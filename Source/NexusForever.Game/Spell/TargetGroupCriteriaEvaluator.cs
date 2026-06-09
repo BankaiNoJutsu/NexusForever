@@ -152,7 +152,7 @@ namespace NexusForever.Game.Spell
                 if (dataEntries[i] == 0u)
                     break;
 
-                TargetGroupEntry subEntry = gameTableManager.TargetGroup.GetEntry(dataEntries[i]);
+                TargetGroupEntry subEntry = gameTableManager?.TargetGroup?.GetEntry(dataEntries[i]);
                 bool subResult = Evaluate(subEntry, entity, gameTableManager, depth + 1);
 
                 if (mustAllPass && !subResult)

@@ -1,13 +1,19 @@
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Spell;
+using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 
 namespace NexusForever.Game.Tests.Spell;
 
+[Collection(LegacyServiceProviderCollection.Name)]
 public class ActionSetAmpTests
 {
     [Fact]
@@ -33,5 +39,141 @@ public class ActionSetAmpTests
 
         CharacterActionSetAmpModel model = Assert.Single(context.ChangeTracker.Entries<CharacterActionSetAmpModel>()).Entity;
         Assert.Equal((ushort)976, model.AmpId);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AddAmp_WithMissingEldanAugmentationStaticDataThrowsInvalidAmp(bool includeEmptyTable)
+    {
+        using var scope = new LegacyServiceProviderScope(BuildProvider(
+            includeEmptyTable ? CreateGameTable<EldanAugmentationEntry>() : null));
+        ActionSet actionSet = CreateActionSet(out RecordingDispatchProxy<IPlayer> playerProxy);
+
+        Assert.Throws<ArgumentException>(() => actionSet.AddAmp(42));
+
+        Assert.Empty(actionSet.Amps);
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.RequestSave)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AddAmpFromExistingModel_WithMissingEldanAugmentationStaticDataThrowsInvalidAmp(bool includeEmptyTable)
+    {
+        using var scope = new LegacyServiceProviderScope(BuildProvider(
+            includeEmptyTable ? CreateGameTable<EldanAugmentationEntry>() : null));
+        ActionSet actionSet = CreateActionSet(out RecordingDispatchProxy<IPlayer> playerProxy);
+
+        Assert.Throws<ArgumentException>(() => actionSet.AddAmp(new CharacterActionSetAmpModel
+        {
+            Id        = 1ul,
+            SpecIndex = 0,
+            AmpId     = 42
+        }));
+
+        Assert.Empty(actionSet.Amps);
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.RequestSave)));
+    }
+
+    [Fact]
+    public void AddAmp_WithKnownStaticDataAddsAmpAndRequestsSave()
+    {
+        using var scope = new LegacyServiceProviderScope(BuildProvider(CreateGameTable(new EldanAugmentationEntry
+        {
+            Id        = 42u,
+            PowerCost = 3u
+        })));
+        ActionSet actionSet = CreateActionSet(out RecordingDispatchProxy<IPlayer> playerProxy);
+
+        actionSet.AddAmp(42);
+
+        Assert.NotNull(actionSet.GetAmp(42));
+        Assert.Equal((byte)42, actionSet.AmpPoints);
+        Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.RequestSave)));
+    }
+
+    [Fact]
+    public void AddAmpFromExistingModel_WithKnownStaticDataAddsAmpWithoutRequestingSave()
+    {
+        using var scope = new LegacyServiceProviderScope(BuildProvider(CreateGameTable(new EldanAugmentationEntry
+        {
+            Id        = 42u,
+            PowerCost = 3u
+        })));
+        ActionSet actionSet = CreateActionSet(out RecordingDispatchProxy<IPlayer> playerProxy);
+
+        actionSet.AddAmp(new CharacterActionSetAmpModel
+        {
+            Id        = 1ul,
+            SpecIndex = 0,
+            AmpId     = 42
+        });
+
+        Assert.NotNull(actionSet.GetAmp(42));
+        Assert.Equal((byte)42, actionSet.AmpPoints);
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.RequestSave)));
+    }
+
+    private static ActionSet CreateActionSet(out RecordingDispatchProxy<IPlayer> playerProxy)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
+        return new ActionSet(0, player);
+    }
+
+    private static IServiceProvider BuildProvider(GameTable<EldanAugmentationEntry> eldanAugmentationTable)
+    {
+        var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
+        if (eldanAugmentationTable != null)
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.EldanAugmentation), eldanAugmentationTable);
+
+        return new ServiceCollection()
+            .AddSingleton(gameTableManager)
+            .BuildServiceProvider();
+    }
+
+    private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()
+    {
+        var table = (GameTable<T>)RuntimeHelpers.GetUninitializedObject(typeof(GameTable<T>));
+        SetAutoProperty(table, nameof(GameTable<T>.Entries), entries);
+        SetPrivateField(table, "header", new GameTableHeader
+        {
+            MaxId = entries.Length == 0 ? 0u : entries.Max(GetEntryId) + 1u
+        });
+        SetPrivateField(table, "lookup", BuildLookup(entries));
+        return table;
+    }
+
+    private static void SetAutoProperty(object instance, string propertyName, object value)
+    {
+        FieldInfo backingField = instance.GetType()
+            .GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+        backingField.SetValue(instance, value);
+    }
+
+    private static void SetPrivateField(object instance, string fieldName, object value)
+    {
+        FieldInfo field = instance.GetType()
+            .GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+        field.SetValue(instance, value);
+    }
+
+    private static int[] BuildLookup<T>(IReadOnlyList<T> entries)
+    {
+        if (entries.Count == 0)
+            return [];
+
+        int[] lookup = Enumerable.Repeat(-1, (int)(entries.Max(GetEntryId) + 1u)).ToArray();
+        for (int i = 0; i < entries.Count; i++)
+            lookup[GetEntryId(entries[i])] = i;
+
+        return lookup;
+    }
+
+    private static uint GetEntryId<T>(T entry)
+    {
+        FieldInfo idField = typeof(T).GetField("Id", BindingFlags.Instance | BindingFlags.Public);
+        return (uint)idField.GetValue(entry);
     }
 }

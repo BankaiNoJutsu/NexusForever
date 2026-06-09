@@ -44,7 +44,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
 
         public void HandleMessage(IWorldSession session, ClientRequestActionSetChanges requestActionSetChanges)
         {
-            LimitedActionSetResult validationResult = ValidateRequest(session, requestActionSetChanges, out List<uint> requestedSpell4BaseIds);
+            LimitedActionSetResult validationResult = ValidateRequest(session, requestActionSetChanges, out List<uint> requestedSpell4BaseIds, out List<EldanAugmentationEntry> newAmpEntries);
             if (validationResult != LimitedActionSetResult.Ok)
             {
                 log.LogDebug(
@@ -90,13 +90,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
                 session.Player.SpellManager.UpdateSpell(spell4BaseId, actionTier.Tier, requestActionSetChanges.ActionSetIndex);
             }
 
-            List<ushort> newAmps = GetDistinctNewAmpIds(actionSet, requestActionSetChanges.Amps)
-                .ToList();
-
-            if (newAmps.Count > 0)
+            if (newAmpEntries.Count > 0)
             {
-                foreach (ushort id in newAmps)
-                    actionSet.AddAmp(id);
+                foreach (EldanAugmentationEntry entry in newAmpEntries)
+                    actionSet.AddAmp(entry);
             }
 
             session.Player.SpellManager.SendServerSpellList();
@@ -106,7 +103,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
             if (actionSet.TierPoints != previousTierPoints)
                 session.Player.SpellManager.SendServerAbilityPoints();
 
-            if (newAmps.Count > 0)
+            if (newAmpEntries.Count > 0)
             {
                 session.EnqueueMessageEncrypted(actionSet.BuildServerAmpList());
             }
@@ -134,9 +131,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
         private LimitedActionSetResult ValidateRequest(
             IWorldSession session,
             ClientRequestActionSetChanges requestActionSetChanges,
-            out List<uint> requestedSpell4BaseIds)
+            out List<uint> requestedSpell4BaseIds,
+            out List<EldanAugmentationEntry> newAmpEntries)
         {
             requestedSpell4BaseIds = [];
+            newAmpEntries          = [];
 
             if (session.Player == null)
                 return LimitedActionSetResult.InvalidUnit;
@@ -218,7 +217,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
             ushort requiredAmpPower = 0;
             foreach (ushort ampId in newAmpIds)
             {
-                var entry = gameTableManager.EldanAugmentation.GetEntry(ampId);
+                var entry = gameTableManager.EldanAugmentation?.GetEntry(ampId);
                 if (entry == null)
                     return LimitedActionSetResult.EldanAugmentationInvalidId;
 
@@ -231,6 +230,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
                 requiredAmpPower += (ushort)entry.PowerCost;
                 if (requiredAmpPower > actionSet.AmpPoints)
                     return LimitedActionSetResult.EldanAugmentationNotEnoughPower;
+
+                newAmpEntries.Add(entry);
             }
 
             if (IsRestrictedInPvp(session.Player.Identity))
@@ -249,7 +250,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
                 return true;
             }
 
-            Spell4Entry spell4Entry = gameTableManager.Spell4.GetEntry(requestedSpellId);
+            Spell4Entry spell4Entry = gameTableManager.Spell4?.GetEntry(requestedSpellId);
             if (spell4Entry != null
                 && TryGetSpellBaseInfo(spell4Entry.Spell4BaseIdBaseSpell, out ISpellBaseInfo mappedSpellBaseInfo))
             {

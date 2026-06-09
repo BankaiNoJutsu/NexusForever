@@ -71,7 +71,7 @@ namespace NexusForever.Game.Account.Inventory
             TargetPlayerIdentity.RealmId = model.TargetRealmId;
             TargetPlayerIdentity.Id      = model.TargetCharacterId;
 
-            Entry = GameTableManager.Instance.AccountItem.GetEntry(AccountItemId);
+            Entry = GameTableManager.Instance.AccountItem?.GetEntry(AccountItemId);
             if (Entry == null)
                 throw new ArgumentException($"Account item {AccountItemId} does not exist!");
 
@@ -95,7 +95,7 @@ namespace NexusForever.Game.Account.Inventory
                 TargetPlayerIdentity.Id      = targetPlayerIdentity.Id;
             }
 
-            Entry = GameTableManager.Instance.AccountItem.GetEntry(AccountItemId);
+            Entry = GameTableManager.Instance.AccountItem?.GetEntry(AccountItemId);
             if (Entry == null)
                 throw new ArgumentException($"Account item {AccountItemId} does not exist!");
 

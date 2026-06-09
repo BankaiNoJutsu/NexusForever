@@ -6,6 +6,7 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Network;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
@@ -100,6 +101,25 @@ public class ClientItemUseHandlerTests
     }
 
     [Fact]
+    public void HandleMessage_WhenItemSpecialTableMissingThrowsWithoutCastOrConsume()
+    {
+        ClientItemUseHandler handler = new(CreateGameTableManager(spell4Id: 777u, includeItemSpecial: false));
+        var callOrder = new List<string>();
+        IWorldSession session = CreateSession(
+            CreateItem(stackCount: 1u, maxStackCount: 20u),
+            CastResult.Ok,
+            callOrder,
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out RecordingDispatchProxy<IPlayer> playerProxy);
+
+        Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(session, CreateRequest()));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+        Assert.Empty(callOrder);
+    }
+
+    [Fact]
     public void HandleMessage_CurrencyTreasure_ConsumesAndGrantsCurrency()
     {
         ClientItemUseHandler handler = CreateHandler(spell4Id: 0u);
@@ -123,6 +143,28 @@ public class ClientItemUseHandlerTests
         Assert.Equal(1566ul, currencyCall.Arguments[1]);
         Assert.Equal(true, currencyCall.Arguments[2]);
         Assert.Equal(["consume", "currency"], callOrder);
+    }
+
+    [Fact]
+    public void HandleMessage_CurrencyTreasureWhenCurrencyTypeTableMissingThrowsWithoutConsumeOrGrant()
+    {
+        ClientItemUseHandler handler = new(CreateGameTableManager(spell4Id: 0u, includeCurrencyType: false));
+        var callOrder = new List<string>();
+        IItem item = CreateCurrencyTreasure(stackCount: 1u);
+        IWorldSession session = CreateSession(
+            item,
+            CastResult.Ok,
+            callOrder,
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<ICurrencyManager> currencyProxy);
+
+        Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(session, CreateRequest()));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+        Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+        Assert.Empty(callOrder);
     }
 
     [Fact]
@@ -185,18 +227,24 @@ public class ClientItemUseHandlerTests
             CreateGameTableManager(spell4Id));
     }
 
-    private static IGameTableManager CreateGameTableManager(uint spell4Id)
+    private static IGameTableManager CreateGameTableManager(
+        uint spell4Id,
+        bool includeItemSpecial = true,
+        bool includeCurrencyType = true)
     {
         IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out var proxy);
-        proxy.SetProperty(nameof(IGameTableManager.ItemSpecial), CreateGameTable(new ItemSpecialEntry
-        {
-            Id = 123u,
-            Spell4IdOnActivate = spell4Id
-        }));
-        proxy.SetProperty(nameof(IGameTableManager.CurrencyType), CreateGameTable(new CurrencyTypeEntry
-        {
-            Id = (uint)CurrencyType.Credits
-        }));
+        if (includeItemSpecial)
+            proxy.SetProperty(nameof(IGameTableManager.ItemSpecial), CreateGameTable(new ItemSpecialEntry
+            {
+                Id = 123u,
+                Spell4IdOnActivate = spell4Id
+            }));
+
+        if (includeCurrencyType)
+            proxy.SetProperty(nameof(IGameTableManager.CurrencyType), CreateGameTable(new CurrencyTypeEntry
+            {
+                Id = (uint)CurrencyType.Credits
+            }));
 
         return gameTableManager;
     }

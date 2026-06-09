@@ -23,7 +23,7 @@ namespace NexusForever.Game.Quest
         public QuestInfo(Quest2Entry entry)
         {
             Entry           = entry;
-            DifficultyEntry = GameTableManager.Instance.Quest2Difficulty.GetEntry(Entry.Quest2DifficultyId);
+            DifficultyEntry = GameTableManager.Instance.Quest2Difficulty?.GetEntry(Entry.Quest2DifficultyId);
 
             InitialisePrerequisiteQuests();
             InitialiseObjectives();
@@ -33,8 +33,12 @@ namespace NexusForever.Game.Quest
         private void InitialisePrerequisiteQuests()
         {
             ImmutableList<Quest2Entry>.Builder builder = ImmutableList.CreateBuilder<Quest2Entry>();
-            foreach (uint questId in Entry.PrerequisiteQuests.Where(q => q != 0u))
-                builder.Add(GameTableManager.Instance.Quest2.GetEntry(questId));
+            foreach (uint questId in (Entry.PrerequisiteQuests ?? []).Where(q => q != 0u))
+            {
+                Quest2Entry prerequisiteQuest = GameTableManager.Instance.Quest2?.GetEntry(questId);
+                if (prerequisiteQuest != null)
+                    builder.Add(prerequisiteQuest);
+            }
 
             PrerequisiteQuests = builder.ToImmutable();
         }
@@ -42,8 +46,12 @@ namespace NexusForever.Game.Quest
         private void InitialiseObjectives()
         {
             ImmutableList<IQuestObjectiveInfo>.Builder builder = ImmutableList.CreateBuilder<IQuestObjectiveInfo>();
-            foreach (uint objectiveId in Entry.Objectives.Where(o => o != 0u))
-                builder.Add(new QuestObjectiveInfo(GameTableManager.Instance.QuestObjective.GetEntry(objectiveId)));
+            foreach (uint objectiveId in (Entry.Objectives ?? []).Where(o => o != 0u))
+            {
+                QuestObjectiveEntry objectiveEntry = GameTableManager.Instance.QuestObjective?.GetEntry(objectiveId);
+                if (objectiveEntry != null)
+                    builder.Add(new QuestObjectiveInfo(objectiveEntry));
+            }
 
             Objectives = builder.ToImmutable();
         }
@@ -51,7 +59,7 @@ namespace NexusForever.Game.Quest
         private void InitialiseRewards()
         {
             ImmutableDictionary<uint, Quest2RewardEntry>.Builder builder = ImmutableDictionary.CreateBuilder<uint, Quest2RewardEntry>();
-            foreach (Quest2RewardEntry rewardEntry in GameTableManager.Instance.Quest2Reward.Entries
+            foreach (Quest2RewardEntry rewardEntry in (GameTableManager.Instance.Quest2Reward?.Entries ?? [])
                 .Where(e => e.Quest2Id == Entry.Id))
                 builder.Add(rewardEntry.Id, rewardEntry);
 
@@ -99,7 +107,13 @@ namespace NexusForever.Game.Quest
             if (Entry.RewardXpOverride != 0u)
                 return Entry.RewardXpOverride;
 
-            XpPerLevelEntry entry = GameTableManager.Instance.XpPerLevel.GetEntry(Entry.ConLevel);
+            if (DifficultyEntry == null)
+                return 0u;
+
+            XpPerLevelEntry entry = GameTableManager.Instance.XpPerLevel?.GetEntry(Entry.ConLevel);
+            if (entry == null)
+                return 0u;
+
             return (uint)(DifficultyEntry.XpMultiplier * entry.BaseQuestXpPerLevel);
         }
 
@@ -111,7 +125,13 @@ namespace NexusForever.Game.Quest
             if (Entry.RewardCashOverride != 0u)
                 return Entry.RewardCashOverride;
 
-            GameFormulaEntry entry = GameTableManager.Instance.GameFormula.GetEntry(530);
+            if (DifficultyEntry == null)
+                return 0u;
+
+            GameFormulaEntry entry = GameTableManager.Instance.GameFormula?.GetEntry(530);
+            if (entry == null)
+                return 0u;
+
             return (uint)(MathF.Pow(Entry.ConLevel, entry.Datafloat0) * DifficultyEntry.CashRewardMultiplier);
         }
     }

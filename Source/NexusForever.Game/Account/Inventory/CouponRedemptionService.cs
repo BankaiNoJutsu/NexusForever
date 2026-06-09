@@ -24,6 +24,9 @@ namespace NexusForever.Game.Account.Inventory
             if (!KnownCoupons.TryGetValue(couponCode.Trim(), out accountItemId))
                 return AccountOperationResult.InvalidCoupon;
 
+            if (account.InventoryManager == null)
+                return AccountOperationResult.GenericFail;
+
             if (!account.InventoryManager.CanAddItem(accountItemId))
                 return AccountOperationResult.InvalidAccountItem;
 

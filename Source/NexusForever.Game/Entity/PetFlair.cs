@@ -19,7 +19,7 @@ namespace NexusForever.Game.Entity
         public PetFlair(CharacterPetFlairModel model)
         {
             Owner = model.Id;
-            Entry = GameTableManager.Instance.PetFlair.GetEntry(model.PetFlairId);
+            Entry = GameTableManager.Instance.PetFlair?.GetEntry(model.PetFlairId);
         }
 
         /// <summary>

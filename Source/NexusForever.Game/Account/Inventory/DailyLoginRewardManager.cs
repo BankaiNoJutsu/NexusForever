@@ -12,6 +12,7 @@ namespace NexusForever.Game.Account.Inventory
     {
         private const uint SecondsPerDay = 86400u;
         private const float NextRewardDayDuration = 1f;
+        private const string DailyLoginRewardTableName = "DailyLoginReward.tbl";
 
         private readonly IAccount account;
         private uint loginDaysTotal;
@@ -187,7 +188,14 @@ namespace NexusForever.Game.Account.Inventory
 
         private static IEnumerable<DailyLoginRewardEntry> GetRewardEntries()
         {
-            return GameTableManager.Instance.DailyLoginReward.Entries;
+            if (GameTableManager.Instance.DailyLoginReward?.Entries == null)
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    DailyLoginRewardTableName,
+                    nameof(DailyLoginRewardManager) + "." + nameof(GetRewardEntries),
+                    MissingGameDataSeverity.PlayerImpacting,
+                    "Cannot resolve daily login rewards.");
+
+            return GameTableManager.Instance.DailyLoginReward?.Entries ?? [];
         }
 
         private static uint InferLastClaimedLoginDay(uint loginDaysTotal, uint rewardsAvailable)

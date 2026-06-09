@@ -48,6 +48,10 @@ namespace NexusForever.Game.Spell
         private const uint ActionBarShortcutSetPacketMax = 0x3FFFu;
         private const uint OutfitInfoPacketMax = 0x7FFFu;
         private const uint StarterTutorialScanSpellId = 81662u;
+        private const string GenericUnlockEntryTableName = "GenericUnlockEntry.tbl";
+        private const string Spell4TableName = "Spell4.tbl";
+        private const string PetFlairTableName = "PetFlair.tbl";
+        private const string CharacterTitleTableName = "CharacterTitle.tbl";
 
         private static ISpellEffectDependencyResolver dependencyResolver;
 
@@ -1837,7 +1841,17 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            GenericUnlockEntryEntry entry = GameTableManager.Instance.GenericUnlockEntry.GetEntry(info.Entry.DataBits00);
+            GenericUnlockEntryEntry entry = GameTableManager.Instance.GenericUnlockEntry?.GetEntry(info.Entry.DataBits00);
+            if (entry == null)
+            {
+                ReportMissingCollectionData(
+                    GameTableManager.Instance.GenericUnlockEntry == null,
+                    GenericUnlockEntryTableName,
+                    info.Entry.DataBits00,
+                    nameof(HandleEffectLearnDyeColor),
+                    "Cannot resolve dye color generic unlock.");
+            }
+
             bool alreadyUnlocked = entry != null && player.Account.GenericUnlockManager.IsUnlocked(entry.GenericUnlockTypeEnum, entry.UnlockObject);
             player.Account.GenericUnlockManager.Unlock((ushort)info.Entry.DataBits00);
             SpellEffectDiagnostics.TracePlayerCollection(spell, target, "learn-dye-color", player.Guid, info.Entry.DataBits00, entry?.UnlockObject ?? 0u, !alreadyUnlocked && entry != null, entry == null ? "unknown-generic-unlock" : alreadyUnlocked ? "already-unlocked" : null);
@@ -1853,7 +1867,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (!TryLearnCollectionSpell(player, info.Entry.DataBits00, out uint spell4BaseId, out string skippedReason))
+            if (!TryLearnCollectionSpell(player, info.Entry.DataBits00, "Spell mount unlock", out uint spell4BaseId, out string skippedReason))
             {
                 SpellEffectDiagnostics.TracePlayerCollection(spell, target, "unlock-mount", player.Guid, info.Entry.DataBits00, spell4BaseId, false, skippedReason);
                 return;
@@ -1882,8 +1896,13 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (GameTableManager.Instance.PetFlair.GetEntry(info.Entry.DataBits00) == null)
+            if (GameTableManager.Instance.PetFlair?.GetEntry(info.Entry.DataBits00) == null)
             {
+                MissingGameDataDiagnostics.ReportSkippedGrant(
+                    "Spell pet flair unlock",
+                    PetFlairTableName,
+                    info.Entry.DataBits00,
+                    nameof(SpellHandler) + "." + nameof(HandleEffectUnlockPetFlair));
                 SpellEffectDiagnostics.TracePlayerCollection(spell, target, "unlock-pet-flair", player.Guid, info.Entry.DataBits00, 0u, false, "unknown-pet-flair");
                 return;
             }
@@ -1909,7 +1928,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (!TryLearnCollectionSpell(player, info.Entry.DataBits00, out uint spell4BaseId, out string skippedReason))
+            if (!TryLearnCollectionSpell(player, info.Entry.DataBits00, "Spell vanity pet unlock", out uint spell4BaseId, out string skippedReason))
             {
                 SpellEffectDiagnostics.TracePlayerCollection(spell, target, "unlock-vanity-pet", player.Guid, info.Entry.DataBits00, spell4BaseId, false, skippedReason);
                 return;
@@ -1980,8 +1999,13 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (GameTableManager.Instance.CharacterTitle.GetEntry(info.Entry.DataBits00) == null)
+            if (GameTableManager.Instance.CharacterTitle?.GetEntry(info.Entry.DataBits00) == null)
             {
+                MissingGameDataDiagnostics.ReportSkippedGrant(
+                    "Spell title grant",
+                    CharacterTitleTableName,
+                    info.Entry.DataBits00,
+                    nameof(SpellHandler) + "." + nameof(HandleEffectTitleGrant));
                 SpellEffectDiagnostics.TracePlayerCollection(spell, target, "title-grant", player.Guid, info.Entry.DataBits00, 0u, false, "unknown-title");
                 return;
             }
@@ -2002,8 +2026,14 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (GameTableManager.Instance.CharacterTitle.GetEntry(info.Entry.DataBits00) == null)
+            if (GameTableManager.Instance.CharacterTitle?.GetEntry(info.Entry.DataBits00) == null)
             {
+                ReportMissingCollectionData(
+                    GameTableManager.Instance.CharacterTitle == null,
+                    CharacterTitleTableName,
+                    info.Entry.DataBits00,
+                    nameof(HandleEffectTitleRevoke),
+                    "Cannot resolve title revoke target.");
                 SpellEffectDiagnostics.TracePlayerCollection(spell, target, "title-revoke", player.Guid, info.Entry.DataBits00, 0u, false, "unknown-title");
                 return;
             }
@@ -3266,7 +3296,7 @@ namespace NexusForever.Game.Spell
             }
         }
 
-        private static bool TryLearnCollectionSpell(IPlayer player, uint spell4Id, out uint spell4BaseId, out string skippedReason)
+        private static bool TryLearnCollectionSpell(IPlayer player, uint spell4Id, string collectionGrantType, out uint spell4BaseId, out string skippedReason)
         {
             spell4BaseId  = 0u;
             skippedReason = null;
@@ -3277,9 +3307,14 @@ namespace NexusForever.Game.Spell
                 return false;
             }
 
-            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(spell4Id);
+            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4?.GetEntry(spell4Id);
             if (spell4Entry == null)
             {
+                MissingGameDataDiagnostics.ReportSkippedGrant(
+                    collectionGrantType,
+                    Spell4TableName,
+                    spell4Id,
+                    nameof(SpellHandler) + "." + nameof(TryLearnCollectionSpell));
                 skippedReason = "unknown-spell4";
                 return false;
             }
@@ -3307,6 +3342,27 @@ namespace NexusForever.Game.Spell
                 skippedReason = "invalid-base-spell";
                 return false;
             }
+        }
+
+        private static void ReportMissingCollectionData(bool tableMissing, string tableName, uint staticId, string handlerName, string detail)
+        {
+            string context = nameof(SpellHandler) + "." + handlerName;
+            if (tableMissing)
+            {
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    tableName,
+                    context,
+                    MissingGameDataSeverity.PlayerImpacting,
+                    detail);
+                return;
+            }
+
+            MissingGameDataDiagnostics.ReportMissingRow(
+                tableName,
+                staticId,
+                context,
+                MissingGameDataSeverity.PlayerImpacting,
+                detail);
         }
 
         private static IPlayer GetPlayerSpellOwner(ISpell spell, IUnitEntity target)
@@ -3424,7 +3480,7 @@ namespace NexusForever.Game.Spell
                 return false;
             }
 
-            entry = GameTableManager.Instance.RewardProperty.GetEntry(rewardProperty.RewardPropertyId);
+            entry = GameTableManager.Instance.RewardProperty?.GetEntry(rewardProperty.RewardPropertyId);
             if (entry == null)
             {
                 skippedReason = "unknown-reward-property";

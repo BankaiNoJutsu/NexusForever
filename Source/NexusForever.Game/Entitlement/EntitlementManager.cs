@@ -39,7 +39,7 @@ namespace NexusForever.Game.Entitlement
         /// </summary>
         public void UpdateEntitlement(EntitlementType type, int value)
         {
-            EntitlementEntry entry = GameTableManager.Instance.Entitlement.GetEntry((ulong)type);
+            EntitlementEntry entry = GameTableManager.Instance.Entitlement?.GetEntry((ulong)type);
             if (entry == null)
                 throw new ArgumentException($"Invalid entitlement type {type}!");
 

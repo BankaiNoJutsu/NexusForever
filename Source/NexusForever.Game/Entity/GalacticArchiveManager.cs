@@ -12,6 +12,7 @@ namespace NexusForever.Game.Entity
     public class GalacticArchiveManager : IGalacticArchiveManager
     {
         private const uint ArticleUnlockedFlag = 0x80000000u;
+        private const string ArchiveEntryTableName = "ArchiveEntry.tbl";
 
         private readonly IPlayer player;
         private readonly Dictionary<uint, ArchiveArticleState> articles = new();
@@ -20,9 +21,10 @@ namespace NexusForever.Game.Entity
         {
             this.player = player;
 
+            GameTable<ArchiveArticleEntry> archiveArticleTable = GameTableManager.Instance.ArchiveArticle;
             foreach (CharacterGalacticArchiveModel archiveModel in model.GalacticArchive)
             {
-                if (GameTableManager.Instance.ArchiveArticle.GetEntry(archiveModel.ArchiveArticleId) == null)
+                if (archiveArticleTable?.GetEntry(archiveModel.ArchiveArticleId) == null)
                     continue;
 
                 articles[archiveModel.ArchiveArticleId] = ArchiveArticleState.FromModel(archiveModel);
@@ -49,7 +51,7 @@ namespace NexusForever.Game.Entity
 
         public bool UnlockArticle(uint archiveArticleId, bool grantRewards = true, bool unlockAllEntries = true)
         {
-            ArchiveArticleEntry articleEntry = GameTableManager.Instance.ArchiveArticle.GetEntry(archiveArticleId);
+            ArchiveArticleEntry articleEntry = GameTableManager.Instance.ArchiveArticle?.GetEntry(archiveArticleId);
             if (articleEntry == null)
                 return false;
 
@@ -72,9 +74,31 @@ namespace NexusForever.Game.Entity
             return true;
         }
 
+        public bool UnlockLinkedArticle(uint archiveArticleId)
+        {
+            if (GameTableManager.Instance.ArchiveArticle?.GetEntry(archiveArticleId) == null)
+                return false;
+
+            if (IsArticleUnlocked(archiveArticleId))
+                return true;
+
+            GameTable<ArchiveLinkEntry> archiveLinkTable = GameTableManager.Instance.ArchiveLink;
+            if (archiveLinkTable == null)
+                return false;
+
+            bool hasUnlockedParent = archiveLinkTable.Entries.Any(link =>
+                link.ArchiveArticleIdChild == archiveArticleId
+                && link.ArchiveArticleIdParent != 0u
+                && IsArticleUnlocked(link.ArchiveArticleIdParent));
+            if (!hasUnlockedParent)
+                return false;
+
+            return UnlockArticle(archiveArticleId, grantRewards: false);
+        }
+
         public bool MarkArticleViewed(uint archiveArticleId)
         {
-            ArchiveArticleEntry articleEntry = GameTableManager.Instance.ArchiveArticle.GetEntry(archiveArticleId);
+            ArchiveArticleEntry articleEntry = GameTableManager.Instance.ArchiveArticle?.GetEntry(archiveArticleId);
             if (articleEntry == null)
                 return false;
 
@@ -93,7 +117,11 @@ namespace NexusForever.Game.Entity
 
         public void RefreshRuleUnlocks()
         {
-            foreach (ArchiveArticleEntry articleEntry in GameTableManager.Instance.ArchiveArticle.Entries)
+            GameTable<ArchiveArticleEntry> archiveArticleTable = GameTableManager.Instance.ArchiveArticle;
+            if (archiveArticleTable == null)
+                return;
+
+            foreach (ArchiveArticleEntry articleEntry in archiveArticleTable.Entries)
             {
                 uint ruleFlags = GetSatisfiedRuleEntryFlags(articleEntry);
                 if (ruleFlags == 0u)
@@ -129,8 +157,18 @@ namespace NexusForever.Game.Entity
             return article;
         }
 
+        private bool IsArticleUnlocked(uint archiveArticleId)
+        {
+            return articles.TryGetValue(archiveArticleId, out ArchiveArticleState article)
+                && (article.UnlockedFlags & ArticleUnlockedFlag) != 0u;
+        }
+
         private uint GetSatisfiedRuleEntryFlags(ArchiveArticleEntry articleEntry)
         {
+            GameTable<ArchiveEntryUnlockRuleEntry> ruleTable = GameTableManager.Instance.ArchiveEntryUnlockRule;
+            if (ruleTable == null)
+                return 0u;
+
             uint flags = 0u;
             IReadOnlyList<uint> entryIds = GetEntryIds(articleEntry);
             for (int i = 0; i < entryIds.Count; i++)
@@ -139,7 +177,7 @@ namespace NexusForever.Game.Entity
                 if (entryId == 0u)
                     continue;
 
-                List<ArchiveEntryUnlockRuleEntry> rules = GameTableManager.Instance.ArchiveEntryUnlockRule.Entries
+                List<ArchiveEntryUnlockRuleEntry> rules = ruleTable.Entries
                     .Where(rule => rule.ArchiveEntryId == entryId)
                     .ToList();
                 if (rules.Count == 0)
@@ -178,6 +216,16 @@ namespace NexusForever.Game.Entity
 
         private void GrantUnlockRewards(ArchiveArticleEntry articleEntry, uint previousFlags, uint currentFlags)
         {
+            GameTable<ArchiveEntryEntry> archiveEntryTable = GameTableManager.Instance.ArchiveEntry;
+            if (archiveEntryTable == null)
+            {
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    ArchiveEntryTableName,
+                    nameof(GalacticArchiveManager) + "." + nameof(GrantUnlockRewards),
+                    MissingGameDataSeverity.PlayerImpacting,
+                    $"Cannot grant archive entry rewards for archiveArticleId={articleEntry.Id}.");
+            }
+
             if ((previousFlags & ArticleUnlockedFlag) == 0u
                 && (currentFlags & ArticleUnlockedFlag) != 0u
                 && articleEntry.CharacterTitleIdReward != 0u
@@ -191,7 +239,21 @@ namespace NexusForever.Game.Entity
                 if ((previousFlags & flag) != 0u || (currentFlags & flag) == 0u)
                     continue;
 
-                ArchiveEntryEntry entry = GameTableManager.Instance.ArchiveEntry.GetEntry(entryIds[i]);
+                if (archiveEntryTable == null)
+                    continue;
+
+                ArchiveEntryEntry entry = archiveEntryTable.GetEntry(entryIds[i]);
+                if (entry == null)
+                {
+                    MissingGameDataDiagnostics.ReportMissingRow(
+                        ArchiveEntryTableName,
+                        entryIds[i],
+                        nameof(GalacticArchiveManager) + "." + nameof(GrantUnlockRewards),
+                        MissingGameDataSeverity.PlayerImpacting,
+                        $"Cannot grant archive entry reward for archiveArticleId={articleEntry.Id}.");
+                    continue;
+                }
+
                 if (entry?.CharacterTitleIdReward > 0u && entry.CharacterTitleIdReward <= ushort.MaxValue)
                     player.TitleManager.AddTitle((ushort)entry.CharacterTitleIdReward);
             }

@@ -45,7 +45,7 @@ namespace NexusForever.Game.Chat
         /// </summary>
         public void AppendItem(uint itemId)
         {
-            if (GameTableManager.Instance.Item.GetEntry(itemId) == null)
+            if (GameTableManager.Instance.Item?.GetEntry(itemId) == null)
                 throw new ArgumentException($"Invalid item entry id {itemId}!");
 
             builder.Append("[I]");
@@ -66,7 +66,7 @@ namespace NexusForever.Game.Chat
         /// </summary>
         public void AppendQuest(ushort questId)
         {
-            if (GameTableManager.Instance.Quest2.GetEntry(questId) == null)
+            if (GameTableManager.Instance.Quest2?.GetEntry(questId) == null)
                 throw new ArgumentException($"Invalid quest entry id {questId}!");
 
             builder.Append("[Q]");

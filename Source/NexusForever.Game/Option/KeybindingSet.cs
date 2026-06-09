@@ -87,7 +87,8 @@ namespace NexusForever.Game.Option
             isDirty = true;
 
             foreach (ushort inputActionId in bindings.Keys
-                .Except(biInputKeySet.Bindings.Select(b => b.InputActionId)))
+                .Except(biInputKeySet.Bindings.Select(b => b.InputActionId))
+                .ToList())
             {
                 IKeybinding binding = bindings[inputActionId];
                 if (binding.PendingCreate)

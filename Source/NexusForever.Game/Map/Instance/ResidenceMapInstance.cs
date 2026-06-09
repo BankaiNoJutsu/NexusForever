@@ -831,6 +831,9 @@ namespace NexusForever.Game.Map.Instance
             HousingResult result = GetResult();
             if (result == HousingResult.Success)
             {
+                if (update.Scale < 0f)
+                    throw new InvalidPacketValueException();
+
                 if (update.PlotIndex != decor.PlotIndex)
                 {
                     decor.PlotIndex = update.PlotIndex;

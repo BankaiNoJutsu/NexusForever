@@ -35,6 +35,19 @@ public class AccountTerminalHandlerTests
     }
 
     [Fact]
+    public void DailyLoginClaim_WithoutInventoryManagerReturnsGenericFail()
+    {
+        IWorldSession session = CreateSessionWithoutInventory(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        var handler = new ClientDailyLoginClaimRewardHandler(NullLogger<ClientDailyLoginClaimRewardHandler>.Instance);
+
+        handler.HandleMessage(session, new ClientDailyLoginClaimReward());
+
+        ServerAccountOperationResult result = Assert.Single(GetMessages<ServerAccountOperationResult>(sessionProxy));
+        Assert.Equal(AccountOperation.RequestDailyLoginRewards, result.Operation);
+        Assert.Equal(AccountOperationResult.GenericFail, result.Result);
+    }
+
+    [Fact]
     public void RedeemCoupon_WithKnownCode_ReturnsOk()
     {
         IWorldSession session = CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy, out RecordingDispatchProxy<IAccountInventoryManager> inventoryProxy);
@@ -47,6 +60,19 @@ public class AccountTerminalHandlerTests
         Assert.Equal(AccountOperation.RedeemCoupon, result.Operation);
         Assert.Equal(AccountOperationResult.Ok, result.Result);
         Assert.Single(inventoryProxy.GetInvocations(nameof(IAccountInventoryManager.AddItem)));
+    }
+
+    [Fact]
+    public void RedeemCoupon_WithoutInventoryManagerReturnsGenericFail()
+    {
+        IWorldSession session = CreateSessionWithoutInventory(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        var handler = new ClientAccountRedeemCouponHandler(NullLogger<ClientAccountRedeemCouponHandler>.Instance);
+
+        handler.HandleMessage(session, ReadCoupon("WELCOME"));
+
+        ServerAccountOperationResult result = Assert.Single(GetMessages<ServerAccountOperationResult>(sessionProxy));
+        Assert.Equal(AccountOperation.RedeemCoupon, result.Operation);
+        Assert.Equal(AccountOperationResult.GenericFail, result.Result);
     }
 
     [Fact]
@@ -118,6 +144,17 @@ public class AccountTerminalHandlerTests
         IAccountInventoryManager inventory = RecordingDispatchProxy<IAccountInventoryManager>.Create(out inventoryProxy);
 
         accountProxy.SetProperty(nameof(IAccount.InventoryManager), inventory);
+        sessionProxy.SetProperty(nameof(IWorldSession.Account), account);
+
+        return session;
+    }
+
+    private static IWorldSession CreateSessionWithoutInventory(out RecordingDispatchProxy<IWorldSession> sessionProxy)
+    {
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
+
+        accountProxy.SetProperty(nameof(IAccount.InventoryManager), null);
         sessionProxy.SetProperty(nameof(IWorldSession.Account), account);
 
         return session;

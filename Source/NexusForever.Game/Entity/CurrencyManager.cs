@@ -66,7 +66,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public bool CanAfford(CurrencyType currencyId, ulong amount)
         {
-            CurrencyTypeEntry currencyEntry = gameTableManager.CurrencyType.GetEntry((ulong)currencyId);
+            CurrencyTypeEntry currencyEntry = gameTableManager.CurrencyType?.GetEntry((ulong)currencyId);
             if (currencyEntry == null)
                 throw new ArgumentNullException();
 
@@ -83,7 +83,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void CurrencyAddAmount(CurrencyType currencyId, ulong amount, bool isLoot = false)
         {
-            CurrencyTypeEntry currencyEntry = gameTableManager.CurrencyType.GetEntry((ulong)currencyId);
+            CurrencyTypeEntry currencyEntry = gameTableManager.CurrencyType?.GetEntry((ulong)currencyId);
             if (currencyEntry == null)
                 throw new ArgumentNullException();
 
@@ -130,7 +130,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void CurrencySubtractAmount(CurrencyType currencyId, ulong amount, bool isLoot = false)
         {
-            CurrencyTypeEntry currencyEntry = gameTableManager.CurrencyType.GetEntry((ulong)currencyId);
+            CurrencyTypeEntry currencyEntry = gameTableManager.CurrencyType?.GetEntry((ulong)currencyId);
             if (currencyEntry == null)
                 throw new ArgumentNullException();
 

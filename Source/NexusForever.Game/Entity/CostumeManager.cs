@@ -157,7 +157,7 @@ namespace NexusForever.Game.Entity
                     return;
                 }
 
-                ItemDisplayEntry itemDisplayEntry = GameTableManager.Instance.ItemDisplay.GetEntry(itemEntry.GetDisplayId());
+                ItemDisplayEntry itemDisplayEntry = GameTableManager.Instance.ItemDisplay?.GetEntry(itemEntry.GetDisplayId());
                 for (int i = 0; i < costumeItem.Dyes.Length; i++)
                 {
                     if (costumeItem.Dyes[i] == 0u)
@@ -171,6 +171,12 @@ namespace NexusForever.Game.Entity
 
                     uint dyeChannelFlag = 1u << i;
                     if ((itemDisplayEntry.DyeChannelFlags & dyeChannelFlag) == 0)
+                    {
+                        SendCostumeSaveResult(CostumeSaveResult.InvalidDye);
+                        return;
+                    }
+
+                    if (GameTableManager.Instance.DyeColorRamp?.GetEntry(costumeItem.Dyes[i]) == null)
                     {
                         SendCostumeSaveResult(CostumeSaveResult.InvalidDye);
                         return;

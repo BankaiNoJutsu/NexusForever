@@ -14,7 +14,7 @@ namespace NexusForever.Game.Map
         /// <summary>
         /// Returns if all <see cref="MapZoneHexGroupEntry"/> in the <see cref="MapZoneEntry"/> have been discovered.
         /// </summary>
-        public bool IsComplete => maxHexGroups == zoneMapHexGroups.Count;
+        public bool IsComplete => maxHexGroups != 0u && maxHexGroups == zoneMapHexGroups.Count;
 
         private readonly MapZoneEntry entry;
         
@@ -41,12 +41,18 @@ namespace NexusForever.Game.Map
             height       = (ushort)(mapZone.HexLimY - mapZone.HexMinY + 1);
             ushort wh    = (ushort)(width * height);
             size         = (ushort)((wh % 8u > 0u ? 8u : 0u) + wh);
-            maxHexGroups = (ushort)GameTableManager.Instance.MapZoneHexGroup.Entries.Count(m => m.MapZoneId == entry.Id);
+            GameTable<MapZoneHexGroupEntry> hexGroupTable = GameTableManager.Instance.MapZoneHexGroup;
+            GameTable<MapZoneHexGroupEntryEntry> hexGroupEntryTable = GameTableManager.Instance.MapZoneHexGroupEntry;
+
+            maxHexGroups = (ushort)(hexGroupTable?.Entries.Count(m => m.MapZoneId == entry.Id) ?? 0);
             zoneMapBits  = new NetworkBitArray(size, NetworkBitArray.BitOrder.LeastSignificantBit);
 
             uint hexCount = 0;
-            foreach (MapZoneHexGroupEntry groupEntry in GameTableManager.Instance.MapZoneHexGroup.Entries.Where(m => m.MapZoneId == entry.Id))
-                hexCount += (uint)GameTableManager.Instance.MapZoneHexGroupEntry.Entries.Count(m => m.MapZoneHexGroupId == groupEntry.Id);
+            if (hexGroupTable != null && hexGroupEntryTable != null)
+            {
+                foreach (MapZoneHexGroupEntry groupEntry in hexGroupTable.Entries.Where(m => m.MapZoneId == entry.Id))
+                    hexCount += (uint)hexGroupEntryTable.Entries.Count(m => m.MapZoneHexGroupId == groupEntry.Id);
+            }
 
             maxHexCount = hexCount;
         }
@@ -85,7 +91,11 @@ namespace NexusForever.Game.Map
         /// </summary>
         public void AddHexGroup(ushort hexGroupId, bool sendUpdate = true)
         {
-            foreach (MapZoneHexGroupEntryEntry mapZoneHexGroupEntry in GameTableManager.Instance.MapZoneHexGroupEntry.Entries.Where(m => m.MapZoneHexGroupId == hexGroupId))
+            GameTable<MapZoneHexGroupEntryEntry> hexGroupEntryTable = GameTableManager.Instance.MapZoneHexGroupEntry;
+            if (hexGroupEntryTable == null)
+                return;
+
+            foreach (MapZoneHexGroupEntryEntry mapZoneHexGroupEntry in hexGroupEntryTable.Entries.Where(m => m.MapZoneHexGroupId == hexGroupId))
             {
                 var bit = (ushort)
                     (((short)mapZoneHexGroupEntry.HexY - (short)entry.HexMinY) * (short)width +
@@ -115,19 +125,26 @@ namespace NexusForever.Game.Map
         /// </remarks>
         public float GetExploredPercent()
         {
+            if (maxHexCount == 0u)
+                return 0f;
+
             return (float)Math.Floor(((float)GetCurrentHexCount() / (float)maxHexCount) * 100f);
         }
 
         private int GetCurrentHexCount()
         {
             int count = 0;
+            GameTable<MapZoneHexGroupEntry> hexGroupTable = GameTableManager.Instance.MapZoneHexGroup;
+            GameTable<MapZoneHexGroupEntryEntry> hexGroupEntryTable = GameTableManager.Instance.MapZoneHexGroupEntry;
+            if (hexGroupTable == null || hexGroupEntryTable == null)
+                return count;
 
-            foreach (MapZoneHexGroupEntry groupEntry in GameTableManager.Instance.MapZoneHexGroup.Entries.Where(m => m.MapZoneId == entry.Id))
+            foreach (MapZoneHexGroupEntry groupEntry in hexGroupTable.Entries.Where(m => m.MapZoneId == entry.Id))
             {
                 if (!zoneMapHexGroups.ContainsKey((ushort)groupEntry.Id))
                     continue;
 
-                count += GameTableManager.Instance.MapZoneHexGroupEntry.Entries.Count(m => m.MapZoneHexGroupId == groupEntry.Id);
+                count += hexGroupEntryTable.Entries.Count(m => m.MapZoneHexGroupId == groupEntry.Id);
             }
 
             return count;

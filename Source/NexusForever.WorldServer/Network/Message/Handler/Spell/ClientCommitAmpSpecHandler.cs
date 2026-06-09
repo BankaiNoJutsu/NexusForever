@@ -13,35 +13,39 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
 {
     public class ClientCommitAmpSpecHandler : IMessageHandler<IWorldSession, ClientCommitAmpSpec>
     {
+        private readonly IGameTableManager gameTableManager;
         private readonly ILogger<ClientCommitAmpSpecHandler> log;
 
-        public ClientCommitAmpSpecHandler(ILogger<ClientCommitAmpSpecHandler> log)
+        public ClientCommitAmpSpecHandler(
+            IGameTableManager gameTableManager,
+            ILogger<ClientCommitAmpSpecHandler> log)
         {
-            this.log = log;
+            this.gameTableManager = gameTableManager;
+            this.log              = log;
         }
 
         public void HandleMessage(IWorldSession session, ClientCommitAmpSpec commitAmpSpec)
         {
-            LimitedActionSetResult validationResult = ValidateRequest(session, commitAmpSpec, out IActionSet actionSet, out List<ushort> newAmps);
+            LimitedActionSetResult validationResult = ValidateRequest(session, commitAmpSpec, out IActionSet actionSet, out List<EldanAugmentationEntry> newAmpEntries);
             if (validationResult != LimitedActionSetResult.Ok)
             {
                 SendActionSetResult(session, session.Player?.SpellManager.ActiveActionSet ?? 0, validationResult);
                 return;
             }
 
-            foreach (ushort ampId in newAmps)
-                actionSet.AddAmp(ampId);
+            foreach (EldanAugmentationEntry entry in newAmpEntries)
+                actionSet.AddAmp(entry);
 
             log.LogDebug("Committed {AmpCount} AMP(s) for player {PlayerGuid} on spec {SpecIndex}.",
-                newAmps.Count, session.Player.Guid, actionSet.Index);
+                newAmpEntries.Count, session.Player.Guid, actionSet.Index);
 
             session.EnqueueMessageEncrypted(actionSet.BuildServerAmpList());
         }
 
-        private static LimitedActionSetResult ValidateRequest(IWorldSession session, ClientCommitAmpSpec commitAmpSpec, out IActionSet actionSet, out List<ushort> newAmps)
+        private LimitedActionSetResult ValidateRequest(IWorldSession session, ClientCommitAmpSpec commitAmpSpec, out IActionSet actionSet, out List<EldanAugmentationEntry> newAmpEntries)
         {
-            actionSet = null;
-            newAmps  = [];
+            actionSet     = null;
+            newAmpEntries = [];
 
             if (session.Player == null)
                 return LimitedActionSetResult.InvalidUnit;
@@ -57,17 +61,17 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
                 return LimitedActionSetResult.InCombat;
 
             actionSet = session.Player.SpellManager.GetActionSet(actionSetIndex);
-            newAmps = GetDistinctNewAmpIds(actionSet, commitAmpSpec.Amps)
+            List<ushort> newAmpIds = GetDistinctNewAmpIds(actionSet, commitAmpSpec.Amps)
                 .ToList();
             HashSet<ushort> selectedAmpIds = actionSet.Amps
                 .Select(amp => checked((ushort)amp.Entry.Id))
-                .Concat(newAmps)
+                .Concat(newAmpIds)
                 .ToHashSet();
 
             ushort requiredAmpPower = 0;
-            foreach (ushort ampId in newAmps)
+            foreach (ushort ampId in newAmpIds)
             {
-                var entry = GameTableManager.Instance.EldanAugmentation.GetEntry(ampId);
+                var entry = gameTableManager.EldanAugmentation?.GetEntry(ampId);
                 if (entry == null)
                     return LimitedActionSetResult.EldanAugmentationInvalidId;
 
@@ -80,6 +84,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
                 requiredAmpPower += (ushort)entry.PowerCost;
                 if (requiredAmpPower > actionSet.AmpPoints)
                     return LimitedActionSetResult.EldanAugmentationNotEnoughPower;
+
+                newAmpEntries.Add(entry);
             }
 
             return LimitedActionSetResult.Ok;

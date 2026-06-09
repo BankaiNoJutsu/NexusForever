@@ -26,6 +26,10 @@ namespace NexusForever.Game.Account.Inventory
 {
     public class AccountInventoryManager : IAccountInventoryManager
     {
+        private const string EntitlementTableName = "Entitlement.tbl";
+        private const string GenericUnlockSetTableName = "GenericUnlockSet.tbl";
+        private const string GenericUnlockEntryTableName = "GenericUnlockEntry.tbl";
+
         private readonly Dictionary<ulong, IAccountInventoryItem> items = new();
         private readonly Dictionary<string, List<PendingAccountItem>> pendingGroups = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<uint, AccountItemCooldown> cooldowns = new();
@@ -70,7 +74,7 @@ namespace NexusForever.Game.Account.Inventory
             foreach (AccountItemCooldownModel cooldownModel in model.AccountItemCooldown)
                 cooldowns.TryAdd(cooldownModel.CooldownGroupId, new AccountItemCooldown(cooldownModel));
 
-            foreach (AccountItemCooldownGroupEntry cooldownEntry in GameTableManager.Instance.AccountItemCooldownGroup.Entries)
+            foreach (AccountItemCooldownGroupEntry cooldownEntry in GameTableManager.Instance.AccountItemCooldownGroup?.Entries ?? [])
                 cooldowns.TryAdd(cooldownEntry.Id, new AccountItemCooldown(account.Id, cooldownEntry.Id));
 
             dailyLoginRewardManager = new DailyLoginRewardManager(account, model);
@@ -223,7 +227,7 @@ namespace NexusForever.Game.Account.Inventory
 
         public bool CanAddItem(uint accountItemId)
         {
-            return GameTableManager.Instance.AccountItem.GetEntry(accountItemId) != null;
+            return GameTableManager.Instance.AccountItem?.GetEntry(accountItemId) != null;
         }
 
         public bool RemoveItem(ulong id)
@@ -933,9 +937,15 @@ namespace NexusForever.Game.Account.Inventory
         {
             error = GenericError.Ok;
 
-            EntitlementEntry entitlementEntry = GameTableManager.Instance.Entitlement.GetEntry(entry.EntitlementId);
+            EntitlementEntry entitlementEntry = GameTableManager.Instance.Entitlement?.GetEntry(entry.EntitlementId);
             if (entitlementEntry == null)
             {
+                ReportMissingAccountItemStaticData(
+                    GameTableManager.Instance.Entitlement == null,
+                    EntitlementTableName,
+                    entry.EntitlementId,
+                    nameof(TryAddEntitlementGrant),
+                    $"accountItemId={entry.Id}");
                 error = GenericError.ItemBadStaticData;
                 return false;
             }
@@ -973,9 +983,15 @@ namespace NexusForever.Game.Account.Inventory
         {
             error = GenericError.Ok;
 
-            EntitlementEntry entitlementEntry = GameTableManager.Instance.Entitlement.GetEntry(entry.EntitlementId);
+            EntitlementEntry entitlementEntry = GameTableManager.Instance.Entitlement?.GetEntry(entry.EntitlementId);
             if (entitlementEntry == null)
             {
+                ReportMissingAccountItemStaticData(
+                    GameTableManager.Instance.Entitlement == null,
+                    EntitlementTableName,
+                    entry.EntitlementId,
+                    nameof(TryAddImmediateAccountEntitlementGrant),
+                    $"accountItemId={entry.Id}");
                 error = GenericError.ItemBadStaticData;
                 return false;
             }
@@ -1015,9 +1031,15 @@ namespace NexusForever.Game.Account.Inventory
         {
             error = GenericError.Ok;
 
-            GenericUnlockSetEntry unlockSetEntry = GameTableManager.Instance.GenericUnlockSet.GetEntry(genericUnlockSetId);
+            GenericUnlockSetEntry unlockSetEntry = GameTableManager.Instance.GenericUnlockSet?.GetEntry(genericUnlockSetId);
             if (unlockSetEntry == null)
             {
+                ReportMissingAccountItemStaticData(
+                    GameTableManager.Instance.GenericUnlockSet == null,
+                    GenericUnlockSetTableName,
+                    genericUnlockSetId,
+                    nameof(TryAddGenericUnlockGrants),
+                    "Cannot resolve account item generic unlock set.");
                 error = GenericError.InvalidGenericUnlock;
                 return false;
             }
@@ -1027,9 +1049,16 @@ namespace NexusForever.Game.Account.Inventory
                 if (genericUnlockEntryId == 0u)
                     continue;
 
-                GenericUnlockEntryEntry genericUnlockEntry = GameTableManager.Instance.GenericUnlockEntry.GetEntry(genericUnlockEntryId);
+                GenericUnlockEntryEntry genericUnlockEntry = GameTableManager.Instance.GenericUnlockEntry?.GetEntry(genericUnlockEntryId);
                 if (genericUnlockEntry == null || genericUnlockEntry.Id > ushort.MaxValue)
                 {
+                    if (genericUnlockEntry == null)
+                        ReportMissingAccountItemStaticData(
+                            GameTableManager.Instance.GenericUnlockEntry == null,
+                            GenericUnlockEntryTableName,
+                            genericUnlockEntryId,
+                            nameof(TryAddGenericUnlockGrants),
+                            $"genericUnlockSetId={genericUnlockSetId}");
                     error = GenericError.InvalidGenericUnlock;
                     return false;
                 }
@@ -1051,6 +1080,27 @@ namespace NexusForever.Game.Account.Inventory
             yield return entry.GenericUnlockEntryId03;
             yield return entry.GenericUnlockEntryId04;
             yield return entry.GenericUnlockEntryId05;
+        }
+
+        private static void ReportMissingAccountItemStaticData(bool tableMissing, string tableName, uint staticId, string context, string detail)
+        {
+            context = nameof(AccountInventoryManager) + "." + context;
+            if (tableMissing)
+            {
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    tableName,
+                    context,
+                    MissingGameDataSeverity.PlayerImpacting,
+                    detail);
+                return;
+            }
+
+            MissingGameDataDiagnostics.ReportMissingRow(
+                tableName,
+                staticId,
+                context,
+                MissingGameDataSeverity.PlayerImpacting,
+                detail);
         }
 
         private interface IAccountItemGrant

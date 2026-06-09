@@ -60,6 +60,84 @@ public class AccountItemHandlerTests
     }
 
     [Fact]
+    public void ClaimPendingItemGroup_WithoutInventoryManagerSendsGenericFail()
+    {
+        IWorldSession session = CreateSessionWithoutInventory(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        var handler = new ClientAccountItemClaimPendingItemGroupHandler(
+            NullLogger<ClientAccountItemClaimPendingItemGroupHandler>.Instance);
+        var request = new ClientAccountItemClaimPendingItemGroup();
+        SetAutoProperty(request, nameof(ClientAccountItemClaimPendingItemGroup.Group), "group-a");
+
+        handler.HandleMessage(session, request);
+
+        ServerAccountOperationResult result = Assert.Single(GetEncryptedMessages<ServerAccountOperationResult>(sessionProxy));
+        Assert.Equal(AccountOperation.ClaimPending, result.Operation);
+        Assert.Equal(AccountOperationResult.GenericFail, result.Result);
+    }
+
+    [Fact]
+    public void CanAddItem_WithMissingAccountItemTable_ReturnsFalse()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        using ServiceProvider provider = BuildGameTableProviderWithoutAccountItems();
+        LegacyServiceProvider.Provider = provider;
+
+        try
+        {
+            IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out _);
+            IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
+            accountProxy.SetProperty(nameof(IAccount.Id), 5001u);
+            accountProxy.SetProperty(nameof(IAccount.Session), session);
+
+            var manager = new AccountInventoryManager(account, new AccountModel
+            {
+                Id = 5001u
+            });
+
+            Assert.False(manager.CanAddItem(901u));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void Load_WithMissingAccountItemTable_RejectsPersistedInventoryItem()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        using ServiceProvider provider = BuildGameTableProviderWithoutAccountItems();
+        LegacyServiceProvider.Provider = provider;
+
+        try
+        {
+            IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out _);
+            IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
+            accountProxy.SetProperty(nameof(IAccount.Id), 5001u);
+            accountProxy.SetProperty(nameof(IAccount.Session), session);
+
+            var model = new AccountModel
+            {
+                Id = 5001u
+            };
+            model.AccountInventory.Add(new AccountInventoryModel
+            {
+                Id            = 5001u,
+                InventoryId   = 1ul,
+                AccountItemId = 901u,
+                ClaimState    = (byte)AccountItemClaimState.CanClaim
+            });
+
+            ArgumentException exception = Assert.Throws<ArgumentException>(() => new AccountInventoryManager(account, model));
+            Assert.Contains("Account item 901 does not exist", exception.Message);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void TakeItem_WithoutPlayer_AccountEntitlementGrant_AppliesAndDeletesItem()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
@@ -196,6 +274,86 @@ public class AccountItemHandlerTests
     }
 
     [Fact]
+    public void TakeItem_DirectAccountEntitlementWithMissingEntitlementTable_ReturnsInvalidWithoutDeletingItem()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        using ServiceProvider provider = BuildGameTableProviderWithoutEntitlements(
+            [
+                CreateCharacterSlotAccountItemEntry()
+            ]);
+        LegacyServiceProvider.Provider = provider;
+
+        try
+        {
+            AccountInventoryManager manager = CreateAccountInventoryManager(
+                accountItemId: 133u,
+                out RecordingDispatchProxy<IWorldSession> sessionProxy,
+                out _,
+                out RecordingDispatchProxy<IAccountEntitlementManager> entitlementProxy);
+
+            AccountOperationResult result = manager.TakeItem(null, 1ul);
+
+            Assert.Equal(AccountOperationResult.InvalidAccountItem, result);
+            Assert.NotNull(manager.GetItem(1ul));
+            Assert.Empty(entitlementProxy.GetInvocations(nameof(IAccountEntitlementManager.UpdateEntitlement)));
+
+            ServerAccountOperationResult operationResult = Assert.Single(GetEncryptedMessages<ServerAccountOperationResult>(sessionProxy));
+            Assert.Equal(AccountOperation.TakeItem, operationResult.Operation);
+            Assert.Equal(AccountOperationResult.InvalidAccountItem, operationResult.Result);
+            Assert.Empty(GetEncryptedMessages<ServerAccountItemDelete>(sessionProxy));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void TakeItem_MixedEntitlementGrantWithMissingEntitlementTable_ReturnsInvalidBeforeCurrencyOrDelete()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        using ServiceProvider provider = BuildGameTableProviderWithoutEntitlements(
+            [
+                new AccountItemEntry
+                {
+                    Id                         = 904u,
+                    AccountCurrencyEnum        = (uint)AccountCurrencyType.Omnibit,
+                    AccountCurrencyAmount      = 610ul,
+                    EntitlementId              = (uint)EntitlementType.BaseCharacterSlots,
+                    EntitlementCount           = 1u,
+                    AccountItemCooldownGroupId = 1u
+                }
+            ]);
+        LegacyServiceProvider.Provider = provider;
+
+        try
+        {
+            AccountInventoryManager manager = CreateAccountInventoryManager(
+                accountItemId: 904u,
+                out RecordingDispatchProxy<IWorldSession> sessionProxy,
+                out RecordingDispatchProxy<IAccountCurrencyManager> currencyProxy,
+                out RecordingDispatchProxy<IAccountEntitlementManager> entitlementProxy);
+            IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+
+            AccountOperationResult result = manager.TakeItem(player, 1ul);
+
+            Assert.Equal(AccountOperationResult.InvalidAccountItem, result);
+            Assert.NotNull(manager.GetItem(1ul));
+            Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+            Assert.Empty(entitlementProxy.GetInvocations(nameof(IAccountEntitlementManager.UpdateEntitlement)));
+
+            ServerAccountOperationResult operationResult = Assert.Single(GetEncryptedMessages<ServerAccountOperationResult>(sessionProxy));
+            Assert.Equal(AccountOperation.TakeItem, operationResult.Operation);
+            Assert.Equal(AccountOperationResult.InvalidAccountItem, operationResult.Result);
+            Assert.Empty(GetEncryptedMessages<ServerAccountItemDelete>(sessionProxy));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void TakeItem_WithoutPlayer_AccountCurrencyGrant_AddsCurrencyAndDeletesItem()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
@@ -228,6 +386,86 @@ public class AccountItemHandlerTests
             Assert.Equal(610ul, add.Arguments[1]);
             Assert.Null(manager.GetItem(1ul));
             Assert.Single(GetEncryptedMessages<ServerAccountItemDelete>(sessionProxy));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void TakeItem_GenericUnlockWithMissingUnlockSetTableReturnsInvalidWithoutDeletingItem()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        using ServiceProvider provider = BuildGameTableProvider(
+            [
+                CreateGenericUnlockAccountItemEntry()
+            ],
+            []);
+        LegacyServiceProvider.Provider = provider;
+
+        try
+        {
+            AccountInventoryManager manager = CreateAccountInventoryManager(
+                accountItemId: 902u,
+                out RecordingDispatchProxy<IWorldSession> sessionProxy,
+                out _,
+                out _);
+            IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+
+            AccountOperationResult result = manager.TakeItem(player, 1ul);
+
+            Assert.Equal(AccountOperationResult.InvalidAccountItem, result);
+            Assert.NotNull(manager.GetItem(1ul));
+            Assert.Empty(GetEncryptedMessages<ServerAccountItemDelete>(sessionProxy));
+
+            ServerAccountOperationResult operationResult = Assert.Single(GetEncryptedMessages<ServerAccountOperationResult>(sessionProxy));
+            Assert.Equal(AccountOperation.TakeItem, operationResult.Operation);
+            Assert.Equal(AccountOperationResult.InvalidAccountItem, operationResult.Result);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void TakeItem_GenericUnlockWithMissingUnlockEntryTableReturnsInvalidWithoutDeletingItem()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        using ServiceProvider provider = BuildGameTableProvider(
+            [
+                CreateGenericUnlockAccountItemEntry()
+            ],
+            [],
+            genericUnlockSets:
+            [
+                new GenericUnlockSetEntry
+                {
+                    Id = 10u,
+                    GenericUnlockEntryId00 = 11u
+                }
+            ]);
+        LegacyServiceProvider.Provider = provider;
+
+        try
+        {
+            AccountInventoryManager manager = CreateAccountInventoryManager(
+                accountItemId: 902u,
+                out RecordingDispatchProxy<IWorldSession> sessionProxy,
+                out _,
+                out _);
+            IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+
+            AccountOperationResult result = manager.TakeItem(player, 1ul);
+
+            Assert.Equal(AccountOperationResult.InvalidAccountItem, result);
+            Assert.NotNull(manager.GetItem(1ul));
+            Assert.Empty(GetEncryptedMessages<ServerAccountItemDelete>(sessionProxy));
+
+            ServerAccountOperationResult operationResult = Assert.Single(GetEncryptedMessages<ServerAccountOperationResult>(sessionProxy));
+            Assert.Equal(AccountOperation.TakeItem, operationResult.Operation);
+            Assert.Equal(AccountOperationResult.InvalidAccountItem, operationResult.Result);
         }
         finally
         {
@@ -271,6 +509,40 @@ public class AccountItemHandlerTests
             Assert.Equal(7ul, take.Arguments[1]);
             Assert.Single(storefrontPurchaseProxy.GetInvocations(nameof(IStorefrontPurchaseService.PersistAccount)));
             Assert.Single(characterListProxy.GetInvocations(nameof(ICharacterListManager.SendCharacterListPackets)));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void TakeHandler_WithoutInventoryManagerSendsGenericFailWithoutPersisting()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        using ServiceProvider provider = new ServiceCollection().BuildServiceProvider();
+        LegacyServiceProvider.Provider = provider;
+
+        try
+        {
+            IWorldSession session = CreateSessionWithoutInventory(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+            ICharacterListManager characterListManager = RecordingDispatchProxy<ICharacterListManager>.Create(out RecordingDispatchProxy<ICharacterListManager> characterListProxy);
+            IStorefrontPurchaseService storefrontPurchaseService = RecordingDispatchProxy<IStorefrontPurchaseService>.Create(out RecordingDispatchProxy<IStorefrontPurchaseService> storefrontPurchaseProxy);
+
+            var handler = new ClientAccountItemTakeHandler(
+                NullLogger<ClientAccountItemTakeHandler>.Instance,
+                characterListManager,
+                storefrontPurchaseService);
+            var request = new ClientAccountItemTake();
+            SetAutoProperty(request, nameof(ClientAccountItemTake.Id), 7ul);
+
+            handler.HandleMessage(session, request);
+
+            ServerAccountOperationResult result = Assert.Single(GetEncryptedMessages<ServerAccountOperationResult>(sessionProxy));
+            Assert.Equal(AccountOperation.TakeItem, result.Operation);
+            Assert.Equal(AccountOperationResult.GenericFail, result.Result);
+            Assert.Empty(storefrontPurchaseProxy.GetInvocations(nameof(IStorefrontPurchaseService.PersistAccount)));
+            Assert.Empty(characterListProxy.GetInvocations(nameof(ICharacterListManager.SendCharacterListPackets)));
         }
         finally
         {
@@ -392,6 +664,36 @@ public class AccountItemHandlerTests
         Assert.Empty(environment.UnlockManager.Results);
     }
 
+    [Fact]
+    public void GenericUnlock_WhenItemConsumeFailsReturnsInvalidWithoutUnlocking()
+    {
+        GenericUnlockEnvironment environment = CreateGenericUnlockEnvironment(
+            itemGenericUnlockSetId: 10u,
+            unlockSets:
+            [
+                new GenericUnlockSetEntry
+                {
+                    Id = 10u,
+                    GenericUnlockEntryId00 = 11u
+                }
+            ],
+            unlockEntries:
+            [
+                CreateGenericUnlockEntry(11u, 200u)
+            ],
+            itemUseResult: false);
+
+        var handler = new ClientItemGenericUnlockHandler(
+            environment.GameTableManager,
+            NullLogger<ClientItemGenericUnlockHandler>.Instance);
+
+        handler.HandleMessage(environment.Session, new ClientItemGenericUnlock());
+
+        Assert.Single(environment.InventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+        Assert.Empty(environment.UnlockManager.UnlockedEntryIds);
+        Assert.Equal([GenericUnlockResult.Invalid], environment.UnlockManager.Results);
+    }
+
     private static AccountInventoryManager CreateAccountInventoryManager(
         uint accountItemId,
         out RecordingDispatchProxy<IWorldSession> sessionProxy,
@@ -429,13 +731,58 @@ public class AccountItemHandlerTests
         return new AccountInventoryManager(account, model);
     }
 
-    private static ServiceProvider BuildGameTableProvider(AccountItemEntry[] accountItems, EntitlementEntry[] entitlements)
+    private static IWorldSession CreateSessionWithoutInventory(out RecordingDispatchProxy<IWorldSession> sessionProxy)
+    {
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+
+        sessionProxy.SetProperty(nameof(IWorldSession.Account), account);
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
+        accountProxy.SetProperty(nameof(IAccount.InventoryManager), null);
+        playerProxy.SetProperty(nameof(IPlayer.Guid), 123u);
+
+        return session;
+    }
+
+    private static ServiceProvider BuildGameTableProvider(
+        AccountItemEntry[] accountItems,
+        EntitlementEntry[] entitlements,
+        GenericUnlockSetEntry[] genericUnlockSets = null,
+        GenericUnlockEntryEntry[] genericUnlockEntries = null)
     {
         var gameTableManager = (GameTableManager)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItem), CreateGameTable(accountItems));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItemCooldownGroup), CreateGameTable<AccountItemCooldownGroupEntry>());
         SetAutoProperty(gameTableManager, nameof(GameTableManager.DailyLoginReward), CreateGameTable<DailyLoginRewardEntry>());
         SetAutoProperty(gameTableManager, nameof(GameTableManager.Entitlement), CreateGameTable(entitlements));
+        if (genericUnlockSets != null)
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.GenericUnlockSet), CreateGameTable(genericUnlockSets));
+        if (genericUnlockEntries != null)
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.GenericUnlockEntry), CreateGameTable(genericUnlockEntries));
+
+        return new ServiceCollection()
+            .AddSingleton(gameTableManager)
+            .BuildServiceProvider();
+    }
+
+    private static ServiceProvider BuildGameTableProviderWithoutEntitlements(AccountItemEntry[] accountItems)
+    {
+        var gameTableManager = (GameTableManager)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItem), CreateGameTable(accountItems));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItemCooldownGroup), CreateGameTable<AccountItemCooldownGroupEntry>());
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.DailyLoginReward), CreateGameTable<DailyLoginRewardEntry>());
+
+        return new ServiceCollection()
+            .AddSingleton(gameTableManager)
+            .BuildServiceProvider();
+    }
+
+    private static ServiceProvider BuildGameTableProviderWithoutAccountItems()
+    {
+        var gameTableManager = (GameTableManager)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItemCooldownGroup), CreateGameTable<AccountItemCooldownGroupEntry>());
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.DailyLoginReward), CreateGameTable<DailyLoginRewardEntry>());
 
         return new ServiceCollection()
             .AddSingleton(gameTableManager)
@@ -461,6 +808,15 @@ public class AccountItemHandlerTests
             Id       = (uint)EntitlementType.BaseCharacterSlots,
             MaxCount = 12u,
             Flags    = (uint)EntitlementFlags.None
+        };
+    }
+
+    private static AccountItemEntry CreateGenericUnlockAccountItemEntry()
+    {
+        return new AccountItemEntry
+        {
+            Id                 = 902u,
+            GenericUnlockSetId = 10u
         };
     }
 

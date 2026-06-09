@@ -159,7 +159,9 @@ namespace NexusForever.Game.Achievement
             if (Info.ChecklistEntries.Count == 0 || AchievementProgressRules.UsesChecklistValueProgress(Info))
                 return ProgressCount >= AchievementProgressRules.GetRequiredProgress(Info.Entry.RequiredProgress);
 
-            return Info.ChecklistEntries.All(entry => (CompletedChecklistMask & (1u << (int)entry.Bit)) != 0);
+            return Info.ChecklistEntries.All(entry =>
+                AchievementProgressRules.TryBuildChecklistBit(entry.Bit, out uint bit)
+                && (CompletedChecklistMask & bit) != 0);
         }
 
         private void SetProgressState(uint value)

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Account.Inventory;
 using NexusForever.Network;
 using NexusForever.Game.Static.Account;
@@ -20,7 +21,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientDailyLoginClaimReward _)
         {
-            AccountOperationResult result = session.Account.InventoryManager.ClaimDailyLoginReward();
+            AccountOperationResult result;
+            if (!ClientAccountInventoryHandlerGuard.TryGetInventoryManager(session, AccountOperation.RequestDailyLoginRewards, out IAccountInventoryManager inventoryManager, out result))
+            {
+                log.LogDebug("Processed daily-login claim from player {PlayerGuid}: result {Result}.", session.Player?.Guid, result);
+                return;
+            }
+
+            result = inventoryManager.ClaimDailyLoginReward();
             log.LogDebug("Processed daily-login claim from player {PlayerGuid}: result {Result}.", session.Player?.Guid, result);
             ClientAccountItemOperationResultHelper.Send(session, AccountOperation.RequestDailyLoginRewards, result);
         }

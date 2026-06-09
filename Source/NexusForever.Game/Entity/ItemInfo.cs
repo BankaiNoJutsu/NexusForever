@@ -329,7 +329,8 @@ namespace NexusForever.Game.Entity
             if (Entry.ItemSourceId == 0u)
                 return (ushort)Entry.ItemDisplayId;
 
-            List<ItemDisplaySourceEntryEntry> entries = AssetManager.Instance.GetItemDisplaySource(Entry.ItemSourceId)
+            List<ItemDisplaySourceEntryEntry> entries = (AssetManager.Instance.GetItemDisplaySource(Entry.ItemSourceId)
+                    ?? ImmutableList<ItemDisplaySourceEntryEntry>.Empty)
                 .Where(e => e.Item2TypeId == Entry.Item2TypeId)
                 .ToList();
 

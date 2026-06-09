@@ -94,7 +94,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                 foreach (GenericUnlockEntryEntry entry in lockedEntries)
                     session.Account.GenericUnlockManager.Unlock((ushort)entry.Id);
             else
+            {
                 LogInvalidUnlock(session, item, itemEntry.GenericUnlockSetId, GenericUnlockResult.Invalid, "item-consume-failed");
+                SendUnlockResult(session, GenericUnlockResult.Invalid);
+            }
         }
 
         private IItem GetItemOrDefault(IWorldSession session, ClientItemGenericUnlock itemGenericUnlock, out string invalidItemReason)

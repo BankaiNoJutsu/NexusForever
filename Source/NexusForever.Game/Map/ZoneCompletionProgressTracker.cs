@@ -13,34 +13,35 @@ namespace NexusForever.Game.Map
         private const uint DatacubeTypeEnumDatacube = 0u;
         private const uint DatacubeTypeEnumTale = 1u;
 
-        private static HashSet<uint> episodeQuestIds;
-        private static readonly Dictionary<uint, HashSet<uint>> MapZoneWorldZoneIds = new();
-
         public static ZoneCompletionProgress GetProgress(IPlayer player, uint mapZoneId)
         {
             HashSet<uint> worldZoneIds = GetWorldZoneIdsForMapZone(mapZoneId);
             if (worldZoneIds.Count == 0)
                 return default;
 
-            EnsureEpisodeQuestCache();
+            HashSet<uint> episodeQuestIds = GetEpisodeQuestIds();
 
             uint episodeQuests = 0u;
             uint taskQuests = 0u;
-            foreach (Quest2Entry quest in GameTableManager.Instance.Quest2.Entries)
+            GameTable<Quest2Entry> questTable = GameTableManager.Instance.Quest2;
+            if (questTable != null)
             {
-                if (!worldZoneIds.Contains(quest.WorldZoneId))
-                    continue;
-                if (!QuestMatchesPlayerFaction(quest, player.Faction1))
-                    continue;
+                foreach (Quest2Entry quest in questTable.Entries)
+                {
+                    if (!worldZoneIds.Contains(quest.WorldZoneId))
+                        continue;
+                    if (!QuestMatchesPlayerFaction(quest, player.Faction1))
+                        continue;
 
-                QuestState? state = player.QuestManager.GetQuestState((ushort)quest.Id);
-                if (state != QuestState.Completed)
-                    continue;
+                    QuestState? state = player.QuestManager.GetQuestState((ushort)quest.Id);
+                    if (state != QuestState.Completed)
+                        continue;
 
-                if (episodeQuestIds.Contains(quest.Id))
-                    episodeQuests++;
-                else
-                    taskQuests++;
+                    if (episodeQuestIds.Contains(quest.Id))
+                        episodeQuests++;
+                    else
+                        taskQuests++;
+                }
             }
 
             return CountDatacubesChallengesAndJournals(player, worldZoneIds, episodeQuests, taskQuests);
@@ -54,33 +55,41 @@ namespace NexusForever.Game.Map
         {
             uint datacubes = 0u;
             uint tales = 0u;
-            foreach (DatacubeEntry entry in GameTableManager.Instance.Datacube.Entries)
+            GameTable<DatacubeEntry> datacubeTable = GameTableManager.Instance.Datacube;
+            if (datacubeTable != null)
             {
-                if (!worldZoneIds.Contains(entry.WorldZoneId))
-                    continue;
-                if (!DatacubeMatchesPlayerFaction(entry, player.Faction1))
-                    continue;
+                foreach (DatacubeEntry entry in datacubeTable.Entries)
+                {
+                    if (!worldZoneIds.Contains(entry.WorldZoneId))
+                        continue;
+                    if (!DatacubeMatchesPlayerFaction(entry, player.Faction1))
+                        continue;
 
-                if (entry.DatacubeTypeEnum == DatacubeTypeEnumDatacube)
-                {
-                    if (player.DatacubeManager.GetDatacube((ushort)entry.Id, DatacubeType.Datacube) != null)
-                        datacubes++;
-                }
-                else if (entry.DatacubeTypeEnum == DatacubeTypeEnumTale)
-                {
-                    if (player.DatacubeManager.GetDatacube((ushort)entry.Id, DatacubeType.Chronicle) != null)
-                        tales++;
+                    if (entry.DatacubeTypeEnum == DatacubeTypeEnumDatacube)
+                    {
+                        if (player.DatacubeManager.GetDatacube((ushort)entry.Id, DatacubeType.Datacube) != null)
+                            datacubes++;
+                    }
+                    else if (entry.DatacubeTypeEnum == DatacubeTypeEnumTale)
+                    {
+                        if (player.DatacubeManager.GetDatacube((ushort)entry.Id, DatacubeType.Chronicle) != null)
+                            tales++;
+                    }
                 }
             }
 
             uint journals = 0u;
-            foreach (DatacubeVolumeEntry volume in GameTableManager.Instance.DatacubeVolume.Entries)
+            GameTable<DatacubeVolumeEntry> volumeTable = GameTableManager.Instance.DatacubeVolume;
+            if (volumeTable != null && datacubeTable != null)
             {
-                if (player.DatacubeManager.GetDatacube((ushort)volume.Id, DatacubeType.Journal) == null)
-                    continue;
+                foreach (DatacubeVolumeEntry volume in volumeTable.Entries)
+                {
+                    if (player.DatacubeManager.GetDatacube((ushort)volume.Id, DatacubeType.Journal) == null)
+                        continue;
 
-                if (VolumeTouchesWorldZones(volume, worldZoneIds))
-                    journals++;
+                    if (VolumeTouchesWorldZones(volume, worldZoneIds, datacubeTable))
+                        journals++;
+                }
             }
 
             uint challenges = 0u;
@@ -118,68 +127,66 @@ namespace NexusForever.Game.Map
             };
         }
 
-        private static void EnsureEpisodeQuestCache()
+        private static HashSet<uint> GetEpisodeQuestIds()
         {
-            if (episodeQuestIds != null)
-                return;
-
-            episodeQuestIds = GameTableManager.Instance.EpisodeQuest?.Entries
+            return GameTableManager.Instance.EpisodeQuest?.Entries
                 .Select(e => e.QuestId)
                 .ToHashSet() ?? new HashSet<uint>();
         }
 
         private static HashSet<uint> GetWorldZoneIdsForMapZone(uint mapZoneId)
         {
-            if (MapZoneWorldZoneIds.TryGetValue(mapZoneId, out HashSet<uint> cached))
-                return cached;
-
-            MapZoneEntry mapZone = GameTableManager.Instance.MapZone?.Entries?
+            GameTable<MapZoneEntry> mapZoneTable = GameTableManager.Instance.MapZone;
+            MapZoneEntry mapZone = mapZoneTable?.Entries?
                 .FirstOrDefault(m => m.Id == mapZoneId);
             if (mapZone == null)
-            {
-                cached = new HashSet<uint>();
-                MapZoneWorldZoneIds[mapZoneId] = cached;
-                return cached;
-            }
+                return new HashSet<uint>();
 
-            cached = new HashSet<uint>();
+            var worldZoneIds = new HashSet<uint>();
             if (mapZone.WorldZoneId != 0u)
             {
-                foreach (WorldZoneEntry zone in GameTableManager.Instance.WorldZone.Entries)
+                GameTable<WorldZoneEntry> worldZoneTable = GameTableManager.Instance.WorldZone;
+                if (worldZoneTable != null)
                 {
-                    if (IsWorldZoneInTree(zone.Id, mapZone.WorldZoneId))
-                        cached.Add(zone.Id);
+                    foreach (WorldZoneEntry zone in worldZoneTable.Entries)
+                    {
+                        if (IsWorldZoneInTree(worldZoneTable, zone.Id, mapZone.WorldZoneId))
+                            worldZoneIds.Add(zone.Id);
+                    }
                 }
             }
 
-            MapZoneWorldZoneIds[mapZoneId] = cached;
-            return cached;
+            return worldZoneIds;
         }
 
-        private static bool IsWorldZoneInTree(uint zoneId, uint rootZoneId)
+        private static bool IsWorldZoneInTree(GameTable<WorldZoneEntry> worldZoneTable, uint zoneId, uint rootZoneId)
         {
-            WorldZoneEntry zone = GameTableManager.Instance.WorldZone.GetEntry(zoneId);
-            while (zone != null)
+            var visited = new HashSet<uint>();
+            WorldZoneEntry zone = worldZoneTable.GetEntry(zoneId);
+            while (zone != null && visited.Add(zone.Id))
             {
                 if (zone.Id == rootZoneId)
                     return true;
                 if (zone.ParentZoneId == 0u)
                     return false;
 
-                zone = GameTableManager.Instance.WorldZone.GetEntry(zone.ParentZoneId);
+                zone = worldZoneTable.GetEntry(zone.ParentZoneId);
             }
 
             return false;
         }
 
-        private static bool VolumeTouchesWorldZones(DatacubeVolumeEntry volume, HashSet<uint> worldZoneIds)
+        private static bool VolumeTouchesWorldZones(
+            DatacubeVolumeEntry volume,
+            HashSet<uint> worldZoneIds,
+            GameTable<DatacubeEntry> datacubeTable)
         {
             foreach (uint datacubeId in GetVolumeDatacubeIds(volume))
             {
                 if (datacubeId == 0u)
                     continue;
 
-                DatacubeEntry datacube = GameTableManager.Instance.Datacube.GetEntry(datacubeId);
+                DatacubeEntry datacube = datacubeTable.GetEntry(datacubeId);
                 if (datacube != null && worldZoneIds.Contains(datacube.WorldZoneId))
                     return true;
             }

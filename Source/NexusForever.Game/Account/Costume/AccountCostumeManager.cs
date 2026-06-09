@@ -54,6 +54,12 @@ namespace NexusForever.Game.Account.Costume
                 return;
             }
 
+            if (item.Info?.IsEquippable() != true)
+            {
+                SendCostumeItemUnlock(CostumeUnlockResult.InvalidItem);
+                return;
+            }
+
             if (TryUnlockItem(item.Id))
             {
                 item.MakeSoulbound();
@@ -104,7 +110,7 @@ namespace NexusForever.Game.Account.Costume
         private uint GetMaxUnlockItemCount()
         {
             // client defaults to 1000 if entry doesn't exist
-            GameFormulaEntry entry = GameTableManager.Instance.GameFormula.GetEntry(1203);
+            GameFormulaEntry entry = GameTableManager.Instance.GameFormula?.GetEntry(1203);
             if (entry == null)
                 return 1000u;
 
@@ -116,7 +122,7 @@ namespace NexusForever.Game.Account.Costume
         /// </summary>
         public void ForgetItem(uint itemId)
         {
-            Item2Entry itemEntry = GameTableManager.Instance.Item.GetEntry(itemId);
+            Item2Entry itemEntry = GameTableManager.Instance.Item?.GetEntry(itemId);
             if (itemEntry == null)
             {
                 SendCostumeItemUnlock(CostumeUnlockResult.InvalidItem);

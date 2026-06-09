@@ -467,6 +467,13 @@ namespace NexusForever.WorldServer.Account
                     return false;
                 }
 
+                if (itemData.Type != 0u)
+                {
+                    error  = StoreError.CannotUseOffer;
+                    reason = $"offer item data {itemData.ItemId} has unsupported type {itemData.Type}";
+                    return false;
+                }
+
                 if (!session.Account.InventoryManager.CanAddItem(itemData.ItemId))
                 {
                     error  = StoreError.CannotUseOffer;

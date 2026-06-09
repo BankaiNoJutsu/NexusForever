@@ -113,7 +113,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
 
         private ulong CalculateRepairCost(IItem item)
         {
-            GameFormulaEntry formula = gameTableManager.GameFormula.GetEntry(RepairFormulaId);
+            GameFormulaEntry formula = gameTableManager.GameFormula?.GetEntry(RepairFormulaId);
             float repairMultiplier = formula?.Datafloat03 ?? 0f;
             if (repairMultiplier <= 0f)
                 return 0ul;

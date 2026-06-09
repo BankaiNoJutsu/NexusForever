@@ -205,6 +205,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                     SendClickEmptyReset(session);
                     return;
                 }
+                if (!CanGrantCardReward(account, card))
+                {
+                    SendClickEmptyReset(session);
+                    return;
+                }
 
                 card.Flipped = true;
                 GrantCardReward(account, session.Player, card);
@@ -397,12 +402,23 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             if (card.Granted || card.AccountItemId == 0u)
                 return;
 
+            IAccountInventoryManager inventoryManager = account.InventoryManager;
+            if (inventoryManager == null)
+                return;
+
             NetworkIdentity targetIdentity = BuildTargetIdentity(player);
-            account.InventoryManager.AddItem(
+            inventoryManager.AddItem(
                 card.AccountItemId,
                 targetIdentity,
                 hasTargetPlayerIdentity: targetIdentity?.Id != 0ul);
             card.Granted = true;
+        }
+
+        private static bool CanGrantCardReward(IAccount account, FortuneCardState card)
+        {
+            return card.Granted
+                || card.AccountItemId == 0u
+                || account.InventoryManager != null;
         }
 
         private NetworkIdentity BuildTargetIdentity(IPlayer player)

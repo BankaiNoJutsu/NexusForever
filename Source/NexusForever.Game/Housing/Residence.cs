@@ -107,7 +107,7 @@ namespace NexusForever.Game.Housing
             get => wallpaperId;
             set
             {
-                if (GameTableManager.Instance.HousingWallpaperInfo.GetEntry(value) == null)
+                if (GameTableManager.Instance.HousingWallpaperInfo?.GetEntry(value) == null)
                     throw new ArgumentOutOfRangeException();
 
                 wallpaperId = value;
@@ -122,7 +122,7 @@ namespace NexusForever.Game.Housing
             get => roofDecorInfoId;
             set
             {
-                if (GameTableManager.Instance.HousingDecorInfo.GetEntry(value) == null)
+                if (GameTableManager.Instance.HousingDecorInfo?.GetEntry(value) == null)
                     throw new ArgumentOutOfRangeException();
 
                 roofDecorInfoId = value;
@@ -137,7 +137,7 @@ namespace NexusForever.Game.Housing
             get => entrywayDecorInfoId;
             set
             {
-                if (GameTableManager.Instance.HousingDecorInfo.GetEntry(value) == null)
+                if (GameTableManager.Instance.HousingDecorInfo?.GetEntry(value) == null)
                     throw new ArgumentOutOfRangeException();
 
                 entrywayDecorInfoId = value;
@@ -152,7 +152,7 @@ namespace NexusForever.Game.Housing
             get => doorDecorInfoId;
             set
             {
-                if (GameTableManager.Instance.HousingDecorInfo.GetEntry(value) == null)
+                if (GameTableManager.Instance.HousingDecorInfo?.GetEntry(value) == null)
                     throw new ArgumentOutOfRangeException();
 
                 doorDecorInfoId = value;
@@ -167,7 +167,7 @@ namespace NexusForever.Game.Housing
             get => musicId;
             set
             {
-                HousingWallpaperInfoEntry entry = GameTableManager.Instance.HousingWallpaperInfo.GetEntry(value);
+                HousingWallpaperInfoEntry entry = GameTableManager.Instance.HousingWallpaperInfo?.GetEntry(value);
                 if (entry == null)
                     throw new ArgumentOutOfRangeException();
 
@@ -186,7 +186,7 @@ namespace NexusForever.Game.Housing
             get => groundWallpaperId;
             set
             {
-                HousingWallpaperInfoEntry entry = GameTableManager.Instance.HousingWallpaperInfo.GetEntry(value);
+                HousingWallpaperInfoEntry entry = GameTableManager.Instance.HousingWallpaperInfo?.GetEntry(value);
                 if (entry == null)
                     throw new ArgumentOutOfRangeException();
 
@@ -205,7 +205,7 @@ namespace NexusForever.Game.Housing
             get => skyWallpaperId;
             set
             {
-                HousingWallpaperInfoEntry entry = GameTableManager.Instance.HousingWallpaperInfo.GetEntry(value);
+                HousingWallpaperInfoEntry entry = GameTableManager.Instance.HousingWallpaperInfo?.GetEntry(value);
                 if (entry == null)
                     throw new ArgumentOutOfRangeException();
 
@@ -322,12 +322,12 @@ namespace NexusForever.Game.Housing
                 DecorType decorType = (DecorType)decorModel.DecorType;
                 if (decorType == DecorType.InteriorWallpaper)
                 {
-                    if (GameTableManager.Instance.HousingWallpaperInfo.GetEntry(decorModel.DecorInfoId) == null)
+                    if (GameTableManager.Instance.HousingWallpaperInfo?.GetEntry(decorModel.DecorInfoId) == null)
                         throw new DatabaseDataException($"Decor {decorModel.Id} has invalid wallpaper entry {decorModel.DecorInfoId}!");
                 }
                 else
                 {
-                    entry = GameTableManager.Instance.HousingDecorInfo.GetEntry(decorModel.DecorInfoId);
+                    entry = GameTableManager.Instance.HousingDecorInfo?.GetEntry(decorModel.DecorInfoId);
                     if (entry == null)
                         throw new DatabaseDataException($"Decor {decorModel.Id} has invalid decor entry {decorModel.DecorInfoId}!");
                 }

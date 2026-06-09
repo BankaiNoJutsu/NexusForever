@@ -1,6 +1,8 @@
 using System.Collections.Immutable;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Currency;
@@ -14,6 +16,8 @@ using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Configuration.Model;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.GameTable.Model;
@@ -247,6 +251,107 @@ public class QuestTests
             quest.ObjectiveUpdate(QuestObjectiveType.KillCreature, 73464u, 5u);
 
             Assert.Equal(QuestStateFlags.Tracked | QuestStateFlags.Objective0Complete, quest.Flags);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void SendObjectiveWorldLocationUpdates_WithMissingDirectionTablesSendsZeroWorldLocation()
+    {
+        IPlayer player = CreatePlayer(out var sessionProxy);
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider(BuildGameTableManager());
+
+        try
+        {
+            var quest = new NexusForever.Game.Quest.Quest(
+                player,
+                CreateGuidanceQuestInfo(questDirectionId: 77u));
+
+            quest.SendObjectiveWorldLocationUpdates();
+
+            ServerQuestObjectiveWorldLocation update = Assert.Single(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerQuestObjectiveWorldLocation>());
+
+            Assert.Equal((ushort)9002, update.QuestId);
+            Assert.Equal((byte)0, update.QuestObjectiveIndex);
+            Assert.Equal(0u, update.WorldLocation2Id);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void SendObjectiveWorldLocationUpdates_WithMissingDirectionEntryTableSendsZeroWorldLocation()
+    {
+        IPlayer player = CreatePlayer(out var sessionProxy);
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider(BuildGameTableManager(
+            questDirectionTable: CreateGameTable(new QuestDirectionEntry
+            {
+                Id                      = 77u,
+                QuestDirectionEntryId00 = 88u
+            })));
+
+        try
+        {
+            var quest = new NexusForever.Game.Quest.Quest(
+                player,
+                CreateGuidanceQuestInfo(questDirectionId: 77u));
+
+            quest.SendObjectiveWorldLocationUpdates();
+
+            ServerQuestObjectiveWorldLocation update = Assert.Single(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerQuestObjectiveWorldLocation>());
+
+            Assert.Equal(0u, update.WorldLocation2Id);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void SendObjectiveWorldLocationUpdates_WithSingleDirectionEntrySendsWorldLocation()
+    {
+        IPlayer player = CreatePlayer(out var sessionProxy);
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider(BuildGameTableManager(
+            questDirectionTable: CreateGameTable(new QuestDirectionEntry
+            {
+                Id                      = 77u,
+                QuestDirectionEntryId00 = 88u
+            }),
+            questDirectionEntryTable: CreateGameTable(new QuestDirectionEntryEntry
+            {
+                Id               = 88u,
+                WorldLocation2Id = 12345u
+            })));
+
+        try
+        {
+            var quest = new NexusForever.Game.Quest.Quest(
+                player,
+                CreateGuidanceQuestInfo(questDirectionId: 77u));
+
+            quest.SendObjectiveWorldLocationUpdates();
+
+            ServerQuestObjectiveWorldLocation update = Assert.Single(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerQuestObjectiveWorldLocation>());
+
+            Assert.Equal(12345u, update.WorldLocation2Id);
         }
         finally
         {
@@ -842,6 +947,26 @@ public class QuestTests
         return questInfo;
     }
 
+    private static IQuestInfo CreateGuidanceQuestInfo(uint questDirectionId)
+    {
+        IQuestInfo questInfo = RecordingDispatchProxy<IQuestInfo>.Create(out var questInfoProxy);
+        questInfoProxy.SetProperty(nameof(IQuestInfo.Entry), new Quest2Entry
+        {
+            Id = 9002u
+        });
+        questInfoProxy.SetProperty(nameof(IQuestInfo.Objectives), ImmutableList.Create<IQuestObjectiveInfo>(
+            new QuestObjectiveInfo(new QuestObjectiveEntry
+            {
+                Id               = 201u,
+                Type             = (uint)QuestObjectiveType.ActivateEntity,
+                Data             = 73464u,
+                Count            = 1u,
+                QuestDirectionId = questDirectionId
+            })));
+
+        return questInfo;
+    }
+
     private static IQuestInfo CreateQuestInfo(ushort questId, params Quest2RewardEntry[] rewards)
     {
         IQuestInfo questInfo = RecordingDispatchProxy<IQuestInfo>.Create(out RecordingDispatchProxy<IQuestInfo> questInfoProxy);
@@ -869,15 +994,36 @@ public class QuestTests
         return quest;
     }
 
-    private static IServiceProvider BuildProvider()
+    private static IServiceProvider BuildProvider(GameTableManager gameTableManager = null)
     {
         IScriptCollection scriptCollection = RecordingDispatchProxy<IScriptCollection>.Create(out _);
         IScriptManager scriptManager = RecordingDispatchProxy<IScriptManager>.Create(out var scriptManagerProxy);
         scriptManagerProxy.SetMethodReturn(nameof(IScriptManager.InitialiseOwnedScripts), scriptCollection);
 
-        return new ServiceCollection()
-            .AddSingleton(scriptManager)
-            .BuildServiceProvider();
+        var services = new ServiceCollection()
+            .AddSingleton(scriptManager);
+
+        if (gameTableManager != null)
+            services.AddSingleton(gameTableManager);
+
+        return services.BuildServiceProvider();
+    }
+
+    private static GameTableManager BuildGameTableManager(
+        GameTable<QuestDirectionEntry> questDirectionTable = null,
+        GameTable<QuestDirectionEntryEntry> questDirectionEntryTable = null)
+    {
+        var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
+        {
+            GameTablePath = string.Empty
+        }));
+
+        if (questDirectionTable != null)
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.QuestDirection), questDirectionTable);
+        if (questDirectionEntryTable != null)
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.QuestDirectionEntry), questDirectionEntryTable);
+
+        return gameTableManager;
     }
 
     private static IServiceProvider BuildQuestCompleteProvider(
@@ -933,6 +1079,32 @@ public class QuestTests
         FieldInfo field = typeof(T).GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.NotNull(field);
         field.SetValue(instance, value);
+    }
+
+    private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()
+    {
+        var table = (GameTable<T>)RuntimeHelpers.GetUninitializedObject(typeof(GameTable<T>));
+        SetAutoProperty(table, nameof(GameTable<T>.Entries), entries);
+
+        FieldInfo idField = typeof(T).GetField("Id", BindingFlags.Instance | BindingFlags.Public)!;
+        uint maxId = entries.Select(entry => (uint)idField.GetValue(entry)!).DefaultIfEmpty().Max();
+        var lookup = Enumerable.Repeat(-1, (int)maxId + 1).ToArray();
+        for (int i = 0; i < entries.Length; i++)
+            lookup[(int)(uint)idField.GetValue(entries[i])!] = i;
+
+        SetPrivateField(table, "lookup", lookup);
+        SetPrivateField(table, "header", new GameTableHeader
+        {
+            MaxId = (ulong)lookup.Length
+        });
+
+        return table;
+    }
+
+    private static void SetAutoProperty(object instance, string propertyName, object value)
+    {
+        FieldInfo backingField = instance.GetType().GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        backingField.SetValue(instance, value);
     }
 
     private static byte[] WritePacket(IWritable packet)

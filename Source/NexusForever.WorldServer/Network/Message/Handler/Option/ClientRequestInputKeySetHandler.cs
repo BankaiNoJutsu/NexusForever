@@ -7,10 +7,24 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Option
     {
         public void HandleMessage(IWorldSession session, ClientRequestInputKeySet clientRequestInputKeySet)
         {
-            if (clientRequestInputKeySet.CharacterId != 0ul)
+            if (InputKeySetScopeValidator.IsCharacterScoped(session, clientRequestInputKeySet.CharacterId))
                 session.EnqueueMessageEncrypted(session.Player.KeybindingManager.Build());
             else
                 session.EnqueueMessageEncrypted(session.Account.KeybindingManager.Build());
+        }
+    }
+
+    internal static class InputKeySetScopeValidator
+    {
+        public static bool IsCharacterScoped(IWorldSession session, ulong characterId)
+        {
+            if (characterId == 0ul)
+                return false;
+
+            if (session.Player?.CharacterId != characterId)
+                throw new NexusForever.Network.InvalidPacketValueException($"Invalid character keybinding scope received: {characterId}");
+
+            return true;
         }
     }
 }

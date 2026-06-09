@@ -1,7 +1,8 @@
+using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using NexusForever.Database;
 using NexusForever.Game.Abstract;
 using NexusForever.Database.Character;
@@ -41,7 +42,7 @@ namespace NexusForever.WorldServer.Leaderboard
         public IReadOnlyList<LeaderboardPveEntryRecord> GetPveEntries(LeaderboardType type, uint matchingGameMapId, uint primeLevel)
         {
             EnsureLoaded();
-            return cachedPve
+            return (Volatile.Read(ref cachedPve) ?? Array.Empty<LeaderboardPveEntryRecord>())
                 .Where(entry => LeaderboardCategoryRules.MatchesPveScope(entry, type, matchingGameMapId, primeLevel))
                 .ToList();
         }
@@ -49,7 +50,7 @@ namespace NexusForever.WorldServer.Leaderboard
         public IReadOnlyList<LeaderboardPvpEntryRecord> GetPvpEntries(LeaderboardType type)
         {
             EnsureLoaded();
-            return cachedPvp
+            return (Volatile.Read(ref cachedPvp) ?? Array.Empty<LeaderboardPvpEntryRecord>())
                 .Where(entry => LeaderboardCategoryRules.MatchesPvpCategory(entry, type))
                 .ToList();
         }
@@ -67,27 +68,13 @@ namespace NexusForever.WorldServer.Leaderboard
 
                 CharacterDatabase database = databaseManager.GetDatabase<CharacterDatabase>();
                 if (database == null)
-                {
-                    lock (sync)
-                    {
-                        cachedPve ??= [];
-                        cachedPvp ??= [];
-                    }
-
                     return;
-                }
 
-                IReadOnlyList<LeaderboardPveEntryRecord> loadedPve = database.GetLeaderboardPveScores(realmContext.RealmId)
-                    .OrderBy(s => s.CompletionTime)
-                    .Take(MaxRowsPerScope * 8)
-                    .Select(MapPve)
-                    .ToList();
+                IReadOnlyList<LeaderboardPveEntryRecord> loadedPve = LimitPveRowsPerScope(
+                    database.GetLeaderboardPveScores(realmContext.RealmId).Select(MapPve));
 
-                IReadOnlyList<LeaderboardPvpEntryRecord> loadedPvp = database.GetLeaderboardPvpScores(realmContext.RealmId)
-                    .OrderByDescending(s => s.Rating)
-                    .Take(MaxRowsPerScope * 8)
-                    .Select(MapPvp)
-                    .ToList();
+                IReadOnlyList<LeaderboardPvpEntryRecord> loadedPvp = LimitPvpRowsPerCategory(
+                    database.GetLeaderboardPvpScores(realmContext.RealmId).Select(MapPvp));
 
                 lock (sync)
                 {
@@ -99,6 +86,36 @@ namespace NexusForever.WorldServer.Leaderboard
             {
                 loadGate.Release();
             }
+        }
+
+        internal static IReadOnlyList<LeaderboardPveEntryRecord> LimitPveRowsPerScope(IEnumerable<LeaderboardPveEntryRecord> entries)
+        {
+            return entries
+                .Where(entry => LeaderboardCategoryRules.IsPveType(entry.Type))
+                .GroupBy(entry => new { entry.Type, entry.MatchingGameMapId, entry.PrimeLevel })
+                .SelectMany(group => group
+                    .OrderBy(entry => entry.CompletionTime)
+                    .ThenBy(entry => entry.Name, StringComparer.Ordinal)
+                    .ThenBy(entry => entry.CharacterId)
+                    .GroupBy(entry => entry.CharacterId)
+                    .Select(characterGroup => characterGroup.First())
+                    .Take(MaxRowsPerScope))
+                .ToList();
+        }
+
+        internal static IReadOnlyList<LeaderboardPvpEntryRecord> LimitPvpRowsPerCategory(IEnumerable<LeaderboardPvpEntryRecord> entries)
+        {
+            return entries
+                .Where(entry => LeaderboardCategoryRules.MatchesPvpCategory(entry, entry.Type))
+                .GroupBy(entry => entry.Type)
+                .SelectMany(group => group
+                    .OrderByDescending(entry => entry.Rating)
+                    .ThenBy(entry => entry.Name, StringComparer.Ordinal)
+                    .ThenBy(entry => entry.CharacterId)
+                    .GroupBy(entry => entry.CharacterId)
+                    .Select(characterGroup => characterGroup.First())
+                    .Take(MaxRowsPerScope))
+                .ToList();
         }
 
         private static LeaderboardPveEntryRecord MapPve(LeaderboardPveScoreModel model)

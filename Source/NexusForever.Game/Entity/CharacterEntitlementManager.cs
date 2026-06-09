@@ -22,7 +22,7 @@ namespace NexusForever.Game.Entity
 
             foreach (CharacterEntitlementModel entitlementModel in model.Entitlement)
             {
-                EntitlementEntry entry = GameTableManager.Instance.Entitlement.GetEntry(entitlementModel.EntitlementId);
+                EntitlementEntry entry = GameTableManager.Instance.Entitlement?.GetEntry(entitlementModel.EntitlementId);
                 if (entry == null)
                     throw new DatabaseDataException($"Account {model.Id} has invalid entitlement {entitlementModel.EntitlementId} stored!");
 

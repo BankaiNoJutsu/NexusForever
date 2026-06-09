@@ -116,7 +116,8 @@ namespace NexusForever.Game.Fortune
 
         private static IReadOnlyList<FortunePoolEntry> BuildPool()
         {
-            return GameTableManager.Instance.AccountItem.Entries
+            IEnumerable<AccountItemEntry> entries = GameTableManager.Instance.AccountItem?.Entries ?? [];
+            return entries
                 .Where(IsFortuneRewardCandidate)
                 .Select(entry =>
                 {
@@ -157,7 +158,7 @@ namespace NexusForever.Game.Fortune
             if (entry.Item2Id == 0u)
                 return RewardRarity.Normal;
 
-            Item2Entry itemEntry = GameTableManager.Instance.Item.GetEntry(entry.Item2Id);
+            Item2Entry itemEntry = GameTableManager.Instance.Item?.GetEntry(entry.Item2Id);
             if (itemEntry == null)
                 return RewardRarity.Normal;
 

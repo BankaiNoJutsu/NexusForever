@@ -84,6 +84,34 @@ public class GlobalLootManagerTests
         Assert.Contains(0x80000000u, ids);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DropLoot_WithUnavailableCreatureTableReturnsFalseWithoutLoot(bool includeEmptyCreatureTable)
+    {
+        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
+        var manager = new GlobalLootManager(groupStateManager);
+        var gameTableManager = (GameTableManager)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
+        if (includeEmptyCreatureTable)
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.Creature2), CreateGameTable<Creature2Entry>());
+
+        using var scope = new LegacyServiceProviderScope(new ServiceCollection()
+            .AddSingleton(gameTableManager)
+            .BuildServiceProvider());
+        IPlayer looter = CreateLootBoundaryPlayer(characterId: 42ul, guid: 4242u, out var sessionProxy);
+        IWorldEntity lootedEntity = RecordingDispatchProxy<IWorldEntity>.Create(out var lootedEntityProxy);
+        lootedEntityProxy.SetProperty(nameof(IGridEntity.Guid), 9090u);
+        lootedEntityProxy.SetProperty(nameof(IWorldEntity.CreatureId), 1234u);
+
+        bool dropped = manager.DropLoot(looter, lootedEntity);
+
+        Assert.False(dropped);
+        Assert.Equal(0, GetLootInstanceCount(manager));
+        Assert.Equal(0, GetOwnerIndexCount(manager, lootedEntity.Guid));
+        Assert.Equal(0, GetLooterIndexCount(manager, looter.CharacterId));
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+    }
+
     [Fact]
     public void LootRequestBoundaries_NonLooterReturnsWithoutThrowing()
     {
@@ -697,6 +725,34 @@ public class GlobalLootManagerTests
 
         var remove = Assert.IsType<ServerLootRemove>(sessionCalls[1].Arguments[0]);
         Assert.Equal(99u, remove.OwnerUnitId);
+    }
+
+    [Theory]
+    [InlineData(LootItemType.AccountCurrency, 9u)]
+    [InlineData(LootItemType.AccountItem, 77u)]
+    [InlineData(LootItemType.VirtualItem, 88u)]
+    public void CanDeliverGeneratedLoot_WithMissingRewardTable_ReturnsInvalidLootItem(LootItemType type, uint staticId)
+    {
+        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
+        var manager = new GlobalLootManager(groupStateManager);
+        IPlayer player = CreatePlayer(out _, out _, out _);
+        var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
+        {
+            GameTablePath = string.Empty
+        }));
+
+        using var providerScope = new LegacyServiceProviderScope(new ServiceCollection()
+            .AddSingleton(manager)
+            .AddSingleton(gameTableManager)
+            .BuildServiceProvider());
+
+        bool result = manager.CanDeliverGeneratedLoot(
+            player,
+            [new GeneratedLootItem(type, staticId, 1u)],
+            out string reason);
+
+        Assert.False(result);
+        Assert.Equal($"invalid-loot-item:{type}:{staticId}", reason);
     }
 
     private static IPlayer CreatePlayer(

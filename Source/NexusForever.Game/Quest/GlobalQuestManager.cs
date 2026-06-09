@@ -11,6 +11,10 @@ namespace NexusForever.Game.Quest
 {
     public sealed class GlobalQuestManager : Singleton<GlobalQuestManager>, IGlobalQuestManager
     {
+        private const string Quest2TableName = "Quest2.tbl";
+        private const string Creature2TableName = "Creature2.tbl";
+        private const string CommunicatorMessagesTableName = "CommunicatorMessages.tbl";
+
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
         /// <summary>
@@ -61,7 +65,16 @@ namespace NexusForever.Game.Quest
         private void InitialiseQuestInfo()
         {
             var builder = ImmutableDictionary.CreateBuilder<ushort, IQuestInfo>();
-            foreach (Quest2Entry entry in GameTableManager.Instance.Quest2.Entries)
+            if (GameTableManager.Instance.Quest2?.Entries == null)
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    Quest2TableName,
+                    nameof(GlobalQuestManager) + "." + nameof(InitialiseQuestInfo),
+                    MissingGameDataSeverity.PlayerImpacting,
+                    "Cannot cache quest definitions.");
+
+            IEnumerable<Quest2Entry> questEntries =
+                GameTableManager.Instance.Quest2?.Entries ?? Enumerable.Empty<Quest2Entry>();
+            foreach (Quest2Entry entry in questEntries)
                 builder.Add((ushort)entry.Id, new QuestInfo(entry));
 
             questInfoStore = builder.ToImmutable();
@@ -72,10 +85,19 @@ namespace NexusForever.Game.Quest
             var questGivers = new Dictionary<ushort, List<uint>>();
             var questReceivers = new Dictionary<ushort, List<uint>>();
 
-            foreach (Creature2Entry entry in GameTableManager.Instance.Creature2.Entries)
+            if (GameTableManager.Instance.Creature2?.Entries == null)
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    Creature2TableName,
+                    nameof(GlobalQuestManager) + "." + nameof(InitialiseQuestRelations),
+                    MissingGameDataSeverity.PlayerImpacting,
+                    "Cannot cache quest giver and receiver relations.");
+
+            IEnumerable<Creature2Entry> creatureEntries =
+                GameTableManager.Instance.Creature2?.Entries ?? Enumerable.Empty<Creature2Entry>();
+            foreach (Creature2Entry entry in creatureEntries)
             {
                 // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
-                foreach (ushort questId in entry.QuestIdGiven.Where(q => q != 0u))
+                foreach (ushort questId in (entry.QuestIdGiven ?? []).Where(q => q != 0u))
                 {
                     if (!questGivers.ContainsKey(questId))
                         questGivers.Add(questId, new List<uint>());
@@ -84,7 +106,7 @@ namespace NexusForever.Game.Quest
                 }
 
                 // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
-                foreach (ushort questId in entry.QuestIdReceive.Where(q => q != 0u))
+                foreach (ushort questId in (entry.QuestIdReceive ?? []).Where(q => q != 0u))
                 {
                     if (!questReceivers.ContainsKey(questId))
                         questReceivers.Add(questId, new List<uint>());
@@ -100,7 +122,16 @@ namespace NexusForever.Game.Quest
         private void InitialiseCommunicatorEntries()
         {
             var builder = ImmutableDictionary.CreateBuilder<uint, ICommunicatorMessage>();
-            foreach (CommunicatorMessagesEntry entry in GameTableManager.Instance.CommunicatorMessages.Entries)
+            if (GameTableManager.Instance.CommunicatorMessages?.Entries == null)
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    CommunicatorMessagesTableName,
+                    nameof(GlobalQuestManager) + "." + nameof(InitialiseCommunicatorEntries),
+                    MissingGameDataSeverity.PlayerImpacting,
+                    "Cannot cache communicator messages.");
+
+            IEnumerable<CommunicatorMessagesEntry> communicatorEntries =
+                GameTableManager.Instance.CommunicatorMessages?.Entries ?? Enumerable.Empty<CommunicatorMessagesEntry>();
+            foreach (CommunicatorMessagesEntry entry in communicatorEntries)
             {
                 var communicator = new CommunicatorMessage(entry);
                 builder.Add(communicator.Id, communicator);
@@ -112,10 +143,14 @@ namespace NexusForever.Game.Quest
         private void InitialiseCommunicatorQuests()
         {
             var builder = new Dictionary<ushort, List<ICommunicatorMessage>>();
-            foreach (CommunicatorMessagesEntry entry in GameTableManager.Instance.CommunicatorMessages.Entries
+            IEnumerable<CommunicatorMessagesEntry> communicatorEntries =
+                GameTableManager.Instance.CommunicatorMessages?.Entries ?? Enumerable.Empty<CommunicatorMessagesEntry>();
+            foreach (CommunicatorMessagesEntry entry in communicatorEntries
                 .Where(e => e.QuestIdDelivered != 0u))
             {
-                ICommunicatorMessage communicator = communicatorStore[entry.Id];
+                if (!communicatorStore.TryGetValue(entry.Id, out ICommunicatorMessage communicator))
+                    continue;
+
                 if (!builder.ContainsKey(communicator.QuestId))
                     builder.Add(communicator.QuestId, new List<ICommunicatorMessage>());
 
@@ -128,12 +163,15 @@ namespace NexusForever.Game.Quest
         private void InitialiseCommunicatorQuestStateTriggers()
         {
             var builder = new Dictionary<(ushort, QuestState), List<ICommunicatorMessage>>();
-            foreach (CommunicatorMessagesEntry entry in GameTableManager.Instance.CommunicatorMessages.Entries)
+            IEnumerable<CommunicatorMessagesEntry> communicatorEntries =
+                GameTableManager.Instance.CommunicatorMessages?.Entries ?? Enumerable.Empty<CommunicatorMessagesEntry>();
+            foreach (CommunicatorMessagesEntry entry in communicatorEntries)
             {
-                ICommunicatorMessage communicator = communicatorStore[entry.Id];
+                if (!communicatorStore.TryGetValue(entry.Id, out ICommunicatorMessage communicator))
+                    continue;
 
                 foreach ((ushort QuestId, QuestState QuestState) p in
-                    entry.Quests.Zip(entry.States, (a, b) => ((ushort)a, (QuestState)b)))
+                    (entry.Quests ?? []).Zip(entry.States ?? [], (a, b) => ((ushort)a, (QuestState)b)))
                 {
                     if (p.QuestId == 0)
                         continue;

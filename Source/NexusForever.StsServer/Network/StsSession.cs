@@ -145,11 +145,11 @@ namespace NexusForever.StsServer.Network
                 return;
             }
 
-            /*if (State != handlerInfo.State)
+            if (handlerInfo.State.HasValue && handlerInfo.State.Value != SessionState.None && State != handlerInfo.State.Value)
             {
-                log.Info($"Received packet with invalid session state {packet.Uri}");
+                log.Info($"Received packet with invalid session state {packet.Uri}, current {State}, required {handlerInfo.State.Value}");
                 return;
-            }*/
+            }
 
             if (packet.Headers.TryGetValue("s", out string sequenceString))
                 uint.TryParse(sequenceString, out sequence);

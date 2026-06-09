@@ -281,6 +281,39 @@ public class MarketplaceAuctionHandlerTests
             manager.ValidateAuctionSearch(CreateGameTableManager(), itemManager, request));
     }
 
+    [Theory]
+    [InlineData("family")]
+    [InlineData("category")]
+    [InlineData("type")]
+    public void ValidateAuctionSearch_WithMissingSelectorTable_RejectsBeforeSearch(string missingTable)
+    {
+        using ServiceProviderScope scope = UseMarketplaceProvider();
+        GlobalMarketplaceManager manager = (GlobalMarketplaceManager)scope.Provider.GetRequiredService<IGlobalMarketplaceManager>();
+        IItemManager itemManager = CreateItemManager(CreateItemInfo());
+        var request = new ClientAuctionsByFilterRequest();
+
+        switch (missingTable)
+        {
+            case "family":
+                SetAutoProperty(request, nameof(ClientAuctionsByFilterRequest.Item2FamilyId), 7u);
+                break;
+            case "category":
+                SetAutoProperty(request, nameof(ClientAuctionsByFilterRequest.Item2CategoryId), 8u);
+                break;
+            case "type":
+                SetAutoProperty(request, nameof(ClientAuctionsByFilterRequest.Item2TypeId), 9u);
+                break;
+        }
+
+        GameTableManager gameTableManager = CreateGameTableManager(
+            includeItem2FamilyTable: missingTable != "family",
+            includeItem2CategoryTable: missingTable != "category",
+            includeItem2TypeTable: missingTable != "type");
+
+        Assert.Throws<InvalidPacketValueException>(() =>
+            manager.ValidateAuctionSearch(gameTableManager, itemManager, request));
+    }
+
     [Fact]
     public void AuctionBid_OutbidNotifiesPreviousBidderAndRefundsCredits()
     {
@@ -473,6 +506,123 @@ public class MarketplaceAuctionHandlerTests
     }
 
     [Fact]
+    public void AuctionBid_WithOfflinePreviousBidderAndNoCharacterDatabase_RestoresNewBidAndRefundsBidder()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
+        SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
+        var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
+        var manager = new GlobalMarketplaceManager();
+
+        try
+        {
+            LegacyServiceProvider.Provider = new ServiceCollection()
+                .AddSingleton(realmContext)
+                .AddSingleton(playerManager)
+                .BuildServiceProvider();
+
+            IItemInfo itemInfo = CreateItemInfo();
+            IItem item = CreateItem(itemInfo, out _);
+            CreateSession(SellerGuid, SellerCharacterId, out _, out _, out _, out IPlayer seller);
+            playerManager.AddPlayer(seller);
+            Assert.Equal(GenericError.Ok, manager.PostAuction(seller, item, MinimumBid, BuyoutPrice, out AuctionInfo postedAuction));
+
+            const ulong firstBidderCharacterId = 3003ul;
+            CreateSession(301u, firstBidderCharacterId, out _, out RecordingDispatchProxy<ICurrencyManager> firstBidderCurrencyProxy, out _, out IPlayer firstBidder);
+            firstBidderCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+            playerManager.AddPlayer(firstBidder);
+            Assert.Equal(GenericError.Ok, manager.BuyAuction(firstBidder, CreateBidRequest(postedAuction.AuctionId, MinimumBid), out _));
+            playerManager.RemovePlayer(firstBidder);
+
+            CreateSession(BuyerGuid, BuyerCharacterId, out _, out RecordingDispatchProxy<ICurrencyManager> secondBidderCurrencyProxy, out _, out IPlayer secondBidder);
+            secondBidderCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+            playerManager.AddPlayer(secondBidder);
+
+            GenericError result = manager.BuyAuction(secondBidder, CreateBidRequest(postedAuction.AuctionId, MinimumBid + 50ul), out AuctionInfo bidAuction);
+
+            Assert.Equal(GenericError.DbFailure, result);
+            Assert.Equal(MinimumBid, bidAuction.CurrentBid);
+            Assert.Equal(firstBidderCharacterId, bidAuction.TopBidderCharacterId);
+
+            RecordingDispatchProxy<ICurrencyManager>.Invocation debit =
+                Assert.Single(secondBidderCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+            Assert.Equal(CurrencyType.Credits, debit.Arguments[0]);
+            Assert.Equal(MinimumBid + 50ul, debit.Arguments[1]);
+
+            RecordingDispatchProxy<ICurrencyManager>.Invocation refund =
+                Assert.Single(secondBidderCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+            Assert.Equal(CurrencyType.Credits, refund.Arguments[0]);
+            Assert.Equal(MinimumBid + 50ul, refund.Arguments[1]);
+
+            Assert.Empty(firstBidderCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+
+            AuctionInfo activeAuction = Assert.Single(manager.GetOwnedItemAuctions(seller));
+            Assert.Equal(postedAuction.AuctionId, activeAuction.AuctionId);
+            Assert.Equal(MinimumBid, activeAuction.CurrentBid);
+            Assert.Equal(firstBidderCharacterId, activeAuction.TopBidderCharacterId);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void AuctionCancel_WithOfflineTopBidderAndNoCharacterDatabase_DoesNotRefundReturnOrRemoveAuction()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
+        SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
+        var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
+        var manager = new GlobalMarketplaceManager();
+
+        try
+        {
+            LegacyServiceProvider.Provider = new ServiceCollection()
+                .AddSingleton(realmContext)
+                .AddSingleton(playerManager)
+                .BuildServiceProvider();
+
+            IItemInfo itemInfo = CreateItemInfo();
+            IItem item = CreateItem(itemInfo, out RecordingDispatchProxy<IItem> itemProxy);
+            CreateSession(SellerGuid, SellerCharacterId, out RecordingDispatchProxy<IInventory> sellerInventoryProxy, out _, out _, out IPlayer seller);
+            sellerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 1u);
+            sellerInventoryProxy.SetMethodHandler(nameof(IInventory.ItemRemove), _ =>
+            {
+                itemProxy.SetProperty(nameof(IItem.CharacterId), null);
+                itemProxy.SetProperty(nameof(IItem.Location), InventoryLocation.None);
+                return null;
+            });
+            playerManager.AddPlayer(seller);
+            Assert.Equal(GenericError.Ok, manager.PostAuction(seller, item, MinimumBid, BuyoutPrice, out AuctionInfo postedAuction));
+
+            CreateSession(BuyerGuid, BuyerCharacterId, out _, out RecordingDispatchProxy<ICurrencyManager> bidderCurrencyProxy, out _, out IPlayer bidder);
+            bidderCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+            playerManager.AddPlayer(bidder);
+            Assert.Equal(GenericError.Ok, manager.BuyAuction(bidder, CreateBidRequest(postedAuction.AuctionId, MinimumBid), out _));
+            playerManager.RemovePlayer(bidder);
+
+            GenericError result = manager.CancelAuction(seller, postedAuction.AuctionId, postedAuction.Item2Id, out AuctionInfo cancelledAuction);
+
+            Assert.Equal(GenericError.DbFailure, result);
+            Assert.Equal(postedAuction.AuctionId, cancelledAuction.AuctionId);
+            Assert.Empty(sellerInventoryProxy.GetInvocations(nameof(IInventory.AddItem)));
+            Assert.Empty(bidderCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+            Assert.Null(item.CharacterId);
+            Assert.Equal(InventoryLocation.None, item.Location);
+
+            AuctionInfo activeAuction = Assert.Single(manager.GetOwnedItemAuctions(seller));
+            Assert.Equal(postedAuction.AuctionId, activeAuction.AuctionId);
+            Assert.Equal(MinimumBid, activeAuction.CurrentBid);
+            Assert.Equal(BuyerCharacterId, activeAuction.TopBidderCharacterId);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void AuctionExpire_WithHighBid_CompletesSaleToTopBidder()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
@@ -575,6 +725,104 @@ public class MarketplaceAuctionHandlerTests
             Assert.Equal(MinimumBid, activeAuction.CurrentBid);
             Assert.Equal(BuyerCharacterId, activeAuction.TopBidderCharacterId);
             Assert.Equal(SellerCharacterId, item.CharacterId);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void AuctionBuyout_WithOfflineSellerAndNoCharacterDatabase_DoesNotDeliverDebitOrRemoveAuction()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
+        SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
+        var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
+        var manager = new GlobalMarketplaceManager();
+
+        try
+        {
+            LegacyServiceProvider.Provider = new ServiceCollection()
+                .AddSingleton(realmContext)
+                .AddSingleton(playerManager)
+                .BuildServiceProvider();
+
+            IItemInfo itemInfo = CreateItemInfo();
+            IItem item = CreateItem(itemInfo, out _);
+            CreateSession(SellerGuid, SellerCharacterId, out _, out RecordingDispatchProxy<ICurrencyManager> sellerCurrencyProxy, out _, out IPlayer seller);
+            playerManager.AddPlayer(seller);
+            Assert.Equal(GenericError.Ok, manager.PostAuction(seller, item, MinimumBid, BuyoutPrice, out AuctionInfo postedAuction));
+            playerManager.RemovePlayer(seller);
+
+            CreateSession(BuyerGuid, BuyerCharacterId, out RecordingDispatchProxy<IInventory> buyerInventoryProxy, out RecordingDispatchProxy<ICurrencyManager> buyerCurrencyProxy, out RecordingDispatchProxy<IWorldSession> buyerSessionProxy, out IPlayer buyer);
+            buyerCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+            buyerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 1u);
+            playerManager.AddPlayer(buyer);
+
+            GenericError result = manager.BuyAuction(buyer, CreateBidRequest(postedAuction.AuctionId, BuyoutPrice), out AuctionInfo auction);
+
+            Assert.Equal(GenericError.DbFailure, result);
+            Assert.Equal(0ul, auction.CurrentBid);
+            Assert.Equal(0ul, auction.TopBidderCharacterId);
+            Assert.Empty(buyerCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+            Assert.Empty(buyerInventoryProxy.GetInvocations(nameof(IInventory.AddItem)));
+            Assert.Empty(sellerCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+            Assert.Empty(GetMessages<ServerAuctionWon>(buyerSessionProxy));
+            Assert.Equal(SellerCharacterId, item.CharacterId);
+
+            AuctionInfo activeAuction = Assert.Single(manager.GetOwnedItemAuctions(seller));
+            Assert.Equal(postedAuction.AuctionId, activeAuction.AuctionId);
+            Assert.Equal(0ul, activeAuction.CurrentBid);
+            Assert.Equal(0ul, activeAuction.TopBidderCharacterId);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void AuctionExpire_WithOnlineWinnerOfflineSellerAndNoCharacterDatabase_DoesNotDeliverCreditNotifyOrRemoveAuction()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
+        SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
+        var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
+        var manager = new GlobalMarketplaceManager();
+
+        try
+        {
+            LegacyServiceProvider.Provider = new ServiceCollection()
+                .AddSingleton(realmContext)
+                .AddSingleton(playerManager)
+                .BuildServiceProvider();
+
+            IItemInfo itemInfo = CreateItemInfo();
+            IItem item = CreateItem(itemInfo, out _);
+            CreateSession(SellerGuid, SellerCharacterId, out _, out RecordingDispatchProxy<ICurrencyManager> sellerCurrencyProxy, out _, out IPlayer seller);
+            playerManager.AddPlayer(seller);
+            Assert.Equal(GenericError.Ok, manager.PostAuction(seller, item, MinimumBid, BuyoutPrice, out AuctionInfo postedAuction));
+
+            CreateSession(BuyerGuid, BuyerCharacterId, out RecordingDispatchProxy<IInventory> buyerInventoryProxy, out RecordingDispatchProxy<ICurrencyManager> buyerCurrencyProxy, out RecordingDispatchProxy<IWorldSession> buyerSessionProxy, out IPlayer buyer);
+            buyerCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+            buyerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 1u);
+            playerManager.AddPlayer(buyer);
+            Assert.Equal(GenericError.Ok, manager.BuyAuction(buyer, CreateBidRequest(postedAuction.AuctionId, MinimumBid), out _));
+            playerManager.RemovePlayer(seller);
+
+            ForceAuctionExpiration(manager);
+            manager.Update(2000d);
+
+            Assert.Empty(buyerInventoryProxy.GetInvocations(nameof(IInventory.AddItem)));
+            Assert.Empty(sellerCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+            Assert.Empty(GetMessages<ServerAuctionWon>(buyerSessionProxy));
+            Assert.Equal(SellerCharacterId, item.CharacterId);
+
+            AuctionInfo activeAuction = Assert.Single(manager.GetOwnedItemAuctions(seller));
+            Assert.Equal(postedAuction.AuctionId, activeAuction.AuctionId);
+            Assert.Equal(MinimumBid, activeAuction.CurrentBid);
+            Assert.Equal(BuyerCharacterId, activeAuction.TopBidderCharacterId);
         }
         finally
         {
@@ -1747,6 +1995,47 @@ public class MarketplaceAuctionHandlerTests
     }
 
     [Fact]
+    public void CommodityBuyOrderExpire_WithOfflineOwnerAndNoCharacterDatabase_DoesNotRefundOrRemoveOrder()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
+        SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
+        var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
+        var manager = new GlobalMarketplaceManager();
+
+        try
+        {
+            LegacyServiceProvider.Provider = new ServiceCollection()
+                .AddSingleton(realmContext)
+                .AddSingleton(playerManager)
+                .BuildServiceProvider();
+
+            IItemManager itemManager = CreateItemManager(CreateItemInfo());
+            CreateSession(BuyerGuid, BuyerCharacterId, out _, out RecordingDispatchProxy<ICurrencyManager> currencyProxy, out _, out IPlayer buyer);
+            currencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+            playerManager.AddPlayer(buyer);
+
+            CommodityOrder order = CreateCommodityBuyRequest(quantity: 3u, pricePerUnit: 25ul).Order;
+            Assert.Equal(GenericError.Ok, manager.PostCommodityOrder(buyer, order, out CommodityOrder postedOrder, itemManager));
+            ForceCommodityOrderExpiration(manager);
+            playerManager.RemovePlayer(buyer);
+
+            manager.Update(1d);
+
+            Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+
+            CommodityOrder activeOrder = Assert.Single(manager.GetOwnedCommodityOrders(buyer));
+            Assert.Equal(postedOrder.CommodityOrderId, activeOrder.CommodityOrderId);
+            Assert.Equal(3u, activeOrder.Quantity);
+            Assert.Equal(75ul, activeOrder.Price);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void CommoditySellOrderExpire_WhenMailReturnDeletePersistFails_DoesNotNotifyOrRemoveOrder()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
@@ -1861,6 +2150,73 @@ public class MarketplaceAuctionHandlerTests
             Assert.Equal(postedSellOrder.CommodityOrderId, activeOrder.CommodityOrderId);
             Assert.Equal(2u, activeOrder.Quantity);
             Assert.Equal(20ul, activeOrder.Price);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void CommodityForceImmediateBuy_WithOfflineSellerAndNoCharacterDatabase_LeavesSellOrderUnfilled()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
+        SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
+        var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
+        var manager = new GlobalMarketplaceManager();
+
+        try
+        {
+            LegacyServiceProvider.Provider = new ServiceCollection()
+                .AddSingleton(realmContext)
+                .AddSingleton(playerManager)
+                .BuildServiceProvider();
+
+            IItemManager itemManager = CreateItemManager(CreateItemInfo());
+            CreateSession(SellerGuid, SellerCharacterId, out RecordingDispatchProxy<IInventory> sellerInventoryProxy, out RecordingDispatchProxy<ICurrencyManager> sellerCurrencyProxy, out RecordingDispatchProxy<IWorldSession> sellerSessionProxy, out IPlayer seller);
+            sellerInventoryProxy.SetMethodReturn(nameof(IInventory.HasItemCount), true);
+            sellerInventoryProxy.SetMethodReturn(nameof(IInventory.ItemDelete), true);
+            playerManager.AddPlayer(seller);
+
+            CommodityOrder sellOrder = CreateCommoditySellRequest(quantity: 2u, pricePerUnit: 10ul).Order;
+            Assert.Equal(GenericError.Ok, manager.PostCommodityOrder(seller, sellOrder, out CommodityOrder postedSellOrder, itemManager));
+            playerManager.RemovePlayer(seller);
+
+            CreateSession(BuyerGuid, BuyerCharacterId, out RecordingDispatchProxy<IInventory> buyerInventoryProxy, out RecordingDispatchProxy<ICurrencyManager> buyerCurrencyProxy, out RecordingDispatchProxy<IWorldSession> buyerSessionProxy, out IPlayer buyer);
+            buyerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 2u);
+            buyerCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+            playerManager.AddPlayer(buyer);
+
+            CommodityOrder buyOrder = CreateCommodityBuyRequest(quantity: 2u, pricePerUnit: 10ul).Order;
+            buyOrder.ForceImmediate = true;
+
+            GenericError result = manager.PostCommodityOrder(buyer, buyOrder, out CommodityOrder postedBuyOrder, itemManager);
+
+            Assert.Equal(GenericError.Ok, result);
+            Assert.Equal(0u, postedBuyOrder.Quantity);
+            Assert.Equal(0ul, postedBuyOrder.Price);
+
+            RecordingDispatchProxy<ICurrencyManager>.Invocation buyerDebit =
+                Assert.Single(buyerCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+            Assert.Equal(CurrencyType.Credits, buyerDebit.Arguments[0]);
+            Assert.Equal(20ul, buyerDebit.Arguments[1]);
+
+            RecordingDispatchProxy<ICurrencyManager>.Invocation buyerRefund =
+                Assert.Single(buyerCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+            Assert.Equal(CurrencyType.Credits, buyerRefund.Arguments[0]);
+            Assert.Equal(20ul, buyerRefund.Arguments[1]);
+
+            Assert.Empty(buyerInventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+            Assert.Empty(sellerCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+            Assert.Empty(GetMessages<ServerCommodityAuctionFilledPartial>(sellerSessionProxy));
+            Assert.Empty(GetMessages<ServerCommodityAuctionFilledPartial>(buyerSessionProxy));
+
+            CommodityOrder activeOrder = Assert.Single(manager.GetOwnedCommodityOrders(seller));
+            Assert.Equal(postedSellOrder.CommodityOrderId, activeOrder.CommodityOrderId);
+            Assert.Equal(2u, activeOrder.Quantity);
+            Assert.Equal(20ul, activeOrder.Price);
+            Assert.Empty(manager.GetOwnedCommodityOrders(buyer));
         }
         finally
         {
@@ -2043,7 +2399,10 @@ public class MarketplaceAuctionHandlerTests
     private static GameTableManager CreateGameTableManager(
         uint maxCommodityOrderQuantity = 200u,
         bool includeListingDurationFormula = false,
-        uint? defaultAuctionDurationHours = null)
+        uint? defaultAuctionDurationHours = null,
+        bool includeItem2FamilyTable = true,
+        bool includeItem2CategoryTable = true,
+        bool includeItem2TypeTable = true)
     {
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
@@ -2081,9 +2440,12 @@ public class MarketplaceAuctionHandlerTests
         }
 
         SetAutoProperty(gameTableManager, nameof(GameTableManager.GameFormula), CreateGameTable(formulaEntries.ToArray()));
-        SetAutoProperty(gameTableManager, nameof(GameTableManager.Item2Family), CreateGameTable<Item2FamilyEntry>());
-        SetAutoProperty(gameTableManager, nameof(GameTableManager.Item2Category), CreateGameTable<Item2CategoryEntry>());
-        SetAutoProperty(gameTableManager, nameof(GameTableManager.Item2Type), CreateGameTable<Item2TypeEntry>());
+        if (includeItem2FamilyTable)
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.Item2Family), CreateGameTable<Item2FamilyEntry>());
+        if (includeItem2CategoryTable)
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.Item2Category), CreateGameTable<Item2CategoryEntry>());
+        if (includeItem2TypeTable)
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.Item2Type), CreateGameTable<Item2TypeEntry>());
         return gameTableManager;
     }
 

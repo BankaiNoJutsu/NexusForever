@@ -2,6 +2,7 @@
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Static.Abilities;
 using NexusForever.Game.Static.Spell;
+using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model.Abilities;
 
 namespace NexusForever.Game.Abstract.Spell
@@ -62,6 +63,11 @@ namespace NexusForever.Game.Abstract.Spell
         /// Add AMP to <see cref="IActionSet"/> with supplied id.
         /// </summary>
         void AddAmp(ushort id);
+
+        /// <summary>
+        /// Add AMP to <see cref="IActionSet"/> with supplied table entry.
+        /// </summary>
+        void AddAmp(EldanAugmentationEntry entry);
 
         /// <summary>
         /// Add AMP power to <see cref="IActionSet"/>.

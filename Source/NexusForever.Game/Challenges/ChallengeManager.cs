@@ -49,7 +49,7 @@ namespace NexusForever.Game.Challenges
 
             foreach (CharacterChallengeModel challengeModel in model.Challenge)
             {
-                if (gameTableManager.Challenge.GetEntry(challengeModel.ChallengeId) == null)
+                if (gameTableManager.Challenge?.GetEntry(challengeModel.ChallengeId) == null)
                     continue;
 
                 ushort id = challengeModel.ChallengeId;
@@ -223,7 +223,7 @@ namespace NexusForever.Game.Challenges
 
         public void ReceiveShare(ushort challengeId, uint sharerUnitId)
         {
-            ChallengeEntry entry = gameTableManager.Challenge.GetEntry(challengeId);
+            ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(challengeId);
             if (entry == null || !player.SharedChallengeEnabled)
                 return;
 
@@ -242,7 +242,7 @@ namespace NexusForever.Game.Challenges
 
         private void TryActivate(ushort challengeId)
         {
-            ChallengeEntry entry = gameTableManager.Challenge.GetEntry(challengeId);
+            ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(challengeId);
             if (entry == null)
             {
                 SendResult(challengeId, ChallengeResult.GenericFail);
@@ -369,7 +369,7 @@ namespace NexusForever.Game.Challenges
                 if (!state.Activated)
                     continue;
 
-                ChallengeEntry entry = gameTableManager.Challenge.GetEntry(state.ChallengeId);
+                ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(state.ChallengeId);
                 if (entry != null && entry.ChallengeTypeEnum == challengeType)
                     return true;
             }
@@ -399,7 +399,7 @@ namespace NexusForever.Game.Challenges
 
         private bool HasCooldownType(uint challengeId)
         {
-            ChallengeEntry entry = gameTableManager.Challenge.GetEntry(challengeId);
+            ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(challengeId);
             return entry != null && (entry.ChallengeFlags & CooldownTypeFlag) != 0u;
         }
 
@@ -426,7 +426,7 @@ namespace NexusForever.Game.Challenges
                 if (!state.Activated)
                     continue;
 
-                ChallengeEntry entry = gameTableManager.Challenge.GetEntry(challengeId);
+                ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(challengeId);
                 if (entry == null || entry.ChallengeTypeEnum != (uint)ChallengeType.Combat)
                     continue;
 
@@ -479,7 +479,7 @@ namespace NexusForever.Game.Challenges
             if (!activeChallenges.TryGetValue(challengeId, out ChallengeRuntimeState state) || !state.Activated)
                 return false;
 
-            ChallengeEntry entry = gameTableManager.Challenge.GetEntry(challengeId);
+            ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(challengeId);
             if (entry == null)
                 return false;
 
@@ -488,7 +488,7 @@ namespace NexusForever.Game.Challenges
             if (goalCount == 0u)
                 return false;
 
-            state.CurrentCount = Math.Min(state.CurrentCount + progress, goalCount);
+            state.CurrentCount = (uint)Math.Min((ulong)state.CurrentCount + progress, goalCount);
             MarkDirty(challengeId);
             SendChallengeUpdate();
 
@@ -541,7 +541,7 @@ namespace NexusForever.Game.Challenges
             if (tierId == 0u)
                 return 0u;
 
-            ChallengeTierEntry tier = gameTableManager.ChallengeTier.GetEntry(tierId);
+            ChallengeTierEntry tier = gameTableManager.ChallengeTier?.GetEntry(tierId);
             return tier?.Count ?? 0u;
         }
 
@@ -560,7 +560,7 @@ namespace NexusForever.Game.Challenges
             var update = new ServerChallengeUpdate();
             foreach (ChallengeRuntimeState state in activeChallenges.Values)
             {
-                ChallengeEntry entry = gameTableManager.Challenge.GetEntry(state.ChallengeId);
+                ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(state.ChallengeId);
                 if (entry == null)
                     continue;
 
@@ -631,7 +631,7 @@ namespace NexusForever.Game.Challenges
                 if (state.CompletionCount == 0u)
                     continue;
 
-                ChallengeEntry entry = gameTableManager.Challenge.GetEntry(challengeId);
+                ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(challengeId);
                 if (entry == null)
                     continue;
 

@@ -47,7 +47,7 @@ namespace NexusForever.Game.Account.Currency
             this.account = account;
             CurrencyId   = (AccountCurrencyType)model.CurrencyId;
             Amount       = model.Amount;
-            Entry        = GameTableManager.Instance.AccountCurrencyType.GetEntry((ulong)CurrencyId);
+            Entry        = GameTableManager.Instance.AccountCurrencyType?.GetEntry((ulong)CurrencyId);
 
             saveMask = AccountCurrencySaveMask.None;
         }
@@ -60,7 +60,7 @@ namespace NexusForever.Game.Account.Currency
             this.account = account;
             CurrencyId   = currencyType;
             Amount       = amount;
-            Entry        = GameTableManager.Instance.AccountCurrencyType.GetEntry((ulong)CurrencyId);
+            Entry        = GameTableManager.Instance.AccountCurrencyType?.GetEntry((ulong)CurrencyId);
 
             saveMask = AccountCurrencySaveMask.Create;
         }

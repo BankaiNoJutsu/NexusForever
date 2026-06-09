@@ -23,7 +23,7 @@ namespace NexusForever.Game.Guild
             public GuildStandardPart(GuildStandardPartType type, ushort guildStandardPartId,
                 ushort dyeColorRampId1, ushort dyeColorRampId2, ushort dyeColorRampId3)
             {
-                GuildStandardPartEntry entry = GameTableManager.Instance.GuildStandardPart.GetEntry(guildStandardPartId);
+                GuildStandardPartEntry entry = GameTableManager.Instance.GuildStandardPart?.GetEntry(guildStandardPartId);
                 if (entry == null)
                     throw new ArgumentException();
 
@@ -43,7 +43,7 @@ namespace NexusForever.Game.Guild
                     return false;
 
                 ushort[] colourRamps = { DyeColorRampId1, DyeColorRampId2, DyeColorRampId3 };
-                return colourRamps.All(c => c == 0 || GameTableManager.Instance.DyeColorRamp.GetEntry(c) != null);
+                return colourRamps.All(c => c == 0 || GameTableManager.Instance.DyeColorRamp?.GetEntry(c) != null);
             }
 
             public NetworkGuildStandard.GuildStandardPart Build()

@@ -25,7 +25,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 
         public void HandleMessage(IWorldSession session, ClientConvertResource convertResource)
         {
-            ResourceConversionEntry conversion = gameTableManager.ResourceConversion.GetEntry(convertResource.ConversionId);
+            ResourceConversionEntry conversion = gameTableManager.ResourceConversion?.GetEntry(convertResource.ConversionId);
             if (conversion == null)
             {
                 log.LogDebug("Ignoring resource conversion request from player {PlayerGuid}: unknown conversion {ConversionId}, selector {Selector}, resource field {ResourceField}.",
@@ -60,7 +60,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 
         private bool TryConvertItemToItem(IWorldSession session, ResourceConversionEntry conversion)
         {
-            if (gameTableManager.Item.GetEntry(conversion.TargetId) == null)
+            if (gameTableManager.Item?.GetEntry(conversion.TargetId) == null)
                 return RejectConversion(session, conversion, $"target item {conversion.TargetId} was not found");
 
             if (!session.Player.Inventory.HasItemCount(conversion.SourceId, conversion.SourceCount))
@@ -127,7 +127,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
         {
             currencyType = (CurrencyType)currencyId;
             return Enum.IsDefined(typeof(CurrencyType), currencyType)
-                && gameTableManager.CurrencyType.GetEntry(currencyId) != null;
+                && gameTableManager.CurrencyType?.GetEntry(currencyId) != null;
         }
 
         private bool RejectConversion(IWorldSession session, ResourceConversionEntry conversion, string reason)

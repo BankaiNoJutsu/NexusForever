@@ -15,6 +15,9 @@ namespace NexusForever.Game
 {
     public sealed class ItemManager : Singleton<ItemManager>, IItemManager
     {
+        private const string ItemTableName = "Item2.tbl";
+        private const string ItemSlotTableName = "ItemSlot.tbl";
+
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
         /// <summary>
@@ -43,7 +46,16 @@ namespace NexusForever.Game
         private void InitialiseItemInfo()
         {
             var builder = ImmutableDictionary.CreateBuilder<uint, IItemInfo>();
-            foreach (Item2Entry entry in GameTableManager.Instance.Item.Entries)
+            if (GameTableManager.Instance.Item?.Entries == null)
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    ItemTableName,
+                    nameof(ItemManager) + "." + nameof(InitialiseItemInfo),
+                    MissingGameDataSeverity.PlayerImpacting,
+                    "Cannot cache item definitions.");
+
+            IEnumerable<Item2Entry> itemEntries =
+                GameTableManager.Instance.Item?.Entries ?? Enumerable.Empty<Item2Entry>();
+            foreach (Item2Entry entry in itemEntries)
             {
                 var info = new ItemInfo(entry);
                 builder.Add(info.Id, info);
@@ -55,7 +67,16 @@ namespace NexusForever.Game
         private void InitialiseEquippedItemSlots()
         {
             var builder = new Dictionary<ItemSlot, List<EquippedItem>>();
-            foreach (ItemSlotEntry entry in GameTableManager.Instance.ItemSlot.Entries)
+            if (GameTableManager.Instance.ItemSlot?.Entries == null)
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    ItemSlotTableName,
+                    nameof(ItemManager) + "." + nameof(InitialiseEquippedItemSlots),
+                    MissingGameDataSeverity.PlayerImpacting,
+                    "Cannot cache equipped item slot mappings.");
+
+            IEnumerable<ItemSlotEntry> itemSlotEntries =
+                GameTableManager.Instance.ItemSlot?.Entries ?? Enumerable.Empty<ItemSlotEntry>();
+            foreach (ItemSlotEntry entry in itemSlotEntries)
             {
                 for (EquippedItem slot = EquippedItem.Chest; slot < EquippedItem.BankBag9; slot++)
                 {

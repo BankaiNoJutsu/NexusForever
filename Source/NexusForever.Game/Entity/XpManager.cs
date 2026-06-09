@@ -5,6 +5,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared.Configuration;
@@ -59,7 +60,7 @@ namespace NexusForever.Game.Entity
         public static byte CalculateLevelForXp(uint totalXp)
         {
             byte maxLevel = GetMaxCharacterLevel();
-            uint level = GameTableManager.Instance.XpPerLevel.Entries
+            uint level = (GameTableManager.Instance.XpPerLevel?.Entries ?? [])
                 .Where(e => e.Id <= maxLevel && e.MinXpForLevel <= totalXp)
                 .Select(e => e.Id)
                 .DefaultIfEmpty(1u)
@@ -96,7 +97,9 @@ namespace NexusForever.Game.Entity
             if (model.LastOnline == null)
                 return;
 
-            uint levelXpSpan = GetCurrentLevelXpSpan();
+            if (!TryGetCurrentLevelXpSpan(out uint levelXpSpan))
+                return;
+
             uint maximumBonusXp = GetMaximumRestBonusXp(levelXpSpan);
 
             double xpPercentEarned;
@@ -122,7 +125,9 @@ namespace NexusForever.Game.Entity
             if (float.IsNaN(levelSpanMultiplier) || float.IsInfinity(levelSpanMultiplier))
                 return RestBonusXp;
 
-            uint levelXpSpan = GetCurrentLevelXpSpan();
+            if (!TryGetCurrentLevelXpSpan(out uint levelXpSpan))
+                return RestBonusXp;
+
             uint maximumBonusXp = GetMaximumRestBonusXp(levelXpSpan);
             RestBonusXp = CalculateModifiedRestBonusXp(RestBonusXp, levelXpSpan, maximumBonusXp, levelSpanMultiplier);
             return RestBonusXp;
@@ -193,7 +198,9 @@ namespace NexusForever.Game.Entity
             while (player.Level < maxLevel)
             {
                 byte nextLevel = (byte)(player.Level + 1);
-                uint xpToNextLevel = GameTableManager.Instance.XpPerLevel.GetEntry(nextLevel).MinXpForLevel;
+                if (!TryGetXpForLevel(nextLevel, out uint xpToNextLevel))
+                    break;
+
                 if (totalXp < xpToNextLevel)
                     break;
 
@@ -236,7 +243,9 @@ namespace NexusForever.Game.Entity
             if (newLevel == player.Level)
                 return;
 
-            uint newXp = GameTableManager.Instance.XpPerLevel.GetEntry(newLevel).MinXpForLevel;
+            if (!TryGetXpForLevel(newLevel, out uint newXp))
+                return;
+
             uint xpGained = newXp > TotalXp ? newXp - TotalXp : 0u;
             player.Session.EnqueueMessageEncrypted(new ServerExperienceGained
             {
@@ -293,14 +302,29 @@ namespace NexusForever.Game.Entity
             return SharedConfiguration.Instance.Get<WorldConfig>()?.SignatureXpRate ?? DefaultSignatureXpRate;
         }
 
-        private uint GetCurrentLevelXpSpan()
+        private bool TryGetCurrentLevelXpSpan(out uint levelXpSpan)
         {
+            levelXpSpan = 0u;
             if (player.Level >= GetMaxCharacterLevel())
-                return 0u;
+                return true;
 
-            uint xpForLevel     = GameTableManager.Instance.XpPerLevel.GetEntry(player.Level).MinXpForLevel;
-            uint xpForNextLevel = GameTableManager.Instance.XpPerLevel.GetEntry(player.Level + 1).MinXpForLevel;
-            return xpForNextLevel > xpForLevel ? xpForNextLevel - xpForLevel : 0u;
+            if (!TryGetXpForLevel(player.Level, out uint xpForLevel)
+                || !TryGetXpForLevel(player.Level + 1, out uint xpForNextLevel))
+                return false;
+
+            levelXpSpan = xpForNextLevel > xpForLevel ? xpForNextLevel - xpForLevel : 0u;
+            return true;
+        }
+
+        private static bool TryGetXpForLevel(uint level, out uint xp)
+        {
+            xp = 0u;
+            XpPerLevelEntry entry = GameTableManager.Instance.XpPerLevel?.GetEntry(level);
+            if (entry == null)
+                return false;
+
+            xp = entry.MinXpForLevel;
+            return true;
         }
 
         private static uint GetMaximumRestBonusXp(uint levelXpSpan)

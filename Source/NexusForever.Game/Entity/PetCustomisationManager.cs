@@ -36,6 +36,9 @@ namespace NexusForever.Game.Entity
             foreach (CharacterPetFlairModel flairModel in model.PetFlair)
             {
                 var petFlair = new PetFlair(flairModel);
+                if (petFlair.Entry == null)
+                    continue;
+
                 petFlairs.Add(petFlair.Entry.Id, petFlair);
             }
 
@@ -60,7 +63,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void UnlockFlair(ushort id)
         {
-            PetFlairEntry entry = GameTableManager.Instance.PetFlair.GetEntry(id);
+            PetFlairEntry entry = GameTableManager.Instance.PetFlair?.GetEntry(id);
             if (entry == null)
                 throw new ArgumentOutOfRangeException();
 
@@ -120,12 +123,16 @@ namespace NexusForever.Game.Entity
             if (index >= MaxCustomisationFlairs)
                 throw new ArgumentOutOfRangeException();
 
-            if (flairId != 0 && !petFlairs.ContainsKey(flairId))
-                throw new ArgumentException();
+            PetFlairEntry entry = null;
+            if (flairId != 0)
+            {
+                if (!petFlairs.ContainsKey(flairId))
+                    throw new ArgumentException();
 
-            PetFlairEntry entry = GameTableManager.Instance.PetFlair.GetEntry(flairId);
-            if (flairId != 0 && entry == null)
-                throw new ArgumentException();
+                entry = GameTableManager.Instance.PetFlair?.GetEntry(flairId);
+                if (entry == null)
+                    throw new ArgumentException();
+            }
 
             ulong hash = PetCustomisationHash(type, objectId);
             if (!petCustomisations.TryGetValue(hash, out IPetCustomisation customisation))
@@ -160,7 +167,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void UnlockScanBotProfile(uint id)
         {
-            PathScientistScanBotProfileEntry entry = GameTableManager.Instance.PathScientistScanBotProfile.GetEntry(id);
+            PathScientistScanBotProfileEntry entry = GameTableManager.Instance.PathScientistScanBotProfile?.GetEntry(id);
             if (entry == null)
                 throw new ArgumentOutOfRangeException();
 

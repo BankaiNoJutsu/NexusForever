@@ -202,13 +202,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
                 return;
             }
 
-            if (!TryBeginStuckAction(session, UnstickType.RecallTransmat, contextToken, spell4Id))
-                return;
-
             uint worldLocation2Id = session.Player.Zone?.WorldLocation2IdExit ?? 0u;
             WorldLocation2Entry location = worldLocation2Id == 0u
                 ? null
-                : gameTableManager.WorldLocation2.GetEntry(worldLocation2Id);
+                : gameTableManager.WorldLocation2?.GetEntry(worldLocation2Id);
             if (location == null)
             {
                 log.LogWarning("Unable to process transmat stuck request for player {PlayerGuid}: zone exit world location {WorldLocation2Id} was not found, context token {ContextToken}.",
@@ -216,6 +213,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
                 SendStuckCastResult(session, contextToken, spell4Id, CastResult.SpellPreRequisites);
                 return;
             }
+
+            if (!TryBeginStuckAction(session, UnstickType.RecallTransmat, contextToken, spell4Id))
+                return;
 
             log.LogDebug("Processing transmat stuck request for player {PlayerGuid}: zone {ZoneId}, world location {WorldLocation2Id}, context token {ContextToken}.",
                 session.Player?.Guid, session.Player.Zone?.Id, worldLocation2Id, contextToken);
@@ -230,9 +230,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
                 SendStuckCastResult(session, contextToken, spell4Id, CastResult.PendingSpellCast);
                 return;
             }
-
-            if (!TryBeginStuckAction(session, UnstickType.RecallHouse, contextToken, spell4Id))
-                return;
 
             IResidence residence = globalResidenceManager.GetResidenceByOwner(session.Player.Name)
                 ?? globalResidenceManager.CreateResidence(session.Player);
@@ -258,6 +255,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
             }
 
             IMapLock mapLock = mapLockManager.GetResidenceLock(residence.Parent ?? residence);
+
+            if (!TryBeginStuckAction(session, UnstickType.RecallHouse, contextToken, spell4Id))
+                return;
 
             log.LogDebug("Processing house stuck request for player {PlayerGuid}: residence {ResidenceId}, context token {ContextToken}.",
                 session.Player?.Guid, residence.Id, contextToken);

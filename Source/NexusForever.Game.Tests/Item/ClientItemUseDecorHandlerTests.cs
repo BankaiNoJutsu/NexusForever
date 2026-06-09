@@ -8,6 +8,7 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Network;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Item;
@@ -92,6 +93,31 @@ public class ClientItemUseDecorHandlerTests
     }
 
     [Fact]
+    public void HandleMessage_MissingDecorInfoTable_ThrowsBeforeResidenceOrConsume()
+    {
+        ClientItemUseDecorHandler handler = CreateHandlerWithoutDecorInfo();
+        var callOrder = new List<string>();
+        IWorldSession session = CreateSession(
+            CreateItem(stackCount: 1u, maxStackCount: 20u),
+            residenceHandler: args =>
+            {
+                callOrder.Add("residence");
+                return RecordingDispatchProxy<IResidence>.Create(out var _);
+            },
+            itemUseResult: true,
+            callOrder,
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out RecordingDispatchProxy<IResidenceManager> residenceManagerProxy);
+
+        Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(session, CreateRequest(12345ul)));
+
+        Assert.Empty(residenceManagerProxy.GetInvocations(nameof(IResidenceManager.GetOrCreateResidence)));
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+        Assert.Empty(residenceManagerProxy.GetInvocations(nameof(IResidenceManager.DecorCreate)));
+        Assert.Empty(callOrder);
+    }
+
+    [Fact]
     public void HandleMessage_Success_ConsumesAfterResidencePreflightBeforeDecor()
     {
         ClientItemUseDecorHandler handler = CreateHandler(out HousingDecorInfoEntry decorEntry);
@@ -127,6 +153,13 @@ public class ClientItemUseDecorHandlerTests
 
         IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out var proxy);
         proxy.SetProperty(nameof(IGameTableManager.HousingDecorInfo), CreateGameTable(decorEntry));
+
+        return new ClientItemUseDecorHandler(NullLogger<ClientItemUseDecorHandler>.Instance, gameTableManager);
+    }
+
+    private static ClientItemUseDecorHandler CreateHandlerWithoutDecorInfo()
+    {
+        IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out _);
 
         return new ClientItemUseDecorHandler(NullLogger<ClientItemUseDecorHandler>.Instance, gameTableManager);
     }

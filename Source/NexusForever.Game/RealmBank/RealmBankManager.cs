@@ -90,11 +90,11 @@ namespace NexusForever.Game.RealmBank
         public void EnsureLoaded(IPlayer player)
         {
             var key = (player.Account.Id, player.Identity.RealmId);
-            if (!loaded.Add(key))
-                return;
-
             CharacterDatabase database = GetDatabase();
             if (database == null)
+                return;
+
+            if (!loaded.Add(key))
                 return;
 
             foreach (RealmBankItemModel model in database.GetRealmBankItems(player.Account.Id, player.Identity.RealmId))

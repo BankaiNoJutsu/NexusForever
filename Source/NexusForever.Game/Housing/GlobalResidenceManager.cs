@@ -271,11 +271,14 @@ namespace NexusForever.Game.Housing
 
         public IResidenceEntrance GetResidenceEntrance(PropertyInfoId propertyInfoId)
         {
-            HousingPropertyInfoEntry propertyEntry = GameTableManager.Instance.HousingPropertyInfo.GetEntry((ulong)propertyInfoId);
+            HousingPropertyInfoEntry propertyEntry = GameTableManager.Instance.HousingPropertyInfo?.GetEntry((ulong)propertyInfoId);
             if (propertyEntry == null)
                 throw new HousingException();
 
-            WorldLocation2Entry locationEntry = GameTableManager.Instance.WorldLocation2.GetEntry(propertyEntry.WorldLocation2Id);
+            WorldLocation2Entry locationEntry = GameTableManager.Instance.WorldLocation2?.GetEntry(propertyEntry.WorldLocation2Id);
+            if (locationEntry == null)
+                throw new HousingException();
+
             return new ResidenceEntrance(locationEntry);
         }
 

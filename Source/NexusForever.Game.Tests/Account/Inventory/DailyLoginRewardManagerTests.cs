@@ -192,11 +192,73 @@ public class DailyLoginRewardManagerTests
         Assert.Empty(inventoryProxy.GetInvocations(nameof(IAccountInventoryManager.AddItem)));
     }
 
+    [Fact]
+    public void SendDailyLoginUpdate_WithMissingRewardTable_EmitsZeroAvailableRewards()
+    {
+        using LegacyServiceProviderScope _ = UseGameTableManager(CreateGameTableManagerWithoutDailyLoginReward());
+
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
+        accountProxy.SetProperty(nameof(IAccount.Session), session);
+
+        var manager = new DailyLoginRewardManager(account, new AccountModel
+        {
+            AccountDailyLogin = new AccountDailyLoginModel
+            {
+                LoginDaysTotal      = 3u,
+                RewardsAvailable    = 2u,
+                LastDayIncrementUtc = DateTime.UtcNow
+            }
+        });
+
+        manager.SendDailyLoginUpdate();
+
+        RecordingDispatchProxy<IGameSession>.Invocation invocation =
+            Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        var packet = Assert.IsType<ServerDailyLoginUpdate>(invocation.Arguments[0]);
+        Assert.Equal(3u, packet.Value0);
+        Assert.Equal(0u, packet.Value1);
+        Assert.Equal(0u, packet.Value2);
+    }
+
+    [Fact]
+    public void TryClaimReward_WithMissingRewardTable_DoesNotGrantItem()
+    {
+        using LegacyServiceProviderScope _ = UseGameTableManager(CreateGameTableManagerWithoutDailyLoginReward());
+
+        IAccountInventoryManager inventory = RecordingDispatchProxy<IAccountInventoryManager>.Create(out RecordingDispatchProxy<IAccountInventoryManager> inventoryProxy);
+        inventoryProxy.SetMethodReturn(nameof(IAccountInventoryManager.CanAddItem), true);
+
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
+        accountProxy.SetProperty(nameof(IAccount.InventoryManager), inventory);
+
+        var manager = new DailyLoginRewardManager(account, new AccountModel
+        {
+            AccountDailyLogin = new AccountDailyLoginModel
+            {
+                LoginDaysTotal      = 3u,
+                RewardsAvailable    = 2u,
+                LastDayIncrementUtc = DateTime.UtcNow
+            }
+        });
+
+        AccountOperationResult result = manager.TryClaimReward();
+
+        Assert.Equal(AccountOperationResult.AlreadyClaimed, result);
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IAccountInventoryManager.CanAddItem)));
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IAccountInventoryManager.AddItem)));
+    }
+
     private static GameTableManager CreateGameTableManager(params DailyLoginRewardEntry[] dailyLoginRewards)
     {
         var manager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         SetAutoProperty(manager, nameof(GameTableManager.DailyLoginReward), CreateGameTable(dailyLoginRewards));
         return manager;
+    }
+
+    private static GameTableManager CreateGameTableManagerWithoutDailyLoginReward()
+    {
+        return (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()
@@ -227,8 +289,13 @@ public class DailyLoginRewardManagerTests
 
     private static LegacyServiceProviderScope UseDailyLoginRewards(params DailyLoginRewardEntry[] dailyLoginRewards)
     {
+        return UseGameTableManager(CreateGameTableManager(dailyLoginRewards));
+    }
+
+    private static LegacyServiceProviderScope UseGameTableManager(GameTableManager gameTableManager)
+    {
         ServiceProvider provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManager(dailyLoginRewards))
+            .AddSingleton(gameTableManager)
             .BuildServiceProvider();
         return new LegacyServiceProviderScope(provider);
     }

@@ -41,6 +41,12 @@ namespace NexusForever.Game.Entity
             {
                 var datacube = new Datacube(player, model);
                 uint hash = DatacubeHash(datacube.Id, datacube.Type);
+                if (datacubes.TryGetValue(hash, out IDatacube existingDatacube))
+                {
+                    existingDatacube.Progress |= datacube.Progress;
+                    continue;
+                }
+
                 datacubes.Add(hash, datacube);
             }
         }
@@ -65,7 +71,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void AddDatacube(ushort id, uint progress)
         {
-            if (ResolveDatacubeGameTableManager().Datacube.GetEntry(id) == null)
+            if (ResolveDatacubeGameTableManager()?.Datacube?.GetEntry(id) == null)
                 throw new ArgumentException();
 
             uint hash = DatacubeHash(id, DatacubeType.Datacube);
@@ -87,7 +93,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void AddDatacubeVolume(ushort id, uint progress)
         {
-            if (ResolveDatacubeGameTableManager().DatacubeVolume.GetEntry(id) == null)
+            if (ResolveDatacubeGameTableManager()?.DatacubeVolume?.GetEntry(id) == null)
                 throw new ArgumentException();
 
             uint hash = DatacubeHash(id, DatacubeType.Journal);

@@ -53,10 +53,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
             {
                 AmpRespecType.Full when requestAmpReset.Value == 0u => LimitedActionSetResult.Ok,
                 AmpRespecType.Full => LimitedActionSetResult.EldanAugmentationInvalidId,
-                AmpRespecType.Section => gameTableManager.EldanAugmentationCategory.GetEntry(requestAmpReset.Value) == null
+                AmpRespecType.Section => gameTableManager.EldanAugmentationCategory?.GetEntry(requestAmpReset.Value) == null
                     ? LimitedActionSetResult.EldanAugmentationInvalidCategoryId
                     : LimitedActionSetResult.Ok,
-                AmpRespecType.Single => gameTableManager.EldanAugmentation.GetEntry(requestAmpReset.Value) == null
+                AmpRespecType.Single => gameTableManager.EldanAugmentation?.GetEntry(requestAmpReset.Value) == null
                     || actionSet.GetAmp((ushort)requestAmpReset.Value) == null
                         ? LimitedActionSetResult.EldanAugmentationInvalidId
                         : LimitedActionSetResult.Ok,

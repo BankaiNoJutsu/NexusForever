@@ -158,6 +158,19 @@ public class MarketplaceMailSettlementTests
     }
 
     [Fact]
+    public void MarketplaceMailDelivery_IsAvailable_UsesRegisteredDatabaseManagerInterface()
+    {
+        IDatabaseManager databaseManager = RecordingDispatchProxy<IDatabaseManager>.Create(out RecordingDispatchProxy<IDatabaseManager> databaseProxy);
+        databaseProxy.SetMethodReturn(nameof(IDatabaseManager.GetDatabase), new CharacterDatabase());
+
+        var services = new ServiceCollection();
+        services.AddSingleton(databaseManager);
+        using var scope = new LegacyServiceProviderScope(services.BuildServiceProvider());
+
+        Assert.True(MarketplaceMailDelivery.IsAvailable);
+    }
+
+    [Fact]
     public void MarketplaceMailDelivery_AdditionalSaveFailure_RestoresAttachedItemOwner()
     {
         using LegacyServiceProviderScope scope = UseMarketplaceMailProvider();

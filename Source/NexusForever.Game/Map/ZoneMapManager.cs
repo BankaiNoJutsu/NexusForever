@@ -31,11 +31,15 @@ namespace NexusForever.Game.Map
         {
             player = owner;
 
+            GameTable<MapZoneEntry> mapZoneTable = GameTableManager.Instance.MapZone;
             foreach (CharacterZonemapHexgroupModel hexGroupModel in characterModel.ZonemapHexgroup)
             {
                 if (!zoneMaps.TryGetValue(hexGroupModel.ZoneMap, out IZoneMap zoneMap))
                 {
-                    MapZoneEntry entry = GameTableManager.Instance.MapZone.GetEntry(hexGroupModel.ZoneMap);
+                    MapZoneEntry entry = mapZoneTable?.GetEntry(hexGroupModel.ZoneMap);
+                    if (entry == null)
+                        continue;
+
                     zoneMap = new ZoneMap(entry, player);
                     zoneMaps.Add(hexGroupModel.ZoneMap, zoneMap);
                 }
@@ -95,13 +99,18 @@ namespace NexusForever.Game.Map
 
             currentZoneMapCoordinate = newZoneMapCoordinate;
 
-            foreach (MapZoneHexGroupEntry mapZoneHexGroup in GameTableManager.Instance.MapZoneHexGroup.Entries.Where(m => m.MapZoneId == currentZoneMap))
+            GameTable<MapZoneHexGroupEntry> hexGroupTable = GameTableManager.Instance.MapZoneHexGroup;
+            GameTable<MapZoneHexGroupEntryEntry> hexGroupEntryTable = GameTableManager.Instance.MapZoneHexGroupEntry;
+            if (hexGroupTable == null || hexGroupEntryTable == null)
+                return;
+
+            foreach (MapZoneHexGroupEntry mapZoneHexGroup in hexGroupTable.Entries.Where(m => m.MapZoneId == currentZoneMap))
             {
                 if (zoneMap != null && zoneMap.HasHexGroup((ushort)mapZoneHexGroup.Id))
                     continue;
 
                 // +/-1 is for proximity
-                MapZoneHexGroupEntryEntry mapZoneHexGroupEntry = GameTableManager.Instance.MapZoneHexGroupEntry.Entries.
+                MapZoneHexGroupEntryEntry mapZoneHexGroupEntry = hexGroupEntryTable.Entries.
                     FirstOrDefault(m => m.MapZoneHexGroupId == mapZoneHexGroup.Id
                         && m.HexX >= currentZoneMapCoordinate.X - 1u
                         && m.HexX <= currentZoneMapCoordinate.X + 1u
@@ -114,7 +123,7 @@ namespace NexusForever.Game.Map
                 zoneMap?.AddHexGroup((ushort)mapZoneHexGroup.Id);
             }
 
-            if (zoneMap.IsComplete)
+            if (zoneMap?.IsComplete == true)
             {
                 player.AchievementManager.CheckAchievements(player, AchievementType.MapComplete, currentZoneMap);
                 TryGrantZoneCompletionRewards(currentZoneMap);
@@ -155,25 +164,27 @@ namespace NexusForever.Game.Map
             // maybe there is a more efficient lookup method @sub_1406FB130 - this works for all zones though
             WorldZoneEntry worldZoneEntry = player.Zone;
             MapZoneEntry zoneMap = null;
+            GameTable<MapZoneEntry> mapZoneTable = GameTableManager.Instance.MapZone;
+            GameTable<WorldZoneEntry> worldZoneTable = GameTableManager.Instance.WorldZone;
 
             do
             {
                 if (worldZoneEntry == null)
                     break;
 
-                zoneMap = GameTableManager.Instance.MapZone.Entries.FirstOrDefault(m => m.WorldZoneId == worldZoneEntry.Id);
+                zoneMap = mapZoneTable?.Entries.FirstOrDefault(m => m.WorldZoneId == worldZoneEntry.Id);
                 if (zoneMap != null)
                     break;
 
-                worldZoneEntry = GameTableManager.Instance.WorldZone.GetEntry(worldZoneEntry.ParentZoneId);
+                worldZoneEntry = worldZoneTable?.GetEntry(worldZoneEntry.ParentZoneId);
             }
             while (worldZoneEntry != null);
 
             if (zoneMap == null)
             {
-                MapZoneWorldJoinEntry mapZoneWorldJoin = GameTableManager.Instance.MapZoneWorldJoin.Entries.FirstOrDefault(m => m.WorldId == player.Map.Entry.Id);
+                MapZoneWorldJoinEntry mapZoneWorldJoin = GameTableManager.Instance.MapZoneWorldJoin?.Entries.FirstOrDefault(m => m.WorldId == player.Map.Entry.Id);
                 if (mapZoneWorldJoin != null)
-                    zoneMap = GameTableManager.Instance.MapZone.GetEntry(mapZoneWorldJoin.MapZoneId);
+                    zoneMap = mapZoneTable?.GetEntry(mapZoneWorldJoin.MapZoneId);
             }
 
             if (zoneMap == null)

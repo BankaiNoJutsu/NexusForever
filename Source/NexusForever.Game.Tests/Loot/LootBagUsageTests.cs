@@ -237,6 +237,49 @@ public class LootBagUsageTests
     }
 
     [Fact]
+    public void TryUseLootBag_SingleStackDeleteFailureDoesNotGrantLoot()
+    {
+        GlobalLootManager manager = CreateLootManager(CreateItemLootGroup(
+            new LootItemModel
+            {
+                Id          = 220000000008,
+                Type        = (uint)LootItemType.AccountCurrency,
+                StaticId    = (uint)AccountCurrencyType.Omnibit,
+                Probability = 100f,
+                MinCount    = 5u,
+                MaxCount    = 5u
+            }));
+
+        IPlayer player = CreatePlayer(out var inventoryProxy, out var currencyProxy, out _, out var sessionProxy);
+        IItem item = CreateLootBagItem(maxStackCount: 1u, maxCharges: 0u, bagIndex: 7u);
+        inventoryProxy.SetMethodReturn(nameof(IInventory.ItemUse), true);
+        inventoryProxy.SetMethodHandler(nameof(IInventory.ItemDelete), _ => throw new ArgumentException());
+
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider(manager, CreateGameTable(
+            new AccountCurrencyTypeEntry
+            {
+                Id = (uint)AccountCurrencyType.Omnibit
+            }));
+
+        try
+        {
+            bool result = manager.TryUseLootBag(player, item, out string reason);
+
+            Assert.False(result);
+            Assert.Equal("item-delete-failed", reason);
+            Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+            Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
+            Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+            Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void TryUseLootBag_WithOnlySalvageGroups_DoesNotConsumeItem()
     {
         GlobalLootManager manager = CreateLootManager(CreateItemLootGroup(
@@ -504,6 +547,42 @@ public class LootBagUsageTests
 
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         LegacyServiceProvider.Provider = BuildProvider(manager, CreateGameTable<AccountCurrencyTypeEntry>());
+
+        try
+        {
+            bool result = manager.TryUseLootBag(player, item, out string reason);
+
+            Assert.False(result);
+            Assert.Equal($"invalid-loot-item:{LootItemType.AccountCurrency}:{(uint)AccountCurrencyType.ServiceToken}", reason);
+            Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+            Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void TryUseLootBag_AccountCurrencyMissingGameTable_DoesNotConsumeItem()
+    {
+        GlobalLootManager manager = CreateLootManager(CreateItemLootGroup(
+            new LootItemModel
+            {
+                Id          = 220000000006,
+                Type        = (uint)LootItemType.AccountCurrency,
+                StaticId    = (uint)AccountCurrencyType.ServiceToken,
+                Probability = 100f,
+                MinCount    = 1u,
+                MaxCount    = 1u
+            }));
+
+        IPlayer player = CreatePlayerWithRealAccountCurrencyManager(out var inventoryProxy, out var sessionProxy);
+        inventoryProxy.SetMethodReturn(nameof(IInventory.ItemUse), true);
+        IItem item = CreateLootBagItem();
+
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider(manager, null);
 
         try
         {

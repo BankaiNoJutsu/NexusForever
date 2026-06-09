@@ -60,7 +60,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
                     break;
                 case ShortcutType.BagItem:
                     if (requestActionSetChanges.ObjectId == 0u
-                        || gameTableManager.Item.GetEntry(requestActionSetChanges.ObjectId) == null)
+                        || gameTableManager.Item?.GetEntry(requestActionSetChanges.ObjectId) == null)
                     {
                         throw new InvalidPacketValueException($"Invalid bag item shortcut received: {requestActionSetChanges.ObjectId}");
                     }

@@ -36,7 +36,10 @@ namespace NexusForever.Game.Entity
                 if (dyes[i] == 0)
                     continue;
 
-                DyeColorRampEntry entry = GameTableManager.Instance.DyeColorRamp.GetEntry(dyes[i]);
+                DyeColorRampEntry entry = GameTableManager.Instance.DyeColorRamp?.GetEntry(dyes[i]);
+                if (entry == null)
+                    throw new ArgumentException($"Unknown dye color ramp {dyes[i]}.", nameof(dyes));
+
                 ramps[i] = entry.RampIndex;
             }
 

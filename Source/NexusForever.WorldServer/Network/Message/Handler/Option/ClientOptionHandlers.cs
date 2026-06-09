@@ -75,6 +75,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Option
 
         public void HandleMessage(IWorldSession session, ClientCombatLogDisableOthers combatLogDisableOthers)
         {
+            if (combatLogDisableOthers.DisableOtherPlayersValue > 1u)
+                throw new InvalidPacketValueException($"Invalid combat log disable-others option received: {combatLogDisableOthers.DisableOtherPlayersValue}");
+
             session.Player.DisableOtherPlayersCombatLogs = combatLogDisableOthers.DisableOtherPlayers;
 
             log.LogDebug("Updated combat log disable-others option from player {PlayerGuid}: disable {DisableOtherPlayers}.",

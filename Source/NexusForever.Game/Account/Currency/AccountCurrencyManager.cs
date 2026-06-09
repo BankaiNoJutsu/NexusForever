@@ -37,7 +37,7 @@ namespace NexusForever.Game.Account.Currency
         /// </summary>
         private IAccountCurrency CreateAccountCurrency(AccountCurrencyType currencyType, ulong amount = 0)
         {
-            AccountCurrencyTypeEntry currencyEntry = GameTableManager.Instance.AccountCurrencyType.GetEntry((ulong)currencyType);
+            AccountCurrencyTypeEntry currencyEntry = GameTableManager.Instance.AccountCurrencyType?.GetEntry((ulong)currencyType);
             if (currencyEntry == null)
                 throw new ArgumentNullException($"AccountCurrencyTypeEntry not found for currencyId {currencyType}");
 

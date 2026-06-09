@@ -5,7 +5,6 @@ using NexusForever.Game.Spell;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
-using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
@@ -81,7 +80,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
 
             GameFormulaEntry formula = gameTableManager.GameFormula?.GetEntry(RapidTransportSpellGameFormulaId);
             if (formula == null || formula.Dataint0 == 0u)
-                throw new InvalidPacketValueException();
+            {
+                log.LogTrace("Rapid transport rejected for player {PlayerGuid}: rapid transport spell formula {GameFormulaId} is unavailable or empty.",
+                    session.Player?.Guid, RapidTransportSpellGameFormulaId);
+                SendRapidTransportCastResult(session, 0u, CastResult.RapidTransportInvalid);
+                return;
+            }
 
             if (session.Player.SpellManager.GetSpellCooldown(formula.Dataint0) > 0d)
             {

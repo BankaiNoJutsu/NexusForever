@@ -46,6 +46,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
             if (community == null)
                 throw new InvalidPacketValueException();
 
+            GameFormulaEntry renameCostEntry = null;
+
             HousingResult GetResult()
             {
                 // client checks if the player has a rank of 0, this is the same
@@ -56,15 +58,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
                     || !textFilterManager.IsTextValid(housingCommunityRename.Name, UserText.HousingResidenceName))
                     return HousingResult.InvalidResidenceName;
 
-                GameFormulaEntry entry = gameTableManager.GameFormula.GetEntry(2395);
-                if (entry == null)
+                renameCostEntry = gameTableManager.GameFormula?.GetEntry(2395);
+                if (renameCostEntry == null)
                     return HousingResult.Failed;
 
                 bool canAfford;
                 if (housingCommunityRename.AlternativeCurrency)
-                    canAfford = session.Player.CurrencyManager.CanAfford(CurrencyType.Renown, entry.Dataint01);
+                    canAfford = session.Player.CurrencyManager.CanAfford(CurrencyType.Renown, renameCostEntry.Dataint01);
                 else
-                    canAfford = session.Player.CurrencyManager.CanAfford(CurrencyType.Credits, entry.Dataint0);
+                    canAfford = session.Player.CurrencyManager.CanAfford(CurrencyType.Credits, renameCostEntry.Dataint0);
 
                 if (!canAfford)
                     return HousingResult.InsufficientFunds;
@@ -76,11 +78,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
             if (result == HousingResult.Success)
             {
                 // fun fact: 2395 is the final game formula entry
-                GameFormulaEntry entry = gameTableManager.GameFormula.GetEntry(2395);
                 if (housingCommunityRename.AlternativeCurrency)
-                    session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Renown, entry.Dataint01);
+                    session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Renown, renameCostEntry.Dataint01);
                 else
-                    session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, entry.Dataint0);
+                    session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, renameCostEntry.Dataint0);
 
                 community.RenameGuild(housingCommunityRename.Name);
                 community.Residence.Map?.RenameResidence(community.Residence, housingCommunityRename.Name);

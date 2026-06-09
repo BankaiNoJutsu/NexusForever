@@ -157,6 +157,42 @@ public class PathManagerTests
     }
 
     [Fact]
+    public void AddLevels_WithMissingTargetPathLevelRow_DoesNotMutateXp()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }
+            ],
+            []);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out var achievementManagerProxy,
+                out var inventoryProxy);
+
+            manager.AddLevels(1u);
+
+            IPathEntry pathEntry = Assert.Single(manager, entry => entry.Path == Path.Soldier);
+            Assert.Equal(0u, pathEntry.TotalXp);
+            Assert.Equal(1, pathEntry.LevelRewarded);
+            Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+            Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.SetAchievementProgress)));
+            Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void ActivateMissions_SendsEpisodeProgressAndMissionActivate()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
@@ -366,6 +402,77 @@ public class PathManagerTests
         Assert.Empty(update.DatacubeData);
         Assert.Equal([11, 12], update.DatacubeVolumeData.Select(d => d.DatacubeId).ToArray());
         Assert.Equal([2u, 4u], update.DatacubeVolumeData.Select(d => d.Progress).ToArray());
+    }
+
+    [Fact]
+    public void DatacubeManager_Constructor_MergesDuplicatePersistedRows()
+    {
+        _ = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 1,
+            out IPlayer player,
+            out _,
+            out _,
+            out _,
+            out _,
+            datacubeModels:
+            [
+                new CharacterDatacubeModel
+                {
+                    Id       = 42ul,
+                    Datacube = 11,
+                    Type     = (byte)DatacubeType.Datacube,
+                    Progress = 1u
+                },
+                new CharacterDatacubeModel
+                {
+                    Id       = 42ul,
+                    Datacube = 11,
+                    Type     = (byte)DatacubeType.Datacube,
+                    Progress = 2u
+                }
+            ]);
+
+        IDatacube datacube = player.DatacubeManager.GetDatacube(11, DatacubeType.Datacube);
+        Assert.NotNull(datacube);
+        Assert.Equal(3u, datacube.Progress);
+    }
+
+    [Fact]
+    public void DatacubeManager_AddDatacube_WhenTableMissingRejectsWithoutPacket()
+    {
+        _ = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 1,
+            out IPlayer player,
+            out _,
+            out RecordingDispatchProxy<IGameSession> sessionProxy,
+            out _,
+            out _,
+            gameTableManager: CreateEmptyGameTableManager());
+
+        Assert.Throws<ArgumentException>(() => player.DatacubeManager.AddDatacube(11, 1u));
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+    }
+
+    [Fact]
+    public void DatacubeManager_AddDatacubeVolume_WhenTableMissingRejectsWithoutPacket()
+    {
+        _ = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 1,
+            out IPlayer player,
+            out _,
+            out RecordingDispatchProxy<IGameSession> sessionProxy,
+            out _,
+            out _,
+            gameTableManager: CreateEmptyGameTableManager());
+
+        Assert.Throws<ArgumentException>(() => player.DatacubeManager.AddDatacubeVolume(12, 1u));
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
     }
 
     [Fact]
@@ -1377,6 +1484,126 @@ public class PathManagerTests
     }
 
     [Fact]
+    public void CompleteMission_WithMissingPathLevelRows_SkipsXpAndKeepsMissionReward()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [],
+            [
+                new PathRewardEntry
+                {
+                    Id = 1u,
+                    PathRewardTypeEnum = PathRewardGrant.MissionRewardType,
+                    ObjectId = 35u,
+                    Item2Id = 9001u
+                }
+            ],
+            [
+                new PathMissionEntry
+                {
+                    Id = 35u,
+                    PathTypeEnum = (uint)Path.Explorer,
+                    PathMissionTypeEnum = 0x000Fu
+                }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out var inventoryProxy);
+
+            Assert.True(manager.CompleteMission(35));
+            Assert.True(manager.IsMissionComplete(35));
+
+            Assert.Empty(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerPathUpdateXP>());
+
+            RecordingDispatchProxy<IInventory>.Invocation itemCreate =
+                Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+            Assert.Equal(InventoryLocation.Inventory, itemCreate.Arguments[0]);
+            Assert.Equal(9001u, itemCreate.Arguments[1]);
+            Assert.Equal(1u, itemCreate.Arguments[2]);
+            Assert.Equal(ItemUpdateReason.PathReward, itemCreate.Arguments[3]);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void CompleteMission_WithMissingPathMissionTable_CompletesWithoutMissionMetadata()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
+            ],
+            [
+                new PathRewardEntry
+                {
+                    Id = 1u,
+                    PathRewardTypeEnum = PathRewardGrant.MissionRewardType,
+                    ObjectId = 35u,
+                    Item2Id = 9001u
+                }
+            ],
+            [
+                new PathMissionEntry
+                {
+                    Id = 35u,
+                    PathTypeEnum = (uint)Path.Explorer,
+                    PathMissionTypeEnum = 0x000Fu
+                }
+            ]);
+
+        try
+        {
+            GameTableManager gameTableManager = LegacyServiceProvider.Provider.GetRequiredService<GameTableManager>();
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.PathMission), null);
+
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out var achievementManagerProxy,
+                out var inventoryProxy);
+
+            Assert.True(manager.CompleteMission(35));
+            Assert.True(manager.IsMissionComplete(35));
+
+            Assert.Empty(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerPathUpdateXP>());
+            Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+
+            RecordingDispatchProxy<IInventory>.Invocation itemCreate =
+                Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+            Assert.Equal(InventoryLocation.Inventory, itemCreate.Arguments[0]);
+            Assert.Equal(9001u, itemCreate.Arguments[1]);
+            Assert.Equal(1u, itemCreate.Arguments[2]);
+            Assert.Equal(ItemUpdateReason.PathReward, itemCreate.Arguments[3]);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void CompleteMission_WithMismatchedMissionPathAndNoConfiguredXp_DoesNotAwardFallbackXp()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
@@ -1522,6 +1749,14 @@ public class PathManagerTests
             spell4Entries:
             [
                 new Spell4Entry { Id = 99u, Spell4BaseIdBaseSpell = 77u }
+            ],
+            characterTitles:
+            [
+                new CharacterTitleEntry { Id = 18u }
+            ],
+            scanBotProfiles:
+            [
+                new PathScientistScanBotProfileEntry { Id = 6u }
             ]);
 
         try
@@ -1572,6 +1807,260 @@ public class PathManagerTests
         finally
         {
             LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void CompleteMission_WithMissingSpellRewardEntry_SkipsSpellRewardWithoutThrowing()
+    {
+        MissingGameDataDiagnostics.ResetForTests();
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
+            ],
+            [
+                new PathRewardEntry
+                {
+                    Id = 1u,
+                    PathRewardTypeEnum = PathRewardGrant.MissionRewardType,
+                    ObjectId = 35u,
+                    Item2Id = 9001u,
+                    Spell4Id = 99u
+                }
+            ],
+            [
+                new PathMissionEntry
+                {
+                    Id = 35u,
+                    PathTypeEnum = (uint)Path.Explorer,
+                    PathMissionTypeEnum = 0x000Fu
+                }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out _,
+                out _,
+                out var inventoryProxy);
+
+            ISpellManager spellManager = RecordingDispatchProxy<ISpellManager>.Create(out RecordingDispatchProxy<ISpellManager> spellManagerProxy);
+            playerProxy.SetProperty(nameof(IPlayer.SpellManager), spellManager);
+
+            manager.ActivateMissions(9, new Dictionary<ushort, uint>
+            {
+                [35] = 0
+            });
+
+            Assert.True(manager.CompleteMission(35));
+
+            RecordingDispatchProxy<IInventory>.Invocation itemCreate =
+                Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+            Assert.Equal(9001u, itemCreate.Arguments[1]);
+            Assert.Empty(spellManagerProxy.GetInvocations(nameof(ISpellManager.AddSpell)));
+            AssertSkippedGrantDiagnostic("Spell4.tbl", 99u, "Path spell reward");
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+            MissingGameDataDiagnostics.ResetForTests();
+        }
+    }
+
+    [Fact]
+    public void CompleteMission_WithMissingSpellRewardTable_SkipsSpellRewardWithoutThrowing()
+    {
+        MissingGameDataDiagnostics.ResetForTests();
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
+            ],
+            [
+                new PathRewardEntry
+                {
+                    Id = 1u,
+                    PathRewardTypeEnum = PathRewardGrant.MissionRewardType,
+                    ObjectId = 35u,
+                    Item2Id = 9001u,
+                    Spell4Id = 99u
+                }
+            ],
+            [
+                new PathMissionEntry
+                {
+                    Id = 35u,
+                    PathTypeEnum = (uint)Path.Explorer,
+                    PathMissionTypeEnum = 0x000Fu
+                }
+            ],
+            includeSpell4Table: false);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out _,
+                out _,
+                out var inventoryProxy);
+
+            ISpellManager spellManager = RecordingDispatchProxy<ISpellManager>.Create(out RecordingDispatchProxy<ISpellManager> spellManagerProxy);
+            playerProxy.SetProperty(nameof(IPlayer.SpellManager), spellManager);
+
+            manager.ActivateMissions(9, new Dictionary<ushort, uint>
+            {
+                [35] = 0
+            });
+
+            Assert.True(manager.CompleteMission(35));
+
+            RecordingDispatchProxy<IInventory>.Invocation itemCreate =
+                Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+            Assert.Equal(9001u, itemCreate.Arguments[1]);
+            Assert.Empty(spellManagerProxy.GetInvocations(nameof(ISpellManager.AddSpell)));
+            AssertSkippedGrantDiagnostic("Spell4.tbl", 99u, "Path spell reward");
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+            MissingGameDataDiagnostics.ResetForTests();
+        }
+    }
+
+    [Fact]
+    public void CompleteMission_WithMissingTitleRewardEntry_SkipsTitleRewardWithoutThrowing()
+    {
+        MissingGameDataDiagnostics.ResetForTests();
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
+            ],
+            [
+                new PathRewardEntry
+                {
+                    Id = 1u,
+                    PathRewardTypeEnum = PathRewardGrant.MissionRewardType,
+                    ObjectId = 35u,
+                    Item2Id = 9001u,
+                    CharacterTitleId = 18u
+                }
+            ],
+            [
+                new PathMissionEntry
+                {
+                    Id = 35u,
+                    PathTypeEnum = (uint)Path.Explorer,
+                    PathMissionTypeEnum = 0x000Fu
+                }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out _,
+                out _,
+                out var inventoryProxy);
+
+            ITitleManager titleManager = RecordingDispatchProxy<ITitleManager>.Create(out RecordingDispatchProxy<ITitleManager> titleManagerProxy);
+            playerProxy.SetProperty(nameof(IPlayer.TitleManager), titleManager);
+
+            manager.ActivateMissions(9, new Dictionary<ushort, uint>
+            {
+                [35] = 0
+            });
+
+            Assert.True(manager.CompleteMission(35));
+
+            RecordingDispatchProxy<IInventory>.Invocation itemCreate =
+                Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+            Assert.Equal(9001u, itemCreate.Arguments[1]);
+            Assert.Empty(titleManagerProxy.GetInvocations(nameof(ITitleManager.AddTitle)));
+            AssertSkippedGrantDiagnostic("CharacterTitle.tbl", 18u, "Path title reward");
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+            MissingGameDataDiagnostics.ResetForTests();
+        }
+    }
+
+    [Fact]
+    public void CompleteMission_WithMissingScanBotProfileRewardTable_SkipsScanBotProfileRewardWithoutThrowing()
+    {
+        MissingGameDataDiagnostics.ResetForTests();
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }
+            ],
+            [
+                new PathRewardEntry
+                {
+                    Id = 1u,
+                    PathRewardTypeEnum = PathRewardGrant.MissionRewardType,
+                    ObjectId = 35u,
+                    Item2Id = 9001u,
+                    PathScientistScanBotProfileId = 6u
+                }
+            ],
+            [
+                new PathMissionEntry
+                {
+                    Id = 35u,
+                    PathTypeEnum = (uint)Path.Scientist,
+                    PathMissionTypeEnum = 0x002Au
+                }
+            ],
+            includeScanBotProfileTable: false);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Scientist,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out _,
+                out _,
+                out var inventoryProxy);
+
+            IPetCustomisationManager petCustomisationManager = RecordingDispatchProxy<IPetCustomisationManager>.Create(out RecordingDispatchProxy<IPetCustomisationManager> petCustomisationManagerProxy);
+            playerProxy.SetProperty(nameof(IPlayer.PetCustomisationManager), petCustomisationManager);
+
+            manager.ActivateMissions(9, new Dictionary<ushort, uint>
+            {
+                [35] = 0
+            });
+
+            Assert.True(manager.CompleteMission(35));
+
+            RecordingDispatchProxy<IInventory>.Invocation itemCreate =
+                Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+            Assert.Equal(9001u, itemCreate.Arguments[1]);
+            Assert.Empty(petCustomisationManagerProxy.GetInvocations(nameof(IPetCustomisationManager.UnlockScanBotProfile)));
+            AssertSkippedGrantDiagnostic("PathScientistScanBotProfile.tbl", 6u, "Path scanbot profile reward");
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+            MissingGameDataDiagnostics.ResetForTests();
         }
     }
 
@@ -1870,6 +2359,67 @@ public class PathManagerTests
         }
     }
 
+    [Theory]
+    [InlineData("path-mission")]
+    [InlineData("explorer-node")]
+    public void CompleteExplorerProgressMission_WithMissingStaticTable_DoesNotCompleteMission(string missingTable)
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 35u,
+                    PathTypeEnum = (uint)Path.Explorer,
+                    PathMissionTypeEnum = 0x000Fu,
+                    ObjectId = 123u
+                }
+            ],
+            pathExplorerNodes:
+            [
+                new PathExplorerNodeEntry { Id = 1u, PathExplorerAreaId = 123u }
+            ]);
+
+        try
+        {
+            GameTableManager gameTableManager = LegacyServiceProvider.Provider.GetRequiredService<GameTableManager>();
+            SetAutoProperty(
+                gameTableManager,
+                missingTable == "path-mission" ? nameof(GameTableManager.PathMission) : nameof(GameTableManager.PathExplorerNode),
+                null);
+
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out _);
+            manager.ActivateMissions(9, new Dictionary<ushort, uint>
+            {
+                [35] = 0
+            });
+
+            Assert.False(manager.CompleteExplorerProgressMission(35, 0u));
+
+            Assert.False(manager.IsMissionComplete(35));
+            Assert.Empty(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerPathMissionAdvanced>());
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
     [Fact]
     public void CompleteExplorerPowerMapMission_WithActivePowerMapMission_CompletesMission()
     {
@@ -1918,6 +2468,67 @@ public class PathManagerTests
                 .OfType<ServerPathMissionAdvanced>()
                 .Single();
             Assert.Equal(40, advanced.PathMissionId);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Theory]
+    [InlineData("path-mission")]
+    [InlineData("power-map")]
+    public void CompleteExplorerPowerMapMission_WithMissingStaticTable_DoesNotCompleteMission(string missingTable)
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 40u,
+                    PathTypeEnum = (uint)Path.Explorer,
+                    PathMissionTypeEnum = 0x0012u,
+                    ObjectId = 77u
+                }
+            ],
+            pathExplorerPowerMaps:
+            [
+                new PathExplorerPowerMapEntry { Id = 77u }
+            ]);
+
+        try
+        {
+            GameTableManager gameTableManager = LegacyServiceProvider.Provider.GetRequiredService<GameTableManager>();
+            SetAutoProperty(
+                gameTableManager,
+                missingTable == "path-mission" ? nameof(GameTableManager.PathMission) : nameof(GameTableManager.PathExplorerPowerMap),
+                null);
+
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out _);
+            manager.ActivateMissions(9, new Dictionary<ushort, uint>
+            {
+                [40] = 0
+            });
+
+            Assert.False(manager.CompleteExplorerPowerMapMission(77u));
+
+            Assert.False(manager.IsMissionComplete(40));
+            Assert.Empty(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerPathMissionAdvanced>());
         }
         finally
         {
@@ -2202,6 +2813,67 @@ public class PathManagerTests
     }
 
     [Fact]
+    public void CompleteCurrentExplorerExploreZoneMission_WithMissingPathMissionTable_DoesNotCompleteMission()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 41u,
+                    PathTypeEnum = (uint)Path.Explorer,
+                    PathMissionTypeEnum = 0x0010u,
+                    ObjectId = 700u
+                }
+            ],
+            worldZones:
+            [
+                new WorldZoneEntry { Id = 10u }
+            ],
+            mapZones:
+            [
+                new MapZoneEntry { Id = 700u, WorldZoneId = 10u }
+            ]);
+
+        try
+        {
+            GameTableManager gameTableManager = LegacyServiceProvider.Provider.GetRequiredService<GameTableManager>();
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.PathMission), null);
+
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _);
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 10u });
+            manager.ActivateMissions(9, new Dictionary<ushort, uint>
+            {
+                [41] = 0
+            });
+
+            Assert.False(manager.CompleteCurrentExplorerExploreZoneMission());
+
+            Assert.False(manager.IsMissionComplete(41u));
+            Assert.Empty(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerPathMissionAdvanced>());
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void CompleteMissionByObjectId_CompletesMatchingActiveMission()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
@@ -2279,6 +2951,47 @@ public class PathManagerTests
     }
 
     [Fact]
+    public void CompleteMissionByObjectId_WithMissingPathMissionTable_DoesNotCompleteMission()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry { Id = 1254u, PathEpisodeId = 9u, PathTypeEnum = (uint)Path.Explorer, ObjectId = 1u }
+            ]);
+
+        try
+        {
+            GameTableManager gameTableManager = LegacyServiceProvider.Provider.GetRequiredService<GameTableManager>();
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.PathMission), null);
+
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out _,
+                out _,
+                out _);
+            manager.ActivateMissions(9, new Dictionary<ushort, uint>
+            {
+                [1254] = 0
+            });
+
+            Assert.False(manager.CompleteMissionByObjectId(1u));
+            Assert.False(manager.IsMissionComplete(1254u));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void CompleteMissionBySoldierTowerDefenseId_CompletesMatchingEventMission()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
@@ -2313,6 +3026,55 @@ public class PathManagerTests
             Assert.True(manager.CompleteMissionBySoldierTowerDefenseId(2u));
 
             Assert.True(manager.IsMissionComplete(156u));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Theory]
+    [InlineData("path-mission")]
+    [InlineData("tower-defense")]
+    public void CompleteMissionBySoldierTowerDefenseId_WithMissingStaticTable_DoesNotCompleteMission(string missingTable)
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry { Id = 156u, PathEpisodeId = 8u, PathTypeEnum = (uint)Path.Soldier, ObjectId = 2u }
+            ],
+            [
+                new PathSoldierTowerDefenseEntry { Id = 2u, PathSoldierEventId = 2u }
+            ]);
+
+        try
+        {
+            GameTableManager gameTableManager = LegacyServiceProvider.Provider.GetRequiredService<GameTableManager>();
+            SetAutoProperty(
+                gameTableManager,
+                missingTable == "path-mission" ? nameof(GameTableManager.PathMission) : nameof(GameTableManager.PathSoldierTowerDefense),
+                null);
+
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out _,
+                out _,
+                out _);
+            manager.ActivateMissions(8, new Dictionary<ushort, uint>
+            {
+                [156] = 0
+            });
+
+            Assert.False(manager.CompleteMissionBySoldierTowerDefenseId(2u));
+            Assert.False(manager.IsMissionComplete(156u));
         }
         finally
         {
@@ -2490,6 +3252,68 @@ public class PathManagerTests
         }
     }
 
+    [Theory]
+    [InlineData("path-mission")]
+    [InlineData("soldier-assassinate")]
+    public void ProgressSoldierAssassinateMissionForCreatureKill_WithMissingStaticTable_DoesNotProgressMission(string missingTable)
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 35u,
+                    PathEpisodeId = 8u,
+                    PathTypeEnum = (uint)Path.Soldier,
+                    PathMissionTypeEnum = 0x0004u,
+                    ObjectId = 12u
+                }
+            ],
+            soldierAssassinate:
+            [
+                new PathSoldierAssassinateEntry { Id = 12u, Creature2Id = 9001u, Count = 1u }
+            ]);
+
+        try
+        {
+            GameTableManager gameTableManager = LegacyServiceProvider.Provider.GetRequiredService<GameTableManager>();
+            SetAutoProperty(
+                gameTableManager,
+                missingTable == "path-mission" ? nameof(GameTableManager.PathMission) : nameof(GameTableManager.PathSoldierAssassinate),
+                null);
+
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out _);
+            manager.ActivateMissions(8, new Dictionary<ushort, uint>
+            {
+                [35] = 0
+            });
+
+            Assert.False(manager.ProgressSoldierAssassinateMissionForCreatureKill(9001u, []));
+
+            Assert.False(manager.IsMissionComplete(35u));
+            Assert.Empty(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerPathMissionAdvanced>());
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
     [Fact]
     public void CompleteMissionBySettlerImprovementGroupId_WithHubMissionCount_CompletesAfterRequiredBuilds()
     {
@@ -2557,6 +3381,74 @@ public class PathManagerTests
             Assert.True(completeUpdate.Mission.Completed);
             Assert.Equal(2u, completeUpdate.Mission.ProgressCount);
             Assert.Equal(0u, completeUpdate.Mission.ProgressData);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Theory]
+    [InlineData("path-mission")]
+    [InlineData("improvement-group")]
+    [InlineData("hub")]
+    public void CompleteMissionBySettlerImprovementGroupId_WithMissingStaticTable_DoesNotProgressMission(string missingTable)
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 650u,
+                    PathEpisodeId = 82u,
+                    PathTypeEnum = (uint)Path.Settler,
+                    PathMissionTypeEnum = 0x0013u,
+                    ObjectId = 46u
+                }
+            ],
+            settlerImprovementGroups:
+            [
+                new PathSettlerImprovementGroupEntry { Id = 11u, PathSettlerHubId = 46u }
+            ],
+            settlerHubs:
+            [
+                new PathSettlerHubEntry { Id = 46u, MissionCount = 1u }
+            ]);
+
+        try
+        {
+            GameTableManager gameTableManager = LegacyServiceProvider.Provider.GetRequiredService<GameTableManager>();
+            string propertyName = missingTable switch
+            {
+                "path-mission"      => nameof(GameTableManager.PathMission),
+                "improvement-group" => nameof(GameTableManager.PathSettlerImprovementGroup),
+                _                   => nameof(GameTableManager.PathSettlerHub)
+            };
+            SetAutoProperty(gameTableManager, propertyName, null);
+
+            PathManager manager = CreateManager(
+                Path.Settler,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out _);
+            manager.ActivateMissions(82, new Dictionary<ushort, uint>
+            {
+                [650] = 0
+            });
+            int beforeCount = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count;
+
+            Assert.False(manager.CompleteMissionBySettlerImprovementGroupId(11u));
+
+            Assert.False(manager.IsMissionComplete(650u));
+            Assert.Equal(beforeCount, sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count);
         }
         finally
         {
@@ -3016,11 +3908,28 @@ public class PathManagerTests
         return manager;
     }
 
+    private static void AssertSkippedGrantDiagnostic(string tableName, uint staticId, string detail)
+    {
+        MissingGameDataDiagnostic diagnostic = Assert.Single(MissingGameDataDiagnostics.GetSnapshot(), d =>
+            d.Kind == MissingGameDataDiagnosticKind.SkippedGrant
+            && d.Severity == MissingGameDataSeverity.PlayerImpacting
+            && d.TableName == tableName
+            && d.StaticId == staticId.ToString()
+            && d.Detail.Contains(detail));
+
+        Assert.Equal(1, diagnostic.Count);
+    }
+
     private static IGameTableManager CreateScientistCreatureInfoGameTableManager(params PathScientistCreatureInfoEntry[] entries)
     {
         IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> proxy);
         proxy.SetProperty(nameof(IGameTableManager.PathScientistCreatureInfo), CreateGameTable(entries));
         return gameTableManager;
+    }
+
+    private static IGameTableManager CreateEmptyGameTableManager()
+    {
+        return RecordingDispatchProxy<IGameTableManager>.Create(out _);
     }
 
     private static CharacterContext CreateCharacterContext()
@@ -3049,8 +3958,12 @@ public class PathManagerTests
         IEnumerable<MapZoneEntry> mapZones = null,
         IEnumerable<MapZoneWorldJoinEntry> mapZoneWorldJoins = null,
         IEnumerable<Spell4Entry> spell4Entries = null,
+        IEnumerable<CharacterTitleEntry> characterTitles = null,
+        IEnumerable<PathScientistScanBotProfileEntry> scanBotProfiles = null,
         IEnumerable<PrerequisiteEntry> prerequisites = null,
-        IEnumerable<GameFormulaEntry> gameFormulas = null)
+        IEnumerable<GameFormulaEntry> gameFormulas = null,
+        bool includeSpell4Table = true,
+        bool includeScanBotProfileTable = true)
     {
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
@@ -3069,7 +3982,11 @@ public class PathManagerTests
         SetAutoProperty(gameTableManager, nameof(GameTableManager.WorldZone), CreateGameTable((worldZones ?? []).ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.MapZone), CreateGameTable((mapZones ?? []).ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.MapZoneWorldJoin), CreateGameTable((mapZoneWorldJoins ?? []).ToArray()));
-        SetAutoProperty(gameTableManager, nameof(GameTableManager.Spell4), CreateGameTable((spell4Entries ?? []).ToArray()));
+        if (includeSpell4Table)
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.Spell4), CreateGameTable((spell4Entries ?? []).ToArray()));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.CharacterTitle), CreateGameTable((characterTitles ?? []).ToArray()));
+        if (includeScanBotProfileTable)
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.PathScientistScanBotProfile), CreateGameTable((scanBotProfiles ?? []).ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.Prerequisite), CreateGameTable((prerequisites ?? []).ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.GameFormula), CreateGameTable((gameFormulas ?? []).ToArray()));
 

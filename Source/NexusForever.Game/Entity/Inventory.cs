@@ -23,7 +23,7 @@ namespace NexusForever.Game.Entity
 
         private static ulong ItemLocationToDragDropData(InventoryLocation location, ushort slot)
         {
-            return (ulong)location << 8 | slot;
+            return ItemLocation.ToDragDropData(location, slot);
         }
 
         private readonly ulong characterId;

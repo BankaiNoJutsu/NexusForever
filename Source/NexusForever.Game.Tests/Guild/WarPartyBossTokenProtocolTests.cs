@@ -2,6 +2,7 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Guild;
 using NexusForever.Network.World.Message.Model.Shared;
+using NexusForever.Network.World.Message.Model.Spell;
 
 namespace NexusForever.Game.Tests.Guild;
 
@@ -56,6 +57,31 @@ public class WarPartyBossTokenProtocolTests
         Assert.Equal(1u, reader.ReadUInt());
         Assert.Equal(0x12345u, reader.ReadUInt(18u));
         Assert.Equal(4u, reader.ReadUInt());
+    }
+
+    [Fact]
+    public void ClientCastGuildBossToken_ReadsGuildIdentityItemAndContextToken()
+    {
+        byte[] packetData = WritePacket(writer =>
+        {
+            new Identity
+            {
+                RealmId = 11,
+                Id = 0x1020304050607080ul
+            }.Write(writer);
+            writer.Write(0x23456u, 18u);
+            writer.Write(0xAABBCCDDu);
+        });
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        var packet = new ClientCastGuildBossToken();
+
+        packet.Read(reader);
+
+        Assert.Equal((ushort)11, packet.GuildIdentity.RealmId);
+        Assert.Equal(0x1020304050607080ul, packet.GuildIdentity.Id);
+        Assert.Equal(0x23456u, packet.Item2Id);
+        Assert.Equal(0xAABBCCDDu, packet.ContextToken);
     }
 
     private static byte[] WritePacket(IWritable packet)

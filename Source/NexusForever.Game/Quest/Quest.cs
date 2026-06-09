@@ -705,7 +705,7 @@ namespace NexusForever.Game.Quest
             if (directionId == 0u)
                 return false;
 
-            QuestDirectionEntry direction = GameTableManager.Instance.QuestDirection.GetEntry(directionId);
+            QuestDirectionEntry direction = GameTableManager.Instance.QuestDirection?.GetEntry(directionId);
             if (direction == null)
                 return false;
 
@@ -729,7 +729,7 @@ namespace NexusForever.Game.Quest
             if (directionEntryId == 0u)
                 return false;
 
-            QuestDirectionEntryEntry directionEntry = GameTableManager.Instance.QuestDirectionEntry.GetEntry(directionEntryId);
+            QuestDirectionEntryEntry directionEntry = GameTableManager.Instance.QuestDirectionEntry?.GetEntry(directionEntryId);
             if (directionEntry == null || directionEntry.WorldLocation2Id == 0u)
                 return false;
 

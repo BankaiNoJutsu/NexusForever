@@ -105,11 +105,13 @@ namespace NexusForever.Game.Achievement
             {
                 achievement.ProgressCount = AchievementProgressRules.GetRequiredProgress(info.Entry.RequiredProgress);
                 foreach (AchievementChecklistEntry entry in info.ChecklistEntries)
-                    achievement.CreditedChecklistMask |= 1u << (int)entry.Bit;
+                    if (AchievementProgressRules.TryBuildChecklistBit(entry.Bit, out uint bit))
+                        achievement.CreditedChecklistMask |= bit;
             }
             else
                 foreach (AchievementChecklistEntry entry in info.ChecklistEntries)
-                    achievement.CompletedChecklistMask |= 1u << (int)entry.Bit;
+                    if (AchievementProgressRules.TryBuildChecklistBit(entry.Bit, out uint bit))
+                        achievement.CompletedChecklistMask |= bit;
 
             Debug.Assert(achievement.IsComplete());
             CompleteAchievement(null, achievement);
@@ -192,7 +194,9 @@ namespace NexusForever.Game.Achievement
                     if (!CanUpdateChecklist(target, entry, objectId, objectIdAlt))
                         continue;
 
-                    uint bit = 1u << (int)entry.Bit;
+                    if (!AchievementProgressRules.TryBuildChecklistBit(entry.Bit, out uint bit))
+                        continue;
+
                     if ((achievement.CreditedChecklistMask & bit) != 0u)
                         continue;
 
@@ -214,7 +218,9 @@ namespace NexusForever.Game.Achievement
                     if (!CanUpdateChecklist(target, entry, objectId, objectIdAlt))
                         continue;
 
-                    uint bit = 1u << (int)entry.Bit;
+                    if (!AchievementProgressRules.TryBuildChecklistBit(entry.Bit, out uint bit))
+                        continue;
+
                     if ((achievement.CompletedChecklistMask & bit) != 0u)
                         continue;
 

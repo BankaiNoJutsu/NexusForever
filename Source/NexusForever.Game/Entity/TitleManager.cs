@@ -47,7 +47,13 @@ namespace NexusForever.Game.Entity
             activeTitleId = model.Title;
 
             foreach (CharacterTitleModel titleModel in model.CharacterTitle)
-                titles.Add(titleModel.Title, new Title(titleModel));
+            {
+                var title = new Title(titleModel);
+                if (title.Entry == null)
+                    continue;
+
+                titles.Add(titleModel.Title, title);
+            }
 
             EnsureActiveTitleIsOwned();
         }
@@ -91,7 +97,7 @@ namespace NexusForever.Game.Entity
         /// </remarks>
         public void AddTitle(ushort titleId, bool suppress = false)
         {
-            CharacterTitleEntry entry = GameTableManager.Instance.CharacterTitle.GetEntry(titleId);
+            CharacterTitleEntry entry = GameTableManager.Instance.CharacterTitle?.GetEntry(titleId);
             if (entry == null)
                 throw new InvalidPacketValueException();
 
@@ -132,7 +138,7 @@ namespace NexusForever.Game.Entity
         /// </remarks>
         public void RevokeTitle(ushort titleId, bool suppress = false)
         {
-            if (GameTableManager.Instance.CharacterTitle.GetEntry(titleId) == null)
+            if (GameTableManager.Instance.CharacterTitle?.GetEntry(titleId) == null)
                 throw new InvalidPacketValueException();
 
             if (!titles.TryGetValue(titleId, out ITitle title))
@@ -176,7 +182,14 @@ namespace NexusForever.Game.Entity
         /// </remarks>
         public void AddAllTitles()
         {
-            ushort[] titleIds = GameTableManager.Instance.CharacterTitle.Entries
+            CharacterTitleEntry[] entries = GameTableManager.Instance.CharacterTitle?.Entries;
+            if (entries == null)
+            {
+                SendTitles();
+                return;
+            }
+
+            ushort[] titleIds = entries
                 .Select(entry => (ushort)entry.Id)
                 .ToArray();
 

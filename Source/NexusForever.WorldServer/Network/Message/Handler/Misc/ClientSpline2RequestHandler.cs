@@ -21,7 +21,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 
         public void HandleMessage(IWorldSession session, ClientSpline2Request request)
         {
-            bool knownSpline = gameTableManager.Spline2.GetEntry(request.Spline2Id) != null;
+            bool knownSpline = gameTableManager.Spline2?.GetEntry(request.Spline2Id) != null;
 
             log.LogDebug("ClientSpline2Request: player={Player}, spline2Id={Spline2Id}, known={Known}.",
                 session.Player?.Guid, request.Spline2Id, knownSpline);

@@ -305,6 +305,15 @@ public class TargetGroupCriteriaEvaluatorTests
         Assert.False(TargetGroupCriteriaEvaluator.Evaluate(entry, entity, gtm));
     }
 
+    [Fact]
+    public void Evaluate_Type10_WithMissingTargetGroupTablePreservesMissingRowPassThrough()
+    {
+        IWorldEntity entity = MakeWorldEntity(Faction.Dominion);
+        TargetGroupEntry entry = MakeEntry(10u, 1u);
+
+        Assert.True(TargetGroupCriteriaEvaluator.Evaluate(entry, entity, null));
+    }
+
     #endregion
 
     #region Type 11 — recursive NOT (all sub-groups must fail → entity passes)

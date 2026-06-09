@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using NexusForever.Game.Abstract.Account;
+using NexusForever.Game.Abstract.Account.Option;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Option;
 using NexusForever.Game.Tests.TestSupport;
@@ -101,6 +103,20 @@ public class OptionHandlerTests
     }
 
     [Fact]
+    public void CombatLogDisableOthers_WithInvalidBooleanValueThrowsBeforeUpdatingPlayer()
+    {
+        IWorldSession session = CreateSession(out RecordingDispatchProxy<IPlayer> playerProxy);
+        var handler = new ClientCombatLogDisableOthersHandler(NullLogger<ClientCombatLogDisableOthersHandler>.Instance);
+
+        Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(session, new ClientCombatLogDisableOthers
+        {
+            DisableOtherPlayersValue = 2u
+        }));
+
+        Assert.Empty(playerProxy.GetInvocations("set_" + nameof(IPlayer.DisableOtherPlayersCombatLogs)));
+    }
+
+    [Fact]
     public void CombatLogDisables_UpdatesDisableFlags()
     {
         IWorldSession session = CreateSession(out _);
@@ -128,6 +144,42 @@ public class OptionHandlerTests
         Assert.Empty(playerProxy.GetInvocations("set_" + nameof(IPlayer.CombatLogDisableFlags)));
     }
 
+    [Fact]
+    public void RequestInputKeySet_WithDifferentCharacterIdThrowsBeforeReadback()
+    {
+        IWorldSession session = CreateKeybindingSession(
+            123ul,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out RecordingDispatchProxy<ICharacterKeybindingManager> characterKeybindingProxy,
+            out RecordingDispatchProxy<IAccountKeybindingManager> accountKeybindingProxy);
+        var handler = new ClientRequestInputKeySetHandler();
+
+        Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(session, CreateRequestInputKeySet(456ul)));
+
+        Assert.Empty(characterKeybindingProxy.GetInvocations(nameof(ICharacterKeybindingManager.Build)));
+        Assert.Empty(accountKeybindingProxy.GetInvocations(nameof(IAccountKeybindingManager.Build)));
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)));
+    }
+
+    [Fact]
+    public void UpdateInputKeySet_WithDifferentCharacterIdThrowsBeforeMutatingManagers()
+    {
+        IWorldSession session = CreateKeybindingSession(
+            123ul,
+            out _,
+            out RecordingDispatchProxy<ICharacterKeybindingManager> characterKeybindingProxy,
+            out RecordingDispatchProxy<IAccountKeybindingManager> accountKeybindingProxy);
+        var handler = new BiInputKeySetHandler();
+
+        Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(session, new BiInputKeySet
+        {
+            CharacterId = 456ul
+        }));
+
+        Assert.Empty(characterKeybindingProxy.GetInvocations(nameof(ICharacterKeybindingManager.Update)));
+        Assert.Empty(accountKeybindingProxy.GetInvocations(nameof(IAccountKeybindingManager.Update)));
+    }
+
     private static IWorldSession CreateSession(out RecordingDispatchProxy<IPlayer> playerProxy)
     {
         IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
@@ -142,5 +194,33 @@ public class OptionHandlerTests
         typeof(ClientOptions).GetProperty(nameof(ClientOptions.Type))!.SetValue(options, type);
         typeof(ClientOptions).GetProperty(nameof(ClientOptions.NewValue))!.SetValue(options, value);
         return options;
+    }
+
+    private static IWorldSession CreateKeybindingSession(
+        ulong characterId,
+        out RecordingDispatchProxy<IWorldSession> sessionProxy,
+        out RecordingDispatchProxy<ICharacterKeybindingManager> characterKeybindingProxy,
+        out RecordingDispatchProxy<IAccountKeybindingManager> accountKeybindingProxy)
+    {
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
+        ICharacterKeybindingManager characterKeybindings = RecordingDispatchProxy<ICharacterKeybindingManager>.Create(out characterKeybindingProxy);
+        IAccountKeybindingManager accountKeybindings = RecordingDispatchProxy<IAccountKeybindingManager>.Create(out accountKeybindingProxy);
+
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), characterId);
+        playerProxy.SetProperty(nameof(IPlayer.KeybindingManager), characterKeybindings);
+        accountProxy.SetProperty(nameof(IAccount.KeybindingManager), accountKeybindings);
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
+        sessionProxy.SetProperty(nameof(IWorldSession.Account), account);
+
+        return session;
+    }
+
+    private static ClientRequestInputKeySet CreateRequestInputKeySet(ulong characterId)
+    {
+        var request = (ClientRequestInputKeySet)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(ClientRequestInputKeySet));
+        typeof(ClientRequestInputKeySet).GetProperty(nameof(ClientRequestInputKeySet.CharacterId))!.SetValue(request, characterId);
+        return request;
     }
 }

@@ -446,6 +446,45 @@ public class StorefrontPurchaseHandlerTests
         Assert.Equal(901u, addItem.Arguments[0]);
     }
 
+    [Fact]
+    public void AccountPurchase_WithUnsupportedOfferItemType_ReturnsCannotUseOfferAndDoesNotCharge()
+    {
+        IWorldSession session = CreateSession(
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out RecordingDispatchProxy<IAccountCurrencyManager> currencyProxy,
+            out RecordingDispatchProxy<IAccountInventoryManager> inventoryProxy);
+        IGlobalStorefrontManager storefrontManager = CreateStorefrontManager(
+            offerId: 1710u,
+            accountItemId: 902u,
+            priceCurrency: AccountCurrencyType.Protobuck,
+            price: 10f,
+            itemType: 1u);
+        var handler = new ClientStorefrontPurchaseAccountHandler(
+            NullLogger<ClientStorefrontPurchaseAccountHandler>.Instance,
+            CreateStorefrontPurchaseService(storefrontManager),
+            RecordingDispatchProxy<ICharacterManager>.Create(out _),
+            RecordingDispatchProxy<IPlayerManager>.Create(out _),
+            CreateGameTableManager(),
+            new InMemoryAccountPendingItemRepository(),
+            RecordingDispatchProxy<ICharacterListManager>.Create(out _));
+
+        ClientStorefrontPurchaseAccount purchase = ReadAccountPurchase(
+            offerId: 1710u,
+            currencyId: AccountCurrencyType.Protobuck,
+            target: new NetworkIdentity(),
+            accountTarget: new NetworkIdentity(),
+            recipientName: string.Empty);
+
+        handler.HandleMessage(session, purchase);
+
+        ServerStoreError error = Assert.Single(GetMessages<ServerStoreError>(sessionProxy));
+        Assert.Equal(StoreError.CannotUseOffer, error.Error);
+        Assert.Empty(GetMessages<ServerStorePurchaseOfferResultVariant>(sessionProxy));
+        Assert.Empty(GetMessages<ServerStorePurchaseOfferResult>(sessionProxy));
+        Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencySubtractAmount)));
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IAccountInventoryManager.AddItem)));
+    }
+
     private static IWorldSession CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy)
     {
         return CreateSession(out sessionProxy, out _, out _);
@@ -516,7 +555,8 @@ public class StorefrontPurchaseHandlerTests
         AccountCurrencyType priceCurrency,
         float price,
         AccountItemEntry accountItemEntry = null,
-        uint amount = 1u)
+        uint amount = 1u,
+        uint itemType = 0u)
     {
         IGlobalStorefrontManager storefrontManager = RecordingDispatchProxy<IGlobalStorefrontManager>.Create(out RecordingDispatchProxy<IGlobalStorefrontManager> storefrontProxy);
         IOfferItem offerItem = RecordingDispatchProxy<IOfferItem>.Create(out RecordingDispatchProxy<IOfferItem> offerProxy);
@@ -524,6 +564,7 @@ public class StorefrontPurchaseHandlerTests
         IOfferItemData itemData = RecordingDispatchProxy<IOfferItemData>.Create(out RecordingDispatchProxy<IOfferItemData> itemDataProxy);
 
         itemDataProxy.SetProperty(nameof(IOfferItemData.ItemId), (ushort)accountItemId);
+        itemDataProxy.SetProperty(nameof(IOfferItemData.Type), itemType);
         itemDataProxy.SetProperty(nameof(IOfferItemData.Amount), amount);
         if (accountItemEntry != null)
             itemDataProxy.SetProperty(nameof(IOfferItemData.Entry), accountItemEntry);

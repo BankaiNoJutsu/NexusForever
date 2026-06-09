@@ -23,7 +23,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
 
         public void HandleMessage(IWorldSession session, ClientSetStance innateChange)
         {
-            ClassEntry classEntry = gameTableManager.Class.GetEntry((uint)session.Player.Class);
+            ClassEntry classEntry = gameTableManager.Class?.GetEntry((uint)session.Player.Class);
             if (classEntry == null)
                 throw new InvalidPacketValueException();
 

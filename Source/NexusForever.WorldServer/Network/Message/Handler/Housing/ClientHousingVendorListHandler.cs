@@ -26,7 +26,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
                 ListType = 0
             };
 
-            foreach (HousingPlugItemEntry entry in gameTableManager.HousingPlugItem.Entries)
+            foreach (HousingPlugItemEntry entry in gameTableManager.HousingPlugItem?.Entries ?? [])
             {
                 serverHousingVendorList.PlugItems.Add(new ServerHousingVendorList.PlugItem
                 {
@@ -52,7 +52,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
 
             foreach (uint contributionId in contributionIds)
             {
-                HousingContributionInfoEntry contribution = gameTableManager.HousingContributionInfo.GetEntry(contributionId);
+                HousingContributionInfoEntry contribution = gameTableManager.HousingContributionInfo?.GetEntry(contributionId);
                 if (contribution?.ContributionPointRequirement > 0u)
                     return contribution.ContributionPointRequirement;
             }

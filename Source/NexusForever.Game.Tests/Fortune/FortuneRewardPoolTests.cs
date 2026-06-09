@@ -90,6 +90,61 @@ public class FortuneRewardPoolTests
     }
 
     [Fact]
+    public void GetRewardCatalog_WhenAccountItemTableMissing_ReturnsEmptyCatalog()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [],
+            [new Item2Entry { Id = 101u, ItemQualityId = (uint)Quality.Excellent }],
+            includeAccountItemTable: false);
+
+        try
+        {
+            var pool = new FortuneRewardPool();
+
+            FortuneRewardCatalog catalog = pool.GetRewardCatalog();
+
+            Assert.Empty(catalog.Item2IdRewards);
+            Assert.Empty(catalog.RewardItemProbabilities);
+            Assert.Empty(pool.PickCardRewards(new ZeroRollRandom()));
+            Assert.False(pool.IsCardRewardDisplayable(1u));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void GetRewardCatalog_WhenItemTableMissing_UsesNormalRarityFallback()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [new AccountItemEntry { Id = 1u, Item2Id = 101u }],
+            [],
+            includeItemTable: false);
+
+        try
+        {
+            var pool = new FortuneRewardPool();
+
+            FortuneRewardCatalog catalog = pool.GetRewardCatalog();
+            FortuneCardReward[] picks = pool.PickCardRewards(new ZeroRollRandom());
+
+            Assert.Equal([101u], catalog.Item2IdRewards);
+            Assert.Single(catalog.RewardItemProbabilities);
+            Assert.InRange(catalog.RewardItemProbabilities[0], 0.99f, 1.01f);
+            Assert.NotEmpty(picks);
+            Assert.Equal(RewardRarity.Normal, picks[0].Rarity);
+            Assert.True(pool.IsCardRewardDisplayable(1u));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void GetRewardCatalog_ProbabilitiesAreNormalizedFractions()
     {
         var pool = new TestFortuneRewardPool(
@@ -126,15 +181,25 @@ public class FortuneRewardPoolTests
         Assert.DoesNotContain(picks, pick => pick.AccountItemId == 4u);
     }
 
-    private static IServiceProvider BuildGameTableProvider(AccountItemEntry[] accountItems, Item2Entry[] itemEntries)
+    private static IServiceProvider BuildGameTableProvider(
+        AccountItemEntry[] accountItems,
+        Item2Entry[] itemEntries,
+        bool includeAccountItemTable = true,
+        bool includeItemTable = true)
     {
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
             GameTablePath = string.Empty
         }));
 
-        SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItem), CreateGameTable(accountItems));
-        SetAutoProperty(gameTableManager, nameof(GameTableManager.Item), CreateGameTable(itemEntries));
+        SetAutoProperty(
+            gameTableManager,
+            nameof(GameTableManager.AccountItem),
+            includeAccountItemTable ? CreateGameTable(accountItems) : null);
+        SetAutoProperty(
+            gameTableManager,
+            nameof(GameTableManager.Item),
+            includeItemTable ? CreateGameTable(itemEntries) : null);
 
         return new ServiceCollection()
             .AddSingleton(gameTableManager)

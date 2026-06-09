@@ -6,6 +6,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Spell;
+using NexusForever.Game.Static.Abilities;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Tests.TestSupport;
@@ -219,6 +220,227 @@ public class ActionSetSaveRequestTests
     }
 
     [Fact]
+    public void ClientRequestActionSetChangesHandler_WithMissingSpell4TableRejectsUnknownSpell()
+    {
+        IWorldSession session = CreateUseSetSession(out RecordingDispatchProxy<IWorldSession> sessionProxy, out RecordingDispatchProxy<IPlayer> playerProxy);
+        var handler = new ClientRequestActionSetChangesHandler(
+            CreateMatchManager(),
+            CreateGameTableManagerWithoutSpell4(),
+            CreateGlobalSpellManager(),
+            CreateActionSetChangesLogger());
+
+        uint[] actions = new uint[ClientRequestActionSetChanges.ActionCount];
+        actions[(int)UILocation.LAS1] = 999u;
+        handler.HandleMessage(session, ReadActionSetChanges(actions));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.RequestSave)));
+        Assert.DoesNotContain(
+            sessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)),
+            invocation => invocation.Arguments[0] is ServerActionSetClearCache);
+
+        ServerActionSet response = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0])
+            .OfType<ServerActionSet>());
+        Assert.Equal(LimitedActionSetResult.UnknownSpellId, response.Result);
+    }
+
+    [Fact]
+    public void ClientRequestActionSetChangesHandler_WithMissingEldanAugmentationTableRejectsAmp()
+    {
+        IWorldSession session = CreateUseSetSession(out RecordingDispatchProxy<IWorldSession> sessionProxy, out RecordingDispatchProxy<IPlayer> playerProxy);
+        var handler = new ClientRequestActionSetChangesHandler(
+            CreateMatchManager(),
+            CreateGameTableManagerWithoutEldanAugmentation(),
+            CreateGlobalSpellManager(),
+            CreateActionSetChangesLogger());
+
+        handler.HandleMessage(
+            session,
+            ReadActionSetChanges(new uint[ClientRequestActionSetChanges.ActionCount], [42]));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.RequestSave)));
+        Assert.DoesNotContain(
+            sessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)),
+            invocation => invocation.Arguments[0] is ServerActionSetClearCache);
+
+        ServerActionSet response = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0])
+            .OfType<ServerActionSet>());
+        Assert.Equal(LimitedActionSetResult.EldanAugmentationInvalidId, response.Result);
+    }
+
+    [Fact]
+    public void ClientCommitAmpSpecHandler_WithMissingEldanAugmentationTableRejectsAmp()
+    {
+        IWorldSession session = CreateUseSetSession(out RecordingDispatchProxy<IWorldSession> sessionProxy, out RecordingDispatchProxy<IPlayer> playerProxy);
+        var handler = new ClientCommitAmpSpecHandler(
+            CreateGameTableManagerWithoutEldanAugmentation(),
+            CreateCommitAmpSpecLogger());
+
+        handler.HandleMessage(session, ReadCommitAmpSpec([42]));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.RequestSave)));
+        Assert.DoesNotContain(
+            sessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)),
+            invocation => invocation.Arguments[0] is ServerAmpList);
+
+        ServerActionSet response = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0])
+            .OfType<ServerActionSet>());
+        Assert.Equal(LimitedActionSetResult.EldanAugmentationInvalidId, response.Result);
+    }
+
+    [Fact]
+    public void ClientCommitAmpSpecHandler_WithKnownAmpCommitsAmpList()
+    {
+        IWorldSession session = CreateUseSetSessionWithSpell(
+            1234u,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out ActionSet actionSet);
+        var handler = new ClientCommitAmpSpecHandler(
+            CreateGameTableManagerWithAmps(new EldanAugmentationEntry
+            {
+                Id        = 42u,
+                PowerCost = 1u
+            }),
+            CreateCommitAmpSpecLogger());
+
+        handler.HandleMessage(session, ReadCommitAmpSpec([42]));
+
+        Assert.NotNull(actionSet.GetAmp(42));
+        Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.RequestSave)));
+
+        ServerAmpList response = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0])
+            .OfType<ServerAmpList>());
+        Assert.Equal((byte)0, response.SpecIndex);
+        Assert.Equal(new ushort[] { 42 }, response.Amps);
+    }
+
+    [Fact]
+    public void ClientRespecAmpsHandler_WithMissingCategoryTableRejectsSectionRespec()
+    {
+        IWorldSession session = CreateUseSetSession(out RecordingDispatchProxy<IWorldSession> sessionProxy, out RecordingDispatchProxy<IPlayer> playerProxy);
+        var handler = new ClientRespecAmpsHandler(CreateGameTableManagerWithoutEldanAugmentationCategory());
+
+        handler.HandleMessage(session, ReadRespecAmps(0, AmpRespecType.Section, 7u));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.RequestSave)));
+        Assert.DoesNotContain(
+            sessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)),
+            invocation => invocation.Arguments[0] is ServerAmpList);
+
+        ServerAmpRespecResult response = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0])
+            .OfType<ServerAmpRespecResult>());
+        ServerAmpRespecResult.AmpResult result = Assert.Single(response.Results);
+        Assert.Equal((ushort)0, result.SpecIndex);
+        Assert.Equal(LimitedActionSetResult.EldanAugmentationInvalidCategoryId, result.Result);
+    }
+
+    [Fact]
+    public void ClientRespecAmpsHandler_WithMissingEldanAugmentationTableRejectsSingleRespec()
+    {
+        IWorldSession session = CreateUseSetSession(out RecordingDispatchProxy<IWorldSession> sessionProxy, out RecordingDispatchProxy<IPlayer> playerProxy);
+        var handler = new ClientRespecAmpsHandler(CreateGameTableManagerWithoutEldanAugmentation());
+
+        handler.HandleMessage(session, ReadRespecAmps(0, AmpRespecType.Single, 42u));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.RequestSave)));
+        Assert.DoesNotContain(
+            sessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)),
+            invocation => invocation.Arguments[0] is ServerAmpList);
+
+        ServerAmpRespecResult response = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0])
+            .OfType<ServerAmpRespecResult>());
+        ServerAmpRespecResult.AmpResult result = Assert.Single(response.Results);
+        Assert.Equal((ushort)0, result.SpecIndex);
+        Assert.Equal(LimitedActionSetResult.EldanAugmentationInvalidId, result.Result);
+    }
+
+    [Fact]
+    public void ClientRespecAmpsHandler_WithKnownSingleAmpRemovesAmp()
+    {
+        IWorldSession session = CreateUseSetSessionWithSpell(
+            1234u,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out ActionSet actionSet);
+        var ampEntry = new EldanAugmentationEntry
+        {
+            Id        = 42u,
+            PowerCost = 1u
+        };
+        actionSet.AddAmp(ampEntry);
+        playerProxy.Invocations.Clear();
+        sessionProxy.Invocations.Clear();
+
+        var handler = new ClientRespecAmpsHandler(CreateGameTableManagerWithAmps(ampEntry));
+        handler.HandleMessage(session, ReadRespecAmps(0, AmpRespecType.Single, 42u));
+
+        Assert.Null(actionSet.GetAmp(42));
+        Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.RequestSave)));
+
+        List<object> encryptedMessages = sessionProxy
+            .GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0])
+            .ToList();
+        ServerAmpRespecResult respecResult = Assert.Single(encryptedMessages.OfType<ServerAmpRespecResult>());
+        Assert.Equal(LimitedActionSetResult.Ok, Assert.Single(respecResult.Results).Result);
+
+        ServerAmpList ampList = Assert.Single(encryptedMessages.OfType<ServerAmpList>());
+        Assert.Equal((byte)0, ampList.SpecIndex);
+        Assert.Empty(ampList.Amps);
+    }
+
+    [Fact]
+    public void ClientNonSpellActionSetChangesHandler_WithMissingItemTableRejectsBagItem()
+    {
+        IWorldSession session = CreateUseSetSessionWithSpell(
+            1234u,
+            out _,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out _);
+        var handler = new ClientNonSpellActionSetChangesHandler(CreateGameTableManagerWithoutItem());
+
+        Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(
+            session,
+            ReadNonSpellActionSetChanges(UILocation.LAS1, ShortcutType.BagItem, 42u, 0)));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.RequestSave)));
+    }
+
+    [Fact]
+    public void ClientNonSpellActionSetChangesHandler_WithKnownBagItemSavesShortcut()
+    {
+        IWorldSession session = CreateUseSetSessionWithSpell(
+            1234u,
+            out _,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out ActionSet actionSet);
+        var handler = new ClientNonSpellActionSetChangesHandler(CreateGameTableManagerWithItems(new Item2Entry
+        {
+            Id = 42u
+        }));
+
+        handler.HandleMessage(session, ReadNonSpellActionSetChanges(UILocation.LAS1, ShortcutType.BagItem, 42u, 0));
+
+        IActionSetShortcut shortcut = actionSet.GetShortcut(UILocation.LAS1);
+        Assert.NotNull(shortcut);
+        Assert.Equal(ShortcutType.BagItem, shortcut.ShortcutType);
+        Assert.Equal(42u, shortcut.ObjectId);
+        Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.RequestSave)));
+    }
+
+    [Fact]
     public void ClientRequestActionSetChangesHandler_RefreshesAbilityBookAndSelectedAbilityItemsBeforeActionSet()
     {
         const uint spell4BaseId = 37968u;
@@ -415,6 +637,55 @@ public class ActionSetSaveRequestTests
         return gameTableManager;
     }
 
+    private static IGameTableManager CreateGameTableManagerWithoutSpell4()
+    {
+        IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> gameTableManagerProxy);
+        gameTableManagerProxy.SetProperty(nameof(IGameTableManager.EldanAugmentation), CreateGameTable<EldanAugmentationEntry>());
+        return gameTableManager;
+    }
+
+    private static IGameTableManager CreateGameTableManagerWithoutEldanAugmentation()
+    {
+        IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> gameTableManagerProxy);
+        gameTableManagerProxy.SetProperty(nameof(IGameTableManager.Spell4), CreateGameTable<Spell4Entry>());
+        gameTableManagerProxy.SetProperty(nameof(IGameTableManager.EldanAugmentationCategory), CreateGameTable<EldanAugmentationCategoryEntry>());
+        return gameTableManager;
+    }
+
+    private static IGameTableManager CreateGameTableManagerWithoutEldanAugmentationCategory()
+    {
+        IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> gameTableManagerProxy);
+        gameTableManagerProxy.SetProperty(nameof(IGameTableManager.Spell4), CreateGameTable<Spell4Entry>());
+        gameTableManagerProxy.SetProperty(nameof(IGameTableManager.EldanAugmentation), CreateGameTable<EldanAugmentationEntry>());
+        return gameTableManager;
+    }
+
+    private static IGameTableManager CreateGameTableManagerWithoutItem()
+    {
+        IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> gameTableManagerProxy);
+        gameTableManagerProxy.SetProperty(nameof(IGameTableManager.Spell4), CreateGameTable<Spell4Entry>());
+        gameTableManagerProxy.SetProperty(nameof(IGameTableManager.EldanAugmentation), CreateGameTable<EldanAugmentationEntry>());
+        return gameTableManager;
+    }
+
+    private static IGameTableManager CreateGameTableManagerWithItems(params Item2Entry[] itemEntries)
+    {
+        IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> gameTableManagerProxy);
+        gameTableManagerProxy.SetProperty(nameof(IGameTableManager.Spell4), CreateGameTable<Spell4Entry>());
+        gameTableManagerProxy.SetProperty(nameof(IGameTableManager.EldanAugmentation), CreateGameTable<EldanAugmentationEntry>());
+        gameTableManagerProxy.SetProperty(nameof(IGameTableManager.Item), CreateGameTable(itemEntries));
+        return gameTableManager;
+    }
+
+    private static IGameTableManager CreateGameTableManagerWithAmps(params EldanAugmentationEntry[] ampEntries)
+    {
+        IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> gameTableManagerProxy);
+        gameTableManagerProxy.SetProperty(nameof(IGameTableManager.Spell4), CreateGameTable<Spell4Entry>());
+        gameTableManagerProxy.SetProperty(nameof(IGameTableManager.EldanAugmentation), CreateGameTable(ampEntries));
+        gameTableManagerProxy.SetProperty(nameof(IGameTableManager.EldanAugmentationCategory), CreateGameTable<EldanAugmentationCategoryEntry>());
+        return gameTableManager;
+    }
+
     private static IGlobalSpellManager CreateGlobalSpellManager(params uint[] spell4BaseIds)
     {
         return CreateGlobalSpellManagerWithWeaponSlot(spell4BaseIds
@@ -441,6 +712,11 @@ public class ActionSetSaveRequestTests
     private static ILogger<ClientRequestActionSetChangesHandler> CreateActionSetChangesLogger()
     {
         return RecordingDispatchProxy<ILogger<ClientRequestActionSetChangesHandler>>.Create(out _);
+    }
+
+    private static ILogger<ClientCommitAmpSpecHandler> CreateCommitAmpSpecLogger()
+    {
+        return RecordingDispatchProxy<ILogger<ClientCommitAmpSpecHandler>>.Create(out _);
     }
 
     private static ISpellBaseInfo CreateSpellBaseInfo(uint spell4BaseId, uint weaponSlot = 5u)
@@ -529,7 +805,7 @@ public class ActionSetSaveRequestTests
         return packet;
     }
 
-    private static ClientRequestActionSetChanges ReadActionSetChanges(IReadOnlyList<uint> actions)
+    private static ClientRequestActionSetChanges ReadActionSetChanges(IReadOnlyList<uint> actions, IReadOnlyList<ushort> amps = null)
     {
         byte[] packetData;
         using var stream = new MemoryStream();
@@ -541,13 +817,78 @@ public class ActionSetSaveRequestTests
 
             writer.Write((byte)0, 3u);
             writer.Write((byte)0, 5u);
-            writer.Write((byte)0, 7u);
+            writer.Write((byte)(amps?.Count ?? 0), 7u);
+            if (amps != null)
+            {
+                foreach (ushort amp in amps)
+                    writer.Write(amp);
+            }
+
             writer.FlushBits();
             packetData = stream.ToArray();
         }
 
         using var reader = new GamePacketReader(new MemoryStream(packetData));
         var packet = new ClientRequestActionSetChanges();
+        packet.Read(reader);
+        return packet;
+    }
+
+    private static ClientNonSpellActionSetChanges ReadNonSpellActionSetChanges(UILocation actionBarIndex, ShortcutType shortcutType, uint objectId, byte specIndex)
+    {
+        byte[] packetData;
+        using var stream = new MemoryStream();
+        using (var writer = new GamePacketWriter(stream))
+        {
+            writer.Write(actionBarIndex, 6u);
+            writer.Write(shortcutType, 4u);
+            writer.Write(objectId);
+            writer.Write(specIndex, 4u);
+            writer.FlushBits();
+            packetData = stream.ToArray();
+        }
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        var packet = new ClientNonSpellActionSetChanges();
+        packet.Read(reader);
+        return packet;
+    }
+
+    private static ClientCommitAmpSpec ReadCommitAmpSpec(IReadOnlyList<ushort> amps)
+    {
+        byte[] packetData;
+        using var stream = new MemoryStream();
+        using (var writer = new GamePacketWriter(stream))
+        {
+            writer.Write((uint)amps.Count, 7u);
+            foreach (ushort amp in amps)
+                writer.Write(amp);
+
+            writer.FlushBits();
+            packetData = stream.ToArray();
+        }
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        var packet = new ClientCommitAmpSpec();
+        packet.Read(reader);
+        return packet;
+    }
+
+    private static ClientRespecAmps ReadRespecAmps(byte specIndex, AmpRespecType respecType, uint value)
+    {
+        byte[] packetData;
+        using var stream = new MemoryStream();
+        using (var writer = new GamePacketWriter(stream))
+        {
+            writer.Write(specIndex, 3u);
+            writer.Write(respecType, 3u);
+            writer.Write(value);
+            writer.FlushBits();
+            packetData = stream.ToArray();
+        }
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        var packet = new ClientRespecAmps();
         packet.Read(reader);
         return packet;
     }

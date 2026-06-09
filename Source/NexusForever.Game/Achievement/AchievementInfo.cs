@@ -20,7 +20,9 @@ namespace NexusForever.Game.Achievement
         public AchievementInfo(AchievementEntry entry)
         {
             Entry = entry;
-            ChecklistEntries = GameTableManager.Instance.AchievementChecklist.Entries
+            IEnumerable<AchievementChecklistEntry> checklistEntries =
+                GameTableManager.Instance.AchievementChecklist?.Entries ?? Enumerable.Empty<AchievementChecklistEntry>();
+            ChecklistEntries = checklistEntries
                 .Where(t => t.AchievementId == entry.Id)
                 .ToList();
         }

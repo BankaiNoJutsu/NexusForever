@@ -160,6 +160,40 @@ public class ResidenceMapInstanceInteriorWallpaperTests
         }
     }
 
+    [Fact]
+    public void DecorMove_NegativeScale_ThrowsBeforeMutatingDecor()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        try
+        {
+            LegacyServiceProvider.Provider = BuildConfigurationProvider();
+
+            ResidenceMapInstance map = CreateResidenceMapInstance(out _);
+            InitialiseResidence(map, out RecordingDispatchProxy<IResidence> residenceProxy);
+
+            IDecor decor = RecordingDispatchProxy<IDecor>.Create(out RecordingDispatchProxy<IDecor> decorProxy);
+            decorProxy.SetProperty(nameof(IDecor.Type), DecorType.Unknown2);
+            residenceProxy.SetMethodReturn(nameof(IResidence.GetDecor), decor);
+
+            IPlayer player = CreatePlayer(
+                out _,
+                out RecordingDispatchProxy<IGameSession> sessionProxy);
+
+            ClientHousingDecorUpdate update = CreateDecorMoveUpdate(scale: -1f);
+
+            Assert.Throws<InvalidPacketValueException>(() => map.DecorUpdate(player, update));
+
+            Assert.Empty(decorProxy.GetInvocations(nameof(IDecor.Move)));
+            Assert.Empty(decorProxy.GetInvocations("set_PlotIndex"));
+            Assert.Empty(decorProxy.GetInvocations("set_DecorData"));
+            Assert.Empty(GetEncryptedMessages<ServerHousingResult>(sessionProxy));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
     private static IServiceProvider BuildConfigurationProvider()
     {
         var configuration = new SharedConfiguration(new ConfigurationBuilder()
@@ -241,6 +275,22 @@ public class ResidenceMapInstanceInteriorWallpaperTests
         SetProperty(decor, nameof(DecorInfo.Scale), 1f);
         SetProperty(decor, nameof(DecorInfo.DecorInfoId), 100u);
         SetProperty(decor, nameof(DecorInfo.ColourShiftId), colourShiftId);
+        update.DecorUpdates.Add(decor);
+        return update;
+    }
+
+    private static ClientHousingDecorUpdate CreateDecorMoveUpdate(float scale)
+    {
+        var update = new ClientHousingDecorUpdate();
+        SetProperty(update, nameof(ClientHousingDecorUpdate.Operation), DecorUpdateOperation.Move);
+
+        var decor = new DecorInfo();
+        decor.TargetResidence.RealmId = RealmId;
+        decor.TargetResidence.ResidenceId = ResidenceId;
+        SetProperty(decor, nameof(DecorInfo.DecorId), DecorId);
+        SetProperty(decor, nameof(DecorInfo.DecorType), DecorType.Unknown2);
+        SetProperty(decor, nameof(DecorInfo.PlotIndex), (uint)int.MaxValue);
+        SetProperty(decor, nameof(DecorInfo.Scale), scale);
         update.DecorUpdates.Add(decor);
         return update;
     }

@@ -11,6 +11,8 @@ namespace NexusForever.Game.Achievement
 {
     public sealed class GlobalAchievementManager : Singleton<GlobalAchievementManager>, IGlobalAchievementManager
     {
+        private const string AchievementTableName = "Achievement.tbl";
+
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
         private readonly Dictionary<ushort, IAchievementInfo> achievements = new();
@@ -25,7 +27,16 @@ namespace NexusForever.Game.Achievement
         {
             DateTime start = DateTime.UtcNow;
 
-            foreach (AchievementEntry entry in GameTableManager.Instance.Achievement.Entries)
+            if (GameTableManager.Instance.Achievement?.Entries == null)
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    AchievementTableName,
+                    nameof(GlobalAchievementManager) + "." + nameof(Initialise),
+                    MissingGameDataSeverity.PlayerImpacting,
+                    "Cannot cache achievements.");
+
+            IEnumerable<AchievementEntry> achievementEntries =
+                GameTableManager.Instance.Achievement?.Entries ?? Enumerable.Empty<AchievementEntry>();
+            foreach (AchievementEntry entry in achievementEntries)
             {
                 var info = new AchievementInfo(entry);
                 achievements.Add((ushort)entry.Id, info);
@@ -47,6 +58,8 @@ namespace NexusForever.Game.Achievement
         private void LoadCompletedRealmFirstAchievements()
         {
             CharacterDatabase database = DatabaseManager.Instance.GetDatabase<CharacterDatabase>();
+            if (database == null)
+                return;
 
             completedCharacterRealmFirstAchievements.UnionWith(database.GetCompletedCharacterAchievementIds()
                 .Where(IsRealmFirstAchievement));

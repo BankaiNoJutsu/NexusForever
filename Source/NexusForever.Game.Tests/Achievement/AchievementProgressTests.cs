@@ -86,6 +86,25 @@ public class AchievementProgressTests
     }
 
     [Fact]
+    public void IsComplete_DoesNotAliasChecklistBit32ToBit0()
+    {
+        var achievement = new Achievement<CharacterAchievementModel>(
+            1u,
+            new TestAchievementInfo(
+                new AchievementEntry
+                {
+                    Id                = 17,
+                    AchievementTypeId = (uint)AchievementType.QuestCompleteChecklist
+                },
+                new AchievementChecklistEntry { Bit = 32u, ObjectId = 100u }))
+        {
+            CompletedChecklistMask = 1u
+        };
+
+        Assert.False(achievement.IsComplete());
+    }
+
+    [Fact]
     public void QuestCompleteChecklistCount_OnlyCountsDistinctChecklistEntries()
     {
         var info = new TestAchievementInfo(
@@ -178,6 +197,38 @@ public class AchievementProgressTests
             Assert.True(achievement.IsComplete());
             Assert.Equal(1u, achievement.ProgressCount);
             Assert.Single(manager.SentUpdates);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void QuestCompleteChecklistCount_IgnoresChecklistBitsOutsideMask()
+    {
+        var info = new TestAchievementInfo(
+            new AchievementEntry
+            {
+                Id                = 18,
+                AchievementTypeId = (uint)AchievementType.QuestCompleteChecklistCount,
+                RequiredProgress  = 1
+            },
+            new AchievementChecklistEntry { Bit = 32u, ObjectId = 100u });
+
+        var manager = new TestAchievementManager(info);
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildDisableProvider();
+
+        try
+        {
+            manager.Check(info, 100u);
+
+            IAchievement achievement = manager.Get(info.Id);
+            Assert.False(achievement.IsComplete());
+            Assert.Equal(0u, achievement.ProgressCount);
+            Assert.Equal(0u, achievement.CreditedChecklistMask);
+            Assert.Empty(manager.SentUpdates);
         }
         finally
         {

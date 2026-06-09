@@ -1,5 +1,7 @@
 ﻿using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.PlayerPath;
+using NexusForever.Game.Static.Entity;
+using NexusForever.Network;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Pet
 {
@@ -7,8 +9,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pet
     {
         public void HandleMessage(IWorldSession session, ClientPathScientistSetScannerName setScannerName)
         {
-            session.Player.PetCustomisationManager.RenamePet(setScannerName.PetType,
-                setScannerName.PathScientistScanBotProfileId,
+            if (setScannerName.PetType != PetType.ScanBot)
+                throw new InvalidPacketValueException();
+
+            if (session.Player.PetCustomisationManager.GetCustomisation(PetType.ScanBot, setScannerName.PathScientistScanBotProfileId) == null)
+                throw new InvalidPacketValueException();
+
+            session.Player.PetCustomisationManager.RenamePet(PetType.ScanBot, setScannerName.PathScientistScanBotProfileId,
                 setScannerName.Name);
         }
     }

@@ -142,6 +142,50 @@ public class FortuneSessionManagerTests
     }
 
     [Fact]
+    public void Start_WithMismatchedTargetFortuneCoinItemSendsResetWithoutClaimingBundle()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        using ServiceProvider provider = BuildGameTableProvider(
+            new AccountItemEntry
+            {
+                Id                    = 901u,
+                AccountCurrencyEnum   = (uint)AccountCurrencyType.FortuneCoin,
+                AccountCurrencyAmount = 5ul
+            });
+        LegacyServiceProvider.Provider = provider;
+
+        try
+        {
+            var manager = CreateManager(out _);
+            IWorldSession session = CreateSessionWithClaimableFortuneCoinItem(
+                42u,
+                out var sessionProxy,
+                out var currencyProxy,
+                out AccountInventoryManager inventoryManager,
+                out Func<ulong> getFortuneCoinBalance,
+                new NetworkIdentity
+                {
+                    RealmId = TestRealmId,
+                    Id      = 9002ul
+                });
+
+            manager.Start(session);
+
+            Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+            Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencySubtractAmount)));
+            Assert.Equal(0ul, getFortuneCoinBalance());
+            Assert.NotNull(inventoryManager.GetItem(1ul));
+
+            ServerFortuneReset reset = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneReset>().Single();
+            Assert.Equal(ClickEmptyResetCode, reset.ResetCode);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void Start_WithoutFortuneCoinSendsResetClick()
     {
         var manager = CreateManager(out _);
@@ -254,6 +298,26 @@ public class FortuneSessionManagerTests
     }
 
     [Fact]
+    public void FlipCard_WithoutInventoryManagerSendsResetWithoutFlipping()
+    {
+        var manager = CreateManager(out _);
+        IWorldSession session = CreateSessionWithoutInventoryManager(42u, out var sessionProxy);
+
+        manager.Start(session);
+        manager.FlipCard(session, CreateFlipCard(0u));
+
+        ServerFortuneReset reset = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneReset>().Single();
+        Assert.Equal(ClickEmptyResetCode, reset.ResetCode);
+        Assert.Empty(GetEncryptedMessages(sessionProxy).OfType<ServerFortuneCardUpdate>());
+
+        manager.SendStatus(session);
+
+        ServerFortuneCards statusCards = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneCards>().Last();
+        Assert.Equal(FortuneOperation.Update, statusCards.Operation);
+        Assert.All(statusCards.CardFlipped, Assert.False);
+    }
+
+    [Fact]
     public void FlipCard_AlreadyFlippedCardSendsResetClick()
     {
         var manager = CreateManager(out _);
@@ -334,12 +398,33 @@ public class FortuneSessionManagerTests
         return session;
     }
 
+    private static IWorldSession CreateSessionWithoutInventoryManager(
+        uint accountId,
+        out RecordingDispatchProxy<IWorldSession> sessionProxy)
+    {
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out var accountProxy);
+        IAccountCurrencyManager currencyManager = RecordingDispatchProxy<IAccountCurrencyManager>.Create(out var currencyProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+
+        accountProxy.SetProperty(nameof(IAccount.Id), accountId);
+        accountProxy.SetProperty(nameof(IAccount.CurrencyManager), currencyManager);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 9001ul);
+        playerProxy.SetProperty(nameof(IPlayer.Account), account);
+        sessionProxy.SetProperty(nameof(IWorldSession.Account), account);
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
+        currencyProxy.SetMethodReturn(nameof(IAccountCurrencyManager.CanAfford), true);
+
+        return session;
+    }
+
     private static IWorldSession CreateSessionWithClaimableFortuneCoinItem(
         uint accountId,
         out RecordingDispatchProxy<IWorldSession> sessionProxy,
         out RecordingDispatchProxy<IAccountCurrencyManager> currencyProxy,
         out AccountInventoryManager inventoryManager,
-        out Func<ulong> getFortuneCoinBalance)
+        out Func<ulong> getFortuneCoinBalance,
+        NetworkIdentity targetPlayerIdentity = null)
     {
         IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
         IAccount account = RecordingDispatchProxy<IAccount>.Create(out var accountProxy);
@@ -388,10 +473,13 @@ public class FortuneSessionManagerTests
         };
         model.AccountInventory.Add(new AccountInventoryModel
         {
-            Id            = accountId,
-            InventoryId   = 1ul,
-            AccountItemId = 901u,
-            ClaimState    = (byte)AccountItemClaimState.CanClaim
+            Id                      = accountId,
+            InventoryId             = 1ul,
+            AccountItemId           = 901u,
+            ClaimState              = (byte)AccountItemClaimState.CanClaim,
+            HasTargetPlayerIdentity = targetPlayerIdentity?.Id != 0ul,
+            TargetRealmId           = targetPlayerIdentity?.RealmId ?? 0,
+            TargetCharacterId       = targetPlayerIdentity?.Id ?? 0ul
         });
 
         inventoryManager = new AccountInventoryManager(account, model);

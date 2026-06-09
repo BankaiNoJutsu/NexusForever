@@ -3,6 +3,8 @@ using NexusForever.Game.Spell;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Game.Static.Spell;
+using System.Linq;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Pet
 {
@@ -15,9 +17,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pet
                 throw new InvalidPacketValueException();
 
             byte tier = session.Player.SpellManager.GetSpellTier(spell.BaseInfo.Entry.Id);
+            ISpellInfo spellInfo = spell.BaseInfo.GetSpellInfo(tier);
+            if (spellInfo?.Effects?.Any(e => e.EffectType == SpellEffectType.SummonVanityPet) != true)
+                throw new InvalidPacketValueException();
+
             session.Player.CastSpell(new SpellParameters
             {
-                SpellInfo = spell.BaseInfo.GetSpellInfo(tier)
+                SpellInfo = spellInfo
             });
         }
     }

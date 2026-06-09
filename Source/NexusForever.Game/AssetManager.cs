@@ -63,7 +63,9 @@ namespace NexusForever.Game
         private void CacheItemDisplaySourceEntries()
         {
             var entries = new Dictionary<uint, List<ItemDisplaySourceEntryEntry>>();
-            foreach (ItemDisplaySourceEntryEntry entry in GameTableManager.Instance.ItemDisplaySourceEntry.Entries)
+            IEnumerable<ItemDisplaySourceEntryEntry> itemDisplaySourceEntries =
+                GameTableManager.Instance.ItemDisplaySourceEntry?.Entries ?? Enumerable.Empty<ItemDisplaySourceEntryEntry>();
+            foreach (ItemDisplaySourceEntryEntry entry in itemDisplaySourceEntries)
             {
                 if (!entries.ContainsKey(entry.ItemSourceId))
                     entries.Add(entry.ItemSourceId, new List<ItemDisplaySourceEntryEntry>());
@@ -92,7 +94,9 @@ namespace NexusForever.Game
         private void CacheCreatureTargetGroups()
         {
             var entries = ImmutableDictionary.CreateBuilder<uint, List<uint>>();
-            foreach (TargetGroupEntry entry in GameTableManager.Instance.TargetGroup.Entries)
+            IEnumerable<TargetGroupEntry> targetGroupEntries =
+                GameTableManager.Instance.TargetGroup?.Entries ?? Enumerable.Empty<TargetGroupEntry>();
+            foreach (TargetGroupEntry entry in targetGroupEntries)
             {
                 if ((TargetGroupType)entry.Type != TargetGroupType.CreatureIdGroup)
                     continue;
@@ -123,7 +127,7 @@ namespace NexusForever.Game
                 case TargetGroupType.OtherTargetGroup:
                 case TargetGroupType.OtherTargetGroupCreatures:
                     foreach (uint targetGroupId in entry.DataEntries.Where(id => id != 0u))
-                        AddToTargets(GameTableManager.Instance.TargetGroup.GetEntry(targetGroupId), targetIds, unhandledTargetGroups, visitedTargetGroups);
+                        AddToTargets(GameTableManager.Instance.TargetGroup?.GetEntry(targetGroupId), targetIds, unhandledTargetGroups, visitedTargetGroups);
                     break;
                 default:
                     unhandledTargetGroups.Add((TargetGroupType)entry.Type);
@@ -136,7 +140,9 @@ namespace NexusForever.Game
             var entries = ImmutableDictionary.CreateBuilder<uint, ImmutableList<uint>>();
             var unhandledTargetGroups = new HashSet<TargetGroupType>();
 
-            foreach (QuestObjectiveEntry questObjectiveEntry in GameTableManager.Instance.QuestObjective.Entries
+            IEnumerable<QuestObjectiveEntry> questObjectiveEntries =
+                GameTableManager.Instance.QuestObjective?.Entries ?? Enumerable.Empty<QuestObjectiveEntry>();
+            foreach (QuestObjectiveEntry questObjectiveEntry in questObjectiveEntries
                 .Where(o => o.TargetGroupIdRewardPane > 0u
                     || (QuestObjectiveType)o.Type == QuestObjectiveType.ActivateTargetGroup
                     || (QuestObjectiveType)o.Type == QuestObjectiveType.ActivateTargetGroupChecklist
@@ -153,7 +159,7 @@ namespace NexusForever.Game
                     continue;
 
                 var targetIds = new HashSet<uint>();
-                AddToTargets(GameTableManager.Instance.TargetGroup.GetEntry(targetGroupId), targetIds, unhandledTargetGroups, new HashSet<uint>());
+                AddToTargets(GameTableManager.Instance.TargetGroup?.GetEntry(targetGroupId), targetIds, unhandledTargetGroups, new HashSet<uint>());
                 entries[questObjectiveEntry.Id] = targetIds.Order().ToImmutableList();
             }
 
@@ -164,8 +170,9 @@ namespace NexusForever.Game
         {
             // VIP was intended to be used in China from what I can see, you can force the VIP premium system in the client with the China game mode parameter
             // not supported as the system was unfinished
-            IEnumerable<RewardPropertyPremiumModifierEntry> hybridEntries = GameTableManager.Instance
-                .RewardPropertyPremiumModifier.Entries
+            IEnumerable<RewardPropertyPremiumModifierEntry> modifierEntries =
+                GameTableManager.Instance.RewardPropertyPremiumModifier?.Entries ?? Enumerable.Empty<RewardPropertyPremiumModifierEntry>();
+            IEnumerable<RewardPropertyPremiumModifierEntry> hybridEntries = modifierEntries
                 .Where(e => (PremiumSystem)e.PremiumSystemEnum == PremiumSystem.Hybrid)
                 .ToList();
 

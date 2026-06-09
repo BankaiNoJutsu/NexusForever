@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using NexusForever.Database;
@@ -8,6 +10,7 @@ using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Housing;
 using NexusForever.Game.Static.Housing;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Shared;
@@ -17,6 +20,159 @@ namespace NexusForever.Game.Tests.Housing;
 [Collection(LegacyServiceProviderCollection.Name)]
 public class ResidenceTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void VisualSetters_WithMissingStaticTablesRejectWithoutMutation(bool includeEmptyTables)
+    {
+        using var scope = new LegacyServiceProviderScope(BuildGameTableProvider(
+            includeEmptyTables ? CreateGameTable<HousingWallpaperInfoEntry>() : null,
+            includeEmptyTables ? CreateGameTable<HousingDecorInfoEntry>() : null));
+        var residence = new Residence(new ResidenceModel
+        {
+            Id             = 100ul,
+            OwnerId        = 200ul,
+            Name           = "Test Residence",
+            PropertyInfoId = (byte)PropertyInfoId.Residence
+        });
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => residence.Wallpaper = 10);
+        Assert.Throws<ArgumentOutOfRangeException>(() => residence.Roof = 20);
+        Assert.Throws<ArgumentOutOfRangeException>(() => residence.Entryway = 21);
+        Assert.Throws<ArgumentOutOfRangeException>(() => residence.Door = 22);
+        Assert.Throws<ArgumentOutOfRangeException>(() => residence.Music = 11);
+        Assert.Throws<ArgumentOutOfRangeException>(() => residence.Ground = 12);
+        Assert.Throws<ArgumentOutOfRangeException>(() => residence.Sky = 13);
+
+        Assert.Equal((ushort)0, residence.Wallpaper);
+        Assert.Equal((ushort)0, residence.Roof);
+        Assert.Equal((ushort)0, residence.Entryway);
+        Assert.Equal((ushort)0, residence.Door);
+        Assert.Equal((ushort)0, residence.Music);
+        Assert.Equal((ushort)0, residence.Ground);
+        Assert.Equal((ushort)0, residence.Sky);
+        Assert.False(residence.NeedsSave);
+    }
+
+    [Fact]
+    public void VisualSetters_WithKnownStaticDataAcceptAndMarkDirty()
+    {
+        using var scope = new LegacyServiceProviderScope(BuildGameTableProvider(
+            CreateGameTable(
+                new HousingWallpaperInfoEntry
+                {
+                    Id = 10u
+                },
+                new HousingWallpaperInfoEntry
+                {
+                    Id    = 11u,
+                    Flags = 0x100u
+                },
+                new HousingWallpaperInfoEntry
+                {
+                    Id    = 12u,
+                    Flags = 0x200u
+                },
+                new HousingWallpaperInfoEntry
+                {
+                    Id    = 13u,
+                    Flags = 0x40u
+                }),
+            CreateGameTable(
+                new HousingDecorInfoEntry
+                {
+                    Id = 20u
+                },
+                new HousingDecorInfoEntry
+                {
+                    Id = 21u
+                },
+                new HousingDecorInfoEntry
+                {
+                    Id = 22u
+                })));
+        var residence = new Residence(new ResidenceModel
+        {
+            Id             = 100ul,
+            OwnerId        = 200ul,
+            Name           = "Test Residence",
+            PropertyInfoId = (byte)PropertyInfoId.Residence
+        });
+
+        residence.Wallpaper = 10;
+        residence.Roof = 20;
+        residence.Entryway = 21;
+        residence.Door = 22;
+        residence.Music = 11;
+        residence.Ground = 12;
+        residence.Sky = 13;
+
+        Assert.Equal((ushort)10, residence.Wallpaper);
+        Assert.Equal((ushort)20, residence.Roof);
+        Assert.Equal((ushort)21, residence.Entryway);
+        Assert.Equal((ushort)22, residence.Door);
+        Assert.Equal((ushort)11, residence.Music);
+        Assert.Equal((ushort)12, residence.Ground);
+        Assert.Equal((ushort)13, residence.Sky);
+        Assert.True(residence.NeedsSave);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Constructor_WithMissingWallpaperStaticDataForInteriorWallpaperThrowsDatabaseDataException(bool includeEmptyTable)
+    {
+        using var scope = new LegacyServiceProviderScope(BuildGameTableProvider(
+            includeEmptyTable ? CreateGameTable<HousingWallpaperInfoEntry>() : null,
+            null));
+
+        Assert.Throws<DatabaseDataException>(() => new Residence(new ResidenceModel
+        {
+            Id             = 100ul,
+            OwnerId        = 200ul,
+            Name           = "Test Residence",
+            PropertyInfoId = (byte)PropertyInfoId.Residence,
+            Decor =
+            [
+                new ResidenceDecor
+                {
+                    Id          = 100ul,
+                    DecorId     = 200ul,
+                    DecorInfoId = 300u,
+                    DecorType   = (uint)DecorType.InteriorWallpaper
+                }
+            ]
+        }));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Constructor_WithMissingDecorStaticDataThrowsDatabaseDataException(bool includeEmptyTable)
+    {
+        using var scope = new LegacyServiceProviderScope(BuildGameTableProvider(
+            null,
+            includeEmptyTable ? CreateGameTable<HousingDecorInfoEntry>() : null));
+
+        Assert.Throws<DatabaseDataException>(() => new Residence(new ResidenceModel
+        {
+            Id             = 100ul,
+            OwnerId        = 200ul,
+            Name           = "Test Residence",
+            PropertyInfoId = (byte)PropertyInfoId.Residence,
+            Decor =
+            [
+                new ResidenceDecor
+                {
+                    Id          = 100ul,
+                    DecorId     = 200ul,
+                    DecorInfoId = 300u,
+                    DecorType   = (uint)DecorType.Crate
+                }
+            ]
+        }));
+    }
+
     [Fact]
     public void Build_ForPersonalResidence_UsesZeroNeighbourhoodId()
     {
@@ -289,5 +445,64 @@ public class ResidenceTests
         return new ServiceCollection()
             .AddSingleton(realmContext)
             .BuildServiceProvider();
+    }
+
+    private static IServiceProvider BuildGameTableProvider(
+        GameTable<HousingWallpaperInfoEntry> housingWallpaperInfoTable,
+        GameTable<HousingDecorInfoEntry> housingDecorInfoTable)
+    {
+        var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
+        if (housingWallpaperInfoTable != null)
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.HousingWallpaperInfo), housingWallpaperInfoTable);
+        if (housingDecorInfoTable != null)
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.HousingDecorInfo), housingDecorInfoTable);
+
+        return new ServiceCollection()
+            .AddSingleton(gameTableManager)
+            .BuildServiceProvider();
+    }
+
+    private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()
+    {
+        var table = (GameTable<T>)RuntimeHelpers.GetUninitializedObject(typeof(GameTable<T>));
+        SetAutoProperty(table, nameof(GameTable<T>.Entries), entries);
+        SetPrivateField(table, "header", new GameTableHeader
+        {
+            MaxId = entries.Length == 0 ? 0u : entries.Max(GetEntryId) + 1u
+        });
+        SetPrivateField(table, "lookup", BuildLookup(entries));
+        return table;
+    }
+
+    private static int[] BuildLookup<T>(IReadOnlyList<T> entries)
+    {
+        if (entries.Count == 0)
+            return [];
+
+        int[] lookup = Enumerable.Repeat(-1, (int)(entries.Max(GetEntryId) + 1u)).ToArray();
+        for (int i = 0; i < entries.Count; i++)
+            lookup[GetEntryId(entries[i])] = i;
+
+        return lookup;
+    }
+
+    private static uint GetEntryId<T>(T entry)
+    {
+        FieldInfo idField = typeof(T).GetField("Id", BindingFlags.Instance | BindingFlags.Public);
+        return (uint)idField.GetValue(entry);
+    }
+
+    private static void SetAutoProperty(object instance, string propertyName, object value)
+    {
+        FieldInfo backingField = instance.GetType()
+            .GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+        backingField.SetValue(instance, value);
+    }
+
+    private static void SetPrivateField(object instance, string fieldName, object value)
+    {
+        FieldInfo field = instance.GetType()
+            .GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+        field.SetValue(instance, value);
     }
 }

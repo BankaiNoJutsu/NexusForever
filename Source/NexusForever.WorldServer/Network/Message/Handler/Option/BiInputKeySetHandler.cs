@@ -7,7 +7,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Option
     {
         public void HandleMessage(IWorldSession session, BiInputKeySet biInputKeySet)
         {
-            if (biInputKeySet.CharacterId != 0ul)
+            if (InputKeySetScopeValidator.IsCharacterScoped(session, biInputKeySet.CharacterId))
                 session.Player.KeybindingManager.Update(biInputKeySet);
             else
                 session.Account.KeybindingManager.Update(biInputKeySet);

@@ -69,6 +69,48 @@ public class LeaderboardAggregationTests
     }
 
     [Fact]
+    public void Provider_BuildPve_DeduplicatesCharacterScoresUsingBestCompletion()
+    {
+        var store = new InMemoryLeaderboardStore(
+            [
+                CreatePveRecord(1000ul, "Runner", 600u),
+                CreatePveRecord(1000ul, "Runner", 400u),
+                CreatePveRecord(1001ul, "Other", 500u)
+            ],
+            []);
+        var provider = new LeaderboardProvider(store, () => FixedUtcNow);
+
+        ServerLeaderboardPve response = provider.BuildPve(CreatePveRequest(LeaderboardType.PveDungeon, 1234u, 5u));
+
+        Assert.Equal(2, response.Players.Count);
+        Assert.Equal("Runner", response.Players[0].Name);
+        Assert.Equal(400u, response.Players[0].CompletionTime);
+        Assert.Equal(1u, response.Players[0].Rank);
+        Assert.Equal("Other", response.Players[1].Name);
+    }
+
+    [Fact]
+    public void Provider_BuildPvp_DeduplicatesCharacterScoresUsingBestRating()
+    {
+        var store = new InMemoryLeaderboardStore(
+            [],
+            [
+                CreatePvpRecord(2000ul, "Arena Team", 1200u),
+                CreatePvpRecord(2000ul, "Arena Team", 1500u),
+                CreatePvpRecord(2001ul, "Other Team", 1300u)
+            ]);
+        var provider = new LeaderboardProvider(store, () => FixedUtcNow);
+
+        ServerLeaderboardPvp response = provider.BuildPvp(CreatePvpRequest(LeaderboardType.Arena3v3));
+
+        Assert.Equal(2, response.Players.Count);
+        Assert.Equal("Arena Team", response.Players[0].Name);
+        Assert.Equal(1500u, response.Players[0].Rating);
+        Assert.Equal(1u, response.Players[0].Rank);
+        Assert.Equal("Other Team", response.Players[1].Name);
+    }
+
+    [Fact]
     public void CategoryRules_BattlegroundFiltersByClass()
     {
         var store = new InMemoryLeaderboardStore();
@@ -92,6 +134,34 @@ public class LeaderboardAggregationTests
         playerProxy.SetProperty(nameof(IPlayer.Class), playerClass);
         playerProxy.SetProperty(nameof(IPlayer.GuildManager), guildManager);
         return player;
+    }
+
+    private static LeaderboardPveEntryRecord CreatePveRecord(ulong characterId, string name, uint completionTime)
+    {
+        return new LeaderboardPveEntryRecord
+        {
+            CharacterId       = characterId,
+            Name              = name,
+            Class             = Class.Esper,
+            Type              = LeaderboardType.PveDungeon,
+            MatchingGameMapId = 1234u,
+            PrimeLevel        = 5u,
+            CompletionTime    = completionTime,
+            TeamMembers       = []
+        };
+    }
+
+    private static LeaderboardPvpEntryRecord CreatePvpRecord(ulong characterId, string name, uint rating)
+    {
+        return new LeaderboardPvpEntryRecord
+        {
+            CharacterId = characterId,
+            Name        = name,
+            Class       = Class.PvpTeam,
+            Type        = LeaderboardType.Arena3v3,
+            Rating      = rating,
+            TeamMembers = []
+        };
     }
 
     private static ClientLeaderboardPveRequest CreatePveRequest(LeaderboardType type, uint matchingGameMapId, uint primeLevel)

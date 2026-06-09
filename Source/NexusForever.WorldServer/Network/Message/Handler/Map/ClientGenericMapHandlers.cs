@@ -20,7 +20,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Map
 
         public void HandleMessage(IWorldSession session, ClientGenericMapNodeRequest genericMapNodeRequest)
         {
-            if (gameTableManager.GenericMapNode.GetEntry(genericMapNodeRequest.GenericMapNodeId) == null)
+            if (gameTableManager.GenericMapNode?.GetEntry(genericMapNodeRequest.GenericMapNodeId) == null)
             {
                 log.LogDebug("Ignoring generic map node request from player {PlayerGuid}: unknown node {GenericMapNodeId}.",
                     session.Player?.Guid, genericMapNodeRequest.GenericMapNodeId);
@@ -56,7 +56,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Map
 
         public void HandleMessage(IWorldSession session, ClientGenericMapNodeChosen genericMapNodeChosen)
         {
-            var node = gameTableManager.GenericMapNode.GetEntry(genericMapNodeChosen.GenericMapNodeId);
+            var node = gameTableManager.GenericMapNode?.GetEntry(genericMapNodeChosen.GenericMapNodeId);
             if (node == null)
             {
                 log.LogDebug("Ignoring generic map node choice from player {PlayerGuid}: unknown node {GenericMapNodeId}.",
@@ -79,7 +79,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Map
                 return;
             }
 
-            var location = gameTableManager.WorldLocation2.GetEntry(node.WorldLocation2Id);
+            var location = gameTableManager.WorldLocation2?.GetEntry(node.WorldLocation2Id);
             if (location == null)
             {
                 log.LogWarning("Unable to process generic map node choice from player {PlayerGuid}: node {GenericMapNodeId} references missing world location {WorldLocation2Id}.",

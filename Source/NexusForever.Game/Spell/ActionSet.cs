@@ -246,10 +246,19 @@ namespace NexusForever.Game.Spell
         /// </summary>
         public void AddAmp(ushort id)
         {
-            EldanAugmentationEntry entry = GameTableManager.Instance.EldanAugmentation.GetEntry(id);
+            EldanAugmentationEntry entry = GameTableManager.Instance.EldanAugmentation?.GetEntry(id);
             if (entry == null)
                 throw new ArgumentException($"Invalid eldan augmentation id {id}!");
 
+            AddAmp(entry);
+        }
+
+        /// <summary>
+        /// Add AMP to <see cref="IActionSet"/> with supplied table entry.
+        /// </summary>
+        public void AddAmp(EldanAugmentationEntry entry)
+        {
+            ushort id = checked((ushort)entry.Id);
             if (amps.TryGetValue(id, out IActionSetAmp amp) && !amp.PendingDelete)
                 throw new InvalidOperationException($"Failed to add AMP {id}, location is already occupied!");
 
@@ -285,7 +294,7 @@ namespace NexusForever.Game.Spell
         /// </summary>
         public void AddAmp(CharacterActionSetAmpModel model)
         {
-            EldanAugmentationEntry entry = GameTableManager.Instance.EldanAugmentation.GetEntry(model.AmpId);
+            EldanAugmentationEntry entry = GameTableManager.Instance.EldanAugmentation?.GetEntry(model.AmpId);
             if (entry == null)
                 throw new ArgumentException();
 

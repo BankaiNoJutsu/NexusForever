@@ -24,7 +24,7 @@ namespace NexusForever.Game.Storefront
             Type    = model.Type;
             Amount  = model.Amount;
 
-            Entry = GameTableManager.Instance.AccountItem.GetEntry(ItemId);
+            Entry = GameTableManager.Instance.AccountItem?.GetEntry(ItemId);
             if (Entry == null)
                 throw new ArgumentException("ItemId");
         }

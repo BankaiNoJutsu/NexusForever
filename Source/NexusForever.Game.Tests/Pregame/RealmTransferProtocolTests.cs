@@ -4,7 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Database;
 using NexusForever.Database.Auth.Model;
+using NexusForever.Database.Character.Model;
 using NexusForever.Game;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Server;
 using NexusForever.Game.Static.Pregame;
 using NexusForever.Game.Tests.TestSupport;
@@ -38,6 +40,25 @@ public class RealmTransferProtocolTests
             .OfType<ServerTransferDestinationRealmList>()
             .Single();
         Assert.Empty(response.Realms);
+    }
+
+    [Fact]
+    public void ClientRealmTransferHandler_UnknownRealmSendsInvalidRealmTransferResult()
+    {
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        IServerManager serverManager = CreateServerManager();
+        var handler = new ClientRealmTransferHandler(
+            serverManager,
+            NullLogger<ClientRealmTransferHandler>.Instance);
+
+        handler.HandleMessage(session, CreateRealmTransfer(0x1122334455667788ul, 9, transferFlag: false));
+
+        ServerRealmTransferResult result = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0])
+            .OfType<ServerRealmTransferResult>()
+            .Single();
+        Assert.Equal(CharacterModifyResult.RealmTransferFailed_InvalidRealm, result.Result);
     }
 
     [Fact]
@@ -79,6 +100,56 @@ public class RealmTransferProtocolTests
     }
 
     [Fact]
+    public void ClientRealmTransferHandler_KnownCharacterListMismatchSendsInvalidCharacter()
+    {
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        sessionProxy.SetProperty(nameof(IWorldSession.Characters), new List<CharacterModel>
+        {
+            new()
+            {
+                Id = 0x0102030405060708ul
+            }
+        });
+
+        IServerManager serverManager = CreateServerManager(CreateServer(3, isOnline: true));
+        var handler = new ClientRealmTransferHandler(
+            serverManager,
+            NullLogger<ClientRealmTransferHandler>.Instance);
+
+        handler.HandleMessage(session, CreateRealmTransfer(0x1122334455667788ul, 3, transferFlag: true));
+
+        ServerRealmTransferResult result = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0])
+            .OfType<ServerRealmTransferResult>()
+            .Single();
+        Assert.Equal(CharacterModifyResult.RealmTransferFailed_InvalidCharacter, result.Result);
+    }
+
+    [Fact]
+    public void ClientRealmTransferHandler_PlayerCharacterMismatchSendsInvalidCharacter()
+    {
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 0x0102030405060708ul);
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
+
+        IServerManager serverManager = CreateServerManager(CreateServer(3, isOnline: true));
+        var handler = new ClientRealmTransferHandler(
+            serverManager,
+            NullLogger<ClientRealmTransferHandler>.Instance);
+
+        handler.HandleMessage(session, CreateRealmTransfer(0x1122334455667788ul, 3, transferFlag: true));
+
+        ServerRealmTransferResult result = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0])
+            .OfType<ServerRealmTransferResult>()
+            .Single();
+        Assert.Equal(CharacterModifyResult.RealmTransferFailed_InvalidCharacter, result.Result);
+    }
+
+    [Fact]
     public void ClientInitiatePTRCharacterCopy_ReadsSelectedCharacterId()
     {
         byte[] packetData = WritePacket(writer => writer.Write(0x0102030405060708ul));
@@ -91,13 +162,16 @@ public class RealmTransferProtocolTests
     }
 
     [Fact]
-    public void ClientInitiatePTRCharacterCopyHandler_LogsCharacterId()
+    public void ClientInitiatePTRCharacterCopyHandler_StaysDiagnosticOnlyUntilHandoffMapped()
     {
-        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out _);
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
         var handler = new ClientInitiatePTRCharacterCopyHandler(
             NullLogger<ClientInitiatePTRCharacterCopyHandler>.Instance);
 
         handler.HandleMessage(session, CreateInitiatePtrCharacterCopy(0xAABBCCDDEEFF0011ul));
+
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessage)));
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
     }
 
     [Fact]
@@ -120,6 +194,7 @@ public class RealmTransferProtocolTests
 
         handler.HandleMessage(session, new ClientPtrCopy());
 
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessage)));
         Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
     }
 

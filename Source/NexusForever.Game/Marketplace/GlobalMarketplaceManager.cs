@@ -330,9 +330,13 @@ namespace NexusForever.Game.Marketplace
                 auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
             }
 
+            bool refundPreviousBidder = previousBidderId != 0ul && previousBidderId != player.CharacterId;
+            IPlayer previousBidder = refundPreviousBidder ? PlayerManager.Instance.GetPlayer(previousBidderId) : null;
+            ulong previousBidderRefund = refundPreviousBidder ? previousBid : 0ul;
+
             if (!isBuyout)
             {
-                if (!PersistAuctionUpdate(record))
+                if (!PersistAuctionUpdateWithOfflineCredit(record, previousBidderId, previousBidderRefund, previousBidder))
                 {
                     lock (syncRoot)
                     {
@@ -345,9 +349,9 @@ namespace NexusForever.Game.Marketplace
                     return GenericError.DbFailure;
                 }
 
-                if (previousBidderId != 0ul && previousBidderId != player.CharacterId)
+                if (refundPreviousBidder)
                 {
-                    CreditCharacter(previousBidderId, CurrencyType.Credits, previousBid);
+                    CreditOnlinePlayer(previousBidder, CurrencyType.Credits, previousBidderRefund);
                     NotifyOutbid(previousBidderId, CloneAuction(record.Auction, record.ExpiresAtUtc));
                 }
 
@@ -365,7 +369,8 @@ namespace NexusForever.Game.Marketplace
                     record.Item.CharacterId = player.CharacterId;
                 }
 
-                if (!PersistAuctionDelete(record))
+                IPlayer onlineSeller = PlayerManager.Instance.GetPlayer(record.Auction.OwnerCharacterId);
+                if (!PersistAuctionDeleteWithCredits(record, acceptedAmount, onlineSeller, previousBidderId, previousBidderRefund, previousBidder))
                 {
                     lock (syncRoot)
                     {
@@ -378,15 +383,14 @@ namespace NexusForever.Game.Marketplace
                     return GenericError.DbFailure;
                 }
 
-                if (previousBidderId != 0ul && previousBidderId != player.CharacterId)
-                    CreditCharacter(previousBidderId, CurrencyType.Credits, previousBid);
+                CreditOnlinePlayer(previousBidder, CurrencyType.Credits, previousBidderRefund);
 
                 player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, amountToCharge);
                 player.Inventory.AddItem(record.Item, InventoryLocation.Inventory, ItemUpdateReason.Auction);
 
                 lock (syncRoot)
                 {
-                    PaySeller(record, acceptedAmount);
+                    PayOnlineSeller(record, acceptedAmount, onlineSeller);
                     auctions.Remove(record);
                 }
 
@@ -397,7 +401,17 @@ namespace NexusForever.Game.Marketplace
             bool persistedAuctionDelete;
             lock (syncRoot)
             {
-                if (!CompleteAuctionSale(record, player.CharacterId, acceptedAmount, wonAuction, player, true, out persistedAuctionDelete))
+                if (!CompleteAuctionSale(
+                    record,
+                    player.CharacterId,
+                    acceptedAmount,
+                    wonAuction,
+                    player,
+                    true,
+                    previousBidderId,
+                    previousBidderRefund,
+                    previousBidder,
+                    out persistedAuctionDelete))
                 {
                     record.Auction.CurrentBid           = originalBid;
                     record.Auction.TopBidderCharacterId = originalTopBidderId;
@@ -405,15 +419,12 @@ namespace NexusForever.Game.Marketplace
                     return GenericError.ItemInventoryFull;
                 }
 
-                if (previousBidderId != 0ul && previousBidderId != player.CharacterId)
-                    CreditCharacter(previousBidderId, CurrencyType.Credits, previousBid);
-
                 player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, amountToCharge);
                 auctions.Remove(record);
             }
 
             if (!persistedAuctionDelete)
-                PersistAuctionDelete(record);
+                PersistAuctionDeleteWithCredits(record, acceptedAmount, PlayerManager.Instance.GetPlayer(record.Auction.OwnerCharacterId), previousBidderId, previousBidderRefund, previousBidder);
 
             return GenericError.Ok;
         }
@@ -433,6 +444,9 @@ namespace NexusForever.Game.Marketplace
             bool canReturnToInventory;
             ulong? previousItemCharacterId;
             bool persistedAuctionDelete;
+            ulong topBidderId;
+            ulong topBidderRefund;
+            IPlayer topBidder;
 
             lock (syncRoot)
             {
@@ -451,11 +465,16 @@ namespace NexusForever.Game.Marketplace
                 previousItemCharacterId = record.Item.CharacterId;
                 record.Item.CharacterId = player.CharacterId;
                 persistedAuctionDelete  = false;
+                topBidderId             = record.Auction.TopBidderCharacterId;
+                topBidderRefund         = record.Auction.CurrentBid;
+                topBidder               = topBidderId != 0ul && topBidderRefund != 0ul
+                    ? PlayerManager.Instance.GetPlayer(topBidderId)
+                    : null;
             }
 
             if (canReturnToInventory)
             {
-                if (!PersistAuctionDelete(record))
+                if (!PersistAuctionDeleteWithBidderRefund(record, topBidderId, topBidderRefund, topBidder))
                 {
                     record.Item.CharacterId = previousItemCharacterId;
                     return GenericError.DbFailure;
@@ -464,7 +483,15 @@ namespace NexusForever.Game.Marketplace
             else if (!MarketplaceMailDelivery.TrySendItemAuctionReturnMail(
                 player.CharacterId,
                 record.Item,
-                context => RemoveAuctionModel(context, record)))
+                context => RemoveAuctionModelAndCreditOfflineParticipants(
+                    context,
+                    record,
+                    grossAmount: 0ul,
+                    saveItem: false,
+                    onlineSeller: null,
+                    refundCharacterId: topBidderId,
+                    refundAmount: topBidderRefund,
+                    onlineRefundOwner: topBidder)))
             {
                 record.Item.CharacterId = previousItemCharacterId;
                 return GenericError.ItemInventoryFull;
@@ -477,7 +504,7 @@ namespace NexusForever.Game.Marketplace
             lock (syncRoot)
             {
                 auctions.Remove(record);
-                RefundTopBidder(record);
+                CreditOnlinePlayer(topBidder, CurrencyType.Credits, topBidderRefund);
             }
 
             if (canReturnToInventory)
@@ -645,21 +672,21 @@ namespace NexusForever.Game.Marketplace
 
             if (request.Item2FamilyId != 0u)
             {
-                if (gameTableManager.Item2Family.GetEntry(request.Item2FamilyId) == null)
+                if (gameTableManager.Item2Family?.GetEntry(request.Item2FamilyId) == null)
                     throw new InvalidPacketValueException();
                 selectorCount++;
             }
 
             if (request.Item2CategoryId != 0u)
             {
-                if (gameTableManager.Item2Category.GetEntry(request.Item2CategoryId) == null)
+                if (gameTableManager.Item2Category?.GetEntry(request.Item2CategoryId) == null)
                     throw new InvalidPacketValueException();
                 selectorCount++;
             }
 
             if (request.Item2TypeId != 0u)
             {
-                if (gameTableManager.Item2Type.GetEntry(request.Item2TypeId) == null)
+                if (gameTableManager.Item2Type?.GetEntry(request.Item2TypeId) == null)
                     throw new InvalidPacketValueException();
                 selectorCount++;
             }
@@ -993,18 +1020,29 @@ namespace NexusForever.Game.Marketplace
                 {
                     ulong? previousItemCharacterId = record.Item.CharacterId;
                     record.Item.CharacterId = winningBidderId;
-                    if (!PersistAuctionDelete(record))
+                    IPlayer onlineSeller = PlayerManager.Instance.GetPlayer(record.Auction.OwnerCharacterId);
+                    if (!PersistAuctionDeleteWithSellerCredit(record, record.Auction.CurrentBid, onlineSeller))
                     {
                         record.Item.CharacterId = previousItemCharacterId;
                         return;
                     }
 
                     winningBidder.Inventory.AddItem(record.Item, InventoryLocation.Inventory, ItemUpdateReason.Auction);
-                    PaySeller(record, record.Auction.CurrentBid);
+                    PayOnlineSeller(record, record.Auction.CurrentBid, onlineSeller);
                     NotifyAuctionWon(winningBidder, auctionSnapshot);
                     persistedDelete = true;
                 }
-                else if (!CompleteAuctionSale(record, winningBidderId, record.Auction.CurrentBid, auctionSnapshot, winningBidder, true, out bool persistedMailDelete))
+                else if (!CompleteAuctionSale(
+                    record,
+                    winningBidderId,
+                    record.Auction.CurrentBid,
+                    auctionSnapshot,
+                    winningBidder,
+                    true,
+                    0ul,
+                    0ul,
+                    null,
+                    out bool persistedMailDelete))
                 {
                     return;
                 }
@@ -1084,10 +1122,10 @@ namespace NexusForever.Game.Marketplace
 
             if (record.Order.IsBuyOrder)
             {
-                if (!PersistCommodityOrderDelete(record))
+                if (!PersistCommodityOrderDeleteWithOfflineCredit(record, CurrencyType.Credits, record.Order.Price, owner))
                     return;
 
-                CreditCharacter(record.OwnerCharacterId, CurrencyType.Credits, record.Order.Price);
+                owner?.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, record.Order.Price);
             }
             else
             {
@@ -1121,6 +1159,9 @@ namespace NexusForever.Game.Marketplace
             AuctionInfo auctionSnapshot,
             IPlayer buyer,
             bool persistAuctionDeleteWithMail,
+            ulong refundCharacterId,
+            ulong refundAmount,
+            IPlayer onlineRefundOwner,
             out bool persistedAuctionDelete)
         {
             persistedAuctionDelete = false;
@@ -1129,6 +1170,7 @@ namespace NexusForever.Game.Marketplace
 
             ulong? previousCharacterId = record.Item.CharacterId;
             record.Item.CharacterId = buyerCharacterId;
+            IPlayer onlineSeller = PlayerManager.Instance.GetPlayer(record.Auction.OwnerCharacterId);
             bool deliverToInventory = buyer != null
                 && buyer.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u;
             bool delivered = deliverToInventory
@@ -1137,7 +1179,15 @@ namespace NexusForever.Game.Marketplace
                     ? MarketplaceMailDelivery.TrySendItemAuctionWonMail(
                         buyerCharacterId,
                         record.Item,
-                        context => RemoveAuctionModel(context, record))
+                        context => RemoveAuctionModelAndCreditOfflineParticipants(
+                            context,
+                            record,
+                            saleAmount,
+                            saveItem: false,
+                            onlineSeller,
+                            refundCharacterId,
+                            refundAmount,
+                            onlineRefundOwner))
                     : TryDeliverAuctionItemToCharacter(buyerCharacterId, record.Item, buyer, MarketplaceMailDelivery.TrySendItemAuctionWonMail);
             if (!delivered)
             {
@@ -1146,7 +1196,8 @@ namespace NexusForever.Game.Marketplace
             }
             persistedAuctionDelete = !deliverToInventory && persistAuctionDeleteWithMail;
 
-            PaySeller(record, saleAmount);
+            PayOnlineSeller(record, saleAmount, onlineSeller);
+            CreditOnlinePlayer(onlineRefundOwner, CurrencyType.Credits, refundAmount);
             NotifyAuctionWon(buyer, auctionSnapshot);
             return true;
         }
@@ -1243,18 +1294,13 @@ namespace NexusForever.Game.Marketplace
             });
         }
 
-        private void RefundTopBidder(MarketplaceAuction record)
+        private void PayOnlineSeller(MarketplaceAuction record, ulong grossAmount, IPlayer seller)
         {
-            if (record.Auction.TopBidderCharacterId == 0ul || record.Auction.CurrentBid == 0ul)
+            if (seller == null)
                 return;
 
-            CreditCharacter(record.Auction.TopBidderCharacterId, CurrencyType.Credits, record.Auction.CurrentBid);
-        }
-
-        private void PaySeller(MarketplaceAuction record, ulong grossAmount)
-        {
             ulong proceeds = MarketplaceTransactionFee.CalculateItemAuctionSellerProceeds(grossAmount, GetGameTableManager());
-            CreditCharacter(record.Auction.OwnerCharacterId, CurrencyType.Credits, proceeds);
+            seller.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, proceeds);
         }
 
         private static void NotifyOutbid(ulong outbidCharacterId, AuctionInfo auction)
@@ -1266,27 +1312,12 @@ namespace NexusForever.Game.Marketplace
             });
         }
 
-        private void CreditCharacter(ulong characterId, CurrencyType currencyType, ulong amount)
+        private static void CreditOnlinePlayer(IPlayer player, CurrencyType currencyType, ulong amount)
         {
-            if (amount == 0ul)
+            if (amount == 0ul || player == null)
                 return;
 
-            IPlayer player = PlayerManager.Instance.GetPlayer(characterId);
-            if (player != null)
-            {
-                player.CurrencyManager.CurrencyAddAmount(currencyType, amount);
-                return;
-            }
-
-            if (currencyType == CurrencyType.Credits
-                && MarketplaceMailDelivery.TrySendMarketplaceCreditMail(
-                    characterId,
-                    amount,
-                    "Marketplace",
-                    "Credits from the marketplace are enclosed."))
-                return;
-
-            TryGetCharacterDatabase()?.CreditCharacterCurrency(characterId, (byte)currencyType, amount);
+            player.CurrencyManager.CurrencyAddAmount(currencyType, amount);
         }
 
         private void AddCommodityOrder(MarketplaceCommodityOrder record)
@@ -1415,18 +1446,26 @@ namespace NexusForever.Game.Marketplace
                 ulong buyEscrowAfter      = buyOrder.Order.PricePerUnit * buyRemainingQuantity;
                 ulong paidAmount          = proceeds;
                 ulong sellEscrowAfter     = sellOrder.Order.PricePerUnit * sellRemainingQuantity;
+                ulong sellerProceeds      = MarketplaceTransactionFee.CalculateCommoditySellerProceeds(proceeds, GetGameTableManager());
+                ulong retainedAmount      = paidAmount + buyEscrowAfter;
+                ulong buyerRefund         = buyEscrowBefore > retainedAmount ? buyEscrowBefore - retainedAmount : 0ul;
 
                 bool persistedOrderChangesWithDelivery = false;
                 IPlayer buyer = PlayerManager.Instance.GetPlayer(buyOrder.OwnerCharacterId);
+                IPlayer seller = PlayerManager.Instance.GetPlayer(sellOrder.OwnerCharacterId);
                 if (CanDeliverCommodityItemsToInventory(buyer, sellOrder.Order.Item2Id, fillQuantity, itemManager))
                 {
-                    if (!TryPersistCommodityFillOrderChanges(
+                    if (!TryPersistCommodityFillOrderChangesWithOfflineCredits(
                         buyOrder,
                         buyRemainingQuantity,
                         buyEscrowAfter,
                         sellOrder,
                         sellRemainingQuantity,
-                        sellEscrowAfter))
+                        sellEscrowAfter,
+                        sellerProceeds,
+                        seller,
+                        buyerRefund,
+                        buyer))
                     {
                         continue;
                     }
@@ -1439,29 +1478,31 @@ namespace NexusForever.Game.Marketplace
                     sellOrder.Order.Item2Id,
                     fillQuantity,
                     itemManager,
-                    context => PersistCommodityFillOrderChanges(
+                    context => PersistCommodityFillOrderChangesWithOfflineCredits(
                         context,
                         buyOrder,
                         buyRemainingQuantity,
                         buyEscrowAfter,
                         sellOrder,
                         sellRemainingQuantity,
-                        sellEscrowAfter),
+                        sellEscrowAfter,
+                        sellerProceeds,
+                        seller,
+                        buyerRefund,
+                        buyer),
                     out persistedOrderChangesWithDelivery))
                 {
                     continue;
                 }
 
-                CreditCharacter(sellOrder.OwnerCharacterId, CurrencyType.Credits, MarketplaceTransactionFee.CalculateCommoditySellerProceeds(proceeds, GetGameTableManager()));
+                CreditOnlinePlayer(seller, CurrencyType.Credits, sellerProceeds);
 
                 buyOrder.Order.Quantity  = buyRemainingQuantity;
                 sellOrder.Order.Quantity = sellRemainingQuantity;
                 buyOrder.Order.Price     = buyEscrowAfter;
                 sellOrder.Order.Price    = sellEscrowAfter;
 
-                ulong retainedAmount = paidAmount + buyEscrowAfter;
-                if (buyEscrowBefore > retainedAmount)
-                    CreditCharacter(buyOrder.OwnerCharacterId, CurrencyType.Credits, buyEscrowBefore - retainedAmount);
+                CreditOnlinePlayer(buyer, CurrencyType.Credits, buyerRefund);
 
                 NotifyCommodityPartialFill(buyOrder, AuctionEventType.Fill);
                 NotifyCommodityPartialFill(sellOrder, AuctionEventType.Fill);

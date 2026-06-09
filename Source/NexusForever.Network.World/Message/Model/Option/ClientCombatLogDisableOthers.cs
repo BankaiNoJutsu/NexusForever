@@ -5,11 +5,16 @@ namespace NexusForever.Network.World.Message.Model.Option
     [Message(GameMessageOpcode.ClientCombatLogDisableOthers)]
     public class ClientCombatLogDisableOthers : IReadable
     {
-        public bool DisableOtherPlayers { get; set; }
+        public uint DisableOtherPlayersValue { get; set; }
+        public bool DisableOtherPlayers
+        {
+            get => DisableOtherPlayersValue != 0u;
+            set => DisableOtherPlayersValue = value ? 1u : 0u;
+        }
 
         public void Read(GamePacketReader reader)
         {
-            DisableOtherPlayers = reader.ReadUInt() > 0;
+            DisableOtherPlayersValue = reader.ReadUInt();
         }
     }
 }

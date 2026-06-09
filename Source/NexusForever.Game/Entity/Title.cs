@@ -55,10 +55,10 @@ namespace NexusForever.Game.Entity
         public Title(CharacterTitleModel model)
         {
             CharacterId = model.Id;
-            Entry       = GameTableManager.Instance.CharacterTitle.GetEntry(model.Title);
+            Entry       = GameTableManager.Instance.CharacterTitle?.GetEntry(model.Title);
             revoked     = Convert.ToBoolean(model.Revoked);
 
-            if (Entry.LifeTimeSeconds != 0u)
+            if (Entry != null && Entry.LifeTimeSeconds != 0u)
                 timeRemaining = model.TimeRemaining;
 
             saveMask = TitleSaveMask.None;

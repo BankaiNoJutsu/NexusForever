@@ -54,7 +54,10 @@ namespace NexusForever.Game.Entity
             for (int i = 0; i < PetCustomisationManager.MaxCustomisationFlairs; i++)
             {
                 uint flairId = (uint)(model.FlairIdMask >> i * 16) & 0xFFFF;
-                flairs[i] = GameTableManager.Instance.PetFlair.GetEntry(flairId);
+                if (flairId == 0)
+                    continue;
+
+                flairs[i] = GameTableManager.Instance.PetFlair?.GetEntry(flairId);
             }
         }
 

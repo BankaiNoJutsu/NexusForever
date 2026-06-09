@@ -36,6 +36,9 @@ namespace NexusForever.Game.Loot
         private const int OMNIBIT_KILL_MAX_BASE_AMOUNT = 25;
         private const uint CLIENT_LOOT_UNIT_ID_OVERLAY = 0x40000000u;
         private const string ITEM_SALVAGE_LOOT_GROUP_COMMENT_PREFIX = "DataMapping item_salvage";
+        private const string AccountCurrencyTypeTableName = "AccountCurrencyType.tbl";
+        private const string AccountItemTableName = "AccountItem.tbl";
+        private const string VirtualItemTableName = "VirtualItem.tbl";
 
         private sealed class LootRecipientContext
         {
@@ -236,7 +239,7 @@ namespace NexusForever.Game.Loot
                 return false;
             }
 
-            Creature2Entry entry = GameTableManager.Instance.Creature2.GetEntry(lootedEntity.CreatureId);
+            Creature2Entry entry = GameTableManager.Instance.Creature2?.GetEntry(lootedEntity.CreatureId);
             if (entry == null)
             {
                 log.Warn($"Creature2 entry {lootedEntity.CreatureId} not found while generating loot for owner {lootedEntity.Guid}.");
@@ -343,11 +346,27 @@ namespace NexusForever.Game.Loot
 
             if (lootedItem.Info.Entry.MaxCharges == 0u && lootedItem.Info.Entry.MaxStackCount == 1u)
             {
-                IItem deletedItem = looter.Inventory.ItemDelete(new NetworkItemLocation
+                IItem deletedItem;
+                try
                 {
-                    Location = lootedItem.Location,
-                    BagIndex = lootedItem.BagIndex
-                }, ItemUpdateReason.ConsumeCharge);
+                    deletedItem = looter.Inventory.ItemDelete(new NetworkItemLocation
+                    {
+                        Location = lootedItem.Location,
+                        BagIndex = lootedItem.BagIndex
+                    }, ItemUpdateReason.ConsumeCharge);
+                }
+                catch (InvalidPacketValueException)
+                {
+                    reason = "item-delete-failed";
+                    log.Trace($"Loot bag use failed while deleting single-stack item for player {looter.CharacterId}, item {lootedItem.Info.Entry.Id}: reason={reason}, generatedItems=[{FormatGeneratedLootItems(items)}].");
+                    return false;
+                }
+                catch (ArgumentException)
+                {
+                    reason = "item-delete-failed";
+                    log.Trace($"Loot bag use failed while deleting single-stack item for player {looter.CharacterId}, item {lootedItem.Info.Entry.Id}: reason={reason}, generatedItems=[{FormatGeneratedLootItems(items)}].");
+                    return false;
+                }
 
                 if (deletedItem == null)
                 {
@@ -680,10 +699,10 @@ namespace NexusForever.Game.Loot
             return item.Type switch
             {
                 LootItemType.AccountCurrency => IsDefinedAccountCurrency(item.StaticId),
-                LootItemType.AccountItem     => GameTableManager.Instance.AccountItem.GetEntry(item.StaticId) != null,
+                LootItemType.AccountItem     => HasAccountItem(item.StaticId),
                 LootItemType.Cash            => IsDefinedCharacterCurrency(item.StaticId),
                 LootItemType.StaticItem      => ItemManager.Instance.GetItemInfo(item.StaticId) != null,
-                LootItemType.VirtualItem     => GameTableManager.Instance.VirtualItem.GetEntry(item.StaticId) != null,
+                LootItemType.VirtualItem     => HasVirtualItem(item.StaticId),
                 _                            => false
             };
         }
@@ -1338,10 +1357,10 @@ namespace NexusForever.Game.Loot
             return item.Type switch
             {
                 LootItemType.AccountCurrency => IsDefinedAccountCurrency(item.StaticId),
-                LootItemType.AccountItem     => GameTableManager.Instance.AccountItem.GetEntry(item.StaticId) != null,
+                LootItemType.AccountItem     => HasAccountItem(item.StaticId),
                 LootItemType.Cash            => IsDefinedCharacterCurrency(item.StaticId),
                 LootItemType.StaticItem      => ItemManager.Instance.GetItemInfo(item.StaticId) != null,
-                LootItemType.VirtualItem     => GameTableManager.Instance.VirtualItem.GetEntry(item.StaticId) != null,
+                LootItemType.VirtualItem     => HasVirtualItem(item.StaticId),
                 _                            => false
             };
         }
@@ -1360,12 +1379,59 @@ namespace NexusForever.Game.Loot
         {
             return staticId <= int.MaxValue
                 && Enum.IsDefined(typeof(AccountCurrencyType), (int)staticId)
-                && GameTableManager.Instance.AccountCurrencyType.GetEntry(staticId) != null;
+                && HasRewardTableEntry(
+                    GameTableManager.Instance.AccountCurrencyType,
+                    AccountCurrencyTypeTableName,
+                    staticId,
+                    nameof(IsDefinedAccountCurrency));
+        }
+
+        private static bool HasAccountItem(uint staticId)
+        {
+            return HasRewardTableEntry(
+                GameTableManager.Instance.AccountItem,
+                AccountItemTableName,
+                staticId,
+                nameof(HasAccountItem));
+        }
+
+        private static bool HasVirtualItem(uint staticId)
+        {
+            return HasRewardTableEntry(
+                GameTableManager.Instance.VirtualItem,
+                VirtualItemTableName,
+                staticId,
+                nameof(HasVirtualItem));
         }
 
         private static bool IsDefinedCharacterCurrency(uint staticId)
         {
             return staticId <= int.MaxValue && Enum.IsDefined(typeof(CurrencyType), (int)staticId);
+        }
+
+        private static bool HasRewardTableEntry<T>(GameTable<T> table, string tableName, uint staticId, string context) where T : class, new()
+        {
+            context = nameof(GlobalLootManager) + "." + context;
+            if (table == null)
+            {
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    tableName,
+                    context,
+                    MissingGameDataSeverity.PlayerImpacting,
+                    "Cannot validate generated loot reward.");
+                return false;
+            }
+
+            if (table.GetEntry(staticId) != null)
+                return true;
+
+            MissingGameDataDiagnostics.ReportMissingRow(
+                tableName,
+                staticId,
+                context,
+                MissingGameDataSeverity.PlayerImpacting,
+                "Cannot validate generated loot reward.");
+            return false;
         }
 
         private static bool CanHoldStaticLoot(IPlayer looter, IEnumerable<GeneratedLootItem> staticItems, out string reason)

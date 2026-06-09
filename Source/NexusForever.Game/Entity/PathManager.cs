@@ -31,6 +31,11 @@ namespace NexusForever.Game.Entity
         private const uint SettlerImprovementMaxTier = 4u;
         private const uint PathMissionCompletionXpGameFormulaId = 0x017Au;
         private const uint DefaultMissionCompletionXp = 50u;
+        private const string PathLevelTableName = "PathLevel.tbl";
+        private const string PathRewardTableName = "PathReward.tbl";
+        private const string Spell4TableName = "Spell4.tbl";
+        private const string CharacterTitleTableName = "CharacterTitle.tbl";
+        private const string PathScientistScanBotProfileTableName = "PathScientistScanBotProfile.tbl";
 
         private readonly IPlayer player;
         private readonly Dictionary<Path, IPathEntry> paths = new();
@@ -190,9 +195,12 @@ namespace NexusForever.Game.Entity
 
             Path path = player.Path;
             IPathEntry entry = GetPathEntry(path);
+            if (!TryGetCurrentLevel(path, out uint currentLevel))
+                return;
+
             bool xpChanged = false;
 
-            if (GetCurrentLevel(path) < MaxPathLevel)
+            if (currentLevel < MaxPathLevel)
             {
                 checked
                 {
@@ -215,7 +223,9 @@ namespace NexusForever.Game.Entity
                 throw new ArgumentException("Levels must be greater than 0.");
 
             Path path = player.Path;
-            uint currentLevel = GetCurrentLevel(path);
+            if (!TryGetCurrentLevel(path, out uint currentLevel))
+                return;
+
             IPathEntry entry = GetPathEntry(path);
             if (currentLevel >= MaxPathLevel)
             {
@@ -224,7 +234,12 @@ namespace NexusForever.Game.Entity
             }
 
             uint targetLevel = Math.Min(currentLevel + levels, MaxPathLevel);
-            uint targetXp = GetPathXpForLevel(path, targetLevel);
+            if (!TryGetPathXpForLevel(path, targetLevel, out uint targetXp))
+            {
+                GrantOutstandingLevelRewards(path, entry.TotalXp);
+                return;
+            }
+
             if (targetXp <= entry.TotalXp)
             {
                 GrantOutstandingLevelRewards(path, entry.TotalXp);
@@ -327,7 +342,7 @@ namespace NexusForever.Game.Entity
                 Mission = BuildMission(state)
             });
 
-            PathMissionEntry mission = GameTableManager.Instance.PathMission.GetEntry(pathMissionId);
+            PathMissionEntry mission = GameTableManager.Instance.PathMission?.GetEntry(pathMissionId);
             if (mission != null)
             {
                 // WIP/GUESSED: LaughingWS exposes AchievementType.PathMission (62) and
@@ -382,14 +397,14 @@ namespace NexusForever.Game.Entity
             if (!pathMissions.ContainsKey(pathMissionId))
                 return false;
 
-            PathMissionEntry mission = GameTableManager.Instance.PathMission.GetEntry(pathMissionId);
+            PathMissionEntry mission = GameTableManager.Instance.PathMission?.GetEntry(pathMissionId);
             if (mission == null
                 || mission.PathTypeEnum != (uint)Path.Explorer
                 || mission.PathMissionTypeEnum != ExplorerVistaMissionType)
                 return false;
 
-            bool hasExplorerNode = GameTableManager.Instance.PathExplorerNode.Entries
-                .Any(n => n.PathExplorerAreaId == mission.ObjectId);
+            bool hasExplorerNode = GameTableManager.Instance.PathExplorerNode?.Entries
+                .Any(n => n.PathExplorerAreaId == mission.ObjectId) ?? false;
             if (!hasExplorerNode)
                 return false;
 
@@ -401,13 +416,13 @@ namespace NexusForever.Game.Entity
             if (pathExplorerPowerMapId == 0u)
                 return false;
 
-            if (GameTableManager.Instance.PathExplorerPowerMap.GetEntry(pathExplorerPowerMapId) == null)
+            if (GameTableManager.Instance.PathExplorerPowerMap?.GetEntry(pathExplorerPowerMapId) == null)
                 return false;
 
             bool completedAny = false;
             foreach (PathMissionRuntimeState state in pathMissions.Values.ToList())
             {
-                PathMissionEntry mission = GameTableManager.Instance.PathMission.GetEntry(state.MissionId);
+                PathMissionEntry mission = GameTableManager.Instance.PathMission?.GetEntry(state.MissionId);
                 if (mission == null
                     || mission.PathTypeEnum != (uint)Path.Explorer
                     || mission.PathMissionTypeEnum != ExplorerPowerMapMissionType
@@ -435,7 +450,7 @@ namespace NexusForever.Game.Entity
             bool completedAny = false;
             foreach (PathMissionRuntimeState state in pathMissions.Values.ToList())
             {
-                PathMissionEntry mission = GameTableManager.Instance.PathMission.GetEntry(state.MissionId);
+                PathMissionEntry mission = GameTableManager.Instance.PathMission?.GetEntry(state.MissionId);
                 if (mission == null
                     || mission.PathTypeEnum != (uint)Path.Explorer
                     || mission.PathMissionTypeEnum != ExplorerExploreZoneMissionType
@@ -459,7 +474,7 @@ namespace NexusForever.Game.Entity
             bool completedAny = false;
             foreach (PathMissionRuntimeState state in pathMissions.Values.ToList())
             {
-                PathMissionEntry entry = GameTableManager.Instance.PathMission.GetEntry(state.MissionId);
+                PathMissionEntry entry = GameTableManager.Instance.PathMission?.GetEntry(state.MissionId);
                 if (entry?.ObjectId != objectId)
                     continue;
 
@@ -480,7 +495,7 @@ namespace NexusForever.Game.Entity
             if (pathSoldierTowerDefenseId == 0u)
                 return false;
 
-            PathSoldierTowerDefenseEntry entry = GameTableManager.Instance.PathSoldierTowerDefense.GetEntry(pathSoldierTowerDefenseId);
+            PathSoldierTowerDefenseEntry entry = GameTableManager.Instance.PathSoldierTowerDefense?.GetEntry(pathSoldierTowerDefenseId);
             return entry != null && CompleteMissionByObjectId(entry.PathSoldierEventId);
         }
 
@@ -499,13 +514,13 @@ namespace NexusForever.Game.Entity
                 if (state.Completed)
                     continue;
 
-                PathMissionEntry mission = GameTableManager.Instance.PathMission.GetEntry(state.MissionId);
+                PathMissionEntry mission = GameTableManager.Instance.PathMission?.GetEntry(state.MissionId);
                 if (mission == null
                     || mission.PathTypeEnum != (uint)Path.Soldier
                     || mission.PathMissionTypeEnum != SoldierAssassinateMissionType)
                     continue;
 
-                PathSoldierAssassinateEntry assassinate = GameTableManager.Instance.PathSoldierAssassinate.GetEntry(mission.ObjectId);
+                PathSoldierAssassinateEntry assassinate = GameTableManager.Instance.PathSoldierAssassinate?.GetEntry(mission.ObjectId);
                 if (!MatchesSoldierAssassinateKill(assassinate, creature2Id, targetGroupIds))
                     continue;
 
@@ -540,11 +555,11 @@ namespace NexusForever.Game.Entity
             if (pathSettlerImprovementGroupId == 0u)
                 return false;
 
-            PathSettlerImprovementGroupEntry entry = GameTableManager.Instance.PathSettlerImprovementGroup.GetEntry(pathSettlerImprovementGroupId);
+            PathSettlerImprovementGroupEntry entry = GameTableManager.Instance.PathSettlerImprovementGroup?.GetEntry(pathSettlerImprovementGroupId);
             if (entry == null || entry.PathSettlerHubId == 0u)
                 return false;
 
-            PathSettlerHubEntry hub = GameTableManager.Instance.PathSettlerHub.GetEntry(entry.PathSettlerHubId);
+            PathSettlerHubEntry hub = GameTableManager.Instance.PathSettlerHub?.GetEntry(entry.PathSettlerHubId);
             if (hub == null)
                 return false;
 
@@ -554,7 +569,7 @@ namespace NexusForever.Game.Entity
                 if (state.Completed)
                     continue;
 
-                PathMissionEntry mission = GameTableManager.Instance.PathMission.GetEntry(state.MissionId);
+                PathMissionEntry mission = GameTableManager.Instance.PathMission?.GetEntry(state.MissionId);
                 if (mission == null
                     || mission.PathTypeEnum != (uint)Path.Settler
                     || mission.PathMissionTypeEnum != SettlerHubMissionType
@@ -668,7 +683,7 @@ namespace NexusForever.Game.Entity
             if (improvementGroupId != 0u
                 && settlerImprovementGroupStatus.TryGetValue(improvementGroupId, out SettlerImprovementGroupRuntimeStatus status))
             {
-                PathSettlerImprovementGroupEntry group = GameTableManager.Instance.PathSettlerImprovementGroup.GetEntry(improvementGroupId);
+                PathSettlerImprovementGroupEntry group = GameTableManager.Instance.PathSettlerImprovementGroup?.GetEntry(improvementGroupId);
                 if (group != null && group.MaxBundleCount > 0u)
                     return Math.Min(100u, status.BundleCount * 100u / group.MaxBundleCount);
             }
@@ -706,14 +721,14 @@ namespace NexusForever.Game.Entity
 
         private uint GetSettlerHubMissionProgressPercent(uint pathSettlerHubId)
         {
-            PathSettlerHubEntry hub = GameTableManager.Instance.PathSettlerHub.GetEntry(pathSettlerHubId);
+            PathSettlerHubEntry hub = GameTableManager.Instance.PathSettlerHub?.GetEntry(pathSettlerHubId);
             if (hub == null)
                 return 0u;
 
             uint requiredCount = Math.Max(hub.MissionCount, 1u);
             foreach (PathMissionRuntimeState state in pathMissions.Values)
             {
-                PathMissionEntry mission = GameTableManager.Instance.PathMission.GetEntry(state.MissionId);
+                PathMissionEntry mission = GameTableManager.Instance.PathMission?.GetEntry(state.MissionId);
                 if (mission == null
                     || mission.PathTypeEnum != (uint)Path.Settler
                     || mission.PathMissionTypeEnum != SettlerHubMissionType
@@ -733,10 +748,10 @@ namespace NexusForever.Game.Entity
             if (objectId == 0u)
                 return 0u;
 
-            if (GameTableManager.Instance.PathSettlerHub.GetEntry(objectId) != null)
+            if (GameTableManager.Instance.PathSettlerHub?.GetEntry(objectId) != null)
                 return objectId;
 
-            PathSettlerImprovementGroupEntry group = GameTableManager.Instance.PathSettlerImprovementGroup.GetEntry(objectId);
+            PathSettlerImprovementGroupEntry group = GameTableManager.Instance.PathSettlerImprovementGroup?.GetEntry(objectId);
             return group?.PathSettlerHubId ?? 0u;
         }
 
@@ -745,7 +760,7 @@ namespace NexusForever.Game.Entity
             if (objectId == 0u)
                 return 0u;
 
-            return GameTableManager.Instance.PathSettlerImprovementGroup.GetEntry(objectId) != null
+            return GameTableManager.Instance.PathSettlerImprovementGroup?.GetEntry(objectId) != null
                 ? objectId
                 : 0u;
         }
@@ -763,16 +778,64 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Get the current <see cref="Path"/> level for the <see cref="IPlayer"/>.
         /// </summary>
-        private uint GetCurrentLevel(Path path)
+        private bool TryGetCurrentLevel(Path path, out uint level)
         {
-            return GameTableManager.Instance.PathLevel.Entries
-                .Last(x => x.PathXP <= paths[path].TotalXp && x.PathTypeEnum == (uint)path).PathLevel;
+            level = 0u;
+            if (GameTableManager.Instance.PathLevel?.Entries == null)
+            {
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    PathLevelTableName,
+                    nameof(PathManager) + "." + nameof(TryGetCurrentLevel),
+                    MissingGameDataSeverity.PlayerImpacting,
+                    "Cannot resolve current path level.");
+                return false;
+            }
+
+            PathLevelEntry entry = GameTableManager.Instance.PathLevel.Entries
+                .LastOrDefault(x => x.PathXP <= paths[path].TotalXp && x.PathTypeEnum == (uint)path);
+            if (entry == null)
+            {
+                MissingGameDataDiagnostics.ReportMissingRow(
+                    PathLevelTableName,
+                    path,
+                    nameof(PathManager) + "." + nameof(TryGetCurrentLevel),
+                    MissingGameDataSeverity.PlayerImpacting,
+                    "Cannot resolve current path level.");
+                return false;
+            }
+
+            level = entry.PathLevel;
+            return true;
         }
 
-        private uint GetPathXpForLevel(Path path, uint level)
+        private bool TryGetPathXpForLevel(Path path, uint level, out uint xp)
         {
-            return GameTableManager.Instance.PathLevel.Entries
-                .Last(x => x.PathLevel == level && x.PathTypeEnum == (uint)path).PathXP;
+            xp = 0u;
+            if (GameTableManager.Instance.PathLevel?.Entries == null)
+            {
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    PathLevelTableName,
+                    nameof(PathManager) + "." + nameof(TryGetPathXpForLevel),
+                    MissingGameDataSeverity.PlayerImpacting,
+                    "Cannot resolve path XP target.");
+                return false;
+            }
+
+            PathLevelEntry entry = GameTableManager.Instance.PathLevel.Entries
+                .LastOrDefault(x => x.PathLevel == level && x.PathTypeEnum == (uint)path);
+            if (entry == null)
+            {
+                MissingGameDataDiagnostics.ReportMissingRow(
+                    PathLevelTableName,
+                    $"{path}:{level}",
+                    nameof(PathManager) + "." + nameof(TryGetPathXpForLevel),
+                    MissingGameDataSeverity.PlayerImpacting,
+                    "Cannot resolve path XP target.");
+                return false;
+            }
+
+            xp = entry.PathXP;
+            return true;
         }
 
         private void GrantOutstandingLevelRewards(Path path, uint totalXp)
@@ -782,7 +845,18 @@ namespace NexusForever.Game.Entity
                 return;
 
             byte rewardedLevel = entry.LevelRewarded;
-            foreach (uint level in GameTableManager.Instance.PathLevel.Entries
+            if (GameTableManager.Instance.PathLevel?.Entries == null)
+            {
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    PathLevelTableName,
+                    nameof(PathManager) + "." + nameof(GrantOutstandingLevelRewards),
+                    MissingGameDataSeverity.PlayerImpacting,
+                    "Cannot grant outstanding path level rewards.");
+                return;
+            }
+
+            IEnumerable<PathLevelEntry> pathLevelEntries = GameTableManager.Instance.PathLevel.Entries;
+            foreach (uint level in pathLevelEntries
                 .Where(x => x.PathTypeEnum == (uint)path
                     && x.PathLevel > rewardedLevel
                     && x.PathXP <= totalXp)
@@ -800,8 +874,21 @@ namespace NexusForever.Game.Entity
         {
             uint pathRewardObjectId = PathRewardGrant.GetLevelRewardObjectId(path, level);
 
-            IEnumerable<PathRewardEntry> pathRewardEntries = GameTableManager.Instance.PathReward.Entries
-                .Where(x => x.ObjectId == pathRewardObjectId);
+            IEnumerable<PathRewardEntry> pathRewardEntries;
+            if (GameTableManager.Instance.PathReward?.Entries == null)
+            {
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    PathRewardTableName,
+                    nameof(PathManager) + "." + nameof(GrantLevelUpReward),
+                    MissingGameDataSeverity.PlayerImpacting,
+                    $"Cannot grant level reward for path={path} level={level}.");
+                pathRewardEntries = [];
+            }
+            else
+            {
+                pathRewardEntries = GameTableManager.Instance.PathReward.Entries
+                    .Where(x => x.ObjectId == pathRewardObjectId);
+            }
             foreach (PathRewardEntry pathRewardEntry in pathRewardEntries)
             {
                 if (!PathRewardGrant.IsGrantableLevelReward(pathRewardEntry))
@@ -822,6 +909,16 @@ namespace NexusForever.Game.Entity
 
         private void GrantMissionRewards(ushort pathMissionId)
         {
+            if (GameTableManager.Instance.PathReward?.Entries == null)
+            {
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    PathRewardTableName,
+                    nameof(PathManager) + "." + nameof(GrantMissionRewards),
+                    MissingGameDataSeverity.PlayerImpacting,
+                    $"Cannot grant mission reward for pathMissionId={pathMissionId}.");
+                return;
+            }
+
             foreach (PathRewardEntry pathRewardEntry in GameTableManager.Instance.PathReward.Entries
                 .Where(x => x.ObjectId == pathMissionId))
             {
@@ -858,15 +955,45 @@ namespace NexusForever.Game.Entity
 
             if (pathRewardEntry.Spell4Id > 0)
             {
-                Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(pathRewardEntry.Spell4Id);
-                player.SpellManager.AddSpell(spell4Entry.Spell4BaseIdBaseSpell);
+                Spell4Entry spell4Entry = GameTableManager.Instance.Spell4?.GetEntry(pathRewardEntry.Spell4Id);
+                if (spell4Entry != null)
+                    player.SpellManager.AddSpell(spell4Entry.Spell4BaseIdBaseSpell);
+                else
+                    MissingGameDataDiagnostics.ReportSkippedGrant(
+                        "Path spell reward",
+                        Spell4TableName,
+                        pathRewardEntry.Spell4Id,
+                        nameof(PathManager) + "." + nameof(GrantPathReward),
+                        $"pathRewardId={pathRewardEntry.Id}");
             }
 
             if (pathRewardEntry.CharacterTitleId > 0)
-                player.TitleManager.AddTitle((ushort)pathRewardEntry.CharacterTitleId);
+            {
+                CharacterTitleEntry titleEntry = GameTableManager.Instance.CharacterTitle?.GetEntry(pathRewardEntry.CharacterTitleId);
+                if (titleEntry != null)
+                    player.TitleManager.AddTitle((ushort)titleEntry.Id);
+                else
+                    MissingGameDataDiagnostics.ReportSkippedGrant(
+                        "Path title reward",
+                        CharacterTitleTableName,
+                        pathRewardEntry.CharacterTitleId,
+                        nameof(PathManager) + "." + nameof(GrantPathReward),
+                        $"pathRewardId={pathRewardEntry.Id}");
+            }
 
             if (pathRewardEntry.PathScientistScanBotProfileId > 0)
-                player.PetCustomisationManager.UnlockScanBotProfile(pathRewardEntry.PathScientistScanBotProfileId);
+            {
+                PathScientistScanBotProfileEntry scanBotProfileEntry = GameTableManager.Instance.PathScientistScanBotProfile?.GetEntry(pathRewardEntry.PathScientistScanBotProfileId);
+                if (scanBotProfileEntry != null)
+                    player.PetCustomisationManager.UnlockScanBotProfile(scanBotProfileEntry.Id);
+                else
+                    MissingGameDataDiagnostics.ReportSkippedGrant(
+                        "Path scanbot profile reward",
+                        PathScientistScanBotProfileTableName,
+                        pathRewardEntry.PathScientistScanBotProfileId,
+                        nameof(PathManager) + "." + nameof(GrantPathReward),
+                        $"pathRewardId={pathRewardEntry.Id}");
+            }
         }
 
         private PathUnlockedMask GetPathUnlockedMask()
@@ -1074,7 +1201,7 @@ namespace NexusForever.Game.Entity
             if (pathMissions.TryGetValue(pathMissionId, out PathMissionRuntimeState state))
                 return state;
 
-            PathMissionEntry entry = GameTableManager.Instance.PathMission.GetEntry(pathMissionId);
+            PathMissionEntry entry = GameTableManager.Instance.PathMission?.GetEntry(pathMissionId);
             state = new PathMissionRuntimeState(player.CharacterId, pathMissionId, (ushort)(entry?.PathEpisodeId ?? 0u));
             state.State = PathMissionState.Started;
             pathMissions.Add(pathMissionId, state);

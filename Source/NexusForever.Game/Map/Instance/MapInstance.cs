@@ -285,7 +285,7 @@ namespace NexusForever.Game.Map.Instance
             if (instanceRemovals.ContainsKey(player.Guid))
                 return;
 
-            GameFormulaEntry entry = GameTableManager.Instance.GameFormula.GetEntry(1123);
+            GameFormulaEntry entry = GameTableManager.Instance.GameFormula?.GetEntry(1123);
             var removal = new MapInstanceRemoval
             {
                 Guid     = player.Guid,

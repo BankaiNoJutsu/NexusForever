@@ -15,12 +15,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.GalacticArchive
 
         public void HandleMessage(IWorldSession session, ClientGalacticArchiveUnlock archiveUnlock)
         {
-            bool unlocked = session.Player?.GalacticArchiveManager.UnlockArticle(archiveUnlock.ArchiveArticleId, grantRewards: false) ?? false;
+            bool unlocked = session.Player?.GalacticArchiveManager.UnlockLinkedArticle(archiveUnlock.ArchiveArticleId) ?? false;
             log.LogDebug("ClientGalacticArchiveUnlock: player={Player} articleId={ArticleId}",
                 session.Player?.Guid, archiveUnlock.ArchiveArticleId);
 
             if (!unlocked)
-                log.LogDebug("Rejected Galactic Archive unlock request from player {Player}: invalid article {ArticleId}.",
+                log.LogDebug("Rejected Galactic Archive unlock request from player {Player}: invalid, locked, or unauthorized linked article {ArticleId}.",
                     session.Player?.Guid, archiveUnlock.ArchiveArticleId);
         }
     }

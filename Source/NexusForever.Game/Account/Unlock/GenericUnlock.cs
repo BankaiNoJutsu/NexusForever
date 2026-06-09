@@ -18,23 +18,18 @@ namespace NexusForever.Game.Account.Unlock
         private bool isDirty;
 
         /// <summary>
-        /// Create a new <see cref="IGenericUnlock"/> from existing <see cref="AccountGenericUnlockModel"/> database model.
-        /// </summary>
-        public GenericUnlock(IAccount account, AccountGenericUnlockModel model)
-        {
-            this.account = account;
-            Entry        = GameTableManager.Instance.GenericUnlockEntry.GetEntry(model.Entry);
-            isDirty      = false;
-        }
-
-        /// <summary>
         /// Create a new <see cref="IGenericUnlock"/> from supplied <see cref="GenericUnlockEntryEntry"/>.
         /// </summary>
         public GenericUnlock(IAccount account, GenericUnlockEntryEntry entry)
+            : this(account, entry, true)
+        {
+        }
+
+        internal GenericUnlock(IAccount account, GenericUnlockEntryEntry entry, bool isDirty)
         {
             this.account = account;
             Entry        = entry;
-            isDirty      = true;
+            this.isDirty = isDirty;
         }
 
         public void Save(AuthContext context)

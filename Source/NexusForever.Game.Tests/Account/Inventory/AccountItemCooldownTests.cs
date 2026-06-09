@@ -172,6 +172,53 @@ public class AccountItemCooldownTests
         }
     }
 
+    [Fact]
+    public void SendCooldowns_WithMissingCooldownGroupTable_EmitsPersistedCooldowns()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        GameTableManager gameTableManager = CreateGameTableManagerWithoutCooldownGroups();
+        using ServiceProvider provider = new ServiceCollection()
+            .AddSingleton(gameTableManager)
+            .BuildServiceProvider();
+        LegacyServiceProvider.Provider = provider;
+
+        try
+        {
+            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+            IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
+            accountProxy.SetProperty(nameof(IAccount.Id), 42u);
+            accountProxy.SetProperty(nameof(IAccount.Session), session);
+
+            var manager = new AccountInventoryManager(account, new AccountModel
+            {
+                AccountInventory = [],
+                AccountItemCooldown =
+                [
+                    new AccountItemCooldownModel
+                    {
+                        Id              = 42u,
+                        CooldownGroupId = 7u,
+                        Timestamp       = DateTime.UtcNow.AddSeconds(-10d),
+                        Duration        = 60u
+                    }
+                ]
+            });
+
+            manager.SendCooldowns();
+
+            RecordingDispatchProxy<IGameSession>.Invocation invocation =
+                Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+            var packet = Assert.IsType<ServerAccountItemCooldowns>(invocation.Arguments[0]);
+            ServerAccountItemCooldowns.Cooldown entry = Assert.Single(packet.Cooldowns);
+            Assert.Equal(7u, entry.AccountItemCooldownGroup);
+            Assert.InRange(entry.CooldownInSeconds, 49u, 50u);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
     private static AuthContext CreateContext()
     {
         DbContextOptions<AuthContext> options = new DbContextOptionsBuilder<AuthContext>()
@@ -195,6 +242,11 @@ public class AccountItemCooldownTests
         var manager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         SetAutoProperty(manager, nameof(GameTableManager.AccountItemCooldownGroup), CreateGameTable<AccountItemCooldownGroupEntry>());
         return manager;
+    }
+
+    private static GameTableManager CreateGameTableManagerWithoutCooldownGroups()
+    {
+        return (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
     }
 
     private static void SetAutoProperty(object instance, string propertyName, object value)

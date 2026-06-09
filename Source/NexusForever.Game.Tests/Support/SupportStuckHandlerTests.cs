@@ -105,6 +105,20 @@ public class SupportStuckHandlerTests
     }
 
     [Fact]
+    public void RecallTransmat_WhenWorldLocationTableMissingSendsSpellPreRequisitesResult()
+    {
+        var handler = CreateHandler();
+        IWorldSession session = CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy, out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetMethodReturn(nameof(IPlayer.CanTeleport), true);
+        playerProxy.SetProperty(nameof(IWorldEntity.Zone), new WorldZoneEntry { WorldLocation2IdExit = 77u });
+
+        handler.HandleMessage(session, CreateStuck(UnstickType.RecallTransmat, 9015u));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
+        AssertStuckCastResult(sessionProxy, 9015u, SupportStuckSpell4Ids.RecallTransmat, CastResult.SpellPreRequisites);
+    }
+
+    [Fact]
     public void RecallTransmat_WhenZoneExitResolvedTeleportsToWorldLocation()
     {
         var handler = CreateHandler(out RecordingDispatchProxy<IGameTableManager> tableProxy);
@@ -130,6 +144,58 @@ public class SupportStuckHandlerTests
         Assert.Equal(1f, invocation.Arguments[1]);
         Assert.Equal(2f, invocation.Arguments[2]);
         Assert.Equal(3f, invocation.Arguments[3]);
+    }
+
+    [Fact]
+    public void RecallTransmat_WhenUsedAgainDuringCooldownSendsSpellCooldown()
+    {
+        var handler = CreateHandler(out RecordingDispatchProxy<IGameTableManager> tableProxy);
+        IWorldSession session = CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy, out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetMethodReturn(nameof(IPlayer.CanTeleport), true);
+        playerProxy.SetProperty(nameof(IWorldEntity.Zone), new WorldZoneEntry { WorldLocation2IdExit = 77u });
+        tableProxy.SetProperty(nameof(IGameTableManager.WorldLocation2), CreateWorldLocationTable(new WorldLocation2Entry
+        {
+            Id        = 77u,
+            WorldId   = 42u,
+            Position0 = 1f,
+            Position1 = 2f,
+            Position2 = 3f
+        }));
+
+        handler.HandleMessage(session, CreateStuck(UnstickType.RecallTransmat, 9011u));
+        handler.HandleMessage(session, CreateStuck(UnstickType.RecallTransmat, 9012u));
+
+        Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
+        AssertStuckCastResult(sessionProxy, 9012u, SupportStuckSpell4Ids.RecallTransmat, CastResult.SpellCooldown);
+    }
+
+    [Fact]
+    public void RecallTransmat_WhenZoneExitMissingDoesNotStartCooldown()
+    {
+        var handler = CreateHandler(out RecordingDispatchProxy<IGameTableManager> tableProxy);
+        IWorldSession session = CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy, out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetMethodReturn(nameof(IPlayer.CanTeleport), true);
+        playerProxy.SetProperty(nameof(IWorldEntity.Zone), new WorldZoneEntry { WorldLocation2IdExit = 77u });
+        tableProxy.SetProperty(nameof(IGameTableManager.WorldLocation2), CreateWorldLocationTable(null));
+
+        handler.HandleMessage(session, CreateStuck(UnstickType.RecallTransmat, 9013u));
+
+        AssertStuckCastResult(sessionProxy, 9013u, SupportStuckSpell4Ids.RecallTransmat, CastResult.SpellPreRequisites);
+
+        tableProxy.SetProperty(nameof(IGameTableManager.WorldLocation2), CreateWorldLocationTable(new WorldLocation2Entry
+        {
+            Id        = 77u,
+            WorldId   = 42u,
+            Position0 = 1f,
+            Position1 = 2f,
+            Position2 = 3f
+        }));
+
+        handler.HandleMessage(session, CreateStuck(UnstickType.RecallTransmat, 9014u));
+
+        Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
+        Assert.DoesNotContain(GetEncryptedMessages(sessionProxy).OfType<ServerSpellCastResult>(),
+            result => result.CastResult == CastResult.SpellCooldown);
     }
 
     [Fact]

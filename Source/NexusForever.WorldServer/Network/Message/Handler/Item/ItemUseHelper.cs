@@ -38,7 +38,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
             ItemSpecialEntry itemSpecial = null;
             if (item.Info.Entry.ItemSpecialId00 > 0u)
             {
-                itemSpecial = gameTableManager.ItemSpecial.GetEntry(item.Info.Entry.ItemSpecialId00);
+                itemSpecial = gameTableManager.ItemSpecial?.GetEntry(item.Info.Entry.ItemSpecialId00);
                 if (itemSpecial == null)
                     throw new InvalidPacketValueException();
             }
@@ -202,7 +202,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                 if (currencyType == CurrencyType.None || amount == 0u)
                     continue;
 
-                if (gameTableManager.CurrencyType.GetEntry((ulong)currencyType) == null)
+                if (gameTableManager.CurrencyType?.GetEntry((ulong)currencyType) == null)
                     throw new InvalidPacketValueException();
 
                 grants.Add((currencyType, amount));

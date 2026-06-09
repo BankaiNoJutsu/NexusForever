@@ -2,9 +2,11 @@ using System.Collections;
 using System.Collections.Immutable;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using NexusForever.Database;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Entitlement;
 using NexusForever.Game.Abstract.Entity;
@@ -111,6 +113,19 @@ public class RealmBankInventoryTests : IDisposable
         Assert.Null(result);
     }
 
+    [Fact]
+    public void EnsureLoaded_WithoutDatabase_DoesNotMarkAccountRealmLoaded()
+    {
+        IDatabaseManager databaseManager = RecordingDispatchProxy<IDatabaseManager>.Create(out RecordingDispatchProxy<IDatabaseManager> databaseProxy);
+        databaseProxy.SetMethodReturn(nameof(IDatabaseManager.GetDatabase), null);
+        var manager = new RealmBankManager(databaseManager);
+        IPlayer player = CreatePlayer(unlocked: true);
+
+        manager.EnsureLoaded(player);
+
+        Assert.Empty(GetLoadedKeys(manager));
+    }
+
     private static NexusForever.Game.Entity.Inventory CreateInventory(bool unlocked, uint extraSlotStacks = 0u)
     {
         IPlayer player = CreatePlayer(unlocked, extraSlotStacks);
@@ -129,8 +144,14 @@ public class RealmBankInventoryTests : IDisposable
             entitlementManager.Set(EntitlementType.SharedRealmBankSlots, extraSlotStacks);
 
         IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
+        accountProxy.SetProperty(nameof(IAccount.Id), 5678u);
         accountProxy.SetProperty(nameof(IAccount.EntitlementManager), entitlementManager);
         playerProxy.SetProperty(nameof(IPlayer.Account), account);
+        playerProxy.SetProperty(nameof(IPlayer.Identity), new Identity
+        {
+            RealmId = 2,
+            Id      = 1234ul
+        });
         return player;
     }
 
@@ -212,5 +233,12 @@ public class RealmBankInventoryTests : IDisposable
         typeof(AssetManager)
             .GetProperty(nameof(AssetManager.InventoryLocationCapacities))
             .SetValue(null, entries.ToImmutableDictionary());
+    }
+
+    private static IEnumerable GetLoadedKeys(RealmBankManager manager)
+    {
+        FieldInfo field = typeof(RealmBankManager)
+            .GetField("loaded", BindingFlags.Instance | BindingFlags.NonPublic);
+        return (IEnumerable)field.GetValue(manager);
     }
 }

@@ -30,11 +30,12 @@ namespace NexusForever.Game.Account.Reward
 
             foreach (RewardPropertyPremiumModifierEntry modifierEntry in AssetManager.Instance.GetRewardPropertiesForTier(account.AccountTier))
             {
-                RewardPropertyEntry entry = GameTableManager.Instance.RewardProperty.GetEntry(modifierEntry.RewardPropertyId);
+                RewardPropertyEntry entry = GameTableManager.Instance.RewardProperty?.GetEntry(modifierEntry.RewardPropertyId);
                 if (entry == null)
-                    throw new ArgumentException();
+                    continue;
 
-                float value = GetPremiumModiferValue(entry, modifierEntry, player);
+                if (!TryGetPremiumModiferValue(entry, modifierEntry, player, out float value))
+                    continue;
 
                 // update reward without sending
                 IRewardProperty rewardProperty = GetRewardProperty(entry);
@@ -42,32 +43,37 @@ namespace NexusForever.Game.Account.Reward
             }
         }
 
-        private float GetPremiumModiferValue(RewardPropertyEntry entry, RewardPropertyPremiumModifierEntry modifierEntry, IPlayer player)
+        private bool TryGetPremiumModiferValue(RewardPropertyEntry entry, RewardPropertyPremiumModifierEntry modifierEntry, IPlayer player, out float value)
         {
+            value = 0f;
+
             // some reward property premium modifier entries use an existing entitlement values rather than static values
             if (modifierEntry.EntitlementIdModifierCount != 0u)
             {
-                EntitlementEntry entitlementEntry = GameTableManager.Instance.Entitlement.GetEntry(modifierEntry.EntitlementIdModifierCount);
+                EntitlementEntry entitlementEntry = GameTableManager.Instance.Entitlement?.GetEntry(modifierEntry.EntitlementIdModifierCount);
                 if (entitlementEntry == null)
-                    throw new InvalidOperationException();
+                    return false;
 
                 EntitlementFlags entitlementFlags = (EntitlementFlags)entitlementEntry.Flags;
                 if (entitlementFlags.HasFlag(EntitlementFlags.Disabled))
-                    return 0f;
+                    return true;
 
                 if (entitlementFlags.HasFlag(EntitlementFlags.Character))
-                    return player?.EntitlementManager.GetEntitlement((EntitlementType)modifierEntry.EntitlementIdModifierCount)?.Amount ?? 0u;
+                    value = player?.EntitlementManager?.GetEntitlement((EntitlementType)modifierEntry.EntitlementIdModifierCount)?.Amount ?? 0u;
+                else
+                    value = account.EntitlementManager?.GetEntitlement((EntitlementType)modifierEntry.EntitlementIdModifierCount)?.Amount ?? 0u;
 
-                return account.EntitlementManager.GetEntitlement((EntitlementType)modifierEntry.EntitlementIdModifierCount)?.Amount ?? 0u;
+                return true;
             }
-            
-            return (RewardPropertyModifierValueType)entry.RewardModifierValueTypeEnum switch
+
+            value = (RewardPropertyModifierValueType)entry.RewardModifierValueTypeEnum switch
             {
                 RewardPropertyModifierValueType.AdditiveScalar       => modifierEntry.ModifierValueFloat,
                 RewardPropertyModifierValueType.Discrete             => modifierEntry.ModifierValueInt,
                 RewardPropertyModifierValueType.MultiplicativeScalar => modifierEntry.ModifierValueFloat,
                 _ => 0f
             };
+            return true;
         }
 
         public void SendInitialPackets()
@@ -96,9 +102,9 @@ namespace NexusForever.Game.Account.Reward
         /// </remarks>
         public void UpdateRewardProperty(RewardPropertyType type, float value, uint data = 0u)
         {
-            RewardPropertyEntry entry = GameTableManager.Instance.RewardProperty.GetEntry((ulong)type);
+            RewardPropertyEntry entry = GameTableManager.Instance.RewardProperty?.GetEntry((ulong)type);
             if (entry == null)
-                throw new ArgumentException();
+                return;
 
             UpdateRewardProperty(entry, value, data);
         }

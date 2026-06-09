@@ -28,7 +28,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Chat
             StandState standState = StandState.Stand;
             if (emote.EmoteId != 0)
             {
-                EmotesEntry entry = gameTableManager.Emotes.GetEntry(emote.EmoteId);
+                EmotesEntry entry = gameTableManager.Emotes?.GetEntry(emote.EmoteId);
                 if (entry == null)
                     throw new InvalidPacketValueException("HandleEmote: Invalid EmoteId");
 

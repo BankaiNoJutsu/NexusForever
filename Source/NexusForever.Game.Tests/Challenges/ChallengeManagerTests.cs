@@ -43,6 +43,38 @@ public class ChallengeManagerTests
     }
 
     [Fact]
+    public void Activate_WhenChallengeTableMissing_SendsGenericFail()
+    {
+        GameTableManager gameTables = CreateEmptyGameTables();
+        IPlayer player = CreatePlayer(RecipientGuid, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTables);
+        IChallengeManager manager = new ChallengeManager(player, gameTables);
+
+        manager.HandleChoice(ChallengeId, ChallengeChoice.Activate);
+
+        ServerChallengeResult result = Assert.Single(GetMessages<ServerChallengeResult>(sessionProxy));
+        Assert.Equal(ChallengeId, result.ChallengeId);
+        Assert.Equal(ChallengeResult.GenericFail, result.Result);
+        Assert.Empty(GetMessages<ServerChallengeUpdate>(sessionProxy));
+    }
+
+    [Fact]
+    public void Activate_WhenChallengeTierTableMissing_SendsUpdateWithZeroGoal()
+    {
+        GameTableManager gameTables = CreateGameTablesWithoutChallengeTiers();
+        IPlayer player = CreatePlayer(RecipientGuid, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTables);
+        IChallengeManager manager = new ChallengeManager(player, gameTables);
+
+        manager.HandleChoice(ChallengeId, ChallengeChoice.Activate);
+
+        ServerChallengeResult result = Assert.Single(GetMessages<ServerChallengeResult>(sessionProxy));
+        Assert.Equal(ChallengeResult.Activate, result.Result);
+
+        ServerChallengeUpdate.Challenge row = Assert.Single(Assert.Single(GetMessages<ServerChallengeUpdate>(sessionProxy)).ActiveChallenges);
+        Assert.Equal(0u, row.GoalCount);
+        Assert.Equal([0u, 0u, 0u], row.TierGoalCount);
+    }
+
+    [Fact]
     public void Activate_ThirdConcurrentChallenge_ReturnsGenericFail()
     {
         const ushort challengeTwoId = 1002;
@@ -167,6 +199,30 @@ public class ChallengeManagerTests
     }
 
     [Fact]
+    public void TryAdvanceProgress_LargeProgressClampsAtGoalWithoutWrapping()
+    {
+        GameTableManager gameTables = CreateGameTables(tierOneCount: uint.MaxValue);
+        IPlayer player = CreatePlayer(RecipientGuid, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTables, out RecordingDispatchProxy<IQuestManager> questProxy);
+        var manager = new ChallengeManager(player, gameTables);
+
+        manager.HandleChoice(ChallengeId, ChallengeChoice.Activate);
+        Assert.True(manager.TryAdvanceProgress(ChallengeId, uint.MaxValue - 1u));
+        Assert.True(manager.TryAdvanceProgress(ChallengeId, 10u));
+
+        ServerChallengeResult completed = GetMessages<ServerChallengeResult>(sessionProxy)
+            .Single(result => result.Result == ChallengeResult.Completed);
+        Assert.Equal(0, completed.Data);
+
+        ServerChallengeUpdate.Challenge finalRow = Assert.Single(GetMessages<ServerChallengeUpdate>(sessionProxy).Last().ActiveChallenges);
+        Assert.False(finalRow.Activated);
+        Assert.Equal(uint.MaxValue, finalRow.CurrentCount);
+
+        RecordingDispatchProxy<IQuestManager>.Invocation questUpdate = Assert.Single(
+            questProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+        Assert.Equal(QuestObjectiveType.CompleteChallenge, questUpdate.Arguments[0]);
+    }
+
+    [Fact]
     public void ShareWithTarget_SendsSharedInvitationToRecipient()
     {
         GameTableManager gameTables = CreateGameTables();
@@ -190,10 +246,7 @@ public class ChallengeManagerTests
 
     private static GameTableManager CreateGameTablesWithMultipleTypes(params (ushort Id, ChallengeType Type)[] challenges)
     {
-        var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
-        {
-            GameTablePath = string.Empty
-        }));
+        GameTableManager gameTableManager = CreateEmptyGameTables();
 
         SetAutoProperty(gameTableManager, nameof(GameTableManager.ChallengeTier), CreateGameTable(new ChallengeTierEntry
         {
@@ -217,10 +270,7 @@ public class ChallengeManagerTests
 
     private static GameTableManager CreateGameTables(uint tierOneCount = 5, uint tierTwoCount = 0)
     {
-        var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
-        {
-            GameTablePath = string.Empty
-        }));
+        GameTableManager gameTableManager = CreateEmptyGameTables();
 
         var tierEntries = new List<ChallengeTierEntry>
         {
@@ -258,6 +308,31 @@ public class ChallengeManagerTests
         SetAutoProperty(gameTableManager, nameof(GameTableManager.Challenge), CreateGameTable(challengeEntry));
 
         return gameTableManager;
+    }
+
+    private static GameTableManager CreateGameTablesWithoutChallengeTiers()
+    {
+        GameTableManager gameTableManager = CreateEmptyGameTables();
+
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.Challenge), CreateGameTable(new ChallengeEntry
+        {
+            Id                      = ChallengeId,
+            ChallengeTypeEnum       = (uint)ChallengeType.General,
+            ChallengeFlags          = CooldownTypeFlag,
+            TargetGroupIdRewardPane = 42u,
+            ChallengeTierId00       = 2001,
+            CompletionCount         = 1u
+        }));
+
+        return gameTableManager;
+    }
+
+    private static GameTableManager CreateEmptyGameTables()
+    {
+        return new GameTableManager(Options.Create(new GameTableConfig
+        {
+            GameTablePath = string.Empty
+        }));
     }
 
     private const uint CooldownTypeFlag = 0x10u;

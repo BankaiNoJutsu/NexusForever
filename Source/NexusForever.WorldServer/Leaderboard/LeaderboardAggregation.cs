@@ -67,6 +67,9 @@ namespace NexusForever.WorldServer.Leaderboard
                 .Where(entry => LeaderboardCategoryRules.MatchesPveScope(entry, type, matchingGameMapId, primeLevel))
                 .OrderBy(entry => entry.CompletionTime)
                 .ThenBy(entry => entry.Name, StringComparer.Ordinal)
+                .ThenBy(entry => entry.CharacterId)
+                .GroupBy(entry => entry.CharacterId)
+                .Select(group => group.First())
                 .ToList();
 
             LeaderboardPveEntryRecord viewerEntry = TryCreateViewerPveEntry(viewer, type, matchingGameMapId, primeLevel, scoped);
@@ -76,6 +79,9 @@ namespace NexusForever.WorldServer.Leaderboard
             scoped = scoped
                 .OrderBy(entry => entry.CompletionTime)
                 .ThenBy(entry => entry.Name, StringComparer.Ordinal)
+                .ThenBy(entry => entry.CharacterId)
+                .GroupBy(entry => entry.CharacterId)
+                .Select(group => group.First())
                 .ToList();
 
             return scoped;
@@ -90,6 +96,9 @@ namespace NexusForever.WorldServer.Leaderboard
                 .Where(entry => LeaderboardCategoryRules.MatchesPvpCategory(entry, type))
                 .OrderByDescending(entry => entry.Rating)
                 .ThenBy(entry => entry.Name, StringComparer.Ordinal)
+                .ThenBy(entry => entry.CharacterId)
+                .GroupBy(entry => entry.CharacterId)
+                .Select(group => group.First())
                 .ToList();
 
             LeaderboardPvpEntryRecord viewerEntry = TryCreateViewerPvpEntry(viewer, type, scoped);
@@ -99,6 +108,9 @@ namespace NexusForever.WorldServer.Leaderboard
             scoped = scoped
                 .OrderByDescending(entry => entry.Rating)
                 .ThenBy(entry => entry.Name, StringComparer.Ordinal)
+                .ThenBy(entry => entry.CharacterId)
+                .GroupBy(entry => entry.CharacterId)
+                .Select(group => group.First())
                 .ToList();
 
             return scoped;

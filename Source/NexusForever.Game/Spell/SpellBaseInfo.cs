@@ -35,17 +35,17 @@ namespace NexusForever.Game.Spell
         public SpellBaseInfo(Spell4BaseEntry spell4BaseEntry)
         {
             Entry             = spell4BaseEntry;
-            HitResult         = GameTableManager.Instance.Spell4HitResults.GetEntry(Entry.Spell4HitResultId);
-            TargetMechanics   = GameTableManager.Instance.Spell4TargetMechanics.GetEntry(Entry.Spell4TargetMechanicId);
-            TargetAngle       = GameTableManager.Instance.Spell4TargetAngle.GetEntry(Entry.Spell4TargetAngleId);
-            Prerequisites     = GameTableManager.Instance.Spell4Prerequisites.GetEntry(Entry.Spell4PrerequisiteId);
+            HitResult         = GameTableManager.Instance.Spell4HitResults?.GetEntry(Entry.Spell4HitResultId);
+            TargetMechanics   = GameTableManager.Instance.Spell4TargetMechanics?.GetEntry(Entry.Spell4TargetMechanicId);
+            TargetAngle       = GameTableManager.Instance.Spell4TargetAngle?.GetEntry(Entry.Spell4TargetAngleId);
+            Prerequisites     = GameTableManager.Instance.Spell4Prerequisites?.GetEntry(Entry.Spell4PrerequisiteId);
             PrerequisiteFlags = (SpellPrerequisiteFlags)(Prerequisites?.Flags ?? 0u);
-            ValidTargets      = GameTableManager.Instance.Spell4ValidTargets.GetEntry(Entry.Spell4ValidTargetId);
-            CastGroup         = GameTableManager.Instance.TargetGroup.GetEntry(Entry.TargetGroupIdCastGroup);
-            PositionalAoe     = GameTableManager.Instance.Creature2.GetEntry(Entry.Creature2IdPositionalAoe);
-            AoeGroup          = GameTableManager.Instance.TargetGroup.GetEntry(Entry.TargetGroupIdAoeGroup);
-            PrerequisiteSpell = GameTableManager.Instance.Spell4Base.GetEntry(Entry.Spell4BaseIdPrerequisiteSpell);
-            SpellType         = GameTableManager.Instance.Spell4SpellTypes.GetEntry(Entry.Spell4SpellTypesIdSpellType);
+            ValidTargets      = GameTableManager.Instance.Spell4ValidTargets?.GetEntry(Entry.Spell4ValidTargetId);
+            CastGroup         = GameTableManager.Instance.TargetGroup?.GetEntry(Entry.TargetGroupIdCastGroup);
+            PositionalAoe     = GameTableManager.Instance.Creature2?.GetEntry(Entry.Creature2IdPositionalAoe);
+            AoeGroup          = GameTableManager.Instance.TargetGroup?.GetEntry(Entry.TargetGroupIdAoeGroup);
+            PrerequisiteSpell = GameTableManager.Instance.Spell4Base?.GetEntry(Entry.Spell4BaseIdPrerequisiteSpell);
+            SpellType         = GameTableManager.Instance.Spell4SpellTypes?.GetEntry(Entry.Spell4SpellTypesIdSpellType);
 
             SpellClass        = (SpellClass)Entry.SpellClass;
             CastMethod        = (SpellCastMethod)Entry.CastMethod;
@@ -80,6 +80,10 @@ namespace NexusForever.Game.Spell
         {
             if (tier < 1)
                 tier = 1;
+
+            if (spellInfoStore == null || tier > spellInfoStore.Length)
+                return null;
+
             return spellInfoStore[tier - 1];
         }
     }

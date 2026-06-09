@@ -24,7 +24,13 @@ namespace NexusForever.Game.Account.Unlock
             this.account = account;
 
             foreach (AccountGenericUnlockModel unlockModel in model.AccountGenericUnlock)
-                unlocks.Add(unlockModel.Entry, new GenericUnlock(account, unlockModel));
+            {
+                GenericUnlockEntryEntry entry = GameTableManager.Instance.GenericUnlockEntry?.GetEntry(unlockModel.Entry);
+                if (entry == null)
+                    continue;
+
+                unlocks.Add(unlockModel.Entry, new GenericUnlock(account, entry, false));
+            }
         }
 
         public void Save(AuthContext context)
@@ -38,7 +44,7 @@ namespace NexusForever.Game.Account.Unlock
         /// </summary>
         public void Unlock(ushort genericUnlockEntryId)
         {
-            GenericUnlockEntryEntry entry = GameTableManager.Instance.GenericUnlockEntry.GetEntry(genericUnlockEntryId);
+            GenericUnlockEntryEntry entry = GameTableManager.Instance.GenericUnlockEntry?.GetEntry(genericUnlockEntryId);
             if (entry == null)
             {
                 SendUnlockResult(GenericUnlockResult.Invalid);
@@ -62,7 +68,7 @@ namespace NexusForever.Game.Account.Unlock
         /// </summary>
         public void UnlockAll(GenericUnlockType type)
         {
-            foreach (GenericUnlockEntryEntry entry in GameTableManager.Instance.GenericUnlockEntry.Entries
+            foreach (GenericUnlockEntryEntry entry in (GameTableManager.Instance.GenericUnlockEntry?.Entries ?? [])
                 .Where(e => e.GenericUnlockTypeEnum == type))
             {
                 if (unlocks.ContainsKey(entry.Id))

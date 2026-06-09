@@ -32,7 +32,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
             if (item == null)
                 throw new InvalidPacketValueException();
 
-            HousingDecorInfoEntry entry = gameTableManager.HousingDecorInfo.GetEntry(item.Info.Entry.HousingDecorInfoId);
+            HousingDecorInfoEntry entry = gameTableManager.HousingDecorInfo?.GetEntry(item.Info.Entry.HousingDecorInfoId);
             if (entry == null)
                 throw new InvalidPacketValueException();
 

@@ -169,6 +169,26 @@ namespace NexusForever.Game.Marketplace
                 credits);
         }
 
+        public static void SaveMarketplaceCreditMail(
+            CharacterContext context,
+            ulong recipientCharacterId,
+            ulong credits,
+            string subject,
+            string body)
+        {
+            if (credits == 0ul)
+                return;
+
+            MailItem mail = CreateMail(
+                recipientCharacterId,
+                SenderType.ItemAuction,
+                ContentType.AuctionWon,
+                subject,
+                body,
+                credits);
+            mail.Save(context);
+        }
+
         public static bool TrySendCommodityAuctionReturnMail(ulong recipientCharacterId, uint item2Id, uint quantity)
         {
             return TrySendCommodityAuctionReturnMail(recipientCharacterId, item2Id, quantity, null);
@@ -233,31 +253,16 @@ namespace NexusForever.Game.Marketplace
             if (database == null)
                 return false;
 
-            var parameters = new MailParameters
-            {
-                RecipientCharacterId = recipientCharacterId,
-                MessageType          = senderType,
-                ContentType          = contentType,
-                MoneyToGive          = credits,
-                DeliverySpeed        = DeliverySpeed.Instant
-            };
-
-            if ((senderType == SenderType.ItemAuction || senderType == SenderType.CommodityAuction)
-                && MarketplaceMailTexts.TryGetMarketplaceMailLocalizedTextId(out uint localizedTextId))
-            {
-                parameters.SubjectStringId = localizedTextId;
-                parameters.BodyStringId    = localizedTextId;
-            }
-            else
-            {
-                parameters.Subject = subject;
-                parameters.Body    = body;
-            }
-
             List<(IItem Item, ulong? CharacterId)> itemSnapshots = [];
             try
             {
-                var mail = new MailItem(parameters);
+                MailItem mail = CreateMail(
+                    recipientCharacterId,
+                    senderType,
+                    contentType,
+                    subject,
+                    body,
+                    credits);
 
                 uint index = 0;
                 foreach (IItem item in items)
@@ -282,6 +287,38 @@ namespace NexusForever.Game.Marketplace
             }
 
             return true;
+        }
+
+        private static MailItem CreateMail(
+            ulong recipientCharacterId,
+            SenderType senderType,
+            ContentType contentType,
+            string subject,
+            string body,
+            ulong credits)
+        {
+            var parameters = new MailParameters
+            {
+                RecipientCharacterId = recipientCharacterId,
+                MessageType          = senderType,
+                ContentType          = contentType,
+                MoneyToGive          = credits,
+                DeliverySpeed        = DeliverySpeed.Instant
+            };
+
+            if ((senderType == SenderType.ItemAuction || senderType == SenderType.CommodityAuction)
+                && MarketplaceMailTexts.TryGetMarketplaceMailLocalizedTextId(out uint localizedTextId))
+            {
+                parameters.SubjectStringId = localizedTextId;
+                parameters.BodyStringId    = localizedTextId;
+            }
+            else
+            {
+                parameters.Subject = subject;
+                parameters.Body    = body;
+            }
+
+            return new MailItem(parameters);
         }
 
         private static void PersistMail(CharacterDatabase database, ulong recipientCharacterId, MailItem mail, IEnumerable<IItem> items)
@@ -315,10 +352,10 @@ namespace NexusForever.Game.Marketplace
 
         private static CharacterDatabase TryGetCharacterDatabase()
         {
-            if (LegacyServiceProvider.Provider?.GetService<DatabaseManager>() is not DatabaseManager manager)
-                return null;
+            IDatabaseManager manager = LegacyServiceProvider.Provider?.GetService<IDatabaseManager>()
+                ?? LegacyServiceProvider.Provider?.GetService<DatabaseManager>();
 
-            return manager.GetDatabase<CharacterDatabase>();
+            return manager?.GetDatabase<CharacterDatabase>();
         }
     }
 }

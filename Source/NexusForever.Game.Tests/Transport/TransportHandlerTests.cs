@@ -23,6 +23,7 @@ using NexusForever.Shared;
 using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Entity.Player;
+using NexusForever.WorldServer.Network.Message.Handler.Entity.Vehicle;
 
 namespace NexusForever.Game.Tests.Transport;
 
@@ -84,6 +85,30 @@ public class TransportHandlerTests
     }
 
     [Fact]
+    public void RapidTransport_RejectsWhenTaxiNodeTableUnavailable()
+    {
+        ClientRapidTransportHandler handler = CreateRapidTransportHandler(
+            out RecordingDispatchProxy<IGameTableManager> tableProxy,
+            out IPlayer player,
+            out RecordingDispatchProxy<ICurrencyManager> currencyProxy,
+            out _,
+            out _,
+            out _);
+        tableProxy.SetProperty(nameof(IGameTableManager.TaxiNode), null);
+
+        TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
+        handler.HandleMessage(session, BuildRapidTransport(destinationNodeId: 20));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IUnitEntity.CastSpell)));
+        Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        ServerSpellCastResult result = GetEncryptedMessages(session)
+            .OfType<ServerSpellCastResult>()
+            .Single();
+        Assert.Equal(0u, result.Spell4Id);
+        Assert.Equal(CastResult.RapidTransportInvalid, result.CastResult);
+    }
+
+    [Fact]
     public void RapidTransport_RejectsWhenTaxiRouteTableUnavailable()
     {
         ClientRapidTransportHandler handler = CreateRapidTransportHandler(
@@ -103,6 +128,82 @@ public class TransportHandlerTests
             .OfType<ServerSpellCastResult>()
             .Single();
         Assert.Equal(RapidTransportSpell4Id, result.Spell4Id);
+        Assert.Equal(CastResult.RapidTransportInvalid, result.CastResult);
+    }
+
+    [Fact]
+    public void RapidTransport_RejectsWhenWorldLocationTableUnavailable()
+    {
+        ClientRapidTransportHandler handler = CreateRapidTransportHandler(
+            out RecordingDispatchProxy<IGameTableManager> tableProxy,
+            out IPlayer player,
+            out RecordingDispatchProxy<ICurrencyManager> currencyProxy,
+            out _,
+            out _,
+            out _);
+        tableProxy.SetProperty(nameof(IGameTableManager.WorldLocation2), null);
+
+        TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
+        handler.HandleMessage(session, BuildRapidTransport(destinationNodeId: 20));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IUnitEntity.CastSpell)));
+        Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        ServerSpellCastResult result = GetEncryptedMessages(session)
+            .OfType<ServerSpellCastResult>()
+            .Single();
+        Assert.Equal(0u, result.Spell4Id);
+        Assert.Equal(CastResult.RapidTransportInvalid, result.CastResult);
+    }
+
+    [Fact]
+    public void RapidTransport_RejectsWhenSpellFormulaUnavailable()
+    {
+        ClientRapidTransportHandler handler = CreateRapidTransportHandler(
+            out RecordingDispatchProxy<IGameTableManager> tableProxy,
+            out IPlayer player,
+            out RecordingDispatchProxy<ICurrencyManager> currencyProxy,
+            out _,
+            out _,
+            out _);
+        tableProxy.SetProperty(nameof(IGameTableManager.GameFormula), null);
+
+        TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
+        handler.HandleMessage(session, BuildRapidTransport(destinationNodeId: 20));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IUnitEntity.CastSpell)));
+        Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        ServerSpellCastResult result = GetEncryptedMessages(session)
+            .OfType<ServerSpellCastResult>()
+            .Single();
+        Assert.Equal(0u, result.Spell4Id);
+        Assert.Equal(CastResult.RapidTransportInvalid, result.CastResult);
+    }
+
+    [Fact]
+    public void RapidTransport_RejectsWhenSpellFormulaHasNoSpell()
+    {
+        ClientRapidTransportHandler handler = CreateRapidTransportHandler(
+            out RecordingDispatchProxy<IGameTableManager> tableProxy,
+            out IPlayer player,
+            out RecordingDispatchProxy<ICurrencyManager> currencyProxy,
+            out _,
+            out _,
+            out _);
+        tableProxy.SetProperty(nameof(IGameTableManager.GameFormula), CreateGameTable(new GameFormulaEntry
+        {
+            Id       = RapidTransportSpellGameFormulaId,
+            Dataint0 = 0u
+        }));
+
+        TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
+        handler.HandleMessage(session, BuildRapidTransport(destinationNodeId: 20));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IUnitEntity.CastSpell)));
+        Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        ServerSpellCastResult result = GetEncryptedMessages(session)
+            .OfType<ServerSpellCastResult>()
+            .Single();
+        Assert.Equal(0u, result.Spell4Id);
         Assert.Equal(CastResult.RapidTransportInvalid, result.CastResult);
     }
 
@@ -175,6 +276,46 @@ public class TransportHandlerTests
     }
 
     [Fact]
+    public void FlightPathPurchase_RejectsWhenTaxiNodeTableUnavailable()
+    {
+        ClientFlightPathPurchaseHandler handler = CreateFlightPathHandler(
+            out RecordingDispatchProxy<IGameTableManager> tableProxy,
+            out IPlayer player,
+            out RecordingDispatchProxy<ICurrencyManager> currencyProxy,
+            out _);
+        tableProxy.SetProperty(nameof(IGameTableManager.TaxiNode), null);
+
+        TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
+        handler.HandleMessage(session, BuildFlightPathPurchase(1u));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
+        Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        RecordingDispatchProxy<IPlayer>.Invocation error =
+            Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.SendGenericError)));
+        Assert.Equal(GenericError.EmbarkNoSplineForTaxi, error.Arguments[0]);
+    }
+
+    [Fact]
+    public void FlightPathPurchase_RejectsWhenWorldLocationTableUnavailable()
+    {
+        ClientFlightPathPurchaseHandler handler = CreateFlightPathHandler(
+            out RecordingDispatchProxy<IGameTableManager> tableProxy,
+            out IPlayer player,
+            out RecordingDispatchProxy<ICurrencyManager> currencyProxy,
+            out _);
+        tableProxy.SetProperty(nameof(IGameTableManager.WorldLocation2), null);
+
+        TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
+        handler.HandleMessage(session, BuildFlightPathPurchase(1u));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
+        Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        RecordingDispatchProxy<IPlayer>.Invocation error =
+            Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.SendGenericError)));
+        Assert.Equal(GenericError.EmbarkNoSplineForTaxi, error.Arguments[0]);
+    }
+
+    [Fact]
     public void FlightPathPurchase_RejectsInsufficientCredits()
     {
         ClientFlightPathPurchaseHandler handler = CreateFlightPathHandler(
@@ -216,6 +357,52 @@ public class TransportHandlerTests
         Assert.Equal(40f, teleport.Arguments[1]);
         Assert.Equal(50f, teleport.Arguments[2]);
         Assert.Equal(60f, teleport.Arguments[3]);
+    }
+
+    [Fact]
+    public void VehicleEmbark_LogsDecodedRequestWithoutMutatingVehicleState()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.Guid), 77u);
+        TransportTestSession session = CreateSession(player, out _);
+        var handler = new ClientVehicleEmbarkHandler(NullLogger<ClientVehicleEmbarkHandler>.Instance);
+
+        handler.HandleMessage(session, BuildVehicleEmbark(0x11111111u, unknown1: 3u, unknown2: 0u));
+
+        Assert.Empty(session.EncryptedMessages);
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.Dismount)));
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.SendGenericError)));
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.SetControl)));
+        Assert.Empty(playerProxy.GetInvocations(nameof(IWorldEntity.SetPlatform)));
+        Assert.Empty(playerProxy.GetInvocations(nameof(IWorldEntity.AddPlatformPassenger)));
+    }
+
+    [Fact]
+    public void VehicleDisembark_IgnoresRequestWhenPlayerIsNotPlatformed()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.PlatformGuid), null);
+        TransportTestSession session = CreateSession(player, out _);
+        var handler = new ClientVehicleDisembarkHandler();
+
+        handler.HandleMessage(session, new ClientVehicleDisembark());
+
+        Assert.Empty(session.EncryptedMessages);
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.Dismount)));
+    }
+
+    [Fact]
+    public void VehicleDisembark_DelegatesMountedPlayerToDismount()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.PlatformGuid), 0x22222222u);
+        TransportTestSession session = CreateSession(player, out _);
+        var handler = new ClientVehicleDisembarkHandler();
+
+        handler.HandleMessage(session, new ClientVehicleDisembark());
+
+        Assert.Empty(session.EncryptedMessages);
+        Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.Dismount)));
     }
 
     private static ClientRapidTransportHandler CreateRapidTransportHandler(
@@ -327,6 +514,15 @@ public class TransportHandlerTests
     {
         var message = new ClientFlightPathPurchase();
         message.RouteIds.AddRange(routeIds);
+        return message;
+    }
+
+    private static ClientVehicleEmbark BuildVehicleEmbark(uint vehicleUnitId, uint unknown1, uint unknown2)
+    {
+        var message = new ClientVehicleEmbark();
+        SetPrivateProperty(message, nameof(ClientVehicleEmbark.VehicleUnitId), vehicleUnitId);
+        SetPrivateProperty(message, nameof(ClientVehicleEmbark.Unknown1), unknown1);
+        SetPrivateProperty(message, nameof(ClientVehicleEmbark.Unknown2), unknown2);
         return message;
     }
 

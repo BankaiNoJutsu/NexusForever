@@ -34,14 +34,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Guild
                 {
                     case GuildType.Guild:
                     {
-                        GameFormulaEntry entry = gameTableManager.GameFormula.GetEntry(764);
+                        GameFormulaEntry entry = GetGameFormulaEntry(764);
+                        if (entry == null)
+                            return new GuildResultInfo(GuildResult.UnableToProcess);
+
                         if (!session.Player.CurrencyManager.CanAfford(CurrencyType.Credits, entry.Dataint0))
                             return new GuildResultInfo(GuildResult.NotEnoughCredits);
                         break;
                     }
                     case GuildType.Community:
                     {
-                        GameFormulaEntry entry = gameTableManager.GameFormula.GetEntry(1159);
+                        GameFormulaEntry entry = GetGameFormulaEntry(1159);
+                        if (entry == null)
+                            return new GuildResultInfo(GuildResult.UnableToProcess);
+
                         if (guildRegister.AlternateCost && !session.Account.CurrencyManager.CanAfford(AccountCurrencyType.ServiceToken, entry.Dataint01))
                             return new GuildResultInfo(GuildResult.NotEnoughCredits); // this right guild result for account credits?
                         if (!guildRegister.AlternateCost && !session.Player.CurrencyManager.CanAfford(CurrencyType.Credits, entry.Dataint0))
@@ -70,14 +76,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Guild
             {
                 case GuildType.Guild:
                 {
-                    GameFormulaEntry entry = gameTableManager.GameFormula.GetEntry(RetailCertainRules.GuildCreateCostGameFormulaId);
+                    GameFormulaEntry entry = GetGameFormulaEntry(RetailCertainRules.GuildCreateCostGameFormulaId);
                     if (entry != null)
                         session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, entry.Dataint0);
                     break;
                 }
                 case GuildType.Community:
                 {
-                    GameFormulaEntry entry = gameTableManager.GameFormula.GetEntry(RetailCertainRules.CommunityCreateCostGameFormulaId);
+                    GameFormulaEntry entry = GetGameFormulaEntry(RetailCertainRules.CommunityCreateCostGameFormulaId);
                     if (entry == null)
                         break;
 
@@ -88,6 +94,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Guild
                     break;
                 }
             }
+        }
+
+        private GameFormulaEntry GetGameFormulaEntry(uint id)
+        {
+            return gameTableManager.GameFormula?.GetEntry(id);
         }
     }
 }
