@@ -6,6 +6,8 @@ namespace NexusForever.GameTable.Configuration.Model
     {
         [Required]
         public string GameTablePath { get; set; }
+        public bool ValidateRequiredTablesOnStartup { get; set; } = true;
+        public bool StrictRequiredTables { get; set; }
         public CacheConfig Cache { get; set; }
     }
 }
