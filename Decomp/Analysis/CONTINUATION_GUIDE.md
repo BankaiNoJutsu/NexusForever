@@ -28,6 +28,8 @@ implement server behavior from the evidence in the existing C# codebase.
 | `Decomp/Analysis/scripts/TraceFunctionCallers.java` | Lists direct references to a target function and prints each caller instruction window. |
 | `Decomp/Analysis/function_labels.csv` | Durable function label map. This is the main bridge from native addresses to named evidence. |
 | `Decomp/Analysis/INITIAL_FINDINGS.md` | Living summary of mapped behavior and follow-up implementation. |
+| `Decomp/Analysis/mapping_artifacts/README.md` | Seven-layer durable mapping workflow for opcode provenance, function evidence, structure offsets, dispatcher registrations, source traceability, live evidence bundles, and packet fixture planning. |
+| `Decomp/Analysis/Validate-DecompileMappingArtifacts.ps1` | Validates mapping artifact headers, evidence-ladder states, unique row ids, and review dates. |
 | `Decomp/Analysis/STOREFRONT_CATALOG_UNAVAILABLE.md` | Resolved local storefront *Catalogue Unavailable* chain (realm data center id, catalog timing, `0x0989`). |
 | `Decomp/Analysis/Get-DecompCoverageSnapshot.ps1` | Generates the current export and opcode coverage inventories from local artifacts and source. |
 | `Decomp/Analysis/exports/<binary>/selected_reasons_summary.csv` | Selection audit for the focused export, including why a function was selected and whether it is inside the current decompile cutoff. |
@@ -56,8 +58,8 @@ The default analysis targets are:
 1. Keep client binaries, Ghidra projects, logs, and decompiled exports out of
    source control.
 2. Keep durable knowledge in source-controlled artifacts:
-   `function_labels.csv`, `INITIAL_FINDINGS.md`, focused tracker documents, and
-   clean C# implementation changes.
+   `function_labels.csv`, `INITIAL_FINDINGS.md`, `mapping_artifacts/*.csv`,
+   focused tracker documents, and clean C# implementation changes.
 3. Prefer behavioral summaries over copied decompiler output. Use addresses,
    function names, export file names, and short line references to make evidence
    findable.
@@ -390,7 +392,33 @@ Avoid over-naming helper functions too early. A name like
 like `CryptoHandshake_FinaliseRetailSecureLogin` is too strong unless every
 part of that claim is mapped.
 
-### 5. Add Durable Labels
+### 5. Update Mapping Artifacts
+
+When the pass produces reusable evidence, update the relevant CSV under
+`Decomp/Analysis/mapping_artifacts` before or alongside findings updates:
+
+| Layer | File |
+| --- | --- |
+| Native opcode provenance | `native_opcode_provenance.csv` |
+| Function evidence | `function_evidence_inventory.csv` |
+| Structure and offset maps | `structure_offset_maps.csv` |
+| Dispatcher or registration rows | `dispatcher_registration_exports.csv` |
+| Native-to-source traceability | `source_traceability_map.csv` |
+| Live-client capture plan or result | `live_evidence_bundle_manifest.csv` |
+| Packet fixture backlog | `packet_fixture_plan.csv` |
+
+Use these ledgers for compact facts: function labels, addresses, opcodes, field
+order, bit widths, source paths, confidence state, and blockers. Keep longer
+explanations in `INITIAL_FINDINGS.md` or a focused tracker, then point the CSV
+row at that finding.
+
+Validate the ledgers after edits:
+
+```powershell
+.\Decomp\Analysis\Validate-DecompileMappingArtifacts.ps1
+```
+
+### 6. Add Durable Labels
 
 Add labels to `Decomp/Analysis/function_labels.csv` after the function is mapped
 well enough to be useful in future exports.
@@ -433,7 +461,7 @@ If the script reports "No function at address", open the function in Ghidra or
 check `functions.csv`; the address may be inside a thunk or a containing
 function. Use the real function entry when possible.
 
-### 6. Update Export Selection When Needed
+### 7. Update Export Selection When Needed
 
 If a target string is repeatedly useful but not exported as interesting, add it
 to `HIGH_VALUE_STRING_PATTERNS` in
@@ -789,6 +817,13 @@ Before adding labels:
 - [ ] Any MCP/Ghidra-only rename worth keeping is mirrored to `function_labels.csv`.
 - [ ] Export-only run applies the label.
 - [ ] Label appears in generated exports.
+
+Before finishing a mapping-only pass:
+
+- [ ] Relevant `mapping_artifacts/*.csv` rows were added or intentionally left unchanged.
+- [ ] `Validate-DecompileMappingArtifacts.ps1` passes.
+- [ ] Longer evidence is recorded in `INITIAL_FINDINGS.md` or a focused tracker when the CSV row cannot stand alone.
+- [ ] Source traceability, fixture backlog, and live evidence blockers are explicit when they apply.
 
 Before changing Ghidra datatypes:
 

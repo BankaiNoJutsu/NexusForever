@@ -345,12 +345,32 @@ can confirm whether they reused the existing export or invalidated it.
 
 `run_ghidra_analysis.ps1` refreshes these coverage artifacts after each run.
 
+Durable mapping ledgers live under `Decomp\Analysis\mapping_artifacts`:
+
+- `native_opcode_provenance.csv` - opcode to native registration, payload functions, source model/handler, status, and blocker.
+- `function_evidence_inventory.csv` - evidence behind durable labels and mapped function families.
+- `structure_offset_maps.csv` - wire, memory, XML, or table offsets with size and access evidence.
+- `dispatcher_registration_exports.csv` - curated registration-table, dispatcher, vtable, and callback-family rows.
+- `source_traceability_map.csv` - native evidence to NexusForever source and test coverage.
+- `live_evidence_bundle_manifest.csv` - repeatable live-client capture plans and results.
+- `packet_fixture_plan.csv` - packet layouts that should become encode/decode fixtures.
+
+Validate those ledgers after edits:
+
+```powershell
+.\Decomp\Analysis\Validate-DecompileMappingArtifacts.ps1
+```
+
 The client binaries, Ghidra projects, exports, and raw logs are reproducible
 local artifacts and are ignored by Git. Coverage reports live outside the
 ignored `logs` tree so they can be reviewed and committed when useful.
 
 See `INITIAL_FINDINGS.md` for the first pass of protocol/data anchors found in
 the generated exports.
+
+See [mapping_artifacts/README.md](mapping_artifacts/README.md) for the durable
+seven-layer mapping workflow that links native evidence to source traceability,
+live evidence bundles, and packet fixture planning.
 
 See [CLIENT_LOGGING.md](CLIENT_LOGGING.md) for evidence-backed retail client
 `CLog` switches, severity levels, and NexusForever launcher integration.

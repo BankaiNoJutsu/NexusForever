@@ -242,6 +242,15 @@ export-only verification for the affected binary. If it only improves local
 Ghidra types, record the structure map in `INITIAL_FINDINGS.md` or a focused
 tracker and explain why no source behavior changed.
 
+Also add or update `Decomp/Analysis/mapping_artifacts/structure_offset_maps.csv`
+with the durable offset facts: map kind, structure name, binary, function
+family, offset kind, offset, size, access mode, field name, evidence, source
+path, confidence state, and blocker. Run:
+
+```powershell
+.\Decomp\Analysis\Validate-DecompileMappingArtifacts.ps1
+```
+
 ## Phase 9: Decide The NexusForever Action
 
 Use the evidence ladder:
@@ -271,6 +280,8 @@ scripts, or code-owned assets first.
 - [ ] Type application was verified in every updated function.
 - [ ] Field offsets, structure size, stride, and alignment were checked.
 - [ ] Durable labels, findings, or tracker notes were updated.
+- [ ] `mapping_artifacts/structure_offset_maps.csv` was updated or explicitly not needed.
+- [ ] `Validate-DecompileMappingArtifacts.ps1` passes when mapping artifacts changed.
 - [ ] Generated exports and local Ghidra artifacts were not committed.
 - [ ] Final state is `Mapped only`, `Implemented`, `Rejected`, or `Blocked`.
 
