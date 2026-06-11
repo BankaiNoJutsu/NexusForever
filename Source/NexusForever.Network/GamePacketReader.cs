@@ -61,11 +61,38 @@ namespace NexusForever.Network
         private ulong ReadBits(uint bits)
         {
             ulong value = 0ul;
-            for (uint i = 0u; i < bits; i++)
-                if (ReadBit())
-                    value |= 1ul << (int)i;
+            int outputShift = 0;
+            while (bits != 0u)
+            {
+                int bitIndex = MoveToNextBit();
+                int availableBits = 8 - bitIndex;
+                int chunkBits = (int)Math.Min(bits, (uint)availableBits);
+                ulong mask = (1ul << chunkBits) - 1ul;
+
+                value |= (((ulong)currentBitValue >> bitIndex) & mask) << outputShift;
+                currentBitPosition = (byte)(bitIndex + chunkBits - 1);
+
+                bits -= (uint)chunkBits;
+                outputShift += chunkBits;
+            }
 
             return value;
+        }
+
+        private int MoveToNextBit()
+        {
+            currentBitPosition++;
+            if (currentBitPosition <= 7)
+                return currentBitPosition;
+
+            currentBitPosition = 0;
+
+            int value = stream.ReadByte();
+            if (value == -1)
+                throw new EndOfStreamException();
+
+            currentBitValue = (byte)value;
+            return currentBitPosition;
         }
 
         public byte ReadByte(uint bits = 8u)
@@ -224,7 +251,15 @@ namespace NexusForever.Network
 
         public byte[] ReadBytes(uint length)
         {
-            byte[] data = new byte[length];
+            byte[] data = new byte[checked((int)length)];
+            if (length != 0u && currentBitPosition >= 7)
+            {
+                stream.ReadExactly(data);
+                currentBitPosition = 7;
+                currentBitValue = 0;
+                return data;
+            }
+
             for (uint i = 0u; i < length; i++)
                 data[i] = ReadByte();
 

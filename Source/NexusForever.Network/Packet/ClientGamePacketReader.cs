@@ -21,7 +21,7 @@ namespace NexusForever.Network.Packet
             if (stream != null || reader != null)
                 throw new InvalidOperationException();
 
-            PlaintextData = packet.IsEncrypted ? encryption.Decrypt(packet.Data, packet.Data.Length) : packet.Data.ToArray();
+            PlaintextData = packet.IsEncrypted ? encryption.Decrypt(packet.Data, packet.Data.Length) : packet.Data;
             stream = new MemoryStream(PlaintextData);
             reader = new GamePacketReader(stream);
         }

@@ -49,8 +49,21 @@ namespace NexusForever.Network
                     throw new ArgumentOutOfRangeException(nameof(value), value, $"Value exceeds the {bits}-bit wire limit.");
             }
 
-            for (int i = 0; i < bits; i++)
-                Write(Convert.ToBoolean((value >> i) & 1));
+            while (bits != 0u)
+            {
+                int availableBits = 8 - bitPosition;
+                int chunkBits = (int)Math.Min(bits, (uint)availableBits);
+                ulong mask = (1ul << chunkBits) - 1ul;
+
+                bitValue |= (byte)((value & mask) << bitPosition);
+                bitPosition += (byte)chunkBits;
+
+                value >>= chunkBits;
+                bits -= (uint)chunkBits;
+
+                if (bitPosition == 8)
+                    FlushBits();
+            }
         }
 
         public void Write(byte value, uint bits = 8u)
@@ -129,6 +142,12 @@ namespace NexusForever.Network
         {
             if (length != 0 && length != data.Length)
                 throw new ArgumentException();
+
+            if (bitPosition == 0)
+            {
+                stream.Write(data, 0, data.Length);
+                return;
+            }
 
             foreach (byte value in data)
                 WriteBits(value, 8);
