@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using NexusForever.Database;
 using NexusForever.Database.Character;
@@ -17,7 +16,6 @@ using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Housing;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class ResidenceTests
 {
     [Theory]
@@ -25,16 +23,16 @@ public class ResidenceTests
     [InlineData(true)]
     public void VisualSetters_WithMissingStaticTablesRejectWithoutMutation(bool includeEmptyTables)
     {
-        using var scope = new LegacyServiceProviderScope(BuildGameTableProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             includeEmptyTables ? CreateGameTable<HousingWallpaperInfoEntry>() : null,
-            includeEmptyTables ? CreateGameTable<HousingDecorInfoEntry>() : null));
+            includeEmptyTables ? CreateGameTable<HousingDecorInfoEntry>() : null);
         var residence = new Residence(new ResidenceModel
         {
             Id             = 100ul,
             OwnerId        = 200ul,
             Name           = "Test Residence",
             PropertyInfoId = (byte)PropertyInfoId.Residence
-        });
+        }, gameTableManager: gameTableManager);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => residence.Wallpaper = 10);
         Assert.Throws<ArgumentOutOfRangeException>(() => residence.Roof = 20);
@@ -57,7 +55,7 @@ public class ResidenceTests
     [Fact]
     public void VisualSetters_WithKnownStaticDataAcceptAndMarkDirty()
     {
-        using var scope = new LegacyServiceProviderScope(BuildGameTableProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             CreateGameTable(
                 new HousingWallpaperInfoEntry
                 {
@@ -90,14 +88,14 @@ public class ResidenceTests
                 new HousingDecorInfoEntry
                 {
                     Id = 22u
-                })));
+                }));
         var residence = new Residence(new ResidenceModel
         {
             Id             = 100ul,
             OwnerId        = 200ul,
             Name           = "Test Residence",
             PropertyInfoId = (byte)PropertyInfoId.Residence
-        });
+        }, gameTableManager: gameTableManager);
 
         residence.Wallpaper = 10;
         residence.Roof = 20;
@@ -122,9 +120,9 @@ public class ResidenceTests
     [InlineData(true)]
     public void Constructor_WithMissingWallpaperStaticDataForInteriorWallpaperThrowsDatabaseDataException(bool includeEmptyTable)
     {
-        using var scope = new LegacyServiceProviderScope(BuildGameTableProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             includeEmptyTable ? CreateGameTable<HousingWallpaperInfoEntry>() : null,
-            null));
+            null);
 
         Assert.Throws<DatabaseDataException>(() => new Residence(new ResidenceModel
         {
@@ -142,7 +140,7 @@ public class ResidenceTests
                     DecorType   = (uint)DecorType.InteriorWallpaper
                 }
             ]
-        }));
+        }, gameTableManager: gameTableManager));
     }
 
     [Theory]
@@ -150,9 +148,9 @@ public class ResidenceTests
     [InlineData(true)]
     public void Constructor_WithMissingDecorStaticDataThrowsDatabaseDataException(bool includeEmptyTable)
     {
-        using var scope = new LegacyServiceProviderScope(BuildGameTableProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             null,
-            includeEmptyTable ? CreateGameTable<HousingDecorInfoEntry>() : null));
+            includeEmptyTable ? CreateGameTable<HousingDecorInfoEntry>() : null);
 
         Assert.Throws<DatabaseDataException>(() => new Residence(new ResidenceModel
         {
@@ -170,82 +168,52 @@ public class ResidenceTests
                     DecorType   = (uint)DecorType.Crate
                 }
             ]
-        }));
+        }, gameTableManager: gameTableManager));
     }
 
     [Fact]
     public void Build_ForPersonalResidence_UsesZeroNeighbourhoodId()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        try
+        ServerHousingProperties.Residence packet = new Residence(new ResidenceModel
         {
-            LegacyServiceProvider.Provider = BuildRealmProvider(7);
+            Id = 100ul,
+            OwnerId = 200ul,
+            Name = "Personal Residence",
+            PropertyInfoId = (byte)PropertyInfoId.Residence
+        }, realmId: 7).Build();
 
-            ServerHousingProperties.Residence packet = new Residence(new ResidenceModel
-            {
-                Id = 100ul,
-                OwnerId = 200ul,
-                Name = "Personal Residence",
-                PropertyInfoId = (byte)PropertyInfoId.Residence
-            }).Build();
-
-            Assert.Equal(0ul, packet.NeighbourhoodId);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(0ul, packet.NeighbourhoodId);
     }
 
     [Fact]
     public void Build_ForCommunityResidence_UsesGuildOwnerAsNeighbourhoodId()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        try
+        ServerHousingProperties.Residence packet = new Residence(new ResidenceModel
         {
-            LegacyServiceProvider.Provider = BuildRealmProvider(7);
+            Id = 100ul,
+            GuildOwnerId = 0x1122334455667788ul,
+            Name = "Community Residence",
+            PropertyInfoId = (byte)PropertyInfoId.Community
+        }, realmId: 7).Build();
 
-            ServerHousingProperties.Residence packet = new Residence(new ResidenceModel
-            {
-                Id = 100ul,
-                GuildOwnerId = 0x1122334455667788ul,
-                Name = "Community Residence",
-                PropertyInfoId = (byte)PropertyInfoId.Community
-            }).Build();
-
-            Assert.Equal(0x1122334455667788ul, packet.NeighbourhoodId);
-            Assert.Equal(0x1122334455667788ul, packet.GuildIdOwner);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(0x1122334455667788ul, packet.NeighbourhoodId);
+        Assert.Equal(0x1122334455667788ul, packet.GuildIdOwner);
     }
 
     [Fact]
     public void Build_ForCommunityChildResidence_UsesGuildOwnerAsNeighbourhoodId()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        try
+        ServerHousingProperties.Residence packet = new Residence(new ResidenceModel
         {
-            LegacyServiceProvider.Provider = BuildRealmProvider(7);
+            Id = 100ul,
+            OwnerId = 200ul,
+            GuildOwnerId = 0x1122334455667788ul,
+            Name = "Child Residence",
+            PropertyInfoId = (byte)PropertyInfoId.Residence
+        }, realmId: 7).Build();
 
-            ServerHousingProperties.Residence packet = new Residence(new ResidenceModel
-            {
-                Id = 100ul,
-                OwnerId = 200ul,
-                GuildOwnerId = 0x1122334455667788ul,
-                Name = "Child Residence",
-                PropertyInfoId = (byte)PropertyInfoId.Residence
-            }).Build();
-
-            Assert.Equal(0x1122334455667788ul, packet.NeighbourhoodId);
-            Assert.Equal(0ul, packet.GuildIdOwner.GetValueOrDefault(0ul));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(0x1122334455667788ul, packet.NeighbourhoodId);
+        Assert.Equal(0ul, packet.GuildIdOwner.GetValueOrDefault(0ul));
     }
 
     [Fact]
@@ -286,48 +254,39 @@ public class ResidenceTests
     [Fact]
     public void Decor_BuildPreservesNativeDecorStateFields()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        try
+        IResidence residence = RecordingDispatchProxy<IResidence>.Create(out RecordingDispatchProxy<IResidence> residenceProxy);
+        residenceProxy.SetProperty(nameof(IResidence.Id), 100ul);
+        residenceProxy.SetProperty(nameof(IResidence.RealmId), (ushort)7);
+
+        var decor = new Decor(residence, new ResidenceDecor
         {
-            LegacyServiceProvider.Provider = BuildRealmProvider(7);
+            Id = 100ul,
+            DecorId = 200ul,
+            DecorInfoId = 300u,
+            DecorType = (uint)DecorType.InteriorWallpaper,
+            DecorData = 400u,
+            HookBagIndex = 500u,
+            HookIndex = 6u,
+            PlotIndex = 700u,
+            Scale = 1.5f,
+            ActivePropUnitId = 800u,
+            DecorParentId = 900ul,
+            ColourShiftId = 1000
+        }, null);
 
-            IResidence residence = RecordingDispatchProxy<IResidence>.Create(out RecordingDispatchProxy<IResidence> residenceProxy);
-            residenceProxy.SetProperty(nameof(IResidence.Id), 100ul);
+        ServerHousingResidenceDecor.Decor packet = decor.Build();
 
-            var decor = new Decor(residence, new ResidenceDecor
-            {
-                Id = 100ul,
-                DecorId = 200ul,
-                DecorInfoId = 300u,
-                DecorType = (uint)DecorType.InteriorWallpaper,
-                DecorData = 400u,
-                HookBagIndex = 500u,
-                HookIndex = 6u,
-                PlotIndex = 700u,
-                Scale = 1.5f,
-                ActivePropUnitId = 800u,
-                DecorParentId = 900ul,
-                ColourShiftId = 1000
-            }, null);
-
-            ServerHousingResidenceDecor.Decor packet = decor.Build();
-
-            Assert.Equal(7u, packet.RealmId);
-            Assert.Null(decor.Entry);
-            Assert.Equal(300u, packet.DecorInfoId);
-            Assert.Equal(DecorType.InteriorWallpaper, packet.DecorType);
-            Assert.Equal(400u, packet.DecorData);
-            Assert.Equal(500u, packet.HookBagIndex);
-            Assert.Equal(6u, packet.HookIndex);
-            Assert.Equal(700u, packet.PlotIndex);
-            Assert.Equal(800u, packet.ActivePropUnitId);
-            Assert.Equal(900ul, packet.ParentDecorId);
-            Assert.Equal(1000u, packet.ColourShift);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(7u, packet.RealmId);
+        Assert.Null(decor.Entry);
+        Assert.Equal(300u, packet.DecorInfoId);
+        Assert.Equal(DecorType.InteriorWallpaper, packet.DecorType);
+        Assert.Equal(400u, packet.DecorData);
+        Assert.Equal(500u, packet.HookBagIndex);
+        Assert.Equal(6u, packet.HookIndex);
+        Assert.Equal(700u, packet.PlotIndex);
+        Assert.Equal(800u, packet.ActivePropUnitId);
+        Assert.Equal(900ul, packet.ParentDecorId);
+        Assert.Equal(1000u, packet.ColourShift);
     }
 
     [Fact]
@@ -434,20 +393,7 @@ public class ResidenceTests
         Assert.Null(decor.Entry);
     }
 
-    private static IServiceProvider BuildRealmProvider(ushort realmId)
-    {
-        IDatabaseManager databaseManager = RecordingDispatchProxy<IDatabaseManager>.Create(out _);
-        var realmContext = new RealmContext(databaseManager);
-        typeof(RealmContext)
-            .GetProperty(nameof(RealmContext.RealmId))!
-            .SetValue(realmContext, realmId);
-
-        return new ServiceCollection()
-            .AddSingleton(realmContext)
-            .BuildServiceProvider();
-    }
-
-    private static IServiceProvider BuildGameTableProvider(
+    private static GameTableManager CreateGameTableManager(
         GameTable<HousingWallpaperInfoEntry> housingWallpaperInfoTable,
         GameTable<HousingDecorInfoEntry> housingDecorInfoTable)
     {
@@ -457,9 +403,7 @@ public class ResidenceTests
         if (housingDecorInfoTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.HousingDecorInfo), housingDecorInfoTable);
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

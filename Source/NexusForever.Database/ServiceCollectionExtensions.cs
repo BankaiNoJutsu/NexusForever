@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NexusForever.Shared;
 
 namespace NexusForever.Database
 {
@@ -7,7 +6,7 @@ namespace NexusForever.Database
     {
         public static void AddDatabase(this IServiceCollection sc)
         {
-            sc.AddSingletonLegacy<IDatabaseManager, DatabaseManager>();
+            sc.AddSingleton<IDatabaseManager, DatabaseManager>();
         }
     }
 }

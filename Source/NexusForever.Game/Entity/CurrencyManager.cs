@@ -40,7 +40,7 @@ namespace NexusForever.Game.Entity
 
             foreach (CharacterCurrencyModel currencyModel in model.Currency)
             {
-                var currency = new Currency(currencyModel);
+                var currency = new Currency(currencyModel, gameTableManager);
                 currencies.Add(currency.Id, currency);
             }
         }

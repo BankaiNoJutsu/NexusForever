@@ -1,5 +1,4 @@
 using System.Numerics;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Chat;
 using NexusForever.Game.Abstract.Entity;
@@ -53,7 +52,7 @@ namespace NexusForever.Game.Entity
             set
             {
                 CreatureInfo  = null;
-                CreatureEntry = GameTableManager.Instance.Creature2.GetEntry(value);
+                CreatureEntry = GetGameTableManager().Creature2.GetEntry(value);
                 SetVisualEmit(true);
             }
         }
@@ -66,7 +65,7 @@ namespace NexusForever.Game.Entity
             get => CreatureDisplayEntry?.Id ?? 0;
             set
             {
-                CreatureDisplayEntry = GameTableManager.Instance.Creature2DisplayInfo.GetEntry(value);
+                CreatureDisplayEntry = GetGameTableManager().Creature2DisplayInfo.GetEntry(value);
                 SetVisualEmit(true);
             }
         }
@@ -78,7 +77,7 @@ namespace NexusForever.Game.Entity
             get => (ushort)(CreatureOutfitEntry?.Id ?? 0);
             set
             {
-                CreatureOutfitEntry = GameTableManager.Instance.Creature2OutfitInfo.GetEntry(value);
+                CreatureOutfitEntry = GetGameTableManager().Creature2OutfitInfo.GetEntry(value);
                 SetVisualEmit(true);
             }
         }
@@ -203,6 +202,8 @@ namespace NexusForever.Game.Entity
         private IEntitySummonFactory summonFactory;
         private Func<IEntitySummonFactory> summonFactoryResolver;
         private Func<ICreatureInfoManager> creatureInfoManagerResolver;
+        private Func<IFactionManager> factionManagerResolver;
+        private Func<IGameTableManager> gameTableManagerResolver;
 
         /// <summary>
         /// Factory used to summon child entities owned by this <see cref="IWorldEntity"/>.
@@ -211,8 +212,7 @@ namespace NexusForever.Game.Entity
 
         private IEntitySummonFactory InitialiseSummonFactory()
         {
-            IEntitySummonFactory factory = summonFactoryResolver?.Invoke()
-                ?? LegacyServiceProvider.Provider?.GetService<IEntitySummonFactory>();
+            IEntitySummonFactory factory = summonFactoryResolver?.Invoke();
             factory?.Initialise(this);
             return factory;
         }
@@ -260,10 +260,14 @@ namespace NexusForever.Game.Entity
 
         internal void InitialiseRuntimeDependencies(
             Func<IEntitySummonFactory> summonFactoryResolver,
-            Func<ICreatureInfoManager> creatureInfoManagerResolver)
+            Func<ICreatureInfoManager> creatureInfoManagerResolver,
+            Func<IFactionManager> factionManagerResolver,
+            Func<IGameTableManager> gameTableManagerResolver)
         {
             this.summonFactoryResolver = summonFactoryResolver;
             this.creatureInfoManagerResolver = creatureInfoManagerResolver;
+            this.factionManagerResolver = factionManagerResolver;
+            this.gameTableManagerResolver = gameTableManagerResolver;
         }
 
         #endregion
@@ -361,8 +365,7 @@ namespace NexusForever.Game.Entity
 
         private ICreatureInfo GetCreatureInfo(uint creatureId)
         {
-            ICreatureInfoManager manager = creatureInfoManagerResolver?.Invoke()
-                ?? LegacyServiceProvider.Provider?.GetService<ICreatureInfoManager>();
+            ICreatureInfoManager manager = creatureInfoManagerResolver?.Invoke();
             return manager?.GetCreatureInfo(creatureId);
         }
 
@@ -425,7 +428,7 @@ namespace NexusForever.Game.Entity
 
         private static IStatValue CreateStatValue(Stat stat, float value)
         {
-            StatAttribute attribute = EntityManager.Instance.GetStatAttribute(stat);
+            StatAttribute attribute = EntityManager.GetStatAttributeFor(stat);
             return attribute?.Type == StatType.Integer
                 ? new StatValue(stat, (uint)value)
                 : new StatValue(stat, value);
@@ -490,7 +493,7 @@ namespace NexusForever.Game.Entity
             uint? worldAreaId = Map.File.GetWorldAreaId(vector);
             if (worldAreaId.HasValue && Zone?.Id != worldAreaId)
             {
-                Zone = GameTableManager.Instance.WorldZone.GetEntry(worldAreaId.Value);
+                Zone = GetGameTableManager().WorldZone.GetEntry(worldAreaId.Value);
                 if (Zone != null)
                 {
                     OnZoneUpdate();
@@ -823,7 +826,7 @@ namespace NexusForever.Game.Entity
         /// </remarks>
         protected virtual float CalculateDefaultProperty(Property property)
         {
-            UnitProperty2Entry entry = GameTableManager.Instance.UnitProperty2.GetEntry((uint)property);
+            UnitProperty2Entry entry = GetGameTableManager().UnitProperty2.GetEntry((uint)property);
             if (entry == null)
                 return 0f;
 
@@ -840,13 +843,13 @@ namespace NexusForever.Game.Entity
             if (property >= Property.MoveSpeedMultiplier)
             {
                 // final row is used for anything above property 100
-                level = (uint)GameTableManager.Instance.CreatureLevel.Entries.Length;
+                level = (uint)GetGameTableManager().CreatureLevel.Entries.Length;
 
                 // creature level entry only has 100 columns for properties, wrap around for higher values
                 levelProperty = (Property)(property - Property.MoveSpeedMultiplier);
             }
 
-            CreatureLevelEntry levelEntry = GameTableManager.Instance.CreatureLevel.GetEntry(level);
+            CreatureLevelEntry levelEntry = GetGameTableManager().CreatureLevel.GetEntry(level);
             if (levelEntry == null)
                 return entry.DefaultValue;
 
@@ -990,7 +993,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         protected float? GetStatFloat(Stat stat)
         {
-            StatAttribute attribute = EntityManager.Instance.GetStatAttribute(stat);
+            StatAttribute attribute = EntityManager.GetStatAttributeFor(stat);
             if (attribute?.Type != StatType.Float)
                 throw new ArgumentException();
 
@@ -1005,7 +1008,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         protected uint? GetStatInteger(Stat stat)
         {
-            StatAttribute attribute = EntityManager.Instance.GetStatAttribute(stat);
+            StatAttribute attribute = EntityManager.GetStatAttributeFor(stat);
             if (attribute?.Type != StatType.Integer)
                 throw new ArgumentException();
 
@@ -1032,7 +1035,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         protected void SetStat(Stat stat, float value)
         {
-            StatAttribute attribute = EntityManager.Instance.GetStatAttribute(stat);
+            StatAttribute attribute = EntityManager.GetStatAttributeFor(stat);
             if (attribute?.Type != StatType.Float)
                 throw new ArgumentException();
 
@@ -1066,7 +1069,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         protected void SetStat(Stat stat, uint value)
         {
-            StatAttribute attribute = EntityManager.Instance.GetStatAttribute(stat);
+            StatAttribute attribute = EntityManager.GetStatAttributeFor(stat);
             if (attribute?.Type != StatType.Integer)
                 throw new ArgumentException();
 
@@ -1210,7 +1213,7 @@ namespace NexusForever.Game.Entity
             if (factionId == Faction.None)
                 return Disposition.Unknown;
 
-            IFactionNode targetFaction = FactionManager.Instance.GetFaction(factionId);
+            IFactionNode targetFaction = GetFactionManager().GetFaction(factionId);
             if (targetFaction == null)
                 throw new ArgumentException($"Invalid faction {factionId}!");
 
@@ -1219,7 +1222,7 @@ namespace NexusForever.Game.Entity
             if (dispositionFromFactionTarget.HasValue)
                 return dispositionFromFactionTarget.Value;
 
-            IFactionNode invokeFaction = FactionManager.Instance.GetFaction(primary ? Faction1 : Faction2);
+            IFactionNode invokeFaction = GetFactionManager().GetFaction(primary ? Faction1 : Faction2);
             Disposition? dispositionFromFactionInvoker = GetDispositionFromFactionFriendship(invokeFaction, factionId);
             if (dispositionFromFactionInvoker.HasValue)
                 return dispositionFromFactionInvoker.Value;
@@ -1247,6 +1250,18 @@ namespace NexusForever.Game.Entity
             return GetDispositionFromFactionFriendship(node.Parent, factionId);
         }
 
+        private IFactionManager GetFactionManager()
+        {
+            return factionManagerResolver?.Invoke()
+                ?? throw new InvalidOperationException("World entity faction manager has not been initialised.");
+        }
+
+        protected IGameTableManager GetGameTableManager()
+        {
+            return gameTableManagerResolver?.Invoke()
+                ?? throw new InvalidOperationException("World entity game table manager has not been initialised.");
+        }
+
         private IChatMessageBuilder BuildNpcChat(string text, ChatChannelType type)
         {
             return new ChatMessageBuilder
@@ -1254,7 +1269,7 @@ namespace NexusForever.Game.Entity
                 Type     = type,
                 Text     = text,
                 Guid     = Guid,
-                FromName = GameTableManager.Instance.TextEnglish.GetEntry(CreatureEntry.LocalizedTextIdName)
+                FromName = GetGameTableManager().TextEnglish.GetEntry(CreatureEntry.LocalizedTextIdName)
             };
         }
 

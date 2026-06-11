@@ -27,20 +27,20 @@ namespace NexusForever.Game.Entity
         public override void Initialise(EntityModel model)
         {
             base.Initialise(model);
-            scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<ISimpleEntity>(this);
+            scriptCollection = GetScriptManager().InitialiseEntityScripts<ISimpleEntity>(this);
             QuestChecklistIdx = model.QuestChecklistIdx;
         }
 
         public override void Initialise(ICreatureInfo creatureInfo)
         {
             base.Initialise(creatureInfo);
-            scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<ISimpleEntity>(this);
+            scriptCollection = GetScriptManager().InitialiseEntityScripts<ISimpleEntity>(this);
         }
 
         public override void Initialise(ICreatureInfo creatureInfo, EntityModel model)
         {
             base.Initialise(creatureInfo, model);
-            scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<ISimpleEntity>(this);
+            scriptCollection = GetScriptManager().InitialiseEntityScripts<ISimpleEntity>(this);
             QuestChecklistIdx = model.QuestChecklistIdx;
         }
 

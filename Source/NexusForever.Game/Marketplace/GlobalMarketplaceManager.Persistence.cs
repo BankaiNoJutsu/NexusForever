@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
@@ -182,7 +181,7 @@ namespace NexusForever.Game.Marketplace
             return amount != 0ul && onlineOwner == null;
         }
 
-        private static void SaveOfflineCreditIfOwnerOffline(
+        private void SaveOfflineCreditIfOwnerOffline(
             CharacterContext context,
             ulong characterId,
             ulong amount,
@@ -386,7 +385,7 @@ namespace NexusForever.Game.Marketplace
             }
         }
 
-        private static void SaveOfflineCredit(
+        private void SaveOfflineCredit(
             CharacterContext context,
             ulong characterId,
             CurrencyType currencyType,
@@ -402,7 +401,9 @@ namespace NexusForever.Game.Marketplace
                     characterId,
                     amount,
                     MarketplaceCreditSubject,
-                    MarketplaceCreditBody);
+                    MarketplaceCreditBody,
+                    GetGameTableManager(),
+                    assetManager);
                 return;
             }
 
@@ -424,11 +425,7 @@ namespace NexusForever.Game.Marketplace
 
         private CharacterDatabase TryGetCharacterDatabase()
         {
-            IDatabaseManager manager = databaseManager
-                ?? LegacyServiceProvider.Provider?.GetService<IDatabaseManager>()
-                ?? LegacyServiceProvider.Provider?.GetService<DatabaseManager>();
-
-            return manager?.GetDatabase<CharacterDatabase>();
+            return databaseManager?.GetDatabase<CharacterDatabase>();
         }
     }
 }

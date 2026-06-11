@@ -3,18 +3,27 @@ using NexusForever.Game.Configuration.Model;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.IO.Map;
-using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
 using NLog;
 
 namespace NexusForever.Game.Map
 {
-    public sealed class MapIOManager : Singleton<MapIOManager>, IMapIOManager
+    public sealed class MapIOManager : IMapIOManager
     {
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
 
         private readonly Dictionary<string, MapFile> mapFiles = new();
         private readonly object mapFileLock = new();
+        private readonly ISharedConfiguration sharedConfiguration;
+        private readonly IGameTableManager gameTableManager;
+
+        public MapIOManager(
+            ISharedConfiguration sharedConfiguration = null,
+            IGameTableManager gameTableManager = null)
+        {
+            this.sharedConfiguration = sharedConfiguration;
+            this.gameTableManager    = gameTableManager;
+        }
 
         public void Initialise()
         {
@@ -26,7 +35,7 @@ namespace NexusForever.Game.Map
         {
             log.Info("Validating map files...");
 
-            string mapPath = SharedConfiguration.Instance.Get<MapConfig>().MapPath;
+            string mapPath = GetMapConfig().MapPath;
             if (mapPath == null || !Directory.Exists(mapPath))
                 throw new DirectoryNotFoundException("Invalid path to base maps! Make sure you have set it in the configuration file.");
 
@@ -43,13 +52,16 @@ namespace NexusForever.Game.Map
         {
             log.Info("Caching map files...");
 
-            List<ushort> precachedBaseMaps = SharedConfiguration.Instance.Get<MapConfig>().PrecacheBaseMaps;
+            List<ushort> precachedBaseMaps = GetMapConfig().PrecacheBaseMaps;
             if (precachedBaseMaps == null)
                 return;
 
             foreach (ushort worldId in precachedBaseMaps)
             {
-                WorldEntry entry = GameTableManager.Instance.World.GetEntry(worldId);
+                if (gameTableManager == null)
+                    throw new InvalidOperationException("MapIOManager requires an IGameTableManager to precache base maps.");
+
+                WorldEntry entry = gameTableManager.World.GetEntry(worldId);
                 if (entry == null)
                     throw new ConfigurationException($"Invalid world id {worldId} supplied for precached base maps!");
 
@@ -76,7 +88,7 @@ namespace NexusForever.Game.Map
 
         private MapFile LoadBaseMap(string assetPath)
         {
-            string mapPath  = SharedConfiguration.Instance.Get<MapConfig>().MapPath;
+            string mapPath  = GetMapConfig().MapPath;
 
             // replace backslashes with OS specific directory separator, for Linux it will replace backslashes with forward slashes
             // this will allow GetFileName to work correctly on Linux
@@ -91,6 +103,14 @@ namespace NexusForever.Game.Map
 
             log.Trace($"Initialised base map file for asset {assetPath}.");
             return mapFile;
+        }
+
+        private MapConfig GetMapConfig()
+        {
+            if (sharedConfiguration == null)
+                throw new InvalidOperationException("MapIOManager requires an ISharedConfiguration to load map files.");
+
+            return sharedConfiguration.Get<MapConfig>();
         }
     }
 }

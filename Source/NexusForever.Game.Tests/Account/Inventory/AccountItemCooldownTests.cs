@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
@@ -11,12 +10,10 @@ using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 
 namespace NexusForever.Game.Tests.Account.Inventory;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class AccountItemCooldownTests
 {
     [Fact]
@@ -121,102 +118,82 @@ public class AccountItemCooldownTests
     [Fact]
     public void SendCooldowns_EmitsRetailCooldownListPacket()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         GameTableManager gameTableManager = CreateGameTableManager();
-        using ServiceProvider provider = new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
-        LegacyServiceProvider.Provider = provider;
 
-        try
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
+        accountProxy.SetProperty(nameof(IAccount.Id), 42u);
+        accountProxy.SetProperty(nameof(IAccount.Session), session);
+
+        var manager = new AccountInventoryManager(account, new AccountModel
         {
-            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
-            IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
-            accountProxy.SetProperty(nameof(IAccount.Id), 42u);
-            accountProxy.SetProperty(nameof(IAccount.Session), session);
+            AccountInventory = [],
+            AccountItemCooldown =
+            [
+                new AccountItemCooldownModel
+                {
+                    Id              = 42u,
+                    CooldownGroupId = 7u,
+                    Timestamp       = DateTime.UtcNow.AddSeconds(-10d),
+                    Duration        = 60u
+                },
+                new AccountItemCooldownModel
+                {
+                    Id              = 42u,
+                    CooldownGroupId = 8u,
+                    Timestamp       = DateTime.UtcNow.AddSeconds(-65d),
+                    Duration        = 60u
+                }
+            ]
+        },
+        null,
+        gameTableManager: gameTableManager);
 
-            var manager = new AccountInventoryManager(account, new AccountModel
-            {
-                AccountInventory = [],
-                AccountItemCooldown =
-                [
-                    new AccountItemCooldownModel
-                    {
-                        Id              = 42u,
-                        CooldownGroupId = 7u,
-                        Timestamp       = DateTime.UtcNow.AddSeconds(-10d),
-                        Duration        = 60u
-                    },
-                    new AccountItemCooldownModel
-                    {
-                        Id              = 42u,
-                        CooldownGroupId = 8u,
-                        Timestamp       = DateTime.UtcNow.AddSeconds(-65d),
-                        Duration        = 60u
-                    }
-                ]
-            });
+        manager.SendCooldowns();
 
-            manager.SendCooldowns();
-
-            RecordingDispatchProxy<IGameSession>.Invocation invocation =
-                Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-            var packet = Assert.IsType<ServerAccountItemCooldowns>(invocation.Arguments[0]);
-            ServerAccountItemCooldowns.Cooldown entry = Assert.Single(packet.Cooldowns);
-            Assert.Equal(7u, entry.AccountItemCooldownGroup);
-            Assert.InRange(entry.CooldownInSeconds, 49u, 50u);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        RecordingDispatchProxy<IGameSession>.Invocation invocation =
+            Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        var packet = Assert.IsType<ServerAccountItemCooldowns>(invocation.Arguments[0]);
+        ServerAccountItemCooldowns.Cooldown entry = Assert.Single(packet.Cooldowns);
+        Assert.Equal(7u, entry.AccountItemCooldownGroup);
+        Assert.InRange(entry.CooldownInSeconds, 49u, 50u);
     }
 
     [Fact]
     public void SendCooldowns_WithMissingCooldownGroupTable_EmitsPersistedCooldowns()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         GameTableManager gameTableManager = CreateGameTableManagerWithoutCooldownGroups();
-        using ServiceProvider provider = new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
-        LegacyServiceProvider.Provider = provider;
 
-        try
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
+        accountProxy.SetProperty(nameof(IAccount.Id), 42u);
+        accountProxy.SetProperty(nameof(IAccount.Session), session);
+
+        var manager = new AccountInventoryManager(account, new AccountModel
         {
-            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
-            IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
-            accountProxy.SetProperty(nameof(IAccount.Id), 42u);
-            accountProxy.SetProperty(nameof(IAccount.Session), session);
+            AccountInventory = [],
+            AccountItemCooldown =
+            [
+                new AccountItemCooldownModel
+                {
+                    Id              = 42u,
+                    CooldownGroupId = 7u,
+                    Timestamp       = DateTime.UtcNow.AddSeconds(-10d),
+                    Duration        = 60u
+                }
+            ]
+        },
+        null,
+        gameTableManager: gameTableManager);
 
-            var manager = new AccountInventoryManager(account, new AccountModel
-            {
-                AccountInventory = [],
-                AccountItemCooldown =
-                [
-                    new AccountItemCooldownModel
-                    {
-                        Id              = 42u,
-                        CooldownGroupId = 7u,
-                        Timestamp       = DateTime.UtcNow.AddSeconds(-10d),
-                        Duration        = 60u
-                    }
-                ]
-            });
+        manager.SendCooldowns();
 
-            manager.SendCooldowns();
-
-            RecordingDispatchProxy<IGameSession>.Invocation invocation =
-                Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-            var packet = Assert.IsType<ServerAccountItemCooldowns>(invocation.Arguments[0]);
-            ServerAccountItemCooldowns.Cooldown entry = Assert.Single(packet.Cooldowns);
-            Assert.Equal(7u, entry.AccountItemCooldownGroup);
-            Assert.InRange(entry.CooldownInSeconds, 49u, 50u);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        RecordingDispatchProxy<IGameSession>.Invocation invocation =
+            Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        var packet = Assert.IsType<ServerAccountItemCooldowns>(invocation.Arguments[0]);
+        ServerAccountItemCooldowns.Cooldown entry = Assert.Single(packet.Cooldowns);
+        Assert.Equal(7u, entry.AccountItemCooldownGroup);
+        Assert.InRange(entry.CooldownInSeconds, 49u, 50u);
     }
 
     private static AuthContext CreateContext()

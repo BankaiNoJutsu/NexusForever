@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
@@ -13,7 +12,6 @@ using NexusForever.Game.Marketplace;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Static;
-using NexusForever.Shared;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Database.Auth;
 using NexusForever.Network.World.Message.Model;
@@ -58,11 +56,7 @@ public class MarketplaceAccountLimitsTests
     [Fact]
     public void PostAuction_EnforcesRetailFreeSellLimit()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        var services = new ServiceCollection();
-        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
-        LegacyServiceProvider.Provider = services.BuildServiceProvider();
-        GlobalMarketplaceManager manager = GlobalMarketplaceManager.Instance;
+        var manager = new GlobalMarketplaceManager();
 
         try
         {
@@ -86,7 +80,6 @@ public class MarketplaceAccountLimitsTests
         finally
         {
             ClearMarketplaceState(manager);
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 

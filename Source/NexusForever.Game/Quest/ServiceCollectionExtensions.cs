@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Quest;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Quest
 {
@@ -8,7 +7,7 @@ namespace NexusForever.Game.Quest
     {
         public static void AddGameQuest(this IServiceCollection sc)
         {
-            sc.AddSingletonLegacy<IGlobalQuestManager, GlobalQuestManager>();
+            sc.AddSingleton<IGlobalQuestManager, GlobalQuestManager>();
         }
     }
 }

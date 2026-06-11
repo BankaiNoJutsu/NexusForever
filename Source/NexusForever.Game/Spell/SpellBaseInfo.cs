@@ -1,4 +1,4 @@
-﻿using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -31,21 +31,29 @@ namespace NexusForever.Game.Spell
         public bool IsMovingInterrupted { get; }
 
         private readonly ISpellInfo[] spellInfoStore;
+        private readonly IGlobalSpellManager globalSpellManager;
+        private readonly IGameTableManager gameTableManager;
 
-        public SpellBaseInfo(Spell4BaseEntry spell4BaseEntry)
+        public SpellBaseInfo(
+            Spell4BaseEntry spell4BaseEntry,
+            IGlobalSpellManager globalSpellManager = null,
+            IGameTableManager gameTableManager = null)
         {
+            this.globalSpellManager = globalSpellManager;
+            this.gameTableManager = gameTableManager;
+
             Entry             = spell4BaseEntry;
-            HitResult         = GameTableManager.Instance.Spell4HitResults?.GetEntry(Entry.Spell4HitResultId);
-            TargetMechanics   = GameTableManager.Instance.Spell4TargetMechanics?.GetEntry(Entry.Spell4TargetMechanicId);
-            TargetAngle       = GameTableManager.Instance.Spell4TargetAngle?.GetEntry(Entry.Spell4TargetAngleId);
-            Prerequisites     = GameTableManager.Instance.Spell4Prerequisites?.GetEntry(Entry.Spell4PrerequisiteId);
+            HitResult         = gameTableManager.Spell4HitResults?.GetEntry(Entry.Spell4HitResultId);
+            TargetMechanics   = gameTableManager.Spell4TargetMechanics?.GetEntry(Entry.Spell4TargetMechanicId);
+            TargetAngle       = gameTableManager.Spell4TargetAngle?.GetEntry(Entry.Spell4TargetAngleId);
+            Prerequisites     = gameTableManager.Spell4Prerequisites?.GetEntry(Entry.Spell4PrerequisiteId);
             PrerequisiteFlags = (SpellPrerequisiteFlags)(Prerequisites?.Flags ?? 0u);
-            ValidTargets      = GameTableManager.Instance.Spell4ValidTargets?.GetEntry(Entry.Spell4ValidTargetId);
-            CastGroup         = GameTableManager.Instance.TargetGroup?.GetEntry(Entry.TargetGroupIdCastGroup);
-            PositionalAoe     = GameTableManager.Instance.Creature2?.GetEntry(Entry.Creature2IdPositionalAoe);
-            AoeGroup          = GameTableManager.Instance.TargetGroup?.GetEntry(Entry.TargetGroupIdAoeGroup);
-            PrerequisiteSpell = GameTableManager.Instance.Spell4Base?.GetEntry(Entry.Spell4BaseIdPrerequisiteSpell);
-            SpellType         = GameTableManager.Instance.Spell4SpellTypes?.GetEntry(Entry.Spell4SpellTypesIdSpellType);
+            ValidTargets      = gameTableManager.Spell4ValidTargets?.GetEntry(Entry.Spell4ValidTargetId);
+            CastGroup         = gameTableManager.TargetGroup?.GetEntry(Entry.TargetGroupIdCastGroup);
+            PositionalAoe     = gameTableManager.Creature2?.GetEntry(Entry.Creature2IdPositionalAoe);
+            AoeGroup          = gameTableManager.TargetGroup?.GetEntry(Entry.TargetGroupIdAoeGroup);
+            PrerequisiteSpell = gameTableManager.Spell4Base?.GetEntry(Entry.Spell4BaseIdPrerequisiteSpell);
+            SpellType         = gameTableManager.Spell4SpellTypes?.GetEntry(Entry.Spell4SpellTypesIdSpellType);
 
             SpellClass        = (SpellClass)Entry.SpellClass;
             CastMethod        = (SpellCastMethod)Entry.CastMethod;
@@ -58,7 +66,7 @@ namespace NexusForever.Game.Spell
             IsFreeformTarget  = (TargetingFlags & SpellTargetingFlags.FreeformTarget) != 0;
             IsMovingInterrupted = (TargetingFlags & SpellTargetingFlags.InterruptOnMove) != 0;
 
-            List<Spell4Entry> spellEntries = GlobalSpellManager.Instance.GetSpell4Entries(spell4BaseEntry.Id).ToList();
+            List<Spell4Entry> spellEntries = GetGlobalSpellManager().GetSpell4Entries(spell4BaseEntry.Id).ToList();
             if (spellEntries.Count < 1)
                 return;
 
@@ -68,9 +76,14 @@ namespace NexusForever.Game.Spell
 
             foreach (Spell4Entry spell4Entry in spellEntries)
             {
-                var spellInfo = new SpellInfo(this, spell4Entry);
+                var spellInfo = new SpellInfo(this, spell4Entry, GetGlobalSpellManager(), gameTableManager);
                 spellInfoStore[spell4Entry.TierIndex - 1] = spellInfo;
             }
+        }
+
+        private IGlobalSpellManager GetGlobalSpellManager()
+        {
+            return globalSpellManager ?? throw new InvalidOperationException($"{nameof(SpellBaseInfo)} requires an {nameof(IGlobalSpellManager)}.");
         }
 
         /// <summary>

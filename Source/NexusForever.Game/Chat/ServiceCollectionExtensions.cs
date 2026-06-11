@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Chat;
 using NexusForever.Game.Chat.Format;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Chat
 {
@@ -11,7 +10,7 @@ namespace NexusForever.Game.Chat
         {
             sc.AddGameChatFormat();
 
-            sc.AddSingletonLegacy<IGlobalChatManager, GlobalChatManager>();
+            sc.AddSingleton<IGlobalChatManager, GlobalChatManager>();
         }
     }
 }

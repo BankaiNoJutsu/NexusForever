@@ -2,12 +2,11 @@
 using NexusForever.Database.Auth;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Configuration.Model;
-using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
 
 namespace NexusForever.Game
 {
-    public sealed class RealmContext : Singleton<RealmContext>, IRealmContext
+    public sealed class RealmContext : IRealmContext
     {
         public ushort RealmId { get; private set; }
         public string RealmName { get; private set; }
@@ -18,18 +17,21 @@ namespace NexusForever.Game
         #region Dependency Injection
 
         private readonly IDatabaseManager databaseManager;
+        private readonly ISharedConfiguration sharedConfiguration;
 
         public RealmContext(
-            IDatabaseManager databaseManager)
+            IDatabaseManager databaseManager,
+            ISharedConfiguration sharedConfiguration = null)
         {
             this.databaseManager = databaseManager;
+            this.sharedConfiguration = sharedConfiguration;
         }
 
         #endregion
 
         public void Initialise()
         {
-            RealmConfig config = SharedConfiguration.Instance.Get<RealmConfig>();
+            RealmConfig config = sharedConfiguration?.Get<RealmConfig>() ?? new RealmConfig();
             RealmId = config.RealmId;
             Motd    = config.MessageOfTheDay;
 

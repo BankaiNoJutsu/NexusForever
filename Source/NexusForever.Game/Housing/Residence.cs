@@ -46,6 +46,7 @@ namespace NexusForever.Game.Housing
         }
 
         public ulong Id { get; }
+        public ushort RealmId { get; }
         public ResidenceType Type { get; }
         public ulong? OwnerId { get; }
 
@@ -107,7 +108,7 @@ namespace NexusForever.Game.Housing
             get => wallpaperId;
             set
             {
-                if (GameTableManager.Instance.HousingWallpaperInfo?.GetEntry(value) == null)
+                if (gameTableManager.HousingWallpaperInfo?.GetEntry(value) == null)
                     throw new ArgumentOutOfRangeException();
 
                 wallpaperId = value;
@@ -122,7 +123,7 @@ namespace NexusForever.Game.Housing
             get => roofDecorInfoId;
             set
             {
-                if (GameTableManager.Instance.HousingDecorInfo?.GetEntry(value) == null)
+                if (gameTableManager.HousingDecorInfo?.GetEntry(value) == null)
                     throw new ArgumentOutOfRangeException();
 
                 roofDecorInfoId = value;
@@ -137,7 +138,7 @@ namespace NexusForever.Game.Housing
             get => entrywayDecorInfoId;
             set
             {
-                if (GameTableManager.Instance.HousingDecorInfo?.GetEntry(value) == null)
+                if (gameTableManager.HousingDecorInfo?.GetEntry(value) == null)
                     throw new ArgumentOutOfRangeException();
 
                 entrywayDecorInfoId = value;
@@ -152,7 +153,7 @@ namespace NexusForever.Game.Housing
             get => doorDecorInfoId;
             set
             {
-                if (GameTableManager.Instance.HousingDecorInfo?.GetEntry(value) == null)
+                if (gameTableManager.HousingDecorInfo?.GetEntry(value) == null)
                     throw new ArgumentOutOfRangeException();
 
                 doorDecorInfoId = value;
@@ -167,7 +168,7 @@ namespace NexusForever.Game.Housing
             get => musicId;
             set
             {
-                HousingWallpaperInfoEntry entry = GameTableManager.Instance.HousingWallpaperInfo?.GetEntry(value);
+                HousingWallpaperInfoEntry entry = gameTableManager.HousingWallpaperInfo?.GetEntry(value);
                 if (entry == null)
                     throw new ArgumentOutOfRangeException();
 
@@ -186,7 +187,7 @@ namespace NexusForever.Game.Housing
             get => groundWallpaperId;
             set
             {
-                HousingWallpaperInfoEntry entry = GameTableManager.Instance.HousingWallpaperInfo?.GetEntry(value);
+                HousingWallpaperInfoEntry entry = gameTableManager.HousingWallpaperInfo?.GetEntry(value);
                 if (entry == null)
                     throw new ArgumentOutOfRangeException();
 
@@ -205,7 +206,7 @@ namespace NexusForever.Game.Housing
             get => skyWallpaperId;
             set
             {
-                HousingWallpaperInfoEntry entry = GameTableManager.Instance.HousingWallpaperInfo?.GetEntry(value);
+                HousingWallpaperInfoEntry entry = gameTableManager.HousingWallpaperInfo?.GetEntry(value);
                 if (entry == null)
                     throw new ArgumentOutOfRangeException();
 
@@ -290,13 +291,23 @@ namespace NexusForever.Game.Housing
 
         private readonly Dictionary<ulong, IDecor> decors = new();
         private readonly List<IPlot> plots = new();
+        private readonly IGlobalResidenceManager globalResidenceManager;
+        private readonly IGameTableManager gameTableManager;
 
         /// <summary>
         /// Create a new <see cref="IResidence"/> from an existing database model.
         /// </summary>
-        public Residence(ResidenceModel model)
+        public Residence(
+            ResidenceModel model,
+            IGlobalResidenceManager globalResidenceManager = null,
+            ushort realmId = 0,
+            IGameTableManager gameTableManager = null)
         {
+            this.globalResidenceManager = globalResidenceManager;
+            this.gameTableManager = gameTableManager;
+
             Id                  = model.Id;
+            RealmId             = realmId;
             OwnerId             = model.OwnerId;
             GuildOwnerId        = model.GuildOwnerId;
             propertyInfoId      = (PropertyInfoId)model.PropertyInfoId;
@@ -322,12 +333,12 @@ namespace NexusForever.Game.Housing
                 DecorType decorType = (DecorType)decorModel.DecorType;
                 if (decorType == DecorType.InteriorWallpaper)
                 {
-                    if (GameTableManager.Instance.HousingWallpaperInfo?.GetEntry(decorModel.DecorInfoId) == null)
+                    if (gameTableManager.HousingWallpaperInfo?.GetEntry(decorModel.DecorInfoId) == null)
                         throw new DatabaseDataException($"Decor {decorModel.Id} has invalid wallpaper entry {decorModel.DecorInfoId}!");
                 }
                 else
                 {
-                    entry = GameTableManager.Instance.HousingDecorInfo?.GetEntry(decorModel.DecorInfoId);
+                    entry = gameTableManager.HousingDecorInfo?.GetEntry(decorModel.DecorInfoId);
                     if (entry == null)
                         throw new DatabaseDataException($"Decor {decorModel.Id} has invalid decor entry {decorModel.DecorInfoId}!");
                 }
@@ -341,7 +352,7 @@ namespace NexusForever.Game.Housing
 
             foreach (ResidencePlotModel plotModel in model.Plot
                 .OrderBy(e => e.Index))
-                plots.Add(new Plot(plotModel));
+                plots.Add(new Plot(plotModel, gameTableManager));
 
             saveMask = ResidenceSaveMask.None;
         }
@@ -349,9 +360,16 @@ namespace NexusForever.Game.Housing
         /// <summary>
         /// Create a new <see cref="IResidence"/> from a <see cref="IPlayer"/>.
         /// </summary>
-        public Residence(IPlayer player)
+        public Residence(
+            IPlayer player,
+            IGlobalResidenceManager globalResidenceManager,
+            IGameTableManager gameTableManager = null)
         {
-            Id             = GlobalResidenceManager.Instance.NextResidenceId;
+            this.globalResidenceManager = globalResidenceManager ?? throw new ArgumentNullException(nameof(globalResidenceManager));
+            this.gameTableManager = gameTableManager;
+
+            Id             = globalResidenceManager.NextResidenceId;
+            RealmId        = player.Identity.RealmId;
             Type           = ResidenceType.Residence;
             OwnerId        = player.CharacterId;
             propertyInfoId = PropertyInfoId.Residence;
@@ -371,9 +389,17 @@ namespace NexusForever.Game.Housing
         /// <remarks>
         /// This creates the parent <see cref="IResidence"/> which all children are part of.
         /// </remarks>
-        public Residence(ICommunity community)
+        public Residence(
+            ICommunity community,
+            IGlobalResidenceManager globalResidenceManager,
+            ushort realmId = 0,
+            IGameTableManager gameTableManager = null)
         {
-            Id             = GlobalResidenceManager.Instance.NextResidenceId;
+            this.globalResidenceManager = globalResidenceManager ?? throw new ArgumentNullException(nameof(globalResidenceManager));
+            this.gameTableManager = gameTableManager;
+
+            Id             = globalResidenceManager.NextResidenceId;
+            RealmId        = realmId;
             Type           = ResidenceType.Community;
             GuildOwnerId   = community.Id;
             propertyInfoId = PropertyInfoId.Community;
@@ -394,15 +420,15 @@ namespace NexusForever.Game.Housing
 
         private void InitialiseDefaultPlots()
         {
-            foreach (HousingPlotInfoEntry entry in GameTableManager.Instance.HousingPlotInfo.Entries
+            foreach (HousingPlotInfoEntry entry in gameTableManager.HousingPlotInfo.Entries
                 .Where(e => (PropertyInfoId)e.HousingPropertyInfoId == PropertyInfoId)
                 .OrderBy(e => e.HousingPropertyPlotIndex))
-                plots.Add(new Plot(Id, entry));
+                plots.Add(new Plot(Id, entry, gameTableManager));
         }
 
         private void UpdatePlots()
         {
-            foreach (HousingPlotInfoEntry entry in GameTableManager.Instance.HousingPlotInfo.Entries
+            foreach (HousingPlotInfoEntry entry in gameTableManager.HousingPlotInfo.Entries
                 .Where(e => (PropertyInfoId)e.HousingPropertyInfoId == PropertyInfoId))
                 GetPlot((byte)entry.HousingPropertyPlotIndex).PlotInfoEntry = entry;
         }
@@ -547,7 +573,7 @@ namespace NexusForever.Game.Housing
         {
             return new()
             {
-                RealmId           = RealmContext.Instance.RealmId,
+                RealmId           = RealmId,
                 ResidenceId       = Id,
                 NeighbourhoodId   = GuildOwnerId.GetValueOrDefault(0ul),
                 CharacterIdOwner  = OwnerId,
@@ -774,14 +800,14 @@ namespace NexusForever.Game.Housing
         /// </summary>
         public IDecor DecorCreate(HousingDecorInfoEntry entry)
         {
-            var decor = new Decor(this, GlobalResidenceManager.Instance.NextDecorId, entry);
+            var decor = new Decor(this, GetGlobalResidenceManager().NextDecorId, entry);
             decors.Add(decor.DecorId, decor);
             return decor;
         }
 
         public IDecor DecorCreateInteriorWallpaper(uint wallpaperInfoId)
         {
-            var decor = new Decor(this, GlobalResidenceManager.Instance.NextDecorId, wallpaperInfoId, DecorType.InteriorWallpaper);
+            var decor = new Decor(this, GetGlobalResidenceManager().NextDecorId, wallpaperInfoId, DecorType.InteriorWallpaper);
             decors.Add(decor.DecorId, decor);
             return decor;
         }
@@ -794,9 +820,14 @@ namespace NexusForever.Game.Housing
         /// </remarks>
         public IDecor DecorCopy(IDecor decor)
         {
-            var newDecor = new Decor(this, decor, GlobalResidenceManager.Instance.NextDecorId);
+            var newDecor = new Decor(this, decor, GetGlobalResidenceManager().NextDecorId);
             decors.Add(newDecor.DecorId, newDecor);
             return newDecor;
+        }
+
+        private IGlobalResidenceManager GetGlobalResidenceManager()
+        {
+            return globalResidenceManager ?? throw new InvalidOperationException("Residence requires an IGlobalResidenceManager.");
         }
 
         /// <summary>

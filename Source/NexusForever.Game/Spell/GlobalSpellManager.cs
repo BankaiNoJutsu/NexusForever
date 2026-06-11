@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -7,12 +7,11 @@ using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
-using NexusForever.Shared;
 using NLog;
 
 namespace NexusForever.Game.Spell
 {
-    public sealed class GlobalSpellManager : Singleton<GlobalSpellManager>, IGlobalSpellManager
+    public sealed class GlobalSpellManager : IGlobalSpellManager
     {
         private const string Spell4TableName = "Spell4.tbl";
         private const string Spell4EffectsTableName = "Spell4Effects.tbl";
@@ -43,14 +42,19 @@ namespace NexusForever.Game.Spell
         private ImmutableDictionary<uint, ImmutableList<Spell4ThresholdsEntry>> spellThresholdEntries;
 
         private readonly ISpellEffectDependencyResolver spellEffectDependencyResolver;
+        private readonly IGameTableManager gameTableManager;
 
-        public GlobalSpellManager()
+        public GlobalSpellManager(IGameTableManager gameTableManager = null)
         {
+            this.gameTableManager = gameTableManager;
         }
 
-        internal GlobalSpellManager(ISpellEffectDependencyResolver spellEffectDependencyResolver)
+        internal GlobalSpellManager(
+            ISpellEffectDependencyResolver spellEffectDependencyResolver,
+            IGameTableManager gameTableManager = null)
         {
             this.spellEffectDependencyResolver = spellEffectDependencyResolver;
+            this.gameTableManager = gameTableManager;
         }
 
         public void Initialise()
@@ -64,7 +68,7 @@ namespace NexusForever.Game.Spell
         private void CacheSpellEntries()
         {
             // caching is required as most of the spell tables have 50k+ entries, calculating for each spell is SLOW
-            if (GameTableManager.Instance.Spell4?.Entries == null)
+            if (gameTableManager.Spell4?.Entries == null)
                 MissingGameDataDiagnostics.ReportMissingTable(
                     Spell4TableName,
                     nameof(GlobalSpellManager) + "." + nameof(CacheSpellEntries),
@@ -72,14 +76,14 @@ namespace NexusForever.Game.Spell
                     "Cannot cache Spell4 tier entries.");
 
             IEnumerable<Spell4Entry> spell4Entries =
-                GameTableManager.Instance.Spell4?.Entries ?? Enumerable.Empty<Spell4Entry>();
+                gameTableManager.Spell4?.Entries ?? Enumerable.Empty<Spell4Entry>();
             spellEntries = spell4Entries
                 .GroupBy(e => e.Spell4BaseIdBaseSpell)
                 .ToImmutableDictionary(g => g.Key, g => g
                     .OrderByDescending(e => e.TierIndex)
                     .ToImmutableList());
 
-            if (GameTableManager.Instance.Spell4Effects?.Entries == null)
+            if (gameTableManager.Spell4Effects?.Entries == null)
                 MissingGameDataDiagnostics.ReportMissingTable(
                     Spell4EffectsTableName,
                     nameof(GlobalSpellManager) + "." + nameof(CacheSpellEntries),
@@ -87,7 +91,7 @@ namespace NexusForever.Game.Spell
                     "Cannot cache Spell4 effect entries.");
 
             IEnumerable<Spell4EffectsEntry> spell4EffectEntries =
-                GameTableManager.Instance.Spell4Effects?.Entries ?? Enumerable.Empty<Spell4EffectsEntry>();
+                gameTableManager.Spell4Effects?.Entries ?? Enumerable.Empty<Spell4EffectsEntry>();
             spellEffectEntries = spell4EffectEntries
                 .GroupBy(e => e.SpellId)
                 .ToImmutableDictionary(g => g.Key, g => g
@@ -95,15 +99,15 @@ namespace NexusForever.Game.Spell
                     .ToImmutableList());
 
             IEnumerable<Spell4TelegraphEntry> spell4TelegraphEntries =
-                GameTableManager.Instance.Spell4Telegraph?.Entries ?? Enumerable.Empty<Spell4TelegraphEntry>();
+                gameTableManager.Spell4Telegraph?.Entries ?? Enumerable.Empty<Spell4TelegraphEntry>();
             spellTelegraphEntries = spell4TelegraphEntries
                 .GroupBy(e => e.Spell4Id)
                 .ToImmutableDictionary(g => g.Key, g => g
-                    .Select(e => GameTableManager.Instance.TelegraphDamage?.GetEntry(e.TelegraphDamageId))
+                    .Select(e => gameTableManager.TelegraphDamage?.GetEntry(e.TelegraphDamageId))
                     .ToImmutableList());
 
             IEnumerable<Spell4ThresholdsEntry> spell4ThresholdEntries =
-                GameTableManager.Instance.Spell4Thresholds?.Entries ?? Enumerable.Empty<Spell4ThresholdsEntry>();
+                gameTableManager.Spell4Thresholds?.Entries ?? Enumerable.Empty<Spell4ThresholdsEntry>();
             spellThresholdEntries = spell4ThresholdEntries
                 .GroupBy(e => e.Spell4IdParent)
                 .ToImmutableDictionary(g => g.Key, g => g
@@ -116,7 +120,7 @@ namespace NexusForever.Game.Spell
             Stopwatch sw = Stopwatch.StartNew();
             log.Info("Generating spell info...");
 
-            if (GameTableManager.Instance.Spell4Base?.Entries == null)
+            if (gameTableManager.Spell4Base?.Entries == null)
                 MissingGameDataDiagnostics.ReportMissingTable(
                     Spell4BaseTableName,
                     nameof(GlobalSpellManager) + "." + nameof(InitialiseSpellInfo),
@@ -124,9 +128,9 @@ namespace NexusForever.Game.Spell
                     "Cannot cache spell base info.");
 
             IEnumerable<Spell4BaseEntry> spell4BaseEntries =
-                GameTableManager.Instance.Spell4Base?.Entries ?? Enumerable.Empty<Spell4BaseEntry>();
+                gameTableManager.Spell4Base?.Entries ?? Enumerable.Empty<Spell4BaseEntry>();
             foreach (Spell4BaseEntry entry in spell4BaseEntries)
-                spellBaseInfoStore.Add(entry.Id, new SpellBaseInfo(entry));
+                spellBaseInfoStore.Add(entry.Id, new SpellBaseInfo(entry, this, gameTableManager));
 
             log.Info($"Cached {spellBaseInfoStore.Count} spells in {sw.ElapsedMilliseconds}ms.");
         }
@@ -207,13 +211,13 @@ namespace NexusForever.Game.Spell
         /// </summary>
         public ISpellBaseInfo GetSpellBaseInfo(uint spell4BaseId)
         {
-            Spell4BaseEntry spell4BaseEntry = GameTableManager.Instance.Spell4Base?.GetEntry(spell4BaseId);
+            Spell4BaseEntry spell4BaseEntry = gameTableManager.Spell4Base?.GetEntry(spell4BaseId);
             if (spell4BaseEntry == null)
                 throw new ArgumentOutOfRangeException();
 
             if (!spellBaseInfoStore.TryGetValue(spell4BaseId, out ISpellBaseInfo spellBaseInfo))
             {
-                spellBaseInfo = new SpellBaseInfo(spell4BaseEntry);
+                spellBaseInfo = new SpellBaseInfo(spell4BaseEntry, this, gameTableManager);
                 spellBaseInfoStore.Add(spell4BaseId, spellBaseInfo);
             }
             

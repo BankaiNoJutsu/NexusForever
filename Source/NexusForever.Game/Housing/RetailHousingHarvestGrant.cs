@@ -1,3 +1,5 @@
+using NexusForever.Database.Character;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Entity;
@@ -23,7 +25,11 @@ namespace NexusForever.Game.Housing
             IResidence residence,
             IPlot plot,
             HousingPlugItemEntry plugEntry,
-            IGameTableManager gameTableManager)
+            IGameTableManager gameTableManager,
+            IAssetManager assetManager,
+            CharacterDatabase characterDatabase = null,
+            IPlayerManager playerManager = null,
+            IItemManager itemManager = null)
         {
             if (harvester == null || residence == null || plot == null || plugEntry == null || gameTableManager == null)
                 return false;
@@ -65,7 +71,7 @@ namespace NexusForever.Game.Housing
 
             if (ownerAmount > 0)
             {
-                if (TryGrantToCharacter(ownerCharacterId, yield.Item2Id, ownerAmount))
+                if (TryGrantToCharacter(ownerCharacterId, yield.Item2Id, ownerAmount, gameTableManager, characterDatabase, assetManager, playerManager, itemManager))
                     ownerGrants.Add((yield.Item2Id, ownerAmount));
             }
 
@@ -79,7 +85,7 @@ namespace NexusForever.Game.Housing
                 harvesterGrants.Add((yield.Item2Id, harvesterAmount));
             }
 
-            IPlayer ownerPlayer = PlayerManager.Instance.GetPlayer(ownerCharacterId);
+            IPlayer ownerPlayer = playerManager?.GetPlayer(ownerCharacterId);
             if (ownerGrants.Count > 0)
                 RetailHousingHarvestNotify.NotifyGrants(ownerPlayer ?? harvester, ownerGrants);
 
@@ -103,9 +109,17 @@ namespace NexusForever.Game.Housing
             return residence.GetNeighbors().Any(n => n.CharacterId == harvester.CharacterId && n.PermissionLevel > 0);
         }
 
-        static bool TryGrantToCharacter(ulong characterId, uint item2Id, uint quantity)
+        static bool TryGrantToCharacter(
+            ulong characterId,
+            uint item2Id,
+            uint quantity,
+            IGameTableManager gameTableManager,
+            CharacterDatabase characterDatabase,
+            IAssetManager assetManager,
+            IPlayerManager playerManager,
+            IItemManager itemManager)
         {
-            IPlayer owner = PlayerManager.Instance.GetPlayer(characterId);
+            IPlayer owner = playerManager?.GetPlayer(characterId);
             if (owner != null)
             {
                 owner.Inventory.ItemCreate(InventoryLocation.Inventory, item2Id, quantity, ItemUpdateReason.HousingContribution);
@@ -113,11 +127,16 @@ namespace NexusForever.Game.Housing
             }
 
             return MarketplaceMailDelivery.TrySendSystemItemMail(
+                characterDatabase,
+                gameTableManager,
+                assetManager,
                 characterId,
                 item2Id,
                 quantity,
                 "Housing Harvest",
-                "Resources from your housing plot were mailed while you were away.");
+                "Resources from your housing plot were mailed while you were away.",
+                playerManager,
+                itemManager);
         }
     }
 }

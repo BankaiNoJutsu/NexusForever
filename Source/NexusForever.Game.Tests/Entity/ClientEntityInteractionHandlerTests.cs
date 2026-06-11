@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.RealmBank;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.WorldServer.Network;
@@ -16,7 +17,7 @@ public class ClientEntityInteractionHandlerTests
     public void HandleMessage_ClientSideInteractionSuccessWithZeroTarget_DoesNotCreditObjectives()
     {
         IWorldSession session = CreateSession(out RecordingDispatchProxy<IQuestManager> questProxy, out _);
-        var handler = new ClientEntityInteractionHandler(NullLogger<ClientEntityInteractionHandler>.Instance, assetManager: null);
+        var handler = new ClientEntityInteractionHandler(NullLogger<ClientEntityInteractionHandler>.Instance, assetManager: null, new RealmBankManager());
 
         handler.HandleMessage(session, CreateEntityInteract(guid: 0u, eventId: 101));
 

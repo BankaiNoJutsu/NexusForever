@@ -59,9 +59,9 @@ namespace NexusForever.Game.Entity
             sc.AddTransient<IVolumeGridTriggerEntity, VolumeGridTriggerEntity>();
             sc.AddTransient<IWorldLocationVolumeGridTriggerEntity, WorldLocationVolumeGridTriggerEntity>();
 
-            sc.AddSingletonLegacy<IBuybackManager, BuybackManager>();
-            sc.AddSingletonLegacy<IEntityManager, EntityManager>();
-            sc.AddSingletonLegacy<IPlayerManager, PlayerManager>();
+            sc.AddSingleton<IBuybackManager, BuybackManager>();
+            sc.AddSingleton<IEntityManager, EntityManager>();
+            sc.AddSingleton<IPlayerManager, PlayerManager>();
 
             sc.AddSingleton<ICreatureInfoManager, CreatureInfoManager>();
             sc.AddTransientFactory<ICreatureInfo, CreatureInfo>();

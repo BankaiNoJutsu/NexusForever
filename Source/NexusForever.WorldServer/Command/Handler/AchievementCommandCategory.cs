@@ -13,6 +13,14 @@ namespace NexusForever.WorldServer.Command.Handler
     [CommandTarget(typeof(IPlayer))]
     public class AchievementCommandCategory : CommandCategory
     {
+        private readonly IGlobalAchievementManager globalAchievementManager;
+
+        public AchievementCommandCategory(
+            IGlobalAchievementManager globalAchievementManager)
+        {
+            this.globalAchievementManager = globalAchievementManager;
+        }
+
         [Command(Permission.AchievementUpdate, "Update achievement criteria for player.", "update")]
         public void HandleAchievementUpdate(ICommandContext context,
             [Parameter("Achievement criteria type to update.", ParameterFlags.None, typeof(EnumParameterConverter<AchievementType>))]
@@ -33,7 +41,7 @@ namespace NexusForever.WorldServer.Command.Handler
             [Parameter("Achievement id to grant.")]
             ushort achievementId)
         {
-            IAchievementInfo info = GlobalAchievementManager.Instance.GetAchievement(achievementId);
+            IAchievementInfo info = globalAchievementManager.GetAchievement(achievementId);
             if (info == null)
             {
                 context.SendMessage($"Invalid achievement id {achievementId}!");

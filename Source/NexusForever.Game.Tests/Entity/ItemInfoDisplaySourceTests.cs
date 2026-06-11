@@ -1,14 +1,11 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Entity;
-using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Tests.Entity;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class ItemInfoDisplaySourceTests
 {
     [Theory]
@@ -16,10 +13,8 @@ public class ItemInfoDisplaySourceTests
     [InlineData(true)]
     public void CacheItemDisplaySourceEntries_WithMissingSourceTableUsesEmptyCache(bool includeEmptyTable)
     {
-        var assetManager = new AssetManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
-            assetManager,
-            includeEmptyTable ? CreateGameTable<ItemDisplaySourceEntryEntry>() : null));
+        GameTableManager gameTableManager = CreateGameTableManager(includeEmptyTable ? CreateGameTable<ItemDisplaySourceEntryEntry>() : null);
+        var assetManager = new AssetManager(null, gameTableManager);
 
         InvokeCacheItemDisplaySourceEntries(assetManager);
 
@@ -31,13 +26,11 @@ public class ItemInfoDisplaySourceTests
     [InlineData(true)]
     public void GetDisplayId_WithUnavailableDisplaySourceRowsReturnsZero(bool includeEmptyTable)
     {
-        var assetManager = new AssetManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
-            assetManager,
-            includeEmptyTable ? CreateGameTable<ItemDisplaySourceEntryEntry>() : null));
+        GameTableManager gameTableManager = CreateGameTableManager(includeEmptyTable ? CreateGameTable<ItemDisplaySourceEntryEntry>() : null);
+        var assetManager = new AssetManager(null, gameTableManager);
         InvokeCacheItemDisplaySourceEntries(assetManager);
 
-        ItemInfo itemInfo = CreateItemInfo(itemSourceId: 55u, item2TypeId: 7u);
+        ItemInfo itemInfo = CreateItemInfo(assetManager, itemSourceId: 55u, item2TypeId: 7u);
 
         Assert.Equal((ushort)0, itemInfo.GetDisplayId());
     }
@@ -45,15 +38,13 @@ public class ItemInfoDisplaySourceTests
     [Fact]
     public void GetDisplayId_WithTableBackedSingleMatchingSourceReturnsDisplayId()
     {
-        var assetManager = new AssetManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
-            assetManager,
-            CreateGameTable(
+        GameTableManager gameTableManager = CreateGameTableManager(CreateGameTable(
                 CreateDisplaySource(id: 1u, itemSourceId: 55u, item2TypeId: 7u, itemDisplayId: 1234u),
-                CreateDisplaySource(id: 2u, itemSourceId: 55u, item2TypeId: 8u, itemDisplayId: 5678u))));
+                CreateDisplaySource(id: 2u, itemSourceId: 55u, item2TypeId: 8u, itemDisplayId: 5678u)));
+        var assetManager = new AssetManager(null, gameTableManager);
         InvokeCacheItemDisplaySourceEntries(assetManager);
 
-        ItemInfo itemInfo = CreateItemInfo(itemSourceId: 55u, item2TypeId: 7u);
+        ItemInfo itemInfo = CreateItemInfo(assetManager, itemSourceId: 55u, item2TypeId: 7u);
 
         Assert.Equal((ushort)1234, itemInfo.GetDisplayId());
     }
@@ -61,34 +52,28 @@ public class ItemInfoDisplaySourceTests
     [Fact]
     public void GetDisplayId_WithTableBackedMultipleSourcesUsesPowerLevelFallback()
     {
-        var assetManager = new AssetManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
-            assetManager,
-            CreateGameTable(
+        GameTableManager gameTableManager = CreateGameTableManager(CreateGameTable(
                 CreateDisplaySource(id: 1u, itemSourceId: 55u, item2TypeId: 7u, itemDisplayId: 1234u, minLevel: 1u, maxLevel: 20u),
-                CreateDisplaySource(id: 2u, itemSourceId: 55u, item2TypeId: 7u, itemDisplayId: 5678u, minLevel: 21u, maxLevel: 50u))));
+                CreateDisplaySource(id: 2u, itemSourceId: 55u, item2TypeId: 7u, itemDisplayId: 5678u, minLevel: 21u, maxLevel: 50u)));
+        var assetManager = new AssetManager(null, gameTableManager);
         InvokeCacheItemDisplaySourceEntries(assetManager);
 
-        ItemInfo itemInfo = CreateItemInfo(itemSourceId: 55u, item2TypeId: 7u, powerLevel: 30u);
+        ItemInfo itemInfo = CreateItemInfo(assetManager, itemSourceId: 55u, item2TypeId: 7u, powerLevel: 30u);
 
         Assert.Equal((ushort)5678, itemInfo.GetDisplayId());
     }
 
-    private static IServiceProvider BuildProvider(
-        AssetManager assetManager,
-        GameTable<ItemDisplaySourceEntryEntry> displaySourceTable)
+    private static GameTableManager CreateGameTableManager(GameTable<ItemDisplaySourceEntryEntry> displaySourceTable)
     {
         var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         if (displaySourceTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.ItemDisplaySourceEntry), displaySourceTable);
 
-        return new ServiceCollection()
-            .AddSingleton(assetManager)
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static ItemInfo CreateItemInfo(
+        AssetManager assetManager,
         uint itemSourceId,
         uint item2TypeId,
         uint powerLevel = 0u,
@@ -103,6 +88,7 @@ public class ItemInfoDisplaySourceTests
             PowerLevel    = powerLevel,
             ItemDisplayId = itemDisplayId
         });
+        SetPrivateField(itemInfo, "assetManager", assetManager);
         return itemInfo;
     }
 
@@ -144,5 +130,11 @@ public class ItemInfoDisplaySourceTests
         FieldInfo backingField = instance.GetType()
             .GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
         backingField.SetValue(instance, value);
+    }
+
+    private static void SetPrivateField(object instance, string fieldName, object value)
+    {
+        FieldInfo field = instance.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+        field.SetValue(instance, value);
     }
 }

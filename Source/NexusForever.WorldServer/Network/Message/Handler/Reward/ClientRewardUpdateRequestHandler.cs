@@ -3,6 +3,7 @@ using NexusForever.Game.Abstract.Account.Reward;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Storefront;
 using NexusForever.Game.Account.Reward;
+using NexusForever.GameTable;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.WorldServer.Network.Message.Handler.Fortune;
@@ -15,17 +16,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
         private readonly IGlobalStorefrontManager globalStorefrontManager;
         private readonly IRewardRotationRefreshProvider refreshProvider;
         private readonly IFortuneSessionManager fortuneSessionManager;
+        private readonly IGameTableManager gameTableManager;
 
         public ClientRewardUpdateRequestHandler(
             ILogger<ClientRewardUpdateRequestHandler> log,
             IGlobalStorefrontManager globalStorefrontManager,
             IRewardRotationRefreshProvider refreshProvider = null,
-            IFortuneSessionManager fortuneSessionManager = null)
+            IFortuneSessionManager fortuneSessionManager = null,
+            IGameTableManager gameTableManager = null)
         {
             this.log = log;
             this.globalStorefrontManager = globalStorefrontManager;
             this.refreshProvider = refreshProvider;
             this.fortuneSessionManager = fortuneSessionManager;
+            this.gameTableManager = gameTableManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientRewardUpdateRequest rewardUpdateRequest)
@@ -47,6 +51,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
             IRewardRotationRefreshProvider provider = refreshProvider
                 ?? new AccountRewardRotationRefreshProvider(
                     session.Account,
+                    gameTableManager,
                     playerLevel: ResolveRewardRotationPlayerLevel(session.Player),
                     worldDifficultyFlags: RewardRotationScheduleBuilder.KnownWorldDifficultyFlags);
             RewardRotationRefresh refresh = RewardRotationRefreshBuilder.Build(rewardUpdateRequest.RewardRotationIndex, provider);

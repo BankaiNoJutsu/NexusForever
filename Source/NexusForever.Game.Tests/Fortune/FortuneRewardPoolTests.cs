@@ -1,5 +1,4 @@
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NexusForever.Game.Abstract.Fortune;
 using NexusForever.Game.Fortune;
@@ -10,18 +9,15 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Fortune;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class FortuneRewardPoolTests
 {
     [Fact]
     public void GetRewardCatalog_RealPoolAdvertisesOnlyMappedItemRewards()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        GameTableManager gameTableManager = BuildGameTableManager(
             [
                 new AccountItemEntry { Id = 1u, Item2Id = 101u },
                 new AccountItemEntry { Id = 2u, Item2Id = 202u },
@@ -38,28 +34,20 @@ public class FortuneRewardPoolTests
                 new Item2Entry { Id = 202u, ItemQualityId = (uint)Quality.Excellent }
             ]);
 
-        try
-        {
-            var pool = new FortuneRewardPool();
+        var pool = new FortuneRewardPool(gameTableManager);
 
-            FortuneRewardCatalog catalog = pool.GetRewardCatalog();
+        FortuneRewardCatalog catalog = pool.GetRewardCatalog();
 
-            Assert.Equal([101u, 202u], catalog.Item2IdRewards);
-            Assert.Equal(2, catalog.RewardItemProbabilities.Count);
-            Assert.InRange(catalog.RewardItemProbabilities.Sum(), 0.99f, 1.01f);
-            Assert.True(catalog.RewardItemProbabilities[0] > catalog.RewardItemProbabilities[1]);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal([101u, 202u], catalog.Item2IdRewards);
+        Assert.Equal(2, catalog.RewardItemProbabilities.Count);
+        Assert.InRange(catalog.RewardItemProbabilities.Sum(), 0.99f, 1.01f);
+        Assert.True(catalog.RewardItemProbabilities[0] > catalog.RewardItemProbabilities[1]);
     }
 
     [Fact]
     public void PickCardRewards_RealPoolSkipsNonItemAccountRewards()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        GameTableManager gameTableManager = BuildGameTableManager(
             [
                 new AccountItemEntry { Id = 1u, Item2Id = 101u },
                 new AccountItemEntry { Id = 2u, EntitlementId = 202u },
@@ -73,75 +61,52 @@ public class FortuneRewardPoolTests
                 new Item2Entry { Id = 105u, ItemQualityId = (uint)Quality.Good }
             ]);
 
-        try
-        {
-            var pool = new FortuneRewardPool();
+        var pool = new FortuneRewardPool(gameTableManager);
 
-            FortuneCardReward[] picks = pool.PickCardRewards(new ZeroRollRandom());
+        FortuneCardReward[] picks = pool.PickCardRewards(new ZeroRollRandom());
 
-            Assert.Equal(3, picks.Length);
-            Assert.Equal([1u, 4u, 5u], picks.Select(pick => pick.AccountItemId));
-            Assert.Equal([101u, 104u, 105u], picks.Select(pick => pick.Item2Id));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(3, picks.Length);
+        Assert.Equal([1u, 4u, 5u], picks.Select(pick => pick.AccountItemId));
+        Assert.Equal([101u, 104u, 105u], picks.Select(pick => pick.Item2Id));
     }
 
     [Fact]
     public void GetRewardCatalog_WhenAccountItemTableMissing_ReturnsEmptyCatalog()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        GameTableManager gameTableManager = BuildGameTableManager(
             [],
             [new Item2Entry { Id = 101u, ItemQualityId = (uint)Quality.Excellent }],
             includeAccountItemTable: false);
 
-        try
-        {
-            var pool = new FortuneRewardPool();
+        var pool = new FortuneRewardPool(gameTableManager);
 
-            FortuneRewardCatalog catalog = pool.GetRewardCatalog();
+        FortuneRewardCatalog catalog = pool.GetRewardCatalog();
 
-            Assert.Empty(catalog.Item2IdRewards);
-            Assert.Empty(catalog.RewardItemProbabilities);
-            Assert.Empty(pool.PickCardRewards(new ZeroRollRandom()));
-            Assert.False(pool.IsCardRewardDisplayable(1u));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Empty(catalog.Item2IdRewards);
+        Assert.Empty(catalog.RewardItemProbabilities);
+        Assert.Empty(pool.PickCardRewards(new ZeroRollRandom()));
+        Assert.False(pool.IsCardRewardDisplayable(1u));
     }
 
     [Fact]
     public void GetRewardCatalog_WhenItemTableMissing_UsesNormalRarityFallback()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        GameTableManager gameTableManager = BuildGameTableManager(
             [new AccountItemEntry { Id = 1u, Item2Id = 101u }],
             [],
             includeItemTable: false);
 
-        try
-        {
-            var pool = new FortuneRewardPool();
+        var pool = new FortuneRewardPool(gameTableManager);
 
-            FortuneRewardCatalog catalog = pool.GetRewardCatalog();
-            FortuneCardReward[] picks = pool.PickCardRewards(new ZeroRollRandom());
+        FortuneRewardCatalog catalog = pool.GetRewardCatalog();
+        FortuneCardReward[] picks = pool.PickCardRewards(new ZeroRollRandom());
 
-            Assert.Equal([101u], catalog.Item2IdRewards);
-            Assert.Single(catalog.RewardItemProbabilities);
-            Assert.InRange(catalog.RewardItemProbabilities[0], 0.99f, 1.01f);
-            Assert.NotEmpty(picks);
-            Assert.Equal(RewardRarity.Normal, picks[0].Rarity);
-            Assert.True(pool.IsCardRewardDisplayable(1u));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal([101u], catalog.Item2IdRewards);
+        Assert.Single(catalog.RewardItemProbabilities);
+        Assert.InRange(catalog.RewardItemProbabilities[0], 0.99f, 1.01f);
+        Assert.NotEmpty(picks);
+        Assert.Equal(RewardRarity.Normal, picks[0].Rarity);
+        Assert.True(pool.IsCardRewardDisplayable(1u));
     }
 
     [Fact]
@@ -181,7 +146,7 @@ public class FortuneRewardPoolTests
         Assert.DoesNotContain(picks, pick => pick.AccountItemId == 4u);
     }
 
-    private static IServiceProvider BuildGameTableProvider(
+    private static GameTableManager BuildGameTableManager(
         AccountItemEntry[] accountItems,
         Item2Entry[] itemEntries,
         bool includeAccountItemTable = true,
@@ -201,9 +166,7 @@ public class FortuneRewardPoolTests
             nameof(GameTableManager.Item),
             includeItemTable ? CreateGameTable(itemEntries) : null);
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

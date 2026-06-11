@@ -7,6 +7,8 @@ using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Game.Map;
+using NexusForever.GameTable;
+using NexusForever.Shared.Configuration;
 using NexusForever.Script;
 using NexusForever.Script.Template;
 
@@ -31,8 +33,12 @@ namespace NexusForever.Game.Map.Instance
             IEntityFactory entityFactory,
             IPublicEventManager publicEventManager,
             IScriptManager scriptManager,
-            ICreatureInfoManager creatureInfoManager = null)
-            : base(entityFactory, publicEventManager, creatureInfoManager)
+            ICreatureInfoManager creatureInfoManager = null,
+            IMapIOManager mapIOManager = null,
+            IEntityCacheManager entityCacheManager = null,
+            ISharedConfiguration sharedConfiguration = null,
+            IGameTableManager gameTableManager = null)
+            : base(entityFactory, publicEventManager, creatureInfoManager, mapIOManager, entityCacheManager, sharedConfiguration, gameTableManager)
         {
             this.scriptManager = scriptManager;
         }

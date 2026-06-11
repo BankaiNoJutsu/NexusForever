@@ -9,6 +9,7 @@ using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
 using NexusForever.Network.World.Entity;
@@ -287,6 +288,7 @@ public class EntityCreatePacketTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton(RecordingDispatchProxy<IGameTableManager>.Create(out _));
         services.AddGameEntity();
         configure?.Invoke(services);
         return services.BuildServiceProvider();

@@ -4,13 +4,12 @@ using Microsoft.Extensions.Options;
 using NexusForever.Game.Static;
 using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
-using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
 using NLog;
 
 namespace NexusForever.GameTable
 {
-    public sealed class GameTableManager : Singleton<GameTableManager>, IGameTableManager
+    public sealed class GameTableManager : IGameTableManager
     {
         private const int minimumThreads = 2;
         private const int maximumThreads = 16;
@@ -816,9 +815,11 @@ namespace NexusForever.GameTable
         private readonly GameTableConfig configuration;
 
         public GameTableManager(
-            IOptions<GameTableConfig> configuration)
+            IOptions<GameTableConfig> configuration,
+            ISharedConfiguration sharedConfiguration = null)
         {
             this.configuration = configuration.Value;
+            FileCache.Configure(this.configuration.Cache);
         }
 
         #endregion

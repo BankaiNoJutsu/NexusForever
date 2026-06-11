@@ -42,12 +42,12 @@ namespace NexusForever.Game.Account.Currency
         /// <summary>
         /// Create a new <see cref="IAccountCurrency"/> from an <see cref="AccountCurrencyModel"/>.
         /// </summary>
-        public AccountCurrency(IAccount account, AccountCurrencyModel model)
+        public AccountCurrency(IAccount account, AccountCurrencyModel model, IGameTableManager gameTableManager)
         {
             this.account = account;
             CurrencyId   = (AccountCurrencyType)model.CurrencyId;
             Amount       = model.Amount;
-            Entry        = GameTableManager.Instance.AccountCurrencyType?.GetEntry((ulong)CurrencyId);
+            Entry        = gameTableManager.AccountCurrencyType?.GetEntry((ulong)CurrencyId);
 
             saveMask = AccountCurrencySaveMask.None;
         }
@@ -55,12 +55,12 @@ namespace NexusForever.Game.Account.Currency
         /// <summary>
         /// Create a new <see cref="IAccountCurrency"/>.
         /// </summary>
-        public AccountCurrency(IAccount account, AccountCurrencyType currencyType, ulong amount)
+        public AccountCurrency(IAccount account, AccountCurrencyType currencyType, ulong amount, IGameTableManager gameTableManager)
         {
             this.account = account;
             CurrencyId   = currencyType;
             Amount       = amount;
-            Entry        = GameTableManager.Instance.AccountCurrencyType?.GetEntry((ulong)CurrencyId);
+            Entry        = gameTableManager.AccountCurrencyType?.GetEntry((ulong)CurrencyId);
 
             saveMask = AccountCurrencySaveMask.Create;
         }

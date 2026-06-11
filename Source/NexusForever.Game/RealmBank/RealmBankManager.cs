@@ -1,8 +1,8 @@
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using ItemModel = NexusForever.Database.Character.Model.ItemModel;
 using NexusForever.Game.Entity;
@@ -15,7 +15,7 @@ using NLog;
 
 namespace NexusForever.Game.RealmBank
 {
-    public sealed class RealmBankManager : Singleton<RealmBankManager>
+    public sealed class RealmBankManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
@@ -24,14 +24,18 @@ namespace NexusForever.Game.RealmBank
 
         readonly HashSet<(uint AccountId, ushort RealmId)> loaded = new();
         readonly IDatabaseManager databaseManager;
+        readonly IItemManager itemManager;
 
         public RealmBankManager()
         {
         }
 
-        public RealmBankManager(IDatabaseManager databaseManager)
+        public RealmBankManager(
+            IDatabaseManager databaseManager,
+            IItemManager itemManager = null)
         {
             this.databaseManager = databaseManager;
+            this.itemManager     = itemManager;
         }
 
         public bool HasUnlock(IPlayer player)
@@ -99,7 +103,7 @@ namespace NexusForever.Game.RealmBank
 
             foreach (RealmBankItemModel model in database.GetRealmBankItems(player.Account.Id, player.Identity.RealmId))
             {
-                IItemInfo info = ItemManager.Instance.GetItemInfo(model.ItemId);
+                IItemInfo info = itemManager.GetItemInfo(model.ItemId);
                 if (info == null)
                     continue;
 
@@ -234,9 +238,7 @@ namespace NexusForever.Game.RealmBank
 
         CharacterDatabase GetDatabase()
         {
-            return databaseManager?.GetDatabase<CharacterDatabase>()
-                ?? LegacyServiceProvider.Provider?.GetService<IDatabaseManager>()?.GetDatabase<CharacterDatabase>()
-                ?? LegacyServiceProvider.Provider?.GetService<DatabaseManager>()?.GetDatabase<CharacterDatabase>();
+            return databaseManager?.GetDatabase<CharacterDatabase>();
         }
     }
 }

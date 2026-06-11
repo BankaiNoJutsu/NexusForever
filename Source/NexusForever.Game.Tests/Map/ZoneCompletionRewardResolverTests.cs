@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
@@ -13,44 +12,32 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Map;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class ZoneCompletionRewardResolverTests
 {
     [Fact]
     public void GetExplorationOnlyTitleRewards_WithSingleExplorationOnlyReward_ReturnsTitle()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new ZoneCompletionEntry
             {
                 MapZoneId = 10u,
                 ZoneCompletionFactionEnum = (uint)ZoneCompletionFaction.Dominion,
                 CharacterTitleIdReward = 77u
             });
-        LegacyServiceProvider.Provider = provider;
 
-        try
-        {
-            IReadOnlyList<ushort> titleIds = ZoneCompletionRewardResolver.GetExplorationOnlyTitleRewards(10u);
+        IReadOnlyList<ushort> titleIds = ZoneCompletionRewardResolver.GetExplorationOnlyTitleRewards(10u, gameTableManager);
 
-            ushort titleId = Assert.Single(titleIds);
-            Assert.Equal((ushort)77, titleId);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        ushort titleId = Assert.Single(titleIds);
+        Assert.Equal((ushort)77, titleId);
     }
 
     [Fact]
     public void GetExplorationOnlyTitleRewards_WithNonExplorationRequirements_ReturnsNoTitle()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new ZoneCompletionEntry
             {
                 MapZoneId = 10u,
@@ -58,23 +45,14 @@ public class ZoneCompletionRewardResolverTests
                 EpisodeQuestCount = 1u,
                 CharacterTitleIdReward = 77u
             });
-        LegacyServiceProvider.Provider = provider;
 
-        try
-        {
-            Assert.Empty(ZoneCompletionRewardResolver.GetExplorationOnlyTitleRewards(10u));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Empty(ZoneCompletionRewardResolver.GetExplorationOnlyTitleRewards(10u, gameTableManager));
     }
 
     [Fact]
     public void GetEntry_WithFactionRows_ReturnsMatchingFactionRow()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new ZoneCompletionEntry
             {
                 MapZoneId = 10u,
@@ -87,20 +65,12 @@ public class ZoneCompletionRewardResolverTests
                 ZoneCompletionFactionEnum = (uint)ZoneCompletionFaction.Exile,
                 CharacterTitleIdReward = 88u
             });
-        LegacyServiceProvider.Provider = provider;
 
-        try
-        {
-            ZoneCompletionEntry dominion = ZoneCompletionRewardResolver.GetEntry(10u, ZoneCompletionFaction.Dominion);
-            ZoneCompletionEntry exile = ZoneCompletionRewardResolver.GetEntry(10u, ZoneCompletionFaction.Exile);
+        ZoneCompletionEntry dominion = ZoneCompletionRewardResolver.GetEntry(10u, ZoneCompletionFaction.Dominion, gameTableManager);
+        ZoneCompletionEntry exile = ZoneCompletionRewardResolver.GetEntry(10u, ZoneCompletionFaction.Exile, gameTableManager);
 
-            Assert.Equal(77u, dominion.CharacterTitleIdReward);
-            Assert.Equal(88u, exile.CharacterTitleIdReward);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(77u, dominion.CharacterTitleIdReward);
+        Assert.Equal(88u, exile.CharacterTitleIdReward);
     }
 
     [Fact]
@@ -153,31 +123,23 @@ public class ZoneCompletionRewardResolverTests
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
         playerProxy.SetProperty(nameof(IPlayer.Faction1), Faction.Dominion);
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new ZoneCompletionEntry
             {
                 MapZoneId = 10u,
                 ZoneCompletionFactionEnum = (uint)ZoneCompletionFaction.Dominion,
                 CharacterTitleIdReward = 77u
             });
-        LegacyServiceProvider.Provider = provider;
 
-        try
-        {
-            bool granted = ZoneCompletionRewardResolver.TryGetTitleReward(
-                player,
-                10u,
-                explorationComplete: true,
-                out ushort titleId);
+        bool granted = ZoneCompletionRewardResolver.TryGetTitleReward(
+            player,
+            10u,
+            explorationComplete: true,
+            out ushort titleId,
+            gameTableManager);
 
-            Assert.True(granted);
-            Assert.Equal((ushort)77, titleId);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.True(granted);
+        Assert.Equal((ushort)77, titleId);
     }
 
     [Fact]
@@ -186,8 +148,7 @@ public class ZoneCompletionRewardResolverTests
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
         playerProxy.SetProperty(nameof(IPlayer.Faction1), Faction.Exile);
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new ZoneCompletionEntry
             {
                 MapZoneId = 10u,
@@ -195,20 +156,13 @@ public class ZoneCompletionRewardResolverTests
                 EpisodeQuestCount = 1u,
                 CharacterTitleIdReward = 88u
             });
-        LegacyServiceProvider.Provider = provider;
 
-        try
-        {
-            Assert.False(ZoneCompletionRewardResolver.TryGetTitleReward(
-                player,
-                10u,
-                explorationComplete: true,
-                out _));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.False(ZoneCompletionRewardResolver.TryGetTitleReward(
+            player,
+            10u,
+            explorationComplete: true,
+            out _,
+            gameTableManager));
     }
 
     [Fact]
@@ -217,8 +171,7 @@ public class ZoneCompletionRewardResolverTests
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
         playerProxy.SetProperty(nameof(IPlayer.Faction1), Faction.Dominion);
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildProviderWithTables(
+        GameTableManager gameTableManager = CreateGameTableManagerWithTables(
             zoneCompletionEntries:
             [
                 new ZoneCompletionEntry
@@ -244,20 +197,13 @@ public class ZoneCompletionRewardResolverTests
                     Id = 200u
                 }
             ]);
-        LegacyServiceProvider.Provider = provider;
 
-        try
-        {
-            Assert.False(ZoneCompletionRewardResolver.TryGetTitleReward(
-                player,
-                20u,
-                explorationComplete: true,
-                out _));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.False(ZoneCompletionRewardResolver.TryGetTitleReward(
+            player,
+            20u,
+            explorationComplete: true,
+            out _,
+            gameTableManager));
     }
 
     [Fact]
@@ -267,9 +213,8 @@ public class ZoneCompletionRewardResolverTests
         const uint worldZoneId = 600u;
 
         IPlayer player = CreateDominionPlayerWithDatacube();
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
 
-        using ServiceProvider missingMapProvider = BuildProviderWithTables(
+        GameTableManager missingMapGameTableManager = CreateGameTableManagerWithTables(
             zoneCompletionEntries:
             [
                 new ZoneCompletionEntry
@@ -281,22 +226,14 @@ public class ZoneCompletionRewardResolverTests
                 }
             ]);
 
-        LegacyServiceProvider.Provider = missingMapProvider;
+        Assert.False(ZoneCompletionRewardResolver.TryGetTitleReward(
+            player,
+            mapZoneId,
+            explorationComplete: true,
+            out _,
+            missingMapGameTableManager));
 
-        try
-        {
-            Assert.False(ZoneCompletionRewardResolver.TryGetTitleReward(
-                player,
-                mapZoneId,
-                explorationComplete: true,
-                out _));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
-
-        using ServiceProvider completeProvider = BuildProviderWithTables(
+        GameTableManager completeGameTableManager = CreateGameTableManagerWithTables(
             zoneCompletionEntries:
             [
                 new ZoneCompletionEntry
@@ -333,81 +270,55 @@ public class ZoneCompletionRewardResolverTests
                 }
             ]);
 
-        LegacyServiceProvider.Provider = completeProvider;
+        bool granted = ZoneCompletionRewardResolver.TryGetTitleReward(
+            player,
+            mapZoneId,
+            explorationComplete: true,
+            out ushort titleId,
+            completeGameTableManager);
 
-        try
-        {
-            bool granted = ZoneCompletionRewardResolver.TryGetTitleReward(
-                player,
-                mapZoneId,
-                explorationComplete: true,
-                out ushort titleId);
-
-            Assert.True(granted);
-            Assert.Equal((ushort)77, titleId);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.True(granted);
+        Assert.Equal((ushort)77, titleId);
     }
 
     [Fact]
     public void ZoneMap_WhenHexTablesMissing_IsIncompleteWithZeroExploredPercent()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildProviderWithTables();
-        LegacyServiceProvider.Provider = provider;
+        GameTableManager gameTableManager = CreateGameTableManagerWithTables();
 
-        try
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        var zoneMap = new ZoneMap(new MapZoneEntry
         {
-            IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
-            var zoneMap = new ZoneMap(new MapZoneEntry
-            {
-                Id = 30u,
-                HexMinX = 0u,
-                HexMinY = 0u,
-                HexLimX = 1u,
-                HexLimY = 1u
-            }, player);
+            Id = 30u,
+            HexMinX = 0u,
+            HexMinY = 0u,
+            HexLimX = 1u,
+            HexLimY = 1u
+        }, player, gameTableManager);
 
-            zoneMap.AddHexGroup(1, sendUpdate: false);
+        zoneMap.AddHexGroup(1, sendUpdate: false);
 
-            Assert.False(zoneMap.IsComplete);
-            Assert.False(zoneMap.HasHexGroup(1));
-            Assert.Equal(0f, zoneMap.GetExploredPercent());
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.False(zoneMap.IsComplete);
+        Assert.False(zoneMap.HasHexGroup(1));
+        Assert.Equal(0f, zoneMap.GetExploredPercent());
     }
 
     [Fact]
     public void ZoneMapManager_WhenPersistedMapZoneMissing_SkipsHexGroup()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildProviderWithTables();
-        LegacyServiceProvider.Provider = provider;
+        GameTableManager gameTableManager = CreateGameTableManagerWithTables();
 
-        try
+        var player = (Player)RuntimeHelpers.GetUninitializedObject(typeof(Player));
+        var model = new CharacterModel();
+        model.ZonemapHexgroup.Add(new CharacterZonemapHexgroupModel
         {
-            var player = (Player)RuntimeHelpers.GetUninitializedObject(typeof(Player));
-            var model = new CharacterModel();
-            model.ZonemapHexgroup.Add(new CharacterZonemapHexgroupModel
-            {
-                ZoneMap = 40,
-                HexGroup = 1
-            });
+            ZoneMap = 40,
+            HexGroup = 1
+        });
 
-            var manager = new ZoneMapManager(player, model);
+        var manager = new ZoneMapManager(player, model, gameTableManager);
 
-            Assert.Equal(0, manager.GetMapZoneExploredPercent(40));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(0, manager.GetMapZoneExploredPercent(40));
     }
 
     [Fact]
@@ -418,9 +329,9 @@ public class ZoneCompletionRewardResolverTests
         Assert.Null(ZoneCompletionRewardResolver.GetPlayerZoneCompletionFaction(Faction.MatchingTeam1));
     }
 
-    private static ServiceProvider BuildProvider(params ZoneCompletionEntry[] entries)
+    private static GameTableManager CreateGameTableManager(params ZoneCompletionEntry[] entries)
     {
-        return BuildProviderWithTables(
+        return CreateGameTableManagerWithTables(
             zoneCompletionEntries: entries,
             questEntries: [],
             episodeQuestEntries: [],
@@ -431,7 +342,7 @@ public class ZoneCompletionRewardResolverTests
             challengeEntries: []);
     }
 
-    private static ServiceProvider BuildProviderWithTables(
+    private static GameTableManager CreateGameTableManagerWithTables(
         ZoneCompletionEntry[] zoneCompletionEntries = null,
         Quest2Entry[] questEntries = null,
         EpisodeQuestEntry[] episodeQuestEntries = null,
@@ -463,9 +374,7 @@ public class ZoneCompletionRewardResolverTests
         if (challengeEntries != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.Challenge), CreateGameTable(challengeEntries));
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static IPlayer CreateDominionPlayerWithDatacube()

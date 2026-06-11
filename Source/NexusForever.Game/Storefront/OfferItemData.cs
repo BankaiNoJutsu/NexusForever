@@ -17,14 +17,16 @@ namespace NexusForever.Game.Storefront
         /// <summary>
         /// Create a new <see cref="IOfferItemData"/>
         /// </summary>
-        public OfferItemData(StoreOfferItemDataModel model)
+        public OfferItemData(
+            StoreOfferItemDataModel model,
+            IGameTableManager gameTableManager)
         {
             OfferId = model.Id;
             ItemId  = model.ItemId;
             Type    = model.Type;
             Amount  = model.Amount;
 
-            Entry = GameTableManager.Instance.AccountItem?.GetEntry(ItemId);
+            Entry = gameTableManager?.AccountItem?.GetEntry(ItemId);
             if (Entry == null)
                 throw new ArgumentException("ItemId");
         }

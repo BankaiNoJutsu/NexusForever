@@ -4,12 +4,11 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
-using NexusForever.Shared;
 using static NexusForever.Network.World.Message.Model.ServerP2PTradeResult;
 
 namespace NexusForever.Game.Trade
 {
-    public sealed class TradeManager : Singleton<TradeManager>, ITradeManager
+    public sealed class TradeManager : ITradeManager
     {
         private const double InviteTimeoutSeconds = 30d;
 

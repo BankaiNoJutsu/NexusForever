@@ -12,7 +12,7 @@ using NexusForever.Shared;
 
 namespace NexusForever.Script
 {
-    public sealed class ScriptManager : Singleton<IScriptManager>, IScriptManager
+    public sealed class ScriptManager : IScriptManager
     {
         /// <summary>
         /// Id to be assigned to the next <see cref="IScriptInstanceInfo"/>.

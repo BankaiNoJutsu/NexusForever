@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Costume;
 using NexusForever.Game.Static.Entity;
@@ -36,20 +37,28 @@ namespace NexusForever.Game.Entity
         private const double CostumeSwapCooldown = 15d;
 
         private readonly IPlayer player;
+        private readonly IItemManager itemManager;
+        private readonly IGameTableManager gameTableManager;
         private readonly Dictionary<byte, ICostume> costumes = new();
         private double costumeSwapCooldown;
 
         /// <summary>
         /// Create a new <see cref="ICostumeManager"/> from existing <see cref="CharacterModel"/> database model.
         /// </summary>
-        public CostumeManager(IPlayer owner, CharacterModel characterModel)
+        public CostumeManager(
+            IPlayer owner,
+            CharacterModel characterModel,
+            IItemManager itemManager = null,
+            IGameTableManager gameTableManager = null)
         {
             player = owner;
+            this.itemManager = itemManager;
+            this.gameTableManager = gameTableManager;
 
             costumeIndex = characterModel.ActiveCostumeIndex >= 0 ? (byte)characterModel.ActiveCostumeIndex : null;
 
             foreach (CharacterCostumeModel costumeModel in characterModel.Costume)
-                costumes.Add(costumeModel.Index, new Costume(costumeModel));
+                costumes.Add(costumeModel.Index, new Costume(costumeModel, itemManager, gameTableManager));
         }
 
         public void Save(CharacterContext context)
@@ -138,7 +147,7 @@ namespace NexusForever.Game.Entity
                 if (costumeItem.ItemId == 0)
                     continue;
 
-                IItemInfo itemEntry = ItemManager.Instance.GetItemInfo(costumeItem.ItemId);
+                IItemInfo itemEntry = itemManager?.GetItemInfo(costumeItem.ItemId);
                 if (itemEntry == null)
                 {
                     SendCostumeSaveResult(CostumeSaveResult.InvalidItem);
@@ -157,7 +166,7 @@ namespace NexusForever.Game.Entity
                     return;
                 }
 
-                ItemDisplayEntry itemDisplayEntry = GameTableManager.Instance.ItemDisplay?.GetEntry(itemEntry.GetDisplayId());
+                ItemDisplayEntry itemDisplayEntry = gameTableManager.ItemDisplay?.GetEntry(itemEntry.GetDisplayId());
                 for (int i = 0; i < costumeItem.Dyes.Length; i++)
                 {
                     if (costumeItem.Dyes[i] == 0u)
@@ -176,7 +185,7 @@ namespace NexusForever.Game.Entity
                         return;
                     }
 
-                    if (GameTableManager.Instance.DyeColorRamp?.GetEntry(costumeItem.Dyes[i]) == null)
+                    if (gameTableManager.DyeColorRamp?.GetEntry(costumeItem.Dyes[i]) == null)
                     {
                         SendCostumeSaveResult(CostumeSaveResult.InvalidDye);
                         return;
@@ -194,7 +203,7 @@ namespace NexusForever.Game.Entity
                 costume.Update(costumeSave);
             else
             {
-                costume = new Costume(player, costumeSave);
+                costume = new Costume(player, costumeSave, itemManager, gameTableManager);
                 costumes.Add(costume.Index, costume);
             }
 

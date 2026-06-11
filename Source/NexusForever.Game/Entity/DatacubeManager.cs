@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
@@ -6,7 +5,6 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Entity
 {
@@ -194,12 +192,12 @@ namespace NexusForever.Game.Entity
 
         private IGameTableManager ResolveDatacubeGameTableManager()
         {
-            return gameTableManager ?? GameTableManager.Instance;
+            return gameTableManager;
         }
 
         private IGameTableManager ResolveScientistScanGameTableManager()
         {
-            return gameTableManager ?? LegacyServiceProvider.Provider?.GetService<IGameTableManager>();
+            return gameTableManager;
         }
     }
 }

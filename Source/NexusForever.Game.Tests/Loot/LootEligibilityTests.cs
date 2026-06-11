@@ -1,26 +1,17 @@
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Tests.TestSupport;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Loot;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class LootEligibilityTests
 {
     [Fact]
     public void CanTryRoll_RequiresRollAndEligibleMember()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
-
-        try
-        {
         Identity winner = new() { RealmId = 1, Id = 42ul };
         Identity loser  = new() { RealmId = 1, Id = 43ul };
         var lootItem = new LootInstanceItem(100u, LootItemType.StaticItem, 1u);
@@ -29,21 +20,11 @@ public class LootEligibilityTests
         Assert.True(lootItem.CanTryRoll(winner.Id));
         Assert.True(lootItem.CanTryRoll(loser.Id));
         Assert.False(lootItem.CanTryRoll(99ul));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void TryRecordRoll_RejectsIneligiblePlayer()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
-
-        try
-        {
         Identity winner = new() { RealmId = 1, Id = 42ul };
         var lootItem = new LootInstanceItem(100u, LootItemType.StaticItem, 1u);
         lootItem.ConfigureRoll([winner]);
@@ -53,21 +34,11 @@ public class LootEligibilityTests
         outsiderProxy.SetProperty(nameof(IPlayer.Identity), new Identity { RealmId = 1, Id = 99ul });
 
         Assert.False(lootItem.TryRecordRoll(outsider, LootRollAction.Need));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CanTryMasterAssign_RequiresMasterAuthorityAndEligibleAssignee()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
-
-        try
-        {
         Identity master   = new() { RealmId = 1, Id = 52ul };
         Identity assignee = new() { RealmId = 1, Id = 53ul };
         Identity outsider = new() { RealmId = 1, Id = 54ul };
@@ -77,21 +48,11 @@ public class LootEligibilityTests
         Assert.True(lootItem.CanTryMasterAssign(master.Id, assignee));
         Assert.False(lootItem.CanTryMasterAssign(master.Id, outsider));
         Assert.False(lootItem.CanTryMasterAssign(assignee.Id, assignee));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void AssignMasterLoot_RejectsNonMasterAssigner()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
-
-        try
-        {
         Identity master   = new() { RealmId = 1, Id = 52ul };
         Identity assignee = new() { RealmId = 1, Id = 53ul };
         var lootInstance = new LootInstance(
@@ -111,18 +72,5 @@ public class LootEligibilityTests
         assigneeProxy.SetProperty(nameof(IPlayer.CharacterId), assignee.Id);
 
         Assert.False(lootInstance.AssignMasterLoot(assigneePlayer, lootItem.Id, assignee));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
-    }
-
-    private static IServiceProvider BuildProvider()
-    {
-        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
-        return new ServiceCollection()
-            .AddSingleton(new GlobalLootManager(groupStateManager))
-            .BuildServiceProvider();
     }
 }

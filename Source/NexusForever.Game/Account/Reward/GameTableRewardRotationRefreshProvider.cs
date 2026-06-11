@@ -10,18 +10,16 @@ namespace NexusForever.Game.Account.Reward
     /// </summary>
     public sealed class GameTableRewardRotationRefreshProvider : IRewardRotationRefreshProvider
     {
-        public static GameTableRewardRotationRefreshProvider Instance { get; } = new();
-
         private readonly IGameTableManager gameTables;
         private readonly uint playerLevel;
         private readonly uint worldDifficultyFlags;
 
         public GameTableRewardRotationRefreshProvider(
-            IGameTableManager gameTables = null,
+            IGameTableManager gameTables,
             uint playerLevel = RewardRotationScheduleBuilder.DefaultPlayerLevel,
             uint worldDifficultyFlags = RewardRotationScheduleBuilder.DefaultWorldDifficultyFlags)
         {
-            this.gameTables = gameTables ?? GameTableManager.Instance;
+            this.gameTables = gameTables ?? throw new ArgumentNullException(nameof(gameTables));
             this.playerLevel = playerLevel;
             this.worldDifficultyFlags = worldDifficultyFlags;
         }

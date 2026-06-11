@@ -26,21 +26,21 @@ namespace NexusForever.Game.Entity
         {
             base.Initialise(model);
 
-            scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<ISimpleCollidableEntity>(this);
+            scriptCollection = GetScriptManager().InitialiseEntityScripts<ISimpleCollidableEntity>(this);
         }
 
         public override void Initialise(ICreatureInfo creatureInfo)
         {
             base.Initialise(creatureInfo);
 
-            scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<ISimpleCollidableEntity>(this);
+            scriptCollection = GetScriptManager().InitialiseEntityScripts<ISimpleCollidableEntity>(this);
         }
 
         public override void Initialise(ICreatureInfo creatureInfo, EntityModel model)
         {
             base.Initialise(creatureInfo, model);
 
-            scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<ISimpleCollidableEntity>(this);
+            scriptCollection = GetScriptManager().InitialiseEntityScripts<ISimpleCollidableEntity>(this);
         }
 
         protected override IEntityModel BuildEntityModel()

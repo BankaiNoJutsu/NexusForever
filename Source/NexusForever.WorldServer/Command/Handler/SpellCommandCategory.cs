@@ -23,6 +23,17 @@ namespace NexusForever.WorldServer.Command.Handler
     [Command(Permission.Spell, "A collection of commands to manage spells.", "spell")]
     public class SpellCommandCategory : CommandCategory
     {
+        private readonly IGlobalSpellManager globalSpellManager;
+        private readonly IGameTableManager gameTableManager;
+
+        public SpellCommandCategory(
+            IGlobalSpellManager globalSpellManager,
+            IGameTableManager gameTableManager)
+        {
+            this.globalSpellManager = globalSpellManager;
+            this.gameTableManager   = gameTableManager;
+        }
+
         [Command(Permission.SpellAdd, "Add a base spell to character, optionally supplying the tier.", "add")]
         [CommandTarget(typeof(IPlayer))]
         public void HandleSpellAdd(ICommandContext context,
@@ -33,7 +44,7 @@ namespace NexusForever.WorldServer.Command.Handler
         {
             tier ??= 1;
 
-            ISpellBaseInfo spellBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(spell4BaseId);
+            ISpellBaseInfo spellBaseInfo = globalSpellManager.GetSpellBaseInfo(spell4BaseId);
             if (spellBaseInfo == null)
             {
                 context.SendMessage($"Invalid spell base id {spell4BaseId}!");
@@ -60,7 +71,7 @@ namespace NexusForever.WorldServer.Command.Handler
         {
             tier ??= 1;
 
-            ISpellBaseInfo spellBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(spell4BaseId);
+            ISpellBaseInfo spellBaseInfo = globalSpellManager.GetSpellBaseInfo(spell4BaseId);
             if (spellBaseInfo == null)
             {
                 context.SendMessage($"Invalid spell base id {spell4BaseId}!");
@@ -223,7 +234,7 @@ namespace NexusForever.WorldServer.Command.Handler
         {
             tier ??= 1;
 
-            ISpellBaseInfo spellBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(spell4BaseId);
+            ISpellBaseInfo spellBaseInfo = globalSpellManager.GetSpellBaseInfo(spell4BaseId);
             if (spellBaseInfo == null)
             {
                 context.SendMessage($"Invalid spell base id {spell4BaseId}!");
@@ -245,14 +256,14 @@ namespace NexusForever.WorldServer.Command.Handler
             [Parameter("Concrete Spell4 id to inspect.")]
             uint spell4Id)
         {
-            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(spell4Id);
+            Spell4Entry spell4Entry = gameTableManager.Spell4.GetEntry(spell4Id);
             if (spell4Entry == null)
             {
                 context.SendMessage($"Invalid spell4 id {spell4Id}!");
                 return;
             }
 
-            ISpellBaseInfo spellBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(spell4Entry.Spell4BaseIdBaseSpell);
+            ISpellBaseInfo spellBaseInfo = globalSpellManager.GetSpellBaseInfo(spell4Entry.Spell4BaseIdBaseSpell);
             if (spellBaseInfo == null)
             {
                 context.SendMessage($"Invalid spell base id {spell4Entry.Spell4BaseIdBaseSpell} for spell4 id {spell4Id}!");
@@ -320,9 +331,9 @@ namespace NexusForever.WorldServer.Command.Handler
             return false;
         }
 
-        private static bool TryCastSpell4(ICommandContext context, uint spell4Id, bool captureRuntimeEvidence, bool emitDiagnosticSpellBroadcasts, out CastResult castResult)
+        private bool TryCastSpell4(ICommandContext context, uint spell4Id, bool captureRuntimeEvidence, bool emitDiagnosticSpellBroadcasts, out CastResult castResult)
         {
-            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(spell4Id);
+            Spell4Entry spell4Entry = gameTableManager.Spell4.GetEntry(spell4Id);
             if (spell4Entry == null)
             {
                 context.SendMessage($"Invalid spell4 id {spell4Id}!");
@@ -354,7 +365,7 @@ namespace NexusForever.WorldServer.Command.Handler
             return true;
         }
 
-        private static void InspectSpell(ICommandContext context, ISpellBaseInfo spellBaseInfo, ISpellInfo spellInfo, byte tier)
+        private void InspectSpell(ICommandContext context, ISpellBaseInfo spellBaseInfo, ISpellInfo spellInfo, byte tier)
         {
             Spell4Entry entry = spellInfo.Entry;
 
@@ -505,7 +516,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 && (entry.ChannelInitialDelay != 0u || entry.ChannelMaxTime != 0u || entry.ChannelPulseTime != 0u);
         }
 
-        private static string DescribeProxyChannelData(ISpellInfo spellInfo)
+        private string DescribeProxyChannelData(ISpellInfo spellInfo)
         {
             List<string> proxyChannels = [];
             foreach (SpellEffectInterpretation effect in spellInfo.Effects.Select(SpellEffectInterpreter.Interpret))
@@ -513,7 +524,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 if (effect.Proxy == null)
                     continue;
 
-                Spell4Entry proxyEntry = GameTableManager.Instance.Spell4.GetEntry(effect.Proxy.Spell4Id);
+                Spell4Entry proxyEntry = gameTableManager.Spell4.GetEntry(effect.Proxy.Spell4Id);
                 if (!HasChannelData(proxyEntry))
                     continue;
 
@@ -606,12 +617,12 @@ namespace NexusForever.WorldServer.Command.Handler
                 labels.Add(label);
         }
 
-        private static string DescribeLocalizedText(uint textId)
+        private string DescribeLocalizedText(uint textId)
         {
             if (textId == 0u)
                 return "0 (none)";
 
-            string text = GameTableManager.Instance.TextEnglish.GetEntry(textId);
+            string text = gameTableManager.TextEnglish.GetEntry(textId);
             if (string.IsNullOrWhiteSpace(text))
                 return $"{textId} (missing)";
 
@@ -662,9 +673,9 @@ namespace NexusForever.WorldServer.Command.Handler
             return $"comparison {entry.EmmComparison}, value {entry.EmmValue} (unknown semantics)";
         }
 
-        private static string DescribeThresholds(uint spell4Id)
+        private string DescribeThresholds(uint spell4Id)
         {
-            GameTable<Spell4ThresholdsEntry> thresholdTable = GameTableManager.Instance.Spell4Thresholds;
+            GameTable<Spell4ThresholdsEntry> thresholdTable = gameTableManager.Spell4Thresholds;
             if (thresholdTable?.Entries == null)
                 return "unavailable (Spell4Thresholds table not loaded)";
 
@@ -679,7 +690,7 @@ namespace NexusForever.WorldServer.Command.Handler
             return string.Join("; ", entries.Select(DescribeThreshold));
         }
 
-        private static string DescribeThreshold(Spell4ThresholdsEntry entry)
+        private string DescribeThreshold(Spell4ThresholdsEntry entry)
         {
             string iconDescription = string.IsNullOrWhiteSpace(entry.IconReplacement)
                 ? "none"
@@ -835,7 +846,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 : "flagged/no-row";
         }
 
-        private static string DescribeEffectSemantics(SpellEffectInterpretation effect)
+        private string DescribeEffectSemantics(SpellEffectInterpretation effect)
         {
             if (effect.Absorption != null)
                 return $"absorption amount formula multiplier {effect.Absorption.TypeMultiplier:R}, base value {effect.Absorption.TypeBaseValue:R}, type {effect.Absorption.AbsorptionType}, data {effect.Absorption.DataBits02}/{effect.Absorption.DataBits03}/{effect.Absorption.DataBits05}";
@@ -988,24 +999,24 @@ namespace NexusForever.WorldServer.Command.Handler
             return states.Length > 0 ? string.Join(", ", states) : "none";
         }
 
-        private static string DescribeSpell4(uint spell4Id)
+        private string DescribeSpell4(uint spell4Id)
         {
             if (spell4Id == 0u)
                 return "0";
 
-            Spell4Entry entry = GameTableManager.Instance.Spell4.GetEntry(spell4Id);
+            Spell4Entry entry = gameTableManager.Spell4.GetEntry(spell4Id);
             if (entry == null)
                 return $"{spell4Id} (missing)";
 
             return $"{entry.Id} base {entry.Spell4BaseIdBaseSpell} tier {entry.TierIndex} \"{entry.Description}\"";
         }
 
-        private static string DescribeCreature(uint creatureId)
+        private string DescribeCreature(uint creatureId)
         {
             if (creatureId == 0u)
                 return "0";
 
-            Creature2Entry entry = GameTableManager.Instance.Creature2.GetEntry(creatureId);
+            Creature2Entry entry = gameTableManager.Creature2.GetEntry(creatureId);
             if (entry == null)
                 return $"{creatureId} (missing)";
 

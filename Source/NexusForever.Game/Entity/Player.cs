@@ -9,22 +9,30 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Challenges;
+using NexusForever.Game.Abstract.Character;
+using NexusForever.Game.Abstract.Chat;
+using NexusForever.Game.Abstract.Customisation;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
+using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.Housing;
+using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Map.Search;
 using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Game.Abstract.Matching.Queue;
+using NexusForever.Game.Abstract.Prerequisite;
+using NexusForever.Game.Abstract.Pvp;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Abstract.Reputation;
+using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Abstract.Storefront;
 using NexusForever.Game.Achievement;
 using NexusForever.Game.Challenges;
 using NexusForever.Game.Character;
-using NexusForever.Game.Chat;
 using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Map.Search;
 using NexusForever.Game.Guild;
@@ -32,6 +40,7 @@ using NexusForever.Game.Housing;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Map;
 using NexusForever.Game.Quest;
+using NexusForever.Game.RealmBank;
 using NexusForever.Game.Reputation;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static;
@@ -49,9 +58,9 @@ using NexusForever.Game.Static.RBAC;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Setting;
 using NexusForever.Game.Static.Spell;
-using NexusForever.Game.Pvp;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.GameTable.Text.Filter;
 using NexusForever.Network.Message;
 using NexusForever.Network.Internal;
 using NexusForever.Network.Internal.Message.Player;
@@ -110,8 +119,6 @@ namespace NexusForever.Game.Entity
         }
 
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
-
-        private static double SaveDuration => SharedConfiguration.Instance.Get<WorldConfig>()?.PlayerSaveIntervalSeconds ?? 60d;
 
         private const ushort TutorialWorldId = 3460;
         private const float DefaultInteractionMaxRange = 5f;
@@ -425,7 +432,7 @@ namespace NexusForever.Game.Entity
         private bool saveRequestedDuringSave;
         private Action deferredSaveCallback;
         private Action deferredSaveFailureCallback;
-        private UpdateTimer saveTimer = new(SaveDuration);
+        private UpdateTimer saveTimer;
         private PlayerSaveMask saveMask;
 
         private Dictionary<Property, Dictionary<ItemSlot, /*value*/float>> itemProperties = new();
@@ -442,7 +449,34 @@ namespace NexusForever.Game.Entity
         private readonly IMatchingManager matchingManager;
         private readonly IMatchManager matchManager;
         private readonly IGameTableManager gameTableManager;
-        private readonly GlobalLootManager globalLootManager;
+        private readonly IGlobalLootManager globalLootManager;
+        private readonly IGroupStateManager groupStateManager;
+        private readonly ICleanupManager cleanupManager;
+        private readonly IBuybackManager buybackManager;
+        private readonly IGlobalAchievementManager globalAchievementManager;
+        private readonly IGlobalGuildManager globalGuildManager;
+        private readonly IGlobalQuestManager globalQuestManager;
+        private readonly IGlobalSpellManager globalSpellManager;
+        private readonly ICustomisationManager customisationManager;
+        private readonly IDuelManager duelManager;
+        private readonly IGlobalStorefrontManager globalStorefrontManager;
+        private readonly IGlobalResidenceManager globalResidenceManager;
+        private readonly IMapManager mapManager;
+        private readonly ITextFilterManager textFilterManager;
+        private readonly IPrerequisiteManager prerequisiteManager;
+        private readonly IShutdownManager shutdownManager;
+        private readonly IGlobalChatManager globalChatManager;
+        private readonly IFactionManager factionManager;
+        private readonly RealmBankManager realmBankManager;
+        private readonly IDisableManager disableManager;
+        private readonly IAssetManager assetManager;
+        private readonly ICharacterManager characterManager;
+        private readonly IScriptManager scriptManager;
+        private readonly IRealmContext realmContext;
+        private readonly IPlayerManager playerManager;
+        private readonly IItemManager itemManager;
+        private readonly IDatabaseManager databaseManager;
+        private readonly ISharedConfiguration sharedConfiguration;
 
         public Player(
             IMovementManager movementManager,
@@ -452,8 +486,35 @@ namespace NexusForever.Game.Entity
             IMatchManager matchManager,
             IGameTableManager gameTableManager,
             ICurrencyManager currencyManager,
-            GlobalLootManager globalLootManager = null)
-            : base(movementManager)
+            IGlobalLootManager globalLootManager = null,
+            IGroupStateManager groupStateManager = null,
+            ICleanupManager cleanupManager = null,
+            IBuybackManager buybackManager = null,
+            IGlobalAchievementManager globalAchievementManager = null,
+            IGlobalGuildManager globalGuildManager = null,
+            IGlobalQuestManager globalQuestManager = null,
+            IGlobalSpellManager globalSpellManager = null,
+            ICustomisationManager customisationManager = null,
+            IDuelManager duelManager = null,
+            IGlobalStorefrontManager globalStorefrontManager = null,
+            IGlobalResidenceManager globalResidenceManager = null,
+            IMapManager mapManager = null,
+            ITextFilterManager textFilterManager = null,
+            IPrerequisiteManager prerequisiteManager = null,
+            IShutdownManager shutdownManager = null,
+            IGlobalChatManager globalChatManager = null,
+            IFactionManager factionManager = null,
+            RealmBankManager realmBankManager = null,
+            IDisableManager disableManager = null,
+            IAssetManager assetManager = null,
+            ICharacterManager characterManager = null,
+            IScriptManager scriptManager = null,
+            IRealmContext realmContext = null,
+            IPlayerManager playerManager = null,
+            IItemManager itemManager = null,
+            IDatabaseManager databaseManager = null,
+            ISharedConfiguration sharedConfiguration = null)
+            : base(movementManager, sharedConfiguration)
         {
             this.messagePublisher = messagePublisher;
             this.entityFactory    = entityFactory;
@@ -461,6 +522,44 @@ namespace NexusForever.Game.Entity
             this.matchManager     = matchManager;
             this.gameTableManager = gameTableManager;
             this.globalLootManager = globalLootManager;
+            this.groupStateManager = groupStateManager;
+            this.cleanupManager    = cleanupManager;
+            this.buybackManager    = buybackManager;
+            this.globalAchievementManager = globalAchievementManager;
+            this.globalGuildManager = globalGuildManager;
+            this.globalQuestManager = globalQuestManager;
+            this.globalSpellManager = globalSpellManager;
+            this.customisationManager = customisationManager;
+            this.duelManager       = duelManager;
+            this.globalStorefrontManager = globalStorefrontManager;
+            this.globalResidenceManager = globalResidenceManager;
+            this.mapManager        = mapManager;
+            this.textFilterManager = textFilterManager;
+            this.prerequisiteManager = prerequisiteManager;
+            this.shutdownManager   = shutdownManager;
+            this.globalChatManager = globalChatManager;
+            this.factionManager    = factionManager;
+            this.realmBankManager  = realmBankManager;
+            this.disableManager    = disableManager;
+            this.assetManager      = assetManager;
+            this.characterManager  = characterManager;
+            this.scriptManager     = scriptManager;
+            this.realmContext      = realmContext;
+            this.playerManager     = playerManager;
+            this.itemManager       = itemManager;
+            this.databaseManager   = databaseManager;
+            this.sharedConfiguration = sharedConfiguration;
+            saveTimer              = new UpdateTimer(GetSaveDuration());
+
+            InitialiseScriptManager(() => scriptManager);
+
+            InitialiseRuntimeDependencies(
+                null,
+                null,
+                () => disableManager,
+                () => assetManager,
+                () => prerequisiteManager,
+                () => globalSpellManager);
 
             // managers
             CurrencyManager = currencyManager;
@@ -478,7 +577,7 @@ namespace NexusForever.Game.Entity
             Session           = session;
 
             Account           = account;
-            Identity          = new Abstract.Identity { Id = model.Id, RealmId = RealmContext.Instance.RealmId };
+            Identity          = new Abstract.Identity { Id = model.Id, RealmId = realmContext?.RealmId ?? (ushort)0 };
             Name              = model.Name;
             sex               = (Sex)model.Sex;
             race              = (Race)model.Race;
@@ -520,7 +619,7 @@ namespace NexusForever.Game.Entity
                 stats.Add((Stat)statModel.Stat, statValue);
             }
 
-            byte resolvedLevel = NexusForever.Game.Entity.XpManager.ResolveStoredLevel(model.Level, model.TotalXp);
+            byte resolvedLevel = NexusForever.Game.Entity.XpManager.ResolveStoredLevel(model.Level, model.TotalXp, gameTableManager);
             if (Level > resolvedLevel)
                 resolvedLevel = (byte)Math.Min(Level, byte.MaxValue);
 
@@ -547,55 +646,65 @@ namespace NexusForever.Game.Entity
             CalculateDefaultProperties();
             SetBaseCharacterProperties();
 
-            scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<IPlayer>(this);
+            scriptCollection = GetScriptManager().InitialiseEntityScripts<IPlayer>(this);
 
             // managers
-            EntitlementManager      = new CharacterEntitlementManager(this, model);
+            EntitlementManager      = new CharacterEntitlementManager(this, model, assetManager, gameTableManager);
             Account.RewardPropertyManager.Initialise(this);
 
-            CostumeManager          = new CostumeManager(this, model);
-            Inventory               = new Inventory(this, model);
+            CostumeManager          = new CostumeManager(this, model, itemManager, gameTableManager);
+            Inventory               = new Inventory(this, model, realmBankManager, prerequisiteManager, itemManager, gameTableManager);
             CurrencyManager.Initialise(this, model);
-            PathManager             = new PathManager(this, model);
-            TitleManager            = new TitleManager(this, model);
-            SpellManager            = new SpellManager(this, model);
-            PetCustomisationManager = new PetCustomisationManager(this, model);
+            PathManager             = new PathManager(this, model, prerequisiteManager, gameTableManager);
+            TitleManager            = new TitleManager(this, model, gameTableManager);
+            SpellManager            = new SpellManager(this, model, prerequisiteManager, globalSpellManager, gameTableManager);
+            PetCustomisationManager = new PetCustomisationManager(this, model, gameTableManager, textFilterManager, prerequisiteManager);
             KeybindingManager       = new CharacterKeybindingManager(this, model);
             DatacubeManager         = new DatacubeManager(this, model, gameTableManager);
-            GalacticArchiveManager  = new GalacticArchiveManager(this, model);
-            MailManager             = new MailManager(this, model);
-            ZoneMapManager          = new ZoneMapManager(this, model);
-            ChallengeManager        = new ChallengeManager(this, model);
-            QuestManager            = new QuestManager(this, model);
-            AchievementManager      = new CharacterAchievementManager(this, model);
-            SupplySatchelManager    = new SupplySatchelManager(this, model);
-            XpManager               = new XpManager(this, model);
-            ReputationManager       = new ReputationManager(this, model);
-            GuildManager            = new GuildManager(this, model);
-            ResidenceManager        = new ResidenceManager(this);
+            GalacticArchiveManager  = new GalacticArchiveManager(this, model, gameTableManager);
+            MailManager             = new MailManager(this, model, assetManager, characterManager, realmContext?.RealmId ?? Identity.RealmId, playerManager, itemManager, gameTableManager, sharedConfiguration);
+            ZoneMapManager          = new ZoneMapManager(this, model, gameTableManager);
+            ChallengeManager        = new ChallengeManager(this, model, gameTableManager);
+            QuestManager            = new QuestManager(this, model, disableManager, assetManager, prerequisiteManager, globalQuestManager, scriptManager, gameTableManager);
+            AchievementManager      = new CharacterAchievementManager(this, model, groupStateManager, disableManager, globalAchievementManager, prerequisiteManager, playerManager, gameTableManager);
+            SupplySatchelManager    = new SupplySatchelManager(this, model, gameTableManager);
+            XpManager               = new XpManager(this, model, gameTableManager, sharedConfiguration);
+            ReputationManager       = new ReputationManager(this, model, factionManager);
+            GuildManager            = new GuildManager(this, model, textFilterManager, globalGuildManager, realmContext, playerManager, sharedConfiguration, gameTableManager);
+            ResidenceManager        = new ResidenceManager(this, globalResidenceManager, characterManager);
             CinematicManager        = new CinematicManager(this);
 
             LogoutManager           = new LogoutManager(this);
             LogoutManager.OnTimerFinished += Logout;
 
-            AppearanceManager       = new AppearanceManager(this, model);
-            ResurrectionManager     = new ResurrectionManager(this);
+            AppearanceManager       = new AppearanceManager(this, model, customisationManager);
+            ResurrectionManager     = new ResurrectionManager(this, sharedConfiguration, gameTableManager);
 
             // do dependant stat balance after all stats and properties have been set
             SetDependantStatBalance(true);
             foreach (IPropertyValue property in GetProperties())
                 DependantStatBalance(property);
 
-            PlayerManager.Instance.AddPlayer(this);
+            playerManager?.AddPlayer(this);
         }
 
         private void SetBaseCharacterProperties()
         {
-            var baseProperties  = CharacterManager.Instance.GetCharacterBaseProperties();
-            var classProperties = CharacterManager.Instance.GetCharacterClassBaseProperties(Class);
+            var baseProperties  = GetCharacterManager().GetCharacterBaseProperties();
+            var classProperties = GetCharacterManager().GetCharacterClassBaseProperties(Class);
 
             foreach (IPropertyModifier propertyValue in baseProperties.Concat(classProperties))
                 SetBaseProperty(propertyValue.Property, propertyValue.GetValue(Level));
+        }
+
+        private ICharacterManager GetCharacterManager()
+        {
+            return characterManager ?? throw new InvalidOperationException("Player requires an ICharacterManager.");
+        }
+
+        private IGlobalQuestManager GetGlobalQuestManager()
+        {
+            return globalQuestManager ?? throw new InvalidOperationException("Player requires an IGlobalQuestManager.");
         }
 
         public override void Update(double lastTick)
@@ -689,8 +798,8 @@ namespace NexusForever.Game.Entity
         /// </remarks>
         public async Task SaveDirect()
         {
-            await DatabaseManager.Instance.GetDatabase<AuthDatabase>().Save(Save);
-            await DatabaseManager.Instance.GetDatabase<CharacterDatabase>().Save(Save);
+            await GetAuthDatabase().Save(Save);
+            await GetCharacterDatabase().Save(Save);
         }
 
         public void RequestSave()
@@ -712,16 +821,28 @@ namespace NexusForever.Game.Entity
             // prevent packets from being processed until asynchronous player save task is complete
             Session.CanProcessIncomingPackets = false;
 
-            Task authSaveTask = DatabaseManager.Instance.GetDatabase<AuthDatabase>().Save(Save);
+            Task authSaveTask = GetAuthDatabase().Save(Save);
             Session.Events.EnqueueEvent(new TaskEvent(authSaveTask,
                 () =>
                 {
-                    Task characterSaveTask = DatabaseManager.Instance.GetDatabase<CharacterDatabase>().Save(Save);
+                    Task characterSaveTask = GetCharacterDatabase().Save(Save);
                     Session.Events.EnqueueEvent(new TaskEvent(characterSaveTask,
                         () => CompleteSave(callback, failureCallback),
                         () => HandleSaveFailure("character", failureCallback)));
                 },
                 () => HandleSaveFailure("auth", failureCallback)));
+        }
+
+        private AuthDatabase GetAuthDatabase()
+        {
+            AuthDatabase authDatabase = databaseManager?.GetDatabase<AuthDatabase>();
+            return authDatabase ?? throw new InvalidOperationException("AuthDatabase is not available.");
+        }
+
+        private CharacterDatabase GetCharacterDatabase()
+        {
+            CharacterDatabase characterDatabase = databaseManager?.GetDatabase<CharacterDatabase>();
+            return characterDatabase ?? throw new InvalidOperationException("CharacterDatabase is not available.");
         }
 
         private void CompleteSave(Action callback, Action failureCallback)
@@ -989,7 +1110,7 @@ namespace NexusForever.Game.Entity
             return new PlayerEntityModel
             {
                 Id        = CharacterId,
-                RealmId   = RealmContext.Instance.RealmId,
+                RealmId   = Identity.RealmId,
                 Name      = Name,
                 Race      = Race,
                 Class     = Class,
@@ -1089,7 +1210,7 @@ namespace NexusForever.Game.Entity
                 return;
             }
 
-            Creature2Entry creatureEntry = GameTableManager.Instance.Creature2.GetEntry(vendor.CreatureId);
+            Creature2Entry creatureEntry = gameTableManager.Creature2.GetEntry(vendor.CreatureId);
             float maxRange = creatureEntry?.ActivateSpellMaxRange > 0f
                 ? creatureEntry.ActivateSpellMaxRange
                 : DefaultInteractionMaxRange;
@@ -1102,13 +1223,13 @@ namespace NexusForever.Game.Entity
         {
             if (Zone != null)
             {
-                TextTable tt = GameTableManager.Instance.GetTextTable(Language.English);
+                TextTable tt = gameTableManager.GetTextTable(Language.English);
                 if (tt != null)
                 {
-                    GlobalChatManager.Instance.SendMessage(Session, $"New Zone: ({Zone.Id}){tt.GetEntry(Zone.LocalizedTextIdName)}");
+                    globalChatManager.SendMessage(Session, $"New Zone: ({Zone.Id}){tt.GetEntry(Zone.LocalizedTextIdName)}");
                 }
 
-                uint tutorialId = AssetManager.Instance.GetTutorialIdForZone(Zone.Id);
+                uint tutorialId = assetManager?.GetTutorialIdForZone(Zone.Id) ?? 0u;
                 if (tutorialId > 0)
                 {
                     Session.EnqueueMessageEncrypted(new ServerTutorial
@@ -1134,8 +1255,8 @@ namespace NexusForever.Game.Entity
 
         private void SendDeferredInWorldStorefrontCatalog()
         {
-            StorePurchaseHistoryManager.SendPurchaseHistory(Account);
-            GlobalStorefrontManager.Instance.SendBootstrapCatalogPacketsIfNeeded(Session, Account.Id);
+            StorePurchaseHistoryManager.SendPurchaseHistory(Account, databaseManager);
+            globalStorefrontManager?.SendBootstrapCatalogPacketsIfNeeded(Session, Account.Id);
         }
 
         internal bool CanSendDeferredInWorldStorefrontCatalog()
@@ -1148,7 +1269,7 @@ namespace NexusForever.Game.Entity
             DateTime start = DateTime.UtcNow;
 
             SendInGameTime();
-            BuybackManager.Instance.SendBuybackItems(this);
+            buybackManager?.SendBuybackItems(this);
 
             ResidenceManager.SendHousingBasics();
             ResidenceManager.SendHousingNeighbors();
@@ -1252,7 +1373,7 @@ namespace NexusForever.Game.Entity
 
         public ItemProficiency GetItemProficiencies()
         {
-            ClassEntry classEntry = GameTableManager.Instance.Class.GetEntry((ulong)Class);
+            ClassEntry classEntry = gameTableManager.Class.GetEntry((ulong)Class);
             return (ItemProficiency)classEntry.StartingItemProficiencies;
         }
 
@@ -1304,8 +1425,8 @@ namespace NexusForever.Game.Entity
             // Character-select packets queued during logout must wait until this player is fully detached.
             Session.CanProcessIncomingPackets = false;
 
-            PlayerManager.Instance.RemovePlayer(this);
-            CleanupManager.Instance.AddPlayer(this);
+            playerManager?.RemovePlayer(this);
+            cleanupManager?.AddPlayer(this);
 
             log.Trace($"Waiting to cleanup character {Name}({CharacterId})...");
 
@@ -1314,7 +1435,7 @@ namespace NexusForever.Game.Entity
             {
                 void CompleteCleanup()
                 {
-                    CleanupManager.Instance.RemovePlayer(this);
+                    cleanupManager?.RemovePlayer(this);
                     log.Trace($"Cleanup for character {Name}({CharacterId}) has completed.");
 
                     LogoutManager.State = LogoutState.Finished;
@@ -1368,13 +1489,13 @@ namespace NexusForever.Game.Entity
         {
             scriptCollection.Invoke<IPlayerScript>(s => s.OnLogin());
 
-            string motd = RealmContext.Instance.Motd;
+            string motd = realmContext?.Motd;
             if (motd?.Length > 0)
-                GlobalChatManager.Instance.SendMessage(Session, motd, "MOTD", ChatChannelType.Realm);
+                globalChatManager.SendMessage(Session, motd, "MOTD", ChatChannelType.Realm);
 
             GuildManager.OnLogin();
 
-            ShutdownManager.Instance.OnLogin(this);
+            shutdownManager?.OnLogin(this);
 
             matchingManager.OnLogin(this);
             matchManager.OnLogin(this);
@@ -1413,7 +1534,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void TeleportTo(ushort worldId, float x, float y, float z, IMapLock mapLock = null, TeleportReason reason = TeleportReason.Relocate)
         {
-            WorldEntry entry = GameTableManager.Instance.World.GetEntry(worldId);
+            WorldEntry entry = gameTableManager.World.GetEntry(worldId);
             if (entry == null)
                 throw new ArgumentException($"{worldId} is not a valid world id!");
 
@@ -1447,7 +1568,7 @@ namespace NexusForever.Game.Entity
                 return;
             }
 
-            if (DisableManager.Instance.IsDisabled(DisableType.World, mapPosition.Info.Entry.Id))
+            if (disableManager?.IsDisabled(DisableType.World, mapPosition.Info.Entry.Id) == true)
             {
                 SendSystemMessage($"Unable to teleport to world {mapPosition.Info.Entry.Id} because it is disabled.");
                 return;
@@ -1470,7 +1591,10 @@ namespace NexusForever.Game.Entity
 
             SetControl(null);
 
-            MapManager.Instance.AddToMap(this, mapPosition);
+            if (mapManager == null)
+                throw new InvalidOperationException("Player requires an IMapManager to teleport.");
+
+            mapManager.AddToMap(this, mapPosition);
             log.Trace($"Teleporting {Name}({CharacterId}) to map: {mapPosition.Info.Entry.Id}, instance: {mapPosition.Info.MapLock?.InstanceId ?? null}.");
         }
 
@@ -1631,7 +1755,7 @@ namespace NexusForever.Game.Entity
             if (QuestManager.GetQuestState(questId) != null)
                 return;
 
-            IQuestInfo questInfo = GlobalQuestManager.Instance.GetQuestInfo(questId);
+            IQuestInfo questInfo = GetGlobalQuestManager().GetQuestInfo(questId);
             if (questInfo == null)
                 return;
 
@@ -1675,7 +1799,7 @@ namespace NexusForever.Game.Entity
 
             for (int index = 0; index < TutorialWorldLocationIds.Length; index++)
             {
-                WorldLocation2Entry worldLocation = GameTableManager.Instance.WorldLocation2.GetEntry(TutorialWorldLocationIds[index]);
+                WorldLocation2Entry worldLocation = gameTableManager.WorldLocation2.GetEntry(TutorialWorldLocationIds[index]);
                 if (worldLocation != null && IsInsideStarterTutorialWorldLocation(Position, worldLocation, horizontalPadding))
                     furthestIndex = index;
             }
@@ -1749,7 +1873,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         private void SendInGameTime()
         {
-            uint lengthOfInGameDayInSeconds = SharedConfiguration.Instance.Get<RealmConfig>().LengthOfInGameDay;
+            uint lengthOfInGameDayInSeconds = sharedConfiguration?.Get<RealmConfig>()?.LengthOfInGameDay ?? 0u;
             if (lengthOfInGameDayInSeconds == 0u)
                 lengthOfInGameDayInSeconds = (uint)TimeSpan.FromHours(3.5d).TotalSeconds; // Live servers were 3.5h per in game day
 
@@ -1840,7 +1964,7 @@ namespace NexusForever.Game.Entity
         {
             uint total = 0u;
             for (uint level = 1u; level <= Level; level++)
-                total += GameTableManager.Instance.XpPerLevel.GetEntry(level)?.AttributePointsPerLevel ?? 0u;
+                total += gameTableManager.XpPerLevel.GetEntry(level)?.AttributePointsPerLevel ?? 0u;
 
             return total;
         }
@@ -1963,7 +2087,7 @@ namespace NexusForever.Game.Entity
 
         private void CheckTradeskillTierAchievements(TradeskillType tradeskillId, uint previousXp, uint currentXp)
         {
-            foreach (TradeskillTierEntry tierEntry in GameTableManager.Instance.TradeskillTier.Entries
+            foreach (TradeskillTierEntry tierEntry in gameTableManager.TradeskillTier.Entries
                 .Where(entry => entry.TradeSkillId == (uint)tradeskillId
                     && entry.RequiredXp <= currentXp
                     && (entry.RequiredXp == 0u ? previousXp == 0u : entry.RequiredXp > previousXp)))
@@ -1975,7 +2099,7 @@ namespace NexusForever.Game.Entity
             if (amount == 0u)
                 return 0u;
 
-            TradeskillTierEntry tierEntry = GameTableManager.Instance.TradeskillTier.GetEntry(tradeskillTierId);
+            TradeskillTierEntry tierEntry = gameTableManager.TradeskillTier.GetEntry(tradeskillTierId);
             if (tierEntry == null || tierEntry.TradeSkillId == 0u)
                 return 0u;
 
@@ -2053,7 +2177,7 @@ namespace NexusForever.Game.Entity
 
         public bool LearnSchematic(uint tradeskillSchematic2Id, bool discovered = false)
         {
-            TradeskillSchematic2Entry schematicEntry = GameTableManager.Instance.TradeskillSchematic2.GetEntry(tradeskillSchematic2Id);
+            TradeskillSchematic2Entry schematicEntry = gameTableManager.TradeskillSchematic2.GetEntry(tradeskillSchematic2Id);
             if (schematicEntry == null)
                 return false;
 
@@ -2322,7 +2446,7 @@ namespace NexusForever.Game.Entity
             if (Map?.Entry?.Id != TutorialWorldId || PlatformGuid == null || !HasStarterTutorialCombatProjectorAvailable())
                 return false;
 
-            WorldLocation2Entry finishWorldLocation = GameTableManager.Instance.WorldLocation2.GetEntry(TutorialHoverboardFinishWorldLocationId);
+            WorldLocation2Entry finishWorldLocation = gameTableManager.WorldLocation2.GetEntry(TutorialHoverboardFinishWorldLocationId);
             if (finishWorldLocation == null || !IsInsideStarterTutorialWorldLocation(Position, finishWorldLocation, HitRadius * 0.5f))
                 return false;
 
@@ -2499,7 +2623,7 @@ namespace NexusForever.Game.Entity
             if (Map?.Entry?.Id != TutorialWorldId)
                 return false;
 
-            WorldLocation2Entry finishWorldLocation = GameTableManager.Instance.WorldLocation2.GetEntry(TutorialHoverboardFinishWorldLocationId);
+            WorldLocation2Entry finishWorldLocation = gameTableManager.WorldLocation2.GetEntry(TutorialHoverboardFinishWorldLocationId);
             if (finishWorldLocation == null || !IsInsideStarterTutorialWorldLocation(Position, finishWorldLocation, HitRadius * 0.5f))
                 return false;
 
@@ -2556,7 +2680,7 @@ namespace NexusForever.Game.Entity
 
             if (requireFinishWorldLocation)
             {
-                WorldLocation2Entry finishWorldLocation = GameTableManager.Instance.WorldLocation2.GetEntry(TutorialHoverboardFinishWorldLocationId);
+                WorldLocation2Entry finishWorldLocation = gameTableManager.WorldLocation2.GetEntry(TutorialHoverboardFinishWorldLocationId);
                 if (finishWorldLocation == null || !IsInsideStarterTutorialWorldLocation(Position, finishWorldLocation, HitRadius * 0.5f))
                     return false;
             }
@@ -2574,7 +2698,7 @@ namespace NexusForever.Game.Entity
             if (!CanRecoverStarterTutorialCombatTransition(hoverboardQuestId, hoverboardState, combatState, projectorObjectiveId, rideObjectiveId, finishObjectiveId))
                 return false;
 
-            WorldLocation2Entry destination = GameTableManager.Instance.WorldLocation2.GetEntry(destinationWorldLocationId);
+            WorldLocation2Entry destination = gameTableManager.WorldLocation2.GetEntry(destinationWorldLocationId);
             if (destination == null)
             {
                 log.Warn($"Starter tutorial combat transition recovery missing destination world location {destinationWorldLocationId} for player {Guid}.");
@@ -2693,7 +2817,7 @@ namespace NexusForever.Game.Entity
                 if (nextQuestState is QuestState.Accepted or QuestState.Achieved or QuestState.Completed or QuestState.Ignored)
                     continue;
 
-                IQuestInfo nextQuestInfo = GlobalQuestManager.Instance.GetQuestInfo(nextQuestId);
+                IQuestInfo nextQuestInfo = GetGlobalQuestManager().GetQuestInfo(nextQuestId);
                 if (nextQuestInfo == null)
                     continue;
 
@@ -2761,7 +2885,12 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public double GetTimeSinceLastSave()
         {
-            return SaveDuration - saveTimer.Time;
+            return GetSaveDuration() - saveTimer.Time;
+        }
+
+        private double GetSaveDuration()
+        {
+            return sharedConfiguration?.Get<WorldConfig>()?.PlayerSaveIntervalSeconds ?? 60d;
         }
 
         /// <summary>
@@ -2772,7 +2901,7 @@ namespace NexusForever.Game.Entity
             if (factionId == Faction.None)
                 return Disposition.Unknown;
 
-            IFactionNode targetFaction = FactionManager.Instance.GetFaction(factionId);
+            IFactionNode targetFaction = factionManager.GetFaction(factionId);
             if (targetFaction == null)
                 throw new ArgumentException($"Invalid faction {factionId}!");
 
@@ -3090,7 +3219,7 @@ namespace NexusForever.Game.Entity
         {
             if (target is IPlayer playerTarget)
             {
-                if (!DuelManager.Instance.AreDueling(this, playerTarget))
+                if (duelManager == null || !duelManager.AreDueling(this, playerTarget))
                     return false;
 
                 return IsAlive
@@ -3130,7 +3259,7 @@ namespace NexusForever.Game.Entity
                 OnResurrection(source);
 
             if (!IsAlive && source is IPlayer player)
-                DuelManager.Instance.TryFinishDefeat(this, player);
+                duelManager?.TryFinishDefeat(this, player);
         }
 
         protected override void OnDeath()

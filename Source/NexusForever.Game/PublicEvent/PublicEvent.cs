@@ -66,7 +66,7 @@ namespace NexusForever.Game.PublicEvent
         public void Dispose()
         {
             if (scriptCollection != null)
-                ScriptManager.Instance.Unload(scriptCollection);
+                scriptManager.Unload(scriptCollection);
 
             scriptCollection = null;
         }

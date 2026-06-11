@@ -1,4 +1,6 @@
 using System.Numerics;
+using NexusForever.Database;
+using NexusForever.Database.Character;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Creature;
@@ -22,6 +24,7 @@ using NexusForever.Network.World.Message.Model.Abilities;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Script;
+using NexusForever.Shared.Configuration;
 using NLog;
 
 namespace NexusForever.Game.Map.Instance
@@ -47,6 +50,10 @@ namespace NexusForever.Game.Map.Instance
         private readonly IGameTableManager gameTableManager;
         private readonly IRealmContext realmContext;
         private readonly IScriptManager scriptManager;
+        private readonly IDatabaseManager databaseManager;
+        private readonly IAssetManager assetManager;
+        private readonly IPlayerManager playerManager;
+        private readonly IItemManager itemManager;
 
         public ResidenceMapInstance(
             IEntityFactory entityFactory,
@@ -56,8 +63,15 @@ namespace NexusForever.Game.Map.Instance
             IGameTableManager gameTableManager,
             IRealmContext realmContext,
             IScriptManager scriptManager,
-            ICreatureInfoManager creatureInfoManager = null)
-            : base(entityFactory, publicEventManager, creatureInfoManager)
+            IAssetManager assetManager = null,
+            ICreatureInfoManager creatureInfoManager = null,
+            IDatabaseManager databaseManager = null,
+            IPlayerManager playerManager = null,
+            IItemManager itemManager = null,
+            IMapIOManager mapIOManager = null,
+            IEntityCacheManager entityCacheManager = null,
+            ISharedConfiguration sharedConfiguration = null)
+            : base(entityFactory, publicEventManager, creatureInfoManager, mapIOManager, entityCacheManager, sharedConfiguration, gameTableManager)
         {
             this.entityFactory          = entityFactory;
             this.mapLockManager         = mapLockManager;
@@ -65,6 +79,10 @@ namespace NexusForever.Game.Map.Instance
             this.gameTableManager       = gameTableManager;
             this.realmContext           = realmContext;
             this.scriptManager          = scriptManager;
+            this.databaseManager        = databaseManager;
+            this.assetManager           = assetManager;
+            this.playerManager          = playerManager;
+            this.itemManager            = itemManager;
         }
 
         #endregion
@@ -616,7 +634,16 @@ namespace NexusForever.Game.Map.Instance
             if (plot == null)
                 return false;
 
-            return RetailHousingHarvestGrant.TryHarvestPlug(harvester, residence, plot, plugEntity.PlugEntry, gameTableManager);
+            return RetailHousingHarvestGrant.TryHarvestPlug(
+                harvester,
+                residence,
+                plot,
+                plugEntity.PlugEntry,
+                gameTableManager,
+                assetManager,
+                databaseManager?.GetDatabase<CharacterDatabase>(),
+                playerManager,
+                itemManager);
         }
 
         public void SetEditMode(IPlayer player, IResidence residence, bool enabled)

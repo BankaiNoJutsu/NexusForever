@@ -38,11 +38,11 @@ namespace NexusForever.Game.Entity
 
             OwnerGuid        = owner.Guid;
             MountType        = vehicleId == 411 ? PetType.HoverBoard : PetType.GroundMount;
-            PilotDisplayInfo = GameTableManager.Instance.ItemDisplay.GetEntry(itemDisplayId);
+            PilotDisplayInfo = GetGameTableManager().ItemDisplay.GetEntry(itemDisplayId);
             Rotation         = owner.Rotation;
             Position         = owner.Position;
 
-            Creature2DisplayGroupEntryEntry displayGroupEntry = GameTableManager.Instance.Creature2DisplayGroupEntry.Entries
+            Creature2DisplayGroupEntryEntry displayGroupEntry = GetGameTableManager().Creature2DisplayGroupEntry.Entries
                 .SingleOrDefault(x => x.Creature2DisplayGroupId == CreatureEntry.Creature2DisplayGroupId);
             DisplayInfo = displayGroupEntry?.Creature2DisplayInfoId ?? 0u;
 

@@ -1,7 +1,11 @@
 ﻿using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Character;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.Housing;
+using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Static.Guild;
+using NexusForever.GameTable.Text.Filter;
 using NexusForever.Network.Internal;
 
 namespace NexusForever.Game.Guild
@@ -16,14 +20,21 @@ namespace NexusForever.Game.Guild
         #region Dependency Injection
 
         private readonly IGlobalResidenceManager globalResidenceManager;
+        private readonly IMapLockManager mapLockManager;
 
         public Community(
             IRealmContext realmContext,
             IInternalMessagePublisher messagePublisher,
-            IGlobalResidenceManager globalResidenceManager)
-            : base(realmContext, messagePublisher)
+            IGlobalResidenceManager globalResidenceManager,
+            ITextFilterManager textFilterManager,
+            IMapLockManager mapLockManager,
+            ICharacterManager characterManager = null,
+            IGlobalGuildManager globalGuildManager = null,
+            IPlayerManager playerManager = null)
+            : base(realmContext, messagePublisher, textFilterManager, characterManager, globalGuildManager, playerManager)
         {
             this.globalResidenceManager = globalResidenceManager;
+            this.mapLockManager         = mapLockManager;
         }
 
         #endregion

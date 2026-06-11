@@ -1,17 +1,14 @@
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database;
 using NexusForever.Game.Achievement;
 using NexusForever.Game.Static.Achievement;
-using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Tests.Achievement;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class GlobalAchievementManagerPartialTableTests
 {
     [Theory]
@@ -19,12 +16,11 @@ public class GlobalAchievementManagerPartialTableTests
     [InlineData(true)]
     public void Initialise_WithMissingAchievementTableUsesEmptyCaches(bool includeEmptyTable)
     {
-        var manager = new GlobalAchievementManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(manager, gameTableManager =>
+        GlobalAchievementManager manager = BuildManager(gameTableManager =>
         {
             if (includeEmptyTable)
                 SetTable(gameTableManager, nameof(GameTableManager.Achievement), CreateGameTable<AchievementEntry>());
-        }));
+        });
 
         manager.Initialise();
 
@@ -36,8 +32,7 @@ public class GlobalAchievementManagerPartialTableTests
     [Fact]
     public void Initialise_WithTableBackedRowsIndexesCharacterAndGuildAchievements()
     {
-        var manager = new GlobalAchievementManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(manager, gameTableManager =>
+        GlobalAchievementManager manager = BuildManager(gameTableManager =>
         {
             SetTable(gameTableManager, nameof(GameTableManager.Achievement), CreateGameTable(
                 new AchievementEntry
@@ -52,7 +47,7 @@ public class GlobalAchievementManagerPartialTableTests
                     Flags             = (uint)AchievementFlags.Guild
                 }));
             SetTable(gameTableManager, nameof(GameTableManager.AchievementChecklist), CreateGameTable<AchievementChecklistEntry>());
-        }));
+        });
 
         manager.Initialise();
 
@@ -62,18 +57,12 @@ public class GlobalAchievementManagerPartialTableTests
         Assert.Equal([43], manager.GetGuildAchievements(AchievementType.KillCreatureEntry).Select(a => a.Id));
     }
 
-    private static IServiceProvider BuildProvider(
-        GlobalAchievementManager manager,
-        Action<GameTableManager> configure)
+    private static GlobalAchievementManager BuildManager(Action<GameTableManager> configure)
     {
         var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         configure(gameTableManager);
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .AddSingleton(CreateEmptyDatabaseManager())
-            .AddSingleton(manager)
-            .BuildServiceProvider();
+        return new GlobalAchievementManager(CreateEmptyDatabaseManager(), gameTableManager);
     }
 
     private static DatabaseManager CreateEmptyDatabaseManager()

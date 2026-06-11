@@ -43,6 +43,7 @@ namespace NexusForever.Game.Matching.Match
         private readonly IGameTableManager gameTableManager;
         private readonly IPlayerManager playerManager;
         private readonly IInternalMessagePublisher messagePublisher;
+        private readonly IMatchingDeserterManager matchingDeserterManager;
 
         public Match(
             ILogger<Match> log,
@@ -51,7 +52,8 @@ namespace NexusForever.Game.Matching.Match
             IFactory<IMatchTeam> matchTeamFactory,
             IGameTableManager gameTableManager,
             IPlayerManager playerManager,
-            IInternalMessagePublisher messagePublisher)
+            IInternalMessagePublisher messagePublisher,
+            IMatchingDeserterManager matchingDeserterManager)
         {
             this.log                 = log;
 
@@ -61,6 +63,7 @@ namespace NexusForever.Game.Matching.Match
             this.gameTableManager    = gameTableManager;
             this.playerManager       = playerManager;
             this.messagePublisher    = messagePublisher;
+            this.matchingDeserterManager = matchingDeserterManager;
         }
 
         #endregion
@@ -240,7 +243,7 @@ namespace NexusForever.Game.Matching.Match
             if (Status == MatchStatus.InProgress)
             {
                 double completionRatio = CalculateMatchCompletionRatio();
-                MatchingDeserterManager.Instance.ApplyDeserter(
+                matchingDeserterManager.ApplyDeserter(
                     player.CharacterId,
                     MatchingMap.GameTypeEntry.MatchTypeEnum,
                     completionRatio);
@@ -299,7 +302,7 @@ namespace NexusForever.Game.Matching.Match
             Broadcast(new ServerMatchingMatchFinished());
 
             foreach (IMatchTeamMember member in GetTeams().SelectMany(t => t.GetMembers()))
-                MatchingDeserterManager.Instance.ClearDeserter(member.Identity.Id);
+                matchingDeserterManager.ClearDeserter(member.Identity.Id);
 
             GameFormulaEntry entry = gameTableManager.GameFormula.GetEntry(656);
             closeTimer = new UpdateTimer(TimeSpan.FromMilliseconds(entry?.Dataint0 ?? 300000));

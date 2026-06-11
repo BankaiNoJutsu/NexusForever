@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game;
 using NexusForever.Game.Abstract.Mail;
 using NexusForever.Game.Mail;
 using NexusForever.Game.Static.Entity;
@@ -13,6 +14,34 @@ namespace NexusForever.Game.Tests.Mail;
 
 public class MailItemTransactionTests
 {
+    [Fact]
+    public void NewMail_UsesUtcCreateTime()
+    {
+        var assetManager = new AssetManager();
+
+        DateTime beforeUtc = DateTime.UtcNow;
+
+        MailItem mailItem = new(new MailParameters
+        {
+            RecipientCharacterId = 100ul,
+            SenderCharacterId    = 200ul,
+            MessageType          = SenderType.Player,
+            DeliverySpeed        = DeliverySpeed.Instant
+        }, assetManager);
+
+        Assert.Equal(DateTimeKind.Utc, mailItem.CreateTime.Kind);
+        Assert.InRange(mailItem.CreateTime, beforeUtc, DateTime.UtcNow);
+    }
+
+    [Fact]
+    public void IsReadyToDeliver_TreatsUnspecifiedCreateTimeAsUtc()
+    {
+        DateTime recentUtc = DateTime.SpecifyKind(DateTime.UtcNow.AddMinutes(-30d), DateTimeKind.Unspecified);
+        MailItem mailItem = new(MailModel(deliverySpeed: DeliverySpeed.Hour, createTime: recentUtc));
+
+        Assert.False(mailItem.IsReadyToDeliver());
+    }
+
     [Fact]
     public void PayOrTakeCash_Save_PersistsCurrencyCollectedAndNotReturnable()
     {
@@ -94,7 +123,9 @@ public class MailItemTransactionTests
         ulong recipientId = 100ul,
         ulong senderId = 200ul,
         string subject = "Subject",
-        SenderType senderType = SenderType.Player)
+        SenderType senderType = SenderType.Player,
+        DeliverySpeed deliverySpeed = DeliverySpeed.Instant,
+        DateTime? createTime = null)
     {
         return new CharacterMailModel
         {
@@ -109,8 +140,8 @@ public class MailItemTransactionTests
             IsCashOnDelivery           = 0,
             HasPaidOrCollectedCurrency = 0,
             Flags                      = 0,
-            DeliveryTime               = (byte)DeliverySpeed.Instant,
-            CreateTime                 = DateTime.UtcNow
+            DeliveryTime               = (byte)deliverySpeed,
+            CreateTime                 = createTime ?? DateTime.UtcNow
         };
     }
 

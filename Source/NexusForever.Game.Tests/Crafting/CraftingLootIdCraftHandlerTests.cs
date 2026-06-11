@@ -257,6 +257,7 @@ public class CraftingLootIdCraftHandlerTests
         public void Initialise() { }
 
         public bool DropLoot(IPlayer looter, IWorldEntity lootedEntity) => false;
+        public void RemoveLootForOwner(uint ownerUnitId, bool sendRemove = true) { }
         public bool HasLoot(IItem lootedItem) => false;
         public bool DropLoot(IPlayer looter, IItem lootedItem) => false;
         public bool TryDeliverHarvestLoot(IPlayer harvester, IReadOnlyList<GeneratedLootItem> items, uint ownerUnitId) => false;

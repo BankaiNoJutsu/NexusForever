@@ -1,7 +1,6 @@
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Map;
@@ -17,12 +16,10 @@ using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Pregame;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.IO.Map;
-using NexusForever.Shared;
 using SharedItem = NexusForever.Network.World.Message.Model.Shared.Item;
 
 namespace NexusForever.Game.Tests.Entity;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class ProtocolRuntimeHardeningTests
 {
     [Fact]
@@ -174,73 +171,45 @@ public class ProtocolRuntimeHardeningTests
     [Fact]
     public void ClientEntityCommand_ReadRejectsUnsupportedCommandType()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        var entityCommandManager = new EntityCommandManager();
-        entityCommandManager.Initialise();
-
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(entityCommandManager)
-            .BuildServiceProvider();
-
-        try
+        EntityCommandManager entityCommandManager = CreateEntityCommandManager();
+        byte[] packetData;
+        using var stream = new MemoryStream();
+        using (var writer = new GamePacketWriter(stream))
         {
-            byte[] packetData;
-            using var stream = new MemoryStream();
-            using (var writer = new GamePacketWriter(stream))
-            {
-                writer.Write(123u);
-                writer.Write(1u);
-                writer.Write(31u, 5u);
-                writer.FlushBits();
-                packetData = stream.ToArray();
-            }
-
-            using var reader = new GamePacketReader(new MemoryStream(packetData));
-
-            InvalidPacketValueException exception = Assert.Throws<InvalidPacketValueException>(() => new ClientEntityCommand().Read(reader));
-
-            Assert.Contains("Unsupported entity command", exception.Message);
+            writer.Write(123u);
+            writer.Write(1u);
+            writer.Write(31u, 5u);
+            writer.FlushBits();
+            packetData = stream.ToArray();
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+
+        InvalidPacketValueException exception = Assert.Throws<InvalidPacketValueException>(() => new ClientEntityCommand(entityCommandManager).Read(reader));
+
+        Assert.Contains("Unsupported entity command", exception.Message);
     }
 
     [Fact]
     public void ClientEntityCommand_ReadsTimeCountAndSetTimePayload()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        var entityCommandManager = new EntityCommandManager();
-        entityCommandManager.Initialise();
-
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(entityCommandManager)
-            .BuildServiceProvider();
-
-        try
+        EntityCommandManager entityCommandManager = CreateEntityCommandManager();
+        byte[] packetData = WritePacket(writer =>
         {
-            byte[] packetData = WritePacket(writer =>
-            {
-                writer.Write(0x11223344u);
-                writer.Write(1u);
-                writer.Write((uint)EntityCommand.SetTime, 5u);
-                writer.Write(0x55667788u);
-            });
+            writer.Write(0x11223344u);
+            writer.Write(1u);
+            writer.Write((uint)EntityCommand.SetTime, 5u);
+            writer.Write(0x55667788u);
+        });
 
-            ClientEntityCommand packet = ReadPacket<ClientEntityCommand>(packetData);
+        ClientEntityCommand packet = ReadClientEntityCommand(packetData, entityCommandManager);
 
-            Assert.Equal(0x11223344u, packet.Time);
-            NetworkEntityCommand command = Assert.IsType<NetworkEntityCommand>(Assert.Single(packet.Commands));
-            Assert.Equal(EntityCommand.SetTime, command.Command);
+        Assert.Equal(0x11223344u, packet.Time);
+        NetworkEntityCommand command = Assert.IsType<NetworkEntityCommand>(Assert.Single(packet.Commands));
+        Assert.Equal(EntityCommand.SetTime, command.Command);
 
-            var setTime = Assert.IsType<SetTimeCommand>(command.Model);
-            Assert.Equal(0x55667788u, setTime.Time);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        var setTime = Assert.IsType<SetTimeCommand>(command.Model);
+        Assert.Equal(0x55667788u, setTime.Time);
     }
 
     [Fact]
@@ -480,5 +449,23 @@ public class ProtocolRuntimeHardeningTests
         packet.Read(reader);
 
         return packet;
+    }
+
+    private static ClientEntityCommand ReadClientEntityCommand(byte[] packetData, IEntityCommandManager entityCommandManager)
+    {
+        using var stream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(stream);
+
+        var packet = new ClientEntityCommand(entityCommandManager);
+        packet.Read(reader);
+
+        return packet;
+    }
+
+    private static EntityCommandManager CreateEntityCommandManager()
+    {
+        var entityCommandManager = new EntityCommandManager();
+        entityCommandManager.Initialise();
+        return entityCommandManager;
     }
 }

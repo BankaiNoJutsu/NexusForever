@@ -1,15 +1,12 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Storefront;
-using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Tests.Storefront;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class OfferItemDataTests
 {
     [Theory]
@@ -17,9 +14,9 @@ public class OfferItemDataTests
     [InlineData(true)]
     public void Constructor_WithMissingAccountItemStaticDataThrowsInvalidItemId(bool includeEmptyTable)
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(includeEmptyTable ? CreateGameTable<AccountItemEntry>() : null));
+        GameTableManager gameTableManager = BuildGameTableManager(includeEmptyTable ? CreateGameTable<AccountItemEntry>() : null);
 
-        ArgumentException exception = Assert.Throws<ArgumentException>(() => new OfferItemData(CreateModel(123)));
+        ArgumentException exception = Assert.Throws<ArgumentException>(() => new OfferItemData(CreateModel(123), gameTableManager));
 
         Assert.Equal("ItemId", exception.Message);
     }
@@ -27,12 +24,12 @@ public class OfferItemDataTests
     [Fact]
     public void Constructor_WithKnownAccountItemBuildsOfferItemData()
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(CreateGameTable(new AccountItemEntry
+        GameTableManager gameTableManager = BuildGameTableManager(CreateGameTable(new AccountItemEntry
         {
             Id = 123u
-        })));
+        }));
 
-        var itemData = new OfferItemData(CreateModel(123));
+        var itemData = new OfferItemData(CreateModel(123), gameTableManager);
         var packet = itemData.Build();
 
         Assert.Equal(10u, itemData.OfferId);
@@ -59,15 +56,13 @@ public class OfferItemDataTests
         };
     }
 
-    private static IServiceProvider BuildProvider(GameTable<AccountItemEntry> accountItemTable = null)
+    private static GameTableManager BuildGameTableManager(GameTable<AccountItemEntry> accountItemTable = null)
     {
         var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         if (accountItemTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItem), accountItemTable);
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

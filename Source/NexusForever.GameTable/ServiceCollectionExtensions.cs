@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Text;
-using NexusForever.Shared;
 
 namespace NexusForever.GameTable
 {
@@ -16,7 +15,8 @@ namespace NexusForever.GameTable
                 .Bind(configuration)
                 .ValidateOnStart();
 
-            sc.AddSingletonLegacy<IGameTableManager, GameTableManager>();
+            sc.AddSingleton<GameTableManager>();
+            sc.AddSingleton<IGameTableManager>(sp => sp.GetRequiredService<GameTableManager>());
         }
     }
 }

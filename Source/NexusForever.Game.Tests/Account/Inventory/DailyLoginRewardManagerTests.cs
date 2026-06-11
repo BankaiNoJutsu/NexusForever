@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Inventory;
@@ -14,13 +13,12 @@ using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.Game.Tests.Account.Inventory;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class DailyLoginRewardManagerTests
 {
     [Fact]
     public void SendDailyLoginUpdate_EmitsLastClaimedLoginDayInsteadOfLastRewardItemKey()
     {
-        using LegacyServiceProviderScope _ = UseDailyLoginRewards(CreateDailyRewards(10u));
+        GameTableManager gameTableManager = CreateGameTableManager(CreateDailyRewards(10u));
 
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
         IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
@@ -37,7 +35,7 @@ public class DailyLoginRewardManagerTests
                 SecondsUntilNextKey = 1234u,
                 LastDayIncrementUtc = DateTime.UtcNow
             }
-        });
+        }, gameTableManager);
 
         manager.SendDailyLoginUpdate();
 
@@ -54,7 +52,7 @@ public class DailyLoginRewardManagerTests
     [Fact]
     public void TryClaimReward_ClaimsNextUnclaimedLoginDay()
     {
-        using LegacyServiceProviderScope _ = UseDailyLoginRewards(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new DailyLoginRewardEntry { Id = 1u, LoginDay = 1u, RewardObjectValue = 101u },
             new DailyLoginRewardEntry { Id = 2u, LoginDay = 2u, RewardObjectValue = 102u },
             new DailyLoginRewardEntry { Id = 3u, LoginDay = 3u, RewardObjectValue = 103u });
@@ -75,7 +73,7 @@ public class DailyLoginRewardManagerTests
                 RewardsAvailable    = 3u,
                 LastDayIncrementUtc = DateTime.UtcNow
             }
-        });
+        }, gameTableManager);
 
         AccountOperationResult result = manager.TryClaimReward();
 
@@ -93,7 +91,7 @@ public class DailyLoginRewardManagerTests
     [Fact]
     public void TryClaimReward_UsesPersistedClaimedDayWhenAvailableCountIsStale()
     {
-        using LegacyServiceProviderScope _ = UseDailyLoginRewards(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new DailyLoginRewardEntry { Id = 1u, LoginDay = 1u, RewardObjectValue = 101u },
             new DailyLoginRewardEntry { Id = 2u, LoginDay = 2u, RewardObjectValue = 102u },
             new DailyLoginRewardEntry { Id = 3u, LoginDay = 3u, RewardObjectValue = 103u },
@@ -116,7 +114,7 @@ public class DailyLoginRewardManagerTests
                 LastClaimedLoginDay   = 3u,
                 LastDayIncrementUtc   = DateTime.UtcNow
             }
-        });
+        }, gameTableManager);
 
         AccountOperationResult result = manager.TryClaimReward();
 
@@ -135,7 +133,7 @@ public class DailyLoginRewardManagerTests
     [Fact]
     public void SendDailyLoginUpdate_DoesNotMakeFinalClaimedRewardAvailableAfterScheduleEnd()
     {
-        using LegacyServiceProviderScope _ = UseDailyLoginRewards(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new DailyLoginRewardEntry { Id = 1u, LoginDay = 1u, RewardObjectValue = 101u },
             new DailyLoginRewardEntry { Id = 2u, LoginDay = 2u, RewardObjectValue = 102u });
 
@@ -152,7 +150,7 @@ public class DailyLoginRewardManagerTests
                 LastClaimedLoginDay   = 2u,
                 LastDayIncrementUtc   = DateTime.UtcNow.AddDays(-1d)
             }
-        });
+        }, gameTableManager);
 
         manager.SendDailyLoginUpdate();
 
@@ -167,7 +165,7 @@ public class DailyLoginRewardManagerTests
     [Fact]
     public void TryClaimReward_DoesNotRepeatFinalConfiguredRewardAfterAdditionalLoginDay()
     {
-        using LegacyServiceProviderScope _ = UseDailyLoginRewards(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new DailyLoginRewardEntry { Id = 1u, LoginDay = 1u, RewardObjectValue = 101u },
             new DailyLoginRewardEntry { Id = 2u, LoginDay = 2u, RewardObjectValue = 102u });
 
@@ -184,7 +182,7 @@ public class DailyLoginRewardManagerTests
                 LastClaimedLoginDay   = 2u,
                 LastDayIncrementUtc   = DateTime.UtcNow.AddDays(-1d)
             }
-        });
+        }, gameTableManager);
 
         AccountOperationResult result = manager.TryClaimReward();
 
@@ -195,7 +193,7 @@ public class DailyLoginRewardManagerTests
     [Fact]
     public void SendDailyLoginUpdate_WithMissingRewardTable_EmitsZeroAvailableRewards()
     {
-        using LegacyServiceProviderScope _ = UseGameTableManager(CreateGameTableManagerWithoutDailyLoginReward());
+        GameTableManager gameTableManager = CreateGameTableManagerWithoutDailyLoginReward();
 
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
         IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
@@ -209,7 +207,7 @@ public class DailyLoginRewardManagerTests
                 RewardsAvailable    = 2u,
                 LastDayIncrementUtc = DateTime.UtcNow
             }
-        });
+        }, gameTableManager);
 
         manager.SendDailyLoginUpdate();
 
@@ -224,7 +222,7 @@ public class DailyLoginRewardManagerTests
     [Fact]
     public void TryClaimReward_WithMissingRewardTable_DoesNotGrantItem()
     {
-        using LegacyServiceProviderScope _ = UseGameTableManager(CreateGameTableManagerWithoutDailyLoginReward());
+        GameTableManager gameTableManager = CreateGameTableManagerWithoutDailyLoginReward();
 
         IAccountInventoryManager inventory = RecordingDispatchProxy<IAccountInventoryManager>.Create(out RecordingDispatchProxy<IAccountInventoryManager> inventoryProxy);
         inventoryProxy.SetMethodReturn(nameof(IAccountInventoryManager.CanAddItem), true);
@@ -240,7 +238,7 @@ public class DailyLoginRewardManagerTests
                 RewardsAvailable    = 2u,
                 LastDayIncrementUtc = DateTime.UtcNow
             }
-        });
+        }, gameTableManager);
 
         AccountOperationResult result = manager.TryClaimReward();
 
@@ -285,18 +283,5 @@ public class DailyLoginRewardManagerTests
                 RewardObjectValue = 100u + (uint)i
             })
             .ToArray();
-    }
-
-    private static LegacyServiceProviderScope UseDailyLoginRewards(params DailyLoginRewardEntry[] dailyLoginRewards)
-    {
-        return UseGameTableManager(CreateGameTableManager(dailyLoginRewards));
-    }
-
-    private static LegacyServiceProviderScope UseGameTableManager(GameTableManager gameTableManager)
-    {
-        ServiceProvider provider = new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
-        return new LegacyServiceProviderScope(provider);
     }
 }

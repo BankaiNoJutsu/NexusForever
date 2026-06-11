@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
@@ -163,13 +164,17 @@ namespace NexusForever.Game.Entity
         public bool PendingDelete => (saveMask & ItemSaveMask.Delete) != 0;
 
         private ItemSaveMask saveMask;
+        private readonly IGameTableManager gameTableManager;
 
         public Dictionary<Property, float> InnateProperties { get; private set; } = new Dictionary<Property, float>();
 
         /// <summary>
         /// Create a new <see cref="IItem"/> from an existing database model.
         /// </summary>
-        public Item(ItemModel model)
+        public Item(
+            ItemModel model,
+            IItemManager itemManager = null,
+            IGameTableManager gameTableManager = null)
         {
             Guid             = model.Id;
             characterId      = model.OwnerId;
@@ -181,11 +186,12 @@ namespace NexusForever.Game.Entity
             durability       = model.Durability;
             expirationTimeLeft = model.ExpirationTimeLeft;
             soulbound        = model.Soulbound;
+            this.gameTableManager = gameTableManager;
 
             if ((InventoryLocation)model.Location != InventoryLocation.Ability)
-                Info = ItemManager.Instance.GetItemInfo(model.ItemId);
+                Info = itemManager?.GetItemInfo(model.ItemId);
             else
-                SpellEntry = GameTableManager.Instance.Spell4Base.GetEntry(model.ItemId);
+                SpellEntry = gameTableManager?.Spell4Base.GetEntry(model.ItemId);
 
             charges = GetInitialCharges(Info, stackCount, model.Charges);
 
@@ -198,9 +204,15 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="IItem"/> from an <see cref="IItemInfo"/> template.
         /// </summary>
-        public Item(ulong? owner, IItemInfo info, uint count = 1u, uint initialCharges = 0)
+        public Item(
+            ulong? owner,
+            IItemInfo info,
+            uint count = 1u,
+            uint initialCharges = 0,
+            IItemManager itemManager = null,
+            IGameTableManager gameTableManager = null)
         {
-            Guid             = ItemManager.Instance.NextItemId;
+            Guid             = itemManager?.NextItemId ?? 0ul;
             characterId      = owner;
             location         = InventoryLocation.None;
             PreviousLocation = InventoryLocation.None;
@@ -211,8 +223,9 @@ namespace NexusForever.Game.Entity
             soulbound        = false;
             Info             = info;
             charges          = GetInitialCharges(Info, stackCount, initialCharges);
+            this.gameTableManager = gameTableManager;
 
-            ItemRuneSlotInitializer.ApplyDefaultSockets(this);
+            ItemRuneSlotInitializer.ApplyDefaultSockets(this, gameTableManager);
 
             saveMask         = ItemSaveMask.Create;
         }
@@ -220,9 +233,14 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="IItem"/> from a <see cref="Spell4BaseEntry"/> template.
         /// </summary>
-        public Item(ulong owner, Spell4BaseEntry entry, uint count = 1u)
+        public Item(
+            ulong owner,
+            Spell4BaseEntry entry,
+            uint count = 1u,
+            IItemManager itemManager = null,
+            IGameTableManager gameTableManager = null)
         {
-            Guid             = ItemManager.Instance.NextItemId;
+            Guid             = itemManager?.NextItemId ?? 0ul;
             characterId      = owner;
             location         = InventoryLocation.None;
             PreviousLocation = InventoryLocation.None;
@@ -233,6 +251,7 @@ namespace NexusForever.Game.Entity
             durability       = 0.0f;
             soulbound        = false;
             SpellEntry       = entry;
+            this.gameTableManager = gameTableManager;
 
             saveMask         = ItemSaveMask.Create;
         }
@@ -360,7 +379,7 @@ namespace NexusForever.Game.Entity
         public NetworkItem Build()
         {
             EnsureInitialCharges();
-            ItemRuneSlotInitializer.ApplyDefaultSockets(this);
+            ItemRuneSlotInitializer.ApplyDefaultSockets(this, gameTableManager);
 
             var networkItem = new NetworkItem
             {
@@ -382,7 +401,7 @@ namespace NexusForever.Game.Entity
                 }
             };
 
-            ItemRuneNetworkWire.Populate(networkItem, this);
+            ItemRuneNetworkWire.Populate(networkItem, this, gameTableManager);
 
             return networkItem;
         }

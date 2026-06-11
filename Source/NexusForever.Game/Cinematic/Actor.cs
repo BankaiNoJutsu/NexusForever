@@ -27,7 +27,7 @@ namespace NexusForever.Game.Cinematic
 
         public Actor(uint creature2Id, EntityCreateFlag createFlags, float? angle, Position position, uint initialDelay = 0, ushort textureLoDBias = 10, ModeType movementMode = ModeType.Free, ulong activePropId = 0, uint socketId = 0)
         {
-            UnitId                   = GlobalCinematicManager.Instance.NextCinematicId;
+            UnitId                   = GlobalCinematicManager.AllocateCinematicId();
             Creature2Id              = creature2Id;
             CreateFlags              = createFlags;
             Angle                    = angle;

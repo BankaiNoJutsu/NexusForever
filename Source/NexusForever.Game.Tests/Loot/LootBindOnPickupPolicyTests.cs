@@ -1,9 +1,9 @@
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NexusForever.Game;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Entity;
@@ -23,11 +23,9 @@ using NexusForever.GameTable.Model;
 using NexusForever.GameTable.Static;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Loot;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Loot;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class LootBindOnPickupPolicyTests
 {
     private const uint BindOnPickupItemId = 91003u;
@@ -36,10 +34,9 @@ public class LootBindOnPickupPolicyTests
     [Fact]
     public void GiveLoot_BindOnPickupItem_FirstCollectSendsBindcheckWithoutDelivering()
     {
-        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateBindOnPickupItemInfo(), CreateNormalItemInfo()));
-
-        IPlayer player = CreatePlayer(slotsRemaining: 1u, out RecordingDispatchProxy<IGameSession> sessionProxy);
-        var lootInstance = CreateLootInstance(player);
+        IItemManager itemManager = CreateItemManager(CreateBindOnPickupItemInfo(), CreateNormalItemInfo());
+        IPlayer player = CreatePlayer(slotsRemaining: 1u, itemManager, out RecordingDispatchProxy<IGameSession> sessionProxy);
+        var lootInstance = CreateLootInstance(player, itemManager);
         LootInstanceItem lootItem = lootInstance.AddLootItem(BindOnPickupItemId, LootItemType.StaticItem, 1u);
 
         bool delivered = lootInstance.GiveLoot(player, lootItem.Id);
@@ -58,10 +55,9 @@ public class LootBindOnPickupPolicyTests
     [Fact]
     public void GiveLoot_BindOnPickupItem_SecondCollectDeliversAndSoulbinds()
     {
-        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateBindOnPickupItemInfo(), CreateNormalItemInfo()));
-
-        IPlayer player = CreatePlayer(slotsRemaining: 1u, out RecordingDispatchProxy<IGameSession> sessionProxy);
-        var lootInstance = CreateLootInstance(player);
+        IItemManager itemManager = CreateItemManager(CreateBindOnPickupItemInfo(), CreateNormalItemInfo());
+        IPlayer player = CreatePlayer(slotsRemaining: 1u, itemManager, out RecordingDispatchProxy<IGameSession> sessionProxy);
+        var lootInstance = CreateLootInstance(player, itemManager);
         LootInstanceItem lootItem = lootInstance.AddLootItem(BindOnPickupItemId, LootItemType.StaticItem, 1u);
 
         Assert.False(lootInstance.GiveLoot(player, lootItem.Id));
@@ -81,10 +77,9 @@ public class LootBindOnPickupPolicyTests
     [Fact]
     public void GiveLoot_NonBindOnPickupItem_DeliversOnFirstCollect()
     {
-        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateBindOnPickupItemInfo(), CreateNormalItemInfo()));
-
-        IPlayer player = CreatePlayer(slotsRemaining: 1u, out RecordingDispatchProxy<IGameSession> sessionProxy);
-        var lootInstance = CreateLootInstance(player);
+        IItemManager itemManager = CreateItemManager(CreateBindOnPickupItemInfo(), CreateNormalItemInfo());
+        IPlayer player = CreatePlayer(slotsRemaining: 1u, itemManager, out RecordingDispatchProxy<IGameSession> sessionProxy);
+        var lootInstance = CreateLootInstance(player, itemManager);
         LootInstanceItem lootItem = lootInstance.AddLootItem(NormalItemId, LootItemType.StaticItem, 1u);
 
         Assert.True(lootInstance.GiveLoot(player, lootItem.Id));
@@ -94,20 +89,21 @@ public class LootBindOnPickupPolicyTests
             call => call.Arguments[0] is ServerLootBindOnPickup);
     }
 
-    private static LootInstance CreateLootInstance(IPlayer player)
+    private static LootInstance CreateLootInstance(IPlayer player, IItemManager itemManager)
     {
         return new LootInstance(
             ownerUnitId: 99u,
             looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
             looterType: LooterType.Player,
-            lootEntityType: LootEntityType.Creature);
+            lootEntityType: LootEntityType.Creature,
+            itemManager: itemManager);
     }
 
-    private static IPlayer CreatePlayer(uint slotsRemaining, out RecordingDispatchProxy<IGameSession> sessionProxy)
+    private static IPlayer CreatePlayer(uint slotsRemaining, IItemManager itemManager, out RecordingDispatchProxy<IGameSession> sessionProxy)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out sessionProxy);
-        var inventory = new TestInventory(slotsRemaining, createItems: true);
+        var inventory = new TestInventory(slotsRemaining, createItems: true, itemManager);
 
         playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
         playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
@@ -117,10 +113,8 @@ public class LootBindOnPickupPolicyTests
         return player;
     }
 
-    private static IServiceProvider BuildProvider(params IItemInfo[] itemInfos)
+    private static IItemManager CreateItemManager(params IItemInfo[] itemInfos)
     {
-        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
-        var lootManager = new GlobalLootManager(groupStateManager);
         var itemManager = new ItemManager();
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
@@ -138,11 +132,7 @@ public class LootBindOnPickupPolicyTests
         GameTable<Item2Entry> itemTable = CreateGameTable(entries);
         SetAutoProperty(gameTableManager, nameof(GameTableManager.Item), itemTable);
 
-        return new ServiceCollection()
-            .AddSingleton(lootManager)
-            .AddSingleton(itemManager)
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return itemManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

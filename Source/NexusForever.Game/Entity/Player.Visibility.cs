@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Entity.Movement.Command;
 using NexusForever.Network.Message;
@@ -191,10 +192,9 @@ namespace NexusForever.Game.Entity
             Map.GridAddVisiblePlayer(gridX, gridZ);
         }
 
-        private GlobalLootManager GetGlobalLootManager()
+        private IGlobalLootManager GetGlobalLootManager()
         {
-            return globalLootManager
-                ?? LegacyServiceProvider.Provider?.GetService<GlobalLootManager>();
+            return globalLootManager;
         }
 
         protected override void RemoveVisible(uint gridX, uint gridZ)

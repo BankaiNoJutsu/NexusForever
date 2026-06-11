@@ -1,5 +1,4 @@
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
@@ -8,11 +7,9 @@ using NexusForever.Game.Achievement;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Achievement;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class GuildAchievementManagerTests
 {
     [Fact]
@@ -23,34 +20,22 @@ public class GuildAchievementManagerTests
         playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
 
         IGuild guild = RecordingDispatchProxy<IGuild>.Create(out _);
-        var manager = new GuildAchievementManager(guild);
+        var manager = new GuildAchievementManager(guild, globalAchievementManager: new GlobalAchievementManager());
         var achievement = new Achievement<GuildAchievementModel>(1ul, new TestAchievementInfo(new AchievementEntry
         {
             Id = 73,
             AchievementTypeId = (uint)AchievementType.KillCreatureEntry
         }));
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(new GlobalAchievementManager())
-            .BuildServiceProvider();
+        GetCompleteAchievementMethod().Invoke(manager, [player, achievement]);
 
-        try
-        {
-            GetCompleteAchievementMethod().Invoke(manager, [player, achievement]);
-
-            RecordingDispatchProxy<ICharacterAchievementManager>.Invocation call = Assert.Single(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
-            Assert.Same(player, call.Arguments[0]);
-            Assert.Equal(AchievementType.AchievementComplete, call.Arguments[1]);
-            Assert.Equal(73u, call.Arguments[2]);
-            Assert.Equal(0u, call.Arguments[3]);
-            Assert.Equal(1u, call.Arguments[4]);
-            Assert.NotNull(achievement.DateCompleted);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation call = Assert.Single(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+        Assert.Same(player, call.Arguments[0]);
+        Assert.Equal(AchievementType.AchievementComplete, call.Arguments[1]);
+        Assert.Equal(73u, call.Arguments[2]);
+        Assert.Equal(0u, call.Arguments[3]);
+        Assert.Equal(1u, call.Arguments[4]);
+        Assert.NotNull(achievement.DateCompleted);
     }
 
     private static MethodInfo GetCompleteAchievementMethod()

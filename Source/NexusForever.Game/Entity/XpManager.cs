@@ -45,22 +45,26 @@ namespace NexusForever.Game.Entity
 
         private bool isDirty;
         private readonly IPlayer player;
+        private readonly IGameTableManager gameTableManager;
+        private readonly ISharedConfiguration sharedConfiguration;
 
         /// <summary>
         /// Create a new <see cref="IXpManager"/> from existing <see cref="CharacterModel"/> database model.
         /// </summary>
-        public XpManager(IPlayer player, CharacterModel model)
+        public XpManager(IPlayer player, CharacterModel model, IGameTableManager gameTableManager, ISharedConfiguration sharedConfiguration = null)
         {
             this.player = player;
+            this.gameTableManager = gameTableManager;
+            this.sharedConfiguration = sharedConfiguration;
             totalXp = model.TotalXp;
 
             CalculateRestXpAtLogin(model);
         }
 
-        public static byte CalculateLevelForXp(uint totalXp)
+        public static byte CalculateLevelForXp(uint totalXp, IGameTableManager gameTableManager)
         {
             byte maxLevel = GetMaxCharacterLevel();
-            uint level = (GameTableManager.Instance.XpPerLevel?.Entries ?? [])
+            uint level = (gameTableManager.XpPerLevel?.Entries ?? [])
                 .Where(e => e.Id <= maxLevel && e.MinXpForLevel <= totalXp)
                 .Select(e => e.Id)
                 .DefaultIfEmpty(1u)
@@ -69,9 +73,9 @@ namespace NexusForever.Game.Entity
             return (byte)Math.Clamp(level, 1u, maxLevel);
         }
 
-        public static byte ResolveStoredLevel(byte storedLevel, uint totalXp)
+        public static byte ResolveStoredLevel(byte storedLevel, uint totalXp, IGameTableManager gameTableManager)
         {
-            return Math.Max(storedLevel, CalculateLevelForXp(totalXp));
+            return Math.Max(storedLevel, CalculateLevelForXp(totalXp, gameTableManager));
         }
 
         public void Save(CharacterContext context)
@@ -285,11 +289,11 @@ namespace NexusForever.Game.Entity
             // Add feature access
         }
 
-        private static byte GetMaxCharacterLevel()
+        private static byte GetMaxCharacterLevel(ISharedConfiguration sharedConfiguration = null)
         {
             try
             {
-                return SharedConfiguration.Instance.Get<WorldConfig>()?.MaxCharacterLevel ?? DefaultMaxCharacterLevel;
+                return sharedConfiguration?.Get<WorldConfig>()?.MaxCharacterLevel ?? DefaultMaxCharacterLevel;
             }
             catch (InvalidOperationException)
             {
@@ -297,15 +301,15 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        private static float GetSignatureXpRate()
+        private float GetSignatureXpRate()
         {
-            return SharedConfiguration.Instance.Get<WorldConfig>()?.SignatureXpRate ?? DefaultSignatureXpRate;
+            return sharedConfiguration?.Get<WorldConfig>()?.SignatureXpRate ?? DefaultSignatureXpRate;
         }
 
         private bool TryGetCurrentLevelXpSpan(out uint levelXpSpan)
         {
             levelXpSpan = 0u;
-            if (player.Level >= GetMaxCharacterLevel())
+            if (player.Level >= GetMaxCharacterLevel(sharedConfiguration))
                 return true;
 
             if (!TryGetXpForLevel(player.Level, out uint xpForLevel)
@@ -316,10 +320,10 @@ namespace NexusForever.Game.Entity
             return true;
         }
 
-        private static bool TryGetXpForLevel(uint level, out uint xp)
+        private bool TryGetXpForLevel(uint level, out uint xp)
         {
             xp = 0u;
-            XpPerLevelEntry entry = GameTableManager.Instance.XpPerLevel?.GetEntry(level);
+            XpPerLevelEntry entry = gameTableManager.XpPerLevel?.GetEntry(level);
             if (entry == null)
                 return false;
 

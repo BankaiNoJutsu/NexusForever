@@ -9,12 +9,19 @@ namespace NexusForever.WorldServer.Command.Handler
     [CommandTarget(typeof(IPlayer))]
     public class TitleCommandCategory : CommandCategory
     {
+        private readonly IGameTableManager gameTableManager;
+
+        public TitleCommandCategory(IGameTableManager gameTableManager)
+        {
+            this.gameTableManager = gameTableManager;
+        }
+
         [Command(Permission.TitleAdd, "Add a title to character.", "add")]
         public void HandleTitleAdd(ICommandContext context,
             [Parameter("")]
             ushort characterTitleId)
         {
-            if (GameTableManager.Instance.CharacterTitle.GetEntry(characterTitleId) == null)
+            if (gameTableManager.CharacterTitle.GetEntry(characterTitleId) == null)
             {
                 context.SendMessage($"Invalid character title id {characterTitleId}!");
                 return;
@@ -28,7 +35,7 @@ namespace NexusForever.WorldServer.Command.Handler
             [Parameter("")]
             ushort characterTitleId)
         {
-            if (GameTableManager.Instance.CharacterTitle.GetEntry(characterTitleId) == null)
+            if (gameTableManager.CharacterTitle.GetEntry(characterTitleId) == null)
             {
                 context.SendMessage($"Invalid character title id {characterTitleId}!");
                 return;

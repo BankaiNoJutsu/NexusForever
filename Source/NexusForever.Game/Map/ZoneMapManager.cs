@@ -23,15 +23,17 @@ namespace NexusForever.Game.Map
         private readonly Dictionary<ushort /*ZoneMapId*/, IZoneMap> zoneMaps = new();
 
         private readonly Player player;
+        private readonly IGameTableManager gameTableManager;
 
         /// <summary>
         /// Create a new <see cref="IZoneMapManager"/> from existing <see cref="CharacterModel"/> database model.
         /// </summary>
-        public ZoneMapManager(Player owner, CharacterModel characterModel)
+        public ZoneMapManager(Player owner, CharacterModel characterModel, IGameTableManager gameTableManager = null)
         {
             player = owner;
+            this.gameTableManager = gameTableManager;
 
-            GameTable<MapZoneEntry> mapZoneTable = GameTableManager.Instance.MapZone;
+            GameTable<MapZoneEntry> mapZoneTable = this.gameTableManager?.MapZone;
             foreach (CharacterZonemapHexgroupModel hexGroupModel in characterModel.ZonemapHexgroup)
             {
                 if (!zoneMaps.TryGetValue(hexGroupModel.ZoneMap, out IZoneMap zoneMap))
@@ -40,7 +42,7 @@ namespace NexusForever.Game.Map
                     if (entry == null)
                         continue;
 
-                    zoneMap = new ZoneMap(entry, player);
+                    zoneMap = new ZoneMap(entry, player, this.gameTableManager);
                     zoneMaps.Add(hexGroupModel.ZoneMap, zoneMap);
                 }
 
@@ -99,8 +101,8 @@ namespace NexusForever.Game.Map
 
             currentZoneMapCoordinate = newZoneMapCoordinate;
 
-            GameTable<MapZoneHexGroupEntry> hexGroupTable = GameTableManager.Instance.MapZoneHexGroup;
-            GameTable<MapZoneHexGroupEntryEntry> hexGroupEntryTable = GameTableManager.Instance.MapZoneHexGroupEntry;
+            GameTable<MapZoneHexGroupEntry> hexGroupTable = gameTableManager?.MapZoneHexGroup;
+            GameTable<MapZoneHexGroupEntryEntry> hexGroupEntryTable = gameTableManager?.MapZoneHexGroupEntry;
             if (hexGroupTable == null || hexGroupEntryTable == null)
                 return;
 
@@ -132,7 +134,7 @@ namespace NexusForever.Game.Map
 
         private void TryGrantZoneCompletionRewards(uint mapZoneId)
         {
-            if (!ZoneCompletionRewardResolver.TryGetTitleReward(player, mapZoneId, explorationComplete: true, out ushort titleId))
+            if (!ZoneCompletionRewardResolver.TryGetTitleReward(player, mapZoneId, explorationComplete: true, out ushort titleId, gameTableManager))
                 return;
 
             if (player.TitleManager.HasTitle(titleId))
@@ -164,8 +166,8 @@ namespace NexusForever.Game.Map
             // maybe there is a more efficient lookup method @sub_1406FB130 - this works for all zones though
             WorldZoneEntry worldZoneEntry = player.Zone;
             MapZoneEntry zoneMap = null;
-            GameTable<MapZoneEntry> mapZoneTable = GameTableManager.Instance.MapZone;
-            GameTable<WorldZoneEntry> worldZoneTable = GameTableManager.Instance.WorldZone;
+            GameTable<MapZoneEntry> mapZoneTable = gameTableManager?.MapZone;
+            GameTable<WorldZoneEntry> worldZoneTable = gameTableManager?.WorldZone;
 
             do
             {
@@ -182,7 +184,7 @@ namespace NexusForever.Game.Map
 
             if (zoneMap == null)
             {
-                MapZoneWorldJoinEntry mapZoneWorldJoin = GameTableManager.Instance.MapZoneWorldJoin?.Entries.FirstOrDefault(m => m.WorldId == player.Map.Entry.Id);
+                MapZoneWorldJoinEntry mapZoneWorldJoin = gameTableManager?.MapZoneWorldJoin?.Entries.FirstOrDefault(m => m.WorldId == player.Map.Entry.Id);
                 if (mapZoneWorldJoin != null)
                     zoneMap = mapZoneTable?.GetEntry(mapZoneWorldJoin.MapZoneId);
             }
@@ -197,7 +199,7 @@ namespace NexusForever.Game.Map
                 return;
 
             if (!zoneMaps.ContainsKey((ushort) zoneMap.Id))
-                zoneMaps.Add((ushort)zoneMap.Id, new ZoneMap(zoneMap, player));
+                zoneMaps.Add((ushort)zoneMap.Id, new ZoneMap(zoneMap, player, gameTableManager));
 
             currentZoneMap = (ushort)zoneMap.Id;
         }

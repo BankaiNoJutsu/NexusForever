@@ -2,6 +2,7 @@
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Static.Spell;
@@ -39,6 +40,9 @@ namespace NexusForever.Game.Spell
         public ISpellInfo SpellInfo { get; private set; }
         public ISpellInfo AlternateSpellInfo { get; private set; }
         public IItem Item { get; }
+        private readonly IPrerequisiteManager prerequisiteManager;
+        private readonly IGlobalSpellManager globalSpellManager;
+        private readonly IGameTableManager gameTableManager;
 
         public byte Tier
         {
@@ -72,13 +76,23 @@ namespace NexusForever.Game.Spell
         /// <summary>
         /// Create a new <see cref="ICharacterSpell"/> from an existing database model.
         /// </summary>
-        public CharacterSpell(IPlayer player, CharacterSpellModel model, ISpellBaseInfo baseInfo, IItem item)
+        public CharacterSpell(
+            IPlayer player,
+            CharacterSpellModel model,
+            ISpellBaseInfo baseInfo,
+            IItem item,
+            IPrerequisiteManager prerequisiteManager = null,
+            IGlobalSpellManager globalSpellManager = null,
+            IGameTableManager gameTableManager = null)
         {
             Owner     = player;
             BaseInfo  = baseInfo;
             Item      = item;
             tier      = model.Tier;
             SpellInfo = baseInfo.GetSpellInfo(tier);
+            this.prerequisiteManager = prerequisiteManager;
+            this.globalSpellManager = globalSpellManager;
+            this.gameTableManager = gameTableManager;
 
             InitialiseAbilityCharges();
             AlternateSpellInfo = ResolveAlternateSpellInfo();
@@ -87,13 +101,23 @@ namespace NexusForever.Game.Spell
         /// <summary>
         /// Create a new <see cref="ICharacterSpell"/> from a <see cref="ISpellBaseInfo"/>.
         /// </summary>
-        public CharacterSpell(IPlayer player, ISpellBaseInfo baseInfo, byte tier, IItem item)
+        public CharacterSpell(
+            IPlayer player,
+            ISpellBaseInfo baseInfo,
+            byte tier,
+            IItem item,
+            IPrerequisiteManager prerequisiteManager = null,
+            IGlobalSpellManager globalSpellManager = null,
+            IGameTableManager gameTableManager = null)
         {
             Owner     = player;
             BaseInfo  = baseInfo ?? throw new ArgumentNullException();
             SpellInfo = baseInfo.GetSpellInfo(tier);
             Item      = item;
             this.tier = tier;
+            this.prerequisiteManager = prerequisiteManager;
+            this.globalSpellManager = globalSpellManager;
+            this.gameTableManager = gameTableManager;
 
             InitialiseAbilityCharges();
             AlternateSpellInfo = ResolveAlternateSpellInfo();
@@ -229,21 +253,31 @@ namespace NexusForever.Game.Spell
             if (alternateSpell4Id == 0u)
                 return null;
 
-            Spell4Entry alternateEntry = GameTableManager.Instance.Spell4.GetEntry(alternateSpell4Id);
+            Spell4Entry alternateEntry = gameTableManager?.Spell4?.GetEntry(alternateSpell4Id);
             if (alternateEntry == null)
                 return null;
 
-            ISpellBaseInfo alternateBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(alternateEntry.Spell4BaseIdBaseSpell);
+            ISpellBaseInfo alternateBaseInfo = GetGlobalSpellManager().GetSpellBaseInfo(alternateEntry.Spell4BaseIdBaseSpell);
             return alternateBaseInfo.GetSpellInfo((byte)alternateEntry.TierIndex);
         }
 
         private bool CheckRunnerOverride()
         {
             foreach (PrerequisiteEntry runnerPrereq in SpellInfo.PrerequisiteRunners)
-                if (runnerPrereq != null && PrerequisiteManager.Instance.Meets(Owner, runnerPrereq.Id))
+                if (runnerPrereq != null && GetPrerequisiteManager().Meets(Owner, runnerPrereq.Id))
                     return true;
 
             return false;
+        }
+
+        private IPrerequisiteManager GetPrerequisiteManager()
+        {
+            return prerequisiteManager ?? throw new InvalidOperationException($"{nameof(CharacterSpell)} requires an {nameof(IPrerequisiteManager)}.");
+        }
+
+        private IGlobalSpellManager GetGlobalSpellManager()
+        {
+            return globalSpellManager ?? throw new InvalidOperationException($"{nameof(CharacterSpell)} requires an {nameof(IGlobalSpellManager)}.");
         }
 
         private uint ResolvePrimaryTargetId()

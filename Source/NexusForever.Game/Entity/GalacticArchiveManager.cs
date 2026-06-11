@@ -15,13 +15,18 @@ namespace NexusForever.Game.Entity
         private const string ArchiveEntryTableName = "ArchiveEntry.tbl";
 
         private readonly IPlayer player;
+        private readonly IGameTableManager gameTableManager;
         private readonly Dictionary<uint, ArchiveArticleState> articles = new();
 
-        public GalacticArchiveManager(IPlayer player, CharacterModel model)
+        public GalacticArchiveManager(
+            IPlayer player,
+            CharacterModel model,
+            IGameTableManager gameTableManager = null)
         {
             this.player = player;
+            this.gameTableManager = gameTableManager;
 
-            GameTable<ArchiveArticleEntry> archiveArticleTable = GameTableManager.Instance.ArchiveArticle;
+            GameTable<ArchiveArticleEntry> archiveArticleTable = gameTableManager.ArchiveArticle;
             foreach (CharacterGalacticArchiveModel archiveModel in model.GalacticArchive)
             {
                 if (archiveArticleTable?.GetEntry(archiveModel.ArchiveArticleId) == null)
@@ -51,7 +56,7 @@ namespace NexusForever.Game.Entity
 
         public bool UnlockArticle(uint archiveArticleId, bool grantRewards = true, bool unlockAllEntries = true)
         {
-            ArchiveArticleEntry articleEntry = GameTableManager.Instance.ArchiveArticle?.GetEntry(archiveArticleId);
+            ArchiveArticleEntry articleEntry = gameTableManager.ArchiveArticle?.GetEntry(archiveArticleId);
             if (articleEntry == null)
                 return false;
 
@@ -76,13 +81,13 @@ namespace NexusForever.Game.Entity
 
         public bool UnlockLinkedArticle(uint archiveArticleId)
         {
-            if (GameTableManager.Instance.ArchiveArticle?.GetEntry(archiveArticleId) == null)
+            if (gameTableManager.ArchiveArticle?.GetEntry(archiveArticleId) == null)
                 return false;
 
             if (IsArticleUnlocked(archiveArticleId))
                 return true;
 
-            GameTable<ArchiveLinkEntry> archiveLinkTable = GameTableManager.Instance.ArchiveLink;
+            GameTable<ArchiveLinkEntry> archiveLinkTable = gameTableManager.ArchiveLink;
             if (archiveLinkTable == null)
                 return false;
 
@@ -98,7 +103,7 @@ namespace NexusForever.Game.Entity
 
         public bool MarkArticleViewed(uint archiveArticleId)
         {
-            ArchiveArticleEntry articleEntry = GameTableManager.Instance.ArchiveArticle?.GetEntry(archiveArticleId);
+            ArchiveArticleEntry articleEntry = gameTableManager.ArchiveArticle?.GetEntry(archiveArticleId);
             if (articleEntry == null)
                 return false;
 
@@ -117,7 +122,7 @@ namespace NexusForever.Game.Entity
 
         public void RefreshRuleUnlocks()
         {
-            GameTable<ArchiveArticleEntry> archiveArticleTable = GameTableManager.Instance.ArchiveArticle;
+            GameTable<ArchiveArticleEntry> archiveArticleTable = gameTableManager.ArchiveArticle;
             if (archiveArticleTable == null)
                 return;
 
@@ -165,7 +170,7 @@ namespace NexusForever.Game.Entity
 
         private uint GetSatisfiedRuleEntryFlags(ArchiveArticleEntry articleEntry)
         {
-            GameTable<ArchiveEntryUnlockRuleEntry> ruleTable = GameTableManager.Instance.ArchiveEntryUnlockRule;
+            GameTable<ArchiveEntryUnlockRuleEntry> ruleTable = gameTableManager.ArchiveEntryUnlockRule;
             if (ruleTable == null)
                 return 0u;
 
@@ -216,7 +221,7 @@ namespace NexusForever.Game.Entity
 
         private void GrantUnlockRewards(ArchiveArticleEntry articleEntry, uint previousFlags, uint currentFlags)
         {
-            GameTable<ArchiveEntryEntry> archiveEntryTable = GameTableManager.Instance.ArchiveEntry;
+            GameTable<ArchiveEntryEntry> archiveEntryTable = gameTableManager.ArchiveEntry;
             if (archiveEntryTable == null)
             {
                 MissingGameDataDiagnostics.ReportMissingTable(

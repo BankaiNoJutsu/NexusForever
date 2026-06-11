@@ -29,6 +29,13 @@ namespace NexusForever.Game.Map.Instance
 
         private readonly ConcurrentQueue<PendingAdd> pendingAdds = new();
         private readonly Dictionary</*instanceId*/ Guid, T> instances = new();
+        private readonly IMapManager mapManager;
+
+        protected InstancedMap(
+            IMapManager mapManager = null)
+        {
+            this.mapManager = mapManager;
+        }
 
         /// <summary>
         /// Initialise <see cref="IInstancedMap{T}"/> with <see cref="WorldEntry"/>.
@@ -72,7 +79,7 @@ namespace NexusForever.Game.Map.Instance
         /// </summary>
         public virtual GenericError? CanEnter(IPlayer player, IMapPosition position)
         {
-            if (!MapManager.Instance.CanCreateInstance(player))
+            if (!GetMapManager().CanCreateInstance(player))
                 return GenericError.InstanceLimitExceeded;
 
             return null;
@@ -89,7 +96,7 @@ namespace NexusForever.Game.Map.Instance
 
         private void ProcessPending()
         {
-            var newActions = new List<PendingAdd>();
+            List<PendingAdd> newActions = null;
             while (pendingAdds.TryDequeue(out PendingAdd pending))
             {
                 IMapLock mapLock = pending.MapPosition.Info.MapLock;
@@ -109,7 +116,7 @@ namespace NexusForever.Game.Map.Instance
 
                     log.Trace($"Created new instance {instance.InstanceId} for map {instance.Entry.Id}.");
 
-                    MapManager.Instance.IncreaseInstanceCount(pending.Player);
+                    GetMapManager().IncreaseInstanceCount(pending.Player);
                 }
 
                 // existing instance is unloading
@@ -127,6 +134,7 @@ namespace NexusForever.Game.Map.Instance
                     }
 
                     // wait for instance to completely unload before recreating and adding
+                    newActions ??= new List<PendingAdd>();
                     newActions.Add(pending);
                     continue;
                 }
@@ -143,8 +151,9 @@ namespace NexusForever.Game.Map.Instance
             }
 
             // new actions are added to the queue after processing so they are processed starting next update
-            foreach (PendingAdd action in newActions)
-                pendingAdds.Enqueue(action);
+            if (newActions != null)
+                foreach (PendingAdd action in newActions)
+                    pendingAdds.Enqueue(action);
         }
 
         private void UpdateInstances(double lastTick)
@@ -172,6 +181,14 @@ namespace NexusForever.Game.Map.Instance
         protected virtual void UpdatePosition(IPlayer player, IMapPosition mapPosition)
         {
             // deliberately empty
+        }
+
+        private IMapManager GetMapManager()
+        {
+            if (mapManager == null)
+                throw new InvalidOperationException("InstancedMap requires an IMapManager.");
+
+            return mapManager;
         }
 
         /// <summary>

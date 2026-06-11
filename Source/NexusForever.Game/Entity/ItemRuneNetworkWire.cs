@@ -32,9 +32,9 @@ namespace NexusForever.Game.Entity
         private const int RandomGlyphSocketBitOffset = 7;
         private const int RandomGlyphSocketBitWidth = 3;
 
-        public static void Populate(NetworkItem networkItem, IItem item)
+        public static void Populate(NetworkItem networkItem, IItem item, IGameTableManager gameTableManager = null)
         {
-            Populate(networkItem, item.RuneSlots, item.MicrochipIds, GetDefinedSocketCount(item));
+            Populate(networkItem, item.RuneSlots, item.MicrochipIds, GetDefinedSocketCount(item, gameTableManager));
         }
 
         public static void Populate(NetworkItem networkItem, IList<ItemRuneSlot> runeSlots, IList<uint> microchipIds, uint definedSocketCount = 0u)
@@ -73,13 +73,13 @@ namespace NexusForever.Game.Entity
             return glyphData;
         }
 
-        private static uint GetDefinedSocketCount(IItem item)
+        private static uint GetDefinedSocketCount(IItem item, IGameTableManager gameTableManager)
         {
             uint instanceId = item.Info?.Entry?.ItemRuneInstanceId ?? 0u;
-            if (instanceId == 0u || GameTableManager.Instance.ItemRuneInstance == null)
+            if (instanceId == 0u || gameTableManager?.ItemRuneInstance == null)
                 return 0u;
 
-            ItemRuneInstanceEntry instance = GameTableManager.Instance.ItemRuneInstance.GetEntry(instanceId);
+            ItemRuneInstanceEntry instance = gameTableManager.ItemRuneInstance.GetEntry(instanceId);
             return instance == null ? 0u : Math.Min(instance.DefinedSocketCount, (uint)MaxWireRuneSlots);
         }
 

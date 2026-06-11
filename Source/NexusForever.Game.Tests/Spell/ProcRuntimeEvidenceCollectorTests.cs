@@ -1,12 +1,14 @@
 using System.Collections.Immutable;
 using System.Text.Json;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Spell.Effect;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.RBAC;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable;
 using NexusForever.WorldServer.Command.Context;
 using NexusForever.WorldServer.Command.Handler;
 
@@ -133,7 +135,9 @@ public class ProcRuntimeEvidenceCollectorTests
             "none",
             "unsupported-target-data");
 
-        var category = new SpellCommandCategory();
+        var category = new SpellCommandCategory(
+            RecordingDispatchProxy<IGlobalSpellManager>.Create(out _),
+            RecordingDispatchProxy<IGameTableManager>.Create(out _));
         var context = new TestCommandContext(holder, null, [Permission.Spell]);
 
         category.HandleSpellProcUnsupported(context);

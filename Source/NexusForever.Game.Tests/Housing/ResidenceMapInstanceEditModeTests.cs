@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Housing;
@@ -11,12 +10,10 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.Network;
 using NexusForever.Script;
-using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
 
 namespace NexusForever.Game.Tests.Housing;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class ResidenceMapInstanceEditModeTests
 {
     private const ushort RealmId = 7;
@@ -26,88 +23,56 @@ public class ResidenceMapInstanceEditModeTests
     [Fact]
     public void SetEditMode_EnableStoresLoadedResidence()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        try
-        {
-            LegacyServiceProvider.Provider = BuildConfigurationProvider();
-            ResidenceMapInstance map = CreateResidenceMapInstance();
-            IResidence residence = InitialiseResidence(map, ResidenceId, canModify: true, out _);
-            IPlayer player = CreatePlayer(CharacterId);
+        ISharedConfiguration sharedConfiguration = CreateSharedConfiguration();
+        ResidenceMapInstance map = CreateResidenceMapInstance(sharedConfiguration);
+        IResidence residence = InitialiseResidence(map, ResidenceId, canModify: true, out _);
+        IPlayer player = CreatePlayer(CharacterId);
 
-            map.SetEditMode(player, residence, enabled: true);
+        map.SetEditMode(player, residence, enabled: true);
 
-            Assert.True(map.TryGetEditModeResidence(player, out IResidence editResidence));
-            Assert.Same(residence, editResidence);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.True(map.TryGetEditModeResidence(player, out IResidence editResidence));
+        Assert.Same(residence, editResidence);
     }
 
     [Fact]
     public void SetEditMode_DisableClearsStoredResidence()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        try
-        {
-            LegacyServiceProvider.Provider = BuildConfigurationProvider();
-            ResidenceMapInstance map = CreateResidenceMapInstance();
-            IResidence residence = InitialiseResidence(map, ResidenceId, canModify: true, out _);
-            IPlayer player = CreatePlayer(CharacterId);
+        ISharedConfiguration sharedConfiguration = CreateSharedConfiguration();
+        ResidenceMapInstance map = CreateResidenceMapInstance(sharedConfiguration);
+        IResidence residence = InitialiseResidence(map, ResidenceId, canModify: true, out _);
+        IPlayer player = CreatePlayer(CharacterId);
 
-            map.SetEditMode(player, residence, enabled: true);
-            map.SetEditMode(player, residence, enabled: false);
+        map.SetEditMode(player, residence, enabled: true);
+        map.SetEditMode(player, residence, enabled: false);
 
-            Assert.False(map.TryGetEditModeResidence(player, out _));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.False(map.TryGetEditModeResidence(player, out _));
     }
 
     [Fact]
     public void SetEditMode_UnloadedResidenceThrowsInvalidPacket()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        try
-        {
-            LegacyServiceProvider.Provider = BuildConfigurationProvider();
-            ResidenceMapInstance map = CreateResidenceMapInstance();
-            IResidence residence = CreateResidence(ResidenceId, canModify: true, out _);
-            IPlayer player = CreatePlayer(CharacterId);
+        ISharedConfiguration sharedConfiguration = CreateSharedConfiguration();
+        ResidenceMapInstance map = CreateResidenceMapInstance(sharedConfiguration);
+        IResidence residence = CreateResidence(ResidenceId, canModify: true, out _);
+        IPlayer player = CreatePlayer(CharacterId);
 
-            Assert.Throws<InvalidPacketValueException>(() => map.SetEditMode(player, residence, enabled: true));
-            Assert.False(map.TryGetEditModeResidence(player, out _));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Throws<InvalidPacketValueException>(() => map.SetEditMode(player, residence, enabled: true));
+        Assert.False(map.TryGetEditModeResidence(player, out _));
     }
 
     [Fact]
     public void SetEditMode_WithoutModifyPermissionThrowsInvalidPacket()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        try
-        {
-            LegacyServiceProvider.Provider = BuildConfigurationProvider();
-            ResidenceMapInstance map = CreateResidenceMapInstance();
-            IResidence residence = InitialiseResidence(map, ResidenceId, canModify: false, out _);
-            IPlayer player = CreatePlayer(CharacterId);
+        ISharedConfiguration sharedConfiguration = CreateSharedConfiguration();
+        ResidenceMapInstance map = CreateResidenceMapInstance(sharedConfiguration);
+        IResidence residence = InitialiseResidence(map, ResidenceId, canModify: false, out _);
+        IPlayer player = CreatePlayer(CharacterId);
 
-            Assert.Throws<InvalidPacketValueException>(() => map.SetEditMode(player, residence, enabled: true));
-            Assert.False(map.TryGetEditModeResidence(player, out _));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Throws<InvalidPacketValueException>(() => map.SetEditMode(player, residence, enabled: true));
+        Assert.False(map.TryGetEditModeResidence(player, out _));
     }
 
-    private static IServiceProvider BuildConfigurationProvider()
+    private static ISharedConfiguration CreateSharedConfiguration()
     {
         var configuration = new SharedConfiguration(new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string>
@@ -118,12 +83,10 @@ public class ResidenceMapInstanceEditModeTests
             .Build());
         configuration.Initialise<TestConfiguration>();
 
-        return new ServiceCollection()
-            .AddSingleton(configuration)
-            .BuildServiceProvider();
+        return configuration;
     }
 
-    private static ResidenceMapInstance CreateResidenceMapInstance()
+    private static ResidenceMapInstance CreateResidenceMapInstance(ISharedConfiguration sharedConfiguration)
     {
         IEntityFactory entityFactory = RecordingDispatchProxy<IEntityFactory>.Create(out _);
         IPublicEventManager publicEventManager = RecordingDispatchProxy<IPublicEventManager>.Create(out _);
@@ -142,7 +105,8 @@ public class ResidenceMapInstanceEditModeTests
             globalResidenceManager,
             gameTableManager,
             realmContext,
-            scriptManager);
+            scriptManager,
+            sharedConfiguration: sharedConfiguration);
     }
 
     private static IResidence InitialiseResidence(ResidenceMapInstance map, ulong residenceId, bool canModify, out RecordingDispatchProxy<IResidence> residenceProxy)

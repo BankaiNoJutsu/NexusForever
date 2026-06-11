@@ -15,6 +15,7 @@ namespace NexusForever.Game.Abstract.Loot
         void Initialise();
 
         bool DropLoot(IPlayer looter, IWorldEntity lootedEntity);
+        void RemoveLootForOwner(uint ownerUnitId, bool sendRemove = true);
         bool HasLoot(IItem lootedItem);
         bool DropLoot(IPlayer looter, IItem lootedItem);
         bool TryUseLootBag(IPlayer looter, IItem lootedItem, out string reason);

@@ -17,7 +17,7 @@ namespace NexusForever.Game.Cinematic
 
         public VisualEffect(uint visualEffectId, Position position = null, uint delay = 0, bool removeOnCameraEnd = false)
         {
-            Id                = GlobalCinematicManager.Instance.NextCinematicId;
+            Id                = GlobalCinematicManager.AllocateCinematicId();
             VisualEffectId    = visualEffectId;
 
             Position          = position ?? new Position();
@@ -28,7 +28,7 @@ namespace NexusForever.Game.Cinematic
 
         public VisualEffect(uint visualEffectId, uint unitId, Position position = null, uint delay = 0, uint duration = 0, bool removeOnCameraEnd = false)
         {
-            Id                = GlobalCinematicManager.Instance.NextCinematicId;
+            Id                = GlobalCinematicManager.AllocateCinematicId();
             VisualEffectId    = visualEffectId;
 
             Position          = position ?? new Position();

@@ -1,7 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Reflection;
 using NexusForever.Game.Static;
-using NexusForever.Shared;
 using NLog;
 
 namespace NexusForever.GameTable.Text.Search
@@ -9,20 +8,28 @@ namespace NexusForever.GameTable.Text.Search
     /// <summary>
     /// Responsible for looking up text and objects that the text references.
     /// </summary>
-    public sealed class SearchManager : Singleton<SearchManager>, ISearchManager
+    public sealed class SearchManager : ISearchManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
         private ImmutableDictionary<Language, ITextReverseIndex> reverseIndexDictionary;
+        private readonly IGameTableManager gameTableManager;
+
+        public SearchManager(
+            IGameTableManager gameTableManager = null)
+        {
+            this.gameTableManager = gameTableManager;
+        }
 
         public void Initialise()
         {
             log.Info("Creating reverse text lookups.");
+            IGameTableManager manager = GetGameTableManager();
             var index = new Dictionary<Language, ITextReverseIndex>
             {
-                [Language.English] = new TextReverseIndex(GameTableManager.Instance.TextEnglish),
-                [Language.French]  = new TextReverseIndex(GameTableManager.Instance.TextFrench),
-                [Language.German]  = new TextReverseIndex(GameTableManager.Instance.TextGerman)
+                [Language.English] = new TextReverseIndex(manager.TextEnglish),
+                [Language.French]  = new TextReverseIndex(manager.TextFrench),
+                [Language.German]  = new TextReverseIndex(manager.TextGerman)
             };
             reverseIndexDictionary = index.ToImmutableDictionary();
             foreach ((Language language, ITextReverseIndex value) in index)
@@ -36,10 +43,19 @@ namespace NexusForever.GameTable.Text.Search
 
         private GameTable<T> GetGameTable<T>() where T : class, new()
         {
-            return GameTableManager.Instance.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            IGameTableManager manager = GetGameTableManager();
+            return manager.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(i => i.PropertyType == typeof(GameTable<T>))
-                .Select(property => property.GetValue(GameTableManager.Instance) as GameTable<T>)
+                .Select(property => property.GetValue(manager) as GameTable<T>)
                 .FirstOrDefault();
+        }
+
+        private IGameTableManager GetGameTableManager()
+        {
+            if (gameTableManager == null)
+                throw new InvalidOperationException("SearchManager requires an IGameTableManager.");
+
+            return gameTableManager;
         }
 
         /// <summary>

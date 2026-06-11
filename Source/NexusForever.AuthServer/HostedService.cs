@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using NexusForever.AuthServer.Network;
 using NexusForever.Database;
 using NexusForever.Database.Configuration.Model;
-using NexusForever.Game.Server;
+using NexusForever.Game.Abstract.Server;
 using NexusForever.Network.Auth.Message;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
@@ -25,21 +25,27 @@ namespace NexusForever.AuthServer
         private readonly INetworkManager<IAuthSession> networkManager;
         private readonly IMessageManager messageManager;
         private readonly IWorldManager worldManager;
+        private readonly IServerManager serverManager;
+        private readonly IDatabaseManager databaseManager;
+        private readonly ISharedConfiguration sharedConfiguration;
 
         public HostedService(
-            IServiceProvider serviceProvider,
             ILogger<IHostedService> log,
             INetworkManager<IAuthSession> networkManager,
             IMessageManager messageManager,
-            IWorldManager worldManager)
+            IWorldManager worldManager,
+            IServerManager serverManager,
+            IDatabaseManager databaseManager,
+            ISharedConfiguration sharedConfiguration)
         {
-            LegacyServiceProvider.Provider = serviceProvider;
-
             this.log            = log;
 
             this.networkManager = networkManager;
             this.messageManager = messageManager;
             this.worldManager   = worldManager;
+            this.serverManager  = serverManager;
+            this.databaseManager = databaseManager;
+            this.sharedConfiguration = sharedConfiguration;
         }
 
         #endregion
@@ -51,11 +57,11 @@ namespace NexusForever.AuthServer
         {
             log.LogInformation("Starting...");
 
-            SharedConfiguration.Instance.Initialise<AuthServerConfiguration>();
+            sharedConfiguration.Initialise<AuthServerConfiguration>();
 
-            DatabaseManager.Instance.Initialise(SharedConfiguration.Instance.Get<DatabaseConfig>());
+            databaseManager.Initialise(sharedConfiguration.Get<DatabaseConfig>());
 
-            ServerManager.Instance.Initialise();
+            serverManager.Initialise();
 
             // initialise world after all assets have loaded but before any network or command handlers might be invoked
             worldManager.Initialise(lastTick =>
@@ -87,7 +93,7 @@ namespace NexusForever.AuthServer
             networkManager.Shutdown();
 
             // stop server manager pinging other servers
-            ServerManager.Instance.Shutdown();
+            serverManager.Shutdown();
 
             // stop world manager processing the world thread
             // at this point no incoming packets will be handled

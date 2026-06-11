@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Cinematic;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Cinematic
 {
@@ -9,7 +8,7 @@ namespace NexusForever.Game.Cinematic
     {
         public static void AddGameCinematic(this IServiceCollection sc)
         {
-            sc.AddSingletonLegacy<IGlobalCinematicManager, GlobalCinematicManager>();
+            sc.AddSingleton<IGlobalCinematicManager, GlobalCinematicManager>();
             sc.AddTransient<ICinematicFactory, CinematicFactory>();
 
             foreach (Type type in Assembly.GetExecutingAssembly().GetTypes())

@@ -1,4 +1,4 @@
-﻿using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -33,9 +33,18 @@ namespace NexusForever.Game.Spell
 
         private Dictionary<uint, (ISpellInfo SpellInfo, Spell4ThresholdsEntry Threshold)> thresholdCache;
         private (ISpellInfo SpellInfo, Spell4ThresholdsEntry Threshold) maxThresholdSpell;
+        private readonly IGlobalSpellManager globalSpellManager;
+        private readonly IGameTableManager gameTableManager;
 
-        public SpellInfo(ISpellBaseInfo spellBaseBaseInfo, Spell4Entry spell4Entry)
+        public SpellInfo(
+            ISpellBaseInfo spellBaseBaseInfo,
+            Spell4Entry spell4Entry,
+            IGlobalSpellManager globalSpellManager = null,
+            IGameTableManager gameTableManager = null)
         {
+            this.globalSpellManager = globalSpellManager;
+            this.gameTableManager = gameTableManager;
+
             Entry                          = spell4Entry;
             BaseInfo                       = spellBaseBaseInfo;
             PropertyFlags                  = (SpellPropertyFlags)spell4Entry.PropertyFlags;
@@ -43,26 +52,26 @@ namespace NexusForever.Game.Spell
             IsBeneficial                   = (PropertyFlags & SpellPropertyFlags.IsBeneficial) != 0;
             HasServiceTokenCost            = (PropertyFlags & SpellPropertyFlags.HasServiceTokenCost) != 0;
             IEnumerable<Spell4ServiceTokenCostEntry> serviceTokenCostEntries =
-                GameTableManager.Instance.Spell4ServiceTokenCost?.Entries ?? Enumerable.Empty<Spell4ServiceTokenCostEntry>();
+                gameTableManager.Spell4ServiceTokenCost?.Entries ?? Enumerable.Empty<Spell4ServiceTokenCostEntry>();
             ServiceTokenCostEntry          = serviceTokenCostEntries.FirstOrDefault(e => e.Spell4Id == spell4Entry.Id);
-            AoeTargetConstraints           = GameTableManager.Instance.Spell4AoeTargetConstraints?.GetEntry(spell4Entry.Spell4AoeTargetConstraintsId);
-            CasterConditions               = GameTableManager.Instance.Spell4Conditions?.GetEntry(spell4Entry.Spell4ConditionsIdCaster);
-            TargetConditions               = GameTableManager.Instance.Spell4Conditions?.GetEntry(spell4Entry.Spell4ConditionsIdTarget);
-            CasterCCConditions             = GameTableManager.Instance.Spell4CCConditions?.GetEntry(spell4Entry.Spell4CCConditionsIdCaster);
-            TargetCCConditions             = GameTableManager.Instance.Spell4CCConditions?.GetEntry(spell4Entry.Spell4CCConditionsIdTarget);
-            GlobalCooldown                 = GameTableManager.Instance.SpellCoolDown?.GetEntry(spell4Entry.SpellCoolDownIdGlobal);
-            StackGroup                     = GameTableManager.Instance.Spell4StackGroup?.GetEntry(spell4Entry.Spell4StackGroupId);
-            CasterCastPrerequisite         = GameTableManager.Instance.Prerequisite?.GetEntry(spell4Entry.PrerequisiteIdCasterCast);
-            TargetCastPrerequisites        = GameTableManager.Instance.Prerequisite?.GetEntry(spell4Entry.PrerequisiteIdTargetCast);
-            CasterPersistencePrerequisites = GameTableManager.Instance.Prerequisite?.GetEntry(spell4Entry.PrerequisiteIdCasterPersistence);
-            TargetPersistencePrerequisites = GameTableManager.Instance.Prerequisite?.GetEntry(spell4Entry.PrerequisiteIdTargetPersistence);
+            AoeTargetConstraints           = gameTableManager.Spell4AoeTargetConstraints?.GetEntry(spell4Entry.Spell4AoeTargetConstraintsId);
+            CasterConditions               = gameTableManager.Spell4Conditions?.GetEntry(spell4Entry.Spell4ConditionsIdCaster);
+            TargetConditions               = gameTableManager.Spell4Conditions?.GetEntry(spell4Entry.Spell4ConditionsIdTarget);
+            CasterCCConditions             = gameTableManager.Spell4CCConditions?.GetEntry(spell4Entry.Spell4CCConditionsIdCaster);
+            TargetCCConditions             = gameTableManager.Spell4CCConditions?.GetEntry(spell4Entry.Spell4CCConditionsIdTarget);
+            GlobalCooldown                 = gameTableManager.SpellCoolDown?.GetEntry(spell4Entry.SpellCoolDownIdGlobal);
+            StackGroup                     = gameTableManager.Spell4StackGroup?.GetEntry(spell4Entry.Spell4StackGroupId);
+            CasterCastPrerequisite         = gameTableManager.Prerequisite?.GetEntry(spell4Entry.PrerequisiteIdCasterCast);
+            TargetCastPrerequisites        = gameTableManager.Prerequisite?.GetEntry(spell4Entry.PrerequisiteIdTargetCast);
+            CasterPersistencePrerequisites = gameTableManager.Prerequisite?.GetEntry(spell4Entry.PrerequisiteIdCasterPersistence);
+            TargetPersistencePrerequisites = gameTableManager.Prerequisite?.GetEntry(spell4Entry.PrerequisiteIdTargetPersistence);
 
-            Telegraphs                     = GlobalSpellManager.Instance.GetTelegraphDamageEntries(spell4Entry.Id).ToList();
-            Effects                        = GlobalSpellManager.Instance.GetSpell4EffectEntries(spell4Entry.Id).ToList();
-            Thresholds                     = GlobalSpellManager.Instance.GetSpell4ThresholdEntries(spell4Entry.Id).ToList();
+            Telegraphs                     = GetGlobalSpellManager().GetTelegraphDamageEntries(spell4Entry.Id).ToList();
+            Effects                        = GetGlobalSpellManager().GetSpell4EffectEntries(spell4Entry.Id).ToList();
+            Thresholds                     = GetGlobalSpellManager().GetSpell4ThresholdEntries(spell4Entry.Id).ToList();
 
             foreach (uint runnerId in (spell4Entry.PrerequisiteIdRunners ?? []).Where(r => r != 0))
-                PrerequisiteRunners.Add(GameTableManager.Instance.Prerequisite?.GetEntry(runnerId));
+                PrerequisiteRunners.Add(gameTableManager.Prerequisite?.GetEntry(runnerId));
         }
 
         /// <summary>
@@ -96,11 +105,11 @@ namespace NexusForever.Game.Spell
 
             foreach (Spell4ThresholdsEntry thresholdsEntry in Thresholds)
             {
-                Spell4Entry spell4Entry = GameTableManager.Instance.Spell4?.GetEntry(thresholdsEntry.Spell4IdToCast);
+                Spell4Entry spell4Entry = gameTableManager.Spell4?.GetEntry(thresholdsEntry.Spell4IdToCast);
                 if (spell4Entry == null)
                     continue;
 
-                ISpellBaseInfo spellBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(spell4Entry.Spell4BaseIdBaseSpell);
+                ISpellBaseInfo spellBaseInfo = GetGlobalSpellManager().GetSpellBaseInfo(spell4Entry.Spell4BaseIdBaseSpell);
                 ISpellInfo spellInfo = spellBaseInfo.GetSpellInfo((byte)spell4Entry.TierIndex);
                 if (spellInfo == null)
                     continue;
@@ -115,6 +124,11 @@ namespace NexusForever.Game.Spell
             maxThresholdSpell = thresholdCache.TryGetValue(maxThreshold.OrderIndex, out (ISpellInfo SpellInfo, Spell4ThresholdsEntry Threshold) value)
                 ? value
                 : thresholdCache.OrderByDescending(t => t.Key).First().Value;
+        }
+
+        private IGlobalSpellManager GetGlobalSpellManager()
+        {
+            return globalSpellManager ?? throw new InvalidOperationException($"{nameof(SpellInfo)} requires an {nameof(IGlobalSpellManager)}.");
         }
     }
 }

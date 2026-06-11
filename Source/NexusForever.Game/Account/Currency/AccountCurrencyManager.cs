@@ -14,16 +14,18 @@ namespace NexusForever.Game.Account.Currency
         private readonly Dictionary<AccountCurrencyType, IAccountCurrency> currencies = new();
 
         private readonly IAccount account;
+        private readonly IGameTableManager gameTableManager;
 
         /// <summary>
         /// Create a new <see cref="IAccountCurrencyManager"/> from an existing database model.
         /// </summary>
-        public AccountCurrencyManager(IAccount account, AccountModel model)
+        public AccountCurrencyManager(IAccount account, AccountModel model, IGameTableManager gameTableManager)
         {
-            this.account = account;
+            this.account          = account;
+            this.gameTableManager = gameTableManager;
 
             foreach (AccountCurrencyModel currencyModel in model.AccountCurrency)
-                currencies.Add((AccountCurrencyType)currencyModel.CurrencyId, new AccountCurrency(account, currencyModel));
+                currencies.Add((AccountCurrencyType)currencyModel.CurrencyId, new AccountCurrency(account, currencyModel, gameTableManager));
         }
 
         public void Save(AuthContext context)
@@ -37,11 +39,11 @@ namespace NexusForever.Game.Account.Currency
         /// </summary>
         private IAccountCurrency CreateAccountCurrency(AccountCurrencyType currencyType, ulong amount = 0)
         {
-            AccountCurrencyTypeEntry currencyEntry = GameTableManager.Instance.AccountCurrencyType?.GetEntry((ulong)currencyType);
+            AccountCurrencyTypeEntry currencyEntry = gameTableManager.AccountCurrencyType?.GetEntry((ulong)currencyType);
             if (currencyEntry == null)
                 throw new ArgumentNullException($"AccountCurrencyTypeEntry not found for currencyId {currencyType}");
 
-            if (currencies.TryAdd(currencyType, new AccountCurrency(account, currencyType, amount)))
+            if (currencies.TryAdd(currencyType, new AccountCurrency(account, currencyType, amount, gameTableManager)))
                 return currencies[currencyType];
 
             return null;

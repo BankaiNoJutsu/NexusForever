@@ -16,6 +16,17 @@ namespace NexusForever.WorldServer.Command.Handler
     [Command(Permission.Account, "A collection of commands to modify game accounts.", "acc", "account")]
     public class AccountCommandCategory : CommandCategory
     {
+        private readonly IDatabaseManager databaseManager;
+        private readonly ISharedConfiguration sharedConfiguration;
+
+        public AccountCommandCategory(
+            IDatabaseManager databaseManager = null,
+            ISharedConfiguration sharedConfiguration = null)
+        {
+            this.databaseManager = databaseManager;
+            this.sharedConfiguration = sharedConfiguration;
+        }
+
         [Command(Permission.AccountCreate, "Create a new account.", "create")]
         public void HandleAccountCreate(ICommandContext context,
             [Parameter("Email address for the new account", converter: typeof(StringLowerParameterConverter))]
@@ -25,16 +36,17 @@ namespace NexusForever.WorldServer.Command.Handler
             [Parameter("Role", ParameterFlags.Optional, typeof(EnumParameterConverter<Role>))]
             Role? role = null)
         {
-            if (DatabaseManager.Instance.GetDatabase<AuthDatabase>().AccountExists(email))
+            AuthDatabase authDatabase = databaseManager.GetDatabase<AuthDatabase>();
+            if (authDatabase.AccountExists(email))
             {
                 context.SendMessage("Account with that username already exists. Please try another.");
                 return;
             }
 
-            role ??= (SharedConfiguration.Instance.Get<RealmConfig>().DefaultRole ?? Role.Player);
+            role ??= (sharedConfiguration?.Get<RealmConfig>()?.DefaultRole ?? Role.Player);
 
             (string salt, string verifier) = PasswordProvider.GenerateSaltAndVerifier(email, password);
-            DatabaseManager.Instance.GetDatabase<AuthDatabase>().CreateAccount(email, salt, verifier, (uint)role);
+            authDatabase.CreateAccount(email, salt, verifier, (uint)role);
 
             context.SendMessage($"Account {email} created successfully");
         }
@@ -44,7 +56,7 @@ namespace NexusForever.WorldServer.Command.Handler
             [Parameter("Email address of the account to delete")]
             string email)
         {
-            if (DatabaseManager.Instance.GetDatabase<AuthDatabase>().DeleteAccount(email))
+            if (databaseManager.GetDatabase<AuthDatabase>().DeleteAccount(email))
                 context.SendMessage($"Account {email} successfully removed!");
             else
                 context.SendMessage($"Cannot find account with Email: {email}");

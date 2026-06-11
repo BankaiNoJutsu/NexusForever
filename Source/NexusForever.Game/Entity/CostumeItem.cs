@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
@@ -28,7 +29,7 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Return dye ramp mask generated from supplied dyes.
         /// </summary>
-        public static uint GenerateDyeMask(uint[] dyes)
+        public static uint GenerateDyeMask(uint[] dyes, IGameTableManager gameTableManager)
         {
             uint[] ramps = new uint[MaxCostumeItemDyes];
             for (var i = 0; i < dyes.Length; i++)
@@ -36,7 +37,7 @@ namespace NexusForever.Game.Entity
                 if (dyes[i] == 0)
                     continue;
 
-                DyeColorRampEntry entry = GameTableManager.Instance.DyeColorRamp?.GetEntry(dyes[i]);
+                DyeColorRampEntry entry = gameTableManager.DyeColorRamp?.GetEntry(dyes[i]);
                 if (entry == null)
                     throw new ArgumentException($"Unknown dye color ramp {dyes[i]}.", nameof(dyes));
 
@@ -60,7 +61,7 @@ namespace NexusForever.Game.Entity
                 if (ItemInfo?.Id == value)
                     return;
 
-                ItemInfo  = value.HasValue ? ItemManager.Instance.GetItemInfo(value.Value) : null;
+                ItemInfo  = value.HasValue ? itemManager?.GetItemInfo(value.Value) : null;
                 saveMask |= CostumeItemSaveMask.ItemId;
             }
         }
@@ -83,15 +84,23 @@ namespace NexusForever.Game.Entity
         private uint dyeData;
 
         private readonly ICostume costume;
+        private readonly IItemManager itemManager;
+        private readonly IGameTableManager gameTableManager;
 
         private CostumeItemSaveMask saveMask;
 
         /// <summary>
         /// Create a new <see cref="ICostumeItem"/> from an existing <see cref="CharacterCostumeItemModel"/> database model.
         /// </summary>
-        public CostumeItem(ICostume costume, CharacterCostumeItemModel model)
+        public CostumeItem(
+            ICostume costume,
+            CharacterCostumeItemModel model,
+            IItemManager itemManager = null,
+            IGameTableManager gameTableManager = null)
         {
             this.costume = costume;
+            this.itemManager = itemManager;
+            this.gameTableManager = gameTableManager;
             Slot         = (CostumeItemSlot)model.Slot;
             ItemSlot     = GetSlot(Slot);
             ItemId       = model.Item2Id > 0 ? model.Item2Id : null;
@@ -103,13 +112,20 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="ICostumeItem"/> from packet <see cref="ClientCostumeSave"/>.
         /// </summary>
-        public CostumeItem(ICostume costume, ClientCostumeSave.CostumeItem item, CostumeItemSlot slot)
+        public CostumeItem(
+            ICostume costume,
+            ClientCostumeSave.CostumeItem item,
+            CostumeItemSlot slot,
+            IItemManager itemManager = null,
+            IGameTableManager gameTableManager = null)
         {
             this.costume = costume;
+            this.itemManager = itemManager;
+            this.gameTableManager = gameTableManager;
             Slot         = slot;
             ItemSlot     = GetSlot(Slot);
             ItemId       = item.ItemId > 0 ? item.ItemId : null;
-            dyeData      = GenerateDyeMask(item.Dyes);
+            dyeData      = GenerateDyeMask(item.Dyes, gameTableManager);
 
             saveMask     = CostumeItemSaveMask.Create;
         }

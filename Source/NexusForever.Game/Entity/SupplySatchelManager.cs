@@ -15,16 +15,21 @@ namespace NexusForever.Game.Entity
         private const uint DefaultMaximumStackAmount = 100u;
 
         private readonly IPlayer player;
+        private readonly IGameTableManager gameTableManager;
         private readonly uint maximumStackAmount = DefaultMaximumStackAmount;
         private readonly Dictionary</* materialId */ushort, ITradeskillMaterial> tradeskillMaterials = new();
 
-        public SupplySatchelManager(IPlayer owner, CharacterModel model)
+        public SupplySatchelManager(
+            IPlayer owner,
+            CharacterModel model,
+            IGameTableManager gameTableManager)
         {
             player = owner;
+            this.gameTableManager = gameTableManager;
             maximumStackAmount = ResolveMaximumStackAmount(owner);
 
             foreach (CharacterTradeskillMaterialModel tradeskillMaterial in model.TradeskillMaterials)
-                tradeskillMaterials.Add(tradeskillMaterial.MaterialId, new TradeskillMaterial(tradeskillMaterial));
+                tradeskillMaterials.Add(tradeskillMaterial.MaterialId, new TradeskillMaterial(tradeskillMaterial, gameTableManager));
         }
 
         private static uint ResolveMaximumStackAmount(IPlayer owner)
@@ -84,7 +89,7 @@ namespace NexusForever.Game.Entity
                 amountAdded = AddAmountToMaterial(materialId, amount);
             else
             {
-                tradeskillMaterials.Add(materialId, new TradeskillMaterial(player.CharacterId, materialId));
+                tradeskillMaterials.Add(materialId, new TradeskillMaterial(player.CharacterId, materialId, gameTableManager));
                 amountAdded = AddAmountToMaterial(materialId, amount);
             }
 
@@ -110,7 +115,7 @@ namespace NexusForever.Game.Entity
                 amountAdded = AddAmountToMaterial(materialId, amount);
             else
             {
-                tradeskillMaterials.Add(materialId, new TradeskillMaterial(player.CharacterId, materialId));
+                tradeskillMaterials.Add(materialId, new TradeskillMaterial(player.CharacterId, materialId, gameTableManager));
                 amountAdded = AddAmountToMaterial(materialId, amount);
             }
 
@@ -153,7 +158,7 @@ namespace NexusForever.Game.Entity
                     return; // Swallow the issue for now.
             }
             else
-                tradeskillMaterials.Add(materialId, new TradeskillMaterial(player.CharacterId, materialId));
+                tradeskillMaterials.Add(materialId, new TradeskillMaterial(player.CharacterId, materialId, gameTableManager));
 
             RemoveAmount(materialId, amount);
         }
@@ -218,21 +223,21 @@ namespace NexusForever.Game.Entity
                 return false;
         }
 
-        private static bool TryGetMaterialEntry(IItem item, out TradeskillMaterialEntry entry)
+        private bool TryGetMaterialEntry(IItem item, out TradeskillMaterialEntry entry)
         {
             entry = null;
             uint itemId = item?.Info?.Entry?.Id ?? 0u;
             if (itemId == 0u)
                 return false;
 
-            entry = GameTableManager.Instance.TradeskillMaterial?.Entries?
+            entry = gameTableManager?.TradeskillMaterial?.Entries?
                 .SingleOrDefault(i => i.Item2IdStatRevolution == itemId);
             return entry != null && entry.Id <= ushort.MaxValue;
         }
 
-        private static bool TryGetMaterialEntry(ushort materialId, out TradeskillMaterialEntry entry)
+        private bool TryGetMaterialEntry(ushort materialId, out TradeskillMaterialEntry entry)
         {
-            entry = GameTableManager.Instance.TradeskillMaterial?.GetEntry(materialId);
+            entry = gameTableManager?.TradeskillMaterial?.GetEntry(materialId);
             return entry != null && entry.Item2IdStatRevolution != 0u;
         }
 

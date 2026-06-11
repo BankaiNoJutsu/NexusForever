@@ -6,9 +6,7 @@ namespace NexusForever.Game.Tests.Storefront;
 
 internal sealed class NoOpGlobalStorefrontManager : IGlobalStorefrontManager
 {
-    public static NoOpGlobalStorefrontManager Instance { get; } = new();
-
-    private NoOpGlobalStorefrontManager()
+    public NoOpGlobalStorefrontManager()
     {
     }
 

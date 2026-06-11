@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
@@ -12,174 +11,110 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Entity;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class TitleManagerTests
 {
     [Fact]
     public void Constructor_WithKnownCharacterTitle_LoadsPersistedTitleAndKeepsActiveTitle()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithCharacterTitle(new CharacterTitleEntry
-            {
-                Id = 21u
-            }))
-            .BuildServiceProvider();
-
-        try
+        GameTableManager gameTableManager = CreateGameTableManagerWithCharacterTitle(new CharacterTitleEntry
         {
-            var manager = new TitleManager(CreatePlayer(), CreatePersistedModel(activeTitleId: 21));
+            Id = 21u
+        });
 
-            Assert.True(manager.HasTitle(21));
-            Assert.Equal((ushort)21, manager.ActiveTitleId);
-            Assert.Single(manager);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        var manager = new TitleManager(CreatePlayer(), CreatePersistedModel(activeTitleId: 21), gameTableManager);
+
+        Assert.True(manager.HasTitle(21));
+        Assert.Equal((ushort)21, manager.ActiveTitleId);
+        Assert.Single(manager);
     }
 
     [Fact]
     public void Constructor_WithMissingCharacterTitleTable_SkipsPersistedTitleAndClearsActiveTitle()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithoutCharacterTitle())
-            .BuildServiceProvider();
+        GameTableManager gameTableManager = CreateGameTableManagerWithoutCharacterTitle();
 
-        try
-        {
-            var manager = new TitleManager(CreatePlayer(), CreatePersistedModel(activeTitleId: 21));
+        var manager = new TitleManager(CreatePlayer(), CreatePersistedModel(activeTitleId: 21), gameTableManager);
 
-            Assert.False(manager.HasTitle(21));
-            Assert.Equal((ushort)0, manager.ActiveTitleId);
-            Assert.Empty(manager);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.False(manager.HasTitle(21));
+        Assert.Equal((ushort)0, manager.ActiveTitleId);
+        Assert.Empty(manager);
     }
 
     [Fact]
     public void AddTitle_WithMissingCharacterTitleTable_ThrowsBeforeAchievementOrPacket()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithoutCharacterTitle())
-            .BuildServiceProvider();
+        GameTableManager gameTableManager = CreateGameTableManagerWithoutCharacterTitle();
 
-        try
-        {
-            IPlayer player = CreatePlayer(
-                out RecordingDispatchProxy<IGameSession> sessionProxy,
-                out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy);
-            var manager = new TitleManager(player, new CharacterModel { Id = 42ul });
+        IPlayer player = CreatePlayer(
+            out RecordingDispatchProxy<IGameSession> sessionProxy,
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy);
+        var manager = new TitleManager(player, new CharacterModel { Id = 42ul }, gameTableManager);
 
-            Assert.Throws<InvalidPacketValueException>(() => manager.AddTitle(21));
+        Assert.Throws<InvalidPacketValueException>(() => manager.AddTitle(21));
 
-            Assert.False(manager.HasTitle(21));
-            Assert.Empty(achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
-            Assert.Empty(GetMessages<ServerTitleUpdate>(sessionProxy));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.False(manager.HasTitle(21));
+        Assert.Empty(achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+        Assert.Empty(GetMessages<ServerTitleUpdate>(sessionProxy));
     }
 
     [Fact]
     public void AddTitle_WithKnownCharacterTitle_AddsTitleAndSendsUpdate()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithCharacterTitle(new CharacterTitleEntry
-            {
-                Id = 21u
-            }))
-            .BuildServiceProvider();
-
-        try
+        GameTableManager gameTableManager = CreateGameTableManagerWithCharacterTitle(new CharacterTitleEntry
         {
-            IPlayer player = CreatePlayer(
-                out RecordingDispatchProxy<IGameSession> sessionProxy,
-                out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy);
-            var manager = new TitleManager(player, new CharacterModel { Id = 42ul });
+            Id = 21u
+        });
 
-            manager.AddTitle(21);
+        IPlayer player = CreatePlayer(
+            out RecordingDispatchProxy<IGameSession> sessionProxy,
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy);
+        var manager = new TitleManager(player, new CharacterModel { Id = 42ul }, gameTableManager);
 
-            Assert.True(manager.HasTitle(21));
-            Assert.Single(achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
-            ServerTitleUpdate update = Assert.Single(GetMessages<ServerTitleUpdate>(sessionProxy));
-            Assert.Equal((ushort)21, update.TitleId);
-            Assert.False(update.Alreadyowned);
-            Assert.False(update.Revoked);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        manager.AddTitle(21);
+
+        Assert.True(manager.HasTitle(21));
+        Assert.Single(achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+        ServerTitleUpdate update = Assert.Single(GetMessages<ServerTitleUpdate>(sessionProxy));
+        Assert.Equal((ushort)21, update.TitleId);
+        Assert.False(update.Alreadyowned);
+        Assert.False(update.Revoked);
     }
 
     [Fact]
     public void RevokeTitle_WithMissingCharacterTitleTable_ThrowsBeforeRevocationOrPacket()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithCharacterTitle(new CharacterTitleEntry
-            {
-                Id = 21u
-            }))
-            .BuildServiceProvider();
-
-        try
+        GameTableManager gameTableManager = CreateGameTableManagerWithCharacterTitle(new CharacterTitleEntry
         {
-            IPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
-            var manager = new TitleManager(player, CreatePersistedModel(activeTitleId: 21));
+            Id = 21u
+        });
 
-            LegacyServiceProvider.Provider = new ServiceCollection()
-                .AddSingleton(CreateGameTableManagerWithoutCharacterTitle())
-                .BuildServiceProvider();
+        IPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        var manager = new TitleManager(player, CreatePersistedModel(activeTitleId: 21), gameTableManager);
 
-            Assert.Throws<InvalidPacketValueException>(() => manager.RevokeTitle(21));
+        SetPrivateField(manager, "gameTableManager", CreateGameTableManagerWithoutCharacterTitle());
 
-            Assert.True(manager.HasTitle(21));
-            Assert.Equal((ushort)21, manager.ActiveTitleId);
-            Assert.Empty(GetMessages<ServerTitleUpdate>(sessionProxy));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Throws<InvalidPacketValueException>(() => manager.RevokeTitle(21));
+
+        Assert.True(manager.HasTitle(21));
+        Assert.Equal((ushort)21, manager.ActiveTitleId);
+        Assert.Empty(GetMessages<ServerTitleUpdate>(sessionProxy));
     }
 
     [Fact]
     public void AddAllTitles_WithMissingCharacterTitleTable_SendsCurrentEmptyTitleList()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithoutCharacterTitle())
-            .BuildServiceProvider();
+        GameTableManager gameTableManager = CreateGameTableManagerWithoutCharacterTitle();
 
-        try
-        {
-            IPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
-            var manager = new TitleManager(player, new CharacterModel { Id = 42ul });
+        IPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        var manager = new TitleManager(player, new CharacterModel { Id = 42ul }, gameTableManager);
 
-            manager.AddAllTitles();
+        manager.AddAllTitles();
 
-            ServerTitles titles = Assert.Single(GetMessages<ServerTitles>(sessionProxy));
-            Assert.Empty(titles.Titles);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        ServerTitles titles = Assert.Single(GetMessages<ServerTitles>(sessionProxy));
+        Assert.Empty(titles.Titles);
     }
 
     private static IPlayer CreatePlayer()

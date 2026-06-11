@@ -1,14 +1,19 @@
 ﻿using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
 using NetworkBuybackItem = NexusForever.Network.World.Message.Model.Shared.BuybackItem;
 
 namespace NexusForever.Game.Entity
 {
-    public sealed class BuybackManager : Singleton<BuybackManager>, IBuybackManager
+    public sealed class BuybackManager : IBuybackManager
     {
         private readonly Dictionary<ulong /*CharacterId*/, IBuybackInfo> buybackInfo = new();
+        private readonly IPlayerManager playerManager;
+
+        public BuybackManager(IPlayerManager playerManager = null)
+        {
+            this.playerManager = playerManager;
+        }
 
         public void Update(double lastTick)
         {
@@ -22,7 +27,7 @@ namespace NexusForever.Game.Entity
 
                     info.RemoveItem(buybackItem.UniqueId);
 
-                    IPlayer player = PlayerManager.Instance.GetPlayer(characterId);
+                    IPlayer player = playerManager?.GetPlayer(characterId);
                     player?.Session?.EnqueueMessageEncrypted(new ServerBuybackItemRemoved
                     {
                         UniqueId = buybackItem.UniqueId

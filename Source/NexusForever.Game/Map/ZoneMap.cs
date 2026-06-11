@@ -28,21 +28,23 @@ namespace NexusForever.Game.Map
         private readonly Dictionary<ushort /*ZoneMapHexGroupId*/, bool /*new*/> zoneMapHexGroups = new();
 
         private readonly IPlayer player;
+        private readonly IGameTableManager gameTableManager;
 
         /// <summary>
         /// Create a new <see cref="IZoneMap"/> from supplied <see cref="MapZoneEntry"/>.
         /// </summary>
-        public ZoneMap(MapZoneEntry mapZone, IPlayer owner)
+        public ZoneMap(MapZoneEntry mapZone, IPlayer owner, IGameTableManager gameTableManager = null)
         {
             player       = owner;
+            this.gameTableManager = gameTableManager;
 
             entry        = mapZone;
             width        = (ushort)(mapZone.HexLimX - mapZone.HexMinX + 1);
             height       = (ushort)(mapZone.HexLimY - mapZone.HexMinY + 1);
             ushort wh    = (ushort)(width * height);
             size         = (ushort)((wh % 8u > 0u ? 8u : 0u) + wh);
-            GameTable<MapZoneHexGroupEntry> hexGroupTable = GameTableManager.Instance.MapZoneHexGroup;
-            GameTable<MapZoneHexGroupEntryEntry> hexGroupEntryTable = GameTableManager.Instance.MapZoneHexGroupEntry;
+            GameTable<MapZoneHexGroupEntry> hexGroupTable = this.gameTableManager?.MapZoneHexGroup;
+            GameTable<MapZoneHexGroupEntryEntry> hexGroupEntryTable = this.gameTableManager?.MapZoneHexGroupEntry;
 
             maxHexGroups = (ushort)(hexGroupTable?.Entries.Count(m => m.MapZoneId == entry.Id) ?? 0);
             zoneMapBits  = new NetworkBitArray(size, NetworkBitArray.BitOrder.LeastSignificantBit);
@@ -91,7 +93,7 @@ namespace NexusForever.Game.Map
         /// </summary>
         public void AddHexGroup(ushort hexGroupId, bool sendUpdate = true)
         {
-            GameTable<MapZoneHexGroupEntryEntry> hexGroupEntryTable = GameTableManager.Instance.MapZoneHexGroupEntry;
+            GameTable<MapZoneHexGroupEntryEntry> hexGroupEntryTable = gameTableManager?.MapZoneHexGroupEntry;
             if (hexGroupEntryTable == null)
                 return;
 
@@ -134,8 +136,8 @@ namespace NexusForever.Game.Map
         private int GetCurrentHexCount()
         {
             int count = 0;
-            GameTable<MapZoneHexGroupEntry> hexGroupTable = GameTableManager.Instance.MapZoneHexGroup;
-            GameTable<MapZoneHexGroupEntryEntry> hexGroupEntryTable = GameTableManager.Instance.MapZoneHexGroupEntry;
+            GameTable<MapZoneHexGroupEntry> hexGroupTable = gameTableManager?.MapZoneHexGroup;
+            GameTable<MapZoneHexGroupEntryEntry> hexGroupEntryTable = gameTableManager?.MapZoneHexGroupEntry;
             if (hexGroupTable == null || hexGroupEntryTable == null)
                 return count;
 

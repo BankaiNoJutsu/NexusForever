@@ -1,7 +1,6 @@
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Achievement;
@@ -15,199 +14,141 @@ using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Entity;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class XpManagerTests
 {
     [Fact]
     public void CalculateLevelForXp_UsesHighestLevelAtOrBelowTotalXp()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new XpPerLevelEntry { Id = 1u, MinXpForLevel = 0u },
             new XpPerLevelEntry { Id = 2u, MinXpForLevel = 100u },
             new XpPerLevelEntry { Id = 3u, MinXpForLevel = 300u },
             new XpPerLevelEntry { Id = 4u, MinXpForLevel = 600u });
 
-        try
-        {
-            Assert.Equal(1, XpManager.CalculateLevelForXp(0u));
-            Assert.Equal(2, XpManager.CalculateLevelForXp(299u));
-            Assert.Equal(3, XpManager.CalculateLevelForXp(300u));
-            Assert.Equal(4, XpManager.CalculateLevelForXp(600u));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(1, XpManager.CalculateLevelForXp(0u, gameTableManager));
+        Assert.Equal(2, XpManager.CalculateLevelForXp(299u, gameTableManager));
+        Assert.Equal(3, XpManager.CalculateLevelForXp(300u, gameTableManager));
+        Assert.Equal(4, XpManager.CalculateLevelForXp(600u, gameTableManager));
     }
 
     [Fact]
     public void CalculateLevelForXp_WithMissingXpTableReturnsLevelOne()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProviderWithoutXpPerLevel();
+        GameTableManager gameTableManager = CreateGameTableManagerWithoutXpPerLevel();
 
-        try
-        {
-            Assert.Equal(1, XpManager.CalculateLevelForXp(1000u));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(1, XpManager.CalculateLevelForXp(1000u, gameTableManager));
     }
 
     [Fact]
     public void ResolveStoredLevel_RepairsZeroLevelFromTotalXpWithoutLoweringStoredLevel()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new XpPerLevelEntry { Id = 1u, MinXpForLevel = 0u },
             new XpPerLevelEntry { Id = 2u, MinXpForLevel = 100u },
             new XpPerLevelEntry { Id = 3u, MinXpForLevel = 300u },
             new XpPerLevelEntry { Id = 4u, MinXpForLevel = 600u });
 
-        try
-        {
-            Assert.Equal(3, XpManager.ResolveStoredLevel(0, 300u));
-            Assert.Equal(4, XpManager.ResolveStoredLevel(4, 300u));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(3, XpManager.ResolveStoredLevel(0, 300u, gameTableManager));
+        Assert.Equal(4, XpManager.ResolveStoredLevel(4, 300u, gameTableManager));
     }
 
     [Fact]
     public void GrantXp_WithMissingNextLevelRowAddsExperienceWithoutLeveling()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new XpPerLevelEntry { Id = 1u, MinXpForLevel = 0u });
 
-        try
-        {
-            IPlayer player = CreatePlayer(level: 1u, characterClass: Class.Warrior, out var sessionProxy, out var achievementManagerProxy, out var spellManagerProxy);
-            var manager = new XpManager(player, new CharacterModel { TotalXp = 0u });
+        IPlayer player = CreatePlayer(level: 1u, characterClass: Class.Warrior, out var sessionProxy, out var achievementManagerProxy, out var spellManagerProxy);
+        var manager = new XpManager(player, new CharacterModel { TotalXp = 0u }, gameTableManager);
 
-            manager.GrantXp(100u);
+        manager.GrantXp(100u);
 
-            Assert.Equal(100u, manager.TotalXp);
-            Assert.Equal(1u, player.Level);
+        Assert.Equal(100u, manager.TotalXp);
+        Assert.Equal(1u, player.Level);
 
-            RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-            var experienceGained = Assert.IsType<ServerExperienceGained>(sessionCall.Arguments[0]);
-            Assert.Equal(100u, experienceGained.TotalXpGained);
+        RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        var experienceGained = Assert.IsType<ServerExperienceGained>(sessionCall.Arguments[0]);
+        Assert.Equal(100u, experienceGained.TotalXpGained);
 
-            Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.SetAchievementProgress)));
-            Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
-            Assert.Empty(spellManagerProxy.GetInvocations(nameof(ISpellManager.GrantSpells)));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.SetAchievementProgress)));
+        Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+        Assert.Empty(spellManagerProxy.GetInvocations(nameof(ISpellManager.GrantSpells)));
     }
 
     [Fact]
     public void SetLevel_IncreasingLevelAwardsProgressionAndPositiveExperienceDelta()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new XpPerLevelEntry { Id = 3u, MinXpForLevel = 300u },
             new XpPerLevelEntry { Id = 4u, MinXpForLevel = 600u });
 
-        try
-        {
-            IPlayer player = CreatePlayer(level: 3u, characterClass: Class.Warrior, out var sessionProxy, out var achievementManagerProxy, out var spellManagerProxy);
-            var manager = new XpManager(player, new CharacterModel { TotalXp = 300u });
+        IPlayer player = CreatePlayer(level: 3u, characterClass: Class.Warrior, out var sessionProxy, out var achievementManagerProxy, out var spellManagerProxy);
+        var manager = new XpManager(player, new CharacterModel { TotalXp = 300u }, gameTableManager);
 
-            manager.SetLevel(4);
+        manager.SetLevel(4);
 
-            Assert.Equal(600u, manager.TotalXp);
-            Assert.Equal(4u, player.Level);
+        Assert.Equal(600u, manager.TotalXp);
+        Assert.Equal(4u, player.Level);
 
-            RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-            var experienceGained = Assert.IsType<ServerExperienceGained>(sessionCall.Arguments[0]);
-            Assert.Equal(300u, experienceGained.TotalXpGained);
+        RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        var experienceGained = Assert.IsType<ServerExperienceGained>(sessionCall.Arguments[0]);
+        Assert.Equal(300u, experienceGained.TotalXpGained);
 
-            RecordingDispatchProxy<ICharacterAchievementManager>.Invocation achievementCall =
-                Assert.Single(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.SetAchievementProgress)));
-            Assert.Same(player, achievementCall.Arguments[0]);
-            Assert.Equal(AchievementType.CharacterLevel, achievementCall.Arguments[1]);
-            Assert.Equal(0u, achievementCall.Arguments[2]);
-            Assert.Equal(0u, achievementCall.Arguments[3]);
-            Assert.Equal(4u, achievementCall.Arguments[4]);
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation achievementCall =
+            Assert.Single(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.SetAchievementProgress)));
+        Assert.Same(player, achievementCall.Arguments[0]);
+        Assert.Equal(AchievementType.CharacterLevel, achievementCall.Arguments[1]);
+        Assert.Equal(0u, achievementCall.Arguments[2]);
+        Assert.Equal(0u, achievementCall.Arguments[3]);
+        Assert.Equal(4u, achievementCall.Arguments[4]);
 
-            Assert.Single(spellManagerProxy.GetInvocations(nameof(ISpellManager.GrantSpells)));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Single(spellManagerProxy.GetInvocations(nameof(ISpellManager.GrantSpells)));
     }
 
     [Fact]
     public void SetLevel_WithMissingTargetLevelRowDoesNotMutateOrSend()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new XpPerLevelEntry { Id = 3u, MinXpForLevel = 300u });
 
-        try
-        {
-            IPlayer player = CreatePlayer(level: 3u, characterClass: Class.Warrior, out var sessionProxy, out var achievementManagerProxy, out var spellManagerProxy);
-            var manager = new XpManager(player, new CharacterModel { TotalXp = 300u });
+        IPlayer player = CreatePlayer(level: 3u, characterClass: Class.Warrior, out var sessionProxy, out var achievementManagerProxy, out var spellManagerProxy);
+        var manager = new XpManager(player, new CharacterModel { TotalXp = 300u }, gameTableManager);
 
-            manager.SetLevel(4);
+        manager.SetLevel(4);
 
-            Assert.Equal(300u, manager.TotalXp);
-            Assert.Equal(3u, player.Level);
-            Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-            Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.SetAchievementProgress)));
-            Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
-            Assert.Empty(spellManagerProxy.GetInvocations(nameof(ISpellManager.GrantSpells)));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(300u, manager.TotalXp);
+        Assert.Equal(3u, player.Level);
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.SetAchievementProgress)));
+        Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+        Assert.Empty(spellManagerProxy.GetInvocations(nameof(ISpellManager.GrantSpells)));
     }
 
     [Fact]
     public void SetLevel_DecreasingLevelDoesNotRegressProgressionOrWrapExperienceDelta()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new XpPerLevelEntry { Id = 3u, MinXpForLevel = 300u },
             new XpPerLevelEntry { Id = 4u, MinXpForLevel = 600u });
 
-        try
-        {
-            IPlayer player = CreatePlayer(level: 4u, characterClass: Class.Warrior, out var sessionProxy, out var achievementManagerProxy, out var spellManagerProxy);
-            var manager = new XpManager(player, new CharacterModel { TotalXp = 600u });
+        IPlayer player = CreatePlayer(level: 4u, characterClass: Class.Warrior, out var sessionProxy, out var achievementManagerProxy, out var spellManagerProxy);
+        var manager = new XpManager(player, new CharacterModel { TotalXp = 600u }, gameTableManager);
 
-            manager.SetLevel(3);
+        manager.SetLevel(3);
 
-            Assert.Equal(300u, manager.TotalXp);
-            Assert.Equal(3u, player.Level);
+        Assert.Equal(300u, manager.TotalXp);
+        Assert.Equal(3u, player.Level);
 
-            RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-            var experienceGained = Assert.IsType<ServerExperienceGained>(sessionCall.Arguments[0]);
-            Assert.Equal(0u, experienceGained.TotalXpGained);
+        RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        var experienceGained = Assert.IsType<ServerExperienceGained>(sessionCall.Arguments[0]);
+        Assert.Equal(0u, experienceGained.TotalXpGained);
 
-            Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.SetAchievementProgress)));
-            Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
-            Assert.Empty(spellManagerProxy.GetInvocations(nameof(ISpellManager.GrantSpells)));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.SetAchievementProgress)));
+        Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+        Assert.Empty(spellManagerProxy.GetInvocations(nameof(ISpellManager.GrantSpells)));
     }
 
     private static IPlayer CreatePlayer(
@@ -232,7 +173,7 @@ public class XpManagerTests
         return player;
     }
 
-    private static IServiceProvider BuildGameTableProvider(params XpPerLevelEntry[] xpPerLevelEntries)
+    private static GameTableManager CreateGameTableManager(params XpPerLevelEntry[] xpPerLevelEntries)
     {
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
@@ -240,21 +181,17 @@ public class XpManagerTests
         }));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.XpPerLevel), CreateGameTable(xpPerLevelEntries));
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
-    private static IServiceProvider BuildGameTableProviderWithoutXpPerLevel()
+    private static GameTableManager CreateGameTableManagerWithoutXpPerLevel()
     {
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
             GameTablePath = string.Empty
         }));
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

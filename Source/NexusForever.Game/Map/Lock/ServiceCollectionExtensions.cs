@@ -8,7 +8,7 @@ namespace NexusForever.Game.Map.Lock
     {
         public static void AddGameMapLock(this IServiceCollection sc)
         {
-            sc.AddSingletonLegacy<IMapLockManager, MapLockManager>();
+            sc.AddSingleton<IMapLockManager, MapLockManager>();
             sc.AddTransientFactory<IMapLockCollection, MapLockCollection>();
 
             sc.AddSingleton<IFactoryInterface<IMapLock>, FactoryInterface<IMapLock>>();

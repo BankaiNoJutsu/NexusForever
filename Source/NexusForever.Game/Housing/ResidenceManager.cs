@@ -2,7 +2,6 @@
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Housing;
-using NexusForever.Game.Character;
 using NexusForever.Game.Static.Housing;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
@@ -19,15 +18,19 @@ namespace NexusForever.Game.Housing
         public IResidence Residence { get; private set; }
 
         private readonly IPlayer owner;
+        private readonly IGlobalResidenceManager globalResidenceManager;
+        private readonly ICharacterManager characterManager;
         private ResidenceNeighborInviteInfo pendingNeighborInvite;
 
         /// <summary>
         /// Create a new <see cref="IResidenceManager"/>.
         /// </summary>
-        public ResidenceManager(IPlayer player)
+        public ResidenceManager(IPlayer player, IGlobalResidenceManager globalResidenceManager = null, ICharacterManager characterManager = null)
         {
-            owner     = player;
-            Residence = GlobalResidenceManager.Instance.GetResidenceByOwner(owner.CharacterId);
+            owner                       = player;
+            this.globalResidenceManager = globalResidenceManager;
+            this.characterManager       = characterManager;
+            Residence                   = globalResidenceManager?.GetResidenceByOwner(owner.CharacterId);
         }
 
         /// <summary>
@@ -67,7 +70,7 @@ namespace NexusForever.Game.Housing
             if (blocked != null)
                 throw new HousingException("Player does not meet retail housing unlock requirements.");
 
-            Residence ??= GlobalResidenceManager.Instance.CreateResidence(owner);
+            Residence ??= GetGlobalResidenceManager().CreateResidence(owner);
             return Residence;
         }
 
@@ -170,11 +173,11 @@ namespace NexusForever.Game.Housing
                 return;
             }
 
-            ushort realmId = RealmContext.Instance.RealmId;
+            ushort realmId = owner.Identity.RealmId;
             foreach ((ulong characterId, byte permissionLevel) in Residence.GetNeighbors())
             {
-                ICharacter character = CharacterManager.Instance.GetCharacter(characterId);
-                IResidence neighborResidence = GlobalResidenceManager.Instance.GetResidenceByOwner(characterId);
+                ICharacter character = GetCharacterManager().GetCharacter(characterId);
+                IResidence neighborResidence = GetGlobalResidenceManager().GetResidenceByOwner(characterId);
                 if (character == null || neighborResidence == null)
                     continue;
 
@@ -189,6 +192,16 @@ namespace NexusForever.Game.Housing
             }
 
             owner.Session.EnqueueMessageEncrypted(packet);
+        }
+
+        private IGlobalResidenceManager GetGlobalResidenceManager()
+        {
+            return globalResidenceManager ?? throw new InvalidOperationException("ResidenceManager requires an IGlobalResidenceManager.");
+        }
+
+        private ICharacterManager GetCharacterManager()
+        {
+            return characterManager ?? throw new InvalidOperationException("ResidenceManager requires an ICharacterManager.");
         }
     }
 }

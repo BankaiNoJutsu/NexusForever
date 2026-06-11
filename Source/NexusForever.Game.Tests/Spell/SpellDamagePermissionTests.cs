@@ -1,42 +1,34 @@
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement.Force;
+using NexusForever.Game.Abstract.Housing;
+using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Static.Spell.Effect;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Combat;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Spell;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class SpellDamagePermissionTests : IDisposable
 {
-    private readonly IServiceProvider previousProvider;
     private readonly ISpellEffectDependencyResolver previousDependencyResolver;
-    private readonly ServiceProvider provider;
 
     public SpellDamagePermissionTests()
     {
-        previousProvider = LegacyServiceProvider.Provider;
-        previousDependencyResolver = SpellHandler.InitialiseDependencyResolver(null);
-        provider = new ServiceCollection()
-            .AddSingleton<IFactory<IDamageCalculator>>(new StaticFactory<IDamageCalculator>(new FakeDamageCalculator(17u, 11u)))
-            .BuildServiceProvider();
-        LegacyServiceProvider.Provider = provider;
+        previousDependencyResolver = SpellHandler.InitialiseDependencyResolver(new FakeSpellEffectDependencyResolver(new FakeDamageCalculator(17u, 11u)));
     }
 
     public void Dispose()
     {
         SpellHandler.InitialiseDependencyResolver(previousDependencyResolver);
-        LegacyServiceProvider.Provider = previousProvider;
-        provider.Dispose();
     }
 
     [Fact]
@@ -74,7 +66,7 @@ public class SpellDamagePermissionTests : IDisposable
     }
 
     [Fact]
-    public void HandleEffectDamage_UsesInitialisedDependencyResolverBeforeLegacyProvider()
+    public void HandleEffectDamage_UsesLatestInitialisedDependencyResolver()
     {
         var injectedCalculator = new FakeDamageCalculator(23u, 19u);
         SpellHandler.InitialiseDependencyResolver(new FakeSpellEffectDependencyResolver(injectedCalculator));
@@ -150,18 +142,6 @@ public class SpellDamagePermissionTests : IDisposable
             throw new NotSupportedException();
     }
 
-    private sealed class StaticFactory<T> : IFactory<T> where T : class
-    {
-        private readonly T instance;
-
-        public StaticFactory(T instance)
-        {
-            this.instance = instance;
-        }
-
-        public T Resolve() => instance;
-    }
-
     private sealed class FakeSpellEffectDependencyResolver : ISpellEffectDependencyResolver
     {
         private readonly IDamageCalculator damageCalculator;
@@ -182,6 +162,36 @@ public class SpellDamagePermissionTests : IDisposable
         }
 
         public IForcedMovementGenerator GetForcedMovementGenerator()
+        {
+            return null;
+        }
+
+        public IAssetManager GetAssetManager()
+        {
+            return null;
+        }
+
+        public IGlobalAchievementManager GetGlobalAchievementManager()
+        {
+            return null;
+        }
+
+        public IGlobalResidenceManager GetGlobalResidenceManager()
+        {
+            return null;
+        }
+
+        public IMapLockManager GetMapLockManager()
+        {
+            return null;
+        }
+
+        public IGlobalSpellManager GetGlobalSpellManager()
+        {
+            return null;
+        }
+
+        public IGameTableManager GetGameTableManager()
         {
             return null;
         }

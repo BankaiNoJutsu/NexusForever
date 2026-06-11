@@ -44,7 +44,7 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="IPetCustomisation"/> from existing <see cref="CharacterPetCustomisationModel"/> database model.
         /// </summary>
-        public PetCustomisation(CharacterPetCustomisationModel model)
+        public PetCustomisation(CharacterPetCustomisationModel model, GameTable<PetFlairEntry> petFlairTable)
         {
             Owner    = model.Id;
             Type     = (PetType)model.Type;
@@ -57,7 +57,7 @@ namespace NexusForever.Game.Entity
                 if (flairId == 0)
                     continue;
 
-                flairs[i] = GameTableManager.Instance.PetFlair?.GetEntry(flairId);
+                flairs[i] = petFlairTable?.GetEntry(flairId);
             }
         }
 

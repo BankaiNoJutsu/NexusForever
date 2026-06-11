@@ -1,11 +1,11 @@
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Database;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Server;
 using NexusForever.Game.Static.Pregame;
@@ -15,14 +15,12 @@ using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Pregame;
 using NexusForever.Network.World.Message.Static;
-using NexusForever.Shared;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Character;
 using NexusForever.WorldServer.Network.Message.Handler.Misc;
 
 namespace NexusForever.Game.Tests.Pregame;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class RealmTransferProtocolTests
 {
     [Fact]
@@ -267,54 +265,32 @@ public class RealmTransferProtocolTests
     [Fact]
     public void ClientSelectRealmHandler_IgnoresCurrentRealmSelection()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = CreateRealmProvider(1);
-        LegacyServiceProvider.Provider = provider;
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        IServerManager serverManager = CreateServerManager(CreateServer(1, isOnline: false));
+        IDatabaseManager databaseManager = RecordingDispatchProxy<IDatabaseManager>.Create(out _);
+        var handler = new ClientSelectRealmHandler(serverManager, databaseManager, CreateRealmContext(1));
 
-        try
-        {
-            IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
-            IServerManager serverManager = CreateServerManager(CreateServer(1, isOnline: false));
-            IDatabaseManager databaseManager = RecordingDispatchProxy<IDatabaseManager>.Create(out _);
-            var handler = new ClientSelectRealmHandler(serverManager, databaseManager);
+        handler.HandleMessage(session, CreateSelectRealm(1u));
 
-            handler.HandleMessage(session, CreateSelectRealm(1u));
-
-            Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
     }
 
     [Fact]
     public void ClientSelectRealmHandler_OfflineRealmSendsServerDownTransferResult()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = CreateRealmProvider(1);
-        LegacyServiceProvider.Provider = provider;
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        IServerManager serverManager = CreateServerManager(CreateServer(2, isOnline: false));
+        IDatabaseManager databaseManager = RecordingDispatchProxy<IDatabaseManager>.Create(out _);
+        var handler = new ClientSelectRealmHandler(serverManager, databaseManager, CreateRealmContext(1));
 
-        try
-        {
-            IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
-            IServerManager serverManager = CreateServerManager(CreateServer(2, isOnline: false));
-            IDatabaseManager databaseManager = RecordingDispatchProxy<IDatabaseManager>.Create(out _);
-            var handler = new ClientSelectRealmHandler(serverManager, databaseManager);
+        handler.HandleMessage(session, CreateSelectRealm(2u));
 
-            handler.HandleMessage(session, CreateSelectRealm(2u));
-
-            ServerRealmTransferResult result = sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .Select(invocation => invocation.Arguments[0])
-                .OfType<ServerRealmTransferResult>()
-                .Single();
-            Assert.Equal(CharacterModifyResult.RealmTransferFailed_ServerDown, result.Result);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        ServerRealmTransferResult result = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0])
+            .OfType<ServerRealmTransferResult>()
+            .Single();
+        Assert.Equal(CharacterModifyResult.RealmTransferFailed_ServerDown, result.Result);
     }
 
     private static byte[] WritePacket(Action<GamePacketWriter> write)
@@ -335,13 +311,11 @@ public class RealmTransferProtocolTests
         return stream.ToArray();
     }
 
-    private static ServiceProvider CreateRealmProvider(ushort realmId)
+    private static IRealmContext CreateRealmContext(ushort realmId)
     {
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), realmId);
-        return new ServiceCollection()
-            .AddSingleton(realmContext)
-            .BuildServiceProvider();
+        return realmContext;
     }
 
     private static IServerManager CreateServerManager(params IServerInfo[] servers)

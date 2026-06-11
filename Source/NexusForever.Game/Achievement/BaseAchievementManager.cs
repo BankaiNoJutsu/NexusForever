@@ -2,10 +2,10 @@
 using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Game.Entity;
-using NexusForever.Game.Prerequisite;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.GameTable.Model;
@@ -19,6 +19,22 @@ namespace NexusForever.Game.Achievement
 
         protected abstract ulong OwnerId { get; }
         protected Dictionary<ushort, IAchievement> achievements = new();
+        private readonly IDisableManager disableManager;
+        private readonly IGlobalAchievementManager globalAchievementManager;
+        private readonly IPrerequisiteManager prerequisiteManager;
+        private readonly IPlayerManager playerManager;
+
+        protected BaseAchievementManager(
+            IDisableManager disableManager = null,
+            IGlobalAchievementManager globalAchievementManager = null,
+            IPrerequisiteManager prerequisiteManager = null,
+            IPlayerManager playerManager = null)
+        {
+            this.disableManager            = disableManager;
+            this.globalAchievementManager = globalAchievementManager;
+            this.prerequisiteManager      = prerequisiteManager;
+            this.playerManager            = playerManager;
+        }
 
         /// <summary>
         /// Initialise a collection of existing achievement database models.
@@ -27,7 +43,7 @@ namespace NexusForever.Game.Achievement
         {
             foreach (T model in models)
             {
-                IAchievementInfo info = GlobalAchievementManager.Instance.GetAchievement(model.AchievementId);
+                IAchievementInfo info = GetGlobalAchievementManager().GetAchievement(model.AchievementId);
                 if (info == null)
                     throw new DatabaseDataException($"{(isPlayer ? "Player" : "Guild")} {model.Id} has invalid achievement {model.AchievementId} stored!");
 
@@ -93,7 +109,7 @@ namespace NexusForever.Game.Achievement
         /// </summary>
         public void GrantAchievement(ushort id)
         {
-            IAchievementInfo info = GlobalAchievementManager.Instance.GetAchievement(id);
+            IAchievementInfo info = GetGlobalAchievementManager().GetAchievement(id);
             if (info == null)
                 throw new ArgumentException();
 
@@ -164,7 +180,7 @@ namespace NexusForever.Game.Achievement
             if (HasCompletedAchievement(info.Id))
                 return false;
 
-            if (DisableManager.Instance.IsDisabled(DisableType.Achievement, info.Id))
+            if (IsDisabled(DisableType.Achievement, info.Id))
                 return false;
 
             bool sendUpdate = false;
@@ -243,7 +259,7 @@ namespace NexusForever.Game.Achievement
             if (HasCompletedAchievement(info.Id))
                 return false;
 
-            if (DisableManager.Instance.IsDisabled(DisableType.Achievement, info.Id))
+            if (IsDisabled(DisableType.Achievement, info.Id))
                 return false;
 
             if (info.ChecklistEntries.Count != 0)
@@ -264,21 +280,26 @@ namespace NexusForever.Game.Achievement
             return true;
         }
 
+        private bool IsDisabled(DisableType type, uint objectId)
+        {
+            return disableManager?.IsDisabled(type, objectId) == true;
+        }
+
         /// <summary>
         /// Check if <see cref="AchievementEntry"/> can be updated as <see cref="IPlayer"/> with supplied object ids.
         /// </summary>
         private bool CanUpdateAchievement(IPlayer player, AchievementEntry entry, uint objectId, uint objectIdAlt)
         {
-            if (entry.PrerequisiteIdServer != 0u && !PrerequisiteManager.Instance.Meets(player, entry.PrerequisiteIdServer))
+            if (entry.PrerequisiteIdServer != 0u && !GetPrerequisiteManager().Meets(player, entry.PrerequisiteIdServer))
                 return false;
             
-            if (entry.PrerequisiteId != 0u && !PrerequisiteManager.Instance.Meets(player, entry.PrerequisiteId))
+            if (entry.PrerequisiteId != 0u && !GetPrerequisiteManager().Meets(player, entry.PrerequisiteId))
                 return false;
 
-            if (entry.PrerequisiteIdObjective != 0u && !PrerequisiteManager.Instance.Meets(player, entry.PrerequisiteIdObjective))
+            if (entry.PrerequisiteIdObjective != 0u && !GetPrerequisiteManager().Meets(player, entry.PrerequisiteIdObjective))
                 return false;
 
-            if (entry.PrerequisiteIdObjectiveAlt != 0u && !PrerequisiteManager.Instance.Meets(player, entry.PrerequisiteIdObjectiveAlt))
+            if (entry.PrerequisiteIdObjectiveAlt != 0u && !GetPrerequisiteManager().Meets(player, entry.PrerequisiteIdObjectiveAlt))
                 return false;
 
             if ((AchievementType)entry.AchievementTypeId == AchievementType.EnterWorldZone
@@ -313,10 +334,10 @@ namespace NexusForever.Game.Achievement
         /// </summary>
         private bool CanUpdateChecklist(IPlayer player, AchievementChecklistEntry entry, uint objectId, uint objectIdAlt)
         {
-            if (entry.PrerequisiteId != 0u && !PrerequisiteManager.Instance.Meets(player, entry.PrerequisiteId))
+            if (entry.PrerequisiteId != 0u && !GetPrerequisiteManager().Meets(player, entry.PrerequisiteId))
                 return false;
             // no checklist entry has PrerequisiteIdAlt set
-            if (entry.PrerequisiteIdAlt != 0u && !PrerequisiteManager.Instance.Meets(player, entry.PrerequisiteIdAlt))
+            if (entry.PrerequisiteIdAlt != 0u && !GetPrerequisiteManager().Meets(player, entry.PrerequisiteIdAlt))
                 return false;
 
             if (entry.ObjectId != 0u && entry.ObjectId != objectId)
@@ -343,7 +364,7 @@ namespace NexusForever.Game.Achievement
 
         protected void BroadcastRealmFirstAchievement(IAchievement achievement, bool isGuildAchievement, string name)
         {
-            foreach (IPlayer player in PlayerManager.Instance)
+            foreach (IPlayer player in playerManager ?? Enumerable.Empty<IPlayer>())
                 player.Session?.EnqueueMessageEncrypted(new ServerRealmFirstAchievement
                 {
                     AchievementId      = achievement.Id,
@@ -385,13 +406,23 @@ namespace NexusForever.Game.Achievement
             if (achievements.TryGetValue(id, out IAchievement achievement))
                 return achievement;
 
-            IAchievementInfo info = GlobalAchievementManager.Instance.GetAchievement(id);
+            IAchievementInfo info = GetGlobalAchievementManager().GetAchievement(id);
             if (info == null)
                 throw new ArgumentException();
 
             achievement = new Achievement<T>(OwnerId, info);
             achievements.Add(achievement.Id, achievement);
             return achievement;
+        }
+
+        protected IGlobalAchievementManager GetGlobalAchievementManager()
+        {
+            return globalAchievementManager ?? throw new InvalidOperationException($"{GetType().Name} requires an IGlobalAchievementManager.");
+        }
+
+        protected IPrerequisiteManager GetPrerequisiteManager()
+        {
+            return prerequisiteManager ?? throw new InvalidOperationException($"{GetType().Name} requires an IPrerequisiteManager.");
         }
     }
 }

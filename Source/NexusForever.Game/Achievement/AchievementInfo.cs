@@ -17,11 +17,11 @@ namespace NexusForever.Game.Achievement
         /// <summary>
         /// Create a new <see cref="IAchievementInfo"/> from <see cref="AchievementEntry"/>.
         /// </summary>
-        public AchievementInfo(AchievementEntry entry)
+        public AchievementInfo(AchievementEntry entry, IGameTableManager gameTableManager = null)
         {
             Entry = entry;
             IEnumerable<AchievementChecklistEntry> checklistEntries =
-                GameTableManager.Instance.AchievementChecklist?.Entries ?? Enumerable.Empty<AchievementChecklistEntry>();
+                gameTableManager?.AchievementChecklist?.Entries ?? Enumerable.Empty<AchievementChecklistEntry>();
             ChecklistEntries = checklistEntries
                 .Where(t => t.AchievementId == entry.Id)
                 .ToList();

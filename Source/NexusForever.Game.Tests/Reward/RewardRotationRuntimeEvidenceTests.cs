@@ -46,7 +46,7 @@ public class RewardRotationRuntimeEvidenceTests
 
         var handler = new ClientRewardUpdateRequestHandler(
             NullLogger<ClientRewardUpdateRequestHandler>.Instance,
-            NoOpGlobalStorefrontManager.Instance,
+            new NoOpGlobalStorefrontManager(),
             EmptyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(3u));
@@ -84,7 +84,7 @@ public class RewardRotationRuntimeEvidenceTests
 
         var handler = new ClientRewardUpdateRequestHandler(
             NullLogger<ClientRewardUpdateRequestHandler>.Instance,
-            NoOpGlobalStorefrontManager.Instance,
+            new NoOpGlobalStorefrontManager(),
             EmptyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(RewardRotationRefreshBuilder.ContentTypeCount));

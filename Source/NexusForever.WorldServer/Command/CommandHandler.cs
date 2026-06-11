@@ -44,7 +44,7 @@ namespace NexusForever.WorldServer.Command
         /// <summary>
         /// Build <see cref="CommandHandler"/> that represents <see cref="MethodInfo"/> on the instance <see cref="CommandCategory"/>.
         /// </summary>
-        public void Build(CommandAttribute attribute, CommandCategory category, MethodInfo method)
+        public void Build(CommandAttribute attribute, CommandCategory category, MethodInfo method, ICommandManager commandManager)
         {
             permission      = attribute.Permission;
             methodContainer = new MethodContainer(category, method);
@@ -52,7 +52,7 @@ namespace NexusForever.WorldServer.Command
             HandleOptionalAttributes(attribute, method);
 
             ParameterInfo[] parameterInfo = method.GetParameters();
-            BuildParameters(attribute, parameterInfo);
+            BuildParameters(attribute, parameterInfo, commandManager);
             BuildHelp(attribute, parameterInfo);
         }
 
@@ -69,8 +69,11 @@ namespace NexusForever.WorldServer.Command
             }
         }
 
-        private void BuildParameters(CommandAttribute attribute, ParameterInfo[] parameterInfo)
+        private void BuildParameters(CommandAttribute attribute, ParameterInfo[] parameterInfo, ICommandManager commandManager)
         {
+            if (commandManager == null)
+                throw new InvalidOperationException("CommandHandler requires an ICommandManager to build parameter converters.");
+
             if (parameterInfo.Length == 0)
                 throw new CommandException($"No parameters for CommandHandler {string.Join(',', attribute.Commands)}, ICommandContext must at least be supplied!");
 
@@ -87,8 +90,8 @@ namespace NexusForever.WorldServer.Command
                 // otherwise it will come from the default for the parameter type
                 ParameterAttribute parameterAttribute = parameter.GetCustomAttribute<ParameterAttribute>();
                 IParameterConvert converter = parameterAttribute?.Converter != null
-                    ? CommandManager.Instance.GetParameterConverter(parameterAttribute.Converter)
-                    : CommandManager.Instance.GetParameterConverterDefault(underlyingType ?? parameter.ParameterType);
+                    ? commandManager.GetParameterConverter(parameterAttribute.Converter)
+                    : commandManager.GetParameterConverterDefault(underlyingType ?? parameter.ParameterType);
 
                 if (converter == null)
                     throw new ArgumentException($"No parameter converter found for parameter {parameter.Name} in CommandHandler {string.Join(',', attribute.Commands)}!");

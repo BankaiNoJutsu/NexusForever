@@ -2,9 +2,11 @@
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Costume;
 using NexusForever.Game.Static.Entity;
+using NexusForever.GameTable;
 using NexusForever.Network.World.Message.Model;
 using NetworkCostume = NexusForever.Network.World.Message.Model.Shared.Costume;
 
@@ -44,33 +46,43 @@ namespace NexusForever.Game.Entity
         private uint visibilityMask;
 
         private readonly ICostumeItem[] items = new CostumeItem[MaxCostumeItems];
+        private readonly IGameTableManager gameTableManager;
 
         private CostumeSaveMask saveMask;
 
         /// <summary>
         /// Create a new <see cref="ICostume"/> from an existing <see cref="CharacterCostumeModel"/> database model.
         /// </summary>
-        public Costume(CharacterCostumeModel model)
+        public Costume(
+            CharacterCostumeModel model,
+            IItemManager itemManager = null,
+            IGameTableManager gameTableManager = null)
         {
             Owner = model.Id;
             Index = model.Index;
             visibilityMask = model.VisibilityMask;
+            this.gameTableManager = gameTableManager;
 
             foreach (CharacterCostumeItemModel costumeItemModel in model.CostumeItem)
-                items[costumeItemModel.Slot] = new CostumeItem(this, costumeItemModel);
+                items[costumeItemModel.Slot] = new CostumeItem(this, costumeItemModel, itemManager, gameTableManager);
         }
 
         /// <summary>
         /// Create a new <see cref="ICostume"/> from packet <see cref="ClientCostumeSave"/>.
         /// </summary>
-        public Costume(IPlayer player, ClientCostumeSave costumeSave)
+        public Costume(
+            IPlayer player,
+            ClientCostumeSave costumeSave,
+            IItemManager itemManager = null,
+            IGameTableManager gameTableManager = null)
         {
             Owner = player.CharacterId;
             Index = (byte)costumeSave.Index;
             visibilityMask = costumeSave.VisibilityMask;
+            this.gameTableManager = gameTableManager;
 
             for (byte i = 0; i < costumeSave.Items.Count; i++)
-                items[i] = new CostumeItem(this, costumeSave.Items[i], (CostumeItemSlot)i);
+                items[i] = new CostumeItem(this, costumeSave.Items[i], (CostumeItemSlot)i, itemManager, gameTableManager);
 
             saveMask = CostumeSaveMask.Create;
         }
@@ -169,7 +181,7 @@ namespace NexusForever.Game.Entity
             for (int i = 0; i < costumeSave.Items.Count; i++)
             {
                 items[i].ItemId  = costumeSave.Items[i].ItemId;
-                items[i].DyeData = CostumeItem.GenerateDyeMask(costumeSave.Items[i].Dyes);
+                items[i].DyeData = CostumeItem.GenerateDyeMask(costumeSave.Items[i].Dyes, gameTableManager);
             }
         }
 

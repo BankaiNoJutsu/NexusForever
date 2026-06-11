@@ -1,5 +1,6 @@
 ﻿using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Matching.Match;
@@ -21,7 +22,9 @@ namespace NexusForever.Game.Map.Instance
             IMapLockManager mapLockManager,
             IMatchManager matchManager,
             IGroupStateManager groupStateManager,
-            IFactory<T> instanceFactory)
+            IFactory<T> instanceFactory,
+            IMapManager mapManager = null)
+            : base(mapManager)
         {
             this.mapLockManager    = mapLockManager;
             this.matchManager      = matchManager;

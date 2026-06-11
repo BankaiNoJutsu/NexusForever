@@ -3,6 +3,7 @@ using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Guild;
 using NexusForever.Game.Static.Guild;
 using NexusForever.Game.Static.RBAC;
+using NexusForever.GameTable;
 using NexusForever.WorldServer.Command.Context;
 using NexusForever.WorldServer.Command.Convert;
 using NexusForever.WorldServer.Command.Static;
@@ -13,6 +14,17 @@ namespace NexusForever.WorldServer.Command.Handler
     [CommandTarget(typeof(IPlayer))]
     public class GuildCommandCategory : CommandCategory
     {
+        private readonly IGlobalGuildManager globalGuildManager;
+        private readonly IGameTableManager gameTableManager;
+
+        public GuildCommandCategory(
+            IGlobalGuildManager globalGuildManager,
+            IGameTableManager gameTableManager)
+        {
+            this.globalGuildManager = globalGuildManager;
+            this.gameTableManager = gameTableManager;
+        }
+
         [Command(Permission.GuildRegister, "Register a new guild.", "register")]
         public void HandleGuildRegister(ICommandContext context,
             [Parameter("Guild type to create.", ParameterFlags.None, typeof(EnumParameterConverter<GuildType>))]
@@ -36,7 +48,7 @@ namespace NexusForever.WorldServer.Command.Handler
             // default standard from the client
             IGuildStandard standard = null;
             if (type == GuildType.Guild)
-                standard = new GuildStandard(4, 5, 6);
+                standard = new GuildStandard(4, 5, 6, gameTableManager);
 
             IGuildResultInfo info = player.GuildManager.CanRegisterGuild(type, name, leaderRank, councilRank, memberRank, standard);
             if (info.Result != GuildResult.Success)
@@ -57,7 +69,7 @@ namespace NexusForever.WorldServer.Command.Handler
         {
             IPlayer player = context.Invoker as IPlayer;
 
-            ulong guildId = GlobalGuildManager.Instance.GetGuild(type, name)?.Id ?? 0;
+            ulong guildId = globalGuildManager.GetGuild(type, name)?.Id ?? 0;
 
             IGuildResultInfo info = player.GuildManager.CanJoinGuild(guildId);
             if (info.Result != GuildResult.Success)

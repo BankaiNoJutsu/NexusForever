@@ -24,7 +24,9 @@ namespace NexusForever.Game.Map.Instance
             ILogger<ResidenceInstancedMap> log,
             IMapLockManager mapLockManager,
             IFactory<IResidenceMapInstance> instanceFactory,
-            IGlobalResidenceManager globalResidenceManager)
+            IGlobalResidenceManager globalResidenceManager,
+            IMapManager mapManager = null)
+            : base(mapManager)
         {
             this.log = log;
 

@@ -2,11 +2,10 @@
 using System.Linq.Expressions;
 using System.Reflection;
 using NexusForever.Game.Static.Entity.Movement.Command;
-using NexusForever.Shared;
 
 namespace NexusForever.Network.World.Entity
 {
-    public sealed class EntityCommandManager : Singleton<EntityCommandManager>, IEntityCommandManager
+    public sealed class EntityCommandManager : IEntityCommandManager
     {
         private delegate IEntityCommandModel EntityCommandFactoryDelegate();
         private ImmutableDictionary<EntityCommand, EntityCommandFactoryDelegate> entityCommandFactories;

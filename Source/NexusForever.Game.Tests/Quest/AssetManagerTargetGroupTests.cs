@@ -1,16 +1,13 @@
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
-using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Tests.Quest;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class AssetManagerTargetGroupTests
 {
     [Theory]
@@ -18,10 +15,10 @@ public class AssetManagerTargetGroupTests
     [InlineData(true)]
     public void CacheCreatureTargetGroups_WithMissingTargetGroupTableUsesEmptyCache(bool includeEmptyTable)
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
-            targetGroupTable: includeEmptyTable ? CreateGameTable<TargetGroupEntry>() : null));
+        GameTableManager gameTableManager = CreateGameTableManager(
+            targetGroupTable: includeEmptyTable ? CreateGameTable<TargetGroupEntry>() : null);
 
-        var assetManager = new AssetManager();
+        AssetManager assetManager = CreateAssetManager(gameTableManager);
 
         InvokeCache(assetManager, "CacheCreatureTargetGroups");
 
@@ -41,10 +38,10 @@ public class AssetManagerTargetGroupTests
             type: TargetGroupType.OtherTargetGroupCreatures,
             11u);
 
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
-            targetGroupTable: CreateGameTable(creatureGroup, ignoredNestedGroup)));
+        GameTableManager gameTableManager = CreateGameTableManager(
+            targetGroupTable: CreateGameTable(creatureGroup, ignoredNestedGroup));
 
-        var assetManager = new AssetManager();
+        AssetManager assetManager = CreateAssetManager(gameTableManager);
 
         InvokeCache(assetManager, "CacheCreatureTargetGroups");
 
@@ -61,13 +58,13 @@ public class AssetManagerTargetGroupTests
         bool includeQuestObjectiveTable,
         bool includeTargetGroupTable)
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             questObjectiveTable: includeQuestObjectiveTable
                 ? CreateGameTable(CreateQuestObjective(1u, QuestObjectiveType.KillTargetGroup, targetGroupId: 44u))
                 : null,
-            targetGroupTable: includeTargetGroupTable ? CreateGameTable<TargetGroupEntry>() : null));
+            targetGroupTable: includeTargetGroupTable ? CreateGameTable<TargetGroupEntry>() : null);
 
-        var assetManager = new AssetManager();
+        AssetManager assetManager = CreateAssetManager(gameTableManager);
 
         InvokeCache(assetManager, "CacheQuestObjectiveTargetGroups");
 
@@ -97,18 +94,18 @@ public class AssetManagerTargetGroupTests
             73605u,
             73681u);
 
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             questObjectiveTable: CreateGameTable(questObjective),
-            targetGroupTable: CreateGameTable(parentGroup, firstCreatureGroup, secondCreatureGroup)));
+            targetGroupTable: CreateGameTable(parentGroup, firstCreatureGroup, secondCreatureGroup));
 
-        var assetManager = new AssetManager();
+        AssetManager assetManager = CreateAssetManager(gameTableManager);
 
         InvokeCache(assetManager, "CacheQuestObjectiveTargetGroups");
 
         Assert.Equal([73498u, 73605u, 73681u], assetManager.GetQuestObjectiveTargetIds(501u));
     }
 
-    private static IServiceProvider BuildProvider(
+    private static GameTableManager CreateGameTableManager(
         GameTable<QuestObjectiveEntry> questObjectiveTable = null,
         GameTable<TargetGroupEntry> targetGroupTable = null)
     {
@@ -118,9 +115,12 @@ public class AssetManagerTargetGroupTests
         if (targetGroupTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.TargetGroup), targetGroupTable);
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
+    }
+
+    private static AssetManager CreateAssetManager(GameTableManager gameTableManager)
+    {
+        return new AssetManager(null, gameTableManager);
     }
 
     private static QuestObjectiveEntry CreateQuestObjective(uint id, QuestObjectiveType type, uint targetGroupId)

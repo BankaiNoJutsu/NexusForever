@@ -10,6 +10,13 @@ namespace NexusForever.WorldServer.Command.Handler
     [Command(Permission.Script, "A collection of commands to manage the script system.", "script")]
     public class ScriptCommandCategory : CommandCategory
     {
+        private readonly IScriptManager scriptManager;
+
+        public ScriptCommandCategory(IScriptManager scriptManager)
+        {
+            this.scriptManager = scriptManager;
+        }
+
         [Command(Permission.ScriptReload, "Reload a script assembly.", "reload")]
         public void HandleScriptReload(
             ICommandContext context,
@@ -19,7 +26,7 @@ namespace NexusForever.WorldServer.Command.Handler
             ReloadType reloadType)
         {
             DateTime start = DateTime.UtcNow;
-            ScriptManager.Instance.Reload(assemblyName, reloadType);
+            scriptManager.Reload(assemblyName, reloadType);
             context.SendMessage($"{assemblyName} reloaded in {(DateTime.UtcNow - start).TotalMilliseconds}ms.");
         }
 
@@ -27,7 +34,7 @@ namespace NexusForever.WorldServer.Command.Handler
         public void HandleScriptInfo(
             ICommandContext context)
         {
-            context.SendMessage(ScriptManager.Instance.Information());
+            context.SendMessage(scriptManager.Information());
         }
     }
 }

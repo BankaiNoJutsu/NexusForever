@@ -1,10 +1,10 @@
 using System.Reflection;
 using System.Collections.Immutable;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Game.Account.Currency;
 using NexusForever.Database.World.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Currency;
 using NexusForever.Game.Abstract.Achievement;
@@ -25,11 +25,9 @@ using NexusForever.Network.World.Message.Model.Loot;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Model.Story;
 using NexusForever.Network.World.Message.Static;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Loot;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class LootBagUsageTests
 {
     private const uint LootBagItemId = 84623u;
@@ -54,26 +52,18 @@ public class LootBagUsageTests
         IPlayer player = CreatePlayer(out var inventoryProxy, out var currencyProxy, out _, out _);
         IItem item = CreateLootBagItem();
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(manager, CreateGameTable(
+        ConfigureManager(manager, CreateGameTable(
             new AccountCurrencyTypeEntry
             {
                 Id = (uint)AccountCurrencyType.Omnibit
             }));
 
-        try
-        {
-            bool result = manager.TryUseLootBag(player, item, out string reason);
+        bool result = manager.TryUseLootBag(player, item, out string reason);
 
-            Assert.False(result);
-            Assert.Equal($"empty-item-loot:{LootBagItemId}", reason);
-            Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
-            Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.False(result);
+        Assert.Equal($"empty-item-loot:{LootBagItemId}", reason);
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+        Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
     }
 
     [Fact]
@@ -94,29 +84,21 @@ public class LootBagUsageTests
         inventoryProxy.SetMethodReturn(nameof(IInventory.ItemUse), false);
         IItem item = CreateLootBagItem();
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(manager, CreateGameTable(
+        ConfigureManager(manager, CreateGameTable(
             new AccountCurrencyTypeEntry
             {
                 Id = (uint)AccountCurrencyType.Omnibit
             }));
 
-        try
-        {
-            bool result = manager.TryUseLootBag(player, item, out string reason);
+        bool result = manager.TryUseLootBag(player, item, out string reason);
 
-            Assert.False(result);
-            Assert.Equal("item-use-failed", reason);
+        Assert.False(result);
+        Assert.Equal("item-use-failed", reason);
 
-            RecordingDispatchProxy<IInventory>.Invocation itemUseCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
-            Assert.Same(item, itemUseCall.Arguments[0]);
+        RecordingDispatchProxy<IInventory>.Invocation itemUseCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+        Assert.Same(item, itemUseCall.Arguments[0]);
 
-            Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
     }
 
     [Fact]
@@ -137,51 +119,43 @@ public class LootBagUsageTests
         inventoryProxy.SetMethodReturn(nameof(IInventory.ItemUse), true);
         IItem item = CreateLootBagItem();
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(manager, CreateGameTable(
+        ConfigureManager(manager, CreateGameTable(
             new AccountCurrencyTypeEntry
             {
                 Id = (uint)AccountCurrencyType.Omnibit
             }));
 
-        try
+        bool result = manager.TryUseLootBag(player, item, out string reason);
+
+        Assert.True(result);
+        Assert.Equal(string.Empty, reason);
+
+        RecordingDispatchProxy<IInventory>.Invocation itemUseCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+        Assert.Same(item, itemUseCall.Arguments[0]);
+
+        RecordingDispatchProxy<IAccountCurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+        Assert.Equal(AccountCurrencyType.Omnibit, currencyCall.Arguments[0]);
+        Assert.Equal(5ul, currencyCall.Arguments[1]);
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation achievementCall = achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)).First();
+        Assert.Same(player, achievementCall.Arguments[0]);
+
+        IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+        Assert.Equal(2, sessionCalls.Count);
+        var notify = Assert.IsType<ServerLootNotify>(sessionCalls[0].Arguments[0]);
+        Assert.True(notify.Explosion);
+        var singleLootItem = Assert.Single(notify.LootItems);
+        Assert.All(notify.LootItems, lootItem =>
         {
-            bool result = manager.TryUseLootBag(player, item, out string reason);
+            Assert.True(lootItem.Granted);
+            Assert.Equal(LootItemType.AccountCurrency, lootItem.Type);
+            Assert.Equal((uint)AccountCurrencyType.Omnibit, lootItem.ItemId);
+        });
+        Assert.Equal(5u, singleLootItem.Amount);
+        Assert.Equal(5u, notify.LootItems.Sum(lootItem => lootItem.Amount));
 
-            Assert.True(result);
-            Assert.Equal(string.Empty, reason);
-
-            RecordingDispatchProxy<IInventory>.Invocation itemUseCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
-            Assert.Same(item, itemUseCall.Arguments[0]);
-
-            RecordingDispatchProxy<IAccountCurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
-            Assert.Equal(AccountCurrencyType.Omnibit, currencyCall.Arguments[0]);
-            Assert.Equal(5ul, currencyCall.Arguments[1]);
-
-            RecordingDispatchProxy<ICharacterAchievementManager>.Invocation achievementCall = achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)).First();
-            Assert.Same(player, achievementCall.Arguments[0]);
-
-            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
-            Assert.Equal(2, sessionCalls.Count);
-            var notify = Assert.IsType<ServerLootNotify>(sessionCalls[0].Arguments[0]);
-            Assert.True(notify.Explosion);
-            var singleLootItem = Assert.Single(notify.LootItems);
-            Assert.All(notify.LootItems, lootItem =>
-            {
-                Assert.True(lootItem.Granted);
-                Assert.Equal(LootItemType.AccountCurrency, lootItem.Type);
-                Assert.Equal((uint)AccountCurrencyType.Omnibit, lootItem.ItemId);
-            });
-            Assert.Equal(5u, singleLootItem.Amount);
-            Assert.Equal(5u, notify.LootItems.Sum(lootItem => lootItem.Amount));
-
-            var remove = Assert.IsType<ServerLootRemove>(sessionCalls[1].Arguments[0]);
-            Assert.Equal(player.Guid, remove.OwnerUnitId);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        var remove = Assert.IsType<ServerLootRemove>(sessionCalls[1].Arguments[0]);
+        Assert.Equal(player.Guid, remove.OwnerUnitId);
     }
 
     [Fact]
@@ -203,37 +177,29 @@ public class LootBagUsageTests
         inventoryProxy.SetMethodReturn(nameof(IInventory.ItemUse), true);
         inventoryProxy.SetMethodReturn(nameof(IInventory.ItemDelete), item);
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(manager, CreateGameTable(
+        ConfigureManager(manager, CreateGameTable(
             new AccountCurrencyTypeEntry
             {
                 Id = (uint)AccountCurrencyType.Omnibit
             }));
 
-        try
-        {
-            bool result = manager.TryUseLootBag(player, item, out string reason);
+        bool result = manager.TryUseLootBag(player, item, out string reason);
 
-            Assert.True(result);
-            Assert.Equal(string.Empty, reason);
+        Assert.True(result);
+        Assert.Equal(string.Empty, reason);
 
-            RecordingDispatchProxy<IInventory>.Invocation itemUseCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
-            Assert.Same(item, itemUseCall.Arguments[0]);
+        RecordingDispatchProxy<IInventory>.Invocation itemUseCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+        Assert.Same(item, itemUseCall.Arguments[0]);
 
-            RecordingDispatchProxy<IInventory>.Invocation itemDeleteCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
-            ItemLocation location = Assert.IsType<ItemLocation>(itemDeleteCall.Arguments[0]);
-            Assert.Equal(InventoryLocation.Inventory, location.Location);
-            Assert.Equal(7u, location.BagIndex);
-            Assert.Equal(ItemUpdateReason.ConsumeCharge, itemDeleteCall.Arguments[1]);
+        RecordingDispatchProxy<IInventory>.Invocation itemDeleteCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
+        ItemLocation location = Assert.IsType<ItemLocation>(itemDeleteCall.Arguments[0]);
+        Assert.Equal(InventoryLocation.Inventory, location.Location);
+        Assert.Equal(7u, location.BagIndex);
+        Assert.Equal(ItemUpdateReason.ConsumeCharge, itemDeleteCall.Arguments[1]);
 
-            RecordingDispatchProxy<IAccountCurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
-            Assert.Equal(AccountCurrencyType.Omnibit, currencyCall.Arguments[0]);
-            Assert.Equal(5ul, currencyCall.Arguments[1]);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        RecordingDispatchProxy<IAccountCurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+        Assert.Equal(AccountCurrencyType.Omnibit, currencyCall.Arguments[0]);
+        Assert.Equal(5ul, currencyCall.Arguments[1]);
     }
 
     [Fact]
@@ -255,28 +221,20 @@ public class LootBagUsageTests
         inventoryProxy.SetMethodReturn(nameof(IInventory.ItemUse), true);
         inventoryProxy.SetMethodHandler(nameof(IInventory.ItemDelete), _ => throw new ArgumentException());
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(manager, CreateGameTable(
+        ConfigureManager(manager, CreateGameTable(
             new AccountCurrencyTypeEntry
             {
                 Id = (uint)AccountCurrencyType.Omnibit
             }));
 
-        try
-        {
-            bool result = manager.TryUseLootBag(player, item, out string reason);
+        bool result = manager.TryUseLootBag(player, item, out string reason);
 
-            Assert.False(result);
-            Assert.Equal("item-delete-failed", reason);
-            Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
-            Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
-            Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
-            Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.False(result);
+        Assert.Equal("item-delete-failed", reason);
+        Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+        Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
+        Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
     }
 
     [Fact]
@@ -308,7 +266,9 @@ public class LootBagUsageTests
     [Fact]
     public void TrySalvageItem_ExactRuntimeRowDeletesSourceItemAndGrantsLoot()
     {
+        ItemManager itemManager = CreateItemManager(CreateStaticItemInfo(StandardOmniPlasmItemId));
         GlobalLootManager manager = CreateLootManagerWithItemSalvage(
+            itemManager,
             new ItemSalvageModel
             {
                 Purpose      = ItemSalvagePurpose.ExactItem,
@@ -324,41 +284,33 @@ public class LootBagUsageTests
         IItem item = CreateItem(SalvageItemId, maxStackCount: 1u, maxCharges: 0u, bagIndex: 9u);
         inventoryProxy.SetMethodReturn(nameof(IInventory.ItemDelete), item);
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(manager, CreateGameTable(
+        ConfigureManager(manager, CreateGameTable(
             new AccountCurrencyTypeEntry
             {
                 Id = (uint)AccountCurrencyType.Omnibit
             }));
 
-        try
-        {
-            bool result = manager.TrySalvageItem(player, item, out string reason);
+        bool result = manager.TrySalvageItem(player, item, out string reason);
 
-            Assert.True(result);
-            Assert.Equal(string.Empty, reason);
-            Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+        Assert.True(result);
+        Assert.Equal(string.Empty, reason);
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
 
-            RecordingDispatchProxy<IInventory>.Invocation itemDeleteCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
-            ItemLocation location = Assert.IsType<ItemLocation>(itemDeleteCall.Arguments[0]);
-            Assert.Equal(InventoryLocation.Inventory, location.Location);
-            Assert.Equal(9u, location.BagIndex);
-            Assert.Equal(1u, itemDeleteCall.Arguments[1]);
-            Assert.Equal(ItemUpdateReason.Salvage, itemDeleteCall.Arguments[2]);
+        RecordingDispatchProxy<IInventory>.Invocation itemDeleteCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
+        ItemLocation location = Assert.IsType<ItemLocation>(itemDeleteCall.Arguments[0]);
+        Assert.Equal(InventoryLocation.Inventory, location.Location);
+        Assert.Equal(9u, location.BagIndex);
+        Assert.Equal(1u, itemDeleteCall.Arguments[1]);
+        Assert.Equal(ItemUpdateReason.Salvage, itemDeleteCall.Arguments[2]);
 
-            RecordingDispatchProxy<IAccountCurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
-            Assert.Equal(AccountCurrencyType.Omnibit, currencyCall.Arguments[0]);
-            Assert.Equal(5ul, currencyCall.Arguments[1]);
+        RecordingDispatchProxy<IAccountCurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+        Assert.Equal(AccountCurrencyType.Omnibit, currencyCall.Arguments[0]);
+        Assert.Equal(5ul, currencyCall.Arguments[1]);
 
-            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
-            Assert.Equal(2, sessionCalls.Count);
-            Assert.IsType<ServerLootNotify>(sessionCalls[0].Arguments[0]);
-            Assert.IsType<ServerLootRemove>(sessionCalls[1].Arguments[0]);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+        Assert.Equal(2, sessionCalls.Count);
+        Assert.IsType<ServerLootNotify>(sessionCalls[0].Arguments[0]);
+        Assert.IsType<ServerLootRemove>(sessionCalls[1].Arguments[0]);
     }
 
     [Fact]
@@ -390,7 +342,9 @@ public class LootBagUsageTests
     [Fact]
     public void TrySalvageItem_WithClientTypeLevelRuntimeRowDeletesSourceItemAndGrantsMaterial()
     {
+        ItemManager itemManager = CreateItemManager(CreateStaticItemInfo(StandardOmniPlasmItemId));
         GlobalLootManager manager = CreateLootManagerWithItemSalvage(
+            itemManager,
             new ItemSalvageModel
             {
                 Purpose           = ItemSalvagePurpose.ClientTypeLevel,
@@ -415,11 +369,10 @@ public class LootBagUsageTests
             requiredLevel: 10u);
         inventoryProxy.SetMethodReturn(nameof(IInventory.ItemDelete), item);
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(
+        ConfigureManager(
             manager,
             CreateGameTable<AccountCurrencyTypeEntry>(),
-            itemManager: CreateItemManager(CreateStaticItemInfo(StandardOmniPlasmItemId)),
+            itemManager: itemManager,
             itemTable: CreateGameTable(new Item2Entry
             {
                 Id            = StandardOmniPlasmItemId,
@@ -427,39 +380,32 @@ public class LootBagUsageTests
                 MaxStackCount = 250u
             }));
 
-        try
-        {
-            bool result = manager.TrySalvageItem(player, item, out string reason);
+        bool result = manager.TrySalvageItem(player, item, out string reason);
 
-            Assert.True(result);
-            Assert.Equal(string.Empty, reason);
+        Assert.True(result);
+        Assert.Equal(string.Empty, reason);
 
-            RecordingDispatchProxy<IInventory>.Invocation itemDeleteCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
-            ItemLocation location = Assert.IsType<ItemLocation>(itemDeleteCall.Arguments[0]);
-            Assert.Equal(InventoryLocation.Inventory, location.Location);
-            Assert.Equal(10u, location.BagIndex);
-            Assert.Equal(1u, itemDeleteCall.Arguments[1]);
-            Assert.Equal(ItemUpdateReason.Salvage, itemDeleteCall.Arguments[2]);
+        RecordingDispatchProxy<IInventory>.Invocation itemDeleteCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
+        ItemLocation location = Assert.IsType<ItemLocation>(itemDeleteCall.Arguments[0]);
+        Assert.Equal(InventoryLocation.Inventory, location.Location);
+        Assert.Equal(10u, location.BagIndex);
+        Assert.Equal(1u, itemDeleteCall.Arguments[1]);
+        Assert.Equal(ItemUpdateReason.Salvage, itemDeleteCall.Arguments[2]);
 
-            RecordingDispatchProxy<IInventory>.Invocation itemCreateCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
-            Assert.Equal(InventoryLocation.Inventory, itemCreateCall.Arguments[0]);
-            Assert.Equal(StandardOmniPlasmItemId, itemCreateCall.Arguments[1]);
-            Assert.Equal(1u, itemCreateCall.Arguments[2]);
-            Assert.Equal(ItemUpdateReason.Loot, itemCreateCall.Arguments[3]);
+        RecordingDispatchProxy<IInventory>.Invocation itemCreateCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+        Assert.Equal(InventoryLocation.Inventory, itemCreateCall.Arguments[0]);
+        Assert.Equal(StandardOmniPlasmItemId, itemCreateCall.Arguments[1]);
+        Assert.Equal(1u, itemCreateCall.Arguments[2]);
+        Assert.Equal(ItemUpdateReason.Loot, itemCreateCall.Arguments[3]);
 
-            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
-            Assert.Equal(2, sessionCalls.Count);
-            var notify = Assert.IsType<ServerLootNotify>(sessionCalls[0].Arguments[0]);
-            NexusForever.Network.World.Message.Model.Loot.LootItem grantedItem = Assert.Single(notify.LootItems);
-            Assert.True(grantedItem.Granted);
-            Assert.Equal(LootItemType.StaticItem, grantedItem.Type);
-            Assert.Equal(StandardOmniPlasmItemId, grantedItem.ItemId);
-            Assert.IsType<ServerLootRemove>(sessionCalls[1].Arguments[0]);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+        Assert.Equal(2, sessionCalls.Count);
+        var notify = Assert.IsType<ServerLootNotify>(sessionCalls[0].Arguments[0]);
+        NexusForever.Network.World.Message.Model.Loot.LootItem grantedItem = Assert.Single(notify.LootItems);
+        Assert.True(grantedItem.Granted);
+        Assert.Equal(LootItemType.StaticItem, grantedItem.Type);
+        Assert.Equal(StandardOmniPlasmItemId, grantedItem.ItemId);
+        Assert.IsType<ServerLootRemove>(sessionCalls[1].Arguments[0]);
     }
 
     [Fact]
@@ -480,51 +426,43 @@ public class LootBagUsageTests
         inventoryProxy.SetMethodReturn(nameof(IInventory.ItemUse), true);
         IItem item = CreateLootBagItem();
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(manager, CreateGameTable(
+        ConfigureManager(manager, CreateGameTable(
             new AccountCurrencyTypeEntry
             {
                 Id = (uint)AccountCurrencyType.ServiceToken
             }));
 
-        try
+        bool result = manager.TryUseLootBag(player, item, out string reason);
+
+        Assert.True(result);
+        Assert.Equal(string.Empty, reason);
+
+        RecordingDispatchProxy<IInventory>.Invocation itemUseCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+        Assert.Same(item, itemUseCall.Arguments[0]);
+
+        RecordingDispatchProxy<IAccountCurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+        Assert.Equal(AccountCurrencyType.ServiceToken, currencyCall.Arguments[0]);
+        Assert.Equal(140ul, currencyCall.Arguments[1]);
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation achievementCall = achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)).First();
+        Assert.Same(player, achievementCall.Arguments[0]);
+
+        IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+        Assert.Equal(2, sessionCalls.Count);
+        var notify = Assert.IsType<ServerLootNotify>(sessionCalls[0].Arguments[0]);
+        Assert.True(notify.Explosion);
+        var singleLootItem = Assert.Single(notify.LootItems);
+        Assert.All(notify.LootItems, lootItem =>
         {
-            bool result = manager.TryUseLootBag(player, item, out string reason);
+            Assert.True(lootItem.Granted);
+            Assert.Equal(LootItemType.AccountCurrency, lootItem.Type);
+            Assert.Equal((uint)AccountCurrencyType.ServiceToken, lootItem.ItemId);
+        });
+        Assert.Equal(140u, singleLootItem.Amount);
+        Assert.Equal(140u, notify.LootItems.Sum(lootItem => lootItem.Amount));
 
-            Assert.True(result);
-            Assert.Equal(string.Empty, reason);
-
-            RecordingDispatchProxy<IInventory>.Invocation itemUseCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
-            Assert.Same(item, itemUseCall.Arguments[0]);
-
-            RecordingDispatchProxy<IAccountCurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
-            Assert.Equal(AccountCurrencyType.ServiceToken, currencyCall.Arguments[0]);
-            Assert.Equal(140ul, currencyCall.Arguments[1]);
-
-            RecordingDispatchProxy<ICharacterAchievementManager>.Invocation achievementCall = achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)).First();
-            Assert.Same(player, achievementCall.Arguments[0]);
-
-            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
-            Assert.Equal(2, sessionCalls.Count);
-            var notify = Assert.IsType<ServerLootNotify>(sessionCalls[0].Arguments[0]);
-            Assert.True(notify.Explosion);
-            var singleLootItem = Assert.Single(notify.LootItems);
-            Assert.All(notify.LootItems, lootItem =>
-            {
-                Assert.True(lootItem.Granted);
-                Assert.Equal(LootItemType.AccountCurrency, lootItem.Type);
-                Assert.Equal((uint)AccountCurrencyType.ServiceToken, lootItem.ItemId);
-            });
-            Assert.Equal(140u, singleLootItem.Amount);
-            Assert.Equal(140u, notify.LootItems.Sum(lootItem => lootItem.Amount));
-
-            var remove = Assert.IsType<ServerLootRemove>(sessionCalls[1].Arguments[0]);
-            Assert.Equal(player.Guid, remove.OwnerUnitId);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        var remove = Assert.IsType<ServerLootRemove>(sessionCalls[1].Arguments[0]);
+        Assert.Equal(player.Guid, remove.OwnerUnitId);
     }
 
     [Fact]
@@ -545,22 +483,14 @@ public class LootBagUsageTests
         inventoryProxy.SetMethodReturn(nameof(IInventory.ItemUse), true);
         IItem item = CreateLootBagItem();
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(manager, CreateGameTable<AccountCurrencyTypeEntry>());
+        ConfigureManager(manager, CreateGameTable<AccountCurrencyTypeEntry>());
 
-        try
-        {
-            bool result = manager.TryUseLootBag(player, item, out string reason);
+        bool result = manager.TryUseLootBag(player, item, out string reason);
 
-            Assert.False(result);
-            Assert.Equal($"invalid-loot-item:{LootItemType.AccountCurrency}:{(uint)AccountCurrencyType.ServiceToken}", reason);
-            Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
-            Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.False(result);
+        Assert.Equal($"invalid-loot-item:{LootItemType.AccountCurrency}:{(uint)AccountCurrencyType.ServiceToken}", reason);
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
     }
 
     [Fact]
@@ -581,22 +511,14 @@ public class LootBagUsageTests
         inventoryProxy.SetMethodReturn(nameof(IInventory.ItemUse), true);
         IItem item = CreateLootBagItem();
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(manager, null);
+        ConfigureManager(manager, null);
 
-        try
-        {
-            bool result = manager.TryUseLootBag(player, item, out string reason);
+        bool result = manager.TryUseLootBag(player, item, out string reason);
 
-            Assert.False(result);
-            Assert.Equal($"invalid-loot-item:{LootItemType.AccountCurrency}:{(uint)AccountCurrencyType.ServiceToken}", reason);
-            Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
-            Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.False(result);
+        Assert.Equal($"invalid-loot-item:{LootItemType.AccountCurrency}:{(uint)AccountCurrencyType.ServiceToken}", reason);
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
     }
 
     private static GlobalLootManager CreateLootManager(LootGroup lootGroup)
@@ -608,6 +530,12 @@ public class LootBagUsageTests
     {
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
         return new GlobalLootManager(groupStateManager);
+    }
+
+    private static GlobalLootManager CreateLootManager(ItemManager itemManager)
+    {
+        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
+        return new GlobalLootManager(groupStateManager, itemManager: itemManager);
     }
 
     private static GlobalLootManager CreateLootManager(uint itemId, LootGroup lootGroup)
@@ -624,7 +552,14 @@ public class LootBagUsageTests
 
     private static GlobalLootManager CreateLootManagerWithItemSalvage(params ItemSalvageModel[] salvageRows)
     {
-        GlobalLootManager manager = CreateLootManager();
+        return CreateLootManagerWithItemSalvage(null, salvageRows);
+    }
+
+    private static GlobalLootManager CreateLootManagerWithItemSalvage(ItemManager itemManager, params ItemSalvageModel[] salvageRows)
+    {
+        GlobalLootManager manager = itemManager == null
+            ? CreateLootManager()
+            : CreateLootManager(itemManager);
 
         Dictionary<uint, List<ItemSalvageModel>> itemSalvageByItem = (Dictionary<uint, List<ItemSalvageModel>>)typeof(GlobalLootManager)
             .GetField("itemSalvageByItem", BindingFlags.Instance | BindingFlags.NonPublic)!
@@ -664,7 +599,7 @@ public class LootBagUsageTests
         rows.Add(salvageRow);
     }
 
-    private static IServiceProvider BuildProvider(
+    private static void ConfigureManager(
         GlobalLootManager manager,
         GameTable<AccountCurrencyTypeEntry> accountCurrencyTypeTable,
         ItemManager itemManager = null,
@@ -677,15 +612,7 @@ public class LootBagUsageTests
 
         SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountCurrencyType), accountCurrencyTypeTable);
         SetAutoProperty(gameTableManager, nameof(GameTableManager.Item), itemTable ?? CreateGameTable<Item2Entry>());
-
-        IServiceCollection services = new ServiceCollection()
-            .AddSingleton(manager)
-            .AddSingleton(gameTableManager);
-
-        if (itemManager != null)
-            services.AddSingleton(itemManager);
-
-        return services.BuildServiceProvider();
+        SetPrivateField(manager, "gameTableManager", gameTableManager);
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()
@@ -850,10 +777,23 @@ public class LootBagUsageTests
         IAccount account = RecordingDispatchProxy<IAccount>.Create(out var accountProxy);
         ICharacterAchievementManager achievementManager = RecordingDispatchProxy<ICharacterAchievementManager>.Create(out _);
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out sessionProxy);
+        var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
+        {
+            GameTablePath = string.Empty
+        }));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountCurrencyType), CreateGameTable(
+            new AccountCurrencyTypeEntry
+            {
+                Id = (uint)AccountCurrencyType.Omnibit
+            },
+            new AccountCurrencyTypeEntry
+            {
+                Id = (uint)AccountCurrencyType.ServiceToken
+            }));
         var currencyManager = new AccountCurrencyManager(account, new AccountModel
         {
             Id = 77u
-        });
+        }, gameTableManager);
 
         playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
         playerProxy.SetProperty(nameof(IPlayer.Account), account);

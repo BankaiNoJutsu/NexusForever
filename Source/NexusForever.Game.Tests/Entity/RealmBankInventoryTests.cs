@@ -16,35 +16,18 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Entity;
 
-[Collection(LegacyServiceProviderCollection.Name)]
-public class RealmBankInventoryTests : IDisposable
+public class RealmBankInventoryTests
 {
-    private readonly IServiceProvider previousProvider;
-    private readonly ServiceProvider provider;
-
     public RealmBankInventoryTests()
     {
         EnsureInventoryLocationCapacities();
-
-        previousProvider = LegacyServiceProvider.Provider;
-        provider = new ServiceCollection()
-            .AddSingleton(new RealmBankManager())
-            .BuildServiceProvider();
-        LegacyServiceProvider.Provider = provider;
-    }
-
-    public void Dispose()
-    {
-        LegacyServiceProvider.Provider = previousProvider;
-        provider.Dispose();
     }
 
     [Fact]
-    public void AddGame_RegistersRealmBankManagerForLegacySingleton()
+    public void AddGame_RegistersRealmBankManager()
     {
         var services = new ServiceCollection();
         services.AddGame();
@@ -58,7 +41,9 @@ public class RealmBankInventoryTests : IDisposable
     {
         IPlayer player = CreatePlayer(unlocked: false);
 
-        Assert.Equal(0u, RealmBankManager.Instance.GetSlotCapacity(player));
+        var manager = new RealmBankManager();
+
+        Assert.Equal(0u, manager.GetSlotCapacity(player));
     }
 
     [Fact]
@@ -66,7 +51,9 @@ public class RealmBankInventoryTests : IDisposable
     {
         IPlayer player = CreatePlayer(unlocked: true, extraSlotStacks: 3u);
 
-        Assert.Equal(40u, RealmBankManager.Instance.GetSlotCapacity(player));
+        var manager = new RealmBankManager();
+
+        Assert.Equal(40u, manager.GetSlotCapacity(player));
     }
 
     [Fact]
@@ -129,7 +116,7 @@ public class RealmBankInventoryTests : IDisposable
     private static NexusForever.Game.Entity.Inventory CreateInventory(bool unlocked, uint extraSlotStacks = 0u)
     {
         IPlayer player = CreatePlayer(unlocked, extraSlotStacks);
-        return new NexusForever.Game.Entity.Inventory(player, new CharacterModel());
+        return new NexusForever.Game.Entity.Inventory(player, new CharacterModel(), new RealmBankManager());
     }
 
     private static IPlayer CreatePlayer(bool unlocked, uint extraSlotStacks = 0u)

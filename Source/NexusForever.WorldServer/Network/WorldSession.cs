@@ -1,16 +1,27 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NexusForever.Cryptography;
+using NexusForever.Database;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Character.Model;
-using NexusForever.Game;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
+using NexusForever.Game.Abstract.Account.Inventory;
+using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Prerequisite;
+using NexusForever.Game.Abstract.Pvp;
+using NexusForever.Game.Abstract.RBAC;
+using NexusForever.Game.Abstract.Storefront;
 using NexusForever.Game.Account;
-using NexusForever.Game.Pvp;
-using NexusForever.Game.Storefront;
+using NexusForever.Game.Account.Inventory;
+using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.RBAC;
+using NexusForever.GameTable;
 using NexusForever.Network.Message;
 using NexusForever.Network.Message.Model;
 using NexusForever.Network.Session;
@@ -46,15 +57,55 @@ namespace NexusForever.WorldServer.Network
 
         private readonly INetworkManager<IWorldSession> networkManager;
         private readonly ILoginQueueManager loginQueueManager;
+        private readonly IPendingAccountItemGroupDelivery pendingAccountItemGroupDelivery;
+        private readonly ILogger<AccountInventoryManager> accountInventoryLog;
+        private readonly IDuelManager duelManager;
+        private readonly IGlobalStorefrontManager globalStorefrontManager;
+        private readonly IRBACManager rbacManager;
+        private readonly IAssetManager assetManager;
+        private readonly ICharacterManager characterManager;
+        private readonly IPrerequisiteManager prerequisiteManager;
+        private readonly IRealmContext realmContext;
+        private readonly IItemManager itemManager;
+        private readonly IDatabaseManager databaseManager;
+        private readonly IGameTableManager gameTableManager;
+        private readonly Role defaultRole;
 
         public WorldSession(
             IMessageManager messageManager,
+            IServiceProvider serviceProvider,
             INetworkManager<IWorldSession> networkManager,
-            ILoginQueueManager loginQueueManager)
-            : base(messageManager)
+            ILoginQueueManager loginQueueManager,
+            IPendingAccountItemGroupDelivery pendingAccountItemGroupDelivery = null,
+            ILogger<AccountInventoryManager> accountInventoryLog = null,
+            IDuelManager duelManager = null,
+            IGlobalStorefrontManager globalStorefrontManager = null,
+            IRBACManager rbacManager = null,
+            IAssetManager assetManager = null,
+            ICharacterManager characterManager = null,
+            IPrerequisiteManager prerequisiteManager = null,
+            IRealmContext realmContext = null,
+            IItemManager itemManager = null,
+            IDatabaseManager databaseManager = null,
+            IGameTableManager gameTableManager = null,
+            IOptions<RealmConfig> realmOptions = null)
+            : base(messageManager, serviceProvider)
         {
-            this.networkManager    = networkManager;
-            this.loginQueueManager = loginQueueManager;
+            this.networkManager                   = networkManager;
+            this.loginQueueManager                = loginQueueManager;
+            this.pendingAccountItemGroupDelivery  = pendingAccountItemGroupDelivery;
+            this.accountInventoryLog              = accountInventoryLog;
+            this.duelManager                      = duelManager;
+            this.globalStorefrontManager          = globalStorefrontManager;
+            this.rbacManager                      = rbacManager;
+            this.assetManager                     = assetManager;
+            this.characterManager                 = characterManager;
+            this.prerequisiteManager              = prerequisiteManager;
+            this.realmContext                     = realmContext;
+            this.itemManager                      = itemManager;
+            this.databaseManager                  = databaseManager;
+            this.gameTableManager                 = gameTableManager;
+            defaultRole                           = realmOptions?.Value.DefaultRole ?? Role.Player;
         }
 
         #endregion
@@ -66,7 +117,7 @@ namespace NexusForever.WorldServer.Network
             EnqueueMessageEncrypted(new ServerHello
             {
                 AuthVersion    = 16042,
-                RealmId        = RealmContext.Instance.RealmId,
+                RealmId        = realmContext?.RealmId ?? (ushort)0,
                 RealmGroupId   = 21,
                 AuthMessage    = 0x97998A0,
                 ConnectionType = 11
@@ -99,7 +150,7 @@ namespace NexusForever.WorldServer.Network
                     Heartbeat.SecondsUntilFlatline);
             }
 
-            DuelManager.Instance.OnPlayerDisconnect(Player);
+            duelManager?.OnPlayerDisconnect(Player);
 
             base.OnDisconnect();
             Player?.LogoutManager.Finish(LogoutReason.AccountDisconnected);
@@ -108,7 +159,7 @@ namespace NexusForever.WorldServer.Network
             if (Account != null)
                 loginQueueManager.OnDisconnect(this);
 
-            GlobalStorefrontManager.Instance.ClearCatalogDeliveryState(Id, Account?.Id ?? 0u);
+            globalStorefrontManager?.ClearCatalogDeliveryState(Id, Account?.Id ?? 0u);
         }
 
         public override void Update(double lastTick)
@@ -138,7 +189,7 @@ namespace NexusForever.WorldServer.Network
             if (Account != null)
                 throw new InvalidOperationException();
 
-            Account = new NexusForever.Game.Account.Account();
+            Account = new NexusForever.Game.Account.Account(pendingAccountItemGroupDelivery, accountInventoryLog, rbacManager, defaultRole, assetManager, characterManager, prerequisiteManager, itemManager, databaseManager, gameTableManager);
             Account.Initialise(account, this);
 
             networkManager.UpdateSessionId(this, account.Id.ToString());

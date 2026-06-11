@@ -1,4 +1,5 @@
 ﻿using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Static.Entity;
@@ -17,13 +18,17 @@ namespace NexusForever.Game.Quest
         public bool DeliversQuest => entry.QuestIdDelivered != 0u;
 
         private readonly CommunicatorMessagesEntry entry;
+        private readonly IPrerequisiteManager prerequisiteManager;
 
         /// <summary>
         /// Create a new <see cref="ICommunicatorMessage"/> with supplied <see cref="CommunicatorMessagesEntry"/>.
         /// </summary>
-        public CommunicatorMessage(CommunicatorMessagesEntry entry)
+        public CommunicatorMessage(
+            CommunicatorMessagesEntry entry,
+            IPrerequisiteManager prerequisiteManager = null)
         {
             this.entry = entry;
+            this.prerequisiteManager = prerequisiteManager;
         }
 
         /// <summary>
@@ -65,10 +70,15 @@ namespace NexusForever.Game.Quest
             if (entry.FactionIdReputation != 0u && !MeetsReputation(player))
                 return false;
 
-            if (entry.PrerequisiteId != 0u && !PrerequisiteManager.Instance.Meets(player, entry.PrerequisiteId))
+            if (entry.PrerequisiteId != 0u && !GetPrerequisiteManager().Meets(player, entry.PrerequisiteId))
                 return false;
 
             return true;
+        }
+
+        private IPrerequisiteManager GetPrerequisiteManager()
+        {
+            return prerequisiteManager ?? throw new InvalidOperationException($"{nameof(CommunicatorMessage)} requires an {nameof(IPrerequisiteManager)}.");
         }
 
         private bool MeetsReputation(IPlayer player)

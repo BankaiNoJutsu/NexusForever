@@ -1,6 +1,7 @@
 ﻿using NexusForever.Database;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Entitlement;
 using NexusForever.Game.Entitlement;
@@ -13,17 +14,20 @@ namespace NexusForever.Game.Account.Entitlement
     public class AccountEntitlementManager : EntitlementManager<IAccountEntitlement>, IAccountEntitlementManager
     {
         private readonly IAccount account;
+        private readonly IAssetManager assetManager;
 
         /// <summary>
         /// Create a new <see cref="IAccountEntitlementManager"/> from existing database model.
         /// </summary>
-        public AccountEntitlementManager(IAccount account, AccountModel model)
+        public AccountEntitlementManager(IAccount account, AccountModel model, IAssetManager assetManager, IGameTableManager gameTableManager)
+            : base(gameTableManager)
         {
-            this.account = account;
+            this.account       = account;
+            this.assetManager = assetManager;
 
             foreach (AccountEntitlementModel entitlementModel in model.AccountEntitlement)
             {
-                EntitlementEntry entry = GameTableManager.Instance.Entitlement?.GetEntry(entitlementModel.EntitlementId);
+                EntitlementEntry entry = gameTableManager.Entitlement?.GetEntry(entitlementModel.EntitlementId);
                 if (entry == null)
                     throw new DatabaseDataException($"Account {model.Id} has invalid entitlement {entitlementModel.EntitlementId} stored!");
 
@@ -54,7 +58,7 @@ namespace NexusForever.Game.Account.Entitlement
 
             // some reward property premium modifier entries use an existing entitlement values rather than static values
             // make sure we update these when the entitlement changes
-            foreach (RewardPropertyPremiumModifierEntry modifierEntry in AssetManager.Instance.GetRewardPropertiesForTier(account.AccountTier)
+            foreach (RewardPropertyPremiumModifierEntry modifierEntry in (assetManager?.GetRewardPropertiesForTier(account.AccountTier) ?? Enumerable.Empty<RewardPropertyPremiumModifierEntry>())
                 .Where(e => e.EntitlementIdModifierCount == entry.Id))
             {
                 account.RewardPropertyManager.UpdateRewardProperty((RewardPropertyType)modifierEntry.RewardPropertyId, value, modifierEntry.RewardPropertyData);

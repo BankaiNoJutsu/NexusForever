@@ -1,12 +1,11 @@
 ﻿using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Shared;
 using NLog;
 
 namespace NexusForever.Game
 {
-    public sealed class CleanupManager : Singleton<CleanupManager>, ICleanupManager
+    public sealed class CleanupManager : ICleanupManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 

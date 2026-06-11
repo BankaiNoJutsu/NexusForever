@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static.Entity;
@@ -30,7 +31,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
             uint contextToken = 0u,
             string clientRequestSource = null,
             bool applyPendingSpellEvidenceCapture = false,
-            bool? selectedBranch = null)
+            bool? selectedBranch = null,
+            IPrerequisiteManager prerequisiteManager = null)
         {
             if (session?.Player == null || item?.Info == null)
                 return false;
@@ -53,7 +55,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                     position,
                     contextToken,
                     clientRequestSource,
-                    applyPendingSpellEvidenceCapture);
+                    applyPendingSpellEvidenceCapture,
+                    prerequisiteManager);
                 return true;
             }
 
@@ -72,11 +75,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
             Position position,
             uint contextToken,
             string clientRequestSource,
-            bool applyPendingSpellEvidenceCapture)
+            bool applyPendingSpellEvidenceCapture,
+            IPrerequisiteManager prerequisiteManager)
         {
             if (itemSpecial.PrerequisiteIdGeneric00 > 0)
             {
-                if (!PrerequisiteEvaluation.Meets(session.Player, itemSpecial.PrerequisiteIdGeneric00, item))
+                if (!PrerequisiteEvaluation.Meets(session.Player, itemSpecial.PrerequisiteIdGeneric00, item, prerequisiteManager))
                 {
                     session.Player.SendGenericError(GenericError.UnlockItemFailed);
                     return;

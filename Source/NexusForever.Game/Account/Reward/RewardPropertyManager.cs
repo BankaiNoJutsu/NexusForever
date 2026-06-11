@@ -1,5 +1,6 @@
 ﻿using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Reward;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
@@ -11,11 +12,15 @@ namespace NexusForever.Game.Account.Reward
     public class RewardPropertyManager : IRewardPropertyManager
     {
         private readonly IAccount account;
+        private readonly IAssetManager assetManager;
+        private readonly IGameTableManager gameTableManager;
         private readonly Dictionary<RewardPropertyType, IRewardProperty> rewardProperties = new();
 
-        public RewardPropertyManager(IAccount account)
+        public RewardPropertyManager(IAccount account, IAssetManager assetManager, IGameTableManager gameTableManager)
         {
-            this.account = account;
+            this.account          = account;
+            this.assetManager     = assetManager;
+            this.gameTableManager = gameTableManager;
             UpdateRewardPropertiesPremiumModifiers(null);
         }
 
@@ -28,9 +33,9 @@ namespace NexusForever.Game.Account.Reward
         {
             rewardProperties.Clear();
 
-            foreach (RewardPropertyPremiumModifierEntry modifierEntry in AssetManager.Instance.GetRewardPropertiesForTier(account.AccountTier))
+            foreach (RewardPropertyPremiumModifierEntry modifierEntry in assetManager?.GetRewardPropertiesForTier(account.AccountTier) ?? Enumerable.Empty<RewardPropertyPremiumModifierEntry>())
             {
-                RewardPropertyEntry entry = GameTableManager.Instance.RewardProperty?.GetEntry(modifierEntry.RewardPropertyId);
+                RewardPropertyEntry entry = gameTableManager.RewardProperty?.GetEntry(modifierEntry.RewardPropertyId);
                 if (entry == null)
                     continue;
 
@@ -50,7 +55,7 @@ namespace NexusForever.Game.Account.Reward
             // some reward property premium modifier entries use an existing entitlement values rather than static values
             if (modifierEntry.EntitlementIdModifierCount != 0u)
             {
-                EntitlementEntry entitlementEntry = GameTableManager.Instance.Entitlement?.GetEntry(modifierEntry.EntitlementIdModifierCount);
+                EntitlementEntry entitlementEntry = gameTableManager.Entitlement?.GetEntry(modifierEntry.EntitlementIdModifierCount);
                 if (entitlementEntry == null)
                     return false;
 
@@ -102,7 +107,7 @@ namespace NexusForever.Game.Account.Reward
         /// </remarks>
         public void UpdateRewardProperty(RewardPropertyType type, float value, uint data = 0u)
         {
-            RewardPropertyEntry entry = GameTableManager.Instance.RewardProperty?.GetEntry((ulong)type);
+            RewardPropertyEntry entry = gameTableManager.RewardProperty?.GetEntry((ulong)type);
             if (entry == null)
                 return;
 

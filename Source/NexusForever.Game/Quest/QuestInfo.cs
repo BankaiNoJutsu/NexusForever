@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
@@ -15,15 +15,23 @@ namespace NexusForever.Game.Quest
         public ImmutableList<IQuestObjectiveInfo> Objectives { get; private set; }
         public ImmutableDictionary<uint, Quest2RewardEntry> Rewards { get; private set; }
 
-        public bool IsQuestMentioned => GlobalQuestManager.Instance.GetQuestCommunicatorMessages((ushort)Entry.Id).ToList().Count > 0u;
+        public bool IsQuestMentioned => GetGlobalQuestManager().GetQuestCommunicatorMessages((ushort)Entry.Id).Any();
+
+        private readonly IGlobalQuestManager globalQuestManager;
+        private readonly IGameTableManager gameTableManager;
 
         /// <summary>
         /// Create a new <see cref="IQuestInfo"/> using supplied <see cref="Quest2Entry"/>.
         /// </summary>
-        public QuestInfo(Quest2Entry entry)
+        public QuestInfo(
+            Quest2Entry entry,
+            IGlobalQuestManager globalQuestManager = null,
+            IGameTableManager gameTableManager = null)
         {
+            this.globalQuestManager = globalQuestManager;
+            this.gameTableManager = gameTableManager;
             Entry           = entry;
-            DifficultyEntry = GameTableManager.Instance.Quest2Difficulty?.GetEntry(Entry.Quest2DifficultyId);
+            DifficultyEntry = gameTableManager.Quest2Difficulty?.GetEntry(Entry.Quest2DifficultyId);
 
             InitialisePrerequisiteQuests();
             InitialiseObjectives();
@@ -35,7 +43,7 @@ namespace NexusForever.Game.Quest
             ImmutableList<Quest2Entry>.Builder builder = ImmutableList.CreateBuilder<Quest2Entry>();
             foreach (uint questId in (Entry.PrerequisiteQuests ?? []).Where(q => q != 0u))
             {
-                Quest2Entry prerequisiteQuest = GameTableManager.Instance.Quest2?.GetEntry(questId);
+                Quest2Entry prerequisiteQuest = gameTableManager.Quest2?.GetEntry(questId);
                 if (prerequisiteQuest != null)
                     builder.Add(prerequisiteQuest);
             }
@@ -48,7 +56,7 @@ namespace NexusForever.Game.Quest
             ImmutableList<IQuestObjectiveInfo>.Builder builder = ImmutableList.CreateBuilder<IQuestObjectiveInfo>();
             foreach (uint objectiveId in (Entry.Objectives ?? []).Where(o => o != 0u))
             {
-                QuestObjectiveEntry objectiveEntry = GameTableManager.Instance.QuestObjective?.GetEntry(objectiveId);
+                QuestObjectiveEntry objectiveEntry = gameTableManager.QuestObjective?.GetEntry(objectiveId);
                 if (objectiveEntry != null)
                     builder.Add(new QuestObjectiveInfo(objectiveEntry));
             }
@@ -59,7 +67,7 @@ namespace NexusForever.Game.Quest
         private void InitialiseRewards()
         {
             ImmutableDictionary<uint, Quest2RewardEntry>.Builder builder = ImmutableDictionary.CreateBuilder<uint, Quest2RewardEntry>();
-            foreach (Quest2RewardEntry rewardEntry in (GameTableManager.Instance.Quest2Reward?.Entries ?? [])
+            foreach (Quest2RewardEntry rewardEntry in (gameTableManager.Quest2Reward?.Entries ?? [])
                 .Where(e => e.Quest2Id == Entry.Id))
                 builder.Add(rewardEntry.Id, rewardEntry);
 
@@ -110,7 +118,7 @@ namespace NexusForever.Game.Quest
             if (DifficultyEntry == null)
                 return 0u;
 
-            XpPerLevelEntry entry = GameTableManager.Instance.XpPerLevel?.GetEntry(Entry.ConLevel);
+            XpPerLevelEntry entry = gameTableManager.XpPerLevel?.GetEntry(Entry.ConLevel);
             if (entry == null)
                 return 0u;
 
@@ -128,11 +136,16 @@ namespace NexusForever.Game.Quest
             if (DifficultyEntry == null)
                 return 0u;
 
-            GameFormulaEntry entry = GameTableManager.Instance.GameFormula?.GetEntry(530);
+            GameFormulaEntry entry = gameTableManager.GameFormula?.GetEntry(530);
             if (entry == null)
                 return 0u;
 
             return (uint)(MathF.Pow(Entry.ConLevel, entry.Datafloat0) * DifficultyEntry.CashRewardMultiplier);
+        }
+
+        private IGlobalQuestManager GetGlobalQuestManager()
+        {
+            return globalQuestManager ?? throw new InvalidOperationException($"{nameof(QuestInfo)} requires an {nameof(IGlobalQuestManager)}.");
         }
     }
 }

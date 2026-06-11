@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Nexus.Archive;
-using NexusForever.Shared;
 using NLog;
 
 namespace NexusForever.MapGenerator
 {
-    public sealed class ArchiveManager : Singleton<ArchiveManager>, IDisposable
+    public sealed class ArchiveManager : IDisposable
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 

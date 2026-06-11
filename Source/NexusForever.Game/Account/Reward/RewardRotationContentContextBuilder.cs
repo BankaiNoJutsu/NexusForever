@@ -12,11 +12,6 @@ namespace NexusForever.Game.Account.Reward
     /// </summary>
     public static class RewardRotationContentContextBuilder
     {
-        public static ServerRewardRotationContentContext Build(uint rewardRotationIndex)
-        {
-            return Build(GameTableManager.Instance, rewardRotationIndex);
-        }
-
         public static ServerRewardRotationContentContext Build(IGameTableManager gameTables, uint rewardRotationIndex)
         {
             return Build(RewardRotationContentContextSources.From(gameTables), rewardRotationIndex);

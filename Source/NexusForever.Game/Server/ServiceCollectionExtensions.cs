@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Server;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Server
 {
@@ -8,7 +7,7 @@ namespace NexusForever.Game.Server
     {
         public static void AddGameServer(this IServiceCollection sc)
         {
-            sc.AddSingletonLegacy<IServerManager, ServerManager>();
+            sc.AddSingleton<IServerManager, ServerManager>();
         }
     }
 }

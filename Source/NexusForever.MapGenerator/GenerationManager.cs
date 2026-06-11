@@ -12,15 +12,17 @@ using NexusForever.IO;
 using NexusForever.IO.Area;
 using NexusForever.IO.Map;
 using NexusForever.MapGenerator.GameTable;
-using NexusForever.Shared;
 using NLog;
 
 namespace NexusForever.MapGenerator
 {
-    public sealed class GenerationManager : Singleton<GenerationManager>
+    public sealed class GenerationManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
         private static readonly Regex gridFilePattern = new(@"[\w]+\.([A-Fa-f0-9]{2})([A-Fa-f0-9]{2})\.area", RegexOptions.Compiled);
+
+        private readonly GameTableManager gameTableManager;
+        private readonly ArchiveManager archiveManager;
         private string outputDir;
 
         private readonly struct GridRequest
@@ -39,6 +41,12 @@ namespace NexusForever.MapGenerator
             public byte Y { get; }
         }
 
+        public GenerationManager(GameTableManager gameTableManager, ArchiveManager archiveManager)
+        {
+            this.gameTableManager = gameTableManager;
+            this.archiveManager = archiveManager;
+        }
+
         public void Initialise(string outputDir)
         {
             log.Info("Generatring base map files...");
@@ -53,9 +61,9 @@ namespace NexusForever.MapGenerator
         /// </summary>
         public void GenerateWorld(ushort worldId, byte? gridX = null, byte? gridY = null, int maxDegreeOfParallelism = 1)
         {
-            WorldEntry entry = GameTableManager.Instance.World.GetEntry(worldId);
+            WorldEntry entry = gameTableManager.World.GetEntry(worldId);
             if (entry != null)
-                ProcessWorld(entry, ArchiveManager.Instance, maxDegreeOfParallelism, gridX, gridY);
+                ProcessWorld(entry, archiveManager, maxDegreeOfParallelism, gridX, gridY);
         }
 
         /// <summary>
@@ -63,7 +71,7 @@ namespace NexusForever.MapGenerator
         /// </summary>
         public void GenerateWorlds(int maxDegreeOfParallelism = 1)
         {
-            List<WorldEntry> entries = GameTableManager.Instance.World.Entries
+            List<WorldEntry> entries = gameTableManager.World.Entries
                 .Where(e => e.AssetPath != string.Empty)
                 .GroupBy(e => e.AssetPath)
                 .Select(g => g.First())
@@ -73,7 +81,7 @@ namespace NexusForever.MapGenerator
             if (effectiveMaxDegreeOfParallelism == 1)
             {
                 foreach (WorldEntry entry in entries)
-                    ProcessWorld(entry, ArchiveManager.Instance);
+                    ProcessWorld(entry, archiveManager);
 
                 return;
             }
@@ -83,7 +91,7 @@ namespace NexusForever.MapGenerator
             Parallel.ForEach(
                 entries,
                 new ParallelOptions { MaxDegreeOfParallelism = effectiveMaxDegreeOfParallelism },
-                () => ArchiveManager.Instance.CreateIsolatedInstance(),
+                () => archiveManager.CreateIsolatedInstance(),
                 (entry, _, localArchiveManager) =>
                 {
                     ProcessWorld(entry, localArchiveManager);
@@ -120,7 +128,7 @@ namespace NexusForever.MapGenerator
                 Parallel.ForEach(
                     gridRequests,
                     new ParallelOptions { MaxDegreeOfParallelism = effectiveMaxDegreeOfParallelism },
-                    () => ArchiveManager.Instance.CreateIsolatedInstance(),
+                    () => this.archiveManager.CreateIsolatedInstance(),
                     (gridRequest, _, localArchiveManager) =>
                     {
                         WritableMapFileGrid mapFileGrid = ProcessGrid(localArchiveManager, gridRequest);

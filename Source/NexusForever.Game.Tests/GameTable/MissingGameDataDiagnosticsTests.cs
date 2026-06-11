@@ -5,7 +5,7 @@ using NexusForever.GameTable.Configuration.Model;
 
 namespace NexusForever.Game.Tests.TableContracts;
 
-[Collection(LegacyServiceProviderCollection.Name)]
+[Collection(MissingGameDataDiagnosticsCollection.Name)]
 public class MissingGameDataDiagnosticsTests
 {
     [Fact]

@@ -12,12 +12,11 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
-using NexusForever.Shared;
 using NLog;
 
 namespace NexusForever.Game.Character
 {
-    public sealed class CharacterManager : Singleton<CharacterManager>, ICharacterManager
+    public sealed class CharacterManager : ICharacterManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
@@ -36,12 +35,27 @@ namespace NexusForever.Game.Character
         private readonly Dictionary<ulong, ICharacter> characters = new();
         private readonly Dictionary<string, ulong> characterNameToId = new(StringComparer.OrdinalIgnoreCase);
 
+        #region Dependency Injection
+
+        private readonly IDatabaseManager databaseManager;
+        private readonly IGameTableManager gameTableManager;
+
+        public CharacterManager(
+            IDatabaseManager databaseManager = null,
+            IGameTableManager gameTableManager = null)
+        {
+            this.databaseManager  = databaseManager;
+            this.gameTableManager = gameTableManager;
+        }
+
+        #endregion
+
         /// <summary>
         /// Called to Initialise the <see cref="CharacterManager"/> at server start
         /// </summary>
         public void Initialise()
         {
-            nextCharacterId = DatabaseManager.Instance.GetDatabase<CharacterDatabase>().GetNextCharacterId() + 1ul;
+            nextCharacterId = GetCharacterDatabase().GetNextCharacterId() + 1ul;
 
             CacheCharacterCreate();
 
@@ -54,11 +68,13 @@ namespace NexusForever.Game.Character
         private void CacheCharacterCreate()
         {
             var entries = ImmutableDictionary.CreateBuilder<(Race, Faction, CharacterCreationStart), ILocation>();
-            foreach (CharacterCreateModel model in DatabaseManager.Instance.GetDatabase<CharacterDatabase>().GetCharacterCreationData())
+            CharacterDatabase database = GetCharacterDatabase();
+            IGameTableManager gameTables = GetGameTableManager();
+            foreach (CharacterCreateModel model in database.GetCharacterCreationData())
             {
                 entries.Add(((Race)model.Race, (Faction)model.Faction, (CharacterCreationStart)model.CreationStart), new Location
                 (
-                    GameTableManager.Instance.World.GetEntry(model.WorldId),
+                    gameTables.World.GetEntry(model.WorldId),
                     new Vector3
                     {
                         X = model.X,
@@ -80,7 +96,7 @@ namespace NexusForever.Game.Character
         private void CacheCharacterBaseProperties()
         {
             var entries = ImmutableList.CreateBuilder<IPropertyModifier>();
-            foreach (PropertyBaseModel propertyModel in DatabaseManager.Instance.GetDatabase<CharacterDatabase>().GetProperties(0))
+            foreach (PropertyBaseModel propertyModel in GetCharacterDatabase().GetProperties(0))
             {
                 var newPropValue = new PropertyModifier((Property)propertyModel.Property, (ModType)propertyModel.ModType, propertyModel.Value);
                 entries.Add(newPropValue);
@@ -93,7 +109,7 @@ namespace NexusForever.Game.Character
         {
             var entries = ImmutableDictionary.CreateBuilder<Class, ImmutableList<IPropertyModifier>>();
 
-            foreach (IGrouping<uint, PropertyBaseModel> group in DatabaseManager.Instance.GetDatabase<CharacterDatabase>()
+            foreach (IGrouping<uint, PropertyBaseModel> group in GetCharacterDatabase()
                 .GetProperties(1)
                 .GroupBy(p => p.Subtype)) // class
             {
@@ -116,7 +132,7 @@ namespace NexusForever.Game.Character
         /// </summary>
         private void BuildCharacterInfoFromDb()
         {
-            List<CharacterModel> allCharactersInDb = DatabaseManager.Instance.GetDatabase<CharacterDatabase>().GetAllCharacters();
+            List<CharacterModel> allCharactersInDb = GetCharacterDatabase().GetAllCharacters();
             foreach (CharacterModel character in allCharactersInDb)
                 AddCharacter(character);
 
@@ -191,7 +207,7 @@ namespace NexusForever.Game.Character
         /// </summary>
         public ILocation GetStartingLocation(Race race, Faction faction, CharacterCreationStart creationStart)
         {
-            return characterCreationData.TryGetValue((race, faction, creationStart), out ILocation location) ? location : null;
+            return characterCreationData != null && characterCreationData.TryGetValue((race, faction, creationStart), out ILocation location) ? location : null;
         }
 
         /// <summary>
@@ -199,7 +215,7 @@ namespace NexusForever.Game.Character
         /// </summary>
         public IEnumerable<IPropertyModifier> GetCharacterBaseProperties()
         {
-            return characterBaseProperties;
+            return characterBaseProperties ?? Enumerable.Empty<IPropertyModifier>();
         }
 
         /// <summary>
@@ -207,7 +223,17 @@ namespace NexusForever.Game.Character
         /// </summary>
         public IEnumerable<IPropertyModifier> GetCharacterClassBaseProperties(Class @class)
         {
-            return characterClassBaseProperties.TryGetValue(@class, out ImmutableList<IPropertyModifier> propertyValues) ? propertyValues : Enumerable.Empty<IPropertyModifier>();
+            return characterClassBaseProperties != null && characterClassBaseProperties.TryGetValue(@class, out ImmutableList<IPropertyModifier> propertyValues) ? propertyValues : Enumerable.Empty<IPropertyModifier>();
+        }
+
+        private CharacterDatabase GetCharacterDatabase()
+        {
+            return databaseManager?.GetDatabase<CharacterDatabase>() ?? throw new InvalidOperationException("CharacterManager requires an IDatabaseManager.");
+        }
+
+        private IGameTableManager GetGameTableManager()
+        {
+            return gameTableManager ?? throw new InvalidOperationException("CharacterManager requires an IGameTableManager.");
         }
     }
 }

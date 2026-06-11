@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Numerics;
 using System.Text;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Creature;
@@ -57,14 +56,26 @@ namespace NexusForever.Game.Map
 
         private readonly IEntityFactory entityFactory;
         private readonly ICreatureInfoManager creatureInfoManager;
+        private readonly IMapIOManager mapIOManager;
+        private readonly IEntityCacheManager entityCacheManager;
+        private readonly ISharedConfiguration sharedConfiguration;
+        private readonly IScriptManager scriptManager;
 
         public BaseMap(
             IEntityFactory entityFactory,
             IPublicEventManager publicEventManager,
-            ICreatureInfoManager creatureInfoManager = null)
+            ICreatureInfoManager creatureInfoManager = null,
+            IMapIOManager mapIOManager = null,
+            IEntityCacheManager entityCacheManager = null,
+            ISharedConfiguration sharedConfiguration = null,
+            IScriptManager scriptManager = null)
         {
             this.entityFactory        = entityFactory;
             this.creatureInfoManager  = creatureInfoManager;
+            this.mapIOManager         = mapIOManager;
+            this.entityCacheManager   = entityCacheManager;
+            this.sharedConfiguration  = sharedConfiguration;
+            this.scriptManager        = scriptManager;
             PublicEventManager        = publicEventManager;
         }
 
@@ -76,8 +87,8 @@ namespace NexusForever.Game.Map
         public virtual void Initialise(WorldEntry entry)
         {
             Entry       = entry;
-            File        = MapIOManager.Instance.GetBaseMap(Entry.AssetPath);
-            entityCache = EntityCacheManager.Instance.GetEntityCache((ushort)Entry.Id);
+            File        = GetMapIOManager().GetBaseMap(Entry.AssetPath);
+            entityCache = GetEntityCacheManager().GetEntityCache((ushort)Entry.Id);
 
             PublicEventManager.Initialise(this);
 
@@ -86,7 +97,28 @@ namespace NexusForever.Game.Map
 
         protected virtual void InitialiseScriptCollection()
         {
-            scriptCollection = ScriptManager.Instance.InitialiseOwnedScripts<IBaseMap>(this, Entry.Id);
+            scriptCollection = GetScriptManager().InitialiseOwnedScripts<IBaseMap>(this, Entry.Id);
+        }
+
+        private IScriptManager GetScriptManager()
+        {
+            return scriptManager ?? throw new InvalidOperationException("BaseMap requires an IScriptManager to initialise.");
+        }
+
+        private IMapIOManager GetMapIOManager()
+        {
+            if (mapIOManager == null)
+                throw new InvalidOperationException("BaseMap requires an IMapIOManager to initialise.");
+
+            return mapIOManager;
+        }
+
+        private IEntityCacheManager GetEntityCacheManager()
+        {
+            if (entityCacheManager == null)
+                throw new InvalidOperationException("BaseMap requires an IEntityCacheManager to initialise.");
+
+            return entityCacheManager;
         }
 
         /// <summary>
@@ -104,9 +136,10 @@ namespace NexusForever.Game.Map
 
         private void ProcessGridActions()
         {
-            var newActions = new List<IGridAction>();
-            foreach (IGridAction action in pendingActions.Dequeue(
-                SharedConfiguration.Instance.Get<MapConfig>().GridActionThreshold ?? 100u))
+            MapConfig mapConfig = GetMapConfig();
+            List<IGridAction> newActions = null;
+            uint actionThreshold = mapConfig.GridActionThreshold ?? 100u;
+            for (uint i = 0u; i < actionThreshold && pendingActions.TryDequeue(out IGridAction action); i++)
             {
                 switch (action)
                 {
@@ -118,18 +151,22 @@ namespace NexusForever.Game.Map
                         {
                             // retry threshold to prevent any issues with stuck actions
                             actionAdd.RequeueCount++;
-                            if (actionAdd.RequeueCount > (SharedConfiguration.Instance.Get<MapConfig>().GridActionMaxRetry ?? 5u))
+                            if (actionAdd.RequeueCount > (mapConfig.GridActionMaxRetry ?? 5u))
                             {
                                 log.Error($"Failed to add entity to map {Entry.Id} at position X: {actionAdd.Vector.X}, Y: {actionAdd.Vector.Y}, Z: {actionAdd.Vector.Z}!");
                             }
                             else
+                            {
+                                newActions ??= new List<IGridAction>();
                                 newActions.Add(action);
+                            }
                         }
 
                         break;
                     }
                     case GridActionPending actionPending:
                     {
+                        newActions ??= new List<IGridAction>();
                         if (actionPending.Entity.Map == null)
                         {
                             newActions.Add(new GridActionAdd
@@ -153,8 +190,9 @@ namespace NexusForever.Game.Map
             }
 
             // new actions are added to the queue after processing so they are processed starting next update
-            foreach (IGridAction action in newActions)
-                pendingActions.Enqueue(action);
+            if (newActions != null)
+                foreach (IGridAction action in newActions)
+                    pendingActions.Enqueue(action);
         }
 
         private void UpdateGrids(double lastTick)
@@ -275,8 +313,10 @@ namespace NexusForever.Game.Map
             // no radius is unlimited distance
             if (radius == null)
             {
-                foreach (T entity in entities.Values.OfType<T>().Where(check.CheckEntity))
-                    yield return entity;
+                foreach (IGridEntity entity in entities.Values)
+                    if (entity is T result && check.CheckEntity(result))
+                        yield return result;
+
                 yield break;
             }
 
@@ -374,8 +414,8 @@ namespace NexusForever.Game.Map
 
         protected IEnumerable<IMapGrid> GetActiveGrids()
         {
-            return activeGrids
-                .Select(g => GetGrid(g.GridX, g.GridZ));
+            foreach ((uint gridX, uint gridZ) in activeGrids)
+                yield return GetGrid(gridX, gridZ);
         }
 
         /// <summary>
@@ -404,7 +444,7 @@ namespace NexusForever.Game.Map
         private void ActivateGrid(uint gridX, uint gridZ)
         {
             // instance grids are not unloaded, the entire instance is unloaded instead during inactivity
-            var grid = new MapGrid(gridX, gridZ, this is not MapInstance);
+            var grid = new MapGrid(gridX, gridZ, this is not MapInstance, GetMapConfig().GridUnloadTimer ?? 600d);
             grids[gridZ * MapDefines.WorldGridCount + gridX] = grid;
             activeGrids.Add(grid.Coord);
 
@@ -445,8 +485,7 @@ namespace NexusForever.Game.Map
             if (model.Creature == 0u)
                 return null;
 
-            ICreatureInfoManager manager = creatureInfoManager
-                ?? LegacyServiceProvider.Provider?.GetService<ICreatureInfoManager>();
+            ICreatureInfoManager manager = creatureInfoManager;
             if (manager == null)
                 throw new InvalidOperationException($"CreatureInfoManager is not available while spawning entity {model.Id} for world {model.World}.");
 
@@ -585,6 +624,11 @@ namespace NexusForever.Game.Map
             {
                 return false;
             }
+        }
+
+        protected MapConfig GetMapConfig()
+        {
+            return sharedConfiguration?.Get<MapConfig>() ?? new MapConfig();
         }
 
         /// <summary>

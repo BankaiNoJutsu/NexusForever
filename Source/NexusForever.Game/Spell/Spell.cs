@@ -1,5 +1,6 @@
 using System.Numerics;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Abstract.Spell.Event;
 using NexusForever.Game.Combat.CrowdControl;
@@ -45,6 +46,10 @@ namespace NexusForever.Game.Spell
         public bool IsFinished => status == SpellStatus.Finished;
 
         public IUnitEntity Caster { get; }
+        private readonly IPrerequisiteManager prerequisiteManager;
+        private readonly IGlobalSpellManager globalSpellManager;
+        private readonly IScriptManager scriptManager;
+        private readonly IGameTableManager gameTableManager;
 
         private SpellStatus status;
         private bool cancelled;
@@ -64,16 +69,26 @@ namespace NexusForever.Game.Spell
 
         private sealed record PendingSpellGoEffect(ISpellTargetInfo TargetInfo, ISpellTargetEffectInfo EffectInfo);
 
-        public Spell(IUnitEntity caster, ISpellParameters parameters)
+        public Spell(
+            IUnitEntity caster,
+            ISpellParameters parameters,
+            IPrerequisiteManager prerequisiteManager = null,
+            IGlobalSpellManager globalSpellManager = null,
+            IScriptManager scriptManager = null,
+            IGameTableManager gameTableManager = null)
         {
             Caster     = caster;
             Parameters = parameters;
-            CastingId  = GlobalSpellManager.Instance.NextCastingId;
+            this.prerequisiteManager = prerequisiteManager;
+            this.globalSpellManager = globalSpellManager;
+            this.scriptManager = scriptManager;
+            this.gameTableManager = gameTableManager;
+            CastingId  = GetGlobalSpellManager().NextCastingId;
             status     = SpellStatus.Initiating;
 
             parameters.RootSpellInfo ??= parameters.SpellInfo;
 
-            scriptCollection = ScriptManager.Instance.InitialiseOwnedScripts<ISpell>(this, parameters.SpellInfo.Entry.Id);
+            scriptCollection = GetScriptManager().InitialiseOwnedScripts<ISpell>(this, parameters.SpellInfo.Entry.Id);
         }
 
         public void Dispose()
@@ -81,7 +96,7 @@ namespace NexusForever.Game.Spell
             SpellRuntimeEvidenceCollector.FinalizeAndExport(this, status == SpellStatus.Finished ? "disposed-finished" : "disposed");
 
             if (scriptCollection != null)
-                ScriptManager.Instance.Unload(scriptCollection);
+                GetScriptManager().Unload(scriptCollection);
 
             scriptCollection = null;
         }
@@ -310,7 +325,7 @@ namespace NexusForever.Game.Spell
                 return true;
 
             TargetGroupEntry castGroup = Parameters.SpellInfo.BaseInfo.CastGroup;
-            return castGroup != null && TargetGroupCriteriaEvaluator.Evaluate(castGroup, target, GameTableManager.Instance);
+            return castGroup != null && TargetGroupCriteriaEvaluator.Evaluate(castGroup, target, GetGameTableManager());
         }
 
         private CastResult CheckPrimaryTargetCastGroup(IWorldEntity target)
@@ -319,7 +334,7 @@ namespace NexusForever.Game.Spell
             if (castGroup == null)
                 return CastResult.Ok;
 
-            return TargetGroupCriteriaEvaluator.Evaluate(castGroup, target, GameTableManager.Instance)
+            return TargetGroupCriteriaEvaluator.Evaluate(castGroup, target, GetGameTableManager())
                 ? CastResult.Ok
                 : CastResult.TargetUnknown;
         }
@@ -402,7 +417,7 @@ namespace NexusForever.Game.Spell
 
             if (Parameters.SpellInfo.CasterCastPrerequisite != null && !CheckRunnerOverride(player, prerequisiteParameters))
             {
-                if (!PrerequisiteManager.Instance.Meets(player, Parameters.SpellInfo.CasterCastPrerequisite.Id, prerequisiteParameters))
+                if (!GetPrerequisiteManager().Meets(player, Parameters.SpellInfo.CasterCastPrerequisite.Id, prerequisiteParameters))
                     return CastResult.PrereqCasterCast;
             }
 
@@ -426,7 +441,7 @@ namespace NexusForever.Game.Spell
         private bool CheckRunnerOverride(IPlayer player, PrerequisiteParameters prerequisiteParameters)
         {
             foreach (PrerequisiteEntry runnerPrereq in Parameters.SpellInfo.PrerequisiteRunners)
-                if (PrerequisiteManager.Instance.Meets(player, runnerPrereq.Id, prerequisiteParameters))
+                if (GetPrerequisiteManager().Meets(player, runnerPrereq.Id, prerequisiteParameters))
                     return true;
 
             return false;
@@ -466,16 +481,19 @@ namespace NexusForever.Game.Spell
 
         private bool MeetsApplyPrerequisites(SpellEffectInterpretation effect, IWorldEntity target)
         {
-            return MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdCasterApply), Caster)
-                && MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdTargetApply), target);
+            return MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdCasterApply), Caster, prerequisiteManager)
+                && MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdTargetApply), target, prerequisiteManager);
         }
 
-        private static PrerequisiteEntry GetPrerequisite(uint prerequisiteId)
+        private PrerequisiteEntry GetPrerequisite(uint prerequisiteId)
         {
-            return prerequisiteId == 0u ? null : GameTableManager.Instance.Prerequisite.GetEntry(prerequisiteId);
+            return prerequisiteId == 0u ? null : gameTableManager?.Prerequisite?.GetEntry(prerequisiteId);
         }
 
-        internal static bool MeetsApplyPrerequisite(PrerequisiteEntry prerequisite, IWorldEntity entity)
+        internal static bool MeetsApplyPrerequisite(
+            PrerequisiteEntry prerequisite,
+            IWorldEntity entity,
+            IPrerequisiteManager prerequisiteManager = null)
         {
             if (prerequisite == null)
                 return true;
@@ -486,7 +504,7 @@ namespace NexusForever.Game.Spell
             if (entity is not IPlayer player)
                 return true;
 
-            return PrerequisiteManager.Instance.Meets(player, prerequisite.Id);
+            return GetPrerequisiteManager(prerequisiteManager).Meets(player, prerequisite.Id);
         }
 
         private static bool TryEvaluateCreatureDifficultyPrerequisite(PrerequisiteEntry prerequisite, IWorldEntity entity, out bool result)
@@ -561,11 +579,11 @@ namespace NexusForever.Game.Spell
         {
             return MeetsPersistencePrerequisite(Parameters.SpellInfo.CasterPersistencePrerequisites, Caster)
                 && MeetsPersistencePrerequisite(Parameters.SpellInfo.TargetPersistencePrerequisites, target)
-                && MeetsPersistencePrerequisite(GameTableManager.Instance.Prerequisite.GetEntry(effect.Entry.PrerequisiteIdCasterPersistence), Caster)
-                && MeetsPersistencePrerequisite(GameTableManager.Instance.Prerequisite.GetEntry(effect.Entry.PrerequisiteIdTargetPersistence), target);
+                && MeetsPersistencePrerequisite(gameTableManager?.Prerequisite?.GetEntry(effect.Entry.PrerequisiteIdCasterPersistence), Caster)
+                && MeetsPersistencePrerequisite(gameTableManager?.Prerequisite?.GetEntry(effect.Entry.PrerequisiteIdTargetPersistence), target);
         }
 
-        private static bool MeetsPersistencePrerequisite(PrerequisiteEntry prerequisite, IWorldEntity entity)
+        private bool MeetsPersistencePrerequisite(PrerequisiteEntry prerequisite, IWorldEntity entity)
         {
             if (prerequisite == null)
                 return true;
@@ -573,7 +591,32 @@ namespace NexusForever.Game.Spell
             if (entity is not IPlayer player)
                 return true;
 
-            return PrerequisiteManager.Instance.Meets(player, prerequisite.Id);
+            return GetPrerequisiteManager().Meets(player, prerequisite.Id);
+        }
+
+        private IPrerequisiteManager GetPrerequisiteManager()
+        {
+            return GetPrerequisiteManager(prerequisiteManager);
+        }
+
+        private static IPrerequisiteManager GetPrerequisiteManager(IPrerequisiteManager prerequisiteManager)
+        {
+            return prerequisiteManager ?? throw new InvalidOperationException($"{nameof(Spell)} requires an {nameof(IPrerequisiteManager)}.");
+        }
+
+        private IGlobalSpellManager GetGlobalSpellManager()
+        {
+            return globalSpellManager ?? throw new InvalidOperationException($"{nameof(Spell)} requires an {nameof(IGlobalSpellManager)}.");
+        }
+
+        private IScriptManager GetScriptManager()
+        {
+            return scriptManager ?? throw new InvalidOperationException($"{nameof(Spell)} requires an {nameof(IScriptManager)}.");
+        }
+
+        private IGameTableManager GetGameTableManager()
+        {
+            return gameTableManager ?? throw new InvalidOperationException($"{nameof(Spell)} requires an {nameof(IGameTableManager)}.");
         }
 
         private CastResult CheckCCConditions()
@@ -1146,7 +1189,7 @@ namespace NexusForever.Game.Spell
             }
 
             TargetGroupEntry aoeGroup = Parameters.SpellInfo.BaseInfo.AoeGroup;
-            if (aoeGroup != null && !TargetGroupCriteriaEvaluator.Evaluate(aoeGroup, entity, GameTableManager.Instance))
+            if (aoeGroup != null && !TargetGroupCriteriaEvaluator.Evaluate(aoeGroup, entity, GetGameTableManager()))
                 return false;
 
             return true;
@@ -1370,7 +1413,7 @@ namespace NexusForever.Game.Spell
                 .Where(t => IsEffectTargetStillValid(effectTargetFlags, t))
                 .ToList();
 
-            SpellEffectDelegate handler = GlobalSpellManager.Instance.GetEffectHandler((SpellEffectType)effect.Entry.EffectType);
+            SpellEffectDelegate handler = GetGlobalSpellManager().GetEffectHandler((SpellEffectType)effect.Entry.EffectType);
             SpellEffectDiagnostics.TraceEffectDispatch(this, effect, effectTargets.Count, handler != null);
 
             if (handler == null)
@@ -1379,7 +1422,7 @@ namespace NexusForever.Game.Spell
                 return false;
             }
 
-            uint effectId = GlobalSpellManager.Instance.NextEffectId;
+            uint effectId = GetGlobalSpellManager().NextEffectId;
             bool executed = false;
             foreach (SpellTargetInfo effectTarget in effectTargets)
             {

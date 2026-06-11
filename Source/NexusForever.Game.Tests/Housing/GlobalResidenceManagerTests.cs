@@ -1,16 +1,13 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Housing;
 using NexusForever.Game.Static.Housing;
-using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Tests.Housing;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class GlobalResidenceManagerTests
 {
     [Theory]
@@ -22,8 +19,7 @@ public class GlobalResidenceManagerTests
     [InlineData("world-empty-table")]
     public void GetResidenceEntrance_WithMissingStaticDataThrowsHousingException(string missingSource)
     {
-        GlobalResidenceManager manager = CreateManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(gameTableManager =>
+        GameTableManager gameTableManager = BuildGameTableManager(gameTableManager =>
         {
             if (missingSource != "property-missing-table")
             {
@@ -59,7 +55,8 @@ public class GlobalResidenceManagerTests
                     });
                 SetTable(gameTableManager, nameof(GameTableManager.World), table);
             }
-        }));
+        });
+        GlobalResidenceManager manager = CreateManager(gameTableManager);
 
         Assert.Throws<HousingException>(() => manager.GetResidenceEntrance(PropertyInfoId.Residence));
     }
@@ -67,8 +64,7 @@ public class GlobalResidenceManagerTests
     [Fact]
     public void GetResidenceEntrance_WithTableBackedRowsBuildsEntrance()
     {
-        GlobalResidenceManager manager = CreateManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(gameTableManager =>
+        GameTableManager gameTableManager = BuildGameTableManager(gameTableManager =>
         {
             SetTable(gameTableManager, nameof(GameTableManager.HousingPropertyInfo), CreateGameTable(new HousingPropertyInfoEntry
             {
@@ -91,7 +87,8 @@ public class GlobalResidenceManagerTests
             {
                 Id = 900u
             }));
-        }));
+        });
+        GlobalResidenceManager manager = CreateManager(gameTableManager);
 
         IResidenceEntrance entrance = manager.GetResidenceEntrance(PropertyInfoId.Residence);
 
@@ -105,19 +102,16 @@ public class GlobalResidenceManagerTests
         Assert.Equal(7f, entrance.Rotation.W);
     }
 
-    private static IServiceProvider BuildProvider(Action<GameTableManager> configure)
+    private static GameTableManager BuildGameTableManager(Action<GameTableManager> configure)
     {
         var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         configure(gameTableManager);
-
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
-    private static GlobalResidenceManager CreateManager()
+    private static GlobalResidenceManager CreateManager(GameTableManager gameTableManager)
     {
-        return (GlobalResidenceManager)RuntimeHelpers.GetUninitializedObject(typeof(GlobalResidenceManager));
+        return new GlobalResidenceManager(gameTableManager: gameTableManager);
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

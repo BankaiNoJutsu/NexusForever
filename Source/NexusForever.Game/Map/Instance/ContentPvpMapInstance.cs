@@ -1,10 +1,13 @@
 ﻿using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.PublicEvent;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Matching;
+using NexusForever.GameTable;
+using NexusForever.Shared.Configuration;
 using NexusForever.Script;
 using NexusForever.Script.Template;
 
@@ -18,8 +21,12 @@ namespace NexusForever.Game.Map.Instance
             IEntityFactory entityFactory,
             IPublicEventManager publicEventManager,
             IScriptManager scriptManager,
-            ICreatureInfoManager creatureInfoManager = null)
-            : base(entityFactory, publicEventManager, scriptManager, creatureInfoManager)
+            ICreatureInfoManager creatureInfoManager = null,
+            IMapIOManager mapIOManager = null,
+            IEntityCacheManager entityCacheManager = null,
+            ISharedConfiguration sharedConfiguration = null,
+            IGameTableManager gameTableManager = null)
+            : base(entityFactory, publicEventManager, scriptManager, creatureInfoManager, mapIOManager, entityCacheManager, sharedConfiguration, gameTableManager)
         {
         }
 

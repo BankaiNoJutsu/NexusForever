@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NexusForever.Database.Character.Model;
@@ -19,7 +18,7 @@ using NexusForever.WorldServer.Network.Message.Handler.GalacticArchive;
 
 namespace NexusForever.Game.Tests.Entity;
 
-[Collection(LegacyServiceProviderCollection.Name)]
+[Collection(MissingGameDataDiagnosticsCollection.Name)]
 public class GalacticArchiveManagerTests
 {
     private const uint ArticleUnlockedFlag = 0x80000000u;
@@ -30,12 +29,12 @@ public class GalacticArchiveManagerTests
     [Fact]
     public void UnlockLinkedArticle_WithUnlockedParent_UnlocksChildWithoutRewards()
     {
-        using var _ = new LegacyServiceProviderScope(BuildGameTableProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             [CreateArticle(ParentArticleId), CreateArticle(ChildArticleId)],
-            [CreateLink(ParentArticleId, ChildArticleId)]));
+            [CreateLink(ParentArticleId, ChildArticleId)]);
         IPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
         var model = CreateModelWithUnlockedArticle(ParentArticleId);
-        var manager = new GalacticArchiveManager(player, model);
+        var manager = new GalacticArchiveManager(player, model, gameTableManager);
 
         bool unlocked = manager.UnlockLinkedArticle(ChildArticleId);
 
@@ -48,11 +47,11 @@ public class GalacticArchiveManagerTests
     [Fact]
     public void UnlockLinkedArticle_WithoutUnlockedParent_RejectsChild()
     {
-        using var _ = new LegacyServiceProviderScope(BuildGameTableProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             [CreateArticle(ParentArticleId), CreateArticle(ChildArticleId)],
-            [CreateLink(ParentArticleId, ChildArticleId)]));
+            [CreateLink(ParentArticleId, ChildArticleId)]);
         IPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
-        var manager = new GalacticArchiveManager(player, new CharacterModel { Id = CharacterId });
+        var manager = new GalacticArchiveManager(player, new CharacterModel { Id = CharacterId }, gameTableManager);
 
         bool unlocked = manager.UnlockLinkedArticle(ChildArticleId);
 
@@ -82,9 +81,9 @@ public class GalacticArchiveManagerTests
     [Fact]
     public void Constructor_WhenArchiveArticleTableMissing_SkipsPersistedArchiveState()
     {
-        using var _ = new LegacyServiceProviderScope(BuildGameTableProvider());
+        GameTableManager gameTableManager = CreateGameTableManager();
         IPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
-        var manager = new GalacticArchiveManager(player, CreateModelWithUnlockedArticle(ParentArticleId));
+        var manager = new GalacticArchiveManager(player, CreateModelWithUnlockedArticle(ParentArticleId), gameTableManager);
 
         manager.SendInitialPackets();
 
@@ -95,9 +94,9 @@ public class GalacticArchiveManagerTests
     [Fact]
     public void UnlockArticle_WhenArchiveArticleTableMissing_ReturnsFalse()
     {
-        using var _ = new LegacyServiceProviderScope(BuildGameTableProvider());
+        GameTableManager gameTableManager = CreateGameTableManager();
         IPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
-        var manager = new GalacticArchiveManager(player, new CharacterModel { Id = CharacterId });
+        var manager = new GalacticArchiveManager(player, new CharacterModel { Id = CharacterId }, gameTableManager);
 
         bool unlocked = manager.UnlockArticle(ParentArticleId);
 
@@ -108,11 +107,11 @@ public class GalacticArchiveManagerTests
     [Fact]
     public void SendInitialPackets_WhenRuleTableMissing_SendsRefreshWithoutRuleUnlocks()
     {
-        using var _ = new LegacyServiceProviderScope(BuildGameTableProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             [CreateArticle(ParentArticleId, entryId: 500u)],
-            []));
+            []);
         IPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
-        var manager = new GalacticArchiveManager(player, new CharacterModel { Id = CharacterId });
+        var manager = new GalacticArchiveManager(player, new CharacterModel { Id = CharacterId }, gameTableManager);
 
         manager.SendInitialPackets();
 
@@ -126,11 +125,11 @@ public class GalacticArchiveManagerTests
         MissingGameDataDiagnostics.ResetForTests();
         try
         {
-            using var _ = new LegacyServiceProviderScope(BuildGameTableProvider(
+            GameTableManager gameTableManager = CreateGameTableManager(
                 [CreateArticle(ParentArticleId, entryId: 500u)],
-                []));
+                []);
             IPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
-            var manager = new GalacticArchiveManager(player, new CharacterModel { Id = CharacterId });
+            var manager = new GalacticArchiveManager(player, new CharacterModel { Id = CharacterId }, gameTableManager);
 
             bool unlocked = manager.UnlockArticle(ParentArticleId);
 
@@ -201,7 +200,7 @@ public class GalacticArchiveManagerTests
         return message;
     }
 
-    private static IServiceProvider BuildGameTableProvider(
+    private static GameTableManager CreateGameTableManager(
         ArchiveArticleEntry[] articleEntries = null,
         ArchiveLinkEntry[] linkEntries = null,
         ArchiveEntryEntry[] entryEntries = null,
@@ -221,9 +220,7 @@ public class GalacticArchiveManagerTests
         if (ruleEntries != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.ArchiveEntryUnlockRule), CreateGameTable(ruleEntries));
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static IReadOnlyList<T> GetMessages<T>(RecordingDispatchProxy<IGameSession> sessionProxy)

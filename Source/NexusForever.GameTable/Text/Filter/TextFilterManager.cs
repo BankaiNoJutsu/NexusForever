@@ -2,14 +2,13 @@
 using System.Reflection;
 using NexusForever.Game.Static;
 using NexusForever.GameTable.Text.Static;
-using NexusForever.Shared;
 
 namespace NexusForever.GameTable.Text.Filter
 {
     /// <summary>
     /// A manager to validate client text, this is based on client class.
     /// </summary>
-    public sealed class TextFilterManager : Singleton<TextFilterManager>, ITextFilterManager
+    public sealed class TextFilterManager : ITextFilterManager
     {
         private ImmutableDictionary<Language, TextFilterLanguage> textFilters;
         private ImmutableDictionary<UserText, UserTextAttribute> userTextAttributes;

@@ -1,8 +1,7 @@
 using System.Collections.Immutable;
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using NexusForever.Game;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.Loot;
@@ -12,8 +11,6 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Tests.TestSupport;
-using NexusForever.GameTable;
-using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Chat.Model;
@@ -23,11 +20,9 @@ using NexusForever.Network.World.Message.Model.Loot;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Model.Story;
 using NexusForever.Network.World.Message.Static;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Loot;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class LootInstanceDeliveryTests
 {
     private const uint StaticItemId = 91001u;
@@ -35,7 +30,7 @@ public class LootInstanceDeliveryTests
     [Fact]
     public void GiveLoot_StaticItemInventoryFull_DoesNotMarkDeliveredAndCanBeRetried()
     {
-        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateItemInfo()));
+        IItemManager itemManager = CreateItemManager(CreateItemInfo());
 
         var inventory = new TestInventory(0u);
         IPlayer player = CreatePlayer(inventory, out var sessionProxy);
@@ -43,7 +38,8 @@ public class LootInstanceDeliveryTests
             ownerUnitId: 99u,
             looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
             looterType: LooterType.Player,
-            lootEntityType: LootEntityType.Creature);
+            lootEntityType: LootEntityType.Creature,
+            itemManager: itemManager);
 
         LootInstanceItem lootItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 3u);
 
@@ -86,7 +82,7 @@ public class LootInstanceDeliveryTests
     [Fact]
     public void GiveLoot_Cash_SendsLootGrant()
     {
-        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateItemInfo()));
+        IItemManager itemManager = CreateItemManager(CreateItemInfo());
 
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
         ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out var currencyProxy);
@@ -100,7 +96,8 @@ public class LootInstanceDeliveryTests
             ownerUnitId: 99u,
             looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
             looterType: LooterType.Player,
-            lootEntityType: LootEntityType.Creature);
+            lootEntityType: LootEntityType.Creature,
+            itemManager: itemManager);
 
         LootInstanceItem lootItem = lootInstance.AddLootItem((uint)CurrencyType.Credits, LootItemType.Cash, 17u);
 
@@ -126,7 +123,7 @@ public class LootInstanceDeliveryTests
     [Fact]
     public void DeliverAllLoot_MixedSuccessAndFailure_ReturnsFalseAndKeepsFailedItemRetryable()
     {
-        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateItemInfo()));
+        IItemManager itemManager = CreateItemManager(CreateItemInfo());
 
         var inventory = new TestInventory(0u);
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
@@ -142,7 +139,8 @@ public class LootInstanceDeliveryTests
             ownerUnitId: 99u,
             looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
             looterType: LooterType.Player,
-            lootEntityType: LootEntityType.Creature);
+            lootEntityType: LootEntityType.Creature,
+            itemManager: itemManager);
 
         LootInstanceItem cash = lootInstance.AddLootItem((uint)CurrencyType.Credits, LootItemType.Cash, 17u);
         LootInstanceItem staticItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 1u);
@@ -166,9 +164,9 @@ public class LootInstanceDeliveryTests
     [Fact]
     public void GiveGeneratedLoot_WithGrantedNotify_WhenPartiallyDelivered_DoesNotSendGrantedNotify()
     {
+        IItemManager itemManager = CreateItemManager(CreateItemInfo());
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
-        var manager = new GlobalLootManager(groupStateManager);
-        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateItemInfo()));
+        var manager = new GlobalLootManager(groupStateManager, itemManager: itemManager);
 
         var inventory = new TestInventory(0u);
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
@@ -199,7 +197,7 @@ public class LootInstanceDeliveryTests
     [Fact]
     public void GiveLoot_VirtualItemUpdatesVirtualCollectObjective()
     {
-        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateItemInfo(), CreateVirtualItemInfo(265u)));
+        IItemManager itemManager = CreateItemManager(CreateItemInfo());
 
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
         IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out var questManagerProxy);
@@ -213,7 +211,8 @@ public class LootInstanceDeliveryTests
             ownerUnitId: 99u,
             looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
             looterType: LooterType.Player,
-            lootEntityType: LootEntityType.Creature);
+            lootEntityType: LootEntityType.Creature,
+            itemManager: itemManager);
 
         LootInstanceItem lootItem = lootInstance.AddLootItem(265u, LootItemType.VirtualItem, 2u);
 
@@ -239,31 +238,15 @@ public class LootInstanceDeliveryTests
         Assert.Equal(2u, grant.LootItem.Amount);
     }
 
-    private static IServiceProvider BuildProvider(IItemInfo itemInfo, VirtualItemEntry virtualItem = null)
+    private static IItemManager CreateItemManager(IItemInfo itemInfo)
     {
-        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
-        var lootManager = new GlobalLootManager(groupStateManager);
         var itemManager = new ItemManager();
-        var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
-        {
-            GameTablePath = string.Empty
-        }));
 
         typeof(ItemManager)
             .GetField("item", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(itemManager, ImmutableDictionary<uint, IItemInfo>.Empty.Add(StaticItemId, itemInfo));
 
-        SetAutoProperty(gameTableManager, nameof(GameTableManager.Item), CreateGameTable(new Item2Entry
-        {
-            Id = StaticItemId
-        }));
-        SetAutoProperty(gameTableManager, nameof(GameTableManager.VirtualItem), CreateGameTable(virtualItem ?? CreateVirtualItemInfo(0u)));
-
-        return new ServiceCollection()
-            .AddSingleton(lootManager)
-            .AddSingleton(itemManager)
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return itemManager;
     }
 
     private static IItemInfo CreateItemInfo()
@@ -276,29 +259,6 @@ public class LootInstanceDeliveryTests
         });
         itemInfoProxy.SetMethodReturn(nameof(IItemInfo.IsStackable), false);
         return itemInfo;
-    }
-
-    private static VirtualItemEntry CreateVirtualItemInfo(uint virtualItemId)
-    {
-        return new VirtualItemEntry
-        {
-            Id             = virtualItemId,
-            ItemQualityId  = 4u
-        };
-    }
-
-    private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()
-    {
-        var table = (GameTable<T>)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(GameTable<T>));
-        SetAutoProperty(table, nameof(GameTable<T>.Entries), entries);
-        return table;
-    }
-
-    private static void SetAutoProperty(object instance, string propertyName, object value)
-    {
-        FieldInfo backingField = instance.GetType()
-            .GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        backingField.SetValue(instance, value);
     }
 
     private static IPlayer CreatePlayer(IInventory inventory, out RecordingDispatchProxy<IGameSession> sessionProxy)

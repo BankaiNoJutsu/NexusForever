@@ -8,6 +8,7 @@ using NexusForever.Game.Quest;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.RBAC;
 using NexusForever.Game.Static.Chat;
+using NexusForever.GameTable;
 using NexusForever.WorldServer.Command.Context;
 using NexusForever.WorldServer.Command.Convert;
 using NexusForever.WorldServer.Command.Static;
@@ -18,6 +19,17 @@ namespace NexusForever.WorldServer.Command.Handler
     [CommandTarget(typeof(IPlayer))]
     public class QuestCommandCategory : CommandCategory
     {
+        private readonly IGlobalQuestManager globalQuestManager;
+        private readonly IGameTableManager gameTableManager;
+
+        public QuestCommandCategory(
+            IGlobalQuestManager globalQuestManager,
+            IGameTableManager gameTableManager)
+        {
+            this.globalQuestManager = globalQuestManager;
+            this.gameTableManager   = gameTableManager;
+        }
+
         [Command(Permission.QuestList, "List all active quests.", "list")]
         public void HandleQuestList(ICommandContext context)
         {
@@ -27,7 +39,7 @@ namespace NexusForever.WorldServer.Command.Handler
             context.SendMessage(builder.ToString());
             foreach (Quest quest in context.GetTargetOrInvoker<IPlayer>().QuestManager.GetActiveQuests())
             {
-                var chatBuilder = new ChatMessageBuilder
+                var chatBuilder = new ChatMessageBuilder(gameTableManager)
                 {
                     Type = ChatChannelType.System,
                     Text = $"({quest.Id}) "
@@ -42,7 +54,7 @@ namespace NexusForever.WorldServer.Command.Handler
             [Parameter("Quest entry id to add to character.")]
             ushort questId)
         {
-            IQuestInfo info = GlobalQuestManager.Instance.GetQuestInfo(questId);
+            IQuestInfo info = globalQuestManager.GetQuestInfo(questId);
             if (info == null)
             {
                 context.SendMessage($"Quest id {questId} is invalid!");
@@ -57,7 +69,7 @@ namespace NexusForever.WorldServer.Command.Handler
             [Parameter("Quest entry id to achieve for character.")]
             ushort questId)
         {
-            IQuestInfo info = GlobalQuestManager.Instance.GetQuestInfo(questId);
+            IQuestInfo info = globalQuestManager.GetQuestInfo(questId);
             if (info == null)
             {
                 context.SendMessage($"Quest id {questId} is invalid!");
@@ -74,7 +86,7 @@ namespace NexusForever.WorldServer.Command.Handler
             [Parameter("Quest objective index to achieve for character.")]
             byte index)
         {
-            IQuestInfo info = GlobalQuestManager.Instance.GetQuestInfo(questId);
+            IQuestInfo info = globalQuestManager.GetQuestInfo(questId);
             if (info == null)
             {
                 context.SendMessage($"Quest id {questId} is invalid!");

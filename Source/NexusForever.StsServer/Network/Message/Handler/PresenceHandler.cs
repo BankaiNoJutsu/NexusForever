@@ -10,6 +10,14 @@ namespace NexusForever.StsServer.Network.Message.Handler
 {
     public static class PresenceHandler
     {
+        private static IDatabaseManager databaseManager;
+
+        public static void Initialise(
+            IDatabaseManager databaseManager)
+        {
+            PresenceHandler.databaseManager = databaseManager;
+        }
+
         [MessageHandler("/Presence/Login", SessionState.None)]
         public static void HandlePresenceLogin(StsSession session, PresenceLoginMessage message)
         {
@@ -83,7 +91,7 @@ namespace NexusForever.StsServer.Network.Message.Handler
             }
 
             session.Events.EnqueueEvent(new TaskGenericEvent<AccountModel>(
-                DatabaseManager.Instance.GetDatabase<AuthDatabase>().GetAccountByEmailAsync(requestedIdentity),
+                GetAuthDatabase().GetAccountByEmailAsync(requestedIdentity),
                 account =>
             {
                 EnqueuePresenceUserInfo(session, account, requestedIdentity);
@@ -136,6 +144,12 @@ namespace NexusForever.StsServer.Network.Message.Handler
             }
 
             return "";
+        }
+
+        private static AuthDatabase GetAuthDatabase()
+        {
+            AuthDatabase authDatabase = databaseManager?.GetDatabase<AuthDatabase>();
+            return authDatabase ?? throw new InvalidOperationException("AuthDatabase is not available.");
         }
     }
 }

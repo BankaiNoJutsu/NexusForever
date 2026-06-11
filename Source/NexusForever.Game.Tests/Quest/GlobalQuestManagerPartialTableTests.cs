@@ -1,15 +1,12 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Quest;
 using NexusForever.Game.Static.Quest;
-using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Tests.Quest;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class GlobalQuestManagerPartialTableTests
 {
     [Theory]
@@ -17,8 +14,7 @@ public class GlobalQuestManagerPartialTableTests
     [InlineData(true)]
     public void Initialise_WithMissingPrimaryTablesUsesEmptyCaches(bool includeEmptyTables)
     {
-        var manager = new GlobalQuestManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(manager, gameTableManager =>
+        var manager = CreateManager(gameTableManager =>
         {
             if (!includeEmptyTables)
                 return;
@@ -26,7 +22,7 @@ public class GlobalQuestManagerPartialTableTests
             SetTable(gameTableManager, nameof(GameTableManager.Quest2), CreateGameTable<Quest2Entry>());
             SetTable(gameTableManager, nameof(GameTableManager.Creature2), CreateGameTable<Creature2Entry>());
             SetTable(gameTableManager, nameof(GameTableManager.CommunicatorMessages), CreateGameTable<CommunicatorMessagesEntry>());
-        }));
+        });
 
         manager.Initialise();
 
@@ -41,8 +37,7 @@ public class GlobalQuestManagerPartialTableTests
     [Fact]
     public void Initialise_WithTableBackedRowsCachesQuestRelationsAndCommunicators()
     {
-        var manager = new GlobalQuestManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(manager, gameTableManager =>
+        var manager = CreateManager(gameTableManager =>
         {
             SetTable(gameTableManager, nameof(GameTableManager.Quest2), CreateGameTable(new Quest2Entry
             {
@@ -82,7 +77,7 @@ public class GlobalQuestManagerPartialTableTests
                     Quests           = CommunicatorValues(44u),
                     States           = CommunicatorValues((uint)QuestState.Accepted)
                 }));
-        }));
+        });
 
         manager.Initialise();
 
@@ -109,17 +104,12 @@ public class GlobalQuestManagerPartialTableTests
         return result;
     }
 
-    private static IServiceProvider BuildProvider(
-        GlobalQuestManager manager,
-        Action<GameTableManager> configure)
+    private static GlobalQuestManager CreateManager(Action<GameTableManager> configure)
     {
         var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         configure(gameTableManager);
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .AddSingleton(manager)
-            .BuildServiceProvider();
+        return new GlobalQuestManager(gameTableManager: gameTableManager);
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

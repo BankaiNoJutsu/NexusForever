@@ -20,7 +20,7 @@ namespace NexusForever.Game.Loot
         private readonly List<LootGroup> childLootGroups = [];
         private readonly List<LootItem> lootItems = [];
 
-        public LootGroup(LootGroupModel lootGroupModel, bool loadChildren = true)
+        public LootGroup(LootGroupModel lootGroupModel, bool loadChildren = true, IDatabaseManager databaseManager = null)
         {
             Id            = lootGroupModel.Id;
             Probability   = lootGroupModel.Probability;
@@ -30,10 +30,10 @@ namespace NexusForever.Game.Loot
             conditionType = (LootConditionType)lootGroupModel.ConditionType;
             condition     = lootGroupModel.Condition;
 
-            if (loadChildren)
+            if (loadChildren && databaseManager != null)
             {
-                foreach (LootGroupModel childLootGroup in DatabaseManager.Instance.GetDatabase<WorldDatabase>().GetLootGroupChildren(Id))
-                    childLootGroups.Add(new LootGroup(childLootGroup));
+                foreach (LootGroupModel childLootGroup in databaseManager.GetDatabase<WorldDatabase>().GetLootGroupChildren(Id))
+                    childLootGroups.Add(new LootGroup(childLootGroup, databaseManager: databaseManager));
             }
 
             foreach (LootItemModel lootItemModel in lootGroupModel.Item)

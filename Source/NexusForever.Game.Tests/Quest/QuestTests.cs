@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Account;
@@ -25,133 +24,107 @@ using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Script;
 using NexusForever.Script.Template.Collection;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Quest;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class QuestTests
 {
     [Fact]
     public void SendInitialPackets_IncludesCurrentObjectiveIdForActiveQuest()
     {
         IPlayer player = CreatePlayer(out var sessionProxy);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
 
-        try
-        {
-            var quest = new NexusForever.Game.Quest.Quest(
-                player,
-                CreateSequentialQuestInfo(),
-                CreateAcceptedQuestModel(firstObjectiveProgress: 5u));
+        var quest = new NexusForever.Game.Quest.Quest(
+            player,
+            CreateSequentialQuestInfo(),
+            CreateAcceptedQuestModel(firstObjectiveProgress: 5u),
+            scriptManager: CreateScriptManager());
 
-            var manager = new QuestManager(player, new CharacterModel());
-            AddActiveQuest(manager, quest);
+        var manager = CreateQuestManager(player);
+        AddActiveQuest(manager, quest);
 
-            manager.SendInitialPackets();
+        manager.SendInitialPackets();
 
-            ServerQuestInit init = sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .Select(i => i.Arguments[0])
-                .OfType<ServerQuestInit>()
-                .Single();
+        ServerQuestInit init = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .OfType<ServerQuestInit>()
+            .Single();
 
-            ServerQuestInit.QuestActive activeQuest = Assert.Single(init.Active);
-            Assert.Equal((ushort)9001, activeQuest.QuestId);
-            Assert.Equal(QuestState.Accepted, activeQuest.State);
-            Assert.Equal(102u, activeQuest.QuestObjectiveId);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        ServerQuestInit.QuestActive activeQuest = Assert.Single(init.Active);
+        Assert.Equal((ushort)9001, activeQuest.QuestId);
+        Assert.Equal(QuestState.Accepted, activeQuest.State);
+        Assert.Equal(102u, activeQuest.QuestObjectiveId);
     }
 
     [Fact]
     public void SendInitialPackets_ReplaysQuestStateAndObjectiveUpdatesForActiveQuest()
     {
         IPlayer player = CreatePlayer(out var sessionProxy);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
 
-        try
-        {
-            var quest = new NexusForever.Game.Quest.Quest(
-                player,
-                CreateSequentialQuestInfo(),
-                CreateAcceptedQuestModel(firstObjectiveProgress: 5u));
+        var quest = new NexusForever.Game.Quest.Quest(
+            player,
+            CreateSequentialQuestInfo(),
+            CreateAcceptedQuestModel(firstObjectiveProgress: 5u),
+            scriptManager: CreateScriptManager());
 
-            var manager = new QuestManager(player, new CharacterModel());
-            AddActiveQuest(manager, quest);
+        var manager = CreateQuestManager(player);
+        AddActiveQuest(manager, quest);
 
-            manager.SendInitialPackets();
+        manager.SendInitialPackets();
 
-            object[] messages = sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .Select(i => i.Arguments[0])
-                .ToArray();
+        object[] messages = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .ToArray();
 
-            Assert.IsType<ServerQuestInit>(messages[0]);
+        Assert.IsType<ServerQuestInit>(messages[0]);
 
-            ServerQuestStateChange stateChange = Assert.Single(messages.OfType<ServerQuestStateChange>());
-            Assert.Equal((ushort)9001, stateChange.QuestId);
-            Assert.Equal(QuestState.Accepted, stateChange.QuestState);
-            Assert.Equal(102u, stateChange.QuestObjectiveId);
+        ServerQuestStateChange stateChange = Assert.Single(messages.OfType<ServerQuestStateChange>());
+        Assert.Equal((ushort)9001, stateChange.QuestId);
+        Assert.Equal(QuestState.Accepted, stateChange.QuestState);
+        Assert.Equal(102u, stateChange.QuestObjectiveId);
 
-            ServerQuestObjectiveUpdate[] objectiveUpdates = messages
-                .OfType<ServerQuestObjectiveUpdate>()
-                .OrderBy(m => m.QuestObjectiveIndex)
-                .ToArray();
+        ServerQuestObjectiveUpdate[] objectiveUpdates = messages
+            .OfType<ServerQuestObjectiveUpdate>()
+            .OrderBy(m => m.QuestObjectiveIndex)
+            .ToArray();
 
-            Assert.Equal(2, objectiveUpdates.Length);
+        Assert.Equal(2, objectiveUpdates.Length);
 
-            Assert.Equal((ushort)9001, objectiveUpdates[0].QuestId);
-            Assert.Equal((byte)0, objectiveUpdates[0].QuestObjectiveIndex);
-            Assert.Equal(5u, objectiveUpdates[0].Completed);
+        Assert.Equal((ushort)9001, objectiveUpdates[0].QuestId);
+        Assert.Equal((byte)0, objectiveUpdates[0].QuestObjectiveIndex);
+        Assert.Equal(5u, objectiveUpdates[0].Completed);
 
-            Assert.Equal((ushort)9001, objectiveUpdates[1].QuestId);
-            Assert.Equal((byte)1, objectiveUpdates[1].QuestObjectiveIndex);
-            Assert.Equal(0u, objectiveUpdates[1].Completed);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal((ushort)9001, objectiveUpdates[1].QuestId);
+        Assert.Equal((byte)1, objectiveUpdates[1].QuestObjectiveIndex);
+        Assert.Equal(0u, objectiveUpdates[1].Completed);
     }
 
     [Fact]
     public void SendInitialPackets_UsesObjectiveCompletionFlagsFromStoredProgress()
     {
         IPlayer player = CreatePlayer(out var sessionProxy);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
 
-        try
-        {
-            var quest = new NexusForever.Game.Quest.Quest(
-                player,
-                CreateSequentialQuestInfo(),
-                CreateAcceptedQuestModel(firstObjectiveProgress: 5u));
+        var quest = new NexusForever.Game.Quest.Quest(
+            player,
+            CreateSequentialQuestInfo(),
+            CreateAcceptedQuestModel(firstObjectiveProgress: 5u),
+            scriptManager: CreateScriptManager());
 
-            var manager = new QuestManager(player, new CharacterModel());
-            AddActiveQuest(manager, quest);
+        var manager = CreateQuestManager(player);
+        AddActiveQuest(manager, quest);
 
-            manager.SendInitialPackets();
+        manager.SendInitialPackets();
 
-            ServerQuestInit init = sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .Select(i => i.Arguments[0])
-                .OfType<ServerQuestInit>()
-                .Single();
+        ServerQuestInit init = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .OfType<ServerQuestInit>()
+            .Single();
 
-            ServerQuestInit.QuestActive activeQuest = Assert.Single(init.Active);
-            Assert.Equal(QuestStateFlags.Tracked | QuestStateFlags.Objective0Complete, activeQuest.Flags);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        ServerQuestInit.QuestActive activeQuest = Assert.Single(init.Active);
+        Assert.Equal(QuestStateFlags.Tracked | QuestStateFlags.Objective0Complete, activeQuest.Flags);
     }
 
     [Theory]
@@ -162,7 +135,7 @@ public class QuestTests
         ushort hoverboardQuestId)
     {
         IPlayer player = CreatePlayer(out var sessionProxy);
-        var manager = new QuestManager(player, new CharacterModel());
+        var manager = CreateQuestManager(player);
 
         AddCompletedQuest(manager, CreateQuest(movementQuestId, CreateQuestInfo(movementQuestId), QuestState.Completed));
         AddActiveQuest(manager, CreateQuest(hoverboardQuestId, CreateQuestInfo(hoverboardQuestId), QuestState.Accepted, 21321u));
@@ -186,7 +159,7 @@ public class QuestTests
     public void SendInitialPackets_RidersReefMovementCompleteWithoutHoverboardActive_IncludesCompletedMovementRoot()
     {
         IPlayer player = CreatePlayer(out var sessionProxy);
-        var manager = new QuestManager(player, new CharacterModel());
+        var manager = CreateQuestManager(player);
 
         AddCompletedQuest(manager, CreateQuest(10513, CreateQuestInfo(10513), QuestState.Completed));
 
@@ -207,126 +180,95 @@ public class QuestTests
     public void ObjectiveUpdate_WhenSequentialObjectiveUnlocks_SendsCurrentObjectiveId()
     {
         IPlayer player = CreatePlayer(out var sessionProxy);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
 
-        try
-        {
-            var quest = new NexusForever.Game.Quest.Quest(player, CreateSequentialQuestInfo());
+        var quest = new NexusForever.Game.Quest.Quest(player, CreateSequentialQuestInfo(), scriptManager: CreateScriptManager());
 
-            Assert.Equal(101u, quest.GetCurrentObjectiveId());
+        Assert.Equal(101u, quest.GetCurrentObjectiveId());
 
-            quest.ObjectiveUpdate(QuestObjectiveType.KillCreature, 73464u, 5u);
+        quest.ObjectiveUpdate(QuestObjectiveType.KillCreature, 73464u, 5u);
 
-            Assert.Equal(102u, quest.GetCurrentObjectiveId());
+        Assert.Equal(102u, quest.GetCurrentObjectiveId());
 
-            ServerQuestStateChange stateChange = sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .Select(i => i.Arguments[0])
-                .OfType<ServerQuestStateChange>()
-                .Single();
+        ServerQuestStateChange stateChange = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .OfType<ServerQuestStateChange>()
+            .Single();
 
-            Assert.Equal((ushort)9001, stateChange.QuestId);
-            Assert.Equal(QuestState.Accepted, stateChange.QuestState);
-            Assert.Equal(102u, stateChange.QuestObjectiveId);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal((ushort)9001, stateChange.QuestId);
+        Assert.Equal(QuestState.Accepted, stateChange.QuestState);
+        Assert.Equal(102u, stateChange.QuestObjectiveId);
     }
 
     [Fact]
     public void ObjectiveUpdate_SyncsObjectiveCompletionFlags()
     {
         IPlayer player = CreatePlayer(out _);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
 
-        try
-        {
-            var quest = new NexusForever.Game.Quest.Quest(player, CreateSequentialQuestInfo());
-            quest.Flags = QuestStateFlags.Tracked;
+        var quest = new NexusForever.Game.Quest.Quest(player, CreateSequentialQuestInfo(), scriptManager: CreateScriptManager());
+        quest.Flags = QuestStateFlags.Tracked;
 
-            quest.ObjectiveUpdate(QuestObjectiveType.KillCreature, 73464u, 5u);
+        quest.ObjectiveUpdate(QuestObjectiveType.KillCreature, 73464u, 5u);
 
-            Assert.Equal(QuestStateFlags.Tracked | QuestStateFlags.Objective0Complete, quest.Flags);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(QuestStateFlags.Tracked | QuestStateFlags.Objective0Complete, quest.Flags);
     }
 
     [Fact]
     public void SendObjectiveWorldLocationUpdates_WithMissingDirectionTablesSendsZeroWorldLocation()
     {
         IPlayer player = CreatePlayer(out var sessionProxy);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(BuildGameTableManager());
+        GameTableManager gameTableManager = BuildGameTableManager();
 
-        try
-        {
-            var quest = new NexusForever.Game.Quest.Quest(
-                player,
-                CreateGuidanceQuestInfo(questDirectionId: 77u));
+        var quest = new NexusForever.Game.Quest.Quest(
+            player,
+            CreateGuidanceQuestInfo(questDirectionId: 77u),
+            scriptManager: CreateScriptManager(),
+            gameTableManager: gameTableManager);
 
-            quest.SendObjectiveWorldLocationUpdates();
+        quest.SendObjectiveWorldLocationUpdates();
 
-            ServerQuestObjectiveWorldLocation update = Assert.Single(sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .Select(i => i.Arguments[0])
-                .OfType<ServerQuestObjectiveWorldLocation>());
+        ServerQuestObjectiveWorldLocation update = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .OfType<ServerQuestObjectiveWorldLocation>());
 
-            Assert.Equal((ushort)9002, update.QuestId);
-            Assert.Equal((byte)0, update.QuestObjectiveIndex);
-            Assert.Equal(0u, update.WorldLocation2Id);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal((ushort)9002, update.QuestId);
+        Assert.Equal((byte)0, update.QuestObjectiveIndex);
+        Assert.Equal(0u, update.WorldLocation2Id);
     }
 
     [Fact]
     public void SendObjectiveWorldLocationUpdates_WithMissingDirectionEntryTableSendsZeroWorldLocation()
     {
         IPlayer player = CreatePlayer(out var sessionProxy);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(BuildGameTableManager(
+        GameTableManager gameTableManager = BuildGameTableManager(
             questDirectionTable: CreateGameTable(new QuestDirectionEntry
             {
                 Id                      = 77u,
                 QuestDirectionEntryId00 = 88u
-            })));
+            }));
 
-        try
-        {
-            var quest = new NexusForever.Game.Quest.Quest(
-                player,
-                CreateGuidanceQuestInfo(questDirectionId: 77u));
+        var quest = new NexusForever.Game.Quest.Quest(
+            player,
+            CreateGuidanceQuestInfo(questDirectionId: 77u),
+            scriptManager: CreateScriptManager(),
+            gameTableManager: gameTableManager);
 
-            quest.SendObjectiveWorldLocationUpdates();
+        quest.SendObjectiveWorldLocationUpdates();
 
-            ServerQuestObjectiveWorldLocation update = Assert.Single(sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .Select(i => i.Arguments[0])
-                .OfType<ServerQuestObjectiveWorldLocation>());
+        ServerQuestObjectiveWorldLocation update = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .OfType<ServerQuestObjectiveWorldLocation>());
 
-            Assert.Equal(0u, update.WorldLocation2Id);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(0u, update.WorldLocation2Id);
     }
 
     [Fact]
     public void SendObjectiveWorldLocationUpdates_WithSingleDirectionEntrySendsWorldLocation()
     {
         IPlayer player = CreatePlayer(out var sessionProxy);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(BuildGameTableManager(
+        GameTableManager gameTableManager = BuildGameTableManager(
             questDirectionTable: CreateGameTable(new QuestDirectionEntry
             {
                 Id                      = 77u,
@@ -336,27 +278,22 @@ public class QuestTests
             {
                 Id               = 88u,
                 WorldLocation2Id = 12345u
-            })));
+            }));
 
-        try
-        {
-            var quest = new NexusForever.Game.Quest.Quest(
-                player,
-                CreateGuidanceQuestInfo(questDirectionId: 77u));
+        var quest = new NexusForever.Game.Quest.Quest(
+            player,
+            CreateGuidanceQuestInfo(questDirectionId: 77u),
+            scriptManager: CreateScriptManager(),
+            gameTableManager: gameTableManager);
 
-            quest.SendObjectiveWorldLocationUpdates();
+        quest.SendObjectiveWorldLocationUpdates();
 
-            ServerQuestObjectiveWorldLocation update = Assert.Single(sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .Select(i => i.Arguments[0])
-                .OfType<ServerQuestObjectiveWorldLocation>());
+        ServerQuestObjectiveWorldLocation update = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .OfType<ServerQuestObjectiveWorldLocation>());
 
-            Assert.Equal(12345u, update.WorldLocation2Id);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(12345u, update.WorldLocation2Id);
     }
 
     [Theory]
@@ -369,8 +306,7 @@ public class QuestTests
     {
         IQuestInfo questInfo = CreateQuestInfo(questId);
         IPlayer player = CreateQuestCompletePlayer();
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildQuestCompleteProvider(
+        GlobalQuestManager globalQuestManager = CreateGlobalQuestManager(
             new Dictionary<ushort, IQuestInfo>
             {
                 [questId] = questInfo
@@ -380,20 +316,13 @@ public class QuestTests
                 [questId] = ImmutableList.Create(receiverA, receiverB)
             });
 
-        try
-        {
-            IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
-            var manager = new QuestManager(player, new CharacterModel());
-            AddActiveQuest(manager, quest);
+        IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
+        var manager = CreateQuestManager(player, globalQuestManager);
+        AddActiveQuest(manager, quest);
 
-            manager.QuestComplete(questId, reward: 0, communicator: false);
+        manager.QuestComplete(questId, reward: 0, communicator: false);
 
-            Assert.Equal(QuestState.Completed, quest.State);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(QuestState.Completed, quest.State);
     }
 
     [Fact]
@@ -403,8 +332,7 @@ public class QuestTests
 
         IQuestInfo questInfo = CreateQuestInfo(questId);
         IPlayer player = CreateQuestCompletePlayer();
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildQuestCompleteProvider(
+        GlobalQuestManager globalQuestManager = CreateGlobalQuestManager(
             new Dictionary<ushort, IQuestInfo>
             {
                 [questId] = questInfo
@@ -414,18 +342,11 @@ public class QuestTests
                 [questId] = ImmutableList.Create(74812u)
             });
 
-        try
-        {
-            IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
-            var manager = new QuestManager(player, new CharacterModel());
-            AddActiveQuest(manager, quest);
+        IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
+        var manager = CreateQuestManager(player, globalQuestManager);
+        AddActiveQuest(manager, quest);
 
-            Assert.Throws<QuestException>(() => manager.QuestComplete(questId, reward: 0, communicator: false));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Throws<QuestException>(() => manager.QuestComplete(questId, reward: 0, communicator: false));
     }
 
     [Theory]
@@ -449,8 +370,7 @@ public class QuestTests
             out _,
             out RecordingDispatchProxy<IAccountCurrencyManager> accountCurrencyProxy,
             visibleReceiverIds: ImmutableHashSet.Create(73421u));
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildQuestCompleteProvider(
+        GlobalQuestManager globalQuestManager = CreateGlobalQuestManager(
             new Dictionary<ushort, IQuestInfo>
             {
                 [questId] = questInfo
@@ -460,23 +380,16 @@ public class QuestTests
                 [questId] = ImmutableList.Create(73421u)
             });
 
-        try
-        {
-            IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
-            var manager = new QuestManager(player, new CharacterModel());
-            AddActiveQuest(manager, quest);
+        IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
+        var manager = CreateQuestManager(player, globalQuestManager);
+        AddActiveQuest(manager, quest);
 
-            manager.QuestComplete(questId, reward: 0, communicator: false);
+        manager.QuestComplete(questId, reward: 0, communicator: false);
 
-            RecordingDispatchProxy<IAccountCurrencyManager>.Invocation currencyGrant = Assert.Single(
-                accountCurrencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
-            Assert.Equal(AccountCurrencyType.Omnibit, currencyGrant.Arguments[0]);
-            Assert.Equal(1ul, currencyGrant.Arguments[1]);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        RecordingDispatchProxy<IAccountCurrencyManager>.Invocation currencyGrant = Assert.Single(
+            accountCurrencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+        Assert.Equal(AccountCurrencyType.Omnibit, currencyGrant.Arguments[0]);
+        Assert.Equal(1ul, currencyGrant.Arguments[1]);
     }
 
     [Theory]
@@ -499,8 +412,7 @@ public class QuestTests
         IPlayer player = CreateQuestRewardPlayer(
             out RecordingDispatchProxy<IInventory> inventoryProxy,
             out _);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildQuestCompleteProvider(
+        GlobalQuestManager globalQuestManager = CreateGlobalQuestManager(
             new Dictionary<ushort, IQuestInfo>
             {
                 [questId] = questInfo
@@ -512,24 +424,17 @@ public class QuestTests
                     : ImmutableList.Create(53619u, 53620u)
             });
 
-        try
-        {
-            IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
-            var manager = new QuestManager(player, new CharacterModel());
-            AddActiveQuest(manager, quest);
+        IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
+        var manager = CreateQuestManager(player, globalQuestManager);
+        AddActiveQuest(manager, quest);
 
-            manager.QuestComplete(questId, reward: 0, communicator: false);
+        manager.QuestComplete(questId, reward: 0, communicator: false);
 
-            RecordingDispatchProxy<IInventory>.Invocation itemGrant = Assert.Single(
-                inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
-            Assert.Equal(InventoryLocation.Inventory, itemGrant.Arguments[0]);
-            Assert.Equal(80875u, itemGrant.Arguments[1]);
-            Assert.Equal(1u, itemGrant.Arguments[2]);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        RecordingDispatchProxy<IInventory>.Invocation itemGrant = Assert.Single(
+            inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+        Assert.Equal(InventoryLocation.Inventory, itemGrant.Arguments[0]);
+        Assert.Equal(80875u, itemGrant.Arguments[1]);
+        Assert.Equal(1u, itemGrant.Arguments[2]);
     }
 
     [Theory]
@@ -580,8 +485,7 @@ public class QuestTests
             out RecordingDispatchProxy<IInventory> inventoryProxy,
             out _,
             visibleReceiverIds: ImmutableHashSet.Create(74812u));
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildQuestCompleteProvider(
+        GlobalQuestManager globalQuestManager = CreateGlobalQuestManager(
             new Dictionary<ushort, IQuestInfo>
             {
                 [questId] = questInfo
@@ -591,25 +495,18 @@ public class QuestTests
                 [questId] = ImmutableList.Create(74812u)
             });
 
-        try
-        {
-            IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
-            var manager = new QuestManager(player, new CharacterModel());
-            AddActiveQuest(manager, quest);
+        IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
+        var manager = CreateQuestManager(player, globalQuestManager);
+        AddActiveQuest(manager, quest);
 
-            manager.QuestComplete(questId, rewardSelection, communicator: false);
+        manager.QuestComplete(questId, rewardSelection, communicator: false);
 
-            IReadOnlyList<RecordingDispatchProxy<IInventory>.Invocation> itemGrants =
-                inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate));
-            Assert.Equal(2, itemGrants.Count);
-            Assert.Contains(itemGrants, invocation => (uint)invocation.Arguments[1] == requiredItemId);
-            Assert.Contains(itemGrants, invocation => (uint)invocation.Arguments[1] == selectedItemId);
-            Assert.DoesNotContain(itemGrants, invocation => (uint)invocation.Arguments[1] == unselectedItemId);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        IReadOnlyList<RecordingDispatchProxy<IInventory>.Invocation> itemGrants =
+            inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate));
+        Assert.Equal(2, itemGrants.Count);
+        Assert.Contains(itemGrants, invocation => (uint)invocation.Arguments[1] == requiredItemId);
+        Assert.Contains(itemGrants, invocation => (uint)invocation.Arguments[1] == selectedItemId);
+        Assert.DoesNotContain(itemGrants, invocation => (uint)invocation.Arguments[1] == unselectedItemId);
     }
 
     [Fact]
@@ -652,8 +549,7 @@ public class QuestTests
             out RecordingDispatchProxy<IInventory> inventoryProxy,
             out _,
             visibleReceiverIds: ImmutableHashSet.Create(74812u));
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildQuestCompleteProvider(
+        GlobalQuestManager globalQuestManager = CreateGlobalQuestManager(
             new Dictionary<ushort, IQuestInfo>
             {
                 [questId] = questInfo
@@ -663,44 +559,29 @@ public class QuestTests
                 [questId] = ImmutableList.Create(74812u)
             });
 
-        try
-        {
-            IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
-            var manager = new QuestManager(player, new CharacterModel());
-            AddActiveQuest(manager, quest);
+        IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
+        var manager = CreateQuestManager(player, globalQuestManager);
+        AddActiveQuest(manager, quest);
 
-            Assert.Throws<QuestException>(() => manager.QuestComplete(questId, reward: 9999, communicator: false));
+        Assert.Throws<QuestException>(() => manager.QuestComplete(questId, reward: 9999, communicator: false));
 
-            Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
     }
 
     [Fact]
     public void ObjectiveUpdate_WhenQuestIsCompleted_DoesNotRevertToAchieved()
     {
         IPlayer player = CreatePlayer(out _);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
 
-        try
-        {
-            var quest = new NexusForever.Game.Quest.Quest(
-                player,
-                CreateSequentialQuestInfo(),
-                CreateCompletedSequentialQuestModel());
+        var quest = new NexusForever.Game.Quest.Quest(
+            player,
+            CreateSequentialQuestInfo(),
+            CreateCompletedSequentialQuestModel(),
+            scriptManager: CreateScriptManager());
 
-            quest.ObjectiveUpdate(QuestObjectiveType.CompleteQuest, 9001u, 1u);
+        quest.ObjectiveUpdate(QuestObjectiveType.CompleteQuest, 9001u, 1u);
 
-            Assert.Equal(QuestState.Completed, quest.State);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(QuestState.Completed, quest.State);
     }
 
     [Fact]
@@ -994,19 +875,21 @@ public class QuestTests
         return quest;
     }
 
-    private static IServiceProvider BuildProvider(GameTableManager gameTableManager = null)
+    private static QuestManager CreateQuestManager(IPlayer player, IGlobalQuestManager globalQuestManager = null)
+    {
+        return new QuestManager(
+            player,
+            new CharacterModel(),
+            globalQuestManager: globalQuestManager ?? CreateGlobalQuestManager(),
+            scriptManager: CreateScriptManager());
+    }
+
+    private static IScriptManager CreateScriptManager()
     {
         IScriptCollection scriptCollection = RecordingDispatchProxy<IScriptCollection>.Create(out _);
         IScriptManager scriptManager = RecordingDispatchProxy<IScriptManager>.Create(out var scriptManagerProxy);
         scriptManagerProxy.SetMethodReturn(nameof(IScriptManager.InitialiseOwnedScripts), scriptCollection);
-
-        var services = new ServiceCollection()
-            .AddSingleton(scriptManager);
-
-        if (gameTableManager != null)
-            services.AddSingleton(gameTableManager);
-
-        return services.BuildServiceProvider();
+        return scriptManager;
     }
 
     private static GameTableManager BuildGameTableManager(
@@ -1026,15 +909,15 @@ public class QuestTests
         return gameTableManager;
     }
 
-    private static IServiceProvider BuildQuestCompleteProvider(
-        IReadOnlyDictionary<ushort, IQuestInfo> questInfos,
-        IReadOnlyDictionary<ushort, ImmutableList<uint>> questReceivers)
+    private static GlobalQuestManager CreateGlobalQuestManager(
+        IReadOnlyDictionary<ushort, IQuestInfo> questInfos = null,
+        IReadOnlyDictionary<ushort, ImmutableList<uint>> questReceivers = null)
     {
         var globalQuestManager = new GlobalQuestManager();
         SetPrivateField(
             globalQuestManager,
             "questInfoStore",
-            questInfos.ToImmutableDictionary());
+            questInfos?.ToImmutableDictionary() ?? ImmutableDictionary<ushort, IQuestInfo>.Empty);
         SetPrivateField(
             globalQuestManager,
             "questGiverStore",
@@ -1042,18 +925,21 @@ public class QuestTests
         SetPrivateField(
             globalQuestManager,
             "questReceiverStore",
-            questReceivers.ToImmutableDictionary());
-
-        var disableManager = new DisableManager();
+            questReceivers?.ToImmutableDictionary() ?? ImmutableDictionary<ushort, ImmutableList<uint>>.Empty);
         SetPrivateField(
-            disableManager,
-            "disables",
-            ImmutableDictionary<ulong, Disable>.Empty);
+            globalQuestManager,
+            "communicatorStore",
+            ImmutableDictionary<uint, ICommunicatorMessage>.Empty);
+        SetPrivateField(
+            globalQuestManager,
+            "communicatorQuestStore",
+            ImmutableDictionary<ushort, ImmutableList<ICommunicatorMessage>>.Empty);
+        SetPrivateField(
+            globalQuestManager,
+            "communicatorQuestStateTriggerStore",
+            ImmutableDictionary<(ushort, QuestState), ImmutableList<ICommunicatorMessage>>.Empty);
 
-        return new ServiceCollection()
-            .AddSingleton(globalQuestManager)
-            .AddSingleton(disableManager)
-            .BuildServiceProvider();
+        return globalQuestManager;
     }
 
     private static void AddActiveQuest(QuestManager manager, IQuest quest)

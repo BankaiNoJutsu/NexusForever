@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
+using NexusForever.Game.Abstract.RBAC;
 using NexusForever.WorldServer.Command;
 using NexusForever.WorldServer.Command.Context;
 
@@ -14,9 +15,17 @@ namespace NexusForever.WorldServer.Web.Middleware
 {
     public class WebSocketMiddleware
     {
-        public WebSocketMiddleware(RequestDelegate next)
+        private readonly ICommandManager commandManager;
+        private readonly IRBACManager rbacManager;
+
+        public WebSocketMiddleware(
+            RequestDelegate next,
+            ICommandManager commandManager,
+            IRBACManager rbacManager)
         {
             Next = next;
+            this.commandManager = commandManager;
+            this.rbacManager = rbacManager;
         }
 
         public RequestDelegate Next { get; }
@@ -40,7 +49,7 @@ namespace NexusForever.WorldServer.Web.Middleware
                         if (result.CloseStatus != null)
                             continue;
 
-                        CommandManager.Instance.HandleCommandDelay(new WebSocketCommandContext(webSocket), clientMessage.Message);
+                        commandManager.HandleCommandDelay(new WebSocketCommandContext(webSocket, rbacManager), clientMessage.Message);
                     }
                 }
                 else

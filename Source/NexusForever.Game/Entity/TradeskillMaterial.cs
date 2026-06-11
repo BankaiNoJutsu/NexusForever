@@ -37,24 +37,29 @@ namespace NexusForever.Game.Entity
 
         private TradeskillMaterialSaveMask saveMask;
 
-        public TradeskillMaterial(CharacterTradeskillMaterialModel model)
+        public TradeskillMaterial(
+            CharacterTradeskillMaterialModel model,
+            IGameTableManager gameTableManager)
         {
             Owner      = model.Id;
             MaterialId = model.MaterialId;
             Amount     = model.Amount;
 
-            Entry      = GameTableManager.Instance.TradeskillMaterial.GetEntry(MaterialId);
+            Entry      = gameTableManager?.TradeskillMaterial?.GetEntry(MaterialId);
 
             saveMask   = TradeskillMaterialSaveMask.None;
         }
 
-        public TradeskillMaterial(ulong characterId, ushort materialId)
+        public TradeskillMaterial(
+            ulong characterId,
+            ushort materialId,
+            IGameTableManager gameTableManager)
         {
             Owner      = characterId;
             MaterialId = materialId;
             Amount     = 0;
 
-            Entry      = GameTableManager.Instance.TradeskillMaterial.GetEntry(MaterialId);
+            Entry      = gameTableManager?.TradeskillMaterial?.GetEntry(MaterialId);
 
             saveMask   = TradeskillMaterialSaveMask.Create;
         }

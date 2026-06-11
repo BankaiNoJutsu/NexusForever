@@ -1,5 +1,4 @@
 using System.Numerics;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Guild;
@@ -15,13 +14,11 @@ using NexusForever.GameTable.Model;
 using NexusForever.Network;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Housing;
 
 namespace NexusForever.Game.Tests.Housing;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class ClientHousingCommunityUpdateHandlerTests
 {
     private const ushort RealmId = 7;
@@ -46,9 +43,6 @@ public class ClientHousingCommunityUpdateHandlerTests
 
         IResidenceEntrance entrance = CreateEntrance();
         globalResidenceManagerProxy.SetMethodReturn(nameof(IGlobalResidenceManager.GetResidenceEntrance), entrance);
-
-        using ServiceProvider provider = BuildMapLockProvider();
-        using LegacyServiceProviderScope providerScope = new(provider);
 
         handler.HandleMessage(session, CreatePlacementRequest(2u));
 
@@ -106,7 +100,8 @@ public class ClientHousingCommunityUpdateHandlerTests
     {
         IGlobalResidenceManager globalResidenceManager = RecordingDispatchProxy<IGlobalResidenceManager>.Create(out globalResidenceManagerProxy);
         IRealmContext realmContext = CreateRealmContext(out realmContextProxy);
-        return new ClientHousingCommunityPlacementHandler(globalResidenceManager, realmContext);
+        IMapLockManager mapLockManager = RecordingDispatchProxy<IMapLockManager>.Create(out _);
+        return new ClientHousingCommunityPlacementHandler(globalResidenceManager, realmContext, mapLockManager);
     }
 
     private static ClientHousingCommunityPrivacyLevelHandler CreatePrivacyHandler(
@@ -194,17 +189,6 @@ public class ClientHousingCommunityUpdateHandlerTests
         packet.TargetResidence.ResidenceId = CommunityResidenceId;
         SetPacketProperty(packet, nameof(ClientHousingCommunityPrivacyLevel.PrivacyLevel), privacyLevel);
         return packet;
-    }
-
-    private static ServiceProvider BuildMapLockProvider()
-    {
-        IMapLockManager mapLockManager = RecordingDispatchProxy<IMapLockManager>.Create(out RecordingDispatchProxy<IMapLockManager> mapLockManagerProxy);
-        IResidenceMapLock mapLock = RecordingDispatchProxy<IResidenceMapLock>.Create(out _);
-        mapLockManagerProxy.SetMethodReturn(nameof(IMapLockManager.GetResidenceLock), mapLock);
-
-        return new ServiceCollection()
-            .AddSingleton(mapLockManager)
-            .BuildServiceProvider();
     }
 
     private static void SetPacketProperty(object packet, string propertyName, object value)

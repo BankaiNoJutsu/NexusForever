@@ -9,7 +9,7 @@ using NexusForever.Shared;
 
 namespace NexusForever.Game.Prerequisite
 {
-    public sealed class PrerequisiteManager : Singleton<PrerequisiteManager>, IPrerequisiteManager
+    public sealed class PrerequisiteManager : IPrerequisiteManager
     {
         #region Dependency Injection
 

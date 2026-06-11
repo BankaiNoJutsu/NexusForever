@@ -1,14 +1,13 @@
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.Database.Configuration.Model;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Mail;
 using NexusForever.Game.Marketplace;
@@ -19,18 +18,15 @@ using NexusForever.GameTable;
 using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model.Mail;
-using NexusForever.Shared;
-using NexusForever.Shared.Configuration;
 
 namespace NexusForever.Game.Tests.Mail;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class MarketplaceMailSettlementTests
 {
     [Fact]
     public void MailItem_ItemAuctionWon_UsesLocalizedTextAndAuctionContentType()
     {
-        using LegacyServiceProviderScope scope = UseGameTableProvider();
+        var assetManager = new AssetManager();
 
         MailItem mail = new(new MailParameters
         {
@@ -40,7 +36,7 @@ public class MarketplaceMailSettlementTests
             SubjectStringId      = MarketplaceMailTexts.FallbackMarketplaceLocalizedTextId,
             BodyStringId         = MarketplaceMailTexts.FallbackMarketplaceLocalizedTextId,
             DeliverySpeed        = DeliverySpeed.Instant
-        });
+        }, assetManager);
 
         ServerMailAvailable.Mail packet = mail.Build();
 
@@ -54,7 +50,7 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MailItem_CommodityAuctionReturn_UsesAuctionExpiredContentType()
     {
-        using LegacyServiceProviderScope scope = UseGameTableProvider();
+        var assetManager = new AssetManager();
 
         MailItem mail = new(new MailParameters
         {
@@ -64,7 +60,7 @@ public class MarketplaceMailSettlementTests
             SubjectStringId      = MarketplaceMailTexts.FallbackMarketplaceLocalizedTextId,
             BodyStringId         = MarketplaceMailTexts.FallbackMarketplaceLocalizedTextId,
             DeliverySpeed        = DeliverySpeed.Instant
-        });
+        }, assetManager);
 
         ServerMailAvailable.Mail packet = mail.Build();
 
@@ -75,8 +71,6 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MailItem_PersistedMarketplaceMail_PreservesStoredContentType()
     {
-        using LegacyServiceProviderScope scope = UseGameTableProvider();
-
         MailItem mail = new(new CharacterMailModel
         {
             Id               = 101ul,
@@ -99,8 +93,6 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MailItem_PersistedLegacyMarketplaceMail_FallsBackToSenderType()
     {
-        using LegacyServiceProviderScope scope = UseGameTableProvider();
-
         MailItem mail = new(new CharacterMailModel
         {
             Id               = 101ul,
@@ -123,8 +115,6 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MailItem_Build_ReportsRemainingExpiryDays()
     {
-        using LegacyServiceProviderScope scope = UseGameTableProvider();
-
         MailItem mail = new(new CharacterMailModel
         {
             Id               = 101ul,
@@ -146,34 +136,31 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MarketplaceMailTexts_ResolvesAchievementTextToLocalizedId()
     {
-        using LegacyServiceProviderScope scope = UseGameTableProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new AchievementTextEntry
             {
                 Id              = MarketplaceMailTexts.MarketplaceMailAchievementTextId,
                 LocalizedTextId = 278287u
             });
 
-        Assert.True(MarketplaceMailTexts.TryGetMarketplaceMailLocalizedTextId(out uint localizedTextId));
+        Assert.True(MarketplaceMailTexts.TryGetMarketplaceMailLocalizedTextId(out uint localizedTextId, gameTableManager));
         Assert.Equal(278287u, localizedTextId);
     }
 
     [Fact]
-    public void MarketplaceMailDelivery_IsAvailable_UsesRegisteredDatabaseManagerInterface()
+    public void MarketplaceMailDelivery_IsAvailable_UsesExplicitCharacterDatabase()
     {
-        IDatabaseManager databaseManager = RecordingDispatchProxy<IDatabaseManager>.Create(out RecordingDispatchProxy<IDatabaseManager> databaseProxy);
-        databaseProxy.SetMethodReturn(nameof(IDatabaseManager.GetDatabase), new CharacterDatabase());
-
-        var services = new ServiceCollection();
-        services.AddSingleton(databaseManager);
-        using var scope = new LegacyServiceProviderScope(services.BuildServiceProvider());
-
-        Assert.True(MarketplaceMailDelivery.IsAvailable);
+        Assert.True(MarketplaceMailDelivery.IsAvailable(new CharacterDatabase()));
+        Assert.False(MarketplaceMailDelivery.IsAvailable(null));
     }
 
     [Fact]
     public void MarketplaceMailDelivery_AdditionalSaveFailure_RestoresAttachedItemOwner()
     {
-        using LegacyServiceProviderScope scope = UseMarketplaceMailProvider();
+        CreateMarketplaceMailDependencies(
+            out CharacterDatabase characterDatabase,
+            out GameTableManager gameTableManager,
+            out AssetManager assetManager);
 
         IItem item = RecordingDispatchProxy<IItem>.Create(out RecordingDispatchProxy<IItem> itemProxy);
         itemProxy.SetProperty(nameof(IItem.Id), 123u);
@@ -182,6 +169,9 @@ public class MarketplaceMailSettlementTests
 
         bool additionalSaveInvoked = false;
         bool result = MarketplaceMailDelivery.TrySendItemAuctionWonMail(
+            characterDatabase,
+            gameTableManager,
+            assetManager,
             200ul,
             item,
             _ =>
@@ -198,7 +188,10 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MarketplaceMailDelivery_AuctionReturnAdditionalSaveFailure_RestoresAttachedItemOwner()
     {
-        using LegacyServiceProviderScope scope = UseMarketplaceMailProvider();
+        CreateMarketplaceMailDependencies(
+            out CharacterDatabase characterDatabase,
+            out GameTableManager gameTableManager,
+            out AssetManager assetManager);
 
         IItem item = RecordingDispatchProxy<IItem>.Create(out RecordingDispatchProxy<IItem> itemProxy);
         itemProxy.SetProperty(nameof(IItem.Id), 123u);
@@ -207,6 +200,9 @@ public class MarketplaceMailSettlementTests
 
         bool additionalSaveInvoked = false;
         bool result = MarketplaceMailDelivery.TrySendItemAuctionReturnMail(
+            characterDatabase,
+            gameTableManager,
+            assetManager,
             200ul,
             item,
             _ =>
@@ -223,13 +219,19 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MarketplaceMailDelivery_CommodityReturnAdditionalSaveFailure_ReturnsFalse()
     {
-        using LegacyServiceProviderScope scope = UseMarketplaceMailProvider();
+        CreateMarketplaceMailDependencies(
+            out CharacterDatabase characterDatabase,
+            out GameTableManager gameTableManager,
+            out AssetManager assetManager);
 
         IItemInfo itemInfo = CreateItemInfo(123u);
-        PrimeItemManager(itemInfo);
+        ItemManager itemManager = CreatePrimedItemManager(itemInfo);
 
         bool additionalSaveInvoked = false;
         bool result = MarketplaceMailDelivery.TrySendCommodityAuctionReturnMail(
+            characterDatabase,
+            gameTableManager,
+            assetManager,
             200ul,
             itemInfo.Id,
             2u,
@@ -237,7 +239,8 @@ public class MarketplaceMailSettlementTests
             {
                 additionalSaveInvoked = true;
                 throw new InvalidOperationException("Simulated marketplace settlement save failure.");
-            });
+            },
+            itemManager: itemManager);
 
         Assert.False(result);
         Assert.True(additionalSaveInvoked);
@@ -246,13 +249,19 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MarketplaceMailDelivery_CommodityFillAdditionalSaveFailure_ReturnsFalse()
     {
-        using LegacyServiceProviderScope scope = UseMarketplaceMailProvider();
+        CreateMarketplaceMailDependencies(
+            out CharacterDatabase characterDatabase,
+            out GameTableManager gameTableManager,
+            out AssetManager assetManager);
 
         IItemInfo itemInfo = CreateItemInfo(123u);
-        PrimeItemManager(itemInfo);
+        ItemManager itemManager = CreatePrimedItemManager(itemInfo);
 
         bool additionalSaveInvoked = false;
         bool result = MarketplaceMailDelivery.TrySendCommodityAuctionFillMail(
+            characterDatabase,
+            gameTableManager,
+            assetManager,
             200ul,
             itemInfo.Id,
             2u,
@@ -260,65 +269,38 @@ public class MarketplaceMailSettlementTests
             {
                 additionalSaveInvoked = true;
                 throw new InvalidOperationException("Simulated marketplace settlement save failure.");
-            });
+            },
+            itemManager: itemManager);
 
         Assert.False(result);
         Assert.True(additionalSaveInvoked);
     }
 
-    private static LegacyServiceProviderScope UseGameTableProvider(params AchievementTextEntry[] achievementTexts)
+    private static void CreateMarketplaceMailDependencies(
+        out CharacterDatabase characterDatabase,
+        out GameTableManager gameTableManager,
+        out AssetManager assetManager,
+        params AchievementTextEntry[] achievementTexts)
     {
-        var configuration = new SharedConfiguration(new ConfigurationBuilder().Build());
-        configuration.Initialise<TestConfiguration>();
+        gameTableManager = CreateGameTableManager(achievementTexts);
+        assetManager = new AssetManager();
 
-        var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
-        {
-            GameTablePath = string.Empty
-        }));
-        SetAutoProperty(gameTableManager, nameof(GameTableManager.AchievementText), CreateGameTable(achievementTexts));
-
-        var services = new ServiceCollection();
-        services.AddSingleton(configuration);
-        services.AddSingleton(new AssetManager());
-        services.AddSingleton(gameTableManager);
-        return new LegacyServiceProviderScope(services.BuildServiceProvider());
-    }
-
-    private static LegacyServiceProviderScope UseMarketplaceMailProvider(params AchievementTextEntry[] achievementTexts)
-    {
-        var configuration = new SharedConfiguration(new ConfigurationBuilder().Build());
-        configuration.Initialise<TestConfiguration>();
-
-        var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
-        {
-            GameTablePath = string.Empty
-        }));
-        SetAutoProperty(gameTableManager, nameof(GameTableManager.AchievementText), CreateGameTable(achievementTexts));
-
-        var characterDatabase = new CharacterDatabase();
+        characterDatabase = new CharacterDatabase();
         characterDatabase.Initialise(new DatabaseConnectionString
         {
             Provider         = DatabaseProvider.MySql,
             ConnectionString = "server=127.0.0.1;user id=nexus;password=nexus;database=nexus_forever_character;"
         });
-
-        var databaseManager = (DatabaseManager)RuntimeHelpers.GetUninitializedObject(typeof(DatabaseManager));
-        SetPrivateField(
-            databaseManager,
-            "databases",
-            System.Collections.Immutable.ImmutableDictionary<Type, IDatabase>.Empty.Add(typeof(CharacterDatabase), characterDatabase));
-
-        var services = new ServiceCollection();
-        services.AddSingleton(configuration);
-        services.AddSingleton(new AssetManager());
-        services.AddSingleton(gameTableManager);
-        services.AddSingleton(new ItemManager());
-        services.AddSingleton(databaseManager);
-        return new LegacyServiceProviderScope(services.BuildServiceProvider());
     }
 
-    private sealed class TestConfiguration
+    private static GameTableManager CreateGameTableManager(params AchievementTextEntry[] achievementTexts)
     {
+        var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
+        {
+            GameTablePath = string.Empty
+        }));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.AchievementText), CreateGameTable(achievementTexts));
+        return gameTableManager;
     }
 
     private static IItemInfo CreateItemInfo(uint itemId)
@@ -334,10 +316,12 @@ public class MarketplaceMailSettlementTests
         return itemInfo;
     }
 
-    private static void PrimeItemManager(IItemInfo itemInfo)
+    private static ItemManager CreatePrimedItemManager(IItemInfo itemInfo)
     {
-        SetPrivateField(ItemManager.Instance, "item", ImmutableDictionary<uint, IItemInfo>.Empty.Add(itemInfo.Id, itemInfo));
-        SetPrivateField(ItemManager.Instance, "nextItemId", 1ul);
+        var itemManager = new ItemManager();
+        SetPrivateField(itemManager, "item", ImmutableDictionary<uint, IItemInfo>.Empty.Add(itemInfo.Id, itemInfo));
+        SetPrivateField(itemManager, "nextItemId", 1ul);
+        return itemManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

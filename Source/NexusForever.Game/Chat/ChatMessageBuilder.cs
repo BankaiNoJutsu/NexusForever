@@ -31,6 +31,12 @@ namespace NexusForever.Game.Chat
         public byte PremiumTier { get; set; }
 
         private readonly StringBuilder builder = new();
+        private readonly IGameTableManager gameTableManager;
+
+        public ChatMessageBuilder(IGameTableManager gameTableManager = null)
+        {
+            this.gameTableManager = gameTableManager;
+        }
 
         /// <summary>
         /// Append text to the end of the message.
@@ -45,7 +51,7 @@ namespace NexusForever.Game.Chat
         /// </summary>
         public void AppendItem(uint itemId)
         {
-            if (GameTableManager.Instance.Item?.GetEntry(itemId) == null)
+            if (gameTableManager?.Item?.GetEntry(itemId) == null)
                 throw new ArgumentException($"Invalid item entry id {itemId}!");
 
             builder.Append("[I]");
@@ -66,7 +72,7 @@ namespace NexusForever.Game.Chat
         /// </summary>
         public void AppendQuest(ushort questId)
         {
-            if (GameTableManager.Instance.Quest2?.GetEntry(questId) == null)
+            if (gameTableManager?.Quest2?.GetEntry(questId) == null)
                 throw new ArgumentException($"Invalid quest entry id {questId}!");
 
             builder.Append("[Q]");

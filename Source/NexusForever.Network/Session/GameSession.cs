@@ -33,11 +33,14 @@ namespace NexusForever.Network.Session
         #region Dependency Injection
 
         private readonly IMessageManager messageManager;
+        private readonly IServiceProvider serviceProvider;
 
         public GameSession(
-            IMessageManager messageManager)
+            IMessageManager messageManager,
+            IServiceProvider serviceProvider)
         {
             this.messageManager = messageManager;
+            this.serviceProvider = serviceProvider;
         }
 
         #endregion
@@ -195,7 +198,6 @@ namespace NexusForever.Network.Session
             try
             {
                 //using IServiceScope serviceScope = CreateHandlePacketScope();
-                var serviceProvider = LegacyServiceProvider.Provider;
 
                 using var reader = new ClientGamePacketReader();
                 reader.Initialise(packet, encryption);
@@ -303,7 +305,7 @@ namespace NexusForever.Network.Session
 
         protected virtual IServiceScope CreateHandlePacketScope()
         {
-            return LegacyServiceProvider.Provider.CreateScope();
+            return serviceProvider.CreateScope();
         }
 
         /// <summary>

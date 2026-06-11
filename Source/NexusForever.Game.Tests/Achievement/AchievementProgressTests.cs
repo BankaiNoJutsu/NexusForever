@@ -1,18 +1,14 @@
 using System.Collections.Immutable;
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Achievement;
 using NexusForever.Game.Static.Achievement;
-using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Achievement;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class AchievementProgressTests
 {
     [Fact]
@@ -118,28 +114,19 @@ public class AchievementProgressTests
             new AchievementChecklistEntry { Bit = 1u, ObjectId = 101u });
 
         var manager = new TestAchievementManager(info);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildDisableProvider();
 
-        try
-        {
-            manager.Check(info, 100u);
-            manager.Check(info, 100u);
+        manager.Check(info, 100u);
+        manager.Check(info, 100u);
 
-            Assert.False(manager.Get(info.Id).IsComplete());
-            Assert.Equal(1u, manager.Get(info.Id).ProgressCount);
-            Assert.Equal(1u, manager.Get(info.Id).CreditedChecklistMask);
+        Assert.False(manager.Get(info.Id).IsComplete());
+        Assert.Equal(1u, manager.Get(info.Id).ProgressCount);
+        Assert.Equal(1u, manager.Get(info.Id).CreditedChecklistMask);
 
-            manager.Check(info, 101u);
+        manager.Check(info, 101u);
 
-            Assert.True(manager.Get(info.Id).IsComplete());
-            Assert.Equal(2u, manager.Get(info.Id).ProgressCount);
-            Assert.Equal(3u, manager.Get(info.Id).CreditedChecklistMask);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.True(manager.Get(info.Id).IsComplete());
+        Assert.Equal(2u, manager.Get(info.Id).ProgressCount);
+        Assert.Equal(3u, manager.Get(info.Id).CreditedChecklistMask);
     }
 
     [Fact]
@@ -155,22 +142,13 @@ public class AchievementProgressTests
             });
 
         var manager = new TestAchievementManager(info);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildDisableProvider();
 
-        try
-        {
-            manager.Check(info, 1463u);
+        manager.Check(info, 1463u);
 
-            IAchievement achievement = manager.Get(info.Id);
-            Assert.False(achievement.IsComplete());
-            Assert.Equal(0u, achievement.ProgressCount);
-            Assert.Empty(manager.SentUpdates);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        IAchievement achievement = manager.Get(info.Id);
+        Assert.False(achievement.IsComplete());
+        Assert.Equal(0u, achievement.ProgressCount);
+        Assert.Empty(manager.SentUpdates);
     }
 
     [Fact]
@@ -186,22 +164,13 @@ public class AchievementProgressTests
             });
 
         var manager = new TestAchievementManager(info);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildDisableProvider();
 
-        try
-        {
-            manager.Check(info, 1463u);
+        manager.Check(info, 1463u);
 
-            IAchievement achievement = manager.Get(info.Id);
-            Assert.True(achievement.IsComplete());
-            Assert.Equal(1u, achievement.ProgressCount);
-            Assert.Single(manager.SentUpdates);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        IAchievement achievement = manager.Get(info.Id);
+        Assert.True(achievement.IsComplete());
+        Assert.Equal(1u, achievement.ProgressCount);
+        Assert.Single(manager.SentUpdates);
     }
 
     [Fact]
@@ -217,23 +186,14 @@ public class AchievementProgressTests
             new AchievementChecklistEntry { Bit = 32u, ObjectId = 100u });
 
         var manager = new TestAchievementManager(info);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildDisableProvider();
 
-        try
-        {
-            manager.Check(info, 100u);
+        manager.Check(info, 100u);
 
-            IAchievement achievement = manager.Get(info.Id);
-            Assert.False(achievement.IsComplete());
-            Assert.Equal(0u, achievement.ProgressCount);
-            Assert.Equal(0u, achievement.CreditedChecklistMask);
-            Assert.Empty(manager.SentUpdates);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        IAchievement achievement = manager.Get(info.Id);
+        Assert.False(achievement.IsComplete());
+        Assert.Equal(0u, achievement.ProgressCount);
+        Assert.Equal(0u, achievement.CreditedChecklistMask);
+        Assert.Empty(manager.SentUpdates);
     }
 
     private sealed class TestAchievementInfo : IAchievementInfo
@@ -260,6 +220,7 @@ public class AchievementProgressTests
         public IReadOnlyList<IAchievement> SentUpdates => sentUpdates;
 
         public TestAchievementManager(IAchievementInfo info)
+            : base(CreateDisableManager())
         {
             achievements.Add(info.Id, new Achievement<CharacterAchievementModel>(OwnerId, info));
         }
@@ -290,15 +251,13 @@ public class AchievementProgressTests
         }
     }
 
-    private static IServiceProvider BuildDisableProvider()
+    private static DisableManager CreateDisableManager()
     {
         var disableManager = new DisableManager();
         typeof(DisableManager)
             .GetField("disables", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(disableManager, ImmutableDictionary<ulong, Disable>.Empty);
 
-        return new ServiceCollection()
-            .AddSingleton(disableManager)
-            .BuildServiceProvider();
+        return disableManager;
     }
 }

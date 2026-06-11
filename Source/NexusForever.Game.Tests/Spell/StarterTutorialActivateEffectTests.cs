@@ -1,34 +1,33 @@
 using System.Collections.Immutable;
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Spell;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
-using NexusForever.Shared;
 using static NexusForever.Game.Static.Tutorial.StarterTutorialDefinition;
 
 namespace NexusForever.Game.Tests.Spell;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public sealed class StarterTutorialActivateEffectTests : IDisposable
 {
-    private readonly IServiceProvider previousProvider;
+    private readonly ISpellEffectDependencyResolver previousDependencyResolver;
 
     public StarterTutorialActivateEffectTests()
     {
-        previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateAssetManager())
-            .BuildServiceProvider();
+        ISpellEffectDependencyResolver resolver = RecordingDispatchProxy<ISpellEffectDependencyResolver>.Create(
+            out RecordingDispatchProxy<ISpellEffectDependencyResolver> resolverProxy);
+        resolverProxy.SetMethodReturn(nameof(ISpellEffectDependencyResolver.GetAssetManager), CreateAssetManager());
+
+        previousDependencyResolver = global::NexusForever.Game.Spell.SpellHandler.InitialiseDependencyResolver(resolver);
     }
 
     public void Dispose()
     {
-        LegacyServiceProvider.Provider = previousProvider;
+        global::NexusForever.Game.Spell.SpellHandler.InitialiseDependencyResolver(previousDependencyResolver);
     }
 
     [Fact]

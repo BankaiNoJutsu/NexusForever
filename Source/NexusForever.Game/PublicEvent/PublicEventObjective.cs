@@ -1,6 +1,5 @@
 ﻿using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Game.Entity;
 using NexusForever.Game.Quest;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.PublicEvent;
@@ -24,6 +23,12 @@ namespace NexusForever.Game.PublicEvent
 
         private double elapsedTimer;
         private UpdateTimer failureTimer;
+        private readonly IPlayerManager playerManager;
+
+        public PublicEventObjective(IPlayerManager playerManager = null)
+        {
+            this.playerManager = playerManager;
+        }
 
         /// <summary>
         /// Initialise <see cref="PublicEventObjective"/> with suppled <see cref="IPublicEventTeam"/> and <see cref="PublicEventObjectiveEntry"/>.
@@ -73,7 +78,7 @@ namespace NexusForever.Game.PublicEvent
         {
             foreach (IPublicEventTeamMember member in Team.GetMembers())
             {
-                IPlayer player = PlayerManager.Instance.GetPlayer(member.CharacterId);
+                IPlayer player = playerManager?.GetPlayer(member.CharacterId);
                 if (player != null)
                 {
                     player.AchievementManager.CheckAchievements(player, AchievementType.PublicEventObjectiveComplete, Entry.Id);

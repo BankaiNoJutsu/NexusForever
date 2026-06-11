@@ -1,13 +1,10 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
-using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Tests.Spell;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class GlobalSpellManagerPartialTableTests
 {
     [Theory]
@@ -15,8 +12,7 @@ public class GlobalSpellManagerPartialTableTests
     [InlineData(true)]
     public void CacheSpellEntries_WithMissingPrimaryTablesUsesEmptyCaches(bool includeEmptyTables)
     {
-        var manager = new NexusForever.Game.Spell.GlobalSpellManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(manager, gameTableManager =>
+        var manager = CreateManager(gameTableManager =>
         {
             if (!includeEmptyTables)
                 return;
@@ -26,7 +22,7 @@ public class GlobalSpellManagerPartialTableTests
             SetTable(gameTableManager, nameof(GameTableManager.Spell4Telegraph), CreateGameTable<Spell4TelegraphEntry>());
             SetTable(gameTableManager, nameof(GameTableManager.TelegraphDamage), CreateGameTable<TelegraphDamageEntry>());
             SetTable(gameTableManager, nameof(GameTableManager.Spell4Thresholds), CreateGameTable<Spell4ThresholdsEntry>());
-        }));
+        });
 
         Invoke(manager, "CacheSpellEntries");
 
@@ -39,8 +35,7 @@ public class GlobalSpellManagerPartialTableTests
     [Fact]
     public void CacheSpellEntries_WithTableBackedRowsPreservesOrderingAndLookups()
     {
-        var manager = new NexusForever.Game.Spell.GlobalSpellManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(manager, gameTableManager =>
+        var manager = CreateManager(gameTableManager =>
         {
             SetTable(gameTableManager, nameof(GameTableManager.Spell4), CreateGameTable(
                 new Spell4Entry { Id = 101u, Spell4BaseIdBaseSpell = 55u, TierIndex = 1u },
@@ -57,7 +52,7 @@ public class GlobalSpellManagerPartialTableTests
             SetTable(gameTableManager, nameof(GameTableManager.Spell4Thresholds), CreateGameTable(
                 new Spell4ThresholdsEntry { Id = 501u, Spell4IdParent = 101u, OrderIndex = 2u },
                 new Spell4ThresholdsEntry { Id = 502u, Spell4IdParent = 101u, OrderIndex = 1u }));
-        }));
+        });
 
         Invoke(manager, "CacheSpellEntries");
 
@@ -72,12 +67,11 @@ public class GlobalSpellManagerPartialTableTests
     [InlineData(true)]
     public void InitialiseSpellInfo_WithMissingSpell4BaseTableUsesEmptyStore(bool includeEmptyTable)
     {
-        var manager = new NexusForever.Game.Spell.GlobalSpellManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(manager, gameTableManager =>
+        var manager = CreateManager(gameTableManager =>
         {
             if (includeEmptyTable)
                 SetTable(gameTableManager, nameof(GameTableManager.Spell4Base), CreateGameTable<Spell4BaseEntry>());
-        }));
+        });
 
         Invoke(manager, "InitialiseSpellInfo");
 
@@ -87,8 +81,7 @@ public class GlobalSpellManagerPartialTableTests
     [Fact]
     public void GetSpellBaseInfo_WithMissingDependencyTablesMaterialisesNullableSpellInfo()
     {
-        var manager = new NexusForever.Game.Spell.GlobalSpellManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(manager, gameTableManager =>
+        var manager = CreateManager(gameTableManager =>
         {
             SetTable(gameTableManager, nameof(GameTableManager.Spell4Base), CreateGameTable(new Spell4BaseEntry
             {
@@ -122,7 +115,7 @@ public class GlobalSpellManagerPartialTableTests
                 PrerequisiteIdTargetPersistence        = 21u,
                 PrerequisiteIdRunners                  = [22u, 0u]
             }));
-        }));
+        });
 
         Invoke(manager, "CacheSpellEntries");
 
@@ -162,14 +155,13 @@ public class GlobalSpellManagerPartialTableTests
     [Fact]
     public void GetSpellBaseInfo_WithMissingSpell4TableReturnsNullSpellTier()
     {
-        var manager = new NexusForever.Game.Spell.GlobalSpellManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(manager, gameTableManager =>
+        var manager = CreateManager(gameTableManager =>
         {
             SetTable(gameTableManager, nameof(GameTableManager.Spell4Base), CreateGameTable(new Spell4BaseEntry
             {
                 Id = 77u
             }));
-        }));
+        });
 
         Invoke(manager, "CacheSpellEntries");
 
@@ -181,8 +173,7 @@ public class GlobalSpellManagerPartialTableTests
     [Fact]
     public void GetSpellInfo_WithSparseOrOutOfRangeTierReturnsNull()
     {
-        var manager = new NexusForever.Game.Spell.GlobalSpellManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(manager, gameTableManager =>
+        var manager = CreateManager(gameTableManager =>
         {
             SetTable(gameTableManager, nameof(GameTableManager.Spell4Base), CreateGameTable(new Spell4BaseEntry
             {
@@ -194,7 +185,7 @@ public class GlobalSpellManagerPartialTableTests
                 Spell4BaseIdBaseSpell = 77u,
                 TierIndex             = 2u
             }));
-        }));
+        });
 
         Invoke(manager, "CacheSpellEntries");
 
@@ -205,17 +196,12 @@ public class GlobalSpellManagerPartialTableTests
         Assert.Null(baseInfo.GetSpellInfo(3));
     }
 
-    private static IServiceProvider BuildProvider(
-        NexusForever.Game.Spell.GlobalSpellManager manager,
-        Action<GameTableManager> configure)
+    private static NexusForever.Game.Spell.GlobalSpellManager CreateManager(Action<GameTableManager> configure)
     {
         var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         configure(gameTableManager);
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .AddSingleton(manager)
-            .BuildServiceProvider();
+        return new NexusForever.Game.Spell.GlobalSpellManager(gameTableManager);
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

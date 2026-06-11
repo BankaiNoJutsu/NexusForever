@@ -1,5 +1,5 @@
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Game.Entity;
+using NexusForever.Game.Abstract.RBAC;
 using NexusForever.WorldServer.Command.Context;
 
 namespace NexusForever.WorldServer.Command
@@ -9,7 +9,12 @@ namespace NexusForever.WorldServer.Command
         /// <summary>
         /// Resolve console or websocket command contexts that target an online player via a leading @PlayerName prefix.
         /// </summary>
-        public static bool TryResolve(ICommandContext context, ref string commandText, out ICommandContext resolvedContext)
+        public static bool TryResolve(
+            ICommandContext context,
+            ref string commandText,
+            IPlayerManager playerManager,
+            IRBACManager rbacManager,
+            out ICommandContext resolvedContext)
         {
             resolvedContext = context;
             if (context.Invoker != null)
@@ -29,7 +34,10 @@ namespace NexusForever.WorldServer.Command
                 return false;
             }
 
-            IPlayer player = PlayerManager.Instance.GetPlayer(playerName);
+            if (playerManager == null)
+                throw new System.InvalidOperationException("Command context resolver requires an IPlayerManager.");
+
+            IPlayer player = playerManager.GetPlayer(playerName);
             if (player == null)
             {
                 context.SendError($"Player '{playerName}' is not online.");
@@ -38,8 +46,8 @@ namespace NexusForever.WorldServer.Command
 
             resolvedContext = context switch
             {
-                ConsoleCommandContext       => new ConsoleCommandContext(player),
-                WebSocketCommandContext web => new WebSocketCommandContext(web.WebSocket, player),
+                ConsoleCommandContext       => new ConsoleCommandContext(rbacManager, player),
+                WebSocketCommandContext web => new WebSocketCommandContext(web.WebSocket, rbacManager, player),
                 _                           => context
             };
             return true;

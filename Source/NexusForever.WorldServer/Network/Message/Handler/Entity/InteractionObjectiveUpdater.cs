@@ -47,24 +47,38 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             [(DominionCombatQuestId, TutorialCombatMineHardCreatureId)]  = new TutorialMineObjectiveCredit(21315u, 52901u)
         };
 
-        public static void UpdateDirectInteractionObjectives(IPlayer player, IWorldEntity entity, IAssetManager assetManager)
+        public static void UpdateDirectInteractionObjectives(
+            IPlayer player,
+            IWorldEntity entity,
+            IAssetManager assetManager,
+            IGameTableManager gameTableManager = null)
         {
-            UpdateObjectives(player, entity, assetManager, includeActivateEntity: true);
+            UpdateObjectives(player, entity, assetManager, includeActivateEntity: true, gameTableManager);
         }
 
-        public static void UpdateActivateSuccessObjectives(IPlayer player, IWorldEntity entity, IAssetManager assetManager, bool includeActivateEntity)
+        public static void UpdateActivateSuccessObjectives(
+            IPlayer player,
+            IWorldEntity entity,
+            IAssetManager assetManager,
+            bool includeActivateEntity,
+            IGameTableManager gameTableManager = null)
         {
-            UpdateObjectives(player, entity, assetManager, includeActivateEntity);
+            UpdateObjectives(player, entity, assetManager, includeActivateEntity, gameTableManager);
         }
 
-        private static void UpdateObjectives(IPlayer player, IWorldEntity entity, IAssetManager assetManager, bool includeActivateEntity)
+        private static void UpdateObjectives(
+            IPlayer player,
+            IWorldEntity entity,
+            IAssetManager assetManager,
+            bool includeActivateEntity,
+            IGameTableManager gameTableManager)
         {
             if (entity == null)
                 return;
 
             player.RecordStarterTutorialDepartureTerminal(entity.CreatureId);
 
-            bool handledStarterTutorialCombatMine = TryUpdateStarterTutorialCombatMineObjective(player, entity);
+            bool handledStarterTutorialCombatMine = TryUpdateStarterTutorialCombatMineObjective(player, entity, gameTableManager);
             bool suppressGenericActivateCastObjectives = !includeActivateEntity && scriptHandledActivateCastCreatureIds.Contains(entity.CreatureId);
 
             if (!suppressGenericActivateCastObjectives)
@@ -86,7 +100,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             TryQueueStarterTutorialCombatProjectorRecovery(player, entity);
         }
 
-        private static bool TryUpdateStarterTutorialCombatMineObjective(IPlayer player, IWorldEntity entity)
+        private static bool TryUpdateStarterTutorialCombatMineObjective(
+            IPlayer player,
+            IWorldEntity entity,
+            IGameTableManager gameTableManager)
         {
             if (!tutorialCombatMineCreatureIds.Contains(entity.CreatureId))
                 return false;
@@ -101,7 +118,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 if (!tutorialCombatMineObjectiveCredits.TryGetValue((quest.Id, entity.CreatureId), out TutorialMineObjectiveCredit credit))
                     continue;
 
-                if (!IsNearWorldLocation(entity.Position, credit.WorldLocation2Id))
+                if (!IsNearWorldLocation(entity.Position, credit.WorldLocation2Id, gameTableManager))
                 {
                     log.Debug("Skipped Rider's Reef combat mine objective credit: player={PlayerGuid}, quest={QuestId}, entity={EntityGuid}, creature={CreatureId}, expectedWorldLocation={WorldLocationId}, position=({X}, {Y}, {Z}).",
                         player.Guid,
@@ -133,9 +150,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             return hasActiveCombatQuest;
         }
 
-        private static bool IsNearWorldLocation(Vector3 position, uint worldLocationId)
+        private static bool IsNearWorldLocation(
+            Vector3 position,
+            uint worldLocationId,
+            IGameTableManager gameTableManager)
         {
-            WorldLocation2Entry worldLocation = GameTableManager.Instance.WorldLocation2.GetEntry(worldLocationId);
+            WorldLocation2Entry worldLocation = gameTableManager?.WorldLocation2?.GetEntry(worldLocationId);
             if (worldLocation == null)
                 return false;
 

@@ -3,16 +3,23 @@ using NexusForever.Game.Abstract.Reputation;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
-using NexusForever.Shared;
 using NLog;
 
 namespace NexusForever.Game.Reputation
 {
-    public sealed class FactionManager : Singleton<FactionManager>, IFactionManager
+    public sealed class FactionManager : IFactionManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
         private ImmutableDictionary<Faction, IFactionNode> nodes;
+
+        private readonly IGameTableManager gameTableManager;
+
+        public FactionManager(
+            IGameTableManager gameTableManager = null)
+        {
+            this.gameTableManager = gameTableManager;
+        }
 
         public void Initialise()
         {
@@ -20,8 +27,8 @@ namespace NexusForever.Game.Reputation
             log.Info("Initialising factions...");
 
             var builder = ImmutableDictionary.CreateBuilder<Faction, IFactionNode>();
-            foreach (Faction2Entry entry in GameTableManager.Instance.Faction2.Entries)
-                builder.Add((Faction)entry.Id, new FactionNode(entry));
+            foreach (Faction2Entry entry in gameTableManager.Faction2.Entries)
+                builder.Add((Faction)entry.Id, new FactionNode(entry, gameTableManager));
 
             // link nodes and build the trees
             foreach (IFactionNode node in builder.Values)
@@ -31,7 +38,7 @@ namespace NexusForever.Game.Reputation
 
                 // children
                 var children = new List<IFactionNode>();
-                foreach (Faction2Entry entry in GameTableManager.Instance.Faction2.Entries
+                foreach (Faction2Entry entry in gameTableManager.Faction2.Entries
                     .Where(e => (Faction)e.Faction2IdParent == node.FactionId))
                 {
                     builder.TryGetValue((Faction)entry.Id, out IFactionNode child);

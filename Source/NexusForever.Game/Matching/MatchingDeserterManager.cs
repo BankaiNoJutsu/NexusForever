@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Matching;
 using NexusForever.Game.Entity;
@@ -6,26 +5,34 @@ using NexusForever.Game.Retail;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static.Matching;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
 using MatchType = NexusForever.Game.Static.Matching.MatchType;
 
 namespace NexusForever.Game.Matching
 {
-    public sealed class MatchingDeserterManager : Singleton<MatchingDeserterManager>, IMatchingDeserterManager
+    public sealed class MatchingDeserterManager : IMatchingDeserterManager
     {
         private readonly object syncRoot = new();
         private readonly Dictionary<ulong, DeserterPenalty> penalties = new();
         private readonly HashSet<ulong> loadedCharacterIds = [];
 
         private readonly IMatchingPenaltyStore matchingPenaltyStore;
+        private readonly IPlayerManager playerManager;
 
         public MatchingDeserterManager()
         {
         }
 
         public MatchingDeserterManager(IMatchingPenaltyStore matchingPenaltyStore)
+            : this(matchingPenaltyStore, null)
+        {
+        }
+
+        public MatchingDeserterManager(
+            IMatchingPenaltyStore matchingPenaltyStore,
+            IPlayerManager playerManager)
         {
             this.matchingPenaltyStore = matchingPenaltyStore;
+            this.playerManager        = playerManager;
         }
 
         public bool CanQueue(ulong characterId, MatchType matchType)
@@ -210,12 +217,9 @@ namespace NexusForever.Game.Matching
             matchingPenaltyStore?.Delete(characterId);
         }
 
-        static IPlayer TryGetOnlinePlayer(ulong characterId)
+        private IPlayer TryGetOnlinePlayer(ulong characterId)
         {
-            if (LegacyServiceProvider.Provider?.GetService(typeof(IPlayerManager)) is not IPlayerManager playerManager)
-                return null;
-
-            return playerManager.GetPlayer(characterId);
+            return playerManager?.GetPlayer(characterId);
         }
 
         private static bool IsPvPMatchType(MatchType matchType)

@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using NexusForever.Database.Character;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
 using NLog;
@@ -15,12 +16,17 @@ namespace NexusForever.Game.Entity
         public uint SlotsRemaining { get; private set; }
 
         private IItem[] items;
+        private readonly IItemManager itemManager;
 
-        public Bag(InventoryLocation location, uint capacity)
+        public Bag(
+            InventoryLocation location,
+            uint capacity,
+            IItemManager itemManager = null)
         {
             Location       = location;
             SlotsRemaining = capacity;
             items          = new Item[capacity];
+            this.itemManager = itemManager;
 
             log.Trace($"Initialised new bag {Location} with {capacity} slots.");
         }
@@ -84,7 +90,7 @@ namespace NexusForever.Game.Entity
                 return null;
 
             // find first free bag index, some items can be equipped into multiple slots
-            foreach (uint bagIndex in ItemManager.Instance.GetEquippedBagIndexes(slot))
+            foreach (uint bagIndex in itemManager?.GetEquippedBagIndexes(slot) ?? Enumerable.Empty<EquippedItem>())
                 if (items[bagIndex] == null)
                     return bagIndex;
 

@@ -1,7 +1,5 @@
 using System.Numerics;
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Spell;
@@ -11,17 +9,14 @@ using NexusForever.Game.Static.Prerequisite;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
-using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Script;
 using NexusForever.Script.Template.Collection;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Spell;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class SpellTargetValidationTests
 {
     [Theory]
@@ -43,82 +38,52 @@ public class SpellTargetValidationTests
     [InlineData(0x12u, true, CastResult.Ok)]
     public void CheckPrimaryTargetValidMask_DoesNotTreatObjectOnlyBitAsLivingUnitMask(uint targetBitmask, bool targetAlive, CastResult expected)
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
+        IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out _);
+        IUnitEntity target = CreateUnit(2002u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> targetProxy);
+        targetProxy.SetProperty(nameof(IUnitEntity.IsAlive), targetAlive);
 
-        try
+        var parameters = new NexusForever.Game.Spell.SpellParameters
         {
-            IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out _);
-            IUnitEntity target = CreateUnit(2002u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> targetProxy);
-            targetProxy.SetProperty(nameof(IUnitEntity.IsAlive), targetAlive);
+            SpellInfo = CreateSpellInfoWithValidTargetMask(targetBitmask)
+        };
 
-            var parameters = new NexusForever.Game.Spell.SpellParameters
-            {
-                SpellInfo = CreateSpellInfoWithValidTargetMask(targetBitmask)
-            };
+        var spell = CreateSpell(caster, parameters);
 
-            var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
-
-            Assert.Equal(expected, InvokePrivate<CastResult>(spell, "CheckPrimaryTargetValidMask", target));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(expected, InvokePrivate<CastResult>(spell, "CheckPrimaryTargetValidMask", target));
     }
 
     [Fact]
     public void CheckPrimaryTargetValidMask_AllowsObjectOnlyBitForSimpleEntityTargets()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
+        IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out _);
+        IUnitEntity target = CreateUnit(2002u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> targetProxy);
+        targetProxy.SetProperty(nameof(IWorldEntity.Type), EntityType.Simple);
+        targetProxy.SetProperty(nameof(IUnitEntity.IsAlive), true);
 
-        try
+        var parameters = new NexusForever.Game.Spell.SpellParameters
         {
-            IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out _);
-            IUnitEntity target = CreateUnit(2002u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> targetProxy);
-            targetProxy.SetProperty(nameof(IWorldEntity.Type), EntityType.Simple);
-            targetProxy.SetProperty(nameof(IUnitEntity.IsAlive), true);
+            SpellInfo = CreateSpellInfoWithValidTargetMask(0x02u)
+        };
 
-            var parameters = new NexusForever.Game.Spell.SpellParameters
-            {
-                SpellInfo = CreateSpellInfoWithValidTargetMask(0x02u)
-            };
+        var spell = CreateSpell(caster, parameters);
 
-            var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
-
-            Assert.Equal(CastResult.Ok, InvokePrivate<CastResult>(spell, "CheckPrimaryTargetValidMask", target));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(CastResult.Ok, InvokePrivate<CastResult>(spell, "CheckPrimaryTargetValidMask", target));
     }
 
     [Fact]
     public void CheckPrimaryTargetValidMask_AllowsObjectMaskForSelfTargetedUnit()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
+        IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> casterProxy);
+        casterProxy.SetProperty(nameof(IUnitEntity.IsAlive), true);
 
-        try
+        var parameters = new NexusForever.Game.Spell.SpellParameters
         {
-            IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> casterProxy);
-            casterProxy.SetProperty(nameof(IUnitEntity.IsAlive), true);
+            SpellInfo = CreateSpellInfoWithValidTargetMask(0x02u)
+        };
 
-            var parameters = new NexusForever.Game.Spell.SpellParameters
-            {
-                SpellInfo = CreateSpellInfoWithValidTargetMask(0x02u)
-            };
+        var spell = CreateSpell(caster, parameters);
 
-            var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
-
-            Assert.Equal(CastResult.Ok, InvokePrivate<CastResult>(spell, "CheckPrimaryTargetValidMask", caster));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(CastResult.Ok, InvokePrivate<CastResult>(spell, "CheckPrimaryTargetValidMask", caster));
     }
 
     [Theory]
@@ -126,231 +91,161 @@ public class SpellTargetValidationTests
     [InlineData((uint)Faction.MatchingTeam2, CastResult.TargetUnknown)]
     public void CheckPrimaryTargetValidMask_AllowsObjectMaskUnitTargetsOnlyWhenCastGroupMatches(uint faction2Id, CastResult expected)
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
+        IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out _);
+        IUnitEntity target = CreateUnit(2002u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> targetProxy);
+        targetProxy.SetProperty(nameof(IWorldEntity.Faction2), (Faction)faction2Id);
+        targetProxy.SetProperty(nameof(IUnitEntity.IsAlive), true);
 
-        try
+        var parameters = new NexusForever.Game.Spell.SpellParameters
         {
-            IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out _);
-            IUnitEntity target = CreateUnit(2002u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> targetProxy);
-            targetProxy.SetProperty(nameof(IWorldEntity.Faction2), (Faction)faction2Id);
-            targetProxy.SetProperty(nameof(IUnitEntity.IsAlive), true);
+            SpellInfo = CreateSpellInfoWithValidTargetMask(
+                0x02u,
+                new TargetGroupEntry
+                {
+                    Type        = 3u,
+                    DataEntries = [166u, 167u, 391u, 0u, 0u, 0u, 0u]
+                })
+        };
 
-            var parameters = new NexusForever.Game.Spell.SpellParameters
-            {
-                SpellInfo = CreateSpellInfoWithValidTargetMask(
-                    0x02u,
-                    new TargetGroupEntry
-                    {
-                        Type        = 3u,
-                        DataEntries = [166u, 167u, 391u, 0u, 0u, 0u, 0u]
-                    })
-            };
+        var spell = CreateSpell(caster, parameters);
 
-            var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
-
-            Assert.Equal(expected, InvokePrivate<CastResult>(spell, "CheckPrimaryTargetValidMask", target));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(expected, InvokePrivate<CastResult>(spell, "CheckPrimaryTargetValidMask", target));
     }
 
     [Fact]
     public void SendSpellStart_AttachesCreatureTelegraphToCaster_WhenPrimaryTargetExists()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
+        IUnitEntity caster = CreateUnit(1001u, new Vector3(10f, 20f, 30f), out RecordingDispatchProxy<IUnitEntity> casterProxy);
+        IPlayer target = CreatePlayer(2002u, new Vector3(10f, 20f, 20f));
+        casterProxy.SetMethodHandler(nameof(IUnitEntity.GetVisible), args => (uint)args[0] == target.Guid ? target : null);
 
-        try
+        var parameters = new NexusForever.Game.Spell.SpellParameters
         {
-            IUnitEntity caster = CreateUnit(1001u, new Vector3(10f, 20f, 30f), out RecordingDispatchProxy<IUnitEntity> casterProxy);
-            IPlayer target = CreatePlayer(2002u, new Vector3(10f, 20f, 20f));
-            casterProxy.SetMethodHandler(nameof(IUnitEntity.GetVisible), args => (uint)args[0] == target.Guid ? target : null);
+            PrimaryTargetId = target.Guid,
+            SpellInfo       = CreateSpellInfoWithConeTelegraph()
+        };
 
-            var parameters = new NexusForever.Game.Spell.SpellParameters
-            {
-                PrimaryTargetId = target.Guid,
-                SpellInfo       = CreateSpellInfoWithConeTelegraph()
-            };
+        var spell = CreateSpell(caster, parameters);
+        InvokePrivate(spell, "InitialiseTelegraphs");
+        InvokePrivate(spell, "SendSpellStart");
 
-            var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
-            InvokePrivate(spell, "InitialiseTelegraphs");
-            InvokePrivate(spell, "SendSpellStart");
+        RecordingDispatchProxy<IUnitEntity>.Invocation invocation = Assert.Single(casterProxy.GetInvocations(nameof(IUnitEntity.EnqueueToVisible)));
+        ServerSpellStart spellStart = Assert.IsType<ServerSpellStart>(invocation.Arguments[0]);
 
-            RecordingDispatchProxy<IUnitEntity>.Invocation invocation = Assert.Single(casterProxy.GetInvocations(nameof(IUnitEntity.EnqueueToVisible)));
-            ServerSpellStart spellStart = Assert.IsType<ServerSpellStart>(invocation.Arguments[0]);
+        ServerSpellStart.InitialPosition initialPosition = Assert.Single(spellStart.InitialPositionData);
+        ServerSpellStart.TelegraphPosition telegraphPosition = Assert.Single(spellStart.TelegraphPositionData);
 
-            ServerSpellStart.InitialPosition initialPosition = Assert.Single(spellStart.InitialPositionData);
-            ServerSpellStart.TelegraphPosition telegraphPosition = Assert.Single(spellStart.TelegraphPositionData);
-
-            Assert.Equal(caster.Guid, initialPosition.UnitId);
-            Assert.Equal(caster.Guid, telegraphPosition.AttachedUnitId);
-            Assert.Equal(caster.Position, telegraphPosition.Position.Vector);
-            Assert.Equal(target.Guid, spellStart.PrimaryTargetId);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(caster.Guid, initialPosition.UnitId);
+        Assert.Equal(caster.Guid, telegraphPosition.AttachedUnitId);
+        Assert.Equal(caster.Position, telegraphPosition.Position.Vector);
+        Assert.Equal(target.Guid, spellStart.PrimaryTargetId);
     }
 
     [Fact]
     public void Execute_KeepsCreatureTelegraphAnchored_WhenCasterMovesBeforeImpact()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
+        Vector3 castPosition = new(10f, 20f, 30f);
+        IUnitEntity caster = CreateUnit(1001u, castPosition, out RecordingDispatchProxy<IUnitEntity> casterProxy, CreateEmptySearchMap());
 
-        try
+        var parameters = new NexusForever.Game.Spell.SpellParameters
         {
-            Vector3 castPosition = new(10f, 20f, 30f);
-            IUnitEntity caster = CreateUnit(1001u, castPosition, out RecordingDispatchProxy<IUnitEntity> casterProxy, CreateEmptySearchMap());
+            SpellInfo = CreateSpellInfoWithCircleTelegraph()
+        };
 
-            var parameters = new NexusForever.Game.Spell.SpellParameters
-            {
-                SpellInfo = CreateSpellInfoWithCircleTelegraph()
-            };
+        var spell = CreateSpell(caster, parameters);
+        InvokePrivate(spell, "InitialiseTelegraphs");
 
-            var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
-            InvokePrivate(spell, "InitialiseTelegraphs");
+        casterProxy.SetProperty(nameof(IUnitEntity.Position), new Vector3(50f, 20f, 30f));
+        InvokePrivate(spell, "Execute");
 
-            casterProxy.SetProperty(nameof(IUnitEntity.Position), new Vector3(50f, 20f, 30f));
-            InvokePrivate(spell, "Execute");
-
-            ITelegraph telegraph = Assert.Single(GetTelegraphs(spell));
-            Assert.Equal(castPosition, telegraph.Position);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        ITelegraph telegraph = Assert.Single(GetTelegraphs(spell));
+        Assert.Equal(castPosition, telegraph.Position);
     }
 
     [Fact]
     public void IsEffectTargetStillValid_WhenTelegraphTargetMovedOutsideAnchor_ReturnsFalse()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
+        IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out _, CreateEmptySearchMap());
+        IUnitEntity target = CreateUnit(2002u, new Vector3(20f, 0f, 0f), out _);
 
-        try
+        var parameters = new NexusForever.Game.Spell.SpellParameters
         {
-            IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out _, CreateEmptySearchMap());
-            IUnitEntity target = CreateUnit(2002u, new Vector3(20f, 0f, 0f), out _);
+            SpellInfo = CreateSpellInfoWithCircleTelegraph()
+        };
 
-            var parameters = new NexusForever.Game.Spell.SpellParameters
-            {
-                SpellInfo = CreateSpellInfoWithCircleTelegraph()
-            };
+        var spell = CreateSpell(caster, parameters);
+        InvokePrivate(spell, "InitialiseTelegraphs");
 
-            var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
-            InvokePrivate(spell, "InitialiseTelegraphs");
+        var targetInfo = new NexusForever.Game.Spell.SpellTargetInfo(SpellEffectTargetFlags.Telegraph, target);
 
-            var targetInfo = new NexusForever.Game.Spell.SpellTargetInfo(SpellEffectTargetFlags.Telegraph, target);
-
-            Assert.False(spell.IsEffectTargetStillValid(SpellEffectTargetFlags.Telegraph, targetInfo));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.False(spell.IsEffectTargetStillValid(SpellEffectTargetFlags.Telegraph, targetInfo));
     }
 
     [Fact]
     public void Execute_WithDelayedInitialImpact_BlocksNewCastingUntilImpact()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
+        IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out _, CreateEmptySearchMap());
 
-        try
+        var parameters = new NexusForever.Game.Spell.SpellParameters
         {
-            IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out _, CreateEmptySearchMap());
+            SpellInfo = CreateSpellInfoWithDelayedInitialImpact()
+        };
 
-            var parameters = new NexusForever.Game.Spell.SpellParameters
-            {
-                SpellInfo = CreateSpellInfoWithDelayedInitialImpact()
-            };
+        var spell = CreateSpell(caster, parameters);
 
-            var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
+        Assert.False(spell.BlocksCasting);
 
-            Assert.False(spell.BlocksCasting);
+        InvokePrivate(spell, "Execute");
 
-            InvokePrivate(spell, "Execute");
-
-            Assert.True(spell.BlocksCasting);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.True(spell.BlocksCasting);
     }
 
     [Fact]
     public void Cast_WithInstantSpell_ExecutesImmediatelyAndStopsBlockingAfterCastReturns()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
+        IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> casterProxy, CreateEmptySearchMap());
 
-        try
+        var parameters = new NexusForever.Game.Spell.SpellParameters
         {
-            IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> casterProxy, CreateEmptySearchMap());
+            SpellInfo = CreateSpellInfo(127u, 102u)
+        };
 
-            var parameters = new NexusForever.Game.Spell.SpellParameters
-            {
-                SpellInfo = CreateSpellInfo(127u, 102u)
-            };
+        var spell = CreateSpell(caster, parameters);
 
-            var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
-
-            Assert.Equal(CastResult.Ok, spell.Cast());
-            Assert.False(spell.IsCasting);
-            Assert.False(spell.BlocksCasting);
-            Assert.Contains(casterProxy.GetInvocations(nameof(IUnitEntity.EnqueueToVisible)), i => i.Arguments[0] is ServerSpellGo);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(CastResult.Ok, spell.Cast());
+        Assert.False(spell.IsCasting);
+        Assert.False(spell.BlocksCasting);
+        Assert.Contains(casterProxy.GetInvocations(nameof(IUnitEntity.EnqueueToVisible)), i => i.Arguments[0] is ServerSpellGo);
     }
 
     [Fact]
     public void Cast_WithChannelMaxTime_DelaysFinishUntilChannelCompletes()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
+        IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> casterProxy, CreateEmptySearchMap());
 
-        try
+        var parameters = new NexusForever.Game.Spell.SpellParameters
         {
-            IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> casterProxy, CreateEmptySearchMap());
+            SpellInfo = CreateSpellInfo(128u, 103u, channelMaxTime: 2500u)
+        };
 
-            var parameters = new NexusForever.Game.Spell.SpellParameters
-            {
-                SpellInfo = CreateSpellInfo(128u, 103u, channelMaxTime: 2500u)
-            };
+        var spell = CreateSpell(caster, parameters);
 
-            var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
+        Assert.Equal(CastResult.Ok, spell.Cast());
+        Assert.True(spell.BlocksCasting);
+        Assert.False(spell.IsFinished);
+        Assert.DoesNotContain(casterProxy.GetInvocations(nameof(IUnitEntity.EnqueueToVisible)), i => i.Arguments[0] is ServerSpellFinish);
 
-            Assert.Equal(CastResult.Ok, spell.Cast());
-            Assert.True(spell.BlocksCasting);
-            Assert.False(spell.IsFinished);
-            Assert.DoesNotContain(casterProxy.GetInvocations(nameof(IUnitEntity.EnqueueToVisible)), i => i.Arguments[0] is ServerSpellFinish);
+        spell.Update(2.4d);
 
-            spell.Update(2.4d);
+        Assert.True(spell.BlocksCasting);
+        Assert.False(spell.IsFinished);
+        Assert.DoesNotContain(casterProxy.GetInvocations(nameof(IUnitEntity.EnqueueToVisible)), i => i.Arguments[0] is ServerSpellFinish);
 
-            Assert.True(spell.BlocksCasting);
-            Assert.False(spell.IsFinished);
-            Assert.DoesNotContain(casterProxy.GetInvocations(nameof(IUnitEntity.EnqueueToVisible)), i => i.Arguments[0] is ServerSpellFinish);
+        spell.Update(0.2d);
 
-            spell.Update(0.2d);
-
-            Assert.False(spell.BlocksCasting);
-            Assert.True(spell.IsFinished);
-            Assert.Single(casterProxy.GetInvocations(nameof(IUnitEntity.EnqueueToVisible)), i => i.Arguments[0] is ServerSpellFinish);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.False(spell.BlocksCasting);
+        Assert.True(spell.IsFinished);
+        Assert.Single(casterProxy.GetInvocations(nameof(IUnitEntity.EnqueueToVisible)), i => i.Arguments[0] is ServerSpellFinish);
     }
 
     [Theory]
@@ -377,17 +272,35 @@ public class SpellTargetValidationTests
         Assert.Equal(expected, result);
     }
 
-    private static IServiceProvider BuildProvider()
+    private static NexusForever.Game.Spell.Spell CreateSpell(IUnitEntity caster, ISpellParameters parameters)
+    {
+        return new NexusForever.Game.Spell.Spell(
+            caster,
+            parameters,
+            globalSpellManager: CreateGlobalSpellManager(),
+            scriptManager: CreateScriptManager(),
+            gameTableManager: CreateGameTableManager());
+    }
+
+    private static IGlobalSpellManager CreateGlobalSpellManager()
+    {
+        IGlobalSpellManager globalSpellManager = RecordingDispatchProxy<IGlobalSpellManager>.Create(out RecordingDispatchProxy<IGlobalSpellManager> proxy);
+        proxy.SetProperty(nameof(IGlobalSpellManager.NextCastingId), 1u);
+        proxy.SetProperty(nameof(IGlobalSpellManager.NextEffectId), 1u);
+        return globalSpellManager;
+    }
+
+    private static IGameTableManager CreateGameTableManager()
+    {
+        return RecordingDispatchProxy<IGameTableManager>.Create(out _);
+    }
+
+    private static IScriptManager CreateScriptManager()
     {
         IScriptCollection scriptCollection = RecordingDispatchProxy<IScriptCollection>.Create(out _);
         IScriptManager scriptManager = RecordingDispatchProxy<IScriptManager>.Create(out RecordingDispatchProxy<IScriptManager> scriptManagerProxy);
         scriptManagerProxy.SetMethodReturn(nameof(IScriptManager.InitialiseOwnedScripts), scriptCollection);
-
-        return new ServiceCollection()
-            .AddSingleton<NexusForever.Game.Spell.GlobalSpellManager>()
-            .AddSingleton(new GameTableManager(Options.Create(new GameTableConfig())))
-            .AddSingleton(scriptManager)
-            .BuildServiceProvider();
+        return scriptManager;
     }
 
     private static IUnitEntity CreateUnit(uint guid, Vector3 position, out RecordingDispatchProxy<IUnitEntity> proxy, IBaseMap map = null)

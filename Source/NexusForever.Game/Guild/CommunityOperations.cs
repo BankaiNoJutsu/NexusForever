@@ -4,7 +4,6 @@ using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Housing;
 using NexusForever.Game.Map;
-using NexusForever.Game.Map.Lock;
 using NexusForever.Game.Static.Guild;
 using NexusForever.Game.Static.Housing;
 using NexusForever.Network;
@@ -35,7 +34,7 @@ namespace NexusForever.Game.Guild
                 IResidenceChild targetResidence = Residence.GetChild((PropertyInfoId)(100 + operation.Data.Int32Data));
                 if (targetResidence == null)
                 {
-                    IResidenceEntrance entrance = GlobalResidenceManager.Instance.GetResidenceEntrance((PropertyInfoId)(100 + operation.Data.Int32Data));
+                    IResidenceEntrance entrance = globalResidenceManager.GetResidenceEntrance((PropertyInfoId)(100 + operation.Data.Int32Data));
                     if (entrance == null)
                         throw new InvalidPacketValueException();
 
@@ -52,14 +51,14 @@ namespace NexusForever.Game.Guild
                         else
                             residence.Parent.RemoveChild(residence);
 
-                        IMapLock mapLock = MapLockManager.Instance.GetResidenceLock(Residence);
+                        IMapLock mapLock = mapLockManager.GetResidenceLock(Residence);
 
                         player.Rotation = entrance.Rotation.ToEuler();
                         player.TeleportTo(entrance.Entry, entrance.Position, mapLock);
                     }
                     else
                     {
-                        IMapLock mapLock = MapLockManager.Instance.GetResidenceLock(Residence);
+                        IMapLock mapLock = mapLockManager.GetResidenceLock(Residence);
 
                         // move owner to new instance only if not on the same instance as the residence
                         // otherwise they will be moved to the new instance during the unload

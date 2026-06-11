@@ -16,14 +16,28 @@ namespace NexusForever.WorldServer.Command.Handler
     [CommandTarget(typeof(IWorldEntity))]
     public class EntityCommandCategory : CommandCategory
     {
+        protected readonly IGameTableManager gameTableManager;
+
+        public EntityCommandCategory(IGameTableManager gameTableManager)
+        {
+            this.gameTableManager = gameTableManager;
+        }
+
         [Command(Permission.EntityModify, "A collection of commands to modify an entity.", "modify")]
         public class EntityModifyCommandCategory : CommandCategory
         {
+            private readonly IGameTableManager gameTableManager;
+
+            public EntityModifyCommandCategory(IGameTableManager gameTableManager)
+            {
+                this.gameTableManager = gameTableManager;
+            }
+
             [Command(Permission.EntityModifyDisplayInfo, "Modify the display info of the target entity.", "displayinfo")]
             public void HandleEntityModifyDisplayInfo(ICommandContext context,
                 uint displayInfo)
             {
-                if (displayInfo != 0 && GameTableManager.Instance.Creature2DisplayInfo.GetEntry(displayInfo) == null)
+                if (displayInfo != 0 && gameTableManager.Creature2DisplayInfo.GetEntry(displayInfo) == null)
                 {
                     context.SendMessage($"Invalid display info id {displayInfo}!");
                     return;
@@ -39,7 +53,7 @@ namespace NexusForever.WorldServer.Command.Handler
             IWorldEntity entity = context.GetTargetOrInvoker<IWorldEntity>();
 
             var builder = new StringBuilder();
-            EntityUtility.BuildHeader(builder, entity, context.Language);
+            EntityUtility.BuildHeader(builder, entity, context.Language, gameTableManager);
 
             builder.AppendLine($"XYZ: {entity.Position.X}, {entity.Position.Y}, {entity.Position.Z}");
             builder.AppendLine($"Rotation: {entity.Rotation.X}, {entity.Rotation.Y}, {entity.Rotation.Z}");
@@ -58,7 +72,7 @@ namespace NexusForever.WorldServer.Command.Handler
             IWorldEntity entity = context.GetTargetOrInvoker<IWorldEntity>();
 
             var builder = new StringBuilder();
-            EntityUtility.BuildHeader(builder, entity, context.Language);
+            EntityUtility.BuildHeader(builder, entity, context.Language, gameTableManager);
 
             var properties = entity.GetProperties().ToList();
             if (properties.Count == 0)
@@ -75,6 +89,11 @@ namespace NexusForever.WorldServer.Command.Handler
         [Command(Permission.EntityThreat, "A collection of commands to modify threat for this entity.", "threat")]
         public class EntityThreatCommandCategory : EntityCommandCategory
         {
+            public EntityThreatCommandCategory(IGameTableManager gameTableManager)
+                : base(gameTableManager)
+            {
+            }
+
             [Command(Permission.EntityThreatAdjust, "Adjust threat between the target and yourself.", "a", "adjust")]
             public void HandleEntityThreatAdjust(ICommandContext context,
                 [Parameter("Amount to adjust by. This can be a negative or positive number.")]
@@ -108,7 +127,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 }
 
                 var builder = new StringBuilder();
-                EntityUtility.BuildHeader(builder, unit, context.Language);
+                EntityUtility.BuildHeader(builder, unit, context.Language, gameTableManager);
                 builder.AppendLine("=============================");
                 builder.AppendLine("# | GUID | Name | Threat");
                 builder.AppendLine("-----------------------------");
@@ -121,7 +140,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 foreach (IHostileEntity hostile in hostiles)
                 {
                     IUnitEntity hostileEntity = entity.GetVisible<IUnitEntity>(hostile.HatedUnitId);
-                    builder.AppendLine($"{i++} | ({hostileEntity.Guid}) | {EntityUtility.GetName(hostileEntity, Language.English)} | {hostile.Threat}");
+                    builder.AppendLine($"{i++} | ({hostileEntity.Guid}) | {EntityUtility.GetName(hostileEntity, Language.English, gameTableManager)} | {hostile.Threat}");
                 }
 
                 context.SendMessage(builder.ToString());

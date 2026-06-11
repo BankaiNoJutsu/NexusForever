@@ -21,9 +21,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             return true;
         }
 
-        public static bool TryRejectOutOfRangeTarget(IWorldSession session, IWorldEntity entity, GenericError? error = null)
+        public static bool TryRejectOutOfRangeTarget(
+            IWorldSession session,
+            IWorldEntity entity,
+            GenericError? error = null,
+            IGameTableManager gameTableManager = null)
         {
-            Creature2Entry creatureEntry = entity.CreatureEntry ?? GameTableManager.Instance.Creature2.GetEntry(entity.CreatureId);
+            Creature2Entry creatureEntry = entity.CreatureEntry ?? gameTableManager?.Creature2?.GetEntry(entity.CreatureId);
 
             float minRange = creatureEntry?.ActivateSpellMinRange ?? 0f;
             float maxRange = creatureEntry?.ActivateSpellMaxRange > 0f

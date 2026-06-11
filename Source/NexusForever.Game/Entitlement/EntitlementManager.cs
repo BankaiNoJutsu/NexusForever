@@ -8,7 +8,13 @@ namespace NexusForever.Game.Entitlement
 {
     public abstract class EntitlementManager<T> : IEntitlementManager<T> where T : IEntitlement
     {
+        private readonly IGameTableManager gameTableManager;
         protected readonly Dictionary<EntitlementType, T> entitlements = new();
+
+        protected EntitlementManager(IGameTableManager gameTableManager)
+        {
+            this.gameTableManager = gameTableManager;
+        }
 
         /// <summary>
         /// Return <typeparamref name="T"/> for supplied <see cref="EntitlementType"/>.
@@ -39,7 +45,7 @@ namespace NexusForever.Game.Entitlement
         /// </summary>
         public void UpdateEntitlement(EntitlementType type, int value)
         {
-            EntitlementEntry entry = GameTableManager.Instance.Entitlement?.GetEntry((ulong)type);
+            EntitlementEntry entry = gameTableManager.Entitlement?.GetEntry((ulong)type);
             if (entry == null)
                 throw new ArgumentException($"Invalid entitlement type {type}!");
 

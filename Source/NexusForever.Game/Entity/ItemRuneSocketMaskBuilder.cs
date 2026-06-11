@@ -15,12 +15,11 @@ namespace NexusForever.Game.Entity
         {
             uint mask = 0;
 
-            if (item.Info != null && item.Info.Entry.ItemRuneInstanceId != 0u)
+            if (item.Info != null && item.Info.Entry.ItemRuneInstanceId != 0u && gameTableManager != null)
             {
-                IGameTableManager tables = gameTableManager ?? GameTableManager.Instance;
-                if (tables.ItemRuneInstance != null)
+                if (gameTableManager.ItemRuneInstance != null)
                 {
-                    ItemRuneInstanceEntry instance = tables.ItemRuneInstance.GetEntry(item.Info.Entry.ItemRuneInstanceId);
+                    ItemRuneInstanceEntry instance = gameTableManager.ItemRuneInstance.GetEntry(item.Info.Entry.ItemRuneInstanceId);
                     mask |= BuildFromItemRuneInstance(instance);
                 }
             }

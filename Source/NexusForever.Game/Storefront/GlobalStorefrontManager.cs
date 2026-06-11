@@ -3,14 +3,15 @@ using System.Collections.Immutable;
 using NexusForever.Database;
 using NexusForever.Database.World;
 using NexusForever.Database.World.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Storefront;
 using NexusForever.Game.Account.Inventory;
 using NexusForever.Game.Static.Storefront;
+using NexusForever.GameTable;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
 using NLog;
 
 namespace NexusForever.Game.Storefront
@@ -19,7 +20,7 @@ namespace NexusForever.Game.Storefront
     /// GlobalStorefrontManager provides global caching of all the store items that are sent to each player. It was made global so that reloading store items while the server is 
     /// running would be handled in a global context.
     /// </summary>
-    public sealed class GlobalStorefrontManager : Singleton<GlobalStorefrontManager>, IGlobalStorefrontManager
+    public sealed class GlobalStorefrontManager : IGlobalStorefrontManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
@@ -33,6 +34,19 @@ namespace NexusForever.Game.Storefront
         private ImmutableList<ServerStoreOffers.OfferGroup> serverStoreOfferGroupCache;
 
         private ImmutableDictionary</*offerId*/uint, /*offerGroupId*/uint> offerGroupLookup;
+        private readonly IDatabaseManager databaseManager;
+        private readonly IDisableManager disableManager;
+        private readonly IGameTableManager gameTableManager;
+
+        public GlobalStorefrontManager(
+            IDatabaseManager databaseManager = null,
+            IDisableManager disableManager = null,
+            IGameTableManager gameTableManager = null)
+        {
+            this.databaseManager = databaseManager;
+            this.disableManager  = disableManager;
+            this.gameTableManager = gameTableManager;
+        }
 
         public void Initialise()
         {
@@ -49,8 +63,7 @@ namespace NexusForever.Game.Storefront
 
         private void InitialiseStoreCategories()
         {
-            ImmutableList<StoreCategoryModel> storeCategoryModels = DatabaseManager.Instance
-                .GetDatabase<WorldDatabase>()
+            ImmutableList<StoreCategoryModel> storeCategoryModels = GetWorldDatabase()
                 .GetStoreCategories();
 
             storeCategories = BuildStoreCategories(storeCategoryModels);
@@ -73,7 +86,7 @@ namespace NexusForever.Game.Storefront
 
         private void InitialiseStoreOfferGroups()
         {
-            IEnumerable<StoreOfferGroupModel> offerGroupModels = DatabaseManager.Instance.GetDatabase<WorldDatabase>().GetStoreOfferGroups()
+            IEnumerable<StoreOfferGroupModel> offerGroupModels = GetWorldDatabase().GetStoreOfferGroups()
                 .OrderBy(i => i.Id)
                 .Where(x => Convert.ToBoolean(x.Visible));
 
@@ -81,7 +94,7 @@ namespace NexusForever.Game.Storefront
             var offerBuilder      = ImmutableDictionary.CreateBuilder<uint, uint>();
             foreach (StoreOfferGroupModel offerGroup in offerGroupModels)
             {
-                var group = new OfferGroup(offerGroup);
+                var group = new OfferGroup(offerGroup, disableManager, gameTableManager);
                 if (!group.HasOffers)
                     continue;
 
@@ -93,6 +106,14 @@ namespace NexusForever.Game.Storefront
                 
             offerGroups      = offerGroupBuilder.ToImmutable();
             offerGroupLookup = offerBuilder.ToImmutable();
+        }
+
+        private WorldDatabase GetWorldDatabase()
+        {
+            if (databaseManager == null)
+                throw new InvalidOperationException("GlobalStorefrontManager requires an IDatabaseManager.");
+
+            return databaseManager.GetDatabase<WorldDatabase>();
         }
 
         private void BuildNetworkPackets()

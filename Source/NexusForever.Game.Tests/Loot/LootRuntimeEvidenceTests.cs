@@ -2,7 +2,6 @@ using System.Collections.Immutable;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Character.Model;
@@ -26,7 +25,6 @@ using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Chat;
 using NexusForever.Network.World.Message.Model.Loot;
 using NexusForever.Network.World.Message.Model.Story;
-using NexusForever.Shared;
 using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Command.Context;
 using NexusForever.WorldServer.Command.Handler;
@@ -34,7 +32,6 @@ using NexusForever.WorldServer.Network;
 
 namespace NexusForever.Game.Tests.Loot;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class LootRuntimeEvidenceTests
 {
     [Fact]
@@ -42,65 +39,57 @@ public class LootRuntimeEvidenceTests
     {
         using var output = new LootEvidenceDirectoryScope();
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
-        LegacyServiceProvider.Provider = BuildLootProvider(groupStateManager, 123u);
+        GameTableManager gameTableManager = CreateGameTableManager(123u);
 
-        try
+        var session = new TestWorldSession();
+        session.ArmNextLootEvidenceCapture();
+
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+        playerProxy.SetProperty("Guid", 4242u);
+
+        var lootInstance = new LootInstance(
+            ownerUnitId: 99u,
+            looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
+            looterType: LooterType.Player,
+            lootEntityType: LootEntityType.Creature,
+            gameTableManager: gameTableManager)
         {
-            var session = new TestWorldSession();
-            session.ArmNextLootEvidenceCapture();
+            Explosion = true
+        };
 
-            IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
-            playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
-            playerProxy.SetProperty(nameof(IPlayer.Session), session);
-            playerProxy.SetProperty("Guid", 4242u);
+        lootInstance.AddLootItem(123u, LootItemType.StaticItem, 2u);
+        lootInstance.SendLootNotify(player);
 
-            var lootInstance = new LootInstance(
-                ownerUnitId: 99u,
-                looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
-                looterType: LooterType.Player,
-                lootEntityType: LootEntityType.Creature)
-            {
-                Explosion = true
-            };
+        string artifactPath = Assert.Single(Directory.GetFiles(output.DirectoryPath, "*.json"));
+        using JsonDocument document = JsonDocument.Parse(File.ReadAllText(artifactPath));
+        JsonElement root = document.RootElement;
 
-            lootInstance.AddLootItem(123u, LootItemType.StaticItem, 2u);
-            lootInstance.SendLootNotify(player);
+        Assert.Equal("notify-exported", root.GetProperty("Status").GetString());
+        Assert.Equal(99u, root.GetProperty("OwnerUnitId").GetUInt32());
+        Assert.Equal(99u, root.GetProperty("ParentUnitId").GetUInt32());
+        Assert.Contains("mirrors-owner", root.GetProperty("ParentUnitIdInterpretation").GetString());
 
-            string artifactPath = Assert.Single(Directory.GetFiles(output.DirectoryPath, "*.json"));
-            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(artifactPath));
-            JsonElement root = document.RootElement;
+        JsonElement booleanOrder = root.GetProperty("LootItemBooleanOrder");
+        Assert.Equal("CanLoot", booleanOrder[0].GetString());
+        Assert.Equal("RequiresRoll", booleanOrder[1].GetString());
+        Assert.Equal("OnlyMasterLootable", booleanOrder[2].GetString());
+        Assert.Equal("Explosion", booleanOrder[3].GetString());
+        Assert.Equal("Granted", booleanOrder[4].GetString());
 
-            Assert.Equal("notify-exported", root.GetProperty("Status").GetString());
-            Assert.Equal(99u, root.GetProperty("OwnerUnitId").GetUInt32());
-            Assert.Equal(99u, root.GetProperty("ParentUnitId").GetUInt32());
-            Assert.Contains("mirrors-owner", root.GetProperty("ParentUnitIdInterpretation").GetString());
+        JsonElement notifyPacket = root.GetProperty("NotifyPacket");
+        Assert.Equal("ServerLootNotify", notifyPacket.GetProperty("PacketName").GetString());
+        Assert.NotEmpty(notifyPacket.GetProperty("PayloadHex").GetString());
 
-            JsonElement booleanOrder = root.GetProperty("LootItemBooleanOrder");
-            Assert.Equal("CanLoot", booleanOrder[0].GetString());
-            Assert.Equal("RequiresRoll", booleanOrder[1].GetString());
-            Assert.Equal("OnlyMasterLootable", booleanOrder[2].GetString());
-            Assert.Equal("Explosion", booleanOrder[3].GetString());
-            Assert.Equal("Granted", booleanOrder[4].GetString());
-
-            JsonElement notifyPacket = root.GetProperty("NotifyPacket");
-            Assert.Equal("ServerLootNotify", notifyPacket.GetProperty("PacketName").GetString());
-            Assert.NotEmpty(notifyPacket.GetProperty("PayloadHex").GetString());
-
-            JsonElement item = Assert.Single(root.GetProperty("Items").EnumerateArray().ToArray());
-            JsonElement itemState = item.GetProperty("State");
-            Assert.Equal(5u, itemState.GetProperty("ItemQuality2Id").GetUInt32());
-            Assert.Equal(9876u, itemState.GetProperty("ItemQualityVisualEffectIdLoot").GetUInt32());
-            Assert.Equal("LootItem", item.GetProperty("LootItemPayload").GetProperty("PacketName").GetString());
-            Assert.Equal("ServerLootNotification", item.GetProperty("FeedbackPacketTemplates").GetProperty("Notification").GetProperty("PacketName").GetString());
-            Assert.Equal("ServerLootCanLoot", item.GetProperty("FeedbackPacketTemplates").GetProperty("CanLoot").GetProperty("PacketName").GetString());
-            Assert.Equal("ServerLootBindOnPickup", item.GetProperty("FeedbackPacketTemplates").GetProperty("BindOnPickup").GetProperty("PacketName").GetString());
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        JsonElement item = Assert.Single(root.GetProperty("Items").EnumerateArray().ToArray());
+        JsonElement itemState = item.GetProperty("State");
+        Assert.Equal(5u, itemState.GetProperty("ItemQuality2Id").GetUInt32());
+        Assert.Equal(9876u, itemState.GetProperty("ItemQualityVisualEffectIdLoot").GetUInt32());
+        Assert.Equal("LootItem", item.GetProperty("LootItemPayload").GetProperty("PacketName").GetString());
+        Assert.Equal("ServerLootNotification", item.GetProperty("FeedbackPacketTemplates").GetProperty("Notification").GetProperty("PacketName").GetString());
+        Assert.Equal("ServerLootCanLoot", item.GetProperty("FeedbackPacketTemplates").GetProperty("CanLoot").GetProperty("PacketName").GetString());
+        Assert.Equal("ServerLootBindOnPickup", item.GetProperty("FeedbackPacketTemplates").GetProperty("BindOnPickup").GetProperty("PacketName").GetString());
     }
 
     [Fact]
@@ -108,51 +97,43 @@ public class LootRuntimeEvidenceTests
     {
         using var output = new LootEvidenceDirectoryScope();
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
-        LegacyServiceProvider.Provider = BuildLootProvider(groupStateManager, 123u);
+        GameTableManager gameTableManager = CreateGameTableManager(123u);
 
-        try
-        {
-            var session = new TestWorldSession();
-            session.ArmNextLootEvidenceCapture();
+        var session = new TestWorldSession();
+        session.ArmNextLootEvidenceCapture();
 
-            IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
-            ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out _);
-            playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
-            playerProxy.SetProperty(nameof(IPlayer.CurrencyManager), currencyManager);
-            playerProxy.SetProperty(nameof(IPlayer.Session), session);
-            playerProxy.SetProperty("Guid", 4242u);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out _);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
+        playerProxy.SetProperty(nameof(IPlayer.CurrencyManager), currencyManager);
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+        playerProxy.SetProperty("Guid", 4242u);
 
-            var lootInstance = new LootInstance(
-                ownerUnitId: 77u,
-                looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
-                looterType: LooterType.Player,
-                lootEntityType: LootEntityType.Creature);
+        var lootInstance = new LootInstance(
+            ownerUnitId: 77u,
+            looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
+            looterType: LooterType.Player,
+            lootEntityType: LootEntityType.Creature,
+            gameTableManager: gameTableManager);
 
-            LootInstanceItem delivered = lootInstance.AddLootItem(1u, LootItemType.Cash, 5u);
-            delivered.SetWinner(player);
-            Assert.True(delivered.DeliverItem(player, sendAsGrant: false));
+        LootInstanceItem delivered = lootInstance.AddLootItem(1u, LootItemType.Cash, 5u);
+        delivered.SetWinner(player);
+        Assert.True(delivered.DeliverItem(player, sendAsGrant: false));
 
-            lootInstance.SendLootNotify(player);
+        lootInstance.SendLootNotify(player);
 
-            string artifactPath = Assert.Single(Directory.GetFiles(output.DirectoryPath, "*.json"));
-            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(artifactPath));
-            JsonElement root = document.RootElement;
+        string artifactPath = Assert.Single(Directory.GetFiles(output.DirectoryPath, "*.json"));
+        using JsonDocument document = JsonDocument.Parse(File.ReadAllText(artifactPath));
+        JsonElement root = document.RootElement;
 
-            Assert.Equal("suppressed-no-visible-items", root.GetProperty("Status").GetString());
-            Assert.Equal(77u, root.GetProperty("OwnerUnitId").GetUInt32());
-            Assert.Equal(1, root.GetProperty("TrackedItemCount").GetInt32());
-            Assert.Equal(1, root.GetProperty("DeliveredItemCount").GetInt32());
-            Assert.Equal(JsonValueKind.Null, root.GetProperty("NotifyPacket").ValueKind);
-            Assert.Empty(root.GetProperty("Items").EnumerateArray().ToArray());
-            object message = Assert.Single(session.EncryptedMessages);
-            Assert.IsType<ServerLootRemove>(message);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal("suppressed-no-visible-items", root.GetProperty("Status").GetString());
+        Assert.Equal(77u, root.GetProperty("OwnerUnitId").GetUInt32());
+        Assert.Equal(1, root.GetProperty("TrackedItemCount").GetInt32());
+        Assert.Equal(1, root.GetProperty("DeliveredItemCount").GetInt32());
+        Assert.Equal(JsonValueKind.Null, root.GetProperty("NotifyPacket").ValueKind);
+        Assert.Empty(root.GetProperty("Items").EnumerateArray().ToArray());
+        object message = Assert.Single(session.EncryptedMessages);
+        Assert.IsType<ServerLootRemove>(message);
     }
 
     [Fact]
@@ -177,9 +158,8 @@ public class LootRuntimeEvidenceTests
         Assert.Contains("loot-evidence", context.Messages[0], StringComparison.OrdinalIgnoreCase);
     }
 
-    private static IServiceProvider BuildLootProvider(IGroupStateManager groupStateManager, uint staticItemId)
+    private static GameTableManager CreateGameTableManager(uint staticItemId)
     {
-        var lootManager = new GlobalLootManager(groupStateManager);
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
             GameTablePath = string.Empty
@@ -196,10 +176,7 @@ public class LootRuntimeEvidenceTests
             VisualEffectIdLoot = 9876u
         }));
 
-        return new ServiceCollection()
-            .AddSingleton(lootManager)
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

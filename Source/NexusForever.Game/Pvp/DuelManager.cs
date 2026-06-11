@@ -5,11 +5,10 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Pvp;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Pvp;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Pvp
 {
-    public sealed class DuelManager : Singleton<DuelManager>, IDuelManager
+    public sealed class DuelManager : IDuelManager
     {
         private const double ChallengeTimeoutSeconds = 30d;
         private const double CountdownSeconds = 3d;

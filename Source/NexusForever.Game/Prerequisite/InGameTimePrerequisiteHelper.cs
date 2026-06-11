@@ -9,9 +9,9 @@ namespace NexusForever.Game.Prerequisite
         /// <summary>
         /// Seconds since midnight in the in-game day clock, matching <see cref="Entity.Player.SendInGameTime"/>.
         /// </summary>
-        public static uint GetTimeOfDaySeconds()
+        public static uint GetTimeOfDaySeconds(ISharedConfiguration sharedConfiguration = null)
         {
-            uint lengthOfInGameDayInSeconds = SharedConfiguration.Instance.Get<RealmConfig>()?.LengthOfInGameDay ?? 0u;
+            uint lengthOfInGameDayInSeconds = sharedConfiguration?.Get<RealmConfig>()?.LengthOfInGameDay ?? 0u;
             if (lengthOfInGameDayInSeconds == 0u)
                 lengthOfInGameDayInSeconds = (uint)TimeSpan.FromHours(3.5d).TotalSeconds;
 

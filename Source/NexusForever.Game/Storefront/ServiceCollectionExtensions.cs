@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Storefront;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Storefront
 {
@@ -8,7 +7,7 @@ namespace NexusForever.Game.Storefront
     {
         public static void AddGameStore(this IServiceCollection sc)
         {
-            sc.AddSingletonLegacy<IGlobalStorefrontManager, GlobalStorefrontManager>();
+            sc.AddSingleton<IGlobalStorefrontManager, GlobalStorefrontManager>();
         }
     }
 }

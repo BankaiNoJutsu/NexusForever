@@ -4,7 +4,6 @@ using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Guild;
-using NexusForever.Game.Character;
 using NetworkGuildMember = NexusForever.Network.World.Message.Model.Guild.GuildMember;
 
 namespace NexusForever.Game.Guild
@@ -63,6 +62,7 @@ namespace NexusForever.Game.Guild
         private int communityPlotReservation;
 
         private GuildMemberSaveMask saveMask;
+        private readonly ICharacterManager characterManager;
 
         /// <summary>
         /// Returns if <see cref="IGuildMember"/> is enqueued to be saved to the database.
@@ -77,13 +77,14 @@ namespace NexusForever.Game.Guild
         /// <summary>
         /// Create a new <see cref="IGuildMember"/> from an existing database model.
         /// </summary>
-        public GuildMember(GuildMemberModel model, IGuildBase guild, IGuildRank guildRank)
+        public GuildMember(GuildMemberModel model, IGuildBase guild, IGuildRank guildRank, ICharacterManager characterManager = null)
         {
             Guild                    = guild;
-            PlayerIdentity           = new Identity{ Id = model.CharacterId, RealmId = RealmContext.Instance.RealmId };
+            PlayerIdentity           = new Identity{ Id = model.CharacterId, RealmId = guild.Identity.RealmId };
             rank                     = guildRank;
             note                     = model.Note;
             communityPlotReservation = model.CommunityPlotReservation;
+            this.characterManager    = characterManager;
 
             saveMask = GuildMemberSaveMask.None;
         }
@@ -91,13 +92,14 @@ namespace NexusForever.Game.Guild
         /// <summary>
         /// Create a new <see cref="IGuildMember"/> from the supplied member information.
         /// </summary>
-        public GuildMember(IGuildBase guild, ulong characterId, IGuildRank guildRank, string note = "")
+        public GuildMember(IGuildBase guild, ulong characterId, IGuildRank guildRank, string note = "", ICharacterManager characterManager = null)
         {
             Guild                    = guild;
-            PlayerIdentity           = new Identity { Id = characterId, RealmId = RealmContext.Instance.RealmId };
+            PlayerIdentity           = new Identity { Id = characterId, RealmId = guild.Identity.RealmId };
             rank                     = guildRank;
             this.note                = note;
             communityPlotReservation = -1;
+            this.characterManager    = characterManager;
 
             saveMask = GuildMemberSaveMask.Create;
         }
@@ -105,13 +107,14 @@ namespace NexusForever.Game.Guild
         /// <summary>
         /// Create a new <see cref="IGuildMember"/> from the supplied member information.
         /// </summary>
-        public GuildMember(IGuildBase guild, Identity playerIdentity, IGuildRank guildRank, string note = "")
+        public GuildMember(IGuildBase guild, Identity playerIdentity, IGuildRank guildRank, string note = "", ICharacterManager characterManager = null)
         {
             Guild                    = guild;
             PlayerIdentity           = playerIdentity;
             rank                     = guildRank;
             this.note                = note;
             communityPlotReservation = -1;
+            this.characterManager    = characterManager;
 
             saveMask = GuildMemberSaveMask.Create;
         }
@@ -166,7 +169,7 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public NetworkGuildMember Build()
         {
-            ICharacter characterInfo = CharacterManager.Instance.GetCharacter(CharacterId);
+            ICharacter characterInfo = GetCharacterManager().GetCharacter(CharacterId);
 
             return new NetworkGuildMember
             {
@@ -181,6 +184,11 @@ namespace NexusForever.Game.Guild
                 LastLogoutTimeDays       = characterInfo.GetOnlineStatus() ?? 0f,
                 CommunityReservedPlotIndex = communityPlotReservation
             };
+        }
+
+        private ICharacterManager GetCharacterManager()
+        {
+            return characterManager ?? throw new InvalidOperationException("GuildMember requires an ICharacterManager.");
         }
 
         /// <summary>

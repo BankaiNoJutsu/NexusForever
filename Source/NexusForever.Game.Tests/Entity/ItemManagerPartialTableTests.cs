@@ -1,14 +1,11 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Static.Entity;
-using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Tests.Entity;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class ItemManagerPartialTableTests
 {
     [Theory]
@@ -16,9 +13,9 @@ public class ItemManagerPartialTableTests
     [InlineData(true)]
     public void InitialiseItemInfo_WithMissingItemTableUsesEmptyCache(bool includeEmptyTable)
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
-            itemTable: includeEmptyTable ? CreateGameTable<Item2Entry>() : null));
-        var itemManager = new ItemManager();
+        GameTableManager gameTableManager = CreateGameTableManager(
+            itemTable: includeEmptyTable ? CreateGameTable<Item2Entry>() : null);
+        var itemManager = new ItemManager(gameTableManager: gameTableManager);
 
         Invoke(itemManager, "InitialiseItemInfo");
 
@@ -30,9 +27,9 @@ public class ItemManagerPartialTableTests
     [InlineData(true)]
     public void InitialiseEquippedItemSlots_WithMissingItemSlotTableUsesEmptyCache(bool includeEmptyTable)
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
-            itemSlotTable: includeEmptyTable ? CreateGameTable<ItemSlotEntry>() : null));
-        var itemManager = new ItemManager();
+        GameTableManager gameTableManager = CreateGameTableManager(
+            itemSlotTable: includeEmptyTable ? CreateGameTable<ItemSlotEntry>() : null);
+        var itemManager = new ItemManager(gameTableManager: gameTableManager);
 
         Invoke(itemManager, "InitialiseEquippedItemSlots");
 
@@ -53,9 +50,9 @@ public class ItemManagerPartialTableTests
             EquippedSlotFlags = 0u
         };
 
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
-            itemSlotTable: CreateGameTable(armorChest, armorLegs)));
-        var itemManager = new ItemManager();
+        GameTableManager gameTableManager = CreateGameTableManager(
+            itemSlotTable: CreateGameTable(armorChest, armorLegs));
+        var itemManager = new ItemManager(gameTableManager: gameTableManager);
 
         Invoke(itemManager, "InitialiseEquippedItemSlots");
 
@@ -65,19 +62,17 @@ public class ItemManagerPartialTableTests
         Assert.Empty(itemManager.GetEquippedBagIndexes(ItemSlot.ArmorLegs));
     }
 
-    private static IServiceProvider BuildProvider(
+    private static GameTableManager CreateGameTableManager(
         GameTable<Item2Entry> itemTable = null,
         GameTable<ItemSlotEntry> itemSlotTable = null)
     {
-        var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
+        GameTableManager gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         if (itemTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.Item), itemTable);
         if (itemSlotTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.ItemSlot), itemSlotTable);
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

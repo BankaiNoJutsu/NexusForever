@@ -4,31 +4,36 @@ using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.RBAC;
-using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Static.RBAC;
-using NexusForever.Shared.Configuration;
 
 namespace NexusForever.Game.RBAC
 {
     public class AccountRBACManager : IAccountRBACManager
     {
         private readonly IAccount account;
+        private readonly IRBACManager rbacManager;
 
         private readonly Dictionary<Permission, IAccountPermission> permissions = new();
         private readonly Dictionary<Role, IAccountRole> roles = new();
 
-        private Role defaultRole = (SharedConfiguration.Instance.Get<RealmConfig>().DefaultRole ?? Role.Player);
+        private readonly Role defaultRole;
 
         /// <summary>
         /// Create a new <see cref="IAccountRBACManager"/> from an existing database model.
         /// </summary>
-        public AccountRBACManager(IAccount account, AccountModel model)
+        public AccountRBACManager(
+            IAccount account,
+            AccountModel model,
+            IRBACManager rbacManager,
+            Role defaultRole)
         {
             this.account = account;
+            this.rbacManager = rbacManager ?? throw new ArgumentNullException(nameof(rbacManager));
+            this.defaultRole = defaultRole;
 
             foreach (AccountPermissionModel permissionModel in model.AccountPermission)
             {
-                IRBACPermission rbacPermission = RBACManager.Instance.GetPermission((Permission)permissionModel.PermissionId);
+                IRBACPermission rbacPermission = this.rbacManager.GetPermission((Permission)permissionModel.PermissionId);
                 if (rbacPermission == null)
                     throw new DatabaseDataException($"Account {model.Id} has invalid permission {permissionModel.PermissionId}!");
 
@@ -37,7 +42,7 @@ namespace NexusForever.Game.RBAC
 
             foreach (AccountRoleModel roleModel in model.AccountRole)
             {
-                IRBACRole rbacRole = RBACManager.Instance.GetRole((Role)roleModel.RoleId);
+                IRBACRole rbacRole = this.rbacManager.GetRole((Role)roleModel.RoleId);
                 if (rbacRole == null)
                     throw new DatabaseDataException($"Account {model.Id} has invalid role {roleModel.RoleId}!");
 
@@ -46,7 +51,7 @@ namespace NexusForever.Game.RBAC
 
             if (roles.Count == 0)
             {
-                IRBACRole rbacRole = RBACManager.Instance.GetRole(defaultRole);
+                IRBACRole rbacRole = this.rbacManager.GetRole(defaultRole);
                 if (rbacRole == null)
                     throw new DatabaseDataException($"Account {model.Id} has invalid role {defaultRole}!");
 
@@ -80,7 +85,7 @@ namespace NexusForever.Game.RBAC
         /// </summary>
         public void GrantPermission(Permission permission)
         {
-            IRBACPermission rbacPermission = RBACManager.Instance.GetPermission(permission);
+            IRBACPermission rbacPermission = rbacManager.GetPermission(permission);
             if (rbacPermission == null)
                 throw new ArgumentException($"Failed to grant permission to account {account.Id}, {permission} isn't a valid permission!");
 
@@ -117,7 +122,7 @@ namespace NexusForever.Game.RBAC
         /// </summary>
         public void GrantRole(Role role)
         {
-            IRBACRole rbacRole = RBACManager.Instance.GetRole(role);
+            IRBACRole rbacRole = rbacManager.GetRole(role);
             if (rbacRole == null)
                 throw new ArgumentException($"Failed to grant role to account {account.Id}, {role} isn't a valid role!");
 

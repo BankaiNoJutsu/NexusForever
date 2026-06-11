@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Configuration.Model;
@@ -10,6 +11,7 @@ using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Retail;
 using NexusForever.Game.Static.Guild;
+using NexusForever.GameTable;
 using NexusForever.GameTable.Text.Filter;
 using NexusForever.GameTable.Text.Static;
 using NexusForever.Network.World.Message.Model.Guild;
@@ -102,6 +104,12 @@ namespace NexusForever.Game.Guild
         private SaveMask saveMask;
 
         private readonly IPlayer owner;
+        private readonly ITextFilterManager textFilterManager;
+        private readonly IGlobalGuildManager globalGuildManager;
+        private readonly IRealmContext realmContext;
+        private readonly IPlayerManager playerManager;
+        private readonly ISharedConfiguration sharedConfiguration;
+        private readonly IGameTableManager gameTableManager;
 
         private readonly Dictionary<ulong, IGuildBase> guilds = new();
         private IGuildInvite pendingInvite;
@@ -109,11 +117,25 @@ namespace NexusForever.Game.Guild
         /// <summary>
         /// Create a new <see cref="IGuildManager"/> from existing <see cref="CharacterModel"/> database model.
         /// </summary>
-        public GuildManager(IPlayer player, CharacterModel model)
+        public GuildManager(
+            IPlayer player,
+            CharacterModel model,
+            ITextFilterManager textFilterManager = null,
+            IGlobalGuildManager globalGuildManager = null,
+            IRealmContext realmContext = null,
+            IPlayerManager playerManager = null,
+            ISharedConfiguration sharedConfiguration = null,
+            IGameTableManager gameTableManager = null)
         {
             owner = player;
+            this.textFilterManager = textFilterManager;
+            this.globalGuildManager = globalGuildManager;
+            this.realmContext = realmContext;
+            this.playerManager = playerManager;
+            this.sharedConfiguration = sharedConfiguration;
+            this.gameTableManager = gameTableManager;
 
-            foreach (IGuildBase guild in GlobalGuildManager.Instance.GetCharacterGuilds(owner.CharacterId))
+            foreach (IGuildBase guild in GetGlobalGuildManager().GetCharacterGuilds(owner.CharacterId))
             {
                 if (guild.Type == GuildType.Guild)
                     Guild = guild as IGuild;
@@ -213,7 +235,7 @@ namespace NexusForever.Game.Guild
         {
             IGuildStandard standard = null;
             if (guildRegister.GuildType == GuildType.Guild)
-                standard = new GuildStandard(guildRegister.GuildStandard);
+                standard = new GuildStandard(guildRegister.GuildStandard, gameTableManager);
 
             return CanRegisterGuild(guildRegister.GuildType, guildRegister.GuildName, guildRegister.MasterTitle,
                 guildRegister.CouncilTitle, guildRegister.MasterTitle, standard);
@@ -227,15 +249,16 @@ namespace NexusForever.Game.Guild
             if (!CanStoreGuildType(type))
                 return new GuildResultInfo(GetMaximumGuildTypeError(type));
 
-            if (!TextFilterManager.Instance.IsTextValid(name) || !TextFilterManager.Instance.IsTextValid(name, UserText.GuildName))
+            ITextFilterManager textFilter = GetTextFilterManager();
+            if (!textFilter.IsTextValid(name) || !textFilter.IsTextValid(name, UserText.GuildName))
                 return new GuildResultInfo(GuildResult.InvalidGuildName, referenceString: name);
 
-            if (GlobalGuildManager.Instance.GetGuild(type, name) != null)
+            if (GetGlobalGuildManager().GetGuild(type, name) != null)
                 return new GuildResultInfo(GuildResult.GuildNameUnavailable, referenceString: name);
 
             /*var rankNames = new List<string> { leaderRankName, councilRankName, memberRankName };
             foreach (string rankName in rankNames) 
-                if (!TextFilterManager.Instance.IsTextValid(rankName) || !TextFilterManager.Instance.IsTextValid(rankName, UserText.GuildRankName))
+                if (!textFilter.IsTextValid(rankName) || !textFilter.IsTextValid(rankName, UserText.GuildRankName))
                     return new GuildResultInfo(GuildResult.InvalidGuildName, referenceString: rankName);*/
 
             if (standard != null && !standard.Validate())
@@ -266,6 +289,16 @@ namespace NexusForever.Game.Guild
             return count < GetMaximumGuildTypeCount(type);
         }
 
+        private ITextFilterManager GetTextFilterManager()
+        {
+            return textFilterManager ?? throw new InvalidOperationException("Text filter manager dependency was not supplied.");
+        }
+
+        private IGlobalGuildManager GetGlobalGuildManager()
+        {
+            return globalGuildManager ?? throw new InvalidOperationException("Global guild manager dependency was not supplied.");
+        }
+
         /// <summary>
         /// Register a new guild with the supplied <see cref="GuildType"/>, name, ranks and standard. 
         /// </summary>
@@ -276,7 +309,7 @@ namespace NexusForever.Game.Guild
         {
             IGuildStandard standard = null;
             if (guildRegister.GuildType == GuildType.Guild)
-                standard = new GuildStandard(guildRegister.GuildStandard);
+                standard = new GuildStandard(guildRegister.GuildStandard, gameTableManager);
 
             RegisterGuild(guildRegister.GuildType, guildRegister.GuildName, guildRegister.MasterTitle,
                 guildRegister.CouncilTitle, guildRegister.MemberTitle, standard);
@@ -290,7 +323,7 @@ namespace NexusForever.Game.Guild
         /// </remarks>
         public void RegisterGuild(GuildType type, string name, string leaderRankName, string councilRankName, string memberRankName, IGuildStandard standard = null)
         {
-            IGuildBase guild = GlobalGuildManager.Instance.RegisterGuild(type, name, leaderRankName, councilRankName, memberRankName, standard);
+            IGuildBase guild = GetGlobalGuildManager().RegisterGuild(type, name, leaderRankName, councilRankName, memberRankName, standard);
             JoinGuild(guild);
         }
 
@@ -301,7 +334,7 @@ namespace NexusForever.Game.Guild
         {
             ClearExpiredInvite();
 
-            IGuildBase guild = GlobalGuildManager.Instance.GetGuild(id);
+            IGuildBase guild = GetGlobalGuildManager().GetGuild(id);
             if (guild == null)
                 return new GuildResultInfo(GuildResult.NotAGuild);
 
@@ -322,7 +355,7 @@ namespace NexusForever.Game.Guild
         /// </remarks>
         public void InviteToGuild(ulong id, IPlayer invitee, IPlayer inviter)
         {
-            IGuildBase guild = GlobalGuildManager.Instance.GetGuild(id);
+            IGuildBase guild = GetGlobalGuildManager().GetGuild(id);
             if (guild == null)
                 throw new ArgumentException($"Invalid guild {id}!");
 
@@ -354,7 +387,7 @@ namespace NexusForever.Game.Guild
             if (pendingInvite == null)
                 return new GuildResultInfo(GuildResult.NoPendingInvites);
 
-            IGuildBase guild = GlobalGuildManager.Instance.GetGuild(pendingInvite.GuildId);
+            IGuildBase guild = GetGlobalGuildManager().GetGuild(pendingInvite.GuildId);
             if (guild == null)
                 return new GuildResultInfo(GuildResult.NotAGuild);
 
@@ -372,9 +405,9 @@ namespace NexusForever.Game.Guild
             if (pendingInvite == null)
                 throw new InvalidOperationException($"Invalid guild invite for {owner.CharacterId}!");
 
-            Abstract.Identity GuildIdentity = new Abstract.Identity { Id = pendingInvite.GuildId , RealmId = RealmContext.Instance.RealmId};
+            Abstract.Identity GuildIdentity = new Abstract.Identity { Id = pendingInvite.GuildId , RealmId = realmContext?.RealmId ?? owner.Identity.RealmId};
 
-            IPlayer invitee = PlayerManager.Instance.GetPlayer(pendingInvite.InviteeId);
+            IPlayer invitee = playerManager?.GetPlayer(pendingInvite.InviteeId);
             if (accepted)
             {
                 if (invitee?.Session != null)
@@ -398,9 +431,9 @@ namespace NexusForever.Game.Guild
             pendingInvite = null;
         }
 
-        private static double GetGuildInviteExpirySeconds()
+        private double GetGuildInviteExpirySeconds()
         {
-            return SharedConfiguration.Instance.Get<WorldConfig>()?.GuildInviteExpirySeconds ?? DefaultGuildInviteExpirySeconds;
+            return sharedConfiguration?.Get<WorldConfig>()?.GuildInviteExpirySeconds ?? DefaultGuildInviteExpirySeconds;
         }
 
         /// <summary>
@@ -408,7 +441,7 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public IGuildResultInfo CanJoinGuild(ulong id)
         {
-            IGuildBase guild = GlobalGuildManager.Instance.GetGuild(id);
+            IGuildBase guild = GetGlobalGuildManager().GetGuild(id);
             if (guild == null)
                 return new GuildResultInfo(GuildResult.NotAGuild);
 
@@ -426,7 +459,7 @@ namespace NexusForever.Game.Guild
         /// </remarks>
         public void JoinGuild(ulong id)
         {
-            IGuildBase guild = GlobalGuildManager.Instance.GetGuild(id);
+            IGuildBase guild = GetGlobalGuildManager().GetGuild(id);
             if (guild == null)
                 throw new ArgumentException($"Invalid guild {id}!");
 
@@ -444,7 +477,7 @@ namespace NexusForever.Game.Guild
 
             guild.JoinGuild(owner);
 
-            GlobalGuildManager.Instance.TrackCharacterGuild(owner.CharacterId, guild.Id);
+            GetGlobalGuildManager().TrackCharacterGuild(owner.CharacterId, guild.Id);
 
             owner.AchievementManager.CheckAchievements(owner, AchievementType.GuildOrCircleJoin, (uint)guild.Type);
         }
@@ -454,7 +487,7 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public IGuildResultInfo CanLeaveGuild(ulong id)
         {
-            IGuildBase guild = GlobalGuildManager.Instance.GetGuild(id);
+            IGuildBase guild = GetGlobalGuildManager().GetGuild(id);
             if (guild == null)
                 return new GuildResultInfo(GuildResult.NotAGuild);
 
@@ -469,7 +502,7 @@ namespace NexusForever.Game.Guild
         /// </remarks>
         public void LeaveGuild(ulong id, GuildResult reason = GuildResult.MemberQuit)
         {
-            IGuildBase guild = GlobalGuildManager.Instance.GetGuild(id);
+            IGuildBase guild = GetGlobalGuildManager().GetGuild(id);
             if (guild == null)
                 throw new ArgumentException($"Invalid guild {id}!");
 

@@ -20,10 +20,19 @@ namespace NexusForever.Game.Guild
             /// <summary>
             /// Create a new <see cref="IGuildStandardPart"/> with supplied parameters.
             /// </summary>
-            public GuildStandardPart(GuildStandardPartType type, ushort guildStandardPartId,
-                ushort dyeColorRampId1, ushort dyeColorRampId2, ushort dyeColorRampId3)
+            private readonly IGameTableManager gameTableManager;
+
+            public GuildStandardPart(
+                GuildStandardPartType type,
+                ushort guildStandardPartId,
+                ushort dyeColorRampId1,
+                ushort dyeColorRampId2,
+                ushort dyeColorRampId3,
+                IGameTableManager gameTableManager)
             {
-                GuildStandardPartEntry entry = GameTableManager.Instance.GuildStandardPart?.GetEntry(guildStandardPartId);
+                this.gameTableManager = gameTableManager;
+
+                GuildStandardPartEntry entry = gameTableManager?.GuildStandardPart?.GetEntry(guildStandardPartId);
                 if (entry == null)
                     throw new ArgumentException();
 
@@ -43,7 +52,7 @@ namespace NexusForever.Game.Guild
                     return false;
 
                 ushort[] colourRamps = { DyeColorRampId1, DyeColorRampId2, DyeColorRampId3 };
-                return colourRamps.All(c => c == 0 || GameTableManager.Instance.DyeColorRamp?.GetEntry(c) != null);
+                return colourRamps.All(c => c == 0 || gameTableManager?.DyeColorRamp?.GetEntry(c) != null);
             }
 
             public NetworkGuildStandard.GuildStandardPart Build()
@@ -65,34 +74,42 @@ namespace NexusForever.Game.Guild
         /// <summary>
         /// Create a new <see cref="IGuildStandard"/> from an existing database model.
         /// </summary>
-        public GuildStandard(GuildDataModel model)
+        public GuildStandard(
+            GuildDataModel model,
+            IGameTableManager gameTableManager)
         {
-            BackgroundIcon = new GuildStandardPart(GuildStandardPartType.Background, model.BackgroundIconPartId, 0, 0, 0);
-            ForegroundIcon = new GuildStandardPart(GuildStandardPartType.Foreground, model.ForegroundIconPartId, 0, 0, 0);
-            ScanLines      = new GuildStandardPart(GuildStandardPartType.ScanLines, model.ScanLinesPartId, 0, 0, 0);
+            BackgroundIcon = new GuildStandardPart(GuildStandardPartType.Background, model.BackgroundIconPartId, 0, 0, 0, gameTableManager);
+            ForegroundIcon = new GuildStandardPart(GuildStandardPartType.Foreground, model.ForegroundIconPartId, 0, 0, 0, gameTableManager);
+            ScanLines      = new GuildStandardPart(GuildStandardPartType.ScanLines, model.ScanLinesPartId, 0, 0, 0, gameTableManager);
         }
 
         /// <summary>
         /// Create a new <see cref="IGuildStandard"/> from a network model.
         /// </summary>
-        public GuildStandard(NetworkGuildStandard model)
+        public GuildStandard(
+            NetworkGuildStandard model,
+            IGameTableManager gameTableManager)
         {
             BackgroundIcon = new GuildStandardPart(GuildStandardPartType.Background, model.BackgroundIcon.GuildStandardPartId,
-                model.BackgroundIcon.DyeColorRampId1, model.BackgroundIcon.DyeColorRampId2, model.BackgroundIcon.DyeColorRampId3);
+                model.BackgroundIcon.DyeColorRampId1, model.BackgroundIcon.DyeColorRampId2, model.BackgroundIcon.DyeColorRampId3, gameTableManager);
             ForegroundIcon = new GuildStandardPart(GuildStandardPartType.Foreground, model.ForegroundIcon.GuildStandardPartId,
-                model.ForegroundIcon.DyeColorRampId1, model.ForegroundIcon.DyeColorRampId2, model.ForegroundIcon.DyeColorRampId3);
+                model.ForegroundIcon.DyeColorRampId1, model.ForegroundIcon.DyeColorRampId2, model.ForegroundIcon.DyeColorRampId3, gameTableManager);
             ScanLines      = new GuildStandardPart(GuildStandardPartType.ScanLines, model.ScanLines.GuildStandardPartId,
-                model.ScanLines.DyeColorRampId1, model.ScanLines.DyeColorRampId2, model.ScanLines.DyeColorRampId3);
+                model.ScanLines.DyeColorRampId1, model.ScanLines.DyeColorRampId2, model.ScanLines.DyeColorRampId3, gameTableManager);
         }
 
         /// <summary>
         /// Create a new <see cref="IGuildStandard"/> from supplied ids.
         /// </summary>
-        public GuildStandard(ushort backgroundIconPartId, ushort foregroundIconPartId, ushort scanLinesPartId)
+        public GuildStandard(
+            ushort backgroundIconPartId,
+            ushort foregroundIconPartId,
+            ushort scanLinesPartId,
+            IGameTableManager gameTableManager)
         {
-            BackgroundIcon = new GuildStandardPart(GuildStandardPartType.Background, backgroundIconPartId, 0, 0, 0);
-            ForegroundIcon = new GuildStandardPart(GuildStandardPartType.Foreground, foregroundIconPartId, 0, 0, 0);
-            ScanLines      = new GuildStandardPart(GuildStandardPartType.ScanLines, scanLinesPartId, 0, 0, 0);
+            BackgroundIcon = new GuildStandardPart(GuildStandardPartType.Background, backgroundIconPartId, 0, 0, 0, gameTableManager);
+            ForegroundIcon = new GuildStandardPart(GuildStandardPartType.Foreground, foregroundIconPartId, 0, 0, 0, gameTableManager);
+            ScanLines      = new GuildStandardPart(GuildStandardPartType.ScanLines, scanLinesPartId, 0, 0, 0, gameTableManager);
         }
 
         /// <summary>

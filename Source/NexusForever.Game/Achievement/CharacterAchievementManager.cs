@@ -1,10 +1,10 @@
 ﻿using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.Guild;
-using NexusForever.Game.Entity;
-using NexusForever.Game.Group;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Crafting;
 using NexusForever.GameTable;
@@ -15,14 +15,29 @@ namespace NexusForever.Game.Achievement
     public sealed class CharacterAchievementManager : BaseAchievementManager<CharacterAchievementModel>, ICharacterAchievementManager
     {
         private readonly IPlayer owner;
+        private readonly IGroupStateManager groupStateManager;
+        private readonly IPlayerManager playerManager;
+        private readonly IGameTableManager gameTableManager;
         protected override ulong OwnerId => owner.CharacterId;
 
         /// <summary>
         /// Create a new <see cref="CharacterAchievementManager"/> from existing <see cref="CharacterModel"/> database model.
         /// </summary>
-        public CharacterAchievementManager(IPlayer owner, CharacterModel model)
+        public CharacterAchievementManager(
+            IPlayer owner,
+            CharacterModel model,
+            IGroupStateManager groupStateManager = null,
+            IDisableManager disableManager = null,
+            IGlobalAchievementManager globalAchievementManager = null,
+            IPrerequisiteManager prerequisiteManager = null,
+            IPlayerManager playerManager = null,
+            IGameTableManager gameTableManager = null)
+            : base(disableManager, globalAchievementManager, prerequisiteManager, playerManager)
         {
-            this.owner = owner;
+            this.owner             = owner;
+            this.groupStateManager = groupStateManager;
+            this.playerManager     = playerManager;
+            this.gameTableManager  = gameTableManager;
             Initialise(model.Achievement, true);
         }
 
@@ -48,7 +63,7 @@ namespace NexusForever.Game.Achievement
         /// </summary>
         public override void CheckAchievements(IPlayer target, AchievementType type, uint objectId, uint objectIdAlt = 0u, uint count = 1u)
         {
-            CheckAchievements(target, GlobalAchievementManager.Instance.GetCharacterAchievements(type), objectId, objectIdAlt, count);
+            CheckAchievements(target, GetGlobalAchievementManager().GetCharacterAchievements(type), objectId, objectIdAlt, count);
             if (ShouldForwardToGuildAchievements(target, type))
                 target.GuildManager.Guild?.AchievementManager.CheckAchievements(target, type, objectId, objectIdAlt, count);
         }
@@ -58,12 +73,12 @@ namespace NexusForever.Game.Achievement
         /// </summary>
         public override void SetAchievementProgress(IPlayer target, AchievementType type, uint objectId, uint objectIdAlt, uint value)
         {
-            SetAchievementProgress(target, GlobalAchievementManager.Instance.GetCharacterAchievements(type), objectId, objectIdAlt, value);
+            SetAchievementProgress(target, GetGlobalAchievementManager().GetCharacterAchievements(type), objectId, objectIdAlt, value);
             if (ShouldForwardToGuildAchievements(target, type))
                 target.GuildManager.Guild?.AchievementManager.SetAchievementProgress(target, type, objectId, objectIdAlt, value);
         }
 
-        private static bool ShouldForwardToGuildAchievements(IPlayer target, AchievementType type)
+        private bool ShouldForwardToGuildAchievements(IPlayer target, AchievementType type)
         {
             return type switch
             {
@@ -72,18 +87,20 @@ namespace NexusForever.Game.Achievement
             };
         }
 
-        private static bool IsAllGuildGroup(IPlayer target)
+        private bool IsAllGuildGroup(IPlayer target)
         {
             IGuild guild = target?.GuildManager.Guild;
             if (guild == null || target.GroupAssociation == 0ul)
                 return false;
 
-            if (!GroupStateManager.Instance.TryGetGroupForCharacter(target.Identity, out GroupLootState group) || group.Members.Count <= 1)
+            if (groupStateManager == null
+                || !groupStateManager.TryGetGroupForCharacter(target.Identity, out GroupLootState group)
+                || group.Members.Count <= 1)
                 return false;
 
             foreach (GroupLootMember member in group.Members)
             {
-                IPlayer memberPlayer = PlayerManager.Instance.GetPlayer(member.Identity);
+                IPlayer memberPlayer = playerManager?.GetPlayer(member.Identity);
                 if (memberPlayer?.GuildManager.Guild?.Id != guild.Id)
                     return false;
             }
@@ -98,7 +115,7 @@ namespace NexusForever.Game.Achievement
             if (achievement.Info.Entry.CharacterTitleId != 0u)
                 owner.TitleManager.AddTitle((ushort)achievement.Info.Entry.CharacterTitleId);
 
-            if (GlobalAchievementManager.Instance.TryClaimRealmFirstAchievement(achievement.Info, false))
+            if (GetGlobalAchievementManager().TryClaimRealmFirstAchievement(achievement.Info, false))
                 BroadcastRealmFirstAchievement(achievement, false, owner.Name);
         }
 
@@ -116,7 +133,7 @@ namespace NexusForever.Game.Achievement
             if (player == null)
                 return;
 
-            TradeskillAchievementRewardEntry[] rewardEntries = GameTableManager.Instance.TradeskillAchievementReward?.Entries;
+            TradeskillAchievementRewardEntry[] rewardEntries = gameTableManager?.TradeskillAchievementReward?.Entries;
             if (rewardEntries == null || rewardEntries.Length == 0)
                 return;
 
@@ -144,7 +161,7 @@ namespace NexusForever.Game.Achievement
                 player.EnsureTradeskillTalentPointTotal(tradeskillId, earnedTalentPoints);
         }
 
-        private static IEnumerable<TradeskillType> ResolveRewardTradeskills(AchievementEntry achievement, TradeskillAchievementRewardEntry reward)
+        private IEnumerable<TradeskillType> ResolveRewardTradeskills(AchievementEntry achievement, TradeskillAchievementRewardEntry reward)
         {
             var tradeskillIds = new HashSet<TradeskillType>();
 
@@ -166,13 +183,12 @@ namespace NexusForever.Game.Achievement
             return tradeskillIds;
         }
 
-        private static bool TryResolveTradeskillFromCategory(uint achievementCategoryId, out TradeskillType tradeskillId)
+        private bool TryResolveTradeskillFromCategory(uint achievementCategoryId, out TradeskillType tradeskillId)
         {
             tradeskillId = default;
             if (achievementCategoryId == 0u)
                 return false;
 
-            IGameTableManager gameTableManager = GameTableManager.Instance;
             uint currentCategoryId = achievementCategoryId;
             for (int depth = 0; depth < 8 && currentCategoryId != 0u; depth++)
             {
@@ -188,27 +204,27 @@ namespace NexusForever.Game.Achievement
             return false;
         }
 
-        private static bool TryResolveTradeskillFromSchematic(uint tradeskillSchematic2Id, out TradeskillType tradeskillId)
+        private bool TryResolveTradeskillFromSchematic(uint tradeskillSchematic2Id, out TradeskillType tradeskillId)
         {
             tradeskillId = default;
-            TradeskillSchematic2Entry schematic = GameTableManager.Instance.TradeskillSchematic2?.GetEntry(tradeskillSchematic2Id);
+            TradeskillSchematic2Entry schematic = gameTableManager?.TradeskillSchematic2?.GetEntry(tradeskillSchematic2Id);
             return TryConvertTradeskillId(schematic?.TradeSkillId ?? 0u, out tradeskillId);
         }
 
-        private static bool TryResolveTradeskillFromTier(uint tradeskillTierId, out TradeskillType tradeskillId)
+        private bool TryResolveTradeskillFromTier(uint tradeskillTierId, out TradeskillType tradeskillId)
         {
             tradeskillId = default;
-            TradeskillTierEntry tier = GameTableManager.Instance.TradeskillTier?.GetEntry(tradeskillTierId);
+            TradeskillTierEntry tier = gameTableManager?.TradeskillTier?.GetEntry(tradeskillTierId);
             return TryConvertTradeskillId(tier?.TradeSkillId ?? 0u, out tradeskillId);
         }
 
-        private static bool TryResolveTradeskillFromCraftedItem(uint item2Id, out TradeskillType tradeskillId)
+        private bool TryResolveTradeskillFromCraftedItem(uint item2Id, out TradeskillType tradeskillId)
         {
             tradeskillId = default;
             if (item2Id == 0u)
                 return false;
 
-            TradeskillSchematic2Entry schematic = GameTableManager.Instance.TradeskillSchematic2?.Entries
+            TradeskillSchematic2Entry schematic = gameTableManager?.TradeskillSchematic2?.Entries
                 .FirstOrDefault(entry => entry.Item2IdOutput == item2Id
                     || entry.Item2IdOutputFail == item2Id
                     || entry.Item2IdOutputCrit == item2Id);

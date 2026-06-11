@@ -2,7 +2,6 @@ using System;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Achievement;
@@ -18,239 +17,197 @@ using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
-using NexusForever.Shared;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Entity;
 
 namespace NexusForever.Game.Tests.Entity;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class ClientActivateUnitCastHandlerTests
 {
     [Fact]
     public void HandleMessageInternal_WithAttackableUnit_TargetsAndStartsThreatWithoutCastingActivateSpell()
     {
-        RunWithLegacyProvider(() =>
-        {
-            ClientActivateUnitCastHandler handler = CreateHandler();
-            IWorldSession session = CreateAttackableUnitSession(
-                out IUnitEntity target,
-                out RecordingDispatchProxy<IPlayer> playerProxy,
-                out RecordingDispatchProxy<IUnitEntity> targetProxy,
-                out RecordingDispatchProxy<IThreatManager> threatProxy);
+        ClientActivateUnitCastHandler handler = CreateHandler();
+        IWorldSession session = CreateAttackableUnitSession(
+            out IUnitEntity target,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IUnitEntity> targetProxy,
+            out RecordingDispatchProxy<IThreatManager> threatProxy);
 
-            InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
+        InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
 
-            Assert.Contains(playerProxy.GetInvocations(nameof(IPlayer.SetTarget)), i =>
-                i.Arguments.Length == 2
-                && ReferenceEquals(i.Arguments[0], target)
-                && (uint)i.Arguments[1] == 1u);
-            Assert.Contains(threatProxy.GetInvocations(nameof(IThreatManager.UpdateThreat)), i =>
-                i.Arguments.Length == 2
-                && ReferenceEquals(i.Arguments[0], session.Player)
-                && (int)i.Arguments[1] == 1);
-            Assert.Empty(targetProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
-            Assert.Empty(targetProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
-            Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
-        });
+        Assert.Contains(playerProxy.GetInvocations(nameof(IPlayer.SetTarget)), i =>
+            i.Arguments.Length == 2
+            && ReferenceEquals(i.Arguments[0], target)
+            && (uint)i.Arguments[1] == 1u);
+        Assert.Contains(threatProxy.GetInvocations(nameof(IThreatManager.UpdateThreat)), i =>
+            i.Arguments.Length == 2
+            && ReferenceEquals(i.Arguments[0], session.Player)
+            && (int)i.Arguments[1] == 1);
+        Assert.Empty(targetProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
+        Assert.Empty(targetProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
     }
 
     [Fact]
     public void HandleMessageInternal_WithTutorialMineAndBlockedActivateSpell_CompletesActivation()
     {
-        RunWithLegacyProvider(() =>
-        {
-            ClientActivateUnitCastHandler handler = CreateHandler();
-            IWorldSession session = CreateSession(
-                creatureId: 73463u,
-                castResult: CastResult.TargetUnknown,
-                out RecordingDispatchProxy<IPlayer> playerProxy,
-                out RecordingDispatchProxy<IWorldEntity> entityProxy);
+        ClientActivateUnitCastHandler handler = CreateHandler();
+        IWorldSession session = CreateSession(
+            creatureId: 73463u,
+            castResult: CastResult.TargetUnknown,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IWorldEntity> entityProxy);
 
-            InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
+        InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
 
-            Assert.Single(playerProxy.GetInvocations("TryCastSpell"));
-            Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
-            Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
-        });
+        Assert.Single(playerProxy.GetInvocations("TryCastSpell"));
+        Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
+        Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
     }
 
     [Fact]
     public void HandleMessageInternal_WithNonMineAndBlockedActivateSpell_FailsActivation()
     {
-        RunWithLegacyProvider(() =>
-        {
-            ClientActivateUnitCastHandler handler = CreateHandler();
-            IWorldSession session = CreateSession(
-                creatureId: 70000u,
-                castResult: CastResult.TargetUnknown,
-                out RecordingDispatchProxy<IPlayer> playerProxy,
-                out RecordingDispatchProxy<IWorldEntity> entityProxy);
+        ClientActivateUnitCastHandler handler = CreateHandler();
+        IWorldSession session = CreateSession(
+            creatureId: 70000u,
+            castResult: CastResult.TargetUnknown,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IWorldEntity> entityProxy);
 
-            InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
+        InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
 
-            Assert.Single(playerProxy.GetInvocations("TryCastSpell"));
-            Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
-            Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
-        });
+        Assert.Single(playerProxy.GetInvocations("TryCastSpell"));
+        Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
+        Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
     }
 
     [Fact]
     public void HandleMessageInternal_WithActivateSpellPrerequisite_EvaluatesPrerequisiteAgainstActivatedUnit()
     {
-        RunWithLegacyProvider(() =>
+        IPrerequisiteManager prerequisiteManager = RecordingDispatchProxy<IPrerequisiteManager>.Create(out RecordingDispatchProxy<IPrerequisiteManager> prerequisiteProxy);
+        ClientActivateUnitCastHandler handler = CreateHandler(prerequisiteManager);
+        IWorldSession session = CreateUnitSession(
+            creatureId: 21793u,
+            castResult: CastResult.Ok,
+            activateSpellId: 1817u,
+            activatePrerequisiteId: 1050u,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IUnitEntity> entityProxy,
+            out IUnitEntity entity);
+
+        prerequisiteProxy.SetMethodHandler(nameof(IPrerequisiteManager.Meets), args =>
         {
-            IPrerequisiteManager prerequisiteManager = RecordingDispatchProxy<IPrerequisiteManager>.Create(out RecordingDispatchProxy<IPrerequisiteManager> prerequisiteProxy);
-            ClientActivateUnitCastHandler handler = CreateHandler(prerequisiteManager);
-            IWorldSession session = CreateUnitSession(
-                creatureId: 21793u,
-                castResult: CastResult.Ok,
-                activateSpellId: 1817u,
-                activatePrerequisiteId: 1050u,
-                out RecordingDispatchProxy<IPlayer> playerProxy,
-                out RecordingDispatchProxy<IUnitEntity> entityProxy,
-                out IUnitEntity entity);
+            Assert.Equal(3, args.Length);
+            Assert.Same(session.Player, args[0]);
+            Assert.Equal(1050u, (uint)args[1]);
 
-            prerequisiteProxy.SetMethodHandler(nameof(IPrerequisiteManager.Meets), args =>
-            {
-                Assert.Equal(3, args.Length);
-                Assert.Same(session.Player, args[0]);
-                Assert.Equal(1050u, (uint)args[1]);
-
-                IPrerequisiteParameters parameters = Assert.IsAssignableFrom<IPrerequisiteParameters>(args[2]);
-                Assert.Same(entity, parameters.Target);
-                return true;
-            });
-
-            InvokeHandleMessageInternal(handler, session, 77u, 19u, nameof(ClientActivateUnitCast));
-
-            RecordingDispatchProxy<IPlayer>.Invocation cast = Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
-            Assert.Equal(1817u, (uint)cast.Arguments[0]);
-            Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateCast)));
-            Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
-            Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
+            IPrerequisiteParameters parameters = Assert.IsAssignableFrom<IPrerequisiteParameters>(args[2]);
+            Assert.Same(entity, parameters.Target);
+            return true;
         });
+
+        InvokeHandleMessageInternal(handler, session, 77u, 19u, nameof(ClientActivateUnitCast));
+
+        RecordingDispatchProxy<IPlayer>.Invocation cast = Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
+        Assert.Equal(1817u, (uint)cast.Arguments[0]);
+        Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateCast)));
+        Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
+        Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
     }
 
     [Fact]
     public void HandleMessageInternal_WithTutorialHoverboardProjectorAndBlockedActivateSpell_CastsDirectMountAndCompletesActivation()
     {
-        RunWithLegacyProvider(() =>
-        {
-            ClientActivateUnitCastHandler handler = CreateHandler();
-            IWorldSession session = CreateSession(
-                creatureId: 73419u,
-                castResult: CastResult.TargetUnknown,
-                out RecordingDispatchProxy<IPlayer> playerProxy,
-                out RecordingDispatchProxy<IWorldEntity> entityProxy,
-                mountCastResult: CastResult.Ok,
-                activateSpellId: 86744u);
+        ClientActivateUnitCastHandler handler = CreateHandler();
+        IWorldSession session = CreateSession(
+            creatureId: 73419u,
+            castResult: CastResult.TargetUnknown,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IWorldEntity> entityProxy,
+            mountCastResult: CastResult.Ok,
+            activateSpellId: 86744u);
 
-            InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
+        InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
 
-            uint[] spellIds = playerProxy
-                .GetInvocations(nameof(IPlayer.TryCastSpell))
-                .Select(i => (uint)i.Arguments[0])
-                .ToArray();
+        uint[] spellIds = playerProxy
+            .GetInvocations(nameof(IPlayer.TryCastSpell))
+            .Select(i => (uint)i.Arguments[0])
+            .ToArray();
 
-            Assert.Equal([86744u, 85562u], spellIds);
-            Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
-            Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
-        });
+        Assert.Equal([86744u, 85562u], spellIds);
+        Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
+        Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
     }
 
     [Fact]
     public void HandleMessageInternal_WithTutorialHoverboardProjectorAndBlockedMountCast_FailsActivation()
     {
-        RunWithLegacyProvider(() =>
-        {
-            ClientActivateUnitCastHandler handler = CreateHandler();
-            IWorldSession session = CreateSession(
-                creatureId: 73419u,
-                castResult: CastResult.TargetUnknown,
-                out RecordingDispatchProxy<IPlayer> playerProxy,
-                out RecordingDispatchProxy<IWorldEntity> entityProxy,
-                mountCastResult: CastResult.TargetUnknown,
-                activateSpellId: 86744u);
+        ClientActivateUnitCastHandler handler = CreateHandler();
+        IWorldSession session = CreateSession(
+            creatureId: 73419u,
+            castResult: CastResult.TargetUnknown,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IWorldEntity> entityProxy,
+            mountCastResult: CastResult.TargetUnknown,
+            activateSpellId: 86744u);
 
-            InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
+        InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
 
-            uint[] spellIds = playerProxy
-                .GetInvocations(nameof(IPlayer.TryCastSpell))
-                .Select(i => (uint)i.Arguments[0])
-                .ToArray();
+        uint[] spellIds = playerProxy
+            .GetInvocations(nameof(IPlayer.TryCastSpell))
+            .Select(i => (uint)i.Arguments[0])
+            .ToArray();
 
-            Assert.Equal([86744u, 85562u], spellIds);
-            Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
-            Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
-        });
+        Assert.Equal([86744u, 85562u], spellIds);
+        Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
+        Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
     }
 
     [Fact]
     public void HandleMessageInternal_WithTutorialHoverboardProjectorAndMissingActivateSpell_CastsDirectMountAndCompletesActivation()
     {
-        RunWithLegacyProvider(() =>
-        {
-            ClientActivateUnitCastHandler handler = CreateHandler();
-            IWorldSession session = CreateSession(
-                creatureId: 73419u,
-                castResult: CastResult.NoValidActivateSpell,
-                out RecordingDispatchProxy<IPlayer> playerProxy,
-                out RecordingDispatchProxy<IWorldEntity> entityProxy,
-                mountCastResult: CastResult.Ok,
-                activateSpellId: 0u);
+        ClientActivateUnitCastHandler handler = CreateHandler();
+        IWorldSession session = CreateSession(
+            creatureId: 73419u,
+            castResult: CastResult.NoValidActivateSpell,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IWorldEntity> entityProxy,
+            mountCastResult: CastResult.Ok,
+            activateSpellId: 0u);
 
-            InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
+        InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
 
-            RecordingDispatchProxy<IPlayer>.Invocation mountCast = Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
-            Assert.Equal(85562u, (uint)mountCast.Arguments[0]);
-            Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
-            Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
-        });
+        RecordingDispatchProxy<IPlayer>.Invocation mountCast = Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
+        Assert.Equal(85562u, (uint)mountCast.Arguments[0]);
+        Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
+        Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
     }
 
     [Fact]
     public void HandleMessageInternal_WithTutorialHousingProjectorAndMissingActivateSpell_CompletesActivationWithoutCasting()
     {
-        RunWithLegacyProvider(() =>
-        {
-            ClientActivateUnitCastHandler handler = CreateHandler();
-            IWorldSession session = CreateSession(
-                creatureId: 73741u,
-                castResult: CastResult.NoValidActivateSpell,
-                out RecordingDispatchProxy<IPlayer> playerProxy,
-                out RecordingDispatchProxy<IWorldEntity> entityProxy,
-                activateSpellId: 0u);
+        ClientActivateUnitCastHandler handler = CreateHandler();
+        IWorldSession session = CreateSession(
+            creatureId: 73741u,
+            castResult: CastResult.NoValidActivateSpell,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IWorldEntity> entityProxy,
+            activateSpellId: 0u);
 
-            InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
+        InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
 
-            Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
-            Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
-            Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
-        });
-    }
-
-    private static void RunWithLegacyProvider(Action action)
-    {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = CreateLegacyProvider();
-        LegacyServiceProvider.Provider = provider;
-
-        try
-        {
-            action();
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
+        Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
+        Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
     }
 
     private static ClientActivateUnitCastHandler CreateHandler(IPrerequisiteManager prerequisiteManager = null)
     {
         prerequisiteManager ??= RecordingDispatchProxy<IPrerequisiteManager>.Create(out _);
         IAssetManager assetManager = RecordingDispatchProxy<IAssetManager>.Create(out _);
-        return new ClientActivateUnitCastHandler(prerequisiteManager, assetManager);
+        return new ClientActivateUnitCastHandler(prerequisiteManager, assetManager, CreateGameTableManager());
     }
 
     private static IWorldSession CreateSession(
@@ -379,7 +336,7 @@ public class ClientActivateUnitCastHandlerTests
         return session;
     }
 
-    private static ServiceProvider CreateLegacyProvider()
+    private static GameTableManager CreateGameTableManager()
     {
         GameTableManager gameTableManager = new(Options.Create(new GameTableConfig()));
         SetProperty(gameTableManager, nameof(GameTableManager.Creature2), CreateCreatureTable(
@@ -389,9 +346,7 @@ public class ClientActivateUnitCastHandlerTests
             CreateCreatureEntry(73668u),
             CreateCreatureEntry(73741u)));
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static GameTable<Creature2Entry> CreateCreatureTable(params Creature2Entry[] entries)

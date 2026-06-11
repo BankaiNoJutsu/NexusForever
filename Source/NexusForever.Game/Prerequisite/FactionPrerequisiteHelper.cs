@@ -1,5 +1,4 @@
 using NexusForever.Game.Abstract.Reputation;
-using NexusForever.Game.Reputation;
 using NexusForever.Game.Static.Reputation;
 
 namespace NexusForever.Game.Prerequisite
@@ -10,9 +9,9 @@ namespace NexusForever.Game.Prerequisite
     /// </summary>
     internal static class FactionPrerequisiteHelper
     {
-        public static bool IsFactionOrAncestor(Faction playerFaction, uint requiredFactionId)
+        public static bool IsFactionOrAncestor(IFactionManager factionManager, Faction playerFaction, uint requiredFactionId)
         {
-            IFactionNode node = FactionManager.Instance.GetFaction(playerFaction);
+            IFactionNode node = factionManager.GetFaction(playerFaction);
             if (node == null)
                 return false;
 

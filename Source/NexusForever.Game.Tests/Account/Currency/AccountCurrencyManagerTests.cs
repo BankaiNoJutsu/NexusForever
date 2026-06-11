@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Account.Currency;
@@ -11,19 +10,18 @@ using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Account.Currency;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class AccountCurrencyManagerTests
 {
     [Fact]
     public void Constructor_WithPersistedCurrencyAndMissingCurrencyTableKeepsBalanceForReadback()
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider());
+        GameTableManager gameTableManager = CreateGameTableManager();
 
         AccountCurrencyManager manager = CreateManager(
+            gameTableManager,
             CreateAccountModelWithCurrency(AccountCurrencyType.Omnibit, 123ul),
             out RecordingDispatchProxy<IGameSession> sessionProxy);
 
@@ -42,8 +40,8 @@ public class AccountCurrencyManagerTests
     [InlineData(true)]
     public void CurrencyAddAmount_WithMissingCurrencyStaticDataThrowsBeforeMutating(bool includeEmptyTable)
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(includeEmptyTable ? CreateGameTable<AccountCurrencyTypeEntry>() : null));
-        AccountCurrencyManager manager = CreateManager(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        GameTableManager gameTableManager = CreateGameTableManager(includeEmptyTable ? CreateGameTable<AccountCurrencyTypeEntry>() : null);
+        AccountCurrencyManager manager = CreateManager(gameTableManager, out RecordingDispatchProxy<IGameSession> sessionProxy);
 
         Assert.Throws<ArgumentNullException>(() => manager.CurrencyAddAmount(AccountCurrencyType.ServiceToken, 5ul, 7ul));
 
@@ -54,8 +52,8 @@ public class AccountCurrencyManagerTests
     [Fact]
     public void CurrencySubtractAmount_WithMissingCurrencyTableThrowsBeforeMutating()
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider());
-        AccountCurrencyManager manager = CreateManager(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        GameTableManager gameTableManager = CreateGameTableManager();
+        AccountCurrencyManager manager = CreateManager(gameTableManager, out RecordingDispatchProxy<IGameSession> sessionProxy);
 
         Assert.Throws<ArgumentNullException>(() => manager.CurrencySubtractAmount(AccountCurrencyType.ServiceToken, 5ul, 7ul));
 
@@ -63,15 +61,16 @@ public class AccountCurrencyManagerTests
         Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
     }
 
-    private static AccountCurrencyManager CreateManager(out RecordingDispatchProxy<IGameSession> sessionProxy)
+    private static AccountCurrencyManager CreateManager(IGameTableManager gameTableManager, out RecordingDispatchProxy<IGameSession> sessionProxy)
     {
-        return CreateManager(new AccountModel
+        return CreateManager(gameTableManager, new AccountModel
         {
             Id = 77u
         }, out sessionProxy);
     }
 
     private static AccountCurrencyManager CreateManager(
+        IGameTableManager gameTableManager,
         AccountModel model,
         out RecordingDispatchProxy<IGameSession> sessionProxy)
     {
@@ -80,7 +79,7 @@ public class AccountCurrencyManagerTests
         accountProxy.SetProperty(nameof(IAccount.Id), model.Id);
         accountProxy.SetProperty(nameof(IAccount.Session), session);
 
-        return new AccountCurrencyManager(account, model);
+        return new AccountCurrencyManager(account, model, gameTableManager);
     }
 
     private static AccountModel CreateAccountModelWithCurrency(AccountCurrencyType currencyType, ulong amount)
@@ -100,15 +99,13 @@ public class AccountCurrencyManagerTests
         };
     }
 
-    private static IServiceProvider BuildProvider(GameTable<AccountCurrencyTypeEntry> accountCurrencyTypeTable = null)
+    private static GameTableManager CreateGameTableManager(GameTable<AccountCurrencyTypeEntry> accountCurrencyTypeTable = null)
     {
         var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         if (accountCurrencyTypeTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountCurrencyType), accountCurrencyTypeTable);
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

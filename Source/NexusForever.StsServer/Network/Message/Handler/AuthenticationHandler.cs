@@ -13,10 +13,18 @@ namespace NexusForever.StsServer.Network.Message.Handler
 {
     public static class AuthenticationHandler
     {
+        private static IDatabaseManager databaseManager;
+
+        public static void Initialise(
+            IDatabaseManager databaseManager)
+        {
+            AuthenticationHandler.databaseManager = databaseManager;
+        }
+
         [MessageHandler("/Auth/LoginStart", SessionState.Connected)]
         public static void HandleLoginStart(StsSession session, ClientLoginStartMessage loginStart)
         {
-            session.Events.EnqueueEvent(new TaskGenericEvent<AccountModel>(DatabaseManager.Instance.GetDatabase<AuthDatabase>().GetAccountByEmailAsync(loginStart.LoginName),
+            session.Events.EnqueueEvent(new TaskGenericEvent<AccountModel>(GetAuthDatabase().GetAccountByEmailAsync(loginStart.LoginName),
                 account =>
             {
                 if (account == null)
@@ -141,7 +149,7 @@ namespace NexusForever.StsServer.Network.Message.Handler
             Guid guid = RandomProvider.GetGuid();
 
             session.Account.GameToken = Convert.ToHexString(guid.ToByteArray());
-            session.Events.EnqueueEvent(new TaskEvent(DatabaseManager.Instance.GetDatabase<AuthDatabase>().UpdateAccountGameToken(session.Account.Id, session.Account.GameToken),
+            session.Events.EnqueueEvent(new TaskEvent(GetAuthDatabase().UpdateAccountGameToken(session.Account.Id, session.Account.GameToken),
                 () =>
             {
                 session.EnqueueMessageOk(new RequestGameTokenResponse
@@ -167,7 +175,7 @@ namespace NexusForever.StsServer.Network.Message.Handler
                 return;
             }
 
-            session.Events.EnqueueEvent(new TaskGenericEvent<AccountModel>(DatabaseManager.Instance.GetDatabase<AuthDatabase>().GetAccountByGameTokenAsync(normalisedToken),
+            session.Events.EnqueueEvent(new TaskGenericEvent<AccountModel>(GetAuthDatabase().GetAccountByGameTokenAsync(normalisedToken),
                 account =>
             {
                 if (account == null)
@@ -211,7 +219,7 @@ namespace NexusForever.StsServer.Network.Message.Handler
             }
 
             session.Events.EnqueueEvent(new TaskGenericEvent<AccountModel>(
-                DatabaseManager.Instance.GetDatabase<AuthDatabase>().GetAccountByEmailAsync(requestedIdentity),
+                GetAuthDatabase().GetAccountByEmailAsync(requestedIdentity),
                 account =>
             {
                 if (account == null)
@@ -298,6 +306,12 @@ namespace NexusForever.StsServer.Network.Message.Handler
         {
             DateTime createTime = account.CreateTime == default ? DateTime.UtcNow : account.CreateTime;
             return createTime.ToUniversalTime().ToString("O");
+        }
+
+        private static AuthDatabase GetAuthDatabase()
+        {
+            AuthDatabase authDatabase = databaseManager?.GetDatabase<AuthDatabase>();
+            return authDatabase ?? throw new InvalidOperationException("AuthDatabase is not available.");
         }
     }
 }

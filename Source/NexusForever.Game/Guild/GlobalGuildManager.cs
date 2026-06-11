@@ -22,11 +22,9 @@ using NLog;
 
 namespace NexusForever.Game.Guild
 {
-    public sealed class GlobalGuildManager : Singleton<GlobalGuildManager>, IGlobalGuildManager
+    public sealed class GlobalGuildManager : IGlobalGuildManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
-
-        private static double SaveDuration => SharedConfiguration.Instance.Get<WorldConfig>()?.GuildSaveIntervalSeconds ?? 60d;
 
         /// <summary>
         /// Id to be assigned to the next created guild.
@@ -43,16 +41,23 @@ namespace NexusForever.Game.Guild
         private delegate IGuildResultInfo GuildOperationHandlerResultDelegate(IGuildBase guild, IGuildMember member, IPlayer player, ClientGuildOperation operation);
         private delegate void GuildOperationHandlerDelegate(IGuildBase guild, IGuildMember member, IPlayer player, ClientGuildOperation operation);
 
-        private readonly UpdateTimer saveTimer = new(SaveDuration);
+        private readonly UpdateTimer saveTimer;
 
         #region Dependency Injection
 
         private readonly IGuildFactory guildFactory;
+        private readonly IDatabaseManager databaseManager;
+        private readonly ISharedConfiguration sharedConfiguration;
 
         public GlobalGuildManager(
-            IGuildFactory guildFactory)
+            IGuildFactory guildFactory,
+            IDatabaseManager databaseManager = null,
+            ISharedConfiguration sharedConfiguration = null)
         {
-            this.guildFactory = guildFactory;
+            this.guildFactory    = guildFactory;
+            this.databaseManager = databaseManager;
+            this.sharedConfiguration = sharedConfiguration;
+            saveTimer = new UpdateTimer(GetSaveDuration());
         }
 
         #endregion
@@ -67,7 +72,7 @@ namespace NexusForever.Game.Guild
 
             log.Info("Starting guild manager...");
 
-            nextGuildId = DatabaseManager.Instance.GetDatabase<CharacterDatabase>().GetNextGuildId() + 1ul;
+            nextGuildId = GetCharacterDatabase().GetNextGuildId() + 1ul;
 
             InitialiseGuilds();
             InitialiseGuildOperationHandlers();
@@ -75,7 +80,7 @@ namespace NexusForever.Game.Guild
 
         private void InitialiseGuilds()
         {
-            foreach (GuildModel model in DatabaseManager.Instance.GetDatabase<CharacterDatabase>().GetGuilds())
+            foreach (GuildModel model in GetCharacterDatabase().GetGuilds())
             {
                 IGuildBase baseGuild = guildFactory.CreateGuild(model);
                 guilds.Add(baseGuild.Id, baseGuild);
@@ -184,7 +189,7 @@ namespace NexusForever.Game.Guild
 
         private void SaveGuilds()
         {
-            CharacterDatabase database = DatabaseManager.Instance.GetDatabase<CharacterDatabase>();
+            CharacterDatabase database = databaseManager?.GetDatabase<CharacterDatabase>();
             if (database == null)
                 return;
 
@@ -375,6 +380,17 @@ namespace NexusForever.Game.Guild
                 info.GuildIdentity = guild.Identity;
                 return info;
             }
+        }
+
+        private CharacterDatabase GetCharacterDatabase()
+        {
+            CharacterDatabase database = databaseManager?.GetDatabase<CharacterDatabase>();
+            return database ?? throw new InvalidOperationException("CharacterDatabase is not available.");
+        }
+
+        private double GetSaveDuration()
+        {
+            return sharedConfiguration?.Get<WorldConfig>()?.GuildSaveIntervalSeconds ?? 60d;
         }
     }
 }

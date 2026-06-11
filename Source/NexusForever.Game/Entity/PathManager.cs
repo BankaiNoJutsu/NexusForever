@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
@@ -38,6 +39,8 @@ namespace NexusForever.Game.Entity
         private const string PathScientistScanBotProfileTableName = "PathScientistScanBotProfile.tbl";
 
         private readonly IPlayer player;
+        private readonly IPrerequisiteManager prerequisiteManager;
+        private readonly IGameTableManager gameTableManager;
         private readonly Dictionary<Path, IPathEntry> paths = new();
         private readonly Dictionary<ushort, PathMissionRuntimeState> pathMissions = [];
         private readonly HashSet<ushort> activatedEpisodes = [];
@@ -46,9 +49,15 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="IPathManager"/> from <see cref="IPlayer"/> database model.
         /// </summary>
-        public PathManager(IPlayer owner, CharacterModel model)
+        public PathManager(
+            IPlayer owner,
+            CharacterModel model,
+            IPrerequisiteManager prerequisiteManager = null,
+            IGameTableManager gameTableManager = null)
         {
             player = owner;
+            this.prerequisiteManager = prerequisiteManager;
+            this.gameTableManager = gameTableManager;
             foreach (CharacterPathModel pathModel in model.Path)
                 paths.Add((Path)pathModel.Path, new PathEntry(pathModel));
 
@@ -292,18 +301,18 @@ namespace NexusForever.Game.Entity
             if (rootZone == null)
                 return false;
 
-            if (GameTableManager.Instance.PathEpisode?.Entries == null
-                || GameTableManager.Instance.PathMission?.Entries == null)
+            if (gameTableManager.PathEpisode?.Entries == null
+                || gameTableManager.PathMission?.Entries == null)
                 return false;
 
-            PathEpisodeEntry pathEpisode = GameTableManager.Instance.PathEpisode.Entries
+            PathEpisodeEntry pathEpisode = gameTableManager.PathEpisode.Entries
                 .FirstOrDefault(e => e.WorldId == worldId
                     && e.WorldZoneId == rootZone.Id
                     && e.PathTypeEnum == (uint)player.Path);
             if (pathEpisode == null || pathEpisode.Id > 0x3FFFu)
                 return false;
 
-            Dictionary<ushort, uint> missions = GameTableManager.Instance.PathMission.Entries
+            Dictionary<ushort, uint> missions = gameTableManager.PathMission.Entries
                 .Where(m => m.PathEpisodeId == pathEpisode.Id
                     && m.PathTypeEnum == (uint)player.Path
                     && IsMissionFactionAllowed(m)
@@ -342,7 +351,7 @@ namespace NexusForever.Game.Entity
                 Mission = BuildMission(state)
             });
 
-            PathMissionEntry mission = GameTableManager.Instance.PathMission?.GetEntry(pathMissionId);
+            PathMissionEntry mission = gameTableManager.PathMission?.GetEntry(pathMissionId);
             if (mission != null)
             {
                 // WIP/GUESSED: LaughingWS exposes AchievementType.PathMission (62) and
@@ -363,7 +372,7 @@ namespace NexusForever.Game.Entity
             return true;
         }
 
-        private static uint GetMissionCompletionXp(PathMissionRuntimeState state, PathMissionEntry mission, Path activePath)
+        private uint GetMissionCompletionXp(PathMissionRuntimeState state, PathMissionEntry mission, Path activePath)
         {
             if (state.Xp > 0u)
                 return state.Xp;
@@ -377,7 +386,7 @@ namespace NexusForever.Game.Entity
             // Client Game.PathMission.GetRewardXp reads GameFormula 0x017a Dataint0,
             // and falls back to 50 if the table row is unavailable. Per-mission reward
             // precision remains blocked pending stronger PathReward evidence.
-            GameFormulaEntry formula = GameTableManager.Instance.GameFormula?.GetEntry(PathMissionCompletionXpGameFormulaId);
+            GameFormulaEntry formula = gameTableManager.GameFormula?.GetEntry(PathMissionCompletionXpGameFormulaId);
             return formula?.Dataint0 > 0u ? formula.Dataint0 : DefaultMissionCompletionXp;
         }
 
@@ -397,13 +406,13 @@ namespace NexusForever.Game.Entity
             if (!pathMissions.ContainsKey(pathMissionId))
                 return false;
 
-            PathMissionEntry mission = GameTableManager.Instance.PathMission?.GetEntry(pathMissionId);
+            PathMissionEntry mission = gameTableManager.PathMission?.GetEntry(pathMissionId);
             if (mission == null
                 || mission.PathTypeEnum != (uint)Path.Explorer
                 || mission.PathMissionTypeEnum != ExplorerVistaMissionType)
                 return false;
 
-            bool hasExplorerNode = GameTableManager.Instance.PathExplorerNode?.Entries
+            bool hasExplorerNode = gameTableManager.PathExplorerNode?.Entries
                 .Any(n => n.PathExplorerAreaId == mission.ObjectId) ?? false;
             if (!hasExplorerNode)
                 return false;
@@ -416,13 +425,13 @@ namespace NexusForever.Game.Entity
             if (pathExplorerPowerMapId == 0u)
                 return false;
 
-            if (GameTableManager.Instance.PathExplorerPowerMap?.GetEntry(pathExplorerPowerMapId) == null)
+            if (gameTableManager.PathExplorerPowerMap?.GetEntry(pathExplorerPowerMapId) == null)
                 return false;
 
             bool completedAny = false;
             foreach (PathMissionRuntimeState state in pathMissions.Values.ToList())
             {
-                PathMissionEntry mission = GameTableManager.Instance.PathMission?.GetEntry(state.MissionId);
+                PathMissionEntry mission = gameTableManager.PathMission?.GetEntry(state.MissionId);
                 if (mission == null
                     || mission.PathTypeEnum != (uint)Path.Explorer
                     || mission.PathMissionTypeEnum != ExplorerPowerMapMissionType
@@ -450,7 +459,7 @@ namespace NexusForever.Game.Entity
             bool completedAny = false;
             foreach (PathMissionRuntimeState state in pathMissions.Values.ToList())
             {
-                PathMissionEntry mission = GameTableManager.Instance.PathMission?.GetEntry(state.MissionId);
+                PathMissionEntry mission = gameTableManager.PathMission?.GetEntry(state.MissionId);
                 if (mission == null
                     || mission.PathTypeEnum != (uint)Path.Explorer
                     || mission.PathMissionTypeEnum != ExplorerExploreZoneMissionType
@@ -474,7 +483,7 @@ namespace NexusForever.Game.Entity
             bool completedAny = false;
             foreach (PathMissionRuntimeState state in pathMissions.Values.ToList())
             {
-                PathMissionEntry entry = GameTableManager.Instance.PathMission?.GetEntry(state.MissionId);
+                PathMissionEntry entry = gameTableManager.PathMission?.GetEntry(state.MissionId);
                 if (entry?.ObjectId != objectId)
                     continue;
 
@@ -495,7 +504,7 @@ namespace NexusForever.Game.Entity
             if (pathSoldierTowerDefenseId == 0u)
                 return false;
 
-            PathSoldierTowerDefenseEntry entry = GameTableManager.Instance.PathSoldierTowerDefense?.GetEntry(pathSoldierTowerDefenseId);
+            PathSoldierTowerDefenseEntry entry = gameTableManager.PathSoldierTowerDefense?.GetEntry(pathSoldierTowerDefenseId);
             return entry != null && CompleteMissionByObjectId(entry.PathSoldierEventId);
         }
 
@@ -514,13 +523,13 @@ namespace NexusForever.Game.Entity
                 if (state.Completed)
                     continue;
 
-                PathMissionEntry mission = GameTableManager.Instance.PathMission?.GetEntry(state.MissionId);
+                PathMissionEntry mission = gameTableManager.PathMission?.GetEntry(state.MissionId);
                 if (mission == null
                     || mission.PathTypeEnum != (uint)Path.Soldier
                     || mission.PathMissionTypeEnum != SoldierAssassinateMissionType)
                     continue;
 
-                PathSoldierAssassinateEntry assassinate = GameTableManager.Instance.PathSoldierAssassinate?.GetEntry(mission.ObjectId);
+                PathSoldierAssassinateEntry assassinate = gameTableManager.PathSoldierAssassinate?.GetEntry(mission.ObjectId);
                 if (!MatchesSoldierAssassinateKill(assassinate, creature2Id, targetGroupIds))
                     continue;
 
@@ -555,11 +564,11 @@ namespace NexusForever.Game.Entity
             if (pathSettlerImprovementGroupId == 0u)
                 return false;
 
-            PathSettlerImprovementGroupEntry entry = GameTableManager.Instance.PathSettlerImprovementGroup?.GetEntry(pathSettlerImprovementGroupId);
+            PathSettlerImprovementGroupEntry entry = gameTableManager.PathSettlerImprovementGroup?.GetEntry(pathSettlerImprovementGroupId);
             if (entry == null || entry.PathSettlerHubId == 0u)
                 return false;
 
-            PathSettlerHubEntry hub = GameTableManager.Instance.PathSettlerHub?.GetEntry(entry.PathSettlerHubId);
+            PathSettlerHubEntry hub = gameTableManager.PathSettlerHub?.GetEntry(entry.PathSettlerHubId);
             if (hub == null)
                 return false;
 
@@ -569,7 +578,7 @@ namespace NexusForever.Game.Entity
                 if (state.Completed)
                     continue;
 
-                PathMissionEntry mission = GameTableManager.Instance.PathMission?.GetEntry(state.MissionId);
+                PathMissionEntry mission = gameTableManager.PathMission?.GetEntry(state.MissionId);
                 if (mission == null
                     || mission.PathTypeEnum != (uint)Path.Settler
                     || mission.PathMissionTypeEnum != SettlerHubMissionType
@@ -628,13 +637,13 @@ namespace NexusForever.Game.Entity
 
         public SettlerInfrastructureState GetSettlerInfrastructureState(uint pathSettlerInfrastructureId)
         {
-            if (GameTableManager.Instance.PathSettlerInfrastructure?.GetEntry(pathSettlerInfrastructureId) == null
-                || GameTableManager.Instance.PathMission?.Entries == null)
+            if (gameTableManager.PathSettlerInfrastructure?.GetEntry(pathSettlerInfrastructureId) == null
+                || gameTableManager.PathMission?.Entries == null)
             {
                 return SettlerInfrastructureState.Inactive;
             }
 
-            PathMissionEntry mission = GameTableManager.Instance.PathMission.Entries
+            PathMissionEntry mission = gameTableManager.PathMission.Entries
                 .FirstOrDefault(entry => entry.PathMissionTypeEnum == SettlerInfrastructureMissionType
                     && entry.ObjectId == pathSettlerInfrastructureId);
             if (mission == null)
@@ -683,7 +692,7 @@ namespace NexusForever.Game.Entity
             if (improvementGroupId != 0u
                 && settlerImprovementGroupStatus.TryGetValue(improvementGroupId, out SettlerImprovementGroupRuntimeStatus status))
             {
-                PathSettlerImprovementGroupEntry group = GameTableManager.Instance.PathSettlerImprovementGroup?.GetEntry(improvementGroupId);
+                PathSettlerImprovementGroupEntry group = gameTableManager.PathSettlerImprovementGroup?.GetEntry(improvementGroupId);
                 if (group != null && group.MaxBundleCount > 0u)
                     return Math.Min(100u, status.BundleCount * 100u / group.MaxBundleCount);
             }
@@ -707,9 +716,9 @@ namespace NexusForever.Game.Entity
 
             uint maxPercent = 0u;
             HashSet<uint> hubIds = [];
-            if (GameTableManager.Instance.PathSettlerHub?.Entries != null)
+            if (gameTableManager.PathSettlerHub?.Entries != null)
             {
-                foreach (PathSettlerHubEntry hub in GameTableManager.Instance.PathSettlerHub.Entries)
+                foreach (PathSettlerHubEntry hub in gameTableManager.PathSettlerHub.Entries)
                     hubIds.Add(hub.Id);
             }
 
@@ -721,14 +730,14 @@ namespace NexusForever.Game.Entity
 
         private uint GetSettlerHubMissionProgressPercent(uint pathSettlerHubId)
         {
-            PathSettlerHubEntry hub = GameTableManager.Instance.PathSettlerHub?.GetEntry(pathSettlerHubId);
+            PathSettlerHubEntry hub = gameTableManager.PathSettlerHub?.GetEntry(pathSettlerHubId);
             if (hub == null)
                 return 0u;
 
             uint requiredCount = Math.Max(hub.MissionCount, 1u);
             foreach (PathMissionRuntimeState state in pathMissions.Values)
             {
-                PathMissionEntry mission = GameTableManager.Instance.PathMission?.GetEntry(state.MissionId);
+                PathMissionEntry mission = gameTableManager.PathMission?.GetEntry(state.MissionId);
                 if (mission == null
                     || mission.PathTypeEnum != (uint)Path.Settler
                     || mission.PathMissionTypeEnum != SettlerHubMissionType
@@ -743,24 +752,24 @@ namespace NexusForever.Game.Entity
             return 0u;
         }
 
-        private static uint ResolveSettlerHubId(uint objectId)
+        private uint ResolveSettlerHubId(uint objectId)
         {
             if (objectId == 0u)
                 return 0u;
 
-            if (GameTableManager.Instance.PathSettlerHub?.GetEntry(objectId) != null)
+            if (gameTableManager.PathSettlerHub?.GetEntry(objectId) != null)
                 return objectId;
 
-            PathSettlerImprovementGroupEntry group = GameTableManager.Instance.PathSettlerImprovementGroup?.GetEntry(objectId);
+            PathSettlerImprovementGroupEntry group = gameTableManager.PathSettlerImprovementGroup?.GetEntry(objectId);
             return group?.PathSettlerHubId ?? 0u;
         }
 
-        private static uint ResolveSettlerImprovementGroupId(uint objectId)
+        private uint ResolveSettlerImprovementGroupId(uint objectId)
         {
             if (objectId == 0u)
                 return 0u;
 
-            return GameTableManager.Instance.PathSettlerImprovementGroup?.GetEntry(objectId) != null
+            return gameTableManager.PathSettlerImprovementGroup?.GetEntry(objectId) != null
                 ? objectId
                 : 0u;
         }
@@ -781,7 +790,7 @@ namespace NexusForever.Game.Entity
         private bool TryGetCurrentLevel(Path path, out uint level)
         {
             level = 0u;
-            if (GameTableManager.Instance.PathLevel?.Entries == null)
+            if (gameTableManager.PathLevel?.Entries == null)
             {
                 MissingGameDataDiagnostics.ReportMissingTable(
                     PathLevelTableName,
@@ -791,7 +800,7 @@ namespace NexusForever.Game.Entity
                 return false;
             }
 
-            PathLevelEntry entry = GameTableManager.Instance.PathLevel.Entries
+            PathLevelEntry entry = gameTableManager.PathLevel.Entries
                 .LastOrDefault(x => x.PathXP <= paths[path].TotalXp && x.PathTypeEnum == (uint)path);
             if (entry == null)
             {
@@ -811,7 +820,7 @@ namespace NexusForever.Game.Entity
         private bool TryGetPathXpForLevel(Path path, uint level, out uint xp)
         {
             xp = 0u;
-            if (GameTableManager.Instance.PathLevel?.Entries == null)
+            if (gameTableManager.PathLevel?.Entries == null)
             {
                 MissingGameDataDiagnostics.ReportMissingTable(
                     PathLevelTableName,
@@ -821,7 +830,7 @@ namespace NexusForever.Game.Entity
                 return false;
             }
 
-            PathLevelEntry entry = GameTableManager.Instance.PathLevel.Entries
+            PathLevelEntry entry = gameTableManager.PathLevel.Entries
                 .LastOrDefault(x => x.PathLevel == level && x.PathTypeEnum == (uint)path);
             if (entry == null)
             {
@@ -845,7 +854,7 @@ namespace NexusForever.Game.Entity
                 return;
 
             byte rewardedLevel = entry.LevelRewarded;
-            if (GameTableManager.Instance.PathLevel?.Entries == null)
+            if (gameTableManager.PathLevel?.Entries == null)
             {
                 MissingGameDataDiagnostics.ReportMissingTable(
                     PathLevelTableName,
@@ -855,7 +864,7 @@ namespace NexusForever.Game.Entity
                 return;
             }
 
-            IEnumerable<PathLevelEntry> pathLevelEntries = GameTableManager.Instance.PathLevel.Entries;
+            IEnumerable<PathLevelEntry> pathLevelEntries = gameTableManager.PathLevel.Entries;
             foreach (uint level in pathLevelEntries
                 .Where(x => x.PathTypeEnum == (uint)path
                     && x.PathLevel > rewardedLevel
@@ -875,7 +884,7 @@ namespace NexusForever.Game.Entity
             uint pathRewardObjectId = PathRewardGrant.GetLevelRewardObjectId(path, level);
 
             IEnumerable<PathRewardEntry> pathRewardEntries;
-            if (GameTableManager.Instance.PathReward?.Entries == null)
+            if (gameTableManager.PathReward?.Entries == null)
             {
                 MissingGameDataDiagnostics.ReportMissingTable(
                     PathRewardTableName,
@@ -886,7 +895,7 @@ namespace NexusForever.Game.Entity
             }
             else
             {
-                pathRewardEntries = GameTableManager.Instance.PathReward.Entries
+                pathRewardEntries = gameTableManager.PathReward.Entries
                     .Where(x => x.ObjectId == pathRewardObjectId);
             }
             foreach (PathRewardEntry pathRewardEntry in pathRewardEntries)
@@ -894,7 +903,7 @@ namespace NexusForever.Game.Entity
                 if (!PathRewardGrant.IsGrantableLevelReward(pathRewardEntry))
                     continue;
 
-                if (pathRewardEntry.PrerequisiteId > 0 && !PrerequisiteManager.Instance.Meets(player, pathRewardEntry.PrerequisiteId))
+                if (pathRewardEntry.PrerequisiteId > 0 && !GetPrerequisiteManager().Meets(player, pathRewardEntry.PrerequisiteId))
                     continue;
 
                 GrantPathReward(pathRewardEntry);
@@ -909,7 +918,7 @@ namespace NexusForever.Game.Entity
 
         private void GrantMissionRewards(ushort pathMissionId)
         {
-            if (GameTableManager.Instance.PathReward?.Entries == null)
+            if (gameTableManager.PathReward?.Entries == null)
             {
                 MissingGameDataDiagnostics.ReportMissingTable(
                     PathRewardTableName,
@@ -919,13 +928,13 @@ namespace NexusForever.Game.Entity
                 return;
             }
 
-            foreach (PathRewardEntry pathRewardEntry in GameTableManager.Instance.PathReward.Entries
+            foreach (PathRewardEntry pathRewardEntry in gameTableManager.PathReward.Entries
                 .Where(x => x.ObjectId == pathMissionId))
             {
                 if (!PathRewardGrant.IsGrantableMissionReward(pathRewardEntry, pathMissionId))
                     continue;
 
-                if (pathRewardEntry.PrerequisiteId > 0 && !PrerequisiteManager.Instance.Meets(player, pathRewardEntry.PrerequisiteId))
+                if (pathRewardEntry.PrerequisiteId > 0 && !GetPrerequisiteManager().Meets(player, pathRewardEntry.PrerequisiteId))
                     continue;
 
                 // WIP/GUESSED: LaughingWS grants PathRewardType.Mission rows on path mission
@@ -955,7 +964,7 @@ namespace NexusForever.Game.Entity
 
             if (pathRewardEntry.Spell4Id > 0)
             {
-                Spell4Entry spell4Entry = GameTableManager.Instance.Spell4?.GetEntry(pathRewardEntry.Spell4Id);
+                Spell4Entry spell4Entry = gameTableManager.Spell4?.GetEntry(pathRewardEntry.Spell4Id);
                 if (spell4Entry != null)
                     player.SpellManager.AddSpell(spell4Entry.Spell4BaseIdBaseSpell);
                 else
@@ -969,7 +978,7 @@ namespace NexusForever.Game.Entity
 
             if (pathRewardEntry.CharacterTitleId > 0)
             {
-                CharacterTitleEntry titleEntry = GameTableManager.Instance.CharacterTitle?.GetEntry(pathRewardEntry.CharacterTitleId);
+                CharacterTitleEntry titleEntry = gameTableManager.CharacterTitle?.GetEntry(pathRewardEntry.CharacterTitleId);
                 if (titleEntry != null)
                     player.TitleManager.AddTitle((ushort)titleEntry.Id);
                 else
@@ -983,7 +992,7 @@ namespace NexusForever.Game.Entity
 
             if (pathRewardEntry.PathScientistScanBotProfileId > 0)
             {
-                PathScientistScanBotProfileEntry scanBotProfileEntry = GameTableManager.Instance.PathScientistScanBotProfile?.GetEntry(pathRewardEntry.PathScientistScanBotProfileId);
+                PathScientistScanBotProfileEntry scanBotProfileEntry = gameTableManager.PathScientistScanBotProfile?.GetEntry(pathRewardEntry.PathScientistScanBotProfileId);
                 if (scanBotProfileEntry != null)
                     player.PetCustomisationManager.UnlockScanBotProfile(scanBotProfileEntry.Id);
                 else
@@ -1047,7 +1056,7 @@ namespace NexusForever.Game.Entity
             WorldZoneEntry currentZone = zone;
             for (int i = 0; i < 32 && currentZone?.ParentZoneId > 0u; i++)
             {
-                WorldZoneEntry parentZone = GameTableManager.Instance.WorldZone.GetEntry(currentZone.ParentZoneId);
+                WorldZoneEntry parentZone = gameTableManager.WorldZone.GetEntry(currentZone.ParentZoneId);
                 if (parentZone == null)
                     break;
 
@@ -1062,7 +1071,7 @@ namespace NexusForever.Game.Entity
             WorldZoneEntry worldZoneEntry = player.Zone;
             for (int i = 0; i < 32 && worldZoneEntry != null; i++)
             {
-                MapZoneEntry zoneMap = GameTableManager.Instance.MapZone?.Entries?
+                MapZoneEntry zoneMap = gameTableManager.MapZone?.Entries?
                     .FirstOrDefault(m => m.WorldZoneId == worldZoneEntry.Id);
                 if (zoneMap != null)
                     return zoneMap.Id;
@@ -1070,14 +1079,14 @@ namespace NexusForever.Game.Entity
                 if (worldZoneEntry.ParentZoneId == 0u)
                     break;
 
-                worldZoneEntry = GameTableManager.Instance.WorldZone?.GetEntry(worldZoneEntry.ParentZoneId);
+                worldZoneEntry = gameTableManager.WorldZone?.GetEntry(worldZoneEntry.ParentZoneId);
             }
 
             uint worldId = player.Map?.Entry?.Id ?? 0u;
             if (worldId == 0u)
                 return 0u;
 
-            return GameTableManager.Instance.MapZoneWorldJoin?.Entries?
+            return gameTableManager.MapZoneWorldJoin?.Entries?
                 .FirstOrDefault(m => m.WorldId == worldId)?.MapZoneId ?? 0u;
         }
 
@@ -1108,7 +1117,7 @@ namespace NexusForever.Game.Entity
             if (mission.PrerequisiteId == 0u)
                 return true;
 
-            if (GameTableManager.Instance.Prerequisite?.GetEntry(mission.PrerequisiteId) == null)
+            if (gameTableManager.Prerequisite?.GetEntry(mission.PrerequisiteId) == null)
                 return false;
 
             // WIP/GUESSED: client labels map path mission visibility to path, faction,
@@ -1117,14 +1126,19 @@ namespace NexusForever.Game.Entity
             if (TryEvaluateSimplePathPrerequisite(mission.PrerequisiteId, out bool allowed))
                 return allowed;
 
-            return PrerequisiteManager.Instance.Meets(player, mission.PrerequisiteId);
+            return GetPrerequisiteManager().Meets(player, mission.PrerequisiteId);
+        }
+
+        private IPrerequisiteManager GetPrerequisiteManager()
+        {
+            return prerequisiteManager ?? throw new InvalidOperationException($"{nameof(PathManager)} requires an {nameof(IPrerequisiteManager)}.");
         }
 
         private bool TryEvaluateSimplePathPrerequisite(uint prerequisiteId, out bool allowed)
         {
             allowed = false;
 
-            PrerequisiteEntry entry = GameTableManager.Instance.Prerequisite?.GetEntry(prerequisiteId);
+            PrerequisiteEntry entry = gameTableManager.Prerequisite?.GetEntry(prerequisiteId);
             if (entry == null || entry.Flags != EvaluationMode.EvaluateAND)
                 return false;
 
@@ -1201,7 +1215,7 @@ namespace NexusForever.Game.Entity
             if (pathMissions.TryGetValue(pathMissionId, out PathMissionRuntimeState state))
                 return state;
 
-            PathMissionEntry entry = GameTableManager.Instance.PathMission?.GetEntry(pathMissionId);
+            PathMissionEntry entry = gameTableManager.PathMission?.GetEntry(pathMissionId);
             state = new PathMissionRuntimeState(player.CharacterId, pathMissionId, (ushort)(entry?.PathEpisodeId ?? 0u));
             state.State = PathMissionState.Started;
             pathMissions.Add(pathMissionId, state);

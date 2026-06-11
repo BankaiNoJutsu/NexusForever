@@ -28,17 +28,12 @@ namespace NexusForever.Game.Challenges
         private readonly Dictionary<ushort, PendingChallengeShare> pendingShares = new();
         private readonly Dictionary<ushort, bool> dirtyChallenges = new();
 
-        public ChallengeManager(IPlayer owner, CharacterModel model)
-            : this(owner, model, GameTableManager.Instance)
-        {
-        }
-
         internal ChallengeManager(IPlayer owner, IGameTableManager gameTableManager)
             : this(owner, null, gameTableManager)
         {
         }
 
-        internal ChallengeManager(IPlayer owner, CharacterModel model, IGameTableManager gameTableManager)
+        public ChallengeManager(IPlayer owner, CharacterModel model, IGameTableManager gameTableManager)
         {
             player              = owner;
             characterId         = owner.CharacterId;

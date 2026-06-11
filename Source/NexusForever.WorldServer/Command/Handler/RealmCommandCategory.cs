@@ -1,6 +1,7 @@
 using System;
 using NexusForever.Game;
-using NexusForever.Game.Chat;
+using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Chat;
 using NexusForever.Game.Static.Chat;
 using NexusForever.Game.Static.RBAC;
 using NexusForever.Network.Session;
@@ -14,42 +15,56 @@ namespace NexusForever.WorldServer.Command.Handler
     {
         private readonly INetworkManager<IWorldSession> networkManager;
         private readonly ILoginQueueManager queueManager;
+        private readonly IRealmContext realmContext;
+        private readonly IGlobalChatManager globalChatManager;
 
         public RealmCommandCategory(
             INetworkManager<IWorldSession> networkManager,
-            ILoginQueueManager queueManager)
+            ILoginQueueManager queueManager,
+            IRealmContext realmContext,
+            IGlobalChatManager globalChatManager)
         {
-            this.networkManager = networkManager;
-            this.queueManager   = queueManager;
+            this.networkManager    = networkManager;
+            this.queueManager      = queueManager;
+            this.realmContext      = realmContext;
+            this.globalChatManager = globalChatManager;
         }
 
         [Command(Permission.RealmShutdown, "A collection of commands to manage realm shutdown.", "shutdown")]
         public class RealmShutdownCommandCategory : CommandCategory
         {
+            private readonly IShutdownManager shutdownManager;
+
+            public RealmShutdownCommandCategory(
+                IShutdownManager shutdownManager)
+            {
+                this.shutdownManager = shutdownManager;
+            }
+
             [Command(Permission.RealmShutdownStart, "Start a new realm shutdown.", "start")]
             public void HandleRealmShutdownStart(ICommandContext context,
                 [Parameter("Time till shutdown. (Format: dd:hh:mm:ss)")]
                 TimeSpan span)
             {
-                if (ShutdownManager.Instance.IsShutdownPending)
+                if (shutdownManager.IsShutdownPending)
                 {
                     context.SendError("Realm already has a pending shutdown!");
                     return;
                 }
 
-                ShutdownManager.Instance.StartShutdown(span);
+                shutdownManager.StartShutdown(span);
             }
 
             [Command(Permission.RealmShutdownCancel, "Cancel pending realm shutdown.", "cancel")]
             public void HandleRealmShutdownCancel(ICommandContext context)
             {
-                if (!ShutdownManager.Instance.IsShutdownPending)
+                if (!shutdownManager.IsShutdownPending)
                 {
                     context.SendError("Realm doesn't have a pending shutdown!");
                     return;
                 }
 
-                ShutdownManager.Instance.CancelShutdown();
+                shutdownManager.CancelShutdown();
             }
         }
 
@@ -58,10 +73,10 @@ namespace NexusForever.WorldServer.Command.Handler
             [Parameter("New message of the day for the realm.")]
             string message)
         {
-            RealmContext.Instance.Motd = message;
+            realmContext.Motd = message;
 
             foreach (IWorldSession session in networkManager)
-                GlobalChatManager.Instance.SendMessage(session, RealmContext.Instance.Motd, "MOTD", ChatChannelType.Realm);
+                globalChatManager.SendMessage(session, realmContext.Motd, "MOTD", ChatChannelType.Realm);
         }
 
         [Command(Permission.RealmMaxPlayers, "Set the maximum players allowed to connect.", "max")]

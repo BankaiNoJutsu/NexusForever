@@ -8,7 +8,7 @@ using NLog;
 
 namespace NexusForever.Database
 {
-    public class DatabaseManager : Singleton<DatabaseManager>, IDatabaseManager
+    public class DatabaseManager : IDatabaseManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 

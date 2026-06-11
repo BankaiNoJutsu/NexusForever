@@ -1,11 +1,10 @@
-using Microsoft.Extensions.DependencyInjection;
-using NexusForever.Database;
 using NexusForever.Database.Character;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Mail;
 using NexusForever.Game.Static.Mail;
-using NexusForever.Shared;
+using NexusForever.GameTable;
 using NLog;
 
 namespace NexusForever.Game.Marketplace
@@ -26,32 +25,52 @@ namespace NexusForever.Game.Marketplace
         private const string CommodityReturnSubject   = "Commodity Exchange";
         private const string CommodityReturnBody      = "Your commodity order was cancelled. The listed items have been returned.";
 
-        public static bool IsAvailable => TryGetCharacterDatabase() != null;
+        public static bool IsAvailable(CharacterDatabase database)
+        {
+            return database != null;
+        }
 
-        public static bool TrySendItemAuctionReturnMail(ulong recipientCharacterId, IItem item)
+        public static bool TrySendItemAuctionReturnMail(
+            CharacterDatabase database,
+            IGameTableManager gameTableManager,
+            IAssetManager assetManager,
+            ulong recipientCharacterId,
+            IItem item,
+            IPlayerManager playerManager = null)
         {
             if (item == null)
                 return false;
 
             return TrySendMail(
+                database,
+                gameTableManager,
+                assetManager,
                 recipientCharacterId,
                 SenderType.ItemAuction,
                 ContentType.AuctionExpired,
                 ItemAuctionReturnSubject,
                 ItemAuctionReturnBody,
                 0ul,
+                playerManager,
                 item);
         }
 
         public static bool TrySendItemAuctionReturnMail(
+            CharacterDatabase database,
+            IGameTableManager gameTableManager,
+            IAssetManager assetManager,
             ulong recipientCharacterId,
             IItem item,
-            Action<CharacterContext> additionalSaveAction)
+            Action<CharacterContext> additionalSaveAction,
+            IPlayerManager playerManager = null)
         {
             if (item == null)
                 return false;
 
             return TrySendMail(
+                database,
+                gameTableManager,
+                assetManager,
                 recipientCharacterId,
                 SenderType.ItemAuction,
                 ContentType.AuctionExpired,
@@ -59,33 +78,51 @@ namespace NexusForever.Game.Marketplace
                 ItemAuctionReturnBody,
                 0ul,
                 additionalSaveAction,
+                playerManager,
                 item);
         }
 
-        public static bool TrySendItemAuctionWonMail(ulong recipientCharacterId, IItem item)
+        public static bool TrySendItemAuctionWonMail(
+            CharacterDatabase database,
+            IGameTableManager gameTableManager,
+            IAssetManager assetManager,
+            ulong recipientCharacterId,
+            IItem item,
+            IPlayerManager playerManager = null)
         {
             if (item == null)
                 return false;
 
             return TrySendMail(
+                database,
+                gameTableManager,
+                assetManager,
                 recipientCharacterId,
                 SenderType.ItemAuction,
                 ContentType.AuctionWon,
                 ItemAuctionWonSubject,
                 ItemAuctionWonBody,
                 0ul,
+                playerManager,
                 item);
         }
 
         public static bool TrySendItemAuctionWonMail(
+            CharacterDatabase database,
+            IGameTableManager gameTableManager,
+            IAssetManager assetManager,
             ulong recipientCharacterId,
             IItem item,
-            Action<CharacterContext> additionalSaveAction)
+            Action<CharacterContext> additionalSaveAction,
+            IPlayerManager playerManager = null)
         {
             if (item == null)
                 return false;
 
             return TrySendMail(
+                database,
+                gameTableManager,
+                assetManager,
                 recipientCharacterId,
                 SenderType.ItemAuction,
                 ContentType.AuctionWon,
@@ -93,29 +130,46 @@ namespace NexusForever.Game.Marketplace
                 ItemAuctionWonBody,
                 0ul,
                 additionalSaveAction,
+                playerManager,
                 item);
         }
 
-        public static bool TrySendCommodityAuctionFillMail(ulong recipientCharacterId, uint item2Id, uint quantity)
-        {
-            return TrySendCommodityAuctionFillMail(recipientCharacterId, item2Id, quantity, null);
-        }
-
         public static bool TrySendCommodityAuctionFillMail(
+            CharacterDatabase database,
+            IGameTableManager gameTableManager,
+            IAssetManager assetManager,
             ulong recipientCharacterId,
             uint item2Id,
             uint quantity,
-            Action<CharacterContext> additionalSaveAction)
+            IPlayerManager playerManager = null,
+            IItemManager itemManager = null)
+        {
+            return TrySendCommodityAuctionFillMail(database, gameTableManager, assetManager, recipientCharacterId, item2Id, quantity, null, playerManager, itemManager);
+        }
+
+        public static bool TrySendCommodityAuctionFillMail(
+            CharacterDatabase database,
+            IGameTableManager gameTableManager,
+            IAssetManager assetManager,
+            ulong recipientCharacterId,
+            uint item2Id,
+            uint quantity,
+            Action<CharacterContext> additionalSaveAction,
+            IPlayerManager playerManager = null,
+            IItemManager itemManager = null)
         {
             if (quantity == 0u)
                 return false;
 
-            IItemInfo info = ItemManager.Instance.GetItemInfo(item2Id);
+            IItemInfo info = itemManager?.GetItemInfo(item2Id);
             if (info == null)
                 return false;
 
-            var item = new Item(recipientCharacterId, info, quantity);
+            var item = new Item(recipientCharacterId, info, quantity, itemManager: itemManager, gameTableManager: gameTableManager);
             return TrySendMail(
+                database,
+                gameTableManager,
+                assetManager,
                 recipientCharacterId,
                 SenderType.CommodityAuction,
                 ContentType.AuctionWon,
@@ -123,50 +177,68 @@ namespace NexusForever.Game.Marketplace
                 CommodityFillBody,
                 0ul,
                 additionalSaveAction,
+                playerManager,
                 item);
         }
 
         public static bool TrySendSystemItemMail(
+            CharacterDatabase database,
+            IGameTableManager gameTableManager,
+            IAssetManager assetManager,
             ulong recipientCharacterId,
             uint item2Id,
             uint quantity,
             string subject,
-            string body)
+            string body,
+            IPlayerManager playerManager = null,
+            IItemManager itemManager = null)
         {
             if (quantity == 0u)
                 return false;
 
-            IItemInfo info = ItemManager.Instance.GetItemInfo(item2Id);
+            IItemInfo info = itemManager?.GetItemInfo(item2Id);
             if (info == null)
                 return false;
 
-            var item = new Item(recipientCharacterId, info, quantity);
+            var item = new Item(recipientCharacterId, info, quantity, itemManager: itemManager, gameTableManager: gameTableManager);
             return TrySendMail(
+                database,
+                gameTableManager,
+                assetManager,
                 recipientCharacterId,
                 SenderType.GM,
                 ContentType.PlayerMessage,
                 subject,
                 body,
                 0ul,
+                playerManager,
                 item);
         }
 
         public static bool TrySendMarketplaceCreditMail(
+            CharacterDatabase database,
+            IGameTableManager gameTableManager,
+            IAssetManager assetManager,
             ulong recipientCharacterId,
             ulong credits,
             string subject,
-            string body)
+            string body,
+            IPlayerManager playerManager = null)
         {
             if (credits == 0ul)
                 return false;
 
             return TrySendMail(
+                database,
+                gameTableManager,
+                assetManager,
                 recipientCharacterId,
                 SenderType.ItemAuction,
                 ContentType.AuctionWon,
                 subject,
                 body,
-                credits);
+                credits,
+                playerManager);
         }
 
         public static void SaveMarketplaceCreditMail(
@@ -174,7 +246,9 @@ namespace NexusForever.Game.Marketplace
             ulong recipientCharacterId,
             ulong credits,
             string subject,
-            string body)
+            string body,
+            IGameTableManager gameTableManager = null,
+            IAssetManager assetManager = null)
         {
             if (credits == 0ul)
                 return;
@@ -185,30 +259,48 @@ namespace NexusForever.Game.Marketplace
                 ContentType.AuctionWon,
                 subject,
                 body,
-                credits);
+                credits,
+                gameTableManager,
+                assetManager);
             mail.Save(context);
         }
 
-        public static bool TrySendCommodityAuctionReturnMail(ulong recipientCharacterId, uint item2Id, uint quantity)
-        {
-            return TrySendCommodityAuctionReturnMail(recipientCharacterId, item2Id, quantity, null);
-        }
-
         public static bool TrySendCommodityAuctionReturnMail(
+            CharacterDatabase database,
+            IGameTableManager gameTableManager,
+            IAssetManager assetManager,
             ulong recipientCharacterId,
             uint item2Id,
             uint quantity,
-            Action<CharacterContext> additionalSaveAction)
+            IPlayerManager playerManager = null,
+            IItemManager itemManager = null)
+        {
+            return TrySendCommodityAuctionReturnMail(database, gameTableManager, assetManager, recipientCharacterId, item2Id, quantity, null, playerManager, itemManager);
+        }
+
+        public static bool TrySendCommodityAuctionReturnMail(
+            CharacterDatabase database,
+            IGameTableManager gameTableManager,
+            IAssetManager assetManager,
+            ulong recipientCharacterId,
+            uint item2Id,
+            uint quantity,
+            Action<CharacterContext> additionalSaveAction,
+            IPlayerManager playerManager = null,
+            IItemManager itemManager = null)
         {
             if (quantity == 0u)
                 return false;
 
-            IItemInfo info = ItemManager.Instance.GetItemInfo(item2Id);
+            IItemInfo info = itemManager?.GetItemInfo(item2Id);
             if (info == null)
                 return false;
 
-            var item = new Item(recipientCharacterId, info, quantity);
+            var item = new Item(recipientCharacterId, info, quantity, itemManager: itemManager, gameTableManager: gameTableManager);
             return TrySendMail(
+                database,
+                gameTableManager,
+                assetManager,
                 recipientCharacterId,
                 SenderType.CommodityAuction,
                 ContentType.AuctionExpired,
@@ -216,19 +308,27 @@ namespace NexusForever.Game.Marketplace
                 CommodityReturnBody,
                 0ul,
                 additionalSaveAction,
+                playerManager,
                 item);
         }
 
         private static bool TrySendMail(
+            CharacterDatabase database,
+            IGameTableManager gameTableManager,
+            IAssetManager assetManager,
             ulong recipientCharacterId,
             SenderType senderType,
             ContentType contentType,
             string subject,
             string body,
             ulong credits,
+            IPlayerManager playerManager,
             params IItem[] items)
         {
             return TrySendMail(
+                database,
+                gameTableManager,
+                assetManager,
                 recipientCharacterId,
                 senderType,
                 contentType,
@@ -236,10 +336,14 @@ namespace NexusForever.Game.Marketplace
                 body,
                 credits,
                 null,
+                playerManager,
                 items);
         }
 
         private static bool TrySendMail(
+            CharacterDatabase database,
+            IGameTableManager gameTableManager,
+            IAssetManager assetManager,
             ulong recipientCharacterId,
             SenderType senderType,
             ContentType contentType,
@@ -247,9 +351,9 @@ namespace NexusForever.Game.Marketplace
             string body,
             ulong credits,
             Action<CharacterContext> additionalSaveAction,
+            IPlayerManager playerManager,
             params IItem[] items)
         {
-            CharacterDatabase database = TryGetCharacterDatabase();
             if (database == null)
                 return false;
 
@@ -262,7 +366,9 @@ namespace NexusForever.Game.Marketplace
                     contentType,
                     subject,
                     body,
-                    credits);
+                    credits,
+                    gameTableManager,
+                    assetManager);
 
                 uint index = 0;
                 foreach (IItem item in items)
@@ -275,7 +381,7 @@ namespace NexusForever.Game.Marketplace
                     mail.AttachmentAdd(new MailAttachment(mail.Id, index++, item));
                 }
 
-                PersistMail(database, recipientCharacterId, mail, items, additionalSaveAction);
+                PersistMail(database, recipientCharacterId, mail, items, additionalSaveAction, playerManager);
             }
             catch (Exception ex)
             {
@@ -295,7 +401,9 @@ namespace NexusForever.Game.Marketplace
             ContentType contentType,
             string subject,
             string body,
-            ulong credits)
+            ulong credits,
+            IGameTableManager gameTableManager,
+            IAssetManager assetManager)
         {
             var parameters = new MailParameters
             {
@@ -307,7 +415,7 @@ namespace NexusForever.Game.Marketplace
             };
 
             if ((senderType == SenderType.ItemAuction || senderType == SenderType.CommodityAuction)
-                && MarketplaceMailTexts.TryGetMarketplaceMailLocalizedTextId(out uint localizedTextId))
+                && MarketplaceMailTexts.TryGetMarketplaceMailLocalizedTextId(out uint localizedTextId, gameTableManager))
             {
                 parameters.SubjectStringId = localizedTextId;
                 parameters.BodyStringId    = localizedTextId;
@@ -318,12 +426,12 @@ namespace NexusForever.Game.Marketplace
                 parameters.Body    = body;
             }
 
-            return new MailItem(parameters);
+            return new MailItem(parameters, assetManager);
         }
 
         private static void PersistMail(CharacterDatabase database, ulong recipientCharacterId, MailItem mail, IEnumerable<IItem> items)
         {
-            PersistMail(database, recipientCharacterId, mail, items, null);
+            PersistMail(database, recipientCharacterId, mail, items, null, null);
         }
 
         private static void PersistMail(
@@ -331,7 +439,8 @@ namespace NexusForever.Game.Marketplace
             ulong recipientCharacterId,
             MailItem mail,
             IEnumerable<IItem> items,
-            Action<CharacterContext> additionalSaveAction)
+            Action<CharacterContext> additionalSaveAction,
+            IPlayerManager playerManager)
         {
             database.SaveBlocking(context =>
             {
@@ -346,16 +455,8 @@ namespace NexusForever.Game.Marketplace
                 }
             });
 
-            IPlayer recipient = PlayerManager.Instance.GetPlayer(recipientCharacterId);
+            IPlayer recipient = playerManager?.GetPlayer(recipientCharacterId);
             recipient?.MailManager.EnqueueMail(mail);
-        }
-
-        private static CharacterDatabase TryGetCharacterDatabase()
-        {
-            IDatabaseManager manager = LegacyServiceProvider.Provider?.GetService<IDatabaseManager>()
-                ?? LegacyServiceProvider.Provider?.GetService<DatabaseManager>();
-
-            return manager?.GetDatabase<CharacterDatabase>();
         }
     }
 }

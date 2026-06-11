@@ -1,5 +1,4 @@
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Game;
 using NexusForever.Game.Abstract;
@@ -15,13 +14,11 @@ using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Marketplace;
 using NexusForever.Network.World.Message.Static;
-using NexusForever.Shared;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Marketplace;
 
 namespace NexusForever.Game.Tests.Marketplace;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class MarketplaceOwnedListHandlerTests
 {
     private const uint ItemId = 7001u;
@@ -32,12 +29,13 @@ public class MarketplaceOwnedListHandlerTests
     [Fact]
     public void OwnedMarketplaceRequests_WithNoRows_SendEmptyOwnedListPackets()
     {
-        using LegacyServiceProviderScope scope = UseMarketplaceProvider();
-        ClearMarketplaceState((GlobalMarketplaceManager)scope.Provider.GetRequiredService<IGlobalMarketplaceManager>());
+        var manager = new GlobalMarketplaceManager();
+        ClearMarketplaceState(manager);
 
         IWorldSession session = CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy, out _, out _);
-        var commodityHandler = new ClientRequestOwnedCommodityOrdersHandler(NullLogger<ClientRequestOwnedCommodityOrdersHandler>.Instance);
-        var auctionHandler = new ClientRequestOwnedItemAuctionsHandler(NullLogger<ClientRequestOwnedItemAuctionsHandler>.Instance);
+        MarketplaceRequestHelper helper = CreateMarketplaceRequestHelper(manager);
+        var commodityHandler = new ClientRequestOwnedCommodityOrdersHandler(NullLogger<ClientRequestOwnedCommodityOrdersHandler>.Instance, helper);
+        var auctionHandler = new ClientRequestOwnedItemAuctionsHandler(NullLogger<ClientRequestOwnedItemAuctionsHandler>.Instance, helper);
 
         commodityHandler.HandleMessage(session, new ClientRequestOwnedCommodityOrders());
         auctionHandler.HandleMessage(session, new ClientRequestOwnedItemAuctions());
@@ -50,8 +48,7 @@ public class MarketplaceOwnedListHandlerTests
     [Fact]
     public void OwnedMarketplaceRequests_WithRows_SendOwnedListPackets()
     {
-        using LegacyServiceProviderScope scope = UseMarketplaceProvider();
-        GlobalMarketplaceManager manager = (GlobalMarketplaceManager)scope.Provider.GetRequiredService<IGlobalMarketplaceManager>();
+        var manager = new GlobalMarketplaceManager();
         ClearMarketplaceState(manager);
 
         IWorldSession session = CreateSession(
@@ -66,8 +63,9 @@ public class MarketplaceOwnedListHandlerTests
         Assert.Equal(GenericError.Ok, manager.PostAuction(session.Player, item, 10ul, 20ul, out AuctionInfo auction));
         Assert.Equal(GenericError.Ok, manager.PostCommodityOrder(session.Player, CreateCommodityOrder(), out CommodityOrder commodityOrder));
 
-        var commodityHandler = new ClientRequestOwnedCommodityOrdersHandler(NullLogger<ClientRequestOwnedCommodityOrdersHandler>.Instance);
-        var auctionHandler = new ClientRequestOwnedItemAuctionsHandler(NullLogger<ClientRequestOwnedItemAuctionsHandler>.Instance);
+        MarketplaceRequestHelper helper = CreateMarketplaceRequestHelper(manager);
+        var commodityHandler = new ClientRequestOwnedCommodityOrdersHandler(NullLogger<ClientRequestOwnedCommodityOrdersHandler>.Instance, helper);
+        var auctionHandler = new ClientRequestOwnedItemAuctionsHandler(NullLogger<ClientRequestOwnedItemAuctionsHandler>.Instance, helper);
         commodityHandler.HandleMessage(session, new ClientRequestOwnedCommodityOrders());
         auctionHandler.HandleMessage(session, new ClientRequestOwnedItemAuctions());
 
@@ -160,10 +158,8 @@ public class MarketplaceOwnedListHandlerTests
         field.SetValue(instance, value);
     }
 
-    private static LegacyServiceProviderScope UseMarketplaceProvider()
+    private static MarketplaceRequestHelper CreateMarketplaceRequestHelper(IGlobalMarketplaceManager manager)
     {
-        var services = new ServiceCollection();
-        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
-        return new LegacyServiceProviderScope(services.BuildServiceProvider());
+        return new MarketplaceRequestHelper(manager);
     }
 }

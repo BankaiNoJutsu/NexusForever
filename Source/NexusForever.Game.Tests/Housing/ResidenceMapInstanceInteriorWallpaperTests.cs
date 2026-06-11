@@ -1,7 +1,6 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
@@ -22,12 +21,10 @@ using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Script;
-using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
 
 namespace NexusForever.Game.Tests.Housing;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class ResidenceMapInstanceInteriorWallpaperTests
 {
     private const ushort RealmId = 7;
@@ -37,164 +34,132 @@ public class ResidenceMapInstanceInteriorWallpaperTests
     [Fact]
     public void InteriorWallpaperUpdate_DefaultRestoreId_IsValidForEverySlotAndIsFree()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        try
+        ISharedConfiguration sharedConfiguration = CreateSharedConfiguration();
+
+        ResidenceMapInstance map = CreateResidenceMapInstance(sharedConfiguration, out RecordingDispatchProxy<IGameTableManager> gameTableProxy);
+        gameTableProxy.SetProperty(nameof(IGameTableManager.HousingWallpaperInfo), CreateGameTable(new HousingWallpaperInfoEntry
         {
-            LegacyServiceProvider.Provider = BuildConfigurationProvider();
+            Id                 = 5u,
+            Cost               = 999u,
+            CostCurrencyTypeId = (uint)CurrencyType.Credits,
+            Flags              = 0u
+        }));
 
-            ResidenceMapInstance map = CreateResidenceMapInstance(out RecordingDispatchProxy<IGameTableManager> gameTableProxy);
-            gameTableProxy.SetProperty(nameof(IGameTableManager.HousingWallpaperInfo), CreateGameTable(new HousingWallpaperInfoEntry
-            {
-                Id                 = 5u,
-                Cost               = 999u,
-                CostCurrencyTypeId = (uint)CurrencyType.Credits,
-                Flags              = 0u
-            }));
+        IResidence residence = RecordingDispatchProxy<IResidence>.Create(out RecordingDispatchProxy<IResidence> residenceProxy);
+        IDecor decor = RecordingDispatchProxy<IDecor>.Create(out RecordingDispatchProxy<IDecor> decorProxy);
+        residenceProxy.SetProperty(nameof(IResidence.Id), ResidenceId);
+        residenceProxy.SetMethodReturn(nameof(IResidence.GetChildren), Array.Empty<IResidenceChild>());
+        residenceProxy.SetMethodReturn(nameof(IResidence.GetPlots), Array.Empty<IPlot>());
+        residenceProxy.SetMethodReturn(nameof(IResidence.CanModifyResidence), true);
+        residenceProxy.SetMethodReturn(nameof(IResidence.GetDecor), decor);
+        map.Initialise(residence);
 
-            IResidence residence = RecordingDispatchProxy<IResidence>.Create(out RecordingDispatchProxy<IResidence> residenceProxy);
-            IDecor decor = RecordingDispatchProxy<IDecor>.Create(out RecordingDispatchProxy<IDecor> decorProxy);
-            residenceProxy.SetProperty(nameof(IResidence.Id), ResidenceId);
-            residenceProxy.SetMethodReturn(nameof(IResidence.GetChildren), Array.Empty<IResidenceChild>());
-            residenceProxy.SetMethodReturn(nameof(IResidence.GetPlots), Array.Empty<IPlot>());
-            residenceProxy.SetMethodReturn(nameof(IResidence.CanModifyResidence), true);
-            residenceProxy.SetMethodReturn(nameof(IResidence.GetDecor), decor);
-            map.Initialise(residence);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out RecordingDispatchProxy<ICurrencyManager> currencyProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CurrencyManager), currencyManager);
 
-            IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
-            ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out RecordingDispatchProxy<ICurrencyManager> currencyProxy);
-            playerProxy.SetProperty(nameof(IPlayer.CurrencyManager), currencyManager);
+        ClientHousingInteriorWallpaperUpdate update = CreateWallpaperRestoreUpdate(slotIndex: 5);
 
-            ClientHousingInteriorWallpaperUpdate update = CreateWallpaperRestoreUpdate(slotIndex: 5);
+        map.InteriorWallpaperUpdate(player, update);
 
-            map.InteriorWallpaperUpdate(player, update);
-
-            RecordingDispatchProxy<IDecor>.Invocation replace = Assert.Single(decorProxy.GetInvocations(nameof(IDecor.UpdateDecorInfoId)));
-            Assert.Equal(5u, replace.Arguments[0]);
-            Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CanAfford)));
-            Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        RecordingDispatchProxy<IDecor>.Invocation replace = Assert.Single(decorProxy.GetInvocations(nameof(IDecor.UpdateDecorInfoId)));
+        Assert.Equal(5u, replace.Arguments[0]);
+        Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CanAfford)));
+        Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
     }
 
     [Fact]
     public void DecorCreate_InvalidColourShift_DoesNotDebitOrCreateDecor()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        try
+        ISharedConfiguration sharedConfiguration = CreateSharedConfiguration();
+
+        ResidenceMapInstance map = CreateResidenceMapInstance(sharedConfiguration, out RecordingDispatchProxy<IGameTableManager> gameTableProxy);
+        gameTableProxy.SetProperty(nameof(IGameTableManager.HousingDecorInfo), CreateGameTable(new HousingDecorInfoEntry
         {
-            LegacyServiceProvider.Provider = BuildConfigurationProvider();
+            Id                 = 100u,
+            Cost               = 25u,
+            CostCurrencyTypeId = (uint)CurrencyType.Credits
+        }));
+        gameTableProxy.SetProperty(nameof(IGameTableManager.ColorShift), CreateGameTable<ColorShiftEntry>());
 
-            ResidenceMapInstance map = CreateResidenceMapInstance(out RecordingDispatchProxy<IGameTableManager> gameTableProxy);
-            gameTableProxy.SetProperty(nameof(IGameTableManager.HousingDecorInfo), CreateGameTable(new HousingDecorInfoEntry
-            {
-                Id                 = 100u,
-                Cost               = 25u,
-                CostCurrencyTypeId = (uint)CurrencyType.Credits
-            }));
-            gameTableProxy.SetProperty(nameof(IGameTableManager.ColorShift), CreateGameTable<ColorShiftEntry>());
+        InitialiseResidence(map, out RecordingDispatchProxy<IResidence> residenceProxy);
+        IPlayer player = CreatePlayer(
+            out RecordingDispatchProxy<ICurrencyManager> currencyProxy,
+            out _);
+        currencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
 
-            InitialiseResidence(map, out RecordingDispatchProxy<IResidence> residenceProxy);
-            IPlayer player = CreatePlayer(
-                out RecordingDispatchProxy<ICurrencyManager> currencyProxy,
-                out _);
-            currencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+        ClientHousingDecorUpdate update = CreateDecorCreateUpdate(DecorType.Crate, colourShiftId: 999);
 
-            ClientHousingDecorUpdate update = CreateDecorCreateUpdate(DecorType.Crate, colourShiftId: 999);
+        Assert.Throws<InvalidPacketValueException>(() => map.DecorUpdate(player, update));
 
-            Assert.Throws<InvalidPacketValueException>(() => map.DecorUpdate(player, update));
-
-            RecordingDispatchProxy<ICurrencyManager>.Invocation canAfford = Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CanAfford)));
-            Assert.Equal(CurrencyType.Credits, canAfford.Arguments[0]);
-            Assert.Equal(25ul, canAfford.Arguments[1]);
-            Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
-            Assert.Empty(residenceProxy.GetInvocations(nameof(IResidence.DecorCreate)));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        RecordingDispatchProxy<ICurrencyManager>.Invocation canAfford = Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CanAfford)));
+        Assert.Equal(CurrencyType.Credits, canAfford.Arguments[0]);
+        Assert.Equal(25ul, canAfford.Arguments[1]);
+        Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        Assert.Empty(residenceProxy.GetInvocations(nameof(IResidence.DecorCreate)));
     }
 
     [Fact]
     public void DecorCreate_InvalidPlotPosition_DoesNotDebitOrCreateDecor()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        try
+        ISharedConfiguration sharedConfiguration = CreateSharedConfiguration();
+
+        ResidenceMapInstance map = CreateResidenceMapInstance(sharedConfiguration, out RecordingDispatchProxy<IGameTableManager> gameTableProxy);
+        gameTableProxy.SetProperty(nameof(IGameTableManager.HousingDecorInfo), CreateGameTable(new HousingDecorInfoEntry
         {
-            LegacyServiceProvider.Provider = BuildConfigurationProvider();
+            Id                 = 100u,
+            Cost               = 25u,
+            CostCurrencyTypeId = (uint)CurrencyType.Credits
+        }));
 
-            ResidenceMapInstance map = CreateResidenceMapInstance(out RecordingDispatchProxy<IGameTableManager> gameTableProxy);
-            gameTableProxy.SetProperty(nameof(IGameTableManager.HousingDecorInfo), CreateGameTable(new HousingDecorInfoEntry
-            {
-                Id                 = 100u,
-                Cost               = 25u,
-                CostCurrencyTypeId = (uint)CurrencyType.Credits
-            }));
+        InitialiseResidence(map, out RecordingDispatchProxy<IResidence> residenceProxy);
+        IPlayer player = CreatePlayer(
+            out RecordingDispatchProxy<ICurrencyManager> currencyProxy,
+            out RecordingDispatchProxy<IGameSession> sessionProxy);
+        currencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
 
-            InitialiseResidence(map, out RecordingDispatchProxy<IResidence> residenceProxy);
-            IPlayer player = CreatePlayer(
-                out RecordingDispatchProxy<ICurrencyManager> currencyProxy,
-                out RecordingDispatchProxy<IGameSession> sessionProxy);
-            currencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+        ClientHousingDecorUpdate update = CreateDecorCreateUpdate(DecorType.Unknown2, plotIndex: 999u);
 
-            ClientHousingDecorUpdate update = CreateDecorCreateUpdate(DecorType.Unknown2, plotIndex: 999u);
+        map.DecorUpdate(player, update);
 
-            map.DecorUpdate(player, update);
-
-            ServerHousingResult result = Assert.Single(GetEncryptedMessages<ServerHousingResult>(sessionProxy));
-            Assert.Equal(RealmId, result.RealmId);
-            Assert.Equal(ResidenceId, result.ResidenceId);
-            Assert.Equal(HousingResult.Decor_InvalidPosition, result.Result);
-            RecordingDispatchProxy<ICurrencyManager>.Invocation canAfford = Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CanAfford)));
-            Assert.Equal(CurrencyType.Credits, canAfford.Arguments[0]);
-            Assert.Equal(25ul, canAfford.Arguments[1]);
-            Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
-            Assert.Empty(residenceProxy.GetInvocations(nameof(IResidence.DecorCreate)));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        ServerHousingResult result = Assert.Single(GetEncryptedMessages<ServerHousingResult>(sessionProxy));
+        Assert.Equal(RealmId, result.RealmId);
+        Assert.Equal(ResidenceId, result.ResidenceId);
+        Assert.Equal(HousingResult.Decor_InvalidPosition, result.Result);
+        RecordingDispatchProxy<ICurrencyManager>.Invocation canAfford = Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CanAfford)));
+        Assert.Equal(CurrencyType.Credits, canAfford.Arguments[0]);
+        Assert.Equal(25ul, canAfford.Arguments[1]);
+        Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        Assert.Empty(residenceProxy.GetInvocations(nameof(IResidence.DecorCreate)));
     }
 
     [Fact]
     public void DecorMove_NegativeScale_ThrowsBeforeMutatingDecor()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        try
-        {
-            LegacyServiceProvider.Provider = BuildConfigurationProvider();
+        ISharedConfiguration sharedConfiguration = CreateSharedConfiguration();
 
-            ResidenceMapInstance map = CreateResidenceMapInstance(out _);
-            InitialiseResidence(map, out RecordingDispatchProxy<IResidence> residenceProxy);
+        ResidenceMapInstance map = CreateResidenceMapInstance(sharedConfiguration, out _);
+        InitialiseResidence(map, out RecordingDispatchProxy<IResidence> residenceProxy);
 
-            IDecor decor = RecordingDispatchProxy<IDecor>.Create(out RecordingDispatchProxy<IDecor> decorProxy);
-            decorProxy.SetProperty(nameof(IDecor.Type), DecorType.Unknown2);
-            residenceProxy.SetMethodReturn(nameof(IResidence.GetDecor), decor);
+        IDecor decor = RecordingDispatchProxy<IDecor>.Create(out RecordingDispatchProxy<IDecor> decorProxy);
+        decorProxy.SetProperty(nameof(IDecor.Type), DecorType.Unknown2);
+        residenceProxy.SetMethodReturn(nameof(IResidence.GetDecor), decor);
 
-            IPlayer player = CreatePlayer(
-                out _,
-                out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IPlayer player = CreatePlayer(
+            out _,
+            out RecordingDispatchProxy<IGameSession> sessionProxy);
 
-            ClientHousingDecorUpdate update = CreateDecorMoveUpdate(scale: -1f);
+        ClientHousingDecorUpdate update = CreateDecorMoveUpdate(scale: -1f);
 
-            Assert.Throws<InvalidPacketValueException>(() => map.DecorUpdate(player, update));
+        Assert.Throws<InvalidPacketValueException>(() => map.DecorUpdate(player, update));
 
-            Assert.Empty(decorProxy.GetInvocations(nameof(IDecor.Move)));
-            Assert.Empty(decorProxy.GetInvocations("set_PlotIndex"));
-            Assert.Empty(decorProxy.GetInvocations("set_DecorData"));
-            Assert.Empty(GetEncryptedMessages<ServerHousingResult>(sessionProxy));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Empty(decorProxy.GetInvocations(nameof(IDecor.Move)));
+        Assert.Empty(decorProxy.GetInvocations("set_PlotIndex"));
+        Assert.Empty(decorProxy.GetInvocations("set_DecorData"));
+        Assert.Empty(GetEncryptedMessages<ServerHousingResult>(sessionProxy));
     }
 
-    private static IServiceProvider BuildConfigurationProvider()
+    private static ISharedConfiguration CreateSharedConfiguration()
     {
         var configuration = new SharedConfiguration(new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string>
@@ -205,12 +170,10 @@ public class ResidenceMapInstanceInteriorWallpaperTests
             .Build());
         configuration.Initialise<TestConfiguration>();
 
-        return new ServiceCollection()
-            .AddSingleton(configuration)
-            .BuildServiceProvider();
+        return configuration;
     }
 
-    private static ResidenceMapInstance CreateResidenceMapInstance(out RecordingDispatchProxy<IGameTableManager> gameTableProxy)
+    private static ResidenceMapInstance CreateResidenceMapInstance(ISharedConfiguration sharedConfiguration, out RecordingDispatchProxy<IGameTableManager> gameTableProxy)
     {
         IEntityFactory entityFactory = RecordingDispatchProxy<IEntityFactory>.Create(out _);
         IPublicEventManager publicEventManager = RecordingDispatchProxy<IPublicEventManager>.Create(out _);
@@ -229,7 +192,8 @@ public class ResidenceMapInstanceInteriorWallpaperTests
             globalResidenceManager,
             gameTableManager,
             realmContext,
-            scriptManager);
+            scriptManager,
+            sharedConfiguration: sharedConfiguration);
     }
 
     private static IResidence InitialiseResidence(ResidenceMapInstance map, out RecordingDispatchProxy<IResidence> residenceProxy)

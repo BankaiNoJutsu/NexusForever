@@ -3,8 +3,6 @@ using NexusForever.Database;
 using NexusForever.Database.Auth;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Game.Character;
-using NexusForever.Game.Entity;
 using NexusForever.Game.Static.RBAC;
 using NexusForever.WorldServer.Command.Context;
 
@@ -16,6 +14,20 @@ namespace NexusForever.WorldServer.Command.Handler
         [Command(Permission.BanAccount, "A collection of commands to manage account bans.", "account")]
         public class BanAccountCommandCategory : CommandCategory
         {
+            private readonly IDatabaseManager databaseManager;
+            private readonly ICharacterManager characterManager;
+            private readonly IPlayerManager playerManager;
+
+            public BanAccountCommandCategory(
+                IDatabaseManager databaseManager,
+                ICharacterManager characterManager,
+                IPlayerManager playerManager)
+            {
+                this.databaseManager  = databaseManager;
+                this.characterManager = characterManager;
+                this.playerManager    = playerManager;
+            }
+
             [Command(Permission.BanAccountPlayer, "Ban an account of a player.", "player")]
             [CommandTarget(typeof(IPlayer))]
             public void HandleBanAccountPlayer(ICommandContext context,
@@ -29,7 +41,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 if (context.Invoker == player)
                     return;
 
-                DatabaseManager.Instance.GetDatabase<AuthDatabase>().BanAccount(player.Account.Id, reason, bannedTill);
+                databaseManager.GetDatabase<AuthDatabase>().BanAccount(player.Account.Id, reason, bannedTill);
 
                 player.Session.ForceDisconnect();
 
@@ -45,7 +57,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 [Parameter("Ban expiry time.")]
                 DateTime? bannedTill)
             {
-                ICharacter character = CharacterManager.Instance.GetCharacter(name);
+                ICharacter character = characterManager.GetCharacter(name);
                 if (character == null)
                 {
                     context.SendError($"Character with the name {name} doesn't exist!");
@@ -56,9 +68,9 @@ namespace NexusForever.WorldServer.Command.Handler
                 if (context.Invoker is IPlayer player && player.Account.Id == character.AccountId)
                     return;
 
-                DatabaseManager.Instance.GetDatabase<AuthDatabase>().BanAccount(character.AccountId, reason, bannedTill);
+                databaseManager.GetDatabase<AuthDatabase>().BanAccount(character.AccountId, reason, bannedTill);
 
-                IPlayer target = PlayerManager.Instance.GetPlayer(name);
+                IPlayer target = playerManager.GetPlayer(name);
                 target?.Session.ForceDisconnect();
 
                 context.SendMessage($"Account {character.AccountId} for character {character.Name} was banned!");

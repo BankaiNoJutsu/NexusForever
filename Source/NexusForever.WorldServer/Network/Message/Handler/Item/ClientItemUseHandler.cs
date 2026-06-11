@@ -1,4 +1,5 @@
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.GameTable;
 using NexusForever.Network;
 using NexusForever.Network.Message;
@@ -11,10 +12,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
         #region Dependency Injection
 
         private readonly IGameTableManager gameTableManager;
+        private readonly IPrerequisiteManager prerequisiteManager;
 
-        public ClientItemUseHandler(IGameTableManager gameTableManager)
+        public ClientItemUseHandler(
+            IGameTableManager gameTableManager,
+            IPrerequisiteManager prerequisiteManager = null)
         {
             this.gameTableManager = gameTableManager;
+            this.prerequisiteManager = prerequisiteManager;
         }
 
         #endregion
@@ -33,7 +38,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                 itemUse.Position,
                 itemUse.ContextToken,
                 nameof(ClientItemUse),
-                applyPendingSpellEvidenceCapture: true);
+                applyPendingSpellEvidenceCapture: true,
+                prerequisiteManager: prerequisiteManager);
         }
     }
 }

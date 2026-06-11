@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Spell;
@@ -49,6 +50,9 @@ namespace NexusForever.Game.Entity
         private byte activeActionSet;
 
         private readonly IPlayer player;
+        private readonly IPrerequisiteManager prerequisiteManager;
+        private readonly IGlobalSpellManager globalSpellManager;
+        private readonly IGameTableManager gameTableManager;
 
         private readonly Dictionary<uint /*spell4BaseId*/, ICharacterSpell> spells = new();
         private readonly Dictionary<uint /*spell4Id*/, double /*cooldown*/> spellCooldowns = new();
@@ -62,22 +66,30 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="ISpellManager"/> from existing <see cref="CharacterModel"/> database model.
         /// </summary>
-        public SpellManager(IPlayer owner, CharacterModel model)
+        public SpellManager(
+            IPlayer owner,
+            CharacterModel model,
+            IPrerequisiteManager prerequisiteManager = null,
+            IGlobalSpellManager globalSpellManager = null,
+            IGameTableManager gameTableManager = null)
         {
             player = owner;
+            this.prerequisiteManager = prerequisiteManager;
+            this.globalSpellManager = globalSpellManager;
+            this.gameTableManager = gameTableManager;
 
             foreach (CharacterSpellModel spellModel in model.Spell)
             {
-                ISpellBaseInfo spellBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(spellModel.Spell4BaseId);
+                ISpellBaseInfo spellBaseInfo = GetGlobalSpellManager().GetSpellBaseInfo(spellModel.Spell4BaseId);
                 IItem item = player.Inventory.SpellCreate(spellBaseInfo.Entry, ItemUpdateReason.NoReason);
-                spells.Add(spellModel.Spell4BaseId, new CharacterSpell(owner, spellModel, spellBaseInfo, item));
+                spells.Add(spellModel.Spell4BaseId, new CharacterSpell(owner, spellModel, spellBaseInfo, item, prerequisiteManager, globalSpellManager, gameTableManager));
             }
 
             GrantSpells();
 
             for (byte i = 0; i < ActionSet.MaxActionSets; i++)
             {
-                actionSets[i] = new ActionSet(i, player);
+                actionSets[i] = new ActionSet(i, player, gameTableManager);
 
                 foreach (CharacterActionSetShortcutModel shortcutModel in model.ActionSetShortcut
                     .Where(c => c.SpecIndex == i))
@@ -93,14 +105,15 @@ namespace NexusForever.Game.Entity
 
         public void GrantSpells()
         {
-            foreach (SpellLevelEntry spellLevel in GameTableManager.Instance.SpellLevel.Entries
+            IGameTableManager gameTables = GetGameTableManager();
+            foreach (SpellLevelEntry spellLevel in gameTables.SpellLevel.Entries
                 .Where(s => s.ClassId == (byte)player.Class && s.CharacterLevel <= player.Level)
                 .OrderBy(s => s.CharacterLevel))
             {
-                if (spellLevel.PrerequisiteId > 0 && !PrerequisiteManager.Instance.Meets(player, spellLevel.PrerequisiteId))
+                if (spellLevel.PrerequisiteId > 0 && !GetPrerequisiteManager().Meets(player, spellLevel.PrerequisiteId))
                     continue;
 
-                Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(spellLevel.Spell4Id);
+                Spell4Entry spell4Entry = gameTables.Spell4.GetEntry(spellLevel.Spell4Id);
                 if (spell4Entry == null)
                     continue;
 
@@ -108,13 +121,13 @@ namespace NexusForever.Game.Entity
                     AddSpell(spell4Entry.Spell4BaseIdBaseSpell);
             }
 
-            ClassEntry classEntry = GameTableManager.Instance.Class.GetEntry((byte)player.Class);
+            ClassEntry classEntry = gameTables.Class.GetEntry((byte)player.Class);
             foreach (uint classSpell in classEntry.Spell4IdInnateAbilityActive
                 .Concat(classEntry.Spell4IdInnateAbilityPassive)
                 .Concat(classEntry.Spell4IdAttackPrimary)
                 .Concat(classEntry.Spell4IdAttackUnarmed))
             {
-                Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(classSpell);
+                Spell4Entry spell4Entry = gameTables.Spell4.GetEntry(classSpell);
                 if (spell4Entry == null)
                     continue;
 
@@ -187,7 +200,7 @@ namespace NexusForever.Game.Entity
 
         public ICharacterSpell GetSpellForSpell4Id(uint spell4Id)
         {
-            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(spell4Id);
+            Spell4Entry spell4Entry = GetGameTableManager().Spell4.GetEntry(spell4Id);
             return spell4Entry == null ? null : GetSpell(spell4Entry.Spell4BaseIdBaseSpell);
         }
 
@@ -196,7 +209,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void AddSpell(uint spell4BaseId, byte tier = 1)
         {
-            ISpellBaseInfo spellBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(spell4BaseId);
+            ISpellBaseInfo spellBaseInfo = GetGlobalSpellManager().GetSpellBaseInfo(spell4BaseId);
             if (spellBaseInfo == null)
                 throw new ArgumentOutOfRangeException();
 
@@ -209,7 +222,7 @@ namespace NexusForever.Game.Entity
 
             IItem item = player.Inventory.SpellCreate(spellBaseInfo.Entry, ItemUpdateReason.NoReason);
 
-            var unlockedSpell = new CharacterSpell(player, spellBaseInfo, tier, item);
+            var unlockedSpell = new CharacterSpell(player, spellBaseInfo, tier, item, prerequisiteManager, globalSpellManager, gameTableManager);
             if (!player.IsLoading)
             {
                 player.Session.EnqueueMessageEncrypted(new ServerSpellUpdate
@@ -223,12 +236,27 @@ namespace NexusForever.Game.Entity
             spells.Add(spellBaseInfo.Entry.Id, unlockedSpell);
         }
 
+        private IPrerequisiteManager GetPrerequisiteManager()
+        {
+            return prerequisiteManager ?? throw new InvalidOperationException($"{nameof(SpellManager)} requires an {nameof(IPrerequisiteManager)}.");
+        }
+
+        private IGlobalSpellManager GetGlobalSpellManager()
+        {
+            return globalSpellManager ?? throw new InvalidOperationException($"{nameof(SpellManager)} requires an {nameof(IGlobalSpellManager)}.");
+        }
+
+        private IGameTableManager GetGameTableManager()
+        {
+            return gameTableManager ?? throw new InvalidOperationException($"{nameof(SpellManager)} requires an {nameof(IGameTableManager)}.");
+        }
+
         /// <summary>
         /// Update existing <see cref="ICharacterSpell"/> with supplied tier. The base tier will be updated if no action set index is supplied.
         /// </summary>
         public void UpdateSpell(uint spell4BaseId, byte tier, byte? actionSetIndex)
         {
-            ISpellBaseInfo spellBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(spell4BaseId);
+            ISpellBaseInfo spellBaseInfo = GetGlobalSpellManager().GetSpellBaseInfo(spell4BaseId);
             if (spellBaseInfo == null)
                 throw new ArgumentOutOfRangeException();
 
@@ -432,7 +460,7 @@ namespace NexusForever.Game.Entity
             var serverAbilityBook = new ServerAbilityBook();
             foreach ((uint spell4BaseId, ICharacterSpell spell) in spells)
             {
-                ISpellBaseInfo spellBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(spell4BaseId);
+                ISpellBaseInfo spellBaseInfo = GetGlobalSpellManager().GetSpellBaseInfo(spell4BaseId);
                 if (spellBaseInfo == null)
                     continue;
 
@@ -484,7 +512,7 @@ namespace NexusForever.Game.Entity
 
         public bool SetSpellActivation(uint spell4Id, bool active)
         {
-            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(spell4Id);
+            Spell4Entry spell4Entry = GetGameTableManager().Spell4.GetEntry(spell4Id);
             if (spell4Entry == null)
                 return false;
 

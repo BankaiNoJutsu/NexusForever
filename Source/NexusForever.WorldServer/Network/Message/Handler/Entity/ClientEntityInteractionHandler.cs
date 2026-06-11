@@ -7,6 +7,7 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
+using NexusForever.GameTable;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 {
@@ -21,13 +22,19 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
         private readonly ILogger<ClientEntityInteractionHandler> log;
 
         private readonly IAssetManager assetManager;
+        private readonly RealmBankManager realmBankManager;
+        private readonly IGameTableManager gameTableManager;
 
         public ClientEntityInteractionHandler(
             ILogger<ClientEntityInteractionHandler> log,
-            IAssetManager assetManager)
+            IAssetManager assetManager,
+            RealmBankManager realmBankManager,
+            IGameTableManager gameTableManager = null)
         {
-            this.log          = log;
-            this.assetManager = assetManager;
+            this.log              = log;
+            this.assetManager     = assetManager;
+            this.realmBankManager = realmBankManager;
+            this.gameTableManager = gameTableManager;
         }
 
         #endregion
@@ -47,7 +54,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             if (entity != null && ActivationInteractionGuards.TryRejectOutOfRangeTarget(
                     session,
                     entity,
-                    entityInteraction.Event == 49 ? GenericError.VendorTooFar : null))
+                    entityInteraction.Event == 49 ? GenericError.VendorTooFar : null,
+                    gameTableManager))
                 return;
 
             if (TryHandleInteractionEvent(session, entityInteraction, entity))
@@ -84,7 +92,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                     if (entity == null)
                         throw new InvalidPacketValueException();
 
-                    RealmBankManager.Instance.OpenRealmBank(session.Player);
+                    realmBankManager.OpenRealmBank(session.Player);
                     return true;
                 case 8: // "HousingGuildNeighborhoodBrokerOpen"
                 case 40:
@@ -131,7 +139,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 
         private void UpdateInteractionObjectives(IWorldSession session, IWorldEntity entity)
         {
-            InteractionObjectiveUpdater.UpdateDirectInteractionObjectives(session.Player, entity, assetManager);
+            InteractionObjectiveUpdater.UpdateDirectInteractionObjectives(session.Player, entity, assetManager, gameTableManager);
         }
 
         private void HandleVendor(IWorldSession session, IWorldEntity worldEntity)

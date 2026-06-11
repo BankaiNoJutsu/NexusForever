@@ -57,20 +57,26 @@ namespace NexusForever.Game.Map.Instance
 
         private uint instanceLimit;
 
-        private readonly UpdateTimer unloadTimer
-            = new(SharedConfiguration.Instance.Get<MapConfig>().GridUnloadTimer ?? 600d);
+        private readonly UpdateTimer unloadTimer;
 
         private readonly HashSet<uint> playerEntities = new();
         private readonly Dictionary<uint, IMapInstanceRemoval> instanceRemovals = new();
+        private readonly IGameTableManager gameTableManager;
 
         #region Dependency Injection
 
         public MapInstance(
             IEntityFactory entityFactory,
             IPublicEventManager publicEventManager,
-            ICreatureInfoManager creatureInfoManager = null)
-            : base(entityFactory, publicEventManager, creatureInfoManager)
+            ICreatureInfoManager creatureInfoManager = null,
+            IMapIOManager mapIOManager = null,
+            IEntityCacheManager entityCacheManager = null,
+            ISharedConfiguration sharedConfiguration = null,
+            IGameTableManager gameTableManager = null)
+            : base(entityFactory, publicEventManager, creatureInfoManager, mapIOManager, entityCacheManager, sharedConfiguration)
         {
+            this.gameTableManager = gameTableManager;
+            unloadTimer = new UpdateTimer(GetMapConfig().GridUnloadTimer ?? 600d);
         }
 
         #endregion
@@ -84,7 +90,7 @@ namespace NexusForever.Game.Map.Instance
 
             base.Initialise(entry);
 
-            instanceLimit = SharedConfiguration.Instance.Get<MapConfig>().InstancePlayerLimit ?? 100u;
+            instanceLimit = GetMapConfig().InstancePlayerLimit ?? 100u;
         }
 
         /// <summary>
@@ -285,7 +291,7 @@ namespace NexusForever.Game.Map.Instance
             if (instanceRemovals.ContainsKey(player.Guid))
                 return;
 
-            GameFormulaEntry entry = GameTableManager.Instance.GameFormula?.GetEntry(1123);
+            GameFormulaEntry entry = gameTableManager?.GameFormula?.GetEntry(1123);
             var removal = new MapInstanceRemoval
             {
                 Guid     = player.Guid,

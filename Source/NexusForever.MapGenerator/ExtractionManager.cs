@@ -4,12 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Nexus.Archive;
-using NexusForever.Shared;
 using NLog;
 
 namespace NexusForever.MapGenerator
 {
-    public sealed class ExtractionManager : Singleton<ExtractionManager>
+    public sealed class ExtractionManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
@@ -21,7 +20,13 @@ namespace NexusForever.MapGenerator
             "en-GB.bin"
         };
 
+        private readonly ArchiveManager archiveManager;
         private string outputDir;
+
+        public ExtractionManager(ArchiveManager archiveManager)
+        {
+            this.archiveManager = archiveManager;
+        }
 
         public void Initialise(string outputDir, int maxDegreeOfParallelism = 1)
         {
@@ -41,7 +46,7 @@ namespace NexusForever.MapGenerator
         private void ExtractGameTables(int maxDegreeOfParallelism)
         {
             string searchPattern = Path.Combine("DB", "*.tbl");
-            List<string> tablePaths = ArchiveManager.Instance.MainArchive.IndexFile.GetFiles(searchPattern)
+            List<string> tablePaths = archiveManager.MainArchive.IndexFile.GetFiles(searchPattern)
                 .Select(fileEntry => Path.Combine("DB", fileEntry.FileName))
                 .ToList();
 
@@ -49,7 +54,7 @@ namespace NexusForever.MapGenerator
             if (effectiveMaxDegreeOfParallelism == 1)
             {
                 foreach (string tablePath in tablePaths)
-                    ExtractFile(ArchiveManager.Instance.MainArchive, tablePath);
+                    ExtractFile(archiveManager.MainArchive, tablePath);
 
                 return;
             }
@@ -59,7 +64,7 @@ namespace NexusForever.MapGenerator
             Parallel.ForEach(
                 tablePaths,
                 new ParallelOptions { MaxDegreeOfParallelism = effectiveMaxDegreeOfParallelism },
-                () => ArchiveManager.Instance.CreateIsolatedInstance(),
+                () => archiveManager.CreateIsolatedInstance(),
                 (tablePath, _, localArchiveManager) =>
                 {
                     ExtractFile(localArchiveManager.MainArchive, tablePath);
@@ -73,7 +78,7 @@ namespace NexusForever.MapGenerator
         /// </summary>
         private void ExtractLanguageFiles()
         {
-            foreach (Archive archive in ArchiveManager.Instance.LocalisationArchives)
+            foreach (Archive archive in archiveManager.LocalisationArchives)
             {
                 foreach (IArchiveFileEntry fileEntry in languageFiles
                     .Select(archive.IndexFile.FindEntry)

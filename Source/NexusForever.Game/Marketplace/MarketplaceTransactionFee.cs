@@ -1,7 +1,5 @@
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Marketplace
 {
@@ -43,8 +41,6 @@ namespace NexusForever.Game.Marketplace
 
         private static float GetFeeRate(uint feeFormulaId, IGameTableManager gameTables)
         {
-            gameTables ??= LegacyServiceProvider.Provider?.GetService<IGameTableManager>()
-                ?? LegacyServiceProvider.Provider?.GetService<GameTableManager>();
             GameFormulaEntry entry = gameTables?.GameFormula?.GetEntry(feeFormulaId);
             if (entry == null || entry.Datafloat0 <= 0f)
                 return DefaultFeeRate;
@@ -54,8 +50,6 @@ namespace NexusForever.Game.Marketplace
 
         private static ulong GetMinimumFeeCredits(IGameTableManager gameTables)
         {
-            gameTables ??= LegacyServiceProvider.Provider?.GetService<IGameTableManager>()
-                ?? LegacyServiceProvider.Provider?.GetService<GameTableManager>();
             GameFormulaEntry entry = gameTables?.GameFormula?.GetEntry(MinimumFeeGameFormulaId);
             if (entry != null && entry.Dataint0 > 0u)
                 return entry.Dataint0 * CreditsPerMinimumFeeUnit;

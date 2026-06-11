@@ -36,19 +36,21 @@ namespace NexusForever.Game.Entity
         private bool activeSaved = true;
 
         private readonly IPlayer player;
+        private readonly IGameTableManager gameTableManager;
         private readonly Dictionary<ushort, ITitle> titles = new();
 
         /// <summary>
         /// Create a new <see cref="ITitleManager"/> from existing <see cref="CharacterModel"/> database model.
         /// </summary>
-        public TitleManager(IPlayer owner, CharacterModel model)
+        public TitleManager(IPlayer owner, CharacterModel model, IGameTableManager gameTableManager)
         {
             player = owner;
+            this.gameTableManager = gameTableManager;
             activeTitleId = model.Title;
 
             foreach (CharacterTitleModel titleModel in model.CharacterTitle)
             {
-                var title = new Title(titleModel);
+                var title = new Title(titleModel, gameTableManager);
                 if (title.Entry == null)
                     continue;
 
@@ -97,7 +99,7 @@ namespace NexusForever.Game.Entity
         /// </remarks>
         public void AddTitle(ushort titleId, bool suppress = false)
         {
-            CharacterTitleEntry entry = GameTableManager.Instance.CharacterTitle?.GetEntry(titleId);
+            CharacterTitleEntry entry = gameTableManager.CharacterTitle?.GetEntry(titleId);
             if (entry == null)
                 throw new InvalidPacketValueException();
 
@@ -138,7 +140,7 @@ namespace NexusForever.Game.Entity
         /// </remarks>
         public void RevokeTitle(ushort titleId, bool suppress = false)
         {
-            if (GameTableManager.Instance.CharacterTitle?.GetEntry(titleId) == null)
+            if (gameTableManager.CharacterTitle?.GetEntry(titleId) == null)
                 throw new InvalidPacketValueException();
 
             if (!titles.TryGetValue(titleId, out ITitle title))
@@ -182,7 +184,7 @@ namespace NexusForever.Game.Entity
         /// </remarks>
         public void AddAllTitles()
         {
-            CharacterTitleEntry[] entries = GameTableManager.Instance.CharacterTitle?.Entries;
+            CharacterTitleEntry[] entries = gameTableManager.CharacterTitle?.Entries;
             if (entries == null)
             {
                 SendTitles();

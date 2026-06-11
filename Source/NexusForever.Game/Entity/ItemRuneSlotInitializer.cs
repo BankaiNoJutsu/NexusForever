@@ -19,11 +19,10 @@ namespace NexusForever.Game.Entity
             if (instanceId == 0u)
                 return;
 
-            IGameTableManager tables = gameTableManager ?? GameTableManager.Instance;
-            if (tables.ItemRuneInstance == null)
+            if (gameTableManager?.ItemRuneInstance == null)
                 return;
 
-            ItemRuneInstanceEntry instance = tables.ItemRuneInstance.GetEntry(instanceId);
+            ItemRuneInstanceEntry instance = gameTableManager.ItemRuneInstance.GetEntry(instanceId);
             if (instance == null || instance.DefinedSocketCount == 0u)
                 return;
 

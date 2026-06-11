@@ -1,8 +1,16 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Creature;
+using NexusForever.Game.Abstract.Loot;
+using NexusForever.Game.Abstract.Prerequisite;
+using NexusForever.Game.Abstract.Reputation;
+using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Abstract.Trade;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Entity;
+using NexusForever.GameTable;
+using NexusForever.Script;
 
 namespace NexusForever.Game.Entity
 {
@@ -86,16 +94,26 @@ namespace NexusForever.Game.Entity
 
         private void InitialiseRuntimeDependencies(IGridEntity entity)
         {
+            if (entity is GridEntity gridEntity)
+                gridEntity.InitialiseScriptManager(() => serviceProvider.GetService<IScriptManager>());
+
             if (entity is not WorldEntity worldEntity)
                 return;
 
             worldEntity.InitialiseRuntimeDependencies(
                 () => serviceProvider.GetService<IEntitySummonFactory>(),
-                () => serviceProvider.GetService<ICreatureInfoManager>());
+                () => serviceProvider.GetService<ICreatureInfoManager>(),
+                () => serviceProvider.GetService<IFactionManager>(),
+                () => serviceProvider.GetService<IGameTableManager>());
 
             if (entity is UnitEntity unitEntity)
                 unitEntity.InitialiseRuntimeDependencies(
-                    () => serviceProvider.GetService<GlobalLootManager>());
+                    () => serviceProvider.GetService<IGlobalLootManager>(),
+                    () => serviceProvider.GetService<ITradeManager>(),
+                    () => serviceProvider.GetService<IDisableManager>(),
+                    () => serviceProvider.GetService<IAssetManager>(),
+                    () => serviceProvider.GetService<IPrerequisiteManager>(),
+                    () => serviceProvider.GetService<IGlobalSpellManager>());
         }
     }
 }

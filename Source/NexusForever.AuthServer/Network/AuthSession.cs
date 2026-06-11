@@ -11,8 +11,9 @@ namespace NexusForever.AuthServer.Network
         #region Dependency Injection
 
         public AuthSession(
-            IMessageManager messageManager)
-            : base(messageManager)
+            IMessageManager messageManager,
+            System.IServiceProvider serviceProvider)
+            : base(messageManager, serviceProvider)
         {
         }
 

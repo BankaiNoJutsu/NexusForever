@@ -6,6 +6,7 @@ using NexusForever.Database;
 using NexusForever.Database.World;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Map;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
@@ -16,20 +17,33 @@ using NLog;
 
 namespace NexusForever.Game.Entity
 {
-    public sealed class EntityManager : Singleton<EntityManager>, IEntityManager
+    public sealed class EntityManager : IEntityManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+        private static readonly Lazy<ImmutableDictionary<Stat, StatAttribute>> statAttributeStore = new(BuildStatAttributes);
 
-        private ImmutableDictionary<Stat, StatAttribute> statAttributes;
+        private readonly IDatabaseManager databaseManager;
+        private readonly IGameTableManager gameTableManager;
+        private readonly IMapIOManager mapIOManager;
+
+        public EntityManager(
+            IDatabaseManager databaseManager = null,
+            IGameTableManager gameTableManager = null,
+            IMapIOManager mapIOManager = null)
+        {
+            this.databaseManager  = databaseManager;
+            this.gameTableManager = gameTableManager;
+            this.mapIOManager     = mapIOManager;
+        }
 
         public void Initialise()
         {
-            InitialiseEntityStats();
+            _ = statAttributeStore.Value;
 
             CalculateEntityAreaData();
         }
 
-        private void InitialiseEntityStats()
+        private static ImmutableDictionary<Stat, StatAttribute> BuildStatAttributes()
         {
             var builder = ImmutableDictionary.CreateBuilder<Stat, StatAttribute>();
 
@@ -43,7 +57,7 @@ namespace NexusForever.Game.Entity
                 builder.Add(stat, attribute);
             }
 
-            statAttributes = builder.ToImmutable();
+            return builder.ToImmutable();
         }
 
         [Conditional("DEBUG")]
@@ -54,14 +68,21 @@ namespace NexusForever.Game.Entity
             var mapFiles = new Dictionary<ushort, MapFile>();
             var entities = new HashSet<EntityModel>();
 
-            foreach (EntityModel model in DatabaseManager.Instance.GetDatabase<WorldDatabase>().GetEntitiesWithoutArea())
+            if (databaseManager == null)
+                throw new InvalidOperationException("EntityManager requires an IDatabaseManager to calculate entity area data.");
+            if (gameTableManager == null)
+                throw new InvalidOperationException("EntityManager requires an IGameTableManager to calculate entity area data.");
+            if (mapIOManager == null)
+                throw new InvalidOperationException("EntityManager requires an IMapIOManager to calculate entity area data.");
+
+            foreach (EntityModel model in databaseManager.GetDatabase<WorldDatabase>().GetEntitiesWithoutArea())
             {
                 entities.Add(model);
 
                 if (!mapFiles.TryGetValue(model.World, out MapFile mapFile))
                 {
-                    WorldEntry entry = GameTableManager.Instance.World.GetEntry(model.World);
-                    mapFile = MapIOManager.Instance.GetBaseMap(entry.AssetPath);
+                    WorldEntry entry = gameTableManager.World.GetEntry(model.World);
+                    mapFile = mapIOManager.GetBaseMap(entry.AssetPath);
                     mapFiles.Add(model.World, mapFile);
                 }
 
@@ -74,7 +95,7 @@ namespace NexusForever.Game.Entity
                 log.Info($"Calculated area {worldAreaId} for entity {model.Id}.");
             }
 
-            DatabaseManager.Instance.GetDatabase<WorldDatabase>().UpdateEntities(entities);
+            databaseManager.GetDatabase<WorldDatabase>().UpdateEntities(entities);
 
             log.Info($"Calculated area information for {entities.Count} {(entities.Count == 1 ? "entity" : "entities")}.");
         }
@@ -84,7 +105,15 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public StatAttribute GetStatAttribute(Stat stat)
         {
-            return statAttributes.TryGetValue(stat, out StatAttribute value) ? value : null;
+            return GetStatAttributeFor(stat);
+        }
+
+        /// <summary>
+        /// Return <see cref="StatAttribute"/> for supplied <see cref="Stat"/>.
+        /// </summary>
+        public static StatAttribute GetStatAttributeFor(Stat stat)
+        {
+            return statAttributeStore.Value.TryGetValue(stat, out StatAttribute value) ? value : null;
         }
     }
 }

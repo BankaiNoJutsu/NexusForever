@@ -1,20 +1,34 @@
 ﻿using System.Text;
 using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Chat;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Game.Chat;
-using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Chat;
 using NexusForever.Shared;
 using NexusForever.Shared.Game;
 
 namespace NexusForever.Game
 {
-    public sealed class ShutdownManager : Singleton<ShutdownManager>, IShutdownManager
+    public sealed class ShutdownManager : IShutdownManager
     {
         private UpdateTimer shutdownTick;
         private TimeSpan? shutdownSpan;
 
         private Action shutdown;
+
+        #region Dependency Injection
+
+        private readonly IPlayerManager playerManager;
+        private readonly IGlobalChatManager globalChatManager;
+
+        public ShutdownManager(
+            IPlayerManager playerManager,
+            IGlobalChatManager globalChatManager)
+        {
+            this.playerManager     = playerManager;
+            this.globalChatManager = globalChatManager;
+        }
+
+        #endregion
 
         /// <summary>
         /// Returns if realm is currently pending a shutdown.
@@ -92,7 +106,7 @@ namespace NexusForever.Game
                 return;
 
             string message = FormatShutdownTime(shutdownSpan.Value + TimeSpan.FromSeconds(shutdownTick.Time));
-            GlobalChatManager.Instance.SendMessage(player.Session, message, type: ChatChannelType.Realm);
+            globalChatManager.SendMessage(player.Session, message, type: ChatChannelType.Realm);
         }
 
         /// <summary>
@@ -146,8 +160,8 @@ namespace NexusForever.Game
 
         private void BroadcastMessage(string message)
         {
-            foreach (IPlayer player in PlayerManager.Instance)
-                GlobalChatManager.Instance.SendMessage(player.Session, message, type: ChatChannelType.Realm);
+            foreach (IPlayer player in playerManager)
+                globalChatManager.SendMessage(player.Session, message, type: ChatChannelType.Realm);
         }
     }
 }

@@ -83,7 +83,11 @@ namespace NexusForever.Game.Map
         /// </summary>
         public IEnumerable<T> Search<T>(ISearchCheck<T> check) where T : IGridEntity
         {
-            return entities.OfType<T>().Where(check.CheckEntity);
+            foreach (IGridEntity entity in entities)
+            {
+                if (entity is T result && check.CheckEntity(result))
+                    yield return result;
+            }
         }
     }
 }

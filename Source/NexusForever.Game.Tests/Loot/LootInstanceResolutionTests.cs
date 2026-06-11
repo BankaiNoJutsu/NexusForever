@@ -1,8 +1,6 @@
 using System.Collections.Immutable;
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using NexusForever.Game;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
@@ -14,19 +12,15 @@ using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Tests.TestSupport;
-using NexusForever.GameTable;
-using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Loot;
 using NexusForever.Network.World.Message.Static;
-using NexusForever.Shared;
 using ItemLocation = NexusForever.Network.World.Message.Model.Shared.ItemLocation;
 
 namespace NexusForever.Game.Tests.Loot;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class LootInstanceResolutionTests
 {
     private const uint StaticItemId = 91002u;
@@ -35,10 +29,11 @@ public class LootInstanceResolutionTests
     [Fact]
     public void AddLootItem_DuplicateAmountOverflow_DoesNotWrapExistingAmount()
     {
-        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateItemInfo()));
+        IItemManager itemManager = CreateItemManager(CreateItemInfo());
 
+        PlayerManager playerManager = CreatePlayerManager();
         TestPlayer looter = CreatePlayer(characterId: 42ul, guid: 4242u, accountId: 1001u, slotsRemaining: 1u);
-        LootInstance lootInstance = CreateLootInstance(looter);
+        LootInstance lootInstance = CreateLootInstance(playerManager, itemManager, looter);
 
         LootInstanceItem lootItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 10u);
         LootInstanceItem mergedItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 5u);
@@ -56,46 +51,40 @@ public class LootInstanceResolutionTests
     [Fact]
     public void GiveLoot_DirectDeliveryWithRegisteredLooterDoesNotSendLootItemUpdate()
     {
-        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateItemInfo()));
+        IItemManager itemManager = CreateItemManager(CreateItemInfo());
 
-        try
-        {
-            TestPlayer looter = CreatePlayer(characterId: 42ul, guid: 4242u, accountId: 1001u, slotsRemaining: 1u);
-            PlayerManager.Instance.AddPlayer(looter.Player);
+        PlayerManager playerManager = CreatePlayerManager();
+        TestPlayer looter = CreatePlayer(characterId: 42ul, guid: 4242u, accountId: 1001u, slotsRemaining: 1u);
+        playerManager.AddPlayer(looter.Player);
 
-            LootInstance lootInstance = CreateLootInstance(looter);
-            LootInstanceItem lootItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 1u);
+        LootInstance lootInstance = CreateLootInstance(playerManager, itemManager, looter);
+        LootInstanceItem lootItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 1u);
 
-            IReadOnlyList<object> deliveryMessages = CaptureSessionMessages(
-                looter.SessionProxy,
-                () => Assert.True(lootInstance.GiveLoot(looter.Player, lootItem.Id)));
+        IReadOnlyList<object> deliveryMessages = CaptureSessionMessages(
+            looter.SessionProxy,
+            () => Assert.True(lootInstance.GiveLoot(looter.Player, lootItem.Id)));
 
-            Assert.Contains(deliveryMessages, message => message is ServerLootGrant grant
-                && grant.LootItem.LootUnitId == lootItem.Id
-                && grant.LootItem.ItemId == StaticItemId);
-            Assert.DoesNotContain(deliveryMessages, message => message is ServerLootItemUpdate);
-            Assert.True(lootItem.Delivered);
-            Assert.Single(looter.Inventory.CreatedItems);
-        }
-        finally
-        {
-            foreach (IPlayer player in PlayerManager.Instance.Where(player => player.CharacterId == 42ul).ToList())
-                PlayerManager.Instance.RemovePlayer(player);
-        }
+        Assert.Contains(deliveryMessages, message => message is ServerLootGrant grant
+            && grant.LootItem.LootUnitId == lootItem.Id
+            && grant.LootItem.ItemId == StaticItemId);
+        Assert.DoesNotContain(deliveryMessages, message => message is ServerLootItemUpdate);
+        Assert.True(lootItem.Delivered);
+        Assert.Single(looter.Inventory.CreatedItems);
     }
 
     [Fact]
     public void RollWinnerOffline_RemainsLootableForWinnerWhenTheyReturn()
     {
-        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateItemInfo()));
+        IItemManager itemManager = CreateItemManager(CreateItemInfo());
 
         TestPlayer winner = CreatePlayer(characterId: 42ul, guid: 4242u, accountId: 1001u, slotsRemaining: 1u);
         TestPlayer loser = CreatePlayer(characterId: 43ul, guid: 4343u, accountId: 1002u, slotsRemaining: 1u);
 
-        PlayerManager.Instance.AddPlayer(winner.Player);
-        PlayerManager.Instance.AddPlayer(loser.Player);
+        PlayerManager playerManager = CreatePlayerManager();
+        playerManager.AddPlayer(winner.Player);
+        playerManager.AddPlayer(loser.Player);
 
-        LootInstance lootInstance = CreateLootInstance(winner, loser);
+        LootInstance lootInstance = CreateLootInstance(playerManager, itemManager, winner, loser);
         LootInstanceItem lootItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 1u);
         lootItem.ConfigureRoll([winner.Identity, loser.Identity]);
 
@@ -107,7 +96,7 @@ public class LootInstanceResolutionTests
             && update.LootItem.LootUnitId == lootItem.Id
             && update.LootItem.RequiresRoll);
 
-        PlayerManager.Instance.RemovePlayer(winner.Player);
+        playerManager.RemovePlayer(winner.Player);
         IReadOnlyList<object> loserFinalRollMessages = CaptureSessionMessages(
             loser.SessionProxy,
             () => Assert.True(lootInstance.RollLoot(loser.Player, lootItem.Id, LootRollAction.Pass)));
@@ -121,7 +110,7 @@ public class LootInstanceResolutionTests
         Assert.True(lootItem.CanLoot(winner.CharacterId));
         Assert.False(lootItem.CanLoot(loser.CharacterId));
 
-        PlayerManager.Instance.AddPlayer(winner.Player);
+        playerManager.AddPlayer(winner.Player);
 
         RecordingDispatchProxy<IGameSession>.Invocation notifyCall = CaptureSingleSessionCall(
             winner.SessionProxy,
@@ -155,15 +144,16 @@ public class LootInstanceResolutionTests
     [Fact]
     public void RollAllPasses_MarksDeliveredWithoutGrantingItem()
     {
-        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateItemInfo()));
+        IItemManager itemManager = CreateItemManager(CreateItemInfo());
 
         TestPlayer first = CreatePlayer(characterId: 44ul, guid: 4444u, accountId: 1101u, slotsRemaining: 1u);
         TestPlayer second = CreatePlayer(characterId: 45ul, guid: 4545u, accountId: 1102u, slotsRemaining: 1u);
 
-        PlayerManager.Instance.AddPlayer(first.Player);
-        PlayerManager.Instance.AddPlayer(second.Player);
+        PlayerManager playerManager = CreatePlayerManager();
+        playerManager.AddPlayer(first.Player);
+        playerManager.AddPlayer(second.Player);
 
-        LootInstance lootInstance = CreateLootInstance(first, second);
+        LootInstance lootInstance = CreateLootInstance(playerManager, itemManager, first, second);
         LootInstanceItem lootItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 1u);
         lootItem.ConfigureRoll([first.Identity, second.Identity]);
 
@@ -195,15 +185,16 @@ public class LootInstanceResolutionTests
     [Fact]
     public void AssignMasterLoot_DeferredDeliveryLeavesResolvedLootForAssignee()
     {
-        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateItemInfo()));
+        IItemManager itemManager = CreateItemManager(CreateItemInfo());
 
         TestPlayer master = CreatePlayer(characterId: 52ul, guid: 5252u, accountId: 2001u, slotsRemaining: 1u);
         TestPlayer assignee = CreatePlayer(characterId: 53ul, guid: 5353u, accountId: 2002u, slotsRemaining: 0u);
 
-        PlayerManager.Instance.AddPlayer(master.Player);
-        PlayerManager.Instance.AddPlayer(assignee.Player);
+        PlayerManager playerManager = CreatePlayerManager();
+        playerManager.AddPlayer(master.Player);
+        playerManager.AddPlayer(assignee.Player);
 
-        LootInstance lootInstance = CreateLootInstance(master, assignee);
+        LootInstance lootInstance = CreateLootInstance(playerManager, itemManager, master, assignee);
         LootInstanceItem lootItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 1u);
         lootItem.ConfigureMaster(
             [master.Identity],
@@ -250,14 +241,15 @@ public class LootInstanceResolutionTests
     [Fact]
     public void AssignMasterLoot_OfflineAssigneeRejectsWithoutResolvingWinner()
     {
-        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateItemInfo()));
+        IItemManager itemManager = CreateItemManager(CreateItemInfo());
 
         TestPlayer master = CreatePlayer(characterId: 62ul, guid: 6262u, accountId: 3001u, slotsRemaining: 1u);
         TestPlayer assignee = CreatePlayer(characterId: 63ul, guid: 6363u, accountId: 3002u, slotsRemaining: 1u);
 
-        PlayerManager.Instance.AddPlayer(master.Player);
+        PlayerManager playerManager = CreatePlayerManager();
+        playerManager.AddPlayer(master.Player);
 
-        LootInstance lootInstance = CreateLootInstance(master, assignee);
+        LootInstance lootInstance = CreateLootInstance(playerManager, itemManager, master, assignee);
         LootInstanceItem lootItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 1u);
         lootItem.ConfigureMaster(
             [master.Identity],
@@ -276,13 +268,21 @@ public class LootInstanceResolutionTests
         Assert.False(lootItem.CanLoot(master.CharacterId));
     }
 
-    private static LootInstance CreateLootInstance(params TestPlayer[] players)
+    private static LootInstance CreateLootInstance(IPlayerManager playerManager, IItemManager itemManager, params TestPlayer[] players)
     {
         return new LootInstance(
             ownerUnitId: 99u,
             looterIds: players.ToDictionary(player => player.CharacterId, player => player.Guid),
             looterType: LooterType.Group,
-            lootEntityType: LootEntityType.Creature);
+            lootEntityType: LootEntityType.Creature,
+            playerManager: playerManager,
+            itemManager: itemManager);
+    }
+
+    private static PlayerManager CreatePlayerManager()
+    {
+        ICharacterManager characterManager = RecordingDispatchProxy<ICharacterManager>.Create(out _);
+        return new PlayerManager(NullLogger<PlayerManager>.Instance, characterManager);
     }
 
     private static RecordingDispatchProxy<IGameSession>.Invocation CaptureSingleSessionCall(
@@ -322,35 +322,13 @@ public class LootInstanceResolutionTests
             .ToList();
     }
 
-    private static IServiceProvider BuildProvider(IItemInfo itemInfo)
+    private static IItemManager CreateItemManager(IItemInfo itemInfo)
     {
-        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
-        ICharacterManager characterManager = RecordingDispatchProxy<ICharacterManager>.Create(out _);
-
-        var lootManager = new GlobalLootManager(groupStateManager);
-        var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, characterManager);
         var itemManager = new ItemManager();
-        var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
-        {
-            GameTablePath = string.Empty
-        }));
-        var realmContext = (RealmContext)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
 
         SetPrivateField(itemManager, "item", ImmutableDictionary<uint, IItemInfo>.Empty.Add(StaticItemId, itemInfo));
-        SetAutoProperty(gameTableManager, nameof(GameTableManager.Item), CreateGameTable(new Item2Entry
-        {
-            Id = StaticItemId
-        }));
-        SetAutoProperty(realmContext, nameof(RealmContext.RealmId), RealmId);
 
-        return new ServiceCollection()
-            .AddSingleton(lootManager)
-            .AddSingleton(playerManager)
-            .AddSingleton<IPlayerManager>(playerManager)
-            .AddSingleton(itemManager)
-            .AddSingleton(gameTableManager)
-            .AddSingleton(realmContext)
-            .BuildServiceProvider();
+        return itemManager;
     }
 
     private static IItemInfo CreateItemInfo()
@@ -389,42 +367,6 @@ public class LootInstanceResolutionTests
         accountProxy.SetProperty(nameof(IAccount.Id), accountId);
 
         return new TestPlayer(player, sessionProxy, inventory, identity, guid);
-    }
-
-    private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()
-    {
-        var table = (GameTable<T>)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(GameTable<T>));
-        SetAutoProperty(table, nameof(GameTable<T>.Entries), entries);
-        SetPrivateField(table, "header", new GameTableHeader
-        {
-            MaxId = entries.Length == 0 ? 0u : entries.Max(GetEntryId) + 1u
-        });
-        SetPrivateField(table, "lookup", BuildLookup(entries));
-        return table;
-    }
-
-    private static int[] BuildLookup<T>(IReadOnlyList<T> entries)
-    {
-        if (entries.Count == 0)
-            return [];
-
-        int[] lookup = Enumerable.Repeat(-1, (int)(entries.Max(GetEntryId) + 1u)).ToArray();
-        for (int i = 0; i < entries.Count; i++)
-            lookup[GetEntryId(entries[i])] = i;
-
-        return lookup;
-    }
-
-    private static uint GetEntryId<T>(T entry)
-    {
-        return (uint)typeof(T).GetFields(BindingFlags.Instance | BindingFlags.Public)[0].GetValue(entry)!;
-    }
-
-    private static void SetAutoProperty(object instance, string propertyName, object value)
-    {
-        FieldInfo backingField = instance.GetType()
-            .GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        backingField.SetValue(instance, value);
     }
 
     private static void SetPrivateField(object instance, string fieldName, object value)

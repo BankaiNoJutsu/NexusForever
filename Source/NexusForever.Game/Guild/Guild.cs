@@ -3,9 +3,14 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Achievement;
+using NexusForever.Game.Abstract.Character;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Guild;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Achievement;
 using NexusForever.Game.Static.Guild;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Text.Filter;
 using NexusForever.Network.Internal;
 using NexusForever.Network.World.Message.Model.Guild;
 
@@ -53,14 +58,30 @@ namespace NexusForever.Game.Guild
         private string additionalInfo;
 
         private GuildSaveMask saveMask;
+        private readonly IDisableManager disableManager;
+        private readonly IGlobalAchievementManager globalAchievementManager;
+        private readonly IPrerequisiteManager prerequisiteManager;
+        private readonly IGameTableManager gameTableManager;
 
         #region Dependency Injection
 
         public Guild(
             IRealmContext realmContext,
-            IInternalMessagePublisher messagePublisher)
-            : base(realmContext, messagePublisher)
+            IInternalMessagePublisher messagePublisher,
+            ITextFilterManager textFilterManager,
+            ICharacterManager characterManager = null,
+            IDisableManager disableManager = null,
+            IGlobalAchievementManager globalAchievementManager = null,
+            IPrerequisiteManager prerequisiteManager = null,
+            IGameTableManager gameTableManager = null,
+            IGlobalGuildManager globalGuildManager = null,
+            IPlayerManager playerManager = null)
+            : base(realmContext, messagePublisher, textFilterManager, characterManager, globalGuildManager, playerManager)
         {
+            this.disableManager = disableManager;
+            this.globalAchievementManager = globalAchievementManager;
+            this.prerequisiteManager = prerequisiteManager;
+            this.gameTableManager = gameTableManager;
         }
 
         #endregion
@@ -70,8 +91,8 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public override void Initialise(GuildModel model)
         {
-            Standard           = new GuildStandard(model.GuildData);
-            AchievementManager = new GuildAchievementManager(this, model);
+            Standard           = new GuildStandard(model.GuildData, gameTableManager);
+            AchievementManager = new GuildAchievementManager(this, model, disableManager, globalAchievementManager, prerequisiteManager, playerManager);
             messageOfTheDay    = model.GuildData.MessageOfTheDay;
             additionalInfo     = model.GuildData.AdditionalInfo;
 
@@ -84,7 +105,7 @@ namespace NexusForever.Game.Guild
         public void Initialise(string name, string leaderRankName, string councilRankName, string memberRankName, IGuildStandard standard)
         {
             Standard           = standard;
-            AchievementManager = new GuildAchievementManager(this);
+            AchievementManager = new GuildAchievementManager(this, disableManager, globalAchievementManager, prerequisiteManager, playerManager);
             messageOfTheDay    = "";
             additionalInfo     = "";
 
@@ -148,7 +169,7 @@ namespace NexusForever.Game.Guild
                 {
                     MessageOfTheDay         = MessageOfTheDay,
                     GuildInfo               = AdditionalInfo,
-                    GuildCreationDateInDays = (float)DateTime.Now.Subtract(CreateTime).TotalDays * -1f
+                    GuildCreationDateInDays = GetGuildCreationDateInDays()
                 }
             };
         }

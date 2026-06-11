@@ -1,6 +1,7 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Account.Reward;
 using NexusForever.Game.Static.RBAC;
+using NexusForever.GameTable;
 using NexusForever.WorldServer.Command.Context;
 using NexusForever.WorldServer.Command.Static;
 using NexusForever.WorldServer.Network;
@@ -10,6 +11,13 @@ namespace NexusForever.WorldServer.Command.Handler
     [Command(Permission.Account, "A collection of commands to inspect and capture reward rotation packet evidence.", "reward", "rew")]
     public class RewardCommandCategory : CommandCategory
     {
+        private readonly IGameTableManager gameTableManager;
+
+        public RewardCommandCategory(IGameTableManager gameTableManager = null)
+        {
+            this.gameTableManager = gameTableManager;
+        }
+
         [Command(Permission.Account, "Arm runtime evidence export for the next reward rotation refresh request from the invoker.", "capturenext", "capture", "evidencenext")]
         public void HandleRewardCaptureNext(ICommandContext context)
         {
@@ -33,7 +41,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 rewardRotationIndex,
                 "manual-command-context",
                 "Manual reward rotation report exported with game-table-derived content-context ids; schedule and entry-state rows remain empty.",
-                new GameTableRewardRotationRefreshProvider());
+                new GameTableRewardRotationRefreshProvider(gameTableManager));
             if (string.IsNullOrWhiteSpace(outputPath))
             {
                 context.SendError("Failed to export reward rotation report. Check server logs for details.");

@@ -5,7 +5,6 @@ using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Map;
-using NexusForever.Game.Map.Lock;
 using NexusForever.Game.Static.Guild;
 using NexusForever.Game.Static.Housing;
 using NexusForever.Network;
@@ -20,13 +19,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
 
         private readonly IGlobalResidenceManager globalResidenceManager;
         private readonly IRealmContext realmContext;
+        private readonly IMapLockManager mapLockManager;
 
         public ClientHousingCommunityPlacementHandler(
             IGlobalResidenceManager globalResidenceManager,
-            IRealmContext realmContext)
+            IRealmContext realmContext,
+            IMapLockManager mapLockManager)
         {
             this.globalResidenceManager = globalResidenceManager;
             this.realmContext           = realmContext;
+            this.mapLockManager         = mapLockManager;
         }
 
         #endregion
@@ -64,14 +66,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
                 else
                     residence.Parent.RemoveChild(residence);
 
-                IMapLock mapLock = MapLockManager.Instance.GetResidenceLock(community.Residence);
+                IMapLock mapLock = mapLockManager.GetResidenceLock(community.Residence);
 
                 session.Player.Rotation = entrance.Rotation.ToEuler();
                 session.Player.TeleportTo(entrance.Entry, entrance.Position, mapLock);
             }
             else
             {
-                IMapLock mapLock = MapLockManager.Instance.GetResidenceLock(community.Residence);
+                IMapLock mapLock = mapLockManager.GetResidenceLock(community.Residence);
 
                 // move owner to new instance only if not on the same instance as the residence
                 // otherwise they will be moved to the new instance during the unload

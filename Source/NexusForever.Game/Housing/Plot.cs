@@ -79,16 +79,21 @@ namespace NexusForever.Game.Housing
         private PlotSaveMask saveMask;
 
         public IPlugEntity PlugEntity { get; set; }
+        private readonly IGameTableManager gameTableManager;
 
         /// <summary>
         /// Create a new <see cref="IPlot"/> from an existing database model.
         /// </summary>
-        public Plot(ResidencePlotModel model)
+        public Plot(
+            ResidencePlotModel model,
+            IGameTableManager gameTableManager)
         {
+            this.gameTableManager = gameTableManager;
+
             Id            = model.Id;
             Index         = model.Index;
-            plotInfoEntry = GameTableManager.Instance.HousingPlotInfo.GetEntry(model.PlotInfoId);
-            plugItemEntry = GameTableManager.Instance.HousingPlugItem.GetEntry(model.PlugItemId);
+            plotInfoEntry = gameTableManager?.HousingPlotInfo?.GetEntry(model.PlotInfoId);
+            plugItemEntry = gameTableManager?.HousingPlugItem?.GetEntry(model.PlugItemId);
             plugFacing    = (HousingPlugFacing)model.PlugFacing;
             buildState    = model.BuildState;
 
@@ -98,8 +103,13 @@ namespace NexusForever.Game.Housing
         /// <summary>
         /// Create a new <see cref="IPlot"/> from a <see cref="HousingPlotInfoEntry"/>.
         /// </summary>
-        public Plot(ulong id, HousingPlotInfoEntry entry)
+        public Plot(
+            ulong id,
+            HousingPlotInfoEntry entry,
+            IGameTableManager gameTableManager)
         {
+            this.gameTableManager = gameTableManager;
+
             Id            = id;
             Index         = (byte)entry.HousingPropertyPlotIndex;
             plotInfoEntry = entry;
@@ -174,7 +184,7 @@ namespace NexusForever.Game.Housing
 
         public void SetPlug(ushort plugItemId)
         {
-            HousingPlugItemEntry entry = GameTableManager.Instance.HousingPlugItem.GetEntry(plugItemId);
+            HousingPlugItemEntry entry = gameTableManager?.HousingPlugItem?.GetEntry(plugItemId);
             if (entry == null)
                 throw new ArgumentOutOfRangeException(nameof(plugItemId));
 

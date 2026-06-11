@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Text;
 using NexusForever.Game;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Chat;
 using NexusForever.Game.Static.Entity;
@@ -19,6 +20,20 @@ namespace NexusForever.WorldServer.Command.Handler
     [CommandTarget(typeof(IPlayer))]
     public class ItemCommandCategory : CommandCategory
     {
+        private readonly ISearchManager searchManager;
+        private readonly IItemManager itemManager;
+        private readonly IGameTableManager gameTableManager;
+
+        public ItemCommandCategory(
+            ISearchManager searchManager,
+            IItemManager itemManager,
+            IGameTableManager gameTableManager)
+        {
+            this.searchManager    = searchManager;
+            this.itemManager      = itemManager;
+            this.gameTableManager = gameTableManager;
+        }
+
         [Command(Permission.ItemAdd, "Add an item to inventory, optionally specifying quantity and charges.", "add")]
         public void HandleItemAdd(ICommandContext context,
             [Parameter("Item id to create.")]
@@ -40,7 +55,7 @@ namespace NexusForever.WorldServer.Command.Handler
             [Parameter("Maximum amount of results to return.")]
             int? maxResults)
         {
-            List<Item2Entry> searchResults = SearchManager.Instance
+            List<Item2Entry> searchResults = searchManager
                 .Search<Item2Entry>(name, context.Language, e => e.LocalizedTextIdName, true)
                 .Take(maxResults ?? 25)
                 .ToList();
@@ -56,7 +71,7 @@ namespace NexusForever.WorldServer.Command.Handler
             var target = context.GetTargetOrInvoker<IPlayer>();
             foreach (Item2Entry itemEntry in searchResults)
             {
-                var builder = new ChatMessageBuilder
+                var builder = new ChatMessageBuilder(gameTableManager)
                 {
                     Type = ChatChannelType.System,
                     Text = $"({itemEntry.Id}) "
@@ -71,7 +86,7 @@ namespace NexusForever.WorldServer.Command.Handler
             [Parameter("Id of item to get information on")]
             uint itemId)
         {
-            IItemInfo info = ItemManager.Instance.GetItemInfo(itemId);
+            IItemInfo info = itemManager.GetItemInfo(itemId);
             if (info == null)
             {
                 context.SendError("Invalid item id!");
@@ -94,7 +109,7 @@ namespace NexusForever.WorldServer.Command.Handler
             sb.AppendLine("Properties:");
             foreach ((Property property, float value) in info.Properties)
             {
-                UnitProperty2Entry entry = GameTableManager.Instance.UnitProperty2.GetEntry((uint)property);
+                UnitProperty2Entry entry = gameTableManager.UnitProperty2.GetEntry((uint)property);
                 sb.AppendLine($"Property: {entry.Description}, Value: {value}");
             }
 

@@ -2,10 +2,8 @@ using System.Numerics;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Search;
-using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Static.Map;
 using NexusForever.IO.Map;
-using NexusForever.Shared.Configuration;
 using NexusForever.Shared.Game;
 using NLog;
 
@@ -53,7 +51,7 @@ namespace NexusForever.Game.Map
         /// <summary>
         /// Initialise new <see cref="IMapGrid"/> at the supplied position.
         /// </summary>
-        public MapGrid(uint gridX, uint gridZ, bool allowUnload)
+        public MapGrid(uint gridX, uint gridZ, bool allowUnload, double gridUnloadTimer = 600d)
         {
             Coord = (gridX, gridZ);
 
@@ -62,7 +60,7 @@ namespace NexusForever.Game.Map
                     cells[z * MapDefines.GridCellCount + x] = new MapCell(x, z);
 
             if (allowUnload)
-                unloadTimer = new UpdateTimer(SharedConfiguration.Instance.Get<MapConfig>().GridUnloadTimer ?? 600d);
+                unloadTimer = new UpdateTimer(gridUnloadTimer);
         }
 
         public void Update(double lastTick)

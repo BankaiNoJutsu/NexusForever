@@ -4,7 +4,6 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Housing;
-using NexusForever.Game.Map.Lock;
 using NexusForever.Game.Static.RBAC;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -18,9 +17,31 @@ namespace NexusForever.WorldServer.Command.Handler
     [CommandTarget(typeof(IPlayer))]
     public class HouseCommandCategory : CommandCategory
     {
+        private readonly IGlobalResidenceManager globalResidenceManager;
+        private readonly IMapLockManager mapLockManager;
+
+        public HouseCommandCategory(
+            IGlobalResidenceManager globalResidenceManager,
+            IMapLockManager mapLockManager)
+        {
+            this.globalResidenceManager = globalResidenceManager;
+            this.mapLockManager         = mapLockManager;
+        }
+
         [Command(Permission.HouseDecor, "A collection of commands to modify decor in housing residences.", "decor")]
         public class HouseDecorCommandCategory : CommandCategory
         {
+            private readonly ISearchManager searchManager;
+            private readonly IGameTableManager gameTableManager;
+
+            public HouseDecorCommandCategory(
+                ISearchManager searchManager,
+                IGameTableManager gameTableManager)
+            {
+                this.searchManager    = searchManager;
+                this.gameTableManager = gameTableManager;
+            }
+
             [Command(Permission.HouseDecorAdd, "Add decor to housing residence crate optionally specifying quantity.", "add")]
             public void HandleHouseDecorAdd(ICommandContext context,
                 [Parameter("Decor info id entry to add to the crate.")]
@@ -30,7 +51,7 @@ namespace NexusForever.WorldServer.Command.Handler
             {
                 quantity ??= 1u;
 
-                HousingDecorInfoEntry entry = GameTableManager.Instance.HousingDecorInfo.GetEntry(decorInfoId);
+                HousingDecorInfoEntry entry = gameTableManager.HousingDecorInfo.GetEntry(decorInfoId);
                 if (entry == null)
                 {
                     context.SendMessage($"Invalid decor info id {decorInfoId}!");
@@ -48,9 +69,9 @@ namespace NexusForever.WorldServer.Command.Handler
                 var sw = new StringBuilder();
                 sw.AppendLine("Decor Lookup Results:");
 
-                TextTable tt = GameTableManager.Instance.GetTextTable(context.Language);
+                TextTable tt = gameTableManager.GetTextTable(context.Language);
                 foreach (HousingDecorInfoEntry decorEntry in
-                    SearchManager.Instance.Search<HousingDecorInfoEntry>(name, context.Language, e => e.LocalizedTextIdName, true))
+                    searchManager.Search<HousingDecorInfoEntry>(name, context.Language, e => e.LocalizedTextIdName, true))
                 {
                     string text = tt.GetEntry(decorEntry.LocalizedTextIdName);
                     sw.AppendLine($"({decorEntry.Id}) {text}");
@@ -72,11 +93,11 @@ namespace NexusForever.WorldServer.Command.Handler
                 return;
             }
 
-            IResidence residence = GlobalResidenceManager.Instance.GetResidenceByOwner(name ?? target.Name);
+            IResidence residence = globalResidenceManager.GetResidenceByOwner(name ?? target.Name);
             if (residence == null)
             {
                 if (name == null)
-                    residence = GlobalResidenceManager.Instance.CreateResidence(target);
+                    residence = globalResidenceManager.CreateResidence(target);
                 else
                 {
                     context.SendMessage("A residence for that character doesn't exist!");
@@ -84,9 +105,9 @@ namespace NexusForever.WorldServer.Command.Handler
                 }
             }
 
-            IMapLock mapLock = MapLockManager.Instance.GetResidenceLock(residence.Parent ?? residence);
+            IMapLock mapLock = mapLockManager.GetResidenceLock(residence.Parent ?? residence);
 
-            IResidenceEntrance entrance = GlobalResidenceManager.Instance.GetResidenceEntrance(residence.PropertyInfoId);
+            IResidenceEntrance entrance = globalResidenceManager.GetResidenceEntrance(residence.PropertyInfoId);
             target.Rotation = entrance.Rotation.ToEuler();
             target.TeleportTo(entrance.Entry, entrance.Position, mapLock);
         }

@@ -2,7 +2,6 @@
 using System.IO;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.RBAC;
-using NexusForever.Game.RBAC;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.RBAC;
 using NLog;
@@ -23,7 +22,13 @@ namespace NexusForever.WorldServer.Command.Context
         /// Create a new <see cref="ConsoleCommandContext"/> with the <see cref="Permission"/>'s from the Console <see cref="Role"/>.
         /// </summary>
         public ConsoleCommandContext()
-            : this(null, null)
+            : this(null, null, null)
+        {
+        }
+
+        public ConsoleCommandContext(
+            IRBACManager rbacManager)
+            : this(rbacManager, null, null)
         {
         }
 
@@ -31,16 +36,26 @@ namespace NexusForever.WorldServer.Command.Context
         /// Create a new <see cref="ConsoleCommandContext"/> with optional invoker and target entities.
         /// </summary>
         public ConsoleCommandContext(IWorldEntity invoker, IWorldEntity target = null)
+            : this(null, invoker, target)
+        {
+        }
+
+        public ConsoleCommandContext(IRBACManager rbacManager, IWorldEntity invoker, IWorldEntity target = null)
         {
             Invoker = invoker;
             Target  = target;
 
             // console role needs to exist in order for the console command context to work
-            IRBACRole role = RBACManager.Instance.GetRole(Role.Console);
+            IRBACRole role = GetRbacManager(rbacManager).GetRole(Role.Console);
             if (role == null)
                 throw new InvalidDataException("Console role doesn't exist!");
 
             Permissions = role.Permissions.Keys.ToImmutableHashSet();
+        }
+
+        private static IRBACManager GetRbacManager(IRBACManager rbacManager)
+        {
+            return rbacManager ?? throw new System.InvalidOperationException("Console command context requires an IRBACManager.");
         }
 
         /// <summary>

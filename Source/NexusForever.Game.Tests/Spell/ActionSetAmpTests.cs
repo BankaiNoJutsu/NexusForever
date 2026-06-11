@@ -1,7 +1,6 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
@@ -13,7 +12,6 @@ using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 
 namespace NexusForever.Game.Tests.Spell;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class ActionSetAmpTests
 {
     [Fact]
@@ -46,9 +44,8 @@ public class ActionSetAmpTests
     [InlineData(true)]
     public void AddAmp_WithMissingEldanAugmentationStaticDataThrowsInvalidAmp(bool includeEmptyTable)
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
-            includeEmptyTable ? CreateGameTable<EldanAugmentationEntry>() : null));
-        ActionSet actionSet = CreateActionSet(out RecordingDispatchProxy<IPlayer> playerProxy);
+        GameTableManager gameTableManager = CreateGameTableManager(includeEmptyTable ? CreateGameTable<EldanAugmentationEntry>() : null);
+        ActionSet actionSet = CreateActionSet(out RecordingDispatchProxy<IPlayer> playerProxy, gameTableManager);
 
         Assert.Throws<ArgumentException>(() => actionSet.AddAmp(42));
 
@@ -61,9 +58,8 @@ public class ActionSetAmpTests
     [InlineData(true)]
     public void AddAmpFromExistingModel_WithMissingEldanAugmentationStaticDataThrowsInvalidAmp(bool includeEmptyTable)
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
-            includeEmptyTable ? CreateGameTable<EldanAugmentationEntry>() : null));
-        ActionSet actionSet = CreateActionSet(out RecordingDispatchProxy<IPlayer> playerProxy);
+        GameTableManager gameTableManager = CreateGameTableManager(includeEmptyTable ? CreateGameTable<EldanAugmentationEntry>() : null);
+        ActionSet actionSet = CreateActionSet(out RecordingDispatchProxy<IPlayer> playerProxy, gameTableManager);
 
         Assert.Throws<ArgumentException>(() => actionSet.AddAmp(new CharacterActionSetAmpModel
         {
@@ -79,12 +75,12 @@ public class ActionSetAmpTests
     [Fact]
     public void AddAmp_WithKnownStaticDataAddsAmpAndRequestsSave()
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(CreateGameTable(new EldanAugmentationEntry
+        GameTableManager gameTableManager = CreateGameTableManager(CreateGameTable(new EldanAugmentationEntry
         {
             Id        = 42u,
             PowerCost = 3u
-        })));
-        ActionSet actionSet = CreateActionSet(out RecordingDispatchProxy<IPlayer> playerProxy);
+        }));
+        ActionSet actionSet = CreateActionSet(out RecordingDispatchProxy<IPlayer> playerProxy, gameTableManager);
 
         actionSet.AddAmp(42);
 
@@ -96,12 +92,12 @@ public class ActionSetAmpTests
     [Fact]
     public void AddAmpFromExistingModel_WithKnownStaticDataAddsAmpWithoutRequestingSave()
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(CreateGameTable(new EldanAugmentationEntry
+        GameTableManager gameTableManager = CreateGameTableManager(CreateGameTable(new EldanAugmentationEntry
         {
             Id        = 42u,
             PowerCost = 3u
-        })));
-        ActionSet actionSet = CreateActionSet(out RecordingDispatchProxy<IPlayer> playerProxy);
+        }));
+        ActionSet actionSet = CreateActionSet(out RecordingDispatchProxy<IPlayer> playerProxy, gameTableManager);
 
         actionSet.AddAmp(new CharacterActionSetAmpModel
         {
@@ -115,22 +111,20 @@ public class ActionSetAmpTests
         Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.RequestSave)));
     }
 
-    private static ActionSet CreateActionSet(out RecordingDispatchProxy<IPlayer> playerProxy)
+    private static ActionSet CreateActionSet(out RecordingDispatchProxy<IPlayer> playerProxy, IGameTableManager gameTableManager)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out playerProxy);
         playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
-        return new ActionSet(0, player);
+        return new ActionSet(0, player, gameTableManager);
     }
 
-    private static IServiceProvider BuildProvider(GameTable<EldanAugmentationEntry> eldanAugmentationTable)
+    private static GameTableManager CreateGameTableManager(GameTable<EldanAugmentationEntry> eldanAugmentationTable)
     {
         var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         if (eldanAugmentationTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.EldanAugmentation), eldanAugmentationTable);
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

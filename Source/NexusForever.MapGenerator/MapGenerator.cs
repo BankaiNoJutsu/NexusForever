@@ -4,7 +4,6 @@ using CommandLine;
 using CommandLine.Text;
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.MapGenerator.GameTable;
-using NexusForever.Shared;
 using NLog;
 
 namespace NexusForever.MapGenerator
@@ -28,17 +27,27 @@ namespace NexusForever.MapGenerator
             services.AddSingleton<ExtractionManager>();
             services.AddSingleton<GenerationManager>();
 
-            LegacyServiceProvider.Provider = services.BuildServiceProvider();
+            using ServiceProvider serviceProvider = services.BuildServiceProvider();
 
             Console.Title = Title;
 
             parserResult = Parser.Default.ParseArguments<Parameters>(args);
-            parserResult.WithParsed(ParameterOk);
+            parserResult.WithParsed(parameters => ParameterOk(
+                parameters,
+                serviceProvider.GetRequiredService<ArchiveManager>(),
+                serviceProvider.GetRequiredService<GameTableManager>(),
+                serviceProvider.GetRequiredService<ExtractionManager>(),
+                serviceProvider.GetRequiredService<GenerationManager>()));
 
             log.Info("Finished!");
         }
 
-        private static void ParameterOk(Parameters parameters)
+        private static void ParameterOk(
+            Parameters parameters,
+            ArchiveManager archiveManager,
+            GameTableManager gameTableManager,
+            ExtractionManager extractionManager,
+            GenerationManager generationManager)
         {
             if (!Directory.Exists(parameters.PatchPath))
                 throw new DirectoryNotFoundException();
@@ -59,20 +68,20 @@ namespace NexusForever.MapGenerator
                     throw new DirectoryNotFoundException(parameters.OutputDir);
             }
 
-            ArchiveManager.Instance.Initialise(parameters.PatchPath);
-            GameTableManager.Instance.Initialise();
+            archiveManager.Initialise(parameters.PatchPath);
+            gameTableManager.Initialise();
 
             if (parameters.Extract)
-                ExtractionManager.Instance.Initialise(parameters.OutputDir, parameters.MaxParallelism);
+                extractionManager.Initialise(parameters.OutputDir, parameters.MaxParallelism);
             if (parameters.Generate)
             {
-                GenerationManager.Instance.Initialise(parameters.OutputDir);
+                generationManager.Initialise(parameters.OutputDir);
 
                 var start = DateTime.UtcNow;
                 if (parameters.WorldId.HasValue)
-                    GenerationManager.Instance.GenerateWorld(parameters.WorldId.Value, parameters.GridX, parameters.GridY, parameters.MaxParallelism);
+                    generationManager.GenerateWorld(parameters.WorldId.Value, parameters.GridX, parameters.GridY, parameters.MaxParallelism);
                 else
-                    GenerationManager.Instance.GenerateWorlds(parameters.MaxParallelism);
+                    generationManager.GenerateWorlds(parameters.MaxParallelism);
 
                 TimeSpan span = DateTime.UtcNow - start;
                 log.Info($"Generated base maps in {span.TotalSeconds}s.");

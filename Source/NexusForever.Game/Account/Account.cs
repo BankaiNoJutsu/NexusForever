@@ -9,6 +9,8 @@ using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Abstract.Account.Option;
 using NexusForever.Game.Abstract.Account.Reward;
 using NexusForever.Game.Abstract.Account.Unlock;
+using NexusForever.Game.Abstract.Character;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Abstract.RBAC;
 using NexusForever.Game.Account.Costume;
 using NexusForever.Game.Account.Currency;
@@ -21,6 +23,9 @@ using NexusForever.Game.RBAC;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.RBAC;
 using NexusForever.Network.Session;
+using Microsoft.Extensions.Logging;
+using NexusForever.Game.Abstract;
+using NexusForever.GameTable;
 
 namespace NexusForever.Game.Account
 {
@@ -43,15 +48,54 @@ namespace NexusForever.Game.Account
 
         public IGameSession Session { get; private set; }
 
+        private readonly IPendingAccountItemGroupDelivery pendingAccountItemGroupDelivery;
+        private readonly ILogger<AccountInventoryManager> accountInventoryLog;
+        private readonly IRBACManager rbacManager;
+        private readonly IAssetManager assetManager;
+        private readonly ICharacterManager characterManager;
+        private readonly IPrerequisiteManager prerequisiteManager;
+        private readonly IItemManager itemManager;
+        private readonly IDatabaseManager databaseManager;
+        private readonly IGameTableManager gameTableManager;
+        private readonly Role defaultRole = Role.Player;
+
+        public Account()
+        {
+        }
+
+        public Account(
+            IPendingAccountItemGroupDelivery pendingAccountItemGroupDelivery,
+            ILogger<AccountInventoryManager> accountInventoryLog = null,
+            IRBACManager rbacManager = null,
+            Role? defaultRole = null,
+            IAssetManager assetManager = null,
+            ICharacterManager characterManager = null,
+            IPrerequisiteManager prerequisiteManager = null,
+            IItemManager itemManager = null,
+            IDatabaseManager databaseManager = null,
+            IGameTableManager gameTableManager = null)
+        {
+            this.pendingAccountItemGroupDelivery = pendingAccountItemGroupDelivery;
+            this.accountInventoryLog             = accountInventoryLog;
+            this.rbacManager                     = rbacManager;
+            this.defaultRole                     = defaultRole ?? Role.Player;
+            this.assetManager                    = assetManager;
+            this.characterManager                = characterManager;
+            this.prerequisiteManager             = prerequisiteManager;
+            this.itemManager                     = itemManager;
+            this.databaseManager                 = databaseManager;
+            this.gameTableManager                = gameTableManager ?? throw new ArgumentNullException(nameof(gameTableManager));
+        }
+
         /// <inheritdoc/>
         public uint GetCREDDPendingOrderState()
         {
             try
             {
-                AuthDatabase authDatabase = DatabaseManager.Instance?.GetDatabase<AuthDatabase>();
+                AuthDatabase authDatabase = databaseManager?.GetDatabase<AuthDatabase>();
                 return authDatabase != null && authDatabase.AccountHasCREDDOrder(Id) ? 1u : 0u;
             }
-            catch (InvalidOperationException)
+            catch (Exception ex) when (ex is InvalidOperationException or ArgumentNullException)
             {
                 return 0u;
             }
@@ -64,18 +108,20 @@ namespace NexusForever.Game.Account
         {
             if (Session != null)
                 throw new InvalidOperationException();
+            if (gameTableManager == null)
+                throw new InvalidOperationException($"{nameof(Account)} requires an {nameof(IGameTableManager)}.");
 
             Id      = model.Id;
             Email   = model.Email;
             Session = session;
 
-            RbacManager           = new AccountRBACManager(this, model);
-            GenericUnlockManager  = new GenericUnlockManager(this, model);
-            CurrencyManager       = new AccountCurrencyManager(this, model);
-            EntitlementManager    = new AccountEntitlementManager(this, model);
-            InventoryManager      = new AccountInventoryManager(this, model);
-            CostumeManager        = new AccountCostumeManager(this, model);
-            RewardPropertyManager        = new RewardPropertyManager(this);
+            RbacManager           = new AccountRBACManager(this, model, rbacManager, defaultRole);
+            GenericUnlockManager  = new GenericUnlockManager(this, model, gameTableManager);
+            CurrencyManager       = new AccountCurrencyManager(this, model, gameTableManager);
+            EntitlementManager    = new AccountEntitlementManager(this, model, assetManager, gameTableManager);
+            InventoryManager      = new AccountInventoryManager(this, model, pendingAccountItemGroupDelivery, accountInventoryLog, characterManager, prerequisiteManager, itemManager, gameTableManager);
+            CostumeManager        = new AccountCostumeManager(this, model, gameTableManager);
+            RewardPropertyManager        = new RewardPropertyManager(this, assetManager, gameTableManager);
             RewardRotationGrantManager   = new AccountRewardRotationGrantManager(this, model);
             KeybindingManager              = new AccountKeybindingManager(model);
         }

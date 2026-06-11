@@ -10,6 +10,7 @@ using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Static.Achievement;
@@ -25,20 +26,21 @@ using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.PlayerPath;
 using NexusForever.Network.World.Message.Static;
-using NexusForever.Shared;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using Path = NexusForever.Game.Static.PlayerPath.Path;
 
 namespace NexusForever.Game.Tests.Entity;
 
-[Collection(LegacyServiceProviderCollection.Name)]
+[Collection(MissingGameDataDiagnosticsCollection.Name)]
 public class PathManagerTests
 {
+    private GameTableManager configuredGameTableManager;
+    private IPrerequisiteManager configuredPrerequisiteManager;
+
     [Fact]
     public void AddXp_AwardsInitialPathLevelRewardFromLevelRewardedState()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u },
                 new PathLevelEntry { Id = 2u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 2u, PathXP = 100u }
@@ -52,7 +54,6 @@ public class PathManagerTests
                 }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 totalXp: 0u,
@@ -91,17 +92,12 @@ public class PathManagerTests
             Assert.Equal(1u, pathEntry.TotalXp);
             Assert.Equal(1, pathEntry.LevelRewarded);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void AddLevels_AtMaxPathLevelStillAwardsOutstandingCapReward()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u },
                 new PathLevelEntry { Id = 30u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 30u, PathXP = 3000u }
@@ -115,7 +111,6 @@ public class PathManagerTests
                 }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 totalXp: 3000u,
@@ -150,23 +145,17 @@ public class PathManagerTests
             Assert.Equal(3000u, pathEntry.TotalXp);
             Assert.Equal(30, pathEntry.LevelRewarded);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void AddLevels_WithMissingTargetPathLevelRow_DoesNotMutateXp()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }
             ],
             []);
 
-        try
         {
             PathManager manager = CreateManager(
                 totalXp: 0u,
@@ -186,23 +175,17 @@ public class PathManagerTests
             Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.SetAchievementProgress)));
             Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void ActivateMissions_SendsEpisodeProgressAndMissionActivate()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
             []);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -234,10 +217,6 @@ public class PathManagerTests
 
             ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[2]);
             Assert.Equal([35u, 36u], missionActivate.Missions.Select(m => m.PathMissionId).ToArray());
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
@@ -478,15 +457,13 @@ public class PathManagerTests
     [Fact]
     public void CompleteMission_MarksMappedScientistScanCreatureInfo()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }
             ],
             [],
             [new PathMissionEntry { Id = 42u, PathEpisodeId = 1u }]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Scientist,
@@ -500,10 +477,6 @@ public class PathManagerTests
 
             Assert.True(manager.CompleteMission(42));
             Assert.True(manager.HasScannedScientistCreature(34u));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
@@ -541,14 +514,12 @@ public class PathManagerTests
     [Fact]
     public void Save_WithCompletedPersistedMission_UpdatesPersistedMissionState()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
             []);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -586,23 +557,17 @@ public class PathManagerTests
             Assert.Equal(1u, entry.Entity.ProgressCount);
             Assert.Equal((byte)PathMissionState.Complete, entry.Entity.State);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void SendInitialPackets_WithNewlyActivatedMission_DoesNotReplayEpisodeState()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
             []);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -633,17 +598,12 @@ public class PathManagerTests
             Assert.Single(messages.OfType<ServerPathEpisodeProgress>());
             Assert.Single(messages.OfType<ServerPathMissionActivate>());
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void SendInitialPackets_WithPersistedActiveMission_DoesNotReplayEpisodeState()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -656,7 +616,6 @@ public class PathManagerTests
                 new PathEpisodeEntry { Id = 9u, WorldId = 51u, WorldZoneId = 10u, PathTypeEnum = (uint)Path.Explorer }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -688,17 +647,12 @@ public class PathManagerTests
                 .Select(i => i.Arguments[0]));
             Assert.IsType<ServerPathInitialise>(message);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void SendInitialPackets_WithPersistedActiveMission_SendsPathLogEachCallWithoutReplay()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -711,7 +665,6 @@ public class PathManagerTests
                 new PathEpisodeEntry { Id = 9u, WorldId = 51u, WorldZoneId = 10u, PathTypeEnum = (uint)Path.Explorer }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -751,17 +704,12 @@ public class PathManagerTests
             Assert.IsType<ServerPathInitialise>(messages[0]);
             Assert.IsType<ServerPathInitialise>(messages[firstSendCount]);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void SendInitialPackets_WithPersistedMissionForMissingEpisode_DoesNotReplayEpisodeState()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -770,7 +718,6 @@ public class PathManagerTests
                 new PathMissionEntry { Id = 35u, PathEpisodeId = 9u, PathTypeEnum = (uint)Path.Explorer }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -799,17 +746,12 @@ public class PathManagerTests
                 .Select(i => i.Arguments[0]));
             Assert.IsType<ServerPathInitialise>(message);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void SendInitialPackets_WithPersistedMissionForMismatchedEpisodePath_DoesNotReplayEpisodeState()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -822,7 +764,6 @@ public class PathManagerTests
                 new PathEpisodeEntry { Id = 9u, WorldId = 51u, WorldZoneId = 10u, PathTypeEnum = (uint)Path.Soldier }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -851,17 +792,12 @@ public class PathManagerTests
                 .Select(i => i.Arguments[0]));
             Assert.IsType<ServerPathInitialise>(message);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void SendInitialPackets_WithPersistedMissionForDifferentPath_DoesNotReplayEpisodeState()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }
             ],
@@ -870,7 +806,6 @@ public class PathManagerTests
                 new PathMissionEntry { Id = 35u, PathEpisodeId = 9u, PathTypeEnum = (uint)Path.Explorer }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Soldier,
@@ -899,17 +834,12 @@ public class PathManagerTests
                 .Select(i => i.Arguments[0]));
             Assert.IsType<ServerPathInitialise>(message);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void SendInitialPackets_WithPersistedMissionForWrongFaction_DoesNotReplayEpisodeState()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
             ],
@@ -918,7 +848,6 @@ public class PathManagerTests
                 new PathMissionEntry { Id = 650u, PathEpisodeId = 82u, PathTypeEnum = (uint)Path.Settler, PathMissionFactionEnum = 2u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Settler,
@@ -948,17 +877,12 @@ public class PathManagerTests
                 .Select(i => i.Arguments[0]));
             Assert.IsType<ServerPathInitialise>(message);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void SendInitialPackets_WithPersistedMissionForUnmetPrerequisite_DoesNotReplayEpisodeState()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
             ],
@@ -971,7 +895,6 @@ public class PathManagerTests
                 CreatePathPrerequisite(701u, Path.Soldier)
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Settler,
@@ -1000,10 +923,6 @@ public class PathManagerTests
                 .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
                 .Select(i => i.Arguments[0]));
             Assert.IsType<ServerPathInitialise>(message);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
@@ -1043,8 +962,7 @@ public class PathManagerTests
     [Fact]
     public void TryActivateCurrentZoneEpisode_WithMatchingRootZone_ActivatesFactionFilteredMissions()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
             ],
@@ -1065,7 +983,6 @@ public class PathManagerTests
                 new WorldZoneEntry { Id = 11u, ParentZoneId = 10u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Settler,
@@ -1097,17 +1014,12 @@ public class PathManagerTests
             ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[2]);
             Assert.Equal([650u, 651u], missionActivate.Missions.Select(m => m.PathMissionId).ToArray());
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void TryActivateCurrentZoneEpisode_WithPersistedActiveEpisode_DoesNotReemitActivationPackets()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
             ],
@@ -1124,7 +1036,6 @@ public class PathManagerTests
                 new WorldZoneEntry { Id = 10u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Settler,
@@ -1152,17 +1063,12 @@ public class PathManagerTests
             Assert.True(manager.TryActivateCurrentZoneEpisode());
             Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void TryActivateCurrentZoneEpisode_WithPersistedDifferentPathEpisode_AllowsCurrentPathActivation()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
             ],
@@ -1180,7 +1086,6 @@ public class PathManagerTests
                 new WorldZoneEntry { Id = 10u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Settler,
@@ -1218,17 +1123,12 @@ public class PathManagerTests
             ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[2]);
             Assert.Equal([650u], missionActivate.Missions.Select(m => m.PathMissionId).ToArray());
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void TryActivateCurrentZoneEpisode_WithMissionPrerequisites_ActivatesOnlyEligibleMissions()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
             ],
@@ -1252,7 +1152,6 @@ public class PathManagerTests
                 CreatePathPrerequisite(701u, Path.Soldier)
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Settler,
@@ -1276,17 +1175,12 @@ public class PathManagerTests
                 .Single();
             Assert.Equal([650u, 652u], episodeProgress.Missions.Select(m => m.PathMissionId).ToArray());
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void TryActivateCurrentZoneEpisode_WithoutMatchingEpisode_DoesNotSendPackets()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -1300,7 +1194,6 @@ public class PathManagerTests
                 new WorldZoneEntry { Id = 10u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -1318,24 +1211,18 @@ public class PathManagerTests
             Assert.False(manager.TryActivateCurrentZoneEpisode());
             Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMission_UpdatesMissionAndAwardsConfiguredPathXp()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u },
                 new PathLevelEntry { Id = 2u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 2u, PathXP = 100u }
             ],
             []);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -1377,17 +1264,12 @@ public class PathManagerTests
                 .Single();
             Assert.Equal(25u, xpUpdate.TotalXP);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMission_WithKnownMissionAndNoConfiguredXp_AwardsGameFormulaPathXp()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u },
                 new PathLevelEntry { Id = 2u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 2u, PathXP = 100u }
@@ -1410,7 +1292,6 @@ public class PathManagerTests
                 }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -1431,17 +1312,12 @@ public class PathManagerTests
                 .Single();
             Assert.Equal(25u, xpUpdate.TotalXP);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMission_WithKnownMissionAndNoFormulaXp_AwardsClientFallbackPathXp()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u },
                 new PathLevelEntry { Id = 2u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 2u, PathXP = 100u }
@@ -1456,7 +1332,6 @@ public class PathManagerTests
                 }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -1477,17 +1352,12 @@ public class PathManagerTests
                 .Single();
             Assert.Equal(50u, xpUpdate.TotalXP);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMission_WithMissingPathLevelRows_SkipsXpAndKeepsMissionReward()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [],
             [
                 new PathRewardEntry
@@ -1507,7 +1377,6 @@ public class PathManagerTests
                 }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -1534,17 +1403,12 @@ public class PathManagerTests
             Assert.Equal(1u, itemCreate.Arguments[2]);
             Assert.Equal(ItemUpdateReason.PathReward, itemCreate.Arguments[3]);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMission_WithMissingPathMissionTable_CompletesWithoutMissionMetadata()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -1566,9 +1430,8 @@ public class PathManagerTests
                 }
             ]);
 
-        try
         {
-            GameTableManager gameTableManager = LegacyServiceProvider.Provider.GetRequiredService<GameTableManager>();
+            GameTableManager gameTableManager = configuredGameTableManager;
             SetAutoProperty(gameTableManager, nameof(GameTableManager.PathMission), null);
 
             PathManager manager = CreateManager(
@@ -1597,17 +1460,12 @@ public class PathManagerTests
             Assert.Equal(1u, itemCreate.Arguments[2]);
             Assert.Equal(ItemUpdateReason.PathReward, itemCreate.Arguments[3]);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMission_WithMismatchedMissionPathAndNoConfiguredXp_DoesNotAwardFallbackXp()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u },
                 new PathLevelEntry { Id = 2u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 2u, PathXP = 100u }
@@ -1622,7 +1480,6 @@ public class PathManagerTests
                 }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Soldier,
@@ -1641,17 +1498,12 @@ public class PathManagerTests
                 .Select(i => i.Arguments[0])
                 .OfType<ServerPathUpdateXP>());
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMission_WithKnownMissionRow_UpdatesPathMissionAchievements()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -1665,7 +1517,6 @@ public class PathManagerTests
                 }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -1696,17 +1547,12 @@ public class PathManagerTests
             Assert.Same(player, pathMissionTypeCall.Arguments[0]);
             Assert.Equal(0x000Fu, pathMissionTypeCall.Arguments[2]);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMission_WithSupportedMissionRewards_GrantsUnflaggedRewardRows()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -1759,7 +1605,6 @@ public class PathManagerTests
                 new PathScientistScanBotProfileEntry { Id = 6u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -1804,18 +1649,13 @@ public class PathManagerTests
                 Assert.Single(petCustomisationManagerProxy.GetInvocations(nameof(IPetCustomisationManager.UnlockScanBotProfile)));
             Assert.Equal(6u, unlockScanBotProfile.Arguments[0]);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMission_WithMissingSpellRewardEntry_SkipsSpellRewardWithoutThrowing()
     {
         MissingGameDataDiagnostics.ResetForTests();
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -1838,7 +1678,6 @@ public class PathManagerTests
                 }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -1866,19 +1705,14 @@ public class PathManagerTests
             Assert.Empty(spellManagerProxy.GetInvocations(nameof(ISpellManager.AddSpell)));
             AssertSkippedGrantDiagnostic("Spell4.tbl", 99u, "Path spell reward");
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
             MissingGameDataDiagnostics.ResetForTests();
-        }
     }
 
     [Fact]
     public void CompleteMission_WithMissingSpellRewardTable_SkipsSpellRewardWithoutThrowing()
     {
         MissingGameDataDiagnostics.ResetForTests();
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -1902,7 +1736,6 @@ public class PathManagerTests
             ],
             includeSpell4Table: false);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -1930,19 +1763,14 @@ public class PathManagerTests
             Assert.Empty(spellManagerProxy.GetInvocations(nameof(ISpellManager.AddSpell)));
             AssertSkippedGrantDiagnostic("Spell4.tbl", 99u, "Path spell reward");
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
             MissingGameDataDiagnostics.ResetForTests();
-        }
     }
 
     [Fact]
     public void CompleteMission_WithMissingTitleRewardEntry_SkipsTitleRewardWithoutThrowing()
     {
         MissingGameDataDiagnostics.ResetForTests();
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -1965,7 +1793,6 @@ public class PathManagerTests
                 }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -1993,19 +1820,14 @@ public class PathManagerTests
             Assert.Empty(titleManagerProxy.GetInvocations(nameof(ITitleManager.AddTitle)));
             AssertSkippedGrantDiagnostic("CharacterTitle.tbl", 18u, "Path title reward");
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
             MissingGameDataDiagnostics.ResetForTests();
-        }
     }
 
     [Fact]
     public void CompleteMission_WithMissingScanBotProfileRewardTable_SkipsScanBotProfileRewardWithoutThrowing()
     {
         MissingGameDataDiagnostics.ResetForTests();
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2029,7 +1851,6 @@ public class PathManagerTests
             ],
             includeScanBotProfileTable: false);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Scientist,
@@ -2057,18 +1878,13 @@ public class PathManagerTests
             Assert.Empty(petCustomisationManagerProxy.GetInvocations(nameof(IPetCustomisationManager.UnlockScanBotProfile)));
             AssertSkippedGrantDiagnostic("PathScientistScanBotProfile.tbl", 6u, "Path scanbot profile reward");
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
             MissingGameDataDiagnostics.ResetForTests();
-        }
     }
 
     [Fact]
     public void CompleteMission_WithZeroCountMissionItemReward_GrantsSingleItem()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2091,7 +1907,6 @@ public class PathManagerTests
                 }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -2117,23 +1932,17 @@ public class PathManagerTests
             Assert.Equal(1u, itemCreate.Arguments[2]);
             Assert.Equal(ItemUpdateReason.PathReward, itemCreate.Arguments[3]);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteActiveMission_WithoutActivatedMission_DoesNotCreateMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
             []);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -2150,23 +1959,17 @@ public class PathManagerTests
             Assert.False(manager.IsMissionComplete(35));
             Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteActiveMission_WithActivatedMission_CompletesMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
             []);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -2192,17 +1995,12 @@ public class PathManagerTests
                 .Single();
             Assert.Equal(35, advanced.PathMissionId);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteExplorerProgressMission_WithActiveVistaAndNode_CompletesMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2221,7 +2019,6 @@ public class PathManagerTests
                 new PathExplorerNodeEntry { Id = 1u, PathExplorerAreaId = 123u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -2247,17 +2044,12 @@ public class PathManagerTests
                 .Single();
             Assert.Equal(35, advanced.PathMissionId);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteExplorerProgressMission_WithActiveNonExplorerMission_DoesNotCompleteMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2276,7 +2068,6 @@ public class PathManagerTests
                 new PathExplorerNodeEntry { Id = 1u, PathExplorerAreaId = 123u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Soldier,
@@ -2300,17 +2091,12 @@ public class PathManagerTests
                 .Select(i => i.Arguments[0])
                 .OfType<ServerPathMissionAdvanced>());
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteExplorerProgressMission_WithoutMatchingExplorerNode_DoesNotCompleteMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2329,7 +2115,6 @@ public class PathManagerTests
                 new PathExplorerNodeEntry { Id = 1u, PathExplorerAreaId = 456u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -2353,10 +2138,6 @@ public class PathManagerTests
                 .Select(i => i.Arguments[0])
                 .OfType<ServerPathMissionAdvanced>());
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Theory]
@@ -2364,8 +2145,7 @@ public class PathManagerTests
     [InlineData("explorer-node")]
     public void CompleteExplorerProgressMission_WithMissingStaticTable_DoesNotCompleteMission(string missingTable)
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2384,9 +2164,8 @@ public class PathManagerTests
                 new PathExplorerNodeEntry { Id = 1u, PathExplorerAreaId = 123u }
             ]);
 
-        try
         {
-            GameTableManager gameTableManager = LegacyServiceProvider.Provider.GetRequiredService<GameTableManager>();
+            GameTableManager gameTableManager = configuredGameTableManager;
             SetAutoProperty(
                 gameTableManager,
                 missingTable == "path-mission" ? nameof(GameTableManager.PathMission) : nameof(GameTableManager.PathExplorerNode),
@@ -2414,17 +2193,12 @@ public class PathManagerTests
                 .Select(i => i.Arguments[0])
                 .OfType<ServerPathMissionAdvanced>());
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteExplorerPowerMapMission_WithActivePowerMapMission_CompletesMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2443,7 +2217,6 @@ public class PathManagerTests
                 new PathExplorerPowerMapEntry { Id = 77u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -2469,10 +2242,6 @@ public class PathManagerTests
                 .Single();
             Assert.Equal(40, advanced.PathMissionId);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Theory]
@@ -2480,8 +2249,7 @@ public class PathManagerTests
     [InlineData("power-map")]
     public void CompleteExplorerPowerMapMission_WithMissingStaticTable_DoesNotCompleteMission(string missingTable)
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2500,9 +2268,8 @@ public class PathManagerTests
                 new PathExplorerPowerMapEntry { Id = 77u }
             ]);
 
-        try
         {
-            GameTableManager gameTableManager = LegacyServiceProvider.Provider.GetRequiredService<GameTableManager>();
+            GameTableManager gameTableManager = configuredGameTableManager;
             SetAutoProperty(
                 gameTableManager,
                 missingTable == "path-mission" ? nameof(GameTableManager.PathMission) : nameof(GameTableManager.PathExplorerPowerMap),
@@ -2530,17 +2297,12 @@ public class PathManagerTests
                 .Select(i => i.Arguments[0])
                 .OfType<ServerPathMissionAdvanced>());
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteExplorerPowerMapMission_WithWrongMissionType_DoesNotCompleteMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2559,7 +2321,6 @@ public class PathManagerTests
                 new PathExplorerPowerMapEntry { Id = 77u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -2583,17 +2344,12 @@ public class PathManagerTests
                 .Select(i => i.Arguments[0])
                 .OfType<ServerPathMissionAdvanced>());
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteExplorerPowerMapMission_WithoutPowerMapRow_DoesNotCompleteMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2608,7 +2364,6 @@ public class PathManagerTests
                 }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -2632,17 +2387,12 @@ public class PathManagerTests
                 .Select(i => i.Arguments[0])
                 .OfType<ServerPathMissionAdvanced>());
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteCurrentExplorerExploreZoneMission_WithActiveMissionAndParentMappedZone_CompletesMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2666,7 +2416,6 @@ public class PathManagerTests
                 new MapZoneEntry { Id = 700u, WorldZoneId = 10u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -2693,17 +2442,12 @@ public class PathManagerTests
                 .Single();
             Assert.Equal(41, advanced.PathMissionId);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteCurrentExplorerExploreZoneMission_WithWorldJoinFallback_CompletesMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2726,7 +2470,6 @@ public class PathManagerTests
                 new MapZoneWorldJoinEntry { Id = 1u, WorldId = 51u, MapZoneId = 701u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -2748,17 +2491,12 @@ public class PathManagerTests
 
             Assert.True(manager.IsMissionComplete(42u));
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteCurrentExplorerExploreZoneMission_WithWrongMissionType_DoesNotCompleteMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2781,7 +2519,6 @@ public class PathManagerTests
                 new MapZoneEntry { Id = 700u, WorldZoneId = 10u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -2806,17 +2543,12 @@ public class PathManagerTests
                 .Select(i => i.Arguments[0])
                 .OfType<ServerPathMissionAdvanced>());
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteCurrentExplorerExploreZoneMission_WithMissingPathMissionTable_DoesNotCompleteMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2839,9 +2571,8 @@ public class PathManagerTests
                 new MapZoneEntry { Id = 700u, WorldZoneId = 10u }
             ]);
 
-        try
         {
-            GameTableManager gameTableManager = LegacyServiceProvider.Provider.GetRequiredService<GameTableManager>();
+            GameTableManager gameTableManager = configuredGameTableManager;
             SetAutoProperty(gameTableManager, nameof(GameTableManager.PathMission), null);
 
             PathManager manager = CreateManager(
@@ -2867,17 +2598,12 @@ public class PathManagerTests
                 .Select(i => i.Arguments[0])
                 .OfType<ServerPathMissionAdvanced>());
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMissionByObjectId_CompletesMatchingActiveMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2886,7 +2612,6 @@ public class PathManagerTests
                 new PathMissionEntry { Id = 1254u, PathEpisodeId = 9u, PathTypeEnum = (uint)Path.Explorer, ObjectId = 1u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -2906,17 +2631,12 @@ public class PathManagerTests
 
             Assert.True(manager.IsMissionComplete(1254u));
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMissionByObjectId_WithMismatchedPathMission_DoesNotCompleteMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2925,7 +2645,6 @@ public class PathManagerTests
                 new PathMissionEntry { Id = 1254u, PathEpisodeId = 9u, PathTypeEnum = (uint)Path.Soldier, ObjectId = 1u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -2944,17 +2663,12 @@ public class PathManagerTests
             Assert.False(manager.CompleteMissionByObjectId(1u));
             Assert.False(manager.IsMissionComplete(1254u));
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMissionByObjectId_WithMissingPathMissionTable_DoesNotCompleteMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -2963,9 +2677,8 @@ public class PathManagerTests
                 new PathMissionEntry { Id = 1254u, PathEpisodeId = 9u, PathTypeEnum = (uint)Path.Explorer, ObjectId = 1u }
             ]);
 
-        try
         {
-            GameTableManager gameTableManager = LegacyServiceProvider.Provider.GetRequiredService<GameTableManager>();
+            GameTableManager gameTableManager = configuredGameTableManager;
             SetAutoProperty(gameTableManager, nameof(GameTableManager.PathMission), null);
 
             PathManager manager = CreateManager(
@@ -2985,17 +2698,12 @@ public class PathManagerTests
             Assert.False(manager.CompleteMissionByObjectId(1u));
             Assert.False(manager.IsMissionComplete(1254u));
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMissionBySoldierTowerDefenseId_CompletesMatchingEventMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }
             ],
@@ -3007,7 +2715,6 @@ public class PathManagerTests
                 new PathSoldierTowerDefenseEntry { Id = 2u, PathSoldierEventId = 2u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Soldier,
@@ -3027,10 +2734,6 @@ public class PathManagerTests
 
             Assert.True(manager.IsMissionComplete(156u));
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Theory]
@@ -3038,8 +2741,7 @@ public class PathManagerTests
     [InlineData("tower-defense")]
     public void CompleteMissionBySoldierTowerDefenseId_WithMissingStaticTable_DoesNotCompleteMission(string missingTable)
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }
             ],
@@ -3051,9 +2753,8 @@ public class PathManagerTests
                 new PathSoldierTowerDefenseEntry { Id = 2u, PathSoldierEventId = 2u }
             ]);
 
-        try
         {
-            GameTableManager gameTableManager = LegacyServiceProvider.Provider.GetRequiredService<GameTableManager>();
+            GameTableManager gameTableManager = configuredGameTableManager;
             SetAutoProperty(
                 gameTableManager,
                 missingTable == "path-mission" ? nameof(GameTableManager.PathMission) : nameof(GameTableManager.PathSoldierTowerDefense),
@@ -3076,17 +2777,12 @@ public class PathManagerTests
             Assert.False(manager.CompleteMissionBySoldierTowerDefenseId(2u));
             Assert.False(manager.IsMissionComplete(156u));
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void ProgressSoldierAssassinateMissionForCreatureKill_WithCreatureMatch_CompletesAfterRequiredCount()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }
             ],
@@ -3106,7 +2802,6 @@ public class PathManagerTests
                 new PathSoldierAssassinateEntry { Id = 12u, Creature2Id = 9001u, Count = 2u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Soldier,
@@ -3146,17 +2841,12 @@ public class PathManagerTests
             Assert.Equal(2u, completeUpdate.Mission.ProgressCount);
             Assert.Equal(0u, completeUpdate.Mission.ProgressData);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void ProgressSoldierAssassinateMissionForCreatureKill_WithTargetGroupMatch_CompletesMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }
             ],
@@ -3176,7 +2866,6 @@ public class PathManagerTests
                 new PathSoldierAssassinateEntry { Id = 13u, TargetGroupId = 77u, Count = 1u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Soldier,
@@ -3196,17 +2885,12 @@ public class PathManagerTests
 
             Assert.True(manager.IsMissionComplete(36u));
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void ProgressSoldierAssassinateMissionForCreatureKill_WithNonSoldierPlayer_DoesNotProgressMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -3226,7 +2910,6 @@ public class PathManagerTests
                 new PathSoldierAssassinateEntry { Id = 14u, Creature2Id = 9003u, Count = 1u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -3246,10 +2929,6 @@ public class PathManagerTests
 
             Assert.False(manager.IsMissionComplete(37u));
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Theory]
@@ -3257,8 +2936,7 @@ public class PathManagerTests
     [InlineData("soldier-assassinate")]
     public void ProgressSoldierAssassinateMissionForCreatureKill_WithMissingStaticTable_DoesNotProgressMission(string missingTable)
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }
             ],
@@ -3278,9 +2956,8 @@ public class PathManagerTests
                 new PathSoldierAssassinateEntry { Id = 12u, Creature2Id = 9001u, Count = 1u }
             ]);
 
-        try
         {
-            GameTableManager gameTableManager = LegacyServiceProvider.Provider.GetRequiredService<GameTableManager>();
+            GameTableManager gameTableManager = configuredGameTableManager;
             SetAutoProperty(
                 gameTableManager,
                 missingTable == "path-mission" ? nameof(GameTableManager.PathMission) : nameof(GameTableManager.PathSoldierAssassinate),
@@ -3308,17 +2985,12 @@ public class PathManagerTests
                 .Select(i => i.Arguments[0])
                 .OfType<ServerPathMissionAdvanced>());
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMissionBySettlerImprovementGroupId_WithHubMissionCount_CompletesAfterRequiredBuilds()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
             ],
@@ -3342,7 +3014,6 @@ public class PathManagerTests
                 new PathSettlerHubEntry { Id = 46u, MissionCount = 2u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Settler,
@@ -3382,10 +3053,6 @@ public class PathManagerTests
             Assert.Equal(2u, completeUpdate.Mission.ProgressCount);
             Assert.Equal(0u, completeUpdate.Mission.ProgressData);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Theory]
@@ -3394,8 +3061,7 @@ public class PathManagerTests
     [InlineData("hub")]
     public void CompleteMissionBySettlerImprovementGroupId_WithMissingStaticTable_DoesNotProgressMission(string missingTable)
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
             ],
@@ -3419,9 +3085,8 @@ public class PathManagerTests
                 new PathSettlerHubEntry { Id = 46u, MissionCount = 1u }
             ]);
 
-        try
         {
-            GameTableManager gameTableManager = LegacyServiceProvider.Provider.GetRequiredService<GameTableManager>();
+            GameTableManager gameTableManager = configuredGameTableManager;
             string propertyName = missingTable switch
             {
                 "path-mission"      => nameof(GameTableManager.PathMission),
@@ -3450,17 +3115,12 @@ public class PathManagerTests
             Assert.False(manager.IsMissionComplete(650u));
             Assert.Equal(beforeCount, sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void GetSettlerHubBuildProgressPercent_UsesHubMissionProgressAndStoredTier()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
             ],
@@ -3484,7 +3144,6 @@ public class PathManagerTests
                 new PathSettlerHubEntry { Id = 46u, MissionCount = 2u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Settler,
@@ -3503,17 +3162,12 @@ public class PathManagerTests
             manager.ApplySettlerImprovementGroupStatus(11u, tier: 4, bundleCount: 1u);
             Assert.Equal(100u, manager.GetSettlerHubBuildProgressPercent(11u));
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void GetSettlerHubContributionProgressPercent_UsesBundleCountOverMaxBundles()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
             ],
@@ -3528,7 +3182,6 @@ public class PathManagerTests
                 new PathSettlerHubEntry { Id = 46u, MissionCount = 1u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Settler,
@@ -3544,17 +3197,12 @@ public class PathManagerTests
 
             Assert.Equal(50u, manager.GetSettlerHubContributionProgressPercent(11u));
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMissionBySettlerImprovementGroupId_WithPersistedPartialHubProgress_CompletesAfterReload()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
             ],
@@ -3578,7 +3226,6 @@ public class PathManagerTests
                 new PathSettlerHubEntry { Id = 46u, MissionCount = 2u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Settler,
@@ -3618,17 +3265,12 @@ public class PathManagerTests
             Assert.Equal(2u, entry.Entity.ProgressCount);
             Assert.Equal(0u, entry.Entity.ProgressData);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMissionBySettlerImprovementGroupId_WithNonSettlerPlayer_DoesNotProgressMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
             ],
@@ -3652,7 +3294,6 @@ public class PathManagerTests
                 new PathSettlerHubEntry { Id = 46u, MissionCount = 1u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Explorer,
@@ -3672,10 +3313,6 @@ public class PathManagerTests
 
             Assert.False(manager.IsMissionComplete(651u));
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Theory]
@@ -3683,8 +3320,7 @@ public class PathManagerTests
     [InlineData(99u)]
     public void CompleteMissionBySettlerImprovementGroupId_WithMissingGroup_DoesNotProgressMission(uint pathSettlerImprovementGroupId)
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
             ],
@@ -3700,7 +3336,6 @@ public class PathManagerTests
                 }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Settler,
@@ -3722,17 +3357,12 @@ public class PathManagerTests
             Assert.False(manager.IsMissionComplete(650u));
             Assert.Equal(beforeCount, sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMissionBySettlerImprovementGroupId_WithMissingHub_DoesNotProgressMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
             ],
@@ -3752,7 +3382,6 @@ public class PathManagerTests
                 new PathSettlerImprovementGroupEntry { Id = 11u, PathSettlerHubId = 46u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Settler,
@@ -3774,17 +3403,12 @@ public class PathManagerTests
             Assert.False(manager.IsMissionComplete(650u));
             Assert.Equal(beforeCount, sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
     [Fact]
     public void CompleteMissionBySettlerImprovementGroupId_WithDifferentHub_DoesNotProgressMission()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildGameTableProvider(
+        BuildGameTableProvider(
             [
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
             ],
@@ -3808,7 +3432,6 @@ public class PathManagerTests
                 new PathSettlerHubEntry { Id = 47u, MissionCount = 1u }
             ]);
 
-        try
         {
             PathManager manager = CreateManager(
                 Path.Settler,
@@ -3830,13 +3453,9 @@ public class PathManagerTests
             Assert.False(manager.IsMissionComplete(650u));
             Assert.Equal(beforeCount, sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count);
         }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
     }
 
-    private static PathManager CreateManager(
+    private PathManager CreateManager(
         uint totalXp,
         byte levelRewarded,
         out IPlayer player,
@@ -3856,7 +3475,7 @@ public class PathManagerTests
             out inventoryProxy);
     }
 
-    private static PathManager CreateManager(
+    private PathManager CreateManager(
         Path path,
         uint totalXp,
         byte levelRewarded,
@@ -3899,10 +3518,13 @@ public class PathManagerTests
             Datacube    = datacubeModels?.ToList() ?? []
         };
 
+        gameTableManager ??= configuredGameTableManager;
+        IPrerequisiteManager prerequisiteManager = configuredPrerequisiteManager;
+
         var datacubeManager = new DatacubeManager(player, characterModel, gameTableManager);
         playerProxy.SetProperty(nameof(IPlayer.DatacubeManager), datacubeManager);
 
-        var manager = new PathManager(player, characterModel);
+        var manager = new PathManager(player, characterModel, prerequisiteManager, gameTableManager);
         playerProxy.SetProperty(nameof(IPlayer.PathManager), manager);
 
         return manager;
@@ -3943,7 +3565,7 @@ public class PathManagerTests
         return new CharacterContext(options);
     }
 
-    private static IServiceProvider BuildGameTableProvider(
+    private void BuildGameTableProvider(
         IEnumerable<PathLevelEntry> pathLevels,
         IEnumerable<PathRewardEntry> pathRewards,
         IEnumerable<PathMissionEntry> pathMissions = null,
@@ -3995,7 +3617,9 @@ public class PathManagerTests
             .AddSingleton(gameTableManager)
             .AddSingleton<IGameTableManager>(gameTableManager);
         services.AddGamePrerequisite();
-        return services.BuildServiceProvider();
+        IServiceProvider provider = services.BuildServiceProvider();
+        configuredGameTableManager = gameTableManager;
+        configuredPrerequisiteManager = provider.GetRequiredService<IPrerequisiteManager>();
     }
 
     private static PrerequisiteEntry CreatePathPrerequisite(uint id, Path path)

@@ -1,25 +1,20 @@
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NexusForever.Game.Quest;
-using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Quest;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class QuestInfoTests
 {
     [Fact]
     public void Constructor_WithMissingQuestTablesCreatesEmptyCollections()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             difficultyEntries:
             [
                 new Quest2DifficultyEntry
@@ -28,26 +23,20 @@ public class QuestInfoTests
                 }
             ]);
 
-        try
-        {
-            var info = new QuestInfo(CreateEntry(prerequisiteQuestId: 10u, objectiveId: 20u));
+        var info = new QuestInfo(
+            CreateEntry(prerequisiteQuestId: 10u, objectiveId: 20u),
+            gameTableManager: gameTableManager);
 
-            Assert.NotNull(info.DifficultyEntry);
-            Assert.Empty(info.PrerequisiteQuests);
-            Assert.Empty(info.Objectives);
-            Assert.Empty(info.Rewards);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.NotNull(info.DifficultyEntry);
+        Assert.Empty(info.PrerequisiteQuests);
+        Assert.Empty(info.Objectives);
+        Assert.Empty(info.Rewards);
     }
 
     [Fact]
     public void RewardCalculations_WithCompleteTablesUseDifficultyAndFormulaRows()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             difficultyEntries:
             [
                 new Quest2DifficultyEntry
@@ -82,25 +71,17 @@ public class QuestInfoTests
                 }
             ]);
 
-        try
-        {
-            var info = new QuestInfo(CreateEntry());
+        var info = new QuestInfo(CreateEntry(), gameTableManager: gameTableManager);
 
-            Assert.Equal(150u, info.GetRewardExperience());
-            Assert.Equal(18u, info.GetRewardMoney());
-            Assert.Single(info.Rewards);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(150u, info.GetRewardExperience());
+        Assert.Equal(18u, info.GetRewardMoney());
+        Assert.Single(info.Rewards);
     }
 
     [Fact]
     public void RewardCalculations_WithMissingXpOrFormulaTablesReturnZero()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             difficultyEntries:
             [
                 new Quest2DifficultyEntry
@@ -111,24 +92,16 @@ public class QuestInfoTests
                 }
             ]);
 
-        try
-        {
-            var info = new QuestInfo(CreateEntry());
+        var info = new QuestInfo(CreateEntry(), gameTableManager: gameTableManager);
 
-            Assert.Equal(0u, info.GetRewardExperience());
-            Assert.Equal(0u, info.GetRewardMoney());
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(0u, info.GetRewardExperience());
+        Assert.Equal(0u, info.GetRewardMoney());
     }
 
     [Fact]
     public void RewardCalculations_WithMissingDifficultyRowReturnZero()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             xpEntries:
             [
                 new XpPerLevelEntry
@@ -146,37 +119,24 @@ public class QuestInfoTests
                 }
             ]);
 
-        try
-        {
-            var info = new QuestInfo(CreateEntry());
+        var info = new QuestInfo(CreateEntry(), gameTableManager: gameTableManager);
 
-            Assert.Null(info.DifficultyEntry);
-            Assert.Equal(0u, info.GetRewardExperience());
-            Assert.Equal(0u, info.GetRewardMoney());
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Null(info.DifficultyEntry);
+        Assert.Equal(0u, info.GetRewardExperience());
+        Assert.Equal(0u, info.GetRewardMoney());
     }
 
     [Fact]
     public void RewardCalculations_WithOverridesDoNotRequireTables()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
+        GameTableManager gameTableManager = CreateGameTableManager();
 
-        try
-        {
-            var info = new QuestInfo(CreateEntry(rewardXpOverride: 123u, rewardCashOverride: 456u));
+        var info = new QuestInfo(
+            CreateEntry(rewardXpOverride: 123u, rewardCashOverride: 456u),
+            gameTableManager: gameTableManager);
 
-            Assert.Equal(123u, info.GetRewardExperience());
-            Assert.Equal(456u, info.GetRewardMoney());
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(123u, info.GetRewardExperience());
+        Assert.Equal(456u, info.GetRewardMoney());
     }
 
     private static Quest2Entry CreateEntry(
@@ -202,7 +162,7 @@ public class QuestInfoTests
         };
     }
 
-    private static IServiceProvider BuildProvider(
+    private static GameTableManager CreateGameTableManager(
         Quest2DifficultyEntry[] difficultyEntries = null,
         XpPerLevelEntry[] xpEntries = null,
         GameFormulaEntry[] formulaEntries = null,
@@ -228,9 +188,7 @@ public class QuestInfoTests
         if (objectiveEntries != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.QuestObjective), CreateGameTable(objectiveEntries));
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

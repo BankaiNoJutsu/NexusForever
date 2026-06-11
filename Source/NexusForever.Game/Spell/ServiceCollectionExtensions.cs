@@ -1,5 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Spell;
+using NexusForever.GameTable;
 using NexusForever.Shared;
 
 namespace NexusForever.Game.Spell
@@ -10,7 +11,9 @@ namespace NexusForever.Game.Spell
         {
             sc.AddTransientFactory<ISpellParameters, SpellParameters>();
             sc.AddSingleton<ISpellEffectDependencyResolver, SpellEffectDependencyResolver>();
-            sc.AddSingleton(sp => new GlobalSpellManager(sp.GetRequiredService<ISpellEffectDependencyResolver>()));
+            sc.AddSingleton(sp => new GlobalSpellManager(
+                sp.GetRequiredService<ISpellEffectDependencyResolver>(),
+                sp.GetRequiredService<IGameTableManager>()));
             sc.AddSingleton<IGlobalSpellManager>(sp => sp.GetRequiredService<GlobalSpellManager>());
         }
     }

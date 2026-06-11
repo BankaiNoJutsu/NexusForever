@@ -1,5 +1,6 @@
 using NexusForever.Database.Character;
 using NexusForever.Game;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable.Model;
@@ -11,15 +12,20 @@ namespace NexusForever.Game.Tests.TestSupport;
 internal sealed class TestInventory : IInventory
 {
     private readonly bool createItems;
+    private readonly IItemManager itemManager;
 
     public sealed record ItemCreateCall(InventoryLocation Location, uint ItemId, uint Count, ItemUpdateReason Reason);
 
     public TestBag InventoryBag { get; }
     public List<ItemCreateCall> CreatedItems { get; } = [];
 
-    public TestInventory(uint slotsRemaining, bool createItems = false)
+    public TestInventory(
+        uint slotsRemaining,
+        bool createItems = false,
+        IItemManager itemManager = null)
     {
         this.createItems = createItems;
+        this.itemManager = itemManager;
         InventoryBag = new TestBag(slotsRemaining);
     }
 
@@ -53,7 +59,7 @@ internal sealed class TestInventory : IInventory
             return;
         }
 
-        IItemInfo info = ItemManager.Instance.GetItemInfo(itemId)
+        IItemInfo info = itemManager?.GetItemInfo(itemId)
             ?? throw new InvalidOperationException($"Missing item info for {itemId}.");
         ItemCreate(location, info, count, reason, charges);
     }
@@ -63,7 +69,7 @@ internal sealed class TestInventory : IInventory
         if (!createItems)
             throw new NotSupportedException();
 
-        var item = new NexusForever.Game.Entity.Item(42ul, info, count, charges);
+        var item = new NexusForever.Game.Entity.Item(42ul, info, count, charges, itemManager);
         InventoryBag.AddItem(item, InventoryBag.GetFirstAvailableBagIndex() ?? 0u);
         DecrementSlots();
     }

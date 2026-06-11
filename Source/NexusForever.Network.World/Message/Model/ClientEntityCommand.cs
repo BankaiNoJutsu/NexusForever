@@ -7,6 +7,14 @@ namespace NexusForever.Network.World.Message.Model
     [Message(GameMessageOpcode.ClientEntityCommand)]
     public class ClientEntityCommand : IReadable
     {
+        private readonly IEntityCommandManager entityCommandManager;
+
+        public ClientEntityCommand(
+            IEntityCommandManager entityCommandManager = null)
+        {
+            this.entityCommandManager = entityCommandManager;
+        }
+
         /// <summary>
         /// Runtime movement input envelope consumed by <c>MovementManager.HandleClientEntityCommands</c>.
         /// The packet carries one client clock value, one command count, and then repeated
@@ -17,13 +25,16 @@ namespace NexusForever.Network.World.Message.Model
 
         public void Read(GamePacketReader reader)
         {
+            if (entityCommandManager == null)
+                throw new InvalidOperationException("ClientEntityCommand requires an IEntityCommandManager to read command payloads.");
+
             Time = reader.ReadUInt();
 
             uint commandCount = reader.ReadUInt();
             for (uint i = 0u; i < commandCount; i++)
             {
                 EntityCommand command     = reader.ReadEnum<EntityCommand>(5);
-                IEntityCommandModel model = EntityCommandManager.Instance.NewEntityCommand(command);
+                IEntityCommandModel model = entityCommandManager.NewEntityCommand(command);
                 if (model == null)
                     throw new InvalidPacketValueException($"Unsupported entity command {command}.");
 

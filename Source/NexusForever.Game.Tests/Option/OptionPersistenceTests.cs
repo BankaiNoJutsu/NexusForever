@@ -1,6 +1,4 @@
 using System.Reflection;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -15,19 +13,15 @@ using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Game.Abstract.Reputation;
-using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Option;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.Network.Internal;
-using NexusForever.Shared;
-using NexusForever.Shared.Configuration;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 
 namespace NexusForever.Game.Tests.Option;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class OptionPersistenceTests
 {
     [Fact]
@@ -46,26 +40,15 @@ public class OptionPersistenceTests
     [Fact]
     public void PlayerSave_WithOptionChanges_PersistsCharacterOptionColumns()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildProvider();
-        LegacyServiceProvider.Provider = provider;
-
         using CharacterContext context = CreateContext();
-        try
-        {
-            Player player = CreatePlayer(123ul);
+        Player player = CreatePlayer(123ul);
 
-            player.CastingOptions = CastingOptionFlags.ButtonDownForAbilities | CastingOptionFlags.HoldToContinueCasting;
-            player.SharedChallengeEnabled = true;
-            player.DisableOtherPlayersCombatLogs = true;
-            player.CombatLogDisableFlags = CombatLogOptions.DisableDamage | CombatLogOptions.DisableHeal;
+        player.CastingOptions = CastingOptionFlags.ButtonDownForAbilities | CastingOptionFlags.HoldToContinueCasting;
+        player.SharedChallengeEnabled = true;
+        player.DisableOtherPlayersCombatLogs = true;
+        player.CombatLogDisableFlags = CombatLogOptions.DisableDamage | CombatLogOptions.DisableHeal;
 
-            player.Save(context);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        player.Save(context);
 
         EntityEntry<CharacterModel> entry = Assert.Single(context.ChangeTracker.Entries<CharacterModel>());
         Assert.Equal(123ul, entry.Entity.Id);
@@ -104,21 +87,6 @@ public class OptionPersistenceTests
             .Options;
 
         return new CharacterContext(options);
-    }
-
-    private static ServiceProvider BuildProvider()
-    {
-        var configuration = new SharedConfiguration(new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>
-            {
-                ["World:PlayerSaveIntervalSeconds"] = "60"
-            })
-            .Build());
-        configuration.Initialise<TestConfiguration>();
-
-        return new ServiceCollection()
-            .AddSingleton(configuration)
-            .BuildServiceProvider();
     }
 
     private static Player CreatePlayer(ulong characterId)
@@ -172,8 +140,4 @@ public class OptionPersistenceTests
         property.GetSetMethod(true)!.Invoke(instance, [value]);
     }
 
-    private sealed class TestConfiguration
-    {
-        public WorldConfig World { get; set; }
-    }
 }

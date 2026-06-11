@@ -15,7 +15,7 @@ using NexusForever.Shared;
 
 namespace NexusForever.Game.Chat
 {
-    public sealed class GlobalChatManager : Singleton<GlobalChatManager>, IGlobalChatManager
+    public sealed class GlobalChatManager : IGlobalChatManager
     {
         private const float LocalChatDistance = 155f;
 

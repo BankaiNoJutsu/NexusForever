@@ -17,9 +17,9 @@ namespace NexusForever.Game.Map
 
             sc.AddTransient<IPublicEventManager, PublicEventManager>();
 
-            sc.AddSingletonLegacy<IEntityCacheManager, EntityCacheManager>();
-            sc.AddSingletonLegacy<IMapIOManager, MapIOManager>();
-            sc.AddSingletonLegacy<IMapManager, MapManager>();
+            sc.AddSingleton<IEntityCacheManager, EntityCacheManager>();
+            sc.AddSingleton<IMapIOManager, MapIOManager>();
+            sc.AddSingleton<IMapManager, MapManager>();
 
             sc.AddTransient<IMapFactory, MapFactory>();
             sc.AddSingleton<IFactoryInterface<IMap>, FactoryInterface<IMap>>();

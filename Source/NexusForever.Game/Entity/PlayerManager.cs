@@ -4,11 +4,10 @@ using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Entity
 {
-    public sealed class PlayerManager : Singleton<PlayerManager>, IPlayerManager
+    public sealed class PlayerManager : IPlayerManager
     {
         private readonly ConcurrentDictionary<Identity, IPlayer> players = [];
         private readonly ConcurrentDictionary<uint, Identity> accountPlayer = [];
@@ -17,13 +16,16 @@ namespace NexusForever.Game.Entity
 
         private readonly ILogger<PlayerManager> log;
         private readonly ICharacterManager characterManager;
+        private readonly IRealmContext realmContext;
 
         public PlayerManager(
             ILogger<PlayerManager> log,
-            ICharacterManager characterManager)
+            ICharacterManager characterManager,
+            IRealmContext realmContext = null)
         {
             this.log              = log;
             this.characterManager = characterManager;
+            this.realmContext     = realmContext;
         }
 
         #endregion
@@ -61,7 +63,10 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public IPlayer GetPlayer(ulong characterId)
         {
-            return players.TryGetValue( new Identity{ Id = characterId, RealmId = RealmContext.Instance.RealmId }, out IPlayer player) ? player : null;
+            if (realmContext == null)
+                return players.Values.FirstOrDefault(p => p.Identity.Id == characterId);
+
+            return players.TryGetValue( new Identity{ Id = characterId, RealmId = realmContext?.RealmId ?? (ushort)0 }, out IPlayer player) ? player : null;
         }
 
         /// <summary>

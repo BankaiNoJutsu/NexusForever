@@ -4,12 +4,11 @@ using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
-using NexusForever.Shared;
 using NLog;
 
 namespace NexusForever.Game.Achievement
 {
-    public sealed class GlobalAchievementManager : Singleton<GlobalAchievementManager>, IGlobalAchievementManager
+    public sealed class GlobalAchievementManager : IGlobalAchievementManager
     {
         private const string AchievementTableName = "Achievement.tbl";
 
@@ -23,11 +22,27 @@ namespace NexusForever.Game.Achievement
 
         private readonly object realmFirstLock = new();
 
+        #region Dependency Injection
+
+        private readonly IDatabaseManager databaseManager;
+        private readonly IGameTableManager gameTableManager;
+
+        public GlobalAchievementManager(
+            IDatabaseManager databaseManager = null,
+            IGameTableManager gameTableManager = null)
+        {
+            this.databaseManager  = databaseManager;
+            this.gameTableManager = gameTableManager;
+        }
+
+        #endregion
+
         public void Initialise()
         {
             DateTime start = DateTime.UtcNow;
+            IGameTableManager gameTables = GetGameTableManager();
 
-            if (GameTableManager.Instance.Achievement?.Entries == null)
+            if (gameTables.Achievement?.Entries == null)
                 MissingGameDataDiagnostics.ReportMissingTable(
                     AchievementTableName,
                     nameof(GlobalAchievementManager) + "." + nameof(Initialise),
@@ -35,10 +50,10 @@ namespace NexusForever.Game.Achievement
                     "Cannot cache achievements.");
 
             IEnumerable<AchievementEntry> achievementEntries =
-                GameTableManager.Instance.Achievement?.Entries ?? Enumerable.Empty<AchievementEntry>();
+                gameTables.Achievement?.Entries ?? Enumerable.Empty<AchievementEntry>();
             foreach (AchievementEntry entry in achievementEntries)
             {
-                var info = new AchievementInfo(entry);
+                var info = new AchievementInfo(entry, gameTables);
                 achievements.Add((ushort)entry.Id, info);
 
                 AchievementType type = (AchievementType)entry.AchievementTypeId;
@@ -57,7 +72,7 @@ namespace NexusForever.Game.Achievement
 
         private void LoadCompletedRealmFirstAchievements()
         {
-            CharacterDatabase database = DatabaseManager.Instance.GetDatabase<CharacterDatabase>();
+            CharacterDatabase database = GetCharacterDatabase();
             if (database == null)
                 return;
 
@@ -115,6 +130,16 @@ namespace NexusForever.Game.Achievement
 
                 return completedAchievements.Add(info.Id);
             }
+        }
+
+        private CharacterDatabase GetCharacterDatabase()
+        {
+            return databaseManager?.GetDatabase<CharacterDatabase>();
+        }
+
+        private IGameTableManager GetGameTableManager()
+        {
+            return gameTableManager ?? throw new InvalidOperationException("GlobalAchievementManager requires an IGameTableManager.");
         }
     }
 }

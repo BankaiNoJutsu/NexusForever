@@ -4,100 +4,73 @@ using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.Packet;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Pregame;
-using NexusForever.Shared;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Misc;
 
 namespace NexusForever.Game.Tests.Network;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class GameSessionHeartbeatTests
 {
     [Fact]
     public void HandlePacket_KeepAlivePacket_RefreshesHeartbeatThroughRegisteredHandler()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         MessageManager messageManager = CreateMessageManager(typeof(ClientPregameKeepAlive), typeof(ClientPingHandler));
-        LegacyServiceProvider.Provider = new ServiceCollection()
+        using ServiceProvider serviceProvider = new ServiceCollection()
             .AddTransient<ClientPingHandler>()
             .AddKeyedTransient<IReadable, ClientPregameKeepAlive>(GameMessageOpcode.ClientPregameKeepAlive)
             .BuildServiceProvider();
 
-        try
-        {
-            var session = new TestWorldSession(messageManager);
-            session.Heartbeat.Update(299d);
+        var session = new TestWorldSession(messageManager, serviceProvider);
+        session.Heartbeat.Update(299d);
 
-            session.HandlePacket(BuildPacket(GameMessageOpcode.ClientPregameKeepAlive));
-            session.Heartbeat.Update(2d);
+        session.HandlePacket(BuildPacket(GameMessageOpcode.ClientPregameKeepAlive));
+        session.Heartbeat.Update(2d);
 
-            Assert.False(session.Heartbeat.Flatline);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.False(session.Heartbeat.Flatline);
     }
 
     [Fact]
     public void HandlePacket_NonKeepAlivePacket_DoesNotRefreshHeartbeatImplicitly()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         MessageManager messageManager = CreateMessageManager(typeof(TestNeutralMessage), typeof(TestNeutralHandler));
         var handler = new TestNeutralHandler();
-        LegacyServiceProvider.Provider = new ServiceCollection()
+        using ServiceProvider serviceProvider = new ServiceCollection()
             .AddSingleton(handler)
             .AddKeyedTransient<IReadable, TestNeutralMessage>(GameMessageOpcode.ClientRequestInputKeySet)
             .BuildServiceProvider();
 
-        try
-        {
-            var session = new TestWorldSession(messageManager);
-            session.Heartbeat.Update(299d);
+        var session = new TestWorldSession(messageManager, serviceProvider);
+        session.Heartbeat.Update(299d);
 
-            session.HandlePacket(BuildPacket(GameMessageOpcode.ClientRequestInputKeySet));
-            session.Heartbeat.Update(2d);
+        session.HandlePacket(BuildPacket(GameMessageOpcode.ClientRequestInputKeySet));
+        session.Heartbeat.Update(2d);
 
-            Assert.Equal(1, handler.CallCount);
-            Assert.True(session.Heartbeat.Flatline);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Equal(1, handler.CallCount);
+        Assert.True(session.Heartbeat.Flatline);
     }
 
     [Fact]
     public void HandlePacket_StatePacket_RefreshesHeartbeatThroughRegisteredHandler()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         MessageManager messageManager = CreateMessageManager(typeof(State), typeof(ClientStateHeartbeatHandler));
-        LegacyServiceProvider.Provider = new ServiceCollection()
+        using ServiceProvider serviceProvider = new ServiceCollection()
             .AddTransient<ClientStateHeartbeatHandler>()
             .AddKeyedTransient<IReadable, State>(GameMessageOpcode.State)
             .BuildServiceProvider();
 
-        try
-        {
-            var session = new TestWorldSession(messageManager);
-            session.Heartbeat.Update(299d);
+        var session = new TestWorldSession(messageManager, serviceProvider);
+        session.Heartbeat.Update(299d);
 
-            session.HandlePacket(BuildPacket(GameMessageOpcode.State));
-            session.Heartbeat.Update(2d);
+        session.HandlePacket(BuildPacket(GameMessageOpcode.State));
+        session.Heartbeat.Update(2d);
 
-            Assert.False(session.Heartbeat.Flatline);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.False(session.Heartbeat.Flatline);
     }
 
     [Fact]
@@ -167,7 +140,7 @@ public class GameSessionHeartbeatTests
         }
     }
 
-    private sealed class TestWorldSession(IMessageManager messageManager) : GameSession(messageManager), IWorldSession
+    private sealed class TestWorldSession(IMessageManager messageManager, IServiceProvider serviceProvider) : GameSession(messageManager, serviceProvider), IWorldSession
     {
         public IAccount Account { get; } = null!;
         public IPlayer Player { get; set; }

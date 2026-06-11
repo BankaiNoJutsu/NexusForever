@@ -30,7 +30,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             if (ActivationInteractionGuards.TryRejectBusyTarget(session, chair))
                 return;
 
-            if (ActivationInteractionGuards.TryRejectOutOfRangeTarget(session, chair))
+            if (ActivationInteractionGuards.TryRejectOutOfRangeTarget(session, chair, gameTableManager: gameTableManager))
                 return;
 
             Creature2Entry creatureEntry = gameTableManager.Creature2.GetEntry(chair.CreatureId);

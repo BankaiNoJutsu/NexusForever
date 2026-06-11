@@ -26,7 +26,7 @@ using ServerLootRemovePacket = NexusForever.Network.World.Message.Model.Loot.Ser
 
 namespace NexusForever.Game.Loot
 {
-    public partial class GlobalLootManager : Singleton<GlobalLootManager>, IGlobalLootManager
+    public partial class GlobalLootManager : IGlobalLootManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
@@ -91,11 +91,23 @@ namespace NexusForever.Game.Loot
         private readonly UpdateTimer updateTimer = new(1d);
 
         private readonly IGroupStateManager groupStateManager;
+        private readonly IPlayerManager playerManager;
+        private readonly IItemManager itemManager;
+        private readonly IDatabaseManager databaseManager;
+        private readonly IGameTableManager gameTableManager;
 
         public GlobalLootManager(
-            IGroupStateManager groupStateManager)
+            IGroupStateManager groupStateManager,
+            IPlayerManager playerManager = null,
+            IItemManager itemManager = null,
+            IDatabaseManager databaseManager = null,
+            IGameTableManager gameTableManager = null)
         {
             this.groupStateManager = groupStateManager;
+            this.playerManager     = playerManager;
+            this.itemManager       = itemManager;
+            this.databaseManager   = databaseManager;
+            this.gameTableManager  = gameTableManager;
         }
 
         public void Initialise()
@@ -111,7 +123,7 @@ namespace NexusForever.Game.Loot
             lootInstancesByOwnerUnit.Clear();
             lootInstancesByLooter.Clear();
 
-            WorldDatabase worldDatabase = DatabaseManager.Instance.GetDatabase<WorldDatabase>();
+            WorldDatabase worldDatabase = GetWorldDatabase();
 
             foreach (ItemLootModel itemLootModel in worldDatabase.GetAllItemLootTables())
                 BuildLoot(itemLootModel.Id, LootEntityType.Item, itemLootModel.LootGroup);
@@ -136,7 +148,7 @@ namespace NexusForever.Game.Loot
                     continue;
                 }
 
-                if (ItemManager.Instance.GetItemInfo(creatureLootModel.ItemId) == null)
+                if (itemManager?.GetItemInfo(creatureLootModel.ItemId) == null)
                 {
                     skippedDirectRows++;
                     continue;
@@ -176,7 +188,7 @@ namespace NexusForever.Game.Loot
                         creatureLoot.Add(entityId, creatureGroups);
                     }
 
-                    creatureGroups.Add(new LootGroup(lootGroupModel, !IsMappedFlatLootGroup(lootGroupModel)));
+                    creatureGroups.Add(new LootGroup(lootGroupModel, !IsMappedFlatLootGroup(lootGroupModel), databaseManager));
                     break;
                 case LootEntityType.Item:
                     if (!itemLoot.TryGetValue(entityId, out List<LootGroup> itemGroups))
@@ -185,7 +197,7 @@ namespace NexusForever.Game.Loot
                         itemLoot.Add(entityId, itemGroups);
                     }
 
-                    itemGroups.Add(new LootGroup(lootGroupModel));
+                    itemGroups.Add(new LootGroup(lootGroupModel, databaseManager: databaseManager));
                     break;
             }
         }
@@ -239,7 +251,7 @@ namespace NexusForever.Game.Loot
                 return false;
             }
 
-            Creature2Entry entry = GameTableManager.Instance.Creature2?.GetEntry(lootedEntity.CreatureId);
+            Creature2Entry entry = gameTableManager?.Creature2?.GetEntry(lootedEntity.CreatureId);
             if (entry == null)
             {
                 log.Warn($"Creature2 entry {lootedEntity.CreatureId} not found while generating loot for owner {lootedEntity.Guid}.");
@@ -299,7 +311,7 @@ namespace NexusForever.Game.Loot
                 return false;
             }
 
-            bool delivered = TryDeliverGeneratedItemLoot(looter, items, looter.Guid);
+            bool delivered = TryDeliverGeneratedItemLoot(looter, items, looter.Guid, playerManager, itemManager, gameTableManager);
             log.Trace($"Item loot drop delivery for player {looter.CharacterId}, item {lootedItem.Info.Entry.Id}: delivered={delivered}, generatedItems=[{FormatGeneratedLootItems(items)}].");
             return delivered;
         }
@@ -331,7 +343,7 @@ namespace NexusForever.Game.Loot
                 return false;
             }
 
-            if (!CanDeliverGeneratedItemLoot(looter, items, out reason))
+            if (!CanDeliverGeneratedItemLoot(looter, items, itemManager, out reason))
             {
                 log.Trace($"Loot bag use failed during delivery preflight for player {looter.CharacterId}, item {lootedItem.Info.Entry.Id}: reason={reason}, generatedItems=[{FormatGeneratedLootItems(items)}].");
                 return false;
@@ -376,7 +388,7 @@ namespace NexusForever.Game.Loot
                 }
             }
 
-            if (!TryDeliverGeneratedItemLoot(looter, items, looter.Guid))
+            if (!TryDeliverGeneratedItemLoot(looter, items, looter.Guid, playerManager, itemManager, gameTableManager))
             {
                 reason = "loot-delivery-failed";
                 log.Warn($"Loot bag use failed during final delivery after item consumption for player {looter.CharacterId}, item {lootedItem.Info.Entry.Id}: generatedItems=[{FormatGeneratedLootItems(items)}].");
@@ -408,7 +420,7 @@ namespace NexusForever.Game.Loot
                 List<(IPlayer Player, GroupLootMember Member)> eligible = [];
                 foreach (GroupLootMember member in group.Members)
                 {
-                    IPlayer player = PlayerManager.Instance.GetPlayer(member.Identity);
+                    IPlayer player = playerManager?.GetPlayer(member.Identity);
                     if (player == null || player.Map == null || player.Map != harvester.Map)
                         continue;
 
@@ -449,7 +461,7 @@ namespace NexusForever.Game.Loot
                 return false;
             }
 
-            return TryDeliverGeneratedItemLoot(recipient, items, ownerUnitId);
+            return TryDeliverGeneratedItemLoot(recipient, items, ownerUnitId, playerManager, itemManager, gameTableManager);
         }
 
         private bool CanReceiveHarvestLoot(IPlayer recipient, IReadOnlyList<GeneratedLootItem> items, out string reason)
@@ -457,7 +469,7 @@ namespace NexusForever.Game.Loot
             if (!CanDeliverGeneratedLoot(recipient, items, out reason))
                 return false;
 
-            return CanDeliverGeneratedItemLoot(recipient, items, out reason);
+            return CanDeliverGeneratedItemLoot(recipient, items, itemManager, out reason);
         }
 
         private static Dictionary<ulong, uint> CreatePlayerLooterMap(IPlayer player)
@@ -481,7 +493,7 @@ namespace NexusForever.Game.Loot
             List<(IPlayer Player, GroupLootMember Member)> eligible = [];
             foreach (GroupLootMember member in group.Members)
             {
-                IPlayer player = PlayerManager.Instance.GetPlayer(member.Identity);
+                IPlayer player = playerManager?.GetPlayer(member.Identity);
                 if (player == null || player.Map == null || player.Map != lootedEntity.Map)
                     continue;
 
@@ -542,7 +554,7 @@ namespace NexusForever.Game.Loot
         private LootInstance GenerateLootInstance(uint entityId, uint ownerUnitId, IPlayer player, Dictionary<ulong, uint> looterIds, LooterType looterType, LootEntityType lootEntityType, uint parentUnitId = 0u)
         {
             uint resolvedParentUnitId = parentUnitId != 0u ? parentUnitId : ownerUnitId;
-            LootInstance lootInstance = new(ownerUnitId, resolvedParentUnitId, looterIds, looterType, lootEntityType);
+            LootInstance lootInstance = new(ownerUnitId, resolvedParentUnitId, looterIds, looterType, lootEntityType, playerManager, itemManager, gameTableManager);
             log.Trace($"Generating loot instance: entityId={entityId}, ownerUnit={ownerUnitId}, parentUnit={resolvedParentUnitId}, playerCharacter={player?.CharacterId.ToString() ?? "none"}, looterType={looterType}, lootEntityType={lootEntityType}, looterIds=[{string.Join(",", looterIds.Select(kvp => $"{kvp.Key}:{kvp.Value}"))}].");
 
             switch (lootEntityType)
@@ -554,7 +566,7 @@ namespace NexusForever.Game.Loot
                         foreach (LootGroup lootGroup in creatureLootGroups)
                         {
                             foreach ((LootItem item, uint count) in lootGroup.GenerateLootDrops(player))
-                                TryAddLootItem(lootInstance, item, count, $"creature-table:{entityId}:group:{lootGroup.Id}");
+                                TryAddLootItem(lootInstance, item, count, $"creature-table:{entityId}:group:{lootGroup.Id}", itemManager, gameTableManager);
                         }
                     }
                     else
@@ -568,7 +580,7 @@ namespace NexusForever.Game.Loot
                         foreach (LootItem item in importedItems)
                         {
                             if (item.TryGetDrop(out uint count))
-                                TryAddLootItem(lootInstance, item, count, $"creature-direct:{entityId}");
+                                TryAddLootItem(lootInstance, item, count, $"creature-direct:{entityId}", itemManager, gameTableManager);
                             else
                                 log.Trace($"Imported direct creature loot did not roll: entityId={entityId}, type={item.Type}, staticId={item.StaticId}.");
                         }
@@ -587,7 +599,7 @@ namespace NexusForever.Game.Loot
                         foreach (LootGroup lootGroup in itemLootGroups)
                         {
                             foreach ((LootItem item, uint count) in lootGroup.GenerateLootDrops(player))
-                                TryAddLootItem(lootInstance, item, count, $"item-table:{entityId}:group:{lootGroup.Id}");
+                                TryAddLootItem(lootInstance, item, count, $"item-table:{entityId}:group:{lootGroup.Id}", itemManager, gameTableManager);
                         }
                     }
                     else
@@ -676,7 +688,7 @@ namespace NexusForever.Game.Loot
             GiveImmediateLoot(player, LootItemType.AccountCurrency, (uint)AccountCurrencyType.Omnibit, amount, ownerUnitId);
         }
 
-        private static void TryAddLootItem(LootInstance lootInstance, LootItem item, uint count, string source)
+        private static void TryAddLootItem(LootInstance lootInstance, LootItem item, uint count, string source, IItemManager itemManager, IGameTableManager gameTableManager)
         {
             if (count == 0u)
             {
@@ -684,7 +696,7 @@ namespace NexusForever.Game.Loot
                 return;
             }
 
-            if (!CanDeliverLootItem(item))
+            if (!CanDeliverLootItem(item, itemManager, gameTableManager))
             {
                 log.Trace($"Loot item skipped because it is not deliverable: source={source}, ownerUnit={lootInstance.OwnerUnitId}, type={item.Type}, staticId={item.StaticId}, count={count}.");
                 return;
@@ -694,15 +706,15 @@ namespace NexusForever.Game.Loot
             log.Trace($"Loot item added: source={source}, ownerUnit={lootInstance.OwnerUnitId}, lootUnitId={instanceItem.Id}, type={item.Type}, staticId={item.StaticId}, count={count}, mergedAmount={instanceItem.Amount}.");
         }
 
-        private static bool CanDeliverLootItem(LootItem item)
+        private static bool CanDeliverLootItem(LootItem item, IItemManager itemManager, IGameTableManager gameTableManager)
         {
             return item.Type switch
             {
-                LootItemType.AccountCurrency => IsDefinedAccountCurrency(item.StaticId),
-                LootItemType.AccountItem     => HasAccountItem(item.StaticId),
+                LootItemType.AccountCurrency => IsDefinedAccountCurrency(item.StaticId, gameTableManager),
+                LootItemType.AccountItem     => HasAccountItem(item.StaticId, gameTableManager),
                 LootItemType.Cash            => IsDefinedCharacterCurrency(item.StaticId),
-                LootItemType.StaticItem      => ItemManager.Instance.GetItemInfo(item.StaticId) != null,
-                LootItemType.VirtualItem     => HasVirtualItem(item.StaticId),
+                LootItemType.StaticItem      => itemManager?.GetItemInfo(item.StaticId) != null,
+                LootItemType.VirtualItem     => HasVirtualItem(item.StaticId, gameTableManager),
                 _                            => false
             };
         }
@@ -746,7 +758,7 @@ namespace NexusForever.Game.Loot
                     if (count == 0u)
                         continue;
 
-                    if (!CanDeliverLootItem(item))
+                    if (!CanDeliverLootItem(item, itemManager, gameTableManager))
                     {
                         reason = $"invalid-loot-item:{item.Type}:{item.StaticId}";
                         return false;
@@ -776,7 +788,7 @@ namespace NexusForever.Game.Loot
             return true;
         }
 
-        private static bool CanDeliverGeneratedItemLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, out string reason)
+        private static bool CanDeliverGeneratedItemLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, IItemManager itemManager, out string reason)
         {
             reason = string.Empty;
             if (looter == null)
@@ -794,7 +806,7 @@ namespace NexusForever.Game.Loot
                 switch (item.Type)
                 {
                     case LootItemType.StaticItem:
-                        if (!LootInstanceItem.CanDeliverStaticItem(looter, item.StaticId, item.Count, out bool inventoryFull))
+                        if (!LootInstanceItem.CanDeliverStaticItem(looter, item.StaticId, item.Count, itemManager, out bool inventoryFull))
                         {
                             reason = inventoryFull
                                 ? "inventory-full"
@@ -816,7 +828,7 @@ namespace NexusForever.Game.Loot
             return true;
         }
 
-        private static bool TryDeliverGeneratedItemLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, uint ownerUnitId)
+        private static bool TryDeliverGeneratedItemLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, uint ownerUnitId, IPlayerManager playerManager, IItemManager itemManager, IGameTableManager gameTableManager)
         {
             if (looter == null)
                 return false;
@@ -825,7 +837,7 @@ namespace NexusForever.Game.Loot
             List<GeneratedLootItem> generatedItems = items.ToList();
             log.Trace($"Generated item loot delivery started for player {looter.CharacterId}, ownerUnit={ownerUnitId}, generatedItems=[{FormatGeneratedLootItems(generatedItems)}].");
 
-            LootInstance lootInstance = new(ownerUnitId, CreatePlayerLooterMap(looter), LooterType.Player, LootEntityType.Item)
+            LootInstance lootInstance = new(ownerUnitId, CreatePlayerLooterMap(looter), LooterType.Player, LootEntityType.Item, playerManager, itemManager, gameTableManager)
             {
                 Explosion = true
             };
@@ -1133,7 +1145,7 @@ namespace NexusForever.Game.Loot
             if (entry == null)
                 return;
 
-            GiveImmediateLoot(looter, LootItemType.StaticItem, entry.Id, count, ownerUnitId);
+            GiveImmediateLoot(looter, LootItemType.StaticItem, entry.Id, count, ownerUnitId, playerManager: playerManager, itemManager: itemManager, gameTableManager: gameTableManager);
         }
 
         public void GiveLoot(IPlayer looter, VirtualItemEntry entry, uint count, uint ownerUnitId)
@@ -1141,17 +1153,17 @@ namespace NexusForever.Game.Loot
             if (entry == null)
                 return;
 
-            GiveImmediateLoot(looter, LootItemType.VirtualItem, entry.Id, count, ownerUnitId);
+            GiveImmediateLoot(looter, LootItemType.VirtualItem, entry.Id, count, ownerUnitId, playerManager: playerManager, itemManager: itemManager, gameTableManager: gameTableManager);
         }
 
         public void GiveLoot(IPlayer looter, AccountCurrencyType accountCurrencyType, uint count, uint ownerUnitId)
         {
-            GiveImmediateLoot(looter, LootItemType.AccountCurrency, (uint)accountCurrencyType, count, ownerUnitId, sendGrantedNotify: true);
+            GiveImmediateLoot(looter, LootItemType.AccountCurrency, (uint)accountCurrencyType, count, ownerUnitId, sendGrantedNotify: true, playerManager: playerManager, itemManager: itemManager, gameTableManager: gameTableManager);
         }
 
         public void GiveLoot(IPlayer looter, CurrencyType currencyType, uint count, uint ownerUnitId)
         {
-            GiveImmediateLoot(looter, LootItemType.Cash, (uint)currencyType, count, ownerUnitId);
+            GiveImmediateLoot(looter, LootItemType.Cash, (uint)currencyType, count, ownerUnitId, playerManager: playerManager, itemManager: itemManager, gameTableManager: gameTableManager);
         }
 
         public bool TryGenerateLoot(uint lootGroupId, IPlayer looter, uint rollCount, out IReadOnlyList<GeneratedLootItem> items, out string reason)
@@ -1177,14 +1189,14 @@ namespace NexusForever.Game.Loot
                 return false;
             }
 
-            LootGroupModel lootGroupModel = DatabaseManager.Instance.GetDatabase<WorldDatabase>().GetLootGroup(lootGroupId);
+            LootGroupModel lootGroupModel = GetWorldDatabase().GetLootGroup(lootGroupId);
             if (lootGroupModel == null)
             {
                 reason = $"unknown-loot-group:{lootGroupId}";
                 return false;
             }
 
-            var lootGroup = new LootGroup(lootGroupModel);
+            var lootGroup = new LootGroup(lootGroupModel, databaseManager: databaseManager);
             var generatedItems = new Dictionary<(LootItemType Type, uint StaticId), uint>();
             for (uint i = 0u; i < rollCount; i++)
             {
@@ -1193,7 +1205,7 @@ namespace NexusForever.Game.Loot
                     if (count == 0u)
                         continue;
 
-                    if (!CanDeliverLootItem(item))
+                if (!CanDeliverLootItem(item, itemManager, gameTableManager))
                     {
                         reason = $"invalid-loot-item:{item.Type}:{item.StaticId}";
                         return false;
@@ -1242,7 +1254,7 @@ namespace NexusForever.Game.Loot
                     return false;
                 }
 
-                if (!CanDeliverLootItem(item))
+                    if (!CanDeliverLootItem(item, itemManager, gameTableManager))
                 {
                     reason = $"invalid-loot-item:{item.Type}:{item.StaticId}";
                     return false;
@@ -1255,7 +1267,7 @@ namespace NexusForever.Game.Loot
             if (staticItems.Count == 0)
                 return true;
 
-            return CanHoldStaticLoot(looter, staticItems, out reason);
+            return CanHoldStaticLoot(looter, staticItems, itemManager, out reason);
         }
 
         public void GiveGeneratedLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, uint ownerUnitId, bool sendGrantedNotify = false, uint parentUnitId = 0u)
@@ -1270,17 +1282,17 @@ namespace NexusForever.Game.Loot
 
             if (sendGrantedNotify)
             {
-                GiveGeneratedLootWithGrantedNotify(looter, generatedItems, ownerUnitId, resolvedParentUnitId);
+                GiveGeneratedLootWithGrantedNotify(looter, generatedItems, ownerUnitId, resolvedParentUnitId, playerManager, itemManager, gameTableManager);
                 return;
             }
 
             foreach (GeneratedLootItem item in generatedItems)
-                GiveImmediateLoot(looter, item.Type, item.StaticId, item.Count, ownerUnitId, sendGrantedNotify, resolvedParentUnitId);
+                GiveImmediateLoot(looter, item.Type, item.StaticId, item.Count, ownerUnitId, sendGrantedNotify, resolvedParentUnitId, playerManager, itemManager, gameTableManager);
         }
 
-        private static void GiveGeneratedLootWithGrantedNotify(IPlayer looter, IReadOnlyCollection<GeneratedLootItem> items, uint ownerUnitId, uint parentUnitId)
+        private static void GiveGeneratedLootWithGrantedNotify(IPlayer looter, IReadOnlyCollection<GeneratedLootItem> items, uint ownerUnitId, uint parentUnitId, IPlayerManager playerManager, IItemManager itemManager, IGameTableManager gameTableManager)
         {
-            LootInstance lootInstance = new(ownerUnitId, parentUnitId, CreatePlayerLooterMap(looter), LooterType.Player, LootEntityType.Creature)
+            LootInstance lootInstance = new(ownerUnitId, parentUnitId, CreatePlayerLooterMap(looter), LooterType.Player, LootEntityType.Creature, playerManager, itemManager, gameTableManager)
             {
                 Explosion = true
             };
@@ -1315,7 +1327,7 @@ namespace NexusForever.Game.Loot
             }
         }
 
-        private static void GiveImmediateLoot(IPlayer looter, LootItemType type, uint staticId, uint count, uint ownerUnitId, bool sendGrantedNotify = false, uint parentUnitId = 0u)
+        private static void GiveImmediateLoot(IPlayer looter, LootItemType type, uint staticId, uint count, uint ownerUnitId, bool sendGrantedNotify = false, uint parentUnitId = 0u, IPlayerManager playerManager = null, IItemManager itemManager = null, IGameTableManager gameTableManager = null)
         {
             if (looter == null || count == 0u)
                 return;
@@ -1325,7 +1337,7 @@ namespace NexusForever.Game.Loot
 
             if (sendGrantedNotify)
             {
-                LootInstance lootInstance = new(ownerUnitId, resolvedParentUnitId, CreatePlayerLooterMap(looter), LooterType.Player, LootEntityType.Creature)
+                LootInstance lootInstance = new(ownerUnitId, resolvedParentUnitId, CreatePlayerLooterMap(looter), LooterType.Player, LootEntityType.Creature, playerManager, itemManager, gameTableManager)
                 {
                     Explosion = true
                 };
@@ -1345,22 +1357,22 @@ namespace NexusForever.Game.Loot
                 return;
             }
 
-            LootInstanceItem item = new(staticId, type, count);
+            LootInstanceItem item = new(staticId, type, count, itemManager, gameTableManager);
             item.SetOwnerUnit(ownerUnitId);
             item.SetWinner(looter);
             bool delivered = item.DeliverItem(looter);
             log.Trace($"Immediate loot delivery result for player {looter.CharacterId}: ownerUnit={ownerUnitId}, lootUnitId={item.Id}, type={type}, staticId={staticId}, count={count}, delivered={delivered}.");
         }
 
-        private static bool CanDeliverLootItem(GeneratedLootItem item)
+        private static bool CanDeliverLootItem(GeneratedLootItem item, IItemManager itemManager, IGameTableManager gameTableManager)
         {
             return item.Type switch
             {
-                LootItemType.AccountCurrency => IsDefinedAccountCurrency(item.StaticId),
-                LootItemType.AccountItem     => HasAccountItem(item.StaticId),
+                LootItemType.AccountCurrency => IsDefinedAccountCurrency(item.StaticId, gameTableManager),
+                LootItemType.AccountItem     => HasAccountItem(item.StaticId, gameTableManager),
                 LootItemType.Cash            => IsDefinedCharacterCurrency(item.StaticId),
-                LootItemType.StaticItem      => ItemManager.Instance.GetItemInfo(item.StaticId) != null,
-                LootItemType.VirtualItem     => HasVirtualItem(item.StaticId),
+                LootItemType.StaticItem      => itemManager?.GetItemInfo(item.StaticId) != null,
+                LootItemType.VirtualItem     => HasVirtualItem(item.StaticId, gameTableManager),
                 _                            => false
             };
         }
@@ -1375,30 +1387,30 @@ namespace NexusForever.Game.Loot
             return string.Join(", ", items.Select(item => $"lootUnitId={item.Id}:type={item.Type}:staticId={item.StaticId}:amount={item.Amount}:delivered={item.Delivered}:winnerCharacter={item.WinnerCharacterId}:winnerGuid={item.WinnerGuid}:requiresRoll={item.RequiresRoll}:onlyMasterLootable={item.OnlyMasterLootable}:rollTime={item.RollTime}:quality={item.ItemQualityId}"));
         }
 
-        private static bool IsDefinedAccountCurrency(uint staticId)
+        private static bool IsDefinedAccountCurrency(uint staticId, IGameTableManager gameTableManager)
         {
             return staticId <= int.MaxValue
                 && Enum.IsDefined(typeof(AccountCurrencyType), (int)staticId)
                 && HasRewardTableEntry(
-                    GameTableManager.Instance.AccountCurrencyType,
+                    gameTableManager?.AccountCurrencyType,
                     AccountCurrencyTypeTableName,
                     staticId,
                     nameof(IsDefinedAccountCurrency));
         }
 
-        private static bool HasAccountItem(uint staticId)
+        private static bool HasAccountItem(uint staticId, IGameTableManager gameTableManager)
         {
             return HasRewardTableEntry(
-                GameTableManager.Instance.AccountItem,
+                gameTableManager?.AccountItem,
                 AccountItemTableName,
                 staticId,
                 nameof(HasAccountItem));
         }
 
-        private static bool HasVirtualItem(uint staticId)
+        private static bool HasVirtualItem(uint staticId, IGameTableManager gameTableManager)
         {
             return HasRewardTableEntry(
-                GameTableManager.Instance.VirtualItem,
+                gameTableManager?.VirtualItem,
                 VirtualItemTableName,
                 staticId,
                 nameof(HasVirtualItem));
@@ -1434,7 +1446,7 @@ namespace NexusForever.Game.Loot
             return false;
         }
 
-        private static bool CanHoldStaticLoot(IPlayer looter, IEnumerable<GeneratedLootItem> staticItems, out string reason)
+        private static bool CanHoldStaticLoot(IPlayer looter, IEnumerable<GeneratedLootItem> staticItems, IItemManager itemManager, out string reason)
         {
             reason = string.Empty;
 
@@ -1448,7 +1460,7 @@ namespace NexusForever.Game.Loot
             ulong remainingSlots = inventoryBag.SlotsRemaining;
             foreach (IGrouping<uint, GeneratedLootItem> itemGroup in staticItems.GroupBy(i => i.StaticId))
             {
-                IItemInfo itemInfo = ItemManager.Instance.GetItemInfo(itemGroup.Key);
+                IItemInfo itemInfo = itemManager?.GetItemInfo(itemGroup.Key);
                 if (itemInfo == null)
                 {
                     reason = $"invalid-static-item:{itemGroup.Key}";
@@ -1490,6 +1502,12 @@ namespace NexusForever.Game.Loot
             }
 
             return true;
+        }
+
+        private WorldDatabase GetWorldDatabase()
+        {
+            WorldDatabase worldDatabase = databaseManager?.GetDatabase<WorldDatabase>();
+            return worldDatabase ?? throw new InvalidOperationException("WorldDatabase is not available.");
         }
     }
 }

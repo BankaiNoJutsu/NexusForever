@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Character.Model;
@@ -13,33 +12,35 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Account.Entitlement;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class EntitlementManagerTests
 {
     [Fact]
     public void AccountConstructor_WithPersistedEntitlementAndMissingEntitlementTableThrowsDatabaseDataException()
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider());
+        GameTableManager gameTableManager = CreateGameTableManager();
         IAccount account = CreateAccount(out _);
 
         Assert.Throws<DatabaseDataException>(() => new AccountEntitlementManager(
             account,
-            CreateAccountModelWithEntitlement(EntitlementType.Signature)));
+            CreateAccountModelWithEntitlement(EntitlementType.Signature),
+            assetManager: null,
+            gameTableManager: gameTableManager));
     }
 
     [Fact]
     public void CharacterConstructor_WithPersistedEntitlementAndMissingEntitlementTableThrowsDatabaseDataException()
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider());
+        GameTableManager gameTableManager = CreateGameTableManager();
         IPlayer player = CreatePlayer(out _);
 
         Assert.Throws<DatabaseDataException>(() => new CharacterEntitlementManager(
             player,
-            CreateCharacterModelWithEntitlement(EntitlementType.Signature)));
+            CreateCharacterModelWithEntitlement(EntitlementType.Signature),
+            assetManager: null,
+            gameTableManager: gameTableManager));
     }
 
     [Theory]
@@ -47,12 +48,12 @@ public class EntitlementManagerTests
     [InlineData(true)]
     public void UpdateEntitlement_WithMissingStaticDataThrowsBeforeMutating(bool includeEmptyTable)
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(includeEmptyTable ? CreateGameTable<EntitlementEntry>() : null));
+        GameTableManager gameTableManager = CreateGameTableManager(includeEmptyTable ? CreateGameTable<EntitlementEntry>() : null);
         IAccount account = CreateAccount(out RecordingDispatchProxy<IGameSession> sessionProxy);
         var manager = new AccountEntitlementManager(account, new AccountModel
         {
             Id = 77u
-        });
+        }, assetManager: null, gameTableManager);
 
         Assert.Throws<ArgumentException>(() => manager.UpdateEntitlement(EntitlementType.Signature, 1));
 
@@ -114,15 +115,13 @@ public class EntitlementManagerTests
         };
     }
 
-    private static IServiceProvider BuildProvider(GameTable<EntitlementEntry> entitlementTable = null)
+    private static GameTableManager CreateGameTableManager(GameTable<EntitlementEntry> entitlementTable = null)
     {
         var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         if (entitlementTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.Entitlement), entitlementTable);
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

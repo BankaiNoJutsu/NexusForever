@@ -14,18 +14,20 @@ namespace NexusForever.Game.Account.Unlock
     public class GenericUnlockManager : IGenericUnlockManager
     {
         private readonly IAccount account;
+        private readonly IGameTableManager gameTableManager;
         private readonly Dictionary<uint, IGenericUnlock> unlocks = new();
 
         /// <summary>
         /// Create a new <see cref="IGenericUnlockManager"/> from <see cref="AccountModel"/> database model.
         /// </summary>
-        public GenericUnlockManager(IAccount account, AccountModel model)
+        public GenericUnlockManager(IAccount account, AccountModel model, IGameTableManager gameTableManager)
         {
-            this.account = account;
+            this.account          = account;
+            this.gameTableManager = gameTableManager;
 
             foreach (AccountGenericUnlockModel unlockModel in model.AccountGenericUnlock)
             {
-                GenericUnlockEntryEntry entry = GameTableManager.Instance.GenericUnlockEntry?.GetEntry(unlockModel.Entry);
+                GenericUnlockEntryEntry entry = gameTableManager.GenericUnlockEntry?.GetEntry(unlockModel.Entry);
                 if (entry == null)
                     continue;
 
@@ -44,7 +46,7 @@ namespace NexusForever.Game.Account.Unlock
         /// </summary>
         public void Unlock(ushort genericUnlockEntryId)
         {
-            GenericUnlockEntryEntry entry = GameTableManager.Instance.GenericUnlockEntry?.GetEntry(genericUnlockEntryId);
+            GenericUnlockEntryEntry entry = gameTableManager.GenericUnlockEntry?.GetEntry(genericUnlockEntryId);
             if (entry == null)
             {
                 SendUnlockResult(GenericUnlockResult.Invalid);
@@ -68,7 +70,7 @@ namespace NexusForever.Game.Account.Unlock
         /// </summary>
         public void UnlockAll(GenericUnlockType type)
         {
-            foreach (GenericUnlockEntryEntry entry in (GameTableManager.Instance.GenericUnlockEntry?.Entries ?? [])
+            foreach (GenericUnlockEntryEntry entry in (gameTableManager.GenericUnlockEntry?.Entries ?? [])
                 .Where(e => e.GenericUnlockTypeEnum == type))
             {
                 if (unlocks.ContainsKey(entry.Id))

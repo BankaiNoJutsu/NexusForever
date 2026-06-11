@@ -8,19 +8,19 @@ namespace NexusForever.WorldServer.Command.Shared
 {
     public static class EntityUtility
     {
-        public static void BuildHeader(StringBuilder builder, IWorldEntity target, Language language)
+        public static void BuildHeader(StringBuilder builder, IWorldEntity target, Language language, IGameTableManager gameTableManager)
         {
             builder.AppendLine("=============================");
-            builder.AppendLine($"UnitId: {target.Guid} | DB ID: {target.EntityId} | Type: {target.Type} | CreatureID: {target.CreatureId} | Name: {GetName(target, language)}");
+            builder.AppendLine($"UnitId: {target.Guid} | DB ID: {target.EntityId} | Type: {target.Type} | CreatureID: {target.CreatureId} | Name: {GetName(target, language, gameTableManager)}");
         }
 
-        public static string GetName(IWorldEntity target, Language language)
+        public static string GetName(IWorldEntity target, Language language, IGameTableManager gameTableManager)
         {
             if (target is IPlayer player)
                 return player.Name;
 
-            Creature2Entry entry = GameTableManager.Instance.Creature2.GetEntry(target.CreatureId);
-            return GameTableManager.Instance.GetTextTable(language).GetEntry(entry.LocalizedTextIdName) ?? "Unknown";
+            Creature2Entry entry = gameTableManager.Creature2.GetEntry(target.CreatureId);
+            return gameTableManager.GetTextTable(language).GetEntry(entry.LocalizedTextIdName) ?? "Unknown";
         }
     }
 }

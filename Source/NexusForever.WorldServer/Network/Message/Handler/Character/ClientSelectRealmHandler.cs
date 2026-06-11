@@ -3,7 +3,7 @@ using System.Linq;
 using NexusForever.Cryptography;
 using NexusForever.Database;
 using NexusForever.Database.Auth;
-using NexusForever.Game;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Server;
 using NexusForever.Game.Static.Pregame;
 using NexusForever.Network;
@@ -20,13 +20,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
 
         private readonly IServerManager serverManager;
         private readonly IDatabaseManager databaseManager;
+        private readonly IRealmContext realmContext;
 
         public ClientSelectRealmHandler(
             IServerManager serverManager,
-            IDatabaseManager databaseManager)
+            IDatabaseManager databaseManager,
+            IRealmContext realmContext = null)
         {
             this.serverManager   = serverManager;
             this.databaseManager = databaseManager;
+            this.realmContext    = realmContext;
         }
 
         #endregion
@@ -38,7 +41,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                 throw new InvalidPacketValueException();
 
             // clicking back or selecting the current realm also triggers this packet, client crashes if we don't ignore it
-            if (server.Model.Id == RealmContext.Instance.RealmId)
+            if (server.Model.Id == (realmContext?.RealmId ?? (ushort)0))
                 return;
 
             if (!server.IsOnline)

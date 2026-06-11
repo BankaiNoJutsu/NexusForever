@@ -43,7 +43,7 @@ namespace NexusForever.Game.Entity
             OwnerGuid = owner.Guid;
             Initialise(creature);
 
-            Creature2DisplayGroup = GameTableManager.Instance.Creature2DisplayGroupEntry.Entries.SingleOrDefault(x => x.Creature2DisplayGroupId == CreatureEntry.Creature2DisplayGroupId);
+            Creature2DisplayGroup = GetGameTableManager().Creature2DisplayGroupEntry.Entries.SingleOrDefault(x => x.Creature2DisplayGroupId == CreatureEntry.Creature2DisplayGroupId);
             SetVisualInfo(Creature2DisplayGroup?.Creature2DisplayInfoId ?? 0u, 0);
 
             SetBaseProperty(Property.BaseHealth, 800.0f);

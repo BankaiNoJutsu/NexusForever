@@ -1,7 +1,9 @@
 ﻿using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Guild;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Static.Achievement;
 
 namespace NexusForever.Game.Achievement
@@ -14,7 +16,14 @@ namespace NexusForever.Game.Achievement
         /// <summary>
         /// Create a new <see cref="IGuildAchievementManager"/> from existing <see cref="GuildModel"/> database model.
         /// </summary>
-        public GuildAchievementManager(IGuild guild, GuildModel model)
+        public GuildAchievementManager(
+            IGuild guild,
+            GuildModel model,
+            IDisableManager disableManager = null,
+            IGlobalAchievementManager globalAchievementManager = null,
+            IPrerequisiteManager prerequisiteManager = null,
+            IPlayerManager playerManager = null)
+            : base(disableManager, globalAchievementManager, prerequisiteManager, playerManager)
         {
             this.guild = guild;
             Initialise(model.Achievement, false);
@@ -23,7 +32,13 @@ namespace NexusForever.Game.Achievement
         /// <summary>
         /// Create a new <see cref="IGuildAchievementManager"/> for <see cref="IGuild"/>.
         /// </summary>
-        public GuildAchievementManager(IGuild guild)
+        public GuildAchievementManager(
+            IGuild guild,
+            IDisableManager disableManager = null,
+            IGlobalAchievementManager globalAchievementManager = null,
+            IPrerequisiteManager prerequisiteManager = null,
+            IPlayerManager playerManager = null)
+            : base(disableManager, globalAchievementManager, prerequisiteManager, playerManager)
         {
             this.guild = guild;
         }
@@ -37,7 +52,7 @@ namespace NexusForever.Game.Achievement
         {
             base.CompleteAchievement(achievement);
 
-            if (GlobalAchievementManager.Instance.TryClaimRealmFirstAchievement(achievement.Info, true))
+            if (GetGlobalAchievementManager().TryClaimRealmFirstAchievement(achievement.Info, true))
                 BroadcastRealmFirstAchievement(achievement, true, guild.Name);
         }
 
@@ -54,7 +69,7 @@ namespace NexusForever.Game.Achievement
         /// </summary>
         public override void CheckAchievements(IPlayer target, AchievementType type, uint objectId, uint objectIdAlt = 0, uint count = 1)
         {
-            CheckAchievements(target, GlobalAchievementManager.Instance.GetGuildAchievements(type), objectId, objectIdAlt, count);
+            CheckAchievements(target, GetGlobalAchievementManager().GetGuildAchievements(type), objectId, objectIdAlt, count);
         }
 
         /// <summary>
@@ -62,7 +77,7 @@ namespace NexusForever.Game.Achievement
         /// </summary>
         public override void SetAchievementProgress(IPlayer target, AchievementType type, uint objectId, uint objectIdAlt, uint value)
         {
-            SetAchievementProgress(target, GlobalAchievementManager.Instance.GetGuildAchievements(type), objectId, objectIdAlt, value);
+            SetAchievementProgress(target, GetGlobalAchievementManager().GetGuildAchievements(type), objectId, objectIdAlt, value);
         }
     }
 }

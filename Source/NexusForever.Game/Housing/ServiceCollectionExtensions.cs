@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Housing;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Housing
 {
@@ -8,7 +7,7 @@ namespace NexusForever.Game.Housing
     {
         public static void AddGameHousing(this IServiceCollection sc)
         {
-            sc.AddSingletonLegacy<IGlobalResidenceManager, GlobalResidenceManager>();
+            sc.AddSingleton<IGlobalResidenceManager, GlobalResidenceManager>();
         }
     }
 }

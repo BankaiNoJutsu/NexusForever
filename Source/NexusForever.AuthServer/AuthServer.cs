@@ -51,7 +51,7 @@ namespace NexusForever.AuthServer
                     sc.AddOptions<NetworkConfig>()
                         .Bind(hb.Configuration.GetSection("Network"));
 
-                    sc.AddSingletonLegacy<ISharedConfiguration, SharedConfiguration>();
+                    sc.AddSharedConfiguration<AuthServerConfiguration>(hb.Configuration);
 
                     sc.AddDatabase();
                     sc.AddGame();

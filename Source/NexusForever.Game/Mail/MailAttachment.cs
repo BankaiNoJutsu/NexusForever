@@ -1,9 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Mail;
 using NexusForever.Game.Entity;
+using NexusForever.GameTable;
 using NexusForever.Network.World.Message.Model.Mail;
 
 namespace NexusForever.Game.Mail
@@ -31,11 +33,14 @@ namespace NexusForever.Game.Mail
         /// Create a new <see cref="IMailAttachment"/> from an existing <see cref="CharacterMailAttachmentModel"/> model.
         /// </summary>
         /// <param name="model"></param>
-        public MailAttachment(CharacterMailAttachmentModel model)
+        public MailAttachment(
+            CharacterMailAttachmentModel model,
+            IItemManager itemManager = null,
+            IGameTableManager gameTableManager = null)
         {
             Id       = model.Id;
             Index    = model.Index;
-            Item     = new Item(model.Item);
+            Item     = new Item(model.Item, itemManager, gameTableManager);
 
             saveMask = MailAttachmentSaveMask.None;
         }

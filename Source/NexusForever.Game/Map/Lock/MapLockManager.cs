@@ -9,8 +9,7 @@ using NexusForever.Shared;
 
 namespace NexusForever.Game.Map.Lock
 {
-    // legacy singleton still required for guild operations which don't use dependency injection yet...
-    public class MapLockManager : Singleton<IMapLockManager>, IMapLockManager
+    public class MapLockManager : IMapLockManager
     {
         private readonly ConcurrentDictionary<Identity, IMapLockCollection> soloLocks = [];
         private readonly ConcurrentDictionary<ulong, IMapLockCollection> groupLocks = [];

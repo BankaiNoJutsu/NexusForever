@@ -36,8 +36,9 @@ namespace NexusForever.Game.Matching.Match
             IFactory<IMatchTeam> matchTeamFactory,
             IGameTableManager gameTableManager,
             IPlayerManager playerManager,
-            IInternalMessagePublisher messagePublisher)
-            : base(log, matchManager, matchingDataManager, matchTeamFactory, gameTableManager, playerManager, messagePublisher)
+            IInternalMessagePublisher messagePublisher,
+            IMatchingDeserterManager matchingDeserterManager)
+            : base(log, matchManager, matchingDataManager, matchTeamFactory, gameTableManager, playerManager, messagePublisher, matchingDeserterManager)
         {
         }
 

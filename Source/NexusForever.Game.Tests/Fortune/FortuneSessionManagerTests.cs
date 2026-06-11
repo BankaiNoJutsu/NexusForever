@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
@@ -17,14 +16,12 @@ using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Fortune;
-using NexusForever.Shared;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Fortune;
 using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
 
 namespace NexusForever.Game.Tests.Fortune;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class FortuneSessionManagerTests
 {
     private const uint ClickEmptyResetCode = 3u;
@@ -96,93 +93,77 @@ public class FortuneSessionManagerTests
     [Fact]
     public void Start_WithClaimableFortuneCoinItemClaimsBundleBeforeDealingCards()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildGameTableProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new AccountItemEntry
             {
                 Id                    = 901u,
                 AccountCurrencyEnum   = (uint)AccountCurrencyType.FortuneCoin,
                 AccountCurrencyAmount = 5ul
             });
-        LegacyServiceProvider.Provider = provider;
 
-        try
-        {
-            var manager = CreateManager(out _);
-            IWorldSession session = CreateSessionWithClaimableFortuneCoinItem(
-                42u,
-                out var sessionProxy,
-                out var currencyProxy,
-                out AccountInventoryManager inventoryManager,
-                out Func<ulong> getFortuneCoinBalance);
+        var manager = CreateManager(out _);
+        IWorldSession session = CreateSessionWithClaimableFortuneCoinItem(
+            42u,
+            gameTableManager,
+            out var sessionProxy,
+            out var currencyProxy,
+            out AccountInventoryManager inventoryManager,
+            out Func<ulong> getFortuneCoinBalance);
 
-            manager.Start(session);
+        manager.Start(session);
 
-            RecordingDispatchProxy<IAccountCurrencyManager>.Invocation add = Assert.Single(
-                currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
-            Assert.Equal(AccountCurrencyType.FortuneCoin, add.Arguments[0]);
-            Assert.Equal(5ul, add.Arguments[1]);
+        RecordingDispatchProxy<IAccountCurrencyManager>.Invocation add = Assert.Single(
+            currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+        Assert.Equal(AccountCurrencyType.FortuneCoin, add.Arguments[0]);
+        Assert.Equal(5ul, add.Arguments[1]);
 
-            RecordingDispatchProxy<IAccountCurrencyManager>.Invocation subtract = Assert.Single(
-                currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencySubtractAmount)));
-            Assert.Equal(AccountCurrencyType.FortuneCoin, subtract.Arguments[0]);
-            Assert.Equal(1ul, subtract.Arguments[1]);
+        RecordingDispatchProxy<IAccountCurrencyManager>.Invocation subtract = Assert.Single(
+            currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencySubtractAmount)));
+        Assert.Equal(AccountCurrencyType.FortuneCoin, subtract.Arguments[0]);
+        Assert.Equal(1ul, subtract.Arguments[1]);
 
-            Assert.Equal(4ul, getFortuneCoinBalance());
-            Assert.Null(inventoryManager.GetItem(1ul));
+        Assert.Equal(4ul, getFortuneCoinBalance());
+        Assert.Null(inventoryManager.GetItem(1ul));
 
-            ServerFortuneCards cards = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneCards>().Single();
-            Assert.Equal(FortuneOperation.Update, cards.Operation);
-            Assert.Equal([11u, 22u, 33u], cards.AccountItemId);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        ServerFortuneCards cards = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneCards>().Single();
+        Assert.Equal(FortuneOperation.Update, cards.Operation);
+        Assert.Equal([11u, 22u, 33u], cards.AccountItemId);
     }
 
     [Fact]
     public void Start_WithMismatchedTargetFortuneCoinItemSendsResetWithoutClaimingBundle()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildGameTableProvider(
+        GameTableManager gameTableManager = CreateGameTableManager(
             new AccountItemEntry
             {
                 Id                    = 901u,
                 AccountCurrencyEnum   = (uint)AccountCurrencyType.FortuneCoin,
                 AccountCurrencyAmount = 5ul
             });
-        LegacyServiceProvider.Provider = provider;
 
-        try
-        {
-            var manager = CreateManager(out _);
-            IWorldSession session = CreateSessionWithClaimableFortuneCoinItem(
-                42u,
-                out var sessionProxy,
-                out var currencyProxy,
-                out AccountInventoryManager inventoryManager,
-                out Func<ulong> getFortuneCoinBalance,
-                new NetworkIdentity
-                {
-                    RealmId = TestRealmId,
-                    Id      = 9002ul
-                });
+        var manager = CreateManager(out _);
+        IWorldSession session = CreateSessionWithClaimableFortuneCoinItem(
+            42u,
+            gameTableManager,
+            out var sessionProxy,
+            out var currencyProxy,
+            out AccountInventoryManager inventoryManager,
+            out Func<ulong> getFortuneCoinBalance,
+            new NetworkIdentity
+            {
+                RealmId = TestRealmId,
+                Id      = 9002ul
+            });
 
-            manager.Start(session);
+        manager.Start(session);
 
-            Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
-            Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencySubtractAmount)));
-            Assert.Equal(0ul, getFortuneCoinBalance());
-            Assert.NotNull(inventoryManager.GetItem(1ul));
+        Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+        Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencySubtractAmount)));
+        Assert.Equal(0ul, getFortuneCoinBalance());
+        Assert.NotNull(inventoryManager.GetItem(1ul));
 
-            ServerFortuneReset reset = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneReset>().Single();
-            Assert.Equal(ClickEmptyResetCode, reset.ResetCode);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        ServerFortuneReset reset = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneReset>().Single();
+        Assert.Equal(ClickEmptyResetCode, reset.ResetCode);
     }
 
     [Fact]
@@ -420,6 +401,7 @@ public class FortuneSessionManagerTests
 
     private static IWorldSession CreateSessionWithClaimableFortuneCoinItem(
         uint accountId,
+        IGameTableManager gameTableManager,
         out RecordingDispatchProxy<IWorldSession> sessionProxy,
         out RecordingDispatchProxy<IAccountCurrencyManager> currencyProxy,
         out AccountInventoryManager inventoryManager,
@@ -482,22 +464,20 @@ public class FortuneSessionManagerTests
             TargetCharacterId       = targetPlayerIdentity?.Id ?? 0ul
         });
 
-        inventoryManager = new AccountInventoryManager(account, model);
+        inventoryManager = new AccountInventoryManager(account, model, null, gameTableManager: gameTableManager);
         accountProxy.SetProperty(nameof(IAccount.InventoryManager), inventoryManager);
 
         return session;
     }
 
-    private static ServiceProvider BuildGameTableProvider(params AccountItemEntry[] accountItems)
+    private static GameTableManager CreateGameTableManager(params AccountItemEntry[] accountItems)
     {
         var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItem), CreateGameTable(accountItems));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItemCooldownGroup), CreateGameTable<AccountItemCooldownGroupEntry>());
         SetAutoProperty(gameTableManager, nameof(GameTableManager.DailyLoginReward), CreateGameTable<DailyLoginRewardEntry>());
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

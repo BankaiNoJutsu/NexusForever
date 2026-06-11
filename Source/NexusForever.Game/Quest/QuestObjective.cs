@@ -1,6 +1,7 @@
 using NexusForever.Database.Character;
 using System.Numerics;
 using NexusForever.Game;
+using NexusForever.Game.Abstract;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
@@ -56,14 +57,16 @@ namespace NexusForever.Game.Quest
         private QuestObjectiveSaveMask saveMask;
 
         private readonly IPlayer player;
+        private readonly IAssetManager assetManager;
         private UpdateTimer objectiveTimer;
 
         /// <summary>
         /// Create a new <see cref="IQuestObjective"/> from an existing database model.
         /// </summary>
-        public QuestObjective(IPlayer owner, IQuestInfo questInfo, IQuestObjectiveInfo objectiveInfo, CharacterQuestObjectiveModel model)
+        public QuestObjective(IPlayer owner, IQuestInfo questInfo, IQuestObjectiveInfo objectiveInfo, CharacterQuestObjectiveModel model, IAssetManager assetManager = null)
         {
-            player        = owner;
+            player            = owner;
+            this.assetManager = assetManager;
 
             QuestInfo     = questInfo;
             ObjectiveInfo = objectiveInfo;
@@ -81,9 +84,10 @@ namespace NexusForever.Game.Quest
         /// <summary>
         /// Create a new <see cref="IQuestObjective"/> from supplied <see cref="QuestObjectiveEntry"/>.
         /// </summary>
-        public QuestObjective(IPlayer owner, IQuestInfo questInfo, IQuestObjectiveInfo objectiveInfo, byte index)
+        public QuestObjective(IPlayer owner, IQuestInfo questInfo, IQuestObjectiveInfo objectiveInfo, byte index, IAssetManager assetManager = null)
         {
-            player        = owner;
+            player            = owner;
+            this.assetManager = assetManager;
 
             QuestInfo     = questInfo;
             ObjectiveInfo = objectiveInfo;
@@ -106,7 +110,7 @@ namespace NexusForever.Game.Quest
         /// </summary>
         private void BuildTargets()
         {
-            targetIds = AssetManager.Instance.GetQuestObjectiveTargetIds(ObjectiveInfo.Id).ToList();
+            targetIds = (assetManager?.GetQuestObjectiveTargetIds(ObjectiveInfo.Id) ?? Enumerable.Empty<uint>()).ToList();
         }
 
         public void Save(CharacterContext context)

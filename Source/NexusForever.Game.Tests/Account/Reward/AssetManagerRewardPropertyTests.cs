@@ -1,15 +1,12 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.Entity;
-using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Tests.Account.Reward;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class AssetManagerRewardPropertyTests
 {
     [Theory]
@@ -17,10 +14,9 @@ public class AssetManagerRewardPropertyTests
     [InlineData(true)]
     public void CacheRewardPropertiesByTier_WithMissingModifierTableUsesEmptyCache(bool includeEmptyTable)
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
-            includeEmptyTable ? CreateGameTable<RewardPropertyPremiumModifierEntry>() : null));
-
-        var assetManager = new AssetManager();
+        GameTableManager gameTableManager = CreateGameTableManager(
+            includeEmptyTable ? CreateGameTable<RewardPropertyPremiumModifierEntry>() : null);
+        var assetManager = new AssetManager(null, gameTableManager);
 
         CacheRewardPropertiesByTier(assetManager);
 
@@ -44,12 +40,11 @@ public class AssetManagerRewardPropertyTests
             premiumSystem: PremiumSystem.VIP,
             flags: RewardPropertyPremiumModiferFlags.FallThrough);
 
-        using var scope = new LegacyServiceProviderScope(BuildProvider(CreateGameTable(
+        GameTableManager gameTableManager = CreateGameTableManager(CreateGameTable(
             basicHybrid,
             signatureHybrid,
-            vipIgnored)));
-
-        var assetManager = new AssetManager();
+            vipIgnored));
+        var assetManager = new AssetManager(null, gameTableManager);
 
         CacheRewardPropertiesByTier(assetManager);
 
@@ -62,15 +57,13 @@ public class AssetManagerRewardPropertyTests
             entry => Assert.Same(basicHybrid, entry));
     }
 
-    private static IServiceProvider BuildProvider(GameTable<RewardPropertyPremiumModifierEntry> modifierTable)
+    private static GameTableManager CreateGameTableManager(GameTable<RewardPropertyPremiumModifierEntry> modifierTable)
     {
         var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         if (modifierTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.RewardPropertyPremiumModifier), modifierTable);
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static RewardPropertyPremiumModifierEntry CreateModifier(

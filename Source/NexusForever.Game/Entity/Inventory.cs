@@ -2,12 +2,15 @@
 using System.Diagnostics;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Quest;
 using NexusForever.Game.RealmBank;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
+using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
 using NexusForever.Network.World.Message.Model;
@@ -28,6 +31,10 @@ namespace NexusForever.Game.Entity
 
         private readonly ulong characterId;
         private readonly IPlayer player;
+        private readonly RealmBankManager realmBankManager;
+        private readonly IPrerequisiteManager prerequisiteManager;
+        private readonly IItemManager itemManager;
+        private readonly IGameTableManager gameTableManager;
         private readonly Dictionary<InventoryLocation, IBag> bags = new();
         private readonly List<IItem> deletedItems = new();
         private double itemExpirationAccumulator;
@@ -35,19 +42,29 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="IInventory"/> from <see cref="IPlayer"/> database model.
         /// </summary>
-        public Inventory(IPlayer owner, CharacterModel model)
+        public Inventory(
+            IPlayer owner,
+            CharacterModel model,
+            RealmBankManager realmBankManager = null,
+            IPrerequisiteManager prerequisiteManager = null,
+            IItemManager itemManager = null,
+            IGameTableManager gameTableManager = null)
         {
-            characterId = owner?.CharacterId ?? 0ul;
-            player      = owner;
+            characterId           = owner?.CharacterId ?? 0ul;
+            player                = owner;
+            this.realmBankManager = realmBankManager;
+            this.prerequisiteManager = prerequisiteManager;
+            this.itemManager      = itemManager;
+            this.gameTableManager = gameTableManager;
 
             foreach ((InventoryLocation location, uint defaultCapacity) in AssetManager.InventoryLocationCapacities)
-                bags.Add(location, new Bag(location, defaultCapacity));
+                bags.Add(location, new Bag(location, defaultCapacity, itemManager));
 
             foreach (ItemModel itemModel in model.Item
                 .Select(i => i)
                 .OrderBy(i => i.Location))
             {
-                var item = new Item(itemModel);
+                var item = new Item(itemModel, itemManager, gameTableManager);
                 AddItem(item, (InventoryLocation)itemModel.Location, itemModel.BagIndex);
             }
         }
@@ -55,16 +72,20 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="IInventory"/> from supplied <see cref="CharacterCreationEntry"/>.
         /// </summary>
-        public Inventory(ulong owner, CharacterCreationEntry creationEntry)
+        public Inventory(
+            ulong owner,
+            CharacterCreationEntry creationEntry,
+            IItemManager itemManager = null)
         {
             characterId = owner;
+            this.itemManager = itemManager;
 
             foreach ((InventoryLocation location, uint defaultCapacity) in AssetManager.InventoryLocationCapacities)
-                bags.Add(location, new Bag(location, defaultCapacity));
+                bags.Add(location, new Bag(location, defaultCapacity, itemManager));
 
             foreach (uint itemId in creationEntry.ItemIds.Where(i => i != 0u))
             {
-                IItemInfo info = ItemManager.Instance.GetItemInfo(itemId);
+                IItemInfo info = itemManager?.GetItemInfo(itemId);
                 if (info == null)
                     throw new ArgumentNullException();
 
@@ -234,7 +255,7 @@ namespace NexusForever.Game.Entity
             if (spell4BaseEntry == null)
                 throw new ArgumentNullException();
 
-            var spell = new Item(characterId, spell4BaseEntry);
+            var spell = new Item(characterId, spell4BaseEntry, itemManager: itemManager, gameTableManager: gameTableManager);
             AddItem(spell, InventoryLocation.Ability, reason);
 
             return spell;
@@ -245,7 +266,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void ItemCreate(InventoryLocation location, uint itemId, uint count, ItemUpdateReason reason = ItemUpdateReason.NoReason, uint charges = 0)
         {
-            IItemInfo info = ItemManager.Instance.GetItemInfo(itemId);
+            IItemInfo info = itemManager?.GetItemInfo(itemId);
             if (info == null)
                 throw new ArgumentNullException();
 
@@ -290,7 +311,7 @@ namespace NexusForever.Game.Entity
                 {
                     // If there is remaining count left, and this was created by SupplySatchelManager, then return the rest to the client.
                     if (count > 0 && reason == ItemUpdateReason.ResourceConversion)
-                        player.SupplySatchelManager.AddAmount(new Item(characterId, info, count, charges), count);
+                        player.SupplySatchelManager.AddAmount(new Item(characterId, info, count, charges, itemManager, gameTableManager), count);
                     else
                     {
                         player.Session.EnqueueMessageEncrypted(new ServerItemError
@@ -302,7 +323,7 @@ namespace NexusForever.Game.Entity
                     return;
                 }
 
-                var item = new Item(characterId, info, Math.Min(count, info.IsStackable() ? info.Entry.MaxStackCount : 1), charges);
+                var item = new Item(characterId, info, Math.Min(count, info.IsStackable() ? info.Entry.MaxStackCount : 1), charges, itemManager, gameTableManager);
                 AddItem(item, location, bagIndex.Value);
 
                 if (!player?.IsLoading ?? false)
@@ -389,7 +410,7 @@ namespace NexusForever.Game.Entity
 
                 uint equipPrerequisiteId = item.Info.Entry.PrerequisiteId;
                 if (equipPrerequisiteId != 0u && player != null
-                    && !PrerequisiteEvaluation.Meets(player, equipPrerequisiteId, item))
+                    && !PrerequisiteEvaluation.Meets(player, equipPrerequisiteId, item, prerequisiteManager))
                     return GenericError.ItemEquipPrereqFailed;
 
                 GenericError? bagCapacityError = CanApplyBagCapacityChangeForMove(item, dstItem, location, bagIndex);
@@ -596,7 +617,7 @@ namespace NexusForever.Game.Entity
             if (dstItem != null)
                 throw new InvalidPacketValueException();
 
-            var newItem = new Item(characterId, item.Info, Math.Min(count, item.Info.Entry.MaxStackCount));
+            var newItem = new Item(characterId, item.Info, Math.Min(count, item.Info.Entry.MaxStackCount), itemManager: itemManager, gameTableManager: gameTableManager);
             newItem.ExpirationTimeLeft = item.ExpirationTimeLeft;
             if (item.Soulbound)
                 newItem.MakeSoulbound();
@@ -653,7 +674,7 @@ namespace NexusForever.Game.Entity
             if (count == srcItem.StackCount)
                 return ItemDelete(srcBag, srcItem, reason);
 
-            IItem splitItem = new Item(characterId, srcItem.Info, count, srcItem.Charges)
+            IItem splitItem = new Item(characterId, srcItem.Info, count, srcItem.Charges, itemManager, gameTableManager)
             {
                 Durability          = srcItem.Durability,
                 ExpirationTimeLeft  = srcItem.ExpirationTimeLeft
@@ -682,7 +703,7 @@ namespace NexusForever.Game.Entity
             if (!item.PendingCreate)
             {
                 if (deletedLocation == InventoryLocation.RealmBank)
-                    RealmBankManager.Instance.DeleteItem(item.Guid);
+                    realmBankManager?.DeleteItem(item.Guid);
                 else
                 {
                     item.EnqueueDelete(true);
@@ -809,7 +830,7 @@ namespace NexusForever.Game.Entity
                 InventoryResize(InventoryLocation.PlayerBank, (int)item.Info.Entry.MaxStackCount);
 
             if (location == InventoryLocation.RealmBank && player != null)
-                RealmBankManager.Instance.SaveItem(item, player);
+                realmBankManager?.SaveItem(item, player);
         }
 
         private static void BindOnEquip(IItem item)
@@ -972,10 +993,10 @@ namespace NexusForever.Game.Entity
             if (item.Location != InventoryLocation.RealmBank && location != InventoryLocation.RealmBank)
                 return null;
 
-            if (player == null || !RealmBankManager.Instance.HasUnlock(player))
+            if (player == null || realmBankManager == null || !realmBankManager.HasUnlock(player))
                 return GenericError.ItemNotValidForSlot;
 
-            uint capacity = RealmBankManager.Instance.GetSlotCapacity(player);
+            uint capacity = realmBankManager.GetSlotCapacity(player);
             IBag realmBank = GetBag(InventoryLocation.RealmBank);
             if (realmBank == null)
                 return GenericError.ItemNotValidForSlot;
@@ -995,9 +1016,9 @@ namespace NexusForever.Game.Entity
                 return;
 
             if (item.Location == InventoryLocation.RealmBank)
-                RealmBankManager.Instance.SaveItem(item, player);
+                realmBankManager?.SaveItem(item, player);
             else if (item.PreviousLocation == InventoryLocation.RealmBank)
-                RealmBankManager.Instance.SaveCharacterItem(item, player);
+                realmBankManager?.SaveCharacterItem(item, player);
         }
 
         private bool CanApplyBagCapacityChange(InventoryLocation location, int capacityChange, uint? reservedBagIndex = null)
@@ -1129,7 +1150,7 @@ namespace NexusForever.Game.Entity
             });
 
             if (item.Location == InventoryLocation.RealmBank && player != null)
-                RealmBankManager.Instance.SaveItem(item, player);
+                realmBankManager?.SaveItem(item, player);
         }
 
         /// <summary>

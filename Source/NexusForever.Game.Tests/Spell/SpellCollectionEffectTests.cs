@@ -1,31 +1,32 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Unlock;
+using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Movement.Force;
+using NexusForever.Game.Abstract.Housing;
+using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.Game.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Spell;
 
-[Collection(LegacyServiceProviderCollection.Name)]
+[Collection(MissingGameDataDiagnosticsCollection.Name)]
 public class SpellCollectionEffectTests
 {
     [Fact]
     public void LearnDyeColor_WithMissingGenericUnlockEntryTable_UsesInvalidUnlockPath()
     {
         MissingGameDataDiagnostics.ResetForTests();
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithoutStaticTables())
-            .BuildServiceProvider();
+        using IDisposable dependencyScope = UseGameTableManager(CreateGameTableManagerWithoutStaticTables());
 
         try
         {
@@ -43,7 +44,6 @@ public class SpellCollectionEffectTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
             MissingGameDataDiagnostics.ResetForTests();
         }
     }
@@ -52,10 +52,7 @@ public class SpellCollectionEffectTests
     public void UnlockMount_WithMissingSpell4Table_DoesNotAddSpellOrEmitUnlock()
     {
         MissingGameDataDiagnostics.ResetForTests();
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithoutStaticTables())
-            .BuildServiceProvider();
+        using IDisposable dependencyScope = UseGameTableManager(CreateGameTableManagerWithoutStaticTables());
 
         try
         {
@@ -74,7 +71,6 @@ public class SpellCollectionEffectTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
             MissingGameDataDiagnostics.ResetForTests();
         }
     }
@@ -82,52 +78,39 @@ public class SpellCollectionEffectTests
     [Fact]
     public void UnlockMount_WithKnownSpell4_AddsBaseSpellAndEmitsUnlock()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManager(new Spell4Entry
+        using IDisposable dependencyScope = UseGameTableManager(CreateGameTableManager(new Spell4Entry
             {
                 Id                     = 44u,
                 Spell4BaseIdBaseSpell = 440u
-            }))
-            .BuildServiceProvider();
+            }));
 
-        try
-        {
-            IPlayer player = CreateCollectionPlayer(
-                out RecordingDispatchProxy<ISpellManager> spellManagerProxy,
-                out RecordingDispatchProxy<IGameSession> sessionProxy);
-            ISpell spell = CreateSpell(player);
-            ISpellTargetEffectInfo info = CreateCollectionInfo(SpellEffectType.UnlockMount, 44u);
+        IPlayer player = CreateCollectionPlayer(
+            out RecordingDispatchProxy<ISpellManager> spellManagerProxy,
+            out RecordingDispatchProxy<IGameSession> sessionProxy);
+        ISpell spell = CreateSpell(player);
+        ISpellTargetEffectInfo info = CreateCollectionInfo(SpellEffectType.UnlockMount, 44u);
 
-            global::NexusForever.Game.Spell.SpellHandler.HandleEffectUnlockMount(spell, player, info);
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectUnlockMount(spell, player, info);
 
-            RecordingDispatchProxy<ISpellManager>.Invocation getSpell =
-                Assert.Single(spellManagerProxy.GetInvocations(nameof(ISpellManager.GetSpell)));
-            Assert.Equal(440u, getSpell.Arguments[0]);
+        RecordingDispatchProxy<ISpellManager>.Invocation getSpell =
+            Assert.Single(spellManagerProxy.GetInvocations(nameof(ISpellManager.GetSpell)));
+        Assert.Equal(440u, getSpell.Arguments[0]);
 
-            RecordingDispatchProxy<ISpellManager>.Invocation addSpell =
-                Assert.Single(spellManagerProxy.GetInvocations(nameof(ISpellManager.AddSpell)));
-            Assert.Equal(440u, addSpell.Arguments[0]);
+        RecordingDispatchProxy<ISpellManager>.Invocation addSpell =
+            Assert.Single(spellManagerProxy.GetInvocations(nameof(ISpellManager.AddSpell)));
+        Assert.Equal(440u, addSpell.Arguments[0]);
 
-            RecordingDispatchProxy<IGameSession>.Invocation sessionCall =
-                Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-            ServerUnlockMount unlockMount = Assert.IsType<ServerUnlockMount>(sessionCall.Arguments[0]);
-            Assert.Equal(44u, unlockMount.Spell4Id);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        RecordingDispatchProxy<IGameSession>.Invocation sessionCall =
+            Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        ServerUnlockMount unlockMount = Assert.IsType<ServerUnlockMount>(sessionCall.Arguments[0]);
+        Assert.Equal(44u, unlockMount.Spell4Id);
     }
 
     [Fact]
     public void UnlockPetFlair_WithMissingPetFlairTable_DoesNotUnlockFlair()
     {
         MissingGameDataDiagnostics.ResetForTests();
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithoutStaticTables())
-            .BuildServiceProvider();
+        using IDisposable dependencyScope = UseGameTableManager(CreateGameTableManagerWithoutStaticTables());
 
         try
         {
@@ -143,7 +126,6 @@ public class SpellCollectionEffectTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
             MissingGameDataDiagnostics.ResetForTests();
         }
     }
@@ -151,44 +133,31 @@ public class SpellCollectionEffectTests
     [Fact]
     public void UnlockPetFlair_WithKnownPetFlair_UnlocksFlair()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithPetFlair(new PetFlairEntry
+        using IDisposable dependencyScope = UseGameTableManager(CreateGameTableManagerWithPetFlair(new PetFlairEntry
             {
                 Id = 12u
-            }))
-            .BuildServiceProvider();
+            }));
 
-        try
-        {
-            IPlayer player = CreatePetFlairPlayer(out RecordingDispatchProxy<IPetCustomisationManager> petProxy);
-            ISpell spell = CreateSpell(player);
-            ISpellTargetEffectInfo info = CreateCollectionInfo(SpellEffectType.UnlockPetFlair, 12u);
+        IPlayer player = CreatePetFlairPlayer(out RecordingDispatchProxy<IPetCustomisationManager> petProxy);
+        ISpell spell = CreateSpell(player);
+        ISpellTargetEffectInfo info = CreateCollectionInfo(SpellEffectType.UnlockPetFlair, 12u);
 
-            global::NexusForever.Game.Spell.SpellHandler.HandleEffectUnlockPetFlair(spell, player, info);
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectUnlockPetFlair(spell, player, info);
 
-            RecordingDispatchProxy<IPetCustomisationManager>.Invocation hasFlair =
-                Assert.Single(petProxy.GetInvocations(nameof(IPetCustomisationManager.HasFlair)));
-            Assert.Equal((ushort)12, hasFlair.Arguments[0]);
+        RecordingDispatchProxy<IPetCustomisationManager>.Invocation hasFlair =
+            Assert.Single(petProxy.GetInvocations(nameof(IPetCustomisationManager.HasFlair)));
+        Assert.Equal((ushort)12, hasFlair.Arguments[0]);
 
-            RecordingDispatchProxy<IPetCustomisationManager>.Invocation unlockFlair =
-                Assert.Single(petProxy.GetInvocations(nameof(IPetCustomisationManager.UnlockFlair)));
-            Assert.Equal((ushort)12, unlockFlair.Arguments[0]);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        RecordingDispatchProxy<IPetCustomisationManager>.Invocation unlockFlair =
+            Assert.Single(petProxy.GetInvocations(nameof(IPetCustomisationManager.UnlockFlair)));
+        Assert.Equal((ushort)12, unlockFlair.Arguments[0]);
     }
 
     [Fact]
     public void TitleGrant_WithMissingCharacterTitleTable_DoesNotAddTitle()
     {
         MissingGameDataDiagnostics.ResetForTests();
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithoutStaticTables())
-            .BuildServiceProvider();
+        using IDisposable dependencyScope = UseGameTableManager(CreateGameTableManagerWithoutStaticTables());
 
         try
         {
@@ -204,7 +173,6 @@ public class SpellCollectionEffectTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
             MissingGameDataDiagnostics.ResetForTests();
         }
     }
@@ -212,44 +180,31 @@ public class SpellCollectionEffectTests
     [Fact]
     public void TitleGrant_WithKnownCharacterTitle_AddsTitle()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithCharacterTitle(new CharacterTitleEntry
+        using IDisposable dependencyScope = UseGameTableManager(CreateGameTableManagerWithCharacterTitle(new CharacterTitleEntry
             {
                 Id = 21u
-            }))
-            .BuildServiceProvider();
+            }));
 
-        try
-        {
-            IPlayer player = CreateTitlePlayer(out RecordingDispatchProxy<ITitleManager> titleProxy);
-            ISpell spell = CreateSpell(player);
-            ISpellTargetEffectInfo info = CreateCollectionInfo(SpellEffectType.TitleGrant, 21u);
+        IPlayer player = CreateTitlePlayer(out RecordingDispatchProxy<ITitleManager> titleProxy);
+        ISpell spell = CreateSpell(player);
+        ISpellTargetEffectInfo info = CreateCollectionInfo(SpellEffectType.TitleGrant, 21u);
 
-            global::NexusForever.Game.Spell.SpellHandler.HandleEffectTitleGrant(spell, player, info);
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectTitleGrant(spell, player, info);
 
-            RecordingDispatchProxy<ITitleManager>.Invocation hasTitle =
-                Assert.Single(titleProxy.GetInvocations(nameof(ITitleManager.HasTitle)));
-            Assert.Equal((ushort)21, hasTitle.Arguments[0]);
+        RecordingDispatchProxy<ITitleManager>.Invocation hasTitle =
+            Assert.Single(titleProxy.GetInvocations(nameof(ITitleManager.HasTitle)));
+        Assert.Equal((ushort)21, hasTitle.Arguments[0]);
 
-            RecordingDispatchProxy<ITitleManager>.Invocation addTitle =
-                Assert.Single(titleProxy.GetInvocations(nameof(ITitleManager.AddTitle)));
-            Assert.Equal((ushort)21, addTitle.Arguments[0]);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        RecordingDispatchProxy<ITitleManager>.Invocation addTitle =
+            Assert.Single(titleProxy.GetInvocations(nameof(ITitleManager.AddTitle)));
+        Assert.Equal((ushort)21, addTitle.Arguments[0]);
     }
 
     [Fact]
     public void TitleRevoke_WithMissingCharacterTitleTable_DoesNotRevokeTitle()
     {
         MissingGameDataDiagnostics.ResetForTests();
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithoutStaticTables())
-            .BuildServiceProvider();
+        using IDisposable dependencyScope = UseGameTableManager(CreateGameTableManagerWithoutStaticTables());
 
         try
         {
@@ -265,7 +220,6 @@ public class SpellCollectionEffectTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
             MissingGameDataDiagnostics.ResetForTests();
         }
     }
@@ -273,34 +227,87 @@ public class SpellCollectionEffectTests
     [Fact]
     public void TitleRevoke_WithKnownOwnedCharacterTitle_RevokesTitle()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithCharacterTitle(new CharacterTitleEntry
+        using IDisposable dependencyScope = UseGameTableManager(CreateGameTableManagerWithCharacterTitle(new CharacterTitleEntry
             {
                 Id = 21u
-            }))
-            .BuildServiceProvider();
+            }));
 
-        try
+        IPlayer player = CreateTitlePlayer(out RecordingDispatchProxy<ITitleManager> titleProxy);
+        titleProxy.SetMethodReturn(nameof(ITitleManager.HasTitle), true);
+        ISpell spell = CreateSpell(player);
+        ISpellTargetEffectInfo info = CreateCollectionInfo(SpellEffectType.TitleRevoke, 21u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectTitleRevoke(spell, player, info);
+
+        RecordingDispatchProxy<ITitleManager>.Invocation hasTitle =
+            Assert.Single(titleProxy.GetInvocations(nameof(ITitleManager.HasTitle)));
+        Assert.Equal((ushort)21, hasTitle.Arguments[0]);
+
+        RecordingDispatchProxy<ITitleManager>.Invocation revokeTitle =
+            Assert.Single(titleProxy.GetInvocations(nameof(ITitleManager.RevokeTitle)));
+        Assert.Equal((ushort)21, revokeTitle.Arguments[0]);
+    }
+
+    private static IDisposable UseGameTableManager(IGameTableManager gameTableManager)
+    {
+        ISpellEffectDependencyResolver previousResolver =
+            global::NexusForever.Game.Spell.SpellHandler.InitialiseDependencyResolver(new TestSpellEffectDependencyResolver(gameTableManager));
+        return new DependencyResolverScope(previousResolver);
+    }
+
+    private sealed class DependencyResolverScope(ISpellEffectDependencyResolver previousResolver) : IDisposable
+    {
+        public void Dispose()
         {
-            IPlayer player = CreateTitlePlayer(out RecordingDispatchProxy<ITitleManager> titleProxy);
-            titleProxy.SetMethodReturn(nameof(ITitleManager.HasTitle), true);
-            ISpell spell = CreateSpell(player);
-            ISpellTargetEffectInfo info = CreateCollectionInfo(SpellEffectType.TitleRevoke, 21u);
-
-            global::NexusForever.Game.Spell.SpellHandler.HandleEffectTitleRevoke(spell, player, info);
-
-            RecordingDispatchProxy<ITitleManager>.Invocation hasTitle =
-                Assert.Single(titleProxy.GetInvocations(nameof(ITitleManager.HasTitle)));
-            Assert.Equal((ushort)21, hasTitle.Arguments[0]);
-
-            RecordingDispatchProxy<ITitleManager>.Invocation revokeTitle =
-                Assert.Single(titleProxy.GetInvocations(nameof(ITitleManager.RevokeTitle)));
-            Assert.Equal((ushort)21, revokeTitle.Arguments[0]);
+            global::NexusForever.Game.Spell.SpellHandler.InitialiseDependencyResolver(previousResolver);
         }
-        finally
+    }
+
+    private sealed class TestSpellEffectDependencyResolver(IGameTableManager gameTableManager) : ISpellEffectDependencyResolver
+    {
+        public IDamageCalculator CreateDamageCalculator()
         {
-            LegacyServiceProvider.Provider = previousProvider;
+            return null;
+        }
+
+        public IEntityFactory GetEntityFactory()
+        {
+            return null;
+        }
+
+        public IForcedMovementGenerator GetForcedMovementGenerator()
+        {
+            return null;
+        }
+
+        public IAssetManager GetAssetManager()
+        {
+            return null;
+        }
+
+        public IGlobalAchievementManager GetGlobalAchievementManager()
+        {
+            return null;
+        }
+
+        public IGlobalResidenceManager GetGlobalResidenceManager()
+        {
+            return null;
+        }
+
+        public IMapLockManager GetMapLockManager()
+        {
+            return null;
+        }
+
+        public IGlobalSpellManager GetGlobalSpellManager()
+        {
+            return null;
+        }
+
+        public IGameTableManager GetGameTableManager()
+        {
+            return gameTableManager;
         }
     }
 

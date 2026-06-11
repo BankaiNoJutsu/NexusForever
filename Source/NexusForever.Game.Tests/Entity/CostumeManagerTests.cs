@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
@@ -23,7 +22,6 @@ using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.Game.Tests.Entity;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class CostumeManagerTests
 {
     private const uint CostumeItemId = 101u;
@@ -36,15 +34,18 @@ public class CostumeManagerTests
     public void SaveCostume_WithMissingDyeColorRampStaticDataSendsInvalidDye(bool includeEmptyTable)
     {
         IItemInfo itemInfo = CreateItemInfo(CostumeItemId, ItemDisplayId);
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
+        (ItemManager itemManager, GameTableManager gameTableManager) = CreateManagers(
             itemInfo,
             CreateGameTable(new ItemDisplayEntry
             {
                 Id              = ItemDisplayId,
                 DyeChannelFlags = 1u
             }),
-            includeEmptyTable ? CreateGameTable<DyeColorRampEntry>() : null));
-        CostumeManager manager = CreateManager(out RecordingDispatchProxy<IGameSession> sessionProxy);
+            includeEmptyTable ? CreateGameTable<DyeColorRampEntry>() : null);
+        CostumeManager manager = CreateManager(
+            itemManager,
+            gameTableManager,
+            out RecordingDispatchProxy<IGameSession> sessionProxy);
         ClientCostumeSave packet = CreateCostumeSave(CostumeItemId, DyeColorRampId);
 
         manager.SaveCostume(packet);
@@ -61,7 +62,7 @@ public class CostumeManagerTests
     public void SaveCostume_WithKnownDyeColorRampStaticDataSavesCostume()
     {
         IItemInfo itemInfo = CreateItemInfo(CostumeItemId, ItemDisplayId);
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
+        (ItemManager itemManager, GameTableManager gameTableManager) = CreateManagers(
             itemInfo,
             CreateGameTable(new ItemDisplayEntry
             {
@@ -72,8 +73,11 @@ public class CostumeManagerTests
             {
                 Id        = DyeColorRampId,
                 RampIndex = 7u
-            })));
-        CostumeManager manager = CreateManager(out RecordingDispatchProxy<IGameSession> sessionProxy);
+            }));
+        CostumeManager manager = CreateManager(
+            itemManager,
+            gameTableManager,
+            out RecordingDispatchProxy<IGameSession> sessionProxy);
         ClientCostumeSave packet = CreateCostumeSave(CostumeItemId, DyeColorRampId);
 
         manager.SaveCostume(packet);
@@ -95,11 +99,14 @@ public class CostumeManagerTests
     public void SaveCostume_WithMissingItemDisplayStaticDataAndNoDyeSavesCostume()
     {
         IItemInfo itemInfo = CreateItemInfo(CostumeItemId, ItemDisplayId);
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
+        (ItemManager itemManager, GameTableManager gameTableManager) = CreateManagers(
             itemInfo,
             null,
-            null));
-        CostumeManager manager = CreateManager(out RecordingDispatchProxy<IGameSession> sessionProxy);
+            null);
+        CostumeManager manager = CreateManager(
+            itemManager,
+            gameTableManager,
+            out RecordingDispatchProxy<IGameSession> sessionProxy);
         ClientCostumeSave packet = CreateCostumeSave(CostumeItemId, 0u);
 
         manager.SaveCostume(packet);
@@ -119,15 +126,20 @@ public class CostumeManagerTests
     [InlineData(true)]
     public void GenerateDyeMask_WithMissingDyeColorRampStaticDataThrowsInvalidDye(bool includeEmptyTable)
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
+        (_, GameTableManager gameTableManager) = CreateManagers(
             CreateItemInfo(CostumeItemId, ItemDisplayId),
             CreateGameTable<ItemDisplayEntry>(),
-            includeEmptyTable ? CreateGameTable<DyeColorRampEntry>() : null));
+            includeEmptyTable ? CreateGameTable<DyeColorRampEntry>() : null);
 
-        Assert.Throws<ArgumentException>(() => CostumeItem.GenerateDyeMask([DyeColorRampId, 0u, 0u]));
+        Assert.Throws<ArgumentException>(() => CostumeItem.GenerateDyeMask(
+            [DyeColorRampId, 0u, 0u],
+            gameTableManager));
     }
 
-    private static CostumeManager CreateManager(out RecordingDispatchProxy<IGameSession> sessionProxy)
+    private static CostumeManager CreateManager(
+        IItemManager itemManager,
+        IGameTableManager gameTableManager,
+        out RecordingDispatchProxy<IGameSession> sessionProxy)
     {
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out sessionProxy);
         IAccount account = CreateAccount();
@@ -144,7 +156,9 @@ public class CostumeManagerTests
         {
             Id                 = 42ul,
             ActiveCostumeIndex = -1
-        });
+        },
+            itemManager,
+            gameTableManager);
     }
 
     private static IAccount CreateAccount()
@@ -212,7 +226,7 @@ public class CostumeManagerTests
         return stream.ToArray();
     }
 
-    private static IServiceProvider BuildProvider(
+    private static (ItemManager ItemManager, GameTableManager GameTableManager) CreateManagers(
         IItemInfo itemInfo,
         GameTable<ItemDisplayEntry> itemDisplayTable,
         GameTable<DyeColorRampEntry> dyeColorRampTable)
@@ -226,10 +240,7 @@ public class CostumeManagerTests
         if (dyeColorRampTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.DyeColorRamp), dyeColorRampTable);
 
-        return new ServiceCollection()
-            .AddSingleton(itemManager)
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return (itemManager, gameTableManager);
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

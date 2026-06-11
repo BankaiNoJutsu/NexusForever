@@ -57,13 +57,20 @@ namespace NexusForever.Game.Entity
         private UpdateTimer wakeHereTimer = new UpdateTimer(TimeSpan.FromMinutes(30d), false);
 
         private IPlayer owner;
+        private readonly ISharedConfiguration sharedConfiguration;
+        private readonly IGameTableManager gameTableManager;
 
         /// <summary>
         /// Create a new <see cref="IResurrectionManager"/> for <see cref="IPlayer"/>.
         /// </summary>
-        public ResurrectionManager(IPlayer owner)
+        public ResurrectionManager(
+            IPlayer owner,
+            ISharedConfiguration sharedConfiguration = null,
+            IGameTableManager gameTableManager = null)
         {
             this.owner = owner;
+            this.sharedConfiguration = sharedConfiguration;
+            this.gameTableManager = gameTableManager;
         }
 
         /// <summary>
@@ -282,13 +289,13 @@ namespace NexusForever.Game.Entity
 
         private uint GetCostForResurrection()
         {
-            return SharedConfiguration.Instance.Get<WorldConfig>()?.WakeHereCreditCost ?? 0u;
+            return sharedConfiguration?.Get<WorldConfig>()?.WakeHereCreditCost ?? 0u;
         }
 
         private uint GetServiceTokenCostForResurrection()
         {
-            GameFormulaEntry entry = GameTableManager.Instance.GameFormula.GetEntry(WakeHereServiceTokenCostGameFormulaId);
-            return entry.Dataint0;
+            GameFormulaEntry entry = gameTableManager?.GameFormula?.GetEntry(WakeHereServiceTokenCostGameFormulaId);
+            return entry?.Dataint0 ?? 0u;
         }
     }
 }

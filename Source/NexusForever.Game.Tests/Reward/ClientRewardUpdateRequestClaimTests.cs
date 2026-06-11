@@ -82,7 +82,7 @@ public class ClientRewardUpdateRequestClaimTests
         var session = new ClaimTestWorldSession(account);
         var handler = new ClientRewardUpdateRequestHandler(
             NullLogger<ClientRewardUpdateRequestHandler>.Instance,
-            NoOpGlobalStorefrontManager.Instance,
+            new NoOpGlobalStorefrontManager(),
             new FixedScheduleRefreshProvider(schedule));
 
         handler.HandleMessage(session, BuildClaimRequest(1u, 15u, RewardRotationScheduleBuilder.RewardTypeItem));

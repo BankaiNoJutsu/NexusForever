@@ -66,8 +66,8 @@ namespace NexusForever.Game.Guild
         {
             IGuildResultInfo GetResult()
             {
-                if (!TextFilterManager.Instance.IsTextValid(operation.TextValue)
-                    || !TextFilterManager.Instance.IsTextValid(operation.TextValue, UserText.GuildMemberNote))
+                if (!textFilterManager.IsTextValid(operation.TextValue)
+                    || !textFilterManager.IsTextValid(operation.TextValue, UserText.GuildMemberNote))
                     return new GuildResultInfo(GuildResult.InvalidMemberNote);
 
                 return new GuildResultInfo(GuildResult.Success);
@@ -165,7 +165,7 @@ namespace NexusForever.Game.Guild
                 if (!member.Rank.HasPermission(GuildRankPermission.Invite))
                     return new GuildResultInfo(GuildResult.RankLacksSufficientPermissions);
 
-                target = PlayerManager.Instance.GetPlayer(operation.TextValue);
+                target = playerManager?.GetPlayer(operation.TextValue);
                 if (target == null)
                     return new GuildResultInfo(GuildResult.UnknownCharacter, referenceString: operation.TextValue);
 
@@ -176,7 +176,7 @@ namespace NexusForever.Game.Guild
             if (info.Result != GuildResult.Success)
                 return info;
 
-            IPlayer inviter = PlayerManager.Instance.GetPlayer(member.PlayerIdentity.Id);
+            IPlayer inviter = playerManager?.GetPlayer(member.PlayerIdentity.Id);
 
             target.GuildManager.InviteToGuild(Id, player, inviter);
             return new GuildResultInfo(GuildResult.InviteSent, referenceString: operation.TextValue);
@@ -205,7 +205,7 @@ namespace NexusForever.Game.Guild
             if (info.Result == GuildResult.Success)
             {
                 // if the player is online handle through the local manager otherwise directly in the guild
-                IPlayer targetPlayer = PlayerManager.Instance.GetPlayer(targetMember.CharacterId);
+                IPlayer targetPlayer = playerManager?.GetPlayer(targetMember.CharacterId);
                 if (targetPlayer != null)
                     targetPlayer.GuildManager.LeaveGuild(Id, GuildResult.KickedYou);
                 else
@@ -244,8 +244,8 @@ namespace NexusForever.Game.Guild
                 if (RankExists(operation.TextValue))
                     return new GuildResultInfo(GuildResult.DuplicateRankName, referenceString: operation.TextValue);
 
-                if (!TextFilterManager.Instance.IsTextValid(operation.TextValue)
-                    || !TextFilterManager.Instance.IsTextValid(operation.TextValue, UserText.GuildRankName))
+                if (!textFilterManager.IsTextValid(operation.TextValue)
+                    || !textFilterManager.IsTextValid(operation.TextValue, UserText.GuildRankName))
                     return new GuildResultInfo(GuildResult.InvalidRankName, referenceString: operation.TextValue);
 
                 if (!IsRankPermissionMaskValid(operation.Data.UInt32Data))
@@ -320,8 +320,8 @@ namespace NexusForever.Game.Guild
                 if (RankExists(operation.TextValue))
                     return new GuildResultInfo(GuildResult.DuplicateRankName, referenceString: operation.TextValue);
 
-                if (!TextFilterManager.Instance.IsTextValid(operation.TextValue)
-                    || !TextFilterManager.Instance.IsTextValid(operation.TextValue, UserText.GuildRankName))
+                if (!textFilterManager.IsTextValid(operation.TextValue)
+                    || !textFilterManager.IsTextValid(operation.TextValue, UserText.GuildRankName))
                     return new GuildResultInfo(GuildResult.InvalidRankName, referenceString: operation.TextValue);
 
                 return new GuildResultInfo(GuildResult.Success);

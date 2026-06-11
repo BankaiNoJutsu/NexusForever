@@ -17,9 +17,12 @@ namespace NexusForever.Game.Fortune
         private const int CardCount = 3;
 
         private readonly Lazy<IReadOnlyList<FortunePoolEntry>> pool;
+        private readonly IGameTableManager gameTableManager;
 
-        public FortuneRewardPool()
+        public FortuneRewardPool(
+            IGameTableManager gameTableManager)
         {
+            this.gameTableManager = gameTableManager;
             pool = new Lazy<IReadOnlyList<FortunePoolEntry>>(BuildPool);
         }
 
@@ -114,9 +117,9 @@ namespace NexusForever.Game.Fortune
             return available[^1];
         }
 
-        private static IReadOnlyList<FortunePoolEntry> BuildPool()
+        private IReadOnlyList<FortunePoolEntry> BuildPool()
         {
-            IEnumerable<AccountItemEntry> entries = GameTableManager.Instance.AccountItem?.Entries ?? [];
+            IEnumerable<AccountItemEntry> entries = gameTableManager?.AccountItem?.Entries ?? [];
             return entries
                 .Where(IsFortuneRewardCandidate)
                 .Select(entry =>
@@ -153,12 +156,12 @@ namespace NexusForever.Game.Fortune
             return 0u;
         }
 
-        private static RewardRarity MapRarity(AccountItemEntry entry)
+        private RewardRarity MapRarity(AccountItemEntry entry)
         {
             if (entry.Item2Id == 0u)
                 return RewardRarity.Normal;
 
-            Item2Entry itemEntry = GameTableManager.Instance.Item?.GetEntry(entry.Item2Id);
+            Item2Entry itemEntry = gameTableManager?.Item?.GetEntry(entry.Item2Id);
             if (itemEntry == null)
                 return RewardRarity.Normal;
 

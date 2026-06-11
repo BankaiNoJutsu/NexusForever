@@ -42,11 +42,23 @@ namespace NexusForever.Game.Entity
         protected IScriptCollection scriptCollection;
 
         private readonly ConcurrentQueue<ISynchronisationTask> synchronisationTaskQueue = [];
+        private Func<IScriptManager> scriptManagerResolver;
+
+        internal void InitialiseScriptManager(Func<IScriptManager> scriptManagerResolver)
+        {
+            this.scriptManagerResolver = scriptManagerResolver;
+        }
+
+        protected IScriptManager GetScriptManager()
+        {
+            return scriptManagerResolver?.Invoke()
+                ?? throw new InvalidOperationException($"{nameof(GridEntity)} requires an {nameof(IScriptManager)}.");
+        }
 
         public virtual void Dispose()
         {
             if (scriptCollection != null)
-                ScriptManager.Instance.Unload(scriptCollection);
+                GetScriptManager().Unload(scriptCollection);
         }
 
         /// <summary>

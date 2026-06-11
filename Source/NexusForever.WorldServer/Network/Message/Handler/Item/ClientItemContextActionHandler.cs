@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.GameTable;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
@@ -12,13 +13,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
 
         private readonly ILogger<ClientItemContextActionHandler> log;
         private readonly IGameTableManager gameTableManager;
+        private readonly IPrerequisiteManager prerequisiteManager;
 
         public ClientItemContextActionHandler(
             ILogger<ClientItemContextActionHandler> log,
-            IGameTableManager gameTableManager)
+            IGameTableManager gameTableManager,
+            IPrerequisiteManager prerequisiteManager = null)
         {
             this.log              = log;
             this.gameTableManager = gameTableManager;
+            this.prerequisiteManager = prerequisiteManager;
         }
 
         #endregion
@@ -45,7 +49,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                 item,
                 gameTableManager,
                 clientRequestSource: nameof(ClientItemContextAction),
-                selectedBranch: itemContextAction.SelectedBranch);
+                selectedBranch: itemContextAction.SelectedBranch,
+                prerequisiteManager: prerequisiteManager);
 
             if (!handled)
                 log.LogTrace("ClientItemContextAction: player={Player} itemGuid={ItemGuid} branch={Branch} - no item-use handler matched.",

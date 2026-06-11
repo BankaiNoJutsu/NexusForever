@@ -6,14 +6,13 @@ using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Static.RBAC;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Static;
-using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
 using NexusForever.Shared.Game;
 using NLog;
 
 namespace NexusForever.Game.Map
 {
-    public sealed class MapManager : Singleton<MapManager>, IMapManager
+    public sealed class MapManager : IMapManager
     {
         private class PendingAdd
         {
@@ -35,11 +34,14 @@ namespace NexusForever.Game.Map
         #region Dependency Injection
 
         private readonly IMapFactory mapFactory;
+        private readonly ISharedConfiguration sharedConfiguration;
 
         public MapManager(
-            IMapFactory mapFactory)
+            IMapFactory mapFactory,
+            ISharedConfiguration sharedConfiguration = null)
         {
-            this.mapFactory = mapFactory;
+            this.mapFactory           = mapFactory;
+            this.sharedConfiguration  = sharedConfiguration;
         }
 
         #endregion
@@ -154,10 +156,18 @@ namespace NexusForever.Game.Map
         public bool CanCreateInstance(IPlayer player)
         {
             if (instanceCounts.TryGetValue(player.CharacterId, out uint instanceCount)
-                && instanceCount >= (SharedConfiguration.Instance.Get<MapConfig>().MaxInstances ?? 10u))
+                && instanceCount >= (GetMapConfig().MaxInstances ?? 10u))
                 return false;
 
             return true;
+        }
+
+        private MapConfig GetMapConfig()
+        {
+            if (sharedConfiguration == null)
+                throw new InvalidOperationException("MapManager requires an ISharedConfiguration.");
+
+            return sharedConfiguration.Get<MapConfig>();
         }
 
         /// <summary>

@@ -42,7 +42,7 @@ namespace NexusForever.Game.Entity
         public StatValue(CharacterStatModel model)
         {
             Stat  = (Stat)model.Stat;
-            Type  = EntityManager.Instance.GetStatAttribute(Stat).Type;
+            Type  = EntityManager.GetStatAttributeFor(Stat).Type;
             Value = model.Value;
         }
 
@@ -52,7 +52,7 @@ namespace NexusForever.Game.Entity
         public StatValue(EntityStatModel model)
         {
             Stat  = (Stat)model.Stat;
-            Type  = EntityManager.Instance.GetStatAttribute(Stat).Type;
+            Type  = EntityManager.GetStatAttributeFor(Stat).Type;
             Value = model.Value;
         }
 

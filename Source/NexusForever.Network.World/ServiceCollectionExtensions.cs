@@ -2,7 +2,6 @@
 using NexusForever.Network.World.Chat;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Message;
-using NexusForever.Shared;
 
 namespace NexusForever.Network.World
 {
@@ -13,7 +12,7 @@ namespace NexusForever.Network.World
             sc.AddNetworkWorldChat();
             sc.AddNetworkWorldMessage();
 
-            sc.AddSingletonLegacy<IEntityCommandManager, EntityCommandManager>();
+            sc.AddSingleton<IEntityCommandManager, EntityCommandManager>();
         }
     }
 }

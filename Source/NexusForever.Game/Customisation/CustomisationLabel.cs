@@ -1,6 +1,5 @@
 ﻿using NexusForever.Game.Abstract.Customisation;
 using NexusForever.Game.Static.Reputation;
-using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Customisation
@@ -11,10 +10,10 @@ namespace NexusForever.Game.Customisation
         public string Name { get; }
         public Faction Faction { get; }
 
-        public CustomisationLabel(CharacterCustomizationLabelEntry entry)
+        public CustomisationLabel(CharacterCustomizationLabelEntry entry, string name)
         {
             Id      = entry.Id;
-            Name    = GameTableManager.Instance.TextEnglish.GetEntry(entry.LocalizedTextId);
+            Name    = name;
             Faction = (Faction)entry.Faction2Id;
         }
     }

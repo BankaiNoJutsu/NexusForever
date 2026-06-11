@@ -7,20 +7,27 @@ using NexusForever.Game.Static.Reputation;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.GameTable.Static;
-using NexusForever.Shared;
 using NLog;
 
 namespace NexusForever.Game.Customisation
 {
-    public class CustomisationManager : Singleton<ICustomisationManager>, ICustomisationManager
+    public class CustomisationManager : ICustomisationManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+
+        private readonly IGameTableManager gameTableManager;
 
         private ImmutableDictionary<uint, ICustomisationLabel> customisationLabels;
         private ImmutableDictionary<(uint Label, uint Value), ICustomisationSelection> customisationSelections;
 
         private ImmutableDictionary<(Race, Sex), ICustomisationInfoCollection> customisationInfoCollections;
         private ImmutableDictionary<(Race, Faction), ICustomisationInfo> raceCustomisationInfos;
+
+        public CustomisationManager(
+            IGameTableManager gameTableManager = null)
+        {
+            this.gameTableManager = gameTableManager;
+        }
 
         /// <summary>
         /// Initialise <see cref="ICustomisationManager"/> and any associated resources.
@@ -38,8 +45,9 @@ namespace NexusForever.Game.Customisation
 
         private void InitialiseLabels()
         {
-            customisationLabels = GameTableManager.Instance.CharacterCustomizationLabel.Entries
-                .Select(e => (ICustomisationLabel)new CustomisationLabel(e))
+            IGameTableManager manager = GetGameTableManager();
+            customisationLabels = manager.CharacterCustomizationLabel.Entries
+                .Select(e => (ICustomisationLabel)new CustomisationLabel(e, manager.TextEnglish.GetEntry(e.LocalizedTextId)))
                 .ToImmutableDictionary(l => l.Id, l => l);
 
             log.Trace($"Initialised {customisationLabels.Count} customisation label(s).");
@@ -47,7 +55,7 @@ namespace NexusForever.Game.Customisation
 
         private void InitialiseSelections()
         {
-            customisationSelections = GameTableManager.Instance.CharacterCustomizationSelection.Entries
+            customisationSelections = GetGameTableManager().CharacterCustomizationSelection.Entries
                 // client also skips entry 1
                 .Where(e => e.Id != 1)
                 .Select(e => (ICustomisationSelection)new CustomisationSelection(e))
@@ -59,14 +67,14 @@ namespace NexusForever.Game.Customisation
         private void InitialiseCustomisations()
         {
             // initialise customisation entries that belong to a sex only
-            ILookup<Sex, ICustomisationInfo> sexCustomisations = GameTableManager.Instance.CharacterCustomization.Entries
+            ILookup<Sex, ICustomisationInfo> sexCustomisations = GetGameTableManager().CharacterCustomization.Entries
                 .Where(e => (Race)e.RaceId == Race.None)
                 .Select(InitialiseCustomisation)
                 .Where(c => c != null)
                 .ToLookup(c => c.Sex);
 
             // initialise customistion entries that belong to a race and sex
-            customisationInfoCollections = GameTableManager.Instance.CharacterCustomization.Entries
+            customisationInfoCollections = GetGameTableManager().CharacterCustomization.Entries
                 .Where(e => (Race)e.RaceId != Race.None)
                 .Select(InitialiseCustomisation)
                 .Where(c => c != null)
@@ -78,7 +86,7 @@ namespace NexusForever.Game.Customisation
 
         private void InitialiseRaceCustomisations()
         {
-            raceCustomisationInfos = GameTableManager.Instance.CharacterCustomization.Entries
+            raceCustomisationInfos = GetGameTableManager().CharacterCustomization.Entries
                 // race customisations are handled separately and are not provided by the client
                 .Where(e => (((CharacterCustomisationEntryFlags)e.Flags) & CharacterCustomisationEntryFlags.Race) != 0)
                 .Select(InitialiseCustomisation)
@@ -152,7 +160,7 @@ namespace NexusForever.Game.Customisation
                 // client has a hardcoded array of labels which are face changes
                 && !changedCustomisations.Any(c => c.Label is 1u or 21u or 22u))
             {
-                GameFormulaEntry entry = GameTableManager.Instance.GameFormula.GetEntry(1175);
+                GameFormulaEntry entry = GetGameTableManager().GameFormula.GetEntry(1175);
                 cost += entry?.Dataint0 ?? 0u;
             }
 
@@ -173,9 +181,17 @@ namespace NexusForever.Game.Customisation
             }
             else
             {
-                GameFormulaEntry entry = GameTableManager.Instance.GameFormula.GetEntry(1176);
+                GameFormulaEntry entry = GetGameTableManager().GameFormula.GetEntry(1176);
                 return entry?.Dataint0 ?? 10u;
             }
+        }
+
+        private IGameTableManager GetGameTableManager()
+        {
+            if (gameTableManager == null)
+                throw new InvalidOperationException("CustomisationManager requires an IGameTableManager.");
+
+            return gameTableManager;
         }
 
         /// <summary>

@@ -15,6 +15,17 @@ namespace NexusForever.WorldServer.Command.Handler
     [CommandTarget(typeof(IPlayer))]
     public class TeleportCommandCategory : CommandCategory
     {
+        private readonly ISearchManager searchManager;
+        private readonly IGameTableManager gameTableManager;
+
+        public TeleportCommandCategory(
+            ISearchManager searchManager,
+            IGameTableManager gameTableManager)
+        {
+            this.searchManager    = searchManager;
+            this.gameTableManager = gameTableManager;
+        }
+
         [Command(Permission.TeleportCoordinates, "Teleport to the specified coordinates optionally specifying the world.", "coordinates")]
         public void HandleTeleportCoordinates(ICommandContext context,
             [Parameter("X coordinate for target teleport position.")]
@@ -42,7 +53,7 @@ namespace NexusForever.WorldServer.Command.Handler
             [Parameter("World location id for target teleport position.")]
             uint worldLocation2Id)
         {
-            WorldLocation2Entry entry = GameTableManager.Instance.WorldLocation2.GetEntry(worldLocation2Id);
+            WorldLocation2Entry entry = gameTableManager.WorldLocation2.GetEntry(worldLocation2Id);
             if (entry == null)
             {
                 context.SendMessage($"WorldLocation2 entry not found: {worldLocation2Id}");
@@ -73,7 +84,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 return;
             }
 
-            WorldLocation2Entry zone = SearchManager.Instance.Search<WorldLocation2Entry>(name, context.Language, GetTextIds)
+            WorldLocation2Entry zone = searchManager.Search<WorldLocation2Entry>(name, context.Language, GetTextIds)
                 .FirstOrDefault();
             if (zone == null)
                 context.SendMessage($"Unknown zone: {name}");
@@ -86,10 +97,10 @@ namespace NexusForever.WorldServer.Command.Handler
 
         private IEnumerable<uint> GetTextIds(WorldLocation2Entry entry)
         {
-            WorldZoneEntry worldZone = GameTableManager.Instance.WorldZone.GetEntry(entry.WorldZoneId);
+            WorldZoneEntry worldZone = gameTableManager.WorldZone.GetEntry(entry.WorldZoneId);
             if (worldZone != null && worldZone.LocalizedTextIdName != 0)
                 yield return worldZone.LocalizedTextIdName;
-            WorldEntry world = GameTableManager.Instance.World.GetEntry(entry.WorldId);
+            WorldEntry world = gameTableManager.World.GetEntry(entry.WorldId);
             if (world != null && world.LocalizedTextIdName != 0)
                 yield return world.LocalizedTextIdName;
         }

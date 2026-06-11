@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Account;
 using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
 
@@ -14,13 +13,16 @@ namespace NexusForever.Game.Account.Inventory
     {
         private readonly IAccountPendingItemRepository pendingItemRepository;
         private readonly ILogger<RetailPendingAccountItemGroupDelivery> log;
+        private readonly IPlayerManager playerManager;
 
         public RetailPendingAccountItemGroupDelivery(
             IAccountPendingItemRepository pendingItemRepository,
-            ILogger<RetailPendingAccountItemGroupDelivery> log)
+            ILogger<RetailPendingAccountItemGroupDelivery> log,
+            IPlayerManager playerManager = null)
         {
             this.pendingItemRepository = pendingItemRepository;
             this.log                   = log;
+            this.playerManager         = playerManager;
         }
 
         public AccountOperationResult Deliver(PendingAccountItemGroupDeliveryRequest request)
@@ -28,7 +30,7 @@ namespace NexusForever.Game.Account.Inventory
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(request.AccountItemIds);
 
-            IPlayer targetPlayer = PlayerManager.Instance.GetPlayerByAccountId(request.TargetAccountId);
+            IPlayer targetPlayer = playerManager?.GetPlayerByAccountId(request.TargetAccountId);
             if (targetPlayer != null)
             {
                 targetPlayer.Account.InventoryManager.AddPendingItemGroup(

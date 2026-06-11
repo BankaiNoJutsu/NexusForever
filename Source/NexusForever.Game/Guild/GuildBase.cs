@@ -4,11 +4,12 @@ using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Guild;
-using NexusForever.Game.Character;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Guild;
+using NexusForever.GameTable.Text.Filter;
 using NexusForever.Network.Internal;
 using NexusForever.Network.Internal.Message.Guild;
 using NexusForever.Network.Message;
@@ -109,13 +110,25 @@ namespace NexusForever.Game.Guild
 
         private readonly IRealmContext realmContext;
         private readonly IInternalMessagePublisher messagePublisher;
+        private readonly ICharacterManager characterManager;
+        private readonly IGlobalGuildManager globalGuildManager;
+        protected readonly IPlayerManager playerManager;
+        protected readonly ITextFilterManager textFilterManager;
 
         public GuildBase(
             IRealmContext realmContext,
-            IInternalMessagePublisher messagePublisher)
+            IInternalMessagePublisher messagePublisher,
+            ITextFilterManager textFilterManager,
+            ICharacterManager characterManager = null,
+            IGlobalGuildManager globalGuildManager = null,
+            IPlayerManager playerManager = null)
         {
             this.realmContext     = realmContext;
             this.messagePublisher = messagePublisher;
+            this.textFilterManager = textFilterManager;
+            this.characterManager = characterManager;
+            this.globalGuildManager = globalGuildManager;
+            this.playerManager    = playerManager;
         }
 
         #endregion
@@ -127,7 +140,7 @@ namespace NexusForever.Game.Guild
         {
             Identity   = new Abstract.Identity
             {
-                RealmId = RealmContext.Instance.RealmId,
+                RealmId = realmContext.RealmId,
                 Id     = model.Id
             };
             Name       = model.Name;
@@ -143,7 +156,7 @@ namespace NexusForever.Game.Guild
                 if (!ranks.TryGetValue(memberModel.Rank, out IGuildRank rank))
                     throw new DatabaseDataException($"Guild member {memberModel.Id} has an invalid rank {memberModel.Rank} for guild {memberModel.Guild.Id}!");
                 
-                var member = new GuildMember(memberModel, this, rank);
+                var member = new GuildMember(memberModel, this, rank, characterManager);
                 rank.AddMember(member);
                 members.Add(memberModel.CharacterId, member);
             }
@@ -158,12 +171,12 @@ namespace NexusForever.Game.Guild
         {
             Identity    = new Abstract.Identity
             {
-                RealmId = RealmContext.Instance.RealmId,
-                Id      = GlobalGuildManager.Instance.NextGuildId
+                RealmId = realmContext.RealmId,
+                Id      = GetGlobalGuildManager().NextGuildId
             };
             Name       = guildName;
             Flags      = GuildFlag.None;
-            CreateTime = DateTime.Now;
+            CreateTime = DateTime.UtcNow;
 
             InitialiseRanks(leaderRankName, councilRankName, memberRankName);
 
@@ -291,8 +304,23 @@ namespace NexusForever.Game.Guild
                 OnlineMemberCount = (uint)onlineMembers.Count,
                 GuildInfo =
                 {
-                    GuildCreationDateInDays = (float)DateTime.Now.Subtract(CreateTime).TotalDays * -1f
+                    GuildCreationDateInDays = GetGuildCreationDateInDays()
                 }
+            };
+        }
+
+        protected float GetGuildCreationDateInDays()
+        {
+            return (float)DateTime.UtcNow.Subtract(ToUtc(CreateTime)).TotalDays * -1f;
+        }
+
+        private static DateTime ToUtc(DateTime dateTime)
+        {
+            return dateTime.Kind switch
+            {
+                DateTimeKind.Utc         => dateTime,
+                DateTimeKind.Unspecified => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc),
+                _                        => dateTime.ToUniversalTime()
             };
         }
 
@@ -492,7 +520,7 @@ namespace NexusForever.Game.Guild
                 });
             }
 
-            GlobalGuildManager.Instance.UntrackCharacterGuild(member.CharacterId, Id);
+            GetGlobalGuildManager().UntrackCharacterGuild(member.CharacterId, Id);
         }
 
         /// <summary>
@@ -512,7 +540,7 @@ namespace NexusForever.Game.Guild
             foreach (IGuildMember member in members.Values.ToList())
             {
                 // if the player is online handle through the local manager otherwise directly in the guild
-                IPlayer player = PlayerManager.Instance.GetPlayer(member.CharacterId);
+                IPlayer player = playerManager?.GetPlayer(member.CharacterId);
                 if (player != null)
                     player.GuildManager.LeaveGuild(Id, GuildResult.GuildDisbanded);
                 else
@@ -697,7 +725,7 @@ namespace NexusForever.Game.Guild
             else
             {
                 // new members default to the lowest rank
-                member = new GuildMember(this, player.CharacterId, guildRank);
+                member = new GuildMember(this, player.CharacterId, guildRank, characterManager: characterManager);
                 members.Add(player.CharacterId, member);
             }
 
@@ -766,11 +794,21 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public IGuildMember GetMember(string memberName)
         {
-            ulong? characterId = CharacterManager.Instance.GetCharacterIdByName(memberName);
+            ulong? characterId = GetCharacterManager().GetCharacterIdByName(memberName);
             if (characterId == null)
                 return null;
 
             return GetMember(characterId.Value);
+        }
+
+        private ICharacterManager GetCharacterManager()
+        {
+            return characterManager ?? throw new InvalidOperationException("GuildBase requires an ICharacterManager.");
+        }
+
+        private IGlobalGuildManager GetGlobalGuildManager()
+        {
+            return globalGuildManager ?? throw new InvalidOperationException("GuildBase requires an IGlobalGuildManager.");
         }
 
         /// <summary>
@@ -802,7 +840,7 @@ namespace NexusForever.Game.Guild
         {
             foreach (ulong characterId in onlineMembers)
             {
-                IPlayer player = PlayerManager.Instance.GetPlayer(characterId);
+                IPlayer player = playerManager?.GetPlayer(characterId);
                 player?.Session?.EnqueueMessageEncrypted(writable);
             }
         }

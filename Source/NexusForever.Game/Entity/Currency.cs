@@ -45,10 +45,10 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="ICurrency"/> from an existing database model.
         /// </summary>
-        public Currency(CharacterCurrencyModel model)
+        public Currency(CharacterCurrencyModel model, IGameTableManager gameTableManager)
         {
             CharacterId = model.Id;
-            Entry       = GameTableManager.Instance.CurrencyType.GetEntry(model.CurrencyId);
+            Entry       = gameTableManager.CurrencyType.GetEntry(model.CurrencyId);
             Amount      = model.Amount;
 
             saveMask    = CurrencySaveMask.None;

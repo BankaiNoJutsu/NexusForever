@@ -4,6 +4,8 @@ using NexusForever.Game.Account.Inventory;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Fortune;
 
+using NexusForever.Database;
+
 namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
 {
     public class ClientFortuneNotifyStorefrontHandler : IMessageHandler<IWorldSession, ClientFortuneNotifyStorefront>
@@ -11,15 +13,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
         private readonly ILogger<ClientFortuneNotifyStorefrontHandler> log;
         private readonly IGlobalStorefrontManager globalStorefrontManager;
         private readonly IFortuneSessionManager fortuneSessionManager;
+        private readonly IDatabaseManager databaseManager;
 
         public ClientFortuneNotifyStorefrontHandler(
             ILogger<ClientFortuneNotifyStorefrontHandler> log,
             IGlobalStorefrontManager globalStorefrontManager,
-            IFortuneSessionManager fortuneSessionManager)
+            IFortuneSessionManager fortuneSessionManager,
+            IDatabaseManager databaseManager = null)
         {
             this.log                     = log;
             this.globalStorefrontManager = globalStorefrontManager;
             this.fortuneSessionManager   = fortuneSessionManager;
+            this.databaseManager         = databaseManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientFortuneNotifyStorefront _)
@@ -31,7 +36,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                     session.Player?.Guid, session.Account.Id);
 
                 session.Account.InventoryManager.SendInitialPackets();
-                StorePurchaseHistoryManager.SendPurchaseHistory(session.Account);
+                StorePurchaseHistoryManager.SendPurchaseHistory(session.Account, databaseManager);
                 globalStorefrontManager.HandleCatalogRequest(session, session.Account.Id);
             }
 

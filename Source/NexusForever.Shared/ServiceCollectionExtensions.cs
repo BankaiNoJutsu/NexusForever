@@ -1,16 +1,23 @@
 ﻿using System;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NexusForever.Shared.Configuration;
 
 namespace NexusForever.Shared
 {
     public static class ServiceCollectionExtensions
     {
-        public static void AddSingletonLegacy<TInterface, TImplementation>(this IServiceCollection sc)
-            where TInterface : class
-            where TImplementation : class, TInterface
+        public static void AddSharedConfiguration<TConfiguration>(this IServiceCollection sc, IConfiguration configuration)
         {
-            sc.AddSingleton<TImplementation>();
-            sc.AddSingleton<TInterface>(sp => sp.GetService<TImplementation>());
+            if (configuration == null)
+                throw new ArgumentNullException(nameof(configuration));
+
+            sc.AddSingleton<ISharedConfiguration>(_ =>
+            {
+                var sharedConfiguration = new SharedConfiguration(configuration);
+                sharedConfiguration.Initialise<TConfiguration>();
+                return sharedConfiguration;
+            });
         }
 
         public static void AddTransientFactory<TInterface, TImplementation>(this IServiceCollection sc)

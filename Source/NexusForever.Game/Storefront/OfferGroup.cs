@@ -1,7 +1,9 @@
 using System.Collections.Immutable;
 using NexusForever.Database.World.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Storefront;
 using NexusForever.Game.Static.Storefront;
+using NexusForever.GameTable;
 using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.Game.Storefront
@@ -22,7 +24,10 @@ namespace NexusForever.Game.Storefront
         /// <summary>
         /// Create a new <see cref="IOfferGroup"/> from an existing database model.
         /// </summary>
-        public OfferGroup(StoreOfferGroupModel model)
+        public OfferGroup(
+            StoreOfferGroupModel model,
+            IDisableManager disableManager = null,
+            IGameTableManager gameTableManager = null)
         {
             Id           = model.Id;
             DisplayFlags = (DisplayFlag)model.DisplayFlags;
@@ -50,7 +55,7 @@ namespace NexusForever.Game.Storefront
                 .Where(offerItem => Convert.ToBoolean(offerItem.Visible))
                 .OrderBy(offerItem => offerItem.Id))
             {
-                var offer = new OfferItem(offerItem);
+                var offer = new OfferItem(offerItem, disableManager, gameTableManager);
                 offerItems.Add(offer.Id, offer);
             }
         }

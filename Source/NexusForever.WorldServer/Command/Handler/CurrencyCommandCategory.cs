@@ -16,6 +16,13 @@ namespace NexusForever.WorldServer.Command.Handler
         [Command(Permission.CurrencyAccount, "A collection of commands to modify account currency.", "account")]
         public class CurrencyAccountCommandCategory : CommandCategory
         {
+            private readonly IGameTableManager gameTableManager;
+
+            public CurrencyAccountCommandCategory(IGameTableManager gameTableManager)
+            {
+                this.gameTableManager = gameTableManager;
+            }
+
             [Command(Permission.CurrencyAccountAdd, "Add currency to account.", "add")]
             [CommandTarget(typeof(IPlayer))]
             public void HandleCurrencyAccountAdd(ICommandContext context,
@@ -24,7 +31,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 [Parameter("Amount of currency to grant.")]
                 uint amount)
             {
-                AccountCurrencyTypeEntry entry = GameTableManager.Instance.AccountCurrencyType.GetEntry((uint)currencyId);
+                AccountCurrencyTypeEntry entry = gameTableManager.AccountCurrencyType.GetEntry((uint)currencyId);
                 if (entry == null)
                 {
                     context.SendMessage("Invalid currencyId. Please try again.");
@@ -37,8 +44,8 @@ namespace NexusForever.WorldServer.Command.Handler
             [Command(Permission.CurrencyAccountList, "List all account currency types", "list")]
             public void HandleCurrencyAccountList(ICommandContext context)
             {
-                TextTable tt = GameTableManager.Instance.GetTextTable(context.Language);
-                foreach (AccountCurrencyTypeEntry entry in GameTableManager.Instance.AccountCurrencyType.Entries)
+                TextTable tt = gameTableManager.GetTextTable(context.Language);
+                foreach (AccountCurrencyTypeEntry entry in gameTableManager.AccountCurrencyType.Entries)
                     context.SendMessage($"ID {entry.Id}: {tt.GetEntry(entry.LocalizedTextId)}");
             }
         }
@@ -46,6 +53,13 @@ namespace NexusForever.WorldServer.Command.Handler
         [Command(Permission.CurrencyCharacter, "A collection of commands to modify character currency.", "character")]
         public class CurrencyCharacterCommandCategory : CommandCategory
         {
+            private readonly IGameTableManager gameTableManager;
+
+            public CurrencyCharacterCommandCategory(IGameTableManager gameTableManager)
+            {
+                this.gameTableManager = gameTableManager;
+            }
+
             [Command(Permission.CurrencyCharacterAdd, "Add currency to character.", "add")]
             [CommandTarget(typeof(IPlayer))]
             public void HandleCurrencyCharacterAdd(ICommandContext context,
@@ -54,7 +68,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 [Parameter("Amount of currency to grant.")]
                 uint amount)
             {
-                if (GameTableManager.Instance.CurrencyType.GetEntry((uint)currencyId) == null)
+                if (gameTableManager.CurrencyType.GetEntry((uint)currencyId) == null)
                 {
                     context.SendMessage("Invalid currencyId. Please try again.");
                     return;
@@ -66,7 +80,7 @@ namespace NexusForever.WorldServer.Command.Handler
             [Command(Permission.CurrencyCharacterList, "List all currency types.", "list")]
             public void HandleCurrencyCharacterList(ICommandContext context)
             {
-                foreach (CurrencyTypeEntry entry in GameTableManager.Instance.CurrencyType.Entries)
+                foreach (CurrencyTypeEntry entry in gameTableManager.CurrencyType.Entries)
                     context.SendMessage($"ID {entry.Id}: {entry.Description}");
             }
         }

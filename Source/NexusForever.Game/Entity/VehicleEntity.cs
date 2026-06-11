@@ -36,8 +36,8 @@ namespace NexusForever.Game.Entity
         {
             Initialise(creatureId);
 
-            VehicleEntry = GameTableManager.Instance.UnitVehicle.GetEntry(vehicleId != 0u ? vehicleId : CreatureEntry.UnitVehicleId);
-            SpellEntry   = GameTableManager.Instance.Spell4.GetEntry(spell4Id);
+            VehicleEntry = GetGameTableManager().UnitVehicle.GetEntry(vehicleId != 0u ? vehicleId : CreatureEntry.UnitVehicleId);
+            SpellEntry   = GetGameTableManager().Spell4.GetEntry(spell4Id);
 
             // temp
             SetBaseProperty(Property.BaseHealth, 800.0f);

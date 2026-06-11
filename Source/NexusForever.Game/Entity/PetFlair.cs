@@ -1,7 +1,6 @@
 ﻿using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Entity
@@ -16,10 +15,10 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="IPetFlair"/> from existing <see cref="CharacterPetFlairModel"/> database model.
         /// </summary>
-        public PetFlair(CharacterPetFlairModel model)
+        public PetFlair(CharacterPetFlairModel model, PetFlairEntry entry)
         {
             Owner = model.Id;
-            Entry = GameTableManager.Instance.PetFlair?.GetEntry(model.PetFlairId);
+            Entry = entry;
         }
 
         /// <summary>

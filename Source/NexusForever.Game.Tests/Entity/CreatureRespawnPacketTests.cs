@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Group;
+using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Entity;
@@ -38,6 +39,7 @@ public class CreatureRespawnPacketTests
         services.AddGameEntity();
         services.AddTransient<INonPlayerEntity, TestNonPlayerEntity>();
         services.AddSingleton(lootManager);
+        services.AddSingleton<IGlobalLootManager>(lootManager);
         using ServiceProvider provider = services.BuildServiceProvider();
 
         IEntityFactory entityFactory = provider.GetRequiredService<IEntityFactory>();

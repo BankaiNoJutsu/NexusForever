@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
@@ -19,14 +18,12 @@ using NexusForever.Network.World.Message.Model.Achievement;
 
 namespace NexusForever.Game.Tests.Achievement;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class TradeskillAchievementRewardTests
 {
     [Fact]
     public void CompleteCraftItemTechTreeAchievement_GrantsRewardSchematicAndEnsuresTalentPoints()
     {
-        var globalAchievementManager = new GlobalAchievementManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(globalAchievementManager, gameTableManager =>
+        GameTableManager gameTableManager = CreateGameTableManager(out GlobalAchievementManager globalAchievementManager, gameTableManager =>
         {
             SetTable(gameTableManager, nameof(GameTableManager.Achievement), CreateGameTable(new AchievementEntry
             {
@@ -66,14 +63,14 @@ public class TradeskillAchievementRewardTests
                 TradeSkillId = (uint)TradeskillType.Technologist
             }));
             SetTable(gameTableManager, nameof(GameTableManager.TradeskillTier), CreateGameTable<TradeskillTierEntry>());
-        }));
+        });
         globalAchievementManager.Initialise();
 
         IPlayer player = CreatePlayer(out RecordingDispatchProxy<IPlayer> playerProxy, out RecordingDispatchProxy<IGameSession> sessionProxy);
         var manager = new CharacterAchievementManager(player, new CharacterModel
         {
             Id = 30ul
-        });
+        }, globalAchievementManager: globalAchievementManager, gameTableManager: gameTableManager);
 
         manager.CheckAchievements(player, AchievementType.CraftItem, 14838u, count: 3u);
 
@@ -92,8 +89,7 @@ public class TradeskillAchievementRewardTests
     [Fact]
     public void CompleteTradeskillTierTechTreeAchievement_EnsuresTalentPointFromTierOwner()
     {
-        var globalAchievementManager = new GlobalAchievementManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(globalAchievementManager, gameTableManager =>
+        GameTableManager gameTableManager = CreateGameTableManager(out GlobalAchievementManager globalAchievementManager, gameTableManager =>
         {
             SetTable(gameTableManager, nameof(GameTableManager.Achievement), CreateGameTable(new AchievementEntry
             {
@@ -118,14 +114,14 @@ public class TradeskillAchievementRewardTests
                 Id           = 34u,
                 TradeSkillId = (uint)TradeskillType.Technologist
             }));
-        }));
+        });
         globalAchievementManager.Initialise();
 
         IPlayer player = CreatePlayer(out RecordingDispatchProxy<IPlayer> playerProxy, out _);
         var manager = new CharacterAchievementManager(player, new CharacterModel
         {
             Id = 30ul
-        });
+        }, globalAchievementManager: globalAchievementManager, gameTableManager: gameTableManager);
 
         manager.CheckAchievements(player, AchievementType.TradeskillTier, 34u);
 
@@ -138,8 +134,7 @@ public class TradeskillAchievementRewardTests
     [Fact]
     public void GrantCompletedTradeskillAchievementRewards_BackfillsAlreadyCompletedTechTreeRewards()
     {
-        var globalAchievementManager = new GlobalAchievementManager();
-        using var scope = new LegacyServiceProviderScope(BuildProvider(globalAchievementManager, gameTableManager =>
+        GameTableManager gameTableManager = CreateGameTableManager(out GlobalAchievementManager globalAchievementManager, gameTableManager =>
         {
             SetTable(gameTableManager, nameof(GameTableManager.Achievement), CreateGameTable(
                 new AchievementEntry
@@ -199,7 +194,7 @@ public class TradeskillAchievementRewardTests
                 Id           = 34u,
                 TradeSkillId = (uint)TradeskillType.Technologist
             }));
-        }));
+        });
         globalAchievementManager.Initialise();
 
         IPlayer player = CreatePlayer(out RecordingDispatchProxy<IPlayer> playerProxy, out _);
@@ -223,7 +218,7 @@ public class TradeskillAchievementRewardTests
                     DateCompleted = DateTime.UtcNow
                 }
             }
-        });
+        }, globalAchievementManager: globalAchievementManager, gameTableManager: gameTableManager);
 
         manager.GrantCompletedTradeskillAchievementRewards(player);
 
@@ -253,22 +248,15 @@ public class TradeskillAchievementRewardTests
         return player;
     }
 
-    private static IServiceProvider BuildProvider(
-        GlobalAchievementManager globalAchievementManager,
+    private static GameTableManager CreateGameTableManager(
+        out GlobalAchievementManager globalAchievementManager,
         Action<GameTableManager> configure)
     {
         var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         configure(gameTableManager);
-
-        var disableManager = new DisableManager();
-        SetPrivateField(disableManager, "disables", ImmutableDictionary<ulong, Disable>.Empty);
-
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .AddSingleton(CreateEmptyDatabaseManager())
-            .AddSingleton(disableManager)
-            .AddSingleton(globalAchievementManager)
-            .BuildServiceProvider();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        globalAchievementManager = new GlobalAchievementManager(databaseManager, gameTableManager);
+        return gameTableManager;
     }
 
     private static DatabaseManager CreateEmptyDatabaseManager()

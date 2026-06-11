@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
@@ -8,95 +7,70 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.GameTable.Text.Filter;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Pet;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Pet;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class PetCustomisationManagerTests
 {
     [Fact]
     public void Constructor_WithKnownPetFlair_LoadsPersistedFlairAndCustomisation()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithPetFlair(new PetFlairEntry
+        var manager = new PetCustomisationManager(
+            CreatePlayer(),
+            CreatePersistedModel(),
+            CreateGameTableManagerWithPetFlair(new PetFlairEntry
             {
                 Id             = 12u,
                 UnlockBitIndex = [5u, 0u]
-            }))
-            .BuildServiceProvider();
+            }),
+            CreateTextFilterManager());
 
-        try
-        {
-            var manager = new PetCustomisationManager(CreatePlayer(), CreatePersistedModel());
-
-            Assert.True(manager.HasFlair(12));
-            IPetCustomisation customisation = manager.GetCustomisation(PetType.ScanBot, 77u);
-            Assert.NotNull(customisation);
-            Assert.Equal((ushort)12, customisation.Build().SlotFlairIds[0]);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.True(manager.HasFlair(12));
+        IPetCustomisation customisation = manager.GetCustomisation(PetType.ScanBot, 77u);
+        Assert.NotNull(customisation);
+        Assert.Equal((ushort)12, customisation.Build().SlotFlairIds[0]);
     }
 
     [Fact]
     public void Constructor_WithMissingPetFlairTable_SkipsPersistedFlairAndZerosCustomisationSlot()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithoutPetFlair())
-            .BuildServiceProvider();
+        var manager = new PetCustomisationManager(
+            CreatePlayer(),
+            CreatePersistedModel(),
+            CreateGameTableManagerWithoutPetFlair(),
+            CreateTextFilterManager());
 
-        try
-        {
-            var manager = new PetCustomisationManager(CreatePlayer(), CreatePersistedModel());
-
-            Assert.False(manager.HasFlair(12));
-            IPetCustomisation customisation = manager.GetCustomisation(PetType.ScanBot, 77u);
-            Assert.NotNull(customisation);
-            Assert.Equal((ushort)0, customisation.Build().SlotFlairIds[0]);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.False(manager.HasFlair(12));
+        IPetCustomisation customisation = manager.GetCustomisation(PetType.ScanBot, 77u);
+        Assert.NotNull(customisation);
+        Assert.Equal((ushort)0, customisation.Build().SlotFlairIds[0]);
     }
 
     [Fact]
     public void AddCustomisation_WithZeroFlairAndMissingPetFlairTable_ClearsSlotWithoutStaticData()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(CreateGameTableManagerWithoutPetFlair())
-            .BuildServiceProvider();
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        var manager = new PetCustomisationManager(
+            CreatePlayer(session),
+            new CharacterModel { Id = 42ul },
+            CreateGameTableManagerWithoutPetFlair(),
+            CreateTextFilterManager());
 
-        try
-        {
-            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
-            var manager = new PetCustomisationManager(CreatePlayer(session), new CharacterModel { Id = 42ul });
+        manager.AddCustomisation(PetType.ScanBot, 77u, 2, 0);
 
-            manager.AddCustomisation(PetType.ScanBot, 77u, 2, 0);
+        IPetCustomisation customisation = manager.GetCustomisation(PetType.ScanBot, 77u);
+        Assert.NotNull(customisation);
+        Assert.Equal((ushort)0, customisation.Build().SlotFlairIds[2]);
 
-            IPetCustomisation customisation = manager.GetCustomisation(PetType.ScanBot, 77u);
-            Assert.NotNull(customisation);
-            Assert.Equal((ushort)0, customisation.Build().SlotFlairIds[2]);
-
-            ServerPetCustomisation message = Assert.Single(sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .Where(i => i.Arguments.Length == 1)
-                .Select(i => i.Arguments[0])
-                .OfType<ServerPetCustomisation>());
-            Assert.Equal((ushort)0, message.PetCustomisation.SlotFlairIds[2]);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        ServerPetCustomisation message = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Where(i => i.Arguments.Length == 1)
+            .Select(i => i.Arguments[0])
+            .OfType<ServerPetCustomisation>());
+        Assert.Equal((ushort)0, message.PetCustomisation.SlotFlairIds[2]);
     }
 
     private static IPlayer CreatePlayer(IGameSession session = null)
@@ -137,6 +111,13 @@ public class PetCustomisationManagerTests
         var manager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         SetAutoProperty(manager, nameof(GameTableManager.PetFlair), CreateGameTable(petFlairEntries));
         return manager;
+    }
+
+    private static ITextFilterManager CreateTextFilterManager()
+    {
+        ITextFilterManager textFilterManager = RecordingDispatchProxy<ITextFilterManager>.Create(out RecordingDispatchProxy<ITextFilterManager> proxy);
+        proxy.SetMethodHandler(nameof(ITextFilterManager.IsTextValid), _ => true);
+        return textFilterManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

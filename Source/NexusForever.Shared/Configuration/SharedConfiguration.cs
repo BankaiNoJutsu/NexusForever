@@ -7,7 +7,7 @@ using NLog;
 
 namespace NexusForever.Shared.Configuration
 {
-    public class SharedConfiguration : Singleton<SharedConfiguration>, ISharedConfiguration
+    public class SharedConfiguration : ISharedConfiguration
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
@@ -65,6 +65,9 @@ namespace NexusForever.Shared.Configuration
         /// </summary>
         public T Get<T>()
         {
+            if (binds == null)
+                throw new InvalidOperationException("Shared configuration must be initialised before values can be read.");
+
             if (!binds.TryGetValue(typeof(T), out string key))
                 return default;
 

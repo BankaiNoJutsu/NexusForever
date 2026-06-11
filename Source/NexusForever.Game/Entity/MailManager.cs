@@ -1,11 +1,11 @@
-﻿using System.Numerics;
+using System.Numerics;
 using System.Linq;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Mail;
-using NexusForever.Game.Character;
 using NexusForever.Game.Mail;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Mail;
@@ -14,6 +14,7 @@ using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Mail;
 using NexusForever.Network.World.Message.Static;
+using NexusForever.Shared.Configuration;
 using NexusForever.Shared.Game;
 
 namespace NexusForever.Game.Entity
@@ -21,6 +22,13 @@ namespace NexusForever.Game.Entity
     public class MailManager : IMailManager
     {
         private readonly IPlayer player;
+        private readonly IAssetManager assetManager;
+        private readonly ICharacterManager characterManager;
+        private readonly ushort realmId;
+        private readonly IPlayerManager playerManager;
+        private readonly IItemManager itemManager;
+        private readonly IGameTableManager gameTableManager;
+        private readonly ISharedConfiguration sharedConfiguration;
         private readonly Queue<IMailItem> outgoingMail = new();
         private readonly List<IMailItem> pendingMail = new();
         private readonly List<IMailItem> expiredMail = new();
@@ -32,12 +40,28 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="IMailManager"/> from existing <see cref="CharacterModel"/> database model.
         /// </summary>
-        public MailManager(IPlayer owner, CharacterModel model)
+        public MailManager(
+            IPlayer owner,
+            CharacterModel model,
+            IAssetManager assetManager = null,
+            ICharacterManager characterManager = null,
+            ushort realmId = 0,
+            IPlayerManager playerManager = null,
+            IItemManager itemManager = null,
+            IGameTableManager gameTableManager = null,
+            ISharedConfiguration sharedConfiguration = null)
         {
-            player = owner;
+            player                = owner;
+            this.assetManager     = assetManager;
+            this.characterManager = characterManager;
+            this.realmId          = realmId;
+            this.playerManager    = playerManager;
+            this.itemManager      = itemManager;
+            this.gameTableManager = gameTableManager;
+            this.sharedConfiguration = sharedConfiguration;
             foreach (CharacterMailModel mailModel in model.Mail)
             {
-                var mail = new MailItem(mailModel);
+                var mail = new MailItem(mailModel, realmId, itemManager, gameTableManager, sharedConfiguration);
                 if (IsExpired(mail))
                     ExpireMail(mail);
                 else if (mail.IsReadyToDeliver())
@@ -83,7 +107,7 @@ namespace NexusForever.Game.Entity
                     player.MailManager.EnqueueMail(mail);
                 else
                 {
-                    IPlayer player = PlayerManager.Instance.GetPlayer(mail.RecipientId);
+                    IPlayer player = playerManager?.GetPlayer(mail.RecipientId);
                     player?.MailManager.EnqueueMail(mail);
                 }
             }
@@ -147,7 +171,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void SendMail(ClientMailSend mailSend)
         {
-            ICharacter targetCharacter = CharacterManager.Instance.GetCharacter(mailSend.Name);
+            ICharacter targetCharacter = GetCharacterManager().GetCharacter(mailSend.Name);
 
             var items = new List<IItem>();
             GenericError GetResult()
@@ -244,13 +268,13 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void SendMail(uint creatureId, DeliverySpeed speed, uint subject, uint body, IEnumerable<uint> itemIds)
         {
-            if (GameTableManager.Instance.Creature2.GetEntry(creatureId) == null)
+            if (gameTableManager.Creature2.GetEntry(creatureId) == null)
                 throw new ArgumentException($"Invalid creature {creatureId} for mail sender!");
 
-            if (GameTableManager.Instance.LocalizedText.GetEntry(subject) == null)
+            if (gameTableManager.LocalizedText.GetEntry(subject) == null)
                 throw new ArgumentException($"Invalid localised text {subject} for mail subject!");
 
-            if (GameTableManager.Instance.LocalizedText.GetEntry(body) == null)
+            if (gameTableManager.LocalizedText.GetEntry(body) == null)
                 throw new ArgumentException($"Invalid localised text {body} for mail body!");
 
             var parameters = new MailParameters
@@ -266,11 +290,11 @@ namespace NexusForever.Game.Entity
             var items = new List<IItem>();
             foreach (uint itemId in itemIds)
             {
-                IItemInfo info = ItemManager.Instance.GetItemInfo(itemId);
+                IItemInfo info = itemManager?.GetItemInfo(itemId);
                 if (info == null)
                     throw new ArgumentException($"Invalid item {itemId} for mail attachment!");
 
-                var item = new Item(null, info);
+                var item = new Item(null, info, itemManager: itemManager, gameTableManager: gameTableManager);
                 items.Add(item);
             }
 
@@ -279,7 +303,7 @@ namespace NexusForever.Game.Entity
 
         private void SendMail(MailParameters parameters, IEnumerable<IItem> items)
         {
-            var mail = new MailItem(parameters);
+            var mail = new MailItem(parameters, assetManager, realmId, sharedConfiguration);
 
             uint index = 0;
             foreach (IItem item in items)
@@ -298,13 +322,13 @@ namespace NexusForever.Game.Entity
             GameFormulaEntry GetMailParameters()
             {
                 if (items.Count == 0)
-                    return GameTableManager.Instance.GameFormula.GetEntry(860);
+                    return gameTableManager.GameFormula.GetEntry(860);
 
                 return time switch
                 {
-                    DeliverySpeed.Instant => GameTableManager.Instance.GameFormula.GetEntry(861),
-                    DeliverySpeed.Hour => GameTableManager.Instance.GameFormula.GetEntry(862),
-                    DeliverySpeed.Day => GameTableManager.Instance.GameFormula.GetEntry(863),
+                    DeliverySpeed.Instant => gameTableManager.GameFormula.GetEntry(861),
+                    DeliverySpeed.Hour => gameTableManager.GameFormula.GetEntry(862),
+                    DeliverySpeed.Day => gameTableManager.GameFormula.GetEntry(863),
                     _ => null
                 };
             }
@@ -326,6 +350,11 @@ namespace NexusForever.Game.Entity
             }
 
             return cost;
+        }
+
+        private ICharacterManager GetCharacterManager()
+        {
+            return characterManager ?? throw new InvalidOperationException("MailManager requires an ICharacterManager.");
         }
 
         /// <summary>
@@ -544,7 +573,7 @@ namespace NexusForever.Game.Entity
         private bool IsTargetMailBoxInRange(uint unitId)
         {
             // native client function MailSystemLib.AtMailbox also uses entry 237 for distance check
-            GameFormulaEntry entry = GameTableManager.Instance.GameFormula.GetEntry(237);
+            GameFormulaEntry entry = gameTableManager.GameFormula.GetEntry(237);
             if (entry == null)
                 throw new InvalidOperationException();
 
@@ -594,9 +623,12 @@ namespace NexusForever.Game.Entity
 
         private static DateTime GetExpiryUtc(IMailItem mail)
         {
-            DateTime createUtc = mail.CreateTime.Kind == DateTimeKind.Utc
-                ? mail.CreateTime
-                : mail.CreateTime.ToUniversalTime();
+            DateTime createUtc = mail.CreateTime.Kind switch
+            {
+                DateTimeKind.Utc   => mail.CreateTime,
+                DateTimeKind.Local => mail.CreateTime.ToUniversalTime(),
+                _                  => DateTime.SpecifyKind(mail.CreateTime, DateTimeKind.Utc)
+            };
 
             return createUtc.AddDays(mail.ExpiryTime);
         }

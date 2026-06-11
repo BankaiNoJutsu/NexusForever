@@ -9,7 +9,8 @@ using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Systemd;
 using Microsoft.Extensions.Hosting.WindowsServices;
-using NexusForever.Shared;
+using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.RBAC;
 using NexusForever.WorldServer.Command.Context;
 using NexusForever.WorldServer.Command.Convert;
 using NexusForever.WorldServer.Command.Static;
@@ -17,7 +18,7 @@ using NLog;
 
 namespace NexusForever.WorldServer.Command
 {
-    public sealed class CommandManager : Singleton<CommandManager>, ICommandManager
+    public sealed class CommandManager : ICommandManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
@@ -33,6 +34,24 @@ namespace NexusForever.WorldServer.Command
         private readonly ManualResetEventSlim waitHandle = new();
 
         private volatile CancellationTokenSource cancellationToken;
+        private readonly IServiceProvider serviceProvider;
+        private readonly IPlayerManager playerManager;
+        private readonly IRBACManager rbacManager;
+
+        public CommandManager()
+            : this(null, null, null)
+        {
+        }
+
+        public CommandManager(
+            IServiceProvider serviceProvider,
+            IPlayerManager playerManager = null,
+            IRBACManager rbacManager = null)
+        {
+            this.serviceProvider = serviceProvider;
+            this.playerManager   = playerManager;
+            this.rbacManager     = rbacManager;
+        }
 
         /// <summary>
         /// Initialise <see cref="ICommandManager"/> and any related resources.
@@ -124,6 +143,9 @@ namespace NexusForever.WorldServer.Command
         {
             log.Info("Initialising command handlers...");
 
+            if (serviceProvider == null)
+                throw new InvalidOperationException("CommandManager requires an IServiceProvider to initialise command handlers.");
+
             var builder = ImmutableDictionary.CreateBuilder<string, ICommandHandler>(
                 StringComparer.InvariantCultureIgnoreCase);
             foreach (Type type in Assembly.GetExecutingAssembly().GetTypes())
@@ -139,8 +161,8 @@ namespace NexusForever.WorldServer.Command
                 if (!typeof(CommandCategory).IsAssignableFrom(type))
                     continue;
 
-                CommandCategory category = (CommandCategory)ActivatorUtilities.CreateInstance(LegacyServiceProvider.Provider, type);
-                category.Build(attribute);
+                CommandCategory category = (CommandCategory)ActivatorUtilities.CreateInstance(serviceProvider, type);
+                category.Build(attribute, serviceProvider, this);
 
                 foreach (string command in attribute.Commands)
                     builder.Add(command, category);
@@ -190,7 +212,7 @@ namespace NexusForever.WorldServer.Command
 
                 }
 
-                HandleCommandDelay(new ConsoleCommandContext(), sb.ToString());
+                HandleCommandDelay(new ConsoleCommandContext(rbacManager), sb.ToString());
             }
 
             log.Info("Stopped command thread.");
@@ -246,7 +268,7 @@ namespace NexusForever.WorldServer.Command
         /// </summary>
         public void HandleCommand(ICommandContext context, string commandText)
         {
-            if (!CommandContextResolver.TryResolve(context, ref commandText, out ICommandContext resolvedContext))
+            if (!CommandContextResolver.TryResolve(context, ref commandText, playerManager, rbacManager, out ICommandContext resolvedContext))
                 return;
 
             context = resolvedContext;

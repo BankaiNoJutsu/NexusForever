@@ -5,7 +5,6 @@ using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.RBAC;
-using NexusForever.Shared;
 using NexusForever.WorldServer.Command.Context;
 using NexusForever.WorldServer.Command.Static;
 
@@ -19,13 +18,26 @@ namespace NexusForever.WorldServer.Command
 
         private ImmutableDictionary<string, ICommandHandler> handlers;
 
+        protected ICommandManager CommandManager { get; private set; }
+
         public void Build(CommandAttribute attribute)
+        {
+            Build(attribute, null, null);
+        }
+
+        public void Build(CommandAttribute attribute, IServiceProvider serviceProvider)
+        {
+            Build(attribute, serviceProvider, null);
+        }
+
+        public void Build(CommandAttribute attribute, IServiceProvider serviceProvider, ICommandManager commandManager)
         {
             helpText   = $"{string.Join(", ", attribute.Commands)} - {attribute.HelpText ?? "No help text available"}";
             permission = attribute.Permission;
+            CommandManager = commandManager;
 
             HandleOptionalAttributes(attribute);
-            BuildChildren();
+            BuildChildren(serviceProvider, commandManager);
         }
 
         private void HandleOptionalAttributes(CommandAttribute attribute)
@@ -41,7 +53,7 @@ namespace NexusForever.WorldServer.Command
             }
         }
 
-        private void BuildChildren()
+        private void BuildChildren(IServiceProvider serviceProvider, ICommandManager commandManager)
         {
             var builder = ImmutableDictionary.CreateBuilder<string, ICommandHandler>(
                 StringComparer.InvariantCultureIgnoreCase);
@@ -54,7 +66,7 @@ namespace NexusForever.WorldServer.Command
                     continue;
 
                 var handler = new CommandHandler();
-                handler.Build(attribute, this, method);
+                handler.Build(attribute, this, method, commandManager);
 
                 foreach (string command in attribute.Commands)
                     builder.Add(command, handler);
@@ -67,8 +79,10 @@ namespace NexusForever.WorldServer.Command
                 if (attribute == null)
                     continue;
 
-                CommandCategory category = (CommandCategory)ActivatorUtilities.CreateInstance(LegacyServiceProvider.Provider, type);
-                category.Build(attribute);
+                CommandCategory category = serviceProvider != null
+                    ? (CommandCategory)ActivatorUtilities.CreateInstance(serviceProvider, type)
+                    : (CommandCategory)Activator.CreateInstance(type);
+                category.Build(attribute, serviceProvider, commandManager);
 
                 foreach (string command in attribute.Commands)
                     builder.Add(command, category);

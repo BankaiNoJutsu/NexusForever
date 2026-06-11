@@ -1,12 +1,14 @@
 ﻿using System.Collections;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using NexusForever.Game.Abstract;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Mail;
 using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Mail;
+using NexusForever.GameTable;
 using NexusForever.Network.World.Message.Model.Mail;
 using NexusForever.Shared.Configuration;
 using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
@@ -84,7 +86,7 @@ namespace NexusForever.Game.Mail
 
         public DeliverySpeed DeliverySpeed { get; }
         public DateTime CreateTime { get; }
-        public float ExpiryTime => SharedConfiguration.Instance.Get<WorldConfig>()?.MailExpiryDays ?? DefaultExpiryTimeDays;
+        public float ExpiryTime => sharedConfiguration?.Get<WorldConfig>()?.MailExpiryDays ?? DefaultExpiryTimeDays;
 
         public bool PendingCreate => (saveMask & MailSaveMask.Create) != 0;
 
@@ -97,12 +99,22 @@ namespace NexusForever.Game.Mail
 
         private readonly List<IMailAttachment> mailAttachments = new();
         private readonly HashSet<IMailAttachment> deletedAttachments = new();
+        private readonly ushort realmId;
+        private readonly ISharedConfiguration sharedConfiguration;
 
         /// <summary>
         /// Create a new <see cref="IMailItem"/> from an existing <see cref="CharacterMailModel"/>.
         /// </summary>
-        public MailItem(CharacterMailModel model)
+        public MailItem(
+            CharacterMailModel model,
+            ushort realmId = 0,
+            IItemManager itemManager = null,
+            IGameTableManager gameTableManager = null,
+            ISharedConfiguration sharedConfiguration = null)
         {
+            this.realmId = realmId;
+            this.sharedConfiguration = sharedConfiguration;
+
             Id                         = model.Id;
             recipientId                = model.RecipientId;
             SenderType                 = (SenderType)model.SenderType;
@@ -122,7 +134,7 @@ namespace NexusForever.Game.Mail
             CreateTime                 = model.CreateTime;
 
             foreach (CharacterMailAttachmentModel mailAttachment in model.Attachment)
-                mailAttachments.Add(new MailAttachment(mailAttachment));
+                mailAttachments.Add(new MailAttachment(mailAttachment, itemManager, gameTableManager));
 
             saveMask = MailSaveMask.None;
         }
@@ -130,9 +142,13 @@ namespace NexusForever.Game.Mail
         /// <summary>
         /// Create a new <see cref="IMailItem"/> from supplied <see cref="IMailParameters"/>.
         /// </summary>
-        public MailItem(MailParameters parameters)
+        public MailItem(MailParameters parameters, IAssetManager assetManager, ushort realmId = 0, ISharedConfiguration sharedConfiguration = null)
         {
-            Id          = AssetManager.Instance.NextMailId;
+            ArgumentNullException.ThrowIfNull(assetManager);
+            this.realmId = realmId;
+            this.sharedConfiguration = sharedConfiguration;
+
+            Id          = assetManager.NextMailId;
             recipientId = parameters.RecipientCharacterId;
             SenderType  = parameters.MessageType;
             ContentType = parameters.ContentType != ContentType.PlayerMessage
@@ -165,7 +181,7 @@ namespace NexusForever.Game.Mail
                 CurrencyAmount = parameters.MoneyToGive;
 
             DeliverySpeed = parameters.DeliverySpeed;
-            CreateTime   = DateTime.Now;
+            CreateTime   = DateTime.UtcNow;
 
             saveMask     = MailSaveMask.Create;
         }
@@ -311,13 +327,13 @@ namespace NexusForever.Game.Mail
                 return true;
 
             if (DeliverySpeed == DeliverySpeed.Hour)
-                return DateTime.Now
-                    .Subtract(CreateTime)
+                return DateTime.UtcNow
+                    .Subtract(ToUtc(CreateTime))
                     .TotalHours > 1;
 
             if (DeliverySpeed == DeliverySpeed.Day)
-                return DateTime.Now
-                    .Subtract(CreateTime)
+                return DateTime.UtcNow
+                    .Subtract(ToUtc(CreateTime))
                     .TotalDays > 1;
 
             return false;
@@ -376,7 +392,7 @@ namespace NexusForever.Game.Mail
                 Flags                = Flags,
                 Sender               = new NetworkIdentity
                 {
-                    RealmId = isPlayer ? RealmContext.Instance.RealmId : (ushort)0,
+                    RealmId = isPlayer ? realmId : (ushort)0,
                     Id      = isPlayer ? SenderId : 0ul
                 },
             };
@@ -393,11 +409,19 @@ namespace NexusForever.Game.Mail
             if (expiryTime <= 0f)
                 return 0f;
 
-            DateTime createUtc = CreateTime.Kind == DateTimeKind.Utc
-                ? CreateTime
-                : CreateTime.ToUniversalTime();
+            DateTime createUtc = ToUtc(CreateTime);
             double remainingDays = createUtc.AddDays(expiryTime).Subtract(DateTime.UtcNow).TotalDays;
             return (float)Math.Max(0d, remainingDays);
+        }
+
+        private static DateTime ToUtc(DateTime dateTime)
+        {
+            return dateTime.Kind switch
+            {
+                DateTimeKind.Utc   => dateTime,
+                DateTimeKind.Local => dateTime.ToUniversalTime(),
+                _                  => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
+            };
         }
 
         public IEnumerator<IMailAttachment> GetEnumerator()

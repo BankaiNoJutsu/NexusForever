@@ -27,10 +27,13 @@ namespace NexusForever.Game.Map
             var vector = new Vector3(model.X, model.Y, model.Z);
             (uint GridX, uint GridZ) coord = MapGrid.GetGridCoord(vector);
 
-            if (!entities.ContainsKey(coord))
-                entities.Add(coord, new HashSet<EntityModel>());
+            if (!entities.TryGetValue(coord, out HashSet<EntityModel> cellEntities))
+            {
+                cellEntities = new HashSet<EntityModel>();
+                entities.Add(coord, cellEntities);
+            }
 
-            entities[coord].Add(model);
+            cellEntities.Add(model);
         }
 
         /// <summary>

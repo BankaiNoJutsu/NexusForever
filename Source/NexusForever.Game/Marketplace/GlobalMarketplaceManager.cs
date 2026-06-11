@@ -16,13 +16,12 @@ using NexusForever.Network;
 using NexusForever.Network.World.Message.Model.Marketplace;
 using NexusForever.Network.World.Message.Model.Marketplace.Filter;
 using NexusForever.Network.World.Message.Static;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Shared;
 using NLog;
 
 namespace NexusForever.Game.Marketplace
 {
-    public sealed partial class GlobalMarketplaceManager : Singleton<GlobalMarketplaceManager>, IGlobalMarketplaceManager
+    public sealed partial class GlobalMarketplaceManager : IGlobalMarketplaceManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
@@ -41,6 +40,9 @@ namespace NexusForever.Game.Marketplace
 
         private readonly IDatabaseManager databaseManager;
         private readonly IGameTableManager gameTableManager;
+        private readonly IAssetManager assetManager;
+        private readonly IPlayerManager playerManager;
+        private readonly IItemManager itemManager;
 
         public GlobalMarketplaceManager()
         {
@@ -48,10 +50,16 @@ namespace NexusForever.Game.Marketplace
 
         public GlobalMarketplaceManager(
             IDatabaseManager databaseManager,
-            IGameTableManager gameTableManager)
+            IGameTableManager gameTableManager,
+            IAssetManager assetManager = null,
+            IPlayerManager playerManager = null,
+            IItemManager itemManager = null)
         {
             this.databaseManager  = databaseManager;
             this.gameTableManager = gameTableManager;
+            this.assetManager     = assetManager;
+            this.playerManager    = playerManager;
+            this.itemManager      = itemManager;
         }
 
         public void Initialise()
@@ -71,6 +79,7 @@ namespace NexusForever.Game.Marketplace
                 auctions.Clear();
                 commodityOrders.Clear();
                 commodityOrderBooks.Clear();
+                IGameTableManager tables = GetGameTableManager();
 
                 foreach (MarketplaceAuctionModel model in database.GetMarketplaceAuctions())
                 {
@@ -83,15 +92,14 @@ namespace NexusForever.Game.Marketplace
                     auctions.Add(new MarketplaceAuction
                     {
                         Auction      = ToAuctionInfo(model),
-                        Item         = new Item(model.Item),
+                        Item         = new Item(model.Item, itemManager, tables),
                         ExpiresAtUtc = model.ExpirationTime
                     });
                 }
 
-                IGameTableManager gameTableManager = GetGameTableManager();
                 foreach (MarketplaceCommodityOrderModel model in database.GetMarketplaceCommodityOrders())
                 {
-                    if (!IsValidPersistedCommodityOrder(model, gameTableManager))
+                    if (!IsValidPersistedCommodityOrder(model, tables))
                         continue;
 
                     AddCommodityOrder(new MarketplaceCommodityOrder
@@ -331,7 +339,7 @@ namespace NexusForever.Game.Marketplace
             }
 
             bool refundPreviousBidder = previousBidderId != 0ul && previousBidderId != player.CharacterId;
-            IPlayer previousBidder = refundPreviousBidder ? PlayerManager.Instance.GetPlayer(previousBidderId) : null;
+            IPlayer previousBidder = refundPreviousBidder ? playerManager?.GetPlayer(previousBidderId) : null;
             ulong previousBidderRefund = refundPreviousBidder ? previousBid : 0ul;
 
             if (!isBuyout)
@@ -369,7 +377,7 @@ namespace NexusForever.Game.Marketplace
                     record.Item.CharacterId = player.CharacterId;
                 }
 
-                IPlayer onlineSeller = PlayerManager.Instance.GetPlayer(record.Auction.OwnerCharacterId);
+                IPlayer onlineSeller = playerManager?.GetPlayer(record.Auction.OwnerCharacterId);
                 if (!PersistAuctionDeleteWithCredits(record, acceptedAmount, onlineSeller, previousBidderId, previousBidderRefund, previousBidder))
                 {
                     lock (syncRoot)
@@ -424,7 +432,7 @@ namespace NexusForever.Game.Marketplace
             }
 
             if (!persistedAuctionDelete)
-                PersistAuctionDeleteWithCredits(record, acceptedAmount, PlayerManager.Instance.GetPlayer(record.Auction.OwnerCharacterId), previousBidderId, previousBidderRefund, previousBidder);
+                PersistAuctionDeleteWithCredits(record, acceptedAmount, playerManager?.GetPlayer(record.Auction.OwnerCharacterId), previousBidderId, previousBidderRefund, previousBidder);
 
             return GenericError.Ok;
         }
@@ -459,7 +467,7 @@ namespace NexusForever.Game.Marketplace
                     return GenericError.Params;
 
                 canReturnToInventory = player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u;
-                if (!canReturnToInventory && !MarketplaceMailDelivery.IsAvailable)
+                if (!canReturnToInventory && !IsMarketplaceMailAvailable())
                     return GenericError.ItemInventoryFull;
 
                 previousItemCharacterId = record.Item.CharacterId;
@@ -468,7 +476,7 @@ namespace NexusForever.Game.Marketplace
                 topBidderId             = record.Auction.TopBidderCharacterId;
                 topBidderRefund         = record.Auction.CurrentBid;
                 topBidder               = topBidderId != 0ul && topBidderRefund != 0ul
-                    ? PlayerManager.Instance.GetPlayer(topBidderId)
+                    ? playerManager?.GetPlayer(topBidderId)
                     : null;
             }
 
@@ -480,7 +488,7 @@ namespace NexusForever.Game.Marketplace
                     return GenericError.DbFailure;
                 }
             }
-            else if (!MarketplaceMailDelivery.TrySendItemAuctionReturnMail(
+            else if (!TrySendItemAuctionReturnMail(
                 player.CharacterId,
                 record.Item,
                 context => RemoveAuctionModelAndCreditOfflineParticipants(
@@ -554,7 +562,7 @@ namespace NexusForever.Game.Marketplace
                     if (forceImmediate
                         && unmatchedSellQuantity != 0u
                         && !CanDeliverCommodityItemsToInventory(player, order.Item2Id, unmatchedSellQuantity, itemManager)
-                        && !MarketplaceMailDelivery.IsAvailable)
+                        && !IsMarketplaceMailAvailable())
                     {
                         return GenericError.ItemInventoryFull;
                     }
@@ -638,12 +646,13 @@ namespace NexusForever.Game.Marketplace
                     && !CanDeliverCommodityItemsToInventory(player, record.Order.Item2Id, record.Order.Quantity, itemManager);
                 if (returnByMail)
                 {
-                    if (!MarketplaceMailDelivery.IsAvailable
-                        || !MarketplaceMailDelivery.TrySendCommodityAuctionReturnMail(
+                    if (!IsMarketplaceMailAvailable()
+                        || !TrySendCommodityAuctionReturnMail(
                             player.CharacterId,
                             record.Order.Item2Id,
                             record.Order.Quantity,
-                            context => RemoveCommodityOrderModel(context, record)))
+                            context => RemoveCommodityOrderModel(context, record),
+                            itemManager))
                     {
                         return GenericError.ItemInventoryFull;
                     }
@@ -768,9 +777,104 @@ namespace NexusForever.Game.Marketplace
 
         private IGameTableManager GetGameTableManager()
         {
-            return gameTableManager
-                ?? LegacyServiceProvider.Provider?.GetService<IGameTableManager>()
-                ?? LegacyServiceProvider.Provider?.GetService<GameTableManager>();
+            return gameTableManager;
+        }
+
+        private bool IsMarketplaceMailAvailable()
+        {
+            return MarketplaceMailDelivery.IsAvailable(TryGetCharacterDatabase());
+        }
+
+        private bool TrySendItemAuctionReturnMail(ulong recipientCharacterId, IItem item)
+        {
+            return MarketplaceMailDelivery.TrySendItemAuctionReturnMail(
+                TryGetCharacterDatabase(),
+                GetGameTableManager(),
+                assetManager,
+                recipientCharacterId,
+                item,
+                playerManager);
+        }
+
+        private bool TrySendItemAuctionReturnMail(
+            ulong recipientCharacterId,
+            IItem item,
+            Action<CharacterContext> additionalSaveAction)
+        {
+            return MarketplaceMailDelivery.TrySendItemAuctionReturnMail(
+                TryGetCharacterDatabase(),
+                GetGameTableManager(),
+                assetManager,
+                recipientCharacterId,
+                item,
+                additionalSaveAction,
+                playerManager);
+        }
+
+        private bool TrySendItemAuctionWonMail(ulong recipientCharacterId, IItem item)
+        {
+            return MarketplaceMailDelivery.TrySendItemAuctionWonMail(
+                TryGetCharacterDatabase(),
+                GetGameTableManager(),
+                assetManager,
+                recipientCharacterId,
+                item,
+                playerManager);
+        }
+
+        private bool TrySendItemAuctionWonMail(
+            ulong recipientCharacterId,
+            IItem item,
+            Action<CharacterContext> additionalSaveAction)
+        {
+            return MarketplaceMailDelivery.TrySendItemAuctionWonMail(
+                TryGetCharacterDatabase(),
+                GetGameTableManager(),
+                assetManager,
+                recipientCharacterId,
+                item,
+                additionalSaveAction,
+                playerManager);
+        }
+
+        private bool TrySendCommodityAuctionFillMail(
+            ulong recipientCharacterId,
+            uint item2Id,
+            uint quantity,
+            Action<CharacterContext> additionalSaveAction = null,
+            IItemManager mailItemManager = null)
+        {
+            mailItemManager ??= itemManager;
+            return MarketplaceMailDelivery.TrySendCommodityAuctionFillMail(
+                TryGetCharacterDatabase(),
+                GetGameTableManager(),
+                assetManager,
+                recipientCharacterId,
+                item2Id,
+                quantity,
+                additionalSaveAction,
+                playerManager,
+                mailItemManager);
+        }
+
+        private bool TrySendCommodityAuctionReturnMail(
+            ulong recipientCharacterId,
+            uint item2Id,
+            uint quantity,
+            Action<CharacterContext> additionalSaveAction = null,
+            IItemManager mailItemManager = null)
+        {
+            mailItemManager ??= itemManager;
+            return MarketplaceMailDelivery.TrySendCommodityAuctionReturnMail(
+                TryGetCharacterDatabase(),
+                GetGameTableManager(),
+                assetManager,
+                recipientCharacterId,
+                item2Id,
+                quantity,
+                additionalSaveAction,
+                playerManager,
+                mailItemManager);
         }
 
         private static MarketplaceAuctionModel ToAuctionModel(MarketplaceAuction record)
@@ -1015,12 +1119,12 @@ namespace NexusForever.Game.Marketplace
             if (record.Auction.TopBidderCharacterId != 0ul && record.Auction.CurrentBid != 0ul)
             {
                 ulong winningBidderId = record.Auction.TopBidderCharacterId;
-                IPlayer winningBidder = PlayerManager.Instance.GetPlayer(winningBidderId);
+                IPlayer winningBidder = playerManager?.GetPlayer(winningBidderId);
                 if (winningBidder != null && winningBidder.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u)
                 {
                     ulong? previousItemCharacterId = record.Item.CharacterId;
                     record.Item.CharacterId = winningBidderId;
-                    IPlayer onlineSeller = PlayerManager.Instance.GetPlayer(record.Auction.OwnerCharacterId);
+                    IPlayer onlineSeller = playerManager?.GetPlayer(record.Auction.OwnerCharacterId);
                     if (!PersistAuctionDeleteWithSellerCredit(record, record.Auction.CurrentBid, onlineSeller))
                     {
                         record.Item.CharacterId = previousItemCharacterId;
@@ -1093,7 +1197,7 @@ namespace NexusForever.Game.Marketplace
 
         private void ExpireCommodityOrder(MarketplaceCommodityOrder record)
         {
-            IPlayer owner = PlayerManager.Instance.GetPlayer(record.OwnerCharacterId);
+            IPlayer owner = playerManager?.GetPlayer(record.OwnerCharacterId);
             bool directBuyRefund = record.Order.IsBuyOrder && owner != null;
             bool directSellReturn = !record.Order.IsBuyOrder
                 && CanDeliverCommodityItemsToInventory(owner, record.Order.Item2Id, record.Order.Quantity, null);
@@ -1129,8 +1233,8 @@ namespace NexusForever.Game.Marketplace
             }
             else
             {
-                if (!MarketplaceMailDelivery.IsAvailable
-                    || !MarketplaceMailDelivery.TrySendCommodityAuctionReturnMail(
+                if (!IsMarketplaceMailAvailable()
+                    || !TrySendCommodityAuctionReturnMail(
                         record.OwnerCharacterId,
                         record.Order.Item2Id,
                         record.Order.Quantity,
@@ -1170,13 +1274,13 @@ namespace NexusForever.Game.Marketplace
 
             ulong? previousCharacterId = record.Item.CharacterId;
             record.Item.CharacterId = buyerCharacterId;
-            IPlayer onlineSeller = PlayerManager.Instance.GetPlayer(record.Auction.OwnerCharacterId);
+            IPlayer onlineSeller = playerManager?.GetPlayer(record.Auction.OwnerCharacterId);
             bool deliverToInventory = buyer != null
                 && buyer.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u;
             bool delivered = deliverToInventory
-                ? TryDeliverAuctionItemToCharacter(buyerCharacterId, record.Item, buyer, MarketplaceMailDelivery.TrySendItemAuctionWonMail)
+                ? TryDeliverAuctionItemToCharacter(buyerCharacterId, record.Item, buyer, TrySendItemAuctionWonMail)
                 : persistAuctionDeleteWithMail
-                    ? MarketplaceMailDelivery.TrySendItemAuctionWonMail(
+                    ? TrySendItemAuctionWonMail(
                         buyerCharacterId,
                         record.Item,
                         context => RemoveAuctionModelAndCreditOfflineParticipants(
@@ -1188,7 +1292,7 @@ namespace NexusForever.Game.Marketplace
                             refundCharacterId,
                             refundAmount,
                             onlineRefundOwner))
-                    : TryDeliverAuctionItemToCharacter(buyerCharacterId, record.Item, buyer, MarketplaceMailDelivery.TrySendItemAuctionWonMail);
+                    : TryDeliverAuctionItemToCharacter(buyerCharacterId, record.Item, buyer, TrySendItemAuctionWonMail);
             if (!delivered)
             {
                 record.Item.CharacterId = previousCharacterId;
@@ -1202,7 +1306,7 @@ namespace NexusForever.Game.Marketplace
             return true;
         }
 
-        private static bool ReturnExpiredAuctionToOwner(
+        private bool ReturnExpiredAuctionToOwner(
             MarketplaceAuction record,
             AuctionInfo auctionSnapshot,
             bool persistAuctionDeleteWithMail,
@@ -1211,17 +1315,17 @@ namespace NexusForever.Game.Marketplace
             persistedAuctionDelete = false;
             ulong? previousCharacterId = record.Item.CharacterId;
             record.Item.CharacterId = record.Auction.OwnerCharacterId;
-            IPlayer owner = PlayerManager.Instance.GetPlayer(record.Auction.OwnerCharacterId);
+            IPlayer owner = playerManager?.GetPlayer(record.Auction.OwnerCharacterId);
             bool deliverToInventory = owner != null
                 && owner.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u;
             bool delivered = deliverToInventory
-                ? TryDeliverAuctionItemToCharacter(record.Auction.OwnerCharacterId, record.Item, owner, MarketplaceMailDelivery.TrySendItemAuctionReturnMail)
+                ? TryDeliverAuctionItemToCharacter(record.Auction.OwnerCharacterId, record.Item, owner, TrySendItemAuctionReturnMail)
                 : persistAuctionDeleteWithMail
-                    ? MarketplaceMailDelivery.TrySendItemAuctionReturnMail(
+                    ? TrySendItemAuctionReturnMail(
                         record.Auction.OwnerCharacterId,
                         record.Item,
                         context => RemoveAuctionModel(context, record))
-                    : TryDeliverAuctionItemToCharacter(record.Auction.OwnerCharacterId, record.Item, null, MarketplaceMailDelivery.TrySendItemAuctionReturnMail);
+                    : TryDeliverAuctionItemToCharacter(record.Auction.OwnerCharacterId, record.Item, null, TrySendItemAuctionReturnMail);
             if (!delivered)
             {
                 record.Item.CharacterId = previousCharacterId;
@@ -1236,7 +1340,7 @@ namespace NexusForever.Game.Marketplace
             return true;
         }
 
-        private static bool CanDeliverAuctionItemToCharacter(ulong characterId, IItem item, IPlayer player = null)
+        private bool CanDeliverAuctionItemToCharacter(ulong characterId, IItem item, IPlayer player = null)
         {
             if (characterId == 0ul || item == null)
                 return false;
@@ -1244,24 +1348,24 @@ namespace NexusForever.Game.Marketplace
             if (player != null && player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u)
                 return true;
 
-            return MarketplaceMailDelivery.IsAvailable;
+            return IsMarketplaceMailAvailable();
         }
 
-        private static bool TryDeliverAuctionItemToCharacter(
+        private bool TryDeliverAuctionItemToCharacter(
             ulong characterId,
             IItem item,
             Func<ulong, IItem, bool> mailDelivery = null)
         {
-            return TryDeliverAuctionItemToCharacter(characterId, item, PlayerManager.Instance.GetPlayer(characterId), mailDelivery);
+            return TryDeliverAuctionItemToCharacter(characterId, item, playerManager?.GetPlayer(characterId), mailDelivery);
         }
 
-        private static bool TryDeliverAuctionItemToCharacter(
+        private bool TryDeliverAuctionItemToCharacter(
             ulong characterId,
             IItem item,
             IPlayer player,
             Func<ulong, IItem, bool> mailDelivery = null)
         {
-            mailDelivery ??= MarketplaceMailDelivery.TrySendItemAuctionWonMail;
+            mailDelivery ??= TrySendItemAuctionWonMail;
 
             if (characterId == 0ul || item == null)
                 return false;
@@ -1272,7 +1376,7 @@ namespace NexusForever.Game.Marketplace
                 return true;
             }
 
-            return MarketplaceMailDelivery.IsAvailable
+            return IsMarketplaceMailAvailable()
                 && mailDelivery(characterId, item);
         }
 
@@ -1303,9 +1407,9 @@ namespace NexusForever.Game.Marketplace
             seller.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, proceeds);
         }
 
-        private static void NotifyOutbid(ulong outbidCharacterId, AuctionInfo auction)
+        private void NotifyOutbid(ulong outbidCharacterId, AuctionInfo auction)
         {
-            IPlayer outbidPlayer = PlayerManager.Instance.GetPlayer(outbidCharacterId);
+            IPlayer outbidPlayer = playerManager?.GetPlayer(outbidCharacterId);
             outbidPlayer?.Session.EnqueueMessageEncrypted(new ServerAuctionOutbid
             {
                 Auction = auction
@@ -1451,8 +1555,8 @@ namespace NexusForever.Game.Marketplace
                 ulong buyerRefund         = buyEscrowBefore > retainedAmount ? buyEscrowBefore - retainedAmount : 0ul;
 
                 bool persistedOrderChangesWithDelivery = false;
-                IPlayer buyer = PlayerManager.Instance.GetPlayer(buyOrder.OwnerCharacterId);
-                IPlayer seller = PlayerManager.Instance.GetPlayer(sellOrder.OwnerCharacterId);
+                IPlayer buyer = playerManager?.GetPlayer(buyOrder.OwnerCharacterId);
+                IPlayer seller = playerManager?.GetPlayer(sellOrder.OwnerCharacterId);
                 if (CanDeliverCommodityItemsToInventory(buyer, sellOrder.Order.Item2Id, fillQuantity, itemManager))
                 {
                     if (!TryPersistCommodityFillOrderChangesWithOfflineCredits(
@@ -1541,7 +1645,7 @@ namespace NexusForever.Game.Marketplace
             return remainingQuantity;
         }
 
-        private static GenericError FinaliseImmediateCommodityOrder(IPlayer player, MarketplaceCommodityOrder record, IItemManager itemManager)
+        private GenericError FinaliseImmediateCommodityOrder(IPlayer player, MarketplaceCommodityOrder record, IItemManager itemManager)
         {
             if (record.Order.Quantity == 0u)
                 return GenericError.Ok;
@@ -1560,11 +1664,12 @@ namespace NexusForever.Game.Marketplace
                 return GenericError.Ok;
             }
 
-            if (MarketplaceMailDelivery.IsAvailable
-                && MarketplaceMailDelivery.TrySendCommodityAuctionReturnMail(
+            if (IsMarketplaceMailAvailable()
+                && TrySendCommodityAuctionReturnMail(
                     player.CharacterId,
                     record.Order.Item2Id,
-                    record.Order.Quantity))
+                    record.Order.Quantity,
+                    mailItemManager: itemManager))
             {
                 ClearCommodityOrderRemainder(record.Order);
                 return GenericError.Ok;
@@ -1579,12 +1684,12 @@ namespace NexusForever.Game.Marketplace
             order.Price    = 0ul;
         }
 
-        private static bool TryDeliverCommodityItems(ulong characterId, uint item2Id, uint quantity, IItemManager itemManager)
+        private bool TryDeliverCommodityItems(ulong characterId, uint item2Id, uint quantity, IItemManager itemManager)
         {
             return TryDeliverCommodityItems(characterId, item2Id, quantity, itemManager, null, out _);
         }
 
-        private static bool TryDeliverCommodityItems(
+        private bool TryDeliverCommodityItems(
             ulong characterId,
             uint item2Id,
             uint quantity,
@@ -1598,7 +1703,7 @@ namespace NexusForever.Game.Marketplace
                 return true;
             }
 
-            IPlayer player = PlayerManager.Instance.GetPlayer(characterId);
+            IPlayer player = playerManager?.GetPlayer(characterId);
             if (CanDeliverCommodityItemsToInventory(player, item2Id, quantity, itemManager))
             {
                 player.Inventory.ItemCreate(InventoryLocation.Inventory, item2Id, quantity, ItemUpdateReason.Auction);
@@ -1606,24 +1711,25 @@ namespace NexusForever.Game.Marketplace
                 return true;
             }
 
-            bool deliveredByMail = MarketplaceMailDelivery.IsAvailable
-                && MarketplaceMailDelivery.TrySendCommodityAuctionFillMail(
+            bool deliveredByMail = IsMarketplaceMailAvailable()
+                && TrySendCommodityAuctionFillMail(
                     characterId,
                     item2Id,
                     quantity,
-                    additionalMailSaveAction);
+                    additionalMailSaveAction,
+                    itemManager);
             persistedAdditionalMailSaveAction = deliveredByMail && additionalMailSaveAction != null;
             return deliveredByMail;
         }
 
-        private static bool CanDeliverCommodityItemsToCharacter(ulong characterId, uint item2Id, uint quantity, IItemManager itemManager)
+        private bool CanDeliverCommodityItemsToCharacter(ulong characterId, uint item2Id, uint quantity, IItemManager itemManager)
         {
             if (quantity == 0u)
                 return true;
 
-            IPlayer player = PlayerManager.Instance.GetPlayer(characterId);
+            IPlayer player = playerManager?.GetPlayer(characterId);
             return CanDeliverCommodityItemsToInventory(player, item2Id, quantity, itemManager)
-                || MarketplaceMailDelivery.IsAvailable;
+                || IsMarketplaceMailAvailable();
         }
 
         private static bool CanDeliverCommodityItemsToInventory(IPlayer player, uint item2Id, uint quantity, IItemManager itemManager)
@@ -1661,9 +1767,9 @@ namespace NexusForever.Game.Marketplace
             return commodityOrders.Contains(record);
         }
 
-        private static void NotifyCommodityPartialFill(MarketplaceCommodityOrder record, AuctionEventType type)
+        private void NotifyCommodityPartialFill(MarketplaceCommodityOrder record, AuctionEventType type)
         {
-            IPlayer player = PlayerManager.Instance.GetPlayer(record.OwnerCharacterId);
+            IPlayer player = playerManager?.GetPlayer(record.OwnerCharacterId);
             player?.Session.EnqueueMessageEncrypted(new ServerCommodityAuctionFilledPartial
             {
                 OrderFilled = CloneOrder(record.Order),

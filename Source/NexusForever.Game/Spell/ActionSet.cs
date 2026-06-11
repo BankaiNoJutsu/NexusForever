@@ -51,14 +51,16 @@ namespace NexusForever.Game.Spell
         private readonly Dictionary<ushort, IActionSetAmp> amps = new();
 
         private readonly IPlayer player;
+        private readonly IGameTableManager gameTableManager;
         private ActionSetSaveMask saveMask;
 
         /// <summary>
         /// Create a new <see cref="IActionSet"/> with supplied index.
         /// </summary>
-        public ActionSet(byte index, IPlayer player)
+        public ActionSet(byte index, IPlayer player, IGameTableManager gameTableManager = null)
         {
             this.player = player;
+            this.gameTableManager = gameTableManager;
             Owner      = player.CharacterId;
             Index      = index;
             TierPoints = MaxTierPoints;
@@ -246,7 +248,7 @@ namespace NexusForever.Game.Spell
         /// </summary>
         public void AddAmp(ushort id)
         {
-            EldanAugmentationEntry entry = GameTableManager.Instance.EldanAugmentation?.GetEntry(id);
+            EldanAugmentationEntry entry = gameTableManager?.EldanAugmentation?.GetEntry(id);
             if (entry == null)
                 throw new ArgumentException($"Invalid eldan augmentation id {id}!");
 
@@ -294,7 +296,7 @@ namespace NexusForever.Game.Spell
         /// </summary>
         public void AddAmp(CharacterActionSetAmpModel model)
         {
-            EldanAugmentationEntry entry = GameTableManager.Instance.EldanAugmentation?.GetEntry(model.AmpId);
+            EldanAugmentationEntry entry = gameTableManager?.EldanAugmentation?.GetEntry(model.AmpId);
             if (entry == null)
                 throw new ArgumentException();
 

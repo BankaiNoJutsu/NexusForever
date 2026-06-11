@@ -52,10 +52,10 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="ITitle"/> from an existing database model.
         /// </summary>
-        public Title(CharacterTitleModel model)
+        public Title(CharacterTitleModel model, IGameTableManager gameTableManager)
         {
             CharacterId = model.Id;
-            Entry       = GameTableManager.Instance.CharacterTitle?.GetEntry(model.Title);
+            Entry       = gameTableManager.CharacterTitle?.GetEntry(model.Title);
             revoked     = Convert.ToBoolean(model.Revoked);
 
             if (Entry != null && Entry.LifeTimeSeconds != 0u)

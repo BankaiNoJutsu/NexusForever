@@ -2,7 +2,6 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
@@ -19,66 +18,46 @@ using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
 
 namespace NexusForever.Game.Tests.Map;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class MapInstancePendingRemovalTests
 {
     [Fact]
     public void EnqueuePendingRemoval_WithMissingGameFormulaTable_UsesClientDefaultTimer()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildProvider();
-        LegacyServiceProvider.Provider = provider;
+        (ISharedConfiguration sharedConfiguration, GameTableManager gameTableManager) = CreateMapDependencies();
 
-        try
-        {
-            var map = new TestMapInstance();
-            IPlayer player = CreatePlayer(51u, out RecordingDispatchProxy<IGameSession> sessionProxy);
+        var map = new TestMapInstance(sharedConfiguration, gameTableManager);
+        IPlayer player = CreatePlayer(51u, out RecordingDispatchProxy<IGameSession> sessionProxy);
 
-            map.EnqueuePendingRemoval(player, WorldRemovalReason.KickedFromCommunity);
+        map.EnqueuePendingRemoval(player, WorldRemovalReason.KickedFromCommunity);
 
-            MapInstanceRemoval removal = Assert.Single(map.GetPendingRemovals());
-            Assert.Equal(51u, removal.Guid);
-            Assert.Equal(WorldRemovalReason.KickedFromCommunity, removal.Reason);
-            Assert.Equal(30d, removal.Timer);
-            Assert.Single(GetEncryptedMessages<ServerPendingWorldRemoval>(sessionProxy));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        MapInstanceRemoval removal = Assert.Single(map.GetPendingRemovals());
+        Assert.Equal(51u, removal.Guid);
+        Assert.Equal(WorldRemovalReason.KickedFromCommunity, removal.Reason);
+        Assert.Equal(30d, removal.Timer);
+        Assert.Single(GetEncryptedMessages<ServerPendingWorldRemoval>(sessionProxy));
     }
 
     [Fact]
     public void EnqueuePendingRemoval_WithGameFormulaRow_UsesConfiguredTimer()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildProvider(CreateGameTable(new GameFormulaEntry
+        (ISharedConfiguration sharedConfiguration, GameTableManager gameTableManager) = CreateMapDependencies(CreateGameTable(new GameFormulaEntry
         {
             Id       = 1123u,
             Dataint0 = 45000u
         }));
-        LegacyServiceProvider.Provider = provider;
 
-        try
-        {
-            var map = new TestMapInstance();
-            IPlayer player = CreatePlayer(52u, out RecordingDispatchProxy<IGameSession> sessionProxy);
+        var map = new TestMapInstance(sharedConfiguration, gameTableManager);
+        IPlayer player = CreatePlayer(52u, out RecordingDispatchProxy<IGameSession> sessionProxy);
 
-            map.EnqueuePendingRemoval(player, WorldRemovalReason.GroupMembership);
+        map.EnqueuePendingRemoval(player, WorldRemovalReason.GroupMembership);
 
-            MapInstanceRemoval removal = Assert.Single(map.GetPendingRemovals());
-            Assert.Equal(45d, removal.Timer);
-            Assert.Single(GetEncryptedMessages<ServerPendingWorldRemoval>(sessionProxy));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        MapInstanceRemoval removal = Assert.Single(map.GetPendingRemovals());
+        Assert.Equal(45d, removal.Timer);
+        Assert.Single(GetEncryptedMessages<ServerPendingWorldRemoval>(sessionProxy));
     }
 
     private static IPlayer CreatePlayer(uint guid, out RecordingDispatchProxy<IGameSession> sessionProxy)
@@ -99,7 +78,7 @@ public class MapInstancePendingRemovalTests
             .ToList();
     }
 
-    private static ServiceProvider BuildProvider(GameTable<GameFormulaEntry> gameFormulaTable = null)
+    private static (ISharedConfiguration SharedConfiguration, GameTableManager GameTableManager) CreateMapDependencies(GameTable<GameFormulaEntry> gameFormulaTable = null)
     {
         var configuration = new SharedConfiguration(new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string>
@@ -118,10 +97,7 @@ public class MapInstancePendingRemovalTests
         if (gameFormulaTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.GameFormula), gameFormulaTable);
 
-        return new ServiceCollection()
-            .AddSingleton(configuration)
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return (configuration, gameTableManager);
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()
@@ -167,10 +143,12 @@ public class MapInstancePendingRemovalTests
 
     private sealed class TestMapInstance : MapInstance
     {
-        public TestMapInstance()
+        public TestMapInstance(ISharedConfiguration sharedConfiguration, IGameTableManager gameTableManager)
             : base(
                 RecordingDispatchProxy<IEntityFactory>.Create(out _),
-                RecordingDispatchProxy<IPublicEventManager>.Create(out _))
+                RecordingDispatchProxy<IPublicEventManager>.Create(out _),
+                sharedConfiguration: sharedConfiguration,
+                gameTableManager: gameTableManager)
         {
         }
 

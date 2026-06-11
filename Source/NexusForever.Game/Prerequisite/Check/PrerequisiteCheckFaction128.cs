@@ -1,5 +1,6 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
+using NexusForever.Game.Abstract.Reputation;
 using NexusForever.Game.Static.Prerequisite;
 
 namespace NexusForever.Game.Prerequisite.Check
@@ -11,9 +12,17 @@ namespace NexusForever.Game.Prerequisite.Check
     [PrerequisiteCheck(PrerequisiteType.Faction128)]
     public class PrerequisiteCheckFaction128 : IPrerequisiteCheck
     {
+        private readonly IFactionManager factionManager;
+
+        public PrerequisiteCheckFaction128(
+            IFactionManager factionManager)
+        {
+            this.factionManager = factionManager;
+        }
+
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            uint matches = FactionPrerequisiteHelper.IsFactionOrAncestor(player.Faction1, value) ? 1u : 0u;
+            uint matches = FactionPrerequisiteHelper.IsFactionOrAncestor(factionManager, player.Faction1, value) ? 1u : 0u;
             return PrerequisiteCompare.Compare(comparison, matches, objectId);
         }
     }

@@ -1,11 +1,11 @@
-﻿using NexusForever.Database;
+using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.Housing;
-using NexusForever.Game.Character;
 using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Guild;
 using NexusForever.Game.Static.Guild;
@@ -19,11 +19,9 @@ using NLog;
 
 namespace NexusForever.Game.Housing
 {
-    public sealed class GlobalResidenceManager : Singleton<GlobalResidenceManager>, IGlobalResidenceManager
+    public sealed class GlobalResidenceManager : IGlobalResidenceManager
     {
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
-
-        private static double SaveDuration => SharedConfiguration.Instance.Get<WorldConfig>()?.ResidenceSaveIntervalSeconds ?? 60d;
 
         /// <summary>
         /// Id to be assigned to the next created residence.
@@ -46,39 +44,68 @@ namespace NexusForever.Game.Housing
         private readonly Dictionary<ulong, IPublicResidence> visitableResidences = new();
         private readonly Dictionary<ulong, IPublicCommunity> visitableCommunities = new();
 
-        private double timeToSave = SaveDuration;
+        private double timeToSave;
+
+        #region Dependency Injection
+
+        private readonly ICharacterManager characterManager;
+        private readonly IGlobalGuildManager globalGuildManager;
+        private readonly IRealmContext realmContext;
+        private readonly IDatabaseManager databaseManager;
+        private readonly ISharedConfiguration sharedConfiguration;
+        private readonly IGameTableManager gameTableManager;
+
+        public GlobalResidenceManager(
+            ICharacterManager characterManager = null,
+            IGlobalGuildManager globalGuildManager = null,
+            IRealmContext realmContext = null,
+            IDatabaseManager databaseManager = null,
+            ISharedConfiguration sharedConfiguration = null,
+            IGameTableManager gameTableManager = null)
+        {
+            this.characterManager = characterManager;
+            this.globalGuildManager = globalGuildManager;
+            this.realmContext = realmContext;
+            this.databaseManager = databaseManager;
+            this.sharedConfiguration = sharedConfiguration;
+            this.gameTableManager = gameTableManager;
+            timeToSave = GetSaveDuration();
+        }
+
+        #endregion
 
         /// <summary>
         /// Initialise <see cref="IGlobalResidenceManager"/> and any related resources.
         /// </summary>
         public void Initialise()
         {
-            nextResidenceId = DatabaseManager.Instance.GetDatabase<CharacterDatabase>().GetNextResidenceId() + 1ul;
-            nextDecorId     = DatabaseManager.Instance.GetDatabase<CharacterDatabase>().GetNextDecorId() + 1ul;
+            CharacterDatabase database = GetCharacterDatabase();
+            nextResidenceId = database.GetNextResidenceId() + 1ul;
+            nextDecorId     = database.GetNextDecorId() + 1ul;
 
             InitialiseResidences();
         }
 
         private void InitialiseResidences()
         {
-            foreach (ResidenceModel model in DatabaseManager.Instance.GetDatabase<CharacterDatabase>().GetResidences())
+            foreach (ResidenceModel model in GetCharacterDatabase().GetResidences())
             {
                 if (model.OwnerId.HasValue)
                 {
-                    ICharacter character = CharacterManager.Instance.GetCharacter(model.OwnerId.Value);
+                    ICharacter character = GetCharacterManager().GetCharacter(model.OwnerId.Value);
                     if (character == null)
                         throw new DatabaseDataException($"Character owner {model.OwnerId.Value} of residence {model.Id} is invalid!");
 
-                    var residence = new Residence(model);
+                    var residence = new Residence(model, this, realmContext?.RealmId ?? (ushort)0, gameTableManager);
                     StoreResidence(residence, character.Name);
                 }
                 else if (model.GuildOwnerId.HasValue)
                 {
-                    ICommunity community = GlobalGuildManager.Instance.GetGuild<ICommunity>(model.GuildOwnerId.Value);
+                    ICommunity community = GetGlobalGuildManager().GetGuild<ICommunity>(model.GuildOwnerId.Value);
                     if (community == null)
                         throw new DatabaseDataException($"Community owner {model.OwnerId.Value} of residence {model.Id} is invalid!");
 
-                    var residence = new Residence(model);
+                    var residence = new Residence(model, this, realmContext?.RealmId ?? (ushort)0, gameTableManager);
                     community.Residence = residence;
 
                     StoreCommunity(residence, community);
@@ -90,7 +117,7 @@ namespace NexusForever.Game.Housing
             foreach (IResidence residence in residences.Values
                 .Where(r => r.OwnerId.HasValue && r.GuildOwnerId.HasValue))
             {
-                ICommunity community = GlobalGuildManager.Instance.GetGuild<ICommunity>(residence.GuildOwnerId.Value);
+                ICommunity community = GetGlobalGuildManager().GetGuild<ICommunity>(residence.GuildOwnerId.Value);
                 if (community == null)
                     continue;
 
@@ -125,13 +152,13 @@ namespace NexusForever.Game.Housing
             if (timeToSave <= 0d)
             {
                 SaveResidences();
-                timeToSave = SaveDuration;
+                timeToSave = GetSaveDuration();
             }
         }
 
         private void SaveResidences()
         {
-            CharacterDatabase database = DatabaseManager.Instance.GetDatabase<CharacterDatabase>();
+            CharacterDatabase database = databaseManager?.GetDatabase<CharacterDatabase>();
             if (database == null)
                 return;
 
@@ -155,7 +182,7 @@ namespace NexusForever.Game.Housing
             if (blocked != null)
                 throw new HousingException("Player does not meet retail housing unlock requirements.");
 
-            var residence = new Residence(player);
+            var residence = new Residence(player, this, gameTableManager);
             StoreResidence(residence, player.Name);
 
             log.Trace($"Created new residence {residence.Id} for player {player.Name}.");
@@ -178,7 +205,7 @@ namespace NexusForever.Game.Housing
         /// </summary>
         public IResidence CreateCommunity(ICommunity community)
         {
-            var residence = new Residence(community);
+            var residence = new Residence(community, this, realmContext?.RealmId ?? (ushort)0, gameTableManager);
             StoreCommunity(residence, community);
 
             log.Trace($"Created new residence {residence.Id} for community {community.Name}.");
@@ -195,7 +222,7 @@ namespace NexusForever.Game.Housing
             // community residences store the privacy level in the community it self as a guild flag
             /*if ((community.Flags & GuildFlag.CommunityPrivate) == 0)
             {
-                ICharacter character = CharacterManager.Instance.GetCharacter(community.LeaderId.Value);
+                ICharacter character = GetCharacterManager().GetCharacter(community.LeaderId.Value);
                 RegisterCommunityVisits(residence, community, character.Name);
             }*/
         }
@@ -271,15 +298,15 @@ namespace NexusForever.Game.Housing
 
         public IResidenceEntrance GetResidenceEntrance(PropertyInfoId propertyInfoId)
         {
-            HousingPropertyInfoEntry propertyEntry = GameTableManager.Instance.HousingPropertyInfo?.GetEntry((ulong)propertyInfoId);
+            HousingPropertyInfoEntry propertyEntry = gameTableManager.HousingPropertyInfo?.GetEntry((ulong)propertyInfoId);
             if (propertyEntry == null)
                 throw new HousingException();
 
-            WorldLocation2Entry locationEntry = GameTableManager.Instance.WorldLocation2?.GetEntry(propertyEntry.WorldLocation2Id);
+            WorldLocation2Entry locationEntry = gameTableManager.WorldLocation2?.GetEntry(propertyEntry.WorldLocation2Id);
             if (locationEntry == null)
                 throw new HousingException();
 
-            return new ResidenceEntrance(locationEntry);
+            return new ResidenceEntrance(locationEntry, gameTableManager);
         }
 
         /// <summary>
@@ -346,6 +373,27 @@ namespace NexusForever.Game.Housing
                 .Values
                 .OrderBy(_ => Random.Shared.Next())
                 .Take(50);
+        }
+
+        private ICharacterManager GetCharacterManager()
+        {
+            return characterManager ?? throw new InvalidOperationException("GlobalResidenceManager requires an ICharacterManager.");
+        }
+
+        private IGlobalGuildManager GetGlobalGuildManager()
+        {
+            return globalGuildManager ?? throw new InvalidOperationException("GlobalResidenceManager requires an IGlobalGuildManager.");
+        }
+
+        private CharacterDatabase GetCharacterDatabase()
+        {
+            CharacterDatabase database = databaseManager?.GetDatabase<CharacterDatabase>();
+            return database ?? throw new InvalidOperationException("CharacterDatabase is not available.");
+        }
+
+        private double GetSaveDuration()
+        {
+            return sharedConfiguration?.Get<WorldConfig>()?.ResidenceSaveIntervalSeconds ?? 60d;
         }
     }
 }

@@ -56,6 +56,7 @@ public class MatchCleanupSnapshotTests
         IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out _);
         IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(out _);
         IInternalMessagePublisher messagePublisher = RecordingDispatchProxy<IInternalMessagePublisher>.Create(out RecordingDispatchProxy<IInternalMessagePublisher> messagePublisherProxy);
+        IMatchingDeserterManager matchingDeserterManager = RecordingDispatchProxy<IMatchingDeserterManager>.Create(out _);
         messagePublisherProxy.SetMethodReturn(nameof(IInternalMessagePublisher.PublishAsync), Task.CompletedTask);
 
         IMatchCharacter matchCharacter = RecordingDispatchProxy<IMatchCharacter>.Create(out _);
@@ -82,7 +83,8 @@ public class MatchCleanupSnapshotTests
             matchTeamFactory,
             gameTableManager,
             playerManager,
-            messagePublisher);
+            messagePublisher,
+            matchingDeserterManager);
         SetAutoProperty(match, nameof(Match.Guid), Guid.NewGuid());
         SetAutoProperty(match, nameof(Match.MatchingMap), matchingMap);
         SetPrivateField(match, "map", map);

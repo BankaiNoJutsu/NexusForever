@@ -75,7 +75,7 @@ namespace NexusForever.WorldServer
                     sc.AddNetworkInternalBroker(hb.Configuration.GetSection("Network:Internal").Get<BrokerConfig>());
                     sc.AddNetworkInternalHandlers();
 
-                    sc.AddSingletonLegacy<ISharedConfiguration, SharedConfiguration>();
+                    sc.AddSharedConfiguration<WorldServerConfiguration>(hb.Configuration);
                     sc.AddDatabase();
                     sc.AddGame();
                     sc.AddGameTable(

@@ -34,7 +34,6 @@ using NexusForever.WorldServer.Network.Message.Handler.Marketplace;
 
 namespace NexusForever.Game.Tests.Marketplace;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class MarketplaceAuctionHandlerTests
 {
     private const uint ItemId = 7001u;
@@ -48,10 +47,11 @@ public class MarketplaceAuctionHandlerTests
     private const ulong MinimumBid = 100ul;
     private const ulong BuyoutPrice = 250ul;
 
+    private IServiceProvider configuredMarketplaceProvider;
+
     [Fact]
     public void PostAuction_UsesInjectedGameTableForDefaultExpiration()
     {
-        using LegacyServiceProviderScope scope = new(new ServiceCollection().BuildServiceProvider());
         var manager = new GlobalMarketplaceManager(
             null,
             CreateGameTableManager(defaultAuctionDurationHours: 1u));
@@ -68,15 +68,15 @@ public class MarketplaceAuctionHandlerTests
     [Fact]
     public void AuctionPostSearchAndBuyout_UsesTransientOrderBookAndTransfersItem()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
         var services = new ServiceCollection();
         services.AddSingleton(realmContext);
         services.AddSingleton(playerManager);
-        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
-        LegacyServiceProvider.Provider = services.BuildServiceProvider();
+        services.AddSingleton<IPlayerManager>(playerManager);
+        services.AddSingleton<IGlobalMarketplaceManager>(new GlobalMarketplaceManager(null, null, null, playerManager));
+        configuredMarketplaceProvider = services.BuildServiceProvider();
 
         try
         {
@@ -86,7 +86,7 @@ public class MarketplaceAuctionHandlerTests
             playerManager.AddPlayer(seller);
             sellerInventoryProxy.SetMethodReturn(nameof(IInventory.GetItem), item);
 
-            var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance);
+            var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance, CreateMarketplaceRequestHelper());
             sellHandler.HandleMessage(sellerSession, CreateSellRequest());
 
             RecordingDispatchProxy<IInventory>.Invocation removeCall =
@@ -105,10 +105,7 @@ public class MarketplaceAuctionHandlerTests
             Assert.Single(GetMessages<ServerMarketplaceStatus>(sellerSessionProxy));
 
             IItemManager itemManager = CreateItemManager(itemInfo);
-            var searchHandler = new ClientAuctionsByFilterRequestHandler(
-                NullLogger<ClientAuctionsByFilterRequestHandler>.Instance,
-                CreateGameTableManager(),
-                itemManager);
+            var searchHandler = new ClientAuctionsByFilterRequestHandler(NullLogger<ClientAuctionsByFilterRequestHandler>.Instance, CreateGameTableManager(), itemManager, CreateMarketplaceRequestHelper());
             IWorldSession searchSession = CreateSession(303u, 3003ul, out _, out _, out RecordingDispatchProxy<IWorldSession> searchSessionProxy, out _);
 
             searchHandler.HandleMessage(searchSession, CreateSearchRequest());
@@ -122,9 +119,7 @@ public class MarketplaceAuctionHandlerTests
             IWorldSession buyerSession = CreateSession(BuyerGuid, BuyerCharacterId, out RecordingDispatchProxy<IInventory> buyerInventoryProxy, out RecordingDispatchProxy<ICurrencyManager> buyerCurrencyProxy, out RecordingDispatchProxy<IWorldSession> buyerSessionProxy, out _);
             buyerCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
             buyerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 3u);
-            var buyHandler = new ClientAuctionBuyOrderSubmitHandler(
-                NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance,
-                itemManager);
+            var buyHandler = new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance, itemManager, CreateMarketplaceRequestHelper());
 
             buyHandler.HandleMessage(buyerSession, CreateBuyoutRequest(postResult.Auction.AuctionId));
 
@@ -156,7 +151,6 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
@@ -317,15 +311,15 @@ public class MarketplaceAuctionHandlerTests
     [Fact]
     public void AuctionBid_OutbidNotifiesPreviousBidderAndRefundsCredits()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
         var services = new ServiceCollection();
         services.AddSingleton(realmContext);
         services.AddSingleton(playerManager);
-        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
-        LegacyServiceProvider.Provider = services.BuildServiceProvider();
+        services.AddSingleton<IPlayerManager>(playerManager);
+        services.AddSingleton<IGlobalMarketplaceManager>(new GlobalMarketplaceManager(null, null, null, playerManager));
+        configuredMarketplaceProvider = services.BuildServiceProvider();
 
         try
         {
@@ -335,7 +329,7 @@ public class MarketplaceAuctionHandlerTests
             playerManager.AddPlayer(seller);
             sellerInventoryProxy.SetMethodReturn(nameof(IInventory.GetItem), item);
 
-            var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance);
+            var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance, CreateMarketplaceRequestHelper());
             sellHandler.HandleMessage(sellerSession, CreateSellRequest());
 
             IItemManager itemManager = CreateItemManager(itemInfo);
@@ -351,7 +345,7 @@ public class MarketplaceAuctionHandlerTests
             ServerAuctionPostResult postResult = Assert.Single(GetMessages<ServerAuctionPostResult>(sellerSessionProxy));
             ulong auctionId = postResult.Auction.AuctionId;
 
-            var buyHandler = new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance, itemManager);
+            var buyHandler = new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance, itemManager, CreateMarketplaceRequestHelper());
             buyHandler.HandleMessage(firstBidderSession, CreateBidRequest(auctionId, MinimumBid));
             buyHandler.HandleMessage(secondBidderSession, CreateBidRequest(auctionId, MinimumBid + 50ul));
 
@@ -367,22 +361,21 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void AuctionBid_SameTopBidderIncreaseChargesOnlyDelta()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
         var services = new ServiceCollection();
         services.AddSingleton(realmContext);
         services.AddSingleton(playerManager);
-        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
-        LegacyServiceProvider.Provider = services.BuildServiceProvider();
+        services.AddSingleton<IPlayerManager>(playerManager);
+        services.AddSingleton<IGlobalMarketplaceManager>(new GlobalMarketplaceManager(null, null, null, playerManager));
+        configuredMarketplaceProvider = services.BuildServiceProvider();
 
         try
         {
@@ -392,7 +385,7 @@ public class MarketplaceAuctionHandlerTests
             playerManager.AddPlayer(seller);
             sellerInventoryProxy.SetMethodReturn(nameof(IInventory.GetItem), item);
 
-            var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance);
+            var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance, CreateMarketplaceRequestHelper());
             sellHandler.HandleMessage(sellerSession, CreateSellRequest());
 
             IItemManager itemManager = CreateItemManager(itemInfo);
@@ -403,7 +396,7 @@ public class MarketplaceAuctionHandlerTests
             ServerAuctionPostResult postResult = Assert.Single(GetMessages<ServerAuctionPostResult>(sellerSessionProxy));
             ulong auctionId = postResult.Auction.AuctionId;
 
-            var buyHandler = new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance, itemManager);
+            var buyHandler = new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance, itemManager, CreateMarketplaceRequestHelper());
             buyHandler.HandleMessage(bidderSession, CreateBidRequest(auctionId, MinimumBid));
             buyHandler.HandleMessage(bidderSession, CreateBidRequest(auctionId, MinimumBid + 50ul));
 
@@ -445,24 +438,24 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void AuctionBid_WhenPersistFails_RefundsBidderAndRestoresAuctionState()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .BuildServiceProvider();
 
             IItemInfo itemInfo = CreateItemInfo();
@@ -473,9 +466,11 @@ public class MarketplaceAuctionHandlerTests
             IWorldSession bidderSession = CreateSession(BuyerGuid, BuyerCharacterId, out _, out RecordingDispatchProxy<ICurrencyManager> bidderCurrencyProxy, out _, out IPlayer bidder);
             bidderCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
 
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            SetFailingCharacterDatabase(databaseManager);
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .AddSingleton(CreateFailingDatabaseManager())
                 .BuildServiceProvider();
 
@@ -501,24 +496,24 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void AuctionBid_WithOfflinePreviousBidderAndNoCharacterDatabase_RestoresNewBidAndRefundsBidder()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .BuildServiceProvider();
 
             IItemInfo itemInfo = CreateItemInfo();
@@ -563,24 +558,24 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void AuctionCancel_WithOfflineTopBidderAndNoCharacterDatabase_DoesNotRefundReturnOrRemoveAuction()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .BuildServiceProvider();
 
             IItemInfo itemInfo = CreateItemInfo();
@@ -618,22 +613,21 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void AuctionExpire_WithHighBid_CompletesSaleToTopBidder()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
         var services = new ServiceCollection();
         services.AddSingleton(realmContext);
         services.AddSingleton(playerManager);
-        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
-        LegacyServiceProvider.Provider = services.BuildServiceProvider();
+        services.AddSingleton<IPlayerManager>(playerManager);
+        services.AddSingleton<IGlobalMarketplaceManager>(new GlobalMarketplaceManager(null, null, null, playerManager));
+        configuredMarketplaceProvider = services.BuildServiceProvider();
 
         try
         {
@@ -643,7 +637,7 @@ public class MarketplaceAuctionHandlerTests
             playerManager.AddPlayer(seller);
             sellerInventoryProxy.SetMethodReturn(nameof(IInventory.GetItem), item);
 
-            var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance);
+            var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance, CreateMarketplaceRequestHelper());
             sellHandler.HandleMessage(sellerSession, CreateSellRequest());
 
             IItemManager itemManager = CreateItemManager(itemInfo);
@@ -655,11 +649,12 @@ public class MarketplaceAuctionHandlerTests
             ServerAuctionPostResult postResult = Assert.Single(GetMessages<ServerAuctionPostResult>(sellerSessionProxy));
             ulong auctionId = postResult.Auction.AuctionId;
 
-            var buyHandler = new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance, itemManager);
+            var buyHandler = new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance, itemManager, CreateMarketplaceRequestHelper());
             buyHandler.HandleMessage(bidderSession, CreateBidRequest(auctionId, MinimumBid));
 
-            ForceAuctionExpiration(GlobalMarketplaceManager.Instance);
-            GlobalMarketplaceManager.Instance.Update(2000d);
+            GlobalMarketplaceManager manager = (GlobalMarketplaceManager)configuredMarketplaceProvider.GetRequiredService<IGlobalMarketplaceManager>();
+            ForceAuctionExpiration(manager);
+            manager.Update(2000d);
 
             RecordingDispatchProxy<IInventory>.Invocation addCall =
                 Assert.Single(bidderInventoryProxy.GetInvocations(nameof(IInventory.AddItem)));
@@ -675,24 +670,24 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void AuctionExpire_WithOnlineWinnerInventoryDeliveryDeletePersistFails_DoesNotCreditDeliverNotifyOrRemoveAuction()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .BuildServiceProvider();
 
             IItemInfo itemInfo = CreateItemInfo();
@@ -707,9 +702,11 @@ public class MarketplaceAuctionHandlerTests
             playerManager.AddPlayer(bidder);
             Assert.Equal(GenericError.Ok, manager.BuyAuction(bidder, CreateBidRequest(postedAuction.AuctionId, MinimumBid), out _));
 
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            SetFailingCharacterDatabase(databaseManager);
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .AddSingleton(CreateFailingDatabaseManager())
                 .BuildServiceProvider();
 
@@ -728,24 +725,24 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void AuctionBuyout_WithOfflineSellerAndNoCharacterDatabase_DoesNotDeliverDebitOrRemoveAuction()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .BuildServiceProvider();
 
             IItemInfo itemInfo = CreateItemInfo();
@@ -778,24 +775,24 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void AuctionExpire_WithOnlineWinnerOfflineSellerAndNoCharacterDatabase_DoesNotDeliverCreditNotifyOrRemoveAuction()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .BuildServiceProvider();
 
             IItemInfo itemInfo = CreateItemInfo();
@@ -826,22 +823,21 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void AuctionExpire_WithHighBidOfflineWinnerAndNoMailDelivery_DoesNotCreditSellerOrDeleteAuction()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
         var services = new ServiceCollection();
         services.AddSingleton(realmContext);
         services.AddSingleton(playerManager);
-        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
-        LegacyServiceProvider.Provider = services.BuildServiceProvider();
+        services.AddSingleton<IPlayerManager>(playerManager);
+        services.AddSingleton<IGlobalMarketplaceManager>(new GlobalMarketplaceManager(null, null, null, playerManager));
+        configuredMarketplaceProvider = services.BuildServiceProvider();
 
         try
         {
@@ -851,7 +847,7 @@ public class MarketplaceAuctionHandlerTests
             playerManager.AddPlayer(seller);
             sellerInventoryProxy.SetMethodReturn(nameof(IInventory.GetItem), item);
 
-            var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance);
+            var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance, CreateMarketplaceRequestHelper());
             sellHandler.HandleMessage(sellerSession, CreateSellRequest());
 
             IItemManager itemManager = CreateItemManager(itemInfo);
@@ -862,37 +858,37 @@ public class MarketplaceAuctionHandlerTests
             ServerAuctionPostResult postResult = Assert.Single(GetMessages<ServerAuctionPostResult>(sellerSessionProxy));
             ulong auctionId = postResult.Auction.AuctionId;
 
-            var buyHandler = new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance, itemManager);
+            var buyHandler = new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance, itemManager, CreateMarketplaceRequestHelper());
             buyHandler.HandleMessage(bidderSession, CreateBidRequest(auctionId, MinimumBid));
 
             playerManager.RemovePlayer(bidder);
-            ForceAuctionExpiration(GlobalMarketplaceManager.Instance);
-            GlobalMarketplaceManager.Instance.Update(2000d);
+            GlobalMarketplaceManager manager = (GlobalMarketplaceManager)configuredMarketplaceProvider.GetRequiredService<IGlobalMarketplaceManager>();
+            ForceAuctionExpiration(manager);
+            manager.Update(2000d);
 
             Assert.Empty(sellerCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
             Assert.Empty(bidderInventoryProxy.GetInvocations(nameof(IInventory.AddItem)));
             Assert.Empty(GetMessages<ServerAuctionWon>(bidderSessionProxy));
-            AuctionInfo activeAuction = Assert.Single(GlobalMarketplaceManager.Instance.GetOwnedItemAuctions(seller));
+            AuctionInfo activeAuction = Assert.Single(manager.GetOwnedItemAuctions(seller));
             Assert.Equal(auctionId, activeAuction.AuctionId);
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void AuctionBuyout_FullInventoryWithoutMailDelivery_ReturnsInventoryFull()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
         var services = new ServiceCollection();
         services.AddSingleton(realmContext);
         services.AddSingleton(playerManager);
-        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
-        LegacyServiceProvider.Provider = services.BuildServiceProvider();
+        services.AddSingleton<IPlayerManager>(playerManager);
+        services.AddSingleton<IGlobalMarketplaceManager>(new GlobalMarketplaceManager(null, null, null, playerManager));
+        configuredMarketplaceProvider = services.BuildServiceProvider();
 
         try
         {
@@ -902,7 +898,7 @@ public class MarketplaceAuctionHandlerTests
             playerManager.AddPlayer(seller);
             sellerInventoryProxy.SetMethodReturn(nameof(IInventory.GetItem), item);
 
-            var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance);
+            var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance, CreateMarketplaceRequestHelper());
             sellHandler.HandleMessage(sellerSession, CreateSellRequest());
 
             ServerAuctionPostResult postResult = Assert.Single(GetMessages<ServerAuctionPostResult>(sellerSessionProxy));
@@ -913,7 +909,7 @@ public class MarketplaceAuctionHandlerTests
             buyerCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
             buyerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 0u);
 
-            var buyHandler = new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance, itemManager);
+            var buyHandler = new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance, itemManager, CreateMarketplaceRequestHelper());
             buyHandler.HandleMessage(buyerSession, CreateBuyoutRequest(auctionId));
 
             ServerAuctionBidResult bidResult = Assert.Single(GetMessages<ServerAuctionBidResult>(buyerSessionProxy));
@@ -925,24 +921,24 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void AuctionBuyout_WhenMailPersistFails_DoesNotChargeBuyerOrRemoveAuction()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .BuildServiceProvider();
 
             IItemInfo itemInfo = CreateItemInfo();
@@ -956,9 +952,11 @@ public class MarketplaceAuctionHandlerTests
             buyerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 0u);
             playerManager.AddPlayer(buyer);
 
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            SetFailingCharacterDatabase(databaseManager);
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .AddSingleton(CreateFailingDatabaseManager())
                 .BuildServiceProvider();
 
@@ -975,24 +973,24 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void AuctionBuyout_WhenInventoryDeliveryDeletePersistFails_DoesNotChargeCreditDeliverOrRemoveAuction()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .BuildServiceProvider();
 
             IItemInfo itemInfo = CreateItemInfo();
@@ -1006,9 +1004,11 @@ public class MarketplaceAuctionHandlerTests
             buyerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 1u);
             playerManager.AddPlayer(buyer);
 
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            SetFailingCharacterDatabase(databaseManager);
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .AddSingleton(CreateFailingDatabaseManager())
                 .BuildServiceProvider();
 
@@ -1030,24 +1030,24 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void AuctionCancel_WhenInventoryReturnDeletePersistFails_DoesNotRefundReturnOrRemoveAuction()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .BuildServiceProvider();
 
             IItemInfo itemInfo = CreateItemInfo();
@@ -1067,9 +1067,11 @@ public class MarketplaceAuctionHandlerTests
             playerManager.AddPlayer(bidder);
             Assert.Equal(GenericError.Ok, manager.BuyAuction(bidder, CreateBidRequest(postedAuction.AuctionId, MinimumBid), out _));
 
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            SetFailingCharacterDatabase(databaseManager);
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .AddSingleton(CreateFailingDatabaseManager())
                 .BuildServiceProvider();
 
@@ -1089,7 +1091,6 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
@@ -1102,7 +1103,8 @@ public class MarketplaceAuctionHandlerTests
         var handler = new ClientCommoditySellOrderSubmitHandler(
             NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
             CreateGameTableManager(maxCommodityOrderQuantity: 200u, includeListingDurationFormula: true),
-            CreateItemManager(itemInfo));
+            CreateItemManager(itemInfo),
+            CreateMarketplaceRequestHelper());
         IWorldSession session = CreateSession(404u, 4004ul, out _, out _, out _, out _);
 
         ClientCommoditySellOrderSubmit request = CreateCommoditySellRequest(quantity: 1u);
@@ -1126,7 +1128,8 @@ public class MarketplaceAuctionHandlerTests
         var handler = new ClientCommoditySellOrderSubmitHandler(
             NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
             CreateGameTableManager(maxCommodityOrderQuantity: 200u, includeListingDurationFormula: true),
-            CreateItemManager(itemInfo));
+            CreateItemManager(itemInfo),
+            CreateMarketplaceRequestHelper());
 
         ClientCommoditySellOrderSubmit request = CreateCommoditySellRequest(quantity: 2u);
         ulong listTime = (ulong)DateTime.UtcNow.ToFileTimeUtc();
@@ -1145,17 +1148,18 @@ public class MarketplaceAuctionHandlerTests
     [Fact]
     public void CommodityBuyOrderExpire_WhenDeletePersistFails_DoesNotRefundNotifyOrRemoveOrder()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .BuildServiceProvider();
 
             IItemManager itemManager = CreateItemManager(CreateItemInfo());
@@ -1167,9 +1171,11 @@ public class MarketplaceAuctionHandlerTests
             Assert.Equal(GenericError.Ok, manager.PostCommodityOrder(buyer, order, out CommodityOrder postedOrder, itemManager));
             ForceCommodityOrderExpiration(manager);
 
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            SetFailingCharacterDatabase(databaseManager);
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .AddSingleton(CreateFailingDatabaseManager())
                 .BuildServiceProvider();
 
@@ -1184,24 +1190,24 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void CommoditySellOrderExpire_WhenInventoryReturnDeletePersistFails_DoesNotReturnNotifyOrRemoveOrder()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .BuildServiceProvider();
 
             IItemManager itemManager = CreateItemManager(CreateItemInfo());
@@ -1214,9 +1220,11 @@ public class MarketplaceAuctionHandlerTests
             Assert.Equal(GenericError.Ok, manager.PostCommodityOrder(seller, order, out CommodityOrder postedOrder, itemManager));
             ForceCommodityOrderExpiration(manager);
 
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            SetFailingCharacterDatabase(databaseManager);
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .AddSingleton(CreateFailingDatabaseManager())
                 .BuildServiceProvider();
 
@@ -1231,7 +1239,6 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
@@ -1244,7 +1251,8 @@ public class MarketplaceAuctionHandlerTests
         var handler = new ClientCommoditySellOrderSubmitHandler(
             NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
             CreateGameTableManager(maxCommodityOrderQuantity: 200u),
-            CreateItemManager(itemInfo));
+            CreateItemManager(itemInfo),
+            CreateMarketplaceRequestHelper());
         IWorldSession session = CreateSession(404u, 4004ul, out _, out _, out _, out _);
 
         ClientCommoditySellOrderSubmit request = CreateCommoditySellRequest(quantity: 201u);
@@ -1261,9 +1269,7 @@ public class MarketplaceAuctionHandlerTests
         IItemManager itemManager = CreateItemManager(itemInfo);
         IWorldSession session = CreateSession(606u, 6006ul, out _, out _, out RecordingDispatchProxy<IWorldSession> sessionProxy, out _);
 
-        var cancelHandler = new ClientCommodityOrderCancelHandler(
-            NullLogger<ClientCommodityOrderCancelHandler>.Instance,
-            itemManager);
+        var cancelHandler = new ClientCommodityOrderCancelHandler(NullLogger<ClientCommodityOrderCancelHandler>.Instance, itemManager, CreateMarketplaceRequestHelper());
         cancelHandler.HandleMessage(session, CreateCommodityCancelRequest(new CommodityOrder
         {
             CommodityOrderId = 999ul,
@@ -1335,15 +1341,15 @@ public class MarketplaceAuctionHandlerTests
     [Fact]
     public void CommodityOrders_CrossMatch_FillsBothPartiesAndNotifiesPartialFill()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
         var services = new ServiceCollection();
         services.AddSingleton(realmContext);
         services.AddSingleton(playerManager);
-        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
-        LegacyServiceProvider.Provider = services.BuildServiceProvider();
+        services.AddSingleton<IPlayerManager>(playerManager);
+        services.AddSingleton<IGlobalMarketplaceManager>(new GlobalMarketplaceManager(null, null, null, playerManager));
+        configuredMarketplaceProvider = services.BuildServiceProvider();
 
         try
         {
@@ -1360,10 +1366,7 @@ public class MarketplaceAuctionHandlerTests
         buyerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 5u);
         playerManager.AddPlayer(buyer);
 
-        var submitHandler = new ClientCommoditySellOrderSubmitHandler(
-            NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
-            CreateGameTableManager(maxCommodityOrderQuantity: 200u),
-            itemManager);
+        var submitHandler = new ClientCommoditySellOrderSubmitHandler(NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance, CreateGameTableManager(maxCommodityOrderQuantity: 200u), itemManager, CreateMarketplaceRequestHelper());
 
         submitHandler.HandleMessage(sellerSession, CreateCommoditySellRequest(quantity: 5u));
         submitHandler.HandleMessage(buyerSession, CreateCommodityBuyRequest(quantity: 5u, pricePerUnit: 10ul));
@@ -1391,22 +1394,21 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void CommodityOrderForceImmediateBuy_FillsMultipleSellOrdersByBestPriceAndRefundsImprovement()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
         var services = new ServiceCollection();
         services.AddSingleton(realmContext);
         services.AddSingleton(playerManager);
-        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
-        LegacyServiceProvider.Provider = services.BuildServiceProvider();
+        services.AddSingleton<IPlayerManager>(playerManager);
+        services.AddSingleton<IGlobalMarketplaceManager>(new GlobalMarketplaceManager(null, null, null, playerManager));
+        configuredMarketplaceProvider = services.BuildServiceProvider();
 
         try
         {
@@ -1427,10 +1429,7 @@ public class MarketplaceAuctionHandlerTests
             buyerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 5u);
             playerManager.AddPlayer(buyer);
 
-            var submitHandler = new ClientCommoditySellOrderSubmitHandler(
-                NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
-                CreateGameTableManager(maxCommodityOrderQuantity: 200u),
-                itemManager);
+            var submitHandler = new ClientCommoditySellOrderSubmitHandler(NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance, CreateGameTableManager(maxCommodityOrderQuantity: 200u), itemManager, CreateMarketplaceRequestHelper());
 
             submitHandler.HandleMessage(firstSellerSession, CreateCommoditySellRequest(quantity: 3u, pricePerUnit: 25ul));
             submitHandler.HandleMessage(secondSellerSession, CreateCommoditySellRequest(quantity: 2u, pricePerUnit: 20ul));
@@ -1505,29 +1504,28 @@ public class MarketplaceAuctionHandlerTests
             Assert.Equal(0u, buyResult.OrderPosted.Quantity);
             Assert.Equal(0ul, buyResult.OrderPosted.Price);
 
-            GlobalMarketplaceManager manager = (GlobalMarketplaceManager)LegacyServiceProvider.Provider.GetRequiredService<IGlobalMarketplaceManager>();
+            GlobalMarketplaceManager manager = (GlobalMarketplaceManager)configuredMarketplaceProvider.GetRequiredService<IGlobalMarketplaceManager>();
             Assert.Empty(manager.GetOwnedCommodityOrders(firstSeller));
             Assert.Empty(manager.GetOwnedCommodityOrders(secondSeller));
             Assert.Empty(manager.GetOwnedCommodityOrders(buyer));
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void CommodityOrders_CrossMatch_InsufficientBuyerSlotsWithoutMailLeavesOrdersUnfilled()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
         var services = new ServiceCollection();
         services.AddSingleton(realmContext);
         services.AddSingleton(playerManager);
-        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
-        LegacyServiceProvider.Provider = services.BuildServiceProvider();
+        services.AddSingleton<IPlayerManager>(playerManager);
+        services.AddSingleton<IGlobalMarketplaceManager>(new GlobalMarketplaceManager(null, null, null, playerManager));
+        configuredMarketplaceProvider = services.BuildServiceProvider();
 
         try
         {
@@ -1544,10 +1542,7 @@ public class MarketplaceAuctionHandlerTests
             buyerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 1u);
             playerManager.AddPlayer(buyer);
 
-            var submitHandler = new ClientCommoditySellOrderSubmitHandler(
-                NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
-                CreateGameTableManager(maxCommodityOrderQuantity: 200u),
-                itemManager);
+            var submitHandler = new ClientCommoditySellOrderSubmitHandler(NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance, CreateGameTableManager(maxCommodityOrderQuantity: 200u), itemManager, CreateMarketplaceRequestHelper());
 
             submitHandler.HandleMessage(sellerSession, CreateCommoditySellRequest(quantity: 5u));
             submitHandler.HandleMessage(buyerSession, CreateCommodityBuyRequest(quantity: 5u, pricePerUnit: 10ul));
@@ -1557,13 +1552,12 @@ public class MarketplaceAuctionHandlerTests
             Assert.Empty(GetMessages<ServerCommodityAuctionFilledPartial>(buyerSessionProxy));
             Assert.Empty(GetMessages<ServerCommodityAuctionFilledPartial>(sellerSessionProxy));
 
-            GlobalMarketplaceManager manager = (GlobalMarketplaceManager)LegacyServiceProvider.Provider.GetRequiredService<IGlobalMarketplaceManager>();
+            GlobalMarketplaceManager manager = (GlobalMarketplaceManager)configuredMarketplaceProvider.GetRequiredService<IGlobalMarketplaceManager>();
             Assert.Single(manager.GetOwnedCommodityOrders(seller));
             Assert.Single(manager.GetOwnedCommodityOrders(buyer));
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
@@ -1577,10 +1571,7 @@ public class MarketplaceAuctionHandlerTests
         IWorldSession session = CreateSession(BuyerGuid, BuyerCharacterId, out _, out RecordingDispatchProxy<ICurrencyManager> currencyProxy, out RecordingDispatchProxy<IWorldSession> sessionProxy, out IPlayer player);
         currencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
 
-        var submitHandler = new ClientCommoditySellOrderSubmitHandler(
-            NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
-            CreateGameTableManager(maxCommodityOrderQuantity: 200u),
-            itemManager);
+        var submitHandler = new ClientCommoditySellOrderSubmitHandler(NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance, CreateGameTableManager(maxCommodityOrderQuantity: 200u), itemManager, CreateMarketplaceRequestHelper());
 
         submitHandler.HandleMessage(session, CreateCommodityBuyRequest(quantity: 1u, pricePerUnit: 25ul));
         submitHandler.HandleMessage(session, CreateCommodityBuyRequest(quantity: 1u, pricePerUnit: 25ul));
@@ -1615,15 +1606,15 @@ public class MarketplaceAuctionHandlerTests
     [Fact]
     public void CommodityOrderForceImmediateBuy_PartialFillRefundsPriceImprovementAndUnmatchedEscrow()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
         var services = new ServiceCollection();
         services.AddSingleton(realmContext);
         services.AddSingleton(playerManager);
-        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
-        LegacyServiceProvider.Provider = services.BuildServiceProvider();
+        services.AddSingleton<IPlayerManager>(playerManager);
+        services.AddSingleton<IGlobalMarketplaceManager>(new GlobalMarketplaceManager(null, null, null, playerManager));
+        configuredMarketplaceProvider = services.BuildServiceProvider();
 
         try
         {
@@ -1639,10 +1630,7 @@ public class MarketplaceAuctionHandlerTests
             buyerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 5u);
             playerManager.AddPlayer(buyer);
 
-            var submitHandler = new ClientCommoditySellOrderSubmitHandler(
-                NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
-                CreateGameTableManager(maxCommodityOrderQuantity: 200u),
-                itemManager);
+            var submitHandler = new ClientCommoditySellOrderSubmitHandler(NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance, CreateGameTableManager(maxCommodityOrderQuantity: 200u), itemManager, CreateMarketplaceRequestHelper());
 
             submitHandler.HandleMessage(sellerSession, CreateCommoditySellRequest(quantity: 2u, pricePerUnit: 20ul));
             ClientCommoditySellOrderSubmit buyRequest = CreateCommodityBuyRequest(quantity: 5u, pricePerUnit: 25ul);
@@ -1692,28 +1680,27 @@ public class MarketplaceAuctionHandlerTests
             Assert.Equal(0u, buyResult.OrderPosted.Quantity);
             Assert.Equal(0ul, buyResult.OrderPosted.Price);
 
-            GlobalMarketplaceManager manager = (GlobalMarketplaceManager)LegacyServiceProvider.Provider.GetRequiredService<IGlobalMarketplaceManager>();
+            GlobalMarketplaceManager manager = (GlobalMarketplaceManager)configuredMarketplaceProvider.GetRequiredService<IGlobalMarketplaceManager>();
             Assert.Empty(manager.GetOwnedCommodityOrders(seller));
             Assert.Empty(manager.GetOwnedCommodityOrders(buyer));
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void CommodityOrderForceImmediateSell_FullMatchDoesNotRequireReturnSlots()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
         var services = new ServiceCollection();
         services.AddSingleton(realmContext);
         services.AddSingleton(playerManager);
-        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
-        LegacyServiceProvider.Provider = services.BuildServiceProvider();
+        services.AddSingleton<IPlayerManager>(playerManager);
+        services.AddSingleton<IGlobalMarketplaceManager>(new GlobalMarketplaceManager(null, null, null, playerManager));
+        configuredMarketplaceProvider = services.BuildServiceProvider();
 
         try
         {
@@ -1730,10 +1717,7 @@ public class MarketplaceAuctionHandlerTests
             sellerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 0u);
             playerManager.AddPlayer(seller);
 
-            var submitHandler = new ClientCommoditySellOrderSubmitHandler(
-                NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
-                CreateGameTableManager(maxCommodityOrderQuantity: 200u),
-                itemManager);
+            var submitHandler = new ClientCommoditySellOrderSubmitHandler(NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance, CreateGameTableManager(maxCommodityOrderQuantity: 200u), itemManager, CreateMarketplaceRequestHelper());
 
             submitHandler.HandleMessage(buyerSession, CreateCommodityBuyRequest(quantity: 2u, pricePerUnit: 25ul));
             ClientCommoditySellOrderSubmit sellRequest = CreateCommoditySellRequest(quantity: 2u, pricePerUnit: 20ul);
@@ -1776,13 +1760,12 @@ public class MarketplaceAuctionHandlerTests
             Assert.Equal(0u, sellerFill.OrderFilled.Quantity);
             Assert.Equal(0ul, sellerFill.OrderFilled.Price);
 
-            GlobalMarketplaceManager manager = (GlobalMarketplaceManager)LegacyServiceProvider.Provider.GetRequiredService<IGlobalMarketplaceManager>();
+            GlobalMarketplaceManager manager = (GlobalMarketplaceManager)configuredMarketplaceProvider.GetRequiredService<IGlobalMarketplaceManager>();
             Assert.Empty(manager.GetOwnedCommodityOrders(seller));
             Assert.Empty(manager.GetOwnedCommodityOrders(buyer));
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
@@ -1796,10 +1779,7 @@ public class MarketplaceAuctionHandlerTests
         IWorldSession session = CreateSession(505u, 5005ul, out _, out RecordingDispatchProxy<ICurrencyManager> currencyProxy, out RecordingDispatchProxy<IWorldSession> sessionProxy, out _);
         currencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
 
-        var submitHandler = new ClientCommoditySellOrderSubmitHandler(
-            NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
-            CreateGameTableManager(maxCommodityOrderQuantity: 200u),
-            itemManager);
+        var submitHandler = new ClientCommoditySellOrderSubmitHandler(NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance, CreateGameTableManager(maxCommodityOrderQuantity: 200u), itemManager, CreateMarketplaceRequestHelper());
         submitHandler.HandleMessage(session, CreateCommodityBuyRequest(quantity: 3u, pricePerUnit: 25ul));
 
         ServerCommodityOrderResult postResult = Assert.Single(GetMessages<ServerCommodityOrderResult>(sessionProxy));
@@ -1813,9 +1793,7 @@ public class MarketplaceAuctionHandlerTests
         Assert.Equal(CurrencyType.Credits, debit.Arguments[0]);
         Assert.Equal(75ul, debit.Arguments[1]);
 
-        var cancelHandler = new ClientCommodityOrderCancelHandler(
-            NullLogger<ClientCommodityOrderCancelHandler>.Instance,
-            itemManager);
+        var cancelHandler = new ClientCommodityOrderCancelHandler(NullLogger<ClientCommodityOrderCancelHandler>.Instance, itemManager, CreateMarketplaceRequestHelper());
         cancelHandler.HandleMessage(session, CreateCommodityCancelRequest(postResult.OrderPosted));
 
         RecordingDispatchProxy<ICurrencyManager>.Invocation refund =
@@ -1836,17 +1814,18 @@ public class MarketplaceAuctionHandlerTests
     [Fact]
     public void CommodityBuyOrderCancel_WhenDeletePersistFails_DoesNotRefundOrRemoveOrder()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .BuildServiceProvider();
 
             IItemManager itemManager = CreateItemManager(CreateItemInfo());
@@ -1856,9 +1835,11 @@ public class MarketplaceAuctionHandlerTests
             CommodityOrder order = CreateCommodityBuyRequest(quantity: 3u, pricePerUnit: 25ul).Order;
             Assert.Equal(GenericError.Ok, manager.PostCommodityOrder(buyer, order, out CommodityOrder postedOrder, itemManager));
 
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            SetFailingCharacterDatabase(databaseManager);
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .AddSingleton(CreateFailingDatabaseManager())
                 .BuildServiceProvider();
 
@@ -1880,24 +1861,24 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void CommoditySellOrderCancel_WhenInventoryReturnDeletePersistFails_DoesNotReturnItemsOrRemoveOrder()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .BuildServiceProvider();
 
             IItemManager itemManager = CreateItemManager(CreateItemInfo());
@@ -1908,9 +1889,11 @@ public class MarketplaceAuctionHandlerTests
             CommodityOrder order = CreateCommoditySellRequest(quantity: 2u, pricePerUnit: 10ul).Order;
             Assert.Equal(GenericError.Ok, manager.PostCommodityOrder(seller, order, out CommodityOrder postedOrder, itemManager));
 
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            SetFailingCharacterDatabase(databaseManager);
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .AddSingleton(CreateFailingDatabaseManager())
                 .BuildServiceProvider();
 
@@ -1932,26 +1915,26 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void CommoditySellOrderCancel_WhenMailReturnDeletePersistFails_DoesNotRemoveOrder()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
             IItemInfo itemInfo = CreateItemInfo();
             ItemManager itemManagerSingleton = CreatePrimedItemManager(itemInfo);
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .AddSingleton(itemManagerSingleton)
                 .BuildServiceProvider();
 
@@ -1964,9 +1947,11 @@ public class MarketplaceAuctionHandlerTests
             CommodityOrder order = CreateCommoditySellRequest(quantity: 2u, pricePerUnit: 10ul).Order;
             Assert.Equal(GenericError.Ok, manager.PostCommodityOrder(seller, order, out CommodityOrder postedOrder, itemManager));
 
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            SetFailingCharacterDatabase(databaseManager);
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .AddSingleton(itemManagerSingleton)
                 .AddSingleton(CreateFailingDatabaseManager())
                 .BuildServiceProvider();
@@ -1990,24 +1975,24 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void CommodityBuyOrderExpire_WithOfflineOwnerAndNoCharacterDatabase_DoesNotRefundOrRemoveOrder()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .BuildServiceProvider();
 
             IItemManager itemManager = CreateItemManager(CreateItemInfo());
@@ -2031,26 +2016,26 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void CommoditySellOrderExpire_WhenMailReturnDeletePersistFails_DoesNotNotifyOrRemoveOrder()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
             IItemInfo itemInfo = CreateItemInfo();
             ItemManager itemManagerSingleton = CreatePrimedItemManager(itemInfo);
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .AddSingleton(itemManagerSingleton)
                 .BuildServiceProvider();
 
@@ -2064,9 +2049,11 @@ public class MarketplaceAuctionHandlerTests
             Assert.Equal(GenericError.Ok, manager.PostCommodityOrder(seller, order, out CommodityOrder postedOrder, itemManager));
             ForceCommodityOrderExpiration(manager);
 
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            SetFailingCharacterDatabase(databaseManager);
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .AddSingleton(itemManagerSingleton)
                 .AddSingleton(CreateFailingDatabaseManager())
                 .BuildServiceProvider();
@@ -2082,24 +2069,24 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void CommodityForceImmediateBuy_WhenDirectFillOrderPersistFails_LeavesSellOrderUnfilled()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .BuildServiceProvider();
 
             IItemManager itemManager = CreateItemManager(CreateItemInfo());
@@ -2111,9 +2098,11 @@ public class MarketplaceAuctionHandlerTests
             CommodityOrder sellOrder = CreateCommoditySellRequest(quantity: 2u, pricePerUnit: 10ul).Order;
             Assert.Equal(GenericError.Ok, manager.PostCommodityOrder(seller, sellOrder, out CommodityOrder postedSellOrder, itemManager));
 
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            SetFailingCharacterDatabase(databaseManager);
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .AddSingleton(CreateFailingDatabaseManager())
                 .BuildServiceProvider();
 
@@ -2153,24 +2142,24 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void CommodityForceImmediateBuy_WithOfflineSellerAndNoCharacterDatabase_LeavesSellOrderUnfilled()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .BuildServiceProvider();
 
             IItemManager itemManager = CreateItemManager(CreateItemInfo());
@@ -2220,26 +2209,26 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
     [Fact]
     public void CommodityForceImmediateBuy_WhenFillMailOrderPersistFails_LeavesSellOrderUnfilled()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        var manager = new GlobalMarketplaceManager();
+        DatabaseManager databaseManager = CreateEmptyDatabaseManager();
+        var manager = new GlobalMarketplaceManager(databaseManager, null, null, playerManager);
 
         try
         {
             IItemInfo itemInfo = CreateItemInfo();
             ItemManager itemManagerSingleton = CreatePrimedItemManager(itemInfo);
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .AddSingleton(itemManagerSingleton)
                 .BuildServiceProvider();
 
@@ -2251,9 +2240,11 @@ public class MarketplaceAuctionHandlerTests
             CommodityOrder sellOrder = CreateCommoditySellRequest(quantity: 2u, pricePerUnit: 10ul).Order;
             Assert.Equal(GenericError.Ok, manager.PostCommodityOrder(seller, sellOrder, out CommodityOrder postedSellOrder, itemManager));
 
-            LegacyServiceProvider.Provider = new ServiceCollection()
+            SetFailingCharacterDatabase(databaseManager);
+            configuredMarketplaceProvider = new ServiceCollection()
                 .AddSingleton(realmContext)
                 .AddSingleton(playerManager)
+                .AddSingleton<IPlayerManager>(playerManager)
                 .AddSingleton(itemManagerSingleton)
                 .AddSingleton(CreateFailingDatabaseManager())
                 .BuildServiceProvider();
@@ -2280,7 +2271,6 @@ public class MarketplaceAuctionHandlerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
@@ -2296,18 +2286,13 @@ public class MarketplaceAuctionHandlerTests
         inventoryProxy.SetMethodReturn(nameof(IInventory.ItemDelete), true);
         inventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 1u);
 
-        var submitHandler = new ClientCommoditySellOrderSubmitHandler(
-            NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
-            CreateGameTableManager(maxCommodityOrderQuantity: 200u),
-            itemManager);
+        var submitHandler = new ClientCommoditySellOrderSubmitHandler(NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance, CreateGameTableManager(maxCommodityOrderQuantity: 200u), itemManager, CreateMarketplaceRequestHelper());
         submitHandler.HandleMessage(session, CreateCommoditySellRequest(quantity: 5u));
 
         ServerCommodityOrderResult postResult = Assert.Single(GetMessages<ServerCommodityOrderResult>(sessionProxy));
         Assert.Equal(GenericError.Ok, postResult.Result);
 
-        var cancelHandler = new ClientCommodityOrderCancelHandler(
-            NullLogger<ClientCommodityOrderCancelHandler>.Instance,
-            itemManager);
+        var cancelHandler = new ClientCommodityOrderCancelHandler(NullLogger<ClientCommodityOrderCancelHandler>.Instance, itemManager, CreateMarketplaceRequestHelper());
         cancelHandler.HandleMessage(session, CreateCommodityCancelRequest(postResult.OrderPosted));
 
         ServerCommodityOrderResult cancelResult = GetMessages<ServerCommodityOrderResult>(sessionProxy).Last();
@@ -2593,29 +2578,60 @@ public class MarketplaceAuctionHandlerTests
         }
     }
 
-    private static ServiceProviderScope UseMarketplaceProvider()
+    private ServiceProviderScope UseMarketplaceProvider()
     {
         var services = new ServiceCollection();
-        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
-        return new ServiceProviderScope(services.BuildServiceProvider());
+        services.AddSingleton<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
+        return UseMarketplaceProvider(services.BuildServiceProvider());
     }
 
-    private static ServiceProviderScope UseMarketplaceProviderWithFailingCharacterDatabase()
+    private ServiceProviderScope UseMarketplaceProviderWithFailingCharacterDatabase()
     {
         var services = new ServiceCollection();
-        services.AddSingleton(CreateFailingDatabaseManager());
-        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
-        return new ServiceProviderScope(services.BuildServiceProvider());
+        DatabaseManager databaseManager = CreateFailingDatabaseManager();
+        services.AddSingleton(databaseManager);
+        services.AddSingleton<IDatabaseManager>(databaseManager);
+        services.AddSingleton<IGameTableManager>(CreateGameTableManager());
+        services.AddSingleton<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
+        return UseMarketplaceProvider(services.BuildServiceProvider());
+    }
+
+    private ServiceProviderScope UseMarketplaceProvider(IServiceProvider provider)
+    {
+        configuredMarketplaceProvider = provider;
+        return new ServiceProviderScope(provider);
+    }
+
+    private MarketplaceRequestHelper CreateMarketplaceRequestHelper()
+    {
+        return CreateMarketplaceRequestHelper(configuredMarketplaceProvider);
+    }
+
+    private static MarketplaceRequestHelper CreateMarketplaceRequestHelper(IServiceProvider provider)
+    {
+        return new MarketplaceRequestHelper(provider.GetRequiredService<IGlobalMarketplaceManager>());
+    }
+
+    private static DatabaseManager CreateEmptyDatabaseManager()
+    {
+        var manager = (DatabaseManager)RuntimeHelpers.GetUninitializedObject(typeof(DatabaseManager));
+        SetPrivateField(manager, "databases", ImmutableDictionary<Type, IDatabase>.Empty);
+        return manager;
     }
 
     private static DatabaseManager CreateFailingDatabaseManager()
     {
-        var manager = (DatabaseManager)RuntimeHelpers.GetUninitializedObject(typeof(DatabaseManager));
+        DatabaseManager manager = CreateEmptyDatabaseManager();
+        SetFailingCharacterDatabase(manager);
+        return manager;
+    }
+
+    private static void SetFailingCharacterDatabase(DatabaseManager manager)
+    {
         SetPrivateField(
             manager,
             "databases",
             ImmutableDictionary<Type, IDatabase>.Empty.Add(typeof(CharacterDatabase), new CharacterDatabase()));
-        return manager;
     }
 
     [Fact]
@@ -2700,7 +2716,8 @@ public class MarketplaceAuctionHandlerTests
         var sellHandler = new ClientCommoditySellOrderSubmitHandler(
             NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
             CreateGameTableManager(),
-            CreateItemManager(itemInfo));
+            CreateItemManager(itemInfo),
+            CreateMarketplaceRequestHelper());
         ClientCommoditySellOrderSubmit request = CreateCommodityBuyRequest(10u, 100ul);
         request.Order.Price = 1ul;
 
@@ -2737,20 +2754,17 @@ public class MarketplaceAuctionHandlerTests
 
     private sealed class ServiceProviderScope : IDisposable
     {
-        private readonly IServiceProvider previous;
-
         public ServiceProviderScope(IServiceProvider provider)
         {
-            Provider               = provider;
-            previous               = LegacyServiceProvider.Provider;
-            LegacyServiceProvider.Provider = provider;
+            Provider = provider;
         }
 
         public IServiceProvider Provider { get; }
 
         public void Dispose()
         {
-            LegacyServiceProvider.Provider = previous;
+            if (Provider is IDisposable disposable)
+                disposable.Dispose();
         }
     }
 }

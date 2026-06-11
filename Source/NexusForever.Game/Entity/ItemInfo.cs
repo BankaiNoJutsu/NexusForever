@@ -1,5 +1,6 @@
-﻿using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Abstract;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.GameTable.Static;
@@ -28,20 +29,28 @@ namespace NexusForever.Game.Entity
 
         private CurrencyType[] vendorSellCurrency = new CurrencyType[2];
         private uint[] vendorSellAmount = new uint[2];
+        private readonly IGameTableManager gameTableManager;
+        private readonly IAssetManager assetManager;
 
         /// <summary>
         /// Create a new <see cref="IItemInfo"/> from <see cref="Item2Entry"/> entry.
         /// </summary>
-        public ItemInfo(Item2Entry entry)
+        public ItemInfo(
+            Item2Entry entry,
+            IGameTableManager gameTableManager,
+            IAssetManager assetManager = null)
         {
+            this.gameTableManager = gameTableManager;
+            this.assetManager = assetManager;
+
             Entry         = entry;
-            FamilyEntry   = GameTableManager.Instance.Item2Family.GetEntry(Entry.Item2FamilyId);
-            CategoryEntry = GameTableManager.Instance.Item2Category.GetEntry(Entry.Item2CategoryId);
-            TypeEntry     = GameTableManager.Instance.Item2Type.GetEntry(Entry.Item2TypeId);
-            SlotEntry     = GameTableManager.Instance.ItemSlot.GetEntry(TypeEntry.ItemSlotId);
-            BudgetEntry   = GameTableManager.Instance.ItemBudget.GetEntry(Entry.ItemBudgetId);
-            StatEntry     = GameTableManager.Instance.ItemStat.GetEntry(Entry.ItemStatId);
-            QualityEntry  = GameTableManager.Instance.ItemQuality.GetEntry(Entry.ItemQualityId);
+            FamilyEntry   = gameTableManager.Item2Family.GetEntry(Entry.Item2FamilyId);
+            CategoryEntry = gameTableManager.Item2Category.GetEntry(Entry.Item2CategoryId);
+            TypeEntry     = gameTableManager.Item2Type.GetEntry(Entry.Item2TypeId);
+            SlotEntry     = gameTableManager.ItemSlot.GetEntry(TypeEntry.ItemSlotId);
+            BudgetEntry   = gameTableManager.ItemBudget.GetEntry(Entry.ItemBudgetId);
+            StatEntry     = gameTableManager.ItemStat.GetEntry(Entry.ItemStatId);
+            QualityEntry  = gameTableManager.ItemQuality.GetEntry(Entry.ItemQualityId);
 
             // the client combines the flags from the family, category and type entries into a single value
             SecondaryItemFlags = FamilyEntry.Flags | CategoryEntry.Flags | TypeEntry.Flags;
@@ -92,18 +101,18 @@ namespace NexusForever.Game.Entity
                 // runes
                 formulaEntry = Entry.PowerLevel switch
                 {
-                    < 50u  => GameTableManager.Instance.GameFormula.GetEntry(991),
-                    < 130u => GameTableManager.Instance.GameFormula.GetEntry(65),
-                    _      => GameTableManager.Instance.GameFormula.GetEntry(253)
+                    < 50u  => gameTableManager.GameFormula.GetEntry(991),
+                    < 130u => gameTableManager.GameFormula.GetEntry(65),
+                    _      => gameTableManager.GameFormula.GetEntry(253)
                 };
             }
             else
             {
                 formulaEntry = Entry.PowerLevel switch
                 {
-                    < 50u  => GameTableManager.Instance.GameFormula.GetEntry(1028),
-                    < 130u => GameTableManager.Instance.GameFormula.GetEntry(1027),
-                    _      => GameTableManager.Instance.GameFormula.GetEntry(1255)
+                    < 50u  => gameTableManager.GameFormula.GetEntry(1028),
+                    < 130u => gameTableManager.GameFormula.GetEntry(1027),
+                    _      => gameTableManager.GameFormula.GetEntry(1255)
                 };
             }
 
@@ -150,9 +159,9 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        private static bool TryGetRandomStatGroupProperty(uint randomStatGroupId, out Property property)
+        private bool TryGetRandomStatGroupProperty(uint randomStatGroupId, out Property property)
         {
-            ItemRandomStatEntry entry = GameTableManager.Instance.ItemRandomStat.Entries
+            ItemRandomStatEntry entry = gameTableManager.ItemRandomStat.Entries
                 .Where(e => e.ItemRandomStatGroupId == randomStatGroupId)
                 .OrderByDescending(e => e.Weight)
                 .ThenBy(e => e.Id)
@@ -180,7 +189,7 @@ namespace NexusForever.Game.Entity
                     or Property.ShieldRebootTime)
                     continue;
 
-                UnitProperty2Entry entry = GameTableManager.Instance.UnitProperty2.GetEntry((uint)property);
+                UnitProperty2Entry entry = gameTableManager.UnitProperty2.GetEntry((uint)property);
                 if (entry != null && (entry.Flags & UnitPropertyFlags.Unknown04) != 0)
                     builder.Properties[property] = (budget * ItemPower) * entry.ValuePerPoint;
             }
@@ -215,8 +224,8 @@ namespace NexusForever.Game.Entity
         {
             float CalculateShieldCapacityMax(float budget)
             {
-                GameFormulaEntry formulaEntry = GameTableManager.Instance.GameFormula.GetEntry(548);
-                GameFormulaEntry budgetEntry = GameTableManager.Instance.GameFormula.GetEntry(1260);
+                GameFormulaEntry formulaEntry = gameTableManager.GameFormula.GetEntry(548);
+                GameFormulaEntry budgetEntry = gameTableManager.GameFormula.GetEntry(1260);
 
                 float shield = (formulaEntry.Datafloat03 * formulaEntry.Datafloat0) + (Entry.PowerLevel * formulaEntry.Datafloat02);
                 float modifier = ((budgetEntry.Datafloat01 - budgetEntry.Datafloat0) * budget) + budgetEntry.Datafloat0;
@@ -225,19 +234,19 @@ namespace NexusForever.Game.Entity
 
             float CalculateShieldMitigationMax(float budget)
             {
-                GameFormulaEntry formulaEntry = GameTableManager.Instance.GameFormula.GetEntry(1261);
+                GameFormulaEntry formulaEntry = gameTableManager.GameFormula.GetEntry(1261);
                 return ((formulaEntry.Datafloat01 - formulaEntry.Datafloat0) * budget) + formulaEntry.Datafloat0;
             }
 
             float CalculateShieldRegenPercentage(float budget)
             {
-                GameFormulaEntry formulaEntry = GameTableManager.Instance.GameFormula.GetEntry(1260);
+                GameFormulaEntry formulaEntry = gameTableManager.GameFormula.GetEntry(1260);
                 return ((formulaEntry.Datafloat03 - formulaEntry.Datafloat02) * budget) + formulaEntry.Datafloat02;
             }
 
             float CalculateShieldRebootTime(float budget)
             {
-                GameFormulaEntry formulaEntry = GameTableManager.Instance.GameFormula.GetEntry(1261);
+                GameFormulaEntry formulaEntry = gameTableManager.GameFormula.GetEntry(1261);
                 return (((formulaEntry.Dataint0 - formulaEntry.Dataint01) * (1f - budget)) + formulaEntry.Dataint01) + 0.0000099999997f;
             }
 
@@ -265,12 +274,12 @@ namespace NexusForever.Game.Entity
             if (FamilyEntry.Id == 26)
                 return;
 
-            GameFormulaEntry formulaEntry = GameTableManager.Instance.GameFormula.GetEntry(FamilyEntry.Id == 2u ? 1288ul : 549ul);
+            GameFormulaEntry formulaEntry = gameTableManager.GameFormula.GetEntry(FamilyEntry.Id == 2u ? 1288ul : 549ul);
             float value = CalculatePrimaryBaseValue(formulaEntry);
 
             float support = Entry.SupportPowerPercentage;
 
-            GameFormulaEntry formulaEntry2 = GameTableManager.Instance.GameFormula.GetEntry(1265);
+            GameFormulaEntry formulaEntry2 = gameTableManager.GameFormula.GetEntry(1265);
 
             float v14 = (((1.0f - MathF.Abs(support)) * formulaEntry2.Datafloat0) + 1.0f) * (value * SlotEntry.ArmorModifier);
             float v25 = formulaEntry2.Datafloat01 * v14;
@@ -298,9 +307,9 @@ namespace NexusForever.Game.Entity
 
             GameFormulaEntry formulaEntry = Entry.PowerLevel switch
             {
-                < 50u  => GameTableManager.Instance.GameFormula.GetEntry(547),
-                < 120u => GameTableManager.Instance.GameFormula.GetEntry(1286),
-                _      => GameTableManager.Instance.GameFormula.GetEntry(1287)
+                < 50u  => gameTableManager.GameFormula.GetEntry(547),
+                < 120u => gameTableManager.GameFormula.GetEntry(1286),
+                _      => gameTableManager.GameFormula.GetEntry(1287)
             };
 
             float armor = ((formulaEntry.Datafloat0 * formulaEntry.Datafloat03) + (formulaEntry.Datafloat02 * (Entry.PowerLevel - formulaEntry.Dataint0))) * (CategoryEntry.ArmorModifier * SlotEntry.ArmorModifier);
@@ -315,7 +324,7 @@ namespace NexusForever.Game.Entity
             if (FamilyEntry.Id != 1u)
                 return;
 
-            GameFormulaEntry formulaEntry = GameTableManager.Instance.GameFormula.GetEntry(67);
+            GameFormulaEntry formulaEntry = gameTableManager.GameFormula.GetEntry(67);
 
             float health = ((formulaEntry.Datafloat03 * formulaEntry.Datafloat0) + (Entry.PowerLevel * formulaEntry.Datafloat02)) * (SlotEntry.ArmorModifier * SlotEntry.ItemLevelModifier);
             builder.Properties[Property.BaseHealth] = health;
@@ -329,7 +338,7 @@ namespace NexusForever.Game.Entity
             if (Entry.ItemSourceId == 0u)
                 return (ushort)Entry.ItemDisplayId;
 
-            List<ItemDisplaySourceEntryEntry> entries = (AssetManager.Instance.GetItemDisplaySource(Entry.ItemSourceId)
+            List<ItemDisplaySourceEntryEntry> entries = (assetManager?.GetItemDisplaySource(Entry.ItemSourceId)
                     ?? ImmutableList<ItemDisplaySourceEntryEntry>.Empty)
                 .Where(e => e.Item2TypeId == Entry.Item2TypeId)
                 .ToList();
@@ -419,14 +428,14 @@ namespace NexusForever.Game.Entity
                 vendorSellCurrency[1] = CurrencyType.Credits;
 
                 // calculated sell price
-                GameFormulaEntry formulaEntry = GameTableManager.Instance.GameFormula.GetEntry(1026);
+                GameFormulaEntry formulaEntry = gameTableManager.GameFormula.GetEntry(1026);
                 vendorSellAmount[0] = (uint)MathF.Floor(CalculateVendorAmount() * formulaEntry.Datafloat0);
             }
         }
 
         private float CalculateVendorAmount()
         {
-            GameFormulaEntry formulaEntry = GameTableManager.Instance.GameFormula.GetEntry(1078);
+            GameFormulaEntry formulaEntry = gameTableManager.GameFormula.GetEntry(1078);
 
             float v15 = (Entry.PowerLevel - formulaEntry.Datafloat0);
             float v14 = MathF.Pow(MathF.E, v15 * formulaEntry.Datafloat01);

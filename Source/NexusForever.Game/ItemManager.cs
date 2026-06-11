@@ -13,7 +13,7 @@ using NLog;
 
 namespace NexusForever.Game
 {
-    public sealed class ItemManager : Singleton<ItemManager>, IItemManager
+    public sealed class ItemManager : IItemManager
     {
         private const string ItemTableName = "Item2.tbl";
         private const string ItemSlotTableName = "ItemSlot.tbl";
@@ -30,12 +30,26 @@ namespace NexusForever.Game
         private ImmutableDictionary<uint, IItemInfo> item;
         private ImmutableDictionary<ItemSlot, ImmutableList<EquippedItem>> equippedItemSlots;
 
+        private readonly IDatabaseManager databaseManager;
+        private readonly IGameTableManager gameTableManager;
+        private readonly IAssetManager assetManager;
+
+        public ItemManager(
+            IDatabaseManager databaseManager = null,
+            IGameTableManager gameTableManager = null,
+            IAssetManager assetManager = null)
+        {
+            this.databaseManager  = databaseManager;
+            this.gameTableManager = gameTableManager;
+            this.assetManager     = assetManager;
+        }
+
         public void Initialise()
         {
             var sw = Stopwatch.StartNew();
             log.Info("Initialise item info...");
 
-            nextItemId = DatabaseManager.Instance.GetDatabase<CharacterDatabase>().GetNextItemId() + 1ul;
+            nextItemId = databaseManager.GetDatabase<CharacterDatabase>().GetNextItemId() + 1ul;
 
             InitialiseItemInfo();
             InitialiseEquippedItemSlots();
@@ -46,7 +60,7 @@ namespace NexusForever.Game
         private void InitialiseItemInfo()
         {
             var builder = ImmutableDictionary.CreateBuilder<uint, IItemInfo>();
-            if (GameTableManager.Instance.Item?.Entries == null)
+            if (gameTableManager.Item?.Entries == null)
                 MissingGameDataDiagnostics.ReportMissingTable(
                     ItemTableName,
                     nameof(ItemManager) + "." + nameof(InitialiseItemInfo),
@@ -54,10 +68,10 @@ namespace NexusForever.Game
                     "Cannot cache item definitions.");
 
             IEnumerable<Item2Entry> itemEntries =
-                GameTableManager.Instance.Item?.Entries ?? Enumerable.Empty<Item2Entry>();
+                gameTableManager.Item?.Entries ?? Enumerable.Empty<Item2Entry>();
             foreach (Item2Entry entry in itemEntries)
             {
-                var info = new ItemInfo(entry);
+                var info = new ItemInfo(entry, gameTableManager, assetManager);
                 builder.Add(info.Id, info);
             }
 
@@ -67,7 +81,7 @@ namespace NexusForever.Game
         private void InitialiseEquippedItemSlots()
         {
             var builder = new Dictionary<ItemSlot, List<EquippedItem>>();
-            if (GameTableManager.Instance.ItemSlot?.Entries == null)
+            if (gameTableManager.ItemSlot?.Entries == null)
                 MissingGameDataDiagnostics.ReportMissingTable(
                     ItemSlotTableName,
                     nameof(ItemManager) + "." + nameof(InitialiseEquippedItemSlots),
@@ -75,7 +89,7 @@ namespace NexusForever.Game
                     "Cannot cache equipped item slot mappings.");
 
             IEnumerable<ItemSlotEntry> itemSlotEntries =
-                GameTableManager.Instance.ItemSlot?.Entries ?? Enumerable.Empty<ItemSlotEntry>();
+                gameTableManager.ItemSlot?.Entries ?? Enumerable.Empty<ItemSlotEntry>();
             foreach (ItemSlotEntry entry in itemSlotEntries)
             {
                 for (EquippedItem slot = EquippedItem.Chest; slot < EquippedItem.BankBag9; slot++)

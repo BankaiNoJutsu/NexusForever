@@ -8,11 +8,10 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Matching;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Matching
 {
-    public class MatchingDataManager : Singleton<MatchingDataManager>, IMatchingDataManager
+    public class MatchingDataManager : IMatchingDataManager
     {
         public bool DebugInstantQueue { get; set; }
 

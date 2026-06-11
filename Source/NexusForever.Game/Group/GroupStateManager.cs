@@ -3,11 +3,10 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Static.Group;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Group
 {
-    public class GroupStateManager : Singleton<GroupStateManager>, IGroupStateManager
+    public class GroupStateManager : IGroupStateManager
     {
         private readonly ConcurrentDictionary<ulong, GroupLootState> groups = [];
         private readonly ConcurrentDictionary<Identity, ulong> characterGroups = [];

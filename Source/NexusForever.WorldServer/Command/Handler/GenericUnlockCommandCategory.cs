@@ -13,6 +13,13 @@ namespace NexusForever.WorldServer.Command.Handler
     [CommandTarget(typeof(IPlayer))]
     public class GenericUnlockCommandCategory : CommandCategory
     {
+        private readonly IGameTableManager gameTableManager;
+
+        public GenericUnlockCommandCategory(IGameTableManager gameTableManager)
+        {
+            this.gameTableManager = gameTableManager;
+        }
+
         [Command(Permission.GenericUnlock, "Unlock generic unlock entry for an account.", "unlock")]
         public void HandleGenericUnlockUnlock(ICommandContext context,
             [Parameter("Generic unlock entry to unlock.")]
@@ -34,7 +41,7 @@ namespace NexusForever.WorldServer.Command.Handler
         {
             context.SendMessage("Acquired generic unlock entries:");
 
-            TextTable tt = GameTableManager.Instance.GetTextTable(context.Language);
+            TextTable tt = gameTableManager.GetTextTable(context.Language);
             foreach (IGenericUnlock unlock in context.GetTargetOrInvoker<IPlayer>().Account.GenericUnlockManager)
             {
                 string name = tt.GetEntry(unlock.Entry.LocalizedTextIdDescription);

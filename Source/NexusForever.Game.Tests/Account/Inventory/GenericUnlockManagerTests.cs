@@ -1,7 +1,6 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
@@ -15,190 +14,134 @@ using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.GenericUnlock;
-using NexusForever.Shared;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 
 namespace NexusForever.Game.Tests.Account.Inventory;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class GenericUnlockManagerTests
 {
     [Fact]
     public void Unlock_WithMissingUnlockEntryTableSendsInvalid()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
+        GameTableManager gameTableManager = CreateGameTableManager();
+        GenericUnlockManager manager = CreateManager(gameTableManager, out RecordingDispatchProxy<IGameSession> sessionProxy);
 
-        try
-        {
-            GenericUnlockManager manager = CreateManager(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        manager.Unlock(11);
 
-            manager.Unlock(11);
-
-            ServerGenericUnlockResult result = Assert.Single(sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .Select(i => i.Arguments[0])
-                .OfType<ServerGenericUnlockResult>());
-            Assert.Equal(GenericUnlockResult.Invalid, result.Result);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        ServerGenericUnlockResult result = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .OfType<ServerGenericUnlockResult>());
+        Assert.Equal(GenericUnlockResult.Invalid, result.Result);
     }
 
     [Fact]
     public void UnlockAll_WithMissingUnlockEntryTableDoesNotEmit()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
+        GameTableManager gameTableManager = CreateGameTableManager();
+        GenericUnlockManager manager = CreateManager(gameTableManager, out RecordingDispatchProxy<IGameSession> sessionProxy);
 
-        try
-        {
-            GenericUnlockManager manager = CreateManager(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        manager.UnlockAll(GenericUnlockType.Dye);
 
-            manager.UnlockAll(GenericUnlockType.Dye);
-
-            Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
     }
 
     [Fact]
     public void Constructor_WithPersistedUnlockAndMissingUnlockEntryTableSkipsUnlock()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
+        GameTableManager gameTableManager = CreateGameTableManager();
+        GenericUnlockManager manager = CreateManager(gameTableManager, CreateAccountModelWithUnlock(11u), out RecordingDispatchProxy<IGameSession> sessionProxy);
 
-        try
-        {
-            GenericUnlockManager manager = CreateManager(CreateAccountModelWithUnlock(11u), out RecordingDispatchProxy<IGameSession> sessionProxy);
+        Assert.False(manager.IsDyeUnlocked(22u));
 
-            Assert.False(manager.IsDyeUnlocked(22u));
+        manager.SendUnlockList();
 
-            manager.SendUnlockList();
-
-            ServerGenericUnlockAccountList list = Assert.Single(sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .Select(i => i.Arguments[0])
-                .OfType<ServerGenericUnlockAccountList>());
-            Assert.Empty(list.GenericUnlockEntryIds);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        ServerGenericUnlockAccountList list = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .OfType<ServerGenericUnlockAccountList>());
+        Assert.Empty(list.GenericUnlockEntryIds);
     }
 
     [Fact]
     public void Constructor_WithPersistedUnlockAndKnownUnlockEntryLoadsUnlock()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(CreateGameTable(new GenericUnlockEntryEntry
+        GameTableManager gameTableManager = CreateGameTableManager(CreateGameTable(new GenericUnlockEntryEntry
         {
             Id                    = 11u,
             GenericUnlockTypeEnum = GenericUnlockType.Dye,
             UnlockObject          = 22u
         }));
+        GenericUnlockManager manager = CreateManager(gameTableManager, CreateAccountModelWithUnlock(11u), out RecordingDispatchProxy<IGameSession> sessionProxy);
 
-        try
-        {
-            GenericUnlockManager manager = CreateManager(CreateAccountModelWithUnlock(11u), out RecordingDispatchProxy<IGameSession> sessionProxy);
+        Assert.True(manager.IsDyeUnlocked(22u));
 
-            Assert.True(manager.IsDyeUnlocked(22u));
+        manager.SendUnlockList();
 
-            manager.SendUnlockList();
-
-            ServerGenericUnlockAccountList list = Assert.Single(sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .Select(i => i.Arguments[0])
-                .OfType<ServerGenericUnlockAccountList>());
-            Assert.Equal([11u], list.GenericUnlockEntryIds);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        ServerGenericUnlockAccountList list = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .OfType<ServerGenericUnlockAccountList>());
+        Assert.Equal([11u], list.GenericUnlockEntryIds);
     }
 
     [Fact]
     public void Save_WithPersistedUnlockLoadedFromTableDoesNotTrackAddedRow()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(CreateGameTable(new GenericUnlockEntryEntry
+        GameTableManager gameTableManager = CreateGameTableManager(CreateGameTable(new GenericUnlockEntryEntry
         {
             Id                    = 11u,
             GenericUnlockTypeEnum = GenericUnlockType.Dye,
             UnlockObject          = 22u
         }));
+        GenericUnlockManager manager = CreateManager(gameTableManager, CreateAccountModelWithUnlock(11u), out _);
+        using AuthContext context = CreateContext();
 
-        try
-        {
-            GenericUnlockManager manager = CreateManager(CreateAccountModelWithUnlock(11u), out _);
-            using AuthContext context = CreateContext();
+        manager.Save(context);
 
-            manager.Save(context);
-
-            Assert.Empty(context.ChangeTracker.Entries<AccountGenericUnlockModel>());
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Empty(context.ChangeTracker.Entries<AccountGenericUnlockModel>());
     }
 
     [Fact]
     public void Unlock_WithKnownUnlockEntrySendsUnlockAndGranted()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(CreateGameTable(new GenericUnlockEntryEntry
+        GameTableManager gameTableManager = CreateGameTableManager(CreateGameTable(new GenericUnlockEntryEntry
         {
             Id                    = 11u,
             GenericUnlockTypeEnum = GenericUnlockType.Dye,
             UnlockObject          = 22u
         }));
+        GenericUnlockManager manager = CreateManager(gameTableManager, out RecordingDispatchProxy<IGameSession> sessionProxy);
 
-        try
-        {
-            GenericUnlockManager manager = CreateManager(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        manager.Unlock(11);
 
-            manager.Unlock(11);
+        object[] messages = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .ToArray();
 
-            object[] messages = sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .Select(i => i.Arguments[0])
-                .ToArray();
+        ServerGenericUnlock unlock = Assert.IsType<ServerGenericUnlock>(messages[0]);
+        Assert.Equal((ushort)11, unlock.GenericUnlockEntryId);
 
-            ServerGenericUnlock unlock = Assert.IsType<ServerGenericUnlock>(messages[0]);
-            Assert.Equal((ushort)11, unlock.GenericUnlockEntryId);
-
-            ServerGenericUnlockResult result = Assert.IsType<ServerGenericUnlockResult>(messages[1]);
-            Assert.Equal(GenericUnlockResult.Granted, result.Result);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        ServerGenericUnlockResult result = Assert.IsType<ServerGenericUnlockResult>(messages[1]);
+        Assert.Equal(GenericUnlockResult.Granted, result.Result);
     }
 
-    private static GenericUnlockManager CreateManager(out RecordingDispatchProxy<IGameSession> sessionProxy)
+    private static GenericUnlockManager CreateManager(IGameTableManager gameTableManager, out RecordingDispatchProxy<IGameSession> sessionProxy)
     {
-        return CreateManager(new AccountModel
+        return CreateManager(gameTableManager, new AccountModel
         {
             Id = 1u
         }, out sessionProxy);
     }
 
-    private static GenericUnlockManager CreateManager(AccountModel model, out RecordingDispatchProxy<IGameSession> sessionProxy)
+    private static GenericUnlockManager CreateManager(IGameTableManager gameTableManager, AccountModel model, out RecordingDispatchProxy<IGameSession> sessionProxy)
     {
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out sessionProxy);
         IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
         accountProxy.SetProperty(nameof(IAccount.Session), session);
 
-        return new GenericUnlockManager(account, model);
+        return new GenericUnlockManager(account, model, gameTableManager);
     }
 
     private static AccountModel CreateAccountModelWithUnlock(uint entryId)
@@ -228,7 +171,7 @@ public class GenericUnlockManagerTests
         return new AuthContext(options);
     }
 
-    private static IServiceProvider BuildProvider(GameTable<GenericUnlockEntryEntry> genericUnlockEntryTable = null)
+    private static GameTableManager CreateGameTableManager(GameTable<GenericUnlockEntryEntry> genericUnlockEntryTable = null)
     {
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
@@ -238,9 +181,7 @@ public class GenericUnlockManagerTests
         if (genericUnlockEntryTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.GenericUnlockEntry), genericUnlockEntryTable);
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

@@ -2,7 +2,6 @@
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Customisation;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Game.Customisation;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Network.World.Message.Model;
@@ -20,13 +19,18 @@ namespace NexusForever.Game.Entity
         private readonly List<IBone> deletedCharacterBones = new();
        
         private readonly IPlayer owner;
+        private readonly ICustomisationManager customisationManager;
 
         /// <summary>
         /// Create a new <see cref="IAppearanceManager"/> for <see cref="IPlayer"/>.
         /// </summary>
-        public AppearanceManager(IPlayer player, CharacterModel model)
+        public AppearanceManager(
+            IPlayer player,
+            CharacterModel model,
+            ICustomisationManager customisationManager = null)
         {
             owner = player;
+            this.customisationManager = customisationManager;
 
             foreach (CharacterAppearanceModel characterAppearance in model.Appearance)
             {
@@ -127,7 +131,10 @@ namespace NexusForever.Game.Entity
 
         private void UpdateAppearances(Race race, Sex sex, IList<(uint Label, uint Value)> customisations)
         {
-            List<IItemVisual> itemVisuals = CustomisationManager.Instance.GetItemVisuals(race, sex, customisations).ToList();
+            if (customisationManager == null)
+                throw new InvalidOperationException("AppearanceManager requires an ICustomisationManager to update appearances.");
+
+            List<IItemVisual> itemVisuals = customisationManager.GetItemVisuals(race, sex, customisations).ToList();
             foreach (IItemVisual visual in itemVisuals)
             {
                 if (characterAppearances.TryGetValue(visual.Slot, out IAppearance appearance))

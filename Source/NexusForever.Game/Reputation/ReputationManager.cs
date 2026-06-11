@@ -14,18 +14,20 @@ namespace NexusForever.Game.Reputation
     public class ReputationManager : IReputationManager
     {
         private readonly IPlayer owner;
+        private readonly IFactionManager factionManager;
         private readonly Dictionary<Faction, IReputation> reputations = new();
 
         /// <summary>
         /// Create a new <see cref="IReputationManager"/> from existing <see cref="CharacterModel"/> database model.
         /// </summary>
-        public ReputationManager(IPlayer player, CharacterModel model)
+        public ReputationManager(IPlayer player, CharacterModel model, IFactionManager factionManager = null)
         {
             owner = player;
+            this.factionManager = factionManager;
 
             foreach (CharacterReputation reputationModel in model.Reputation)
             {
-                IFactionNode faction = FactionManager.Instance.GetFaction((Faction)reputationModel.FactionId);
+                IFactionNode faction = this.factionManager.GetFaction((Faction)reputationModel.FactionId);
                 if (faction == null)
                     throw new DatabaseDataException($"Character {model.Id} has invalid faction {reputationModel.FactionId} stored!");
 
@@ -48,7 +50,7 @@ namespace NexusForever.Game.Reputation
         /// </remarks>
         public void UpdateReputation(Faction factionId, float value)
         {
-            IFactionNode faction = FactionManager.Instance.GetFaction(factionId);
+            IFactionNode faction = factionManager.GetFaction(factionId);
             if (faction == null)
                 throw new ArgumentException($"Invalid faction id {factionId}!");
 
@@ -84,7 +86,7 @@ namespace NexusForever.Game.Reputation
         /// </summary>
         public IReputation GetReputation(Faction factionId)
         {
-            IFactionNode faction = FactionManager.Instance.GetFaction(factionId);
+            IFactionNode faction = factionManager.GetFaction(factionId);
             if (faction == null)
                 throw new ArgumentException($"Invalid faction id {factionId}!");
 

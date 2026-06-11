@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Costume;
 using NexusForever.Game.Abstract.Account.Currency;
@@ -24,46 +23,33 @@ using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Account.Reward;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class RewardPropertyManagerTests
 {
     [Fact]
     public void Constructor_WithMissingRewardPropertyTable_SkipsPremiumModifierRows()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildProvider(
+        (GameTableManager gameTableManager, AssetManager assetManager) = BuildServices(
             [
                 CreateModifier(RewardPropertyType.XP, modifierValueFloat: 1.5f)
             ]);
-        LegacyServiceProvider.Provider = provider;
+        IAccount account = CreateAccount(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        var manager = new RewardPropertyManager(account, assetManager, gameTableManager);
 
-        try
-        {
-            IAccount account = CreateAccount(out RecordingDispatchProxy<IGameSession> sessionProxy);
-            var manager = new RewardPropertyManager(account);
+        Assert.Null(manager.GetRewardProperty(RewardPropertyType.XP));
 
-            Assert.Null(manager.GetRewardProperty(RewardPropertyType.XP));
+        manager.SendInitialPackets();
 
-            manager.SendInitialPackets();
-
-            ServerRewardPropertySet packet = Assert.Single(GetEncryptedMessages<ServerRewardPropertySet>(sessionProxy));
-            Assert.Empty(packet.Properties);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        ServerRewardPropertySet packet = Assert.Single(GetEncryptedMessages<ServerRewardPropertySet>(sessionProxy));
+        Assert.Empty(packet.Properties);
     }
 
     [Fact]
     public void Constructor_WithMissingEntitlementTable_SkipsEntitlementBackedModifierRows()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildProvider(
+        (GameTableManager gameTableManager, AssetManager assetManager) = BuildServices(
             [
                 CreateModifier(RewardPropertyType.XP, entitlementId: EntitlementType.Signature)
             ],
@@ -71,26 +57,16 @@ public class RewardPropertyManagerTests
             [
                 CreateRewardProperty(RewardPropertyType.XP, RewardPropertyModifierValueType.Discrete)
             ]);
-        LegacyServiceProvider.Provider = provider;
+        IAccount account = CreateAccount(out _, entitlementAmount: 7u);
+        var manager = new RewardPropertyManager(account, assetManager, gameTableManager);
 
-        try
-        {
-            IAccount account = CreateAccount(out _, entitlementAmount: 7u);
-            var manager = new RewardPropertyManager(account);
-
-            Assert.Null(manager.GetRewardProperty(RewardPropertyType.XP));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Null(manager.GetRewardProperty(RewardPropertyType.XP));
     }
 
     [Fact]
     public void Constructor_WithTableBackedEntitlementModifier_UsesEntitlementValue()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildProvider(
+        (GameTableManager gameTableManager, AssetManager assetManager) = BuildServices(
             [
                 CreateModifier(RewardPropertyType.XP, entitlementId: EntitlementType.Signature)
             ],
@@ -107,80 +83,53 @@ public class RewardPropertyManagerTests
                     Flags    = (uint)EntitlementFlags.None
                 }
             ]);
-        LegacyServiceProvider.Provider = provider;
+        IAccount account = CreateAccount(out _, entitlementAmount: 7u);
+        var manager = new RewardPropertyManager(account, assetManager, gameTableManager);
 
-        try
-        {
-            IAccount account = CreateAccount(out _, entitlementAmount: 7u);
-            var manager = new RewardPropertyManager(account);
+        IRewardProperty property = manager.GetRewardProperty(RewardPropertyType.XP);
 
-            IRewardProperty property = manager.GetRewardProperty(RewardPropertyType.XP);
-
-            Assert.NotNull(property);
-            Assert.Equal(7f, property.GetValue(0u));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.NotNull(property);
+        Assert.Equal(7f, property.GetValue(0u));
     }
 
     [Fact]
     public void UpdateRewardProperty_WithMissingRewardPropertyTable_DoesNotSendPacket()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildProvider([]);
-        LegacyServiceProvider.Provider = provider;
+        (GameTableManager gameTableManager, AssetManager assetManager) = BuildServices([]);
+        IAccount account = CreateAccount(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        var manager = new RewardPropertyManager(account, assetManager, gameTableManager);
 
-        try
-        {
-            IAccount account = CreateAccount(out RecordingDispatchProxy<IGameSession> sessionProxy);
-            var manager = new RewardPropertyManager(account);
+        manager.UpdateRewardProperty(RewardPropertyType.XP, 1f);
 
-            manager.UpdateRewardProperty(RewardPropertyType.XP, 1f);
-
-            Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-            Assert.Null(manager.GetRewardProperty(RewardPropertyType.XP));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        Assert.Null(manager.GetRewardProperty(RewardPropertyType.XP));
     }
 
     [Fact]
     public void TryResolveRewardPropertyModifier_WithMissingRewardPropertyTable_ReturnsUnknownRewardProperty()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = BuildProvider([]);
-        LegacyServiceProvider.Provider = provider;
+        (GameTableManager gameTableManager, _) = BuildServices([]);
 
-        try
-        {
-            bool resolved = SpellHandler.TryResolveRewardPropertyModifier(
-                new SpellEffectRewardPropertyModifierSemantics(
-                    (uint)RewardPropertyType.XP,
-                    0u,
-                    1f,
-                    0f,
-                    0u,
-                    0u),
-                out RewardPropertyEntry entry,
-                out float value,
-                out string skippedReason);
+        bool resolved = SpellHandler.TryResolveRewardPropertyModifier(
+            gameTableManager,
+            new SpellEffectRewardPropertyModifierSemantics(
+                (uint)RewardPropertyType.XP,
+                0u,
+                1f,
+                0f,
+                0u,
+                0u),
+            out RewardPropertyEntry entry,
+            out float value,
+            out string skippedReason);
 
-            Assert.False(resolved);
-            Assert.Null(entry);
-            Assert.Equal(0f, value);
-            Assert.Equal("unknown-reward-property", skippedReason);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.False(resolved);
+        Assert.Null(entry);
+        Assert.Equal(0f, value);
+        Assert.Equal("unknown-reward-property", skippedReason);
     }
 
-    private static ServiceProvider BuildProvider(
+    private static (GameTableManager GameTableManager, AssetManager AssetManager) BuildServices(
         IReadOnlyList<RewardPropertyPremiumModifierEntry> modifiers,
         RewardPropertyEntry[] rewardPropertyEntries = null,
         EntitlementEntry[] entitlementEntries = null)
@@ -196,10 +145,7 @@ public class RewardPropertyManagerTests
             .Empty
             .Add(AccountTier.Signature, modifiers.ToImmutableList()));
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .AddSingleton(assetManager)
-            .BuildServiceProvider();
+        return (gameTableManager, assetManager);
     }
 
     private static IAccount CreateAccount(

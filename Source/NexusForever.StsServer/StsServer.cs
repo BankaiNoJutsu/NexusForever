@@ -50,7 +50,7 @@ namespace NexusForever.StsServer
                     sc.AddOptions<NetworkConfig>()
                         .Bind(hb.Configuration.GetSection("Network"));
 
-                    sc.AddSingletonLegacy<ISharedConfiguration, SharedConfiguration>();
+                    sc.AddSharedConfiguration<StsServerConfiguration>(hb.Configuration);
 
                     sc.AddDatabase();
                     sc.AddStsNetwork();

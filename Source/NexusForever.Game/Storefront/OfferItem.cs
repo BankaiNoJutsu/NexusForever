@@ -1,9 +1,11 @@
 using System.Collections.Immutable;
 using NexusForever.Database.World.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Storefront;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Storefront;
+using NexusForever.GameTable;
 using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.Game.Storefront
@@ -25,7 +27,10 @@ namespace NexusForever.Game.Storefront
         /// <summary>
         /// Create a new <see cref="IOfferItem"/> from an existing database model.
         /// </summary>
-        public OfferItem(StoreOfferItemModel model)
+        public OfferItem(
+            StoreOfferItemModel model,
+            IDisableManager disableManager = null,
+            IGameTableManager gameTableManager = null)
         {
             Id           = model.Id;
             Name         = model.Name;
@@ -40,7 +45,7 @@ namespace NexusForever.Game.Storefront
                 .OrderBy(itemData => itemData.Type)
                 .ThenBy(itemData => itemData.ItemId)
                 .ThenBy(itemData => itemData.Amount))
-                itemBuilder.Add(new OfferItemData(itemData));
+                itemBuilder.Add(new OfferItemData(itemData, gameTableManager));
 
             items = itemBuilder.ToImmutable();
 
@@ -48,7 +53,7 @@ namespace NexusForever.Game.Storefront
             foreach (StoreOfferItemPriceModel price in model.StoreOfferItemPrice
                 .OrderBy(price => price.CurrencyId))
             {
-                if (DisableManager.Instance.IsDisabled(DisableType.AccountCurrency, price.CurrencyId))
+                if (disableManager?.IsDisabled(DisableType.AccountCurrency, price.CurrencyId) == true)
                     continue;
 
                 var itemPrice = new OfferItemPrice(price);

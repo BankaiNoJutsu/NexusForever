@@ -15,6 +15,7 @@ namespace NexusForever.Game.Account.Inventory
         private const string DailyLoginRewardTableName = "DailyLoginReward.tbl";
 
         private readonly IAccount account;
+        private readonly IGameTableManager gameTableManager;
         private uint loginDaysTotal;
         private uint rewardsAvailable;
         private uint lastClaimedLoginDay;
@@ -25,9 +26,10 @@ namespace NexusForever.Game.Account.Inventory
         private DateTime? lastDayIncrementUtc;
         private bool dirty;
 
-        public DailyLoginRewardManager(IAccount account, AccountModel model)
+        public DailyLoginRewardManager(IAccount account, AccountModel model, IGameTableManager gameTableManager)
         {
-            this.account = account;
+            this.account          = account;
+            this.gameTableManager = gameTableManager;
             AccountDailyLoginModel dailyLogin = model.AccountDailyLogin;
             if (dailyLogin == null)
                 return;
@@ -186,16 +188,16 @@ namespace NexusForever.Game.Account.Inventory
                 .Where(e => e.LoginDay > lastClaimedLoginDay && e.LoginDay <= loginDaysTotal);
         }
 
-        private static IEnumerable<DailyLoginRewardEntry> GetRewardEntries()
+        private IEnumerable<DailyLoginRewardEntry> GetRewardEntries()
         {
-            if (GameTableManager.Instance.DailyLoginReward?.Entries == null)
+            if (gameTableManager.DailyLoginReward?.Entries == null)
                 MissingGameDataDiagnostics.ReportMissingTable(
                     DailyLoginRewardTableName,
                     nameof(DailyLoginRewardManager) + "." + nameof(GetRewardEntries),
                     MissingGameDataSeverity.PlayerImpacting,
                     "Cannot resolve daily login rewards.");
 
-            return GameTableManager.Instance.DailyLoginReward?.Entries ?? [];
+            return gameTableManager.DailyLoginReward?.Entries ?? [];
         }
 
         private static uint InferLastClaimedLoginDay(uint loginDaysTotal, uint rewardsAvailable)

@@ -9,7 +9,7 @@ namespace NexusForever.Game.Guild
     {
         public static void AddGameGuild(this IServiceCollection sc)
         {
-            sc.AddSingletonLegacy<IGlobalGuildManager, GlobalGuildManager>();
+            sc.AddSingleton<IGlobalGuildManager, GlobalGuildManager>();
 
             sc.AddTransient<IGuildFactory, GuildFactory>();
             sc.AddKeyedTransient<IGuildBase, Guild>(GuildType.Guild);

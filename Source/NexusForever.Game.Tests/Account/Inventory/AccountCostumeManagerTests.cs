@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Game.Abstract.Account;
@@ -11,11 +10,9 @@ using NexusForever.GameTable.Configuration.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Account.Inventory;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class AccountCostumeManagerTests
 {
     private const uint ItemId = 12345u;
@@ -39,56 +36,49 @@ public class AccountCostumeManagerTests
     [Fact]
     public void UnlockItem_WithMissingFormulaTableUsesDefaultLimitAndUnlocks()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
+        GameTableManager gameTableManager = CreateGameTableManager();
+        AccountCostumeManager manager = CreateManager(
+            gameTableManager,
+            out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IItem item = CreateItem(isEquippable: true, out RecordingDispatchProxy<IItem> itemProxy);
 
-        try
-        {
-            AccountCostumeManager manager = CreateManager(out RecordingDispatchProxy<IGameSession> sessionProxy);
-            IItem item = CreateItem(isEquippable: true, out RecordingDispatchProxy<IItem> itemProxy);
+        manager.UnlockItem(player: null, item);
 
-            manager.UnlockItem(player: null, item);
-
-            RecordingDispatchProxy<IGameSession>.Invocation call = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-            ServerCostumeItemUnlock result = Assert.IsType<ServerCostumeItemUnlock>(call.Arguments[0]);
-            Assert.Equal(CostumeUnlockResult.UnlockSuccess, result.Result);
-            Assert.Equal(ItemId, result.ItemId);
-            Assert.True(manager.HasItemUnlock(ItemId));
-            Assert.Single(itemProxy.GetInvocations(nameof(IItem.MakeSoulbound)));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        RecordingDispatchProxy<IGameSession>.Invocation call = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        ServerCostumeItemUnlock result = Assert.IsType<ServerCostumeItemUnlock>(call.Arguments[0]);
+        Assert.Equal(CostumeUnlockResult.UnlockSuccess, result.Result);
+        Assert.Equal(ItemId, result.ItemId);
+        Assert.True(manager.HasItemUnlock(ItemId));
+        Assert.Single(itemProxy.GetInvocations(nameof(IItem.MakeSoulbound)));
     }
 
     [Fact]
     public void ForgetItem_WithMissingItemTableSendsInvalidWithoutForgetting()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider();
+        GameTableManager gameTableManager = CreateGameTableManager();
+        AccountCostumeManager manager = CreateManager(
+            gameTableManager,
+            out RecordingDispatchProxy<IGameSession> sessionProxy,
+            ItemId);
 
-        try
-        {
-            AccountCostumeManager manager = CreateManager(
-                out RecordingDispatchProxy<IGameSession> sessionProxy,
-                ItemId);
+        manager.ForgetItem(ItemId);
 
-            manager.ForgetItem(ItemId);
-
-            RecordingDispatchProxy<IGameSession>.Invocation call = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-            ServerCostumeItemUnlock result = Assert.IsType<ServerCostumeItemUnlock>(call.Arguments[0]);
-            Assert.Equal(CostumeUnlockResult.InvalidItem, result.Result);
-            Assert.Equal(0u, result.ItemId);
-            Assert.True(manager.HasItemUnlock(ItemId));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        RecordingDispatchProxy<IGameSession>.Invocation call = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        ServerCostumeItemUnlock result = Assert.IsType<ServerCostumeItemUnlock>(call.Arguments[0]);
+        Assert.Equal(CostumeUnlockResult.InvalidItem, result.Result);
+        Assert.Equal(0u, result.ItemId);
+        Assert.True(manager.HasItemUnlock(ItemId));
     }
 
     private static AccountCostumeManager CreateManager(
+        out RecordingDispatchProxy<IGameSession> sessionProxy,
+        params uint[] unlockedItemIds)
+    {
+        return CreateManager(CreateGameTableManager(), out sessionProxy, unlockedItemIds);
+    }
+
+    private static AccountCostumeManager CreateManager(
+        IGameTableManager gameTableManager,
         out RecordingDispatchProxy<IGameSession> sessionProxy,
         params uint[] unlockedItemIds)
     {
@@ -107,7 +97,7 @@ public class AccountCostumeManagerTests
                     ItemId = itemId
                 })
                 .ToList()
-        });
+        }, gameTableManager);
     }
 
     private static IItem CreateItem(bool isEquippable, out RecordingDispatchProxy<IItem> itemProxy)
@@ -121,13 +111,11 @@ public class AccountCostumeManagerTests
         return item;
     }
 
-    private static IServiceProvider BuildProvider()
+    private static GameTableManager CreateGameTableManager()
     {
-        return new ServiceCollection()
-            .AddSingleton(new GameTableManager(Options.Create(new GameTableConfig
-            {
-                GameTablePath = string.Empty
-            })))
-            .BuildServiceProvider();
+        return new GameTableManager(Options.Create(new GameTableConfig
+        {
+            GameTablePath = string.Empty
+        }));
     }
 }

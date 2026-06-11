@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Customisation;
 using NexusForever.Game.Abstract.Entity;
@@ -35,19 +36,22 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
         private readonly IGameTableManager gameTableManager;
         private readonly ICustomisationManager customisationManager;
         private readonly ICharacterManager characterManager;
+        private readonly IItemManager itemManager;
 
         public ClientCharacterCreateHandler(
             ITextFilterManager textFilterManager,
             IDatabaseManager databaseManager,
             IGameTableManager gameTableManager,
             ICustomisationManager customisationManager,
-            ICharacterManager characterManager)
+            ICharacterManager characterManager,
+            IItemManager itemManager)
         {
             this.textFilterManager    = textFilterManager;
             this.databaseManager      = databaseManager;
             this.gameTableManager     = gameTableManager;
             this.customisationManager = customisationManager;
             this.characterManager     = characterManager;
+            this.itemManager          = itemManager;
         }
 
         #endregion
@@ -129,7 +133,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                     Race       = (byte)creationEntry.RaceId,
                     Sex        = (byte)creationEntry.Sex,
                     Class      = (byte)creationEntry.ClassId,
-                    Level      = XpManager.CalculateLevelForXp(creationEntry.Xp),
+                    Level      = XpManager.CalculateLevelForXp(creationEntry.Xp, gameTableManager),
                     FactionId  = (ushort)creationEntry.FactionId,
                     ActivePath = characterCreate.Path,
                     TotalXp    = creationEntry.Xp
@@ -216,7 +220,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                 }
 
                 // create a temporary inventory to create starting gear
-                var inventory = new Inventory(character.Id, creationEntry);
+                var inventory = new Inventory(character.Id, creationEntry, itemManager);
                 IEnumerable<IItem> items = inventory
                     .SelectMany(b => b)
                     .Select(i => i);

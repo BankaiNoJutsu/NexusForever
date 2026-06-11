@@ -3,11 +3,10 @@ using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.ICComm;
 using NexusForever.Game.Static.ICComm;
 using NexusForever.Network.World.Message.Model.ICComm;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.ICComm
 {
-    public sealed class ICCommManager : Singleton<ICCommManager>, IICCommManager
+    public sealed class ICCommManager : IICCommManager
     {
         private sealed class ICCommChannel
         {

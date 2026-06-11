@@ -60,11 +60,13 @@ namespace NexusForever.Game.Reputation
         /// <summary>
         /// Create a new <see cref="IFactionNode"/> with the supplied <see cref="Faction2Entry"/>.
         /// </summary>
-        public FactionNode(Faction2Entry entry)
+        public FactionNode(
+            Faction2Entry entry,
+            IGameTableManager gameTableManager)
         {
             Entry = entry;
 
-            relationships = GameTableManager.Instance.Faction2Relationship.Entries
+            relationships = (gameTableManager?.Faction2Relationship?.Entries ?? [])
                 .Where(e => (Faction)e.FactionId0 == FactionId)
                 .GroupBy(e => e.FactionId1)
                 .Select(g => (IRelationshipNode)new RelationshipNode(g.First()))

@@ -1,14 +1,11 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Achievement;
-using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Tests.Achievement;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class AchievementInfoTests
 {
     [Theory]
@@ -16,13 +13,13 @@ public class AchievementInfoTests
     [InlineData(true)]
     public void Constructor_WithMissingChecklistTableUsesEmptyChecklist(bool includeEmptyTable)
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
-            includeEmptyTable ? CreateGameTable<AchievementChecklistEntry>() : null));
+        GameTableManager gameTableManager = BuildGameTableManager(
+            includeEmptyTable ? CreateGameTable<AchievementChecklistEntry>() : null);
 
         var info = new AchievementInfo(new AchievementEntry
         {
             Id = 42u
-        });
+        }, gameTableManager);
 
         Assert.Empty(info.ChecklistEntries);
     }
@@ -30,7 +27,7 @@ public class AchievementInfoTests
     [Fact]
     public void Constructor_WithChecklistTableFiltersRowsByAchievementId()
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(CreateGameTable(
+        GameTableManager gameTableManager = BuildGameTableManager(CreateGameTable(
             new AchievementChecklistEntry
             {
                 Id            = 1u,
@@ -51,12 +48,12 @@ public class AchievementInfoTests
                 AchievementId = 42u,
                 Bit           = 2u,
                 ObjectId      = 102u
-            })));
+            }));
 
         var info = new AchievementInfo(new AchievementEntry
         {
             Id = 42u
-        });
+        }, gameTableManager);
 
         Assert.Collection(
             info.ChecklistEntries,
@@ -74,15 +71,13 @@ public class AchievementInfoTests
             });
     }
 
-    private static IServiceProvider BuildProvider(GameTable<AchievementChecklistEntry> achievementChecklistTable)
+    private static GameTableManager BuildGameTableManager(GameTable<AchievementChecklistEntry> achievementChecklistTable)
     {
         var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         if (achievementChecklistTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.AchievementChecklist), achievementChecklistTable);
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

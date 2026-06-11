@@ -1,6 +1,7 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Static.Prerequisite;
+using NexusForever.Shared.Configuration;
 
 namespace NexusForever.Game.Prerequisite.Check
 {
@@ -11,9 +12,17 @@ namespace NexusForever.Game.Prerequisite.Check
     [PrerequisiteCheck(PrerequisiteType.TimeOfDay)]
     public class PrerequisiteCheckTimeOfDay : IPrerequisiteCheck
     {
+        private readonly ISharedConfiguration sharedConfiguration;
+
+        public PrerequisiteCheckTimeOfDay(
+            ISharedConfiguration sharedConfiguration = null)
+        {
+            this.sharedConfiguration = sharedConfiguration;
+        }
+
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            uint timeOfDay = InGameTimePrerequisiteHelper.GetTimeOfDaySeconds();
+            uint timeOfDay = InGameTimePrerequisiteHelper.GetTimeOfDaySeconds(sharedConfiguration);
             return PrerequisiteCompare.Compare(comparison, timeOfDay, value);
         }
     }

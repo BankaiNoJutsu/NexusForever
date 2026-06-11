@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Static.Quest;
@@ -142,6 +143,10 @@ namespace NexusForever.Game.Quest
         private QuestSaveMask saveMask;
 
         private readonly IPlayer player;
+        private readonly IAssetManager assetManager;
+        private readonly IGlobalQuestManager globalQuestManager;
+        private readonly IScriptManager scriptManager;
+        private readonly IGameTableManager gameTableManager;
         private readonly List<IQuestObjective> objectives = new();
 
         private uint currentObjectiveId;
@@ -153,10 +158,21 @@ namespace NexusForever.Game.Quest
         /// <summary>
         /// Create a new <see cref="IQuest"/> from an existing database model.
         /// </summary>
-        public Quest(IPlayer owner, IQuestInfo info, CharacterQuestModel model)
+        public Quest(
+            IPlayer owner,
+            IQuestInfo info,
+            CharacterQuestModel model,
+            IAssetManager assetManager = null,
+            IGlobalQuestManager globalQuestManager = null,
+            IScriptManager scriptManager = null,
+            IGameTableManager gameTableManager = null)
         {
-            player = owner;
-            Info   = info;
+            player            = owner;
+            this.assetManager = assetManager;
+            this.globalQuestManager = globalQuestManager;
+            this.scriptManager = scriptManager;
+            this.gameTableManager = gameTableManager;
+            Info              = info;
             state  = (QuestState)model.State;
             flags  = (QuestStateFlags)model.Flags;
             timer  = model.Timer;
@@ -166,25 +182,35 @@ namespace NexusForever.Game.Quest
                 questTimer = new UpdateTimer(timer.Value / 1000d);
 
             foreach (CharacterQuestObjectiveModel objectiveModel in model.QuestObjective)
-                objectives.Add(new QuestObjective(player, info, info.Objectives[objectiveModel.Index], objectiveModel));
+                objectives.Add(new QuestObjective(player, info, info.Objectives[objectiveModel.Index], objectiveModel, assetManager));
 
             SyncObjectiveCompletionFlags(true);
 
             currentObjectiveId = GetCurrentObjectiveId();
-            scriptCollection = ScriptManager.Instance.InitialiseOwnedScripts<IQuest>(this, info.Entry.Id);
+            scriptCollection = GetScriptManager().InitialiseOwnedScripts<IQuest>(this, info.Entry.Id);
         }
 
         /// <summary>
         /// Create a new <see cref="IQuest"/> from supplied <see cref="IQuestInfo"/>.
         /// </summary>
-        public Quest(IPlayer owner, IQuestInfo info)
+        public Quest(
+            IPlayer owner,
+            IQuestInfo info,
+            IAssetManager assetManager = null,
+            IGlobalQuestManager globalQuestManager = null,
+            IScriptManager scriptManager = null,
+            IGameTableManager gameTableManager = null)
         {
-            player = owner;
-            Info   = info;
+            player            = owner;
+            this.assetManager = assetManager;
+            this.globalQuestManager = globalQuestManager;
+            this.scriptManager = scriptManager;
+            this.gameTableManager = gameTableManager;
+            Info              = info;
             state  = QuestState.Accepted;
 
             for (byte i = 0; i < info.Objectives.Count; i++)
-                objectives.Add(new QuestObjective(player, info, info.Objectives[i], i));
+                objectives.Add(new QuestObjective(player, info, info.Objectives[i], i, assetManager));
 
             if (objectives.Count == 0)
                 state = QuestState.Achieved;
@@ -194,13 +220,13 @@ namespace NexusForever.Game.Quest
             saveMask = QuestSaveMask.Create;
 
             currentObjectiveId = GetCurrentObjectiveId();
-            scriptCollection = ScriptManager.Instance.InitialiseOwnedScripts<IQuest>(this, info.Entry.Id);
+            scriptCollection = GetScriptManager().InitialiseOwnedScripts<IQuest>(this, info.Entry.Id);
         }
 
         public void Dispose()
         {
             if (scriptCollection != null)
-                ScriptManager.Instance.Unload(scriptCollection);
+                GetScriptManager().Unload(scriptCollection);
 
             scriptCollection = null;
         }
@@ -590,7 +616,7 @@ namespace NexusForever.Game.Quest
             SendObjectiveWorldLocationUpdates();
 
             // check if this quest and state is a trigger for a new communicator message
-            foreach (ICommunicatorMessage message in GlobalQuestManager.Instance.GetQuestCommunicatorQuestStateTriggers(Id, state))
+            foreach (ICommunicatorMessage message in GetGlobalQuestManager().GetQuestCommunicatorQuestStateTriggers(Id, state))
                 if (message.Meets(player))
                 {
                     message.Send(player.Session);
@@ -602,6 +628,16 @@ namespace NexusForever.Game.Quest
             scriptCollection?.Invoke<IQuestScript>(s => s.OnQuestStateChange(State, oldState));
 
             player.TryRecoverStarterTutorialQuestProgression();
+        }
+
+        private IGlobalQuestManager GetGlobalQuestManager()
+        {
+            return globalQuestManager ?? throw new InvalidOperationException($"{nameof(Quest)} requires an {nameof(IGlobalQuestManager)}.");
+        }
+
+        private IScriptManager GetScriptManager()
+        {
+            return scriptManager ?? throw new InvalidOperationException($"{nameof(Quest)} requires an {nameof(IScriptManager)}.");
         }
 
         private void SendQuestStateChangeIfCurrentObjectiveChanged(uint previousObjectiveId)
@@ -705,7 +741,7 @@ namespace NexusForever.Game.Quest
             if (directionId == 0u)
                 return false;
 
-            QuestDirectionEntry direction = GameTableManager.Instance.QuestDirection?.GetEntry(directionId);
+            QuestDirectionEntry direction = gameTableManager?.QuestDirection?.GetEntry(directionId);
             if (direction == null)
                 return false;
 
@@ -729,7 +765,7 @@ namespace NexusForever.Game.Quest
             if (directionEntryId == 0u)
                 return false;
 
-            QuestDirectionEntryEntry directionEntry = GameTableManager.Instance.QuestDirectionEntry?.GetEntry(directionEntryId);
+            QuestDirectionEntryEntry directionEntry = gameTableManager?.QuestDirectionEntry?.GetEntry(directionEntryId);
             if (directionEntry == null || directionEntry.WorldLocation2Id == 0u)
                 return false;
 

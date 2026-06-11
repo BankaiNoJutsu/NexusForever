@@ -7,6 +7,7 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
+using NexusForever.GameTable;
 using NexusForever.WorldServer.Network.Message.Handler.Spell;
 using NLog;
 
@@ -28,13 +29,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 
         private readonly IPrerequisiteManager prerequisiteManager;
         private readonly IAssetManager assetManager;
+        private readonly IGameTableManager gameTableManager;
 
         public ClientActivateUnitCastHandler(
             IPrerequisiteManager prerequisiteManager,
-            IAssetManager assetManager)
+            IAssetManager assetManager,
+            IGameTableManager gameTableManager = null)
         {
             this.prerequisiteManager = prerequisiteManager;
             this.assetManager        = assetManager;
+            this.gameTableManager    = gameTableManager;
         }
 
         #endregion
@@ -79,7 +83,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 return;
             }
 
-            if (ActivationInteractionGuards.TryRejectOutOfRangeTarget(session, entity))
+            if (ActivationInteractionGuards.TryRejectOutOfRangeTarget(session, entity, gameTableManager: gameTableManager))
             {
                 if (IsTutorialSpecialActivationEntity(entity))
                     log.Debug($"Tutorial activate-cast rejected range: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}.");
@@ -152,7 +156,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 entity.OnActivateCast(session.Player);
 
             entity.OnActivateSuccess(session.Player);
-            InteractionObjectiveUpdater.UpdateActivateSuccessObjectives(session.Player, entity, assetManager, includeActivateEntity: false);
+            InteractionObjectiveUpdater.UpdateActivateSuccessObjectives(session.Player, entity, assetManager, includeActivateEntity: false, gameTableManager);
             ActivationAchievementUpdater.Update(session.Player, entity);
         }
 

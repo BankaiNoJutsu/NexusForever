@@ -1,7 +1,6 @@
 using System.Reflection;
 using System.Collections.Immutable;
 using System.Numerics;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NexusForever.Database.World.Model;
@@ -34,13 +33,11 @@ using NexusForever.Network.World.Message.Model.Chat;
 using NexusForever.Network.World.Message.Model.Loot;
 using NexusForever.Network.World.Message.Model.Story;
 using NexusForever.Network.World.Message.Static;
-using NexusForever.Shared;
 using NexusForever.Shared.Game;
 using NetworkLootItem = NexusForever.Network.World.Message.Model.Loot.LootItem;
 
 namespace NexusForever.Game.Tests.Loot;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class GlobalLootManagerTests
 {
     private const ushort RealmId = 1;
@@ -90,14 +87,11 @@ public class GlobalLootManagerTests
     public void DropLoot_WithUnavailableCreatureTableReturnsFalseWithoutLoot(bool includeEmptyCreatureTable)
     {
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
-        var manager = new GlobalLootManager(groupStateManager);
         var gameTableManager = (GameTableManager)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         if (includeEmptyCreatureTable)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.Creature2), CreateGameTable<Creature2Entry>());
+        var manager = new GlobalLootManager(groupStateManager, gameTableManager: gameTableManager);
 
-        using var scope = new LegacyServiceProviderScope(new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider());
         IPlayer looter = CreateLootBoundaryPlayer(characterId: 42ul, guid: 4242u, out var sessionProxy);
         IWorldEntity lootedEntity = RecordingDispatchProxy<IWorldEntity>.Create(out var lootedEntityProxy);
         lootedEntityProxy.SetProperty(nameof(IGridEntity.Guid), 9090u);
@@ -117,10 +111,6 @@ public class GlobalLootManagerTests
     {
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
         var manager = new GlobalLootManager(groupStateManager);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(manager)
-            .BuildServiceProvider();
 
         try
         {
@@ -150,7 +140,6 @@ public class GlobalLootManagerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
@@ -160,9 +149,8 @@ public class GlobalLootManagerTests
         const ulong groupId = 7001ul;
 
         var groupStateManager = new GroupStateManager();
-        var manager = new GlobalLootManager(groupStateManager);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildHarvestProvider(manager);
+        PlayerManager playerManager = CreatePlayerManager();
+        var manager = new GlobalLootManager(groupStateManager, playerManager);
 
         try
         {
@@ -184,8 +172,8 @@ public class GlobalLootManagerTests
                 position: new Vector3(100f, 0f, 0f),
                 slotsRemaining: 0u);
 
-            PlayerManager.Instance.AddPlayer(harvester.Player);
-            PlayerManager.Instance.AddPlayer(outOfRange.Player);
+            playerManager.AddPlayer(harvester.Player);
+            playerManager.AddPlayer(outOfRange.Player);
             groupStateManager.UpdateGroup(CreateHarvestGroup(
                 groupId,
                 HarvestLootRule.RoundRobin,
@@ -206,8 +194,7 @@ public class GlobalLootManagerTests
         }
         finally
         {
-            RemovePlayers(groupId);
-            LegacyServiceProvider.Provider = previousProvider;
+            RemovePlayers(playerManager, groupId);
         }
     }
 
@@ -217,9 +204,8 @@ public class GlobalLootManagerTests
         const ulong groupId = 7101ul;
 
         var groupStateManager = new GroupStateManager();
-        var manager = new GlobalLootManager(groupStateManager);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildHarvestProvider(manager);
+        PlayerManager playerManager = CreatePlayerManager();
+        var manager = new GlobalLootManager(groupStateManager, playerManager);
 
         try
         {
@@ -242,8 +228,8 @@ public class GlobalLootManagerTests
                 slotsRemaining: 0u);
             IWorldEntity corpse = CreateLootOwner(map, guid: 9010u, position: Vector3.Zero);
 
-            PlayerManager.Instance.AddPlayer(looter.Player);
-            PlayerManager.Instance.AddPlayer(outOfRange.Player);
+            playerManager.AddPlayer(looter.Player);
+            playerManager.AddPlayer(outOfRange.Player);
             groupStateManager.UpdateGroup(CreateHarvestGroup(
                 groupId,
                 HarvestLootRule.FirstTagger,
@@ -266,8 +252,7 @@ public class GlobalLootManagerTests
         }
         finally
         {
-            RemovePlayers(groupId);
-            LegacyServiceProvider.Provider = previousProvider;
+            RemovePlayers(playerManager, groupId);
         }
     }
 
@@ -277,9 +262,10 @@ public class GlobalLootManagerTests
         const ulong groupId = 7002ul;
 
         var groupStateManager = new GroupStateManager();
-        var manager = new GlobalLootManager(groupStateManager);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildHarvestProvider(manager, CreateHarvestItemInfo());
+        PlayerManager playerManager = CreatePlayerManager();
+        IItemInfo itemInfo = CreateHarvestItemInfo();
+        ItemManager itemManager = CreateItemManager(itemInfo);
+        var manager = new GlobalLootManager(groupStateManager, playerManager, itemManager);
 
         try
         {
@@ -301,8 +287,8 @@ public class GlobalLootManagerTests
                 position: new Vector3(5f, 0f, 0f),
                 slotsRemaining: 0u);
 
-            PlayerManager.Instance.AddPlayer(harvester.Player);
-            PlayerManager.Instance.AddPlayer(fullRecipient.Player);
+            playerManager.AddPlayer(harvester.Player);
+            playerManager.AddPlayer(fullRecipient.Player);
             groupStateManager.UpdateGroup(CreateHarvestGroup(
                 groupId,
                 HarvestLootRule.RoundRobin,
@@ -330,8 +316,7 @@ public class GlobalLootManagerTests
         }
         finally
         {
-            RemovePlayers(groupId);
-            LegacyServiceProvider.Provider = previousProvider;
+            RemovePlayers(playerManager, groupId);
         }
     }
 
@@ -340,10 +325,6 @@ public class GlobalLootManagerTests
     {
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
         var manager = new GlobalLootManager(groupStateManager);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(manager)
-            .BuildServiceProvider();
 
         try
         {
@@ -377,7 +358,6 @@ public class GlobalLootManagerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
@@ -386,10 +366,6 @@ public class GlobalLootManagerTests
     {
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
         var manager = new GlobalLootManager(groupStateManager);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(manager)
-            .BuildServiceProvider();
 
         try
         {
@@ -415,7 +391,6 @@ public class GlobalLootManagerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
@@ -426,9 +401,8 @@ public class GlobalLootManagerTests
         const ulong groupId = 7201ul;
 
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
-        var manager = new GlobalLootManager(groupStateManager);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildHarvestProvider(manager);
+        PlayerManager playerManager = CreatePlayerManager();
+        var manager = new GlobalLootManager(groupStateManager, playerManager);
 
         try
         {
@@ -440,13 +414,14 @@ public class GlobalLootManagerTests
                 map: null,
                 position: Vector3.Zero,
                 slotsRemaining: 0u);
-            PlayerManager.Instance.AddPlayer(looter.Player);
+            playerManager.AddPlayer(looter.Player);
 
             var lootInstance = new LootInstance(
                 ownerUnitId: ownerUnitId,
                 looterIds: new Dictionary<ulong, uint> { [looter.Player.CharacterId] = looter.Player.Guid },
                 looterType: LooterType.Player,
-                lootEntityType: LootEntityType.Creature);
+                lootEntityType: LootEntityType.Creature,
+                playerManager: playerManager);
             lootInstance.AddLootItem((uint)CurrencyType.Credits, LootItemType.Cash, 12u);
             AddLootInstance(manager, lootInstance);
 
@@ -462,8 +437,7 @@ public class GlobalLootManagerTests
         }
         finally
         {
-            RemovePlayers(groupId);
-            LegacyServiceProvider.Provider = previousProvider;
+            RemovePlayers(playerManager, groupId);
         }
     }
 
@@ -472,10 +446,6 @@ public class GlobalLootManagerTests
     {
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
         var manager = new GlobalLootManager(groupStateManager);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(manager)
-            .BuildServiceProvider();
 
         try
         {
@@ -499,7 +469,6 @@ public class GlobalLootManagerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
@@ -527,10 +496,6 @@ public class GlobalLootManagerTests
 
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
         var manager = new GlobalLootManager(groupStateManager);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(manager)
-            .BuildServiceProvider();
 
         try
         {
@@ -559,7 +524,6 @@ public class GlobalLootManagerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
@@ -570,10 +534,6 @@ public class GlobalLootManagerTests
 
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
         var manager = new GlobalLootManager(groupStateManager);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(manager)
-            .BuildServiceProvider();
 
         try
         {
@@ -601,7 +561,6 @@ public class GlobalLootManagerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
     }
 
@@ -611,10 +570,6 @@ public class GlobalLootManagerTests
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
         var manager = new GlobalLootManager(groupStateManager);
         IPlayer player = CreatePlayer(out var currencyProxy, out var achievementProxy, out var sessionProxy);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(manager)
-            .BuildServiceProvider();
 
         try
         {
@@ -627,7 +582,6 @@ public class GlobalLootManagerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
 
         RecordingDispatchProxy<IAccountCurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
@@ -666,10 +620,6 @@ public class GlobalLootManagerTests
             out var characterCurrencyProxy,
             out var achievementProxy,
             out var sessionProxy);
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(manager)
-            .BuildServiceProvider();
 
         try
         {
@@ -685,7 +635,6 @@ public class GlobalLootManagerTests
         }
         finally
         {
-            LegacyServiceProvider.Provider = previousProvider;
         }
 
         RecordingDispatchProxy<IAccountCurrencyManager>.Invocation accountCurrencyCall = Assert.Single(accountCurrencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
@@ -734,17 +683,12 @@ public class GlobalLootManagerTests
     public void CanDeliverGeneratedLoot_WithMissingRewardTable_ReturnsInvalidLootItem(LootItemType type, uint staticId)
     {
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
-        var manager = new GlobalLootManager(groupStateManager);
         IPlayer player = CreatePlayer(out _, out _, out _);
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
             GameTablePath = string.Empty
         }));
-
-        using var providerScope = new LegacyServiceProviderScope(new ServiceCollection()
-            .AddSingleton(manager)
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider());
+        var manager = new GlobalLootManager(groupStateManager, gameTableManager: gameTableManager);
 
         bool result = manager.CanDeliverGeneratedLoot(
             player,
@@ -816,41 +760,11 @@ public class GlobalLootManagerTests
         return player;
     }
 
-    private static IServiceProvider BuildHarvestProvider(GlobalLootManager lootManager, IItemInfo itemInfo = null)
+    private static ItemManager CreateItemManager(IItemInfo itemInfo)
     {
-        ICharacterManager characterManager = RecordingDispatchProxy<ICharacterManager>.Create(out _);
-        var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, characterManager);
-        var realmContext = (RealmContext)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
-        SetAutoProperty(realmContext, nameof(RealmContext.RealmId), RealmId);
-
-        var services = new ServiceCollection()
-            .AddSingleton(lootManager)
-            .AddSingleton(playerManager)
-            .AddSingleton<IPlayerManager>(playerManager)
-            .AddSingleton(realmContext)
-            .AddSingleton<IRealmContext>(realmContext);
-
-        if (itemInfo != null)
-        {
-            var itemManager = new ItemManager();
-            SetPrivateField(itemManager, "item", ImmutableDictionary<uint, IItemInfo>.Empty.Add(StaticItemId, itemInfo));
-
-            var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
-            {
-                GameTablePath = string.Empty
-            }));
-            SetAutoProperty(gameTableManager, nameof(GameTableManager.Item), CreateGameTable(new Item2Entry
-            {
-                Id            = StaticItemId,
-                MaxStackCount = 1u
-            }));
-
-            services
-                .AddSingleton(itemManager)
-                .AddSingleton(gameTableManager);
-        }
-
-        return services.BuildServiceProvider();
+        var itemManager = new ItemManager();
+        SetPrivateField(itemManager, "item", ImmutableDictionary<uint, IItemInfo>.Empty.Add(StaticItemId, itemInfo));
+        return itemManager;
     }
 
     private static GroupLootState CreateHarvestGroup(
@@ -989,10 +903,16 @@ public class GlobalLootManagerTests
         field.SetValue(instance, value);
     }
 
-    private static void RemovePlayers(ulong groupId)
+    private static PlayerManager CreatePlayerManager()
     {
-        foreach (IPlayer player in PlayerManager.Instance.Where(p => p.GroupAssociation == groupId).ToList())
-            PlayerManager.Instance.RemovePlayer(player);
+        ICharacterManager characterManager = RecordingDispatchProxy<ICharacterManager>.Create(out _);
+        return new PlayerManager(NullLogger<PlayerManager>.Instance, characterManager);
+    }
+
+    private static void RemovePlayers(IPlayerManager playerManager, ulong groupId)
+    {
+        foreach (IPlayer player in playerManager.Where(p => p.GroupAssociation == groupId).ToList())
+            playerManager.RemovePlayer(player);
     }
 
     private static void AddLootInstance(GlobalLootManager manager, LootInstance lootInstance)

@@ -12,6 +12,7 @@ namespace NexusForever.Game.Abstract.Housing
     public interface IResidence : IDatabaseCharacter, INetworkBuildable<ServerHousingProperties.Residence>
     {
         ulong Id { get; }
+        ushort RealmId { get; }
         ResidenceType Type { get; }
         ulong? OwnerId { get; }
         ulong? GuildOwnerId { get; set; }

@@ -3,10 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
@@ -18,12 +16,10 @@ using NexusForever.Network;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Loot;
 using NexusForever.Network.World.Message.Model.Shared;
-using NexusForever.Shared;
 using NetworkLootItem = NexusForever.Network.World.Message.Model.Loot.LootItem;
 
 namespace NexusForever.Game.Tests.Loot;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class LootPacketShapeTests
 {
     [Fact]
@@ -331,8 +327,6 @@ public class LootPacketShapeTests
     [Fact]
     public void SendLootNotify_IncludeGrantedStaticItemPreservesItemQualityForDropPresentation()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.Item), CreateGameTable(new Item2Entry
         {
@@ -340,64 +334,51 @@ public class LootPacketShapeTests
             ItemQualityId = 5u
         }));
 
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(new GlobalLootManager(groupStateManager))
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
 
-        try
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+        playerProxy.SetProperty("Guid", 4242u);
+
+        var lootInstance = new LootInstance(
+            ownerUnitId: 99u,
+            parentUnitId: 123u,
+            looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
+            looterType: LooterType.Player,
+            lootEntityType: LootEntityType.Creature,
+            gameTableManager: gameTableManager)
         {
-            IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
-            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
+            Explosion = true
+        };
 
-            playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
-            playerProxy.SetProperty(nameof(IPlayer.Session), session);
-            playerProxy.SetProperty("Guid", 4242u);
+        LootInstanceItem delivered = lootInstance.AddLootItem(87654u, LootItemType.StaticItem, 1u);
+        delivered.MarkDeliveredWithoutWinner();
 
-            var lootInstance = new LootInstance(
-                ownerUnitId: 99u,
-                parentUnitId: 123u,
-                looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
-                looterType: LooterType.Player,
-                lootEntityType: LootEntityType.Creature)
-            {
-                Explosion = true
-            };
+        lootInstance.SendLootNotify(player, includeGrantedItems: true);
 
-            LootInstanceItem delivered = lootInstance.AddLootItem(87654u, LootItemType.StaticItem, 1u);
-            delivered.MarkDeliveredWithoutWinner();
+        RecordingDispatchProxy<IGameSession>.Invocation call = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        var notify = Assert.IsType<ServerLootNotify>(call.Arguments[0]);
 
-            lootInstance.SendLootNotify(player, includeGrantedItems: true);
+        Assert.Equal(99u, notify.OwnerUnitId);
+        Assert.Equal(123u, notify.ParentUnitId);
+        Assert.True(notify.Explosion);
 
-            RecordingDispatchProxy<IGameSession>.Invocation call = Assert.Single(sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-            var notify = Assert.IsType<ServerLootNotify>(call.Arguments[0]);
-
-            Assert.Equal(99u, notify.OwnerUnitId);
-            Assert.Equal(123u, notify.ParentUnitId);
-            Assert.True(notify.Explosion);
-
-            NetworkLootItem granted = Assert.Single(notify.LootItems);
-            Assert.Equal(0u, granted.LootUnitId);
-            Assert.Equal(LootItemType.StaticItem, granted.Type);
-            Assert.Equal(87654u, granted.ItemId);
-            Assert.Equal(1u, granted.Amount);
-            Assert.Equal(5u, granted.ItemQuality2Id);
-            Assert.True(granted.CanLoot);
-            Assert.True(granted.Granted);
-            Assert.True(granted.Explosion);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        NetworkLootItem granted = Assert.Single(notify.LootItems);
+        Assert.Equal(0u, granted.LootUnitId);
+        Assert.Equal(LootItemType.StaticItem, granted.Type);
+        Assert.Equal(87654u, granted.ItemId);
+        Assert.Equal(1u, granted.Amount);
+        Assert.Equal(5u, granted.ItemQuality2Id);
+        Assert.True(granted.CanLoot);
+        Assert.True(granted.Granted);
+        Assert.True(granted.Explosion);
     }
 
     [Fact]
     public void SendLootNotify_IncludeGrantedTableBackedNonItemRewardsPreservesPresentationQuality()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.Item), CreateGameTable(new Item2Entry
         {
@@ -415,135 +396,111 @@ public class LootPacketShapeTests
             Item2Id = 2222u
         }));
 
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(new GlobalLootManager(groupStateManager))
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
 
-        try
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+        playerProxy.SetProperty("Guid", 4242u);
+
+        var lootInstance = new LootInstance(
+            ownerUnitId: 99u,
+            parentUnitId: 123u,
+            looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
+            looterType: LooterType.Player,
+            lootEntityType: LootEntityType.Creature,
+            gameTableManager: gameTableManager)
         {
-            IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
-            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
+            Explosion = true
+        };
 
-            playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
-            playerProxy.SetProperty(nameof(IPlayer.Session), session);
-            playerProxy.SetProperty("Guid", 4242u);
+        LootInstanceItem virtualItem = lootInstance.AddLootItem(3333u, LootItemType.VirtualItem, 1u);
+        virtualItem.MarkDeliveredWithoutWinner();
+        LootInstanceItem accountItem = lootInstance.AddLootItem(4444u, LootItemType.AccountItem, 1u);
+        accountItem.MarkDeliveredWithoutWinner();
 
-            var lootInstance = new LootInstance(
-                ownerUnitId: 99u,
-                parentUnitId: 123u,
-                looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
-                looterType: LooterType.Player,
-                lootEntityType: LootEntityType.Creature)
-            {
-                Explosion = true
-            };
+        lootInstance.SendLootNotify(player, includeGrantedItems: true);
 
-            LootInstanceItem virtualItem = lootInstance.AddLootItem(3333u, LootItemType.VirtualItem, 1u);
-            virtualItem.MarkDeliveredWithoutWinner();
-            LootInstanceItem accountItem = lootInstance.AddLootItem(4444u, LootItemType.AccountItem, 1u);
-            accountItem.MarkDeliveredWithoutWinner();
+        RecordingDispatchProxy<IGameSession>.Invocation call = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        var notify = Assert.IsType<ServerLootNotify>(call.Arguments[0]);
 
-            lootInstance.SendLootNotify(player, includeGrantedItems: true);
+        Assert.Equal(99u, notify.OwnerUnitId);
+        Assert.Equal(123u, notify.ParentUnitId);
+        Assert.True(notify.Explosion);
+        Assert.Equal(2, notify.LootItems.Count);
 
-            RecordingDispatchProxy<IGameSession>.Invocation call = Assert.Single(sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-            var notify = Assert.IsType<ServerLootNotify>(call.Arguments[0]);
+        NetworkLootItem virtualLoot = Assert.Single(notify.LootItems, item => item.Type == LootItemType.VirtualItem);
+        Assert.Equal(3333u, virtualLoot.ItemId);
+        Assert.Equal(4u, virtualLoot.ItemQuality2Id);
+        Assert.True(virtualLoot.Granted);
+        Assert.True(virtualLoot.Explosion);
 
-            Assert.Equal(99u, notify.OwnerUnitId);
-            Assert.Equal(123u, notify.ParentUnitId);
-            Assert.True(notify.Explosion);
-            Assert.Equal(2, notify.LootItems.Count);
-
-            NetworkLootItem virtualLoot = Assert.Single(notify.LootItems, item => item.Type == LootItemType.VirtualItem);
-            Assert.Equal(3333u, virtualLoot.ItemId);
-            Assert.Equal(4u, virtualLoot.ItemQuality2Id);
-            Assert.True(virtualLoot.Granted);
-            Assert.True(virtualLoot.Explosion);
-
-            NetworkLootItem accountLoot = Assert.Single(notify.LootItems, item => item.Type == LootItemType.AccountItem);
-            Assert.Equal(4444u, accountLoot.ItemId);
-            Assert.Equal(6u, accountLoot.ItemQuality2Id);
-            Assert.True(accountLoot.Granted);
-            Assert.True(accountLoot.Explosion);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        NetworkLootItem accountLoot = Assert.Single(notify.LootItems, item => item.Type == LootItemType.AccountItem);
+        Assert.Equal(4444u, accountLoot.ItemId);
+        Assert.Equal(6u, accountLoot.ItemQuality2Id);
+        Assert.True(accountLoot.Granted);
+        Assert.True(accountLoot.Explosion);
     }
 
     [Fact]
     public void SendLootNotify_IncludeGrantedItemsPreservesCurrentDeliveryState()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(new GlobalLootManager(groupStateManager))
-            .BuildServiceProvider();
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
+        ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out _);
 
-        try
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
+        playerProxy.SetProperty(nameof(IPlayer.CurrencyManager), currencyManager);
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+        playerProxy.SetProperty("Guid", 4242u);
+
+        var lootInstance = new LootInstance(
+            ownerUnitId: 99u,
+            parentUnitId: 123u,
+            looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
+            looterType: LooterType.Player,
+            lootEntityType: LootEntityType.Creature)
         {
-            IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
-            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
-            ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out _);
+            Explosion = true
+        };
 
-            playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
-            playerProxy.SetProperty(nameof(IPlayer.CurrencyManager), currencyManager);
-            playerProxy.SetProperty(nameof(IPlayer.Session), session);
-            playerProxy.SetProperty("Guid", 4242u);
+        LootInstanceItem delivered = lootInstance.AddLootItem((uint)CurrencyType.Credits, LootItemType.Cash, 7u);
+        delivered.SetWinner(player);
+        Assert.True(delivered.DeliverItem(player, sendAsGrant: false));
 
-            var lootInstance = new LootInstance(
-                ownerUnitId: 99u,
-                parentUnitId: 123u,
-                looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
-                looterType: LooterType.Player,
-                lootEntityType: LootEntityType.Creature)
-            {
-                Explosion = true
-            };
+        LootInstanceItem pending = lootInstance.AddLootItem((uint)CurrencyType.Credits, LootItemType.Cash, 3u);
 
-            LootInstanceItem delivered = lootInstance.AddLootItem((uint)CurrencyType.Credits, LootItemType.Cash, 7u);
-            delivered.SetWinner(player);
-            Assert.True(delivered.DeliverItem(player, sendAsGrant: false));
+        int beforeCount = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count;
+        lootInstance.SendLootNotify(player, includeGrantedItems: true);
 
-            LootInstanceItem pending = lootInstance.AddLootItem((uint)CurrencyType.Credits, LootItemType.Cash, 3u);
+        RecordingDispatchProxy<IGameSession>.Invocation call = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Skip(beforeCount));
+        var notify = Assert.IsType<ServerLootNotify>(call.Arguments[0]);
 
-            int beforeCount = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count;
-            lootInstance.SendLootNotify(player, includeGrantedItems: true);
+        Assert.Equal(99u, notify.OwnerUnitId);
+        Assert.Equal(123u, notify.ParentUnitId);
+        Assert.True(notify.Explosion);
+        Assert.Equal(2, notify.LootItems.Count);
 
-            RecordingDispatchProxy<IGameSession>.Invocation call = Assert.Single(sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .Skip(beforeCount));
-            var notify = Assert.IsType<ServerLootNotify>(call.Arguments[0]);
+        NetworkLootItem granted = Assert.Single(notify.LootItems, item => item.Granted);
+        Assert.Equal(0u, granted.LootUnitId);
+        Assert.Equal(LootItemType.Cash, granted.Type);
+        Assert.Equal((uint)CurrencyType.Credits, granted.ItemId);
+        Assert.Equal(7u, granted.Amount);
+        Assert.True(granted.CanLoot);
+        Assert.True(granted.Explosion);
 
-            Assert.Equal(99u, notify.OwnerUnitId);
-            Assert.Equal(123u, notify.ParentUnitId);
-            Assert.True(notify.Explosion);
-            Assert.Equal(2, notify.LootItems.Count);
-
-            NetworkLootItem granted = Assert.Single(notify.LootItems, item => item.Granted);
-            Assert.Equal(0u, granted.LootUnitId);
-            Assert.Equal(LootItemType.Cash, granted.Type);
-            Assert.Equal((uint)CurrencyType.Credits, granted.ItemId);
-            Assert.Equal(7u, granted.Amount);
-            Assert.True(granted.CanLoot);
-            Assert.True(granted.Explosion);
-
-            NetworkLootItem active = Assert.Single(notify.LootItems, item => !item.Granted);
-            Assert.Equal(pending.Id, active.LootUnitId);
-            Assert.Equal(LootItemType.Cash, active.Type);
-            Assert.Equal((uint)CurrencyType.Credits, active.ItemId);
-            Assert.Equal(3u, active.Amount);
-            Assert.True(active.CanLoot);
-            Assert.False(active.RequiresRoll);
-            Assert.False(active.OnlyMasterLootable);
-            Assert.True(active.Explosion);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        NetworkLootItem active = Assert.Single(notify.LootItems, item => !item.Granted);
+        Assert.Equal(pending.Id, active.LootUnitId);
+        Assert.Equal(LootItemType.Cash, active.Type);
+        Assert.Equal((uint)CurrencyType.Credits, active.ItemId);
+        Assert.Equal(3u, active.Amount);
+        Assert.True(active.CanLoot);
+        Assert.False(active.RequiresRoll);
+        Assert.False(active.OnlyMasterLootable);
+        Assert.True(active.Explosion);
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

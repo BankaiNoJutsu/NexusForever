@@ -13,17 +13,17 @@ namespace NexusForever.Game.Map
         private const uint DatacubeTypeEnumDatacube = 0u;
         private const uint DatacubeTypeEnumTale = 1u;
 
-        public static ZoneCompletionProgress GetProgress(IPlayer player, uint mapZoneId)
+        public static ZoneCompletionProgress GetProgress(IPlayer player, uint mapZoneId, IGameTableManager gameTableManager)
         {
-            HashSet<uint> worldZoneIds = GetWorldZoneIdsForMapZone(mapZoneId);
+            HashSet<uint> worldZoneIds = GetWorldZoneIdsForMapZone(mapZoneId, gameTableManager);
             if (worldZoneIds.Count == 0)
                 return default;
 
-            HashSet<uint> episodeQuestIds = GetEpisodeQuestIds();
+            HashSet<uint> episodeQuestIds = GetEpisodeQuestIds(gameTableManager);
 
             uint episodeQuests = 0u;
             uint taskQuests = 0u;
-            GameTable<Quest2Entry> questTable = GameTableManager.Instance.Quest2;
+            GameTable<Quest2Entry> questTable = gameTableManager?.Quest2;
             if (questTable != null)
             {
                 foreach (Quest2Entry quest in questTable.Entries)
@@ -44,18 +44,19 @@ namespace NexusForever.Game.Map
                 }
             }
 
-            return CountDatacubesChallengesAndJournals(player, worldZoneIds, episodeQuests, taskQuests);
+            return CountDatacubesChallengesAndJournals(player, worldZoneIds, episodeQuests, taskQuests, gameTableManager);
         }
 
         private static ZoneCompletionProgress CountDatacubesChallengesAndJournals(
             IPlayer player,
             HashSet<uint> worldZoneIds,
             uint episodeQuests,
-            uint taskQuests)
+            uint taskQuests,
+            IGameTableManager gameTableManager)
         {
             uint datacubes = 0u;
             uint tales = 0u;
-            GameTable<DatacubeEntry> datacubeTable = GameTableManager.Instance.Datacube;
+            GameTable<DatacubeEntry> datacubeTable = gameTableManager?.Datacube;
             if (datacubeTable != null)
             {
                 foreach (DatacubeEntry entry in datacubeTable.Entries)
@@ -79,7 +80,7 @@ namespace NexusForever.Game.Map
             }
 
             uint journals = 0u;
-            GameTable<DatacubeVolumeEntry> volumeTable = GameTableManager.Instance.DatacubeVolume;
+            GameTable<DatacubeVolumeEntry> volumeTable = gameTableManager?.DatacubeVolume;
             if (volumeTable != null && datacubeTable != null)
             {
                 foreach (DatacubeVolumeEntry volume in volumeTable.Entries)
@@ -127,16 +128,16 @@ namespace NexusForever.Game.Map
             };
         }
 
-        private static HashSet<uint> GetEpisodeQuestIds()
+        private static HashSet<uint> GetEpisodeQuestIds(IGameTableManager gameTableManager)
         {
-            return GameTableManager.Instance.EpisodeQuest?.Entries
+            return gameTableManager?.EpisodeQuest?.Entries
                 .Select(e => e.QuestId)
                 .ToHashSet() ?? new HashSet<uint>();
         }
 
-        private static HashSet<uint> GetWorldZoneIdsForMapZone(uint mapZoneId)
+        private static HashSet<uint> GetWorldZoneIdsForMapZone(uint mapZoneId, IGameTableManager gameTableManager)
         {
-            GameTable<MapZoneEntry> mapZoneTable = GameTableManager.Instance.MapZone;
+            GameTable<MapZoneEntry> mapZoneTable = gameTableManager?.MapZone;
             MapZoneEntry mapZone = mapZoneTable?.Entries?
                 .FirstOrDefault(m => m.Id == mapZoneId);
             if (mapZone == null)
@@ -145,7 +146,7 @@ namespace NexusForever.Game.Map
             var worldZoneIds = new HashSet<uint>();
             if (mapZone.WorldZoneId != 0u)
             {
-                GameTable<WorldZoneEntry> worldZoneTable = GameTableManager.Instance.WorldZone;
+                GameTable<WorldZoneEntry> worldZoneTable = gameTableManager?.WorldZone;
                 if (worldZoneTable != null)
                 {
                     foreach (WorldZoneEntry zone in worldZoneTable.Entries)

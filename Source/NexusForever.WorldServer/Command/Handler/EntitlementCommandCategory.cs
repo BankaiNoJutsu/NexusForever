@@ -14,6 +14,13 @@ namespace NexusForever.WorldServer.Command.Handler
     [CommandTarget(typeof(IPlayer))]
     public class EntitlementCommandCategory : CommandCategory
     {
+        private readonly IGameTableManager gameTableManager;
+
+        public EntitlementCommandCategory(IGameTableManager gameTableManager)
+        {
+            this.gameTableManager = gameTableManager;
+        }
+
         [Command(Permission.EntitlementAccount, "A collection of commands to manage account entitlements", "account")]
         public class EntitlementCommandAccountCategory : CommandCategory
         {
@@ -47,7 +54,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 [Parameter("Value to modify the entitlement.")]
                 int value)
         {
-            EntitlementEntry entry = GameTableManager.Instance.Entitlement.GetEntry((ulong)entitlementType);
+            EntitlementEntry entry = gameTableManager.Entitlement.GetEntry((ulong)entitlementType);
             if (entry == null)
             {
                 context.SendMessage($"{entitlementType} isn't a valid entitlement id!");

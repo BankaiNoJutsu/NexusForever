@@ -1,15 +1,12 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Guild;
 using NexusForever.Game.Static.Guild;
-using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Tests.Guild;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class GuildStandardTests
 {
     [Theory]
@@ -17,16 +14,17 @@ public class GuildStandardTests
     [InlineData(true)]
     public void Constructor_WithMissingGuildStandardPartStaticDataThrowsInvalidPart(bool includeEmptyTable)
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
+        GameTableManager gameTableManager = BuildGameTableManager(
             includeEmptyTable ? CreateGameTable<GuildStandardPartEntry>() : null,
-            null));
+            null);
 
         Assert.Throws<ArgumentException>(() => new GuildStandard.GuildStandardPart(
             GuildStandardPartType.Background,
             10,
             0,
             0,
-            0));
+            0,
+            gameTableManager));
     }
 
     [Theory]
@@ -34,20 +32,21 @@ public class GuildStandardTests
     [InlineData(true)]
     public void Validate_WithMissingDyeColorRampStaticDataRejectsNonZeroDye(bool includeEmptyTable)
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
+        GameTableManager gameTableManager = BuildGameTableManager(
             CreateGameTable(new GuildStandardPartEntry
             {
                 Id = 10u,
                 GuildStandardPartTypeEnum = (uint)GuildStandardPartType.Background
             }),
-            includeEmptyTable ? CreateGameTable<DyeColorRampEntry>() : null));
+            includeEmptyTable ? CreateGameTable<DyeColorRampEntry>() : null);
 
         var part = new GuildStandard.GuildStandardPart(
             GuildStandardPartType.Background,
             10,
             1,
             0,
-            0);
+            0,
+            gameTableManager);
 
         Assert.False(part.Validate());
     }
@@ -55,7 +54,7 @@ public class GuildStandardTests
     [Fact]
     public void Validate_WithKnownStaticDataAcceptsMatchingStandardPartAndDye()
     {
-        using var scope = new LegacyServiceProviderScope(BuildProvider(
+        GameTableManager gameTableManager = BuildGameTableManager(
             CreateGameTable(new GuildStandardPartEntry
             {
                 Id = 10u,
@@ -64,21 +63,22 @@ public class GuildStandardTests
             CreateGameTable(new DyeColorRampEntry
             {
                 Id = 1u
-            })));
+            }));
 
         var part = new GuildStandard.GuildStandardPart(
             GuildStandardPartType.Background,
             10,
             1,
             0,
-            0);
+            0,
+            gameTableManager);
 
         Assert.True(part.Validate());
         Assert.Equal(10u, part.GuildStandardPartEntry.Id);
         Assert.Equal<ushort>(1, part.DyeColorRampId1);
     }
 
-    private static IServiceProvider BuildProvider(
+    private static GameTableManager BuildGameTableManager(
         GameTable<GuildStandardPartEntry> guildStandardPartTable,
         GameTable<DyeColorRampEntry> dyeColorRampTable)
     {
@@ -88,9 +88,7 @@ public class GuildStandardTests
         if (dyeColorRampTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.DyeColorRamp), dyeColorRampTable);
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

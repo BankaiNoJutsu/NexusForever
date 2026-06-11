@@ -17,8 +17,8 @@ namespace NexusForever.Game.Guild
                 if (member.Rank.Index > 0)
                     return new GuildResultInfo(GuildResult.RankLacksSufficientPermissions, Identity);
 
-                if (!TextFilterManager.Instance.IsTextValid(operation.TextValue)
-                    || !TextFilterManager.Instance.IsTextValid(operation.TextValue, UserText.GuildName)) 
+                if (!textFilterManager.IsTextValid(operation.TextValue)
+                    || !textFilterManager.IsTextValid(operation.TextValue, UserText.GuildName))
                     return new GuildResultInfo(GuildResult.InvalidGuildInfo, Identity);
 
                 return new GuildResultInfo(GuildResult.Success, Identity);
@@ -47,8 +47,8 @@ namespace NexusForever.Game.Guild
                 if (!member.Rank.HasPermission(GuildRankPermission.MessageOfTheDay))
                     return new GuildResultInfo(GuildResult.RankLacksSufficientPermissions, Identity);
 
-                if (!TextFilterManager.Instance.IsTextValid(operation.TextValue)
-                    || !TextFilterManager.Instance.IsTextValid(operation.TextValue, UserText.GuildMessageOfTheDay))
+                if (!textFilterManager.IsTextValid(operation.TextValue)
+                    || !textFilterManager.IsTextValid(operation.TextValue, UserText.GuildMessageOfTheDay))
                     return new GuildResultInfo(GuildResult.InvalidMessageOfTheDay, Identity);
 
                 return new GuildResultInfo(GuildResult.Success, Identity);

@@ -16,14 +16,16 @@ namespace NexusForever.Game.Account.Costume
     public class AccountCostumeManager : IAccountCostumeManager
     {
         private readonly IAccount account;
+        private readonly IGameTableManager gameTableManager;
         private readonly Dictionary<uint, ICostumeUnlock> costumeUnlocks = new();
 
         /// <summary>
         /// Create a new <see cref="IAccountCostumeManager"/> from existing <see cref="AccountModel"/> database model.
         /// </summary>
-        public AccountCostumeManager(IAccount account, AccountModel accountModel)
+        public AccountCostumeManager(IAccount account, AccountModel accountModel, IGameTableManager gameTableManager)
         {
-            this.account = account;
+            this.account          = account;
+            this.gameTableManager = gameTableManager;
 
             foreach (AccountCostumeUnlockModel costumeUnlockModel in accountModel.AccountCostumeUnlock)
                 costumeUnlocks.Add(costumeUnlockModel.ItemId, new CostumeUnlock(costumeUnlockModel));
@@ -110,7 +112,7 @@ namespace NexusForever.Game.Account.Costume
         private uint GetMaxUnlockItemCount()
         {
             // client defaults to 1000 if entry doesn't exist
-            GameFormulaEntry entry = GameTableManager.Instance.GameFormula?.GetEntry(1203);
+            GameFormulaEntry entry = gameTableManager.GameFormula?.GetEntry(1203);
             if (entry == null)
                 return 1000u;
 
@@ -122,7 +124,7 @@ namespace NexusForever.Game.Account.Costume
         /// </summary>
         public void ForgetItem(uint itemId)
         {
-            Item2Entry itemEntry = GameTableManager.Instance.Item?.GetEntry(itemId);
+            Item2Entry itemEntry = gameTableManager.Item?.GetEntry(itemId);
             if (itemEntry == null)
             {
                 SendCostumeItemUnlock(CostumeUnlockResult.InvalidItem);

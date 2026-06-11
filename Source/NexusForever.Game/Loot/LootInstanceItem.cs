@@ -1,4 +1,6 @@
+using System.Threading;
 using NexusForever.Game;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Achievement;
@@ -20,6 +22,17 @@ using GameIdentity = NexusForever.Game.Abstract.Identity;
 
 namespace NexusForever.Game.Loot
 {
+    internal static class LootUnitIdAllocator
+    {
+        private static int nextLootId = int.MaxValue;
+
+        public static uint Next()
+        {
+            uint next = unchecked((uint)Interlocked.Increment(ref nextLootId));
+            return next == 0u ? unchecked((uint)Interlocked.Increment(ref nextLootId)) : next;
+        }
+    }
+
     public class LootInstanceItem
     {
         private class LootRollRecord
@@ -53,15 +66,24 @@ namespace NexusForever.Game.Loot
         private readonly Dictionary<ulong, GameIdentity> masterLootCandidates = [];
         private readonly Dictionary<ulong, LootRollRecord> rollRecords = [];
         private readonly HashSet<ulong> bindPickupConfirmations = [];
+        private readonly IItemManager itemManager;
+        private readonly IGameTableManager gameTableManager;
         private UpdateTimer rollTimer;
         private bool rollFinalised;
 
-        public LootInstanceItem(uint staticId, LootItemType type, uint count)
+        public LootInstanceItem(
+            uint staticId,
+            LootItemType type,
+            uint count,
+            IItemManager itemManager = null,
+            IGameTableManager gameTableManager = null)
         {
-            Id       = GlobalLootManager.Instance.NextLootId;
+            Id       = LootUnitIdAllocator.Next();
             StaticId = staticId;
             Type     = type;
             Amount   = count;
+            this.itemManager = itemManager;
+            this.gameTableManager = gameTableManager;
         }
 
         public bool TryAddToAmount(uint amount)
@@ -178,7 +200,7 @@ namespace NexusForever.Game.Loot
             if (Type != LootItemType.StaticItem)
                 return false;
 
-            Item2Entry entry = ItemManager.Instance.GetItemInfo(StaticId)?.Entry;
+            Item2Entry entry = itemManager?.GetItemInfo(StaticId)?.Entry;
             return entry != null && (entry.BindFlags & ItemBindFlags.BindOnPickup) != 0;
         }
 
@@ -425,7 +447,7 @@ namespace NexusForever.Game.Loot
                     player.CurrencyManager.CurrencyAddAmount((CurrencyType)StaticId, Amount, isLoot: true);
                     break;
                 case LootItemType.StaticItem:
-                    if (!CanDeliverStaticItem(player, StaticId, Amount, out bool inventoryFull))
+                    if (!CanDeliverStaticItem(player, StaticId, Amount, itemManager, out bool inventoryFull))
                     {
                         if (inventoryFull)
                         {
@@ -502,6 +524,16 @@ namespace NexusForever.Game.Loot
 
         public static bool CanDeliverStaticItem(IPlayer player, uint staticId, uint amount, out bool inventoryFull)
         {
+            return CanDeliverStaticItem(player, staticId, amount, null, out inventoryFull);
+        }
+
+        public static bool CanDeliverStaticItem(
+            IPlayer player,
+            uint staticId,
+            uint amount,
+            IItemManager itemManager,
+            out bool inventoryFull)
+        {
             inventoryFull = false;
             if (player?.Inventory == null)
                 return false;
@@ -513,7 +545,7 @@ namespace NexusForever.Game.Loot
                 return false;
             }
 
-            IItemInfo itemInfo = ItemManager.Instance.GetItemInfo(staticId);
+            IItemInfo itemInfo = itemManager?.GetItemInfo(staticId);
             if (itemInfo == null)
                 return false;
 
@@ -610,16 +642,16 @@ namespace NexusForever.Game.Loot
             switch (Type)
             {
                 case LootItemType.StaticItem:
-                    return GameTableManager.Instance.Item?.GetEntry(StaticId)?.ItemQualityId ?? 0u;
+                    return gameTableManager?.Item?.GetEntry(StaticId)?.ItemQualityId ?? 0u;
                 case LootItemType.VirtualItem:
-                    return GameTableManager.Instance.VirtualItem?.GetEntry(StaticId)?.ItemQualityId ?? 0u;
+                    return gameTableManager?.VirtualItem?.GetEntry(StaticId)?.ItemQualityId ?? 0u;
                 case LootItemType.AccountItem:
                 {
-                    AccountItemEntry accountItemEntry = GameTableManager.Instance.AccountItem?.GetEntry(StaticId);
+                    AccountItemEntry accountItemEntry = gameTableManager?.AccountItem?.GetEntry(StaticId);
                     if (accountItemEntry == null || accountItemEntry.Item2Id == 0u)
                         return 0u;
 
-                    return GameTableManager.Instance.Item?.GetEntry(accountItemEntry.Item2Id)?.ItemQualityId ?? 0u;
+                    return gameTableManager?.Item?.GetEntry(accountItemEntry.Item2Id)?.ItemQualityId ?? 0u;
                 }
                 default:
                     return 0u;
@@ -632,7 +664,7 @@ namespace NexusForever.Game.Loot
             if (itemQualityId == 0u)
                 return 0u;
 
-            return GameTableManager.Instance.ItemQuality?.GetEntry(itemQualityId)?.VisualEffectIdLoot ?? 0u;
+            return gameTableManager?.ItemQuality?.GetEntry(itemQualityId)?.VisualEffectIdLoot ?? 0u;
         }
 
     }

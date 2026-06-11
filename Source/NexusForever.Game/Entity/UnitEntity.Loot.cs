@@ -1,5 +1,5 @@
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Loot;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Loot;
@@ -14,10 +14,9 @@ namespace NexusForever.Game.Entity
             GetGlobalLootManager()?.RemoveLootForOwner(Guid);
         }
 
-        private GlobalLootManager GetGlobalLootManager()
+        private IGlobalLootManager GetGlobalLootManager()
         {
-            return globalLootManagerResolver?.Invoke()
-                ?? LegacyServiceProvider.Provider?.GetService<GlobalLootManager>();
+            return globalLootManagerResolver?.Invoke();
         }
 
         private void SendLootRemoveForOwnerToVisiblePlayers()

@@ -1,12 +1,11 @@
 using System.Numerics;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement.Force;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Spell;
-using NexusForever.Game.Achievement;
 using NexusForever.Game.Combat;
 using NexusForever.Game.Combat.CrowdControl;
 using NexusForever.Game.Entity;
@@ -68,20 +67,51 @@ namespace NexusForever.Game.Spell
             if (damageCalculator != null)
                 return damageCalculator;
 
-            IFactory<IDamageCalculator> factory = LegacyServiceProvider.Provider.GetRequiredService<IFactory<IDamageCalculator>>();
-            return factory.Resolve();
+            throw new InvalidOperationException("Spell effect dependency resolver has not been initialised.");
         }
 
         private static IEntityFactory GetEntityFactory()
         {
-            return dependencyResolver?.GetEntityFactory()
-                ?? LegacyServiceProvider.Provider.GetService<IEntityFactory>();
+            return dependencyResolver?.GetEntityFactory();
         }
 
         private static IForcedMovementGenerator GetForcedMovementGenerator()
         {
-            return dependencyResolver?.GetForcedMovementGenerator()
-                ?? LegacyServiceProvider.Provider?.GetService<IForcedMovementGenerator>();
+            return dependencyResolver?.GetForcedMovementGenerator();
+        }
+
+        private static IAssetManager GetAssetManager()
+        {
+            return dependencyResolver?.GetAssetManager();
+        }
+
+        private static IGlobalAchievementManager GetGlobalAchievementManager()
+        {
+            return dependencyResolver?.GetGlobalAchievementManager();
+        }
+
+        private static IGlobalResidenceManager GetGlobalResidenceManager()
+        {
+            return dependencyResolver?.GetGlobalResidenceManager()
+                ?? throw new InvalidOperationException("Spell effect dependency resolver has not been initialised.");
+        }
+
+        private static IMapLockManager GetMapLockManager()
+        {
+            return dependencyResolver?.GetMapLockManager()
+                ?? throw new InvalidOperationException("Spell effect dependency resolver has not been initialised.");
+        }
+
+        private static IGlobalSpellManager GetGlobalSpellManager()
+        {
+            return dependencyResolver?.GetGlobalSpellManager()
+                ?? throw new InvalidOperationException("Spell effect dependency resolver has not been initialised.");
+        }
+
+        private static IGameTableManager GetGameTableManager()
+        {
+            return dependencyResolver?.GetGameTableManager()
+                ?? throw new InvalidOperationException("Spell effect dependency resolver has not been initialised.");
         }
 
         [SpellEffectHandler(SpellEffectType.VitalModifier)]
@@ -366,7 +396,7 @@ namespace NexusForever.Game.Spell
             if (parameters == null || parameters.All(p => p.Type == SpellEffectParameterType.None))
                 return false;
 
-            GameFormulaEntry formulaEntry = GameTableManager.Instance.GameFormula.GetEntry(1266);
+            GameFormulaEntry formulaEntry = GetGameTableManager().GameFormula.GetEntry(1266);
             foreach (SpellEffectParameter parameter in parameters.Where(p => p.Type != SpellEffectParameterType.None))
             {
                 float intermediateValue = parameter.Type switch
@@ -422,7 +452,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (GameTableManager.Instance.Creature2.GetEntry(summonCreature.CreatureId) == null)
+            if (GetGameTableManager().Creature2.GetEntry(summonCreature.CreatureId) == null)
             {
                 SpellEffectDiagnostics.TraceSummonCreature(spell, target, summonCreature, position, false, 0u, "unknown-creature-id");
                 return;
@@ -478,7 +508,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            Creature2Entry creatureEntry = GameTableManager.Instance.Creature2.GetEntry(summonVehicle.CreatureId);
+            Creature2Entry creatureEntry = GetGameTableManager().Creature2.GetEntry(summonVehicle.CreatureId);
             if (creatureEntry == null)
             {
                 SpellEffectDiagnostics.TraceSummonVehicle(spell, target, summonVehicle, position, false, false, 0u, "unknown-creature-id");
@@ -488,7 +518,7 @@ namespace NexusForever.Game.Spell
             uint unitVehicleId = summonVehicle.UnitVehicleId != 0u
                 ? summonVehicle.UnitVehicleId
                 : creatureEntry.UnitVehicleId;
-            if (unitVehicleId == 0u || GameTableManager.Instance.UnitVehicle.GetEntry(unitVehicleId) == null)
+            if (unitVehicleId == 0u || GetGameTableManager().UnitVehicle.GetEntry(unitVehicleId) == null)
             {
                 SpellEffectDiagnostics.TraceSummonVehicle(spell, target, summonVehicle, position, false, false, 0u, "unknown-unit-vehicle");
                 return;
@@ -557,9 +587,9 @@ namespace NexusForever.Game.Spell
             var map = target.Map ?? spell.Caster.Map;
             Vector3 position = target.Map != null ? target.Position : spell.Caster.Position;
 
-            bool creatureExists = GameTableManager.Instance.Creature2.GetEntry(summonTrap.CreatureId) != null;
+            bool creatureExists = GetGameTableManager().Creature2.GetEntry(summonTrap.CreatureId) != null;
             bool triggerSpellExists = summonTrap.TriggerSpell4Id == 0u
-                || GameTableManager.Instance.Spell4.GetEntry(summonTrap.TriggerSpell4Id) != null;
+                || GetGameTableManager().Spell4.GetEntry(summonTrap.TriggerSpell4Id) != null;
             SummonTrapEvidenceBoundarySnapshot boundary = SummonTrapEvidenceBoundary.Describe(
                 summonTrap.CreatureId,
                 summonTrap.TriggerSpell4Id,
@@ -1300,7 +1330,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (GameTableManager.Instance.Spell4.GetEntry(backInActionSpell4Id) == null)
+            if (GetGameTableManager().Spell4.GetEntry(backInActionSpell4Id) == null)
             {
                 SpellEffectDiagnostics.TraceSettlerCampfire(spell, target, campfire, backInActionSpell4Id, false, "unknown-back-in-action-spell");
                 return;
@@ -1398,7 +1428,7 @@ namespace NexusForever.Game.Spell
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateEntity, activatedEntity.CreatureId, 1u);
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateEntity2, activatedEntity.CreatureId, 1u);
 
-            IReadOnlyCollection<uint> targetGroupIds = AssetManager.Instance.GetTargetGroupsForCreatureId(activatedEntity.CreatureId);
+            IReadOnlyCollection<uint> targetGroupIds = GetAssetManager()?.GetTargetGroupsForCreatureId(activatedEntity.CreatureId);
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroup, activatedEntity.CreatureId, 1u);
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroupChecklist, activatedEntity.CreatureId, activatedEntity.QuestChecklistIdx);
 
@@ -1539,11 +1569,11 @@ namespace NexusForever.Game.Spell
         [SpellEffectHandler(SpellEffectType.Disguise)]
         public static void HandleEffectDisguise(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
-            Creature2Entry creature2 = GameTableManager.Instance.Creature2.GetEntry(info.Entry.DataBits02);
+            Creature2Entry creature2 = GetGameTableManager().Creature2.GetEntry(info.Entry.DataBits02);
             if (creature2 == null)
                 return;
 
-            Creature2DisplayGroupEntryEntry displayGroupEntry = GameTableManager.Instance.Creature2DisplayGroupEntry.Entries.FirstOrDefault(d => d.Creature2DisplayGroupId == creature2.Creature2DisplayGroupId);
+            Creature2DisplayGroupEntryEntry displayGroupEntry = GetGameTableManager().Creature2DisplayGroupEntry.Entries.FirstOrDefault(d => d.Creature2DisplayGroupId == creature2.Creature2DisplayGroupId);
             if (displayGroupEntry == null)
                 return;
 
@@ -1565,7 +1595,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (GameTableManager.Instance.Creature2.GetEntry(info.Entry.DataBits00) == null)
+            if (GetGameTableManager().Creature2.GetEntry(info.Entry.DataBits00) == null)
             {
                 SpellEffectDiagnostics.TracePlayerCollection(spell, target, "summon-mount", player.Guid, info.Entry.DataBits00, 0u, false, "unknown-creature2");
                 return;
@@ -1679,7 +1709,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            ActionBarShortcutSetEntry actionBarShortcutSetEntry = GameTableManager.Instance.ActionBarShortcutSet.GetEntry(actionBarSet.ActionBarShortcutSetId);
+            ActionBarShortcutSetEntry actionBarShortcutSetEntry = GetGameTableManager().ActionBarShortcutSet.GetEntry(actionBarSet.ActionBarShortcutSetId);
             if (actionBarShortcutSetEntry == null)
             {
                 SpellEffectDiagnostics.TraceActionBarSet(spell, target, actionBarSet, player.Guid, target.Guid, ShortcutSet.FloatingSpellBar, false, "unknown-shortcut-set-id");
@@ -1704,7 +1734,7 @@ namespace NexusForever.Game.Spell
             if (teleport == null || teleport.WorldLocation2Id == 0u)
                 return;
 
-            WorldLocation2Entry locationEntry = GameTableManager.Instance.WorldLocation2.GetEntry(teleport.WorldLocation2Id);
+            WorldLocation2Entry locationEntry = GetGameTableManager().WorldLocation2.GetEntry(teleport.WorldLocation2Id);
             if (locationEntry == null)
                 return;
 
@@ -1744,8 +1774,9 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            IResidence residence = GlobalResidenceManager.Instance.GetResidenceByOwner(player.Name)
-                ?? GlobalResidenceManager.Instance.CreateResidence(player);
+            IGlobalResidenceManager globalResidenceManager = GetGlobalResidenceManager();
+            IResidence residence = globalResidenceManager.GetResidenceByOwner(player.Name)
+                ?? globalResidenceManager.CreateResidence(player);
             if (residence == null)
             {
                 SpellEffectDiagnostics.TraceHousingTeleport(spell, target, housingTeleport, escapeVariant, player.Guid, false, "missing-residence");
@@ -1755,7 +1786,7 @@ namespace NexusForever.Game.Spell
             IResidenceEntrance entrance;
             try
             {
-                entrance = GlobalResidenceManager.Instance.GetResidenceEntrance(residence.PropertyInfoId);
+                entrance = globalResidenceManager.GetResidenceEntrance(residence.PropertyInfoId);
             }
             catch (HousingException)
             {
@@ -1763,7 +1794,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            IMapLock mapLock = MapLockManager.Instance.GetResidenceLock(residence.Parent ?? residence);
+            IMapLock mapLock = GetMapLockManager().GetResidenceLock(residence.Parent ?? residence);
             player.Rotation = entrance.Rotation.ToEuler();
             player.TeleportTo(entrance.Entry, entrance.Position, mapLock);
 
@@ -1812,11 +1843,11 @@ namespace NexusForever.Game.Spell
         [SpellEffectHandler(SpellEffectType.RapidTransport)]
         public static void HandleEffectRapidTransport(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
-            TaxiNodeEntry taxiNode = GameTableManager.Instance.TaxiNode.GetEntry(spell.Parameters.TaxiNode);
+            TaxiNodeEntry taxiNode = GetGameTableManager().TaxiNode.GetEntry(spell.Parameters.TaxiNode);
             if (taxiNode == null)
                 return;
 
-            WorldLocation2Entry worldLocation = GameTableManager.Instance.WorldLocation2.GetEntry(taxiNode.WorldLocation2Id);
+            WorldLocation2Entry worldLocation = GetGameTableManager().WorldLocation2.GetEntry(taxiNode.WorldLocation2Id);
             if (worldLocation == null)
                 return;
 
@@ -1841,11 +1872,11 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            GenericUnlockEntryEntry entry = GameTableManager.Instance.GenericUnlockEntry?.GetEntry(info.Entry.DataBits00);
+            GenericUnlockEntryEntry entry = GetGameTableManager().GenericUnlockEntry?.GetEntry(info.Entry.DataBits00);
             if (entry == null)
             {
                 ReportMissingCollectionData(
-                    GameTableManager.Instance.GenericUnlockEntry == null,
+                    GetGameTableManager().GenericUnlockEntry == null,
                     GenericUnlockEntryTableName,
                     info.Entry.DataBits00,
                     nameof(HandleEffectLearnDyeColor),
@@ -1896,7 +1927,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (GameTableManager.Instance.PetFlair?.GetEntry(info.Entry.DataBits00) == null)
+            if (GetGameTableManager().PetFlair?.GetEntry(info.Entry.DataBits00) == null)
             {
                 MissingGameDataDiagnostics.ReportSkippedGrant(
                     "Spell pet flair unlock",
@@ -1951,7 +1982,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (GameTableManager.Instance.Creature2.GetEntry(info.Entry.DataBits00) == null)
+            if (GetGameTableManager().Creature2.GetEntry(info.Entry.DataBits00) == null)
             {
                 SpellEffectDiagnostics.TracePlayerCollection(spell, target, "summon-vanity-pet", player.Guid, info.Entry.DataBits00, 0u, false, "unknown-creature2");
                 return;
@@ -1999,7 +2030,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (GameTableManager.Instance.CharacterTitle?.GetEntry(info.Entry.DataBits00) == null)
+            if (GetGameTableManager().CharacterTitle?.GetEntry(info.Entry.DataBits00) == null)
             {
                 MissingGameDataDiagnostics.ReportSkippedGrant(
                     "Spell title grant",
@@ -2026,10 +2057,10 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (GameTableManager.Instance.CharacterTitle?.GetEntry(info.Entry.DataBits00) == null)
+            if (GetGameTableManager().CharacterTitle?.GetEntry(info.Entry.DataBits00) == null)
             {
                 ReportMissingCollectionData(
-                    GameTableManager.Instance.CharacterTitle == null,
+                    GetGameTableManager().CharacterTitle == null,
                     CharacterTitleTableName,
                     info.Entry.DataBits00,
                     nameof(HandleEffectTitleRevoke),
@@ -2076,7 +2107,7 @@ namespace NexusForever.Game.Spell
             if (proc == null)
                 return;
 
-            if (proc.TriggerSpell4Id == 0u || GameTableManager.Instance.Spell4.GetEntry(proc.TriggerSpell4Id) == null)
+            if (proc.TriggerSpell4Id == 0u || GetGameTableManager().Spell4.GetEntry(proc.TriggerSpell4Id) == null)
             {
                 SpellEffectDiagnostics.TraceProc(spell, target, proc, false, false, "unknown-trigger-spell4");
                 return;
@@ -2206,7 +2237,7 @@ namespace NexusForever.Game.Spell
 
         private static ushort ResolveCrowdControlDiminishingReturnsId(CCState state)
         {
-            return (ushort)(GameTableManager.Instance.CCStates?.GetEntry((uint)state)?.CcStateDiminishingReturnsId ?? 0u);
+            return (ushort)(GetGameTableManager().CCStates?.GetEntry((uint)state)?.CcStateDiminishingReturnsId ?? 0u);
         }
 
         [SpellEffectHandler(SpellEffectType.SpellDispel)]
@@ -2239,7 +2270,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(charges.Spell4Id);
+            Spell4Entry spell4Entry = GetGameTableManager().Spell4.GetEntry(charges.Spell4Id);
             if (spell4Entry == null)
             {
                 SpellEffectDiagnostics.TraceModifyAbilityCharges(spell, target, charges, 0u, 0u, "none", "unknown-spell4");
@@ -2343,7 +2374,7 @@ namespace NexusForever.Game.Spell
             }
 
             uint spell4Id = ResolveSpell4Id(cooldown.Spell4Id, cooldown.DataBits00);
-            Spell4Entry spell4Entry = spell4Id == 0u ? null : GameTableManager.Instance.Spell4.GetEntry(spell4Id);
+            Spell4Entry spell4Entry = spell4Id == 0u ? null : GetGameTableManager().Spell4.GetEntry(spell4Id);
             if (spell4Entry == null)
             {
                 SpellEffectDiagnostics.TraceActivateSpellCooldown(spell, target, cooldown, "none", 0u, 0d, "unknown-spell4");
@@ -2422,7 +2453,7 @@ namespace NexusForever.Game.Spell
             if (immunity == null)
                 return;
 
-            Spell4Entry immuneSpell = GameTableManager.Instance.Spell4.GetEntry(immunity.Spell4Id);
+            Spell4Entry immuneSpell = GetGameTableManager().Spell4.GetEntry(immunity.Spell4Id);
             if (immuneSpell == null)
             {
                 SpellEffectDiagnostics.TraceSpellImmunity(spell, target, immunity, false, false, "unknown-spell4");
@@ -2488,7 +2519,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(addSpell.Spell4Id);
+            Spell4Entry spell4Entry = GetGameTableManager().Spell4.GetEntry(addSpell.Spell4Id);
             if (spell4Entry == null)
             {
                 SpellEffectDiagnostics.TraceAddSpell(spell, target, addSpell, 0u, "none", "unknown-spell4");
@@ -2540,7 +2571,7 @@ namespace NexusForever.Game.Spell
             if (delayDeath == null)
                 return;
 
-            if (delayDeath.TriggerSpell4Id != 0u && GameTableManager.Instance.Spell4.GetEntry(delayDeath.TriggerSpell4Id) == null)
+            if (delayDeath.TriggerSpell4Id != 0u && GetGameTableManager().Spell4.GetEntry(delayDeath.TriggerSpell4Id) == null)
             {
                 SpellEffectDiagnostics.TraceDelayDeath(spell, target, delayDeath, false, false, "unknown-trigger-spell4");
                 return;
@@ -2811,7 +2842,7 @@ namespace NexusForever.Game.Spell
             }
 
             var achievementId = (ushort)achievementAdvance.AchievementId;
-            if (GlobalAchievementManager.Instance.GetAchievement(achievementId) == null)
+            if (GetGlobalAchievementManager()?.GetAchievement(achievementId) == null)
             {
                 SpellEffectDiagnostics.TraceAchievementAdvance(spell, target, achievementAdvance, player.Guid, false, "unknown-achievement");
                 return;
@@ -2874,7 +2905,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (giveItem.Item2Id == 0u || GameTableManager.Instance.Item.GetEntry(giveItem.Item2Id) == null)
+            if (giveItem.Item2Id == 0u || GetGameTableManager().Item.GetEntry(giveItem.Item2Id) == null)
             {
                 SpellEffectDiagnostics.TraceGiveItemToPlayer(spell, target, giveItem, player.Guid, 0u, false, "unknown-item");
                 return;
@@ -2899,7 +2930,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            TradeskillSchematic2Entry schematicEntry = GameTableManager.Instance.TradeskillSchematic2.GetEntry(giveSchematic.TradeskillSchematic2Id);
+            TradeskillSchematic2Entry schematicEntry = GetGameTableManager().TradeskillSchematic2.GetEntry(giveSchematic.TradeskillSchematic2Id);
             if (schematicEntry == null)
             {
                 SpellEffectDiagnostics.TraceGiveSchematic(spell, target, giveSchematic, player.Guid, 0u, false, "unknown-schematic");
@@ -3085,7 +3116,7 @@ namespace NexusForever.Game.Spell
                 return false;
             }
 
-            Creature2OutfitInfoEntry outfitEntry = GameTableManager.Instance.Creature2OutfitInfo.GetEntry(disguiseOutfit.OutfitInfoId);
+            Creature2OutfitInfoEntry outfitEntry = GetGameTableManager().Creature2OutfitInfo.GetEntry(disguiseOutfit.OutfitInfoId);
             if (outfitEntry == null)
             {
                 skippedReasons.Add("unknown-outfit-info");
@@ -3113,7 +3144,7 @@ namespace NexusForever.Game.Spell
                 return false;
             }
 
-            if (GameTableManager.Instance.ItemDisplay.GetEntry(itemDisplayId) == null)
+            if (GetGameTableManager().ItemDisplay.GetEntry(itemDisplayId) == null)
             {
                 skippedReasons.Add($"unknown-{label}");
                 return false;
@@ -3307,7 +3338,7 @@ namespace NexusForever.Game.Spell
                 return false;
             }
 
-            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4?.GetEntry(spell4Id);
+            Spell4Entry spell4Entry = GetGameTableManager().Spell4?.GetEntry(spell4Id);
             if (spell4Entry == null)
             {
                 MissingGameDataDiagnostics.ReportSkippedGrant(
@@ -3387,8 +3418,8 @@ namespace NexusForever.Game.Spell
                 return 0u;
             }
 
-            XpPerLevelEntry currentLevel = GameTableManager.Instance.XpPerLevel.GetEntry(player.Level);
-            XpPerLevelEntry nextLevel = GameTableManager.Instance.XpPerLevel.GetEntry(player.Level + 1u);
+            XpPerLevelEntry currentLevel = GetGameTableManager().XpPerLevel.GetEntry(player.Level);
+            XpPerLevelEntry nextLevel = GetGameTableManager().XpPerLevel.GetEntry(player.Level + 1u);
             if (currentLevel == null || nextLevel == null)
             {
                 skippedReason = "missing-xp-level-entry";
@@ -3470,6 +3501,16 @@ namespace NexusForever.Game.Spell
             out float value,
             out string skippedReason)
         {
+            return TryResolveRewardPropertyModifier(GetGameTableManager(), rewardProperty, out entry, out value, out skippedReason);
+        }
+
+        internal static bool TryResolveRewardPropertyModifier(
+            IGameTableManager gameTableManager,
+            SpellEffectRewardPropertyModifierSemantics rewardProperty,
+            out RewardPropertyEntry entry,
+            out float value,
+            out string skippedReason)
+        {
             entry         = null;
             value         = 0f;
             skippedReason = null;
@@ -3480,7 +3521,7 @@ namespace NexusForever.Game.Spell
                 return false;
             }
 
-            entry = GameTableManager.Instance.RewardProperty?.GetEntry(rewardProperty.RewardPropertyId);
+            entry = gameTableManager.RewardProperty?.GetEntry(rewardProperty.RewardPropertyId);
             if (entry == null)
             {
                 skippedReason = "unknown-reward-property";
@@ -3507,7 +3548,7 @@ namespace NexusForever.Game.Spell
                 if (candidate <= 1000u)
                     continue;
 
-                if (GameTableManager.Instance.Spell4.GetEntry(candidate) != null)
+                if (GetGameTableManager().Spell4.GetEntry(candidate) != null)
                     return candidate;
             }
 
@@ -3648,13 +3689,13 @@ namespace NexusForever.Game.Spell
         {
             spellBaseInfo = null;
 
-            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(spell4Id);
+            Spell4Entry spell4Entry = GetGameTableManager().Spell4.GetEntry(spell4Id);
             if (spell4Entry == null)
                 return false;
 
             try
             {
-                spellBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(spell4Entry.Spell4BaseIdBaseSpell);
+                spellBaseInfo = GetGlobalSpellManager().GetSpellBaseInfo(spell4Entry.Spell4BaseIdBaseSpell);
                 return spellBaseInfo != null;
             }
             catch (ArgumentOutOfRangeException)

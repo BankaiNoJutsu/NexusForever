@@ -1,9 +1,13 @@
 using System.Numerics;
 using Microsoft.Extensions.DependencyInjection;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Combat;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
+using NexusForever.Game.Abstract.Loot;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Abstract.Trade;
 using NexusForever.Game.Challenges;
 using NexusForever.Game.Combat;
 using NexusForever.Game.Combat.CrowdControl;
@@ -19,7 +23,6 @@ using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Spell;
-using NexusForever.Game.Trade;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Combat;
@@ -106,7 +109,13 @@ namespace NexusForever.Game.Entity
         private readonly UpdateTimer statUpdateTimer = new UpdateTimer(0.25);
         private double shieldRebootRemainingSeconds;
         private double shieldRegenElapsedSeconds;
-        private Func<GlobalLootManager> globalLootManagerResolver;
+        private Func<IGlobalLootManager> globalLootManagerResolver;
+        private Func<ITradeManager> tradeManagerResolver;
+        private Func<IDisableManager> disableManagerResolver;
+        private Func<IAssetManager> assetManagerResolver;
+        private Func<IPrerequisiteManager> prerequisiteManagerResolver;
+        private Func<IGlobalSpellManager> globalSpellManagerResolver;
+        private readonly ISharedConfiguration sharedConfiguration;
 
         private UpdateTimer respawnTimer;
 
@@ -287,17 +296,29 @@ namespace NexusForever.Game.Entity
 
         #region Dependency Injection
 
-        public UnitEntity(IMovementManager movementManager)
+        public UnitEntity(IMovementManager movementManager, ISharedConfiguration sharedConfiguration = null)
             : base(movementManager)
         {
+            this.sharedConfiguration = sharedConfiguration;
             ThreatManager = new ThreatManager(this);
 
             InitialiseHitRadius();
         }
 
-        internal void InitialiseRuntimeDependencies(Func<GlobalLootManager> globalLootManagerResolver)
+        internal void InitialiseRuntimeDependencies(
+            Func<IGlobalLootManager> globalLootManagerResolver,
+            Func<ITradeManager> tradeManagerResolver,
+            Func<IDisableManager> disableManagerResolver = null,
+            Func<IAssetManager> assetManagerResolver = null,
+            Func<IPrerequisiteManager> prerequisiteManagerResolver = null,
+            Func<IGlobalSpellManager> globalSpellManagerResolver = null)
         {
             this.globalLootManagerResolver = globalLootManagerResolver;
+            this.tradeManagerResolver      = tradeManagerResolver;
+            this.disableManagerResolver    = disableManagerResolver;
+            this.assetManagerResolver      = assetManagerResolver;
+            this.prerequisiteManagerResolver = prerequisiteManagerResolver;
+            this.globalSpellManagerResolver = globalSpellManagerResolver;
         }
 
         #endregion
@@ -315,7 +336,7 @@ namespace NexusForever.Game.Entity
             if (CreatureEntry == null)
                 return;
 
-            Creature2ModelInfoEntry modelInfoEntry = GameTableManager.Instance.Creature2ModelInfo.GetEntry(CreatureEntry.Creature2ModelInfoId);
+            Creature2ModelInfoEntry modelInfoEntry = GetGameTableManager().Creature2ModelInfo.GetEntry(CreatureEntry.Creature2ModelInfoId);
             if (modelInfoEntry != null)
                 HitRadius = modelInfoEntry.HitRadius * CreatureEntry.ModelScale;
         }
@@ -637,17 +658,23 @@ namespace NexusForever.Game.Entity
             };
         }
 
-        private static ISpellInfo ResolveSpellInfo(uint spell4Id)
+        private ISpellInfo ResolveSpellInfo(uint spell4Id)
         {
             if (spell4Id == 0u)
                 return null;
 
-            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(spell4Id);
+            Spell4Entry spell4Entry = GetGameTableManager().Spell4.GetEntry(spell4Id);
             if (spell4Entry == null)
                 return null;
 
-            ISpellBaseInfo spellBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(spell4Entry.Spell4BaseIdBaseSpell);
+            ISpellBaseInfo spellBaseInfo = GetGlobalSpellManager().GetSpellBaseInfo(spell4Entry.Spell4BaseIdBaseSpell);
             return spellBaseInfo?.GetSpellInfo((byte)spell4Entry.TierIndex);
+        }
+
+        private IGlobalSpellManager GetGlobalSpellManager()
+        {
+            return globalSpellManagerResolver?.Invoke()
+                ?? throw new InvalidOperationException($"{nameof(UnitEntity)} requires an {nameof(IGlobalSpellManager)}.");
         }
 
         public void AddVitalClamp(uint effectId, uint spell4Id, uint castingId, Vital vital, float ratio, uint mode, uint vitalMode)
@@ -1743,7 +1770,7 @@ namespace NexusForever.Game.Entity
             {
                 foreach (KeyValuePair<uint, SpellPropertyState> state in prop.Value)
                 {
-                    Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(state.Value.Spell4Id);
+                    Spell4Entry spell4Entry = GetGameTableManager().Spell4.GetEntry(state.Value.Spell4Id);
                     if (spell4Entry == null || spell4Entry.Spell4StackGroupId != stackGroupId)
                         continue;
 
@@ -1892,7 +1919,7 @@ namespace NexusForever.Game.Entity
             if (!IsAlive)
                 return CastResult.CasterCannotBeDead;
 
-            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(spell4Id);
+            Spell4Entry spell4Entry = GetGameTableManager().Spell4.GetEntry(spell4Id);
             if (spell4Entry == null)
                 throw new ArgumentOutOfRangeException();
 
@@ -1915,7 +1942,7 @@ namespace NexusForever.Game.Entity
             if (!IsAlive)
                 return CastResult.CasterCannotBeDead;
 
-            ISpellBaseInfo spellBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(spell4BaseId);
+            ISpellBaseInfo spellBaseInfo = GetGlobalSpellManager().GetSpellBaseInfo(spell4BaseId);
             if (spellBaseInfo == null)
                 throw new ArgumentOutOfRangeException();
 
@@ -1943,14 +1970,14 @@ namespace NexusForever.Game.Entity
             if (parameters == null)
                 throw new ArgumentNullException();
 
-            if (DisableManager.Instance.IsDisabled(DisableType.BaseSpell, parameters.SpellInfo.BaseInfo.Entry.Id))
+            if (IsDisabled(DisableType.BaseSpell, parameters.SpellInfo.BaseInfo.Entry.Id))
             {
                 if (this is IPlayer player)
                     player.SendSystemMessage($"Unable to cast base spell {parameters.SpellInfo.BaseInfo.Entry.Id} because it is disabled.");
                 return CastResult.SpellRemoved;
             }
 
-            if (DisableManager.Instance.IsDisabled(DisableType.Spell, parameters.SpellInfo.Entry.Id))
+            if (IsDisabled(DisableType.Spell, parameters.SpellInfo.Entry.Id))
             {
                 if (this is IPlayer player)
                     player.SendSystemMessage($"Unable to cast spell {parameters.SpellInfo.Entry.Id} because it is disabled.");
@@ -1967,7 +1994,7 @@ namespace NexusForever.Game.Entity
                     player.Dismount();
             }
 
-            var spell = new Spell.Spell(this, parameters);
+            var spell = new Spell.Spell(this, parameters, prerequisiteManagerResolver?.Invoke(), GetGlobalSpellManager(), GetScriptManager(), GetGameTableManager());
             ProbeProcEvent("action-cast-any", ProcTriggerEventCandidate.ActionCastAny, this, ResolveProcProbePrimaryTarget(parameters), spell, null, null, "before-cast");
             CastResult castResult = spell.Cast();
             if (castResult != CastResult.Ok)
@@ -1977,7 +2004,7 @@ namespace NexusForever.Game.Entity
             }
 
             if (this is IPlayer currentPlayer && ShouldCancelActiveTrade(parameters))
-                TradeManager.Instance.Cancel(currentPlayer);
+                tradeManagerResolver?.Invoke()?.Cancel(currentPlayer);
 
             pendingSpells.Add(spell);
             return CastResult.Ok;
@@ -1999,6 +2026,11 @@ namespace NexusForever.Game.Entity
         private static bool ShouldCancelActiveTrade(ISpellParameters parameters)
         {
             return parameters.UserInitiatedSpellCast || parameters.CancelActiveTrade;
+        }
+
+        private bool IsDisabled(DisableType type, uint objectId)
+        {
+            return disableManagerResolver?.Invoke()?.IsDisabled(type, objectId) == true;
         }
 
         private IUnitEntity ResolveProcProbePrimaryTarget(ISpellParameters parameters)
@@ -2380,7 +2412,7 @@ namespace NexusForever.Game.Entity
             if (!IsAlive)
                 return;
 
-            if (GameTableManager.Instance.Spell4.GetEntry(spell4Id) == null)
+            if (GetGameTableManager().Spell4.GetEntry(spell4Id) == null)
                 return;
 
             SpellEffectDiagnostics.TraceDelayDeathTriggerCast(this, spell4Id, sourceGuid);
@@ -2440,7 +2472,7 @@ namespace NexusForever.Game.Entity
             player.AchievementManager.CheckAchievements(player, AchievementType.KillCreatureEntry, CreatureId);
             player.AchievementManager.CheckAchievements(player, AchievementType.KillCreatureChecklist, CreatureId);
 
-            List<uint> targetGroupIds = (AssetManager.Instance.GetTargetGroupsForCreatureId(CreatureId) ?? Enumerable.Empty<uint>()).ToList();
+            List<uint> targetGroupIds = (assetManagerResolver?.Invoke()?.GetTargetGroupsForCreatureId(CreatureId) ?? Enumerable.Empty<uint>()).ToList();
             foreach (uint targetGroupId in targetGroupIds)
             {
                 player.AchievementManager.CheckAchievements(player, AchievementType.KillCreatureGroup, targetGroupId);
@@ -2452,7 +2484,7 @@ namespace NexusForever.Game.Entity
             if (CreatureId > 0u)
             {
                 uint groupValue = CreatureInfo?.DifficultyEntry?.GroupValue
-                    ?? GameTableManager.Instance.Creature2Difficulty.GetEntry(CreatureEntry?.Creature2DifficultyId ?? 0u)?.GroupValue
+                    ?? GetGameTableManager().Creature2Difficulty.GetEntry(CreatureEntry?.Creature2DifficultyId ?? 0u)?.GroupValue
                     ?? 0u;
 
                 player.XpManager.GrantXpForCreatureKill(Level, groupValue, GetPropertyValue(Property.XpMultiplier));
@@ -2502,7 +2534,7 @@ namespace NexusForever.Game.Entity
             if (this is not INonPlayerEntity)
                 return;
 
-            uint respawnSeconds = SharedConfiguration.Instance.Get<WorldConfig>()?.CreatureRespawnSeconds ?? 30u;
+            uint respawnSeconds = sharedConfiguration?.Get<WorldConfig>()?.CreatureRespawnSeconds ?? 30u;
             respawnTimer = new UpdateTimer(respawnSeconds);
         }
 

@@ -1,10 +1,10 @@
 using System.Collections;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Abstract.Loot;
+using NexusForever.GameTable;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Loot;
 using NexusForever.Shared;
@@ -32,18 +32,24 @@ namespace NexusForever.Game.Loot
         private readonly Dictionary<ulong, string> lastLootNotifyFingerprintsByLooter = [];
 
         private readonly UpdateTimer expiryTimer = new(1800d);
+        private readonly IPlayerManager playerManager;
+        private readonly IItemManager itemManager;
+        private readonly IGameTableManager gameTableManager;
 
-        public LootInstance(uint ownerUnitId, Dictionary<ulong, uint> looterIds, LooterType looterType, LootEntityType lootEntityType)
-            : this(ownerUnitId, ownerUnitId, looterIds, looterType, lootEntityType)
+        public LootInstance(uint ownerUnitId, Dictionary<ulong, uint> looterIds, LooterType looterType, LootEntityType lootEntityType, IPlayerManager playerManager = null, IItemManager itemManager = null, IGameTableManager gameTableManager = null)
+            : this(ownerUnitId, ownerUnitId, looterIds, looterType, lootEntityType, playerManager, itemManager, gameTableManager)
         {
         }
 
-        public LootInstance(uint ownerUnitId, uint parentUnitId, Dictionary<ulong, uint> looterIds, LooterType looterType, LootEntityType lootEntityType)
+        public LootInstance(uint ownerUnitId, uint parentUnitId, Dictionary<ulong, uint> looterIds, LooterType looterType, LootEntityType lootEntityType, IPlayerManager playerManager = null, IItemManager itemManager = null, IGameTableManager gameTableManager = null)
         {
             OwnerUnitId    = ownerUnitId;
             ParentUnitId   = parentUnitId;
             LooterType     = looterType;
             LootEntityType = lootEntityType;
+            this.playerManager = playerManager;
+            this.itemManager = itemManager;
+            this.gameTableManager = gameTableManager;
 
             foreach ((ulong characterId, uint guid) in looterIds)
                 looterGuids.Add(characterId, guid);
@@ -73,7 +79,7 @@ namespace NexusForever.Game.Loot
                 return existingItem;
             }
 
-            LootInstanceItem item = new(staticId, type, count);
+            LootInstanceItem item = new(staticId, type, count, itemManager, gameTableManager);
             item.SetOwnerUnit(OwnerUnitId);
             lootItems.Add(item.Id, item);
 
@@ -408,15 +414,13 @@ namespace NexusForever.Game.Loot
             }
         }
 
-        private static IPlayer TryGetPlayer(ulong characterId)
+        private IPlayer TryGetPlayer(ulong characterId)
         {
-            IPlayerManager playerManager = LegacyServiceProvider.Provider.GetService<IPlayerManager>();
             return playerManager?.GetPlayer(characterId);
         }
 
-        private static IPlayer TryGetPlayer(Identity identity)
+        private IPlayer TryGetPlayer(Identity identity)
         {
-            IPlayerManager playerManager = LegacyServiceProvider.Provider.GetService<IPlayerManager>();
             return playerManager?.GetPlayer(identity);
         }
 

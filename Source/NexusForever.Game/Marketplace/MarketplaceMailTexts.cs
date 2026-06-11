@@ -1,7 +1,5 @@
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Marketplace
 {
@@ -20,8 +18,6 @@ namespace NexusForever.Game.Marketplace
         public static bool TryGetMarketplaceMailLocalizedTextId(out uint localizedTextId, IGameTableManager gameTables = null)
         {
             localizedTextId = 0u;
-            gameTables ??= LegacyServiceProvider.Provider?.GetService<IGameTableManager>()
-                ?? LegacyServiceProvider.Provider?.GetService<GameTableManager>();
             AchievementTextEntry entry = gameTables?.AchievementText?.GetEntry(MarketplaceMailAchievementTextId);
             if (entry != null && entry.LocalizedTextId != 0u)
             {

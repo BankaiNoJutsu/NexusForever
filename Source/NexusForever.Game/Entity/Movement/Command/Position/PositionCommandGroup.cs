@@ -53,13 +53,16 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
 
         private readonly IFactoryInterface<IPositionCommand> factory;
         private readonly ILogger<PositionCommandGroup> log;
+        private readonly IGameTableManager gameTableManager;
 
         public PositionCommandGroup(
             IFactoryInterface<IPositionCommand> factory,
-            ILogger<PositionCommandGroup> log)
+            ILogger<PositionCommandGroup> log,
+            IGameTableManager gameTableManager)
         {
             this.factory = factory;
             this.log     = log;
+            this.gameTableManager = gameTableManager;
         }
 
         #endregion
@@ -277,7 +280,7 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
 
                 foreach (IQuestObjective objective in quest)
                 {
-                    if (!ShouldUpdateImmediateAreaObjective(objective, position, targetRadius))
+                    if (!ShouldUpdateImmediateAreaObjective(objective, position, targetRadius, gameTableManager))
                         continue;
 
                     matchingObjectives.Add(objective);
@@ -298,14 +301,14 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
                 {
                     log.LogDebug("Immediate tutorial area update for player {PlayerGuid}: quest {QuestId}, objective {ObjectiveId}, matched world locations {WorldLocationIds}, position ({X}, {Y}, {Z}), hit padding {TargetRadius}.",
                         player.Guid, quest.Id, objective.ObjectiveInfo.Id,
-                        string.Join(", ", GetMatchedWorldLocationIds(objective.ObjectiveInfo.Entry, position, targetRadius)),
+                        string.Join(", ", GetMatchedWorldLocationIds(objective.ObjectiveInfo.Entry, position, targetRadius, gameTableManager)),
                         position.X, position.Y, position.Z, targetRadius);
                     quest.ObjectiveUpdate(objective.ObjectiveInfo.Id, 1u);
                 }
             }
         }
 
-        private static IEnumerable<uint> GetMatchedWorldLocationIds(QuestObjectiveEntry objectiveEntry, Vector3 position, float targetRadius)
+        private static IEnumerable<uint> GetMatchedWorldLocationIds(QuestObjectiveEntry objectiveEntry, Vector3 position, float targetRadius, IGameTableManager gameTableManager)
         {
             uint[] worldLocationIds =
             [
@@ -318,27 +321,27 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
             return worldLocationIds
                 .Where(id => id != 0u)
                 .Distinct()
-                .Where(id => IsInsideWorldLocation(position, targetRadius, id));
+                .Where(id => IsInsideWorldLocation(position, targetRadius, id, gameTableManager));
         }
 
-        private static bool ShouldUpdateImmediateAreaObjective(IQuestObjective objective, Vector3 position, float targetRadius)
+        private static bool ShouldUpdateImmediateAreaObjective(IQuestObjective objective, Vector3 position, float targetRadius, IGameTableManager gameTableManager)
         {
             if (objective.IsComplete() || objective.ObjectiveInfo.Type != QuestObjectiveType.EnterArea)
                 return false;
 
             var objectiveEntry = objective.ObjectiveInfo.Entry;
-            return IsInsideWorldLocation(position, targetRadius, objectiveEntry.WorldLocationsIdIndicator00)
-                || IsInsideWorldLocation(position, targetRadius, objectiveEntry.WorldLocationsIdIndicator01)
-                || IsInsideWorldLocation(position, targetRadius, objectiveEntry.WorldLocationsIdIndicator02)
-                || IsInsideWorldLocation(position, targetRadius, objectiveEntry.WorldLocationsIdIndicator03);
+            return IsInsideWorldLocation(position, targetRadius, objectiveEntry.WorldLocationsIdIndicator00, gameTableManager)
+                || IsInsideWorldLocation(position, targetRadius, objectiveEntry.WorldLocationsIdIndicator01, gameTableManager)
+                || IsInsideWorldLocation(position, targetRadius, objectiveEntry.WorldLocationsIdIndicator02, gameTableManager)
+                || IsInsideWorldLocation(position, targetRadius, objectiveEntry.WorldLocationsIdIndicator03, gameTableManager);
         }
 
-        private static bool IsInsideWorldLocation(Vector3 position, float targetRadius, uint worldLocationId)
+        private static bool IsInsideWorldLocation(Vector3 position, float targetRadius, uint worldLocationId, IGameTableManager gameTableManager)
         {
             if (worldLocationId == 0u)
                 return false;
 
-            WorldLocation2Entry worldLocation = GameTableManager.Instance.WorldLocation2.GetEntry(worldLocationId);
+            WorldLocation2Entry worldLocation = gameTableManager?.WorldLocation2?.GetEntry(worldLocationId);
             return worldLocation != null && IsInsideWorldLocation(position, targetRadius, worldLocation);
         }
 

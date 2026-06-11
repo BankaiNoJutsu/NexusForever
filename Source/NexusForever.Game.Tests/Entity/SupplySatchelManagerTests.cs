@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Account;
@@ -14,11 +13,9 @@ using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Entity;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class SupplySatchelManagerTests
 {
     private const ushort MaterialId = 12;
@@ -88,13 +85,13 @@ public class SupplySatchelManagerTests
     [Fact]
     public void AddAmount_WithMappedItemCreatesMaterialAndSendsUpdate()
     {
-        using LegacyServiceProviderScope providerScope = new(BuildGameTableProvider(
+        GameTableManager gameTableManager = BuildGameTableManager(
             new TradeskillMaterialEntry
             {
                 Id = MaterialId,
                 Item2IdStatRevolution = MaterialItemId
-            }));
-        SupplySatchelManager manager = CreateManager(100f, out RecordingDispatchProxy<IGameSession> sessionProxy);
+            });
+        SupplySatchelManager manager = CreateManager(100f, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTableManager: gameTableManager);
 
         uint remainder = manager.AddAmount(CreateItem(MaterialItemId), 4u);
 
@@ -112,8 +109,8 @@ public class SupplySatchelManagerTests
     [Fact]
     public void AddAmount_WithUnmappedItemReturnsRemainderWithoutSatchelUpdate()
     {
-        using LegacyServiceProviderScope providerScope = new(BuildGameTableProvider());
-        SupplySatchelManager manager = CreateManager(100f, out RecordingDispatchProxy<IGameSession> sessionProxy);
+        GameTableManager gameTableManager = BuildGameTableManager();
+        SupplySatchelManager manager = CreateManager(100f, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTableManager: gameTableManager);
         IItem item = CreateItem(MaterialItemId);
 
         Assert.True(manager.IsFull(item));
@@ -127,8 +124,8 @@ public class SupplySatchelManagerTests
     [Fact]
     public void AddAmount_WithUnmappedMaterialIdReturnsRemainderWithoutSatchelUpdate()
     {
-        using LegacyServiceProviderScope providerScope = new(BuildGameTableProvider());
-        SupplySatchelManager manager = CreateManager(100f, out RecordingDispatchProxy<IGameSession> sessionProxy);
+        GameTableManager gameTableManager = BuildGameTableManager();
+        SupplySatchelManager manager = CreateManager(100f, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTableManager: gameTableManager);
 
         uint remainder = manager.AddAmount(MaterialId, 4u);
 
@@ -150,12 +147,19 @@ public class SupplySatchelManagerTests
         Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
     }
 
-    private static SupplySatchelManager CreateManager(float? stackLimit, out RecordingDispatchProxy<IGameSession> sessionProxy)
+    private static SupplySatchelManager CreateManager(
+        float? stackLimit,
+        out RecordingDispatchProxy<IGameSession> sessionProxy,
+        GameTableManager gameTableManager = null)
     {
-        return CreateManager(stackLimit, out sessionProxy, out _);
+        return CreateManager(stackLimit, out sessionProxy, out _, gameTableManager);
     }
 
-    private static SupplySatchelManager CreateManager(float? stackLimit, out RecordingDispatchProxy<IGameSession> sessionProxy, out RecordingDispatchProxy<IInventory> inventoryProxy)
+    private static SupplySatchelManager CreateManager(
+        float? stackLimit,
+        out RecordingDispatchProxy<IGameSession> sessionProxy,
+        out RecordingDispatchProxy<IInventory> inventoryProxy,
+        GameTableManager gameTableManager = null)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out sessionProxy);
@@ -178,7 +182,7 @@ public class SupplySatchelManagerTests
         playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
         playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
 
-        return new SupplySatchelManager(player, new CharacterModel());
+        return new SupplySatchelManager(player, new CharacterModel(), gameTableManager);
     }
 
     private static ITradeskillMaterial AddMaterial(SupplySatchelManager manager, ushort amount, ushort materialId = MaterialId)
@@ -212,7 +216,7 @@ public class SupplySatchelManagerTests
         return item;
     }
 
-    private static IServiceProvider BuildGameTableProvider(params TradeskillMaterialEntry[] tradeskillMaterialEntries)
+    private static GameTableManager BuildGameTableManager(params TradeskillMaterialEntry[] tradeskillMaterialEntries)
     {
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
@@ -220,9 +224,7 @@ public class SupplySatchelManagerTests
         }));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.TradeskillMaterial), CreateGameTable(tradeskillMaterialEntries));
 
-        return new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+        return gameTableManager;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

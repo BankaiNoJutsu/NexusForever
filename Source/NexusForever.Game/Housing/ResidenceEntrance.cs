@@ -11,9 +11,11 @@ namespace NexusForever.Game.Housing
         public Vector3 Position { get; }
         public Quaternion Rotation { get; }
 
-        public ResidenceEntrance(WorldLocation2Entry entry)
+        public ResidenceEntrance(
+            WorldLocation2Entry entry,
+            IGameTableManager gameTableManager)
         {
-            Entry    = GameTableManager.Instance.World?.GetEntry(entry.WorldId) ?? throw new HousingException();
+            Entry    = gameTableManager?.World?.GetEntry(entry.WorldId) ?? throw new HousingException();
             Position = new Vector3(entry.Position0, entry.Position1, entry.Position2);
             Rotation = new Quaternion(entry.Facing0, entry.Facing1, entry.Facing2, entry.Facing3);
         }

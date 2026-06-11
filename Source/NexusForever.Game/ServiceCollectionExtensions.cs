@@ -43,21 +43,21 @@ namespace NexusForever.Game
     {
         public static void AddGame(this IServiceCollection sc)
         {
-            sc.AddSingletonLegacy<IAssetManager, AssetManager>();
-            sc.AddSingletonLegacy<ICleanupManager, CleanupManager>();
-            sc.AddSingletonLegacy<IDisableManager, DisableManager>();
-            sc.AddSingletonLegacy<IItemManager, ItemManager>();
-            sc.AddSingletonLegacy<IRealmContext, RealmContext>();
-            sc.AddSingletonLegacy<IShutdownManager, ShutdownManager>();
-            sc.AddSingletonLegacy<IDamageCalculator, DamageCalculator>();
-            sc.AddSingletonLegacy<IDuelManager, DuelManager>();
-            sc.AddSingletonLegacy<IICCommManager, ICCommManager>();
-            sc.AddSingletonLegacy<ITradeManager, TradeManager>();
-            sc.AddSingletonLegacy<IGroupStateManager, GroupStateManager>();
-            sc.AddSingletonLegacy<IGlobalLootManager, GlobalLootManager>();
+            sc.AddSingleton<IAssetManager, AssetManager>();
+            sc.AddSingleton<ICleanupManager, CleanupManager>();
+            sc.AddSingleton<IDisableManager, DisableManager>();
+            sc.AddSingleton<IItemManager, ItemManager>();
+            sc.AddSingleton<IRealmContext, RealmContext>();
+            sc.AddSingleton<IShutdownManager, ShutdownManager>();
+            sc.AddSingleton<IDamageCalculator, DamageCalculator>();
+            sc.AddSingleton<IDuelManager, DuelManager>();
+            sc.AddSingleton<IICCommManager, ICCommManager>();
+            sc.AddSingleton<ITradeManager, TradeManager>();
+            sc.AddSingleton<IGroupStateManager, GroupStateManager>();
+            sc.AddSingleton<IGlobalLootManager, GlobalLootManager>();
             sc.AddSingleton<RealmBankManager>();
-            sc.AddSingletonLegacy<IAccountPendingItemRepository, AccountPendingItemRepository>();
-            sc.AddSingletonLegacy<IPendingAccountItemGroupDelivery, RetailPendingAccountItemGroupDelivery>();
+            sc.AddSingleton<IAccountPendingItemRepository, AccountPendingItemRepository>();
+            sc.AddSingleton<IPendingAccountItemGroupDelivery, RetailPendingAccountItemGroupDelivery>();
 
             sc.AddGameAchievement();
             sc.AddGameCharacter();

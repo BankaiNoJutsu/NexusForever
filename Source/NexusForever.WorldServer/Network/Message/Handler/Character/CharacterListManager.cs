@@ -26,17 +26,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
         private readonly IDatabaseManager databaseManager;
         private readonly IRealmContext realmContext;
         private readonly IGlobalStorefrontManager globalStorefrontManager;
+        private readonly IItemManager itemManager;
 
         public CharacterListManager(
             ILogger<CharacterListHandler> log,
             IDatabaseManager databaseManager,
             IRealmContext realmContext,
-            IGlobalStorefrontManager globalStorefrontManager)
+            IGlobalStorefrontManager globalStorefrontManager,
+            IItemManager itemManager = null)
         {
             this.log = log;
             this.databaseManager = databaseManager;
             this.realmContext = realmContext;
             this.globalStorefrontManager = globalStorefrontManager;
+            this.itemManager = itemManager;
         }
 
         public void SendCharacterListPackets(IWorldSession session)
@@ -162,8 +165,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                 try
                 {
                     // create a temporary Inventory and CostumeManager to show equipped gear
-                    var inventory      = new Inventory(null, character);
-                    var costumeManager = new CostumeManager(null, character);
+                    var inventory      = new Inventory(null, character, itemManager: itemManager);
+                    var costumeManager = new CostumeManager(null, character, itemManager);
 
                     ICostume costume = null;
                     if (costumeManager.CostumeIndex.HasValue)

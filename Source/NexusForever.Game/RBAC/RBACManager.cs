@@ -4,24 +4,35 @@ using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Game.Abstract.RBAC;
 using NexusForever.Game.Static.RBAC;
-using NexusForever.Shared;
 using NLog;
 
 namespace NexusForever.Game.RBAC
 {
-    public sealed class RBACManager : Singleton<RBACManager>, IRBACManager
+    public sealed class RBACManager : IRBACManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
         private ImmutableDictionary<Permission, IRBACPermission> permissions;
         private ImmutableDictionary<Role, IRBACRole> roles;
 
+        #region Dependency Injection
+
+        private readonly IDatabaseManager databaseManager;
+
+        public RBACManager(
+            IDatabaseManager databaseManager)
+        {
+            this.databaseManager = databaseManager;
+        }
+
+        #endregion
+
         public void Initialise()
         {
             log.Info("Initialising RBAC permissions...");
 
             var permissionBuilder = ImmutableDictionary.CreateBuilder<Permission, IRBACPermission>();
-            foreach (PermissionModel permissionModel in DatabaseManager.Instance.GetDatabase<AuthDatabase>().GetPermissions())
+            foreach (PermissionModel permissionModel in databaseManager.GetDatabase<AuthDatabase>().GetPermissions())
             {
                 var permission = new RBACPermission(permissionModel);
                 permissionBuilder.Add(permission.Permission, permission);
@@ -30,7 +41,7 @@ namespace NexusForever.Game.RBAC
             permissions = permissionBuilder.ToImmutable();
 
             var roleBuilder = ImmutableDictionary.CreateBuilder<Role, IRBACRole>();
-            foreach (RoleModel roleModel in DatabaseManager.Instance.GetDatabase<AuthDatabase>().GetRoles())
+            foreach (RoleModel roleModel in databaseManager.GetDatabase<AuthDatabase>().GetRoles())
             {
                 // check if permissions for role exist
                 if (roleModel.RolePermission.Any(p => GetPermission((Permission)p.PermissionId) == null))

@@ -4,11 +4,10 @@ using NexusForever.Database.World;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Static;
-using NexusForever.Shared;
 
 namespace NexusForever.Game
 {
-    public sealed class DisableManager : Singleton<DisableManager>, IDisableManager
+    public sealed class DisableManager : IDisableManager
     {
         private static ulong Hash(DisableType type, uint objectId)
         {
@@ -16,12 +15,23 @@ namespace NexusForever.Game
             return ((ulong)type << 32) | objectId;
         }
 
-        private ImmutableDictionary<ulong, Disable> disables;
+        private readonly IDatabaseManager databaseManager;
+
+        private ImmutableDictionary<ulong, Disable> disables = ImmutableDictionary<ulong, Disable>.Empty;
+
+        public DisableManager(
+            IDatabaseManager databaseManager = null)
+        {
+            this.databaseManager = databaseManager;
+        }
 
         public void Initialise()
         {
+            if (databaseManager == null)
+                throw new InvalidOperationException("DisableManager requires an IDatabaseManager.");
+
             var builder = ImmutableDictionary.CreateBuilder<ulong, Disable>();
-            foreach (DisableModel model in DatabaseManager.Instance.GetDatabase<WorldDatabase>().GetDisables())
+            foreach (DisableModel model in databaseManager.GetDatabase<WorldDatabase>().GetDisables())
             {
                 DisableType type = (DisableType)model.Type;
                 builder.Add(Hash(type, model.ObjectId), new Disable(type, model.ObjectId, model.Note));

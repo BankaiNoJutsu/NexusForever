@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json;
 using NexusForever.GameTable.Configuration.Model;
-using NexusForever.Shared.Configuration;
 using NLog;
 
 namespace NexusForever.GameTable
@@ -10,9 +9,16 @@ namespace NexusForever.GameTable
         private static Lazy<string> lazyModuleVersion = new(CreateModuleVersionString, LazyThreadSafetyMode.ExecutionAndPublication);
         private static Lazy<DirectoryInfo> lazyCacheDirectory => new(CreateCacheDirectory, LazyThreadSafetyMode.ExecutionAndPublication);
         private static ILogger log = LogManager.GetCurrentClassLogger();
+        private static CacheConfig cacheConfig = new();
+
+        public static void Configure(CacheConfig config)
+        {
+            cacheConfig = config ?? new CacheConfig();
+        }
+
         private static DirectoryInfo CreateCacheDirectory()
         {
-            return Directory.CreateDirectory(SharedConfiguration.Instance.Get<CacheConfig>().CachePath);
+            return Directory.CreateDirectory(cacheConfig.CachePath);
         }
 
         private static readonly object cacheLock = new();
@@ -64,7 +70,7 @@ namespace NexusForever.GameTable
 
         public static T LoadWithCache<T>(string fileName, Func<string, T> creator)
         {
-            if (!SharedConfiguration.Instance.Get<CacheConfig>().UseCache)
+            if (!cacheConfig.UseCache)
                 return creator(fileName);
             CheckAndCleanupCache();
             string cacheName = GetCacheFileName(fileName);

@@ -1,12 +1,9 @@
 using System.Numerics;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
-using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
@@ -16,7 +13,6 @@ using NexusForever.Script.Template.Collection;
 
 namespace NexusForever.Game.Tests.Spell;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class SpellChargeReleaseTests
 {
     private const uint CasterId = 100u;
@@ -30,20 +26,24 @@ public class SpellChargeReleaseTests
     [Fact]
     public void Cast_WithChargeReleaseThreshold_StartsThresholdAndWaits()
     {
-        using var _ = new LegacyServiceProviderScope(BuildProvider());
         IPlayer player = CreatePlayer(out RecordingDispatchProxy<IPlayer> playerProxy, out RecordingDispatchProxy<IGameSession> sessionProxy);
         ISpellInfo parentSpellInfo = CreateChargeReleaseSpellInfo(out ICharacterSpell characterSpell);
 
-        var spell = new NexusForever.Game.Spell.Spell(player, new NexusForever.Game.Spell.SpellParameters
-        {
-            CharacterSpell         = characterSpell,
-            SpellInfo              = parentSpellInfo,
-            RootSpellInfo          = parentSpellInfo,
-            PrimaryTargetId        = PrimaryTargetId,
-            UserInitiatedSpellCast = true,
-            ClientContextToken     = ClientContextToken,
-            ClientRequestSource    = "test-charge"
-        });
+        var spell = new NexusForever.Game.Spell.Spell(
+            player,
+            new NexusForever.Game.Spell.SpellParameters
+            {
+                CharacterSpell         = characterSpell,
+                SpellInfo              = parentSpellInfo,
+                RootSpellInfo          = parentSpellInfo,
+                PrimaryTargetId        = PrimaryTargetId,
+                UserInitiatedSpellCast = true,
+                ClientContextToken     = ClientContextToken,
+                ClientRequestSource    = "test-charge"
+            },
+            globalSpellManager: CreateGlobalSpellManager(),
+            scriptManager: CreateScriptManager(),
+            gameTableManager: CreateGameTableManager());
 
         Assert.Equal(CastResult.Ok, spell.Cast());
 
@@ -64,23 +64,27 @@ public class SpellChargeReleaseTests
     [Fact]
     public void ReleaseCharge_AfterThresholdUpdate_CastsSelectedThresholdChild()
     {
-        using var _ = new LegacyServiceProviderScope(BuildProvider());
         IPlayer player = CreatePlayer(
             out RecordingDispatchProxy<IPlayer> playerProxy,
             out RecordingDispatchProxy<IGameSession> sessionProxy,
             out RecordingDispatchProxy<ISpellManager> spellManagerProxy);
         ISpellInfo parentSpellInfo = CreateChargeReleaseSpellInfo(out ICharacterSpell characterSpell);
 
-        var spell = new NexusForever.Game.Spell.Spell(player, new NexusForever.Game.Spell.SpellParameters
-        {
-            CharacterSpell         = characterSpell,
-            SpellInfo              = parentSpellInfo,
-            RootSpellInfo          = parentSpellInfo,
-            PrimaryTargetId        = PrimaryTargetId,
-            UserInitiatedSpellCast = true,
-            ClientContextToken     = ClientContextToken,
-            ClientRequestSource    = "test-charge"
-        });
+        var spell = new NexusForever.Game.Spell.Spell(
+            player,
+            new NexusForever.Game.Spell.SpellParameters
+            {
+                CharacterSpell         = characterSpell,
+                SpellInfo              = parentSpellInfo,
+                RootSpellInfo          = parentSpellInfo,
+                PrimaryTargetId        = PrimaryTargetId,
+                UserInitiatedSpellCast = true,
+                ClientContextToken     = ClientContextToken,
+                ClientRequestSource    = "test-charge"
+            },
+            globalSpellManager: CreateGlobalSpellManager(),
+            scriptManager: CreateScriptManager(),
+            gameTableManager: CreateGameTableManager());
 
         Assert.Equal(CastResult.Ok, spell.Cast());
         spell.Update(1.1d);
@@ -113,17 +117,25 @@ public class SpellChargeReleaseTests
         Assert.Contains(playerProxy.GetInvocations(nameof(IWorldEntity.EnqueueToVisible)), i => i.Arguments[0] is ServerSpellFinish);
     }
 
-    private static IServiceProvider BuildProvider()
+    private static IScriptManager CreateScriptManager()
     {
         IScriptCollection scriptCollection = RecordingDispatchProxy<IScriptCollection>.Create(out _);
         IScriptManager scriptManager = RecordingDispatchProxy<IScriptManager>.Create(out RecordingDispatchProxy<IScriptManager> scriptManagerProxy);
         scriptManagerProxy.SetMethodReturn(nameof(IScriptManager.InitialiseOwnedScripts), scriptCollection);
+        return scriptManager;
+    }
 
-        return new ServiceCollection()
-            .AddSingleton<NexusForever.Game.Spell.GlobalSpellManager>()
-            .AddSingleton(new GameTableManager(Options.Create(new GameTableConfig())))
-            .AddSingleton(scriptManager)
-            .BuildServiceProvider();
+    private static IGameTableManager CreateGameTableManager()
+    {
+        return RecordingDispatchProxy<IGameTableManager>.Create(out _);
+    }
+
+    private static IGlobalSpellManager CreateGlobalSpellManager()
+    {
+        IGlobalSpellManager globalSpellManager = RecordingDispatchProxy<IGlobalSpellManager>.Create(out RecordingDispatchProxy<IGlobalSpellManager> proxy);
+        proxy.SetProperty(nameof(IGlobalSpellManager.NextCastingId), 1u);
+        proxy.SetProperty(nameof(IGlobalSpellManager.NextEffectId), 1u);
+        return globalSpellManager;
     }
 
     private static IPlayer CreatePlayer(

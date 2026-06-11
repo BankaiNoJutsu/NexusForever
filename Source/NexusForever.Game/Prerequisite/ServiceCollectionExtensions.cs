@@ -9,7 +9,7 @@ namespace NexusForever.Game.Prerequisite
     {
         public static void AddGamePrerequisite(this IServiceCollection sc)
         {
-            sc.AddSingletonLegacy<IPrerequisiteManager, PrerequisiteManager>();
+            sc.AddSingleton<IPrerequisiteManager, PrerequisiteManager>();
 
             sc.AddTransientFactory<IPrerequisiteParameters, PrerequisiteParameters>();
 

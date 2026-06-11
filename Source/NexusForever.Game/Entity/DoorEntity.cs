@@ -30,7 +30,7 @@ namespace NexusForever.Game.Entity
         {
             base.Initialise(model);
 
-            scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<IDoorEntity>(this);
+            scriptCollection = GetScriptManager().InitialiseEntityScripts<IDoorEntity>(this);
             InitialiseDoorState();
         }
 
@@ -38,7 +38,7 @@ namespace NexusForever.Game.Entity
         {
             base.Initialise(creatureInfo, model);
 
-            scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<IDoorEntity>(this);
+            scriptCollection = GetScriptManager().InitialiseEntityScripts<IDoorEntity>(this);
             InitialiseDoorState();
         }
 

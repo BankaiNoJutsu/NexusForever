@@ -1,5 +1,4 @@
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game;
 using NexusForever.Game.Abstract.Entity;
@@ -12,11 +11,9 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Mail;
 using NexusForever.Network.World.Message.Static;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Mail;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class MailManagerDeliveryTests
 {
     [Fact]
@@ -45,63 +42,52 @@ public class MailManagerDeliveryTests
     [Fact]
     public void MailPayCod_QueuesInstantCashSettlementToSender()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        using ServiceProvider provider = new ServiceCollection()
-            .AddSingleton(new AssetManager())
-            .BuildServiceProvider();
-        LegacyServiceProvider.Provider = provider;
+        var assetManager = new AssetManager();
 
-        try
-        {
-            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
-            ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out RecordingDispatchProxy<ICurrencyManager> currencyProxy);
-            currencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out RecordingDispatchProxy<ICurrencyManager> currencyProxy);
+        currencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
 
-            IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
-            playerProxy.SetProperty(nameof(IPlayer.CharacterId), 100ul);
-            playerProxy.SetProperty(nameof(IPlayer.Session), session);
-            playerProxy.SetProperty(nameof(IPlayer.CurrencyManager), currencyManager);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 100ul);
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+        playerProxy.SetProperty(nameof(IPlayer.CurrencyManager), currencyManager);
 
-            var manager = new MailManager(player, new CharacterModel());
-            MailItem codMail = new(MailModel(
-                id: 321ul,
-                recipientId: 100ul,
-                senderId: 200ul,
-                subject: "Crafted widget",
-                currencyAmount: 550ul,
-                isCashOnDelivery: true));
-            GetAvailableMail(manager).Add(codMail.Id, codMail);
+        var manager = new MailManager(player, new CharacterModel(), assetManager);
+        MailItem codMail = new(MailModel(
+            id: 321ul,
+            recipientId: 100ul,
+            senderId: 200ul,
+            subject: "Crafted widget",
+            currencyAmount: 550ul,
+            isCashOnDelivery: true));
+        GetAvailableMail(manager).Add(codMail.Id, codMail);
 
-            manager.MailPayCod(codMail.Id);
+        manager.MailPayCod(codMail.Id);
 
-            RecordingDispatchProxy<ICurrencyManager>.Invocation debit = Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
-            Assert.Equal(CurrencyType.Credits, debit.Arguments[0]);
-            Assert.Equal(550ul, debit.Arguments[1]);
-            Assert.Equal(false, debit.Arguments[2]);
+        RecordingDispatchProxy<ICurrencyManager>.Invocation debit = Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        Assert.Equal(CurrencyType.Credits, debit.Arguments[0]);
+        Assert.Equal(550ul, debit.Arguments[1]);
+        Assert.Equal(false, debit.Arguments[2]);
 
-            Assert.True(codMail.HasPaidOrCollectedCurrency);
-            Assert.Equal(MailFlag.NotReturnable, codMail.Flags & MailFlag.NotReturnable);
+        Assert.True(codMail.HasPaidOrCollectedCurrency);
+        Assert.Equal(MailFlag.NotReturnable, codMail.Flags & MailFlag.NotReturnable);
 
-            IMailItem settlement = Assert.Single(GetOutgoingMail(manager));
-            Assert.Equal(200ul, settlement.RecipientId);
-            Assert.Equal(100ul, settlement.SenderId);
-            Assert.Equal(SenderType.Player, settlement.SenderType);
-            Assert.Equal("Cash from: Crafted widget", settlement.Subject);
-            Assert.Equal(550ul, settlement.CurrencyAmount);
-            Assert.False(settlement.IsCashOnDelivery);
-            Assert.Equal(DeliverySpeed.Instant, settlement.DeliverySpeed);
+        IMailItem settlement = Assert.Single(GetOutgoingMail(manager));
+        Assert.Equal(200ul, settlement.RecipientId);
+        Assert.Equal(100ul, settlement.SenderId);
+        Assert.Equal(SenderType.Player, settlement.SenderType);
+        Assert.Equal("Cash from: Crafted widget", settlement.Subject);
+        Assert.Equal(550ul, settlement.CurrencyAmount);
+        Assert.False(settlement.IsCashOnDelivery);
+        Assert.Equal(DeliverySpeed.Instant, settlement.DeliverySpeed);
 
-            ServerMailResult result = GetEncryptedMessages(sessionProxy)
-                .OfType<ServerMailResult>()
-                .Single();
-            Assert.Equal(MailResultAction.PayCashOnDelivery, result.Action);
-            Assert.Equal(321ul, result.MailId);
-            Assert.Equal(GenericError.Ok, result.Result);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        ServerMailResult result = GetEncryptedMessages(sessionProxy)
+            .OfType<ServerMailResult>()
+            .Single();
+        Assert.Equal(MailResultAction.PayCashOnDelivery, result.Action);
+        Assert.Equal(321ul, result.MailId);
+        Assert.Equal(GenericError.Ok, result.Result);
     }
 
     [Fact]
@@ -141,6 +127,25 @@ public class MailManagerDeliveryTests
 
         var manager = new MailManager(player, new CharacterModel());
         IMailItem mail = CreateMailNearExpiry(457ul, beforeExpiry: true);
+        GetAvailableMail(manager).Add(mail.Id, mail);
+
+        manager.Update(1000d);
+
+        Assert.Same(mail, Assert.Single(GetAvailableMail(manager).Values));
+        Assert.Empty(GetExpiredMail(manager));
+        Assert.Empty(GetEncryptedMessages(sessionProxy).OfType<ServerMailItemDeprecation>());
+    }
+
+    [Fact]
+    public void Update_DoesNotExpireUnspecifiedUtcMailBeforeExactExpiryInstant()
+    {
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 99ul);
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+
+        var manager = new MailManager(player, new CharacterModel());
+        IMailItem mail = CreateMailNearExpiry(459ul, beforeExpiry: true, unspecifiedUtc: true);
         GetAvailableMail(manager).Add(mail.Id, mail);
 
         manager.Update(1000d);
@@ -406,13 +411,17 @@ public class MailManagerDeliveryTests
         return mail;
     }
 
-    private static IMailItem CreateMailNearExpiry(ulong id, bool beforeExpiry)
+    private static IMailItem CreateMailNearExpiry(ulong id, bool beforeExpiry, bool unspecifiedUtc = false)
     {
         IMailItem mail = RecordingDispatchProxy<IMailItem>.Create(out RecordingDispatchProxy<IMailItem> mailProxy);
-        mailProxy.SetProperty(nameof(IMailItem.Id), id);
-        mailProxy.SetProperty(nameof(IMailItem.CreateTime), beforeExpiry
+        DateTime createTime = beforeExpiry
             ? DateTime.UtcNow.AddDays(-1d).AddMinutes(5d)
-            : DateTime.UtcNow.AddDays(-1d).AddMinutes(-5d));
+            : DateTime.UtcNow.AddDays(-1d).AddMinutes(-5d);
+        if (unspecifiedUtc)
+            createTime = DateTime.SpecifyKind(createTime, DateTimeKind.Unspecified);
+
+        mailProxy.SetProperty(nameof(IMailItem.Id), id);
+        mailProxy.SetProperty(nameof(IMailItem.CreateTime), createTime);
         mailProxy.SetProperty(nameof(IMailItem.ExpiryTime), 1f);
         mailProxy.SetMethodReturn(nameof(IMailItem.IsReadyToDeliver), true);
         mailProxy.SetMethodReturn(nameof(IMailItem.Build), new ServerMailAvailable.Mail

@@ -8,9 +8,9 @@ namespace NexusForever.Game.Map
 {
     internal static class ZoneCompletionRewardResolver
     {
-        public static IReadOnlyList<ushort> GetExplorationOnlyTitleRewards(uint mapZoneId)
+        public static IReadOnlyList<ushort> GetExplorationOnlyTitleRewards(uint mapZoneId, IGameTableManager gameTableManager)
         {
-            ZoneCompletionEntry[] entries = GameTableManager.Instance.ZoneCompletion?.Entries;
+            ZoneCompletionEntry[] entries = gameTableManager?.ZoneCompletion?.Entries;
             if (entries == null)
                 return [];
 
@@ -25,7 +25,7 @@ namespace NexusForever.Game.Map
             return titleIds.Length == 1 ? titleIds : [];
         }
 
-        public static bool TryGetTitleReward(IPlayer player, uint mapZoneId, bool explorationComplete, out ushort titleId)
+        public static bool TryGetTitleReward(IPlayer player, uint mapZoneId, bool explorationComplete, out ushort titleId, IGameTableManager gameTableManager)
         {
             titleId = 0;
 
@@ -36,20 +36,20 @@ namespace NexusForever.Game.Map
             if (faction == null)
                 return false;
 
-            ZoneCompletionEntry entry = GetEntry(mapZoneId, faction);
+            ZoneCompletionEntry entry = GetEntry(mapZoneId, faction, gameTableManager);
             if (entry == null || !TryGetTitleId(entry, out titleId))
                 return false;
 
             if (IsExplorationOnly(entry))
                 return true;
 
-            ZoneCompletionProgress progress = ZoneCompletionProgressTracker.GetProgress(player, mapZoneId);
+            ZoneCompletionProgress progress = ZoneCompletionProgressTracker.GetProgress(player, mapZoneId, gameTableManager);
             return MeetsCategoryRequirements(entry, progress);
         }
 
-        public static ZoneCompletionEntry GetEntry(uint mapZoneId, ZoneCompletionFaction? faction)
+        public static ZoneCompletionEntry GetEntry(uint mapZoneId, ZoneCompletionFaction? faction, IGameTableManager gameTableManager)
         {
-            ZoneCompletionEntry[] entries = GameTableManager.Instance.ZoneCompletion?.Entries;
+            ZoneCompletionEntry[] entries = gameTableManager?.ZoneCompletion?.Entries;
             if (entries == null)
                 return null;
 

@@ -3,14 +3,13 @@ using System.Diagnostics;
 using NexusForever.Database;
 using NexusForever.Database.Auth;
 using NexusForever.Game.Abstract.Server;
-using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
 using NexusForever.Shared.Game;
 using NLog;
 
 namespace NexusForever.Game.Server
 {
-    public sealed class ServerManager : Singleton<ServerManager>, IServerManager
+    public sealed class ServerManager : IServerManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
@@ -26,6 +25,13 @@ namespace NexusForever.Game.Server
         private readonly ManualResetEventSlim waitHandle = new();
 
         private volatile CancellationTokenSource cancellationToken;
+        private readonly IDatabaseManager databaseManager;
+
+        public ServerManager(
+            IDatabaseManager databaseManager = null)
+        {
+            this.databaseManager = databaseManager;
+        }
 
         /// <summary>
         /// Initialise <see cref="IServerManager"/> and any related resources.
@@ -57,17 +63,25 @@ namespace NexusForever.Game.Server
 
         private void InitialiseServers()
         {
-            Servers = DatabaseManager.Instance.GetDatabase<AuthDatabase>().GetServers()
+            Servers = GetAuthDatabase().GetServers()
                 .Select(s => (IServerInfo)new ServerInfo(s))
                 .ToImmutableList();
         }
 
         private void InitialiseServerMessages()
         {
-            ServerMessages = DatabaseManager.Instance.GetDatabase<AuthDatabase>().GetServerMessages()
+            ServerMessages = GetAuthDatabase().GetServerMessages()
                 .GroupBy(m => m.Index)
                 .Select(g => (IServerMessageInfo)new ServerMessageInfo(g))
                 .ToImmutableList();
+        }
+
+        private AuthDatabase GetAuthDatabase()
+        {
+            if (databaseManager == null)
+                throw new InvalidOperationException("ServerManager requires an IDatabaseManager.");
+
+            return databaseManager.GetDatabase<AuthDatabase>();
         }
 
         private void ServerPollThread()

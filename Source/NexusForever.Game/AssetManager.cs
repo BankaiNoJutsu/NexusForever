@@ -10,11 +10,10 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game
 {
-    public sealed class AssetManager : Singleton<AssetManager>, IAssetManager
+    public sealed class AssetManager : IAssetManager
     {
         public static ImmutableDictionary<InventoryLocation, uint> InventoryLocationCapacities { get; private set; }
 
@@ -33,9 +32,20 @@ namespace NexusForever.Game
 
         private ImmutableDictionary<AccountTier, ImmutableList<RewardPropertyPremiumModifierEntry>> rewardPropertiesByTier;
 
+        private readonly IDatabaseManager databaseManager;
+        private readonly IGameTableManager gameTableManager;
+
+        public AssetManager(
+            IDatabaseManager databaseManager = null,
+            IGameTableManager gameTableManager = null)
+        {
+            this.databaseManager  = databaseManager;
+            this.gameTableManager = gameTableManager;
+        }
+
         public void Initialise()
         {
-            nextMailId = DatabaseManager.Instance.GetDatabase<CharacterDatabase>().GetNextMailId() + 1ul;
+            nextMailId = GetCharacterDatabase().GetNextMailId() + 1ul;
 
             CacheInventoryBagCapacities();
             CacheItemDisplaySourceEntries();
@@ -63,8 +73,9 @@ namespace NexusForever.Game
         private void CacheItemDisplaySourceEntries()
         {
             var entries = new Dictionary<uint, List<ItemDisplaySourceEntryEntry>>();
+            IGameTableManager manager = GetGameTableManager();
             IEnumerable<ItemDisplaySourceEntryEntry> itemDisplaySourceEntries =
-                GameTableManager.Instance.ItemDisplaySourceEntry?.Entries ?? Enumerable.Empty<ItemDisplaySourceEntryEntry>();
+                manager.ItemDisplaySourceEntry?.Entries ?? Enumerable.Empty<ItemDisplaySourceEntryEntry>();
             foreach (ItemDisplaySourceEntryEntry entry in itemDisplaySourceEntries)
             {
                 if (!entries.ContainsKey(entry.ItemSourceId))
@@ -79,7 +90,7 @@ namespace NexusForever.Game
         private void CacheTutorials()
         {
             var zoneEntries =  ImmutableDictionary.CreateBuilder<uint, uint>();
-            foreach (TutorialModel tutorial in DatabaseManager.Instance.GetDatabase<WorldDatabase>().GetTutorialTriggers())
+            foreach (TutorialModel tutorial in GetWorldDatabase().GetTutorialTriggers())
             {
                 if (tutorial.TriggerId == 0) // Don't add Tutorials with no trigger ID
                     continue;
@@ -94,8 +105,9 @@ namespace NexusForever.Game
         private void CacheCreatureTargetGroups()
         {
             var entries = ImmutableDictionary.CreateBuilder<uint, List<uint>>();
+            IGameTableManager manager = GetGameTableManager();
             IEnumerable<TargetGroupEntry> targetGroupEntries =
-                GameTableManager.Instance.TargetGroup?.Entries ?? Enumerable.Empty<TargetGroupEntry>();
+                manager.TargetGroup?.Entries ?? Enumerable.Empty<TargetGroupEntry>();
             foreach (TargetGroupEntry entry in targetGroupEntries)
             {
                 if ((TargetGroupType)entry.Type != TargetGroupType.CreatureIdGroup)
@@ -127,7 +139,7 @@ namespace NexusForever.Game
                 case TargetGroupType.OtherTargetGroup:
                 case TargetGroupType.OtherTargetGroupCreatures:
                     foreach (uint targetGroupId in entry.DataEntries.Where(id => id != 0u))
-                        AddToTargets(GameTableManager.Instance.TargetGroup?.GetEntry(targetGroupId), targetIds, unhandledTargetGroups, visitedTargetGroups);
+                        AddToTargets(GetGameTableManager().TargetGroup?.GetEntry(targetGroupId), targetIds, unhandledTargetGroups, visitedTargetGroups);
                     break;
                 default:
                     unhandledTargetGroups.Add((TargetGroupType)entry.Type);
@@ -139,9 +151,10 @@ namespace NexusForever.Game
         {
             var entries = ImmutableDictionary.CreateBuilder<uint, ImmutableList<uint>>();
             var unhandledTargetGroups = new HashSet<TargetGroupType>();
+            IGameTableManager manager = GetGameTableManager();
 
             IEnumerable<QuestObjectiveEntry> questObjectiveEntries =
-                GameTableManager.Instance.QuestObjective?.Entries ?? Enumerable.Empty<QuestObjectiveEntry>();
+                manager.QuestObjective?.Entries ?? Enumerable.Empty<QuestObjectiveEntry>();
             foreach (QuestObjectiveEntry questObjectiveEntry in questObjectiveEntries
                 .Where(o => o.TargetGroupIdRewardPane > 0u
                     || (QuestObjectiveType)o.Type == QuestObjectiveType.ActivateTargetGroup
@@ -159,7 +172,7 @@ namespace NexusForever.Game
                     continue;
 
                 var targetIds = new HashSet<uint>();
-                AddToTargets(GameTableManager.Instance.TargetGroup?.GetEntry(targetGroupId), targetIds, unhandledTargetGroups, new HashSet<uint>());
+                AddToTargets(manager.TargetGroup?.GetEntry(targetGroupId), targetIds, unhandledTargetGroups, new HashSet<uint>());
                 entries[questObjectiveEntry.Id] = targetIds.Order().ToImmutableList();
             }
 
@@ -170,8 +183,9 @@ namespace NexusForever.Game
         {
             // VIP was intended to be used in China from what I can see, you can force the VIP premium system in the client with the China game mode parameter
             // not supported as the system was unfinished
+            IGameTableManager manager = GetGameTableManager();
             IEnumerable<RewardPropertyPremiumModifierEntry> modifierEntries =
-                GameTableManager.Instance.RewardPropertyPremiumModifier?.Entries ?? Enumerable.Empty<RewardPropertyPremiumModifierEntry>();
+                manager.RewardPropertyPremiumModifier?.Entries ?? Enumerable.Empty<RewardPropertyPremiumModifierEntry>();
             IEnumerable<RewardPropertyPremiumModifierEntry> hybridEntries = modifierEntries
                 .Where(e => (PremiumSystem)e.PremiumSystemEnum == PremiumSystem.Hybrid)
                 .ToList();
@@ -192,7 +206,7 @@ namespace NexusForever.Game
         /// </summary>
         public ImmutableList<ItemDisplaySourceEntryEntry> GetItemDisplaySource(uint itemSource)
         {
-            return itemDisplaySourcesEntry.TryGetValue(itemSource, out ImmutableList<ItemDisplaySourceEntryEntry> entries) ? entries : null;
+            return itemDisplaySourcesEntry != null && itemDisplaySourcesEntry.TryGetValue(itemSource, out ImmutableList<ItemDisplaySourceEntryEntry> entries) ? entries : null;
         }
 
         /// <summary>
@@ -200,7 +214,7 @@ namespace NexusForever.Game
         /// </summary>
         public uint GetTutorialIdForZone(uint zoneId)
         {
-            return zoneTutorials.TryGetValue(zoneId, out uint tutorialId) ? tutorialId : 0;
+            return zoneTutorials != null && zoneTutorials.TryGetValue(zoneId, out uint tutorialId) ? tutorialId : 0;
         }
 
         /// <summary>
@@ -208,7 +222,7 @@ namespace NexusForever.Game
         /// </summary>
         public ImmutableList<uint> GetTargetGroupsForCreatureId(uint creatureId)
         {
-            return creatureAssociatedTargetGroups.TryGetValue(creatureId, out ImmutableList<uint> entries) ? entries : null;
+            return creatureAssociatedTargetGroups != null && creatureAssociatedTargetGroups.TryGetValue(creatureId, out ImmutableList<uint> entries) ? entries : null;
         }
 
         /// <summary>
@@ -216,7 +230,7 @@ namespace NexusForever.Game
         /// </summary>
         public ImmutableList<uint> GetQuestObjectiveTargetIds(uint questObjectiveId)
         {
-            return questObjectiveTargets.TryGetValue(questObjectiveId, out ImmutableList<uint> entries) ? entries : ImmutableList<uint>.Empty;
+            return questObjectiveTargets != null && questObjectiveTargets.TryGetValue(questObjectiveId, out ImmutableList<uint> entries) ? entries : ImmutableList<uint>.Empty;
         }
 
         /// <summary>
@@ -224,7 +238,31 @@ namespace NexusForever.Game
         /// </summary>
         public ImmutableList<RewardPropertyPremiumModifierEntry> GetRewardPropertiesForTier(AccountTier tier)
         {
-            return rewardPropertiesByTier.TryGetValue(tier, out ImmutableList<RewardPropertyPremiumModifierEntry> entries) ? entries : ImmutableList<RewardPropertyPremiumModifierEntry>.Empty;
+            return rewardPropertiesByTier != null && rewardPropertiesByTier.TryGetValue(tier, out ImmutableList<RewardPropertyPremiumModifierEntry> entries) ? entries : ImmutableList<RewardPropertyPremiumModifierEntry>.Empty;
+        }
+
+        private CharacterDatabase GetCharacterDatabase()
+        {
+            if (databaseManager == null)
+                throw new InvalidOperationException($"{nameof(AssetManager)} requires {nameof(IDatabaseManager)}.");
+
+            return databaseManager.GetDatabase<CharacterDatabase>();
+        }
+
+        private WorldDatabase GetWorldDatabase()
+        {
+            if (databaseManager == null)
+                throw new InvalidOperationException($"{nameof(AssetManager)} requires {nameof(IDatabaseManager)}.");
+
+            return databaseManager.GetDatabase<WorldDatabase>();
+        }
+
+        private IGameTableManager GetGameTableManager()
+        {
+            if (gameTableManager == null)
+                throw new InvalidOperationException($"{nameof(AssetManager)} requires {nameof(IGameTableManager)}.");
+
+            return gameTableManager;
         }
     }
 }

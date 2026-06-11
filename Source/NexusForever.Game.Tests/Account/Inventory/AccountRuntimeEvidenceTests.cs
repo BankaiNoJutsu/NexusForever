@@ -25,7 +25,6 @@ using NexusForever.Network.Message;
 using NexusForever.Network.Packet;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
 using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Command.Context;
 using NexusForever.WorldServer.Command.Handler;
@@ -35,7 +34,6 @@ using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity
 
 namespace NexusForever.Game.Tests.Account.Inventory;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class AccountRuntimeEvidenceTests
 {
     private const ushort RealmId = 1;
@@ -46,36 +44,27 @@ public class AccountRuntimeEvidenceTests
     {
         using var output = new AccountEvidenceDirectoryScope();
 
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         TestEnvironment environment = CreateEnvironmentWithOnlineAccounts([1001u],
             CreateCharacter(accountId: 1001u, characterId: 101ul, name: "Source"),
             CreateCharacter(accountId: 2002u, characterId: 202ul, name: "OfflineTarget"));
-        LegacyServiceProvider.Provider = environment.Provider;
 
-        try
-        {
-            environment.Source.Session.ArmNextAccountRuntimeEvidenceCapture();
-            string group = environment.Source.Manager.AddPendingItemGroup([AccountItemId], notify: false);
+        environment.Source.Session.ArmNextAccountRuntimeEvidenceCapture();
+        string group = environment.Source.Manager.AddPendingItemGroup([AccountItemId], notify: false);
 
-            AccountOperationResult result = environment.Source.Manager.GiftPendingItemGroupToCharacter(
-                environment.Source.Player,
-                group,
-                environment.Target.Identity);
+        AccountOperationResult result = environment.Source.Manager.GiftPendingItemGroupToCharacter(
+            environment.Source.Player,
+            group,
+            environment.Target.Identity);
 
-            Assert.Equal(AccountOperationResult.Ok, result);
+        Assert.Equal(AccountOperationResult.Ok, result);
 
-            InMemoryAccountPendingItemRepository.StoredPendingItem stored = Assert.Single(
-                InMemoryAccountPendingItemRepository.GetPendingItems(environment.Target.AccountId));
-            Assert.Equal(group, stored.GroupName);
-            Assert.Equal(AccountItemId, stored.AccountItemId);
-            Assert.Equal(1001u, stored.SenderAccountId);
-            if (Directory.Exists(output.DirectoryPath))
-                Assert.Empty(Directory.GetFiles(output.DirectoryPath, "*.json"));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        InMemoryAccountPendingItemRepository.StoredPendingItem stored = Assert.Single(
+            InMemoryAccountPendingItemRepository.GetPendingItems(environment.Target.AccountId));
+        Assert.Equal(group, stored.GroupName);
+        Assert.Equal(AccountItemId, stored.AccountItemId);
+        Assert.Equal(1001u, stored.SenderAccountId);
+        if (Directory.Exists(output.DirectoryPath))
+            Assert.Empty(Directory.GetFiles(output.DirectoryPath, "*.json"));
     }
 
     [Fact]
@@ -165,10 +154,9 @@ public class AccountRuntimeEvidenceTests
             .AddSingleton(typeof(Microsoft.Extensions.Logging.ILogger<>), typeof(Microsoft.Extensions.Logging.Abstractions.NullLogger<>))
             .BuildServiceProvider();
 
-        LegacyServiceProvider.Provider = provider;
-
-        TestAccount source = CreateAccount(characters[0].AccountId, characters[0].Identity);
-        TestAccount target = characters.Length > 1 ? CreateAccount(characters[1].AccountId, characters[1].Identity) : null;
+        IPendingAccountItemGroupDelivery pendingDelivery = provider.GetRequiredService<IPendingAccountItemGroupDelivery>();
+        TestAccount source = CreateAccount(characters[0].AccountId, characters[0].Identity, pendingDelivery, characterManager, gameTableManager);
+        TestAccount target = characters.Length > 1 ? CreateAccount(characters[1].AccountId, characters[1].Identity, pendingDelivery, characterManager, gameTableManager) : null;
 
         if (onlineAccountIds.Contains(source.AccountId))
             playerManager.AddPlayer(source.Player);
@@ -178,7 +166,12 @@ public class AccountRuntimeEvidenceTests
         return new TestEnvironment(provider, source, target);
     }
 
-    private static TestAccount CreateAccount(uint accountId, NetworkIdentity identity)
+    private static TestAccount CreateAccount(
+        uint accountId,
+        NetworkIdentity identity,
+        IPendingAccountItemGroupDelivery pendingDelivery,
+        ICharacterManager characterManager,
+        IGameTableManager gameTableManager)
     {
         var session = new TestWorldSession();
         IAccount account = RecordingDispatchProxy<IAccount>.Create(out var accountProxy);
@@ -197,11 +190,17 @@ public class AccountRuntimeEvidenceTests
         playerProxy.SetProperty(nameof(IPlayer.CharacterId), identity.Id);
         playerProxy.SetProperty("Guid", (uint)identity.Id);
 
-        var manager = new AccountInventoryManager(account, new AccountModel
+        var manager = new AccountInventoryManager(
+            account,
+            new AccountModel
         {
             AccountInventory    = [],
             AccountItemCooldown = []
-        });
+        },
+            pendingDelivery,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<AccountInventoryManager>.Instance,
+            characterManager,
+            gameTableManager: gameTableManager);
         accountProxy.SetProperty(nameof(IAccount.InventoryManager), manager);
         session.Account = account;
         session.Player = player;

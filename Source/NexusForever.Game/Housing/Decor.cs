@@ -441,7 +441,7 @@ namespace NexusForever.Game.Housing
         {
             return new()
             {
-                RealmId       = RealmContext.Instance.RealmId,
+                RealmId       = Residence.RealmId,
                 DecorId       = DecorId,
                 ResidenceId   = Residence.Id,
                 DecorType     = Type,

@@ -1,7 +1,7 @@
 ﻿using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Game.Prerequisite;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -23,19 +23,30 @@ namespace NexusForever.Game.Entity
         }
 
         private readonly IPlayer player;
+        private readonly IGameTableManager gameTableManager;
+        private readonly ITextFilterManager textFilterManager;
+        private readonly IPrerequisiteManager prerequisiteManager;
         private readonly Dictionary<uint/*petFlairId*/, IPetFlair> petFlairs = new();
         private readonly Dictionary<ulong/*hash*/, IPetCustomisation> petCustomisations = new();
 
         /// <summary>
         /// Create a new <see cref="IPetCustomisationManager"/> from existing <see cref="CharacterModel"/> database model.
         /// </summary>
-        public PetCustomisationManager(IPlayer owner, CharacterModel model)
+        public PetCustomisationManager(
+            IPlayer owner,
+            CharacterModel model,
+            IGameTableManager gameTableManager = null,
+            ITextFilterManager textFilterManager = null,
+            IPrerequisiteManager prerequisiteManager = null)
         {
             player = owner;
+            this.gameTableManager = gameTableManager;
+            this.textFilterManager = textFilterManager;
+            this.prerequisiteManager = prerequisiteManager;
 
             foreach (CharacterPetFlairModel flairModel in model.PetFlair)
             {
-                var petFlair = new PetFlair(flairModel);
+                var petFlair = new PetFlair(flairModel, GetGameTableManager().PetFlair?.GetEntry(flairModel.PetFlairId));
                 if (petFlair.Entry == null)
                     continue;
 
@@ -44,7 +55,7 @@ namespace NexusForever.Game.Entity
 
             foreach (CharacterPetCustomisationModel customisationModel in model.PetCustomisation)
             {
-                var customisation = new PetCustomisation(customisationModel);
+                var customisation = new PetCustomisation(customisationModel, GetGameTableManager().PetFlair);
                 petCustomisations.Add(PetCustomisationHash(customisation.Type, customisation.ObjectId), customisation);
             }
         }
@@ -63,14 +74,14 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void UnlockFlair(ushort id)
         {
-            PetFlairEntry entry = GameTableManager.Instance.PetFlair?.GetEntry(id);
+            PetFlairEntry entry = GetGameTableManager().PetFlair?.GetEntry(id);
             if (entry == null)
                 throw new ArgumentOutOfRangeException();
 
             if (petFlairs.ContainsKey(id))
                 throw new ArgumentException();
 
-            if (entry.PrerequisiteId > 0 && !PrerequisiteManager.Instance.Meets(player, entry.PrerequisiteId))
+            if (entry.PrerequisiteId > 0 && !GetPrerequisiteManager().Meets(player, entry.PrerequisiteId))
                 return;
 
             petFlairs.Add(id, new PetFlair(player.CharacterId, entry));
@@ -94,7 +105,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void RenamePet(PetType type, uint objectId, String name)
         {
-            if (!TextFilterManager.Instance.IsTextValid(name, UserText.ScientistScanbotName))
+            if (!GetTextFilterManager().IsTextValid(name, UserText.ScientistScanbotName))
                 throw new InvalidPacketValueException();
 
             ulong hash = PetCustomisationHash(type, objectId);
@@ -129,7 +140,7 @@ namespace NexusForever.Game.Entity
                 if (!petFlairs.ContainsKey(flairId))
                     throw new ArgumentException();
 
-                entry = GameTableManager.Instance.PetFlair?.GetEntry(flairId);
+                entry = GetGameTableManager().PetFlair?.GetEntry(flairId);
                 if (entry == null)
                     throw new ArgumentException();
             }
@@ -167,7 +178,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void UnlockScanBotProfile(uint id)
         {
-            PathScientistScanBotProfileEntry entry = GameTableManager.Instance.PathScientistScanBotProfile?.GetEntry(id);
+            PathScientistScanBotProfileEntry entry = GetGameTableManager().PathScientistScanBotProfile?.GetEntry(id);
             if (entry == null)
                 throw new ArgumentOutOfRangeException();
 
@@ -206,6 +217,21 @@ namespace NexusForever.Game.Entity
                 petCustomisationList.UnlockedFlair.SetBit(flairBitIndex, true);
 
             player.Session.EnqueueMessageEncrypted(petCustomisationList);
+        }
+
+        private IGameTableManager GetGameTableManager()
+        {
+            return gameTableManager ?? throw new InvalidOperationException("Game table manager dependency was not supplied.");
+        }
+
+        private ITextFilterManager GetTextFilterManager()
+        {
+            return textFilterManager ?? throw new InvalidOperationException("Text filter manager dependency was not supplied.");
+        }
+
+        private IPrerequisiteManager GetPrerequisiteManager()
+        {
+            return prerequisiteManager ?? throw new InvalidOperationException("Prerequisite manager dependency was not supplied.");
         }
     }
 }

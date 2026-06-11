@@ -9,7 +9,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.RBAC;
-using NexusForever.Game.RBAC;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.RBAC;
 using NLog;
@@ -32,7 +31,12 @@ namespace NexusForever.WorldServer.Command.Context
         /// Create a new <see cref="WebSocketCommandContext"/> with the <see cref="Permission"/>'s from the WebSocket <see cref="Role"/>.
         /// </summary>
         public WebSocketCommandContext(WebSocket webSocket)
-            : this(webSocket, null, null)
+            : this(webSocket, null, null, null)
+        {
+        }
+
+        public WebSocketCommandContext(WebSocket webSocket, IRBACManager rbacManager)
+            : this(webSocket, rbacManager, null, null)
         {
         }
 
@@ -40,17 +44,27 @@ namespace NexusForever.WorldServer.Command.Context
         /// Create a new <see cref="WebSocketCommandContext"/> with optional invoker and target entities.
         /// </summary>
         public WebSocketCommandContext(WebSocket webSocket, IWorldEntity invoker, IWorldEntity target = null)
+            : this(webSocket, null, invoker, target)
+        {
+        }
+
+        public WebSocketCommandContext(WebSocket webSocket, IRBACManager rbacManager, IWorldEntity invoker, IWorldEntity target = null)
         {
             WebSocket = webSocket;
             Invoker   = invoker;
             Target    = target;
 
             // websocket role needs to exist in order for the websocket command context to work
-            IRBACRole role = RBACManager.Instance.GetRole(Role.WebSocket);
+            IRBACRole role = GetRbacManager(rbacManager).GetRole(Role.WebSocket);
             if (role == null)
                 throw new InvalidDataException("WebSocket role doesn't exist!");
 
             Permissions = role.Permissions.Keys.ToImmutableHashSet();
+        }
+
+        private static IRBACManager GetRbacManager(IRBACManager rbacManager)
+        {
+            return rbacManager ?? throw new InvalidOperationException("WebSocket command context requires an IRBACManager.");
         }
 
         /// <summary>

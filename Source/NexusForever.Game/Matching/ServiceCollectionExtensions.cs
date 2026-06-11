@@ -13,9 +13,9 @@ namespace NexusForever.Game.Matching
         {
             sc.AddGameMatchingMatch();
 
-            sc.AddSingletonLegacy<IMatchingDataManager, MatchingDataManager>();
+            sc.AddSingleton<IMatchingDataManager, MatchingDataManager>();
             sc.AddSingleton<IMatchingPenaltyStore, DatabaseMatchingPenaltyStore>();
-            sc.AddSingletonLegacy<IMatchingDeserterManager, MatchingDeserterManager>();
+            sc.AddSingleton<IMatchingDeserterManager, MatchingDeserterManager>();
             sc.AddSingleton<IMatchingManager, MatchingManager>();
 
             sc.AddTransientFactory<IMatchingCharacter, MatchingCharacter>();

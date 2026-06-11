@@ -40,7 +40,7 @@ public class ClientRewardUpdateRequestHandlerTests
         var rewardPropertyManager = new TestRewardPropertyManager();
         var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
         var logger = new TestLogger<ClientRewardUpdateRequestHandler>();
-        var handler = new ClientRewardUpdateRequestHandler(logger, NoOpGlobalStorefrontManager.Instance, EmptyRewardRotationRefreshProvider.Instance);
+        var handler = new ClientRewardUpdateRequestHandler(logger, new NoOpGlobalStorefrontManager(), EmptyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(3u));
 
@@ -73,7 +73,7 @@ public class ClientRewardUpdateRequestHandlerTests
         var rewardPropertyManager = new TestRewardPropertyManager();
         var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
         var logger = new TestLogger<ClientRewardUpdateRequestHandler>();
-        var handler = new ClientRewardUpdateRequestHandler(logger, NoOpGlobalStorefrontManager.Instance, NonEmptyRewardRotationRefreshProvider.Instance);
+        var handler = new ClientRewardUpdateRequestHandler(logger, new NoOpGlobalStorefrontManager(), NonEmptyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(2u));
 
@@ -90,7 +90,7 @@ public class ClientRewardUpdateRequestHandlerTests
         var rewardPropertyManager = new TestRewardPropertyManager();
         var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
         var logger = new TestLogger<ClientRewardUpdateRequestHandler>();
-        var handler = new ClientRewardUpdateRequestHandler(logger, NoOpGlobalStorefrontManager.Instance, ContentContextOnlyRewardRotationRefreshProvider.Instance);
+        var handler = new ClientRewardUpdateRequestHandler(logger, new NoOpGlobalStorefrontManager(), ContentContextOnlyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(2u));
 
@@ -154,7 +154,7 @@ public class ClientRewardUpdateRequestHandlerTests
         IFortuneSessionManager fortuneSessionManager = RecordingDispatchProxy<IFortuneSessionManager>.Create(out RecordingDispatchProxy<IFortuneSessionManager> fortuneSessionProxy);
         var handler = new ClientRewardUpdateRequestHandler(
             new TestLogger<ClientRewardUpdateRequestHandler>(),
-            NoOpGlobalStorefrontManager.Instance,
+            new NoOpGlobalStorefrontManager(),
             EmptyRewardRotationRefreshProvider.Instance,
             fortuneSessionManager);
 
@@ -169,7 +169,7 @@ public class ClientRewardUpdateRequestHandlerTests
         var rewardPropertyManager = new TestRewardPropertyManager();
         var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
         var logger = new TestLogger<ClientRewardUpdateRequestHandler>();
-        var handler = new ClientRewardUpdateRequestHandler(logger, NoOpGlobalStorefrontManager.Instance, EmptyRewardRotationRefreshProvider.Instance);
+        var handler = new ClientRewardUpdateRequestHandler(logger, new NoOpGlobalStorefrontManager(), EmptyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(0u));
 
@@ -203,7 +203,7 @@ public class ClientRewardUpdateRequestHandlerTests
         var rewardPropertyManager = new TestRewardPropertyManager();
         var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
         var logger = new TestLogger<ClientRewardUpdateRequestHandler>();
-        var handler = new ClientRewardUpdateRequestHandler(logger, NoOpGlobalStorefrontManager.Instance, EmptyRewardRotationRefreshProvider.Instance);
+        var handler = new ClientRewardUpdateRequestHandler(logger, new NoOpGlobalStorefrontManager(), EmptyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(RewardRotationRefreshBuilder.ContentTypeCount));
 

@@ -6,6 +6,7 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
+using NexusForever.GameTable;
 using NLog;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Entity
@@ -21,13 +22,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 
         private readonly ITradeManager tradeManager;
         private readonly IAssetManager assetManager;
+        private readonly IGameTableManager gameTableManager;
 
         public ClientActivateUnitHandler(
             ITradeManager tradeManager,
-            IAssetManager assetManager)
+            IAssetManager assetManager,
+            IGameTableManager gameTableManager = null)
         {
             this.tradeManager = tradeManager;
             this.assetManager = assetManager;
+            this.gameTableManager = gameTableManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientActivateUnit activateUnit)
@@ -60,7 +64,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 return;
             }
 
-            if (ActivationInteractionGuards.TryRejectOutOfRangeTarget(session, entity))
+            if (ActivationInteractionGuards.TryRejectOutOfRangeTarget(session, entity, gameTableManager: gameTableManager))
             {
                 if (IsTutorialSpecialActivationEntity(entity))
                     log.Debug($"Tutorial activate rejected range: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}.");
@@ -76,7 +80,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             entity.OnActivate(session.Player);
             tradeManager.Cancel(session.Player);
             entity.OnActivateSuccess(session.Player);
-            InteractionObjectiveUpdater.UpdateActivateSuccessObjectives(session.Player, entity, assetManager, includeActivateEntity: true);
+            InteractionObjectiveUpdater.UpdateActivateSuccessObjectives(session.Player, entity, assetManager, includeActivateEntity: true, gameTableManager);
             ActivationAchievementUpdater.Update(session.Player, entity);
 
             if (IsTutorialSpecialActivationEntity(entity))

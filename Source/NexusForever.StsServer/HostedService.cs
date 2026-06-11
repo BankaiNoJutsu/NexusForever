@@ -11,6 +11,7 @@ using NexusForever.Shared.Configuration;
 using NexusForever.Shared.Diagnostics;
 using NexusForever.StsServer.Network;
 using NexusForever.StsServer.Network.Message;
+using NexusForever.StsServer.Network.Message.Handler;
 
 namespace NexusForever.StsServer
 {
@@ -23,21 +24,24 @@ namespace NexusForever.StsServer
         private readonly IMessageManager messageManager;
         private readonly INetworkManager<IStsSession> networkManager;
         private readonly IWorldManager worldManager;
+        private readonly IDatabaseManager databaseManager;
+        private readonly ISharedConfiguration sharedConfiguration;
 
         public HostedService(
-            IServiceProvider sp,
             ILogger<IHostedService> log,
             IMessageManager messageManager,
             INetworkManager<IStsSession> networkManager,
-            IWorldManager worldManager)
+            IWorldManager worldManager,
+            IDatabaseManager databaseManager,
+            ISharedConfiguration sharedConfiguration)
         {
-            LegacyServiceProvider.Provider = sp;
-
             this.log            = log;
 
             this.messageManager = messageManager;
             this.networkManager = networkManager;
             this.worldManager   = worldManager;
+            this.databaseManager = databaseManager;
+            this.sharedConfiguration = sharedConfiguration;
         }
 
         #endregion
@@ -49,9 +53,11 @@ namespace NexusForever.StsServer
         {
             log.LogInformation("Starting...");
 
-            SharedConfiguration.Instance.Initialise<StsServerConfiguration>();
+            sharedConfiguration.Initialise<StsServerConfiguration>();
 
-            DatabaseManager.Instance.Initialise(SharedConfiguration.Instance.Get<DatabaseConfig>());
+            databaseManager.Initialise(sharedConfiguration.Get<DatabaseConfig>());
+            AuthenticationHandler.Initialise(databaseManager);
+            PresenceHandler.Initialise(databaseManager);
 
             // initialise world after all assets have loaded but before any network handlers might be invoked
             worldManager.Initialise(lastTick =>
