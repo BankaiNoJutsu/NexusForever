@@ -73,10 +73,12 @@ namespace NexusForever.AuthServer.Network.Message.Handler
                     return;
                 }
 
+                DateTime nowUtc = DateTime.UtcNow;
                 DateTime? latestSuspension = account.AccountSuspension.Max(suspension => suspension.EndTime);
-                if (latestSuspension != null && latestSuspension > DateTime.Now)
+                DateTime? latestSuspensionUtc = ToUtc(latestSuspension);
+                if (latestSuspensionUtc != null && latestSuspensionUtc > nowUtc)
                 {
-                    SendServerAuthDeniedSuspended(NpLoginResult.AccountSuspended, (float)((DateTime)latestSuspension - DateTime.Now).TotalDays);
+                    SendServerAuthDeniedSuspended(NpLoginResult.AccountSuspended, (float)(latestSuspensionUtc.Value - nowUtc).TotalDays);
                     return;
                 }
 
@@ -131,6 +133,19 @@ namespace NexusForever.AuthServer.Network.Message.Handler
 
             return onlineServers.FirstOrDefault(s => targetedRealms.Contains(s.Model.Id))
                 ?? onlineServers.FirstOrDefault();
+        }
+
+        private static DateTime? ToUtc(DateTime? dateTime)
+        {
+            if (dateTime == null)
+                return null;
+
+            return dateTime.Value.Kind switch
+            {
+                DateTimeKind.Utc   => dateTime.Value,
+                DateTimeKind.Local => dateTime.Value.ToUniversalTime(),
+                _                  => DateTime.SpecifyKind(dateTime.Value, DateTimeKind.Utc)
+            };
         }
     }
 }

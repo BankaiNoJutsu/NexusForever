@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using NexusForever.Database;
 using NexusForever.Database.Auth;
@@ -13,6 +14,13 @@ namespace NexusForever.Game.Account.Inventory
         private const int AccountLockStripeCount = 256;
 
         private static readonly object[] accountLocks = CreateAccountLockStripes();
+        private readonly IDatabaseManager databaseManager;
+
+        public AccountPendingItemRepository(
+            IDatabaseManager databaseManager)
+        {
+            this.databaseManager = databaseManager;
+        }
 
         private static object[] CreateAccountLockStripes()
         {
@@ -25,7 +33,7 @@ namespace NexusForever.Game.Account.Inventory
 
         private static object GetAccountLock(uint accountId) => accountLocks[accountId % AccountLockStripeCount];
 
-        public void AppendPendingGroup(uint targetAccountId, AccountPendingItemInsert insert)
+        public string AppendPendingGroup(uint targetAccountId, AccountPendingItemInsert insert)
         {
             ArgumentNullException.ThrowIfNull(insert);
             ArgumentNullException.ThrowIfNull(insert.AccountItemIds);
@@ -42,7 +50,7 @@ namespace NexusForever.Game.Account.Inventory
 
             lock (GetAccountLock(targetAccountId))
             {
-                DatabaseManager.Instance.GetDatabase<AuthDatabase>().SaveBlocking(context =>
+                databaseManager.GetDatabase<AuthDatabase>().SaveBlocking(context =>
                 {
                     ulong nextPendingItemId = context.AccountPendingItem
                         .Where(p => p.Id == targetAccountId)
@@ -67,6 +75,25 @@ namespace NexusForever.Game.Account.Inventory
                             HasTargetPlayerIdentity = insert.HasTargetPlayerIdentity
                         });
                     }
+                });
+            }
+
+            return groupName;
+        }
+
+        public void RemovePendingGroup(uint targetAccountId, string groupName)
+        {
+            if (string.IsNullOrWhiteSpace(groupName))
+                return;
+
+            lock (GetAccountLock(targetAccountId))
+            {
+                databaseManager.GetDatabase<AuthDatabase>().SaveBlocking(context =>
+                {
+                    List<AccountPendingItemModel> rows = context.AccountPendingItem
+                        .Where(p => p.Id == targetAccountId && p.GroupName == groupName)
+                        .ToList();
+                    context.AccountPendingItem.RemoveRange(rows);
                 });
             }
         }

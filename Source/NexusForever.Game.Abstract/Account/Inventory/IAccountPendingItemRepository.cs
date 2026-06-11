@@ -16,6 +16,7 @@ namespace NexusForever.Game.Abstract.Account.Inventory
 
     public interface IAccountPendingItemRepository
     {
-        void AppendPendingGroup(uint targetAccountId, AccountPendingItemInsert insert);
+        string AppendPendingGroup(uint targetAccountId, AccountPendingItemInsert insert);
+        void RemovePendingGroup(uint targetAccountId, string groupName);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +18,6 @@ namespace NexusForever.Database.Auth
     public class AuthDatabase : IDatabase
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
-        private static readonly object storePurchaseHistoryLock = new();
 
         private IConnectionString config;
 
@@ -322,10 +322,20 @@ namespace NexusForever.Database.Auth
             {
                 Id      = accountId,
                 Reason  = reason,
-                EndTime = endTime,
+                EndTime = ToUtc(endTime),
             });
 
             context.SaveChanges();
+        }
+
+        private static DateTime? ToUtc(DateTime? dateTime)
+        {
+            if (dateTime == null)
+                return null;
+
+            return dateTime.Value.Kind == DateTimeKind.Utc
+                ? dateTime.Value
+                : dateTime.Value.ToUniversalTime();
         }
 
         public List<AccountCREDDOrderModel> GetCREDDOrders()
@@ -404,16 +414,37 @@ namespace NexusForever.Database.Auth
 
         public void AddStorePurchaseHistory(AccountStorePurchaseHistoryModel model)
         {
-            lock (storePurchaseHistoryLock)
-            {
-                using var context = new AuthContext(config);
-                ulong nextId = context.AccountStorePurchaseHistory
-                    .Select(h => (ulong?)h.Id)
-                    .Max() ?? 0ul;
-                model.Id = nextId + 1ul;
-                context.AccountStorePurchaseHistory.Add(model);
-                context.SaveChanges();
-            }
+            using var context = new AuthContext(config);
+            context.AccountStorePurchaseHistory.Add(model);
+            context.SaveChanges();
+        }
+
+        public void DeleteStorePurchaseHistory(ulong id)
+        {
+            using var context = new AuthContext(config);
+            AccountStorePurchaseHistoryModel model = context.AccountStorePurchaseHistory.Find(id);
+            if (model == null)
+                return;
+
+            context.AccountStorePurchaseHistory.Remove(model);
+            context.SaveChanges();
+        }
+
+        public bool TryAddStorePurchaseHistory(AccountStorePurchaseHistoryModel model, DateTime sinceUtc, int maxPurchases)
+        {
+            using var context = new AuthContext(config);
+            using var transaction = context.Database.BeginTransaction(IsolationLevel.Serializable);
+
+            int purchaseCount = context.AccountStorePurchaseHistory
+                .AsNoTracking()
+                .Count(h => h.AccountId == model.AccountId && h.PurchasedUtc >= sinceUtc);
+            if (purchaseCount >= maxPurchases)
+                return false;
+
+            context.AccountStorePurchaseHistory.Add(model);
+            context.SaveChanges();
+            transaction.Commit();
+            return true;
         }
 
         public List<AccountStorePurchaseHistoryModel> GetStorePurchaseHistory(uint accountId, int maxRows)

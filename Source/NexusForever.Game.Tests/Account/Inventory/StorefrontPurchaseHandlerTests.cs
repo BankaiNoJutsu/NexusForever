@@ -25,13 +25,14 @@ using NexusForever.WorldServer.Account;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Account;
 using NexusForever.WorldServer.Network.Message.Handler.Character;
-using NexusForever.WorldServer.Service;
 using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
 
 namespace NexusForever.Game.Tests.Account.Inventory;
 
 public class StorefrontPurchaseHandlerTests
 {
+    private static int nextAccountId = 5000;
+
     [Fact]
     public void CharacterPurchase_WithMismatchedTarget_ReturnsStoreError()
     {
@@ -257,6 +258,77 @@ public class StorefrontPurchaseHandlerTests
     }
 
     [Fact]
+    public void AccountPurchase_WhenDeliveryThrows_RefundsAndRollsBackPartialDelivery()
+    {
+        IWorldSession session = CreateSession(
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out RecordingDispatchProxy<IAccountCurrencyManager> currencyProxy,
+            out RecordingDispatchProxy<IAccountInventoryManager> inventoryProxy);
+        int addItemCallCount = 0;
+        inventoryProxy.SetMethodHandler(nameof(IAccountInventoryManager.AddItem), _ =>
+        {
+            addItemCallCount++;
+            if (addItemCallCount % 2 == 0)
+                throw new InvalidOperationException("delivery failed");
+
+            return CreateAccountInventoryItem((ulong)addItemCallCount);
+        });
+        IGlobalStorefrontManager storefrontManager = CreateStorefrontManager(
+            offerId: 1627u,
+            accountItemId: 401u,
+            priceCurrency: AccountCurrencyType.Protobuck,
+            price: 80f,
+            amount: 2u);
+        var handler = new ClientStorefrontPurchaseAccountHandler(
+            NullLogger<ClientStorefrontPurchaseAccountHandler>.Instance,
+            CreateStorefrontPurchaseService(storefrontManager),
+            RecordingDispatchProxy<ICharacterManager>.Create(out _),
+            RecordingDispatchProxy<IPlayerManager>.Create(out _),
+            CreateGameTableManager(),
+            new InMemoryAccountPendingItemRepository(),
+            RecordingDispatchProxy<ICharacterListManager>.Create(out _));
+
+        ClientStorefrontPurchaseAccount purchase = ReadAccountPurchase(
+            offerId: 1627u,
+            currencyId: AccountCurrencyType.Protobuck,
+            target: new NetworkIdentity(),
+            accountTarget: new NetworkIdentity(),
+            recipientName: string.Empty);
+
+        for (int i = 0; i < StorePurchaseVelocityLimiter.MaxPurchasesPerWindow; i++)
+            handler.HandleMessage(session, purchase);
+
+        IReadOnlyList<ServerStoreError> errors = GetMessages<ServerStoreError>(sessionProxy);
+        Assert.Equal(StorePurchaseVelocityLimiter.MaxPurchasesPerWindow, errors.Count);
+        Assert.All(errors, error => Assert.Equal(StoreError.GenericFail, error.Error));
+        Assert.Empty(GetMessages<ServerStorePurchaseOfferResultVariant>(sessionProxy));
+        Assert.Empty(GetMessages<ServerStorePurchaseOfferResult>(sessionProxy));
+        Assert.True(StorePurchaseVelocityLimiter.IsWithinVelocityLimit(session.Account.Id, null));
+
+        IReadOnlyList<RecordingDispatchProxy<IAccountCurrencyManager>.Invocation> debits =
+            currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencySubtractAmount));
+        Assert.Equal(StorePurchaseVelocityLimiter.MaxPurchasesPerWindow, debits.Count);
+        Assert.All(debits, debit =>
+        {
+            Assert.Equal(AccountCurrencyType.Protobuck, debit.Arguments[0]);
+            Assert.Equal(80ul, debit.Arguments[1]);
+        });
+
+        IReadOnlyList<RecordingDispatchProxy<IAccountCurrencyManager>.Invocation> refunds =
+            currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount));
+        Assert.Equal(StorePurchaseVelocityLimiter.MaxPurchasesPerWindow, refunds.Count);
+        Assert.All(refunds, refund =>
+        {
+            Assert.Equal(AccountCurrencyType.Protobuck, refund.Arguments[0]);
+            Assert.Equal(80ul, refund.Arguments[1]);
+        });
+
+        IReadOnlyList<RecordingDispatchProxy<IAccountInventoryManager>.Invocation> itemRollbacks =
+            inventoryProxy.GetInvocations(nameof(IAccountInventoryManager.RemoveItem));
+        Assert.Equal(StorePurchaseVelocityLimiter.MaxPurchasesPerWindow, itemRollbacks.Count);
+    }
+
+    [Fact]
     public void AccountPurchase_WithoutPlayer_DirectAccountEntitlementUnlock_AppliesAndRefreshesCharacterList()
     {
         IWorldSession session = CreateSession(
@@ -447,6 +519,65 @@ public class StorefrontPurchaseHandlerTests
     }
 
     [Fact]
+    public void AccountPurchase_DirectAccountGrantThrows_RollsBackGrantedCurrencyAndRefundsCharge()
+    {
+        IWorldSession session = CreateSession(
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out RecordingDispatchProxy<IAccountCurrencyManager> currencyProxy,
+            out RecordingDispatchProxy<IAccountInventoryManager> inventoryProxy,
+            out RecordingDispatchProxy<IAccountEntitlementManager> entitlementProxy,
+            hasPlayer: false);
+        entitlementProxy.SetMethodHandler(nameof(IAccountEntitlementManager.UpdateEntitlement), _ => throw new InvalidOperationException("entitlement failed"));
+        IGlobalStorefrontManager storefrontManager = CreateStorefrontManager(
+            offerId: 1701u,
+            accountItemId: 902u,
+            priceCurrency: AccountCurrencyType.Protobuck,
+            price: 1f,
+            accountItemEntry: new AccountItemEntry
+            {
+                Id                    = 902u,
+                AccountCurrencyEnum   = (uint)AccountCurrencyType.Omnibit,
+                AccountCurrencyAmount = 610ul,
+                EntitlementId         = (uint)EntitlementType.BaseCharacterSlots,
+                EntitlementCount      = 1u
+            });
+        var handler = new ClientStorefrontPurchaseAccountHandler(
+            NullLogger<ClientStorefrontPurchaseAccountHandler>.Instance,
+            CreateStorefrontPurchaseService(storefrontManager),
+            RecordingDispatchProxy<ICharacterManager>.Create(out _),
+            RecordingDispatchProxy<IPlayerManager>.Create(out _),
+            CreateGameTableManager(CreateCharacterSlotEntitlementEntry()),
+            new InMemoryAccountPendingItemRepository(),
+            RecordingDispatchProxy<ICharacterListManager>.Create(out RecordingDispatchProxy<ICharacterListManager> characterListProxy));
+
+        ClientStorefrontPurchaseAccount purchase = ReadAccountPurchase(
+            offerId: 1701u,
+            currencyId: AccountCurrencyType.Protobuck,
+            target: new NetworkIdentity(),
+            accountTarget: new NetworkIdentity(),
+            recipientName: string.Empty);
+
+        handler.HandleMessage(session, purchase);
+
+        ServerStoreError error = Assert.Single(GetMessages<ServerStoreError>(sessionProxy));
+        Assert.Equal(StoreError.GenericFail, error.Error);
+        Assert.Empty(GetMessages<ServerStorePurchaseOfferResultVariant>(sessionProxy));
+        Assert.Empty(GetMessages<ServerStorePurchaseOfferResult>(sessionProxy));
+        Assert.Empty(characterListProxy.GetInvocations(nameof(ICharacterListManager.SendCharacterListPackets)));
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IAccountInventoryManager.AddItem)));
+
+        IReadOnlyList<RecordingDispatchProxy<IAccountCurrencyManager>.Invocation> debits =
+            currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencySubtractAmount));
+        Assert.Contains(debits, debit => Equals(debit.Arguments[0], AccountCurrencyType.Protobuck) && Equals(debit.Arguments[1], 1ul));
+        Assert.Contains(debits, debit => Equals(debit.Arguments[0], AccountCurrencyType.Omnibit) && Equals(debit.Arguments[1], 610ul));
+
+        IReadOnlyList<RecordingDispatchProxy<IAccountCurrencyManager>.Invocation> credits =
+            currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount));
+        Assert.Contains(credits, credit => Equals(credit.Arguments[0], AccountCurrencyType.Omnibit) && Equals(credit.Arguments[1], 610ul));
+        Assert.Contains(credits, credit => Equals(credit.Arguments[0], AccountCurrencyType.Protobuck) && Equals(credit.Arguments[1], 1ul));
+    }
+
+    [Fact]
     public void AccountPurchase_WithUnsupportedOfferItemType_ReturnsCannotUseOfferAndDoesNotCharge()
     {
         IWorldSession session = CreateSession(
@@ -512,7 +643,7 @@ public class StorefrontPurchaseHandlerTests
         IAccountInventoryManager inventoryManager = RecordingDispatchProxy<IAccountInventoryManager>.Create(out inventoryProxy);
         IAccountEntitlementManager entitlementManager = RecordingDispatchProxy<IAccountEntitlementManager>.Create(out entitlementProxy);
 
-        accountProxy.SetProperty(nameof(IAccount.Id), 5001u);
+        accountProxy.SetProperty(nameof(IAccount.Id), (uint)Interlocked.Increment(ref nextAccountId));
         accountProxy.SetProperty(nameof(IAccount.CurrencyManager), currencyManager);
         accountProxy.SetProperty(nameof(IAccount.InventoryManager), inventoryManager);
         accountProxy.SetProperty(nameof(IAccount.EntitlementManager), entitlementManager);
@@ -546,7 +677,7 @@ public class StorefrontPurchaseHandlerTests
     {
         storefrontManager ??= RecordingDispatchProxy<IGlobalStorefrontManager>.Create(out _);
         IDatabaseManager databaseManager = RecordingDispatchProxy<IDatabaseManager>.Create(out _);
-        return new StorefrontPurchaseService(databaseManager, storefrontManager, new BackgroundTaskRunner());
+        return new StorefrontPurchaseService(databaseManager, storefrontManager);
     }
 
     private static IGlobalStorefrontManager CreateStorefrontManager(
@@ -576,6 +707,13 @@ public class StorefrontPurchaseHandlerTests
             (uint)args[0] == offerId ? offerItem : null);
 
         return storefrontManager;
+    }
+
+    private static IAccountInventoryItem CreateAccountInventoryItem(ulong id)
+    {
+        IAccountInventoryItem item = RecordingDispatchProxy<IAccountInventoryItem>.Create(out RecordingDispatchProxy<IAccountInventoryItem> itemProxy);
+        itemProxy.SetProperty(nameof(IAccountInventoryItem.Id), id);
+        return item;
     }
 
     private static AccountItemEntry CreateCharacterSlotAccountItemEntry()

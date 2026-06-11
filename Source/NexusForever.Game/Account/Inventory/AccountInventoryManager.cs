@@ -1,5 +1,4 @@
 using System.Collections;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Database.Auth;
@@ -9,8 +8,8 @@ using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Achievement;
-using NexusForever.Game.Character;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Static.Account;
@@ -41,6 +40,10 @@ namespace NexusForever.Game.Account.Inventory
         private readonly IAccount account;
         private readonly ILogger<AccountInventoryManager> log;
         private readonly IPendingAccountItemGroupDelivery pendingAccountItemGroupDelivery;
+        private readonly ICharacterManager characterManager;
+        private readonly IPrerequisiteManager prerequisiteManager;
+        private readonly IItemManager itemManager;
+        private readonly IGameTableManager gameTableManager;
         private readonly DailyLoginRewardManager dailyLoginRewardManager;
         private ulong nextInventoryId = 1ul;
         private ulong nextPendingItemId = 1ul;
@@ -53,20 +56,34 @@ namespace NexusForever.Game.Account.Inventory
         };
 
         public AccountInventoryManager(IAccount account, AccountModel model)
+            : this(account, model, null, null, null, null, null, null)
+        {
+        }
+
+        public AccountInventoryManager(
+            IAccount account,
+            AccountModel model,
+            IPendingAccountItemGroupDelivery pendingAccountItemGroupDelivery,
+            ILogger<AccountInventoryManager> log = null,
+            ICharacterManager characterManager = null,
+            IPrerequisiteManager prerequisiteManager = null,
+            IItemManager itemManager = null,
+            IGameTableManager gameTableManager = null)
         {
             this.account = account;
-            IServiceProvider serviceProvider = LegacyServiceProvider.Provider;
-            log = serviceProvider?.GetService<ILogger<AccountInventoryManager>>()
-                ?? NullLogger<AccountInventoryManager>.Instance;
-            pendingAccountItemGroupDelivery = serviceProvider?.GetService<IPendingAccountItemGroupDelivery>()
+            this.log    = log ?? NullLogger<AccountInventoryManager>.Instance;
+            this.characterManager = characterManager;
+            this.prerequisiteManager = prerequisiteManager;
+            this.itemManager = itemManager;
+            this.gameTableManager = gameTableManager ?? throw new ArgumentNullException(nameof(gameTableManager));
+            this.pendingAccountItemGroupDelivery = pendingAccountItemGroupDelivery
                 ?? new RetailPendingAccountItemGroupDelivery(
-                    serviceProvider?.GetService<IAccountPendingItemRepository>() ?? new AccountPendingItemRepository(),
-                    serviceProvider?.GetService<ILogger<RetailPendingAccountItemGroupDelivery>>()
-                    ?? NullLogger<RetailPendingAccountItemGroupDelivery>.Instance);
+                    new InMemoryAccountPendingItemRepository(),
+                    NullLogger<RetailPendingAccountItemGroupDelivery>.Instance);
 
             foreach (AccountInventoryModel itemModel in model.AccountInventory)
             {
-                var item = new AccountInventoryItem(account, itemModel);
+                var item = new AccountInventoryItem(account, itemModel, gameTableManager);
                 items.Add(item.Id, item);
                 nextInventoryId = Math.Max(nextInventoryId, item.Id + 1ul);
             }
@@ -74,10 +91,10 @@ namespace NexusForever.Game.Account.Inventory
             foreach (AccountItemCooldownModel cooldownModel in model.AccountItemCooldown)
                 cooldowns.TryAdd(cooldownModel.CooldownGroupId, new AccountItemCooldown(cooldownModel));
 
-            foreach (AccountItemCooldownGroupEntry cooldownEntry in GameTableManager.Instance.AccountItemCooldownGroup?.Entries ?? [])
+            foreach (AccountItemCooldownGroupEntry cooldownEntry in gameTableManager.AccountItemCooldownGroup?.Entries ?? [])
                 cooldowns.TryAdd(cooldownEntry.Id, new AccountItemCooldown(account.Id, cooldownEntry.Id));
 
-            dailyLoginRewardManager = new DailyLoginRewardManager(account, model);
+            dailyLoginRewardManager = new DailyLoginRewardManager(account, model, gameTableManager);
 
             foreach (AccountPendingItemModel pendingModel in model.AccountPendingItem)
             {
@@ -172,7 +189,7 @@ namespace NexusForever.Game.Account.Inventory
                 throw new ArgumentException($"Account item {accountItemId} does not exist!");
 
             ulong inventoryId = GetNextInventoryId();
-            var item = new AccountInventoryItem(account, inventoryId, accountItemId, targetPlayerIdentity, claimState, hasTargetPlayerIdentity);
+            var item = new AccountInventoryItem(account, inventoryId, accountItemId, targetPlayerIdentity, claimState, hasTargetPlayerIdentity, gameTableManager);
             items.Add(item.Id, item);
 
             if (notify)
@@ -225,9 +242,14 @@ namespace NexusForever.Game.Account.Inventory
             return groupName;
         }
 
+        public bool RemovePendingItemGroup(string group, bool notify = true)
+        {
+            return RemovePendingGroup(group, notify);
+        }
+
         public bool CanAddItem(uint accountItemId)
         {
-            return GameTableManager.Instance.AccountItem?.GetEntry(accountItemId) != null;
+            return gameTableManager.AccountItem?.GetEntry(accountItemId) != null;
         }
 
         public bool RemoveItem(ulong id)
@@ -261,7 +283,7 @@ namespace NexusForever.Game.Account.Inventory
             if (directAccountGrant && HasAccountItemFlag(item.Entry, AccountItemFlag.MultiClaim))
                 return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.NoCharacter);
 
-            if (!directAccountGrant && player != null && item.Entry.PrerequisiteId != 0u && !PrerequisiteEvaluation.MeetsAccountItem(player, item.Entry.PrerequisiteId))
+            if (!directAccountGrant && player != null && item.Entry.PrerequisiteId != 0u && !PrerequisiteEvaluation.MeetsAccountItem(player, item.Entry.PrerequisiteId, prerequisiteManager))
                 return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.Prereq);
 
             if (player == null && !directAccountGrant)
@@ -327,7 +349,7 @@ namespace NexusForever.Game.Account.Inventory
             if (!TryGetPendingGroup(group, out List<PendingAccountItem> pendingItems))
                 return SendPendingOperationResult(AccountOperation.ReturnPending, AccountOperationResult.InvalidPendingItem);
 
-            if (!TryGetPendingSender(pendingItems, out uint senderAccountId, out NetworkIdentity senderIdentity))
+            if (!TryGetPendingSender(pendingItems, player.Identity.RealmId, out uint senderAccountId, out NetworkIdentity senderIdentity))
                 return SendPendingOperationResult(AccountOperation.ReturnPending, AccountOperationResult.CannotReturn);
 
             if (senderAccountId == account.Id)
@@ -350,16 +372,16 @@ namespace NexusForever.Game.Account.Inventory
             if (targetCharacter == null || targetCharacter.Id == 0ul)
                 return SendPendingOperationResult(AccountOperation.GiftItem, AccountOperationResult.NoCharacter);
 
-            if (targetCharacter.RealmId != 0u && targetCharacter.RealmId != RealmContext.Instance.RealmId)
+            if (targetCharacter.RealmId != 0u && targetCharacter.RealmId != player.Identity.RealmId)
                 return SendPendingOperationResult(AccountOperation.GiftItem, AccountOperationResult.NoCharacter);
 
-            ICharacter character = CharacterManager.Instance.GetCharacter(targetCharacter.Id);
+            ICharacter character = GetCharacterManager().GetCharacter(targetCharacter.Id);
             if (character == null)
                 return SendPendingOperationResult(AccountOperation.GiftItem, AccountOperationResult.NoCharacter);
 
             var targetIdentity = new NetworkIdentity
             {
-                RealmId = RealmContext.Instance.RealmId,
+                RealmId = player.Identity.RealmId,
                 Id      = character.CharacterId
             };
 
@@ -384,6 +406,11 @@ namespace NexusForever.Game.Account.Inventory
                 return SendPendingOperationResult(AccountOperation.GiftItem, AccountOperationResult.InvalidFriend);
 
             return GiftPendingItemGroup(player, group, pendingItems, (uint)targetAccountId, new NetworkIdentity(), PendingAccountItemGroupTransferKind.GiftToAccount);
+        }
+
+        private ICharacterManager GetCharacterManager()
+        {
+            return characterManager ?? throw new InvalidOperationException("AccountInventoryManager requires an ICharacterManager.");
         }
 
         public void SendInitialPackets()
@@ -493,22 +520,24 @@ namespace NexusForever.Game.Account.Inventory
             }
         }
 
-        private void RemovePendingGroup(string groupName, bool notify)
+        private bool RemovePendingGroup(string groupName, bool notify)
         {
             if (!pendingGroups.Remove(groupName, out List<PendingAccountItem> pendingItems))
-                return;
+                return false;
 
             pendingItemsDirty = true;
             deletedPendingGroups.Add(groupName);
 
             if (!notify)
-                return;
+                return true;
 
             account.Session.EnqueueMessageEncrypted(new ServerAccountPendingItemGroupDelete
             {
                 Value = groupName,
                 Flag  = true
             });
+
+            return true;
         }
 
         public void SendCooldowns()
@@ -752,7 +781,7 @@ namespace NexusForever.Game.Account.Inventory
             return pendingItems.Any(p => p.SenderAccountId != 0u || p.SenderIdentity?.Id != 0ul);
         }
 
-        private static bool TryGetPendingSender(IReadOnlyList<PendingAccountItem> pendingItems, out uint senderAccountId, out NetworkIdentity senderIdentity)
+        private static bool TryGetPendingSender(IReadOnlyList<PendingAccountItem> pendingItems, ushort realmId, out uint senderAccountId, out NetworkIdentity senderIdentity)
         {
             senderAccountId = 0u;
             senderIdentity  = null;
@@ -761,7 +790,7 @@ namespace NexusForever.Game.Account.Inventory
             if (first?.SenderAccountId == 0u || first.SenderIdentity?.Id == 0ul)
                 return false;
 
-            if (first.SenderIdentity.RealmId != 0u && first.SenderIdentity.RealmId != RealmContext.Instance.RealmId)
+            if (first.SenderIdentity.RealmId != 0u && first.SenderIdentity.RealmId != realmId)
                 return false;
 
             if (pendingItems.Any(p => p.SenderAccountId != first.SenderAccountId || !HasSameIdentity(p.SenderIdentity, first.SenderIdentity)))
@@ -807,7 +836,7 @@ namespace NexusForever.Game.Account.Inventory
             };
         }
 
-        private static bool TryBuildGrantPlan(IPlayer player, AccountItemEntry entry, out List<IAccountItemGrant> grants, out GenericError error)
+        private bool TryBuildGrantPlan(IPlayer player, AccountItemEntry entry, out List<IAccountItemGrant> grants, out GenericError error)
         {
             grants = [];
             error  = GenericError.Ok;
@@ -883,11 +912,11 @@ namespace NexusForever.Game.Account.Inventory
             return entry.AccountCurrencyEnum != 0u || entry.EntitlementId != 0u;
         }
 
-        private static bool TryAddItemGrant(IPlayer player, uint item2Id, List<IAccountItemGrant> grants, out GenericError error)
+        private bool TryAddItemGrant(IPlayer player, uint item2Id, List<IAccountItemGrant> grants, out GenericError error)
         {
             error = GenericError.Ok;
 
-            IItemInfo itemInfo = ItemManager.Instance.GetItemInfo(item2Id);
+            IItemInfo itemInfo = itemManager?.GetItemInfo(item2Id);
             if (itemInfo == null)
             {
                 error = GenericError.ItemBadStaticData;
@@ -933,15 +962,15 @@ namespace NexusForever.Game.Account.Inventory
             return true;
         }
 
-        private static bool TryAddEntitlementGrant(IPlayer player, AccountItemEntry entry, List<IAccountItemGrant> grants, out GenericError error)
+        private bool TryAddEntitlementGrant(IPlayer player, AccountItemEntry entry, List<IAccountItemGrant> grants, out GenericError error)
         {
             error = GenericError.Ok;
 
-            EntitlementEntry entitlementEntry = GameTableManager.Instance.Entitlement?.GetEntry(entry.EntitlementId);
+            EntitlementEntry entitlementEntry = gameTableManager.Entitlement?.GetEntry(entry.EntitlementId);
             if (entitlementEntry == null)
             {
                 ReportMissingAccountItemStaticData(
-                    GameTableManager.Instance.Entitlement == null,
+                    gameTableManager.Entitlement == null,
                     EntitlementTableName,
                     entry.EntitlementId,
                     nameof(TryAddEntitlementGrant),
@@ -979,15 +1008,15 @@ namespace NexusForever.Game.Account.Inventory
             return true;
         }
 
-        private static bool TryAddImmediateAccountEntitlementGrant(IAccount account, AccountItemEntry entry, List<IAccountItemGrant> grants, out GenericError error)
+        private bool TryAddImmediateAccountEntitlementGrant(IAccount account, AccountItemEntry entry, List<IAccountItemGrant> grants, out GenericError error)
         {
             error = GenericError.Ok;
 
-            EntitlementEntry entitlementEntry = GameTableManager.Instance.Entitlement?.GetEntry(entry.EntitlementId);
+            EntitlementEntry entitlementEntry = gameTableManager.Entitlement?.GetEntry(entry.EntitlementId);
             if (entitlementEntry == null)
             {
                 ReportMissingAccountItemStaticData(
-                    GameTableManager.Instance.Entitlement == null,
+                    gameTableManager.Entitlement == null,
                     EntitlementTableName,
                     entry.EntitlementId,
                     nameof(TryAddImmediateAccountEntitlementGrant),
@@ -1027,15 +1056,15 @@ namespace NexusForever.Game.Account.Inventory
             return true;
         }
 
-        private static bool TryAddGenericUnlockGrants(IPlayer player, uint genericUnlockSetId, List<IAccountItemGrant> grants, out GenericError error)
+        private bool TryAddGenericUnlockGrants(IPlayer player, uint genericUnlockSetId, List<IAccountItemGrant> grants, out GenericError error)
         {
             error = GenericError.Ok;
 
-            GenericUnlockSetEntry unlockSetEntry = GameTableManager.Instance.GenericUnlockSet?.GetEntry(genericUnlockSetId);
+            GenericUnlockSetEntry unlockSetEntry = gameTableManager.GenericUnlockSet?.GetEntry(genericUnlockSetId);
             if (unlockSetEntry == null)
             {
                 ReportMissingAccountItemStaticData(
-                    GameTableManager.Instance.GenericUnlockSet == null,
+                    gameTableManager.GenericUnlockSet == null,
                     GenericUnlockSetTableName,
                     genericUnlockSetId,
                     nameof(TryAddGenericUnlockGrants),
@@ -1049,12 +1078,12 @@ namespace NexusForever.Game.Account.Inventory
                 if (genericUnlockEntryId == 0u)
                     continue;
 
-                GenericUnlockEntryEntry genericUnlockEntry = GameTableManager.Instance.GenericUnlockEntry?.GetEntry(genericUnlockEntryId);
+                GenericUnlockEntryEntry genericUnlockEntry = gameTableManager.GenericUnlockEntry?.GetEntry(genericUnlockEntryId);
                 if (genericUnlockEntry == null || genericUnlockEntry.Id > ushort.MaxValue)
                 {
                     if (genericUnlockEntry == null)
                         ReportMissingAccountItemStaticData(
-                            GameTableManager.Instance.GenericUnlockEntry == null,
+                            gameTableManager.GenericUnlockEntry == null,
                             GenericUnlockEntryTableName,
                             genericUnlockEntryId,
                             nameof(TryAddGenericUnlockGrants),

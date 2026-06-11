@@ -2,43 +2,53 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusForever.Database.Auth;
 
 #nullable disable
 
-namespace NexusForever.Database.Sqlite.Migrations.Auth
+namespace NexusForever.Database.Auth.Migrations
 {
     [DbContext(typeof(AuthContext))]
-    partial class AuthContextModelSnapshot : ModelSnapshot
+    [Migration("20260610114005_StorePurchaseHistoryAccountPurchasedUtcIndex")]
+    partial class StorePurchaseHistoryAccountPurchasedUtcIndex
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.16");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "9.0.16")
+                .HasAnnotation("Relational:MaxIdentifierLength", 64);
+
+            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountCREDDHistoryModel", b =>
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bigint(20) unsigned")
                         .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<ulong>("Id"));
 
                     b.Property<uint>("AccountId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("accountId");
 
                     b.Property<ulong>("CounterpartyCharacterId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20)")
+                        .HasColumnType("bigint(20) unsigned")
                         .HasDefaultValue(0ul)
                         .HasColumnName("counterpartyCharacterId");
 
                     b.Property<ushort>("CounterpartyRealmId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5)")
+                        .HasColumnType("smallint(5) unsigned")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("counterpartyRealmId");
 
@@ -46,23 +56,23 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("createdUtc")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasDefaultValueSql("current_timestamp()");
 
                     b.Property<ulong>("CreditAmount")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20)")
+                        .HasColumnType("bigint(20) unsigned")
                         .HasDefaultValue(0ul)
                         .HasColumnName("creditAmount");
 
                     b.Property<ulong>("IdentityCharacterId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20)")
+                        .HasColumnType("bigint(20) unsigned")
                         .HasDefaultValue(0ul)
                         .HasColumnName("identityCharacterId");
 
                     b.Property<ushort>("IdentityRealmId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5)")
+                        .HasColumnType("smallint(5) unsigned")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("identityRealmId");
 
@@ -74,7 +84,7 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
 
                     b.Property<uint>("Operation")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("operation");
 
@@ -87,24 +97,24 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountCREDDOrderModel", b =>
                 {
                     b.Property<ulong>("OrderId")
-                        .HasColumnType("bigint(20)")
+                        .HasColumnType("bigint(20) unsigned")
                         .HasColumnName("orderId");
 
                     b.Property<uint>("AccountId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("accountId");
 
                     b.Property<ulong>("CharacterId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20)")
+                        .HasColumnType("bigint(20) unsigned")
                         .HasDefaultValue(0ul)
                         .HasColumnName("characterId");
 
                     b.Property<ulong>("CreditAmount")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20)")
+                        .HasColumnType("bigint(20) unsigned")
                         .HasDefaultValue(0ul)
                         .HasColumnName("creditAmount");
 
@@ -116,7 +126,7 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
 
                     b.Property<ushort>("RealmId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5)")
+                        .HasColumnType("smallint(5) unsigned")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("realmId");
 
@@ -130,13 +140,13 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<uint>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("id");
 
                     b.Property<uint>("ItemId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("itemId");
 
@@ -144,7 +154,7 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("timestamp")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasDefaultValueSql("current_timestamp()");
 
                     b.HasKey("Id", "ItemId")
                         .HasName("PRIMARY");
@@ -156,19 +166,19 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<uint>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("id");
 
                     b.Property<byte>("CurrencyId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("tinyint(4) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("currencyId");
 
                     b.Property<ulong>("Amount")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20)")
+                        .HasColumnType("bigint(20) unsigned")
                         .HasDefaultValue(0ul)
                         .HasColumnName("amount");
 
@@ -181,7 +191,7 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountDailyLoginModel", b =>
                 {
                     b.Property<uint>("Id")
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasColumnName("id");
 
                     b.Property<DateTime?>("LastClaimUtc")
@@ -190,7 +200,7 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
 
                     b.Property<uint>("LastClaimedLoginDay")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("lastClaimedLoginDay");
 
@@ -200,31 +210,31 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
 
                     b.Property<uint>("LastRewardItemKey")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("lastRewardItemKey");
 
                     b.Property<uint>("LoginDaysTotal")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("loginDaysTotal");
 
                     b.Property<uint>("PremiumKeyStatus")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("premiumKeyStatus");
 
                     b.Property<uint>("RewardsAvailable")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("rewardsAvailable");
 
                     b.Property<uint>("SecondsUntilNextKey")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("secondsUntilNextKey");
 
@@ -238,19 +248,19 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<uint>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("id");
 
                     b.Property<byte>("EntitlementId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("entitlementId");
 
                     b.Property<uint>("Amount")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("amount");
 
@@ -263,7 +273,7 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountExternalReferenceModel", b =>
                 {
                     b.Property<uint>("Id")
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasColumnName("id");
 
                     b.Property<string>("Type")
@@ -283,12 +293,12 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountFortuneSessionModel", b =>
                 {
                     b.Property<uint>("Id")
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasColumnName("id");
 
                     b.Property<uint>("Card0AccountItemId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("card0AccountItemId");
 
@@ -306,13 +316,13 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
 
                     b.Property<byte>("Card0Rarity")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3)")
+                        .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("card0Rarity");
 
                     b.Property<uint>("Card1AccountItemId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("card1AccountItemId");
 
@@ -330,13 +340,13 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
 
                     b.Property<byte>("Card1Rarity")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3)")
+                        .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("card1Rarity");
 
                     b.Property<uint>("Card2AccountItemId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("card2AccountItemId");
 
@@ -354,7 +364,7 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
 
                     b.Property<byte>("Card2Rarity")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3)")
+                        .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("card2Rarity");
 
@@ -368,13 +378,13 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<uint>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("id");
 
                     b.Property<uint>("Entry")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("entry");
 
@@ -382,7 +392,7 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("timestamp")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasDefaultValueSql("current_timestamp()");
 
                     b.HasKey("Id", "Entry")
                         .HasName("PRIMARY");
@@ -394,25 +404,25 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<uint>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("id");
 
                     b.Property<ulong>("InventoryId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bigint(20) unsigned")
                         .HasDefaultValue(0ul)
                         .HasColumnName("inventoryId");
 
                     b.Property<uint>("AccountItemId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("accountItemId");
 
                     b.Property<byte>("ClaimState")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3)")
+                        .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("claimState");
 
@@ -420,7 +430,7 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("createTime")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasDefaultValueSql("current_timestamp()");
 
                     b.Property<bool>("HasTargetPlayerIdentity")
                         .ValueGeneratedOnAdd()
@@ -430,13 +440,13 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
 
                     b.Property<ulong>("TargetCharacterId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20)")
+                        .HasColumnType("bigint(20) unsigned")
                         .HasDefaultValue(0ul)
                         .HasColumnName("targetCharacterId");
 
                     b.Property<ushort>("TargetRealmId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5)")
+                        .HasColumnType("smallint(5) unsigned")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("targetRealmId");
 
@@ -450,17 +460,17 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<uint>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("id");
 
                     b.Property<uint>("CooldownGroupId")
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasColumnName("cooldownGroupId");
 
                     b.Property<uint>("Duration")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("duration");
 
@@ -468,7 +478,7 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("timestamp")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasDefaultValueSql("current_timestamp()");
 
                     b.HasKey("Id", "CooldownGroupId")
                         .HasName("PRIMARY");
@@ -480,85 +490,85 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<uint>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("id");
 
                     b.Property<ushort>("InputActionId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("smallint(5) unsigned")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("inputActionId");
 
                     b.Property<uint>("Code00")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("code00");
 
                     b.Property<uint>("Code01")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("code01");
 
                     b.Property<uint>("Code02")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("code02");
 
                     b.Property<uint>("DeviceEnum00")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("deviceEnum00");
 
                     b.Property<uint>("DeviceEnum01")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("deviceEnum01");
 
                     b.Property<uint>("DeviceEnum02")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("deviceEnum02");
 
                     b.Property<uint>("EventTypeEnum00")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("eventTypeEnum00");
 
                     b.Property<uint>("EventTypeEnum01")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("eventTypeEnum01");
 
                     b.Property<uint>("EventTypeEnum02")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("eventTypeEnum02");
 
                     b.Property<uint>("MetaKeys00")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("metaKeys00");
 
                     b.Property<uint>("MetaKeys01")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("metaKeys01");
 
                     b.Property<uint>("MetaKeys02")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("metaKeys02");
 
@@ -572,14 +582,16 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<uint>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<uint>("Id"));
 
                     b.Property<DateTime>("CreateTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("createTime")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasDefaultValueSql("current_timestamp()");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -634,25 +646,25 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<uint>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("id");
 
                     b.Property<ulong>("PendingItemId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bigint(20) unsigned")
                         .HasDefaultValue(0ul)
                         .HasColumnName("pendingItemId");
 
                     b.Property<uint>("AccountItemId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("accountItemId");
 
                     b.Property<byte>("ClaimState")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3)")
+                        .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("claimState");
 
@@ -660,7 +672,7 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("createTime")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasDefaultValueSql("current_timestamp()");
 
                     b.Property<string>("GroupName")
                         .IsRequired()
@@ -677,31 +689,31 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
 
                     b.Property<uint>("SenderAccountId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("senderAccountId");
 
                     b.Property<ulong>("SenderCharacterId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20)")
+                        .HasColumnType("bigint(20) unsigned")
                         .HasDefaultValue(0ul)
                         .HasColumnName("senderCharacterId");
 
                     b.Property<ushort>("SenderRealmId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5)")
+                        .HasColumnType("smallint(5) unsigned")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("senderRealmId");
 
                     b.Property<ulong>("TargetCharacterId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20)")
+                        .HasColumnType("bigint(20) unsigned")
                         .HasDefaultValue(0ul)
                         .HasColumnName("targetCharacterId");
 
                     b.Property<ushort>("TargetRealmId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5)")
+                        .HasColumnType("smallint(5) unsigned")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("targetRealmId");
 
@@ -715,13 +727,13 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<uint>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("id");
 
                     b.Property<uint>("PermissionId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("permissionId");
 
@@ -736,37 +748,37 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<uint>("AccountId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("accountId");
 
                     b.Property<uint>("RewardRotationIndex")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("rewardRotationIndex");
 
                     b.Property<uint>("ContentId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("contentId");
 
                     b.Property<uint>("RewardKeyId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("rewardKeyId");
 
                     b.Property<byte>("RewardType")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("rewardType");
 
                     b.Property<uint>("GrantFlags")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("grantFlags");
 
@@ -774,7 +786,7 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("grantedUtc")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasDefaultValueSql("current_timestamp()");
 
                     b.HasKey("AccountId", "RewardRotationIndex", "ContentId", "RewardKeyId", "RewardType")
                         .HasName("PRIMARY");
@@ -786,13 +798,13 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<uint>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("id");
 
                     b.Property<uint>("RoleId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("roleId");
 
@@ -807,30 +819,32 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("bigint(20) unsigned")
                         .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<ulong>("Id"));
 
                     b.Property<uint>("AccountId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("accountId");
 
                     b.Property<ushort>("CurrencyId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5)")
+                        .HasColumnType("smallint(5) unsigned")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("currencyId");
 
                     b.Property<uint>("OfferId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("offerId");
 
                     b.Property<ulong>("Price")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20)")
+                        .HasColumnType("bigint(20) unsigned")
                         .HasDefaultValue(0ul)
                         .HasColumnName("price");
 
@@ -838,7 +852,7 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("purchasedUtc")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasDefaultValueSql("current_timestamp()");
 
                     b.HasKey("Id")
                         .HasName("PRIMARY");
@@ -853,27 +867,29 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<uint>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("id");
 
                     b.Property<uint>("BanId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasColumnName("banId");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<uint>("BanId"));
 
                     b.Property<DateTime?>("EndTime")
                         .HasColumnType("datetime")
                         .HasColumnName("endTime");
 
                     b.Property<string>("Reason")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<DateTime>("StartTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("startTime")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasDefaultValueSql("current_timestamp()");
 
                     b.HasKey("Id", "BanId")
                         .HasName("PRIMARY");
@@ -885,7 +901,7 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<uint>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("id");
 
@@ -1546,13 +1562,13 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<uint>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("id");
 
                     b.Property<uint>("Flags")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("flags");
 
@@ -1603,13 +1619,13 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<uint>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("id");
 
                     b.Property<uint>("PermissionId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("permissionId");
 
@@ -1623,12 +1639,12 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
             modelBuilder.Entity("NexusForever.Database.Auth.Model.ServerMessageModel", b =>
                 {
                     b.Property<byte>("Index")
-                        .HasColumnType("tinyint(3)")
+                        .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("index");
 
                     b.Property<byte>("Language")
-                        .HasColumnType("tinyint(3)")
+                        .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("language");
 
@@ -1663,8 +1679,10 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
                 {
                     b.Property<byte>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("tinyint(3) unsigned")
                         .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<byte>("Id"));
 
                     b.Property<string>("Host")
                         .IsRequired()
@@ -1682,13 +1700,13 @@ namespace NexusForever.Database.Sqlite.Migrations.Auth
 
                     b.Property<ushort>("Port")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5)")
+                        .HasColumnType("smallint(5) unsigned")
                         .HasDefaultValue((ushort)24000)
                         .HasColumnName("port");
 
                     b.Property<byte>("Type")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3)")
+                        .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("type");
 

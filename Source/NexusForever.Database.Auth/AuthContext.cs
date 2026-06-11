@@ -656,10 +656,13 @@ namespace NexusForever.Database.Auth
 
                 entity.ToTable("account_store_purchase_history");
 
+                entity.HasIndex(e => new { e.AccountId, e.PurchasedUtc })
+                    .HasDatabaseName("accountId_purchasedUtc");
+
                 entity.Property(e => e.Id)
                     .HasColumnName("id")
                     .HasColumnType("bigint(20) unsigned")
-                    .ValueGeneratedNever();
+                    .ValueGeneratedOnAdd();
 
                 entity.Property(e => e.AccountId)
                     .HasColumnName("accountId")

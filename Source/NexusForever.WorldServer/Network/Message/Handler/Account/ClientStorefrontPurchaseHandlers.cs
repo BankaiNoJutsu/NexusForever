@@ -1,6 +1,7 @@
+using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
-using NexusForever.Game;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
@@ -49,6 +50,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             }
 
             DirectAccountGrantPlan directGrantPlan = null;
+            bool directGrantApplied = false;
+            bool refreshCharacterListOnSuccess = false;
+            var addedInventoryItems = new List<(IAccountInventoryManager Manager, ulong Id)>();
             storefrontPurchaseService.TryPurchase(session, log,
                 purchase.OfferId, purchase.PaymentCurrencySlot, purchase.CurrencyId,
                 (offerItem, accountItemIds) =>
@@ -58,23 +62,46 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                     if (directGrantPlan != null)
                     {
                         storefrontPurchaseService.ApplyDirectAccountGrantPlan(session, directGrantPlan);
-                        characterListManager.SendCharacterListPackets(session);
+                        directGrantApplied = true;
+                        refreshCharacterListOnSuccess = true;
                     }
                     else
                     {
                         NetworkIdentity targetPlayerIdentity = storefrontPurchaseService.GetCurrentPlayerIdentity(session);
                         foreach (uint accountItemId in accountItemIds)
-                            session.Account.InventoryManager.AddItem(accountItemId, targetPlayerIdentity, hasTargetPlayerIdentity: targetPlayerIdentity.Id != 0ul);
+                        {
+                            IAccountInventoryItem item = session.Account.InventoryManager.AddItem(accountItemId, targetPlayerIdentity, hasTargetPlayerIdentity: targetPlayerIdentity.Id != 0ul);
+                            if (item != null)
+                                addedInventoryItems.Add((session.Account.InventoryManager, item.Id));
+                        }
                     }
 
-                    storefrontPurchaseService.SendCharacterPurchaseSuccess(session);
+                },
+                purchaseSession =>
+                {
+                    if (refreshCharacterListOnSuccess)
+                        characterListManager.SendCharacterListPackets(purchaseSession);
+
+                    storefrontPurchaseService.SendCharacterPurchaseSuccess(purchaseSession);
                 },
                 characterSelectPurchase ? "character select direct account" : "character",
                 characterSelectPurchase
                     ? (IOfferItem offerItem, IReadOnlyList<uint> _, out StoreError error, out string reason) =>
                         storefrontPurchaseService.TryBuildDirectAccountGrantPlan(session, gameTableManager, offerItem, requireDirectAccountGrant: true, out directGrantPlan, out error, out reason)
                     : null,
-                requirePlayer: !characterSelectPurchase);
+                requirePlayer: !characterSelectPurchase,
+                rollbackDelivery: () =>
+                {
+                    RollbackInventoryItems(addedInventoryItems);
+                    if (directGrantApplied)
+                        storefrontPurchaseService.RollbackDirectAccountGrantPlan(session, directGrantPlan);
+                });
+        }
+
+        private static void RollbackInventoryItems(List<(IAccountInventoryManager Manager, ulong Id)> items)
+        {
+            for (int i = items.Count - 1; i >= 0; i--)
+                items[i].Manager.RemoveItem(items[i].Id);
         }
     }
 
@@ -87,6 +114,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
         private readonly IGameTableManager gameTableManager;
         private readonly IAccountPendingItemRepository pendingItemRepository;
         private readonly ICharacterListManager characterListManager;
+        private readonly IRealmContext realmContext;
 
         public ClientStorefrontPurchaseAccountHandler(
             ILogger<ClientStorefrontPurchaseAccountHandler> log,
@@ -95,7 +123,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             IPlayerManager playerManager,
             IGameTableManager gameTableManager,
             IAccountPendingItemRepository pendingItemRepository,
-            ICharacterListManager characterListManager)
+            ICharacterListManager characterListManager,
+            IRealmContext realmContext = null)
         {
             this.log                       = log;
             this.storefrontPurchaseService = storefrontPurchaseService;
@@ -104,6 +133,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             this.gameTableManager          = gameTableManager;
             this.pendingItemRepository     = pendingItemRepository;
             this.characterListManager      = characterListManager;
+            this.realmContext              = realmContext;
         }
 
         public void HandleMessage(IWorldSession session, ClientStorefrontPurchaseAccount purchase)
@@ -126,21 +156,26 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 if (!TryResolveGiftRecipient(session, purchase, out uint recipientAccountId, out IPlayer recipient, out NetworkIdentity recipientIdentity))
                     return;
 
+                Action rollbackGiftDelivery = null;
                 storefrontPurchaseService.TryPurchase(session, log,
                     purchase.OfferId, purchase.PaymentCurrencySlot, purchase.CurrencyId,
                     (_, accountItemIds) =>
                     {
                         log.LogInformation("StorefrontCatalogDiagnostics storefront account gift delivery player={PlayerGuid} account={AccountId} recipientAccount={RecipientAccountId} online={IsOnline} itemCount={AccountItemCount} items=[{AccountItems}].",
                             session.Player?.Guid, session.Account?.Id, recipientAccountId, recipient != null, accountItemIds.Count, string.Join(",", accountItemIds));
-                        DeliverStorefrontGift(session, recipientAccountId, recipient, recipientIdentity, accountItemIds);
-                        storefrontPurchaseService.SendAccountPurchaseSuccess(session);
+                        rollbackGiftDelivery = DeliverStorefrontGift(session, recipientAccountId, recipient, recipientIdentity, accountItemIds);
                     },
-                    "account gift");
+                    storefrontPurchaseService.SendAccountPurchaseSuccess,
+                    "account gift",
+                    rollbackDelivery: () => rollbackGiftDelivery?.Invoke());
                 return;
             }
 
             DirectAccountGrantPlan directGrantPlan = null;
             bool characterSelectPurchase = session.Player == null;
+            bool directGrantApplied = false;
+            bool refreshCharacterListOnSuccess = false;
+            var addedInventoryItems = new List<(IAccountInventoryManager Manager, ulong Id)>();
             storefrontPurchaseService.TryPurchase(session, log,
                 purchase.OfferId, purchase.PaymentCurrencySlot, purchase.CurrencyId,
                 (offerItem, accountItemIds) =>
@@ -150,15 +185,25 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                     if (directGrantPlan != null)
                     {
                         storefrontPurchaseService.ApplyDirectAccountGrantPlan(session, directGrantPlan);
-                        characterListManager.SendCharacterListPackets(session);
+                        directGrantApplied = true;
+                        refreshCharacterListOnSuccess = true;
                     }
                     else
                     {
                         foreach (uint accountItemId in accountItemIds)
-                            session.Account.InventoryManager.AddItem(accountItemId);
+                        {
+                            IAccountInventoryItem item = session.Account.InventoryManager.AddItem(accountItemId);
+                            if (item != null)
+                                addedInventoryItems.Add((session.Account.InventoryManager, item.Id));
+                        }
                     }
+                },
+                purchaseSession =>
+                {
+                    if (refreshCharacterListOnSuccess)
+                        characterListManager.SendCharacterListPackets(purchaseSession);
 
-                    storefrontPurchaseService.SendAccountPurchaseSuccess(session);
+                    storefrontPurchaseService.SendAccountPurchaseSuccess(purchaseSession);
                 },
                 "account",
                 characterSelectPurchase
@@ -166,7 +211,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                         storefrontPurchaseService.TryBuildDirectAccountGrantPlan(session, gameTableManager, offerItem, requireDirectAccountGrant: true, out directGrantPlan, out error, out reason)
                     : (IOfferItem offerItem, IReadOnlyList<uint> _, out StoreError error, out string reason) =>
                         storefrontPurchaseService.ValidateDirectAccountGrantClaim(session, gameTableManager, offerItem, out error, out reason),
-                requirePlayer: false);
+                requirePlayer: false,
+                rollbackDelivery: () =>
+                {
+                    RollbackInventoryItems(addedInventoryItems);
+                    if (directGrantApplied)
+                        storefrontPurchaseService.RollbackDirectAccountGrantPlan(session, directGrantPlan);
+                });
         }
 
         private bool TryResolveGiftRecipient(IWorldSession session, ClientStorefrontPurchaseAccount purchase, out uint recipientAccountId, out IPlayer recipient, out NetworkIdentity recipientIdentity)
@@ -191,27 +242,27 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             recipient          = playerManager.GetPlayerByAccountId(character.AccountId);
             recipientIdentity  = new NetworkIdentity
             {
-                RealmId = RealmContext.Instance.RealmId,
+                RealmId = realmContext?.RealmId ?? session.Player?.Identity.RealmId ?? (ushort)0,
                 Id      = character.CharacterId
             };
 
             return true;
         }
 
-        private void DeliverStorefrontGift(IWorldSession session, uint recipientAccountId, IPlayer recipient, NetworkIdentity recipientIdentity, IReadOnlyList<uint> accountItemIds)
+        private Action DeliverStorefrontGift(IWorldSession session, uint recipientAccountId, IPlayer recipient, NetworkIdentity recipientIdentity, IReadOnlyList<uint> accountItemIds)
         {
             if (recipient != null)
             {
-                recipient.Account.InventoryManager.AddPendingItemGroup(
+                string group = recipient.Account.InventoryManager.AddPendingItemGroup(
                     accountItemIds,
                     storefrontPurchaseService.GetCurrentPlayerIdentity(session),
                     recipientIdentity,
                     senderAccountId: session.Account.Id,
                     targetAccountId: recipientAccountId);
-                return;
+                return () => recipient.Account.InventoryManager.RemovePendingItemGroup(group);
             }
 
-            pendingItemRepository.AppendPendingGroup(recipientAccountId, new AccountPendingItemInsert
+            string persistedGroup = pendingItemRepository.AppendPendingGroup(recipientAccountId, new AccountPendingItemInsert
             {
                 AccountItemIds  = accountItemIds,
                 SenderAccountId = session.Account.Id,
@@ -221,6 +272,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
             log.LogDebug("Queued storefront gift from player {PlayerGuid} to offline account {RecipientAccountId}.",
                 session.Player?.Guid, recipientAccountId);
+
+            return () => pendingItemRepository.RemovePendingGroup(recipientAccountId, persistedGroup);
+        }
+
+        private static void RollbackInventoryItems(List<(IAccountInventoryManager Manager, ulong Id)> items)
+        {
+            for (int i = items.Count - 1; i >= 0; i--)
+                items[i].Manager.RemoveItem(items[i].Id);
         }
     }
 }

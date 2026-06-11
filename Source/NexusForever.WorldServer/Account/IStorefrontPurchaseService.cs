@@ -23,9 +23,11 @@ namespace NexusForever.WorldServer.Account
             byte paymentCurrencySlot,
             ushort currencyId,
             Action<IOfferItem, IReadOnlyList<uint>> deliverItems,
+            Action<IWorldSession> sendSuccess,
             string purchaseScope,
             StorefrontDeliveryValidator deliveryValidator = null,
-            bool requirePlayer = true);
+            bool requirePlayer = true,
+            Action rollbackDelivery = null);
 
         bool IsCurrentOrEmptyTarget(IWorldSession session, NetworkIdentity identity);
 
@@ -54,6 +56,8 @@ namespace NexusForever.WorldServer.Account
             out string reason);
 
         void ApplyDirectAccountGrantPlan(IWorldSession session, DirectAccountGrantPlan plan);
+
+        void RollbackDirectAccountGrantPlan(IWorldSession session, DirectAccountGrantPlan plan);
 
         void PersistAccount(IWorldSession session, ILogger log);
     }

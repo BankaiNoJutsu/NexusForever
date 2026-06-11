@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using NexusForever.Database;
 using NexusForever.Database.Auth;
 
 namespace NexusForever.Game.Account.Inventory
@@ -9,15 +8,19 @@ namespace NexusForever.Game.Account.Inventory
     /// </summary>
     public static class StorePurchaseVelocityLimiter
     {
-        private const int MaxPurchasesPerWindow = 10;
-        private static readonly TimeSpan Window = TimeSpan.FromHours(1);
+        public const int MaxPurchasesPerWindow = 10;
+        public static readonly TimeSpan Window = TimeSpan.FromHours(1);
 
         private static readonly ConcurrentDictionary<uint, List<DateTime>> inMemoryPurchases = new();
 
         public static bool IsWithinVelocityLimit(uint accountId)
         {
+            return IsWithinVelocityLimit(accountId, null);
+        }
+
+        public static bool IsWithinVelocityLimit(uint accountId, AuthDatabase authDatabase)
+        {
             DateTime cutoff = DateTime.UtcNow - Window;
-            AuthDatabase authDatabase = TryGetAuthDatabase();
             if (authDatabase != null)
                 return authDatabase.CountStorePurchasesSince(accountId, cutoff) < MaxPurchasesPerWindow;
 
@@ -33,25 +36,29 @@ namespace NexusForever.Game.Account.Inventory
 
         public static void NotePurchase(uint accountId)
         {
-            if (TryGetAuthDatabase() != null)
-                return;
+            TryNotePurchase(accountId);
+        }
 
+        public static bool TryNotePurchase(uint accountId)
+        {
+            return TryNotePurchase(accountId, null);
+        }
+
+        public static bool TryNotePurchase(uint accountId, AuthDatabase authDatabase)
+        {
+            if (authDatabase != null)
+                return true;
+
+            DateTime cutoff = DateTime.UtcNow - Window;
             List<DateTime> purchases = inMemoryPurchases.GetOrAdd(accountId, _ => []);
             lock (purchases)
             {
-                purchases.Add(DateTime.UtcNow);
-            }
-        }
+                purchases.RemoveAll(time => time < cutoff);
+                if (purchases.Count >= MaxPurchasesPerWindow)
+                    return false;
 
-        private static AuthDatabase TryGetAuthDatabase()
-        {
-            try
-            {
-                return DatabaseManager.Instance?.GetDatabase<AuthDatabase>();
-            }
-            catch (Exception ex) when (ex is InvalidOperationException or ArgumentNullException)
-            {
-                return null;
+                purchases.Add(DateTime.UtcNow);
+                return true;
             }
         }
     }

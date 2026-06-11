@@ -15,7 +15,6 @@ using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.WorldServer.Network;
-using NexusForever.WorldServer.Service;
 using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
 
 namespace NexusForever.WorldServer.Account
@@ -24,17 +23,29 @@ namespace NexusForever.WorldServer.Account
     {
         private readonly IDatabaseManager databaseManager;
         private readonly IGlobalStorefrontManager globalStorefrontManager;
-        private readonly IBackgroundTaskRunner backgroundTaskRunner;
+
+        private const int AccountLockStripeCount = 256;
+
+        private static readonly object[] accountLocks = CreateAccountLockStripes();
 
         public StorefrontPurchaseService(
             IDatabaseManager databaseManager,
-            IGlobalStorefrontManager globalStorefrontManager,
-            IBackgroundTaskRunner backgroundTaskRunner)
+            IGlobalStorefrontManager globalStorefrontManager)
         {
             this.databaseManager          = databaseManager;
             this.globalStorefrontManager = globalStorefrontManager;
-            this.backgroundTaskRunner    = backgroundTaskRunner;
         }
+
+        private static object[] CreateAccountLockStripes()
+        {
+            var stripes = new object[AccountLockStripeCount];
+            for (int i = 0; i < stripes.Length; i++)
+                stripes[i] = new object();
+
+            return stripes;
+        }
+
+        private static object GetAccountLock(uint accountId) => accountLocks[accountId % AccountLockStripeCount];
 
         public void TryPurchase(
             IWorldSession session,
@@ -43,9 +54,11 @@ namespace NexusForever.WorldServer.Account
             byte paymentCurrencySlot,
             ushort currencyId,
             Action<IOfferItem, IReadOnlyList<uint>> deliverItems,
+            Action<IWorldSession> sendSuccess,
             string purchaseScope,
             StorefrontDeliveryValidator deliveryValidator = null,
-            bool requirePlayer = true)
+            bool requirePlayer = true,
+            Action rollbackDelivery = null)
         {
             log.LogInformation("StorefrontCatalogDiagnostics storefront {PurchaseScope} purchase validate player={PlayerGuid} account={AccountId} offer={OfferId} paymentCurrencySlot={PaymentCurrencySlot} currency={CurrencyId}.",
                 purchaseScope, session.Player?.Guid, session.Account?.Id, offerId, paymentCurrencySlot, currencyId);
@@ -66,14 +79,34 @@ namespace NexusForever.WorldServer.Account
                 return;
             }
 
-            if (!StorePurchaseVelocityLimiter.IsWithinVelocityLimit(session.Account.Id))
+            lock (GetAccountLock(session.Account.Id))
             {
-                log.LogDebug("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: purchase velocity limit reached for account {AccountId}.",
-                    purchaseScope, session.Player?.Guid, session.Account.Id);
-                SendFailure(session, StoreError.PurchaseVelocityLimit);
-                return;
+                TryPurchaseLocked(
+                    session,
+                    log,
+                    offerId,
+                    paymentCurrencySlot,
+                    currencyId,
+                    deliverItems,
+                    sendSuccess,
+                    purchaseScope,
+                    deliveryValidator,
+                    rollbackDelivery);
             }
+        }
 
+        private void TryPurchaseLocked(
+            IWorldSession session,
+            ILogger log,
+            uint offerId,
+            byte paymentCurrencySlot,
+            ushort currencyId,
+            Action<IOfferItem, IReadOnlyList<uint>> deliverItems,
+            Action<IWorldSession> sendSuccess,
+            string purchaseScope,
+            StorefrontDeliveryValidator deliveryValidator,
+            Action rollbackDelivery)
+        {
             IOfferItem offerItem = globalStorefrontManager.GetStoreOfferItem(offerId);
             if (offerItem == null)
             {
@@ -132,13 +165,75 @@ namespace NexusForever.WorldServer.Account
                 return;
             }
 
-            if (chargeAmount > 0ul)
-                session.Account.CurrencyManager.CurrencySubtractAmount(accountCurrencyType, chargeAmount);
+            AuthDatabase authDatabase = TryGetAuthDatabase();
+            if (!StorePurchaseHistoryManager.IsWithinVelocityLimit(session.Account.Id, authDatabase))
+            {
+                log.LogDebug("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: purchase velocity limit reached for account {AccountId}.",
+                    purchaseScope, session.Player?.Guid, session.Account.Id);
+                SendFailure(session, StoreError.PurchaseVelocityLimit);
+                return;
+            }
 
-            deliverItems(offerItem, accountItemIds);
+            bool historyReserved = false;
+            ulong reservedHistoryId = 0ul;
+            if (authDatabase != null)
+            {
+                historyReserved = true;
+                if (!StorePurchaseHistoryManager.TryRecordPurchase(authDatabase, session.Account.Id, offerId, resolvedCurrencyId, chargeAmount, out reservedHistoryId))
+                {
+                    log.LogDebug("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: purchase velocity limit reached for account {AccountId} before delivery.",
+                        purchaseScope, session.Player?.Guid, session.Account.Id);
+                    SendFailure(session, StoreError.PurchaseVelocityLimit);
+                    return;
+                }
+            }
 
-            StorePurchaseHistoryManager.RecordPurchase(session.Account.Id, offerId, resolvedCurrencyId, chargeAmount);
-            PersistAccount(session, log);
+            bool chargeDebited = false;
+            try
+            {
+                if (chargeAmount > 0ul)
+                {
+                    session.Account.CurrencyManager.CurrencySubtractAmount(accountCurrencyType, chargeAmount);
+                    chargeDebited = true;
+                }
+
+                deliverItems(offerItem, accountItemIds);
+            }
+            catch (Exception ex)
+            {
+                TryRollbackDelivery(rollbackDelivery, log, purchaseScope, session, offerId);
+                TryRefundCharge(session, log, accountCurrencyType, chargeAmount, chargeDebited, purchaseScope, offerId);
+
+                if (historyReserved)
+                    StorePurchaseHistoryManager.TryDeletePurchaseHistory(authDatabase, reservedHistoryId);
+
+                log.LogWarning(ex, "StorefrontCatalogDiagnostics storefront {PurchaseScope} purchase failed during delivery player={PlayerGuid} account={AccountId} offer={OfferId}.",
+                    purchaseScope, session.Player?.Guid, session.Account.Id, offerId);
+                SendFailure(session, StoreError.GenericFail);
+                return;
+            }
+
+            if (!TryPersistAccount(session, log))
+            {
+                TryRollbackDelivery(rollbackDelivery, log, purchaseScope, session, offerId);
+                TryRefundCharge(session, log, accountCurrencyType, chargeAmount, chargeDebited, purchaseScope, offerId);
+
+                if (historyReserved)
+                    StorePurchaseHistoryManager.TryDeletePurchaseHistory(authDatabase, reservedHistoryId);
+
+                SendFailure(session, StoreError.GenericFail);
+                return;
+            }
+
+            if (!historyReserved && !StorePurchaseHistoryManager.TryRecordPurchase(authDatabase, session.Account.Id, offerId, resolvedCurrencyId, chargeAmount))
+            {
+                TryRollbackDelivery(rollbackDelivery, log, purchaseScope, session, offerId);
+                TryRefundCharge(session, log, accountCurrencyType, chargeAmount, chargeDebited, purchaseScope, offerId);
+                SendFailure(session, StoreError.PurchaseVelocityLimit);
+                return;
+            }
+
+            sendSuccess(session);
 
             log.LogInformation("StorefrontCatalogDiagnostics storefront {PurchaseScope} purchase completed player={PlayerGuid} account={AccountId} offer={OfferId} currency={CurrencyId} price={Price} accountItems={AccountItemCount}.",
                 purchaseScope, session.Player?.Guid, session.Account.Id, offerId, resolvedCurrencyId, chargeAmount, accountItemIds.Count);
@@ -325,11 +420,48 @@ namespace NexusForever.WorldServer.Account
 
         public void ApplyDirectAccountGrantPlan(IWorldSession session, DirectAccountGrantPlan plan)
         {
-            foreach ((AccountCurrencyType currencyType, ulong amount) in plan.CurrencyGrants)
-                session.Account.CurrencyManager.CurrencyAddAmount(currencyType, amount);
+            var appliedCurrencyGrants = new List<(AccountCurrencyType CurrencyType, ulong Amount)>();
+            var appliedEntitlementGrants = new List<(EntitlementType EntitlementType, int Amount)>();
 
-            foreach ((EntitlementType entitlementType, int amount) in plan.EntitlementGrants)
-                session.Account.EntitlementManager.UpdateEntitlement(entitlementType, amount);
+            try
+            {
+                foreach ((AccountCurrencyType currencyType, ulong amount) in plan.CurrencyGrants)
+                {
+                    session.Account.CurrencyManager.CurrencyAddAmount(currencyType, amount);
+                    appliedCurrencyGrants.Add((currencyType, amount));
+                }
+
+                foreach ((EntitlementType entitlementType, int amount) in plan.EntitlementGrants)
+                {
+                    session.Account.EntitlementManager.UpdateEntitlement(entitlementType, amount);
+                    appliedEntitlementGrants.Add((entitlementType, amount));
+                }
+            }
+            catch
+            {
+                RollbackDirectAccountGrantPlan(session, appliedCurrencyGrants, appliedEntitlementGrants);
+                throw;
+            }
+        }
+
+        public void RollbackDirectAccountGrantPlan(IWorldSession session, DirectAccountGrantPlan plan)
+        {
+            RollbackDirectAccountGrantPlan(
+                session,
+                plan.CurrencyGrants.Select(g => (g.Key, g.Value)),
+                plan.EntitlementGrants.Select(g => (g.Key, g.Value)));
+        }
+
+        private static void RollbackDirectAccountGrantPlan(
+            IWorldSession session,
+            IEnumerable<(AccountCurrencyType CurrencyType, ulong Amount)> currencyGrants,
+            IEnumerable<(EntitlementType EntitlementType, int Amount)> entitlementGrants)
+        {
+            foreach ((EntitlementType entitlementType, int amount) in entitlementGrants.Reverse())
+                session.Account.EntitlementManager.UpdateEntitlement(entitlementType, -amount);
+
+            foreach ((AccountCurrencyType currencyType, ulong amount) in currencyGrants.Reverse())
+                session.Account.CurrencyManager.CurrencySubtractAmount(currencyType, amount);
         }
 
         private static bool TryAddDirectCurrencyGrant(
@@ -504,23 +636,83 @@ namespace NexusForever.WorldServer.Account
 
         public void PersistAccount(IWorldSession session, ILogger log)
         {
-            AuthDatabase authDatabase;
+            TryPersistAccount(session, log);
+        }
+
+        private static void TryRollbackDelivery(Action rollbackDelivery, ILogger log, string purchaseScope, IWorldSession session, uint offerId)
+        {
+            if (rollbackDelivery == null)
+                return;
+
             try
             {
-                authDatabase = databaseManager?.GetDatabase<AuthDatabase>();
+                rollbackDelivery();
+            }
+            catch (Exception rollbackException)
+            {
+                log.LogWarning(rollbackException, "StorefrontCatalogDiagnostics storefront {PurchaseScope} rollback failed player={PlayerGuid} account={AccountId} offer={OfferId}.",
+                    purchaseScope, session.Player?.Guid, session.Account?.Id, offerId);
+            }
+        }
+
+        private static void TryRefundCharge(
+            IWorldSession session,
+            ILogger log,
+            AccountCurrencyType accountCurrencyType,
+            ulong chargeAmount,
+            bool chargeDebited,
+            string purchaseScope,
+            uint offerId)
+        {
+            if (!chargeDebited || chargeAmount == 0ul)
+                return;
+
+            try
+            {
+                session.Account.CurrencyManager.CurrencyAddAmount(accountCurrencyType, chargeAmount);
+            }
+            catch (Exception refundException)
+            {
+                log.LogWarning(refundException, "StorefrontCatalogDiagnostics storefront {PurchaseScope} refund failed player={PlayerGuid} account={AccountId} offer={OfferId} currency={CurrencyId} amount={Amount}.",
+                    purchaseScope, session.Player?.Guid, session.Account?.Id, offerId, (ushort)accountCurrencyType, chargeAmount);
+            }
+        }
+
+        private bool TryPersistAccount(IWorldSession session, ILogger log)
+        {
+            if (session?.Account == null)
+                return false;
+
+            AuthDatabase authDatabase = TryGetAuthDatabase();
+
+            if (authDatabase == null)
+                return true;
+
+            try
+            {
+                lock (GetAccountLock(session.Account.Id))
+                    authDatabase.SaveBlocking(session.Account.Save);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log.LogWarning(ex, "StorefrontCatalogDiagnostics account {AccountId}: failed to persist account state after storefront purchase.",
+                    session.Account?.Id);
+                return false;
+            }
+        }
+
+        private AuthDatabase TryGetAuthDatabase()
+        {
+            try
+            {
+                return databaseManager?.GetDatabase<AuthDatabase>();
             }
             catch (Exception ex) when (ex is InvalidOperationException or ArgumentNullException)
             {
-                return;
+                return null;
             }
-
-            if (authDatabase == null)
-                return;
-
-            backgroundTaskRunner.Observe(
-                authDatabase.Save(session.Account.Save),
-                onException: ex => log.LogWarning(ex, "StorefrontCatalogDiagnostics account {AccountId}: failed to persist account state after storefront purchase.",
-                    session.Account?.Id));
         }
     }
 }

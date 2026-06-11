@@ -5,6 +5,8 @@ using NexusForever.Network.World.Message.Model;
 using NexusForever.Shared.Game.Events;
 using NLog;
 
+using NexusForever.Database;
+
 namespace NexusForever.WorldServer.Network.Message.Handler.Account
 {
     public class ClientStorefrontRequestCatalogHandler : IMessageHandler<IWorldSession, ClientStorefrontRequestCatalog>
@@ -14,11 +16,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
         #region Dependency Injection
 
         private readonly IGlobalStorefrontManager globalStorefrontManager;
+        private readonly IDatabaseManager databaseManager;
 
         public ClientStorefrontRequestCatalogHandler(
-            IGlobalStorefrontManager globalStorefrontManager)
+            IGlobalStorefrontManager globalStorefrontManager,
+            IDatabaseManager databaseManager = null)
         {
             this.globalStorefrontManager = globalStorefrontManager;
+            this.databaseManager = databaseManager;
         }
 
         #endregion
@@ -57,7 +62,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             log.Info($"StorefrontCatalogDiagnostics request start account={accountId} player={session.Player?.Guid ?? 0u} catalogContext={request.CatalogContext}.");
 
             session.Account.InventoryManager.SendInitialPackets();
-            StorePurchaseHistoryManager.SendPurchaseHistory(session.Account);
+            StorePurchaseHistoryManager.SendPurchaseHistory(session.Account, databaseManager);
 
             if (session.Player == null)
                 globalStorefrontManager.MarkAccountCatalogRequestedBeforeWorldLogin(accountId);

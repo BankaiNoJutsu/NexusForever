@@ -815,8 +815,11 @@ namespace NexusForever.Database.Auth.Migrations
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountStorePurchaseHistoryModel", b =>
                 {
                     b.Property<ulong>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20) unsigned")
                         .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<ulong>("Id"));
 
                     b.Property<uint>("AccountId")
                         .ValueGeneratedOnAdd()
@@ -851,7 +854,8 @@ namespace NexusForever.Database.Auth.Migrations
                     b.HasKey("Id")
                         .HasName("PRIMARY");
 
-                    b.HasIndex("AccountId");
+                    b.HasIndex("AccountId", "PurchasedUtc")
+                        .HasDatabaseName("accountId_purchasedUtc");
 
                     b.ToTable("account_store_purchase_history", (string)null);
                 });

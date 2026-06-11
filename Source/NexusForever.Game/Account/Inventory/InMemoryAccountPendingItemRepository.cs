@@ -12,42 +12,62 @@ namespace NexusForever.Game.Account.Inventory
     {
         private static readonly ConcurrentDictionary<uint, List<StoredPendingItem>> PendingByAccount = new();
 
-        public void AppendPendingGroup(uint targetAccountId, AccountPendingItemInsert insert)
+        public string AppendPendingGroup(uint targetAccountId, AccountPendingItemInsert insert)
         {
             ArgumentNullException.ThrowIfNull(insert);
+            ArgumentNullException.ThrowIfNull(insert.AccountItemIds);
+
+            if (insert.AccountItemIds.Count == 0)
+                throw new ArgumentException("Pending account item group must contain at least one item.", nameof(insert));
 
             string groupName = string.IsNullOrWhiteSpace(insert.GroupName)
                 ? $"pending:{targetAccountId}:{Guid.NewGuid():N}"
                 : insert.GroupName;
 
-            ulong nextId = PendingByAccount.GetOrAdd(targetAccountId, _ => []).Select(p => p.PendingItemId).DefaultIfEmpty(0ul).Max() + 1ul;
             NetworkIdentity senderIdentity = insert.SenderIdentity ?? new NetworkIdentity();
             NetworkIdentity targetIdentity = insert.TargetIdentity ?? new NetworkIdentity();
 
             List<StoredPendingItem> rows = PendingByAccount.GetOrAdd(targetAccountId, _ => []);
-            foreach (uint accountItemId in insert.AccountItemIds)
+            lock (rows)
             {
-                rows.Add(new StoredPendingItem
+                ulong nextId = rows.Select(p => p.PendingItemId).DefaultIfEmpty(0ul).Max() + 1ul;
+                foreach (uint accountItemId in insert.AccountItemIds)
                 {
-                    PendingItemId     = nextId++,
-                    GroupName         = groupName,
-                    AccountItemId     = accountItemId,
-                    SenderAccountId   = insert.SenderAccountId,
-                    SenderRealmId     = senderIdentity.RealmId,
-                    SenderCharacterId = senderIdentity.Id,
-                    TargetRealmId     = targetIdentity.RealmId,
-                    TargetCharacterId = targetIdentity.Id,
-                    ClaimState              = insert.ClaimState,
-                    HasTargetPlayerIdentity = insert.HasTargetPlayerIdentity
-                });
+                    rows.Add(new StoredPendingItem
+                    {
+                        PendingItemId     = nextId++,
+                        GroupName         = groupName,
+                        AccountItemId     = accountItemId,
+                        SenderAccountId   = insert.SenderAccountId,
+                        SenderRealmId     = senderIdentity.RealmId,
+                        SenderCharacterId = senderIdentity.Id,
+                        TargetRealmId     = targetIdentity.RealmId,
+                        TargetCharacterId = targetIdentity.Id,
+                        ClaimState              = insert.ClaimState,
+                        HasTargetPlayerIdentity = insert.HasTargetPlayerIdentity
+                    });
+                }
             }
+
+            return groupName;
+        }
+
+        public void RemovePendingGroup(uint targetAccountId, string groupName)
+        {
+            if (string.IsNullOrWhiteSpace(groupName) || !PendingByAccount.TryGetValue(targetAccountId, out List<StoredPendingItem> rows))
+                return;
+
+            lock (rows)
+                rows.RemoveAll(p => string.Equals(p.GroupName, groupName, StringComparison.OrdinalIgnoreCase));
         }
 
         public static IReadOnlyList<StoredPendingItem> GetPendingItems(uint accountId)
         {
-            return PendingByAccount.TryGetValue(accountId, out List<StoredPendingItem> rows)
-                ? rows.ToList()
-                : [];
+            if (!PendingByAccount.TryGetValue(accountId, out List<StoredPendingItem> rows))
+                return [];
+
+            lock (rows)
+                return rows.ToList();
         }
 
         public static void Clear(uint accountId)

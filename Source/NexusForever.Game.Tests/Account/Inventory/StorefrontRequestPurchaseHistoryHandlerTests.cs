@@ -10,7 +10,6 @@ using NexusForever.WorldServer.Network.Message.Handler.Account;
 
 namespace NexusForever.Game.Tests.Account.Inventory;
 
-[Collection(LegacyServiceProviderCollection.Name)]
 public class StorefrontRequestPurchaseHistoryHandlerTests
 {
     [Fact]

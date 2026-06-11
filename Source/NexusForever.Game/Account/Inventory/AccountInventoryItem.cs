@@ -59,7 +59,7 @@ namespace NexusForever.Game.Account.Inventory
 
         private readonly IAccount account;
 
-        public AccountInventoryItem(IAccount account, AccountInventoryModel model)
+        public AccountInventoryItem(IAccount account, AccountInventoryModel model, IGameTableManager gameTableManager)
         {
             this.account = account;
 
@@ -71,7 +71,7 @@ namespace NexusForever.Game.Account.Inventory
             TargetPlayerIdentity.RealmId = model.TargetRealmId;
             TargetPlayerIdentity.Id      = model.TargetCharacterId;
 
-            Entry = GameTableManager.Instance.AccountItem?.GetEntry(AccountItemId);
+            Entry = gameTableManager.AccountItem?.GetEntry(AccountItemId);
             if (Entry == null)
                 throw new ArgumentException($"Account item {AccountItemId} does not exist!");
 
@@ -80,7 +80,7 @@ namespace NexusForever.Game.Account.Inventory
                 : AccountInventorySaveMask.Update;
         }
 
-        public AccountInventoryItem(IAccount account, ulong id, uint accountItemId, NetworkIdentity targetPlayerIdentity, AccountItemClaimState claimState, bool hasTargetPlayerIdentity)
+        public AccountInventoryItem(IAccount account, ulong id, uint accountItemId, NetworkIdentity targetPlayerIdentity, AccountItemClaimState claimState, bool hasTargetPlayerIdentity, IGameTableManager gameTableManager)
         {
             this.account = account;
 
@@ -95,7 +95,7 @@ namespace NexusForever.Game.Account.Inventory
                 TargetPlayerIdentity.Id      = targetPlayerIdentity.Id;
             }
 
-            Entry = GameTableManager.Instance.AccountItem?.GetEntry(AccountItemId);
+            Entry = gameTableManager.AccountItem?.GetEntry(AccountItemId);
             if (Entry == null)
                 throw new ArgumentException($"Account item {AccountItemId} does not exist!");
 
