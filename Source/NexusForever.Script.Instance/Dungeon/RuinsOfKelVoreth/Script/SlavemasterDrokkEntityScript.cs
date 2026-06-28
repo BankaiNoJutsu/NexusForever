@@ -6,10 +6,11 @@ using NexusForever.Shared;
 namespace NexusForever.Script.Instance.Dungeon.RuinsOfKelVoreth.Script
 {
     /// <summary>
-    /// WIP-guessed from LaughingWS worlddb SQL: the branch only maps this boss script
-    /// to the Ruins of Kel Voreth objective. Combat mechanics remain blocked.
+    /// Build 16042 maps public-event objective 446 to TargetGroup 3842,
+    /// whose Creature2 members are Slavemaster Drokk 32536 and 32539.
     /// </summary>
     [ScriptFilterScriptName("SlavemasterDrokkEntityScript")]
+    [ScriptFilterCreatureId(32536u, 32539u)]
     public class SlavemasterDrokkEntityScript : PublicEventObjectiveCreditEntityScript
     {
         public SlavemasterDrokkEntityScript(

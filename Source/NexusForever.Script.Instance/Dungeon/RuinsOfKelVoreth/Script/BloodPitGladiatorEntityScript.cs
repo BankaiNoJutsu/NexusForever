@@ -1,6 +1,5 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Spell;
-using NexusForever.Game.Static.PublicEvent;
 using NexusForever.GameTable;
 using NexusForever.Script.Main.AI;
 using NexusForever.Script.Template.Filter;
@@ -11,6 +10,8 @@ namespace NexusForever.Script.Instance.Dungeon.RuinsOfKelVoreth.Script
     [ScriptFilterScriptName("BloodPitGladiatorEntityScript")]
     public class BloodPitGladiatorEntityScript : CombatAI
     {
+        private bool defeated;
+
         public BloodPitGladiatorEntityScript(
             IFactory<ISpellParameters> spellParametersFactory,
             IGameTableManager gameTableManager)
@@ -23,10 +24,14 @@ namespace NexusForever.Script.Instance.Dungeon.RuinsOfKelVoreth.Script
         /// </summary>
         public override void OnDeath()
         {
-            // WIP-guessed from LaughingWS Instances-and-more. The branch ties this named gladiator
-            // script to KillTargetGroup 3972 for Blood Pit progress, but its auto-attack list was
-            // explicitly marked "get real ones", so this port only records the death credit.
-            entity.Map.PublicEventManager.UpdateObjective(PublicEventObjectiveType.KillTargetGroup, 3972u, 1);
+            if (defeated)
+                return;
+
+            defeated = true;
+            // Build 16042 objective 445 owns the Blood Pit gate. Objective 846
+            // reuses the same KillTargetGroup/objectId pair, so keep this script
+            // scoped to the main phase objective until the timed route is proven.
+            entity.Map.PublicEventManager.UpdateObjective(PublicEventObjective.FightYourWayThroughTheBloodPit, 1);
         }
     }
 }

@@ -6,7 +6,6 @@ using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Abstract.Spell;
-using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
@@ -95,7 +94,7 @@ public class RuinsOfKelVorethTriggerScriptTests
     }
 
     [Fact]
-    public void BloodPitGladiator_OnDeath_UpdatesBloodPitTargetGroup()
+    public void BloodPitGladiator_OnDeath_UpdatesMainBloodPitObjective()
     {
         var script = new BloodPitGladiatorEntityScript(
             RecordingDispatchProxy<IFactory<ISpellParameters>>.Create(out _),
@@ -110,9 +109,29 @@ public class RuinsOfKelVorethTriggerScriptTests
         script.OnDeath();
 
         RecordingDispatchProxy<IPublicEventManager>.Invocation update = Assert.Single(publicEventManagerProxy.GetInvocations(nameof(IPublicEventManager.UpdateObjective)));
-        Assert.Equal(PublicEventObjectiveType.KillTargetGroup, update.Arguments[0]);
-        Assert.Equal(3972u, update.Arguments[1]);
-        Assert.Equal(1, update.Arguments[2]);
+        Assert.Equal(PublicEventObjective.FightYourWayThroughTheBloodPit, update.Arguments[0]);
+        Assert.Equal(1, update.Arguments[1]);
+    }
+
+    [Fact]
+    public void BloodPitGladiator_OnDeath_WhenRepeated_CreditsMainBloodPitObjectiveOnce()
+    {
+        var script = new BloodPitGladiatorEntityScript(
+            RecordingDispatchProxy<IFactory<ISpellParameters>>.Create(out _),
+            RecordingDispatchProxy<IGameTableManager>.Create(out _));
+        ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out RecordingDispatchProxy<ICreatureEntity> creatureProxy);
+        IPublicEventManager publicEventManager = RecordingDispatchProxy<IPublicEventManager>.Create(out RecordingDispatchProxy<IPublicEventManager> publicEventManagerProxy);
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out RecordingDispatchProxy<IBaseMap> mapProxy);
+        mapProxy.SetProperty(nameof(IBaseMap.PublicEventManager), publicEventManager);
+        creatureProxy.SetProperty(nameof(IGridEntity.Map), map);
+
+        script.OnLoad(creature);
+        script.OnDeath();
+        script.OnDeath();
+
+        RecordingDispatchProxy<IPublicEventManager>.Invocation update = Assert.Single(publicEventManagerProxy.GetInvocations(nameof(IPublicEventManager.UpdateObjective)));
+        Assert.Equal(PublicEventObjective.FightYourWayThroughTheBloodPit, update.Arguments[0]);
+        Assert.Equal(1, update.Arguments[1]);
     }
 
     [Fact]
