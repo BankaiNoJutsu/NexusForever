@@ -1,8 +1,12 @@
+using System.Numerics;
+using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Cinematic;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
@@ -104,6 +108,71 @@ public class GeneticArchivesEventScriptTests
 
         RecordingDispatchProxy<ICommunicatorMessage>.Invocation send = Assert.Single(messageProxy.GetInvocations(nameof(ICommunicatorMessage.Send)));
         Assert.Same(session, send.Arguments[0]);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_Enter_ActivatesOpeningBossObjectives()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out _,
+            out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+
+        List<RecordingDispatchProxy<IPublicEvent>.Invocation> activations = eventProxy
+            .GetInvocations(nameof(IPublicEvent.ActivateObjective))
+            .ToList();
+        Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.DefeatExperimentX89);
+        Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.DefeatKuralakTheDefiler);
+    }
+
+    [Theory]
+    [InlineData(1100300052u, 49198u, -1147.055f, -111.3793f, -520.5323f, -2f, 27899u, "ExperimentX-89EntityScript")]
+    [InlineData(1100300053u, 52969u, 169.4765f, -110.4199f, -489.5547f, 2.093871f, 30276u, "KuralakTheDefilerEntityScript")]
+    [InlineData(1100300054u, 53031u, 133.965f, -111.45f, -505.34f, 0f, 27557u, "KuralakPillarEntityScript")]
+    public void OnPublicEventPhase_Enter_SpawnsReviewedOpeningPlacements(
+        uint entityId,
+        uint creatureId,
+        float x,
+        float y,
+        float z,
+        float rx,
+        uint displayInfo,
+        string scriptName)
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(
+            out _,
+            out RecordingDispatchProxy<IMapInstance> mapProxy,
+            out List<CreatedNpc> createdNpcs);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+
+        CreatedNpc npc = Assert.Single(createdNpcs, n => GetEntityModel(n).Id == entityId);
+        Vector3 position = new(x, y, z);
+        AssertReviewedOpeningModel(npc, entityId, creatureId, position, rx, displayInfo, scriptName);
+        AssertGridEntityAddedToMap(mapProxy, npc.Instance, position);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_Enter_DoesNotDuplicateReviewedOpeningPlacements()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(
+            out _,
+            out RecordingDispatchProxy<IMapInstance> mapProxy,
+            out List<CreatedNpc> createdNpcs);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+
+        Assert.Equal(3, createdNpcs.Count);
+        Assert.Equal(3, mapProxy.GetInvocations(nameof(IMap.EnqueueAdd)).Count());
     }
 
     [Fact]
@@ -215,11 +284,39 @@ public class GeneticArchivesEventScriptTests
 
     private static IPublicEvent CreatePublicEvent(IReadOnlyList<IPlayer> players, out RecordingDispatchProxy<IPublicEvent> eventProxy)
     {
-        IMapInstance mapInstance = RecordingDispatchProxy<IMapInstance>.Create(out RecordingDispatchProxy<IMapInstance> mapProxy);
+        return CreatePublicEvent(players, out eventProxy, out _, out _);
+    }
+
+    private static IPublicEvent CreatePublicEvent(
+        out RecordingDispatchProxy<IPublicEvent> eventProxy,
+        out RecordingDispatchProxy<IMapInstance> mapProxy,
+        out List<CreatedNpc> createdNpcs)
+    {
+        return CreatePublicEvent([], out eventProxy, out mapProxy, out createdNpcs);
+    }
+
+    private static IPublicEvent CreatePublicEvent(
+        IReadOnlyList<IPlayer> players,
+        out RecordingDispatchProxy<IPublicEvent> eventProxy,
+        out RecordingDispatchProxy<IMapInstance> mapProxy,
+        out List<CreatedNpc> createdNpcs)
+    {
+        IMapInstance mapInstance = RecordingDispatchProxy<IMapInstance>.Create(out mapProxy);
         mapProxy.SetMethodReturn(nameof(IMapInstance.GetPlayers), players);
+        mapProxy.SetProperty(nameof(IMap.Entry), new WorldEntry { Id = 1462u });
 
         IPublicEvent publicEvent = RecordingDispatchProxy<IPublicEvent>.Create(out eventProxy);
         eventProxy.SetProperty(nameof(IPublicEvent.Map), mapInstance);
+
+        List<CreatedNpc> npcs = [];
+        eventProxy.SetMethodReturnFactory(nameof(IPublicEvent.CreateEntity), () =>
+        {
+            CreatedNpc npc = CreateNpc();
+            npcs.Add(npc);
+            return npc.Instance;
+        });
+
+        createdNpcs = npcs;
         return publicEvent;
     }
 
@@ -271,4 +368,80 @@ public class GeneticArchivesEventScriptTests
         cinematicFactoryProxy.SetMethodReturn(nameof(ICinematicFactory.CreateCinematic), cinematic);
         return cinematicFactory;
     }
+
+    private static CreatedNpc CreateNpc()
+    {
+        INonPlayerEntity npc = RecordingDispatchProxy<INonPlayerEntity>.Create(out RecordingDispatchProxy<INonPlayerEntity> npcProxy);
+        return new CreatedNpc(npc, npcProxy);
+    }
+
+    private static EntityModel GetEntityModel(CreatedNpc npc)
+    {
+        RecordingDispatchProxy<INonPlayerEntity>.Invocation initialise = Assert.Single(
+            npc.Proxy.GetInvocations(nameof(IWorldEntity.Initialise)));
+        return Assert.IsType<EntityModel>(initialise.Arguments[0]);
+    }
+
+    private static void AssertReviewedOpeningModel(
+        CreatedNpc npc,
+        uint entityId,
+        uint creatureId,
+        Vector3 position,
+        float rotationX,
+        uint displayInfo,
+        string scriptName)
+    {
+        EntityModel model = GetEntityModel(npc);
+        Assert.Equal(entityId, model.Id);
+        Assert.Equal(EntityType.NonPlayer, model.Type);
+        Assert.Equal(creatureId, model.Creature);
+        Assert.Equal((ushort)1462u, model.World);
+        Assert.Equal((ushort)0u, model.Area);
+        Assert.Equal(position.X, model.X);
+        Assert.Equal(position.Y, model.Y);
+        Assert.Equal(position.Z, model.Z);
+        Assert.Equal(rotationX, model.Rx);
+        Assert.Equal(0f, model.Ry);
+        Assert.Equal(0f, model.Rz);
+        Assert.Equal(displayInfo, model.DisplayInfo);
+        Assert.Equal((ushort)0u, model.OutfitInfo);
+        Assert.Equal((ushort)1209u, model.Faction1);
+        Assert.Equal((ushort)1209u, model.Faction2);
+        Assert.Null(model.EntityEvent);
+        Assert.Collection(model.EntityScript,
+            entityScript => Assert.Equal(scriptName, entityScript.ScriptName));
+
+        Assert.Collection(model.EntityStat.OrderBy(s => s.Stat),
+            health =>
+            {
+                Assert.Equal((byte)Stat.Health, health.Stat);
+                Assert.Equal(1f, health.Value);
+            },
+            level =>
+            {
+                Assert.Equal((byte)Stat.Level, level.Stat);
+                Assert.Equal(50f, level.Value);
+            });
+    }
+
+    private static void AssertGridEntityAddedToMap(
+        RecordingDispatchProxy<IMapInstance> mapProxy,
+        INonPlayerEntity npc,
+        Vector3 expectedPosition)
+    {
+        Assert.Contains(mapProxy.GetInvocations(nameof(IMap.EnqueueAdd)), invocation =>
+        {
+            if (!ReferenceEquals(npc, invocation.Arguments[0]))
+                return false;
+
+            IMapPosition position = Assert.IsAssignableFrom<IMapPosition>(invocation.Arguments[1]);
+            Assert.Equal(expectedPosition, position.Position);
+            Assert.Equal(1462u, position.Info.Entry.Id);
+            return true;
+        });
+    }
+
+    private sealed record CreatedNpc(
+        INonPlayerEntity Instance,
+        RecordingDispatchProxy<INonPlayerEntity> Proxy);
 }
