@@ -4,7 +4,7 @@ namespace NexusForever.Script.Instance.Dungeon.ProtogamesAcademy
     {
         InitiateProtogamesAcademy = 4341,
         DefeatInvulnotron         = 4342,
-        DefeatGromka              = 4343,
+        DefeatGromka              = 4496,
         MeetWithPhineasARotostar  = 4345,
         DefeatWrathbone           = 4346,
         GatherInvulnotron         = 4490,
