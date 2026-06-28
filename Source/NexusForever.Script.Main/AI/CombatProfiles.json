@@ -15,6 +15,26 @@
       "allowNonPlayerTargets": false
     },
     {
+      "name": "engineer-artillerybot",
+      "autoAttackSpell4Ids": [
+        34521
+      ],
+      "aggroSpell4Id": 0,
+      "chaseDistance": 25.0,
+      "aggroRange": 30.0,
+      "minimumLeashRange": 45.0,
+      "assistRange": 0.0,
+      "stationary": false,
+      "traceCombat": false,
+      "allowNonPlayerTargets": true,
+      "assistSummoner": true,
+      "summonerAssistRange": 35.0,
+      "summonerFollowDistance": 4.0,
+      "summonerFollowRepathDistance": 8.0,
+      "summonerTierSourceBaseSpell4Id": 27002,
+      "summonerTieredAutoAttackBaseSpell4Id": 20491
+    },
+    {
       "name": "starter-tutorial-turret",
       "aggroSpell4Id": 41368,
       "aggroRange": 14.0,
@@ -25,6 +45,20 @@
     }
   ],
   "creatures": [
+    {
+      "creature2Id": 42683,
+      "profile": "engineer-artillerybot",
+      "source": "manual-override",
+      "evidence": "wildstar_client spell4effects 97661 and spell4 34521/42814",
+      "note": "Engineer Artillerybot Exile summon uses SummonPet creature 42683 and table-backed Rocket auto attack spell 34521"
+    },
+    {
+      "creature2Id": 59846,
+      "profile": "engineer-artillerybot",
+      "source": "manual-override",
+      "evidence": "wildstar_client spell4effects 178149 and spell4 34521/42814",
+      "note": "Engineer Artillerybot Dominion summon uses SummonPet creature 59846 and table-backed Rocket auto attack spell 34521"
+    },
     {
       "creature2Id": 73494,
       "profile": "starter-tutorial-turret",

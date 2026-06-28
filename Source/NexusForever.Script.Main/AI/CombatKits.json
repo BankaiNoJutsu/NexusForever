@@ -322,6 +322,7 @@
     {
       "id": "northern-wilds-ultrabot",
       "behavior": "northern-wilds-common",
+      "minimumLeashRange": 80.0,
       "autoAttackSpell4Ids": [
         24626,
         24627

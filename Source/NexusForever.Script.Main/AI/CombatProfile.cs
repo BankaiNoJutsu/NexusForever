@@ -19,7 +19,13 @@ namespace NexusForever.Script.Main.AI
         float AssistRange,
         bool Stationary,
         bool TraceCombat,
-        bool AllowNonPlayerTargets)
+        bool AllowNonPlayerTargets,
+        bool AssistSummoner = false,
+        float SummonerAssistRange = 0f,
+        float SummonerFollowDistance = 0f,
+        float SummonerFollowRepathDistance = 0f,
+        uint SummonerTierSourceBaseSpell4Id = 0u,
+        uint SummonerTieredAutoAttackBaseSpell4Id = 0u)
     {
         public static CombatProfile Default { get; } = new(
             AutoAttackSpell4Ids: [5649u, 5652u],
@@ -31,7 +37,13 @@ namespace NexusForever.Script.Main.AI
             AssistRange: 0f,
             Stationary: false,
             TraceCombat: false,
-            AllowNonPlayerTargets: false);
+            AllowNonPlayerTargets: false,
+            AssistSummoner: false,
+            SummonerAssistRange: 0f,
+            SummonerFollowDistance: 0f,
+            SummonerFollowRepathDistance: 0f,
+            SummonerTierSourceBaseSpell4Id: 0u,
+            SummonerTieredAutoAttackBaseSpell4Id: 0u);
     }
 
     public interface ICombatProfileProvider

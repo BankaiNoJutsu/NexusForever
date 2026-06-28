@@ -27,6 +27,7 @@ namespace NexusForever.Script.Main.AI
     {
         private const float ChaseRepathDistance = 2f;
         private const float ChaseFollowDistanceTolerance = 0.25f;
+        private const double LeashGraceSeconds = 3d;
         private const Faction TutorialDominionCombatFaction = (Faction)1441u;
         private const Faction TutorialExileCombatFaction = (Faction)1442u;
         private static readonly uint SpecialCastInterruptStateMask = CreateCrowdControlMask(CCState.Interrupt);
@@ -37,18 +38,26 @@ namespace NexusForever.Script.Main.AI
         private int autoAttackIndex;
         protected List<uint> autoAttacks = CombatProfile.Default.AutoAttackSpell4Ids.ToList();
         private readonly UpdateTimer autoAttackTimer = new(TimeSpan.FromSeconds(1.5d));
+        private bool autoAttackCastInProgress;
         private bool selectingTarget;
         private readonly List<CombatSpecialAttackState> specialAttacks = [];
         private readonly List<CombatSpecialAttackState> specialAttackSchedule = [];
         private int specialAttackCursor;
 
         private readonly UpdateTimer idleAggroScanTimer = new(TimeSpan.FromSeconds(0.5d));
+        private readonly UpdateTimer leashGraceTimer = new(TimeSpan.FromSeconds(LeashGraceSeconds), false);
+        private readonly UpdateTimer summonerAssistTimer = new(TimeSpan.FromSeconds(0.5d));
+        private readonly UpdateTimer summonerFollowTimer = new(TimeSpan.FromSeconds(1d));
 
         private float chaseDistance = CombatProfile.Default.ChaseDistance;
         private readonly UpdateTimer chaseDistanceTimer = new(TimeSpan.FromSeconds(1d));
         private uint? activeChaseTargetGuid;
+        private uint? activeSummonerFollowGuid;
+        private uint? leashGraceTargetGuid;
         private Vector3 activeChaseTargetPosition;
+        private Vector3 activeSummonerFollowPosition;
         private float activeChaseFollowDistance;
+        private float activeSummonerFollowDistance;
         private bool returningToLeash;
         private bool rangeCheckArmed;
         private bool combatEnabled;
@@ -169,6 +178,8 @@ namespace NexusForever.Script.Main.AI
         {
             rangeCheckArmed = false;
             activeChaseTargetGuid = null;
+            activeSummonerFollowGuid = null;
+            ClearLeashGrace();
             returningToLeash = false;
         }
 
@@ -182,15 +193,22 @@ namespace NexusForever.Script.Main.AI
 
             if (!entity.TargetGuid.HasValue)
             {
+                UpdateSummonerAssist(lastTick);
+                if (entity.TargetGuid.HasValue)
+                    return;
+
                 if (entity.ThreatManager.IsThreatened)
                     SelectTarget();
                 else if (rangeCheckArmed)
                     UpdateIdleAggroScan(lastTick);
 
+                if (!entity.TargetGuid.HasValue && !entity.ThreatManager.IsThreatened)
+                    UpdateSummonerFollow(lastTick);
+
                 return;
             }
 
-            if (!ValidateCurrentTarget())
+            if (!ValidateCurrentTarget(lastTick))
                 return;
 
             UpdateAI(lastTick);
@@ -204,8 +222,8 @@ namespace NexusForever.Script.Main.AI
             autoAttackTimer.Update(lastTick);
             if (autoAttackTimer.HasElapsed)
             {
-                DoAutoAttack();
                 autoAttackTimer.Reset();
+                DoAutoAttack();
             }
 
             if (profile.Stationary)
@@ -243,6 +261,22 @@ namespace NexusForever.Script.Main.AI
 
         private void DoAutoAttack()
         {
+            if (autoAttackCastInProgress)
+                return;
+
+            autoAttackCastInProgress = true;
+            try
+            {
+                DoAutoAttackCore();
+            }
+            finally
+            {
+                autoAttackCastInProgress = false;
+            }
+        }
+
+        private void DoAutoAttackCore()
+        {
             if (autoAttacks.Count == 0 || !entity.TargetGuid.HasValue)
                 return;
 
@@ -264,8 +298,7 @@ namespace NexusForever.Script.Main.AI
                 return;
             }
 
-            uint spell4Id = autoAttacks[autoAttackIndex];
-            autoAttackIndex = (autoAttackIndex + 1) % autoAttacks.Count;
+            uint spell4Id = ResolveAutoAttackSpell4Id(autoAttacks[autoAttackIndex]);
 
             Spell4Entry spell4Entry = gameTableManager.Spell4?.GetEntry(spell4Id);
             if (spell4Entry == null)
@@ -322,7 +355,58 @@ namespace NexusForever.Script.Main.AI
 
             ISpellParameters spellParameters = spellParametersFactory.Resolve();
             spellParameters.PrimaryTargetId = entity.TargetGuid.Value;
-            entity.CastSpell(spell4Id, spellParameters);
+            CastResult castResult = entity.TryCastSpell(spell4Id, spellParameters);
+            if (castResult != CastResult.Ok)
+            {
+                if (ShouldLogStarterTutorialCombat(target))
+                {
+                    log.LogTrace(
+                        "Starter tutorial combat AI auto-attack {Spell4Id} rejected for creature {CreatureId} guid {Guid} at target {TargetGuid}: result={CastResult}.",
+                        spell4Id,
+                        entity.CreatureId,
+                        entity.Guid,
+                        target.Guid,
+                        castResult);
+                }
+
+                return;
+            }
+
+            autoAttackIndex = (autoAttackIndex + 1) % autoAttacks.Count;
+        }
+
+        private uint ResolveAutoAttackSpell4Id(uint fallbackSpell4Id)
+        {
+            if (profile.SummonerTierSourceBaseSpell4Id == 0u || profile.SummonerTieredAutoAttackBaseSpell4Id == 0u)
+                return fallbackSpell4Id;
+
+            if (GetSummoner() is not IPlayer player || player.SpellManager == null)
+                return fallbackSpell4Id;
+
+            if (player.SpellManager.GetSpell(profile.SummonerTierSourceBaseSpell4Id) == null)
+                return fallbackSpell4Id;
+
+            byte tier;
+            try
+            {
+                tier = player.SpellManager.GetSpellTier(profile.SummonerTierSourceBaseSpell4Id);
+            }
+            catch (ArgumentException)
+            {
+                return fallbackSpell4Id;
+            }
+            catch (InvalidOperationException)
+            {
+                return fallbackSpell4Id;
+            }
+
+            if (tier == 0)
+                return fallbackSpell4Id;
+
+            Spell4Entry tieredAutoAttack = gameTableManager.Spell4?.Entries?
+                .FirstOrDefault(e => e?.Spell4BaseIdBaseSpell == profile.SummonerTieredAutoAttackBaseSpell4Id && e.TierIndex == tier);
+
+            return tieredAutoAttack?.Id ?? fallbackSpell4Id;
         }
 
         private void DoChase()
@@ -519,13 +603,9 @@ namespace NexusForever.Script.Main.AI
         /// </summary>
         public void OnExitRange(IGridEntity entity)
         {
-            if (!combatEnabled)
-                return;
-
-            if (entity is not IUnitEntity unit)
-                return;
-
-            this.entity.ThreatManager.RemoveHostile(unit.Guid);
+            // Range checks are centred on the creature's current position and are
+            // only used for aggro acquisition. Leash validation decides when combat
+            // should be dropped.
         }
 
         /// <summary>
@@ -536,8 +616,12 @@ namespace NexusForever.Script.Main.AI
             if (!combatEnabled)
                 return;
 
-            if (entity.Guid == this.entity.TargetGuid)
-                SelectTarget();
+            if (entity.Guid != this.entity.TargetGuid)
+                return;
+
+            // Movement/visibility can briefly desynchronise while the target is
+            // still valid on the map. Let the normal update loop apply map-backed
+            // target and leash validation instead of immediately evading.
         }
 
         /// <summary>
@@ -565,8 +649,9 @@ namespace NexusForever.Script.Main.AI
 
         private float GetLeashDistance(IUnitEntity unit)
         {
+            Vector3 leashAnchor = GetLeashAnchor();
             return Vector2.Distance(
-                new Vector2(entity.LeashPosition.X, entity.LeashPosition.Z),
+                new Vector2(leashAnchor.X, leashAnchor.Z),
                 new Vector2(unit.Position.X, unit.Position.Z));
         }
 
@@ -727,6 +812,8 @@ namespace NexusForever.Script.Main.AI
             }
 
             activeChaseTargetGuid = null;
+            activeSummonerFollowGuid = null;
+            ClearLeashGrace();
             returningToLeash = false;
             entity.MovementManager.Finalise();
             entity.MovementManager.SetRotationFaceUnit(unit.Guid);
@@ -826,7 +913,7 @@ namespace NexusForever.Script.Main.AI
         /// </summary>
         public void OnThreatAddTarget(IHostileEntity hostile)
         {
-            if (!combatEnabled)
+            if (!combatEnabled || !entity.IsAlive)
                 return;
 
             SelectTarget();
@@ -837,7 +924,7 @@ namespace NexusForever.Script.Main.AI
         /// </summary>
         public void OnThreatRemoveTarget(IHostileEntity hostile)
         {
-            if (!combatEnabled)
+            if (!combatEnabled || !entity.IsAlive)
                 return;
 
             SelectTarget();
@@ -848,7 +935,7 @@ namespace NexusForever.Script.Main.AI
         /// </summary>
         public void OnThreatChange(IHostileEntity hostile)
         {
-            if (!combatEnabled)
+            if (!combatEnabled || !entity.IsAlive)
                 return;
 
             SelectTarget();
@@ -867,8 +954,11 @@ namespace NexusForever.Script.Main.AI
 
                 foreach (IHostileEntity hostile in entity.ThreatManager.OrderByDescending(hostile => hostile.Threat))
                 {
-                    IUnitEntity target = entity.GetVisible<IUnitEntity>(hostile.HatedUnitId);
-                    if (target == null || !CanAcquireTarget(target) || !entity.CanAttack(target) || !IsWithinLeash(target))
+                    bool currentTarget = entity.TargetGuid == hostile.HatedUnitId;
+                    IUnitEntity target = currentTarget
+                        ? GetCombatTarget(hostile.HatedUnitId)
+                        : entity.GetVisible<IUnitEntity>(hostile.HatedUnitId);
+                    if (target == null || !CanAcquireTarget(target) || !entity.CanAttack(target) || (!currentTarget && !IsWithinLeash(target)))
                     {
                         invalidHostiles.Add(hostile.HatedUnitId);
                         continue;
@@ -890,6 +980,7 @@ namespace NexusForever.Script.Main.AI
                 if (entity.TargetGuid == nextHostile.HatedUnitId)
                     return;
 
+                ClearLeashGrace();
                 entity.SetTarget(nextHostile.HatedUnitId, nextHostile.Threat);
             }
             finally
@@ -898,11 +989,20 @@ namespace NexusForever.Script.Main.AI
             }
         }
 
-        private bool ValidateCurrentTarget()
+        private bool ValidateCurrentTarget(double lastTick)
         {
-            IUnitEntity target = GetCurrentVisibleTarget();
-            if (target != null && CanAcquireTarget(target) && entity.CanAttack(target) && IsWithinLeash(target))
-                return true;
+            IUnitEntity target = GetCurrentCombatTarget();
+            if (target != null && CanAcquireTarget(target) && entity.CanAttack(target))
+            {
+                if (IsWithinLeash(target))
+                {
+                    ClearLeashGrace();
+                    return true;
+                }
+
+                if (ValidateOutOfLeashTarget(target, lastTick))
+                    return true;
+            }
 
             IUnitEntity mapTarget = entity.Map.GetEntity<IUnitEntity>(entity.TargetGuid.Value);
             if (ShouldLogStarterTutorialCombat(target))
@@ -925,10 +1025,54 @@ namespace NexusForever.Script.Main.AI
             return false;
         }
 
+        private bool ValidateOutOfLeashTarget(IUnitEntity target, double lastTick)
+        {
+            if (leashGraceTargetGuid != target.Guid)
+            {
+                leashGraceTargetGuid = target.Guid;
+                leashGraceTimer.Reset();
+
+                if (ShouldLogStarterTutorialCombat(target))
+                {
+                    log.LogDebug(
+                        "Starter tutorial combat AI leash grace started for creature {CreatureId} guid {Guid}: targetGuid={TargetGuid}, leashDistance={LeashDistance}m, leashRange={LeashRange}m, graceSeconds={GraceSeconds}.",
+                        entity.CreatureId,
+                        entity.Guid,
+                        target.Guid,
+                        GetLeashDistance(target),
+                        GetEffectiveLeashRange(),
+                        LeashGraceSeconds);
+                }
+
+                return true;
+            }
+
+            leashGraceTimer.Update(lastTick);
+            if (!leashGraceTimer.HasElapsed)
+                return true;
+
+            if (ShouldLogStarterTutorialCombat(target))
+            {
+                log.LogDebug(
+                    "Starter tutorial combat AI leash grace expired for creature {CreatureId} guid {Guid}: targetGuid={TargetGuid}, leashDistance={LeashDistance}m, leashRange={LeashRange}m, graceSeconds={GraceSeconds}.",
+                    entity.CreatureId,
+                    entity.Guid,
+                    target.Guid,
+                    GetLeashDistance(target),
+                    GetEffectiveLeashRange(),
+                    LeashGraceSeconds);
+            }
+
+            ClearLeashGrace();
+            return false;
+        }
+
         private void Reset()
         {
             activeChaseTargetGuid = null;
+            activeSummonerFollowGuid = null;
             specialCastLockoutSeconds = 0d;
+            ClearLeashGrace();
 
             IUnitEntity previousTarget = entity.TargetGuid.HasValue
                 ? entity.Map.GetEntity<IUnitEntity>(entity.TargetGuid.Value)
@@ -938,6 +1082,12 @@ namespace NexusForever.Script.Main.AI
             entity.ThreatManager.ClearThreatList();
 
             entity.ModifyHealth(entity.MaxHealth, DamageType.Heal, null);
+
+            if (TryFollowSummoner(true))
+            {
+                returningToLeash = false;
+                return;
+            }
 
             if (previousTarget is IPlayer player)
             {
@@ -989,11 +1139,193 @@ namespace NexusForever.Script.Main.AI
             entity.MovementManager.LaunchSpline(entity.Spline.SplineId, mode, speed, false);
         }
 
+        private IUnitEntity GetCurrentCombatTarget()
+        {
+            return entity.TargetGuid.HasValue
+                ? GetCombatTarget(entity.TargetGuid.Value)
+                : null;
+        }
+
         private IUnitEntity GetCurrentVisibleTarget()
         {
             return entity.TargetGuid.HasValue
                 ? entity.GetVisible<IUnitEntity>(entity.TargetGuid.Value)
                 : null;
+        }
+
+        private IUnitEntity GetCombatTarget(uint guid)
+        {
+            return entity.GetVisible<IUnitEntity>(guid)
+                ?? entity.Map?.GetEntity<IUnitEntity>(guid);
+        }
+
+        private void UpdateSummonerAssist(double lastTick)
+        {
+            if (!CanAssistSummoner())
+                return;
+
+            summonerAssistTimer.Update(lastTick);
+            if (!summonerAssistTimer.HasElapsed)
+                return;
+
+            summonerAssistTimer.Reset();
+
+            IUnitEntity summoner = GetSummoner();
+            IUnitEntity target = GetSummonerAssistTarget(summoner);
+            if (target != null)
+                AggroEntity(target, false);
+        }
+
+        private void UpdateSummonerFollow(double lastTick)
+        {
+            if (!CanFollowSummoner())
+                return;
+
+            summonerFollowTimer.Update(lastTick);
+            if (!summonerFollowTimer.HasElapsed)
+                return;
+
+            summonerFollowTimer.Reset();
+            TryFollowSummoner(false);
+        }
+
+        private bool CanAssistSummoner()
+        {
+            return profile.AssistSummoner
+                && profile.SummonerAssistRange > 0f
+                && entity.SummonerGuid is { } summonerGuid
+                && summonerGuid > 0u;
+        }
+
+        private bool CanFollowSummoner()
+        {
+            return profile.AssistSummoner
+                && !profile.Stationary
+                && profile.SummonerFollowDistance > 0f
+                && entity.SummonerGuid is { } summonerGuid
+                && summonerGuid > 0u;
+        }
+
+        private IUnitEntity GetSummoner()
+        {
+            if (!entity.SummonerGuid.HasValue || entity.SummonerGuid.Value == 0u)
+                return null;
+
+            uint summonerGuid = entity.SummonerGuid.Value;
+            return entity.GetVisible<IUnitEntity>(summonerGuid)
+                ?? entity.Map?.GetEntity<IUnitEntity>(summonerGuid);
+        }
+
+        private IUnitEntity GetSummonerAssistTarget(IUnitEntity summoner)
+        {
+            if (summoner == null)
+                return null;
+
+            if (summoner.TargetGuid.HasValue && summoner.TargetGuid.Value != 0u)
+            {
+                IUnitEntity target = GetCombatTarget(summoner.TargetGuid.Value);
+                if (CanAssistSummonerAgainst(summoner, target))
+                    return target;
+            }
+
+            foreach (IUnitEntity unit in entity.GetInRange<IUnitEntity>(0u).Where(unit => unit != null).ToList())
+            {
+                if (unit.Guid == entity.Guid || unit.Guid == summoner.Guid)
+                    continue;
+
+                if (unit.TargetGuid == summoner.Guid && CanAssistSummonerAgainst(summoner, unit))
+                    return unit;
+
+                if (summoner.ThreatManager?.GetHostile(unit.Guid) != null && CanAssistSummonerAgainst(summoner, unit))
+                    return unit;
+
+                if (unit.ThreatManager?.GetHostile(summoner.Guid) != null && CanAssistSummonerAgainst(summoner, unit))
+                    return unit;
+            }
+
+            return null;
+        }
+
+        private bool CanAssistSummonerAgainst(IUnitEntity summoner, IUnitEntity target)
+        {
+            return target != null
+                && target.Guid != entity.Guid
+                && target.Guid != summoner.Guid
+                && target.IsAlive
+                && CanAcquireTarget(target)
+                && entity.CanAttack(target)
+                && IsWithinRange(summoner.Position, target.Position, profile.SummonerAssistRange)
+                && IsWithinLeash(target);
+        }
+
+        private bool TryFollowSummoner(bool force)
+        {
+            if (!CanFollowSummoner())
+                return false;
+
+            IUnitEntity summoner = GetSummoner();
+            if (summoner == null)
+                return false;
+
+            float followDistance = profile.SummonerFollowDistance;
+            float repathDistance = profile.SummonerFollowRepathDistance > followDistance
+                ? profile.SummonerFollowRepathDistance
+                : followDistance;
+            float distance = Vector2.Distance(
+                new Vector2(entity.Position.X, entity.Position.Z),
+                new Vector2(summoner.Position.X, summoner.Position.Z));
+
+            if (!float.IsFinite(distance))
+                return true;
+
+            if (distance <= followDistance)
+            {
+                if (activeSummonerFollowGuid == summoner.Guid)
+                    entity.MovementManager.Finalise();
+
+                activeSummonerFollowGuid = null;
+                return true;
+            }
+
+            if (!force && distance < repathDistance && !ShouldRepathSummonerFollow(summoner, followDistance))
+                return true;
+
+            entity.MovementManager.Follow(summoner, followDistance);
+            activeSummonerFollowGuid      = summoner.Guid;
+            activeSummonerFollowPosition  = summoner.Position;
+            activeSummonerFollowDistance  = followDistance;
+            returningToLeash              = false;
+            return true;
+        }
+
+        private bool ShouldRepathSummonerFollow(IUnitEntity summoner, float followDistance)
+        {
+            if (activeSummonerFollowGuid != summoner.Guid)
+                return true;
+
+            if (!IsFinite(activeSummonerFollowPosition) || !IsFinite(summoner.Position))
+                return true;
+
+            if (MathF.Abs(activeSummonerFollowDistance - followDistance) > ChaseFollowDistanceTolerance)
+                return true;
+
+            return Vector2.DistanceSquared(
+                new Vector2(activeSummonerFollowPosition.X, activeSummonerFollowPosition.Z),
+                new Vector2(summoner.Position.X, summoner.Position.Z)) >= ChaseRepathDistance * ChaseRepathDistance;
+        }
+
+        private Vector3 GetLeashAnchor()
+        {
+            if (profile.AssistSummoner && GetSummoner() is IUnitEntity summoner)
+                return summoner.Position;
+
+            return entity.LeashPosition;
+        }
+
+        private void ClearLeashGrace()
+        {
+            leashGraceTargetGuid = null;
+            leashGraceTimer.Reset(false);
         }
 
         private float GetEffectiveLeashRange()

@@ -227,7 +227,13 @@ namespace NexusForever.Script.Main.AI
                 AssistRange           = definition.AssistRange ?? fallback.AssistRange,
                 Stationary            = definition.Stationary ?? fallback.Stationary,
                 TraceCombat           = definition.TraceCombat ?? fallback.TraceCombat,
-                AllowNonPlayerTargets = definition.AllowNonPlayerTargets ?? fallback.AllowNonPlayerTargets
+                AllowNonPlayerTargets      = definition.AllowNonPlayerTargets ?? fallback.AllowNonPlayerTargets,
+                AssistSummoner             = definition.AssistSummoner ?? fallback.AssistSummoner,
+                SummonerAssistRange        = definition.SummonerAssistRange ?? fallback.SummonerAssistRange,
+                SummonerFollowDistance     = definition.SummonerFollowDistance ?? fallback.SummonerFollowDistance,
+                SummonerFollowRepathDistance = definition.SummonerFollowRepathDistance ?? fallback.SummonerFollowRepathDistance,
+                SummonerTierSourceBaseSpell4Id = definition.SummonerTierSourceBaseSpell4Id ?? fallback.SummonerTierSourceBaseSpell4Id,
+                SummonerTieredAutoAttackBaseSpell4Id = definition.SummonerTieredAutoAttackBaseSpell4Id ?? fallback.SummonerTieredAutoAttackBaseSpell4Id
             };
         }
 
@@ -598,6 +604,12 @@ namespace NexusForever.Script.Main.AI
             public bool? Stationary { get; set; }
             public bool? TraceCombat { get; set; }
             public bool? AllowNonPlayerTargets { get; set; }
+            public bool? AssistSummoner { get; set; }
+            public float? SummonerAssistRange { get; set; }
+            public float? SummonerFollowDistance { get; set; }
+            public float? SummonerFollowRepathDistance { get; set; }
+            public uint? SummonerTierSourceBaseSpell4Id { get; set; }
+            public uint? SummonerTieredAutoAttackBaseSpell4Id { get; set; }
         }
 
         private sealed class CombatProfileDefinition : CombatProfileFieldsDefinition
