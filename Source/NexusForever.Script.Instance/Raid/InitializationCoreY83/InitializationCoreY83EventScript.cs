@@ -46,6 +46,9 @@ namespace NexusForever.Script.Instance.Raid.InitializationCoreY83
         {
             switch ((PublicEventPhase)phase)
             {
+                case PublicEventPhase.Enter:
+                    publicEvent.ActivateObjective(PublicEventObjective.UnlockTheQuarantineDoor);
+                    break;
                 case PublicEventPhase.OpenDoor:
                     publicEvent.ActivateObjective(PublicEventObjective.OpenTheQuarantineDoor);
                     // WIP-guessed from LaughingWS Instances-and-more: branch broadcasts Nurton2

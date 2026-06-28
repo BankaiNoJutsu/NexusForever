@@ -26,6 +26,19 @@ public class InitializationCoreY83EventScriptTests
     }
 
     [Fact]
+    public void OnPublicEventPhase_Enter_ActivatesUnlockDoorObjective()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+
+        RecordingDispatchProxy<IPublicEvent>.Invocation activation = Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)));
+        Assert.Equal(PublicEventObjective.UnlockTheQuarantineDoor, activation.Arguments[0]);
+    }
+
+    [Fact]
     public void OnPublicEventPhase_OpenDoor_ActivatesDoorObjective()
     {
         var script = CreateScript();
