@@ -21,6 +21,7 @@ namespace NexusForever.Script.Instance.Expedition.SpaceMadness
         EquipAHazmatSuit                 = 1656,
         SurviveYourNightmares            = 1662,
         SurviveTheAirScrubbingProcess    = 2115,
+        GoldMedalTimer                   = 4705,
         AvoidExplodingRowsdowers         = 4708,
         CollectAnExperimentalSlank       = 4709,
         CollectAnExperimentalRockmite    = 4710,
