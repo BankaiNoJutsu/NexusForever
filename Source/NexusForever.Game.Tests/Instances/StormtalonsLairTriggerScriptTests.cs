@@ -14,7 +14,7 @@ public class StormtalonsLairTriggerScriptTests
     public void StopHighPriestTrigger_PlayerEnter_UpdatesObjective()
     {
         var script = new StopTheThundercallHighPriestGridTriggerEntityScript();
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        IPlayer player = CreatePlayer(1ul);
         RecordingDispatchProxy<IPublicEventManager> publicEventManagerProxy = CreateTrigger(out IGridTriggerEntity trigger);
 
         script.OnLoad(trigger);
@@ -23,6 +23,46 @@ public class StormtalonsLairTriggerScriptTests
         RecordingDispatchProxy<IPublicEventManager>.Invocation update = Assert.Single(publicEventManagerProxy.GetInvocations(nameof(IPublicEventManager.UpdateObjective)));
         Assert.Equal(PublicEventObjective.StopTheThundercallHighPriest, update.Arguments[0]);
         Assert.Equal(1, update.Arguments[1]);
+    }
+
+    [Fact]
+    public void StopHighPriestTrigger_SamePlayerReenters_UpdatesObjectiveOnce()
+    {
+        var script = new StopTheThundercallHighPriestGridTriggerEntityScript();
+        IPlayer player = CreatePlayer(1ul);
+        RecordingDispatchProxy<IPublicEventManager> publicEventManagerProxy = CreateTrigger(out IGridTriggerEntity trigger);
+
+        script.OnLoad(trigger);
+        script.OnEnterRange(player);
+        script.OnEnterRange(player);
+
+        RecordingDispatchProxy<IPublicEventManager>.Invocation update = Assert.Single(
+            publicEventManagerProxy.GetInvocations(nameof(IPublicEventManager.UpdateObjective)));
+        Assert.Equal(PublicEventObjective.StopTheThundercallHighPriest, update.Arguments[0]);
+        Assert.Equal(1, update.Arguments[1]);
+    }
+
+    [Fact]
+    public void StopHighPriestTrigger_DifferentPlayersEnter_UpdatesObjectivePerPlayer()
+    {
+        var script = new StopTheThundercallHighPriestGridTriggerEntityScript();
+        IPlayer firstPlayer = CreatePlayer(1ul);
+        IPlayer secondPlayer = CreatePlayer(2ul);
+        RecordingDispatchProxy<IPublicEventManager> publicEventManagerProxy = CreateTrigger(out IGridTriggerEntity trigger);
+
+        script.OnLoad(trigger);
+        script.OnEnterRange(firstPlayer);
+        script.OnEnterRange(secondPlayer);
+
+        List<RecordingDispatchProxy<IPublicEventManager>.Invocation> updates = publicEventManagerProxy
+            .GetInvocations(nameof(IPublicEventManager.UpdateObjective))
+            .ToList();
+        Assert.Equal(2, updates.Count);
+        Assert.All(updates, update =>
+        {
+            Assert.Equal(PublicEventObjective.StopTheThundercallHighPriest, update.Arguments[0]);
+            Assert.Equal(1, update.Arguments[1]);
+        });
     }
 
     [Fact]
@@ -48,5 +88,12 @@ public class StormtalonsLairTriggerScriptTests
         triggerProxy.SetProperty(nameof(IGridEntity.Map), map);
 
         return publicEventManagerProxy;
+    }
+
+    private static IPlayer CreatePlayer(ulong characterId)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), characterId);
+        return player;
     }
 }

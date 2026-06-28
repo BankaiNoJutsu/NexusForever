@@ -6,10 +6,10 @@ using NexusForever.Shared;
 namespace NexusForever.Script.Instance.Dungeon.StormtalonsLair.Script
 {
     /// <summary>
-    /// WIP-guessed from LaughingWS worlddb SQL: the branch only maps this boss script
-    /// to the Stormtalon's Lair objective. Combat mechanics remain blocked.
+    /// Build 16042 maps public-event objective 313 to TargetGroup 2586,
+    /// whose Creature2 members are Aethros 17166 and 32703.
     /// </summary>
-    [ScriptFilterScriptName("AethrosVeteranEntityScript")]
+    [ScriptFilterCreatureId(17166u, 32703u)]
     public class AethrosVeteranEntityScript : PublicEventObjectiveCreditEntityScript
     {
         public AethrosVeteranEntityScript(

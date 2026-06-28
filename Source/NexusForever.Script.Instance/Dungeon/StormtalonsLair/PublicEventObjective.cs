@@ -12,6 +12,8 @@ namespace NexusForever.Script.Instance.Dungeon.StormtalonsLair
         ObtainDataFromTheThundercallDataAltar        = 555,
         DefeatArcanistBreezeBinderForTheEncryptionKey = 556,
         EliminateThundercallPell                     = 557,
+        ActivateImprovementConstructionPlatform      = 558,
+        ActivateLaunchPads                           = 559,
         UseYourGrenadesToDisableTheThundercallPell   = 561,
         HijackPowerFromTheThundercallStormTotems     = 562,
         KillOverseerDriftCatcher                     = 828,
@@ -23,6 +25,7 @@ namespace NexusForever.Script.Instance.Dungeon.StormtalonsLair
         LightningReflexes                            = 2382,
         SwiftSweeper2                                = 2487,
         CompleteStormtalonsLairWithin40Minutes       = 3201,
+        EnableInvokersHolocrypt                      = 4867,
         KillEnemies                                  = 5343,
     }
 }

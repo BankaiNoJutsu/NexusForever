@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Trigger;
 using NexusForever.Script.Template;
@@ -8,6 +9,8 @@ namespace NexusForever.Script.Instance.Dungeon.StormtalonsLair.Script
     [ScriptFilterOwnerId(1831)]
     public class StopTheThundercallHighPriestGridTriggerEntityScript : IGridEntityScript, IOwnedScript<IGridTriggerEntity>
     {
+        private readonly HashSet<ulong> creditedCharacters = [];
+
         private IGridTriggerEntity trigger;
 
         /// <summary>
@@ -23,11 +26,14 @@ namespace NexusForever.Script.Instance.Dungeon.StormtalonsLair.Script
         /// </summary>
         public void OnEnterRange(IGridEntity entity)
         {
-            if (entity is not IPlayer)
+            if (entity is not IPlayer player)
                 return;
 
             // WIP-guessed from LaughingWS Instances-and-more owner 1831. The branch passed the owner id as progress;
-            // this port records one trigger tick until retail packet evidence confirms the exact objective count.
+            // this port records one trigger tick per player until retail packet evidence confirms the exact objective count.
+            if (!creditedCharacters.Add(player.CharacterId))
+                return;
+
             trigger.Map.PublicEventManager.UpdateObjective(PublicEventObjective.StopTheThundercallHighPriest, 1);
         }
     }
