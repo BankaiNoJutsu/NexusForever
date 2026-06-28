@@ -8,6 +8,7 @@ internal class RecordingDispatchProxy<T> : DispatchProxy where T : class
     private readonly Dictionary<string, object> methodReturnValues = [];
     private readonly Dictionary<string, Func<object>> methodReturnFactories = [];
     private readonly Dictionary<string, Func<object[], object>> methodHandlers = [];
+    private readonly Dictionary<string, Func<MethodInfo, object[], object>> methodInfoHandlers = [];
 
     public List<Invocation> Invocations { get; } = [];
 
@@ -45,6 +46,11 @@ internal class RecordingDispatchProxy<T> : DispatchProxy where T : class
         methodHandlers[name] = handler;
     }
 
+    public void SetMethodHandler(string name, Func<MethodInfo, object[], object> handler)
+    {
+        methodInfoHandlers[name] = handler;
+    }
+
     protected override object Invoke(MethodInfo targetMethod, object[] args)
     {
         object[] invocationArgs = args?.ToArray() ?? [];
@@ -62,6 +68,9 @@ internal class RecordingDispatchProxy<T> : DispatchProxy where T : class
                 return null;
             }
         }
+
+        if (methodInfoHandlers.TryGetValue(targetMethod.Name, out Func<MethodInfo, object[], object> methodInfoHandler))
+            return methodInfoHandler(targetMethod, args ?? []);
 
         if (methodHandlers.TryGetValue(targetMethod.Name, out Func<object[], object> handler))
             return handler(args ?? []);

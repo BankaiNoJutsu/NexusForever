@@ -85,7 +85,7 @@ public class XpManagerTests
             new XpPerLevelEntry { Id = 3u, MinXpForLevel = 300u },
             new XpPerLevelEntry { Id = 4u, MinXpForLevel = 600u });
 
-        IPlayer player = CreatePlayer(level: 3u, characterClass: Class.Warrior, out var sessionProxy, out var achievementManagerProxy, out var spellManagerProxy);
+        IPlayer player = CreatePlayer(level: 3u, characterClass: Class.Warrior, out var playerProxy, out var sessionProxy, out var achievementManagerProxy, out var spellManagerProxy);
         var manager = new XpManager(player, new CharacterModel { TotalXp = 300u }, gameTableManager);
 
         manager.SetLevel(4);
@@ -104,6 +104,12 @@ public class XpManagerTests
         Assert.Equal(0u, achievementCall.Arguments[2]);
         Assert.Equal(0u, achievementCall.Arguments[3]);
         Assert.Equal(4u, achievementCall.Arguments[4]);
+
+        RecordingDispatchProxy<IPlayer>.Invocation fanfareCall =
+            Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.CastSpell)));
+        Assert.Equal(53378u, fanfareCall.Arguments[0]);
+        Assert.Equal((byte)3, fanfareCall.Arguments[1]);
+        Assert.IsAssignableFrom<NexusForever.Game.Abstract.Spell.ISpellParameters>(fanfareCall.Arguments[2]);
 
         Assert.Single(spellManagerProxy.GetInvocations(nameof(ISpellManager.GrantSpells)));
     }
@@ -158,7 +164,18 @@ public class XpManagerTests
         out RecordingDispatchProxy<ICharacterAchievementManager> achievementManagerProxy,
         out RecordingDispatchProxy<ISpellManager> spellManagerProxy)
     {
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        return CreatePlayer(level, characterClass, out _, out sessionProxy, out achievementManagerProxy, out spellManagerProxy);
+    }
+
+    private static IPlayer CreatePlayer(
+        uint level,
+        Class characterClass,
+        out RecordingDispatchProxy<IPlayer> playerProxy,
+        out RecordingDispatchProxy<IGameSession> sessionProxy,
+        out RecordingDispatchProxy<ICharacterAchievementManager> achievementManagerProxy,
+        out RecordingDispatchProxy<ISpellManager> spellManagerProxy)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out playerProxy);
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out sessionProxy);
         ICharacterAchievementManager achievementManager = RecordingDispatchProxy<ICharacterAchievementManager>.Create(out achievementManagerProxy);
         ISpellManager spellManager = RecordingDispatchProxy<ISpellManager>.Create(out spellManagerProxy);

@@ -2,6 +2,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Prerequisite;
+using NexusForever.GameTable;
 
 namespace NexusForever.Game.Prerequisite.Check
 {
@@ -13,11 +14,16 @@ namespace NexusForever.Game.Prerequisite.Check
     [PrerequisiteCheck(PrerequisiteType.AccountCurrencyAmount)]
     public class PrerequisiteCheckAccountCurrencyAmount : IPrerequisiteCheck
     {
-        private const uint MaxClientAccountCurrencyType = 18u;
+        private readonly IGameTableManager gameTableManager;
+
+        public PrerequisiteCheckAccountCurrencyAmount(IGameTableManager gameTableManager)
+        {
+            this.gameTableManager = gameTableManager;
+        }
 
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            if (objectId > MaxClientAccountCurrencyType)
+            if (gameTableManager?.AccountCurrencyType?.GetEntry(objectId) == null)
                 return PrerequisiteCompare.Compare(comparison, 0u, value);
 
             ulong amount = player.Account?.CurrencyManager?.GetCurrencyAmount((AccountCurrencyType)objectId) ?? 0ul;

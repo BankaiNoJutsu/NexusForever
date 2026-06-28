@@ -5,6 +5,7 @@ using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Item;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model.Shared;
@@ -393,6 +394,7 @@ namespace NexusForever.Game.Entity
                 StackCount = StackCount,
                 Charges    = Charges,
                 Durability = Durability,
+                DynamicFlags = Soulbound ? DynamicItemFlags.Soulbound : DynamicItemFlags.None,
                 ExpirationTimeLeft = ExpirationTimeLeft,
                 SellPrices  = new NetworkItem.PriceInfo[2]
                 {

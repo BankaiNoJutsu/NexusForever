@@ -93,6 +93,7 @@ namespace NexusForever.Game.Entity
         public EntitySplineModel Spline { get; private set; }
 
         public Vector3 LeashPosition { get; protected set; }
+        protected Vector3 LeashRotation { get; set; }
         public float LeashRange { get; protected set; } = 15f;
         public IMovementManager MovementManager { get; private set; }
 
@@ -102,11 +103,7 @@ namespace NexusForever.Game.Entity
             protected set
             {
                 SetStat(Stat.Health, Math.Clamp(value, 0u, MaxHealth));
-                EnqueueToVisible(new ServerEntityHealthUpdate
-                {
-                    UnitId = Guid,
-                    Health = Health
-                });
+                EnqueueEntityHealthUpdate();
             }
         }
 
@@ -119,7 +116,13 @@ namespace NexusForever.Game.Entity
         public uint Shield
         {
             get => GetStatInteger(Stat.Shield) ?? 0u;
-            set => SetStat(Stat.Shield, Math.Clamp(value, 0u, MaxShieldCapacity));
+            set
+            {
+                uint previousShield = Shield;
+                SetStat(Stat.Shield, Math.Clamp(value, 0u, MaxShieldCapacity));
+                if (Shield != previousShield)
+                    EnqueueEntityHealthUpdate();
+            }
         }
 
         public uint MaxShieldCapacity
@@ -420,10 +423,35 @@ namespace NexusForever.Game.Entity
             QuestChecklistIdx = index;
         }
 
+        public void SetActivePropId(ulong activePropId)
+        {
+            ActivePropId = activePropId;
+        }
+
+        public void RecalculateCreatureProperties()
+        {
+            CalculateDefaultProperties();
+
+            if (CreatureInfo != null)
+                foreach (ICreatureInfoProperty property in CreatureInfo.GetPropertyOverrides())
+                    SetBaseProperty(property.Property, property.Value);
+
+            ResetVitalsToMaximum();
+        }
+
         private void ResetVitalsToMaximum()
         {
             Health = MaxHealth;
             Shield = MaxShieldCapacity;
+        }
+
+        private void EnqueueEntityHealthUpdate()
+        {
+            EnqueueToVisible(new ServerEntityHealthUpdate
+            {
+                UnitId = Guid,
+                Health = Health
+            });
         }
 
         private static IStatValue CreateStatValue(Stat stat, float value)
@@ -440,6 +468,7 @@ namespace NexusForever.Game.Entity
         public override void OnAddToMap(IBaseMap map, uint guid, Vector3 vector)
         {
             LeashPosition = vector;
+            LeashRotation = Rotation;
             MovementManager.SetPosition(vector, false);
 
             base.OnAddToMap(map, guid, vector);
@@ -1213,16 +1242,20 @@ namespace NexusForever.Game.Entity
             if (factionId == Faction.None)
                 return Disposition.Unknown;
 
+            Faction sourceFaction = primary ? Faction1 : Faction2;
+            if (sourceFaction == factionId)
+                return Disposition.Friendly;
+
             IFactionNode targetFaction = GetFactionManager().GetFaction(factionId);
             if (targetFaction == null)
                 throw new ArgumentException($"Invalid faction {factionId}!");
 
             // find disposition based on faction friendships
-            Disposition? dispositionFromFactionTarget = GetDispositionFromFactionFriendship(targetFaction, primary ? Faction1 : Faction2);
+            Disposition? dispositionFromFactionTarget = GetDispositionFromFactionFriendship(targetFaction, sourceFaction);
             if (dispositionFromFactionTarget.HasValue)
                 return dispositionFromFactionTarget.Value;
 
-            IFactionNode invokeFaction = GetFactionManager().GetFaction(primary ? Faction1 : Faction2);
+            IFactionNode invokeFaction = GetFactionManager().GetFaction(sourceFaction);
             Disposition? dispositionFromFactionInvoker = GetDispositionFromFactionFriendship(invokeFaction, factionId);
             if (dispositionFromFactionInvoker.HasValue)
                 return dispositionFromFactionInvoker.Value;

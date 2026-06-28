@@ -95,7 +95,10 @@ namespace NexusForever.Game.Entity
         private void InitialiseRuntimeDependencies(IGridEntity entity)
         {
             if (entity is GridEntity gridEntity)
-                gridEntity.InitialiseScriptManager(() => serviceProvider.GetService<IScriptManager>());
+            {
+                IScriptManager scriptManager = serviceProvider.GetService<IScriptManager>();
+                gridEntity.InitialiseScriptManager(() => scriptManager);
+            }
 
             if (entity is not WorldEntity worldEntity)
                 return;

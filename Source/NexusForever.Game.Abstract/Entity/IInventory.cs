@@ -35,6 +35,16 @@ namespace NexusForever.Game.Abstract.Entity
         uint GetInventorySlotsRemaining(InventoryLocation location);
 
         /// <summary>
+        /// Returns if a new item can be created in the supplied <see cref="InventoryLocation"/>.
+        /// </summary>
+        bool CanCreateItem(InventoryLocation location, uint itemId, uint count);
+
+        /// <summary>
+        /// Returns if a new item can be created in the supplied <see cref="InventoryLocation"/>.
+        /// </summary>
+        bool CanCreateItem(InventoryLocation location, IItemInfo info, uint count);
+
+        /// <summary>
         /// Returns if the count of items with id exists in <see cref="InventoryLocation.Inventory"/>.
         /// </summary>
         bool HasItemCount(uint itemId, uint count);

@@ -103,14 +103,24 @@ namespace NexusForever.Game.Abstract.Entity
         void Initialise(ICreatureInfo creatureInfo, EntityModel model);
 
         /// <summary>
+        /// Recalculate default and creature-info property values after a transient creature level change.
+        /// </summary>
+        void RecalculateCreatureProperties();
+
+        /// <summary>
         /// Sets the quest checklist bit index emitted in the entity create model.
         /// </summary>
         void SetQuestChecklistIndex(byte index);
 
+        /// <summary>
+        /// Sets the active prop identifier emitted in the entity create auxiliary model.
+        /// </summary>
+        void SetActivePropId(ulong activePropId);
+
         ServerEntityCreate BuildCreatePacket(bool initialCommands);
 
         /// <summary>
-        /// Auxiliary entity-create packets emitted before <see cref="BuildCreatePacket"/> (opcodes <c>0x025F</c>..<c>0x0264</c>).
+        /// Builds unresolved entity-create auxiliary packet candidates (opcodes <c>0x025F</c>..<c>0x0264</c>) for evidence work.
         /// </summary>
         IReadOnlyList<IWritable> BuildEntityCreateAuxPackets();
 

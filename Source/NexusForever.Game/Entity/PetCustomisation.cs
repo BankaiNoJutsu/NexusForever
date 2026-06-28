@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
@@ -80,16 +81,25 @@ namespace NexusForever.Game.Entity
 
             if ((saveMask & PetCustomisationSaveMask.Create) != 0)
             {
-                // pet customisation doesn't exist in database, all infomation must be saved
                 var model = new CharacterPetCustomisationModel
                 {
                     Id          = Owner,
                     Type        = (byte)Type,
                     ObjectId    = ObjectId,
-                    Name        = Name,
+                    Name        = Name ?? string.Empty,
                     FlairIdMask = GenerateFlairMask()
                 };
 
+                bool updateName   = (saveMask & PetCustomisationSaveMask.Name) != 0;
+                bool updateFlairs = (saveMask & PetCustomisationSaveMask.Flairs) != 0;
+
+                if (TryUpsertCreatedCustomisation(context, model, updateName, updateFlairs))
+                {
+                    saveMask = PetCustomisationSaveMask.None;
+                    return;
+                }
+
+                // pet customisation doesn't exist in database, all infomation must be saved
                 context.Add(model);
             }
             else
@@ -116,6 +126,74 @@ namespace NexusForever.Game.Entity
             }
 
             saveMask = PetCustomisationSaveMask.None;
+        }
+
+        internal static void UpsertTrackedCreates(CharacterContext context)
+        {
+            List<CharacterPetCustomisationModel> models = context.ChangeTracker.Entries<CharacterPetCustomisationModel>()
+                .Where(e => e.State == EntityState.Added)
+                .Select(e => new CharacterPetCustomisationModel
+                {
+                    Id          = e.Entity.Id,
+                    Type        = e.Entity.Type,
+                    ObjectId    = e.Entity.ObjectId,
+                    Name        = e.Entity.Name ?? string.Empty,
+                    FlairIdMask = e.Entity.FlairIdMask
+                })
+                .ToList();
+
+            foreach (CharacterPetCustomisationModel model in models)
+                if (!TryUpsertCreatedCustomisation(context, model, false, false))
+                    return;
+        }
+
+        private static bool TryUpsertCreatedCustomisation(CharacterContext context, CharacterPetCustomisationModel model, bool updateName, bool updateFlairs)
+        {
+            string providerName = context.Database.ProviderName;
+            if (providerName == null)
+                return false;
+
+            int updateNameFlag   = updateName ? 1 : 0;
+            int updateFlairsFlag = updateFlairs ? 1 : 0;
+
+            if (providerName.Contains("MySql", StringComparison.OrdinalIgnoreCase))
+            {
+                DetachTrackedCustomisation(context, model.Id, model.Type, model.ObjectId);
+                context.Database.ExecuteSqlInterpolated($@"
+                    INSERT INTO character_pet_customisation (id, type, objectId, name, flairIdMask)
+                    VALUES ({model.Id}, {model.Type}, {model.ObjectId}, {model.Name}, {model.FlairIdMask})
+                    ON DUPLICATE KEY UPDATE
+                        name = CASE WHEN {updateNameFlag} <> 0 THEN VALUES(name) ELSE name END,
+                        flairIdMask = CASE WHEN {updateFlairsFlag} <> 0 THEN VALUES(flairIdMask) ELSE flairIdMask END");
+
+                return true;
+            }
+
+            if (providerName.Contains("Sqlite", StringComparison.OrdinalIgnoreCase))
+            {
+                DetachTrackedCustomisation(context, model.Id, model.Type, model.ObjectId);
+                context.Database.ExecuteSqlInterpolated($@"
+                    INSERT INTO character_pet_customisation (id, type, objectId, name, flairIdMask)
+                    VALUES ({model.Id}, {model.Type}, {model.ObjectId}, {model.Name}, {model.FlairIdMask})
+                    ON CONFLICT(id, type, objectId) DO UPDATE SET
+                        name = CASE WHEN {updateNameFlag} <> 0 THEN excluded.name ELSE name END,
+                        flairIdMask = CASE WHEN {updateFlairsFlag} <> 0 THEN excluded.flairIdMask ELSE flairIdMask END");
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private static void DetachTrackedCustomisation(CharacterContext context, ulong characterId, byte type, uint objectId)
+        {
+            foreach (EntityEntry<CharacterPetCustomisationModel> entry in context.ChangeTracker.Entries<CharacterPetCustomisationModel>().ToList())
+            {
+                if (entry.Entity.Id != characterId || entry.Entity.Type != type || entry.Entity.ObjectId != objectId)
+                    continue;
+
+                entry.State = EntityState.Detached;
+            }
         }
 
         public NetworkPetCustomisation Build()

@@ -42,6 +42,8 @@ internal sealed class TestInventory : IInventory
     public bool IsEquippableBankBagSlot(InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
     public bool IsInventoryFull(InventoryLocation location) => InventoryBag.SlotsRemaining == 0u;
     public uint GetInventorySlotsRemaining(InventoryLocation location) => InventoryBag.SlotsRemaining;
+    public bool CanCreateItem(InventoryLocation location, uint itemId, uint count) => count == 0u || InventoryBag.SlotsRemaining > 0u;
+    public bool CanCreateItem(InventoryLocation location, IItemInfo info, uint count) => count == 0u || InventoryBag.SlotsRemaining > 0u;
     public bool HasItemCount(uint itemId, uint count) => throw new NotSupportedException();
     public uint GetItemCount(uint itemId) => throw new NotSupportedException();
     public IItem GetItem(ItemLocation itemLocation) => throw new NotSupportedException();

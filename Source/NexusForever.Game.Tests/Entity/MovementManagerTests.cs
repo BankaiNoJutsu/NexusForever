@@ -133,6 +133,36 @@ public class MovementManagerTests
     }
 
     [Fact]
+    public void BroadcastNetworkEntityCommands_WithClientControlledScaleFinalise_IncludesSelf()
+    {
+        MovementManagerHarness harness = MovementManagerHarness.Create(ownerGuid: 101u);
+        harness.Manager.ServerControl = false;
+        harness.ScaleProxy.SetMethodHandler(nameof(IScaleCommandGroup.Update), _ =>
+        {
+            harness.ScaleProxy.SetProperty(nameof(IScaleCommandGroup.IsDirty), true);
+            return null;
+        });
+
+        harness.Manager.Update(0.016d);
+
+        RecordingDispatchProxy<IUnitEntity>.Invocation enqueue = Assert.Single(harness.OwnerProxy.GetInvocations(nameof(IWorldEntity.EnqueueToVisible)));
+        Assert.True(Assert.IsType<bool>(enqueue.Arguments[1]));
+    }
+
+    [Fact]
+    public void BroadcastNetworkEntityCommands_WithDirtyCommandGroup_BroadcastsWithoutUpdate()
+    {
+        MovementManagerHarness harness = MovementManagerHarness.Create(ownerGuid: 101u);
+        harness.PositionProxy.SetProperty(nameof(IPositionCommandGroup.IsDirty), true);
+
+        harness.Manager.BroadcastNetworkEntityCommands();
+
+        RecordingDispatchProxy<IUnitEntity>.Invocation enqueue = Assert.Single(harness.OwnerProxy.GetInvocations(nameof(IWorldEntity.EnqueueToVisible)));
+        Assert.True(Assert.IsType<bool>(enqueue.Arguments[1]));
+        Assert.False(harness.Manager.IsDirty);
+    }
+
+    [Fact]
     public void ServerPositionPathCommands_WithInvalidNode_AreStopped()
     {
         MovementManagerHarness harness = MovementManagerHarness.Create();

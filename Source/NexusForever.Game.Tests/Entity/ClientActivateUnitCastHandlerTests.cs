@@ -11,7 +11,9 @@ using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.Game.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
@@ -84,6 +86,46 @@ public class ClientActivateUnitCastHandlerTests
     }
 
     [Fact]
+    public void HandleMessageInternal_WithNorthernWildsSoldierHoldoutAndMissingActivateSpell_CompletesActivationWithoutCasting()
+    {
+        ClientActivateUnitCastHandler handler = CreateHandler();
+        IWorldSession session = CreateSession(
+            creatureId: 12508u,
+            castResult: CastResult.NoValidActivateSpell,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IWorldEntity> entityProxy,
+            out _,
+            activateSpellId: 0u,
+            worldId: 426u);
+
+        InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
+        Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
+        Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
+    }
+
+    [Fact]
+    public void HandleMessageInternal_WithNorthernWildsSoldierHoldoutAndBlockedActivateSpell_CompletesActivation()
+    {
+        ClientActivateUnitCastHandler handler = CreateHandler();
+        IWorldSession session = CreateSession(
+            creatureId: 12508u,
+            castResult: CastResult.TargetUnknown,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IWorldEntity> entityProxy,
+            out _,
+            activateSpellId: 85452u,
+            worldId: 426u);
+
+        InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
+
+        Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
+        Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
+        Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
+    }
+
+    [Fact]
     public void HandleMessageInternal_WithActivateSpellPrerequisite_EvaluatesPrerequisiteAgainstActivatedUnit()
     {
         IPrerequisiteManager prerequisiteManager = RecordingDispatchProxy<IPrerequisiteManager>.Create(out RecordingDispatchProxy<IPrerequisiteManager> prerequisiteProxy);
@@ -115,6 +157,43 @@ public class ClientActivateUnitCastHandlerTests
         Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateCast)));
         Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
         Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
+    }
+
+    [Fact]
+    public void HandleMessageInternal_WithQ3963ShipControlsOnNorthernWilds_DefersActivationForClientSideInteraction()
+    {
+        ClientActivateUnitCastHandler handler = CreateHandler();
+        IWorldSession session = CreateSession(
+            creatureId: 27196u,
+            castResult: CastResult.Ok,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IWorldEntity> entityProxy,
+            out _,
+            activateSpellId: 32386u,
+            worldId: 426u,
+            playerPosition: new Vector3(4551.4272f, -694.31885f, -5221.237f),
+            entityPosition: new Vector3(4530.84f, -694.278f, -5196.13f),
+            activateSpellMaxRange: 3f,
+            q3963QuestState: QuestState.Accepted);
+
+        InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
+
+        RecordingDispatchProxy<IPlayer>.Invocation cast =
+            Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
+        SpellParameters parameters = Assert.IsType<SpellParameters>(cast.Arguments[1]);
+        Assert.True(parameters.UseCreatureOverrides);
+        Assert.True(parameters.SkipPrimaryTargetRangeValidation);
+        Assert.True(parameters.DeferActivateEffectObjectiveCredit);
+        Assert.True(parameters.WaitForClientSideInteractionResponse);
+        Assert.Equal(60000u, parameters.ClientSideInteractionDurationMs);
+        Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
+        Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
+
+        Assert.True(PendingClientSideInteractionActivationStore.TryConsume(session, 0u, out PendingClientSideInteractionActivation activation));
+        Assert.Equal(77u, activation.EntityGuid);
+        Assert.Equal(27196u, activation.CreatureId);
+        Assert.Equal(266u, activation.ClientSideInteractionId);
+        Assert.Equal(18613u, activation.Spell4BaseId);
     }
 
     [Fact]
@@ -218,15 +297,43 @@ public class ClientActivateUnitCastHandlerTests
         CastResult? mountCastResult = null,
         uint activateSpellId = 85452u)
     {
+        return CreateSession(
+            creatureId,
+            castResult,
+            out playerProxy,
+            out entityProxy,
+            out _,
+            mountCastResult,
+            activateSpellId);
+    }
+
+    private static IWorldSession CreateSession(
+        uint creatureId,
+        CastResult castResult,
+        out RecordingDispatchProxy<IPlayer> playerProxy,
+        out RecordingDispatchProxy<IWorldEntity> entityProxy,
+        out RecordingDispatchProxy<IQuestManager> questProxy,
+        CastResult? mountCastResult = null,
+        uint activateSpellId = 85452u,
+        uint worldId = 3460u,
+        Vector3? playerPosition = null,
+        Vector3? entityPosition = null,
+        float activateSpellMaxRange = 0f,
+        QuestState? q3963QuestState = null)
+    {
         IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out playerProxy);
         IWorldEntity entity = RecordingDispatchProxy<IWorldEntity>.Create(out entityProxy);
-        IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out RecordingDispatchProxy<IQuestManager> questProxy);
+        IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out questProxy);
         ICharacterAchievementManager achievementManager = RecordingDispatchProxy<ICharacterAchievementManager>.Create(out _);
         IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out RecordingDispatchProxy<IBaseMap> mapProxy);
-        mapProxy.SetProperty(nameof(IMap.Entry), new WorldEntry { Id = 3460u });
+        mapProxy.SetProperty(nameof(IMap.Entry), new WorldEntry { Id = worldId });
 
         questProxy.SetMethodReturn(nameof(IQuestManager.GetActiveQuests), Array.Empty<IQuest>());
+        questProxy.SetMethodHandler(nameof(IQuestManager.GetQuestState), args =>
+            args.Length > 0 && args[0] is ushort questId && questId == 3963u
+                ? q3963QuestState
+                : null);
 
         sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
         sessionProxy.SetMethodHandler(nameof(IWorldSession.TryConsumeNextClientSpellEvidenceCapture), args =>
@@ -237,7 +344,7 @@ public class ClientActivateUnitCastHandlerTests
 
         playerProxy.SetProperty(nameof(IPlayer.Map), map);
         playerProxy.SetProperty(nameof(IPlayer.Guid), 17u);
-        playerProxy.SetProperty(nameof(IPlayer.Position), Vector3.Zero);
+        playerProxy.SetProperty(nameof(IPlayer.Position), playerPosition ?? Vector3.Zero);
         playerProxy.SetProperty(nameof(IPlayer.QuestManager), questManager);
         playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
         playerProxy.SetMethodReturn("GetVisible", entity);
@@ -248,14 +355,14 @@ public class ClientActivateUnitCastHandlerTests
         });
 
         entityProxy.SetProperty(nameof(IGridEntity.Guid), 77u);
-        entityProxy.SetProperty(nameof(IGridEntity.Position), Vector3.Zero);
+        entityProxy.SetProperty(nameof(IGridEntity.Position), entityPosition ?? Vector3.Zero);
         entityProxy.SetProperty(nameof(IWorldEntity.IsBusy), false);
         entityProxy.SetProperty(nameof(IWorldEntity.CreatureId), creatureId);
         entityProxy.SetProperty(nameof(IWorldEntity.CreatureEntry), new Creature2Entry
         {
             Id = creatureId,
             Spell4IdActivate00 = activateSpellId,
-            ActivateSpellMaxRange = 0f
+            ActivateSpellMaxRange = activateSpellMaxRange
         });
 
         return session;
@@ -345,6 +452,27 @@ public class ClientActivateUnitCastHandlerTests
             CreateCreatureEntry(73667u),
             CreateCreatureEntry(73668u),
             CreateCreatureEntry(73741u)));
+        SetProperty(gameTableManager, nameof(GameTableManager.Spell4), CreateGameTable(
+            entry => entry.Id,
+            new Spell4Entry
+            {
+                Id = 32386u,
+                Spell4BaseIdBaseSpell = 18613u
+            }));
+        SetProperty(gameTableManager, nameof(GameTableManager.Spell4Base), CreateGameTable(
+            entry => entry.Id,
+            new Spell4BaseEntry
+            {
+                Id = 18613u,
+                ClientSideInteractionId = 266u
+            }));
+        SetProperty(gameTableManager, nameof(GameTableManager.ClientSideInteraction), CreateGameTable(
+            entry => entry.Id,
+            new ClientSideInteractionEntry
+            {
+                Id = 266u,
+                Duration = 60000u
+            }));
 
         return gameTableManager;
     }
@@ -363,6 +491,30 @@ public class ClientActivateUnitCastHandlerTests
             lookup[entries[index].Id] = index;
 
         SetProperty(gameTable, nameof(GameTable<Creature2Entry>.Entries), entries);
+        SetField(gameTable, "lookup", lookup);
+        SetField(gameTable, "header", new GameTableHeader
+        {
+            MaxId = (ulong)lookup.Length
+        });
+
+        return gameTable;
+    }
+
+    private static GameTable<T> CreateGameTable<T>(Func<T, uint> getId, params T[] entries)
+        where T : class, new()
+    {
+        GameTable<T> gameTable = (GameTable<T>)RuntimeHelpers.GetUninitializedObject(typeof(GameTable<T>));
+        uint maxId = 0u;
+        foreach (T entry in entries)
+            maxId = Math.Max(maxId, getId(entry));
+
+        int[] lookup = new int[checked((int)maxId + 1)];
+        Array.Fill(lookup, -1);
+
+        for (int index = 0; index < entries.Length; index++)
+            lookup[getId(entries[index])] = index;
+
+        SetProperty(gameTable, nameof(GameTable<T>.Entries), entries);
         SetField(gameTable, "lookup", lookup);
         SetField(gameTable, "header", new GameTableHeader
         {

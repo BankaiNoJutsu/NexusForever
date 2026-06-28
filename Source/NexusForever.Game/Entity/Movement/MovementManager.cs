@@ -141,28 +141,41 @@ namespace NexusForever.Game.Entity.Movement
             if (Owner.Map == null)
                 return;
 
-            void UpdateEntityCommandGroup(IEntityCommandGroup commandGroup)
-            {
-                commandGroup.Update(lastTick);
-
-                if (commandGroup.IsDirty)
-                {
-                    commandGroup.IsDirty = false;
-                    IsDirty = true;
-                }
-            }
-
-            UpdateEntityCommandGroup(timeCommandGroup);
-            UpdateEntityCommandGroup(platformCommandGroup);
-            UpdateEntityCommandGroup(positionCommandGroup);
-            UpdateEntityCommandGroup(velocityCommandGroup);
-            UpdateEntityCommandGroup(moveCommandGroup);
-            UpdateEntityCommandGroup(rotationCommandGroup);
-            UpdateEntityCommandGroup(scaleCommandGroup);
-            UpdateEntityCommandGroup(stateCommandGroup);
-            UpdateEntityCommandGroup(modeCommandGroup);
+            timeCommandGroup.Update(lastTick);
+            platformCommandGroup.Update(lastTick);
+            positionCommandGroup.Update(lastTick);
+            velocityCommandGroup.Update(lastTick);
+            moveCommandGroup.Update(lastTick);
+            rotationCommandGroup.Update(lastTick);
+            scaleCommandGroup.Update(lastTick);
+            stateCommandGroup.Update(lastTick);
+            modeCommandGroup.Update(lastTick);
 
             BroadcastNetworkEntityCommands();
+        }
+
+        private void MarkDirtyCommandGroupsForBroadcast()
+        {
+            MarkDirtyCommandGroupForBroadcast(timeCommandGroup);
+            MarkDirtyCommandGroupForBroadcast(platformCommandGroup);
+            MarkDirtyCommandGroupForBroadcast(positionCommandGroup);
+            MarkDirtyCommandGroupForBroadcast(velocityCommandGroup);
+            MarkDirtyCommandGroupForBroadcast(moveCommandGroup);
+            MarkDirtyCommandGroupForBroadcast(rotationCommandGroup);
+            if (MarkDirtyCommandGroupForBroadcast(scaleCommandGroup))
+                IncludeSelfForClientControlledScale();
+            MarkDirtyCommandGroupForBroadcast(stateCommandGroup);
+            MarkDirtyCommandGroupForBroadcast(modeCommandGroup);
+        }
+
+        private bool MarkDirtyCommandGroupForBroadcast(IEntityCommandGroup commandGroup)
+        {
+            if (!commandGroup.IsDirty)
+                return false;
+
+            commandGroup.IsDirty = false;
+            IsDirty = true;
+            return true;
         }
 
         /// <summary>
@@ -240,6 +253,7 @@ namespace NexusForever.Game.Entity.Movement
         /// </summary>
         public void BroadcastNetworkEntityCommands()
         {
+            MarkDirtyCommandGroupsForBroadcast();
             if (!IsDirty)
                 return;
 

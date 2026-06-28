@@ -10,6 +10,11 @@ namespace NexusForever.Game.Abstract.Entity
         void SendInitialPackets();
 
         /// <summary>
+        /// Send the current Quest2-backed contract availability snapshot for contract board UI.
+        /// </summary>
+        void SendContractAvailability();
+
+        /// <summary>
         /// Return <see cref="QuestState"/> for supplied quest.
         /// </summary>
         QuestState? GetQuestState<T>(T questId) where T : Enum;
@@ -68,6 +73,11 @@ namespace NexusForever.Game.Abstract.Entity
         /// Complete an achieved quest supplying an optional reward and whether the quest was completed from the communicator.
         /// </summary>
         void QuestComplete(ushort questId, ushort reward, bool communicator);
+
+        /// <summary>
+        /// Resend the current quest state and objective progress for a quest the player already owns.
+        /// </summary>
+        void SendQuestState(ushort questId);
 
         /// <summary>
         /// Ignore or acknowledge an inactive quest.

@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
@@ -13,6 +14,7 @@ using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Model;
+using NexusForever.Network.World.Message.Model.Entity;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Loot;
 
@@ -83,9 +85,40 @@ public class CreatureRespawnPacketTests
 
         Assert.True(destroyIndex >= 0);
         Assert.True(createIndex > destroyIndex);
+        Assert.DoesNotContain(messages, message => message is ServerEntityCreateAuxScalarList);
         Assert.True(creature.IsAlive);
         Assert.Equal(100u, creature.Health);
         Assert.Equal(25u, creature.RespawnShieldForTest);
+    }
+
+    [Fact]
+    public void Respawn_RestoresNonPlayerPositionCommandToLeashPosition()
+    {
+        Vector3 leashPosition = new(12f, 3f, -4f);
+        TestNonPlayerEntity creature = CreateDeadCreature(88u);
+        creature.SetLeashPositionForTest(leashPosition);
+
+        InvokeRespawn(creature);
+
+        RecordingDispatchProxy<IMovementManager>.Invocation setPosition = Assert.Single(
+            creature.MovementProxy.GetInvocations(nameof(IMovementManager.SetPosition)));
+        Assert.Equal(leashPosition, setPosition.Arguments[0]);
+        Assert.Equal(false, setPosition.Arguments[1]);
+    }
+
+    [Fact]
+    public void Respawn_RestoresNonPlayerRotationCommandToLeashRotation()
+    {
+        Vector3 leashRotation = new(1.25f, 0f, 0f);
+        TestNonPlayerEntity creature = CreateDeadCreature(89u);
+        creature.SetLeashRotationForTest(leashRotation);
+
+        InvokeRespawn(creature);
+
+        RecordingDispatchProxy<IMovementManager>.Invocation setRotation = Assert.Single(
+            creature.MovementProxy.GetInvocations(nameof(IMovementManager.SetRotation)));
+        Assert.Equal(leashRotation, setRotation.Arguments[0]);
+        Assert.Equal(false, setRotation.Arguments[1]);
     }
 
     private static TestNonPlayerEntity CreateDeadCreature(uint guid)
@@ -143,10 +176,22 @@ public class CreatureRespawnPacketTests
         public override uint Health { get; protected set; }
         public IVendorInfo VendorInfo => null;
         public uint RespawnShieldForTest { get; private set; }
+        public RecordingDispatchProxy<IMovementManager> MovementProxy { get; }
 
         public TestNonPlayerEntity()
-            : base(RecordingDispatchProxy<IMovementManager>.Create(out _))
+            : this(CreateMovementManager(out RecordingDispatchProxy<IMovementManager> movementProxy), movementProxy)
         {
+        }
+
+        private TestNonPlayerEntity(IMovementManager movementManager, RecordingDispatchProxy<IMovementManager> movementProxy)
+            : base(movementManager)
+        {
+            MovementProxy = movementProxy;
+        }
+
+        private static IMovementManager CreateMovementManager(out RecordingDispatchProxy<IMovementManager> movementProxy)
+        {
+            return RecordingDispatchProxy<IMovementManager>.Create(out movementProxy);
         }
 
         public void SetGuidForTest(uint guid)
@@ -160,6 +205,16 @@ public class CreatureRespawnPacketTests
             DeathState = EntityDeathState.Dead;
         }
 
+        public void SetLeashPositionForTest(Vector3 position)
+        {
+            LeashPosition = position;
+        }
+
+        public void SetLeashRotationForTest(Vector3 rotation)
+        {
+            LeashRotation = rotation;
+        }
+
         public void AddVisibleForTest(IGridEntity entity)
         {
             visibleEntities.Add(entity.Guid, entity);
@@ -167,7 +222,7 @@ public class CreatureRespawnPacketTests
 
         public override IReadOnlyList<IWritable> BuildEntityCreateAuxPackets()
         {
-            return [];
+            return [new ServerEntityCreateAuxScalarList()];
         }
 
         public override ServerEntityCreate BuildCreatePacket(bool isLoading)

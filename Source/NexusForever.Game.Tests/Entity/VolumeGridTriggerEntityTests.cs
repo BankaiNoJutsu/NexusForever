@@ -6,9 +6,12 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Search;
 using NexusForever.Game.Abstract.PublicEvent;
+using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Quest;
 using NexusForever.Game.Entity.Trigger;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PublicEvent;
+using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -205,9 +208,41 @@ public class VolumeGridTriggerEntityTests
         Assert.Empty(publicEventManagerProxy.GetInvocations(nameof(IPublicEventManager.UpdateObjective)));
     }
 
+    [Fact]
+    public void WorldLocationTrigger_CreditsEnterAreaObjectiveMatchingWorldLocationIndicator()
+    {
+        IScriptManager scriptManager = RecordingDispatchProxy<IScriptManager>.Create(out _);
+        IPublicEventManager publicEventManager = RecordingDispatchProxy<IPublicEventManager>.Create(out _);
+        IQuestObjective objective = CreateQuestObjective(
+            id: 6457u,
+            type: QuestObjectiveType.EnterArea,
+            worldLocationsIdIndicator00: 12649u);
+        IQuest quest = CreateQuest(4696u, objective, out RecordingDispatchProxy<IQuest> questProxy);
+        IPlayer player = CreatePlayer(7u, Vector3.Zero, quest);
+        var map = new TestMap(50f, publicEventManager, player);
+
+        WorldLocationVolumeGridTriggerEntity trigger = CreateWorldLocationTrigger(
+            scriptManager,
+            radius: 10f,
+            maxVerticalDistance: 2f,
+            worldLocationId: 12649u);
+        trigger.Initialise(12649u, objectId: 0u);
+        trigger.OnAddToMap(map, 99u, Vector3.Zero);
+
+        RecordingDispatchProxy<IQuest>.Invocation invocation = Assert.Single(
+            questProxy.GetInvocations(nameof(IQuest.ObjectiveUpdate)));
+        Assert.Equal(6457u, invocation.Arguments[0]);
+        Assert.Equal(1u, invocation.Arguments[1]);
+    }
+
     private static IPlayer CreatePlayer(uint guid, Vector3 position)
     {
         return CreatePlayer(guid, position, out _, 0f);
+    }
+
+    private static IPlayer CreatePlayer(uint guid, Vector3 position, params IQuest[] activeQuests)
+    {
+        return CreatePlayer(guid, position, out _, 0f, activeQuests);
     }
 
     private static IPlayer CreatePlayer(uint guid, Vector3 position, float hitRadius)
@@ -220,10 +255,15 @@ public class VolumeGridTriggerEntityTests
         return CreatePlayer(guid, position, out playerProxy, 0f);
     }
 
-    private static IPlayer CreatePlayer(uint guid, Vector3 position, out RecordingDispatchProxy<IPlayer> playerProxy, float hitRadius)
+    private static IPlayer CreatePlayer(
+        uint guid,
+        Vector3 position,
+        out RecordingDispatchProxy<IPlayer> playerProxy,
+        float hitRadius,
+        params IQuest[] activeQuests)
     {
         IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out var questManagerProxy);
-        questManagerProxy.SetMethodReturn(nameof(IQuestManager.GetActiveQuests), Array.Empty<NexusForever.Game.Abstract.Quest.IQuest>());
+        questManagerProxy.SetMethodReturn(nameof(IQuestManager.GetActiveQuests), activeQuests ?? []);
 
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out playerProxy);
         playerProxy.SetProperty(nameof(IGridEntity.Guid), guid);
@@ -241,12 +281,16 @@ public class VolumeGridTriggerEntityTests
         return entity;
     }
 
-    private static WorldLocationVolumeGridTriggerEntity CreateWorldLocationTrigger(IScriptManager scriptManager, float radius, float maxVerticalDistance)
+    private static WorldLocationVolumeGridTriggerEntity CreateWorldLocationTrigger(
+        IScriptManager scriptManager,
+        float radius,
+        float maxVerticalDistance,
+        uint worldLocationId = 51735u)
     {
         IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out var gameTableManagerProxy);
         gameTableManagerProxy.SetProperty(nameof(IGameTableManager.WorldLocation2), CreateGameTable(new WorldLocation2Entry
         {
-            Id = 51735u,
+            Id = worldLocationId,
             Radius = radius,
             MaxVerticalDistance = maxVerticalDistance
         }));
@@ -255,6 +299,32 @@ public class VolumeGridTriggerEntityTests
             scriptManager,
             gameTableManager,
             NullLogger<WorldLocationVolumeGridTriggerEntity>.Instance);
+    }
+
+    private static IQuest CreateQuest(uint questId, IQuestObjective objective, out RecordingDispatchProxy<IQuest> questProxy)
+    {
+        IQuest quest = RecordingDispatchProxy<IQuest>.Create(out questProxy);
+        questProxy.SetProperty(nameof(IQuest.Id), (ushort)questId);
+        questProxy.SetMethodHandler("GetEnumerator", _ => new[] { objective }.AsEnumerable().GetEnumerator());
+        return quest;
+    }
+
+    private static IQuestObjective CreateQuestObjective(
+        uint id,
+        QuestObjectiveType type,
+        uint worldLocationsIdIndicator00)
+    {
+        IQuestObjective objective = RecordingDispatchProxy<IQuestObjective>.Create(out var objectiveProxy);
+        objectiveProxy.SetProperty(nameof(IQuestObjective.Index), (byte)0);
+        objectiveProxy.SetProperty(nameof(IQuestObjective.ObjectiveInfo), new QuestObjectiveInfo(new QuestObjectiveEntry
+        {
+            Id = id,
+            Type = (uint)type,
+            Count = 1u,
+            WorldLocationsIdIndicator00 = worldLocationsIdIndicator00
+        }));
+        objectiveProxy.SetMethodReturn(nameof(IQuestObjective.IsComplete), false);
+        return objective;
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

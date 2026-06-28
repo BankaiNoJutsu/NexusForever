@@ -5,8 +5,9 @@ using NexusForever.Network.World.Message.Model.Entity;
 namespace NexusForever.Game.Entity
 {
     /// <summary>
-    /// Builds entity-create auxiliary server packets in client registration order
-    /// (<c>0x025F</c>..<c>0x0261</c>, <c>0x0263</c>, <c>0x0264</c>) before <see cref="ServerEntityCreate"/>.
+    /// Builds unresolved entity-create auxiliary packet candidates in client registration order
+    /// (<c>0x025F</c>..<c>0x0261</c>, <c>0x0263</c>, <c>0x0264</c>) for evidence work.
+    /// Normal visibility and respawn recreation do not emit them until native consumer semantics are verified.
     /// Blocked field semantics currently reuse bounded create-surface values only; the 17-bit row
     /// slots intentionally avoid wide identifiers such as <see cref="IWorldEntity.ActivePropId"/>
     /// until native consumer mapping is verified.

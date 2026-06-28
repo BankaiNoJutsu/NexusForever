@@ -3,9 +3,11 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Entity.Movement.Command;
+using NexusForever.Game.Static.Quest;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Command;
+using NexusForever.Network.World.Entity.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Shared;
 
@@ -13,6 +15,11 @@ namespace NexusForever.Game.Entity
 {
     public partial class Player
     {
+        private const ushort SettingUpCampQuestId = 3671;
+        private const uint NorthernWildsWorldId = 426u;
+        private const uint NorthernWildsLandingSiteDeadeyeCreatureId = 11063u;
+        private const uint DeadeyeNeutralPresentationCreatureId = 16962u;
+
         public override bool CanSeeEntity(IGridEntity entity)
         {
             if (ShouldForceStarterTutorialEntityVisibility(entity))
@@ -116,6 +123,8 @@ namespace NexusForever.Game.Entity
                 Session.EnqueueMessageEncrypted(auxiliary);
 
             ServerEntityCreate createPacket = worldEntity.BuildCreatePacket(IsLoading);
+            ApplyQuestPresentationOverrides(worldEntity, createPacket);
+
             IPlayer playerEntity = worldEntity as IPlayer;
             if (playerEntity != null)
                 AddPlayerPositionSnapshot(createPacket, playerEntity);
@@ -125,6 +134,35 @@ namespace NexusForever.Game.Entity
 
             if (playerEntity != null)
                 SendVisiblePlayerMetadata(playerEntity);
+        }
+
+        internal void RefreshQuestPresentation(ushort questId)
+        {
+            if (questId != SettingUpCampQuestId)
+                return;
+
+            foreach (IWorldEntity worldEntity in GetVisibleCreature<IWorldEntity>(NorthernWildsLandingSiteDeadeyeCreatureId).ToList())
+                SendVisibleEntityCreate(worldEntity, refreshExistingEntity: true);
+        }
+
+        private void ApplyQuestPresentationOverrides(IWorldEntity worldEntity, ServerEntityCreate createPacket)
+        {
+            if (!ShouldSuppressSettingUpCampReceiverPresentation(worldEntity))
+                return;
+
+            if (createPacket.EntityModel is NonPlayerEntityModel nonPlayerEntityModel)
+                nonPlayerEntityModel.CreatureId = DeadeyeNeutralPresentationCreatureId;
+        }
+
+        private bool ShouldSuppressSettingUpCampReceiverPresentation(IWorldEntity worldEntity)
+        {
+            if (worldEntity.CreatureId != NorthernWildsLandingSiteDeadeyeCreatureId)
+                return false;
+
+            if (Map?.Entry?.Id != NorthernWildsWorldId)
+                return false;
+
+            return QuestManager?.GetQuestState(SettingUpCampQuestId) == QuestState.Achieved;
         }
 
         private static void AddPlayerPositionSnapshot(ServerEntityCreate createPacket, IPlayer playerEntity)

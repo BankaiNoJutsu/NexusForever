@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Entity;
@@ -15,6 +16,8 @@ using NexusForever.Network;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Model;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Script;
+using NexusForever.Script.Template.Collection;
 
 namespace NexusForever.Game.Tests.Entity;
 
@@ -122,6 +125,37 @@ public class EntityCreatePacketTests
         Assert.Same(creatureInfo, entity.CreatureInfo);
         Assert.Equal(creatureId, creatureInfoManager.LastCreatureId);
         Assert.Equal(1, creatureInfoManager.LookupCount);
+    }
+
+    [Fact]
+    public void CollectableUnitInitialise_AttachesCollectableUnitScripts()
+    {
+        const uint creatureId = 24286u;
+
+        IScriptCollection scriptCollection = RecordingDispatchProxy<IScriptCollection>.Create(out _);
+        IScriptManager scriptManager = RecordingDispatchProxy<IScriptManager>.Create(out RecordingDispatchProxy<IScriptManager> scriptManagerProxy);
+        scriptManagerProxy.SetMethodReturn(nameof(IScriptManager.InitialiseEntityScripts), scriptCollection);
+        IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> gameTableManagerProxy);
+        gameTableManagerProxy.SetProperty(nameof(IGameTableManager.UnitProperty2), CreateGameTable<UnitProperty2Entry>());
+        gameTableManagerProxy.SetProperty(nameof(IGameTableManager.CreatureLevel), CreateGameTable<CreatureLevelEntry>());
+
+        var creatureInfo = new TestCreatureInfo(creatureId);
+        var creatureInfoManager = new TestCreatureInfoManager(creatureInfo);
+        using ServiceProvider provider = BuildProvider(services =>
+        {
+            services.AddSingleton(gameTableManager);
+            services.AddSingleton(scriptManager);
+            services.AddSingleton<ICreatureInfoManager>(creatureInfoManager);
+        });
+
+        IEntityFactory entityFactory = provider.GetRequiredService<IEntityFactory>();
+        IWorldEntity entity = entityFactory.CreateWorldEntity(EntityType.CollectableUnit);
+
+        entity.Initialise(creatureId);
+
+        RecordingDispatchProxy<IScriptManager>.Invocation invocation = Assert.Single(
+            scriptManagerProxy.GetInvocations(nameof(IScriptManager.InitialiseEntityScripts)));
+        Assert.Same(entity, invocation.Arguments[0]);
     }
 
     [Theory]
@@ -342,6 +376,50 @@ public class EntityCreatePacketTests
         return stream.ToArray();
     }
 
+    private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()
+    {
+        var table = (GameTable<T>)RuntimeHelpers.GetUninitializedObject(typeof(GameTable<T>));
+        SetAutoProperty(table, nameof(GameTable<T>.Entries), entries);
+        SetPrivateField(table, "header", new GameTableHeader
+        {
+            MaxId = entries.Length == 0 ? 0u : entries.Max(GetEntryId) + 1u
+        });
+        SetPrivateField(table, "lookup", BuildLookup(entries));
+        return table;
+    }
+
+    private static int[] BuildLookup<T>(IReadOnlyList<T> entries)
+    {
+        if (entries.Count == 0)
+            return [];
+
+        int[] lookup = Enumerable.Repeat(-1, (int)(entries.Max(GetEntryId) + 1u)).ToArray();
+        for (int i = 0; i < entries.Count; i++)
+            lookup[GetEntryId(entries[i])] = i;
+
+        return lookup;
+    }
+
+    private static uint GetEntryId<T>(T entry)
+    {
+        FieldInfo idField = typeof(T).GetField("Id")!;
+        return (uint)idField.GetValue(entry)!;
+    }
+
+    private static void SetAutoProperty(object instance, string propertyName, object value)
+    {
+        FieldInfo backingField = instance.GetType()
+            .GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        backingField.SetValue(instance, value);
+    }
+
+    private static void SetPrivateField(object instance, string fieldName, object value)
+    {
+        FieldInfo field = instance.GetType()
+            .GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)!;
+        field.SetValue(instance, value);
+    }
+
     private sealed class TestSimpleEntity : UnitEntity, ISimpleEntity
     {
         public override EntityType Type => EntityType.Simple;
@@ -466,6 +544,16 @@ public class EntityCreatePacketTests
         }
 
         public void TrackSummon(IWorldEntity entity)
+        {
+            throw new NotSupportedException();
+        }
+
+        public bool TryGetSummonCreature(uint creatureId, out IWorldEntity entity)
+        {
+            throw new NotSupportedException();
+        }
+
+        public uint GetSummonCreatureCount(uint creatureId)
         {
             throw new NotSupportedException();
         }

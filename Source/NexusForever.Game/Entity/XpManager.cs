@@ -3,6 +3,7 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Configuration.Model;
+using NexusForever.Game.Spell;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -17,6 +18,7 @@ namespace NexusForever.Game.Entity
         private const byte DefaultMaxCharacterLevel = 50;
         private const float DefaultSignatureXpRate = 0.25f;
         private const ushort HousingWorldId = 1229;
+        private const uint LevelUpFanfareSpell4BaseId = 53378u;
         private const double HousingRestXpPercentPerHour = 0.0024d;
         private const float RestXpCapLevelPercent = 1.5f;
         private const float RestXpKillPercent = 0.5f;
@@ -278,6 +280,7 @@ namespace NexusForever.Game.Entity
             if (newLevel <= oldLevel)
                 return;
 
+            player.CastSpell(LevelUpFanfareSpell4BaseId, GetLevelUpFanfareTier(newLevel), new SpellParameters());
             player.AchievementManager.SetAchievementProgress(player, AchievementType.CharacterLevel, 0u, 0u, newLevel);
             if (oldLevel < DefaultMaxCharacterLevel && newLevel >= DefaultMaxCharacterLevel)
                 player.AchievementManager.CheckAchievements(player, AchievementType.ClassLevel50, (uint)player.Class);
@@ -334,6 +337,11 @@ namespace NexusForever.Game.Entity
         private static uint GetMaximumRestBonusXp(uint levelXpSpan)
         {
             return (uint)(levelXpSpan * RestXpCapLevelPercent);
+        }
+
+        private static byte GetLevelUpFanfareTier(byte level)
+        {
+            return (byte)(level - 1);
         }
     }
 }

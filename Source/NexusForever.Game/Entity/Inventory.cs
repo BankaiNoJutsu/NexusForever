@@ -262,6 +262,60 @@ namespace NexusForever.Game.Entity
         }
 
         /// <summary>
+        /// Returns if a new item can be created in the supplied <see cref="InventoryLocation"/>.
+        /// </summary>
+        public bool CanCreateItem(InventoryLocation location, uint itemId, uint count)
+        {
+            IItemInfo info = itemManager?.GetItemInfo(itemId);
+            if (info == null)
+                throw new ArgumentNullException();
+
+            return CanCreateItem(location, info, count);
+        }
+
+        /// <summary>
+        /// Returns if a new item can be created in the supplied <see cref="InventoryLocation"/>.
+        /// </summary>
+        public bool CanCreateItem(InventoryLocation location, IItemInfo info, uint count)
+        {
+            if (info == null)
+                throw new ArgumentNullException();
+
+            IBag bag = GetBag(location);
+            if (bag == null)
+                throw new ArgumentException();
+
+            if (count == 0u)
+                return true;
+
+            if (info.IsStackable())
+            {
+                uint expirationTimeLeft = GetInitialExpirationTimeLeft(info);
+                uint maxStackCount = Math.Max(1u, info.Entry.MaxStackCount);
+                foreach (IItem item in bag.Where(i => i.Info.Id == info.Id && i.ExpirationTimeLeft == expirationTimeLeft))
+                {
+                    if (count == 0u)
+                        break;
+
+                    if (item.StackCount >= maxStackCount)
+                        continue;
+
+                    count -= Math.Min(count, maxStackCount - item.StackCount);
+                }
+            }
+
+            if (count == 0u)
+                return true;
+
+            uint itemMaxStackCount = info.IsStackable() ? Math.Max(1u, info.Entry.MaxStackCount) : 1u;
+            ulong slotsNeeded = ((ulong)count + itemMaxStackCount - 1ul) / itemMaxStackCount;
+            if (location == InventoryLocation.Equipped)
+                return slotsNeeded <= 1ul && bag.GetFirstAvailableBagIndex((ItemSlot)info.SlotEntry.Id).HasValue;
+
+            return (ulong)bag.SlotsRemaining >= slotsNeeded;
+        }
+
+        /// <summary>
         /// Create a new <see cref="IItem"/> in the first available inventory bag index or stack.
         /// </summary>
         public void ItemCreate(InventoryLocation location, uint itemId, uint count, ItemUpdateReason reason = ItemUpdateReason.NoReason, uint charges = 0)
@@ -469,6 +523,8 @@ namespace NexusForever.Game.Entity
 
             IItem dstItem = dstBag.GetItem(bagIndex);
             InventoryOperationSnapshot snapshot = CreateOperationSnapshot();
+            bool wasSoulbound = item.Soulbound;
+            bool dstWasSoulbound = dstItem?.Soulbound ?? false;
 
             try
             {
@@ -506,6 +562,8 @@ namespace NexusForever.Game.Entity
                             DragDrop = ItemLocationToDragDropData(item.Location, (ushort)item.BagIndex)
                         }
                     });
+
+                    SendBindOnEquipRefreshIfNeeded(item, wasSoulbound);
                 }
                 else
                 {
@@ -574,6 +632,9 @@ namespace NexusForever.Game.Entity
                             DragDrop = ItemLocationToDragDropData(dstItem.Location, (ushort)dstItem.BagIndex)
                         }
                     });
+
+                    SendBindOnEquipRefreshIfNeeded(item, wasSoulbound);
+                    SendBindOnEquipRefreshIfNeeded(dstItem, dstWasSoulbound);
                 }
             }
             catch (Exception exception)
@@ -835,8 +896,25 @@ namespace NexusForever.Game.Entity
 
         private static void BindOnEquip(IItem item)
         {
-            if (item.Location == InventoryLocation.Equipped && item.Info?.CanBindOnEquip() == true)
-                item.MakeSoulbound();
+            if (item.Location != InventoryLocation.Equipped || item.Soulbound || item.Info?.CanBindOnEquip() != true)
+                return;
+
+            item.MakeSoulbound();
+        }
+
+        private void SendBindOnEquipRefreshIfNeeded(IItem item, bool wasSoulbound)
+        {
+            if (wasSoulbound || item?.Soulbound != true || item.Location == InventoryLocation.None || player?.IsLoading != false)
+                return;
+
+            player.Session.EnqueueMessageEncrypted(new ServerItemAdd
+            {
+                InventoryItem = new InventoryItem
+                {
+                    Item   = item.Build(),
+                    Reason = ItemUpdateReason.NoReason
+                }
+            });
         }
 
         /// <summary>

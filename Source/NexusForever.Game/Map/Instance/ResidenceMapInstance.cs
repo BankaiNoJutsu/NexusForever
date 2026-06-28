@@ -568,7 +568,7 @@ namespace NexusForever.Game.Map.Instance
             if (HasUnsupportedPlugPrerequisites(entry))
                 return HousingResult.Plug_PrereqNotMet;
 
-            if (HasUnsupportedPlugContributionCost(entry) || HasContributionPayload(housingPlugUpdate))
+            if (HasContributionPayload(housingPlugUpdate))
                 return HousingResult.Plug_CannotAfford;
 
             if (HasUnsupportedPlugRuntime(entry))
@@ -592,26 +592,17 @@ namespace NexusForever.Game.Map.Instance
                 || entry.AccountItemIdUpsell != 0u;
         }
 
-        private static bool HasUnsupportedPlugContributionCost(HousingPlugItemEntry entry)
-        {
-            return entry.HousingContributionInfoId00 != 0u
-                || entry.HousingContributionInfoId01 != 0u
-                || entry.HousingContributionInfoId02 != 0u
-                || entry.HousingContributionInfoId03 != 0u
-                || entry.HousingContributionInfoId04 != 0u
-                || entry.HousingContributionInfoIdUpkeepCost00 != 0u
-                || entry.HousingContributionInfoIdUpkeepCost01 != 0u
-                || entry.HousingContributionInfoIdUpkeepCost02 != 0u
-                || entry.HousingContributionInfoIdUpkeepCost03 != 0u
-                || entry.HousingContributionInfoIdUpkeepCost04 != 0u;
-        }
-
         private static bool HasUnsupportedPlugRuntime(HousingPlugItemEntry entry)
         {
             return entry.HousingBuildId != 0u
                 || entry.HousingUpkeepTypeEnum != 0u
                 || entry.UpkeepCharges != 0u
-                || entry.UpkeepTime > 0f;
+                || entry.UpkeepTime > 0f
+                || entry.HousingContributionInfoIdUpkeepCost00 != 0u
+                || entry.HousingContributionInfoIdUpkeepCost01 != 0u
+                || entry.HousingContributionInfoIdUpkeepCost02 != 0u
+                || entry.HousingContributionInfoIdUpkeepCost03 != 0u
+                || entry.HousingContributionInfoIdUpkeepCost04 != 0u;
         }
 
         private static bool HasContributionPayload(ClientHousingPlugUpdate housingPlugUpdate)

@@ -9,14 +9,17 @@ using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Entity.Movement.Command;
+using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 using NexusForever.Network.Internal;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Command;
 using NexusForever.Network.World.Entity.Model;
+using NexusForever.Network.World.Message.Model.Entity;
 using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.Game.Tests.Entity;
@@ -49,6 +52,90 @@ public class PlayerVisibilityPacketTests
 
         RecordingDispatchProxy<IGameSession>.Invocation invocation = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
         Assert.IsType<ServerEntityCreate>(invocation.Arguments[0]);
+    }
+
+    [Fact]
+    public void AddVisible_WhenEntityHasCreateAuxPackets_EmitsAuxPacketsBeforeCreate()
+    {
+        TestPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        TestWorldEntity entity = CreateWorldEntity(55u);
+        entity.EntityCreateAuxPackets.Add(new ServerEntityCreateAuxScalarList());
+
+        player.AddVisible(entity);
+
+        IReadOnlyList<object> messages = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .ToList();
+
+        Assert.IsType<ServerEntityCreateAuxScalarList>(messages[0]);
+        ServerEntityCreate create = Assert.IsType<ServerEntityCreate>(messages[1]);
+        Assert.Equal(entity.Guid, create.Guid);
+    }
+
+    [Fact]
+    public void AddVisible_WhenSettingUpCampAchievedForLandingSiteDeadeye_UsesNeutralPresentationCreature()
+    {
+        TestPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        SetMap(player, CreateMap(426u));
+        SetQuestState(player, _ => QuestState.Achieved);
+        TestWorldEntity entity = CreateNonPlayerEntity(55u, 11063u);
+
+        player.AddVisible(entity);
+
+        ServerEntityCreate create = Assert.IsType<ServerEntityCreate>(
+            Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))).Arguments[0]);
+        NonPlayerEntityModel model = Assert.IsType<NonPlayerEntityModel>(create.EntityModel);
+        Assert.Equal(16962u, model.CreatureId);
+        Assert.Equal(11063u, entity.CreatureId);
+    }
+
+    [Fact]
+    public void AddVisible_WhenSettingUpCampAchievedForCampDeadeye_KeepsCampPresentationCreature()
+    {
+        TestPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        SetMap(player, CreateMap(426u));
+        SetQuestState(player, _ => QuestState.Achieved);
+        TestWorldEntity entity = CreateNonPlayerEntity(55u, 12959u);
+
+        player.AddVisible(entity);
+
+        ServerEntityCreate create = Assert.IsType<ServerEntityCreate>(
+            Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))).Arguments[0]);
+        NonPlayerEntityModel model = Assert.IsType<NonPlayerEntityModel>(create.EntityModel);
+        Assert.Equal(12959u, model.CreatureId);
+        Assert.Equal(12959u, entity.CreatureId);
+    }
+
+    [Fact]
+    public void RefreshQuestPresentation_WhenSettingUpCampBecomesAchieved_RecreatesLandingSiteDeadeyeWithNeutralPresentation()
+    {
+        QuestState? state = null;
+        TestPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        SetMap(player, CreateMap(426u));
+        SetQuestState(player, _ => state);
+        TestWorldEntity entity = CreateNonPlayerEntity(55u, 11063u);
+
+        player.AddVisible(entity);
+
+        ServerEntityCreate initialCreate = Assert.IsType<ServerEntityCreate>(
+            Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))).Arguments[0]);
+        Assert.Equal(11063u, Assert.IsType<NonPlayerEntityModel>(initialCreate.EntityModel).CreatureId);
+
+        state = QuestState.Achieved;
+        sessionProxy.Invocations.Clear();
+        player.RefreshQuestPresentation(3671);
+
+        IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> invocations =
+            sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+
+        ServerEntityDestroy destroy = Assert.IsType<ServerEntityDestroy>(invocations[0].Arguments[0]);
+        Assert.Equal(entity.Guid, destroy.Guid);
+        Assert.True(destroy.Flag);
+
+        ServerEntityCreate refreshedCreate = Assert.IsType<ServerEntityCreate>(invocations[1].Arguments[0]);
+        Assert.Equal(16962u, Assert.IsType<NonPlayerEntityModel>(refreshedCreate.EntityModel).CreatureId);
+        Assert.Equal(11063u, entity.CreatureId);
     }
 
     [Fact]
@@ -88,8 +175,10 @@ public class PlayerVisibilityPacketTests
 
         player.AddVisible(remotePlayer);
 
-        ServerEntityCreate create = Assert.IsType<ServerEntityCreate>(
-            sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))[0].Arguments[0]);
+        ServerEntityCreate create = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .OfType<ServerEntityCreate>()
+            .Single();
         AssertPositionSnapshot(create, remotePlayer.Position);
     }
 
@@ -113,7 +202,9 @@ public class PlayerVisibilityPacketTests
         Assert.Equal(player.Guid, destroy.Guid);
         Assert.True(destroy.Flag);
 
-        ServerEntityCreate create = Assert.IsType<ServerEntityCreate>(remoteMessages[1].Arguments[0]);
+        Assert.IsType<ServerEntityCreateAuxScalarList>(remoteMessages[1].Arguments[0]);
+
+        ServerEntityCreate create = Assert.IsType<ServerEntityCreate>(remoteMessages[2].Arguments[0]);
         Assert.Equal(player.Guid, create.Guid);
         AssertPositionSnapshot(create, player.Position);
     }
@@ -147,6 +238,29 @@ public class PlayerVisibilityPacketTests
         Assert.Equal(entity.Guid, destroy.Guid);
     }
 
+    [Fact]
+    public void Dismount_WhenPlatformIsNotVehicle_DetachesPlatformWithoutThrowing()
+    {
+        TestPlayer player = CreatePlayer(out _, trackMovementState: true);
+        TestWorldEntity platform = CreateWorldEntity(77u);
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out RecordingDispatchProxy<IBaseMap> mapProxy);
+        mapProxy.SetMethodHandler(nameof(IBaseMap.GetEntity), args =>
+        {
+            uint guid = (uint)args[0];
+            return guid == platform.Guid ? platform : null;
+        });
+
+        SetMap(player, map);
+        SetVisibleEntity(player, platform);
+        player.SetPlatform(platform);
+
+        Assert.Equal(platform.Guid, player.PlatformGuid);
+
+        player.Dismount();
+
+        Assert.Null(player.PlatformGuid);
+    }
+
     private static void AssertPositionSnapshot(ServerEntityCreate create, Vector3 expectedPosition)
     {
         INetworkEntityCommand positionCommand = Assert.Single(create.Commands, c => c.Command == EntityCommand.SetPosition);
@@ -155,9 +269,11 @@ public class PlayerVisibilityPacketTests
         Assert.False(model.Blend);
     }
 
-    private static TestPlayer CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy, uint guid = 21u)
+    private static TestPlayer CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy, uint guid = 21u, bool trackMovementState = false)
     {
-        IMovementManager movementManager = RecordingDispatchProxy<IMovementManager>.Create(out _);
+        IMovementManager movementManager = RecordingDispatchProxy<IMovementManager>.Create(out RecordingDispatchProxy<IMovementManager> movementManagerProxy);
+        if (trackMovementState)
+            TrackMovementState(movementManagerProxy);
         IInternalMessagePublisher messagePublisher = RecordingDispatchProxy<IInternalMessagePublisher>.Create(out _);
         IEntityFactory entityFactory = RecordingDispatchProxy<IEntityFactory>.Create(out _);
         IMatchingManager matchingManager = RecordingDispatchProxy<IMatchingManager>.Create(out _);
@@ -179,6 +295,32 @@ public class PlayerVisibilityPacketTests
         return player;
     }
 
+    private static void TrackMovementState(RecordingDispatchProxy<IMovementManager> movementManagerProxy)
+    {
+        uint? platform = null;
+        Vector3 position = Vector3.Zero;
+        Vector3 rotation = Vector3.Zero;
+
+        movementManagerProxy.SetMethodHandler(nameof(IMovementManager.GetPlatform), _ => platform);
+        movementManagerProxy.SetMethodHandler(nameof(IMovementManager.SetPlatform), args =>
+        {
+            platform = (uint?)args[0];
+            return null;
+        });
+        movementManagerProxy.SetMethodHandler(nameof(IMovementManager.GetPosition), _ => position);
+        movementManagerProxy.SetMethodHandler(nameof(IMovementManager.SetPosition), args =>
+        {
+            position = (Vector3)args[0];
+            return null;
+        });
+        movementManagerProxy.SetMethodHandler(nameof(IMovementManager.GetRotation), _ => rotation);
+        movementManagerProxy.SetMethodHandler(nameof(IMovementManager.SetRotation), args =>
+        {
+            rotation = (Vector3)args[0];
+            return null;
+        });
+    }
+
     private static TestWorldEntity CreateWorldEntity(uint guid)
     {
         IMovementManager movementManager = RecordingDispatchProxy<IMovementManager>.Create(out _);
@@ -188,9 +330,40 @@ public class PlayerVisibilityPacketTests
         return entity;
     }
 
+    private static TestWorldEntity CreateNonPlayerEntity(uint guid, uint creatureId)
+    {
+        IMovementManager movementManager = RecordingDispatchProxy<IMovementManager>.Create(out _);
+        var entity = new TestWorldEntity(
+            movementManager,
+            EntityType.NonPlayer,
+            () => new NonPlayerEntityModel
+            {
+                CreatureId = creatureId
+            });
+
+        entity.SetGuidForTest(guid);
+        entity.SetPositionForTest(new Vector3(1f, 0f, 0f));
+        SetAutoProperty(entity, nameof(WorldEntity.CreatureEntry), new Creature2Entry { Id = creatureId });
+        return entity;
+    }
+
+    private static IBaseMap CreateMap(uint worldId)
+    {
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out RecordingDispatchProxy<IBaseMap> mapProxy);
+        mapProxy.SetProperty(nameof(IBaseMap.Entry), new WorldEntry { Id = worldId });
+        return map;
+    }
+
     private static void SetMap(TestPlayer player, IBaseMap map)
     {
         SetAutoProperty(player, nameof(GridEntity.Map), map);
+    }
+
+    private static void SetQuestState(TestPlayer player, Func<ushort, QuestState?> getState)
+    {
+        IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+        questManagerProxy.SetMethodHandler(nameof(IQuestManager.GetQuestState), args => getState((ushort)args[0]));
+        SetAutoProperty(player, nameof(Player.QuestManager), questManager);
     }
 
     private static void SetVisibleEntity(TestPlayer player, IGridEntity visibleEntity)
@@ -254,7 +427,7 @@ public class PlayerVisibilityPacketTests
 
         public override IReadOnlyList<IWritable> BuildEntityCreateAuxPackets()
         {
-            return [];
+            return [new ServerEntityCreateAuxScalarList()];
         }
 
         public override ServerEntityCreate BuildCreatePacket(bool isLoading)
@@ -270,21 +443,31 @@ public class PlayerVisibilityPacketTests
 
     private sealed class TestWorldEntity : WorldEntity
     {
-        public TestWorldEntity(IMovementManager movementManager)
+        private readonly EntityType entityType;
+        private readonly Func<IEntityModel> entityModelFactory;
+
+        public TestWorldEntity(
+            IMovementManager movementManager,
+            EntityType entityType = EntityType.SimpleCollidable,
+            Func<IEntityModel> entityModelFactory = null)
             : base(movementManager)
         {
+            this.entityType          = entityType;
+            this.entityModelFactory = entityModelFactory ?? (() => new SimpleCollidableEntityModel());
         }
 
-        public override EntityType Type => EntityType.SimpleCollidable;
+        public override EntityType Type => entityType;
+
+        public List<IWritable> EntityCreateAuxPackets { get; } = [];
 
         protected override IEntityModel BuildEntityModel()
         {
-            return new SimpleCollidableEntityModel();
+            return entityModelFactory();
         }
 
         public override IReadOnlyList<IWritable> BuildEntityCreateAuxPackets()
         {
-            return [];
+            return EntityCreateAuxPackets;
         }
 
         public override ServerEntityCreate BuildCreatePacket(bool isLoading)

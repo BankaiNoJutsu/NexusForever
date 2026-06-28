@@ -1,4 +1,4 @@
-﻿using NexusForever.Database.Character;
+using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
@@ -66,6 +66,7 @@ namespace NexusForever.Game.Entity
         private readonly IGlobalQuestManager globalQuestManager;
         private readonly IScriptManager scriptManager;
         private readonly IGameTableManager gameTableManager;
+        private readonly IContractManager contractManager;
 
         private readonly Dictionary<ushort, IQuest> completedQuests = new();
         private readonly Dictionary<ushort, IQuest> inactiveQuests = new();
@@ -83,7 +84,8 @@ namespace NexusForever.Game.Entity
             IPrerequisiteManager prerequisiteManager = null,
             IGlobalQuestManager globalQuestManager = null,
             IScriptManager scriptManager = null,
-            IGameTableManager gameTableManager = null)
+            IGameTableManager gameTableManager = null,
+            IContractManager contractManager = null)
         {
             player              = owner;
             this.disableManager = disableManager;
@@ -92,6 +94,7 @@ namespace NexusForever.Game.Entity
             this.globalQuestManager = globalQuestManager;
             this.scriptManager = scriptManager;
             this.gameTableManager = gameTableManager;
+            this.contractManager = contractManager;
 
             foreach (CharacterQuestModel questModel in model.Quest)
             {
@@ -240,6 +243,17 @@ namespace NexusForever.Game.Entity
                 quest.SendObjectiveWorldLocationUpdates();
         }
 
+        public void SendContractAvailability()
+        {
+            if (contractManager == null || player.Session == null)
+                return;
+
+            player.Session.EnqueueMessageEncrypted(new ServerQuestContractGoodQualityChanged
+            {
+                QuestIds = contractManager.GetGoodQualityContractQuestIds(activeQuests.Values, completedQuests.Values, DateTime.UtcNow)
+            });
+        }
+
         private bool ShouldSuppressCompletedQuestFromInitialSnapshot(IQuest quest)
         {
             if (!starterTutorialPresentationFollowUps.TryGetValue(quest.Id, out ushort followUpQuestId))
@@ -373,7 +387,8 @@ namespace NexusForever.Game.Entity
                 if (!GetGlobalQuestManager().GetQuestGivers((ushort)info.Entry.Id)
                         .Any(c => player.GetVisibleCreature<WorldEntity>(c).Any())
                     && !GetGlobalQuestManager().GetQuestCommunicatorMessages((ushort)info.Entry.Id)
-                        .Any(m => m.Meets(player)))
+                        .Any(m => m.Meets(player))
+                    && !AllowsContractReceiverlessLifecycle(info))
                     throw new QuestException($"Player {player.CharacterId} tried to start quest {info.Entry.Id} without quest giver!");
             }
 
@@ -453,6 +468,8 @@ namespace NexusForever.Game.Entity
                 if (!HasActiveQuestCapacity(activeQuests.Count, entry?.Dataint0 ?? 40u))
                     return false;
             }
+            else if (!GetContractManager().CanAccept(info, activeQuests.Values, completedQuests.Values, DateTime.UtcNow))
+                return false;
 
             return true;
         }
@@ -465,6 +482,11 @@ namespace NexusForever.Game.Entity
         private IGlobalQuestManager GetGlobalQuestManager()
         {
             return globalQuestManager ?? throw new InvalidOperationException($"{nameof(QuestManager)} requires an {nameof(IGlobalQuestManager)}.");
+        }
+
+        private IContractManager GetContractManager()
+        {
+            return contractManager ?? throw new InvalidOperationException($"{nameof(QuestManager)} requires an {nameof(IContractManager)} for contract quests.");
         }
 
         public static bool MeetsFactionLevelRequirement(FactionLevel currentLevel, uint requiredLevel, bool requireAtMostLevel)
@@ -538,8 +560,9 @@ namespace NexusForever.Game.Entity
                 QuestRemove(quest);
 
             quest.Flags |= QuestStateFlags.Tracked;
-            quest.State = QuestState.Accepted;
+            quest.State = info.Objectives.Count == 0 ? QuestState.Achieved : QuestState.Accepted;
             activeQuests.Add((ushort)info.Entry.Id, quest);
+            RefreshQuestPresentation((ushort)info.Entry.Id);
 
             quest.InitialiseTimer();
             InventoryQuestObjectiveUpdater.SyncCollectObjectivesForQuest(quest);
@@ -737,26 +760,43 @@ namespace NexusForever.Game.Entity
                 throw new QuestException($"Player {player.CharacterId} tried to complete quest {questId} which wasn't complete!");
 
             bool allowStarterTutorialReceiverlessCompletion = AllowsStarterTutorialReceiverlessCompletion(questId);
+            bool allowContractReceiverlessCompletion = AllowsContractReceiverlessLifecycle(quest.Info);
+            bool hasVisibleReceiver = HasVisibleQuestReceiver(questId);
 
             if (communicator)
             {
                 // for more see QuestTracker:HelperShowQuestCallbackBtn in LUA which contains the logic to show the complete button in the quest tracker
-                if (!quest.Info.IsCommunicatorReceived() && !allowStarterTutorialReceiverlessCompletion)
+                if (!quest.Info.IsCommunicatorReceived() && !allowStarterTutorialReceiverlessCompletion && !allowContractReceiverlessCompletion && !hasVisibleReceiver)
                     throw new QuestException($"Player {player.CharacterId} tried to complete quest {questId} without communicator message!");
 
                 if (!quest.Info.IsCommunicatorReceived() && allowStarterTutorialReceiverlessCompletion)
                     log.Debug($"Allowing starter tutorial communicator completion without communicator metadata for player {player.CharacterId}, quest {questId}.");
+
+                if (!quest.Info.IsCommunicatorReceived() && allowContractReceiverlessCompletion)
+                    log.Debug($"Allowing Quest2-backed contract communicator completion without communicator metadata for player {player.CharacterId}, quest {questId}.");
+
+                if (!quest.Info.IsCommunicatorReceived() && hasVisibleReceiver)
+                    log.Debug($"Allowing communicator-flagged receiver completion without communicator metadata for player {player.CharacterId}, quest {questId}.");
             }
             else
             {
-                bool hasVisibleReceiver = GetGlobalQuestManager().GetQuestReceivers(questId).Any(c => player.GetVisibleCreature<WorldEntity>(c).Any());
                 if (!hasVisibleReceiver)
                 {
-                    if (!allowStarterTutorialReceiverlessCompletion)
+                    if (!allowStarterTutorialReceiverlessCompletion && !allowContractReceiverlessCompletion)
                         throw new QuestException($"Player {player.CharacterId} tried to complete quest {questId} without any quest receiver!");
 
-                    log.Debug($"Allowing starter tutorial completion without a visible receiver for player {player.CharacterId}, quest {questId}.");
+                    if (allowStarterTutorialReceiverlessCompletion)
+                        log.Debug($"Allowing starter tutorial completion without a visible receiver for player {player.CharacterId}, quest {questId}.");
+                    else
+                        log.Debug($"Allowing Quest2-backed contract completion without a visible receiver for player {player.CharacterId}, quest {questId}.");
                 }
+            }
+
+            Quest2RewardEntry selectedReward = GetSelectedQuestReward(quest.Info, reward);
+            if (!CanGrantQuestItemRewards(quest.Info, selectedReward))
+            {
+                player.SendGenericError(GenericError.ItemInventoryFull);
+                return;
             }
 
             // reclaim any quest specific items
@@ -767,7 +807,7 @@ namespace NexusForever.Game.Entity
                     player.Inventory.ItemDelete(itemId, quest.Info.Entry.PushedItemCounts[i]);
             }
 
-            RewardQuest(quest.Info, reward);
+            RewardQuest(quest.Info, selectedReward);
             quest.State = QuestState.Completed;
             ObjectiveUpdate(QuestObjectiveType.CompleteQuest, questId, 1u);
 
@@ -787,6 +827,7 @@ namespace NexusForever.Game.Entity
 
             activeQuests.Remove(questId);
             completedQuests.Add(questId, quest);
+            RefreshQuestPresentation(questId);
 
             LogTutorialRegionQuestLifecycle(communicator ? "completed-via-communicator" : "completed", questId, quest.State);
             player.AchievementManager.CheckAchievements(player, AchievementType.QuestComplete, questId);
@@ -795,9 +836,51 @@ namespace NexusForever.Game.Entity
             UpdateContractAchievements(quest.Info);
         }
 
+        public void SendQuestState(ushort questId)
+        {
+            IQuest quest = GetQuest(questId, GetQuestFlags.Active | GetQuestFlags.Inactive | GetQuestFlags.Completed);
+            if (quest == null)
+                return;
+
+            player.Session.EnqueueMessageEncrypted(new ServerQuestStateChange
+            {
+                QuestId          = quest.Id,
+                QuestState       = quest.State,
+                QuestObjectiveId = quest.GetCurrentObjectiveId()
+            });
+
+            foreach (IQuestObjective objective in quest)
+            {
+                player.Session.EnqueueMessageEncrypted(new ServerQuestObjectiveUpdate
+                {
+                    QuestId             = quest.Id,
+                    QuestObjectiveIndex = objective.Index,
+                    Completed           = objective.Progress
+                });
+            }
+        }
+
         private static bool AllowsStarterTutorialReceiverlessCompletion(ushort questId)
         {
             return receiverlessStarterTutorialQuestIds.Contains(questId);
+        }
+
+        private bool HasVisibleQuestReceiver(ushort questId)
+        {
+            return GetGlobalQuestManager()
+                .GetQuestReceivers(questId)
+                .Any(c => player.GetVisibleCreature<WorldEntity>(c).Any());
+        }
+
+        private void RefreshQuestPresentation(ushort questId)
+        {
+            if (player is Player concretePlayer)
+                concretePlayer.RefreshQuestPresentation(questId);
+        }
+
+        private bool AllowsContractReceiverlessLifecycle(IQuestInfo info)
+        {
+            return contractManager?.CanUseReceiverlessLifecycle(info) == true;
         }
 
         private void UpdateContractAchievements(IQuestInfo info)
@@ -807,7 +890,8 @@ namespace NexusForever.Game.Entity
 
             player.AchievementManager.CheckAchievements(player, AchievementType.ContractComplete, info.Entry.Type);
 
-            PeriodicQuestGroupEntry periodicQuestGroupEntry = gameTableManager?.PeriodicQuestGroup?.GetEntry(info.Entry.PeriodicQuestGroupId);
+            PeriodicQuestGroupEntry periodicQuestGroupEntry = contractManager?.GetPeriodicQuestGroup(info)
+                ?? gameTableManager?.PeriodicQuestGroup?.GetEntry(info.Entry.PeriodicQuestGroupId);
             if (periodicQuestGroupEntry == null)
                 return;
 
@@ -818,16 +902,36 @@ namespace NexusForever.Game.Entity
                 player.AchievementManager.CheckAchievements(player, AchievementType.ContractTypeComplete, periodicQuestGroupEntry.ContractTypeEnum);
         }
 
-        private void RewardQuest(IQuestInfo info, ushort reward)
+        private bool CanGrantQuestItemRewards(IQuestInfo info, Quest2RewardEntry selectedReward)
         {
-            Quest2RewardEntry selectedReward = GetSelectedQuestReward(info, reward);
+            foreach (Quest2RewardEntry rewardEntry in GetQuestItemRewards(info, selectedReward))
+                if (!player.Inventory.CanCreateItem(InventoryLocation.Inventory, rewardEntry.ObjectId, rewardEntry.ObjectAmount))
+                    return false;
 
+            return true;
+        }
+
+        private static IEnumerable<Quest2RewardEntry> GetQuestItemRewards(IQuestInfo info, Quest2RewardEntry selectedReward)
+        {
+            foreach (Quest2RewardEntry rewardEntry in info.Rewards.Values.Where(x => x.Flags == 0))
+                if ((QuestRewardType)rewardEntry.Quest2RewardTypeId == QuestRewardType.Item)
+                    yield return rewardEntry;
+
+            if (selectedReward != null && (QuestRewardType)selectedReward.Quest2RewardTypeId == QuestRewardType.Item)
+                yield return selectedReward;
+        }
+
+        private void RewardQuest(IQuestInfo info, Quest2RewardEntry selectedReward)
+        {
             // Handle all Rewards that are not chosen
             foreach (Quest2RewardEntry rewardEntry in info.Rewards.Values.Where(x => x.Flags == 0))
                 RewardQuest(rewardEntry);
 
             if (selectedReward != null)
                 RewardQuest(selectedReward);
+
+            RewardQuestReputation(info, info.Entry.Faction2IdRewardReputation00, info.Entry.RewardReputationOverride00);
+            RewardQuestReputation(info, info.Entry.Faction2IdRewardReputation01, info.Entry.RewardReputationOverride01);
 
             uint experience = info.GetRewardExperience();
             if (experience != 0u)
@@ -836,6 +940,18 @@ namespace NexusForever.Game.Entity
             uint money = info.GetRewardMoney();
             if (money != 0u)
                 player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, money);
+        }
+
+        private void RewardQuestReputation(IQuestInfo info, uint factionId, float overrideValue)
+        {
+            if (factionId == 0u)
+                return;
+
+            float reputation = info.GetRewardReputation(overrideValue);
+            if (reputation == 0f)
+                return;
+
+            player.ReputationManager.UpdateReputation((Faction)factionId, reputation);
         }
 
         private Quest2RewardEntry GetSelectedQuestReward(IQuestInfo info, ushort reward)
@@ -901,10 +1017,12 @@ namespace NexusForever.Game.Entity
                         log.Warn($"Unhandled invalid quest tradeskill reward objectId {entry.ObjectId}!");
                     break;
                 case QuestRewardType.AccountCurrency:
-                    if (Enum.IsDefined((AccountCurrencyType)entry.ObjectId))
+                    AccountCurrencyTypeEntry currencyEntry = gameTableManager?.AccountCurrencyType?.GetEntry(entry.ObjectId);
+                    if (currencyEntry != null)
                     {
-                        player.Account.CurrencyManager.CurrencyAddAmount((AccountCurrencyType)entry.ObjectId, entry.ObjectAmount);
-                        AccountCurrencyAchievementUpdater.Update(player, (AccountCurrencyType)entry.ObjectId, entry.ObjectAmount);
+                        var currencyType = (AccountCurrencyType)currencyEntry.Id;
+                        player.Account.CurrencyManager.CurrencyAddAmount(currencyType, entry.ObjectAmount);
+                        AccountCurrencyAchievementUpdater.Update(player, currencyType, entry.ObjectAmount);
                     }
                     else
                         log.Warn($"Unhandled invalid quest account currency reward objectId {entry.ObjectId}!");

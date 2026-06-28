@@ -67,6 +67,8 @@ namespace NexusForever.Game.Entity
 
             foreach (IPetCustomisation customisation in petCustomisations.Values)
                 customisation.Save(context);
+
+            PetCustomisation.UpsertTrackedCreates(context);
         }
 
         /// <summary>

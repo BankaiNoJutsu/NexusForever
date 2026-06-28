@@ -17,6 +17,7 @@ namespace NexusForever.Game.Entity
 
         private ICinematicBase currentCinematic;
         private readonly Queue<ICinematicBase> queuedCinematics = new();
+        private readonly HashSet<Type> queuedSurfaceStarterIntroTypesThisSession = [];
         private bool riderReefIntroQueuedThisSession;
 
         /// <summary>
@@ -32,6 +33,18 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void QueueCinematic(ICinematicBase cinematic)
         {
+            if (TryGetSurfaceStarterIntroType(cinematic, out Type surfaceStarterIntroType))
+            {
+                if (!queuedSurfaceStarterIntroTypesThisSession.Add(surfaceStarterIntroType))
+                {
+                    log.Debug("Suppressing duplicate surface starter intro cinematic {CinematicType} for character {CharacterId} (guid {PlayerGuid}) during the same session.",
+                        surfaceStarterIntroType.Name,
+                        owner.CharacterId,
+                        owner.Guid);
+                    return;
+                }
+            }
+
             if (cinematic is INoviceTutorialOnEnter)
             {
                 if (ShouldSuppressRidersReefIntroCinematic())
@@ -74,6 +87,20 @@ namespace NexusForever.Game.Entity
             return owner.QuestManager.GetActiveQuests()
                 .Where(q => riderReefStarterTutorialQuestIds.Contains(q.Id))
                 .Any(q => q.Any(o => o.Progress > 0u));
+        }
+
+        private static bool TryGetSurfaceStarterIntroType(ICinematicBase cinematic, out Type cinematicType)
+        {
+            cinematicType = cinematic switch
+            {
+                INorthernWildsOnCreate => typeof(INorthernWildsOnCreate),
+                ICrimsonIsleOnCreate => typeof(ICrimsonIsleOnCreate),
+                IEverstarGroveOnCreate => typeof(IEverstarGroveOnCreate),
+                ILevianBayOnCreate => typeof(ILevianBayOnCreate),
+                _ => null
+            };
+
+            return cinematicType != null;
         }
 
         /// <summary>

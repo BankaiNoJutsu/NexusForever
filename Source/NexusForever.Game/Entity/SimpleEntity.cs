@@ -61,6 +61,21 @@ namespace NexusForever.Game.Entity
             activator.GalacticArchiveManager.UnlockArticle(CreatureEntry.ArchiveArticleIdInteractUnlock, grantRewards: false);
         }
 
+        private void CompleteScientistDatacubeDiscoveryMission(IPlayer activator)
+        {
+            if (CreatureEntry.DatacubeId == 0u && CreatureEntry.DatacubeVolumeId == 0u)
+                return;
+
+            activator.PathManager.CompleteCurrentScientistDatacubeDiscoveryMission();
+        }
+
+        private bool ShouldCastInteractionCompletionSpell()
+        {
+            return CreatureEntry.ArchiveArticleIdInteractUnlock != 0u
+                || CreatureEntry.DatacubeId != 0u
+                || CreatureEntry.DatacubeVolumeId != 0u;
+        }
+
         public override void OnActivate(IPlayer activator)
         {
             activator.AchievementManager.CheckAchievements(activator, AchievementType.ActivateCreature, CreatureId);
@@ -68,6 +83,8 @@ namespace NexusForever.Game.Entity
 
             if (CreatureEntry.DatacubeId != 0u)
                 activator.DatacubeManager.AddDatacube((ushort)CreatureEntry.DatacubeId, int.MaxValue);
+
+            CompleteScientistDatacubeDiscoveryMission(activator);
         }
 
         public override void OnActivateCast(IPlayer activator)
@@ -101,10 +118,13 @@ namespace NexusForever.Game.Entity
                 }
             }
 
-            activator.CastSpell(116u, new SpellParameters
-            {
-                PrimaryTargetId = Guid
-            });
+            CompleteScientistDatacubeDiscoveryMission(activator);
+
+            if (ShouldCastInteractionCompletionSpell())
+                activator.CastSpell(116u, new SpellParameters
+                {
+                    PrimaryTargetId = Guid
+                });
         }
     }
 }
