@@ -142,7 +142,8 @@ namespace NexusForever.Game.Cinematic
             });
             Player.Session.EnqueueMessageEncrypted(new ServerCinematicActorVisibility
             {
-                Hide = true
+                Hide              = true,
+                AffectOnlyPlayers = true
             });
 
             if (playerActor == null)

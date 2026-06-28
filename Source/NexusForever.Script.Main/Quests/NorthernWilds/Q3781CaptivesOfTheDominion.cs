@@ -18,11 +18,13 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         }
     }
 
-    [ScriptFilterCreatureId(12537u)]
+    [ScriptFilterCreatureId(12537u, 21015u, 21016u)]
     public class Q3781CaptiveExileSoldierEntityScript : IWorldEntityScript, IOwnedScript<ICreatureEntity>
     {
         private const ushort QuestCaptivesOfTheDominion = 3781;
         private const uint ObjectiveRescueCaptives      = 4880u;
+
+        private bool rescued;
 
         public void OnLoad(ICreatureEntity owner)
         {
@@ -30,9 +32,13 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
 
         public void OnActivateSuccess(IPlayer activator)
         {
+            if (rescued)
+                return;
+
             if (activator.QuestManager.GetQuestState(QuestCaptivesOfTheDominion) != QuestState.Accepted)
                 return;
 
+            rescued = true;
             activator.QuestManager.ObjectiveUpdate(ObjectiveRescueCaptives, 1u);
         }
     }

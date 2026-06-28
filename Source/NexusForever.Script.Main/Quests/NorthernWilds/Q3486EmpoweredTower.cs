@@ -130,7 +130,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         }
     }
 
-    [ScriptFilterCreatureId(11925u)]
+    [ScriptFilterCreatureId(11924u, 11925u)]
     public class Q3486CrystalGuardianEntityScript : IUnitScript, IOwnedScript<ICreatureEntity>
     {
         private const ushort QuestEmpoweredTower = 3486;
@@ -148,8 +148,9 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
             if (player.QuestManager.GetQuestState(QuestEmpoweredTower) != QuestState.Accepted)
                 return;
 
-            // Unblocks the mapped QuestObjectiveActive(4485) virtual-loot row when Q3486 was accepted while already in Exo-Lab 729.
+            // QuestObjective 4485 TargetGroup 4985 covers Frostbite and Crystal Guardians as kill-credit sources.
             player.QuestManager.ObjectiveUpdate(ArrivalObjective, 1u);
+            player.QuestManager.ObjectiveUpdate(QuestObjectiveType.VirtualCollect, Q3486LoftiteCrystalCollector.VirtualItemReward, 1u);
         }
     }
 }

@@ -5,16 +5,16 @@ using NexusForever.Script.Template.Filter;
 namespace NexusForever.Script.Main.Quests.NorthernWilds
 {
     [ScriptFilterCreatureId(12653u)]
-    public class DominionGateEntityScript : IWorldEntityScript, IOwnedScript<ICreatureEntity>
+    public class DominionGateEntityScript : IWorldEntityScript, IOwnedScript<ISimpleEntity>
     {
         private const uint IcefuryGateCreatureId = 16799u;
         private static readonly TimeSpan closeDelay = TimeSpan.FromSeconds(10d);
 
-        private ICreatureEntity owner;
+        private ISimpleEntity owner;
         private IDoorEntity pendingCloseDoor;
         private TimeSpan pendingCloseTime;
 
-        public void OnLoad(ICreatureEntity owner)
+        public void OnLoad(ISimpleEntity owner)
         {
             this.owner = owner;
         }

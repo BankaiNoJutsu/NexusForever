@@ -18,22 +18,48 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         }
     }
 
-    [ScriptFilterCreatureId(12919u)]
-    public class Q3741ExileSupplyCrateEntityScript : IWorldEntityScript, IOwnedScript<ICreatureEntity>
+    public abstract class Q3741ExileSupplyCrateEntityScriptBase : IWorldEntityScript
     {
         private const ushort QuestScatteredSupplies = 3741;
-        private const uint ObjectiveGatherSupplies  = 4813u;
+        private const uint ExileSuppliesVirtualItem = 363u;
 
-        public void OnLoad(ICreatureEntity owner)
+        private IWorldEntity owner;
+        private bool collected;
+
+        protected void OnLoad(IWorldEntity owner)
         {
+            this.owner = owner;
         }
 
         public void OnActivateSuccess(IPlayer activator)
         {
+            if (collected)
+                return;
+
             if (activator.QuestManager.GetQuestState(QuestScatteredSupplies) != QuestState.Accepted)
                 return;
 
-            activator.QuestManager.ObjectiveUpdate(ObjectiveGatherSupplies, 1u);
+            collected = true;
+            activator.QuestManager.ObjectiveUpdate(QuestObjectiveType.VirtualCollect, ExileSuppliesVirtualItem, 1u);
+            owner.RemoveFromMap();
+        }
+    }
+
+    [ScriptFilterCreatureId(12919u)]
+    public class Q3741ExileSupplyCrateEntityScript : Q3741ExileSupplyCrateEntityScriptBase, IOwnedScript<ICreatureEntity>
+    {
+        public void OnLoad(ICreatureEntity owner)
+        {
+            OnLoad((IWorldEntity)owner);
+        }
+    }
+
+    [ScriptFilterCreatureId(12919u)]
+    public class Q3741ExileSupplyCrateCollectableEntityScript : Q3741ExileSupplyCrateEntityScriptBase, IOwnedScript<ICollectableUnitEntity>
+    {
+        public void OnLoad(ICollectableUnitEntity owner)
+        {
+            OnLoad((IWorldEntity)owner);
         }
     }
 }

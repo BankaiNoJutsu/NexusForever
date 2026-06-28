@@ -3,11 +3,14 @@ using NexusForever.Game.Abstract.Cinematic;
 using NexusForever.Game.Abstract.Cinematic.Cinematics;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
+using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Abstract.Story;
+using NexusForever.Game.Quest;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 using NexusForever.Script.Main.Quests.CrimsonIsle;
 using NexusForever.Script.Main.Quests.EverstarGrove;
 using NexusForever.Script.Main.Quests.LevianBay;
@@ -58,9 +61,40 @@ public class EarlyZoneEntityObjectiveCreditTests
         script.OnActivateSuccess(player);
 
         RecordingDispatchProxy<IQuestManager>.Invocation update = Assert.Single(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
-        Assert.Equal(QuestObjectiveType.ScriptedTargetGroupChecklist, update.Arguments[0]);
-        Assert.Equal(11251u, update.Arguments[1]);
-        Assert.Equal(3u, update.Arguments[2]);
+        Assert.Equal(4489u, update.Arguments[0]);
+        Assert.Equal(3u, update.Arguments[1]);
+    }
+
+    [Fact]
+    public void Q3487DominionCannon_OnActivateSuccess_WhenOwnerIndexAlreadyCredited_CreditsFirstMissingChecklistIndex()
+    {
+        ICreatureEntity owner = CreateCreature(11251u, checklistIndex: 3, health: 100u, out _);
+        IPlayer player = CreatePlayerWithQuestState(3487, QuestState.Accepted, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+        ConfigureActiveQuestObjective(questManagerProxy, 3487, 4489u, progress: 13u);
+        var script = new Q3487DominionCannonEntityScript();
+
+        script.OnLoad(owner);
+        script.OnActivateSuccess(player);
+
+        RecordingDispatchProxy<IQuestManager>.Invocation update = Assert.Single(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+        Assert.Equal(4489u, update.Arguments[0]);
+        Assert.Equal(1u, update.Arguments[1]);
+    }
+
+    [Fact]
+    public void Q3487DominionCannon_OnActivateSuccess_WhenSameCannonActivatedTwice_CreditsOnce()
+    {
+        ICreatureEntity owner = CreateCreature(11251u, checklistIndex: 3, health: 100u, out _);
+        IPlayer player = CreatePlayerWithQuestState(3487, QuestState.Accepted, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+        var script = new Q3487DominionCannonEntityScript();
+
+        script.OnLoad(owner);
+        script.OnActivateSuccess(player);
+        script.OnActivateSuccess(player);
+
+        RecordingDispatchProxy<IQuestManager>.Invocation update = Assert.Single(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+        Assert.Equal(4489u, update.Arguments[0]);
+        Assert.Equal(3u, update.Arguments[1]);
     }
 
     [Fact]
@@ -79,7 +113,7 @@ public class EarlyZoneEntityObjectiveCreditTests
     [Fact]
     public void Q3741SupplyCrate_OnActivateSuccess_WhenQuestAccepted_CreditsSupplyObjective()
     {
-        ICreatureEntity owner = CreateCreature(12919u, checklistIndex: 0, health: 100u, out _);
+        ICreatureEntity owner = CreateCreature(12919u, checklistIndex: 0, health: 100u, out RecordingDispatchProxy<ICreatureEntity> ownerProxy);
         IPlayer player = CreatePlayerWithQuestState(3741, QuestState.Accepted, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
         var script = new Q3741ExileSupplyCrateEntityScript();
 
@@ -87,14 +121,65 @@ public class EarlyZoneEntityObjectiveCreditTests
         script.OnActivateSuccess(player);
 
         RecordingDispatchProxy<IQuestManager>.Invocation update = Assert.Single(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
-        Assert.Equal(4813u, update.Arguments[0]);
-        Assert.Equal(1u, update.Arguments[1]);
+        Assert.Equal(QuestObjectiveType.VirtualCollect, update.Arguments[0]);
+        Assert.Equal(363u, update.Arguments[1]);
+        Assert.Equal(1u, update.Arguments[2]);
+
+        Assert.Single(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+    }
+
+    [Fact]
+    public void Q3741SupplyCrateCollectable_OnActivateSuccess_WhenQuestAccepted_CreditsSupplyObjective()
+    {
+        ICollectableUnitEntity owner = RecordingDispatchProxy<ICollectableUnitEntity>.Create(out RecordingDispatchProxy<ICollectableUnitEntity> ownerProxy);
+        ownerProxy.SetProperty(nameof(ICollectableUnitEntity.CreatureId), 12919u);
+        IPlayer player = CreatePlayerWithQuestState(3741, QuestState.Accepted, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+        var script = new Q3741ExileSupplyCrateCollectableEntityScript();
+
+        script.OnLoad(owner);
+        script.OnActivateSuccess(player);
+
+        RecordingDispatchProxy<IQuestManager>.Invocation update = Assert.Single(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+        Assert.Equal(QuestObjectiveType.VirtualCollect, update.Arguments[0]);
+        Assert.Equal(363u, update.Arguments[1]);
+        Assert.Equal(1u, update.Arguments[2]);
+
+        Assert.Single(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+    }
+
+    [Fact]
+    public void Q3741SupplyCrate_OnActivateSuccess_WhenQuestMissing_DoesNotCreditObjective()
+    {
+        ICreatureEntity owner = CreateCreature(12919u, checklistIndex: 0, health: 100u, out RecordingDispatchProxy<ICreatureEntity> ownerProxy);
+        IPlayer player = CreatePlayerWithQuestState(3741, null, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+        var script = new Q3741ExileSupplyCrateEntityScript();
+
+        script.OnLoad(owner);
+        script.OnActivateSuccess(player);
+
+        Assert.Empty(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+        Assert.Empty(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+    }
+
+    [Fact]
+    public void Q3741SupplyCrate_OnActivateSuccess_AfterCollected_DoesNotCreditAgain()
+    {
+        ICreatureEntity owner = CreateCreature(12919u, checklistIndex: 0, health: 100u, out RecordingDispatchProxy<ICreatureEntity> ownerProxy);
+        IPlayer player = CreatePlayerWithQuestState(3741, QuestState.Accepted, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+        var script = new Q3741ExileSupplyCrateEntityScript();
+
+        script.OnLoad(owner);
+        script.OnActivateSuccess(player);
+        script.OnActivateSuccess(player);
+
+        Assert.Single(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+        Assert.Single(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
     }
 
     [Fact]
     public void Q3777LoftiteCrystal_OnEnterRange_WhenQuestAccepted_CreditsFragmentObjectives()
     {
-        ICreatureEntity owner = CreateCreature(6987u, checklistIndex: 0, health: 100u, out _);
+        ICreatureEntity owner = CreateCreature(6987u, checklistIndex: 0, health: 100u, out RecordingDispatchProxy<ICreatureEntity> ownerProxy);
         IPlayer player = CreatePlayerWithQuestState(3777, QuestState.Accepted, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
         var script = new Q3777LoftiteCrystalEntityScript();
 
@@ -103,17 +188,23 @@ public class EarlyZoneEntityObjectiveCreditTests
 
         List<RecordingDispatchProxy<IQuestManager>.Invocation> updates = questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)).ToList();
         Assert.Equal(2, updates.Count);
-        Assert.Equal(5076u, updates[0].Arguments[0]);
-        Assert.Equal(1u, updates[0].Arguments[1]);
+        Assert.Equal(QuestObjectiveType.ActivateEntity, updates[0].Arguments[0]);
+        Assert.Equal(6952u, updates[0].Arguments[1]);
+        Assert.Equal(1u, updates[0].Arguments[2]);
         Assert.Equal(QuestObjectiveType.CollectItem, updates[1].Arguments[0]);
         Assert.Equal(6998u, updates[1].Arguments[1]);
         Assert.Equal(1u, updates[1].Arguments[2]);
+
+        Assert.Single(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
     }
 
-    [Fact]
-    public void Q3781CaptiveSoldier_OnActivateSuccess_WhenQuestAccepted_CreditsRescueObjective()
+    [Theory]
+    [InlineData(12537u)]
+    [InlineData(21015u)]
+    [InlineData(21016u)]
+    public void Q3781CaptiveSoldier_OnActivateSuccess_WhenQuestAccepted_CreditsRescueObjective(uint creatureId)
     {
-        ICreatureEntity owner = CreateCreature(12537u, checklistIndex: 0, health: 100u, out _);
+        ICreatureEntity owner = CreateCreature(creatureId, checklistIndex: 0, health: 100u, out _);
         IPlayer player = CreatePlayerWithQuestState(3781, QuestState.Accepted, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
         var script = new Q3781CaptiveExileSoldierEntityScript();
 
@@ -121,6 +212,54 @@ public class EarlyZoneEntityObjectiveCreditTests
         script.OnActivateSuccess(player);
 
         RecordingDispatchProxy<IQuestManager>.Invocation update = Assert.Single(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+        Assert.Equal(4880u, update.Arguments[0]);
+        Assert.Equal(1u, update.Arguments[1]);
+    }
+
+    [Fact]
+    public void Q3781CaptiveSoldier_OnActivateSuccess_WhenQuestMissing_DoesNotCreditObjective()
+    {
+        ICreatureEntity owner = CreateCreature(12537u, checklistIndex: 0, health: 100u, out _);
+        IPlayer player = CreatePlayerWithQuestState(3781, null, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+        var script = new Q3781CaptiveExileSoldierEntityScript();
+
+        script.OnLoad(owner);
+        script.OnActivateSuccess(player);
+
+        Assert.Empty(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+    }
+
+    [Fact]
+    public void Q3781CaptiveSoldier_OnActivateSuccess_WhenSameCaptiveRescuedTwice_CreditsOnce()
+    {
+        ICreatureEntity owner = CreateCreature(12537u, checklistIndex: 0, health: 100u, out _);
+        IPlayer player = CreatePlayerWithQuestState(3781, QuestState.Accepted, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+        var script = new Q3781CaptiveExileSoldierEntityScript();
+
+        script.OnLoad(owner);
+        script.OnActivateSuccess(player);
+        script.OnActivateSuccess(player);
+
+        RecordingDispatchProxy<IQuestManager>.Invocation update = Assert.Single(
+            questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+        Assert.Equal(4880u, update.Arguments[0]);
+        Assert.Equal(1u, update.Arguments[1]);
+    }
+
+    [Fact]
+    public void Q3781CaptiveSoldier_OnActivateSuccess_WhenMissingQuestThenAccepted_CreditsRescue()
+    {
+        ICreatureEntity owner = CreateCreature(12537u, checklistIndex: 0, health: 100u, out _);
+        IPlayer missingQuestPlayer = CreatePlayerWithQuestState(3781, null, out _);
+        IPlayer acceptedPlayer = CreatePlayerWithQuestState(3781, QuestState.Accepted, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+        var script = new Q3781CaptiveExileSoldierEntityScript();
+
+        script.OnLoad(owner);
+        script.OnActivateSuccess(missingQuestPlayer);
+        script.OnActivateSuccess(acceptedPlayer);
+
+        RecordingDispatchProxy<IQuestManager>.Invocation update = Assert.Single(
+            questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
         Assert.Equal(4880u, update.Arguments[0]);
         Assert.Equal(1u, update.Arguments[1]);
     }
@@ -320,6 +459,29 @@ public class EarlyZoneEntityObjectiveCreditTests
         ownerProxy.SetProperty(nameof(ICreatureEntity.QuestChecklistIdx), checklistIndex);
         ownerProxy.SetProperty(nameof(ICreatureEntity.Health), health);
         return owner;
+    }
+
+    private static void ConfigureActiveQuestObjective(
+        RecordingDispatchProxy<IQuestManager> questManagerProxy,
+        ushort questId,
+        uint objectiveId,
+        uint progress)
+    {
+        IQuestObjective objective = RecordingDispatchProxy<IQuestObjective>.Create(out RecordingDispatchProxy<IQuestObjective> objectiveProxy);
+        objectiveProxy.SetProperty(nameof(IQuestObjective.Progress), progress);
+        objectiveProxy.SetProperty(nameof(IQuestObjective.ObjectiveInfo), new QuestObjectiveInfo(new QuestObjectiveEntry
+        {
+            Id = objectiveId
+        }));
+
+        IQuestObjective[] objectives = [objective];
+        IQuest quest = RecordingDispatchProxy<IQuest>.Create(out RecordingDispatchProxy<IQuest> questProxy);
+        questProxy.SetProperty(nameof(IQuest.Id), questId);
+        questProxy.SetMethodHandler(
+            nameof(IEnumerable<IQuestObjective>.GetEnumerator),
+            _ => ((IEnumerable<IQuestObjective>)objectives).GetEnumerator());
+
+        questManagerProxy.SetMethodReturn(nameof(IQuestManager.GetActiveQuests), new[] { quest });
     }
 
     private static IPlayer CreatePlayerWithQuestState(

@@ -7,6 +7,7 @@ using NexusForever.Network.World.Message.Model;
 using NexusForever.Script.Main.Creature;
 using NexusForever.Script.Main.Housing;
 using NexusForever.Script.Main.Quests.NorthernWilds;
+using NexusForever.Script.Template;
 using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Quests;
@@ -122,7 +123,7 @@ public class BranchCreatureScriptTests
             return null;
         });
 
-        ICreatureEntity owner = CreateCreature(12653u, health: 100u, maxHealth: 100u, out RecordingDispatchProxy<ICreatureEntity> ownerProxy);
+        ISimpleEntity owner = CreateSimpleEntity(12653u, out RecordingDispatchProxy<ISimpleEntity> ownerProxy);
         ownerProxy.SetMethodHandler(nameof(IGridEntity.GetVisibleCreature), _ => new[] { door });
 
         var script = new DominionGateEntityScript();
@@ -145,7 +146,7 @@ public class BranchCreatureScriptTests
         IDoorEntity door = RecordingDispatchProxy<IDoorEntity>.Create(out RecordingDispatchProxy<IDoorEntity> doorProxy);
         doorProxy.SetProperty(nameof(IDoorEntity.IsOpen), true);
 
-        ICreatureEntity owner = CreateCreature(12653u, health: 100u, maxHealth: 100u, out RecordingDispatchProxy<ICreatureEntity> ownerProxy);
+        ISimpleEntity owner = CreateSimpleEntity(12653u, out RecordingDispatchProxy<ISimpleEntity> ownerProxy);
         ownerProxy.SetMethodHandler(nameof(IGridEntity.GetVisibleCreature), _ => new[] { door });
 
         var script = new DominionGateEntityScript();
@@ -155,6 +156,12 @@ public class BranchCreatureScriptTests
 
         Assert.Empty(doorProxy.GetInvocations(nameof(IDoorEntity.OpenDoor)));
         Assert.Empty(doorProxy.GetInvocations(nameof(IDoorEntity.CloseDoor)));
+    }
+
+    [Fact]
+    public void DominionGate_UsesSimpleEntityOwnerForBarrierControlPanel()
+    {
+        Assert.True(typeof(IOwnedScript<ISimpleEntity>).IsAssignableFrom(typeof(DominionGateEntityScript)));
     }
 
     private static ICreatureEntity CreateCreature(
@@ -167,6 +174,15 @@ public class BranchCreatureScriptTests
         ownerProxy.SetProperty(nameof(IWorldEntity.CreatureId), creatureId);
         ownerProxy.SetProperty(nameof(IWorldEntity.Health), health);
         ownerProxy.SetProperty(nameof(IWorldEntity.MaxHealth), maxHealth);
+        return owner;
+    }
+
+    private static ISimpleEntity CreateSimpleEntity(
+        uint creatureId,
+        out RecordingDispatchProxy<ISimpleEntity> ownerProxy)
+    {
+        ISimpleEntity owner = RecordingDispatchProxy<ISimpleEntity>.Create(out ownerProxy);
+        ownerProxy.SetProperty(nameof(IWorldEntity.CreatureId), creatureId);
         return owner;
     }
 

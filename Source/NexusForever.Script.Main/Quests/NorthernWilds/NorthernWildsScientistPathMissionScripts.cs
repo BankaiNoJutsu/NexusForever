@@ -11,7 +11,6 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
     {
         private ICreatureEntity owner;
 
-        protected abstract ushort PathMissionId { get; }
         protected abstract uint PathScientistCreatureInfoId { get; }
 
         public void OnLoad(ICreatureEntity owner)
@@ -43,29 +42,25 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
             if (activator.Path != Path.Scientist)
                 return;
 
-            activator.PathManager.MarkScientistCreatureScanned(PathScientistCreatureInfoId);
-            activator.PathManager.CompleteMission(PathMissionId);
+            activator.PathManager.ProgressScientistCreatureScanMission(PathScientistCreatureInfoId);
         }
     }
 
     [ScriptFilterCreatureId(18680u)]
     public class NorthernWildsScientistTurningTheTideEntityScript : NorthernWildsScientistPathMissionEntityScript
     {
-        protected override ushort PathMissionId => 42;
         protected override uint PathScientistCreatureInfoId => 34;
     }
 
     [ScriptFilterCreatureId(15888u)]
     public class NorthernWildsScientistVitaliumCrystalEntityScript : NorthernWildsScientistPathMissionEntityScript
     {
-        protected override ushort PathMissionId => 160;
         protected override uint PathScientistCreatureInfoId => 130;
     }
 
     [ScriptFilterCreatureId(11907u, 11910u, 11912u, 11917u, 36429u, 36884u)]
     public class NorthernWildsScientistSkeechPhysiologyEntityScript : NorthernWildsScientistPathMissionEntityScript
     {
-        protected override ushort PathMissionId => 648;
         protected override uint PathScientistCreatureInfoId => 128;
     }
 }

@@ -1,11 +1,7 @@
 using System.Collections.Generic;
-using System.Numerics;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Quest;
-using NexusForever.Game.Static.Entity;
-using NexusForever.Game.Static.Entity.Movement.Spline;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
@@ -32,8 +28,12 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
     public class Q3487DominionCannonEntityScript : IWorldEntityScript, IOwnedScript<ICreatureEntity>
     {
         private const ushort QuestShellshock = 3487;
+        private const uint OverloadDominionCannonsObjective = 4489;
+        private const uint OverloadDominionCannonsChecklistCount = 4;
+        private const uint ChecklistBitCount = 32;
 
         private ICreatureEntity owner;
+        private readonly HashSet<ulong> creditedCharacters = [];
 
         public void OnLoad(ICreatureEntity owner)
         {
@@ -46,7 +46,71 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
             if (activator.QuestManager.GetQuestState(QuestShellshock) != QuestState.Accepted)
                 return;
 
-            activator.QuestManager.ObjectiveUpdate(QuestObjectiveType.ScriptedTargetGroupChecklist, owner.CreatureId, owner.QuestChecklistIdx);
+            if (!creditedCharacters.Add(activator.CharacterId))
+                return;
+
+            uint checklistIndex = ResolveChecklistIndex(activator);
+            if (checklistIndex >= ChecklistBitCount)
+            {
+                creditedCharacters.Remove(activator.CharacterId);
+                return;
+            }
+
+            activator.QuestManager.ObjectiveUpdate(OverloadDominionCannonsObjective, checklistIndex);
+        }
+
+        private uint ResolveChecklistIndex(IPlayer activator)
+        {
+            IQuestObjective objective = GetOverloadDominionCannonsObjective(activator);
+            uint checklistIndex = owner.QuestChecklistIdx;
+
+            if (checklistIndex < OverloadDominionCannonsChecklistCount
+                && !IsChecklistBitSet(objective, checklistIndex))
+                return checklistIndex;
+
+            return GetFirstIncompleteChecklistIndex(objective) ?? checklistIndex;
+        }
+
+        private static IQuestObjective GetOverloadDominionCannonsObjective(IPlayer activator)
+        {
+            IEnumerable<IQuest> activeQuests = activator.QuestManager.GetActiveQuests();
+            if (activeQuests == null)
+                return null;
+
+            foreach (IQuest quest in activeQuests)
+            {
+                if (quest.Id != QuestShellshock)
+                    continue;
+
+                foreach (IQuestObjective objective in quest)
+                {
+                    if (objective.ObjectiveInfo.Id == OverloadDominionCannonsObjective)
+                        return objective;
+                }
+            }
+
+            return null;
+        }
+
+        private static uint? GetFirstIncompleteChecklistIndex(IQuestObjective objective)
+        {
+            if (objective == null)
+                return null;
+
+            for (uint index = 0; index < OverloadDominionCannonsChecklistCount; index++)
+            {
+                if (!IsChecklistBitSet(objective, index))
+                    return index;
+            }
+
+            return null;
+        }
+
+        private static bool IsChecklistBitSet(IQuestObjective objective, uint index)
+        {
+            return objective != null
+                && index < ChecklistBitCount
+                && (objective.Progress & (1u << (int)index)) != 0u;
         }
     }
 
@@ -54,23 +118,12 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
     public class Q3487UltrabotEntityScript : IUnitScript, IOwnedScript<ICreatureEntity>
     {
         private const ushort AchievementWarbot = 1296;
-        private static readonly Vector3 LocDestination = new(4450f, -700f, -5150f);
 
         private ICreatureEntity owner;
 
         public void OnLoad(ICreatureEntity owner)
         {
             this.owner = owner;
-        }
-
-        public void OnAddToMap(IBaseMap map)
-        {
-            // WIP/GUESSED: branch moves directly to this destination at speed 5; exact retail spline/path timing is not live-smoked.
-            owner.MovementManager.SetPositionPath(
-                new List<Vector3> { owner.Position, LocDestination },
-                SplineType.Linear,
-                SplineMode.OneShot,
-                5f);
         }
 
         public void OnKilled(IUnitEntity killer)

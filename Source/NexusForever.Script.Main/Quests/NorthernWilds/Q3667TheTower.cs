@@ -49,10 +49,20 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
             if (entity is not IPlayer player)
                 return;
 
+            TryCreditTerminal(player);
+        }
+
+        public void OnActivateSuccess(IPlayer activator)
+        {
+            TryCreditTerminal(activator);
+        }
+
+        private static void TryCreditTerminal(IPlayer player)
+        {
             if (player.QuestManager.GetQuestState(QuestTheTower) != QuestState.Accepted)
                 return;
 
-            // WIP/GUESSED: branch credits this objective immediately on proximity; exact repeat/lockout behavior is not live-smoked.
+            // Client row backs direct ActivateEntity credit; proximity fallback remains WIP/GUESSED until live-smoked.
             player.QuestManager.ObjectiveUpdate(QObjTerminal, 1u);
         }
     }
