@@ -1,6 +1,6 @@
 # Matching Implementation Status
 
-Status date: 2026-06-09
+Status date: 2026-06-18 CEST
 
 This tracker closes matching work only when a surface is one of:
 
@@ -9,6 +9,85 @@ This tracker closes matching work only when a surface is one of:
 - **Rejected**: evidence shows the suspected behavior is not part of the matching surface.
 
 Generated exports, logs, and client binaries remain local artifacts. Add durable labels only when a client function/consumer is mapped enough for the next pass to rediscover it.
+
+Latest F-010 matching/raid blocked recheck (2026-06-18 CEST):
+
+The remaining F-010 matching/raid packet cluster is still mapped-only /
+blocked. No runtime code or data changed. `mcp__ghidra_mcp.list_instances`
+again returned no running Ghidra instance, so this pass used cached
+`WildStar64.exe` fragments, current source/tests, and existing F-010
+CDB/blocker artifacts. `Get-GhidraMcpWorkflowHints.ps1 -Targets
+WildStar64.exe` confirmed the local `NexusForeverClient64_WildStar64` project,
+and `Test-DecompileManifest.ps1 -Targets WildStar64.exe -FailOnMismatch`
+passed with `200` selected functions reused from canonical cache.
+
+The cached evidence remains unchanged: `140099110` is a shared raw-`uint32`
+reader for `0x05CF` / `0x085D`; `1405c41c0` writes payload state to
+matching-manager `+0xa0` but still has no opcode-index, dispatch-table, or
+`ClientEvent` owner; `140086e70` is a reused identity-plus-`uint32` reader for
+`0x0600`; `14008bf80`, `14008c010`, and `1406042b0` map only the `0x071A`
+raid-info row path, not standalone non-zero `0x0718` queue timing; and
+`14007d010` / `14007d000` remain shared one-`uint32` helpers for
+`Client0x062A` / `Client0x0634`. Existing artifact scans found no newer
+packet-evidence bundle for the target opcodes; the prior CDB bundles still
+capture normal queue/leave/average-wait/match-ready traffic but no real rows
+for `0x05CF`, `0x0600`, `0x062A`, `0x0634`, `0x0718`, `0x0719`, or `0x071A`.
+The new worksheet is
+`artifacts/blocker_evidence/20260618-024435-F010-matching-raid-cluster-recheck`.
+
+Verification for this recheck:
+
+```powershell
+dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo --filter "FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~MatchingAverageWaitTimeTests|FullyQualifiedName~MatchingLookingForReplacementsValidationTests|FullyQualifiedName~ClientUnresolvedDiagnosticHandlerTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~GroupPacketShapeTests|FullyQualifiedName~ClientRaidInfoRequestHandlerTests|FullyQualifiedName~PacketPlaceholderNamingTests" -p:OutputPath=I:\GIT\NexusForever\artifacts\test-bin\f010-matching-raid-cluster\
+.\Decomp\Analysis\Test-DecompileManifest.ps1 -Targets WildStar64.exe -FailOnMismatch
+```
+
+Results: focused matching/raid tests passed `168/168`; the `WildStar64.exe`
+decompile manifest check passed with `200/200` reused fragments and `0`
+remaining uncached. Keep `ServerMatching0x05CF`,
+`ServerMatchingGroupMemberRoleSelection`, non-zero `ServerRaidQueueStatus`,
+`Client0x062A`, and `Client0x0634` neutral/log-only/non-emitted until the next
+artifact is a real non-`.pdata` producer/apply table, callback owner, or
+accepted live matching/raid capture that proves timing and field meaning.
+
+Previous F-010 matching/raid blocked recheck (2026-06-17):
+
+The remaining matching/raid packet cluster is still mapped-only / blocked for
+producer or semantic widening. `mcp__ghidra_mcp.list_instances` returned no
+running Ghidra instance, so this pass used cached `WildStar64.exe` fragments,
+current source/tests, and the prior solo/LAN CDB evidence bundles. The cached
+fragments continue to prove only bounded facts: `140099110` is a shared raw
+`uint32` server reader for `0x05CF` / `0x085D`; `1405c41c0` writes a payload to
+matching-manager `+0xa0` but has no opcode index or `ClientEvent` owner;
+`140086e70` is an identity-plus-`uint32` reader reused by `0x0600`;
+`14008bf80`, `14008c010`, and `1406042b0` map the raid-info row through
+`0x071A`, not standalone queue semantics; and `14007d010` / `14007d000` are
+shared one-`uint32` client helpers for `Client0x062A` / `Client0x0634`.
+
+Current source still has no safe runtime emit or rename target beyond the
+existing conservative boundaries: `ServerMatching0x05CF` is neutral and
+non-emitted, `ServerMatchingGroupMemberRoleSelection.TrailingValue` remains
+neutral and non-emitted, `Client0x062A` / `Client0x0634` are log-only, and
+`ServerRaidQueueStatus` is emitted only as zero-value compatibility after
+`ServerRaidInfoResponse`. The prior 2026-06-08 CDB bundles captured normal
+queue/leave/average-wait/match-ready flows but no real packet rows for
+`0x05CF`, `0x0600`, `0x062A`, `0x0634`, `0x0718`, `0x0719`, or `0x071A`. The
+new worksheet is
+`artifacts/blocker_evidence/20260617-230330-F010-matching-raid-cluster-recheck`.
+
+Verification for this recheck:
+
+```powershell
+dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo --filter "FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~MatchingAverageWaitTimeTests|FullyQualifiedName~MatchingLookingForReplacementsValidationTests|FullyQualifiedName~ClientUnresolvedDiagnosticHandlerTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~GroupPacketShapeTests|FullyQualifiedName~ClientRaidInfoRequestHandlerTests|FullyQualifiedName~PacketPlaceholderNamingTests"
+python Decomp\Analysis\test_blocker_evidence_harness_presets.py
+python Tools\WikiArchiveAudit\validate_content_retail_completeness_outputs.py
+.\Decomp\Analysis\Test-DecompileManifest.ps1 -FailOnMismatch
+```
+
+Results: focused matching/raid tests passed `168/168`; blocker harness preset
+tests passed `2/2`; content-retail validation reported `31` files and `168,101`
+`not_retail_complete` rows; `WildStar64.exe` decompile manifest check passed
+with `200/200` reused fragments and `0` remaining uncached.
 
 ## Implemented + Verified
 

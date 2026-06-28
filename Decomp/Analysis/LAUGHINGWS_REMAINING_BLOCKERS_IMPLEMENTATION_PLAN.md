@@ -656,8 +656,6 @@ Rules:
   wing-order proof, challenge mechanics, and raid smoke. Only then implement the
   all-in-one-only `HydrofluxLogicAndWaterEntityScript` and
   `MnemesisLogicAndWaterEntityScript` references.
-- [ ] LWS-114 Ultimate Protogames raid: prove Downsizer challenge semantics,
-  boss mechanics, rewards, and raid smoke.
 - [ ] LWS-115 Shade's Eve: prove gather-ring cleanup, town-gate opening,
   communicator/cinematic timing, real cinematic payload, exact vote follow-up,
   Etty/fountain seed interaction smoke, and event smoke.
@@ -668,8 +666,8 @@ Rules:
   immediate completion placeholder.
   `Start-BlockerEvidenceHarness.ps1 -RaidEventSmoke` now creates the LWS-110
   through LWS-117 worksheet, defaults the map-script-backed worlds `1333`,
-  `1462`, `3032`, `3040`, `3041`, `3044`, `3045`, and `3094`, defaults public
-  events `157`, `159`, `595`, `597`, `605`, `642`, `679`, and `705`, and
+  `1462`, `3032`, `3040`, `3044`, `3045`, and `3094`, defaults public
+  events `157`, `159`, `595`, `597`, `605`, `679`, and `705`, and
   captures required negative cases for premature triggers/target sets,
   doors/elevators/gates/rooms, wrong-route weekly/wing/room selection,
   completion-only cinematics, and early finish/rewards. The focused

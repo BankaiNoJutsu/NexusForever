@@ -253,7 +253,7 @@ Items:
    Stormtalon's Lair, Skullcano, Sanctuary of the Swordmaiden, and Ultimate
    Protogames dungeon.
 4. Raids/events: smoke Initialization Core Y-83, Red Moon Terror, Genetic
-   Archives, Datascape, Ultimate Protogames raid, Shade's Eve, Protostar
+   Archives, Datascape, Shade's Eve, Protostar
    SuperMall, and Journey into OMNICore-1.
 5. PvP/adventures: smoke Cryo-Plex, Daggerstone Pass, Halls of the Bloodsworn,
    Walatiki Temple, War of the Wilds, and Rage Logic.

@@ -361,6 +361,33 @@ Validate those ledgers after edits:
 .\Decomp\Analysis\Validate-DecompileMappingArtifacts.ps1
 ```
 
+Audit full-map completion gaps without mutating ledgers:
+
+```powershell
+.\Decomp\Analysis\Get-DecompileMappingArtifactGaps.ps1
+```
+
+Use `-FailOnGap` when the audit should act as a completion gate.
+
+Backfill missing function-evidence rows from durable labels:
+
+```powershell
+.\Decomp\Analysis\Update-FunctionEvidenceInventoryFromLabels.ps1
+```
+
+Backfill missing opcode-provenance rows from coverage:
+
+```powershell
+.\Decomp\Analysis\Update-NativeOpcodeProvenanceFromCoverage.ps1
+```
+
+Backfill traceability and live-evidence rows from opcode provenance:
+
+```powershell
+.\Decomp\Analysis\Update-SourceTraceabilityFromOpcodeProvenance.ps1
+.\Decomp\Analysis\Update-LiveEvidenceManifestFromBlockedProvenance.ps1
+```
+
 The client binaries, Ghidra projects, exports, and raw logs are reproducible
 local artifacts and are ignored by Git. Coverage reports live outside the
 ignored `logs` tree so they can be reviewed and committed when useful.
@@ -385,8 +412,15 @@ Ghidra types obscure packet, table, entity, item, spell, or callback layouts.
 
 Quest coverage (curated scripts vs generic table-driven vs blocked objective
 types) is tracked in [QUEST_IMPLEMENTATION_STATUS.md](QUEST_IMPLEMENTATION_STATUS.md).
-Regenerate the inventory with
-`python Tools/WikiArchiveAudit/quest_implementation_audit.py`.
+Row-level content retail-completeness across quests, public events, path
+missions, dungeons, raids, generated inventories, the next-slice queue, and
+blocker details is tracked in
+[CONTENT_RETAIL_COMPLETENESS_TRACKER.md](CONTENT_RETAIL_COMPLETENESS_TRACKER.md).
+Regenerate the quest inventory with
+`python Tools/WikiArchiveAudit/quest_implementation_audit.py`; regenerate and
+validate the content retail-completeness tracker with
+`python Tools/WikiArchiveAudit/content_retail_completeness_audit.py` and
+`python Tools/WikiArchiveAudit/validate_content_retail_completeness_outputs.py`.
 
 See [EVIDENCE_LOOP_PROCEDURE.md](EVIDENCE_LOOP_PROCEDURE.md) for the spell and
 packet evidence workflow that pairs the decompile exports with fixture SQL,

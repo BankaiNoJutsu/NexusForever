@@ -253,6 +253,17 @@ Parser validation and a create-only bundle pass were run on 2026-05-28.
 preset and verifies its manifest, target worksheet, helper files, and
 negative-case scaffold alongside the other LWS capture presets.
 
+2026-06-17 blocked recheck: cached `WildStar64.exe` fragments and current
+source/tests still prove only `ServerFortuneRewards` transport and client UI
+consumption, not retail item selection or weights. The create-bundle-only
+worksheet
+`artifacts/blocker_evidence/20260617-225039-F031-fortune-retail-weights-recheck`
+records the missing retail packet/catalog path, negative cases, and LWS-066
+target checklist. No retail `ServerFortuneRewards` capture,
+storefront-server catalog dump, native/server producer artifact, or live
+Fortune UI capture is available locally, so exact Madame Fay probabilities and
+active rotation remain blocked.
+
 Runtime-boundary progress: `FortuneRewardPoolTests` now exercises the real
 `FortuneRewardPool` with synthetic account-item and item rows. The tests pin
 the mapped `ServerFortuneRewards` display catalog to item2/probability rows,

@@ -1,6 +1,6 @@
 # F-031 Madame Fay Weight Audit
 
-Status date: 2026-06-09 (cached-export/source recheck; retail weights still blocked)
+Status date: 2026-06-17 (Fortune retail weights blocked recheck; retail weights still blocked)
 
 ## Scope
 
@@ -310,3 +310,22 @@ copies server-provided arrays into UI state, `FortunesLib_GetFortunesLootList`
 `ServerFortuneRewards` from emulator rarity-tier `FortuneRewardPool`; no retail
 active rotation source, per-item weight table, or storefront-server catalog
 proof surfaced. The closure state remains mapped-only / blocked.
+
+Blocked recheck (2026-06-17): `mcp__ghidra_mcp.list_instances` again returned
+no running Ghidra instance, so this pass used cached `WildStar64.exe`
+fragments, current source/tests, and this audit. The evidence boundary is
+unchanged: `ServerFortuneRewards_ReadPayload` (`140081f60`) proves item2,
+money, and probability-array transport; `Fortune_ApplyRewards` (`1407292a0`)
+copies server-provided arrays into Fortune UI state; `FortunesLib_GetFortunesLootList`
+(`140766370`) displays `fProbability = serverFloat * 100`;
+`FortuneNode_ApplyServerFortunePackets` (`1404d60f0`) dispatches the
+`0x03CF`-`0x03D2` packet family; and `ServerFortuneCards_ReadPayload`
+(`1400a0b10`) remains card-state transport evidence. Current source still
+emits `ServerFortuneRewards` from emulator rarity-tier `FortuneRewardPool`, and
+no retail `ServerFortuneRewards` capture, storefront-server catalog dump, or
+native/server producer artifact is available locally. The create-bundle-only
+worksheet
+`artifacts/blocker_evidence/20260617-225039-F031-fortune-retail-weights-recheck`
+records the missing evidence path and LWS-066 target checklist. Exact per-item
+Madame Fay probabilities, money reward arrays, and active rotation remain
+blocked until retail/catalog evidence proves item ids and probabilities.

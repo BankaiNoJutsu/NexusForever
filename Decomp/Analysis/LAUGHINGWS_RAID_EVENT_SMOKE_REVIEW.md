@@ -39,7 +39,6 @@ default world/public-event ids, helper files, and negative-case scaffold.
 | LWS-111 Red Moon Terror | Mapped-only blocker. Ish'amel/engineering timing, Laveka choreography, awakening/challenge mechanics, door/elevator movement, and raid smoke remain blocked. |
 | LWS-112 Genetic Archives | Mapped-only blocker. Experiment X-89, Kuralak, Kuralak pillar, Ohmna, weekly/random selection, boss choreography, communicator/cinematic timing, door/elevator movement, and raid smoke remain blocked. |
 | LWS-113 Datascape | Mapped-only blocker. Hydroflux/Mnemesis mechanics, communicator/cinematic timing, encounter choreography, door/trigger placement, wing order, challenge mechanics, and raid smoke remain blocked. |
-| LWS-114 Ultimate Protogames raid | Mapped-only blocker. Downsizer challenge semantics, boss mechanics, rewards, and raid smoke remain blocked. |
 | LWS-115 Shade's Eve | Mapped-only blocker. Gather-ring cleanup, town-gate opening, communicator/cinematic timing, real cinematic payload, vote follow-up, Etty/fountain interaction smoke, and event smoke remain blocked. |
 | LWS-116 Protostar SuperMall in the Sky | Mapped-only blocker. Store/room routing, encounter logic, real cinematic payload, rewards, and full smoke remain blocked. |
 | LWS-117 Journey into OMNICore-1 | Mapped-only blocker. Real cinematic actor/camera/text/timing payload, event routing, rewards, and encounter behavior remain blocked. |

@@ -1965,6 +1965,111 @@ Twenty-sixth Game.Spell Lua accessor follow-up implemented from this pass:
   `6000`, `ChannelMaxTime` `2500`, `ChannelPulseTime` `500`). This only delays
   finish/active-cast blocking for channeled rows; it does not add new packet
   fields or broaden proxy semantics.
+- 2026-06-20 channel-pulse/proxy follow-up: local `wildstar_client`
+  `Spell4`/`Spell4Effects` audit found 195 `ProxyRandomExclusive` rows across
+  178 spells, including 23 zero-effect-timing rows on channeled spells. The
+  effect payload uses four `{Spell4Id, weight}` pairs in `DataBits00/01`,
+  `02/03`, `04/05`, and `06/07` (examples: `45954` Data Storm -> `46251/20`,
+  `46252/10`, `46253/10`; `77753` Falling Rock -> `79770/45`, `79771/25`,
+  `79772/25`, `79773/5`). NexusForever now interprets the weighted child list,
+  handles `ProxyRandomExclusive` by choosing one positive-weight child and
+  dispatching it through the existing proxy cast path, and includes that family
+  in `ChannelPulseTime` scheduling. `ModifySpellCooldown` channel-pulse rows
+  such as `58841`/`60112` Emission remain blocked from pulse widening because
+  their target payload (`DataBits01=502`) is not a concrete `Spell4` id under
+  the existing safe resolver. Other remaining channel-pulse-only families
+  (`Fluff`, `ForcedMove`, `RavelSignal`, `UnitPropertyModifier`,
+  `SpellForceRemove`, `CCStateSet`, `Activate`, `DespawnUnit`, `Proc`, and
+  similar state/script/control rows) remain family-specific blocked surfaces
+  until their repeat semantics are proven. Verification: focused spell
+  regression/cadence filter passed `42/42`;
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -v minimal --nologo` passed.
+- 2026-06-20 second spell-table audit: no additional low-risk
+  `ProxyRandomExclusive`-style family was found after comparing current
+  handlers, `SpellEffectType` names, and local `Spell4Effects` rows. The closest
+  child-spell candidate is `PetCastSpell` (`191` rows across `88` spells,
+  including `16` channel-pulse-only rows): `DataBits00` is the required bot/pet
+  summon spell (for example `42814` and `56249` for Engineer bot tiers) and
+  `DataBits01` is the pet action/proxy spell (for example `49502` and `56283`).
+  This remains
+  mapped-only because NexusForever currently models `IPetEntity` as the
+  vanity/follower pet path and the existing `PetEntitySpell4` prerequisite note
+  explicitly treats the client pet spell-wrapper lookup as not modeled.
+  `GiveLootTableToPlayer` (`29` rows across `29` spells) is also mapped-only:
+  `DataBits00` contains loot group ids, but none of the `21` referenced ids from
+  those rows are present in runtime-owned `nexus_forever_world.loot_group`, so a
+  safe handler needs a reviewed data-promotion pass first. Other no-handler or
+  pulse-only families from the same audit (`SpellCounter`, `ChangePhase`,
+  `ModifyCreatureFlags`, `FacilityModification`, `ChangeDisplayName`,
+  `SummonPet`, `UnlockInlaidAugment`, `VectorSlide`, `SharedHealthPool`, and
+  similar rows) touch interrupt, phase, facility, collection, movement, pet, or
+  shared-state systems and stay blocked until their owner/runtime semantics are
+  proven. Disposition: mapped-only / blocked; no new runtime code change from
+  this second audit.
+- 2026-06-20 safe implementation follow-up: NexusForever now interprets and
+  handles `PetCastSpell` and `GiveLootTableToPlayer` without crossing the
+  runtime/reference data boundary. `PetCastSpell` validates the required summon
+  `Spell4` id and pet action `Spell4` id, derives allowed creature ids from the
+  required summon spell's runtime-loaded `SummonPet` effect rows, and casts the
+  pet action only when the player's `IEntitySummonFactory` can resolve an active
+  owned summon for one of those creature ids. Missing active pet, missing
+  `SummonPet` link, or unknown spell rows are diagnostic-only and do not cast.
+  This is intentionally not full Engineer bot support yet: the audited bot rows
+  still need `SummonPet` to create and track combat pets before `PetCastSpell`
+  will apply in live gameplay. `GiveLootTableToPlayer` now routes through
+  `IGlobalLootManager.TryGenerateLoot`, `CanDeliverGeneratedLoot`, and
+  `GiveGeneratedLoot` with a default roll count of `1` when `DataBits01` is
+  zero. The audited `21` loot-group ids remain absent from
+  `nexus_forever_world.loot_group`, so those rows fail closed with
+  `unknown-loot-group` until reviewed runtime loot data is promoted. Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --filter "FullyQualifiedName~SpellEffectCombatRegressionTests" -v minimal
+  --nologo --artifacts-path artifacts\test-spell-loot-pet` passed `7/7`;
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  -v minimal --nologo --artifacts-path artifacts\build-spell-loot-pet` passed.
+  A normal in-place WorldServer build was skipped after it hit the existing live
+  `NexusForever.WorldServer` PID `22084` DLL lock.
+- 2026-06-27 Artillerybot follow-up: Engineer Artillerybot support now uses the
+  table-backed summon/action chain instead of treating the bot command as a
+  normal spellbook or floating-bar spell. `Spell4` summon base `27002` tiers
+  `42814`/`56249`..`56256` expose `Spell4IdPetSwitch` rows
+  `51365`/`56267`..`56274`; those pet-switch rows are display/cooldown/fluff
+  commands, while player-cast Barrage base `20884`
+  (`35123`/`56275`..`56282`) contains the `PetCastSpell` effect that requires
+  the matching summon tier and orders the bot to cast target-finder base
+  `32710` (`49502`/`56283`..`56290`). The summoned creature rows `42683` and
+  `59846` have level range `1`..`60`, so NexusForever now clamps Artillerybot
+  level to the summoning player's current level within that range, recalculates
+  creature defaults, registers the active pet-switch selector to the hidden
+  Barrage cast row, and resolves auto-attack base `20491` to the summoner's
+  current Artillerybot summon tier. Verification: focused
+  `SpellEffectCombatRegressionTests`, `FloatingActionBarSpellTests`, and
+  Artillerybot `CombatAITests` slices passed with isolated output directories.
+- 2026-06-20 `GiveLootTableToPlayer` loot-data promotion audit: current
+  `wildstar_client.spell4effects` still has `29` effect-type `44` rows with
+  `21` distinct `DataBits00` ids
+  (`2097`, `2098`, `2099`, `6409`, `6414`, `7126`, `16890`, `17596`, `19144`,
+  `19868`, `26361`, `39775`, `46556`, `50945`, `50950`, `50951`, `51062`,
+  `51076`, `51147`, `51148`, `57435`). Those ids have `0` matches in
+  runtime-owned `nexus_forever_world.loot_group`, `0` matches in
+  `wildstar_client.lootpinatainfo`, and `0` matches in
+  `wildstar_client.lootspell`. The source-item bridge is also empty: item-use
+  spells such as `(Am)Bush` (`Item2 83626 -> Spell4 82833 -> DataBits00
+  50945`), `Chompy Disguise Kit` (`83628 -> 82834 -> 50950`), and the component
+  turn-in items (`49818`, `50380`-`50387 -> DataBits00 46556`) have no reviewed
+  `nf_map_item_container` rows, so the existing high-range item-container loot
+  groups cannot complete these effect rows. Direct `Item2`, `AccountItem`, and
+  Jabbithole item/drop/container hits were rejected as namespace collisions
+  rather than loot-table contents: examples include mineral spells
+  `2097`-`2099` colliding with Monkey King account items, `46556` colliding
+  with `Catabolic Fusion Breastplate` while shared by multiple component-give
+  spells, and `50945` colliding with a low-level armor item while the source
+  spell is `(Am)Bush`. Disposition: blocked from data promotion; do not seed
+  placeholder or guessed loot groups. Required unblocker is a retail/server loot
+  table source for the effect-44 group ids, or an accepted live/old-client
+  capture that proves generated item types, ids, counts, and weighting for each
+  group.
 - `Lua_GameSpell_GetAbilityCharges` (`1405edff0`) exposes the runtime charge
   table shape with `nChargesRemaining`, `nChargesMax`, `fRechargeTime`, and
   `fRechargePercentRemaining`; the two float fields are written directly in the
@@ -14148,6 +14253,38 @@ F-003 crafting/support/realm auxiliary opcode decode (2026-05-22, second unblock
   --filter "FullyQualifiedName~CraftingPacketShapeTests|FullyQualifiedName~SupportPacketShapeTests"`
   (packet-shape tests).
 
+F-013 `ServerRealmAuxUInt32TripletList` cached-export/source recheck (2026-06-18 CEST):
+
+- **Target question**: Can `ServerRealmAuxUInt32TripletList` (`0x05A1`) be
+  promoted from a counted triplet packet contract to a realm-info or mail
+  runtime emitter from cached native fragments, source, local packet evidence,
+  or Ghidra MCP?
+- **MCP state**: `mcp__ghidra_mcp.list_instances` returned no running Ghidra
+  instance, so no fresh labels, xrefs, or debugger traces were added.
+- **Cached native map**: `Network_RegisterServerOpcode_0351` (`14006c290`)
+  still registers `0x05A1` size `0x10` to
+  `ServerRealmAuxUInt32TripletList_ReadPayload` (`140080b00`), and
+  `Network_RegisterServerOpcode_05A1` (`14006e125`) records the same aux slot
+  between `ServerRealmInfoResponse` (`0x059D`) and `ServerMailResult`
+  (`0x05A2`). The reader proves only a `uint32` count followed by counted rows
+  of three `uint32` fields.
+- **Source/evidence result**: Current source remains correctly conservative:
+  `ServerRealmAuxUInt32TripletList` appears only in opcode/model/test surfaces.
+  Realm-info request handling is log-only, realm-transfer destinations emit the
+  named `ServerTransferDestinationRealmList`, realm list emits `ServerRealmList`,
+  and mail flows emit their named mail packets. Existing packet-evidence bundles
+  had no `0x05A1`, `ServerRealmAuxUInt32TripletList`, or `140080b00` target
+  hits.
+- **Disposition**: mapped-only / producer-blocked. The worksheet
+  `artifacts/blocker_evidence/20260618-000112-20260617-F013-realm-info-mail-05A1-recheck`
+  records the required next evidence: native producer/apply owner, post-read
+  consumer, callback/table owner, or accepted live realm-info/mail/realm-list
+  capture with client-visible effect and server-log correlation.
+- **Verification**: focused realm/mail tests passed `54/54`; blocker evidence
+  harness preset tests passed `2/2`; content-retail validation reported `31`
+  files and `168,101` `not_retail_complete` rows; the `WildStar64.exe`
+  manifest check passed with `200/200` reused fragments.
+
 F-016..F-020 spell-runtime family evidence ladder (2026-05-22):
 
 - **F-016 Procs / Implemented boundary**: fixture `Spell4=4046` (Brutal Damage Proc)
@@ -17248,6 +17385,45 @@ Full missing-system restoration pass (2026-06-07 - F-030 realm-transfer invalid 
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo`
   passed 12/12.
 
+F-030 realm-transfer/PTR blocked recheck (2026-06-17):
+
+- **Target question**: Does the current cache, source, or local packet evidence
+  prove `0x03EF` destination payload semantics or `0x06EA` PTR queue/copy
+  producer timing strongly enough to emit or mutate state?
+- **MCP state**: `mcp__ghidra_mcp.list_instances` returned no running Ghidra
+  instances, so no dynamic producer/apply-table proof was available.
+- **Native cache map**:
+  - `ServerRealmTransferDestinationsAux_ReadPayload` (`14007d790`) still reads
+    one `uint32`, one `uint32` byte count, allocates that count, and copies raw
+    bytes. This proves only the `0x03EF` envelope.
+  - `ClientInitiatePTRCharacterCopy_SendFromLuaDispatch` (`140022270`) still
+    sends `0x06E7` with the selected character id and follows with
+    `ClientEncrypted` `0x0244`.
+  - `ClientPtrCopy_SendFromLuaDispatch` (`14063f540`) and
+    `ClientPtrCopy_SendFromLuaDispatch2` (`140707d80`) still send zero-byte
+    `0x06E8` payloads.
+  - `ServerPtrCharacterCopyQueued_DispatchLuaEvent` (`140020ea0`) still proves
+    client-side consumption of `0x06EA` as Lua `PTRCharacterCopyQueued`.
+  - `Network_RegisterServerOpcode_0351` (`14006c290.fragment.c`) still registers
+    `0x06EA` size `1` to `ServerEmpty_ReadPayload`; the adjacent complex writer
+    `14007dd40` is still registered for `0x0592`, not `0x06EA`.
+- **Source and local evidence audit**: current source emits the structured empty
+  `ServerTransferDestinationRealmList` compatibility response, not
+  `ServerRealmTransferDestinationsAux`; both PTR-copy request handlers remain
+  diagnostic-only and do not emit `ServerPtrCharacterCopyQueued`. A bounded
+  scan of `artifacts\packet_evidence` found no matching `0x03EF`, `0x06E7`,
+  `0x06E8`, `0x06EA`, or packet-name rows.
+- **Verification**: focused Realm/PTR/diagnostic packet tests passed 119/119;
+  blocker evidence harness preset tests passed 2/2; content-retail validator
+  passed 31 files / 168101 rows; `Test-DecompileManifest.ps1 -FailOnMismatch`
+  passed WildStar64.exe 200/200.
+- **Disposition**: mapped-only / blocked. Keep `0x03EF` and `0x06EA`
+  non-emitted, keep PTR-copy handlers diagnostic-only, and avoid transfer/copy
+  mutation until a native producer/apply path, callback/table owner, dynamic
+  dispatch proof, server realm/catalog artifact, or accepted character-select
+  packet capture proves destination payload semantics, queue timing, and copy
+  mutation.
+
 Full missing-system restoration pass (2026-06-02 - F-009 vehicle embark aux packet contract):
 
 - Re-aligned current source with pass 30 evidence for `ServerVehicleEmbarkAux`
@@ -17545,6 +17721,36 @@ Full missing-system restoration pass (2026-06-03 - story/recruitment boundary pa
 - Focused `PacketPlaceholderNamingTests` coverage reads both packets back
   through `GamePacketReader`. Story communicator and recruitment/pet producer
   semantics remain blocked.
+
+F-003 story/recruitment boundary cached-export/source recheck (2026-06-17):
+
+- **Target question**: Can `ServerStoryCommunicatorAux` (`0x074A`) or
+  `ServerRecruitmentAuxUInt32List` (`0x077E`) be promoted from neutral
+  packet-contract models to semantic names or runtime emitters from cached
+  native fragments, source, local packet evidence, or Ghidra MCP?
+- **MCP state**: `mcp__ghidra_mcp.list_instances` returned no running Ghidra
+  instance, so no fresh labels, xrefs, or debugger traces were added.
+- **Cached native map**: `Network_RegisterServerOpcode_0351` (`14006c290`)
+  still registers `0x074A` size `0x18` to
+  `ServerStoryCommunicatorAux_ReadPayload` (`140080c80`) and `0x077E` size
+  `0x10` to `ServerFlightPathUpdate_ReadPayload` (`14008eaa0`). The first
+  reader proves only five `uint32` fields plus one `uint16`; the second proves
+  only one `uint32` count plus a counted `uint32` list shared with the positive
+  `ServerFlightPathUpdate` control.
+- **Source/evidence result**: Current source remains correctly conservative:
+  `ServerStoryCommunicatorAux` and `ServerRecruitmentAuxUInt32List` appear only
+  in opcode/model/test surfaces, while `ServerFlightPathUpdate` remains the
+  separate positive counted-list packet. Existing `artifacts\packet_evidence`
+  rows had no `0x074A` / `0x077E` target hits and no flight-path control hits.
+- **Disposition**: mapped-only / producer-blocked. The worksheet
+  `artifacts/blocker_evidence/20260617-235326-20260617-F003-story-recruitment-boundary-recheck`
+  records the required next evidence: native producer/apply owner, post-read
+  consumer, callback/table owner, or accepted live story/recruitment/pet/flight
+  capture with client-visible effect and server-log correlation.
+- **Verification**: focused packet-shape tests passed `101/101`; blocker
+  evidence harness preset tests passed `2/2`; content-retail validation
+  reported `31` files and `168,101` `not_retail_complete` rows; the
+  `WildStar64.exe` manifest check passed with `200/200` reused fragments.
 
 Client opcode discovery loop pass 18 (2026-05-29):
 
@@ -21834,6 +22040,42 @@ F-016-F-020 spell auxiliary triplet-list xref recheck (2026-06-05 pass 150):
   cast failure, cooldown, target list, or buff-removal flows and correlate row
   values to known `Spell4`, unit, cooldown, or aura state.
 
+F-016-F-020 spell auxiliary blocked recheck (2026-06-17):
+
+- **Target question**: Does the current environment add any native, source, or
+  local packet evidence that proves `ServerSpellCastResult.Unknown0` semantics
+  or producer/field semantics for `0x080F`, `0x0810`, or `0x0812`?
+- **MCP state**: `mcp__ghidra_mcp.list_instances` returned no running Ghidra
+  instances, so no dynamic apply-table, callback, or fresh xref proof was
+  available.
+- **Native cache map**:
+  - `Network_RegisterServerOpcode_0351` (`14006c290.fragment.c`) still binds
+    `0x07FC` size `0x0c` to `ServerSpellCastResult_ReadPayload` (`140094fb0`),
+    which reads `uint32`, 18-bit `Spell4Id`, and 9-bit `CastResult`.
+  - The same registration binds `0x0810` and `0x080F` size `0x10` to
+    `ServerSpellUInt32TripletList_ReadPayload` (`140095da0`), which reads a
+    count and rows through `ServerSpellUInt32TripletListRow_ReadPayload`
+    (`140080bf0`: three `uint32` fields).
+  - `0x0812` remains bound to `ServerSpellFourUInt32_ReadPayload`
+    (`14007fef0`: four `uint32` fields).
+- **Source and local evidence audit**: `ServerSpellCastResult` producers remain
+  mixed compatibility behavior: core spell, rapid transport, activate-cast,
+  service-token, selected-spell, and guild-boss-token rejects leave `Unknown0`
+  at default `0`, while support stuck explicitly echoes the client stuck
+  context token. `ServerSpellUInt32TripletList`,
+  `ServerSpellUInt32TripletListVariant`, and `ServerSpellFourUInt32` remain
+  model/test-only. A bounded scan of `artifacts\packet_evidence` found no
+  target opcode or packet-name rows.
+- **Verification**: focused spell/support/transport/packet tests passed 439/439;
+  blocker evidence harness preset tests passed 2/2; content-retail validator
+  passed 31 files / 168101 rows; `Test-DecompileManifest.ps1 -FailOnMismatch`
+  passed WildStar64.exe 200/200.
+- **Disposition**: mapped-only / blocked. Keep
+  `ServerSpellCastResult.Unknown0` neutral and keep `0x080F` / `0x0810` /
+  `0x0812` non-emitted until a native apply/producer path, callback/table
+  owner, dynamic dispatch proof, or accepted spell packet capture proves field
+  semantics and timing.
+
 F-003 `Server0x0015` live-plugin ownership recheck (2026-06-05 pass 151):
 
 - **Target question**: Does the lone server opcode placeholder `Server0x0015`
@@ -22500,6 +22742,59 @@ F-012 ICComm / friendship social option / chat aux boundary recheck (2026-06-07)
 - **Next evidence source**: two-client social smoke, backend friendship workflow
   proof, native/live chat aux producers, and social-option persistence/readback
   evidence before adding persistent channels or durable auto-response state.
+
+F-009 service-token/global-route cached-export/source/artifact recheck (2026-06-18 CEST):
+
+- **Target question**: Can `ClientSpellCastWithServiceToken` (`0x00C2`) be
+  used to implement rapid/taxi service-token bypass, global route state, or
+  taxi embark/completion behavior?
+- **Evidence state**: No running Ghidra MCP instance was available, so this
+  pass used cached `WildStar64.exe` selected fragments, current source/tests,
+  and existing packet/spell evidence artifacts. `140089570` still proves
+  `0x00C2` as an 18-bit context token plus 32-bit `Spell4` id; `140520c10`
+  gates service-token cast results on `Spell4.PropertyFlags & 0x20000000`; and
+  `1403994f0` checks service-token balance, returns `0x014B` on insufficient
+  funds, or sends `0x00C2`. `14007ab80` plus existing spell-evidence files
+  prove separate `ClientRapidTransport` (`0x0141`) credit-route captures for
+  rapid transport spell `82922`. Source search mirrors the generic
+  service-token spell-cast path and captured credit-route behavior, but finds no
+  rapid/taxi service-token bypass, global route-state snapshot, or taxi
+  embark/completion producer. Packet/spell artifact search had no `0x00C2` or
+  `ClientSpellCastWithServiceToken` hits.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo --filter "FullyQualifiedName~Transport|FullyQualifiedName~Prerequisite|FullyQualifiedName~Spell"`
+  passed 750/750; blocker harness presets passed 2/2; content-retail CSV
+  validation passed 31 files / 168101 rows; `Test-DecompileManifest.ps1`
+  passed with 200/200 reused selected fragments.
+- **Disposition**: mapped/source-aligned only for generic service-token spell
+  casting; transport service-token bypass and global route-state remain
+  blocked until a native transport producer or accepted live transport UI
+  capture proves route id, source/destination, cost, service-token debit, and
+  teleport timing for `0x00C2`.
+
+F-012 chat aux cached-export/source/artifact recheck (2026-06-18 CEST):
+
+- **Target question**: Can the already typed `0x01B8`, `0x01C1`,
+  `0x01C4`, or `0x01EF` chat aux packets be promoted from packet contracts to
+  runtime chat/ICComm/cinematic/social producers?
+- **Evidence state**: No running Ghidra MCP instance was available, so this
+  pass used cached `WildStar64.exe` selected fragments, current source/tests,
+  and existing packet-evidence artifacts. Cached readers still prove only the
+  known shapes: `140085ca0` row variant dispatch through `PTR_LAB_140c1ec90`,
+  `140086410` wide-string row envelope with flag and `uint16` footer,
+  `140085fe0` alternate wide-string row envelope, and `1400a0890` counted
+  notification rows. Source search finds the target packet names only in
+  opcode/model/test surfaces; runtime chat and ICComm paths emit named
+  structured packets instead. `artifacts\packet_evidence` has no target hits.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ICComm|FullyQualifiedName~Chat|FullyQualifiedName~Friendship"`
+  passed 114/114; blocker harness presets passed 2/2; content-retail CSV
+  validation passed 31 files / 168101 rows; `Test-DecompileManifest.ps1`
+  passed with 200/200 reused selected fragments.
+- **Disposition**: mapped-only/producer-blocked. Keep chat aux packets
+  non-emitted until a native producer/apply owner, post-read consumer,
+  callback/table owner, dynamic dispatch proof, or accepted two-client
+  chat/ICComm/cinematic/social packet capture proves timing and semantics.
 
 F-015 PvP duel, cooldown, and open-world boundary recheck (2026-06-07):
 
@@ -23251,6 +23546,36 @@ F-021 / audit F-025 action-set partial-table guards (2026-06-08):
   exact lock/spec sequencing, authoritative attribute allocation/refund, bonus
   ability/AMP unlock persistence, and ability-book activation edge cases remain
   evidence-gated.
+
+F-021 LAS update-in-progress blocked recheck (2026-06-18 CEST):
+- Ghidra MCP discovery was available but had no running instances, so this pass
+  used cached selected fragments, current source/tests, and artifact searches.
+- Cached client fragments map the local in-progress guard but not a server
+  transaction lifecycle. `ActionSet_CheckUpdateSpellInProgress` (`1403bb8d0`)
+  resolves `GameFormula` row `0x41e` and scans the client entity's local
+  spell/update list. `Lua_ActionSetLib_RequestActionSetChanges` (`1407580e0`)
+  returns result `0x26` before `ActionSet_SendPendingActionSetChanges`
+  (`1403bb480`) builds/sends `0x00B1`; `Lua_AbilityBook_UpdateSpellTier`
+  (`140748390`) uses the same guard; `Lua_AbilityBook_ClearCachedLASUpdates`
+  (`140748630`) clears the local `entity+0x1458` cache and resets
+  `entity+0x6ddc`; and `AbilityBook_SendClientCommitAmpSpec` (`1403d19a0`)
+  clears the pending AMP cache after sending `0x01A2`.
+- Current NexusForever handlers still validate and mutate action-set/AMP state
+  synchronously through `ClientRequestActionSetChangesHandler`,
+  `ClientCommitAmpSpecHandler`, and `ClientRespecAmpsHandler`. Existing packet
+  models/tests cover the known wire contracts, and artifact searches found no
+  local live packet/client evidence for `UpdateSpellInProgress`.
+- Decision: keep `UpdateSpellInProgress` and the async spell-update transaction
+  blocked. Required unlock evidence is a live WildStar build 16042 client/server
+  capture or native server-side evidence proving update start, clear, packet
+  timing, and whether the result is client-suppressed or server-emitted.
+- Worksheet:
+  `artifacts/blocker_evidence/20260618-002935-20260617-F021-las-update-in-progress-recheck`.
+- Verification passed:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo --filter "FullyQualifiedName~ActionSet|FullyQualifiedName~Amp|FullyQualifiedName~Spell"`
+  passed 363/363; blocker harness presets passed 2/2; content-retail output
+  validation passed 31 files / 168101 rows; and the `WildStar64.exe`
+  decompile manifest passed 200/200 reused fragments.
 
 F-036 / audit F-043 generic-map partial-table guard (2026-06-08):
 - No new native labels were added. This is a source-local setup/partial-table
@@ -25065,3 +25390,413 @@ F-002 structural realm/addon diagnostic cached-export/source recheck (2026-06-09
   structural packets non-mutating until a standalone sender/consumer,
   callback/table owner, indirect send rail, or live payload proves event
   semantics and any server response behavior.
+
+F-001 STS token/optional auth blocked recheck (2026-06-17):
+- Target question: do cached `StsConnLib64.MT.dll` fragments and current source
+  now justify adding `/Auth/LoginTokenStart`, `/Auth/TokenKeyData`,
+  `/Auth/RequestToken`, or `/Auth/AssociateMyExternalAccount` server models or
+  handlers?
+- Current source still implements the password/SRP path, key-data exchange,
+  login finish, game-token request/consume, user-info, verified-IP stubs, and
+  presence/account compatibility routes only. No token-key or external-account
+  optional-route server models/handlers exist.
+- Cached `StsConn_SendLoginTokenStart` (`180003d70`) sends `ClientRand` for
+  transaction `0x61`; cached `StsConn_SendTokenKeyData` (`18000a730`) reads
+  `ServerRand`, `ServerPublicKey`, and `ServerSignature`, validates them through
+  `StsConn_ValidateTokenServerKeyMaterial` (`180012de0`), creates an RSA client
+  through `StsCrypt_CreateRsaClient` (`180037cb0`), and sends
+  `PremasterSecret`, `AuthnToken`, optional `AuthProviderCode`, and `AppId` for
+  transaction `0x3b`.
+- Cached `StsConn_SendRequestToken` (`180004c40`) writes `UserId` and `AppId`;
+  `StsConn_SendAssociateMyExternalAccount` (`1800067d0`) writes `UserId`,
+  `AuthProviderCode`, `AuthnToken`, and `AppId`; and
+  `StsConn_OnAuthnTokenResponse` (`180008230`) reads reply `AuthnToken`.
+- Verification note: `Test-DecompileManifest.ps1 -Targets StsConnLib64.MT.dll
+  -FailOnMismatch` currently fails with `label-fingerprint-mismatch`. The
+  project `NexusForeverClient64_StsConnLib64_MT` exists, but no running Ghidra
+  MCP instance or accepted startup STS capture is available in this run.
+- Worksheet:
+  `artifacts/blocker_evidence/20260617-225659-F001-sts-token-optional-auth-recheck`.
+- Disposition: **Mapped only / Blocked**. Keep token/RSA optional flows
+  unimplemented until the STS export is refreshed/validated and native crypto
+  proof or accepted startup STS captures prove exact RSA key format,
+  signature/trust anchor, premaster derivation, `TokenKeyData` reply fields,
+  post-token session/crypto transition, and route ordering.
+
+F-010 matching/raid cluster blocked recheck (2026-06-17):
+
+- **Target question**: Can any remaining F-010 diagnostic-only or mapped-only
+  packet surface be promoted to runtime behavior from current source, cached
+  decompile fragments, or local evidence bundles?
+- **MCP state**: `mcp__ghidra_mcp.list_instances` returned no running Ghidra
+  instance, so no fresh labels or exports were added.
+- **Cached native map**: `ServerUInt32_LocalReadThunk` (`140099110`) still
+  proves only the shared raw `uint32` shape for server `0x05CF` / `0x085D`;
+  `MatchingManager_ApplyManagerUInt32Field0xA0` (`1405c41c0`) remains
+  correlated to matching-manager `+0xa0` but lacks opcode-index or `ClientEvent`
+  ownership; `ServerHousingCommunityPlotReservation_ReadPayload` (`140086e70`)
+  remains the reused identity-plus-`uint32` reader for `0x0600`;
+  `ServerRaidQueueStatus_ReadPayload` (`14008bf80`) plus
+  `ServerRaidInfoResponse_ReadPayload` (`14008c010`) and
+  `Group_DispatchRaidInfoResponse` (`1406042b0`) continue to support the
+  `0x071A` raid-info row names only; and
+  `ClientTradeskillResetTalents_WritePayload` (`14007d010`) /
+  `ClientUInt32_ReadPayload` (`14007d000`) remain shared one-`uint32` helpers
+  for `Client0x062A` / `Client0x0634`.
+- **Source/evidence result**: Current source remains correctly conservative:
+  no `ServerMatching0x05CF` or `0x0600` emitter, `TrailingValue` neutral,
+  `Client0x062A` / `Client0x0634` log-only, and only zero-value
+  `ServerRaidQueueStatus` compatibility after raid-info. Prior 2026-06-08
+  solo/LAN CDB bundles captured normal queue, leave, average-wait, and
+  match-ready paths, but no real send/receive rows for `0x05CF`, `0x0600`,
+  `0x062A`, `0x0634`, `0x0718`, `0x0719`, or `0x071A`.
+- **Disposition**: mapped-only / blocked. The worksheet
+  `artifacts/blocker_evidence/20260617-230330-F010-matching-raid-cluster-recheck`
+  records the required next evidence: full-party/full-team replacement or
+  raid-info live capture with packet/log/UI artifacts, or a non-`.pdata`
+  native dispatcher/producer table tying these opcodes to client state.
+- **Verification**: focused matching/raid tests passed `168/168`; blocker
+  evidence harness preset tests passed `2/2`; content-retail validation
+  reported `31` files and `168,101` `not_retail_complete` rows; the
+  `WildStar64.exe` manifest check passed with `200/200` reused fragments.
+
+F-005 marketplace aux blocked recheck (2026-06-17):
+
+- **Target question**: Can marketplace aux server opcodes `0x06DF`
+  (`ServerAuctionPostAux`) or `0x07D5` (`ServerAuctionsByFilterAux`) be
+  promoted from packet-contract-only models to runtime emits from current
+  source, cached native fragments, or local evidence?
+- **MCP state**: `mcp__ghidra_mcp.list_instances` returned no running Ghidra
+  instance, so no fresh labels or exports were added.
+- **Cached native map**: `Network_RegisterServerOpcode_0351` (`14006c290`)
+  still registers `0x07D5` size `0x14` to
+  `ServerAuctionsByFilterAux_ReadPayload` (`14008fe80`) and `0x06DF` size
+  `0x20` to `ServerAuctionPostAux_ReadPayload` (`140090090`). The `0x07D5`
+  reader proves only one 14-bit field, three `uint32` fields, and one flag.
+  The `0x06DF` reader proves only a `uint32` count, counted `uint32` array,
+  counted byte array of the same count, and one trailing `uint32`. Selected
+  call edges remain reader-local through bit-read/allocation/copy helpers.
+- **Source/evidence result**: Current source remains correctly conservative:
+  `ServerClusterAuxPackets.cs` has neutral writable packet models and
+  `PacketPlaceholderNamingTests` pins the shapes, while marketplace handlers
+  emit the known status/result/search/owned-list/commodity packets only. No
+  `WorldServer` aux send site, native marketplace producer/apply helper, or
+  live/retail marketplace packet capture is available in this environment.
+- **Disposition**: mapped-only / blocked. The worksheet
+  `artifacts/blocker_evidence/20260617-230906-F005-marketplace-aux-recheck`
+  records the required next evidence: native marketplace apply/producer path,
+  server producer witness, or accepted live/retail marketplace capture tying
+  these fields to visible UI state and emit timing.
+- **Verification**: focused marketplace/auction/placeholder packet tests
+  passed `159/159`; blocker evidence harness preset tests passed `2/2`;
+  content-retail validation reported `31` files and `168,101`
+  `not_retail_complete` rows; the `WildStar64.exe` manifest check passed with
+  `200/200` reused fragments.
+
+F-007 reward rotation content-context blocked recheck (2026-06-17):
+
+- **Target question**: Can `ServerRewardRotationContentContext` (`0x07CD`) or
+  `ServerRewardRotationContentContextArray` (`0x07D3`) be promoted beyond the
+  current neutral/correlated metadata from cached native fragments, source, or
+  local evidence?
+- **MCP state**: `mcp__ghidra_mcp.list_instances` returned no running Ghidra
+  instance, so no fresh labels or exports were added.
+- **Cached native map**: `Network_RegisterServerOpcode_0351` still registers
+  `0x07CD` size `0x28` to `ServerRewardRotationContentContext_ReadPayload`
+  (`14008fcb0`) and `0x07D3` size `0x10` to
+  `ServerRewardRotationContentContextArray_ReadPayload` (`14008fdc0`).
+  `14008fcb0` proves one 14-bit index, four `uint32` fields, counted content
+  ids, and one trailing flag; `14008fdc0` proves counted `0x07CD` rows.
+  `RewardRotation_ManagerInit` (`140635840`) and
+  `Reward_SendRewardUpdateRequest` (`140636ba0`) prove the seven request slots
+  and index-only `0x07CC` request path. `RewardRotation_GetLoadedScheduleForContent`
+  (`140636c40`) proves loaded-schedule lookup/refresh, and
+  `RewardRotation_ApplyServerScheduleUpdate` (`140636280`) proves `0x07CA`
+  schedule-row application, not content-context apply semantics.
+- **Source/evidence result**: Current source remains correctly conservative:
+  content-context packets are emitted from game-table content ids, `0x07D3`
+  arrays are chunked by wire budget, `UInt0`/`UInt1`/`UInt3` stay
+  neutral/correlated, `Flag` stays false, and runtime evidence JSON keeps the
+  missing apply-helper / flag / throttle-slot blocker. No live Content Finder
+  or storefront reward-rotation capture is available in this environment.
+- **Disposition**: mapped-only / blocked for field semantics. The worksheet
+  `artifacts/blocker_evidence/20260617-231511-F007-reward-rotation-content-context-recheck`
+  records the required next evidence: retail/live `0x07CD` payload bundle or a
+  dynamic apply-dispatch breakpoint proving field assignment and consumer
+  meaning.
+- **Verification**: focused reward rotation / reward-property tests passed
+  `59/59`; blocker evidence harness preset tests passed `2/2`;
+  content-retail validation reported `31` files and `168,101`
+  `not_retail_complete` rows; the `WildStar64.exe` manifest check passed with
+  `200/200` reused fragments.
+
+F-002 client diagnostic opcode cluster blocked recheck (2026-06-17):
+
+- **Target question**: Can any non-matching numeric F-002 client diagnostic
+  opcode be promoted from neutral parse/log handling to semantic runtime
+  behavior from current source, cached native fragments, local packet evidence,
+  or Ghidra MCP?
+- **MCP state**: `mcp__ghidra_mcp.list_instances` returned no running Ghidra
+  instance, so no fresh labels, xrefs, or debugger traces were added.
+- **Cached native map**: `Network_RegisterServerOpcode_0351` (`14006c290`)
+  still registers `0x00C8`, `0x00ED`, `0x011B`, `0x011D`, `0x012D`, and
+  `0x0701`; `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) still
+  registers `0x0550`, `0x063E`, `0x07E3`, and `0x0928`. Helper fragments
+  continue to prove only the existing wire shapes: `ClientMatchType_ReadPayload`
+  / `ClientMatchType_WritePayload` (`14008a140` / `14008a150`) for a 5-bit
+  `MatchType`; `1400a6200` for `uint64 + uint32 + uint64 + 3 bits`;
+  `140001ba0` for empty; `ClientUInt32_ReadPayload` /
+  `ClientTradeskillResetTalents_WritePayload` (`14007d000` / `14007d010`) for
+  raw `uint32`; `ClientSuggest_WritePayload` (`14007ae80`) for wide string;
+  `1400a69d0` for 2-bit plus `uint32`; and `1400898b0` / `14008ce80` for
+  `uint32 + 5-bit`.
+- **Source/evidence result**: Current source remains correctly conservative:
+  packet models keep neutral field names, `ClientUnresolvedDiagnosticHandlers`
+  logs only, and packet/handler/placeholder tests reject challenge, queue,
+  duel, mail, loot, tradeskill, ICComm, marketplace, support, pet stance,
+  reward, and movement aliases. Existing `artifacts\packet_evidence` rows had
+  no hits for the target opcode names or hex literals.
+- **Disposition**: mapped-only / blocked. The worksheet
+  `artifacts/blocker_evidence/20260617-233631-20260617-F002-client-diagnostic-opcodes-recheck`
+  records the required next evidence: opcode-specific sender, post-read
+  consumer, callback/table owner, indirect send rail, or accepted live capture
+  with client-visible effect.
+- **Verification**: focused diagnostic packet/handler/placeholder tests passed
+  `106/106`; blocker evidence harness preset tests passed `2/2`;
+  content-retail validation reported `31` files and `168,101`
+  `not_retail_complete` rows; the `WildStar64.exe` manifest check passed with
+  `200/200` reused fragments.
+
+F-003 `Server0x0015` shared-reader cached-export/source recheck (2026-06-17):
+
+- **Target question**: Can the lone `Server0xNNNN` placeholder be promoted from
+  neutral `Value0`/`Value1` to semantic field names or a production emitter
+  from cached native fragments, source, local packet evidence, or Ghidra MCP?
+- **MCP state**: `mcp__ghidra_mcp.list_instances` returned no running Ghidra
+  instance, so no fresh labels, xrefs, or debugger traces were added.
+- **Cached native map**: `Network_RegisterServerOpcode_0351` (`14006c290`)
+  still registers `0x0015` size `8` to `ServerUInt5UInt32_ReadPayload`
+  (`140081f00`), and matching opcode `0x0628` also registers size `8` to the
+  same reader. `140081f00` reads only one 5-bit field plus one `uint32`.
+  `ServerFortuneRewards_ReadPayload` (`140081f60`) calls `140081f00` only as an
+  internal money-reward row reader inside `0x03D2`.
+  `MatchingManager_ApplyMatchingAverageWaitTimeUpdated` (`1405c0e00`) remains
+  the positive `0x0628` apply witness: it updates the matching row average-wait
+  field and dispatches `MatchingAverageWaitTimeUpdated`.
+- **Source/evidence result**: Current source remains correctly conservative:
+  `Server0x0015` is a neutral writable model only, matching emits the named
+  `ServerMatchingAverageWaitTimeUpdate` (`0x0628`), Fortune emits
+  `ServerFortuneRewards` (`0x03D2`), and placeholder tests reject inheriting
+  matching `Type` / `AverageWaitTime` names. Existing `artifacts\packet_evidence`
+  rows had no `0x0015` / `Server0x0015` target hits.
+- **Disposition**: mapped-only / blocked. The worksheet
+  `artifacts/blocker_evidence/20260617-234147-20260617-F003-server-0015-recheck`
+  records the required next evidence: native `0x0015` apply/producer path,
+  post-read consumer, or accepted live `0x0015` payload capture with a
+  client-visible effect distinct from matching and Fortune.
+- **Verification**: focused placeholder/matching/Fortune boundary tests passed
+  `121/121`; blocker evidence harness preset tests passed `2/2`;
+  content-retail validation reported `31` files and `168,101`
+  `not_retail_complete` rows; the `WildStar64.exe` manifest check passed with
+  `200/200` reused fragments.
+
+F-003 `ServerTimeOfDayAuxUInt32` cached-export/source recheck (2026-06-17):
+
+- **Target question**: Can `ServerTimeOfDayAuxUInt32` (`0x0846`) be promoted
+  from a neutral one-`uint32` model to a runtime emitter or semantic field name
+  from cached native fragments, source, local packet evidence, or Ghidra MCP?
+- **MCP state**: `mcp__ghidra_mcp.list_instances` returned no running Ghidra
+  instance, so no fresh labels, xrefs, or debugger traces were added.
+- **Cached native map**: `Network_RegisterServerOpcode_0351` (`14006c290`)
+  still registers `0x0846` size `4` to unlabelled `LAB_140080c60`; `0x01A6`
+  reuses the same selected slot, and no standalone `140080c60.fragment.c`
+  exists in the selected cache. The normal time-of-day packet remains separate:
+  `0x0845` registers size `0x0c` to the three-`uint32` reader. The cached
+  `Prerequisite_CheckTimeOfDay` (`14049dd10`) fragment remains comparison-only
+  evidence, not a producer or packet consumer for `0x0846`.
+- **Source/evidence result**: Current source remains correctly conservative:
+  `Player.SendInGameTime` emits only `ServerTimeOfDay` (`0x0845`),
+  `ServerTimeOfDayAuxUInt32` remains a neutral `ServerUnresolvedUIntPayload`
+  model with packet-shape coverage only, and prerequisite time-of-day code
+  mirrors the same clock math without emitting the aux packet. Existing
+  `artifacts\packet_evidence` rows had no `0x0846` / `ServerTimeOfDayAuxUInt32`
+  target hits.
+- **Disposition**: mapped-only / producer-blocked. The worksheet
+  `artifacts/blocker_evidence/20260617-234715-20260617-F003-time-of-day-aux-recheck`
+  records the required next evidence: native server producer/send site,
+  apply/consumer owner, callback/table owner, or accepted live `0x0846` capture
+  with a client-visible effect distinct from `0x0845` clock sync.
+- **Verification**: focused aux/prerequisite tests passed `470/470`; blocker
+  evidence harness preset tests passed `2/2`; content-retail validation
+  reported `31` files and `168,101` `not_retail_complete` rows; the
+  `WildStar64.exe` manifest check passed with `200/200` reused fragments.
+
+CombatAI leash-grace follow-up (2026-06-22):
+
+- **Target question**: Why does current aggro feel like it cancels too quickly
+  when pulling more than one creature, and can NexusForever move closer to the
+  retail evade model without inventing unproven social-aggro tables?
+- **Cached native map**: Existing cached client evidence still bounds the
+  visible retail evade surface at the client-consumer layer:
+  `UnitState_MaybeDispatchUnitEvaded` (`1403db920`) emits `UnitEvaded` only
+  when the incoming unit-state value is `4`; `ServerEntityThreatListUpdate` and
+  the target/threat-list helpers cover target HUD refresh. The export also has
+  cosmetic `Telegraph_Evade`/`TelegraphEvade` enum strings, but no stronger
+  `Leash` or server threshold constant was found in the local `WildStar64.exe`
+  export. This keeps exact retail leash distance/timer and raw state producer
+  semantics blocked.
+- **Source result**: The current server source no longer drops threat from
+  `OnExitRange`, so the remaining over-eager cancellation path was
+  `CombatAI.ValidateCurrentTarget()` plus `SelectTarget()`: one observed
+  out-of-leash current target, or a threat-change callback while that current
+  target was out of leash, could prune threat and reset immediately.
+- **Implementation**: `CombatAI` now keeps a short 3 second grace timer for the
+  current target after it first observes that target outside the home-position
+  leash. Returning inside leash clears the timer. Hard invalid targets still
+  clear immediately: invisible, non-attackable, disallowed, or dead targets are
+  not protected by the grace window. `SelectTarget()` also preserves the current
+  out-of-leash target so threat-change callbacks cannot bypass the grace timer.
+  This is implemented as retail-style combat persistence around the already
+  modeled evade/reset path; it does not claim a newly proven retail constant.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter FullyQualifiedName~CombatAITests -v minimal --nologo --artifacts-path artifacts\test-aggro-retail`
+  passed `58/58`. New regressions cover a brief out-of-leash pull retaining
+  threat, the same target evading after the grace expires, and a threat-change
+  event not bypassing leash grace.
+- **Remaining blocker**: Exact retail social-aggro radius tables, encounter pack
+  link rules, and raw evade-state packet production remain blocked on stronger
+  client/live evidence. Broadly enabling open-world assist was intentionally not
+  changed in this pass.
+
+RapidTap combo stage selection (2026-06-25):
+
+- **Target question**: Are repeated RapidTap abilities such as Relentless Strike
+  supposed to pick animation/Spell4 variants randomly, or should the server
+  advance them in a fixed sequence?
+- **Cached native map**: `ClientCastSpell_WritePayload` (`140093360`) writes the
+  generated context token, action slot, resolved target id, and trailing boolean
+  for opcode `0x009A`; it does not write a concrete `Spell4Id`. The action-slot
+  path in `SpellCast_SendClientCastSpellOrPosition` (`14039a040`) resolves the
+  equipped spell wrapper through `FUN_1405a4b80`. That helper uses the normal
+  action-set/tier lookup (`FUN_1403bad30`) and only branches through
+  `FUN_140565020` when the wrapper has an alternate spell id at the field that
+  matches `Spell4.spell4IdMechanicAlternateSpell`.
+- **Table result**: Warrior, Esper, Stalker, and Spellslinger RapidTap combo
+  chains are explicit ordinal base-spell rows (`Relentless`, `Rampage`,
+  `Psychic Frenzy`, `Shred`, `Rapid Fire`, and `True Shot`, including surged
+  Rapid Fire/True Shot alternates). Their stage rows are not driven by
+  `ProxyRandomExclusive`. Rows such as `False Retreat -> Return`, `Void Slip ->
+  Escape`, and `Nano Field -> Contract` are conditional follow-up/window rows,
+  not blind animation-cycle stages.
+- **Disposition**: implemented. NexusForever now treats proven RapidTap combo
+  families as deterministic ordered stages, leaves conditional follow-up rows on
+  the root spell until their state/window semantics are mapped, and commits the
+  next stage only after the server cast returns `CastResult.Ok`.
+
+Spell cooldown node and GCD identity pass (2026-06-25):
+
+- **Target question**: Are NexusForever spell cooldowns/global cooldowns only
+  tick-based scalar timers, or should active cooldowns be keyed by client
+  cooldown nodes/groups?
+- **Cached native map**: `ServerCooldown` row reader `140095660` consumes a
+  3-bit type, 18-bit spell id, 32-bit type id, and 32-bit remaining time;
+  `ServerCooldownList_ReadPayload` (`140096120`) reuses that same 16-byte row.
+  Active cooldown construction `1407a01c0` stores type, spell id, type id, and
+  timer. The active-node start/reset routine `14046a3d0` matches non-global
+  nodes by type plus type id, but for type `0` global cooldowns it ignores the
+  type id and refuses to shorten an already-longer timer. `CooldownNode_GetRemainingMs`
+  (`140195f70`) derives remaining time from the shared game tick, confirming
+  tick-driven expiry. `Prerequisite_CheckSpellCooldownNodeOnUnit` (`1404a4fe0`)
+  walks the entity cooldown-node list and compares active node ids.
+- **GCD evidence**: `SpellCooldown_StartCooldownForSpell` (`14046afc0`) starts
+  GCD as type `0`, spell id `0`, type id `SpellCoolDown.Id`, and effective
+  milliseconds from `SpellService_GetGCDMilliseconds` (`14046a760`). This keeps
+  GCD packet/list identity separate from concrete spell ids while preserving one
+  active global lockout timer.
+- **Table result**: Local `wildstar_client.spell4` has `15,502` rows with
+  direct `SpellCoolDown`; `1,895` of those also reference
+  `SpellCoolDownId00/01/02`, while `13,607` require concrete-spell fallback.
+  A join against `spellcooldown` found `1,204` direct-cooldown rows where
+  `Spell4.SpellCoolDown` differs from the referenced node's `CooldownTime`, so
+  `SpellCoolDownId00/01/02` is a lockout identity, not the direct cooldown
+  duration source.
+- **Implementation**: `SpellManager` now stores active cooldown rows keyed by
+  `(type, typeId)`. `GetSpellCooldown(spell4Id)` resolves the spell's shared
+  cooldown-node ids and returns the matching active timer, falling back to the
+  concrete `Spell4.Id` when no node exists. GCD start now sends/stores a type-0
+  cooldown row using `SpellCoolDown.Id`; shorter overlapping GCD starts do not
+  shorten the active timer. Cooldown-node prerequisites now check active node
+  identity directly instead of re-resolving from concrete spell ids.
+- **Verification**: focused cooldown/combo regression filter passed `30/30`;
+  broader spell test filter passed `298/298` using isolated test output
+  directories under `artifacts/codex-tests`.
+
+GCD enum and cooldown modifier edge pass (2026-06-25):
+
+- **GCD enum mapping**: The spell-wrapper fill routine `140568540` writes
+  `*(wrapper+0x70+0x24) = puVar2[0x57]` and
+  `*(wrapper+0x70+0x28) = puVar2[0x4a]`. With the aligned `Spell4` table
+  layout, `puVar2[0x57]` maps to `Spell4.GlobalCooldownEnum` and
+  `puVar2[0x4a]` maps to `Spell4.SpellCoolDownIdGlobal`.
+- **Retail GCD start rule**: `SpellCooldown_StartCooldownForSpell`
+  (`14046afc0`) starts a GCD only when wrapper `+0x70+0x24 < 2` and wrapper
+  `+0x70+0x28 != 0`. It then looks up the `SpellCoolDown` row, computes
+  effective milliseconds via `SpellService_GetGCDMilliseconds` (`14046a760`),
+  and starts an active type-0 cooldown through `14046a3d0`. Local
+  `wildstar_client.spell4` distribution confirms this edge matters: enum `0`
+  has `27,260` rows with a GCD id, enum `1` has `4,208`, enum `2` has `1,628`,
+  and enum `3` has `20,204`; retail's `<2` gate means enum `2/3` rows do not
+  participate even when `SpellCoolDownIdGlobal` is populated.
+- **Implementation**: `Spell` now uses one `UsesGlobalCooldown()` predicate for
+  both cast blocking and GCD start. The predicate requires
+  `!IgnoreGlobalCooldown`, a resolved `GlobalCooldown` row, and
+  `GlobalCooldownEnum < 2`. This fixes the previous edge where enum `1` did
+  not block on an active GCD and enum `2/3` rows could incorrectly start one.
+- **Modifier math mapped-only**: `SpellService_GetGCDMilliseconds` (`14046a760`)
+  applies active entity modifier rows from the entity `+0x1610/+0x1618` list
+  where scope type `3` matches the GCD cooldown id. `SpellService_GetEffectiveCooldownMs`
+  (`14046a890`) applies the same operation set to direct cooldowns with scopes
+  for base spell, concrete spell, category/group membership, cooldown-node id,
+  and unconditional rows. Operation `0` is a capped base multiplier, operation
+  `1` multiplies the current value, operation `2` adds milliseconds with
+  clamping, and operation `3` sets the value.
+- **Modifier blocker**: The attach/remove path is visible through `1405d9930`
+  -> `14046b7f0` and `1405d97c0`, with `14046b920` also recalculating active
+  non-global cooldown nodes when a modifier is attached. The producer/lifetime
+  owner for the modifier rows is not yet mapped to a safe NexusForever effect,
+  property, or aura state. NexusForever's current `ModifySpellCooldown` support
+  mutates active cooldown timers directly and should not be reused for persistent
+  future-cooldown/GCD scaling until that owner is proven.
+- **Verification**: focused cooldown/combo/enum regression filter passed
+  `35/35` with isolated output under
+  `artifacts/codex-tests/cooldown-enum-outdir`. The broader spell filter
+  excluding the unrelated local `FloatingActionBarSpellTests` dependency-resolver
+  failure passed `298/298` under
+  `artifacts/codex-tests/cooldown-enum-spell-excluding-floating-outdir`.
+
+Deflect combat-log and strikethrough parity pass (2026-06-27):
+
+- **Target question**: Can the visible `Deflect` floater be treated as retail
+  complete in NexusForever?
+- **Client evidence**: `ServerCombatLog_ReadTypeAndDispatch` (`14009fac0`)
+  dispatches the 6-bit combat-log type table, and
+  `CombatLog_DispatchDeflectEvent` (`14060f390`) builds the
+  `CombatLogDeflect` named event. The deflect dispatcher uses the shared
+  caster/target/result/spell helper (`14060b380`) and adds `bMultiHit`, matching
+  NexusForever's `CombatLogDeflect` payload of `BMultiHit` plus
+  `CombatLogCastData`.
+- **Implementation**: `DamageCalculator` now computes effective deflect chance
+  as victim avoid (`RatingAvoidIncrease`/`BaseAvoidChance`, formula `1235`)
+  minus attacker strikethrough (`RatingAvoidReduce`/`BaseAvoidReduceChance`,
+  formula `1230`), clamped at zero before the existing deflect roll. A certain
+  deflect still drops the damage effect and emits a standalone
+  `CombatLogDeflect`, so no damage, crit, glance, absorption, shield absorb, or
+  damage procs are applied on that hit.
+- **Verification**: focused regression filter passed `29/29`:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~DamageCalculatorRetailParityTests|FullyQualifiedName~CombatLogPacketShapeTests" -v minimal --nologo --artifacts-path artifacts\test-deflect-retail`.
+- **Retail-complete blocker**: The client proves the deflect display payload,
+  and local tables prove the avoid/strikethrough rating formulas, but the
+  authoritative retail server hit-roll order is still not captured. Exact
+  deflect-vs-crit-deflect ordering, multi-hit `bMultiHit` producer behavior,
+  and any live/server-specific roll edge cases remain blocked pending retail
+  combat captures or stronger native/server evidence.

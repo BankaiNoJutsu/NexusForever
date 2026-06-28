@@ -1,6 +1,177 @@
 # Gameplay / Economy / Social Workstream Status
 
-Updated: 2026-06-09 (F-011 war-party boss-token packet boundary; F-011 guild recruitment packet-family cached-export recheck; F-022 path mission static-table guard; F-004 residence entrance static-data guard; F-014 creature DropLoot Creature2 partial-table guard; F-026 item-manager item/item-slot partial-table guard; F-026 item display-source partial-table guard; F-022 quest target-group cache partial-table guard; F-006/F-026 entitlement-manager partial-table guard; F-006 account-currency partial-table guard; F-007 reward-property partial-table guard; F-014 generated loot reward-table guard; F-005 auction search selector-table guard; F-026 account-item generic-unlock partial-table guard; F-026 persisted generic-unlock partial-table guard; F-026 item-use table guard; F-008 tradeskill request partial-table guard; F-008 additive modifier materialization partial-table guard; F-008/F-011 rune/additive partial-table guard; F-033 challenge reward/share-init blocked classification; F-032 leaderboard medal/season filter blocked classification; F-028 support-case readback blocked classification; F-031 Fortune reward-pool partial-table guard; F-008 crafting fixed-recipe partial-table guard; F-026 repair-vendor formula-table guard; F-022 path-level partial-table guard; F-009 rapid-transport spell-formula partial-table guard; F-026 pet customisation invalid type/slot guard; F-006 account-item terminal missing-inventory guard; F-032 leaderboard duplicate-score dedupe guard; F-033 challenge progress overflow guard; F-027 keybinding character-scope guard; F-006 storefront type-0-only purchase delivery guard; F-031 Fortune target-scoped coin auto-claim guard; F-015 PvP duel/cooldown boundary recheck; F-032 per-scope/category leaderboard cache limiting; F-033 challenge cap/hook reconciliation; F-010 live group-finder CDB smoke correlated queue submit / leave-all / match-ready / decline paths and kept `0x05CF`, `0x0600`, `0x062A`, `0x0634`, `0x0719`, and standalone `0x0718` blocked; F-011 widened Guild UI CDB captured client-owned `0x04A8`/`0x04B1`; F-007 reward-rotation schedule row order/player-level/difficulty refresh; F-026/F-029 runtime `item_salvage` path; F-005 item-auction offline seller settlement guard + commodity buy-order offline expiration refund guard + commodity-fill offline-credit guard + auction bidder-refund offline-credit guard + direct commodity fill persistence gate + multi-order price-priority fill test; F-008 rune bridge closure; R3-L1/R3-L2 item-use guards; R3-L4 duplicate loot overflow guard; loot-bag single-stack delete-failure guard; corpse loot #4/#5 recipient range guard; atomic loot-unit id allocation; R3-M1 same-bidder auction delta guard; R3-M2 ForceImmediate commodity guard; R3-M3 unsupported auction filter rejection; D-M4 auction post tradeability guard; R3-M6 marketplace mail content persistence; R3-M7 mail return guard; R3-M4/R3-M5 marketplace delivery guards; marketplace insert/bid/mail-save plus online-inventory buyout/cancel/expiration and direct commodity cancel/expiration/fill delete-save failure guards; item-auction won/return-mail same-save auction delete guards; commodity return/fill-mail same-save order mutation guards; marketplace microchip overflow guard; R3-M8 auction search page guard; R3-M9 persisted commodity row quarantine; R3-H1/R3-H2/R3-H3 housing visit/decor-create/decor-move hardening; R3-G1 group instance difficulty authority; group online-member fan-out helper; D-G3 ready-check pending packet clarification; R3-IC1 ICComm scoped-membership revalidation; D-G4 duel-only open-world PvP boundary documented/tested; PvP #19/#20 duel cancel/disconnect regressions; durable PvP toggle-off cooldown persistence; support aux padding coverage)
+Updated: 2026-06-18 CEST (F-010 matching/raid cluster blocked recheck; F-008 crafting current-craft/aux blocked recheck; F-009 service-token/global-route blocked recheck; F-012 chat aux blocked recheck; F-013 realm-info/mail aux blocked recheck; F-002 client diagnostic opcode blocked recheck; F-030 realm-transfer/PTR blocked recheck; F-016-F-020 spell aux blocked recheck; F-007 reward rotation content-context blocked recheck; F-005 marketplace aux blocked recheck; F-031 Fortune retail weights blocked recheck; F-025 entity-stat aux blocked recheck; F-025 map-tracked unit producer blocked recheck; F-004 housing neighborhood list blocked recheck; F-011 war-party boss-token packet boundary; F-011 guild recruitment packet-family cached-export recheck; F-022 path mission static-table guard; F-004 residence entrance static-data guard; F-014 creature DropLoot Creature2 partial-table guard; F-026 item-manager item/item-slot partial-table guard; F-026 item display-source partial-table guard; F-022 quest target-group cache partial-table guard; F-006/F-026 entitlement-manager partial-table guard; F-006 account-currency partial-table guard; F-007 reward-property partial-table guard; F-014 generated loot reward-table guard; F-005 auction search selector-table guard; F-026 account-item generic-unlock partial-table guard; F-026 persisted generic-unlock partial-table guard; F-026 item-use table guard; F-008 tradeskill request partial-table guard; F-008 additive modifier materialization partial-table guard; F-008/F-011 rune/additive partial-table guard; F-033 challenge reward/share-init blocked classification; F-032 leaderboard medal/season filter blocked classification; F-028 support-case readback blocked classification; F-031 Fortune reward-pool partial-table guard; F-008 crafting fixed-recipe partial-table guard; F-026 repair-vendor formula-table guard; F-022 path-level partial-table guard; F-009 rapid-transport spell-formula partial-table guard; F-026 pet customisation invalid type/slot guard; F-006 account-item terminal missing-inventory guard; F-032 leaderboard duplicate-score dedupe guard; F-033 challenge progress overflow guard; F-027 keybinding character-scope guard; F-006 storefront type-0-only purchase delivery guard; F-031 Fortune target-scoped coin auto-claim guard; F-015 PvP duel/cooldown boundary recheck; F-032 per-scope/category leaderboard cache limiting; F-033 challenge cap/hook reconciliation; F-010 live group-finder CDB smoke correlated queue submit / leave-all / match-ready / decline paths and kept `0x05CF`, `0x0600`, `0x062A`, `0x0634`, `0x0719`, and standalone `0x0718` blocked; F-011 widened Guild UI CDB captured client-owned `0x04A8`/`0x04B1`; F-007 reward-rotation schedule row order/player-level/difficulty refresh; F-026/F-029 runtime `item_salvage` path; F-005 item-auction offline seller settlement guard + commodity buy-order offline expiration refund guard + commodity-fill offline-credit guard + auction bidder-refund offline-credit guard + direct commodity fill persistence gate + multi-order price-priority fill test; F-008 rune bridge closure; R3-L1/R3-L2 item-use guards; R3-L4 duplicate loot overflow guard; loot-bag single-stack delete-failure guard; corpse loot #4/#5 recipient range guard; atomic loot-unit id allocation; R3-M1 same-bidder auction delta guard; R3-M2 ForceImmediate commodity guard; R3-M3 unsupported auction filter rejection; D-M4 auction post tradeability guard; R3-M6 marketplace mail content persistence; R3-M7 mail return guard; R3-M4/R3-M5 marketplace delivery guards; marketplace insert/bid/mail-save plus online-inventory buyout/cancel/expiration and direct commodity cancel/expiration/fill delete-save failure guards; item-auction won/return-mail same-save auction delete guards; commodity return/fill-mail same-save order mutation guards; marketplace microchip overflow guard; R3-M8 auction search page guard; R3-M9 persisted commodity row quarantine; R3-H1/R3-H2/R3-H3 housing visit/decor-create/decor-move hardening; R3-G1 group instance difficulty authority; group online-member fan-out helper; D-G3 ready-check pending packet clarification; R3-IC1 ICComm scoped-membership revalidation; D-G4 duel-only open-world PvP boundary documented/tested; PvP #19/#20 duel cancel/disconnect regressions; durable PvP toggle-off cooldown persistence; support aux padding coverage)
+
+Supplemental update: 2026-06-18 CEST F-009 service-token/global-route blocked recheck
+The transport service-token/global-route boundary remains `Mapped only /
+Blocked` beyond generic `ClientSpellCastWithServiceToken` spell casting and
+captured `ClientRapidTransport` credit-route behavior. No running Ghidra MCP
+instance was available, so the pass used cached selected fragments,
+current source/tests, and existing packet/spell evidence artifacts. Cached
+fragments still prove only `0x00C2` packet shape and service-token result
+handling; existing artifacts prove `0x0141` rapid-transport spell `82922`
+captures but no `0x00C2` transport UI path. Keep rapid/taxi service-token
+bypass and global route-state blocked until a native transport producer or
+accepted live transport UI capture proves route id, source/destination, cost,
+service-token debit, and teleport timing.
+
+Supplemental update: 2026-06-18 CEST F-012 chat aux blocked recheck
+Chat aux packet contracts `0x01B8`, `0x01C1`, `0x01C4`, and `0x01EF`
+remain `Mapped only / Blocked` for runtime producer timing. No running Ghidra
+MCP instance was available, so the pass used cached selected fragments,
+current source/tests, and existing packet-evidence artifacts. The cached
+readers still prove only row/envelope/notification wire shape; source still
+finds these packets only in opcode/model/test surfaces, runtime chat/ICComm
+paths emit named structured packets, and `artifacts\packet_evidence` had no
+target hits. Keep chat aux non-emitted until a native producer/apply owner,
+post-read consumer, callback/table owner, dynamic dispatch proof, or accepted
+two-client chat/ICComm/cinematic/social capture proves timing and semantics.
+
+Supplemental update: 2026-06-17 F-002 client diagnostic opcode blocked recheck
+The non-matching numeric diagnostic opcode cluster remains `Mapped only /
+Blocked`. No running Ghidra MCP instance was available, so the pass used cached
+`WildStar64.exe` fragments, current source/tests, and existing packet-evidence
+artifacts. `14006c290` still registers `Client0x00C8`, `Client0x00ED`,
+`Client0x011B`, `Client0x011D`, `Client0x012D`, and `Client0x0701`;
+`1400a8190` still registers `Client0x0550`, `Client0x063E`, `Client0x07E3`,
+and `Client0x0928`. Helper fragments prove only the mapped wire shapes, current
+handlers remain log-only/no-emit, and existing `artifacts\packet_evidence`
+rows did not contain target opcodes or names. The worksheet
+`artifacts\blocker_evidence\20260617-233631-20260617-F002-client-diagnostic-opcodes-recheck`
+records the missing live/native path. Keep the packet names neutral until an
+opcode-specific sender, post-read consumer, callback/table owner, indirect send
+rail, or accepted live capture proves semantics.
+
+Supplemental update: 2026-06-17 F-030 realm-transfer/PTR blocked recheck
+Realm-transfer/PTR remains `Mapped only / Blocked` beyond the existing
+diagnostic compatibility behavior. No running Ghidra MCP instance was
+available, so the pass used cached `WildStar64.exe` fragments, current
+source/tests, and existing packet-evidence artifacts. The fragments still prove
+only `0x03EF` as a raw destination aux envelope, `0x06E7` / `0x06E8` as client
+request sends, and `0x06EA` as a client Lua-event consumer; adjacent
+`14007dd40` is still `0x0592`, not `0x06EA`, writer evidence. Current source
+still emits only the empty structured `ServerTransferDestinationRealmList`
+compatibility response and keeps PTR-copy request handlers diagnostic-only.
+Existing `artifacts\packet_evidence` rows did not contain target realm/PTR
+opcodes or names. The worksheet
+`artifacts\blocker_evidence\20260617-232905-20260617-234000-F030-realm-ptr-recheck`
+records the missing live/native path. Keep `0x03EF` and `0x06EA` non-emitted
+and transfer/copy mutation disabled until producer proof or an accepted
+character-select capture proves destination payload semantics and queue timing.
+
+Supplemental update: 2026-06-17 F-016-F-020 spell aux blocked recheck
+Spell aux remains `Mapped only / Blocked`. No running Ghidra MCP instance was
+available, so the pass used cached `WildStar64.exe` fragments, current
+source/tests, and existing packet-evidence artifacts. The fragments still prove
+only `0x07FC` as leading `uint32` plus `Spell4Id`/`CastResult`,
+`0x080F`/`0x0810` as counted triplet rows through `140080bf0`, and `0x0812`
+as four `uint32` fields. Current source keeps `ServerSpellCastResult` mixed
+between default-zero result sends and support-stuck context-token echo, and
+keeps `ServerSpellUInt32TripletList`, `ServerSpellUInt32TripletListVariant`,
+and `ServerSpellFourUInt32` model/test-only. Existing
+`artifacts\packet_evidence` rows did not contain the target opcodes/names. The
+worksheet
+`artifacts\blocker_evidence\20260617-232253-20260617-232300-F016-spell-aux-recheck`
+records the missing live/native path. Keep `ServerSpellCastResult.Unknown0`
+neutral and the triplet/four-uint aux packets non-emitted until native
+apply/producer proof or an accepted spell packet capture proves semantics.
+
+Supplemental update: 2026-06-17 F-031 Fortune retail weights blocked recheck
+Fortune exact retail weights and active rotation remain `Mapped only / Blocked`.
+No running Ghidra MCP instance was available, so the pass used cached
+`WildStar64.exe` fragments, current source/tests, and `FORTUNE_WEIGHT_AUDIT.md`.
+The fragments still prove only `ServerFortuneRewards` item2/money/probability
+transport, `Fortune_ApplyRewards` client-side cache application,
+`FortunesLib.GetFortunesLootList` UI probability exposure, the
+`0x03CF`-`0x03D2` Fortune dispatcher, and card-state transport. Current source
+still emits probabilities from emulator rarity-tier `FortuneRewardPool`; no
+retail `ServerFortuneRewards` capture, storefront-server catalog dump, or
+native/server producer artifact exists locally. The LWS-066 worksheet
+`artifacts\blocker_evidence\20260617-225039-F031-fortune-retail-weights-recheck`
+records the missing evidence path. Keep exact item probabilities, money reward
+arrays, and active rotation blocked until retail/catalog evidence proves item
+ids and probabilities.
+
+Supplemental update: 2026-06-17 F-025 entity-stat aux blocked recheck
+Entity-stat aux remains `Mapped only / Blocked`. No running Ghidra MCP instance
+was available, so the pass used cached `WildStar64.exe` fragments and current
+source/tests. The fragments still prove only reader shapes for `0x0889`,
+`0x08CC`, `0x08F4`, `0x0939`, `0x093D`, and `0x093E`; stale
+`FUN_140939650` remains rejected as viewport/grid math rather than a packet
+consumer. Current source keeps the six `ServerEntityStat*` aux models limited
+to packet models, packet-shape tests, placeholder naming guards, and negative
+entity-create emission guards, while regular stat updates still use
+`ServerEntityStatUpdateFloat` / `ServerEntityStatUpdateInteger`. The worksheet
+`artifacts\blocker_evidence\20260617-224723-F025-entity-stat-aux-recheck`
+records the missing live/manual evidence. Keep producers and semantic field
+names blocked until a per-opcode `WorldSocket+0x15b0` `vtable+0x58` apply
+handler, apply-table classification, or accepted live sniff/order witness proves
+field semantics and emit timing.
+
+Supplemental update: 2026-06-17 F-025 map-tracked unit producer blocked recheck
+Map-tracked unit update/disable remains `Mapped only / Blocked`. No running
+Ghidra MCP instance was available, so the pass used cached `WildStar64.exe`
+fragments and current source/tests. The fragments still prove only the `0x0849`
+reader, the shared-`uint32` `0x0848` reader, client cache update/remove,
+`MapTrackedUnitUpdate` / `MapTrackedUnitDisable` Lua event dispatch, and
+`TrackingSlot.tbl` label/icon lookup. Current source keeps
+`ServerMapTrackedUnitUpdate` and `ServerMapTrackedUnitDisable` limited to packet
+models, packet-shape tests, and the negative entity-create emission guard, while
+`TrackingSlotHelper` remains one-way. The worksheet
+`artifacts\blocker_evidence\20260617-224146-F025-map-tracked-unit-producer-recheck`
+records the missing live/manual evidence. Keep producers, tracked-unit id
+allocation, update cadence, disable lifetime, and `TrackingSlotId` selection
+blocked until a native send site or accepted live public-event marker capture
+proves the `0x0849`/`0x0848` path.
+
+Supplemental update: 2026-06-17 F-004 housing neighborhood list blocked recheck
+Housing neighborhood list/entry remains `Mapped only / Blocked`. No running
+Ghidra MCP instance was available, so the pass used cached `WildStar64.exe`
+fragments and current source/tests. The cached fragments still prove only the
+`0x0501` row reader, the `0x0506` realm/count/list reader, client-side cache
+apply plus `HousingNeighborhoodRecieved`, and table-loader-only
+`HousingNeighborhoodInfo.tbl` registration. Current source keeps
+`ServerHousingNeighborhoodEntry` and `ServerHousingNeighborhoodList` limited to
+packet models, packet-shape tests, placeholder naming guards, and residence
+negative-emission guards. The worksheet
+`artifacts\blocker_evidence\20260617-223732-F004-housing-neighborhood-list-recheck`
+records the missing live/manual evidence. Keep producers, row-tail field names,
+and table/residence backing blocked until a native server-push path or accepted
+live housing UI / realm-login capture proves trigger, field population, and
+realm/session timing.
+
+Supplemental update: 2026-06-18 CEST F-008 crafting current-craft/aux blocked recheck
+The current-craft/aux/microchip producer slice remains `Mapped only / Blocked`.
+No runtime code or data changed. There was no running Ghidra CodeBrowser for an
+interactive producer pass, but the local `NexusForeverClient64_WildStar64`
+project exists and the cached WildStar64 selected-fragment manifest passed.
+Cached evidence still proves only `0x084B`/`0x0855` reader shapes, `0x0854`
+reader plus `CraftingUpdateCurrent` apply behavior, and `0x056C` reader plus
+item microchip apply/`ItemModified` behavior. Prior F-008 packet evidence
+contains no actual `0x084B`, `0x0854`, `0x0855`, or `0x056C` records, and the
+focused crafting packet/handler/discovery tests passed `58/58`. The worksheet
+`artifacts\blocker_evidence\20260618-023758-F008-crafting-current-craft-aux-recheck`
+records the missing live/native evidence and rejected shortcut cases. Keep
+server producers and semantic field names blocked until a native producer/send
+site or accepted live crafting/item-replication capture proves cadence, field
+population, non-success/discovery boundaries, and microchip patch timing.
+
+Supplemental update: 2026-06-17 F-008 crafting current-craft/aux blocked recheck
+The current-craft/aux slice remains `Mapped only / Blocked`. There is no
+running Ghidra MCP instance, though the `NexusForeverClient64_WildStar64`
+project exists; the cached WildStar64 export manifest still passes. Cached
+fragments continue to prove only `0x084B`/`0x0855` reader shapes,
+`0x0854` reader plus `CraftingUpdateCurrent` apply behavior, and `0x056C`
+reader plus item microchip apply/`ItemModified` behavior. Re-parsing the prior
+F-008 packet evidence by `OpcodeHex` found no actual `0x084B`, `0x0854`,
+`0x0855`, or `0x056C` records; only the fixed-recipe path (`0x0852`,
+`0x0853`, `0x0199`, item add/move, and nearby load packets) is represented.
+The worksheet
+`artifacts\blocker_evidence\20260617-223039-F008-crafting-current-craft-aux-recheck`
+records the missing live/client evidence. Keep server producers and semantic
+field names blocked until either a native producer/send-site map or accepted
+live crafting/item-replication capture proves packet cadence, field population,
+non-success/discovery boundaries, and microchip patch timing.
 
 Supplemental update: 2026-06-09 F-009 `ClientSpellCastWithServiceToken`
 (`0x00C2`) cached-export/source recheck
@@ -82,6 +253,23 @@ positive controls remain separate client senders (`0x0943`, `0x00B8`, and
 post-read consumer, callback/table owner, or accepted item-context/friendship
 capture proves intent and timing.
 
+Supplemental update: 2026-06-18 CEST F-010 matching/raid cluster blocked recheck
+The remaining matching/raid diagnostic packet cluster remains `Mapped only /
+Blocked`. No runtime code or data changed. There was no running Ghidra
+CodeBrowser, but the local `NexusForeverClient64_WildStar64` project exists
+and the cached WildStar64 selected-fragment manifest passed. Cached/source
+evidence still proves only shared-reader or unowned apply-candidate facts for
+`0x05CF`, `0x0600`, `0x062A`, `0x0634`, and standalone non-zero `0x0718`;
+existing F-010 CDB artifacts still show normal queue/leave/average-wait/
+match-ready flow without real target packet rows. Focused matching/raid tests
+passed `168/168`. The worksheet
+`artifacts\blocker_evidence\20260618-024435-F010-matching-raid-cluster-recheck`
+records the missing live/native evidence and rejected shortcut cases. Keep
+`ServerMatching0x05CF`, `ServerMatchingGroupMemberRoleSelection`, non-zero
+`ServerRaidQueueStatus`, `Client0x062A`, and `Client0x0634` neutral/log-only/
+non-emitted until a real producer/apply owner or accepted live matching/raid
+capture proves timing and field meaning.
+
 Supplemental update: 2026-06-09 F-010 `ServerMatching0x05CF`
 cached-export/source recheck
 Existing cached `WildStar64.exe` fragments reconfirmed the raw-uint32 reader
@@ -137,6 +325,22 @@ requests; keep `ServerPtrCharacterCopyQueued` non-emitted until a native
 producer/apply path, queue/copy-state mutation, or accepted PTR-copy capture
 proves timing and handoff semantics.
 
+Supplemental update: 2026-06-17 F-005 marketplace aux `0x06DF` / `0x07D5`
+blocked recheck
+Ghidra MCP discovery again reported no running instances. Cached `WildStar64.exe`
+evidence still keeps both packets mapped-only: `Network_RegisterServerOpcode_0351`
+(`14006c290`) binds `0x07D5` size `0x14` to
+`ServerAuctionsByFilterAux_ReadPayload` (`14008fe80`) and `0x06DF` size
+`0x20` to `ServerAuctionPostAux_ReadPayload` (`140090090`). The reader
+fragments prove only `uint14 + uint32 + uint32 + uint32 + flag` for `0x07D5`
+and `count + counted uint32 array + counted byte array + trailing uint32` for
+`0x06DF`; selected call edges remain reader-local. Current marketplace source
+still emits only status/result/search/owned-list/commodity packets, with aux
+models covered by packet-shape tests but no sender. Worksheet
+`artifacts/blocker_evidence/20260617-230906-F005-marketplace-aux-recheck`
+records the missing native/live producer evidence. Focused marketplace,
+auction, and placeholder packet verification passed 159/159.
+
 Supplemental update: 2026-06-09 F-005 marketplace aux `0x06DF` / `0x07D5`
 cached-export/source recheck
 Ghidra MCP discovery reported no running instances. Cached `WildStar64.exe`
@@ -148,6 +352,23 @@ internal bit/raw read helpers, and current source has packet models plus
 packet-shape tests but no marketplace sender. Keep both packets non-emitted
 until a native apply/producer path, retail/live marketplace capture, or server
 producer witness proves field semantics and emit timing.
+
+Supplemental update: 2026-06-17 F-007 reward rotation `0x07CD` / `0x07D3`
+content-context blocked recheck
+Ghidra MCP discovery again reported no running instances. Cached `WildStar64.exe`
+fragments reconfirmed `ServerRewardRotationContentContext_ReadPayload`
+(`14008fcb0`) and `ServerRewardRotationContentContextArray_ReadPayload`
+(`14008fdc0`) as wire-shape evidence only. `RewardRotation_ManagerInit`
+(`140635840`) and `Reward_SendRewardUpdateRequest` (`140636ba0`) still prove
+seven index throttle slots and the index-only `0x07CC` request path, while
+`RewardRotation_GetLoadedScheduleForContent` (`140636c40`) and
+`RewardRotation_ApplyServerScheduleUpdate` (`140636280`) prove loaded-schedule
+lookup and `0x07CA` schedule application, not `0x07CD` field assignment.
+Current source keeps `UInt0`/`UInt1`/`UInt3` neutral/correlated, `Flag=false`,
+and exports runtime evidence blocker text. Worksheet
+`artifacts/blocker_evidence/20260617-231511-F007-reward-rotation-content-context-recheck`
+records the missing native/live producer evidence. Focused reward rotation and
+reward-property verification passed 59/59.
 
 Supplemental update: 2026-06-09 F-007 reward rotation `0x07CD`
 cached-export/source recheck
@@ -372,9 +593,9 @@ Legend: **Partial** = real behavior exists but retail parity incomplete; **Block
 | ID | Status | Verification this pass | Primary blockers |
 | --- | --- | --- | --- |
 | F-004 Housing | Partial | Neighbor handlers + `residence_neighbor` EF + native `ServerHousingNeighbors` `0x0507` row sync + reserved row `+8` semantics + `ServerHousingCommunityDonateUpdate` `0x04FE` emit on donate + neighborhood list `0x0501/0506` packet shapes only + community plot reservation `0x051F` + community placement/privacy `0x053A/053B` emit paths + community rename result `0x078C` + `ServerHousingProperties.Residence.NeighbourhoodId` no longer hardcoded to the old WIP placeholder + interior wallpaper `0x050D` six-slot `HousingWallpaperInfo` id validation/cost debit/decor persistence + private residence visit modify-access teleport guard + housing edit-mode server state on `ResidenceMapInstance` + decor-create colour/scale/plot preflight before debit/mutation + decor-move negative-scale mutation guard + residence entrance static-data guard + neighbor invite prompt/result/update packet coverage; packet-shape and focused housing tests | Housing edit-mode ack/broadcast packet semantics, neighborhood list producer trigger/fields, several neighborhood/community field names, and decor ownership/unlock/refund precision remain unmapped |
-| F-005 Marketplace | Partial | `MarketplaceAuctionHandlerTests` + marketplace/account/owned/mail settlement filters; 2026-06-08 marketplace/mail rechecks passed 86/86 and 89/89; durable `marketplace_auction` + `marketplace_commodity_order` EF; `GlobalMarketplaceManager` load/save/search, expiration sweep, same-bidder auction delta escrow debit, unsupported property/rune/equippable auction filters and property sort rejected before ignored search, auction posting now requires owner-matched inventory items that are not soulbound and not equippable bags, `ForceImmediate` commodity non-resting match/refund/return behavior, price-indexed commodity candidate selection, partial-fill buy escrow refund correction, direct multi-order commodity buy fill price-priority split and price-improvement refund, corrupt persisted auction microchip-id format/overflow quarantine, corrupt persisted commodity row validation/quarantine, marketplace mail `ContentType` persistence, huge auction-search page empty-page guard, auction search family/category/type selector-table invalid-request guard, settled auction delete persistence saves the moved item state instead of deleting the item row, auction/commodity insert DB failures roll back transient listing/order/item/escrow state, auction bid update DB failure refunds the bidder and restores prior bid state, marketplace mail persistence failures restore attached item owner state and leave auction buyout/expiry paths uncommitted, item-auction won/return-mail settlement now composes mail creation, attached item save, and auction row deletion in one character DB save for buyout/cancel/expiration mail delivery, item-auction offline seller proceeds now compose auction row deletion, moved item state, and seller credit mail in one required character DB save for direct winner-inventory and auction-won mail delivery, expired offline commodity buy-order refunds now compose order deletion and refund credit mail in one required character DB save, commodity fills now compose order changes with offline seller proceeds and offline buyer price-improvement refund credit mail in one required character DB save, auction bidder refunds now compose with bid updates, auction deletes, or item-return mail saves, commodity sell-order return-mail settlement now composes mail creation, returned-item save, and commodity order deletion for cancel/expiration mail delivery, commodity fill-mail settlement now composes buyer mail creation, purchased-item save, and resting buy/sell order update/delete for mail delivery, online-inventory auction buyout delete-save failure returns `DbFailure` before buyer debit, seller credit, winner notification, auction removal, or item delivery, online-inventory auction cancel delete-save failure returns `DbFailure` before bidder refund, inventory return, or auction removal, online-inventory auction expiration delete-save failure returns before seller credit, winner notification, auction removal, or item delivery, no-DB offline-seller sale attempts stay pending before buyer delivery/debit or auction removal, no-DB offline commodity buy-order expirations leave the order active before escrow is lost, no-DB commodity fills that require offline credits leave matches unfilled before buyer item delivery or notifications, no-DB auction updates/deletes that require offline bidder refunds leave auctions active before new-bid acceptance, buyer delivery, bidder refund loss, or item return, direct commodity buy/sell cancel delete-save failure returns `DbFailure` before escrow refund, item recreation, or order removal, direct commodity buy/sell expiration delete-save failure returns without refund, item recreation, removal notification, or order removal, direct commodity fill update/delete save failure leaves the match unfilled before buyer item delivery, seller credit, buyer price-improvement refund, or fill notification, `ServerAuctionOutbid`, same-save offline credit mail, commodity cross-match + cancel-failure `ServerCommodityOrderResult`, commodity cancel/return mail, auction cancel rollback and delivery-failure non-mutation guards for commodity cancel/fill and auction expiry/buyout, `MarketplaceMailDelivery` + localized mail (`0x3950` -> `278287`), CREDD `0x026A` non-empty price buckets + `097A` cache rows + durable `account_credd_*` history | Apply migrations `20260522114611_MarketplacePersistence` and `20260603120000_MailContentType` on live DB; retail property/rune/equippable auction filter semantics; retail `0x026A` owned-order row pointers; retail commodity partial-stack precision beyond current direct multi-order guard tests; marketplace aux `0x06DF`/`0x07D5` producer/consumer semantics |
+| F-005 Marketplace | Partial | `MarketplaceAuctionHandlerTests` + marketplace/account/owned/mail settlement filters; 2026-06-08 marketplace/mail rechecks passed 86/86 and 89/89; durable `marketplace_auction` + `marketplace_commodity_order` EF; `GlobalMarketplaceManager` load/save/search, expiration sweep, same-bidder auction delta escrow debit, unsupported property/rune/equippable auction filters and property sort rejected before ignored search, auction posting now requires owner-matched inventory items that are not soulbound and not equippable bags, `ForceImmediate` commodity non-resting match/refund/return behavior, price-indexed commodity candidate selection, partial-fill buy escrow refund correction, direct multi-order commodity buy fill price-priority split and price-improvement refund, corrupt persisted auction microchip-id format/overflow quarantine, corrupt persisted commodity row validation/quarantine, marketplace mail `ContentType` persistence, huge auction-search page empty-page guard, auction search family/category/type selector-table invalid-request guard, settled auction delete persistence saves the moved item state instead of deleting the item row, auction/commodity insert DB failures roll back transient listing/order/item/escrow state, auction bid update DB failure refunds the bidder and restores prior bid state, marketplace mail persistence failures restore attached item owner state and leave auction buyout/expiry paths uncommitted, item-auction won/return-mail settlement now composes mail creation, attached item save, and auction row deletion in one character DB save for buyout/cancel/expiration mail delivery, item-auction offline seller proceeds now compose auction row deletion, moved item state, and seller credit mail in one required character DB save for direct winner-inventory and auction-won mail delivery, expired offline commodity buy-order refunds now compose order deletion and refund credit mail in one required character DB save, commodity fills now compose order changes with offline seller proceeds and offline buyer price-improvement refund credit mail in one required character DB save, auction bidder refunds now compose with bid updates, auction deletes, or item-return mail saves, commodity sell-order return-mail settlement now composes mail creation, returned-item save, and commodity order deletion for cancel/expiration mail delivery, commodity fill-mail settlement now composes buyer mail creation, purchased-item save, and resting buy/sell order update/delete for mail delivery, online-inventory auction buyout delete-save failure returns `DbFailure` before buyer debit, seller credit, winner notification, auction removal, or item delivery, online-inventory auction cancel delete-save failure returns `DbFailure` before bidder refund, inventory return, or auction removal, online-inventory auction expiration delete-save failure returns before seller credit, winner notification, auction removal, or item delivery, no-DB offline-seller sale attempts stay pending before buyer delivery/debit or auction removal, no-DB offline commodity buy-order expirations leave the order active before escrow is lost, no-DB commodity fills that require offline credits leave matches unfilled before buyer item delivery or notifications, no-DB auction updates/deletes that require offline bidder refunds leave auctions active before new-bid acceptance, buyer delivery, bidder refund loss, or item return, direct commodity buy/sell cancel delete-save failure returns `DbFailure` before escrow refund, item recreation, or order removal, direct commodity buy/sell expiration delete-save failure returns without refund, item recreation, removal notification, or order removal, direct commodity fill update/delete save failure leaves the match unfilled before buyer item delivery, seller credit, buyer price-improvement refund, or fill notification, `ServerAuctionOutbid`, same-save offline credit mail, commodity cross-match + cancel-failure `ServerCommodityOrderResult`, commodity cancel/return mail, auction cancel rollback and delivery-failure non-mutation guards for commodity cancel/fill and auction expiry/buyout, `MarketplaceMailDelivery` + localized mail (`0x3950` -> `278287`), CREDD `0x026A` non-empty price buckets + `097A` cache rows + durable `account_credd_*` history; 2026-06-17 marketplace aux recheck kept `0x06DF`/`0x07D5` mapped-only and passed focused marketplace/auction/placeholder verification 159/159 | Apply migrations `20260522114611_MarketplacePersistence` and `20260603120000_MailContentType` on live DB; retail property/rune/equippable auction filter semantics; retail `0x026A` owned-order row pointers; retail commodity partial-stack precision beyond current direct multi-order guard tests; marketplace aux `0x06DF`/`0x07D5` producer/consumer semantics |
 | F-006 Storefront | Partial | Storefront/account/pending/CREDD/terminal/velocity/history tests; daily-login claim (`078F` @ `1400070f0`); purchase-history request (`082E` = `StorefrontLib.RequestHistory` @ `1404f1d50`) now returns `098E`; VC package Lua registration targets mapped-only (`PurchaseVirtualCurrencyPackage` @ `1404f1470`, `CompleteOrderVirtualCurrencyPackage` @ `1404f1550`); coupon handler on `0790` wire; CREDD redeem (`0268`/`097B`); `0x026A` header+buckets (`14042b9a0`); `097A` cache rows; purchase success emits `098C`/`098D` (client `082A`/`0828`); `096A..096C` unused leading field (emit 0); catalog updated (`0989`); unlock sync (`0983`/`0984`); character-select direct account purchases apply entitlement/currency grants immediately and refresh the character list; in-world direct account inventory claims handle targeted character rows with character-slot cap prerequisites enforced by entitlement max-count; missing account-inventory-manager requests fail closed for take, pending claim/return/gift, daily-login claim, and coupon redemption; daily-login reward refresh/claim paths treat a missing `DailyLoginReward` table as an empty schedule before inventory checks or grants; account-item cooldown startup treats a missing `AccountItemCooldownGroup` table as an empty configured list while preserving persisted cooldown rows; account-item existence/materialization paths treat a missing `AccountItem` table like missing account-item rows; entitlement-backed account-item grants treat a missing `Entitlement` table like missing entitlement rows before mutation; account and character entitlement managers treat a missing `Entitlement` table like missing entitlement rows during persisted load and direct updates before mutation or entitlement packet emission; account-currency load/materialization treats a missing `AccountCurrencyType` table like missing account-currency rows, preserving persisted balance readback and failing new balance creation before mutation or wallet packets; account-item generic-unlock claims reject missing `GenericUnlockSet` / `GenericUnlockEntry` tables before unlock grant application or item deletion; storefront purchases reject type-1/type-2 offer-item rows before charge/delivery and only grant mapped type-0 account-item rows; velocity gate (`0971`+`account_store_purchase_history`); migrations `120000`/`130000`/`140000` in tree; focused entitlement-manager verification passed 4/4, entitlement-adjacent verification passed 20/20, focused account-currency verification passed 4/4, loot-bag/account-currency verification passed 16/16, and broader account verification passed 140/140 on 2026-06-08 | Real-money/Protobucks VC billing request/confirm packet path; `0x026A` owned-order tail; live `0986`/`098F` emit; non-zero `096A..096C` leading-field producers; type-1/type-2 offer-item purchase effects; native coupon sender for `0790` |
-| F-007 Rewards | Partial | Per-content schedule catalog; `account_reward_rotation_grant` migration; `AccountRewardRotationGrantManager` + claim `RecordGrant` path; non-empty `0x07C8` on refresh/claim; 2026-06-09 cached-export/source recheck found no running Ghidra MCP instance and kept `0x07CD` mapped-only: cached `14008fcb0` proves the content-context reader, `140635840` proves seven throttle-slot defaults, `140636ba0` sends only index-only `0x07CC` refresh requests, and `140636c40` proves loaded-schedule lookup, not apply semantics; 2026-06-06 refresh now uses player level, expands normal/veteran rows, and writes the native schedule row order; reward-property premium modifiers and spell reward-property modifier effects now fail closed when `RewardProperty`/entitlement static tables are unavailable; focused reward-property tests passed 5/5 and broader reward/spell tests passed 375/375 | `0x07CD` apply/`Flag` consumer and throttle-slot assignment require retail capture or dynamic dispatch proof; item/currency/property delivery after claim; exact retail difficulty/content reward selection |
+| F-007 Rewards | Partial | Per-content schedule catalog; `account_reward_rotation_grant` migration; `AccountRewardRotationGrantManager` + claim `RecordGrant` path; non-empty `0x07C8` on refresh/claim; 2026-06-17 cached-export/source recheck found no running Ghidra MCP instance and kept `0x07CD`/`0x07D3` mapped-only for content-context field semantics: cached `14008fcb0`/`14008fdc0` prove only reader shapes, `140635840` proves seven throttle-slot defaults, `140636ba0` sends only index-only `0x07CC` refresh requests, `140636c40` proves loaded-schedule lookup, and `140636280` proves `0x07CA` schedule apply but not content-context apply; 2026-06-06 refresh now uses player level, expands normal/veteran rows, and writes the native schedule row order; reward-property premium modifiers and spell reward-property modifier effects now fail closed when `RewardProperty`/entitlement static tables are unavailable; focused reward rotation/reward-property verification passed 59/59 | `0x07CD` apply/`Flag` consumer and throttle-slot assignment require retail capture or dynamic dispatch proof; item/currency/property delivery after claim; exact retail difficulty/content reward selection |
 | F-008 Crafting | Partial | `CraftingLootIdCraftHandlerTests` pins LootId craft path; simple/craft-item tests now pin fixed-recipe zero-station success, non-zero station/tradeskill mismatch rejection, saturated inventory material-count availability without `uint` overflow, and missing schematic/item/material/tier table behavior; missing schematic/item tables reject before mutation, missing material tables use inventory-only material debits, and missing tier tables complete with zero XP; `TradeskillRequestHelperTests` pin missing `Tradeskill` / `TradeskillBonus` / `TradeskillTalentTier` table rejection; `CraftingAdditiveHandlerTests` pins additive zero-station rejection and queued modifier materialization guards; `CraftingPacketShapeTests` pin `ServerCraftingCurrentCraft`, native `CodeEnumTradeskillResult` and `CodeEnumRuneType` values, native `GetRuneSlots` live item-data offsets, and corrected typed `0x084B`/`0x0855` auxiliary payloads; `CraftingDiscoveryEvaluatorTests` pins coordinate-discovery distance bands, attempt-coordinate parsing, and station service-key mapping (`0x2C`/`0x4F`/`0x57`); `ItemRuneSocketTests` plus `item.runeSlots` migration, `ItemRuneSlotsCodec`, and `ItemRuneNetworkWire` pin durable rune socket/install persistence, shared-item wire population, and missing `Item`/`Item2Category`/`ItemSpecial` table behavior; rune/additive helpers reject missing `Item`, `TradeskillAdditive`, and `TradeskillCatalyst` tables through existing invalid request paths, and `CraftingModifierSessionStore` does the same before inventory checks/debits when building queued additive/catalyst item counts. Focused partial-table verification passed 12/12, focused tradeskill request verification passed 5/5, focused rune/modifier verification passed 63/63, and broader crafting verification passed 90/90 on 2026-06-08 | Live validation of attempt-coordinate packing; profession-modifier scaling for discovery radii; `ServerCraftingCurrentCraft` mid-craft emit cadence; aux opcode emit intent; non-success sigil result rules; any separate microchip install mutator precision |
 | F-009 Transport | Partial | `TaxiRoute.tbl` default loading and clean missing-table rejection; rapid transport missing/empty spell-formula data now returns `RapidTransportInvalid` before cooldown, debit, or cast; captured table-backed rapid route selection/credit debit/cast context; contiguous flight-path route charging and destination teleport; rapid transport / flight-path / vehicle packet tests; vehicle embark/disembark handler-boundary tests; focused transport verification passed 73/73 | Service-token bypass; global route state; taxi embark/completion; broader charge/teleport parity; passenger/seat modes; deployable vehicle semantics; `Server0x077E` |
 | F-010 Group/matching | Partial | `GroupLootRulesHandlerTests`; `ServerGroupInstanceDifficultyResponse` (`0x0414`) typed + authoritative group-server path on `ClientGroupSetInstanceDifficulty` with leader-only mutation, cached group `InstanceDifficulty`, online-member sync, and shared fan-out helper coverage; ready-check status (`0x0441`) now emits for Pending/Ready/HasSetReady flag updates, with `Group.StartReadyCheckAsync` deliberately clearing ready flags in-memory before the single pending update to avoid duplicate messages; group flag fan-out reuses one immutable role/flag packet and one ready-check packet per update; replacement LFR `0x05D5`/`0x0602` validation/logging only; `ServerRaidQueueStatus` (`0x0718`) zero-value compatibility emit with raid-info plus non-zero wire-order guard (`GroupPacketShapeTests`); `ServerMatching0x05CF` raw `uint32` shape plus correlated-but-unproven apply candidate `1405c41c0` are tracker-aligned as mapped-only; `Client0x062A/0634` handlers are log-only/test-pinned; 2026-06-06 live CDB smokes correlated client-owned `0x05EF` queue submit / `0x05B4` leave-all helper sends, `0x05CA` match-ready apply, and `0x05C8` ready responses for false declines plus a true accept | Non-zero raid queue semantics; `ServerMatching0x05CF` apply-table index/field semantics; `Client0x062A/0634` sender meaning; durable raid locks; replacement server backfill/merge lifecycle |
@@ -389,7 +610,16 @@ Legend: **Partial** = real behavior exists but retail parity incomplete; **Block
 | F-030 Realm transfer | Partial | `RealmTransferProtocolTests` pin unknown/offline/online compatibility results and PTR diagnostic-only handlers; `ServerRealmTransferDestinationsAux` (`0x03EF`) is reader-backed as `uint32` plus counted raw bytes, and the 2026-06-09 cached recheck found registration/reader evidence only; the 2026-06-09 PTR handoff recheck found `0x06E7`/`0x06E8` client senders and `0x06EA` Lua-event consumer evidence, but no native `ServerPtrCharacterCopyQueued` producer or copy mutation | Real destinations/success results; `Client0x0760/0762`; `0x03EF` raw payload semantics/producer timing; PTR queue/copy handoff producer and mutation proof |
 | F-031 Fortune | Partial | Fortune coin cost; emulator rarity-tier `FortuneRewardPool` + `RewardItemProbabilities`; missing `AccountItem` table returns an empty catalog/card pool and missing `Item2` table uses Normal rarity fallback; `ServerFortuneReset.ResetCode` value `3` mapped to click-empty reset; `account_fortune_session` persistence code path; target-scoped Fortune Coin account-item auto-claim guard; `FORTUNE_WEIGHT_AUDIT.md` catalog/table audit; F-007 `RewardRotation*` schedules rejected as Fortune active-rotation evidence; focused reward-pool verification passed 6/6 and broader Fortune verification passed **27/27** | Exact per-item retail weights and active rotation catalog (no tbl weight column, no local live Fortune capture or storefront-server catalog dump) |
 | F-032 Leaderboards | Partial | `DatabaseLeaderboardStore` + `LeaderboardProvider` + `LeaderboardScoreIngestion` + aggregation; per-scope/category cache limiting; duplicate persisted scores dedupe to the best score before row caps and visible ranking; PvE type/map/prime and PvP arena/battleground-class scoping; database-unavailable requests return empty without caching; source/protocol recheck found no mapped season or medal request selector; focused leaderboard verification passed 17/17 | Season and medal-filter semantics remain blocked until a selector is decoded or captured; exact retail row caps/refresh cadence; broader live score ingestion coverage |
-| F-033 Challenges | Partial | `ChallengeManager` lifecycle + `character_challenge` persistence; retail two-active-challenge cap; combat kill direct/nested target-group hooks; `QuestObjectiveType.CompleteChallenge` hook; missing `Challenge`/`ChallengeTier` table guards; large progress deltas clamp at tier goal without `uint` wrap; source/protocol recheck found no mapped challenge reward-track runtime/packet surface or client share-init request; focused challenge verification passed 45/45 | `Client0x00C8` decode; share-init ownership; reward tracks/medal win-chance; full result/reward parity |
+| F-033 Challenges | Partial | `ChallengeManager` lifecycle + `character_challenge` persistence; retail two-active-challenge cap; combat kill direct/nested target-group hooks; mapped Ability/ChecklistActivate activation hooks; public challenge-id progress through `IChallengeManager.TryAdvanceProgress` / `ChallengeProgressHooks`; `QuestObjectiveType.CompleteChallenge` hook; conservative first-supported `RewardTrack` / `RewardTrackRewards` item grants; missing `Challenge`/`ChallengeTier` table guards; large progress deltas clamp at tier goal without `uint` wrap; focused challenge verification passed 52/52 | `Client0x00C8` decode; share-init ownership; reward UI/selection and medal win-chance; timed scoring; producer-specific collect/item/general evidence; challenge-specific achievement trigger evidence; full result/reward parity |
+
+Supplemental update: 2026-06-18 CEST F-013 realm-info/mail aux `0x05A1`
+cached-export/source recheck kept `ServerRealmAuxUInt32TripletList`
+mapped-only / producer-blocked. Cached registration still binds `0x05A1` to
+`ServerRealmAuxUInt32TripletList_ReadPayload` (`140080b00`), which proves only
+a counted three-`uint32` row list. No running Ghidra MCP instance, runtime source
+producer, or packet-evidence target hit was available; focused realm/mail
+verification passed 54/54. Realm-info/mail producer timing remains blocked
+pending native producer/apply proof or accepted live capture.
 
 Recent F-006 closure note (2026-06-08): storefront offer-item data construction now treats a missing `AccountItem` table like missing offer account-item rows before store item-data packet rows are built. Focused offer-item verification passed 3/3 and broader Storefront verification passed 45/45; Protobucks/VC request-confirm, owned-order tails, live `0986`/`098F`, `096A..096C` producers, type-1/type-2 offer-item effects, coupon native sender proof, exact catalog/dirty producer timing, offline transfer persistence, TTL/mail fallback, and coupon-aware routing remain evidence-gated.
 
@@ -403,6 +633,16 @@ roll/master UI parity, and loot aux producer timing remain evidence-gated.
 Recent F-014/F-026 closure note (2026-06-08): direct character-currency manager affordability, add, and subtract requests now treat a missing `CurrencyType` table like missing currency rows before currency-state mutation or currency update packets. Focused character-currency verification passed 7/7 and broader character-currency / loot-adjacent verification passed 32/32; exact retail currency chat/floater policy, item/error aux producers, and loot aux producer timing remain evidence-gated.
 
 Recent F-011 closure note (2026-06-08): guild standard part construction and dye validation now treat missing `GuildStandardPart` and `DyeColorRamp` tables like missing guild-standard rows before guild registration accepts a standard. Focused guild-standard verification passed 5/5 and broader Guild verification passed 13/13; guild bank economy, influence/tab state, perks, holomark producer precision, recruitment, war-party/warplot, and exact standard UI timing remain evidence-gated.
+
+Supplemental update: 2026-06-17 F-003/F-009/F-011 story/recruitment boundary
+packet recheck kept `ServerStoryCommunicatorAux` (`0x074A`) and
+`ServerRecruitmentAuxUInt32List` (`0x077E`) mapped-only / producer-blocked.
+Cached registration still binds `0x074A` to five `uint32` fields plus one
+`uint16`, and `0x077E` to the shared `ServerFlightPathUpdate` count-plus-
+`uint32`-list reader. No running Ghidra MCP instance, runtime source producer,
+or existing packet-evidence target hit was available; focused packet-shape
+verification passed 101/101. Recruitment, pet, and flight-boundary emit timing
+remain blocked pending native producer/apply proof or accepted live capture.
 
 Recent F-021 closure note (2026-06-08): direct and persisted `ActionSet.AddAmp` paths now treat missing `EldanAugmentation` tables like missing AMP rows before owner-save or AMP-list mutation. Focused AMP/action-set verification passed 28/28 and broader Spell verification passed 221/221; `UpdateSpellInProgress`, async spell-update transaction, exact lock/spec sequencing, attribute allocation/refund, bonus ability/AMP unlock persistence, and ability-book activation edges remain evidence-gated.
 

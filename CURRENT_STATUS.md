@@ -1,6 +1,12641 @@
 # NexusForever Feature Restoration - Current Status
 
-Last updated: 2026-06-09 (decompile-evidence closure checkpoint; F-011 war-party boss-token packet boundary; F-011 guild recruitment packet-family cached-export recheck; F-022 active path helper static-table guard; F-022 path mission static-table guard; F-004 residence entrance static-data guard; F-035 achievement primary-table startup guard; F-014 creature DropLoot Creature2 partial-table guard; F-026 item-manager item/item-slot partial-table guard; F-026 item display-source partial-table guard; F-022 quest target-group cache partial-table guard; F-006/F-026 entitlement-manager partial-table guard; F-006 account-currency partial-table guard; F-007 reward-property partial-table guard; F-014 generated loot reward-table guard; F-005 auction search selector-table guard; F-022 path reward scanbot profile guard; F-022 path reward Spell4 table guard; F-022 path reward title partial-table guard; F-026 title manager persisted-title partial-table guard; F-026 account-item generic-unlock partial-table guard; F-026 persisted generic-unlock partial-table guard; F-026 normal item-use partial-table guard; F-008 tradeskill request partial-table guard; F-008 additive modifier materialization partial-table guard; F-008/F-011 rune/additive partial-table guard; F-026 scanbot rename ownership/type guard and vanity-pet summon effect guard; F-027 combat-log disable-others boolean guard; F-034 datacube table-unavailable guard; F-035 Steam achievement ingest blocked classification; F-036 zone-completion non-title reward blocked classification; F-033 challenge reward/share-init blocked classification; F-032 leaderboard medal/season filter blocked classification; F-028 support-case readback blocked classification; F-031 Fortune reward-pool partial-table guard; F-008 crafting fixed-recipe partial-table guard; F-026 repair-vendor formula-table guard; F-011 guild create-cost formula-table guard; F-004 housing vendor-list partial-table guard; F-004 housing community-rename formula-table guard; F-026 decor item-use HousingDecorInfo partial-table guard; F-009 transport table-unavailable coverage; F-021 non-spell action-set item partial-table guard; F-012 emote partial-table guard; mapped small client request partial-table guard; F-036 generic-map partial-table guard; F-026 generic-unlock manager partial-table guard; F-026 account-costume partial-table guard; F-022 quest guidance partial-table guard; F-022 quest-info reward partial-table guard; F-022 character-XP partial-table guard; F-022 path-level partial-table guard; F-009 rapid-transport spell-formula partial-table guard; F-026 pet customisation invalid type/slot guard; F-006 account-item terminal missing-inventory guard; F-031 Fortune flip missing-inventory guard; F-030 realm-transfer known-character guard; F-036 zone-completion stale table-cache guard; F-034 persisted datacube duplicate-row merge guard; F-032 leaderboard duplicate-score dedupe guard; F-035 achievement checklist-bit mask guard; F-033 challenge progress overflow guard; F-017 Charged Shot charge-release threshold runtime and continuous/charge spell-cast target forwarding; F-005 item-auction offline seller settlement guard, commodity buy-order offline expiration refund guard, commodity-fill offline-credit guard, auction bidder-refund offline-credit guard, direct commodity fill order-mutation persistence gate, and multi-order price-priority fill coverage; item-data aux packet contracts for `0x056B`, `0x056C`, and `0x056D`, marketplace aux packet contracts for `0x06DF` and `0x07D5`, chat aux row/envelope packet contracts for `0x01B8`, `0x01C1`, and `0x01C4`, plus story/recruitment boundary packet contracts for `0x074A` and `0x077E`; ported useful LaughingWS branch scripts/data overlays, quest-loot/store/catalog/WIP-Dust-Stalker-quest-instance/WIP-live-event/Skyplot-housing overlays, settler build acknowledgements, active Settler hub build-count progress, WIP current-zone path episode activation with optional PathMission prerequisite filtering, active-path object-id completion guard, active Soldier assassinate kill progress with decompile-mapped ProgressCount, branch-informed active-only node/explore-zone/power-map-validated Explorer progress completion, PathMission and PathMissionType achievement credit, client-mapped GameFormula 0x017a path XP fallback for known completed path missions without configured XP, and unflagged PathRewardType.Mission grants for known completed path missions, branch starter-zone/map-only hooks, Shade's Eve/Infestation/Fragment Zero/Gauntlet/Ruins of Kel Voreth/Stormtalon's Lair/Skullcano/Initialization Core Y-83/Red Moon Terror/Genetic Archives/Sanctuary of the Swordmaiden/Datascape/Protogames/Space Madness/Evil from the Ether event/map chains, WIP-guessed Coldblood Citadel, Ruins of Kel Voreth, Sanctuary of the Swordmaiden, Skullcano, and Stormtalon's Lair optional-objective rolls, Space Madness/Gauntlet/Infestation/Protogames Academy/Fragment Zero/Shade's Eve/Red Moon Terror/Genetic Archives/Datascape/Ruins of Kel Voreth/Skullcano/Initialization Core Y-83/Sanctuary/Evil from the Ether/Cryo-Plex/War of the Wilds trigger objective/message/teleport/PvP scripts and phase broadcasts, SQL-backed boss objective-credit hooks including WIP Red Moon Terror Laveka credit, Skullcano and Sanctuary WIP route scaffolding, remaining map-only bindings plus WIP entry/boss/phase/cinematic-hook scaffolds for Deep Space, Rage Logic, Ultimate Protogames dungeon/raid, Protostar SuperMall, Journey into OMNICore-1, Fragment Zero, Infestation, Space Madness, Shade's Eve, Ruins of Kel Voreth, Stormtalon's Lair, Initialization Core Y-83, Genetic Archives, Datascape, and Gauntlet, narrow branch spell-script hooks for Marauder Mine/Pulse Blast, and the client-table-backed Exo-Lab 22 range teleporter; reward-rotation schedule row order/player-level/difficulty refresh, runtime `item_salvage` exact/type-level salvage path, live group/guild CDB evidence, and full Game test project 2817/2817; focused branch/path/event tests 552/552, focused instance/public-event tests 436/436, focused map-only entry/boss/phase/cinematic-hook scaffold tests 22/22, focused event/trigger cinematic-hook tests 155/155, focused PvP/adventure branch tests 25/25, focused Evil from the Ether tests 12/12, focused Coldblood Citadel tests 10/10, focused Ruins of Kel Voreth tests 16/16, focused Sanctuary of the Swordmaiden tests 38/38, focused Skullcano tests 34/34, focused Stormtalon's Lair tests 19/19, focused Protogames Academy trigger tests 25/25, focused Fragment Zero trigger tests 13/13, focused Gauntlet trigger tests 16/16, focused Infestation tests 9/9, focused Datascape/objective-credit tests 102/102, path-progress tests 36/36, focused transporter tests 49/49, focused quest tests 284/284, focused XP/rest-XP tests 237/237, focused costume tests 7/7, focused generic-unlock tests 22/22, focused account-item/generic-unlock tests 67/67, focused generic-map tests 6/6, focused vendor repair tests 10/10, focused item-use tests 9/9, broader item-use tests 20/20, focused crafting partial-table tests 12/12, focused tradeskill request tests 5/5, focused rune/modifier partial-table tests 63/63, broader crafting tests 90/90, focused Fortune reward-pool tests 6/6, broader Fortune tests 27/27, focused Option tests 36/36, focused Pet tests 293/293, focused Support tests 126/126, focused archive/datacube tests 18/18, broader PathManager tests 67/67, focused Steam achievement tests 2/2, focused achievement tests 25/25, focused Challenge tests 45/45, focused mapped-request tests 5/5, focused emote tests 2/2, broader chat tests 6/6, focused zone-completion tests 12/12, broader map tests 457/457, plus branch spell tests 11/11; F-004/F-009/F-024 remain partial)
+Latest supplemental update: 2026-06-28 CEST Northern Wilds challenge runtime-zone activation bridge.
+
+Supplemental update: 2026-06-28 CEST Northern Wilds challenge runtime-zone activation bridge.
+Northern Wilds challenge activation now mirrors the reviewed path runtime bridge:
+world `426` / runtime/source zone `1` can satisfy build-16042 challenge
+restrictions rooted under client `WorldZoneId 35`, including Skeech Slayer
+`103` / restriction `604`, while unrelated worlds still fail closed. This
+addresses the prior client-observed "challenge would not start/countdown" path
+where manual `ClientChallengeChoice.Activate` could return `AreaRestriction`
+before emitting an activated timer row. Retail completion is still not claimed:
+reward UI selection/presentation, medal chance, broader producer semantics, and
+local client smoke remain pending.
+
+Verification: focused challenge DataMapping slice tests passed `14/14`, broader
+challenge tests passed `40/40`, and the owning `NexusForever.Game.csproj` build
+succeeded from an isolated `artifacts\test-bin\challenge-bridge\` output
+directory because live local `WorldServer`/`StsServer` processes lock normal
+Debug outputs.
+
+Supplemental update: 2026-06-27 CEST Northern Wilds validation-ready audit refresh.
+Northern Wilds top-level quest summary rows now reuse the row-specific runtime
+evidence already carried by their child script/objective/world/reward rows for
+Q3671, Q3741, Q3777, Q3781, Q3783, and Q4526. The four Northern Wilds
+PathEpisode reward type-2 rows are also reclassified from mapped-only blocked
+to runtime-tested pending presentation smoke because current `PathManager`
+coverage verifies completed-episode reward delivery and no-premature-grant
+boundaries. These are validation-ready evidence promotions only: every affected
+row remains `not_retail_complete` and still requires client/manual smoke before
+any retail-complete claim.
+
+Verification: focused Python audit coverage passed `2/2`, focused Northern
+Wilds quest/path xUnit coverage passed `91/91`, and the content-retail audit
+regenerated all CSV outputs. The validator reports `31` generated CSVs /
+`167,388` rows, all `not_retail_complete`, with `1,779` blocker detail rows in
+the next-slice blocker CSV.
+
+Supplemental update: 2026-06-22 CEST Northern Wilds Soldier holdout lifecycle.
+The Northern Wilds Soldier missions now use the local Soldier Missions
+video/transcript plus build-16042 `PathSoldierEvent` and `PathSoldierEventWave`
+rows to run timed control-point lifecycles for Creature2 `12508`, `11139`, and
+`11141` / PathSoldierEvent `2`, `12`, and `13`. The scripts emit initial-delay
+`ServerPathSoldierHoldoutStatus`, active `ServerPathSoldierHoldOutNextWave`,
+and delayed `ServerPathSoldierHoldoutEnd` success packets through active
+`PathMission.objectId` completion instead of immediately completing on beacon
+activation. Generated CSV row state is unchanged: actual wave creature
+spawning, defended survivor health, leave/death/timeout/participation failure
+states, exact early-wave/boss advancement, packet ordering smoke, and local
+client proof remain blocked before any retail-complete claim.
+
+Verification: focused xUnit coverage
+`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~NorthernWildsSoldierPathScripts|FullyQualifiedName~CompleteMissionByObjectId" -v minimal --nologo -p:OutDir=I:\GIT\NexusForever\artifacts\test-bin\soldier\`
+passed `8/8`. A normal-output run was blocked by live `NexusForever.WorldServer`
+and `NexusForever.StsServer` processes locking Debug DLLs, so the passing run
+used the isolated ignored `artifacts` output directory. Content-retail CSVs were
+not regenerated for this scoped runtime packet-lifecycle change.
+
+Supplemental update: 2026-06-21 CEST Northern Wilds path Vitalium bridge cleanup.
+Northern Wilds path mission creature evidence now treats Scientist mission `160`
+(`CHEMISTRY: Vitalium Crystals`) / Creature2 `15888` (`Vitalium Crystal`) as a
+reviewed runtime-owned path row. The server-side
+`NorthernWildsScientistVitaliumCrystalEntityScript` already binds the row to
+PathScientistCreatureInfo `130`; focused tests now cover all three Northern
+Wilds Scientist path scripts through visible scan setup and activation credit.
+The generic `ambiguous_name` creature bridge bucket remains blocked unless a
+row is explicitly reviewed in the Northern Wilds implemented-pair set.
+
+Verification: focused Python audit coverage passed `1/1`, focused Northern
+Wilds/PathManager xUnit coverage passed `124/124`, and the content-retail audit
+regenerated all CSV and tracker outputs. The validator reports `31` generated
+CSVs / `167,362` rows, all `not_retail_complete`, with `1,759` blocker detail rows
+in the next-slice blocker CSV. Northern Wilds path episode, mission,
+runtime-zone, and mission-creature rows are implemented/tested except the four
+PathEpisode reward type-2 rows, which remain mapped-only pending reward
+presentation/timing evidence and client smoke.
+
+Supplemental update: 2026-06-20 CEST Ultimate Protogames Gilded Fowl producer cleanup.
+The generated instance-2980 Ultimate Protogames queue no longer counts six
+Gilded Fowl producer-evidence rows whose runtime-owned source and focused tests
+already prove Power Plunge objective activation, reviewed Gilded Fowl placement,
+and paired ResourcePool/KillCluster death-credit ownership for objectives 2862
+and 4442. Exact Power Plunge scoring/qualification, random-event room timing,
+reward/achievement side effects, and full dungeon smoke remain tracked by the
+remaining instance dependency, public-event, entity, reward, portal, and
+producer blocker rows.
+
+Verification: focused Python audit coverage passed `1/1`, focused Ultimate
+Protogames and public-event objective-credit xUnit coverage passed `620/620`,
+and the content-retail audit regenerated all CSV and tracker outputs. The
+validator reports `31` generated CSVs / `167,367` rows, all
+`not_retail_complete`, with `1,757` blocker detail rows in the next-slice blocker CSV.
+Ultimate Protogames is down to `294` blocker details with
+`script_objective_producer=13`; global `script_objective_producer` blocker
+details are now `321`.
+
+Supplemental update: 2026-06-20 CEST Ultimate Protogames Ruffles producer cleanup.
+The generated instance-2980 Ultimate Protogames queue no longer counts three
+Ruffles producer-evidence rows whose runtime-owned source and focused tests
+already prove phase activation, reviewed Ruffles placement, and Hunt Ruffles
+death-credit ownership for objective 4561. Exact hunt route/pathing, encounter
+behavior, reward/achievement side effects, and full dungeon smoke remain
+tracked by the remaining instance dependency, public-event, entity, reward,
+portal, and producer blocker rows.
+
+Verification: focused Python audit coverage passed `1/1`, focused Ultimate
+Protogames and public-event objective-credit xUnit coverage passed `620/620`,
+and the content-retail audit regenerated all CSV and tracker outputs. The
+validator reports `31` generated CSVs / `167,376` rows, all
+`not_retail_complete`, with `1,766` blocker detail rows in the next-slice blocker CSV.
+Ultimate Protogames is down to `300` blocker details with
+`script_objective_producer=17`; global `script_objective_producer` blocker
+details are now `325`.
+
+Supplemental update: 2026-06-20 CEST Ultimate Protogames Mondo/Mammoth producer cleanup.
+The generated instance-2980 Ultimate Protogames queue no longer counts twelve
+Misplaced Mammoth/Mondo producer-evidence rows whose runtime-owned source and
+focused tests already prove phase activation, reviewed Mammoth/Monstrosity/Crate
+placement, dynamic max-count setup, and death-credit ownership for objectives
+4692, 2926, 2941, and 2920. Exact timed qualification, random-room routing,
+crate script timing, reward/achievement side effects, and full dungeon smoke
+remain tracked by the remaining instance dependency, public-event, entity,
+reward, portal, and producer blocker rows.
+
+Verification: focused Python audit coverage passed `2/2`, focused Ultimate
+Protogames and public-event objective-credit xUnit coverage passed `620/620`,
+and the content-retail audit regenerated all CSV and tracker outputs. The
+validator reports `31` generated CSVs / `167,379` rows, all
+`not_retail_complete`, with `1,769` blocker detail rows in the next-slice blocker CSV.
+Ultimate Protogames is down to `303` blocker details with
+`script_objective_producer=19`; global `script_objective_producer` blocker
+details are now `327`.
+
+Supplemental update: 2026-06-20 CEST Ultimate Protogames tank-room producer cleanup.
+The generated instance-2980 Ultimate Protogames queue no longer counts twelve
+tank-room producer-evidence rows whose runtime-owned source and focused tests
+already prove Destruct-O-Derby, Tank Trample, Can Crusher, and Going Green
+objective activation, reviewed tank placement, dynamic max-count setup, and
+tank death-credit ownership. Exact random-room routing, timer/failure
+semantics, tank visuals/despawn state, reward/achievement side effects, and
+full dungeon smoke remain tracked by the remaining instance dependency,
+public-event, entity, reward, portal, and producer blocker rows.
+
+Verification: focused Python audit coverage passed `1/1`, focused Ultimate
+Protogames and public-event objective-credit xUnit coverage passed `620/620`,
+and the content-retail audit regenerated all CSV and tracker outputs. The
+validator reports `31` generated CSVs / `167,391` rows, all
+`not_retail_complete`, with `1,781` blocker detail rows in the next-slice blocker CSV.
+Ultimate Protogames is down to `315` blocker details with
+`script_objective_producer=27`; global `script_objective_producer` blocker
+details are now `335`.
+
+Supplemental update: 2026-06-20 CEST Ultimate Protogames Bev-O-Rage producer cleanup.
+The generated instance-2980 Ultimate Protogames queue no longer counts twelve
+Bev-O-Rage producer-evidence rows whose runtime-owned source and focused tests
+already prove boss/Vend-A-Tron objective activation plus boss death, child
+objective, and TargetGroup credit ownership. Exact room routing, timer and
+20-percent semantics, placement visuals, reward/achievement side effects, and
+full dungeon smoke remain tracked by the remaining instance dependency,
+public-event, entity, reward, portal, and producer blocker rows.
+
+Verification: focused Python audit coverage passed `2/2`, focused Ultimate
+Protogames and public-event objective-credit xUnit coverage passed `620/620`,
+and the content-retail audit regenerated all CSV and tracker outputs. The
+validator reports `31` generated CSVs / `167,403` rows, all
+`not_retail_complete`, with `1,793` blocker detail rows in the next-slice blocker CSV.
+Ultimate Protogames is down to `327` blocker details with
+`script_objective_producer=35`; global `script_objective_producer` blocker
+details are now `343`.
+
+Supplemental update: 2026-06-20 CEST Evil from the Ether combat producer cleanup.
+The generated instance-3404 Evil from the Ether queue no longer counts twelve
+additional combat/organism producer-evidence rows whose runtime-owned source
+and focused tests already prove Security Chief, Etheric Organism, Katja
+Zarkhov, and Ether-Charged Ravenous objective activation or death-credit
+ownership. Exact spawn cadence, encounter choreography, visuals, reward side
+effects, and full expedition smoke remain tracked by the remaining instance
+dependency, script-presentation, entity, reward, and producer blocker rows.
+
+Verification: focused Python audit coverage passed `1/1`, focused Evil from
+the Ether and public-event objective-credit xUnit coverage passed `667/667`,
+and the content-retail audit regenerated all CSV and tracker outputs. The
+validator reports `31` generated CSVs / `167,415` rows, all
+`not_retail_complete`, with `1,805` blocker detail rows in the next-slice blocker CSV.
+Evil from the Ether is down to `107` blocker details with
+`script_objective_producer=29`; global `script_objective_producer` blocker
+details are now `351`.
+
+Supplemental update: 2026-06-20 CEST Fragment Zero combat producer cleanup.
+The generated instance-3180 Fragment Zero queue no longer counts eighteen
+combat/TargetGroup producer-evidence rows whose runtime-owned source and
+focused tests already prove phase activation or death-credit ownership. The
+reviewed-out rows cover the Skeech horde base/tier activations and death
+credits, Prototype Alpha/Beta/Delta activations and death credits, Project
+Matron activation/death credit, and Life Overseer activation/death credit.
+Exact spawn route/count/cadence, encounter mechanics, rewards, and full
+expedition client smoke remain tracked by dependency, public-event, and
+instance blocker rows.
+
+Verification: focused Python audit coverage passed `4/4`, focused Fragment Zero
+and public-event objective credit xUnit coverage passed `648/648`, and the
+content-retail audit regenerated all CSV and tracker outputs. The validator
+reports `31` generated CSVs / `167,430` rows, all `not_retail_complete`, with
+`1,820` blocker detail rows in the next-slice blocker CSV. Fragment Zero is
+down to `131` blocker details with `script_objective_producer=29`; global
+`script_objective_producer` blocker details are now `364`.
+
+Supplemental update: 2026-06-20 CEST Fragment Zero collectable/checklist producer cleanup.
+The generated instance-3180 Fragment Zero queue no longer counts six additional
+producer-evidence rows whose runtime-owned source and focused tests already
+prove collectable/checklist activation or credit ownership. The reviewed-out
+rows cover the 10-count and 100-count cargo-crate activations, shared Cargo
+Crate VirtualCollect credit, Xenobite Egg objective activation, Xenobite Egg
+direct script credit, and the Facility Defense Control Panel checklist
+activation row. Cargo crate placement/import parity, egg smash lifecycle,
+panel visuals, rewards, and full expedition client smoke remain tracked by
+the remaining dependency, public-event, and instance blocker rows.
+
+Verification: focused Python audit coverage passed `4/4`, focused Fragment Zero
+xUnit coverage passed `69/69`, and the content-retail audit regenerated all CSV
+and tracker outputs. The validator reports `31` generated CSVs / `167,448` rows,
+all `not_retail_complete`, with `1,838` blocker detail rows in the next-slice
+blocker CSV. Fragment Zero is down to `149` blocker details with
+`script_objective_producer=47`; global `script_objective_producer` blocker
+details are now `382`.
+
+Supplemental update: 2026-06-20 CEST Fragment Zero recording/panel producer cleanup.
+The generated instance-3180 Fragment Zero queue no longer counts fourteen
+producer-evidence rows whose runtime-owned source and focused tests already
+prove objective activation or credit ownership for the hidden-recording and
+defense-panel chain. The reviewed-out rows cover the parent
+`DiscoverTheTwoLostRecordings` activation, the Ohmna/Lucent hidden-recording
+child activations, the shared FragmentZeroTargetGroupObjectiveEntityScriptBase
+producer row, the parent recording aggregate credit, the Ohmna/Lucent checklist
+credits, and the Facility Defense Control Panel checklist credit. Exact object
+placement/import smoke, visuals/despawn state, repeat-interaction behavior,
+reward/achievement side effects, and full expedition client smoke remain
+tracked by the remaining Fragment Zero blocker rows.
+
+Verification: focused Python audit coverage passed `4/4`, focused Fragment Zero
+xUnit coverage passed `69/69`, and the content-retail audit regenerated all CSV
+and tracker outputs. The validator reports `31` generated CSVs / `167,454` rows,
+all `not_retail_complete`, with `1,844` blocker detail rows in the next-slice
+blocker CSV. Fragment Zero is down to `155` blocker details with
+`script_objective_producer=53`; global `script_objective_producer` blocker
+details are now `388`.
+
+Supplemental update: 2026-06-20 CEST Sanctuary producer evidence cleanup.
+The generated instance-1271 Sanctuary of the Swordmaiden queue no longer counts
+forty-six producer-evidence rows whose runtime-owned source and focused tests
+already prove objective activation or credit ownership. The reviewed-out rows
+cover the Sanctuary boss/miniboss death-credit scripts, phase activation rows,
+turnstile trigger credit rows, Torine relic/holder/tech-cluster/totem checklist
+credit rows, and the Soul Spore / distracted Moldwood Mauler optional objective
+producer paths. Flame-Crazed Demon target-group identity, Selene escort,
+totem-dodge, relic no-fall, residual challenge rows, public-event creature
+bridges, instance dependencies, rewards, placement/route behavior, and client
+smoke remain tracked as blockers.
+
+Verification: focused Python audit coverage passed `3/3`, focused Sanctuary
+xUnit coverage passed `630/630`, and the content-retail audit regenerated all
+CSV and tracker outputs. The validator reports `31` generated CSVs / `167,468` rows,
+all `not_retail_complete`, with `1,858` blocker detail rows in the
+next-slice blocker CSV. Sanctuary is down to `152` blocker details with
+`script_objective_producer=18`; global `script_objective_producer` blocker
+details are now `402`.
+
+Supplemental update: 2026-06-20 CEST Q3673/Q3963 stale Unknown creature relation review.
+The generated queue no longer counts two `quest_creature` rows backed only by
+Jabbithole creature `23645` (`Unknown`) as live missing Creature2 bridge
+blockers: Q3673 finisher relation `1842` and Q3963 starter relation `2130`.
+Both rows remain emitted as reviewed stale/replaced DataMapping context. Q3673's
+current finisher ownership is source relation `40` / Deadeye Brightland
+Creature2 `11063`; Q3963's current playable start remains the Q3487 follow-up
+handoff with relation `1621` retained as unresolved visible-starter context,
+and completion is owned by Galeras Deadeye Creature2 `16622`.
+
+Verification: focused Python audit coverage passed `2/2`, the focused Q3673 /
+Q3963 / NorthernWilds / Galeras xUnit filter passed `143/143`, and the
+content-retail audit regenerated all CSV and tracker outputs. The validator
+reports `31` generated CSVs / `167,514` rows, all `not_retail_complete`, with `1,904` blocker detail rows
+in the next-slice blocker CSV. Global `quest_creature` blocker details are now
+`2`: Q3963 relation `1621` visible-starter proof and Q3797 relation `5204`
+Snowstalker placement/client smoke.
+
+Supplemental update: 2026-06-20 CEST Q3480 stale starter relation review.
+The generated quest-3480 (`Reporting for Duty`) queue no longer counts stale
+Jabbithole starter relation `2133` / creature `23645` as a live missing
+Creature2 bridge blocker. Current build 16042 starter ownership is already
+recorded through relation `821`: Commander Durek Creature2 `11061`, QuestIdGiven
+`3480`, reviewed source coordinate `40899`, focused spawn/giver-cache coverage,
+and external video observation of Durek offering the quest. Q3480 remains
+`not_retail_complete`; Durek accept UI, alternate receiver route, rewards,
+achievements, and end-to-end client smoke remain tracked by the current Q3480
+rows.
+
+Verification: focused Python audit coverage passed `2/2`, the focused Q3480 /
+NorthernWilds / GlobalQuestManager xUnit filter passed `74/74`, and the
+content-retail audit regenerated all CSV and tracker outputs. The validator
+reports `31` files / `167,516` rows, all `not_retail_complete`, with `1,906` blocker detail rows
+in the next-slice blocker CSV. Q3480 is down to `22`
+blocker details and no longer has a `quest_creature` blocker; global
+`quest_creature` blocker details are now `4`.
+
+Supplemental update: 2026-06-20 CEST Fragment Zero TargetGroup public-event creature review.
+The generated instance-3180 Fragment Zero queue now stops counting fifteen
+public-event creature bridge rows whose runtime-owned TargetGroup evidence
+already proves objective-credit ownership. The reviewed-out rows cover
+Prototype Alpha `67526`/`69672`, Prototype Beta `67527`/`69673`, Prototype
+Delta `67528`/`69674`, Project Matron `69088`/`69664`, Life Overseer
+`67522`/`69635`, Crewmate Jo `67966`, Crewmate Syrus `67931`, and Facility
+Defense Control Panel `68856`, plus Skeech horde TargetGroup `12254` leaves
+`67519`/`67520`. Exact route timing, Skeech spawn count/cadence, spawn
+placement/import smoke, corpse/panel visual and replay state, encounter
+behavior, rewards, achievements, and full expedition client smoke remain
+tracked by adjacent blockers.
+
+Verification: focused Python audit coverage passed `2/2`, the focused Fragment
+Zero/PublicEvent xUnit filter passed `648/648`, and the content-retail audit
+regenerated all CSV and tracker outputs. The validator reports `31` files /
+`167,517` rows, all `not_retail_complete`, with `1,907` blocker detail rows in
+the next-slice blocker CSV. Fragment Zero is down to `169` blocker details with
+`public_event_evidence=45`; global `public_event_evidence` blocker details are
+now `339`.
+
+Supplemental update: 2026-06-20 CEST Gauntlet boss TargetGroup public-event creature review.
+The generated instance-2183 Gauntlet queue now stops counting three additional
+boss public-event creature relations whose runtime-owned TargetGroup evidence is
+already script-backed: Championator relation `483` / Creature2 `48529`, Dice
+relation `754` / Creature2 `48558`, and Slice relation `758` / Creature2
+`48557`. Build 16042 maps objective `1865` to TargetGroup `6856`
+(`48529`/`69255`) and objective `1871` to TargetGroup `6865`
+(`48557`/`48558`/`69306`/`69307`); `GauntletBossEntityScripts` binds those
+same normal/veteran rows, and focused objective-credit tests prove death-credit
+dispatch. Goonbot `52112`, Pilot Taboro `49812`, Judge Kain, Agent Lex, and
+other ambiguous relation rows remain blocked until reviewed bridge/spawn/client
+evidence exists.
+
+Verification: focused Python audit coverage passed `1/1`, the focused
+Gauntlet/PublicEvent xUnit filter passed `615/615`, and the content-retail
+audit regenerated all CSV and tracker outputs. The validator reports `31` files
+/ `167,532` rows, all `not_retail_complete`, with `1,922` blocker detail rows
+in the next-slice blocker CSV. Gauntlet is down to `124` blocker details with
+`public_event_evidence=36`; global `public_event_evidence` blocker details are
+now `354`.
+
+Supplemental update: 2026-06-20 CEST Gauntlet first-arena public-event creature review.
+The generated instance-2183 Gauntlet queue now stops counting the three
+first-arena Arena-Frenzied public-event creature relations `2275` / Creature2
+`48865`, `2339` / Creature2 `48461`, and `2390` / Creature2 `48867` as open
+DataMapping bridge blockers when runtime-owned script evidence already proves
+the objective-credit owner. Build 16042 maps objective `1854` to TargetGroup
+`6871`, which expands through TargetGroups `6869`/`6870` to those Creature2
+rows; `FirstArenaFrenziedCreatureEntityScript` binds the same normal/veteran
+Creature2 set, and focused objective-credit tests prove death-credit dispatch.
+Exact first-arena wave cadence, route selection, spawn placement/count, score
+and reward side effects, achievements, and full expedition client smoke remain
+tracked by adjacent blockers.
+
+Verification: focused Python audit coverage passed `1/1`, the focused
+Gauntlet/PublicEvent xUnit filter passed `615/615`, and the content-retail
+audit regenerated all CSV and tracker outputs. The validator reports `31` files
+/ `167,535` rows, all `not_retail_complete`, with `1,925` blocker detail rows
+in the next-slice blocker CSV. Gauntlet is down to `127` blocker details with
+`public_event_evidence=39`; global `public_event_evidence` blocker details are
+now `357`.
+
+Supplemental update: 2026-06-20 CEST Gauntlet Door Lock public-event creature review.
+The generated instance-2183 Gauntlet queue now stops counting the electric-room
+Door Lock public-event creature relation `490` / Creature2 `48682` as an open
+DataMapping bridge blocker when runtime-owned script evidence already proves the
+TargetGroup credit owner. `ElectricRoomDoorLockEntityScript` binds the build
+16042 TargetGroup `6831` door-lock rows `48682`/`48683`/`48684`, and focused
+Gauntlet tests prove guarded `ActivateTargetGroup` credit. Exact door
+placement/import smoke, visual/despawn state, arena-door choreography, rewards,
+achievements, and full expedition client smoke remain tracked by adjacent
+blockers.
+
+Verification: focused Python audit coverage passed `1/1`, the focused
+Gauntlet/PublicEvent xUnit filter passed `615/615`, and the content-retail
+audit regenerated all CSV and tracker outputs. The validator reports `31` files
+/ `167,538` rows, all `not_retail_complete`, with `1,928` blocker detail rows
+in the next-slice blocker CSV. Gauntlet is down to `130` blocker details with
+`public_event_evidence=42`; global `public_event_evidence` blocker details are
+now `360`.
+
+Supplemental update: 2026-06-20 CEST Space Madness public-event creature evidence review.
+The generated instance-2149 Space Madness queue now stops counting seventeen
+public-event creature bridge rows whose runtime-owned script evidence already
+proves spawn and objective-credit ownership. The reviewed-out rows cover the
+Datapad `45993`, Air Scrubber Controls `46437`, and representative escaped
+experiment rows Slinking Slank `69899`, Talking Rockmite `69900`, and Party
+Down-Grazer `69901`, plus twelve spawn-backed panicked-worker nightmare rows:
+`46123`, `46124`, `46126`, `46127`, `46128`, `46130`, `46132`, `46133`,
+`46135`, `46721`, `58783`, and `58798`. Exact datapad visuals/despawn,
+air-scrubber timing, nightmare pacing/worker state, escaped-experiment
+route/full spawn distribution, rewards, achievements, and full expedition
+client smoke remain tracked by adjacent blockers.
+
+Verification: focused Python audit coverage passed `2/2`, the focused Space
+Madness/PublicEvent xUnit filter passed `626/626`, and the content-retail audit
+regenerated all CSV and tracker outputs. The validator reports `31` files /
+`167,539` rows, all `not_retail_complete`, with `1,929` blocker detail rows in
+the next-slice blocker CSV. Space Madness is down to `163` blocker details with
+`public_event_evidence=96`; global `public_event_evidence` blocker details are
+now `361`.
+
+Supplemental update: 2026-06-20 CEST Ruins public-event creature evidence review.
+The generated instance-1336 Ruins of Kel Voreth queue now stops counting 15
+public-event creature bridge rows whose runtime-owned script evidence already
+proves objective-credit ownership. The reviewed-out rows cover Grond
+`32534/32535`, Slavemaster Drokk `32536/32539`, Darkwitch Gurka
+`33049/33050`, Battlesworn/Darkwitch `32555/32556/32618/32619`, Eldan
+Schematic Data Storage `33155`, Kel Voreth War Supplies `33334`, Eldan Phase
+Monitor `33768`, Kel Voreth Forge `33302`, and the reviewed Forgemaster Trogun
+`32531` anchor. Trogun `32533`, other ambiguous or unmatched creature bridges,
+exact optional-route availability, spawn placement/count/cadence, boss
+mechanics, rewards, achievements, and full dungeon client smoke remain tracked
+by adjacent blockers.
+
+Verification: focused Python audit coverage passed `4/4`, the focused Ruins
+xUnit filter passed `614/614`, and the content-retail audit regenerated
+`content_retail_completeness_public_event_evidence`, `next-slice`, and tracker
+outputs. The validator reports `31` files / `167,553` rows, all
+`not_retail_complete`, with `1,946` blocker detail rows in the next-slice
+blocker CSV. Ruins of Kel Voreth is down to `111` blocker details with
+`public_event_evidence=31`; global `public_event_evidence` blocker details are
+now `378`.
+
+Supplemental update: 2026-06-20 CEST Space/Evil producer-backed instance dependency review.
+The generated Space Madness and Evil from the Ether queues now stop counting
+five instance-dependency rows whose matching script producer evidence is already
+blocker-free. The reviewed-out Space Madness rows cover Captain Tero `1579` and
+Major Lee Barmy `1588` talk activation/credit. The reviewed-out Evil from the
+Ether rows cover Medbay Generator `4938`, Spare Parts `4956`, and repaired door
+control `4957` activation/credit. Captain Weir dialog rows, teleporter gather
+routing, placement/visual/replay state, route timing, rewards, achievements, and
+full expedition client smoke remain tracked by adjacent blockers.
+
+Verification: focused Python audit coverage passed `2/2`, the focused Space
+Madness/Evil xUnit filter passed `133/133`, and the content-retail audit
+regenerated `content_retail_completeness_instance_dependencies`, `next-slice`,
+and tracker outputs. The validator reports `31` files / `167,568` rows, all
+`not_retail_complete`, with `1,961` blocker detail rows in the next-slice
+blocker CSV. Global `instance_dependency` blocker details are now `703`;
+Space Madness is down to `instance_dependency=33`, and Evil from the Ether is
+down to `instance_dependency=38`.
+
+Supplemental update: 2026-06-20 CEST Vault Pell Graveyard producer review.
+The generated instance-3009 Vault of the Archon queue now stops counting the
+Pell Graveyard parent/investigate runtime producer rows as open blockers when
+focused Hall of the Hundred optional-event tests prove both activation and
+trigger credit. The reviewed-out rows cover PE666 objective `5295`
+activation/credit and PE696 objective `4451` trigger activation/credit through
+`TheGraveyardEchoedEventScript` and `PellGraveyardGridTriggerEntityScript`.
+Optional-route availability/order, placement/import smoke, incense/altar visual
+state, Primal Echo/Wraith choreography and combat, rewards, achievements, and
+full World Story client smoke remain tracked by adjacent Vault blockers.
+
+Verification: focused Python Vault audit coverage passed `1/1`, the focused
+Hall of the Hundred xUnit filter passed `100/100`, and the content-retail audit
+regenerated `content_retail_completeness_instance_dependencies`,
+`content_retail_completeness_script_objective_producer_evidence`,
+`next-slice`, and tracker outputs. The validator reports `31` files /
+`167,583` rows, all `not_retail_complete`, with `1,976` blocker detail rows in
+the next-slice blocker CSV. Vault of the Archon is down to
+`instance_dependency=106` and `script_objective_producer=99`; global
+`instance_dependency` blocker details are now `708` and global
+`script_objective_producer` blocker details are now `447`.
+
+Supplemental update: 2026-06-20 CEST Gauntlet talk-objective producer review.
+The generated instance-2183 Gauntlet queue now stops counting the three
+TalkTo runtime producer rows as open blockers when focused runtime tests prove
+both objective activation and talk credit. The reviewed-out rows cover Pilot
+Taboro `1821` / target group `6818`, Judge Kain `1914` / target group `6898`,
+and Agent Lex `1915` / target group `6899`. Arena routing, score/timer
+mechanics, boss behaviors, rewards, achievements, dialog presentation, and full
+expedition client smoke remain tracked by adjacent Gauntlet blockers.
+
+Verification: focused Python Gauntlet audit coverage passed `2/2`, the focused
+Gauntlet xUnit filter passed `615/615`, and the content-retail audit
+regenerated `content_retail_completeness_instance_dependencies`,
+`content_retail_completeness_script_objective_producer_evidence`,
+`next-slice`, and tracker outputs. The validator reports `31` files /
+`167,589` rows, all `not_retail_complete`, with `1,982` blocker detail rows in
+the next-slice blocker CSV. Gauntlet is down to
+`script_objective_producer=36`; global `script_objective_producer` blocker
+details are now `451`.
+
+Supplemental update: 2026-06-20 CEST Stormtalon high-priest producer review.
+The generated instance-382 Stormtalon's Lair queue now stops counting the
+Stop the Thundercall High Priest `540` trigger producer rows as open blockers
+when focused runtime tests prove activation, trigger credit, duplicate
+suppression, and cleanup. The reviewed-out rows cover the
+`StormtalonsLairEventScript` objective activation/trigger creation path and the
+`StopTheThundercallHighPriestGridTriggerEntityScript` credit path for object
+`1831`. Route selection, boss mechanics, optional objectives, rewards,
+achievements, and full dungeon client smoke remain tracked by adjacent
+Stormtalon blockers.
+
+Verification: focused Python Stormtalon audit coverage passed `2/2`, the
+focused Stormtalon xUnit filter passed `43/43`, and the content-retail audit
+regenerated `content_retail_completeness_instance_dependencies`,
+`content_retail_completeness_script_objective_producer_evidence`,
+`next-slice`, and tracker outputs. The validator reports `31` files /
+`167,595` rows, all `not_retail_complete`, with `1,988` blocker detail rows in
+the next-slice blocker CSV. Stormtalon's Lair is down to
+`script_objective_producer=29`; global `script_objective_producer` blocker
+details are now `454`.
+
+Supplemental update: 2026-06-20 CEST Ultimate Protogames start-button producer review.
+The generated instance-2980 Ultimate Protogames queue now stops counting the
+start-button runtime producer rows as open blockers when focused runtime tests
+prove both phase activation/spawn and one-shot objective credit. The
+reviewed-out rows cover objective `3250` activation in
+`UltimateProtogamesEventScript` and the `UltimateProtogamesStartButtonEntityScript`
+credit path for the DataMapping-backed Creature2 `65900` start button. Random
+room selection, timer/route mechanics, placement visuals, rewards,
+achievements, and full dungeon client smoke remain tracked by adjacent Ultimate
+Protogames blockers.
+
+Verification: focused Python Ultimate Protogames audit coverage passed `2/2`,
+the focused Ultimate Protogames xUnit filter passed `620/620`, and the
+content-retail audit regenerated `content_retail_completeness_instance_dependencies`,
+`content_retail_completeness_script_objective_producer_evidence`, `next-slice`,
+and tracker outputs. The validator reports `31` files / `167,598` rows, all
+`not_retail_complete`, with `1,991` blocker detail rows in the next-slice
+blocker CSV. Ultimate Protogames is down to `script_objective_producer=43`;
+global `script_objective_producer` blocker details are now `456`.
+
+Supplemental update: 2026-06-20 CEST Vault navigation objective-producer review.
+The generated instance-3009 Vault of the Archon queue now stops counting the
+non-combat navigation/direct-credit runtime producer rows as open blockers
+when focused Hall of the Hundred tests already prove the producer path. The
+reviewed-out rows cover Dorian/Artemis revive `4301`/`4302`, bridge meet
+`4303`, Kel Havik follow/regroup/tablet/watchtower objectives
+`4305`/`4306`/`4308`/`4310`/`4311`/`5002`/`5054`, elevator/follow-back/courtyard
+regroup `5133`/`5136`/`4340`, and access-terminal trigger `4325`. Combat,
+placement, route choreography, door/force-field choreography, environmental
+hazards, rewards, achievements, and full World Story client smoke remain
+tracked by adjacent Vault blockers.
+
+Verification: focused Python Vault audit coverage passed `3/3`, the focused
+Hall of the Hundred xUnit filter passed `201/201`, and the content-retail audit
+regenerated `content_retail_completeness_instance_dependencies`,
+`content_retail_completeness_script_objective_producer_evidence`,
+`next-slice`, and tracker outputs. The validator reports `31` files /
+`167,601` rows, all `not_retail_complete`, with `1,994` blocker detail rows in
+the next-slice blocker CSV. Vault of the Archon is down to
+`instance_dependency=108` and `script_objective_producer=103`; global
+`script_objective_producer` blocker details are now `458`.
+
+Supplemental update: 2026-06-20 CEST Vault opening objective-producer review.
+The generated instance-3009 Vault of the Archon queue now stops counting the
+opening gather/conversation/locked-gate runtime producer rows as open blockers
+when focused Hall of the Hundred tests already prove the trigger/objective
+producer path. The reviewed-out rows cover opening gather objectives `4456`
+and `4457`, Dorian/Artemis conversation objectives `4458` and `4459`, rejoin
+group objective `4949`, Listen to Plan `4950`, locked-gate investigation
+`4299`, and the shared opening gather/conversation trigger credit producers.
+Path choreography, Bloodhearth defense, Varegor Pass cold/environment behavior,
+boss/combat mechanics, rewards, achievements, and full World Story client smoke
+remain tracked by adjacent Vault blockers.
+
+Verification: focused Python Vault audit coverage passed `2/2`, the focused
+Hall of the Hundred xUnit filter passed `201/201`, and the content-retail audit
+regenerated `content_retail_completeness_instance_dependencies`,
+`content_retail_completeness_script_objective_producer_evidence`,
+`next-slice`, and tracker outputs. The validator reports `31` files /
+`167,634` rows, all `not_retail_complete`, with `2,027` blocker detail rows in
+the next-slice blocker CSV. Vault of the Archon is down to
+`instance_dependency=122` and `script_objective_producer=122`; global
+`script_objective_producer` blocker details are now `477`.
+
+Supplemental update: 2026-06-20 CEST Evil from the Ether medbay/generator objective-producer review.
+The generated instance-3404 Evil from the Ether queue now stops counting `13`
+row-level medbay/generator `script_objective_producer` entries as open
+producer blockers when focused runtime tests already prove the producer path.
+The reviewed-out rows cover PE781 objective activation for Open Medbay `4937`,
+Download Crew Logs `4947`, Scavenge Spare Parts `4956`, Repair Door `4957`,
+Activate Medbay Generator `4938`, Restart Main Generators `4941`, Restore
+Generator Alpha Power `4961`, and Restore Generator Beta Power `4962`, plus the
+Medbay Door Control, Crew Log, Spare Parts Crate, repaired door control, and
+Medbay Generator Controls credit producers. Exact placement/import proof,
+visual/despawn state, replay behavior, rewards, achievements, and client
+expedition smoke remain tracked by the parent instance/dependency rows.
+
+Verification: focused Python Evil from the Ether producer audit coverage passed
+`1/1`, the focused Evil from the Ether event/trigger xUnit filter passed
+`88/88`, and the content-retail audit regenerated
+`content_retail_completeness_script_objective_producer_evidence`,
+`next-slice`, and tracker outputs. The validator reports `31` files /
+`167,652` rows, all `not_retail_complete`, with `2,045` blocker detail rows in
+the next-slice blocker CSV. Evil from the Ether is down to
+`script_objective_producer=42`; global `script_objective_producer` blocker
+details are now `488`.
+
+Supplemental update: 2026-06-20 CEST Ultimate Protogames Downsizer objective-producer review.
+The generated instance-3041 Ultimate Protogames Downsizer queue now stops
+counting the two kill-path `script_objective_producer` rows as open producer
+blockers when focused runtime tests already prove the route. The reviewed-out
+rows cover Downsizer objective `3197` activation on PE642 load, the
+`DefeatTheDownsizer` success-to-finish boundary, and `DownsizerEntityScript`
+death credit for Creature2 `61420`. The four challenge rows remain blocked on
+purpose and now say so explicitly: Voltaic Conversion `3266`, Overcharge
+`3267`, Electrostatic Dynamo `3268`, and Electromagnetic Induction `3269` are
+activation-only until exact ability mechanics, scoring/failure semantics,
+rewards, achievements, and client smoke are proven.
+
+Verification: focused Python Downsizer audit coverage passed `2/2`, the
+focused Downsizer plus shared objective-credit xUnit filter passed `583/583`,
+and the content-retail audit regenerated
+`content_retail_completeness_script_objective_producer_evidence`,
+`next-slice`, and tracker outputs. The validator reports `31` files /
+`167,665` rows, all `not_retail_complete`, with `2,058` blocker detail rows in
+the next-slice blocker CSV. Ultimate Protogames Downsizer now has
+`script_objective_producer=4`; global `script_objective_producer` blocker
+details are now `501`.
+
+Supplemental update: 2026-06-20 CEST Space Madness objective-producer blocker review.
+The generated instance-2149 Space Madness queue now stops counting `36`
+row-level `script_objective_producer` entries as open producer blockers when
+focused runtime tests already prove the producer path. The reviewed-out rows
+cover Captain Tero / Major Lee Barmy talk activation and credit, airlock and
+research-laboratory gather objective activation, observation-deck console
+credit, crew datapad checklist credit, Hazmat storage/control-panel credit,
+Hazmat suit activation/direct credit, panicked-worker and hallucinating
+livestock death-credit producers, air-helm worker talks, air-scrubber and final
+engineering-computer credits, escaped-experiment child and aggregate credits,
+and the gold-medal timer activation/final credit. The three script/challenge
+rows that still lack safe producer evidence remain blocked: Survive Your
+Nightmares `1662`, Survive the Air Scrubbing Process `2115`, and Avoid
+Exploding Rowsdowers `4708`.
+
+Verification: focused Python Space Madness audit coverage passed `2/2`, the
+focused Space Madness xUnit filter passed `45/45`, and the content-retail audit
+regenerated `content_retail_completeness_script_objective_producer_evidence`,
+`next-slice`, and tracker outputs. The validator reports `31` files /
+`167,667` rows, all `not_retail_complete`, with `2,060` blocker detail rows in
+the next-slice blocker CSV. Space Madness is down to `192` blocker details with
+`script_objective_producer=3`; global `script_objective_producer` blocker
+details are now `503`.
+
+Supplemental update: 2026-06-20 CEST promoted expedition runtime-action trigger review.
+The generated next-slice queue now stops counting the five remaining promoted
+`script_runtime_action` trigger-create rows as generic runtime-action blockers.
+Existing focused tests already prove Fragment Zero's missing-crew turnstile,
+Fragment Zero branch world-location triggers, Fragment Zero search grid
+triggers, Gauntlet gather world-location triggers, and Space Madness gather
+world-location triggers are created, initialized with the expected ids/ranges,
+and enqueued at the expected positions. These rows remain
+`not_retail_complete` through their parent instance and producer rows; exact
+retail trigger timing, route choreography, replay/cleanup behavior, rewards,
+achievements, and client expedition smoke still own retail completion.
+
+Verification: focused Python script-runtime-action audit coverage passed
+`2/2`, the focused Fragment Zero/Gauntlet/Space Madness xUnit filter passed
+`150/150`, and the content-retail audit regenerated
+`content_retail_completeness_script_runtime_action_evidence`, `next-slice`,
+and tracker outputs. The validator reports `31` files / `167,703` rows, all
+`not_retail_complete`, with `2,096` blocker detail rows in the next-slice
+blocker CSV. The queue has no `script_runtime_action` blocker category now;
+Fragment Zero is down to `184` blocker details, Gauntlet to `137`, and Space
+Madness to `228`.
+
+Supplemental update: 2026-06-20 CEST Q5573 Mondo Zax creature-relation review.
+The generated quest-5573 Powering Down queue now stops double-counting its
+reviewed Mondo Zax starter and finisher creature relations as DataMapping spawn
+blockers. Build 16042 Creature2 `24187` carries Q5573 in both `QuestIdGiven`
+and `QuestIdReceive`; `CrimsonIsleMapScript` already fallback-spawns Mondo at
+Quest2 receiver WorldLocation2 `17803`, matching reviewed DataMapping
+source_coordinate_id `15089`; new focused QuestManager coverage accepts Q5573
+only with visible Mondo and completes achieved Q5573 only with visible Mondo.
+Q5573 remains `not_retail_complete` with `retail_claim_allowed=false`; client
+Mondo dialog/activation smoke, Q5593-to-Q5573 chain presentation, Power
+Regulator activation UI, cinematic/hidden-objective timing, rewards,
+achievements, and end-to-end Q5573 smoke still own retail completion.
+
+Verification: focused GlobalQuestManager/QuestManager xUnit coverage passed
+`15/15`, focused Python quest-creature audit coverage passed `2/2`, and the
+content-retail audit regenerated `content_retail_completeness_quest_creatures`,
+`next-slice`, and tracker outputs. The validator reports `31` files /
+`167,708` rows, all `not_retail_complete`, with `2,101` blocker detail rows in
+the next-slice blocker CSV. Global `quest_creature` blocker details are now
+`5`.
+
+Supplemental update: 2026-06-20 CEST Gauntlet public-event creature blocker review.
+The generated instance-2183 Gauntlet queue now stops double-counting another
+`22` script-owned `public_event_creature` rows as DataMapping source blockers
+when the row is already covered by focused runtime/script evidence. This
+follow-up covers Shock King, Rockstar Yeti, Goon Squad scored rows, veteran
+Slice/Dice, veteran Championator, Brick Braggor, the Faction Friction opposing
+team, and Pilot Taboro, on top of the earlier first-arena, selected-boss, and
+Product Endorsement review. Ambiguous normal Championator/Slice/Dice rows,
+Goonbot `52112`, Door Lock, Judge Kain / Agent Lex, first-arena aliases,
+alternate Pilot Taboro, and ambient/zone rows remain blocked pending relation-,
+spawn-, visibility-, or client-smoke proof. Gauntlet remains
+`not_retail_complete` with `retail_claim_allowed=false`; exact arena routing,
+spawn placement/count, encounter behavior, score/reward side effects,
+achievements, and manual expedition smoke still own retail completion.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,710` rows, all `not_retail_complete`, with `2,103` blocker detail rows in
+the next-slice blocker CSV. Gauntlet remains rank `19` with `138` blockers
+(`public_event_evidence=43`). Focused Gauntlet Python audit tests passed `4/4`,
+and the focused Gauntlet event/objective-credit xUnit filter passed `615/615`.
+
+Supplemental update: 2026-06-20 CEST Skullcano public-event creature blocker review.
+The generated instance-1263 Skullcano queue now stops double-counting 59
+script-owned `public_event_creature` rows as DataMapping source blockers when
+the row is already covered by concrete `ScriptFilterCreatureId` bindings,
+objective-credit tests, or the build-16042 nested TargetGroup `3947` closure.
+The reviewed-out rows cover Stew-Shaman Tugga, Thunderfoot, Grim-Grim Foe Sack,
+Gold-Covered Treasure, Redmoon Cluster Missile Launch Panel, Bosun Octog,
+Quartermaster Gruh'ar, Mordechai Redmoon, and the Redmoon Marauder / prisoner
+creature rows owned by `RidSkullcanoOfMarauders` objective `334`. Ambiguous
+Chief Kaskalak / Gold-Infused Lava Node relations, unmatched Quartermaster Gruh
+rows, Dorian Walker / Artemis Zin ambiguous bridge rows, and zone visibility
+rows remain blocked pending relation-, spawn-, or visibility-scoped proof.
+Skullcano remains `not_retail_complete` with `retail_claim_allowed=false`;
+exact route availability, placement/count/cadence, boss mechanics, rewards,
+achievements, and manual dungeon smoke still own retail completion.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,774` rows, all `not_retail_complete`, with `2,167` blocker detail rows in
+the next-slice blocker CSV. Skullcano remains rank `18` with `110` blockers;
+its primary blocker is now `instance_dependency` / `client_smoke`, while
+`public_event_evidence` is down to `14`. Focused Skullcano Python audit tests
+passed `7/7`, and the focused Skullcano event/trigger/objective-credit plus
+target-group xUnit filter passed `656/656`.
+
+Supplemental update: 2026-06-20 CEST Fragment Zero Skeech target-group leaf coverage.
+Instance `3180` (`Fragment Zero`) now has runtime/test coverage for all four
+build-16042 TargetGroup `12254` Creature2 leaves used by Skeech horde kill
+objectives `4416`, `4584`, `4585`, and `4586`. `FragmentZeroSkeechHordeEntityScript`
+filters `67516`, `67518`, `67519`, and `67520`, and the generated
+instance-dependency plus script-objective-producer rows no longer carry the
+stale unresolved TargetGroup leaf review text. These rows remain
+`not_retail_complete`: exact Skeech spawn route/count/cadence, rewards, and
+client smoke are still blocked, and the separate public-event creature bridge
+rows for relations `2367`/`2372` still require relation- or spawn-scoped
+evidence before their DataMapping review can be closed.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,833` rows, all `not_retail_complete`, with `2,226` blocker detail rows in
+the next-slice blocker CSV. Fragment Zero remains rank `17` with `187` blockers
+(`script_objective_producer=67`). Focused Python audit coverage passed, and the
+focused Fragment Zero/branch xUnit filter passed `70/70`.
+
+Supplemental update: 2026-06-20 CEST Sanctuary script-objective producer review.
+Instance `1271` (`Sanctuary of the Swordmaiden`) now carries row-specific
+runtime/test evidence for the event-script activation side of the mapped
+boss/miniboss, checklist, and optional Soul Spore / distracted Moldwood Mauler
+objectives. The generated public-event objective rows for Soul Spore objective
+`497` and distracted Moldwood Mauler objective `627` no longer report generic
+missing producer evidence; they point at `SoulSporeEntityScript` and
+`DistractedMoldwoodMaulerEntityScript` plus the focused activation/credit tests.
+The blocker count is intentionally unchanged: these rows remain
+`not_retail_complete` pending route selection, placement/spawn/import proof,
+repeat/negative behavior, rewards/achievement side effects, and full dungeon
+smoke. Flame-Crazed Demon `504`, totem dodge `1503`, no-fall relic placement
+`2211`, Selene escort `662`, and the broader optional aggregate kill-cluster
+rows remain blocked until row-specific completion/failure producer and client
+evidence is available.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,833` rows, all `not_retail_complete`, with `2,226` blocker detail rows in
+the next-slice blocker CSV. Focused Python generator tests for Sanctuary
+activation and script-objective evidence passed, and the focused Sanctuary
+event/trigger/objective-credit xUnit filter previously passed `630/630` for the
+same runtime surfaces.
+
+Supplemental update: 2026-06-20 CEST Sanctuary public-event creature blocker review.
+The generated instance-1271 Sanctuary of the Swordmaiden queue now stops
+double-counting runtime/test-backed `public_event_creature` rows as DataMapping
+source blockers when the row is already covered by script-owned objective
+evidence. The reviewed-out rows cover Deadringer Shallaos, Zealous
+Battlemaiden/Clawsister, Rayna Darkspeaker, Moldwood Overlord Skash, Ondu
+Lifeweaver, Lifeweaver Guardian, Spiritmother Selene the Corrupted, Elder
+Moldwood Ravager, Hammerfist Moldjaw, Corrupted Edgesmith Torian, Corrupted
+Lifecaller Khalee, Corrupted Deathbringer Dareia, Lifeweaver Tech Cluster, and
+Torine Totem of Flame. These rows remain `not_retail_complete`; exact route
+selection, boss/miniboss mechanics, placements, visual/despawn state, rewards,
+achievements, and manual dungeon smoke still own retail completion. Remaining
+Sanctuary public-event creature blockers include ambient/aggregate rows without
+row-specific proof, plus Flame-Crazed Demon relation `29255`, which stays
+blocked because the current script-owned spawn uses Creature2 `29254` and needs
+separate alias/client evidence before the relation can be reviewed out.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,833` rows, all `not_retail_complete`, with `2,226` blocker detail rows in
+the next-slice blocker CSV. The focused Sanctuary event/trigger/objective-credit
+xUnit filter passed `630/630`, and the focused generator override test passed.
+
+Supplemental update: 2026-06-20 CEST Vault frozen-carcass checklist credit.
+Instance `3009` (`Vault of the Archon`) remains
+`split_required_high_blocker_volume` / `not_retail_complete`, but Cold and
+Hungry objective `4378` now has a concrete runtime checklist-credit producer.
+`FrozenCarcassEntityScript` binds build-16042 Creature2 `67659` and credits
+ActivateTargetGroupChecklist `12213` once per mapped carcass interaction using
+the entity checklist index. Exact four-carcass placement review, visual/despawn
+state, client activate-path smoke, rewards, achievements, and full World Story
+smoke remain blocked; Soulless objective `4395` also remains activation-only
+pending Creature2 owner evidence.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,861` rows, all `not_retail_complete`, with `2,254` blocker detail rows in
+the next-slice blocker CSV. The focused Hall optional-event xUnit filter passed
+`72/72`, and the focused generator override test passed.
+
+Supplemental update: 2026-06-20 CEST Ultimate Protogames public-event creature blocker review.
+The generated instance-2980 Ultimate Protogames queue now stops double-counting
+runtime/test-backed `public_event_creature` rows as DataMapping source blockers
+when the row is already covered by reviewed script-owned objective evidence. The
+reviewed-out rows cover Bev-O-Rage, Mondo's Crate, Mondo's Monstrosity,
+Misplaced Mammoth, Ruffles, Gilded Fowl, the Prototentiary Warden, Gate Console,
+Cage Console, and the tank-room Busted Red/Wrecked Blue/Malfunctioning Yellow
+tank rows. These rows remain `not_retail_complete`; random room routing, timer
+semantics, visual/despawn state, boss mechanics, rewards, achievements, and
+manual dungeon smoke still own retail completion. Remaining Ultimate Protogames
+public-event creature blockers are ambient/room entities without row-specific
+script proof, plus the unmatched objective and zone visibility rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,859` rows, all `not_retail_complete`, with `2,253` blocker detail rows in
+the next-slice blocker CSV. The focused public-event audit tests passed, and the
+Ultimate Protogames event/objective-credit xUnit filter passed `620/620`. The
+instance-2980 blocker detail count is down to `342`, with
+`public_event_evidence=39` and `27` remaining public-event creature source
+blockers.
+
+Supplemental update: 2026-06-20 CEST Stormtalon public-event creature blocker review.
+The generated instance-382 Stormtalon's Lair queue now stops double-counting
+runtime/test-backed `public_event_creature` rows as DataMapping source blockers
+when the public-event creature relation is already covered by script-owned
+objective evidence. The reviewed-out rows cover Blade-Wind the Invoker, Aethros,
+Stormtalon, Thundercall Cage, Launch Pad, Thundercall Storm Totem, Thundercall
+Data Altar, Improvement Construction Platform, Tainted Flower Stem, Overseer
+Drift-Catcher, and Arcanist Breeze-Binder. These rows remain
+`not_retail_complete`; exact boss mechanics, optional route selection, visual
+state, rewards, achievements, and manual dungeon smoke still own retail
+completion. Remaining Stormtalon blockers stay split across instance
+dependencies, public-event objective/zone/creature rows without row-specific
+script proof, scripted producers, instance entities, rewards, and portal
+evidence.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,873` rows, all `not_retail_complete`, with `2,267` blocker detail rows in
+the next-slice blocker CSV. The focused public-event audit tests passed, and the
+Stormtalon's Lair event/trigger xUnit filter passed `43/43`. The instance-382
+blocker detail count is down to `104`, with `public_event_evidence=21` and
+`19` remaining public-event creature source blockers.
+
+Supplemental update: 2026-06-20 CEST queue quest-creature blocker review.
+The generated queue-scope `quest_creature` blocker bucket is now narrowed to the
+rows that still need real review instead of double-counting runtime/test-backed
+DataMapping placement evidence. Focused quest coverage backs the reviewed
+runtime rows for Q3479, Q3480, Q3486, Q3673, Q5573, Q5575, Q5580, and Q5597,
+while the Q3479/Q3480 Fierce Yeti Icefang rows stay as mapped-only context
+because build-16042 target-group expansion excludes Creature2 `36331` from both
+objective-credit paths, and the Q5575 Kezrek starter relation is server-covered
+by the build-16042 giver/receiver cache plus the CrimsonIsleMapScript fallback.
+Unresolved rows remain for unmatched source creature `23645`, Q3797 Snowstalker
+placement review, Q3963 visible-starter proof, and Q5573 Mondo starter/finisher
+context. All quest rows remain `not_retail_complete`; client smoke, rewards,
+achievements, prerequisites, world dependencies, and scripts still own the
+retail-completion gates.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,889` rows, all `not_retail_complete`, with `2,283` blocker detail rows in
+the next-slice blocker CSV; the combined focused quest xUnit filter for Q3479,
+Q3480, Q3486, Q3673, Q5573, Q5575, Q5580, and Q5597 passed `130/130`, and the
+focused generator predicate test passed. The queue-scope `quest_creature`
+blocker count is down to `7`.
+
+Supplemental update: 2026-06-20 CEST Q3797 quest-creature blocker review.
+Quest `3797` (`Securing the Area`) remains `quest_validation_ready` /
+`not_retail_complete`, but five generated `quest_creature` blocker rows are now
+reviewed out for already script-owned runtime paths. The reviewed rows cover
+Land's Reach Commander Durek starter/finisher and the focused-test-backed
+Rootbrute Grimspore, Yeti Frostclaw, and Rootbrute Deathcap kill-target
+relations. The Q3797 Snowstalker relation `5204` remains blocked because its
+row text still requires Q3797-specific placement review; objective,
+world-dependency, prerequisite, reward, and script rows still track the remaining
+client-smoke work.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,916` rows, all `not_retail_complete`, with `2,310` blocker detail rows in
+the next-slice blocker CSV; focused Q3797 xUnit filter passed `22/22`, and the
+focused generator predicate test passed. The generated `quest-3797` queue row is
+down to `14` blocker details, with the Snowstalker `quest_creature` blocker
+preserved.
+
+Supplemental update: 2026-06-20 CEST Q3963 quest-creature blocker review.
+Quest `3963` (`More Important Than Revenge`) remains `quest_validation_ready` /
+`not_retail_complete`, but two generated `quest_creature` blocker rows are now
+reviewed out for already script-owned runtime paths. The reviewed rows cover
+the Ship Controls objective relation and the Galeras Deadeye finisher relation,
+both backed by map-script/server credit coverage plus focused tests. The
+Northern Wilds Deadeye starter context and unmatched source creature `23645`
+remain blocked pending visible-client starter proof or a reviewed Creature2
+bridge; objective, world-dependency, reward, achievement, script, and episode
+rows still track the remaining client-smoke work.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,921` rows, all `not_retail_complete`, with `2,315` blocker detail rows in
+the next-slice blocker CSV; focused Q3963 xUnit/teleporter filter passed
+`16/16`, and the focused generator predicate test passed. The generated
+`quest-3963` queue row is down to `16` blocker details, with the two unresolved
+`quest_creature` starter blockers preserved.
+
+Supplemental update: 2026-06-20 CEST Q3886 quest-creature blocker review.
+Quest `3886` (`Fiery Distraction`) remains `quest_validation_ready` /
+`not_retail_complete`, but its generated `quest_creature` blocker bucket is now
+reviewed out for already script-owned runtime paths. The reviewed rows cover
+Land's Reach Commander Durek starter/finisher, Skeech Hut checklist objectives,
+and Burning Torch objective relations whose DataMapping placements are backed by
+NorthernWildsMapScript fallbacks plus focused objective/quest tests. Client
+Durek dialog, exact torch/hut activation packet smoke, hut visual timing,
+reward-choice UI, achievement UI, and end-to-end Q3886 -> Q3673 validation
+remain tracked by objective, world-dependency, reward, achievement, script, and
+episode rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,923` rows, all `not_retail_complete`, with `2,317` blocker detail rows in
+the next-slice blocker CSV; focused Q3886 xUnit filter passed `11/11`, and the
+focused generator predicate test passed. The generated `quest-3886` queue row is
+down to `14` blocker details, with no `quest_creature` blockers remaining.
+
+Supplemental update: 2026-06-20 CEST Q3668 quest-creature blocker review.
+Quest `3668` (`Indigenous Intelligence`) remains `quest_validation_ready` /
+`not_retail_complete`, but its generated `quest_creature` blocker bucket is now
+reviewed out for the already script-owned runtime paths. The reviewed rows cover
+Deadeye starter, Bartol finisher, Scientist Lusk, Imprisoned Survivor, and
+Coldburrow Skeech objective relations whose DataMapping placements are backed by
+NorthernWildsMapScript fallbacks plus focused objective/quest tests. Client
+dialog, activation/combat smoke, reward-choice UI, achievement UI, and
+end-to-end Q3486/Q3671/Q3668 validation remain tracked by objective,
+world-dependency, reward, achievement, script, and episode rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,928` rows, all `not_retail_complete`, with `2,322` blocker detail rows in
+the next-slice blocker CSV; focused Q3668 xUnit filter passed `14/14`, and the
+focused generator predicate test passed. The generated `quest-3668` queue row is
+down to `25` blocker details, with no `quest_creature` blockers remaining.
+
+Supplemental update: 2026-06-20 CEST F-024 Evil from the Ether runtime-action review.
+Sixteen generated `script_runtime_action` blocker rows are now reviewed out for
+Evil from the Ether instance `3404`. Focused coverage proves the airlock,
+medbay teleport/cleanup, medbay door-control cleanup, teleporter/bridge/escape
+trigger creation, drive-spark creation, shared map-add source action, and final
+Captain Weir finish boundary. Route timing, encounter mechanics, exploding
+portal avoidance row `4942`, rewards, achievements, and client validation remain
+tracked by producer, dependency, presentation, entity, reward, and parent
+instance rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,940` rows, all `not_retail_complete`, with `2,334` blocker detail rows in
+the next-slice blocker CSV; focused Evil from the Ether xUnit filter passed
+`86/86`, and focused runtime-action generator coverage passed. The generated
+`instance-3404` queue row is down to `138` blocker details, with no
+`script_runtime_action` blockers remaining.
+
+Supplemental update: 2026-06-20 CEST F-024 Ultimate Protogames runtime-action review.
+The generated `script_runtime_action` blocker bucket is now reviewed out for
+Ultimate Protogames instance `2980`. Focused coverage proves the reviewed
+start-button, Bev-O-Rage, tank-room, timed-room, hunt, Power Plunge, Hut-Hut,
+Prototentiary create actions and shared map-add source action. Route randomness,
+encounter mechanics, rewards, achievements, and client validation remain tracked
+by producer, dependency, public-event, entity, portal, reward, and parent
+instance rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,956` rows, all `not_retail_complete`, with `2,350` blocker detail rows in
+the next-slice blocker CSV; focused Ultimate Protogames xUnit filter passed
+`41/41`, and focused runtime-action generator coverage passed. The generated
+`instance-2980` queue row is down to `356` blocker details, with no
+`script_runtime_action` blockers remaining.
+
+Supplemental update: 2026-06-20 CEST F-024 Stormtalon runtime-action review.
+The generated `script_runtime_action` blocker bucket is now reviewed out for
+Stormtalon's Lair instance `382`. Focused coverage proves the reviewed boss,
+optional producer, cage, launch-pad, high-priest trigger create/remove, shared
+map-add, and final finish source actions. Optional route selection, exact
+interaction/combat smoke, rewards, achievements, and client validation remain
+tracked by the producer, dependency, public-event, entity, portal, reward, and
+parent instance rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,969` rows, all `not_retail_complete`, with `2,363` blocker detail rows in
+the next-slice blocker CSV; focused Stormtalon xUnit filter passed `39/39`, and
+focused runtime-action generator coverage passed. The generated `instance-382`
+queue row is down to `120` blocker details, with no `script_runtime_action`
+blockers remaining.
+
+Supplemental update: 2026-06-20 CEST F-024 Space Madness runtime-action review.
+Five generated `script_runtime_action` blocker rows are now reviewed out for
+Space Madness instance `2149`: reviewed talk NPC/simple/livestock create
+actions, the shared map-add action, and the final all-clear-signal finish
+boundary. The WIP-guessed world-location trigger creation row remains blocked on
+retail trigger-row/timing proof, route smoke, and client validation. Rewards and
+achievements remain tracked by producer, dependency, public-event, entity,
+portal, reward, and parent instance rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,981` rows, all `not_retail_complete`, with `2,375` blocker detail rows in
+the next-slice blocker CSV; focused Space Madness xUnit filter passed `45/45`,
+and focused runtime-action generator coverage passed. The generated
+`instance-2149` queue row is down to `229` blocker details, with one
+`script_runtime_action` blocker remaining.
+
+Supplemental update: 2026-06-20 CEST F-024 Fragment Zero runtime-action review.
+Three generated `script_runtime_action` blocker rows are now reviewed out for
+Fragment Zero instance `3180`: the reviewed Supervisor Lola create action, the
+shared map-add action, and the final Hugo finish boundary. The WIP-guessed
+turnstile/world-location/script-objective trigger creation rows remain blocked
+on retail trigger-row/timing proof, route smoke, and client validation. Rewards
+and achievements remain tracked by producer, dependency, public-event, entity,
+portal, reward, and parent instance rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,986` rows, all `not_retail_complete`, with `2,380` blocker detail rows in
+the next-slice blocker CSV; focused Fragment Zero xUnit filter passed `63/63`,
+and focused runtime-action generator coverage passed. The generated
+`instance-3180` queue row is down to `187` blocker details, with three
+`script_runtime_action` blockers remaining.
+
+Supplemental update: 2026-06-20 CEST F-024 Gauntlet runtime-action review.
+Four generated `script_runtime_action` blocker rows are now reviewed out for
+Gauntlet instance `2183`: the reviewed Pilot Taboro create action, reviewed
+airlock gather marker create action, shared map-add action, and final Judge Kain
+finish boundary. The WIP-guessed branch trigger creation row remains blocked on
+retail trigger-row/timing proof and expedition smoke. Route smoke, rewards,
+achievements, and client validation remain tracked by producer, dependency,
+public-event, entity, portal, reward, and parent instance rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,989` rows, all `not_retail_complete`, with `2,383` blocker detail rows in
+the next-slice blocker CSV; focused Gauntlet xUnit filter passed `36/36`, and
+focused runtime-action generator coverage passed. The generated `instance-2183`
+queue row is down to `202` blocker details, with one
+`script_runtime_action` blocker remaining.
+
+Supplemental update: 2026-06-20 CEST F-024 Skullcano runtime-action review.
+The generated `script_runtime_action` blocker rows are now reviewed out for
+Skullcano instance `1263`. Focused coverage proves the final public-event finish
+boundary, reviewed Thunderfoot and Stew Shaman Tugga create actions, and the
+shared map-add action for the opening boss spawns. Boss mechanics, rewards,
+achievements, portal flow, and client smoke remain tracked by the producer,
+dependency, public-event, entity, portal, reward, and parent instance rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,993` rows, all `not_retail_complete`, with `2,387` blocker detail rows in
+the next-slice blocker CSV; focused Skullcano xUnit filter passed `35/35`, and
+focused runtime-action generator coverage passed. The generated `instance-1263`
+queue row is down to `169` blocker details, with no `script_runtime_action`
+blockers remaining.
+
+Supplemental update: 2026-06-20 CEST F-024 Kel Voreth runtime-action review.
+The generated `script_runtime_action` blocker rows are now reviewed out for
+Ruins of Kel Voreth instance `1336`. Focused coverage proves the final
+public-event finish boundary, the reviewed boss-spawn create action, and the
+shared map-add action for mapped boss phases. Boss mechanics, rewards,
+achievements, portal flow, and client smoke remain tracked by the producer,
+dependency, public-event, entity, portal, reward, and parent instance rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`167,997` rows, all `not_retail_complete`, with `2,391` blocker detail rows in
+the next-slice blocker CSV; focused Kel Voreth xUnit filter passed `28/28`, and
+focused runtime-action generator coverage passed. The generated `instance-1336`
+queue row is down to `126` blocker details, with no `script_runtime_action`
+blockers remaining.
+
+Supplemental update: 2026-06-20 CEST F-024 Swordmaiden runtime-action review.
+The generated `script_runtime_action` blocker rows are now reviewed out for
+Sanctuary of the Swordmaiden instance `1271`. Focused coverage proves the final
+public-event finish boundary, the reviewed Flame-Crazed Demon create action, and
+the shared map-add action for that spawn. Boss mechanics, rewards, achievements,
+portal flow, and client smoke remain tracked by the producer, dependency,
+public-event, entity, portal, reward, and parent instance rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,000` rows, all `not_retail_complete`, with `2,394` blocker detail rows in
+the next-slice blocker CSV; focused Swordmaiden xUnit filter passed `35/35`,
+and focused runtime-action generator coverage passed. The generated
+`instance-1271` queue row is down to `226` blocker details, with no
+`script_runtime_action` blockers remaining.
+
+Supplemental update: 2026-06-20 CEST F-024 Hall optional runtime-action review.
+The remaining `instance-3009` generated `script_runtime_action` rows are now
+reviewed out for the focused Hall of the Hundred optional public-event scripts:
+Cold and Hungry, Cold Soup for the Soulrot, The Graveyard Echoed, and The
+Warhounds of Varegor. Focused optional-event coverage proves each mapped trigger
+creation/map-add/removal boundary and the Cold and Hungry, Cold Soup, and
+Graveyard event-finish boundaries. Optional route choreography, rewards,
+achievements, and client smoke remain tracked by the script-objective-producer,
+instance-dependency, and parent instance rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,003` rows, all `not_retail_complete`, with `2,397` blocker detail rows in
+the next-slice blocker CSV; focused Hall optional xUnit filter passed `70/70`,
+and focused runtime-action generator coverage passed. The generated
+`instance-3009` queue row is down to `261` blocker details, split as
+`instance_dependency=129;script_objective_producer=132`; no
+`script_runtime_action` blockers remain on that slice.
+
+Supplemental update: 2026-06-20 CEST F-024 Hall of the Hundred runtime-action review.
+The generated `script_runtime_action` blocker bucket is now reviewed out for
+nine focused `HallOfTheHundredEventScript` runtime actions in Vault of the
+Archon: phase trigger creation for the opening gather, locked gate, bridge
+meet, Kel Havik regroup, and watchtower turnstile phases; the shared
+world-location trigger create/remove/map-add helpers; and the final
+`Finish(PublicEventTeam.PublicTeam)` call after the vault-exit objective.
+Focused tests prove the trigger bindings, map-add positions, removal guards,
+and final finish boundary. Route choreography, rewards, achievements, and full
+client smoke remain tracked by the script-objective-producer,
+instance-dependency, and parent instance rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,018` rows, all `not_retail_complete`, with `2,412` blocker detail rows in
+the next-slice blocker CSV; focused Hall of the Hundred xUnit filter passed
+`173/173`, and focused runtime-action generator coverage passed. The generated
+`instance-3009` queue row is down to `276` blocker details, split as
+`instance_dependency=129;script_objective_producer=132;script_runtime_action=15`.
+
+Supplemental update: 2026-06-20 CEST F-024 Downsizer runtime finish-action review.
+The generated `script_runtime_action` blocker bucket is now reviewed out for
+the focused Ultimate Protogames Downsizer PE642 `Finish(PublicEventTeam.PublicTeam)`
+call. Existing automated coverage proves PE642 only finishes after objective
+`3197` succeeds, and active or challenge-objective status changes do not finish
+the event. Boss mechanics, challenge mechanics, rewards, achievements, portal
+routing, and client smoke remain tracked by the script-objective-producer,
+instance-dependency, and parent instance rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,027` rows, all `not_retail_complete`, with `2,421` blocker detail rows in
+the next-slice blocker CSV; focused Downsizer xUnit filter passed `4/4`, and
+focused runtime-action generator coverage passed. The generated `instance-3041`
+queue row is down to `16` blocker details, split as
+`instance_dependency=10;script_objective_producer=6`.
+
+Supplemental update: 2026-06-20 CEST F-024 map cinematic handler lifecycle review.
+The generated `instance_script_handler` blocker bucket is now fully reviewed
+out. The final three rows were the Fragment Zero, Evil from the Ether, and
+Space Madness `OnAddToMap` map handlers. Focused coverage proves those handlers
+join the mapped public events and queue their current WIP on-create cinematic
+hooks for players. The exact cinematic payloads, actor/camera/text mapping,
+encounter mechanics, rewards, achievements, and client smoke remain tracked by
+the `script_presentation`, producer, dependency, and parent instance rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,028` rows, all `not_retail_complete`, with `2,422` blocker detail rows in
+the next-slice blocker CSV; focused BranchCinematicHook/InstanceMapBinding
+xUnit filter passed `35/35`, and focused handler generator coverage passed.
+The generated next-slice blocker CSV now has `0` `instance_script_handler`
+blocker rows.
+
+Supplemental update: 2026-06-20 CEST F-024 Downsizer handler lifecycle review.
+The generated `instance_script_handler` blocker bucket is now reviewed out for
+the two focused Ultimate Protogames Downsizer PE642 handler rows:
+`OnLoad` objective activation and `OnPublicEventObjectiveStatus` event-finish
+handling. Existing automated coverage proves the handler boundaries while
+leaving challenge ability mechanics, boss mechanics, portal routing, rewards,
+achievements, and client smoke tracked by the producer, dependency, and parent
+instance rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,031` rows, all `not_retail_complete`, with `2,425` blocker detail rows in
+the next-slice blocker CSV; focused handler generator coverage passed. The
+generated `instance-3041` queue row is down to `17` blocker details, and only
+the unrelated `instance_script_handler` rows for Fragment Zero, Evil from the
+Ether, and Space Madness remain in that bucket.
+
+Supplemental update: 2026-06-20 CEST F-024 Downsizer script-event-flow review.
+The generated `script_event_flow` blocker bucket is now reviewed out for the
+focused Ultimate Protogames Downsizer PE642 event-flow references. Existing
+automated coverage proves `DownsizerEntityScript` credits objective `3197`
+once on death, `UltimateProtogamesEventScript` activates objectives
+`3197`, `3266`, `3267`, `3268`, and `3269` on load, and PE642 finishes only
+when objective `3197` succeeds. Challenge ability mechanics, boss mechanics,
+portal routing, rewards, achievements, and client smoke remain tracked by the
+script-objective-producer, instance-dependency, and parent instance rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,033` rows, all `not_retail_complete`, with `2,427` blocker detail rows in
+the next-slice blocker CSV; focused Downsizer/public-event objective-credit
+xUnit filter passed `583/583`. The generated next-slice blocker CSV now has
+`0` `script_event_flow` blocker rows.
+
+Supplemental update: 2026-06-20 CEST F-022 script-progression hook review.
+The generated `script_quest_progression` blocker bucket is now reviewed out for
+the focused quest hooks with existing automated coverage: Q3486 arrival,
+Loftite Crystal, Crystal Guardian, and NorthernWildsMapScript zone-entry hooks;
+Q3673 signal-flare hidden-completion hook; Q3797 mention from Q3486 completion;
+Q5573/Q5575 Power Regulator hidden-completion hooks; and Q5597 Chua Explosives
+virtual-collect hook. These rows now carry runtime-tested evidence statuses
+without claiming retail completion; local client/UI, reward, achievement,
+route, and end-to-end smoke remain tracked by the parent quest/objective rows.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,040` rows, all `not_retail_complete`, with `2,434` blocker detail rows in
+the next-slice blocker CSV; focused Q3486/Q3673/Q3797/Q5573/Q5575/Q5597 xUnit
+filter passed `97/97`. The generated next-slice blocker CSV now has `0`
+`script_quest_progression` blocker rows.
+
+Supplemental update: 2026-06-19 CEST F-022 objective-evidence text/order review.
+The generated `quest_objective_evidence` blockers for Q5573, Q5575, Q5580,
+and Q3797 are now reviewed out of the DataMapping text/order blocker bucket.
+The reviewed rows are Q5573 Jabbithole objectives `1450` and `1451`, Q5575
+Jabbithole objectives `2703` and `2704`, Q5580 Jabbithole objective `1452`,
+and Q3797 Jabbithole objective `732`. Each row now records
+`reviewed_match` / `datamapping_jabbithole_objective_reviewed_match_pending_client_smoke`
+with the existing focused runtime coverage cited while preserving the remaining
+client-visible smoke gates.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,051` rows, all `not_retail_complete`, with `2,445` blocker detail rows in
+the next-slice blocker CSV; focused Q5573/Q5575/Q5580/Q3797 xUnit filter passed
+`29/29`. The generated next-slice blocker CSV now has `0`
+`quest_objective_evidence` blocker rows.
+
+Supplemental update: 2026-06-19 CEST F-022 Q3486 reward-evidence provenance review.
+The generated Q3486 `quest_reward_evidence` blocker for `Empowered Tower`
+source_reward_id `5319` is now reviewed as provenance-only alias evidence. The
+row still records the Jabbithole/DataMapping source mapping from Item2 `1377`
+(`Frostbitten Gloves`) to source `game_reward_id` `2147`, but build 16042
+client data and focused QuestManager coverage prove canonical Quest2Reward
+`1707` grants Item2 `1377`, while canonical Quest2Reward `2147` grants Item2
+`14102`. The generated row no longer uses the unresolved
+`game_reward_id_mismatch` status or contributes a `quest_reward_evidence`
+blocker detail row.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,057` rows, all `not_retail_complete`, with `2,451` blocker detail rows in
+the next-slice blocker CSV; focused Q3486 xUnit filter passed `34/34`. The
+generated Q3486 queue row remains `retail_claim_allowed=false`, but its blocker
+detail count dropped from `38` to `37`, and the generated next-slice blocker CSV
+now has `0` `quest_reward_evidence` blocker rows.
+
+Supplemental update: 2026-06-19 CEST F-022 Q3797 zone DataMapping review.
+The generated Q3797 `quest_zone_evidence` blockers for `Securing the Area` now
+carry reviewed DataMapping route-proof statuses. The reviewed rows are
+`quest_call_zones` `96` and `quest_zones` `166`. Current build 16042 Q3797
+ownership is Quest2 WorldZone `35` (`Northern Wilds`), with server-owned
+NorthernWildsMapScript coverage for Land's Reach Commander Durek and reviewed
+rootbrute/yeti objective targets; archived WorldZone `1` is missing from
+current client data.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,058` rows, all `not_retail_complete`, with `2,452` blocker detail rows in
+the next-slice blocker CSV; focused Q3797 xUnit filter passed `22/22`. The
+generated Q3797 queue row remains rank `12` with `retail_claim_allowed=false`,
+but its blocker detail count dropped from `23` to `21`, and the generated
+next-slice blocker CSV now has `0` `quest_zone_evidence` blocker rows.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5580 zone DataMapping review.
+The generated Q5580 `quest_zone_evidence` blockers for `Enforced Radio
+Silence` now carry reviewed DataMapping route-proof statuses. The reviewed rows
+are `quest_call_zones` `309` and `quest_zones` `620`. Current build 16042 Q5580
+ownership is Quest2 WorldZone `622` (`Crimson Isle`), while the reviewed Tower
+Controls route uses Megatech Station WorldZone `1219`; archived WorldZone `12`
+is blank/inaccessible in current client data.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,060` rows, all `not_retail_complete`, with `2,454` blocker detail rows in
+the next-slice blocker CSV; focused Q5580 xUnit filter passed `2/2`. The
+generated Q5580 queue row remains rank `11` with `retail_claim_allowed=false`,
+but its blocker detail count dropped from `26` to `24`.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5575 zone DataMapping review.
+The generated Q5575 `quest_zone_evidence` blockers for `Seizing Power` now
+carry reviewed DataMapping route-proof statuses. The reviewed rows are
+`quest_call_zones` `810` and `quest_zones` `1315`. Current build 16042 Q5575
+ownership is Quest2 WorldZone `622` (`Crimson Isle`), while the reviewed Power
+Regulator route uses the Megatech Shield Generator child WorldZone `1217`;
+archived WorldZone `12` is blank/inaccessible in current client data.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,062` rows, all `not_retail_complete`, with `2,456` blocker detail rows in
+the next-slice blocker CSV; focused Q5575 xUnit filter passed `3/3`. The
+generated Q5575 queue row remains rank `10` with `retail_claim_allowed=false`,
+but its blocker detail count dropped from `25` to `23`.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5573 zone DataMapping review.
+The generated Q5573 `quest_zone_evidence` blockers for `Powering Down` now
+carry reviewed DataMapping route-proof statuses. The reviewed rows are
+`quest_call_zones` `308`, `2122`, and `quest_zones` `627`. Current build 16042
+Q5573 ownership is Quest2 WorldZone `622` (`Crimson Isle`), while the reviewed
+Power Regulator route uses the Megatech Shield Generator child WorldZone
+`1217`; archived WorldZone `12` is blank/inaccessible in current client data,
+and WorldZone `131` is missing from current client data.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,064` rows, all `not_retail_complete`, with `2,458` blocker detail rows in
+the next-slice blocker CSV; focused Q5573 xUnit filter passed `3/3`. The
+generated Q5573 queue row remains rank `9` with `retail_claim_allowed=false`,
+but its blocker detail count dropped from `31` to `28`.
+
+Supplemental update: 2026-06-19 CEST F-022 Q3673 zone DataMapping review.
+The generated Q3673 `quest_zone_evidence` blockers for `Contact with Thayd`
+now carry reviewed DataMapping route-proof statuses. The reviewed rows are
+`quest_call_zones` `91` and `quest_zones` `49`. Current build 16042 Q3673
+ownership is Quest2 WorldZone `35` (`Northern Wilds`), with server-owned
+NorthernWildsMapScript coverage for the Deadeye Brightland receiver and all
+three Signal Flare placements; archived WorldZone `1` is missing from current
+client data.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,067` rows, all `not_retail_complete`, with `2,461` blocker detail rows in
+the next-slice blocker CSV; focused Q3673 xUnit filter passed `26/26`. The
+generated Q3673 queue row remains rank `6` with `retail_claim_allowed=false`,
+but its blocker detail count dropped from `30` to `28`.
+
+Supplemental update: 2026-06-19 CEST F-022 Q3486 zone DataMapping review.
+The generated Q3486 `quest_zone_evidence` blocker for `Empowered Tower` now
+carries a reviewed DataMapping route-proof status. The reviewed row is
+`quest_zones` `155`. Current build 16042 Q3486 ownership is Quest2 WorldZone
+`35` (`Northern Wilds`), while the reviewed arrival and Loftite Crystal route
+uses Exo-Lab 729 WorldZone `729` under Northern Wilds; archived WorldZone `1`
+is missing from current client data.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,069` rows, all `not_retail_complete`, with `2,463` blocker detail rows in
+the next-slice blocker CSV; focused Q3486 xUnit filter passed `34/34`. The
+generated Q3486 queue row remains rank `4` with `retail_claim_allowed=false`,
+but its blocker detail count dropped from `39` to `38`.
+
+Supplemental update: 2026-06-19 CEST F-022 Q3480 zone DataMapping review.
+The generated Q3480 `quest_zone_evidence` blockers for `Reporting for Duty`
+now carry reviewed DataMapping route-proof statuses. The reviewed rows are
+`quest_call_zones` `1079`, `6722`, and `quest_zones` `1108`. Current build
+16042 Q3480 ownership is Quest2 WorldZone `35` (`Northern Wilds`), with
+server-owned NorthernWildsMapScript coverage for Commander Durek, Deadeye
+Brightland, Trapped Survivors, and shared yeti placements; archived WorldZone
+`1` is missing from current client data, and WorldZone `17` is `Dom Zone`, not
+the current Q3480 objective route.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,070` rows, all `not_retail_complete`, with `2,464` blocker detail rows in
+the next-slice blocker CSV; focused Q3480 xUnit filter passed `36/36`. The
+generated Q3480 queue row remains rank `3` with `retail_claim_allowed=false`,
+but its blocker detail count dropped from `32` to `29`.
+
+Supplemental update: 2026-06-19 CEST F-022 Q3963 zone DataMapping review.
+The generated Q3963 `quest_zone_evidence` blockers for `More Important Than
+Revenge` now carry reviewed DataMapping route-proof statuses. The reviewed
+rows are `quest_call_zones` `67`, `1888`, and `quest_zones` `259`. Current
+build 16042 Q3963 ownership is Quest2 WorldZone `35` (`Northern Wilds`), while
+the reviewed Ship Controls objective placements live in Camp Icefury WorldZone
+`602`; archived WorldZone `1` is missing from current client data, and
+WorldZone `17` is `Dom Zone`, not the current Q3963 objective route. The
+existing runtime evidence still routes completion through the Galeras/Tremor
+Ridge Deadeye receiver path.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,073` rows, all `not_retail_complete`, with `2,467` blocker detail rows in
+the next-slice blocker CSV; focused Q3963 xUnit filter passed `15/15`. The
+generated Q3963 queue row remains rank `8` with `retail_claim_allowed=false`,
+but its blocker detail count dropped from `21` to `18`.
+
+Supplemental update: 2026-06-19 CEST F-022 Q3886 zone DataMapping review.
+The generated Q3886 `quest_zone_evidence` blockers for `Fiery Distraction`
+now carry reviewed DataMapping route-proof statuses. The reviewed rows are
+`quest_call_zones` `76`, `5459`, and `quest_zones` `235`, `3439`. Current build
+16042 Q3886 ownership is Quest2 WorldZone `35` (`Northern Wilds`), while the
+reviewed Burning Torch and Skeech Hut objective placements live in Coldburrow
+Cavern WorldZone `604`; archived WorldZone `1` is missing from current client
+data, and WorldZone `219` is `The Loftite Cliffs`, not the current Q3886
+objective route.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,076` rows, all `not_retail_complete`, with `2,470` blocker detail rows in
+the next-slice blocker CSV; focused Q3886 xUnit filter passed `11/11`. The
+generated Q3886 queue row remains rank `7` with `retail_claim_allowed=false`,
+but its blocker detail count dropped from `23` to `19`.
+
+Supplemental update: 2026-06-19 CEST F-022 Q3668 zone DataMapping review.
+The generated Q3668 `quest_zone_evidence` blockers for `Indigenous
+Intelligence` now carry reviewed DataMapping route-proof statuses. The reviewed
+rows are `quest_zones` `47` and `2823`. Current build 16042 Q3668 ownership is
+Quest2 WorldZone `35` (`Northern Wilds`), while objective routing uses
+Coldburrow Cavern WorldZone rows `604` and `609`; archived WorldZone `1` is
+missing from current client data, and WorldZone `219` is `The Loftite Cliffs`
+under Western Algoroc, not the current Coldburrow route.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,080` rows, all `not_retail_complete`, with `2,474` blocker detail rows in
+the next-slice blocker CSV; focused Q3668 xUnit filter passed `14/14`. The
+generated Q3668 queue row remains rank `5` with `retail_claim_allowed=false`,
+but its blocker detail count dropped from `39` to `37`. Remaining Q3668
+DataMapping blockers are the unsolved creature-placement/member-review gaps for
+TargetGroup members `14054` and `11913`, so no guessed spawns were added.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 zone DataMapping review.
+The generated Q5597 `quest_zone_evidence` blockers for `Dregs and Thieves`
+now carry reviewed DataMapping route-proof statuses instead of
+`pending_zone_review`. The reviewed rows are `quest_call_zones` `311`, `4637`,
+`4638`, `4639`, `4640`, `4641`, and `quest_zones` `633`. Current build 16042
+Q5597 ownership remains Quest2 WorldZone `622` (`Crimson Isle`) with named
+child WorldZone rows `623`, `629`, `1217`, `1218`, `1219`, `1227`, and `1284`;
+the archived route rows are retained as reviewed route evidence only.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,082` rows, all `not_retail_complete`, with `2,476` blocker detail rows in
+the next-slice blocker CSV. The generated Q5597 queue row remains rank `1` with
+`retail_claim_allowed=false`, but its blocker detail count dropped from `32` to
+`25`, and its blocking evidence source is now `client_smoke`.
+
+Supplemental update: 2026-06-19 CEST F-022 Q3479 zone DataMapping review.
+The generated Q3479 `quest_zone_evidence` blockers for `From the Wreckage`
+now carry row-specific reviewed DataMapping statuses instead of the generic
+partial/matched zone-review buckets. The reviewed rows are
+`quest_call_zones` `264`, `1188`, `1902`, `2546`, `3700`, `7085`, `7109`,
+`7110`, `7145`, `7244`, `7763`, and `quest_zones` `150`. Each row now records
+that current build 16042 Q3479 ownership is Quest2 WorldZone `35` (`Northern
+Wilds`) with server-owned `NorthernWildsMapScript` world `426` coverage for the
+Q3479/Q3480 Deadeye receiver, Trapped Survivor CSI placements, and shared yeti
+objective placements. The stale or non-primary archived zone relations remain
+route/map-guidance proof only; no retail completion is claimed.
+
+Verification: content-retail audit regenerated; validator reports `31` files /
+`168,089` rows, all `not_retail_complete`; focused Q3479 xUnit filter passed
+`38/38`. The generated Q3479 queue row remains rank `2` with
+`retail_claim_allowed=false`, but its blocker detail count dropped from `44` to
+`32`, and `quest_zone_evidence` is no longer listed in Q3479's next-slice
+blocker categories. Remaining Q3479 blockers are client-smoke or row-specific
+creature/world/reward/achievement proof.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Chua Explosives indicator 17899 activation UI smoke review.
+The generated Q5597 `quest_world_dependencies` blocker row for
+`QuestObjective.worldLocationsIdIndicator` slot `worldLocationsIdIndicator03`
+and WorldLocation2 `17899` now records
+`runtime_q5597_chua_explosives_indicator17899_spawn_and_credit_tested_pending_client_ui_smoke`.
+WorldLocation2 `17899` is the build 16042 Scarhide Camp indicator in world
+`870`, WorldZone `1325`, position `-7144,-995.343,-1008.03`, radius `55`,
+all phases `4294967295`. QuestObjective `8256` is the `VirtualCollect` data
+`364` count `6` step, and reward-pane TargetGroup `4373` contains Creature2
+`24286` (`Chua Explosives`). `CrimsonIsleMapScript` fallback-spawns the 30
+reviewed Chua Explosives placements in world `870` area `1218`; focused tests
+load all 30 fallbacks, activate every fallback to credit virtual item `364`
+while Q5597 is accepted, remove the entity, and avoid duplicate credit. This
+remains emulator/server evidence, not retail completion. Retail completion is
+still blocked pending live build 16042 proof that indicator `17899`
+appears/routes correctly, Chua Explosives activation/objective UI smoke,
+Scarhide Camp density/placement confirmation, despawn/respawn visual state,
+duplicate/negative cases, Mondo dialog, reward/achievement UI, and end-to-end
+Q5596->Q5597->Q5604 smoke.
+
+Verification: focused world-dependency generator coverage passed; content-retail
+audit regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; focused Q5597 xUnit filter passed `15/15`; generated
+Q5597 queue row remains rank `1` with `32` blocker details and
+`retail_claim_allowed=false`, with indicator `17899` still blocker rank `17`
+and achievement checklist row `5495` next at blocker rank `18`.
+CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-161627-quest-5597-chua-explosives-indicator-17899-activation-ui-smoke-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Chua Explosives indicator 17897 activation UI smoke review.
+The generated Q5597 `quest_world_dependencies` blocker row for
+`QuestObjective.worldLocationsIdIndicator` slot `worldLocationsIdIndicator02`
+and WorldLocation2 `17897` now records
+`runtime_q5597_chua_explosives_indicator17897_spawn_and_credit_tested_pending_client_ui_smoke`.
+WorldLocation2 `17897` is the build 16042 Scarhide Camp indicator in world
+`870`, WorldZone `1325`, position `-7270.21,-992.368,-828.018`, radius `55`,
+all phases `4294967295`. QuestObjective `8256` is the `VirtualCollect` data
+`364` count `6` step, and reward-pane TargetGroup `4373` contains Creature2
+`24286` (`Chua Explosives`). `CrimsonIsleMapScript` fallback-spawns the 30
+reviewed Chua Explosives placements in world `870` area `1218`; focused tests
+load all 30 fallbacks, activate every fallback to credit virtual item `364`
+while Q5597 is accepted, remove the entity, and avoid duplicate credit. This
+remains emulator/server evidence, not retail completion. Retail completion is
+still blocked pending live build 16042 proof that indicator `17897`
+appears/routes correctly, Chua Explosives activation/objective UI smoke,
+Scarhide Camp density/placement confirmation, despawn/respawn visual state,
+duplicate/negative cases, Mondo dialog, reward/achievement UI, and end-to-end
+Q5596->Q5597->Q5604 smoke.
+
+Verification: focused world-dependency generator coverage passed; content-retail
+audit regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; focused Q5597 xUnit filter passed `15/15`; generated
+Q5597 queue row remains rank `1` with `32` blocker details and
+`retail_claim_allowed=false`, with indicator `17897` still blocker rank `16`
+and indicator `17899` next at blocker rank `17`.
+CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-160917-quest-5597-chua-explosives-indicator-17897-activation-ui-smoke-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Chua Explosives indicator 17898 activation UI smoke review.
+The generated Q5597 `quest_world_dependencies` blocker row for
+`QuestObjective.worldLocationsIdIndicator` slot `worldLocationsIdIndicator01`
+and WorldLocation2 `17898` now records
+`runtime_q5597_chua_explosives_indicator17898_spawn_and_credit_tested_pending_client_ui_smoke`.
+WorldLocation2 `17898` is the build 16042 Scarhide Camp indicator in world
+`870`, WorldZone `1325`, position `-7022.49,-995.437,-946.002`, radius `55`,
+all phases `4294967295`. QuestObjective `8256` is the `VirtualCollect` data
+`364` count `6` step, and reward-pane TargetGroup `4373` contains Creature2
+`24286` (`Chua Explosives`). `CrimsonIsleMapScript` fallback-spawns the 30
+reviewed Chua Explosives placements in world `870` area `1218`; focused tests
+load all 30 fallbacks, activate every fallback to credit virtual item `364`
+while Q5597 is accepted, remove the entity, and avoid duplicate credit. This
+remains emulator/server evidence, not retail completion. Retail completion is
+still blocked pending live build 16042 proof that indicator `17898`
+appears/routes correctly, Chua Explosives activation/objective UI smoke,
+Scarhide Camp density/placement confirmation, despawn/respawn visual state,
+duplicate/negative cases, Mondo dialog, reward/achievement UI, and end-to-end
+Q5596->Q5597->Q5604 smoke.
+
+Verification: focused world-dependency generator coverage passed; content-retail
+audit regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; focused Q5597 xUnit filter passed `15/15`; generated
+Q5597 queue row remains rank `1` with `32` blocker details and
+`retail_claim_allowed=false`, with indicator `17898` still blocker rank `15`
+and indicator `17897` next at blocker rank `16`.
+CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-155949-quest-5597-chua-explosives-indicator-17898-activation-ui-smoke-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Chua Explosives indicator 17896 activation UI smoke review.
+The generated Q5597 `quest_world_dependencies` blocker row for
+`QuestObjective.worldLocationsIdIndicator` slot `worldLocationsIdIndicator00`
+and WorldLocation2 `17896` now records
+`runtime_q5597_chua_explosives_indicator17896_spawn_and_credit_tested_pending_client_ui_smoke`.
+WorldLocation2 `17896` is the build 16042 Bloodstone Canyon indicator in world
+`870`, WorldZone `1218`, position `-7133.34,-994.206,-856.854`, radius `55`,
+all phases `4294967295`. QuestObjective `8256` is the `VirtualCollect` data
+`364` count `6` step, and reward-pane TargetGroup `4373` contains Creature2
+`24286` (`Chua Explosives`). `CrimsonIsleMapScript` fallback-spawns the 30
+reviewed Chua Explosives placements in world `870` area `1218`; focused tests
+load all 30 fallbacks, activate every fallback to credit virtual item `364`
+while Q5597 is accepted, remove the entity, and avoid duplicate credit. This
+remains emulator/server evidence, not retail completion. Retail completion is
+still blocked pending live build 16042 proof that indicator `17896`
+appears/routes correctly, Chua Explosives activation/objective UI smoke,
+density/placement confirmation, despawn/respawn visual state, duplicate/negative
+cases, Mondo dialog, reward/achievement UI, and end-to-end
+Q5596->Q5597->Q5604 smoke.
+
+Verification: focused world-dependency generator coverage passed; content-retail
+audit regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; focused Q5597 xUnit filter passed `15/15`; generated
+Q5597 queue row remains rank `1` with `32` blocker details and
+`retail_claim_allowed=false`, with indicator `17896` still blocker rank `14`
+and indicator `17898` next at blocker rank `15`.
+CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-154422-quest-5597-chua-explosives-indicator-17896-activation-ui-smoke-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Mondo receiver location dialog/completion smoke review.
+The generated Q5597 `quest_world_dependencies` blocker row for
+`Quest2.WorldLocation2IdReceiver` `17803` now records
+`runtime_q5597_mondo_receiver_spawn_accept_complete_tested_pending_dialog_ui_smoke`.
+WorldLocation2 `17803` is the build 16042 Mondo Zax receiver in world `870`,
+WorldZone `1227` (`Bloodstone Canyon`), position `-7662.75,-942.948,-671.901`,
+radius `1.76183`, all phases `4294967295`. `CrimsonIsleMapScript`
+fallback-spawns Creature2 `24187` (`Mondo Zax`) at this receiver location,
+matching reviewed DataMapping `source_coordinate_id` `15089` within the eight
+reviewed Mondo placements in world `870` area `1885`. Creature2 `24187` carries
+Q5597 in `QuestIdGiven` and `QuestIdReceive`; focused QuestManager coverage
+accepts Q5597 only with visible Mondo, completed Q5596, Dominion faction, and
+the level gate, completes achieved Q5597 only with visible Mondo, grants
+Quest2Reward rows `3000` and `5236`, and updates Bloodstone achievement `4134`.
+`Q5596QuestScript` grants Q5597, and `Q5597QuestScript` grants Q5604. This
+remains emulator/server evidence, not retail completion. Retail completion is
+still blocked pending live build 16042 Mondo accept and completion dialog smoke,
+receiver placement/subzone/phase visibility proof, reward UI and inventory
+persistence, achievement UI/progression, duplicate/negative cases, and
+end-to-end Q5596->Q5597->Q5604 smoke.
+
+Verification: focused world-dependency generator coverage passed; content-retail
+audit regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; focused Q5597 xUnit filter passed `15/15`; generated
+Q5597 queue row remains rank `1` with `32` blocker details and
+`retail_claim_allowed=false`, with the Mondo receiver location still blocker
+rank `13` and the Q5597 Chua Explosives objective indicator location next at
+blocker rank `14`.
+CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-153253-quest-5597-mondo-receiver-location-dialog-completion-smoke-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Crimson Isle world-zone map visibility smoke review.
+The generated Q5597 `quest_world_dependencies` blocker row for
+`Quest2.worldZoneId` `622` now records
+`runtime_q5597_crimson_isle_world_zone_assets_tested_pending_client_visibility_smoke`.
+Quest2 world zone `622` is Crimson Isle. Current evidence proves only
+server-owned map-surface availability: `CrimsonIsleMapScript` is owned by world
+`870`, focused map-script tests load the map, spawn Mondo Zax `24187` at
+receiver WorldLocation2 `17803`, and spawn 30 Chua Explosives `24286`
+placements used by QuestObjective `8256` (`VirtualCollect` `364`). QuestManager
+and chain coverage prove Q5597 accept, completion, and follow-up gates only
+after the server assets are available. This remains emulator/server evidence,
+not retail completion. Retail completion is still blocked pending live build
+16042 proof for WorldZone `622` map/zone activation and visibility,
+route/path-arrow or map guidance, episode/zone ordering, Mondo accept/complete
+dialog, Chua Explosives objective UI, rewards, achievements, duplicate/negative
+cases, and end-to-end Q5596->Q5597->Q5604 smoke.
+
+Verification: focused world-dependency generator coverage passed; content-retail
+audit regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; focused Q5597 xUnit filter passed `15/15`; generated
+Q5597 queue row remains rank `1` with `32` blocker details and
+`retail_claim_allowed=false`, with the world-zone dependency still blocker rank
+`12` and the Q5597 Mondo receiver location next at blocker rank `13`.
+CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-152429-quest-5597-crimson-isle-world-zone-map-visibility-smoke-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Mondo starter accept dialog/prerequisite UI smoke review.
+The generated Q5597 `quest_creatures` blocker row for starter relation `1922`
+now records
+`runtime_q5597_mondo_starter_spawn_accept_gate_and_followup_tested_pending_dialog_ui_smoke`.
+DataMapping relation `1922` maps Jabbithole creature `3367` to reviewed build
+16042 Creature2 `24187` (`Mondo Zax`), whose client row carries
+`QuestIdGiven=5597`. `CrimsonIsleMapScript` fallback-spawns Mondo at Quest2
+receiver WorldLocation2 `17803` matching reviewed DataMapping
+`source_coordinate_id` `15089` within eight reviewed Mondo placements in world
+`870` area `1885`. `Q5596QuestScript` grants Q5597 as the follow-up, and
+focused QuestManager coverage accepts Q5597 only with visible Mondo, completed
+Q5596, Dominion faction, and the level gate satisfied; it rejects missing Mondo,
+missing Q5596, wrong faction, or low level. This remains emulator/server
+evidence, not retail completion. Retail completion is still blocked pending live
+build 16042 Mondo accept dialog smoke, prerequisite visibility and denial
+text/UI, exact Mondo spawn choice and density confirmation, reward/achievement
+side effects, and end-to-end Q5596->Q5597->Q5604 smoke.
+
+Verification: focused creature generator coverage passed; content-retail audit
+regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; focused Q5597 xUnit filter passed `15/15`; generated
+Q5597 queue row remains rank `1` with `32` blocker details and
+`retail_claim_allowed=false`, with relation `1922` still blocker rank `11` and
+the Q5597 world-zone dependency next at blocker rank `12`.
+CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-151528-quest-5597-mondo-starter-accept-dialog-prereq-ui-smoke-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Chua Explosives objective activation UI smoke review.
+The generated Q5597 `quest_creatures` blocker row for objective relation `1090`
+now records
+`runtime_q5597_chua_explosives_30_fallbacks_virtual_collect_guards_tested_pending_client_ui_smoke`.
+DataMapping relation `1090` maps Jabbithole creature `3462` to reviewed build
+16042 Creature2 `24286` (`Chua Explosives`). QuestObjective `8256` is the
+`VirtualCollect` data `364` count `6` step with reward-pane TargetGroup `4373`.
+`CrimsonIsleMapScript` fallback-spawns the 30 reviewed Chua Explosives
+placements in world `870` area `1218`, and `Q5597ChuaExplosivesEntityScript`
+plus its creature wrapper credit virtual item `364` while Q5597 is accepted,
+remove the entity, ignore missing quest state, and suppress repeated activation.
+Focused tests cover both collectable-unit and creature activation paths plus all
+30 fallback activations. This remains emulator/server evidence, not retail
+completion. Retail completion is still blocked pending live build 16042 client
+activation/objective UI smoke, exact density and placement confirmation,
+respawn/despawn visual-state smoke, Mondo dialog/client flow, reward UI and
+inventory persistence, achievement UI/progression smoke, duplicate/negative
+activation/completion cases, and end-to-end Q5597->Q5604 smoke.
+
+Verification: focused creature generator coverage passed; content-retail audit
+regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; focused Q5597 xUnit filter passed `15/15`; generated
+Q5597 queue row remains rank `1` with `32` blocker details and
+`retail_claim_allowed=false`, with relation `1090` still blocker rank `10` and
+starter relation `1922` next at blocker rank `11`.
+CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-150153-quest-5597-chua-explosives-objective-activation-ui-smoke-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Mondo finisher reward/achievement UI smoke review.
+The generated Q5597 `quest_creatures` blocker row for finisher relation `1564`
+now records
+`runtime_q5597_mondo_finisher_spawn_rewards_achievement_and_followup_tested_pending_dialog_ui_smoke`.
+DataMapping relation `1564` maps Jabbithole creature `3367` to reviewed build
+16042 Creature2 `24187` (`Mondo Zax`); that Creature2 row carries
+`QuestIdReceive=5597`, and `CrimsonIsleMapScript` fallback-spawns Mondo at
+Quest2 receiver WorldLocation2 `17803` matching reviewed DataMapping
+`source_coordinate_id` `15089`. Focused QuestManager coverage completes
+achieved Q5597 only with visible Mondo, grants fixed Quest2Reward rows `3000`
+and `5236`, updates Bloodstone achievement `4134`, and Q5597QuestScript grants
+Q5604 as the follow-up. This remains an emulator/server verification claim,
+not retail completion. Retail completion is still blocked pending live build
+16042 Mondo completion dialog smoke, reward UI and inventory persistence smoke,
+achievement UI/progression smoke, duplicate/negative completion cases, and
+end-to-end Q5597->Q5604 smoke.
+
+Verification: focused creature generator coverage passed; content-retail audit
+regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; focused Q5597 xUnit filter passed `15/15`; generated
+Q5597 queue row remains rank `1` with `32` blocker details and
+`retail_claim_allowed=false`, with relation `1564` still blocker rank `9`.
+CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-144826-quest-5597-mondo-finisher-reward-achievement-ui-smoke-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Crimson Isle quest-zone WorldZone 12 bridge review.
+The generated Q5597 `quest_zone_evidence` blocker row for `quest_zones`
+relation `633` now records
+`datamapping_q5597_crimson_isle_quest_zone_worldzone12_blank_reviewed_current_zone622_pending_route_proof`
+instead of generic matched-zone runtime visibility smoke. The row maps archived
+Jabbithole zone `9` (`Crimson Isle`) to WorldZone `12` with source
+`last_seen_in=3`, but current build 16042 `world_zone_client_map.csv` shows
+WorldZone `12` has no client name, parent zone `0`, `allow_access=0`, and no
+Crimson Isle ownership. Current named Crimson Isle evidence instead uses
+Q5597's `Quest2.worldZoneId` `622` plus child rows `623`, `629`, `1217`,
+`1218`, `1219`, `1227`, and `1284`. This is a DataMapping route-evidence
+refinement only. Retail completion remains blocked pending a reviewed current
+WorldZone replacement, MapZone or QuestDirection evidence, or live build 16042
+route, visibility, and map-guidance smoke, plus episode/zone ordering, Mondo
+dialog, Chua Explosives objective UI, rewards, achievements, negative cases,
+and end-to-end Q5597 smoke.
+
+Verification: focused zone generator coverage passed; content-retail audit
+regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; focused Q5597 xUnit filter passed `15/15`; generated
+Q5597 queue row remains rank `1` with `32` blocker details and
+`retail_claim_allowed=false`, with relation `633` still blocker rank `8`.
+CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-143751-quest-5597-crimson-isle-quest-zone-worldzone12-bridge-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Auroria call-zone WorldZone 6 missing bridge review.
+The generated Q5597 `quest_zone_evidence` blocker row for `quest_call_zones`
+relation `4641` now records
+`datamapping_q5597_auroria_call_zone_worldzone6_missing_reviewed_nonprimary_pending_route_proof`
+instead of generic partial-zone review. The row maps archived Jabbithole zone
+`5` (`Auroria`) to WorldZone `6` with `match_status=partial` and source
+`last_seen_in=0`, but current build 16042 `world_zone_client_map.csv` has no
+WorldZone `6` row or client name. Current named Auroria evidence instead uses
+WorldZone `36` (`Auroria`) plus child rows `697` (`Northeastern Auroria`),
+`1228` (`Northwestern Auroria`), `1302` (`Central Auroria`), and `1303`
+(`Southern Auroria`). Q5597's current `Quest2.worldZoneId` remains `622`
+(`Crimson Isle`). This is a DataMapping route-evidence refinement only. Retail
+completion remains blocked pending a reviewed current WorldZone replacement,
+MapZone or QuestDirection evidence, or live build 16042 route, visibility, and
+map-guidance smoke, plus episode/zone ordering, Mondo dialog, Chua Explosives
+objective UI, rewards, achievements, negative cases, and end-to-end Q5597
+smoke.
+
+Verification: focused zone generator coverage passed; content-retail audit
+regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; focused Q5597 xUnit filter passed `15/15`; generated
+Q5597 queue row remains rank `1` with `32` blocker details and
+`retail_claim_allowed=false`, with relation `4641` still blocker rank `7`.
+CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-142700-quest-5597-auroria-call-zone-worldzone6-missing-bridge-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Malgrave call-zone WorldZone 42 Protostar Honeyworks bridge review.
+The generated Q5597 `quest_zone_evidence` blocker row for `quest_call_zones`
+relation `4640` now records
+`datamapping_q5597_malgrave_call_zone_worldzone42_protostar_honeyworks_reviewed_nonprimary_pending_route_proof`
+instead of generic matched-zone runtime visibility smoke. The row maps archived
+Jabbithole zone `35` (`Malgrave`) to current WorldZone `42` (`Protostar
+Honeyworks`) with source `last_seen_in=0`; current build 16042
+`world_zone_client_map.csv` shows WorldZone `42` is Protostar Honeyworks under
+parent WorldZone `733` (`Protostar Honeyworks Master`), while named Malgrave
+evidence uses WorldZone `377` (`Malgrave`), WorldZone `1711` (`The Malgrave
+Trail`), WorldZone `1890` (`Southern Malgrave`), WorldZone `1928` (`Central
+Malgrave`), WorldZone `1933` and `2433` (`Malgrave`), and WorldZone `4372`
+(`Malgrave`). Q5597's current `Quest2.worldZoneId` remains `622` (`Crimson
+Isle`). This is a DataMapping route-evidence refinement only. Retail completion
+remains blocked pending a reviewed current WorldZone replacement, MapZone or
+QuestDirection evidence, or live build 16042 route, visibility, and map-guidance
+smoke, plus episode/zone ordering, Mondo dialog, Chua Explosives objective UI,
+rewards, achievements, negative cases, and end-to-end Q5597 smoke.
+
+Verification: focused zone generator coverage passed; content-retail audit
+regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; focused Q5597 xUnit filter passed `15/15`; generated
+Q5597 queue row remains rank `1` with `32` blocker details and
+`retail_claim_allowed=false`, with relation `4640` still blocker rank `6`.
+CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-141909-quest-5597-malgrave-call-zone-worldzone42-protostar-honeyworks-bridge-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Northern Wastes call-zone WorldZone 41 Fort Glory bridge review.
+The generated Q5597 `quest_zone_evidence` blocker row for `quest_call_zones`
+relation `4639` now records
+`datamapping_q5597_northern_wastes_call_zone_worldzone41_fort_glory_reviewed_nonprimary_pending_route_proof`
+instead of generic matched-zone runtime visibility smoke. The row maps archived
+Jabbithole zone `34` (`Northern Wastes`) to current WorldZone `41` (`Fort
+Glory`) with source `last_seen_in=0`; current build 16042
+`world_zone_client_map.csv` shows WorldZone `41` is Fort Glory under parent
+WorldZone `848`, while named Northern Wastes evidence uses WorldZone `1784`,
+child WorldZone `1785`, and child rows `1786`, `1787`, `1788`, `1790`,
+`1792`, `1798`, `4036`, `4374`, `4377`, `4378`, and `4483`. Q5597's current
+`Quest2.worldZoneId` remains `622` (`Crimson Isle`). This is a DataMapping
+route-evidence refinement only. Retail completion remains blocked pending a
+reviewed current WorldZone replacement, MapZone or QuestDirection evidence, or
+live build 16042 route, visibility, and map-guidance smoke, plus episode/zone
+ordering, Mondo dialog, Chua Explosives objective UI, rewards, achievements,
+negative cases, and end-to-end Q5597 smoke.
+
+Verification: focused zone generator coverage passed; content-retail audit
+regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; focused Q5597 xUnit filter passed `15/15`; generated
+Q5597 queue row remains rank `1` with `32` blocker details and
+`retail_claim_allowed=false`, with relation `4639` still blocker rank `5`.
+CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-140947-quest-5597-northern-wastes-call-zone-worldzone41-fort-glory-bridge-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Housing Skymap call-zone WorldZone 60 Mozyk Quarry bridge review.
+The generated Q5597 `quest_zone_evidence` blocker row for `quest_call_zones`
+relation `4638` now records
+`datamapping_q5597_housing_skymap_call_zone_worldzone60_mozyk_quarry_reviewed_nonprimary_pending_route_proof`
+instead of generic matched-zone runtime visibility smoke. The row maps archived
+Jabbithole zone `40` (`Housing Skymap`) to current WorldZone `60` (`Mozyk
+Quarry`) with source `last_seen_in=0`; current build 16042
+`world_zone_client_map.csv` shows WorldZone `60` is Mozyk Quarry under parent
+WorldZone `734`, while named Housing/Skymap evidence uses parent WorldZone
+`1630` (`Housing`), WorldZone `1136` and `4373` (`Skymap`), and WorldZone
+`1265` and `4837` (`Community Skymap`). Q5597's current `Quest2.worldZoneId`
+remains `622` (`Crimson Isle`). This is a DataMapping route-evidence
+refinement only. Retail completion remains blocked pending a reviewed current
+WorldZone replacement, MapZone or QuestDirection evidence, or live build 16042
+route, visibility, and map-guidance smoke, plus episode/zone ordering, Mondo
+dialog, Chua Explosives objective UI, rewards, achievements, negative cases,
+and end-to-end Q5597 smoke.
+
+Verification: focused zone generator coverage passed; content-retail audit
+regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; focused Q5597 xUnit filter passed `15/15`; generated
+Q5597 queue row remains rank `1` with `32` blocker details and
+`retail_claim_allowed=false`, with relation `4638` still blocker rank `4`.
+CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-135937-quest-5597-housing-skymap-call-zone-worldzone60-mozyk-quarry-bridge-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Illium call-zone WorldZone 78 Ellevar bridge review.
+The generated Q5597 `quest_zone_evidence` blocker row for `quest_call_zones`
+relation `4637` now records
+`datamapping_q5597_illium_call_zone_worldzone78_ellevar_reviewed_nonprimary_pending_route_proof`
+instead of generic matched-zone runtime visibility smoke. The row maps archived
+Jabbithole zone `46` (`Illium`) to current WorldZone `78` (`Western Ellevar`)
+with source `last_seen_in=0`; current build 16042 `world_zone_client_map.csv`
+shows WorldZone `78` is an Ellevar child under parent WorldZone `37`, while
+named Illium evidence uses WorldZone `2191` and child rows `2192`, `2193`,
+`2194`, `2195`, `2196`, `3014`, `4202`, `4296`, `4298`, `4365`, `4485`,
+`4486`, and `4957`. Q5597's current `Quest2.worldZoneId` remains `622`
+(`Crimson Isle`). This is a DataMapping route-evidence refinement only.
+Retail completion remains blocked pending a reviewed current WorldZone
+replacement, MapZone or QuestDirection evidence, or live build 16042 route,
+visibility, and map-guidance smoke, plus episode/zone ordering, Mondo dialog,
+Chua Explosives objective UI, rewards, achievements, negative cases, and
+end-to-end Q5597 smoke.
+
+Verification: focused zone generator coverage passed; content-retail audit
+regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; focused Q5597 xUnit filter passed `15/15`; generated
+Q5597 queue row remains rank `1` with `32` blocker details and
+`retail_claim_allowed=false`, with relation `4637` still blocker rank `3`.
+CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-135045-quest-5597-illium-call-zone-worldzone78-ellevar-bridge-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Crimson Isle call-zone WorldZone 12 bridge review.
+The generated Q5597 `quest_zone_evidence` blocker row for `quest_call_zones`
+relation `311` now records
+`datamapping_q5597_crimson_isle_call_zone_worldzone12_blank_reviewed_current_zone622_pending_route_proof`
+instead of generic matched-zone runtime visibility smoke. The row still maps
+archived Jabbithole zone `9` (`Crimson Isle`) to WorldZone `12`, but current
+build 16042 `world_zone_client_map.csv` shows WorldZone `12` has no client
+name, parent zone `0`, `allow_access=0`, and no Crimson Isle ownership. Current
+named Crimson Isle evidence instead uses Q5597 `Quest2.worldZoneId` `622` plus
+child WorldZone rows `623`, `629`, `1217`, `1218`, `1219`, `1227`, and `1284`
+under parent `622`. This is a DataMapping route-evidence refinement only.
+Retail completion remains blocked pending a reviewed current WorldZone
+replacement, MapZone or QuestDirection evidence, or live build 16042 route,
+visibility, and map-guidance smoke, plus episode/zone ordering, Mondo dialog,
+Chua Explosives objective UI, rewards, achievements, negative cases, and
+end-to-end Q5597 smoke.
+
+Verification: focused zone generator test passed; content-retail audit
+regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; generated Q5597 queue row remains rank `1` with `32`
+blocker details and `retail_claim_allowed=false`; CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-133236-quest-5597-crimson-isle-call-zone-worldzone12-bridge-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 episode order chain handoff review.
+The generated Q5597 `quest_episode_evidence` blocker row for EpisodeQuest
+`2398` / Episode `464` (`The Guns of Bloodstone`) now cites table-matched
+EpisodeQuest order evidence and focused Crimson Isle server chain tests instead
+of the generic
+`datamapping_episode_quest_matched_pending_order_progression_smoke` status. The
+row is now
+`runtime_q5597_episode_order_q5596_q5597_q5604_handoff_tested_pending_client_episode_smoke`:
+EpisodeQuest order `2` / flags `0` in WorldZone `622` maps to Jabbithole
+episode `98`, `Q5596QuestScript` grants Q5597, `Q5597QuestScript` grants
+Q5604, and `Q5604TacticalDemolitionsQuestScript` grants Q5580/Q5583 on
+completion. This proves only emulator chain ownership and table/order
+alignment. Retail completion remains blocked pending live build 16042 episode
+tracker/order UI presentation, quest visibility and turn-in state, Mondo
+dialog, Chua Explosives objective UI, reward and achievement side effects,
+duplicate/negative cases, and end-to-end Q5596->Q5597->Q5604 smoke.
+
+Verification: focused episode generator test passed; content-retail audit
+regenerated; validator reports `31` files / `168,101` rows, all
+`not_retail_complete`; focused Q5597 plus Crimson Isle chain xUnit filter
+passed `28/28`; generated Q5597 queue row remains rank `1` with `32` blocker
+details and `retail_claim_allowed=false`; CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-131927-quest-5597-episode-order-chain-handoff-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Crimson Isle world-zone map-surface review.
+The generated Q5597 `Quest2.worldZoneId` blocker row for WorldZone `622`
+(`Crimson Isle`) now cites current server-side Crimson Isle world `870`
+coverage instead of the generic `client_quest_world_zone_pending_map_and_activation_smoke`
+status. The row is now
+`runtime_q5597_crimson_isle_world_zone_map_spawn_tested_pending_client_visibility_smoke`:
+focused tests load `CrimsonIsleMapScript`, spawn Mondo Zax `24187` at receiver
+WorldLocation2 `17803`, and spawn the reviewed Chua Explosives `24286`
+placements used by objective `8256`. This proves only emulator map-surface
+availability for the current evidence set. Retail completion remains blocked
+pending live build 16042 map/zone activation and visibility, episode/zone
+ordering, path or map guidance, Mondo dialog, Chua Explosives objective UI,
+reward and achievement side effects, duplicate/negative cases, and end-to-end
+Q5597 smoke.
+
+Verification: focused world-dependency generator test passed; content-retail
+audit regenerated; generated Q5597 queue row remains rank `1` with `32`
+blocker details and `retail_claim_allowed=false`; CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-130912-quest-5597-crimson-isle-world-zone-map-surface-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 prerequisite accept-gate review.
+The generated Q5597 prerequisite blocker rows for level `1`, Dominion faction
+`1`, and required Quest2 `5596` (`Ordnance Recovery`) now cite focused
+QuestManager accept-path evidence instead of generic pending accept-smoke
+statuses. The new generated statuses are
+`q5597_server_accept_path_level_gate_test_pending_client_dialog_smoke`,
+`q5597_server_accept_path_dominion_faction_gate_test_pending_client_dialog_smoke`,
+and `q5597_server_accept_path_q5596_required_quest_test_pending_client_dialog_smoke`.
+The evidence boundary is still explicit: server tests prove Q5597 accepts only
+with visible Mondo Zax `24187`, Dominion faction, the level gate satisfied, and
+Q5596 completed, and rejects missing Mondo, missing Q5596, wrong faction, or
+low level. Retail completion remains blocked pending live build 16042 Mondo
+availability/dialog and denial UI, Q5596-to-Q5597 chain presentation, rewards,
+achievements, duplicate/negative cases, and end-to-end Q5597 smoke.
+
+Verification: focused prerequisite generator test passed; content-retail audit
+regenerated; generated Q5597 queue row remains rank `1` with `32` blocker
+details and `retail_claim_allowed=false`; CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-125638-quest-5597-prerequisite-accept-gate-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Chua Explosives script quest-state guard review.
+The generated Q5597 script progression row for
+`Source\NexusForever.Script.Main\Quests\CrimsonIsle\Q5597.cs` line `49`
+now records the `ObjectiveUpdate(QuestObjectiveType.VirtualCollect, 364, 1)`
+producer as `quest_state_guard_matches_quest` rather than an ownerless script
+hook. The classification is data-driven: the scanner resolves the
+`ChuaExplosivesVirtualItem` constant, matches QuestObjective `8256`
+(`VirtualCollect`, data `364`) back to Quest2 `5597`, and records the
+surrounding `GetQuestState(5597) == Accepted` guard as the owner link. The row
+remains `script_quest_typed_objective_update_matched_pending_trigger_smoke` /
+`not_retail_complete`; it still requires live build 16042 trigger timing,
+client objective UI, duplicate/repeat negative cases, reward and achievement
+side effects, and source-drop versus activation-only proof.
+
+Verification: focused script-progression generator test passed; content-retail
+audit regenerated; generated Q5597 queue row remains rank `1` with `32`
+blocker details and `retail_claim_allowed=false`; CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-124414-quest-5597-chua-explosives-script-quest-state-guard-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Chua Explosives virtual-loot source review.
+The generated next-slice queue still ranks `quest-5597` first as
+`quest_validation_ready` with `32` blocker details and
+`retail_claim_allowed=false`, but its six `quest_loot` blocker rows now
+separate runtime-tested virtual-item delivery from unresolved retail source/drop
+evidence. The two LaughingWS loot groups `1200000482` and `1200001069` remain
+bound to QuestObjective `8256` (`VirtualCollect`, data `364`) and entity
+`24286`; matching loot items now cite `LootInstanceItem.cs` and
+`LootInstanceDeliveryTests.cs` because the generic loot-delivery path updates
+`QuestObjectiveType.VirtualCollect`. The rows remain `not_retail_complete`
+because Q5597 also directly credits virtual item `364` through
+`Q5597ChuaExplosivesEntityScript`, and this environment still lacks live build
+16042 proof for whether retail expects LaughingWS drop/source generation,
+activation-only collection, client-visible loot UI, drop cadence, or inventory
+cleanup behavior.
+
+Verification: focused quest-loot generator test passed; content-retail audit
+regenerated; generated Q5597 `quest_loot` rows remain `not_retail_complete`;
+CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-123609-quest-5597-chua-explosives-virtual-loot-source-review`.
+This records the blocker only; it does not change retail completion.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Auroria stale WorldZone blocker classification.
+The generated next-slice queue still ranks `quest-5597` first as
+`quest_validation_ready` with `32` blocker details and
+`retail_claim_allowed=false`. The Q5597 `quest_call_zones` row `4641` is now
+recorded with sharper generated blocker evidence instead of a generic partial
+zone note: Jabbithole zone `5` (`Auroria`) maps through the source row to
+WorldZone `6`, but current build 16042 `WorldZone.tbl`/`world_zone_client_map`
+has no WorldZone `6` row/name. Current client evidence instead contains parent
+WorldZone `36` (`Auroria`) and child rows such as WorldZone `1228`
+(`Northwestern Auroria`), while Q5597's own current quest WorldZone remains
+`622` (`Crimson Isle`). The generator now names this as stale or missing
+source-id evidence pending a reviewed current WorldZone replacement, MapZone or
+QuestDirection evidence, or accepted live client route evidence before any
+runtime visibility/routing claim.
+
+Verification: focused quest-zone generator test passed; content-retail audit
+regenerated; generated Q5597 row `source_relation_id=4641` remains
+`datamapping_quest_zone_partial_match_pending_zone_review` /
+`not_retail_complete`; CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-122203-quest-5597-auroria-stale-worldzone-bridge-review`.
+This records the blocker only; it does not change retail completion. Remaining
+external evidence is current build 16042 table/decompile route proof or live
+client/server quest-routing smoke that identifies the correct replacement
+WorldZone and validates visibility, map guidance, episode ordering, and Q5597
+client quest flow.
+
+Supplemental update: 2026-06-19 CEST F-022 Q5597 Chua Explosives bridge review.
+The generated next-slice queue still ranks `quest-5597` first as
+`quest_validation_ready` with `32` blocker details and
+`retail_claim_allowed=false`, but Q5597's Chua Explosives objective creature
+bridge is now reviewed. Tracked DataMapping override
+`Tools\DataMapping\creature_bridge_overrides.csv` maps Jabbithole creature
+`3462` (`Chua Explosives`) to Creature2 `24286`. This was not promoted from
+unique-name matching alone: QuestObjective `8256` is `VirtualCollect` data
+`364` count `6`; reward-pane TargetGroup `4373` contains Creature2 `24286`;
+DataMapping has one current Creature2 candidate plus `30` world `870` / area
+`1218` source coordinates; `CrimsonIsleMapScript` fallback-spawns those
+positions; and `Q5597ChuaExplosivesEntityScript` filters Creature2 `24286` and
+credits virtual item `364` while Q5597 is accepted. After
+`python Tools\DataMapping\map_wildstar_data.py` and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py`,
+`creature_map.csv` reports `match_status=reviewed` /
+`original_match_status=unique_name`, and the Q5597 objective relation `1090`
+regenerates as reviewed while remaining `not_retail_complete`.
+
+Verification: focused Q5597 tests passed `15/15` with `--no-build`; generated
+content-retail validation reports `31` files / `168,101` rows, all
+`not_retail_complete`; CreateBundleOnly worksheet:
+`artifacts\blocker_evidence\20260619-121140-quest-5597-chua-explosives-bridge-review`.
+Q5597 remains not retail-complete. Remaining external evidence is live build
+16042 client/server smoke for Mondo dialog and receiver flow, Chua Explosives
+activation/objective UI timing, exact density and respawn/despawn behavior,
+reward UI/inventory persistence, achievement UI, Q5596->Q5597->Q5604 chain
+behavior, wrong-world/unaccepted/repeat negative cases, and end-to-end Q5597
+validation.
+
+Supplemental update: 2026-06-19 CEST F-024 Ultimate Protogames duplicate Yellow Tank bridge review.
+Ultimate Protogames public-event creature relation `2628` is now a reviewed
+DataMapping bridge: tracked override `Tools\DataMapping\creature_bridge_overrides.csv`
+maps duplicate Jabbithole creature `32287` (`Malfunctioning Yellow Tank`) to
+Creature2 `62546`. This was not promoted from unique-name matching alone:
+build 16042 objectives `2676`, `2868`, `2869`, and `2872` use TargetGroup
+`12671`, whose members are Creature2 `62542`, `62543`, and `62546`; the
+existing `UltimateProtogamesEventScript` spawns Creature2 `62546` in world
+`2980` at `-29077,-938,1552`; `MalfunctioningTankEntityScript` filters
+Creature2 `62542`, `62543`, and `62546` and credits the mapped tank
+objectives; and regenerated DataMapping has PE299 coordinate `7806864` for
+source creature `32287` at the same runtime Yellow Tank placement/stat bundle
+as reviewed relation `2232`. After `python Tools\DataMapping\map_wildstar_data.py`
+and `python Tools\WikiArchiveAudit\content_retail_completeness_audit.py`,
+relation `2628` regenerates as
+`reviewed_public_event_creature_blocked_spawn_credit_smoke` and
+`creature_public_event_map.csv` reports `match_status=reviewed`.
+
+Verification: focused Ultimate Protogames/public-event objective-credit tests
+passed `620/620` with `--no-build`; generated content-retail validation reports
+`31` files / `168,101` rows, all `not_retail_complete`; CreateBundleOnly
+worksheet:
+`artifacts\blocker_evidence\20260619-114800-instance-2980-duplicate-yellow-tank-bridge-review`.
+Ultimate Protogames remains not retail-complete and split-required. Remaining
+external evidence is live build 16042 client/server smoke for tank-room route
+selection, timer and `50%` / Incinerate bonus semantics, objective UI timing,
+reward, medal, achievement side effects, replay cleanup, duplicate-source
+double-count prevention, and full dungeon negative cases.
+
+Supplemental update: 2026-06-19 CEST F-024 Ultimate Protogames Cage Console bridge review.
+Ultimate Protogames public-event creature relation `2245` is now a reviewed
+DataMapping bridge: tracked override `Tools\DataMapping\creature_bridge_overrides.csv`
+maps Jabbithole creature `28535` (`Cage Console`) to Creature2 `63037`. This
+was not promoted from unique-name matching alone: build 16042 objective `2864`
+(`Hack the Cage Console`) uses TargetGroup `10583`, whose sole member is
+Creature2 `63037`, has count `1`, and points at WorldLocation2 `41759`;
+aggregate/timed rows `2678`, `2863`, and `2858` share the same target group;
+the existing `UltimateProtogamesEventScript` spawns Creature2 `63037` in world
+`2980` / area `4333` at `-20703,-945,-6926`; and
+`SneakyPrisonCageConsoleEntityScript` filters Creature2 `63037` and credits
+TargetGroup `10583` once. Regenerated DataMapping has PE299 coordinate
+`6152147` for source creature `28535` at that runtime placement. After
+`python Tools\DataMapping\map_wildstar_data.py` and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py`, relation
+`2245` regenerates as `reviewed_public_event_creature_blocked_spawn_credit_smoke`
+and `creature_public_event_map.csv` reports `match_status=reviewed`. Remaining
+PE594 creature bridge candidates stay separate rows.
+
+Verification: focused Ultimate Protogames/public-event objective-credit tests
+passed `620/620` with `--no-build`; generated content-retail validation reports
+`31` files / `168,101` rows, all `not_retail_complete`; CreateBundleOnly
+worksheet:
+`artifacts\blocker_evidence\20260619-112945-instance-2980-cage-console-bridge-review`.
+Ultimate Protogames remains not retail-complete and split-required. Remaining
+external evidence is live build 16042 client/server smoke for cage release, door
+choreography, stealth/no-alarm and Fast Hands timer semantics, objective UI
+timing, reward, medal, achievement side effects, replay cleanup, and full
+dungeon negative cases.
+
+Supplemental update: 2026-06-19 CEST F-024 Ultimate Protogames Busted Red Tank bridge review.
+Ultimate Protogames public-event creature relation `2243` is now a reviewed
+DataMapping bridge: tracked override `Tools\DataMapping\creature_bridge_overrides.csv`
+maps Jabbithole creature `28516` (`Busted Red Tank`) to Creature2 `62542`.
+This was not promoted from unique-name matching alone: build 16042 objectives
+`2676`, `2868`, `2869`, and `2872` use TargetGroup `12671`, whose members are
+Creature2 `62542`, `62543`, and `62546`; the existing
+`UltimateProtogamesEventScript` spawns Creature2 `62542` in world `2980` /
+area `4336` at `-29052,-938,1497`; `MalfunctioningTankEntityScript` filters
+Creature2 `62542`, `62543`, and `62546` and credits the mapped tank objectives;
+and regenerated DataMapping has PE299 coordinate `6150582` for source creature
+`28516` at that runtime placement with matching stats. After
+`python Tools\DataMapping\map_wildstar_data.py` and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py`, relation
+`2243` regenerates as `reviewed_public_event_creature_blocked_spawn_credit_smoke`
+and `creature_public_event_map.csv` reports `match_status=reviewed`. Remaining
+PE594 creature bridge candidates stay separate rows.
+
+Verification: focused Ultimate Protogames/public-event objective-credit tests
+passed `620/620` with `--no-build`; generated content-retail validation reports
+`31` files / `168,101` rows, all `not_retail_complete`; CreateBundleOnly
+worksheet:
+`artifacts\blocker_evidence\20260619-110945-instance-2980-busted-red-tank-bridge-review`.
+Ultimate Protogames remains not retail-complete and split-required. Remaining
+external evidence is live build 16042 client/server smoke for tank-room route
+selection, timer and `50%` / Incinerate bonus semantics, objective UI timing,
+reward, medal, achievement side effects, replay cleanup, and full dungeon
+negative cases.
+
+Supplemental update: 2026-06-19 CEST F-024 Ultimate Protogames Wrecked Blue Tank bridge review.
+Ultimate Protogames public-event creature relation `2234` is now a reviewed
+DataMapping bridge: tracked override `Tools\DataMapping\creature_bridge_overrides.csv`
+maps Jabbithole creature `28496` (`Wrecked Blue Tank`) to Creature2 `62543`.
+This was not promoted from unique-name matching alone: build 16042 objectives
+`2676`, `2868`, `2869`, and `2872` use TargetGroup `12671`, whose members are
+Creature2 `62542`, `62543`, and `62546`; the existing
+`UltimateProtogamesEventScript` spawns Creature2 `62543` in world `2980` /
+area `4336` at `-29015,-938,1544`; `MalfunctioningTankEntityScript` filters
+Creature2 `62542`, `62543`, and `62546` and credits the mapped tank objectives;
+and regenerated DataMapping has PE299 coordinate `6145453` for source creature
+`28496` at that runtime placement with matching stats. After
+`python Tools\DataMapping\map_wildstar_data.py` and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py`, relation
+`2234` regenerates as `reviewed_public_event_creature_blocked_spawn_credit_smoke`
+and `creature_public_event_map.csv` reports `match_status=reviewed`. Remaining
+PE594 creature bridge candidates stay separate rows.
+
+Verification: focused Ultimate Protogames/public-event objective-credit tests
+passed `620/620` with `--no-build`; generated content-retail validation reports
+`31` files / `168,101` rows, all `not_retail_complete`; CreateBundleOnly
+worksheet:
+`artifacts\blocker_evidence\20260619-105145-instance-2980-wrecked-blue-tank-bridge-review`.
+Ultimate Protogames remains not retail-complete and split-required. Remaining
+external evidence is live build 16042 client/server smoke for tank-room route
+selection, timer and `50%` / Incinerate bonus semantics, objective UI timing,
+reward, medal, achievement side effects, replay cleanup, and full dungeon
+negative cases.
+
+Supplemental update: 2026-06-19 CEST F-024 Ultimate Protogames Malfunctioning Yellow Tank bridge review.
+Ultimate Protogames public-event creature relation `2232` is now a reviewed
+DataMapping bridge: tracked override `Tools\DataMapping\creature_bridge_overrides.csv`
+maps Jabbithole creature `28491` (`Malfunctioning Yellow Tank`) to Creature2
+`62546`. This was not promoted from unique-name matching alone: build 16042
+objectives `2676`, `2868`, `2869`, and `2872` use TargetGroup `12671`, whose
+members are Creature2 `62542`, `62543`, and `62546`; the existing
+`UltimateProtogamesEventScript` spawns Creature2 `62546` in world `2980` /
+area `4336` at `-29077,-938,1552`; `MalfunctioningTankEntityScript` filters
+Creature2 `62542`, `62543`, and `62546` and credits the mapped tank objectives;
+and regenerated DataMapping has PE299 coordinate `6144867` for source creature
+`28491` at that runtime placement with matching stats. After
+`python Tools\DataMapping\map_wildstar_data.py` and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py`, relation
+`2232` regenerates as `reviewed_public_event_creature_blocked_spawn_credit_smoke`
+and `creature_public_event_map.csv` reports `match_status=reviewed`. The
+separate duplicate Yellow Tank source relation `2628` was reviewed later; this
+section closes only relation `2232`.
+
+Verification: focused Ultimate Protogames/public-event objective-credit tests
+passed `620/620` with `--no-build`; generated content-retail validation reports
+`31` files / `168,101` rows, all `not_retail_complete`; CreateBundleOnly
+worksheet:
+`artifacts\blocker_evidence\20260619-103428-instance-2980-malfunctioning-yellow-tank-bridge-review`.
+Ultimate Protogames remains not retail-complete and split-required. Remaining
+external evidence is live build 16042 client/server smoke for tank-room route
+selection, timer and `50%` / Incinerate bonus semantics, objective UI timing,
+reward, medal, achievement side effects, replay cleanup, and full dungeon
+negative cases.
+
+Supplemental update: 2026-06-19 CEST F-024 Ultimate Protogames Ruffles bridge review.
+Ultimate Protogames public-event creature relation `2217` is now a reviewed
+DataMapping bridge: tracked override `Tools\DataMapping\creature_bridge_overrides.csv`
+maps Jabbithole creature `28408` (`Ruffles`) to Creature2 `65794`. This was
+not promoted from unique-name matching alone: build 16042 objective `4561`
+(`Hunt Ruffles`) uses TargetGroup `12390`, whose sole member is Creature2
+`65794`; the existing `UltimateProtogamesEventScript` spawns Creature2 `65794`
+in world `2980` / area `4348` at `-16866,-802,5570`;
+`RufflesEntityScript` filters Creature2 `65794` and credits objective `4561`;
+and regenerated DataMapping has PE299 coordinate `7930052` for source creature
+`28408` at that runtime placement with matching stats. After
+`python Tools\DataMapping\map_wildstar_data.py` and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py`, relation
+`2217` regenerates as `reviewed_public_event_creature_blocked_spawn_credit_smoke`,
+while the creature row reports `match_status=reviewed` and
+`original_match_status=unique_name`.
+
+Verification: focused Ultimate Protogames/public-event objective-credit tests
+passed `620/620` with `--no-build`; generated content-retail validation reports
+`31` files / `168,101` rows, all `not_retail_complete`; CreateBundleOnly
+worksheet:
+`artifacts\blocker_evidence\20260619-100931-instance-2980-ruffles-bridge-review`.
+Ultimate Protogames remains not retail-complete and split-required. Remaining
+external evidence is live build 16042 client/server smoke for the Ruffles hunt
+route/pathing, objective UI timing, reward, medal, achievement side effects,
+replay cleanup, and full dungeon negative cases.
+
+Supplemental update: 2026-06-19 CEST F-024 Ultimate Protogames Misplaced Mammoth bridge review.
+Ultimate Protogames public-event creature relation `2188` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps Jabbithole creature `28290` (`Misplaced Mammoth`) to Creature2 `63312`.
+This was not promoted from unique-name matching alone: build 16042 objective
+`4692` targets TargetGroup `12577`, whose sole member is Creature2 `63312`,
+and uses WorldLocation2 `41745`; the existing `UltimateProtogamesEventScript`
+spawns Creature2 `63312` in world `2980` / area `4351` at
+`-16482,-910,-10996`; `MisplacedMammothEntityScript` filters Creature2
+`63312` and credits objective `4692`; and regenerated DataMapping has PE299
+coordinate `8469464` for source creature `28290` at that runtime placement
+with matching stats. After `python Tools\DataMapping\map_wildstar_data.py` and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py`, relation
+`2188` regenerates as `reviewed_public_event_creature_blocked_spawn_credit_smoke`,
+while the creature row reports `match_status=reviewed` and
+`original_match_status=unique_name`.
+
+Verification: focused Ultimate Protogames/public-event objective-credit tests
+passed `620/620` with `--no-build`; generated content-retail validation reports
+`31` files / `168,101` rows, all `not_retail_complete`; CreateBundleOnly
+worksheet:
+`artifacts\blocker_evidence\20260619-095412-instance-2980-misplaced-mammoth-bridge-review`.
+Ultimate Protogames remains not retail-complete and split-required. Remaining
+external evidence is live build 16042 client/server smoke for the Misplaced
+Mammoth timed room route, `30000` ms objective failure timing, kill-credit UI
+timing, reward, medal, achievement side effects, replay cleanup, and full
+dungeon negative cases.
+
+Supplemental update: 2026-06-19 CEST F-024 Ultimate Protogames Gilded Fowl bridge review.
+Ultimate Protogames public-event creature relation `2185` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps Jabbithole creature `28278` (`Gilded Fowl`) to Creature2 `63055`.
+This was not promoted from unique-name matching alone: build 16042 objectives
+`2862` and `4442` target TargetGroup `12263`, whose sole member is Creature2
+`63055`; the existing `UltimateProtogamesEventScript` spawns Creature2 `63055`
+in world `2980` / area `4347` at `-21242,-807,-10806`;
+`GildedFowlEntityScript` filters Creature2 `63055` and credits objectives
+`2862` and `4442`; and regenerated DataMapping has PE299 coordinate `8011506`
+for source creature `28278` at that runtime placement with matching stats.
+After `python Tools\DataMapping\map_wildstar_data.py` and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py`, relation
+`2185` regenerates as `reviewed_public_event_creature_blocked_spawn_credit_smoke`,
+while the creature row reports `match_status=reviewed` and
+`original_match_status=unique_name`.
+
+Verification: focused Ultimate Protogames/public-event objective-credit tests
+passed `620/620` with `--no-build`; generated content-retail validation reports
+`31` files / `168,101` rows, all `not_retail_complete`; CreateBundleOnly
+worksheet:
+`artifacts\blocker_evidence\20260619-093630-instance-2980-gilded-fowl-bridge-review`.
+Ultimate Protogames remains not retail-complete and split-required. Remaining
+external evidence is live build 16042 client/server smoke for exact Power
+Plunge qualification and scoring, random room route timing, reward, medal, and
+achievement side effects, replay cleanup, and full dungeon negative cases.
+
+Supplemental update: 2026-06-19 CEST F-024 Ultimate Protogames Mondo's Crate bridge review.
+Ultimate Protogames public-event creature relation `2184` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps Jabbithole creature `28277` (`Mondo's Crate`) to Creature2 `62549`.
+This was not promoted from unique-name matching alone: build 16042 objective
+`2920` is the Mondo's Crate script objective at WorldLocation2 `41745`;
+TargetGroup `10666` has sole member Creature2 `62549`; the existing
+`UltimateProtogamesEventScript` spawns Creature2 `62549` in world `2980` /
+area `4351` at `-16500,-910,-10998`; `MondosCrateEntityScript` filters
+Creature2 `62549` and credits objective `2920`; and regenerated DataMapping
+has PE299 coordinate `6132219` for source creature `28277` at that runtime
+crate placement with matching stats. After `python Tools\DataMapping\map_wildstar_data.py`
+and `python Tools\WikiArchiveAudit\content_retail_completeness_audit.py`,
+relation `2184` regenerates as
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`, while the creature
+row reports `match_status=reviewed` and `original_match_status=unique_name`.
+
+Verification: focused Ultimate Protogames/public-event objective-credit tests
+passed `620/620` with `--no-build`; generated content-retail validation reports
+`31` files / `168,101` rows, all `not_retail_complete`; CreateBundleOnly
+worksheet:
+`artifacts\blocker_evidence\20260619-091914-instance-2980-mondos-crate-bridge-review`.
+Ultimate Protogames remains not retail-complete and split-required. Remaining
+external evidence is live build 16042 client/server smoke for exact script
+trigger timing, the `60000` ms timer start/fail semantics, random room routing,
+crate row selection and despawn state, rewards, medals, achievements, replay
+cleanup, and full dungeon negative cases.
+
+Supplemental update: 2026-06-19 CEST F-024 Ultimate Protogames Mondo's Monstrosity bridge review.
+Ultimate Protogames public-event creature relation `2415` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps Jabbithole creature `28306` (`Mondo's Monstrosity`) to Creature2 `62575`.
+This was not promoted from scored-name matching alone: build 16042 objective
+`2926` uses TargetGroup `10657`, whose sole member is Creature2 `62575`;
+objective `2941` shares WorldLocation2 `41745`; the existing
+`UltimateProtogamesEventScript` spawns Creature2 `62575` in world `2980` /
+area `4351` around `-16501,-910,-10991`; `MondosMonstrosityEntityScript`
+filters Creature2 `62575` and credits objectives `2926` and `2941`; and
+regenerated DataMapping has repeated PE299 creature `28306` coordinates in
+world `2980` / area `4351` with matching stats and spells. After
+`python Tools\DataMapping\map_wildstar_data.py` and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py`, relation
+`2415` regenerates as `reviewed_public_event_creature_blocked_spawn_credit_smoke`,
+while the creature row reports `match_status=reviewed` and
+`original_match_status=scored_name`.
+
+Verification: focused Ultimate Protogames/public-event objective-credit tests
+passed `620/620` with `--no-build`; generated content-retail validation reports
+`31` files / `168,101` rows, all `not_retail_complete`; CreateBundleOnly
+worksheet:
+`artifacts\blocker_evidence\20260619-085627-instance-2980-mondos-monstrosity-bridge-review`.
+Ultimate Protogames remains not retail-complete and split-required. Remaining
+external evidence is live build 16042 client/server smoke for the Mondo route,
+timed qualification and phase order, spawn visibility and combat timing,
+Mondo's Crate timing/selection, rewards, medals, achievements, replay cleanup,
+and full dungeon negative cases.
+
+Supplemental update: 2026-06-19 CEST F-024 Ultimate Protogames Warden bridge review.
+Ultimate Protogames public-event creature relation `2219` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps Jabbithole creature `28413` (`Warden`) to Creature2 `62324`. This was
+not promoted from scored-name matching alone: build 16042 objective `2678`
+uses TargetGroup `12474` for the Warden leg, the existing
+`UltimateProtogamesEventScript` spawns Creature2 `62324` in world `2980` /
+area `4333` at `-20718,-945,-6923`, `WardenEntityScript` filters Creature2
+`62324` and credits objective `2678`, and regenerated DataMapping has repeated
+Jabbithole PE299 creature `28413` coordinates in world `2980` / area `4333`
+matching that placement/stat bundle. After `python Tools\DataMapping\map_wildstar_data.py`
+and `python Tools\WikiArchiveAudit\content_retail_completeness_audit.py`,
+relation `2219` regenerates as `reviewed_public_event_creature_blocked_spawn_credit_smoke`
+with `match_status=reviewed` and `original_match_status=scored_name`.
+
+Verification: focused Ultimate Protogames/public-event objective-credit tests
+passed `620/620` with `--no-build`; generated content-retail validation reports
+`31` files / `168,101` rows, all `not_retail_complete`; CreateBundleOnly
+worksheet:
+`artifacts\blocker_evidence\20260619-083228-instance-2980-warden-bridge-review`.
+Ultimate Protogames remains not retail-complete and split-required. Remaining
+external evidence is live build 16042 client/server smoke for Prototentiary
+room and phase order, Warden spawn visibility and combat timing,
+stealth/no-alarm and `2855` timer/failure semantics, door/cage choreography,
+rewards, medals, achievements, replay cleanup, and full dungeon negative cases.
+
+Supplemental update: 2026-06-19 CEST Q3797 Securing the Area validation-gate recheck.
+After the Q5580 row was left blocked on live-client evidence, generated
+next-slice queue rank 12 is `quest-3797` (`Securing the Area`) with
+`actionability_state=quest_validation_ready`,
+`confidence_level=implemented_pending_manual_smoke`, `retail_claim_allowed=false`,
+and `completion_status=not_retail_complete`. Local evidence rechecked:
+`Source/NexusForever.Script.Main/Quests/NorthernWilds/Q3797SecuringTheArea.cs`
+is lifecycle-only, while generic `KillTargetGroups` and TargetGroup expansion
+own objective `4918` / TargetGroup `1177` count `8`.
+`NorthernWildsMapScript.cs` fallback-spawns reviewed Land's Reach Commander
+Durek `11066` at receiver WorldLocation2 `7727` and eight reviewed objective
+targets: Rootbrute Grimspore `12212` at source-coordinate ids `8272460`,
+`8272461`, `8272462`, and `8272464`; Rootbrute Deathcap `12213` at
+`3837530` and `3785147`; and Yeti Frostclaw `11948` at `8122314` and
+`8122316`. Generated evidence maps Jabbithole objective `732` to
+QuestObjective `4918`, Durek starter/finisher relations `166`/`1693` to
+Creature2 `11066`, and Rootbrute/Yeti objective relations `105`, `106`,
+`3055`, and `5204` to `12212`, `11948`, `12213`, and `11945`. Source-coordinate
+review found the reviewed Snowstalker `244->11945` spawns are still the western
+Northern Wilds/shared-yeti cluster, not a Q3797-specific Settler's Reach
+placement, so no new Snowstalker runtime spawn was added. Focused tests cover
+the Q3486 prerequisite accept gate, Durek giver/receiver indexing, map fallback
+placement, TargetGroup `1177` expansion, KillTargetGroups credit, selectable
+reward handling, and the Q3797 completion path.
+
+Verification: the queue-provided focused test command without build
+(`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-build -v minimal --nologo --filter "FullyQualifiedName~Q3797"`)
+passed `22/22`. The normal build-backed variant was not rerun in this slice
+because the local runtime stack is active and includes `NexusForever.StsServer`
+PID `1760` and `NexusForever.WorldServer` PID `53392`; those user/runtime
+processes were left intact. A CreateBundleOnly worksheet was created at
+`artifacts\blocker_evidence\20260619-081509-quest-3797-securing-the-area-recheck`.
+Q3797 remains blocked on completing that live build 16042 client/server bundle:
+Q3486->Q3797 availability and accept, Durek accept/completion dialog,
+Rootbrute/Frostclaw/Snowstalker combat kill and objective UI timing, exact
+placement/density/respawn/tap/threat and loot behavior, type-9/non-spawned
+TargetGroup branch semantics, reward-choice UI and inventory persistence,
+Northern Wilds zone bridge/map guidance for rows `96` and `166`,
+repeat/wrong-world/missing-objective negatives, and end-to-end Q3797 completion.
+Snowstalker relation `5204` / Jabbithole creature `244` -> Creature2 `11945`
+remains reviewed for credit but retail-blocked pending Q3797-specific
+source-coordinate proof or accepted client/live evidence before any
+retail-complete claim.
+
+Supplemental update: 2026-06-19 CEST Q5580 Enforced Radio Silence validation-gate recheck.
+After the Q5575 row was left blocked on live-client evidence, generated
+next-slice queue rank 11 is `quest-5580` (`Enforced Radio Silence`) with
+`actionability_state=quest_validation_ready`,
+`confidence_level=implemented_pending_manual_smoke`, `retail_claim_allowed=false`,
+and `completion_status=not_retail_complete`. Local evidence rechecked:
+`Source/NexusForever.Script.Main/Quests/CrimsonIsle/Q5580.cs` preserves the
+Q5594 merge gate by granting `Last Resistance` only after both Q5580 and Q5583
+are complete. `CrimsonIsleMapScript.cs` fallback-spawns two reviewed Tower
+Controls `26559` simple entities in world `870` / Megatech Station with
+checklist indexes `1..2`, activeProp ids `1137353` and `1137404`, and positions
+matching the generated source-coordinate evidence; it also fallback-spawns
+Kezrek Warbringer `24158` at receiver world location `17902`. Generated rows map
+objective `8227` to ActivateTargetGroupChecklist TargetGroup `2889` count `2`,
+with objective indicators `28105` and `24831`, and mark Kezrek starter/finisher
+relations reviewed but pending dialog smoke. Focused tests cover Q5604->Q5580/
+Q5583 branch grant, Q5580 not granting Q5594 while Q5583 is missing, Tower
+Controls fallback placement/checklist/activeProp coverage, and visible-Kezrek
+receiver override behavior. Online Jabbithole cross-checks corroborate Enforced
+Radio Silence as Crimson Isle / Operation Annihilator content started by call or
+Kezrek Warbringer, completed by call or Kezrek Warbringer, with the objective to
+sabotage Tower Controls at Megatech Station, plus listed cash and six weapon
+choice rewards. The Tower Controls, Kezrek Warbringer, and Crimson Isle pages
+corroborate the involved object/NPC and zone surface. Those sources corroborate
+the client-facing quest surface but do not prove NexusForever live gameplay,
+activation timing, active-prop visuals, Kezrek dialog/route semantics, quest
+direction UI, or reward/achievement UI.
+
+Verification: the queue-provided focused test command without build
+(`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-build -v minimal --nologo --filter "FullyQualifiedName~Q5580"`)
+passed `2/2`. The normal build-backed variant was not rerun in this slice
+because the local runtime stack is active and includes `NexusForever.StsServer`
+PID `1760` and `NexusForever.WorldServer` PID `53392`; those user/runtime
+processes were left intact. A CreateBundleOnly worksheet was created at
+`artifacts\blocker_evidence\20260619-012209-quest-5580-enforced-radio-silence-recheck`.
+Q5580 remains blocked on completing that live build 16042 client/server bundle:
+Q5604->Q5580/Q5583 grant and accept, Kezrek starter/dialog and completion flow
+or confirmed script-grant-only retail route, Tower Controls activation and
+ActivateTargetGroupChecklist packet/UI timing, active-prop visual/despawn/respawn
+behavior, quest direction/map guidance, reward-choice UI and inventory
+persistence, achievement toast/log UI, Q5580/Q5583->Q5594 merge behavior,
+Crimson Isle visibility/routing, and the named negative cases. Kezrek
+source_relation_id `465`/`1559` / Jabbithole creature `3385` to Creature2
+`24158` remains reviewed but retail-blocked pending runtime dialog proof or
+accepted client/live evidence before any retail-complete claim.
+
+Supplemental update: 2026-06-19 CEST Q5575 Seizing Power validation-gate recheck.
+After the Q5573 row was left blocked on live-client evidence, generated
+next-slice queue rank 10 is `quest-5575` (`Seizing Power`) with
+`actionability_state=quest_validation_ready`,
+`confidence_level=implemented_pending_manual_smoke`, `retail_claim_allowed=false`,
+and `completion_status=not_retail_complete`. Local evidence rechecked:
+`Source/NexusForever.Script.Main/Quests/CrimsonIsle/Q5575.cs` credits hidden
+objective `12871` only after Power Regulator objective `8371` completes,
+suppresses duplicate credit once the quest is achieved, intentionally does not
+queue an unproven cinematic, and grants follow-up quest `5596` on completion.
+`CrimsonIsleMapScript.cs` fallback-spawns the shared Q5573/Q5575 Power
+Regulator `24999` simple entities in world `870` / area `1217` with checklist
+indexes `1..3` and activeProp ids `5708188`, `5708196`, and `5708174`; generated
+world-dependency rows place the Q5575 receiver at world location `17817` and
+the objective indicators at `17816`, `17929`, `17930`, and `18449`. Focused
+tests cover Q5595->Q5575 grant, Q5575->Q5596 branch grant, Power Regulator
+fallback placement, hidden-objective credit, no-cinematic behavior, and
+achieved-state duplicate suppression. Online Jabbithole cross-checks corroborate
+Seizing Power as Crimson Isle / Operation Shieldbreaker content started by call
+or Kezrek Warbringer, completed by call, with objectives to find the Megatech
+Shield Generators and disable Power Regulators, plus listed cash and choice
+rewards. The Kezrek Warbringer and Power Regulator pages corroborate their
+Q5575 relationships. Those sources corroborate the client-facing quest surface
+but do not prove NexusForever live gameplay, trigger timing, active-prop visuals,
+Kezrek dialog/spawn routing, or reward/achievement UI.
+
+Verification: the queue-provided focused test command without build
+(`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-build -v minimal --nologo --filter "FullyQualifiedName~Q5575"`)
+passed `3/3`. The normal build-backed variant was not rerun in this slice
+because the local runtime stack is active and includes `NexusForever.StsServer`
+PID `1760` and `NexusForever.WorldServer` PID `53392`; those user/runtime
+processes were left intact. A CreateBundleOnly worksheet was created at
+`artifacts\blocker_evidence\20260619-011828-quest-5575-seizing-power-recheck`.
+Q5575 remains blocked on completing that live build 16042 client/server bundle:
+Q5595->Q5575 grant and accept, Kezrek/call starter dialog and call completion
+flow, objective `8523` trigger timing, Power Regulator activation and
+ActivateTargetGroupChecklist packet/UI timing, active-prop visual/despawn/respawn
+behavior, hidden-objective timing, reward-choice UI and inventory persistence,
+achievement toast/log UI, Q5575->Q5596 branch behavior, Crimson Isle visibility
+and routing, and the named negative cases. Kezrek starter relation
+(`quest_creatures` source_relation_id `2212`, Jabbithole creature `3385` to
+Creature2 `24158`) remains reviewed but retail-blocked pending runtime
+spawn/dialog proof or accepted client/live evidence before any retail-complete
+claim.
+
+Supplemental update: 2026-06-19 CEST Q5573 Powering Down validation-gate recheck.
+After the Q3963 row was left blocked on live-client evidence, generated
+next-slice queue rank 9 is `quest-5573` (`Powering Down`) with
+`actionability_state=quest_validation_ready`,
+`confidence_level=implemented_pending_manual_smoke`, `retail_claim_allowed=false`,
+and `completion_status=not_retail_complete`. Local evidence rechecked:
+`Source/NexusForever.Script.Main/Quests/CrimsonIsle/Q5573PoweringDown.cs`
+queues `IQ5573PoweringDownCinematic` and credits hidden objective `12870` after
+Power Regulator objective `8229` completes, then grants follow-up quest `5596`
+on completion; `CrimsonIsleMapScript.cs` fallback-spawns three reviewed Power
+Regulator `24999` simple entities in world `870` / area `1217` with checklist
+indexes `1..3` and activeProp ids `5708188`, `5708196`, and `5708174`; and
+focused tests cover Q5593->Q5573 grant, Q5573->Q5596 branch grant, Power
+Regulator fallback placement, cinematic/hidden-objective credit, and
+achieved-state duplicate suppression. Online Jabbithole cross-checks corroborate
+Powering Down as Crimson Isle / Operation Shieldbreaker content started and
+completed by Mondo Zax or call, with objectives to find the Megatech Shield
+Generator and disable Power Regulators, plus listed cash and choice rewards.
+The Mondo Zax and Power Regulator pages corroborate their Powering Down
+relationships. Those sources corroborate the client-facing quest surface but do
+not prove NexusForever live gameplay, activation timing, active-prop visuals, or
+the partial Crimson Badlands zone bridge.
+
+Verification: the queue-provided focused test command without build
+(`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-build -v minimal --nologo --filter "FullyQualifiedName~Q5573"`)
+passed `3/3`. The normal build-backed variant was not rerun in this slice
+because the local runtime stack is active and includes `NexusForever.StsServer`
+PID `1760` and `NexusForever.WorldServer` PID `53392`; those user/runtime
+processes were left intact. A CreateBundleOnly worksheet was created at
+`artifacts\blocker_evidence\20260619-011205-quest-5573-powering-down-recheck`.
+Q5573 remains blocked on completing that live build 16042 client/server bundle:
+client-visible Mondo/call accept and completion flow, objective `8524` trigger
+timing, Power Regulator activation and ActivateTargetGroupChecklist packet/UI
+timing, active-prop visual/despawn/respawn behavior, cinematic timing,
+reward-choice UI and inventory persistence, achievement toast/log UI,
+Q5593->Q5573->Q5596 branch behavior, Crimson Isle and Crimson Badlands
+visibility/routing, and the named negative cases. The Crimson Badlands zone
+relation (`quest_call_zones` source_relation_id `2122`, Jabbithole zone `65`
+to WorldZone `131`) remains blocked pending reviewed current WorldZone evidence
+or accepted live/client proof before any retail-complete claim.
+
+Supplemental update: 2026-06-19 CEST Q3963 More Important Than Revenge validation-gate recheck.
+After the Q3886 row was left blocked on live-client evidence and zone routing,
+generated next-slice queue rank 8 is `quest-3963` (`More Important Than
+Revenge`) with `actionability_state=quest_validation_ready`,
+`confidence_level=implemented_pending_manual_smoke`, `retail_claim_allowed=false`,
+and `completion_status=not_retail_complete`. Local evidence rechecked:
+`Source/NexusForever.Script.Main/Quests/NorthernWilds/Q3963MoreImportantThanRevenge.cs`
+owns lifecycle logging only while the generic ActivateEntity path and ship
+control scripts provide objective behavior; `NorthernWildsMapScript.cs`
+fallback-spawns Ship Controls `27196` at world locations `45401` and `45402`;
+`WorldLocationTeleporterEntityScript.cs` explicitly blocks the shared
+Creature2 `27196` transporter mapping in Northern Wilds so Q3963 ship controls
+do not teleport; and focused tests cover Q3487->Q3963 follow-up, Northern Wilds
+ActivateEntity credit for Ship Controls, the no-teleport negative, Galeras
+Deadeye receiver `16622` completion gating, selectable item rewards, and
+achievement hooks. Online Jabbithole cross-checks corroborate More Important
+Than Revenge as Northern Wilds / Vengeance, started by call in Northern Wilds
+or Algoroc, Deadeye Brightland, or Unknown, completed by Deadeye Brightland,
+with a Ship Controls objective and cash reward. The Deadeye Brightland and Ship
+Controls pages corroborate their More Important Than Revenge relationships.
+Jabbithole does not corroborate the local selectable-item reward rows, so those
+remain Quest2Reward/test-backed pending client UI smoke rather than
+online-corroborated. Online evidence also does not resolve the unmatched Unknown
+starter bridge.
+
+Verification: the queue-provided focused test command without build
+(`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-build -v minimal --nologo --filter "FullyQualifiedName~Q3963|FullyQualifiedName=NexusForever.Game.Tests.Transport.WorldLocationTeleporterEntityScriptTests.OnActivateSuccess_WithShipControlsOnNorthernWilds_DoesNotTeleport"`)
+passed `16/16`. The normal build-backed variant was not rerun in this slice
+because the local runtime stack is active and includes `NexusForever.StsServer`
+PID `1760` and `NexusForever.WorldServer` PID `53392`; those user/runtime
+processes were left intact. A CreateBundleOnly worksheet was created at
+`artifacts\blocker_evidence\20260619-010411-quest-3963-more-important-than-revenge-recheck`.
+Q3963 remains blocked on completing that live build 16042 client/server bundle:
+client-visible Deadeye/call/Unknown start behavior, Ship Controls activation
+and ActivateEntity packet/UI timing, confirmation that Northern Wilds controls
+do not behave as transporters, Galeras Deadeye completion dialog, reward-choice
+UI and inventory persistence, achievement toast/log UI, Q3487->Q3963 chain and
+handoff to Algoroc/Galeras visibility, zone/routing guidance for zone `1`
+partial matches and Algoroc `13->17` visibility, and the named negative cases.
+Starter source_relation_id `2130` / Jabbithole creature `23645` (`Unknown`)
+remains blocked pending reviewed current Creature2/source-coordinate evidence, a
+replacement relation, client/decompile table proof, or accepted live/retail
+capture before any runtime spawn/import or retail-complete claim.
+
+Supplemental update: 2026-06-19 CEST Q3886 Fiery Distraction validation-gate recheck.
+After the Q3673 row was left blocked on live-client evidence and the unmatched
+Unknown finisher bridge, generated next-slice queue rank 7 is `quest-3886`
+(`Fiery Distraction`) with `actionability_state=quest_validation_ready`,
+`confidence_level=implemented_pending_manual_smoke`, `retail_claim_allowed=false`,
+and `completion_status=not_retail_complete`. Local evidence rechecked:
+`Source/NexusForever.Script.Main/Quests/NorthernWilds/Q3886FieryDistraction.cs`
+owns the Q3886->Q3673 follow-up handoff; `NorthernWildsMapScript.cs`
+fallback-spawns Burning Torch `13630` and Skeech Hut `13623` entities near
+Coldburrow Cavern, assigning Skeech Hut checklist indexes for TargetGroup
+`1460`; and focused tests cover Commander Durek starter/receiver relation,
+Burning Torch CSI credit, Skeech Hut checklist credit, map fallback placements,
+selectable reward grants, and achievement hooks. Online Jabbithole cross-checks
+corroborate Fiery Distraction as Northern Wilds / Shipwrecked and Coldburrow
+Cavern content, started by call or Commander Durek and completed by Commander
+Durek, with Burning Torch and Skeech Hut objectives plus the listed cash and
+item-choice reward surface. The Commander Durek, Burning Torch, and Skeech Hut
+pages corroborate their Fiery Distraction relationships. Those sources
+corroborate the client-facing quest surface but do not prove NexusForever
+runtime/client smoke or zone bridge/routing semantics.
+
+Verification: the queue-provided focused test command without build
+(`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-build -v minimal --nologo --filter "FullyQualifiedName~Q3886"`)
+passed `11/11`. The normal build-backed variant was not rerun in this slice
+because the local runtime stack is active and includes `NexusForever.StsServer`
+PID `1760` and `NexusForever.WorldServer` PID `53392`; those user/runtime
+processes were left intact. A CreateBundleOnly worksheet was created at
+`artifacts\blocker_evidence\20260619-010104-quest-3886-fiery-distraction-recheck`.
+Q3886 remains blocked on completing that live build 16042 client/server bundle:
+client-visible Commander Durek/call accept flow and Commander Durek completion
+dialog, Burning Torch activation and CSI packet timing, Skeech Hut
+ActivateTargetGroupChecklist credit/despawn/respawn behavior, reward-choice UI
+and inventory persistence, achievement toast/log UI, Q3886->Q3673 chain
+behavior, zone/routing guidance for zone `1` partial matches and
+Coldburrow/Northern Wilds `202->219` visibility, and the named negative cases.
+No runtime/data import was widened in this slice.
+
+Supplemental update: 2026-06-19 CEST Q3673 Contact with Thayd validation-gate recheck.
+After the Q3668 row was left blocked on live-client evidence and unresolved
+target-group members, generated next-slice queue rank 6 is `quest-3673`
+(`Contact with Thayd`) with `actionability_state=quest_validation_ready`,
+`confidence_level=implemented_pending_manual_smoke`, `retail_claim_allowed=false`,
+and `completion_status=not_retail_complete`. Local evidence rechecked:
+`Source/NexusForever.Script.Main/Quests/NorthernWilds/Q3673ContactWithThayd.cs`
+credits the hidden completion objective `13391` only after Signal Flare
+checklist objective `4748` completes, queues the Contact with Thayd cinematic on
+Achieved, and grants follow-up quest `3670` on Completed; `NorthernWildsMapScript.cs`
+fallback-spawns the three Signal Flare entities `12521`, `13150`, and `13151`
+at world locations `8867`, `8868`, and `8869` with checklist indexes `0..2`;
+and focused tests cover the Q3886->Q3673 follow-up, hidden objective duplicate
+guard, incomplete-objective negative, map fallbacks, selectable rewards, and
+achievement hooks. Online Jabbithole cross-checks corroborate Contact with Thayd
+as Northern Wilds / Shipwrecked, started by call or Deadeye Brightland,
+completed by call, Unknown, or Deadeye Brightland, with Signal Flare objectives
+and the listed currency reward. The Deadeye Brightland and Signal Flare pages
+corroborate their Northern Wilds and Contact with Thayd relationships, and the
+WildStar Wiki page independently corroborates the Signal Flare rescue objective.
+Those sources corroborate the client-facing quest surface but do not prove
+NexusForever runtime/client smoke or the unmatched Unknown finisher bridge.
+
+Verification: the queue-provided focused test command without build
+(`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-build -v minimal --nologo --filter "FullyQualifiedName~Q3673"`)
+passed `26/26`. The normal build-backed variant was not rerun in this slice
+because the local runtime stack is active and includes `NexusForever.StsServer`
+PID `1760` and `NexusForever.WorldServer` PID `53392`; those user/runtime
+processes were left intact. A CreateBundleOnly worksheet was created at
+`artifacts\blocker_evidence\20260619-005712-quest-3673-contact-with-thayd-recheck`.
+Q3673 remains blocked on completing that live build 16042 client/server bundle:
+client-visible Deadeye/call accept and completion flow, Signal Flare activate
+and CSI packet timing, checklist objective and hidden objective completion
+timing, cinematic timing, reward-choice UI and inventory persistence,
+achievement toast/log UI, Q3886->Q3673->Q3670 chain behavior, zone/routing
+guidance, and the named negative cases. The finisher bridge for
+source_relation_id `1842` / Jabbithole creature `23645` (`Unknown`) remains
+blocked pending reviewed current Creature2/source-coordinate evidence, a
+replacement relation, client/decompile table proof, or accepted live/retail
+capture before any runtime spawn/import or retail-complete claim.
+
+Supplemental update: 2026-06-19 CEST Q3668 Indigenous Intelligence validation-gate recheck.
+After the Q3486 row was left blocked on live-client evidence and reward
+provenance, generated next-slice queue rank 5 is `quest-3668` (`Indigenous
+Intelligence`) with `actionability_state=quest_validation_ready`,
+`confidence_level=implemented_pending_manual_smoke`, `retail_claim_allowed=false`,
+and `completion_status=not_retail_complete`. Local evidence rechecked:
+`Source/NexusForever.Script.Main/Quests/NorthernWilds/Q3668.cs` is lifecycle
+logging only while generic TalkTo, ActivateEntity target-group, and
+KillTargetGroup paths provide the server-side credit behavior;
+`NorthernWildsMapScript.cs` fallback-spawns the reviewed Bartol Sunward
+receiver, Scientist Lusk objective NPC, seven Imprisoned Survivor placements,
+and reviewed Skeech target-group representatives; and focused tests cover the
+Q3668 nested target-group expansion, blocked target-group member credit shape,
+map-load fallbacks, selectable rewards, and achievement hooks. Online
+Jabbithole cross-checks corroborate Indigenous Intelligence as Northern
+Wilds / Shipwrecked, started by Deadeye Brightland and completed by Bartol
+Sunward, with Scientist Lusk, Imprisoned Survivor, Coldburrow Cavern, and
+Skeech-family objective context. Those sources corroborate the client-facing
+quest surface but do not prove NexusForever runtime/client smoke or resolve
+the missing target-group members.
+
+Verification: the queue-provided focused test command without build
+(`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-build -v minimal --nologo --filter "FullyQualifiedName~Q3668"`)
+passed `14/14`. The normal build-backed variant was not rerun in this slice
+because the local runtime stack is active and includes `NexusForever.StsServer`
+PID `1760` and `NexusForever.WorldServer` PID `53392`; those user/runtime
+processes were left intact. A CreateBundleOnly worksheet was created at
+`artifacts\blocker_evidence\20260619-005231-quest-3668-indigenous-intelligence-recheck`.
+Q3668 remains blocked on completing that live build 16042 client/server bundle:
+client-visible Deadeye accept flow, Lusk dialog/activation and objective
+credit, Imprisoned Survivor activate/transform/despawn timing, Skeech
+combat/tap/threat/respawn/loot behavior, Bartol completion dialog,
+reward-choice UI and inventory persistence, pushed item `6912`
+accept/abandon/replay behavior, achievement toast/log UI, Q3486/Q3671/Q3668
+chain behavior, zone/routing guidance, and the named negative cases. Target
+group members `14054` and `11913` remain blocked pending reviewed current
+Creature2/source-coordinate evidence, client/decompile table proof, or
+accepted live/retail capture before any spawn/import or retail-complete claim.
+
+Supplemental update: 2026-06-19 CEST Q3486 Empowered Tower validation-gate recheck.
+After the Q3480 row was left blocked on live-client evidence, generated
+next-slice queue rank 4 is `quest-3486` (`Empowered Tower`) with
+`actionability_state=quest_validation_ready`,
+`confidence_level=implemented_pending_manual_smoke`, `retail_claim_allowed=false`,
+and `completion_status=not_retail_complete`. Local evidence rechecked:
+`Source/NexusForever.Script.Main/Quests/NorthernWilds/Q3486EmpoweredTower.cs`
+owns the accepted-in-zone arrival story/objective credit, completion cinematic,
+Q3671/Q3797 quest mentions, Loftite Crystal proximity collection, and Crystal
+Guardian/Frostbite kill-credit script; `NorthernWildsMapScript.cs`
+fallback-spawns the reviewed Master Control Panel, Loftite Crystal, and five
+Crystal Guardian placements; and focused tests cover Q3667->Q3486 follow-up,
+arrival zone credit, out-of-zone negative, Loftite duplicate/missing-quest
+negatives, map fallback collection, Crystal Guardian/Frostbite target-group
+credit, Master Control Panel receiver visibility, selectable rewards, cash,
+and achievement hooks. Online Jabbithole cross-checks corroborate Empowered
+Tower as Northern Wilds / Arrival, started and completed by Master Control
+Panel, with power-cable and Loftite/Crystal Guardian objectives plus the
+listed reward choices. The Master Control Panel and Crystal Guardian pages
+corroborate their Northern Wilds and quest relationships. Those sources
+corroborate the client-facing quest surface but do not prove NexusForever
+runtime/client smoke or canonical reward-id provenance.
+
+Verification: the queue-provided focused test command without build
+(`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-build -v minimal --nologo --filter "FullyQualifiedName~Q3486"`)
+passed `34/34`. The normal build-backed variant was not rerun in this slice
+because the local runtime stack is active and includes `NexusForever.StsServer`
+PID `1760` and `NexusForever.WorldServer` PID `53392`; those user/runtime
+processes were left intact. A CreateBundleOnly worksheet was created at
+`artifacts\blocker_evidence\20260619-004925-quest-3486-empowered-tower-recheck`.
+Q3486 remains blocked on completing that live build 16042 client/server bundle:
+client-visible Master Control Panel accept/complete flow, arrival story-panel
+and objective timing, Loftite Crystal proximity collection/despawn behavior,
+Crystal Guardian and Frostbite combat/drop/credit timing, reward-choice UI and
+inventory persistence, achievement toast/log UI, Q3667->Q3486->Q3671/Q3797
+chain behavior, map/episode guidance, and the named negative cases. Source
+reward `5319` (`Item2` `1377`, Jabbithole game reward `2147`, canonical row
+`1707`) remains a provenance collision and must not be used as canonical
+reward-id proof without a source review or accepted client/runtime evidence.
+
+Supplemental update: 2026-06-19 CEST Q3480 Reporting for Duty validation-gate recheck.
+After the Q3479 row was left blocked on live-client evidence, generated
+next-slice queue rank 3 is `quest-3480` (`Reporting for Duty`) with
+`actionability_state=quest_validation_ready`,
+`confidence_level=implemented_pending_manual_smoke`, `retail_claim_allowed=false`,
+and `completion_status=not_retail_complete`. Local evidence rechecked:
+`Source/NexusForever.Script.Main/Quests/NorthernWilds/Q3480.cs` owns the
+Q3667 follow-up; `NorthernWildsMapScript.cs` fallback-spawns the reviewed
+Commander Durek starter, Deadeye Brightland receiver, Trapped Survivor,
+shared Yeti Snowstalker/Yeti Frostclaw rows, and Fierce Yeti Icefang; and
+focused tests cover Commander Durek starter visibility, Q3479 exclusion
+gating, trapped-survivor CSI credit, shared-yeti target-group kill credit,
+Deadeye completion visibility, selectable reward grants, cash, achievement
+hooks, and Q3480->Q3667 follow-up behavior. Online Jabbithole cross-checks
+corroborate the quest as Northern Wilds / Arrival, started by Commander Durek
+and call entries, completed by Deadeye Brightland, with Trapped Survivor and
+yeti objectives plus the listed reward choices. The Commander Durek, Deadeye
+Brightland, Yeti Snowstalker, and Yeti Frostclaw NPC pages corroborate their
+Northern Wilds and quest relationships. Those sources corroborate the
+client-facing quest surface but do not prove NexusForever runtime/client smoke.
+
+Verification: the queue-provided focused test command without build
+(`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-build -v minimal --nologo --filter "FullyQualifiedName~Q3480"`)
+passed `36/36`. The normal build-backed variant was not rerun in this slice
+because the local runtime stack is active and includes `NexusForever.StsServer`
+PID `1760` and `NexusForever.WorldServer` PID `53392`; those user/runtime
+processes were left intact. A CreateBundleOnly worksheet was created at
+`artifacts\blocker_evidence\20260619-004632-quest-3480-reporting-for-duty-recheck`.
+Q3480 remains blocked on completing that live build 16042 client/server bundle:
+client-visible Commander Durek accept flow, Deadeye completion dialog,
+survivor CSI activation and credit timing, yeti combat/tap/threat/respawn
+behavior, reward-choice UI and inventory persistence, achievement toast/log
+UI, Q3479 exclusion behavior, Q3480->Q3667 chain behavior, map/episode
+guidance, and the named negative cases.
+
+Supplemental update: 2026-06-19 CEST Q3479 From the Wreckage validation-gate recheck.
+After the Q5597 row was left blocked on live-client evidence, generated
+next-slice queue rank 2 is `quest-3479` (`From the Wreckage`) with
+`actionability_state=quest_validation_ready`,
+`confidence_level=implemented_pending_manual_smoke`, `retail_claim_allowed=false`,
+and `completion_status=not_retail_complete`. Local evidence rechecked:
+`Source/NexusForever.Script.Main/Quests/NorthernWilds/Q3479FromTheWreckage.cs`
+owns the follow-up, mutual exclusion, trapped-survivor CSI objective `4467`,
+and shared-yeti target-group kill objective `4564`;
+`NorthernWildsMapScript.cs` fallback-spawns the reviewed Bosun/Deadeye,
+Trapped Survivor, Yeti Snowstalker, Yeti Frostclaw, and Fierce Yeti rows; and
+focused tests cover Bosun starter visibility, Deadeye receiver indexing,
+trapped-survivor CSI credit, shared-yeti target-group kill credit, selectable
+reward grants, cash, and achievement hooks. Online Jabbithole cross-checks
+corroborate the quest as Northern Wilds / Arrival, started by Bosun Redmark
+and call entries, completed by Deadeye Brightland, with Trapped Survivor and
+yeti objectives plus the listed reward choices. The Bosun, Deadeye, Yeti
+Snowstalker, and Yeti Frostclaw NPC pages corroborate their Northern Wilds and
+quest relationships. Those sources corroborate the client-facing quest surface
+but do not prove NexusForever runtime/client smoke.
+
+Verification: the queue-provided focused test command without build
+(`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-build -v minimal --nologo --filter "FullyQualifiedName~Q3479"`)
+passed `38/38`. The normal build-backed variant was not rerun in this slice
+because the current local stack was already confirmed during the Q5597 recheck
+to be locking server output DLLs; those user/runtime processes were left
+intact. A CreateBundleOnly worksheet was created at
+`artifacts\blocker_evidence\20260619-003639-quest-3479-from-the-wreckage-recheck`.
+Q3479 remains blocked on completing that live build 16042 client/server bundle:
+client-visible Bosun accept flow, Deadeye completion dialog, survivor CSI
+activation and credit timing, yeti combat/tap/threat/respawn behavior, reward
+choice UI and inventory persistence, achievement toast/log UI, Q4106->Q3479
+and Q3479->Q3667 chain behavior, Q3480 exclusion behavior, map/episode
+guidance, and the named negative cases.
+
+Supplemental update: 2026-06-19 CEST Q5597 Dregs and Thieves validation-gate recheck.
+Generated next-slice queue rank 1 remains `quest-5597` (`Dregs and Thieves`)
+with `actionability_state=quest_validation_ready`,
+`confidence_level=implemented_pending_manual_smoke`, `retail_claim_allowed=false`,
+and `completion_status=not_retail_complete`. Local evidence rechecked:
+`Source/NexusForever.Script.Main/Quests/CrimsonIsle/Q5597.cs` owns the Q5604
+follow-up and Chua Explosives activation script, `CrimsonIsleMapScript.cs`
+fallback-spawns 30 reviewed Chua Explosives `24286` placements in world `870`,
+and focused tests cover accepted-quest virtual collect credit, missing-quest
+and repeat negatives, Mondo Zax receiver visibility, fixed reward grants, and
+achievement checklist `4134`. Online Jabbithole cross-checks corroborate the
+quest as Crimson Isle / The Guns of Bloodstone, started and completed by Mondo
+Zax/call, with the Chua Explosives objective at Scarhide Camp and the listed
+reward surface; Mondo Zax's Crimson Isle NPC page also lists `Dregs and
+Thieves` as both a started and completed quest. Those sources corroborate the
+client-facing quest surface but do not prove NexusForever runtime/client smoke.
+
+Verification: the queue-provided focused test command without build
+(`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-build -v minimal --nologo --filter "FullyQualifiedName~Q5597"`)
+passed `15/15`. The normal build-backed command was attempted first and failed
+before test execution because the already-running local stack locks server
+output DLLs (`NexusForever.StsServer` PID `1760`, `NexusForever.WorldServer`
+PID `53392`); those processes were not stopped. `I:\WildStar`,
+`I:\WildStar\WildStar.exe`, `I:\WildStar\Client64\WildStar64.exe`, and
+`I:\WildStar\Patch` exist. A CreateBundleOnly worksheet was created at
+`artifacts\blocker_evidence\20260619-002956-quest-5597-dregs-and-thieves-recheck`.
+Q5597 remains blocked on completing that live build 16042 client/server bundle:
+client-visible Mondo dialog/receiver flow, Chua Explosives activation and UI
+credit timing, exact density/respawn/despawn behavior, reward UI and inventory
+persistence, achievement toast/log UI, Q5596->Q5597->Q5604 chain behavior, and
+the named negative cases.
+
+Supplemental update: 2026-06-19 CEST F-024 Space Madness Stampeding Horror Prime bridge review.
+Space Madness public-event creature relation `2030` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28129` (`Stampeding Horror`) to Creature2
+`69173`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`2345`, display group `28606`, display `28257`, candidate count `3`, and 61
+world `2149` / area `2421` coordinate rows. Objective `2115` TargetGroup
+`12684` nests TargetGroup `12683`, which nests TargetGroup `12680` containing
+Creature2 `69173`. Online Jabbithole cross-checks found the level-32
+`Stampeding Horror` NPC page in Expedition: Space Madness and the Swipe spell
+page listing both level-32 and level-50 `Stampeding Horror` as Space Madness
+public-event NPC users. Those sources corroborate the public-event context,
+but do not prove the Creature2 id; the bridge remains based on local generated
+DataMapping evidence. Normal source creature `9528` / relation `2251` maps to
+Creature2 `48348` in TargetGroup `12675` and remains its own scored-name
+review slice. Current source spell rows are blank, and no direct Space Madness
+script or test binding for Creature2 `69173` was found. No runtime behavior,
+spawn import, objective ownership, phase timing, objective logic, reward,
+medal, achievement, or replay-cleanup behavior was widened.
+
+Verification: full DataMapping output regenerated with
+`python Tools\DataMapping\map_wildstar_data.py`, and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py --only public-event-evidence,next-slice`
+regenerated only the needed public-event evidence, next-slice queue, and
+next-slice blocker CSVs. Generated DataMapping now reports
+`creature_public_event_map.csv` relation `2030` as `match_status=reviewed`.
+Broad `creature_public_event_map.csv` totals are now `100` reviewed, `620`
+ambiguous-name, `905` scored-name, `921` unique-name, and `99` unmatched rows;
+PE390 totals are now `66` reviewed, `12` ambiguous-name, and `44`
+scored-name. Focused audit tests passed `136/136`; generated content-retail
+validation covers `31` files / `168101` rows, all `not_retail_complete`.
+Safe world import verification was attempted with
+`Tools\DataMapping\sql\verify_safe_world_imports.sql`: runtime
+`nf_map_*` tables are absent (`expected_runtime_world_nf_map_tables_0_mismatch=0`),
+but this workstation is authoring-enabled, so the clean-runtime absence checks
+for `jabbithole`, `wildstar_client`, and `nexus_forever_mapping` each report
+`1`. The matching authoring-safe verification
+(`verify_authoring_safe_world_imports.sql`) produced no nonzero
+`*_mismatch` rows. That verifies the local authoring database state but does
+not replace clean-runtime verification on a deployment without reference
+schemas.
+Space Madness Prime remains not retail-complete and still blocked on live
+build 16042 smoke for relation `2030` spawn/import placement, Creature2
+`69173` objective ownership/usage, objective credit, phase timing, replay
+cleanup, rewards, medals, achievements, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Electrifying Nightmare Prime bridge review.
+Space Madness public-event creature relation `2029` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28128` (`Electrifying Nightmare`) to Creature2
+`69216`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`2300`, display group `25462`, display `22875`, and 69 world `2149` / area
+`2414` coordinate rows. Online Jabbithole cross-checks found the level-32
+`Electrifying Nightmare` NPC page in Expedition: Space Madness and an Energy
+Swat spell page listing both level-32 and level-50 `Electrifying Nightmare` as
+Space Madness public-event NPC users. Those sources corroborate the
+public-event context, but do not prove the Creature2 id; the bridge remains
+based on local generated DataMapping evidence. Normal source creature `389` /
+relation `24` is already reviewed to Creature2 `46127` with objective `1590`
+TargetGroup `6402` nesting TargetGroup `6400`, and
+`SavePanickedWorkersNightmareEntityScript` evidence. No current TargetGroup row
+lists Creature2 `69216`, current source spell rows are blank, and no direct
+Space Madness script or test binding for Creature2 `69216` was found. No
+runtime behavior, spawn import, objective ownership, phase timing, objective
+logic, reward, medal, achievement, or replay-cleanup behavior was widened.
+
+Verification: full DataMapping output regenerated with
+`python Tools\DataMapping\map_wildstar_data.py`, and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py --only public-event-evidence,next-slice`
+regenerated only the needed public-event evidence, next-slice queue, and
+next-slice blocker CSVs. Generated DataMapping now reports
+`creature_public_event_map.csv` relation `2029` as `match_status=reviewed`.
+Broad `creature_public_event_map.csv` totals are now `99` reviewed, `620`
+ambiguous-name, `906` scored-name, `921` unique-name, and `99` unmatched rows;
+PE390 totals are now `65` reviewed, `12` ambiguous-name, and `45`
+scored-name. Focused verification passed: content-retail audit/validator tests
+`136/136`, and generated content-retail validation `31` files / `168101` rows,
+all `not_retail_complete`. Space Madness Prime remains not retail-complete and
+still blocked on live build 16042 smoke for relation `2029` spawn/import
+placement, Creature2 `69216` objective ownership/usage, objective credit, phase
+timing, replay cleanup, rewards, medals, achievements, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Dark Woodheart Prime bridge review.
+Space Madness public-event creature relation `2028` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28127` (`Dark Woodheart`) to Creature2 `69164`.
+This was not promoted from scored-name matching alone: the bridge is backed by
+exact level-50 source/client mapping, faction `218`, action set `2351`, display
+group `24108`, display `21521`, and 65 world `2149` / area `2421` coordinate
+rows. Objective `2115` TargetGroup `12684` nests TargetGroup `12683`, which
+nests TargetGroup `12680` containing Creature2 `69164`. Online Jabbithole
+cross-checks found level-32 and level-50 `Dark Woodheart` NPC pages in
+Expedition: Space Madness plus item/drop and ability context. Those sources
+corroborate the public-event context, but do not prove the Creature2 id; the
+bridge remains based on local generated DataMapping evidence. Normal source
+creature `9509` / relation `2248` maps to Creature2 `48346` in TargetGroup
+`12675` and remains its own scored-name review slice. Current source spell rows
+are blank, and no direct Space Madness script or test binding for Creature2
+`69164` was found. No runtime behavior, spawn import, objective ownership,
+phase timing, objective logic, reward, medal, achievement, or replay-cleanup
+behavior was widened.
+
+Verification: full DataMapping output regenerated with
+`python Tools\DataMapping\map_wildstar_data.py`, and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py --only public-event-evidence,next-slice`
+regenerated only the needed public-event evidence, next-slice queue, and
+next-slice blocker CSVs. Generated DataMapping now reports
+`creature_public_event_map.csv` relation `2028` as `match_status=reviewed`.
+Broad `creature_public_event_map.csv` totals are now `98` reviewed, `620`
+ambiguous-name, `907` scored-name, `921` unique-name, and `99` unmatched rows;
+PE390 totals are now `64` reviewed, `12` ambiguous-name, and `46`
+scored-name. Focused verification passed: content-retail audit/validator tests
+`136/136`, and generated content-retail validation `31` files / `168101` rows,
+all `not_retail_complete`. Space Madness Prime remains not retail-complete and
+still blocked on live build 16042 smoke for relation `2028` spawn/import
+placement, Creature2 `69164` objective ownership/usage, objective credit, phase
+timing, replay cleanup, rewards, medals, achievements, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Rampaging Oxian Prime bridge review.
+Space Madness public-event creature relation `2027` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28126` (`Rampaging Oxian`) to Creature2
+`69140`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`2140`, display group `25209`, display `22622`, and 101 world `2149` / area
+`2419` coordinate rows. Online Jabbithole cross-checks found level-32 and
+level-50 `Rampaging Oxian` NPC pages in Expedition: Space Madness and a shared
+Resounding Charge usage page. Those sources corroborate the public-event
+context, but do not prove the Creature2 id; the bridge remains based on local
+generated DataMapping evidence. Normal source creature `3708` / relation `161`
+is already reviewed to Creature2 `45730` with TargetGroup `6363`, while no
+current PE390 objective row uses TargetGroup `6363`. No current TargetGroup row
+lists Creature2 `69140`, current source spell rows are blank, and no direct
+Space Madness script or test binding for Creature2 `69140` was found. No
+runtime behavior, spawn import, objective ownership, phase timing, objective
+logic, reward, medal, achievement, or replay-cleanup behavior was widened.
+
+Verification: full DataMapping output regenerated with
+`python Tools\DataMapping\map_wildstar_data.py`, and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py --only public-event-evidence,next-slice`
+regenerated only the needed public-event evidence, next-slice queue, and
+next-slice blocker CSVs. Generated DataMapping now reports
+`creature_public_event_map.csv` relation `2027` as `match_status=reviewed`.
+Broad `creature_public_event_map.csv` totals are now `97` reviewed, `620`
+ambiguous-name, `908` scored-name, `921` unique-name, and `99` unmatched rows;
+PE390 totals are now `63` reviewed, `12` ambiguous-name, and `47`
+scored-name. Focused verification passed: content-retail audit/validator tests
+`136/136`, and generated content-retail validation `31` files / `168101` rows,
+all `not_retail_complete`. Space Madness Prime remains not retail-complete and
+still blocked on live build 16042 smoke for relation `2027` spawn/import
+placement, Creature2 `69140` objective ownership/usage, objective credit, phase
+timing, replay cleanup, rewards, medals, achievements, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Gnarled Nightmare Prime bridge review.
+Space Madness public-event creature relation `2026` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28121` (`Gnarled Nightmare`) to Creature2
+`69223`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`2300`, display group `24275`, display `21688`, and 76 world `2149` / area
+`2414` coordinate rows. Online Jabbithole cross-checks found a public spell
+page listing both level-32 and level-50 `Gnarled Nightmare` as Expedition:
+Space Madness public-event NPCs, plus an item page listing the normal level-32
+row as a Space Madness drop source. Those sources corroborate the public-event
+context, but do not prove the Creature2 id; the bridge remains based on local
+generated DataMapping evidence. Normal source creature `3628` / relation `144`
+is already reviewed to Creature2 `58783` with objective `1590` TargetGroup
+`6402` nesting TargetGroup `6401`, and
+`SavePanickedWorkersNightmareEntityScript` filters Creature2 `58783` for
+objective `1590`. No current TargetGroup row lists Creature2 `69223`, current
+source spell rows are blank, and no direct Space Madness script or test binding
+for Creature2 `69223` was found. No runtime behavior, spawn import, objective
+ownership, phase timing, objective logic, reward, medal, achievement, or
+replay-cleanup behavior was widened.
+
+Verification: full DataMapping output regenerated with
+`python Tools\DataMapping\map_wildstar_data.py`, and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py --only public-event-evidence,next-slice`
+regenerated only the needed public-event evidence, next-slice queue, and
+next-slice blocker CSVs. Generated DataMapping now reports
+`creature_public_event_map.csv` relation `2026` as `match_status=reviewed`.
+Broad `creature_public_event_map.csv` totals are now `96` reviewed, `620`
+ambiguous-name, `909` scored-name, `921` unique-name, and `99` unmatched rows;
+PE390 totals are now `62` reviewed, `12` ambiguous-name, and `48`
+scored-name. Focused verification passed: content-retail audit/validator tests
+`136/136`, and generated content-retail validation `31` files / `168101` rows,
+all `not_retail_complete`. Space Madness Prime remains not retail-complete and
+still blocked on live build 16042 smoke for relation `2026` spawn/import
+placement, Creature2 `69223` objective ownership/usage, objective credit, phase
+timing, replay cleanup, rewards, medals, achievements, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Smoke Nightmare Prime bridge review.
+Space Madness public-event creature relation `2022` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28115` (`Smoke Nightmare`) to Creature2
+`69208`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`2031`, display group `31154`, display `28700`, and 75 world `2149` / area
+`2416` coordinate rows. Online cross-checks found the public Space Madness
+wiki/guide context and a Jabbithole Drop 6 page listing normal `Smoke
+Nightmare` as a level-32 Space Madness public-event creature, but no online
+source proved the level-50 Prime Creature2 row; the Prime bridge remains based
+on local generated DataMapping evidence. Normal source creature `3696` /
+relation `160` is already reviewed to Creature2 `46722` with TargetGroup
+`6449`, while no current PE390 objective row uses TargetGroup `6449`. No
+current TargetGroup row lists Creature2 `69208`, current source spell rows are
+blank, and no direct Space Madness script or test binding for Creature2 `69208`
+was found. No runtime behavior, spawn import, objective ownership, phase
+timing, objective logic, reward, medal, achievement, or replay-cleanup behavior
+was widened.
+
+Verification: full DataMapping output regenerated with
+`python Tools\DataMapping\map_wildstar_data.py`, and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py --only public-event-evidence,next-slice`
+regenerated only the needed public-event evidence, next-slice queue, and
+next-slice blocker CSVs. Generated DataMapping now reports
+`creature_public_event_map.csv` relation `2022` as `match_status=reviewed`.
+Broad `creature_public_event_map.csv` totals are now `95` reviewed, `620`
+ambiguous-name, `910` scored-name, `921` unique-name, and `99` unmatched rows;
+PE390 totals are now `61` reviewed, `12` ambiguous-name, and `49`
+scored-name. Focused verification passed: content-retail audit/validator tests
+`136/136`, and generated content-retail validation `31` files / `168101` rows,
+all `not_retail_complete`. Space Madness Prime remains not retail-complete and
+still blocked on live build 16042 smoke for relation `2022` spawn/import
+placement, Creature2 `69208` objective ownership/usage, objective credit, phase
+timing, replay cleanup, rewards, medals, achievements, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Looming Nightmare Prime bridge review.
+Space Madness public-event creature relation `2021` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28114` (`Looming Nightmare`) to Creature2
+`69221`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`2300`, display group `24124`, display `21537`, and 81 world `2149` / area
+`2416` coordinate rows. Normal source creature `884` / relation `155` is
+already reviewed to Creature2 `46135` with objective `1590` TargetGroup `6402`
+nesting TargetGroup `6401`, and `SavePanickedWorkersNightmareEntityScript`
+filters Creature2 `46135` for objective `1590`. No current TargetGroup row
+lists Creature2 `69221`, current source spell rows are blank, and no direct
+Space Madness script or test binding for Creature2 `69221` was found. No
+runtime behavior, spawn import, objective ownership, phase timing, objective
+logic, reward, medal, achievement, or replay-cleanup behavior was widened.
+
+Verification: full DataMapping output regenerated with
+`python Tools\DataMapping\map_wildstar_data.py`, and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py --only public-event-evidence,next-slice`
+regenerated only the needed public-event evidence, next-slice queue, and
+next-slice blocker CSVs. Generated DataMapping now reports
+`creature_public_event_map.csv` relation `2021` as `match_status=reviewed`.
+Broad `creature_public_event_map.csv` totals are now `94` reviewed, `620`
+ambiguous-name, `911` scored-name, `921` unique-name, and `99` unmatched rows;
+PE390 totals are now `60` reviewed, `12` ambiguous-name, and `50`
+scored-name. Focused verification passed: content-retail audit/validator tests
+`136/136`, and generated content-retail validation `31` files / `168101` rows,
+all `not_retail_complete`. Space Madness Prime remains not retail-complete and
+still blocked on live build 16042 smoke for relation `2021` spawn/import
+placement, Creature2 `69221` objective ownership/usage, objective credit, phase
+timing, replay cleanup, rewards, medals, achievements, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Drifting Horror normal bridge review.
+Space Madness public-event creature relation `2252` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps normal level-32 source creature `9518` (`Drifting Horror`) to Creature2
+`48347`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-32 source/client mapping, faction `218`, action set
+`2345`, display group `24124`, display `21537`, 54 world `2149` / area `2421`
+coordinate rows, and objective `2115` TargetGroup `12684` nesting TargetGroup
+`12682` nesting TargetGroup `12675`; TargetGroup `12675` contains Creature2
+`48347`. Prime source creature `28097` / relation `2019` is reviewed
+separately to Creature2 `69165` through TargetGroup `12680`. Current source
+spell rows are blank, and no direct Space Madness script or test binding for
+Creature2 `48347` or normal Drifting Horror was found. No runtime behavior,
+spawn import, objective ownership, phase timing, objective logic, reward,
+medal, achievement, or replay-cleanup behavior was widened.
+
+Verification: full DataMapping output regenerated with
+`python Tools\DataMapping\map_wildstar_data.py`, and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py --only public-event-evidence,next-slice`
+regenerated only the needed public-event evidence, next-slice queue, and
+next-slice blocker CSVs. Generated DataMapping now reports
+`creature_public_event_map.csv` relations `2019` and `2252` as
+`match_status=reviewed`. Broad `creature_public_event_map.csv` totals are now
+`93` reviewed, `620` ambiguous-name, `912` scored-name, `921` unique-name, and
+`99` unmatched rows; PE390 totals are now `59` reviewed, `12` ambiguous-name,
+and `51` scored-name. Focused verification passed: content-retail
+audit/validator tests `136/136`, and generated content-retail validation `31`
+files / `168101` rows, all `not_retail_complete`. Space Madness remains not
+retail-complete and still blocked on live build 16042 smoke for relation `2252`
+spawn/import placement, Creature2 `48347` objective ownership/usage, objective
+credit, objective `2115` wave ownership, phase timing, replay cleanup, rewards,
+medals, achievements, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Drifting Horror Prime bridge review.
+Space Madness public-event creature relation `2019` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28097` (`Drifting Horror`) to Creature2
+`69165`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`2345`, display group `24124`, display `21537`, 91 world `2149` / area `2421`
+coordinate rows, source spell evidence `3131` / `3037` / `2657` / `5893` /
+`7200`, and client Spell4 evidence `42875` / `42874` / `57320` / `43759` /
+`57321`. Objective `2115` uses TargetGroup `12684`, which nests TargetGroup
+`12683`, which nests TargetGroup `12680`; TargetGroup `12680` contains
+Creature2 `69165`. Normal source creature `9518` maps to Creature2 `48347` in
+TargetGroup `12675`. No direct Space Madness script or test binding for
+Creature2 `69165`, Creature2 `48347`, or Drifting Horror was found. No runtime
+behavior, spawn import, objective ownership, phase timing, objective logic,
+reward, medal, achievement, or replay-cleanup behavior was widened.
+
+Verification: full DataMapping output regenerated with
+`python Tools\DataMapping\map_wildstar_data.py`, and
+`python Tools\WikiArchiveAudit\content_retail_completeness_audit.py --only public-event-evidence,next-slice`
+regenerated only the needed public-event evidence, next-slice queue, and
+next-slice blocker CSVs. The public-event evidence CSV wrote `5013` rows to
+`Decomp/Analysis/coverage/content_retail_completeness_public_event_evidence.csv`.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`2019` as `match_status=reviewed`. Broad `creature_public_event_map.csv`
+totals are now `92` reviewed, `620` ambiguous-name, `913` scored-name, `921`
+unique-name, and `99` unmatched rows; PE390 totals are now `58` reviewed, `12`
+ambiguous-name, and `52` scored-name. Focused verification passed:
+content-retail audit/validator tests `136/136`, and generated content-retail
+validation `31` files / `168101` rows, all `not_retail_complete`. Space
+Madness Prime remains not retail-complete and still blocked on live build 16042
+smoke for relation `2019` spawn/import placement, Creature2 `69165` objective
+ownership/usage, objective credit, objective `2115` wave ownership, phase
+timing, replay cleanup, rewards, medals, achievements, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Smoldering Bonebeast Prime bridge review.
+Space Madness public-event creature relation `2018` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28095` (`Smoldering Bonebeast`) to Creature2
+`69169`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`2352`, display group `27608`, display `25021`, 64 world `2149` / area `2421`
+coordinate rows, source spell evidence `2777` / `2809` / `3327` / `5917`, and
+client Spell4 evidence `32734` / `32735` / `34262` / `35556`. Objective `2115`
+uses TargetGroup `12684`, which nests TargetGroup `12683`, which nests
+TargetGroup `12681`; TargetGroup `12681` contains Creature2 `69169`. Normal
+TargetGroup `12676` contains Creature2 `48352`, but normal source creature
+`9534` / relation `2254` remains `ambiguous_name` because ranked candidates
+tie Creature2 `48352` and `69169` without row-level proof. No direct Space
+Madness script or test binding for Creature2 `69169`, Creature2 `48352`, or
+Smoldering Bonebeast was found. No runtime behavior, spawn import, objective
+ownership, phase timing, objective logic, reward, medal, achievement, or
+replay-cleanup behavior was widened.
+
+Verification: full DataMapping output regenerated with manifest timestamp
+`2026-06-18 21:22:46`; the content-retail audit now supports targeted output
+selection, and `python Tools\WikiArchiveAudit\content_retail_completeness_audit.py --only public-event-evidence,next-slice`
+regenerated only the needed public-event evidence, next-slice queue, and
+next-slice blocker CSVs. The public-event evidence CSV wrote `5013` rows to
+`Decomp/Analysis/coverage/content_retail_completeness_public_event_evidence.csv`.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`2018` as `match_status=reviewed` while relation `2254` remains
+`ambiguous_name`. Broad `creature_public_event_map.csv` totals are now `91`
+reviewed, `620` ambiguous-name, `914` scored-name, `921` unique-name, and `99`
+unmatched rows; PE390 totals are now `57` reviewed, `12` ambiguous-name, and
+`53` scored-name; `creature_map.csv` totals are now `1,026` reviewed, `2,780`
+scored-name, `13,839` unique-name, `6,057` ambiguous-name, and `977` unmatched
+rows. Focused verification passed: content-retail audit tests `102/102`,
+content-retail validator tests `34/34`, and generated content-retail validation
+`31` files / `168101` rows, all `not_retail_complete`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-212430-instance-2149-space-madness-smoldering-bonebeast-prime-bridge-review`.
+Space Madness Prime remains not retail-complete and still blocked on live build
+16042 smoke for relation `2018` spawn/import placement, Creature2 `69169`
+objective ownership/usage, objective credit, objective `2115` wave ownership,
+phase timing, replay cleanup, rewards, medals, achievements, and full
+expedition negative cases. Relation `2254` remains blocked pending its own
+normal Smoldering Bonebeast bridge review, and relations `153`, `2007`, `2024`,
+and `2422` remain blocked pending row-level/live/client evidence.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Crazed Handler Prime bridge review.
+Space Madness public-event creature relation `2015` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28088` (`Crazed Handler`) to Creature2 `69143`.
+This was not promoted from ambiguous-name matching alone: the bridge is backed
+by exact level-50 source/client mapping, faction `218`, action set `885`,
+display group `31553`, display `26022`, outfit group `10210`, outfit `9436`,
+109 world `2149` / area `2421` coordinate rows, source spell evidence `3020` /
+`3305` / `2730` / `2497`, and client Spell4 evidence `5649` / `5652` /
+`34552` / `52448`. Objective `2115` uses TargetGroup `12684`, which nests
+TargetGroup `12683`, which nests TargetGroup `12677`; TargetGroup `12677`
+contains Creature2 `69143`. Normal TargetGroup `12672` contains Creature2
+`46671`, but normal source creature `3631` / relation `2253` remains
+`ambiguous_name` for a separate review slice. No direct Space Madness script or
+test binding for Creature2 `69143`, Creature2 `46671`, or Crazed Handler was
+found. No runtime behavior, spawn import, objective ownership, phase timing,
+objective logic, reward, medal, achievement, or replay-cleanup behavior was
+widened.
+
+Verification: full DataMapping output regenerated with manifest timestamp
+`2026-06-18 21:01:49`; the content-retail audit regenerated with absolute paths
+against the refreshed outputs. Generated DataMapping now reports
+`creature_public_event_map.csv` relation `2015` as `match_status=reviewed`
+while relation `2253` remains `ambiguous_name`. Broad
+`creature_public_event_map.csv` totals are now `90` reviewed, `620`
+ambiguous-name, `915` scored-name, `921` unique-name, and `99` unmatched rows;
+PE390 totals are now `56` reviewed, `12` ambiguous-name, and `54` scored-name;
+`creature_map.csv` totals are now `1,025` reviewed, `2,781` scored-name,
+`13,839` unique-name, `6,057` ambiguous-name, and `977` unmatched rows.
+Evidence bundle:
+`artifacts/blocker_evidence/20260618-205113-instance-2149-space-madness-crazed-handler-prime-bridge-review`.
+Space Madness Prime remains not retail-complete and still blocked on live build
+16042 smoke for relation `2015` spawn/import placement, Creature2 `69143`
+objective ownership/usage, objective credit, objective `2115` wave ownership,
+phase timing, replay cleanup, rewards, medals, achievements, and full
+expedition negative cases. Relation `2253` remains blocked pending its own
+normal Crazed Handler bridge review, and relations `153`, `2007`, and `2422`
+remain blocked pending row-level/live/client evidence.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Hallucinating Cubig Prime bridge review.
+Space Madness public-event creature relation `2016` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28092` (`Hallucinating Cubig`) to Creature2
+`69137`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`885`, display group `24064`, display `21477`, 96 world `2149` / area `2421`
+coordinate rows, source spell evidence `6436` / `6455` / `6456` / `6461`, and
+client Spell4 evidence `6891` / `39867` / `39868` / `6892`. Normal source
+creature `3654` / relation `152` remains reviewed to Creature2 `45724`.
+Objective `2115` uses TargetGroup `12684`, which nests TargetGroup `12683`,
+which nests TargetGroup `12677`; TargetGroup `12677` contains Creature2
+`69137`. No direct Space Madness script or test binding for Creature2 `69137`,
+Creature2 `45724`, or Hallucinating Cubig was found. No runtime behavior, spawn
+import, objective ownership, phase timing, objective logic, reward, medal,
+achievement, or replay-cleanup behavior was widened.
+
+Verification: full DataMapping output regenerated with manifest timestamp
+`2026-06-18 20:25:56`; the content-retail audit regenerated with absolute paths
+against the refreshed outputs. Generated DataMapping now reports
+`creature_public_event_map.csv` relation `2016` as `match_status=reviewed`
+while relation `152` remains reviewed. Broad `creature_public_event_map.csv`
+totals are now `89` reviewed, `621` ambiguous-name, `915` scored-name, `921`
+unique-name, and `99` unmatched rows; PE390 totals are now `55` reviewed, `13`
+ambiguous-name, and `54` scored-name; `creature_map.csv` totals are now `1,024`
+reviewed, `2,781` scored-name, `13,839` unique-name, `6,058` ambiguous-name,
+and `977` unmatched rows. Evidence bundle:
+`artifacts/blocker_evidence/20260618-202730-instance-2149-space-madness-hallucinating-cubig-prime-bridge-review`.
+Space Madness Prime remains not retail-complete and still blocked on live build
+16042 smoke for relation `2016` spawn/import placement, Creature2 `69137`
+objective ownership/usage, objective credit, objective `2115` wave ownership,
+phase timing, replay cleanup, rewards, medals, achievements, and full
+expedition negative cases. Relations `153`, `2007`, and `2422` remain blocked
+pending row-level/live/client evidence.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Stinging Nightmare Prime bridge review.
+Space Madness public-event creature relation `2014` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28086` (`Stinging Nightmare`) to Creature2
+`69214`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`2300`, display group `30694`, display `28166`, 86 world `2149` / area
+`2413` coordinate rows, source spell evidence `2893` / `2911` / `2787` /
+`6402`, and client Spell4 evidence `32965` / `32966` / `35963` / `44638`.
+Normal source creature `39` / relation `18` remains reviewed to Creature2
+`46124`; objective `1590` uses reward-pane TargetGroup `6402`, which nests
+TargetGroup `6400` containing Creature2 `46124`, and
+`SavePanickedWorkersNightmareEntityScript` filters Creature2 `46124`. No
+TargetGroup row currently lists Creature2 `69214`, and objective `2115`
+TargetGroup `12684` does not list Creature2 `69214` through nested groups
+`12682` or `12683`. No runtime behavior, spawn import, objective ownership,
+phase timing, objective logic, reward, medal, achievement, or replay-cleanup
+behavior was widened.
+
+Verification: full DataMapping output regenerated with manifest timestamp
+`2026-06-18 19:58:11`; the content-retail audit regenerated with absolute paths
+against the refreshed outputs. Generated DataMapping now reports
+`creature_public_event_map.csv` relation `2014` as `match_status=reviewed`
+while relation `18` remains reviewed. Broad `creature_public_event_map.csv`
+totals are now `88` reviewed, `621` ambiguous-name, `916` scored-name, `921`
+unique-name, and `99` unmatched rows; PE390 totals are now `54` reviewed, `13`
+ambiguous-name, and `55` scored-name; `creature_map.csv` totals are now `1,023`
+reviewed, `2,782` scored-name, `13,839` unique-name, `6,058` ambiguous-name,
+and `977` unmatched rows. Evidence bundle:
+`artifacts/blocker_evidence/20260618-202500-instance-2149-space-madness-stinging-nightmare-prime-bridge-review`.
+Space Madness Prime remains not retail-complete and still blocked on live build
+16042 smoke for relation `2014` spawn/import placement, Creature2 `69214`
+objective ownership/usage, objective credit, phase timing, rewards, medals,
+achievements, replay cleanup, objective `2115` wave/timer ownership, and full
+Space Madness Prime client smoke.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Ravenous Nightmare Prime bridge review.
+Space Madness public-event creature relation `2013` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28076` (`Ravenous Nightmare`) to Creature2
+`69220`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`2300`, display group `31232`, display `28775`, 101 world `2149` / area
+`2414` coordinate rows, source spell evidence `3015` / `3073` / `2276` /
+`6098` / `5893`, and client Spell4 evidence `28936` / `28937` / `34264` /
+`36414` / `43759`. Normal source creature `446` / relation `26` remains
+reviewed to Creature2 `46133`; objective `1590` uses reward-pane TargetGroup
+`6402`, which nests TargetGroup `6401` containing Creature2 `46133`, and
+`SavePanickedWorkersNightmareEntityScript` filters Creature2 `46133`. No
+TargetGroup row currently lists Creature2 `69220`, and no current PE390
+objective row owns Creature2 `69220`. No runtime behavior, spawn import,
+objective ownership, phase timing, objective logic, reward, medal, achievement,
+or replay-cleanup behavior was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated with absolute paths against the
+refreshed outputs. Generated DataMapping now reports `creature_public_event_map.csv`
+relation `2013` as `match_status=reviewed` while relation `26` remains
+reviewed. Broad `creature_public_event_map.csv` totals are now `87` reviewed,
+`621` ambiguous-name, `917` scored-name, `921` unique-name, and `99` unmatched
+rows; PE390 totals are now `53` reviewed, `13` ambiguous-name, and `56`
+scored-name; `creature_map.csv` totals are now `1,022` reviewed, `2,783`
+scored-name, `13,839` unique-name, `6,058` ambiguous-name, and `977` unmatched
+rows. Evidence bundle:
+`artifacts/blocker_evidence/20260618-191413-instance-2149-space-madness-ravenous-nightmare-prime-bridge-review`.
+Space Madness Prime remains not retail-complete and still blocked on live build
+16042 smoke for relation `2013` spawn/import placement, Creature2 `69220`
+objective ownership/usage, objective credit, phase timing, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Decrepit Atrocity Prime bridge review.
+Space Madness public-event creature relation `2012` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28070` (`Decrepit Atrocity`) to Creature2
+`69170`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`2356`, display group `28409`, display `26004`, 66 world `2149` / area `2421`
+coordinate rows, source spell evidence `6096` / `6099` / `2611` / `6091` /
+`3300`, and client Spell4 evidence `4040` / `4041` / `54822` / `54823` /
+`54923`. TargetGroup `12681` lists Creature2 `69170` with Prime rows `69168`
+and `69169`, but no current PE390 objective row uses TargetGroup `12681`.
+Same-name normal source creature `9535` / relation `2249` remains
+`ambiguous_name` because ranked exact-name candidates Creature2 `48353` and
+Creature2 `69170` tie and no row-level objective proof distinguishes them. No
+runtime behavior, spawn import, objective ownership, phase timing, objective
+logic, reward, medal, achievement, or replay-cleanup behavior was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated with absolute paths against the
+refreshed outputs. Generated DataMapping now reports `creature_public_event_map.csv`
+relation `2012` as `match_status=reviewed` while relation `2249` remains
+`ambiguous_name`. Broad `creature_public_event_map.csv` totals are now `86`
+reviewed, `621` ambiguous-name, `918` scored-name, `921` unique-name, and `99`
+unmatched rows; PE390 totals are now `52` reviewed, `13` ambiguous-name, and
+`57` scored-name; `creature_map.csv` totals are now `1,021` reviewed, `2,784`
+scored-name, `13,839` unique-name, `6,058` ambiguous-name, and `977` unmatched
+rows. Evidence bundle:
+`artifacts/blocker_evidence/20260618-185445-instance-2149-space-madness-decrepit-atrocity-prime-bridge-review`.
+Space Madness Prime remains not retail-complete and still blocked on live build
+16042 smoke for relation `2012` spawn/import placement, Creature2 `69170`
+objective ownership/usage, objective credit, phase timing, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases. Relation
+`2249` remains blocked pending row-level target-group/objective proof,
+decompile/client table evidence, or live smoke distinguishing Creature2 `48353`
+from Creature2 `69170`.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Raging Oxianbull Prime bridge review.
+Space Madness public-event creature relation `2011` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28066` (`Raging Oxianbull`) to Creature2
+`69172`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`885`, display group `25244`, display `22657`, 95 world `2149` / area `2419`
+coordinate rows, source spell evidence `2631` / `5873` / `5875` / `6437`, and
+client Spell4 evidence `32761` / `32762` / `53434` / `53435`. Normal source
+creature `3679` / relation `499` remains reviewed to Creature2 `45728`.
+TargetGroup `6363` lists normal Creature2 `45728` with livestock-family rows,
+but no current PE390 objective row uses TargetGroup `6363`. No TargetGroup row
+currently lists Creature2 `69172`, and no current PE390 objective row owns
+Creature2 `69172`. No runtime behavior, spawn import, objective ownership,
+phase timing, objective logic, reward, medal, achievement, or replay-cleanup
+behavior was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated with absolute paths against the
+refreshed outputs. Generated DataMapping now reports `creature_public_event_map.csv`
+relation `2011` as `match_status=reviewed` while relation `499` remains
+reviewed. Broad `creature_public_event_map.csv` totals are now `85` reviewed,
+`621` ambiguous-name, `919` scored-name, `921` unique-name, and `99` unmatched
+rows; PE390 totals are now `51` reviewed, `13` ambiguous-name, and `58`
+scored-name; `creature_map.csv` totals are now `1,020` reviewed, `2,785`
+scored-name, `13,839` unique-name, `6,058` ambiguous-name, and `977` unmatched
+rows. Evidence bundle:
+`artifacts/blocker_evidence/20260618-183359-instance-2149-space-madness-raging-oxianbull-prime-bridge-review`.
+Space Madness Prime remains not retail-complete and still blocked on live build
+16042 smoke for relation `2011` spawn/import placement, Creature2 `69172`
+objective ownership/usage, objective credit, phase timing, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Foaming Roandoe Prime bridge review.
+Space Madness public-event creature relation `2010` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28056` (`Foaming Roandoe`) to Creature2 `69171`.
+This was not promoted from scored-name matching alone: the bridge is backed by
+exact level-50 source/client mapping, faction `218`, action set `885`, display
+group `24049`, display `21462`, 104 world `2149` / area `2419` coordinate
+rows, and spell evidence `6382` / `6422` / `6423`. Normal source creature
+`3684` / relation `159` remains reviewed to Creature2 `45727`. TargetGroup
+`6363` lists normal Creature2 `45727` with livestock-family rows, but no
+current PE390 objective row uses TargetGroup `6363`. No TargetGroup row
+currently lists Creature2 `69171`, and no current PE390 objective row owns
+Creature2 `69171`. No runtime behavior, spawn import, objective ownership,
+phase timing, objective logic, reward, medal, achievement, or replay-cleanup
+behavior was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated with absolute paths against the
+refreshed outputs. Generated DataMapping now reports `creature_public_event_map.csv`
+relation `2010` as `match_status=reviewed` while relation `159` remains
+reviewed. Broad `creature_public_event_map.csv` totals are now `84` reviewed,
+`621` ambiguous-name, `920` scored-name, `921` unique-name, and `99` unmatched
+rows; PE390 totals are now `50` reviewed, `13` ambiguous-name, and `59`
+scored-name; `creature_map.csv` totals are now `1,019` reviewed, `2,786`
+scored-name, `13,839` unique-name, `6,058` ambiguous-name, and `977` unmatched
+rows. Evidence bundle:
+`artifacts/blocker_evidence/20260618-181059-instance-2149-space-madness-foaming-roandoe-prime-bridge-review`.
+Space Madness Prime remains not retail-complete and still blocked on live build
+16042 smoke for relation `2010` spawn/import placement, Creature2 `69171`
+objective ownership/usage, objective credit, phase timing, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Writhing Nightmare Prime bridge review.
+Space Madness public-event creature relation `2009` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28046` (`Writhing Nightmare`) to Creature2
+`69213`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`2300`, display group `24216`, display `21629`, 65 world `2149` / area `2413`
+coordinate rows, and spell evidence `2745` / `2762` / `8142` / `10856` /
+`10859`. Normal source creature `392` / relation `25` remains reviewed to
+Creature2 `46123`. Objective `1590` uses reward-pane TargetGroup `6402`, which
+nests TargetGroup `6400`; TargetGroup `6400` contains Creature2 `46123`, and
+`SavePanickedWorkersNightmareEntityScript` filters `46123`. No TargetGroup row
+currently lists Creature2 `69213`, and no current PE390 objective row owns
+Creature2 `69213`. No runtime behavior, spawn import, objective ownership,
+phase timing, objective logic, reward, medal, achievement, or replay-cleanup
+behavior was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated with absolute paths against the
+refreshed outputs. Generated DataMapping now reports `creature_public_event_map.csv`
+relation `2009` as `match_status=reviewed` while relation `25` remains
+reviewed. Broad `creature_public_event_map.csv` totals are now `83` reviewed,
+`621` ambiguous-name, `921` scored-name, `921` unique-name, and `99` unmatched
+rows; PE390 totals are now `49` reviewed, `13` ambiguous-name, and `60`
+scored-name; `creature_map.csv` totals are now `1,018` reviewed, `2,787`
+scored-name, `13,839` unique-name, `6,058` ambiguous-name, and `977` unmatched
+rows. Evidence bundle:
+`artifacts/blocker_evidence/20260618-175116-instance-2149-space-madness-writhing-nightmare-prime-bridge-review`.
+Space Madness Prime remains not retail-complete and still blocked on live build
+16042 smoke for relation `2009` spawn/import placement, Creature2 `69213`
+objective ownership/usage, objective credit, phase timing, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Dark Creeper bridge review.
+Space Madness public-event creature relations `2008` and `2246` are now
+reviewed DataMapping bridges: tracked overrides
+`Tools/DataMapping/creature_bridge_overrides.csv` map level-50 source creature
+`28040` (`Dark Creeper`) to Creature2 `69163` and normal level-32 source
+creature `9512` (`Dark Creeper`) to Creature2 `48345`. This was not promoted
+from scored-name matching alone: both rows have exact source/client level
+matches, faction `218`, action set `2348`, display group `24216`, display
+`21629`, Space Madness world `2149` / area `2421` coordinate evidence (`56`
+rows for source creature `28040` and `95` rows for source creature `9512`),
+and shared Dark Creeper spell-family evidence. TargetGroup `12680` lists
+Creature2 `69163` with level-50 dark-family rows, and TargetGroup `12675` lists
+Creature2 `48345` with normal dark-family rows, but no current PE390 objective
+row uses either TargetGroup or either Creature2 directly. No runtime behavior,
+spawn import, objective ownership, phase timing, objective logic, reward,
+medal, achievement, or replay-cleanup behavior was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+the first content-retail regeneration attempt with a relative tracker path hit
+Windows `[Errno 22] Invalid argument`, then the same command succeeded with
+absolute paths and regenerated the refreshed coverage. Generated DataMapping
+now reports relations `2008` and `2246` as `match_status=reviewed`. Broad
+`creature_public_event_map.csv` totals are now `82` reviewed, `621`
+ambiguous-name, `922` scored-name, `921` unique-name, and `99` unmatched rows;
+PE390 totals are now `48` reviewed, `13` ambiguous-name, and `61` scored-name;
+`creature_map.csv` totals are now `1,017` reviewed, `2,788` scored-name,
+`13,839` unique-name, `6,058` ambiguous-name, and `977` unmatched rows.
+Evidence bundle:
+`artifacts/blocker_evidence/20260618-173021-instance-2149-space-madness-dark-creeper-bridge-review`.
+Dark Creeper remains not retail-complete and still blocked on live build 16042
+smoke for relation `2008` / `2246` spawn/import placement, objective
+ownership/usage, objective credit, phase timing, replay cleanup, rewards,
+medals, achievements, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Panicked Worker bridge blocker.
+Space Madness public-event creature relations `2007` and `2422` remain blocked
+instead of being promoted to a reviewed bridge. Generated
+`creature_public_event_map.csv` maps level-50 source creature `28037`
+(`Panicked Worker`) and level-32 source creature `863` (`Panicked Worker`) to
+Creature2 `46062` as `ambiguous_name`, but
+`creature_bridge_review_candidates_ranked.csv` shows both source rows have two
+equal-score exact-name candidates: Creature2 `46062` and Creature2 `46063`.
+Both candidates share faction `219`, level overlap, score `140`, and no
+spatial/entity match that separates them. The generated coordinate evidence has
+21 world `2149` / area `2416` rows for source creature `28037` and 24 for
+source creature `863`, but those rows do not prove which Panicked Worker
+Creature2 row retail used. `creature_spell_map.csv` has no Panicked Worker
+spell evidence; no TargetGroup row lists Creature2 `46062` or `46063`; and no
+current PE390 objective row uses either worker Creature2 as an objective object
+or reward-pane TargetGroup. Objective `1590` remains mapped to reward-pane
+TargetGroup `6402`, the already-scripted nightmare target-group set, not to
+Panicked Worker rows.
+
+Decision: no override, DataMapping regeneration, safe-import SQL, runtime spawn,
+script, objective, reward, medal, achievement, or replay-cleanup behavior was
+changed. Evidence bundle:
+`artifacts/blocker_evidence/20260618-172641-instance-2149-space-madness-panicked-worker-bridge-blocker`.
+The named external unblockers are a build 16042 live-client/server smoke bundle
+or retail packet/log capture showing which Panicked Worker Creature2 row is
+spawned for relations `2007` and `2422`, decompile/client table evidence that
+distinguishes Creature2 `46062` from `46063`, or authoritative row-level
+target-group/objective evidence that directly associates one worker row with
+PE390. Aggregate mapping counts remain those from the latest generator run:
+`creature_public_event_map.csv` has `80` reviewed, `621` ambiguous-name,
+`924` scored-name, `921` unique-name, and `99` unmatched rows, and
+`creature_map.csv` has `1,015` reviewed, `2,790` scored-name, `13,839`
+unique-name, `6,058` ambiguous-name, and `977` unmatched rows.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Rending Nightmare Prime bridge review.
+Space Madness public-event creature relation `2006` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28035` (`Rending Nightmare`) to Creature2
+`69218`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`2300`, display group `28606`, display `28257`, 100 world `2149` / area
+`2414` coordinate rows, and Lingering Venom/Swipe/Rend/Caustic Leap spell
+evidence. Normal source creature `1121` / relation `29` remains reviewed to
+Creature2 `46130`. Objective `1590` uses reward-pane TargetGroup `6402`,
+which nests TargetGroup `6400`; TargetGroup `6400` contains Creature2 `46130`,
+and `SavePanickedWorkersNightmareEntityScript` filters `46130`. No TargetGroup
+row currently lists Creature2 `69218`, and no current PE390 objective row owns
+Creature2 `69218`. No runtime behavior, spawn import, objective ownership,
+phase timing, objective logic, reward, medal, achievement, or replay-cleanup
+behavior was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`2006` as `match_status=reviewed` while relation `29` remains reviewed.
+Broad `creature_public_event_map.csv` totals are now `80` reviewed, `621`
+ambiguous-name, `924` scored-name, `921` unique-name, and `99` unmatched rows;
+`creature_map.csv` totals are now `1,015` reviewed, `2,790` scored-name,
+`13,839` unique-name, `6,058` ambiguous-name, and `977` unmatched rows.
+Focused verification passed: content-retail audit tests `98/98`, validator
+`31` files / `168101` rows all `not_retail_complete`, blocker evidence
+harness `2/2`, `RuntimeDataBoundaryTests` `6/6`, and all tracked
+creature-bridge override rows have eight CSV fields. Evidence bundle:
+`artifacts/blocker_evidence/20260618-170357-instance-2149-space-madness-rending-nightmare-prime-bridge-review`.
+Space Madness Prime remains not retail-complete and still blocked on live build
+16042 smoke for relation `2006` spawn/import placement, Creature2 `69218`
+objective ownership/usage, objective credit, phase timing, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Eye Nightmare Prime bridge review.
+Space Madness public-event creature relation `2005` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28023` (`Eye Nightmare`) to Creature2 `69209`.
+This was not promoted from scored-name matching alone: the bridge is backed by
+exact level-50 source/client mapping, faction `218`, action set `2109`,
+display group `31553`, display `26022`, outfit group `10125`, outfit `9351`,
+61 world `2149` / area `2416` coordinate rows, and Punch/Jab/Flourishing
+Combo/Haymaker spell evidence. Normal source creature `3663` / relation `154`
+remains reviewed to Creature2 `46723`. TargetGroup `6449` lists normal
+Nightmare-family rows `46722`, `46723`, and `46724`, but no current PE390
+objective row uses TargetGroup `6449`; objective `1590` uses reward-pane
+TargetGroup `6402`; and `SavePanickedWorkersNightmareEntityScript` remains
+scoped to nested TargetGroups `6400` / `6401` rows. No TargetGroup row
+currently lists Creature2 `69209`, and no current PE390 objective row owns
+Creature2 `69209`. No runtime behavior, spawn import, objective ownership,
+phase timing, objective logic, reward, medal, achievement, or replay-cleanup
+behavior was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`2005` as `match_status=reviewed` while relation `154` remains reviewed.
+Broad `creature_public_event_map.csv` totals are now `79` reviewed, `621`
+ambiguous-name, `925` scored-name, `921` unique-name, and `99` unmatched rows;
+`creature_map.csv` totals are now `1,014` reviewed, `2,791` scored-name,
+`13,839` unique-name, `6,058` ambiguous-name, and `977` unmatched rows.
+Focused verification passed: content-retail audit tests `98/98`, validator
+`31` files / `168101` rows all `not_retail_complete`, blocker evidence
+harness `2/2`, `RuntimeDataBoundaryTests` `6/6`, and all tracked
+creature-bridge override rows have eight CSV fields. Evidence bundle:
+`artifacts/blocker_evidence/20260618-164555-instance-2149-space-madness-eye-nightmare-prime-bridge-review`.
+Space Madness Prime remains not retail-complete and still blocked on live build
+16042 smoke for relation `2005` spawn/import placement, Creature2 `69209`
+objective ownership/usage, objective credit, phase timing, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Blazing Crewman Prime bridge review.
+Space Madness public-event creature relation `2004` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28020` (`Blazing Crewman`) to Creature2
+`69205`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`2131`, display group `31553`, display `26022`, outfit group `10110`, outfit
+`9347`, 78 world `2149` / area `2416` coordinate rows, and Arcane
+Bolt/Firestorm/Erupting Fissure spell evidence. Normal source creature `3642`
+/ relation `148` remains reviewed to Creature2 `46714`, with 89 matching
+coordinates, TargetGroup `6447`, objective `1662`, and
+`HallucinatingLivestockEntityScript` evidence scoped to Creature2 `46714`. No
+TargetGroup row currently lists Creature2 `69205`, and no current PE390
+objective row owns Creature2 `69205`. No runtime behavior, spawn import,
+objective ownership, phase timing, objective logic, reward, medal, achievement,
+or replay-cleanup behavior was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`2004` as `match_status=reviewed` while relation `148` remains reviewed.
+Broad `creature_public_event_map.csv` totals are now `78` reviewed, `621`
+ambiguous-name, `926` scored-name, `921` unique-name, and `99` unmatched rows;
+`creature_map.csv` totals are now `1,013` reviewed, `2,792` scored-name,
+`13,839` unique-name, `6,058` ambiguous-name, and `977` unmatched rows.
+Focused verification passed: content-retail audit tests `98/98`, validator
+`31` files / `168101` rows all `not_retail_complete`, blocker evidence
+harness `2/2`, `RuntimeDataBoundaryTests` `6/6`, and all tracked
+creature-bridge override rows have eight CSV fields. Evidence bundle:
+`artifacts/blocker_evidence/20260618-161841-instance-2149-space-madness-blazing-crewman-prime-bridge-review`.
+Space Madness Prime remains not retail-complete and still blocked on live build
+16042 smoke for relation `2004` spawn/import placement, Creature2 `69205`
+objective ownership/usage, objective credit, phase timing, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Violent Oxiancow Prime bridge review.
+Space Madness public-event creature relation `2003` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28018` (`Violent Oxiancow`) to Creature2
+`69139`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`885`, display group `25245`, display `22658`, 101 world `2149` / area `2419`
+coordinate rows, Ram/Bash/Bucking Frenzy/Overwhelming Bellow spell evidence,
+and TargetGroup `12677` grouping Creature2 `69139` with other Prime livestock
+and scorched rows. No current PE390 objective row uses TargetGroup `12677`.
+Normal source creature `3686` / relation `422` remains reviewed to Creature2
+`45729`. No runtime behavior, spawn import, objective ownership, phase timing,
+objective logic, reward, medal, achievement, or replay-cleanup behavior was
+widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`2003` as `match_status=reviewed` while relation `422` remains reviewed.
+Broad `creature_public_event_map.csv` totals are now `77` reviewed, `621`
+ambiguous-name, `927` scored-name, `921` unique-name, and `99` unmatched rows;
+`creature_map.csv` totals are now `1,012` reviewed, `2,793` scored-name,
+`13,839` unique-name, `6,058` ambiguous-name, and `977` unmatched rows.
+Focused verification passed: content-retail audit tests `98/98`, validator
+`31` files / `168101` rows all `not_retail_complete`, blocker evidence
+harness `2/2`, `RuntimeDataBoundaryTests` `6/6`, and all tracked
+creature-bridge override rows have eight CSV fields. Evidence bundle:
+`artifacts/blocker_evidence/20260618-155502-instance-2149-space-madness-violent-oxiancow-prime-bridge-review`.
+Space Madness Prime remains not retail-complete and still blocked on live build
+16042 smoke for relation `2003` spawn/import placement, TargetGroup `12677`
+objective ownership/usage, objective credit, phase timing, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Smoldering Billow Prime bridge review.
+Space Madness public-event creature relation `2002` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps level-50 source creature `28006` (`Smoldering Billow`) to Creature2
+`69168`. This was not promoted from scored-name matching alone: the bridge is
+backed by exact level-50 source/client mapping, faction `218`, action set
+`2349`, display group `31154`, display `28700`, 93 world `2149` / area `2421`
+coordinate rows, Dice/Slashing Strikes/Slice/Feet of Fury spell evidence, and
+TargetGroup `12681` grouping Creature2 `69168` with `69169` and `69170`. No
+current PE390 objective row uses TargetGroup `12681`. Lower source creature
+`9513` / relation `2247` remains ambiguous-name to Creature2 `48351` and was
+not promoted. No runtime behavior, spawn import, objective ownership, phase
+timing, objective logic, reward, medal, achievement, or replay-cleanup behavior
+was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`2002` as `match_status=reviewed` while relation `2247` remains
+`ambiguous_name`. Broad `creature_public_event_map.csv` totals are now `76`
+reviewed, `621` ambiguous-name, `928` scored-name, `921` unique-name, and `99`
+unmatched rows; `creature_map.csv` totals are now `1,011` reviewed, `2,794`
+scored-name, `13,839` unique-name, `6,058` ambiguous-name, and `977` unmatched
+rows. Focused verification passed: content-retail audit tests `98/98`,
+validator `31` files / `168101` rows all `not_retail_complete`, blocker
+evidence harness `2/2`, `RuntimeDataBoundaryTests` `6/6`, and all tracked
+creature-bridge override rows have eight CSV fields. Evidence bundle:
+`artifacts/blocker_evidence/20260618-153727-instance-2149-space-madness-smoldering-billow-prime-bridge-review`.
+Space Madness Prime remains not retail-complete and still blocked on live build
+16042 smoke for relation `2002` spawn/import placement, TargetGroup `12681`
+objective ownership/usage, objective credit, phase timing, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Major Lee Barmy duplicate bridge review.
+Space Madness public-event creature relation `2120` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps duplicate level-50 source creature `28252` (`Major Lee Barmy`) to
+Creature2 `45812`. This was not promoted from unique-name matching alone: the
+source row is candidate-count-1, has a world `2149` / area `2482` coordinate
+row with Creature2 `45812`, and matches the already-reviewed companion source
+creature `332` / relation `23` -> Creature2 `45812`. PE390 objective `1588`
+(`Talk to $creature=45812`) uses TargetGroup `6358`; TargetGroup `6358`
+contains only Creature2 `45812`; `MajorLeeBarmyEntityScript` filters Creature2
+`45812` while crediting TargetGroup `6358`; and `SpaceMadnessEventScript`
+spawns reviewed talk NPC entity `1100300006` with Creature2 `45812` in area
+`2482`. No runtime behavior, spawn import, phase timing, objective logic,
+reward, medal, achievement, or replay-cleanup behavior was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`2120` as `match_status=reviewed` and leaves relation `23` reviewed. Broad
+`creature_public_event_map.csv` totals are now `75` reviewed, `621`
+ambiguous-name, `929` scored-name, `921` unique-name, and `99` unmatched rows;
+`creature_map.csv` totals are now `1,010` reviewed, `2,795` scored-name,
+`13,839` unique-name, `6,058` ambiguous-name, and `977` unmatched rows.
+Focused verification passed: content-retail audit tests `98/98`, validator
+`31` files / `168101` rows all `not_retail_complete`, blocker evidence harness
+`2/2`, `RuntimeDataBoundaryTests` `6/6`, and all tracked creature-bridge
+override rows have eight CSV fields. Evidence bundle:
+`artifacts/blocker_evidence/20260618-151712-instance-2149-space-madness-major-lee-barmy-duplicate-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for relation `2120` spawn/import placement, objective `1588` UI timing
+and talk credit, phase timing, replay cleanup, rewards, medals, achievements,
+and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Skittish Rowsdower bridge review.
+Space Madness public-event creature relations `2350` and `2025` are now
+reviewed DataMapping bridges: tracked overrides
+`Tools/DataMapping/creature_bridge_overrides.csv` map Jabbithole creatures
+`3704` and `28120` (`Skittish Rowsdower`) to Creature2 `45723`. This was not
+promoted from unique-name matching alone. Both source rows are level `1`
+candidate-count-1 matches in world `2149` / area `2419` with faction `219`,
+action set `885`, display group `24206`, and display `21619`; source creature
+`3704` has 96 local source coordinate rows, and source creature `28120` has
+100 local source coordinate rows plus Plague Burst spell evidence. Objective
+`4708` remains volatile Rowsdower avoidance: the generated
+`public_event_objective_client_map.csv` row has objective type `9`,
+WorldLocation2 `37709`, objective object `0`, and target group `0`. No Space
+Madness objective ownership, explosion/failure producer, phase spawn,
+objective-credit filter, runtime data import, or gameplay behavior was
+widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relations
+`2350` and `2025` as reviewed. The content-retail public-event blocker rows
+now report `reviewed_public_event_creature_blocked_spawn_credit_smoke`.
+Evidence bundle:
+`artifacts/blocker_evidence/20260618-145609-instance-2149-space-madness-skittish-rowsdower-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+evidence for Creature2 `45723` objective ownership, spawn/import placement,
+explosion/failure behavior, objective credit behavior, rewards, medals,
+achievements, replay cleanup, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Enraged Lamp bridge review.
+Space Madness public-event creature relation `150` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps normal level-32 Jabbithole creature `1039` (`Enraged Lamp`) to Creature2
+`45866`. This was not promoted from ambiguous-name matching alone. The bridge
+is backed by PE390 relation `150`, matching source/client level `32`, world
+`2149` / area `2416`, faction `218`, action set `2030`, display group
+`31154`, display `28700`, 82 local source coordinate rows, and source spell
+rows for Jab, Punch, Flourishing Combo, and Haymaker. TargetGroup `6343` lists
+Creature2 `45866` with the hallucination-trio rows `45879` and `45849`, while
+tied level-32 candidate Creature2 `46724` belongs to TargetGroup `6449`; the
+generated `public_event_objective_client_map.csv` has no current PE390
+objective row that uses TargetGroup `6343` or `6449`. The same-name level-50
+row remains separate and unresolved: Jabbithole creature `28168` / PE390
+relation `2036` still maps to Creature2 `69185` as `ambiguous_name`. No Space
+Madness wave objective ownership, phase spawn, objective-credit filter,
+runtime data import, or level-50 bridge was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`150` as reviewed while relation `2036` remains `ambiguous_name`. The
+content-retail public-event blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke` for relation `150`
+and `blocked_public_event_creature_ambiguous_requires_bridge_review` for
+relation `2036`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-143737-instance-2149-space-madness-enraged-lamp-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+evidence for Creature2 `45866` objective ownership, spawn/import placement,
+objective credit behavior, combat behavior, rewards, medals, achievements,
+replay cleanup, Prime/level-50 Enraged Lamp behavior, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Raging Oxianbull bridge review.
+Space Madness public-event creature relation `499` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps normal level-32 Jabbithole creature `3679` (`Raging Oxianbull`) to
+Creature2 `45728`. This was not promoted from scored-name matching alone. The
+bridge is backed by PE390 relation `499`, matching source/client level `32`,
+world `2149` / area `2419`, faction `218`, action set `885`, display group
+`25244`, display `22657`, 81 local source coordinate rows, and source spell
+rows for Bash, Ram, Bucking Frenzy, and Overwhelming Bellow. TargetGroup
+`6363` lists Creature2 `45728` with livestock-family rows, but the generated
+`public_event_objective_client_map.csv` has no current PE390 objective row that
+uses TargetGroup `6363`, and `HallucinatingLivestockEntityScript` remains
+scoped to Creature2 `46483` and `46714`. The same-name level-50 row is reviewed
+in the Prime bridge slice above: Jabbithole creature `28066` / PE390 relation
+`2011` -> Creature2 `69172`. No Space Madness objective ownership, phase spawn,
+objective-credit filter, runtime data import, or Prime runtime behavior was
+widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`499` as reviewed while relation `2011` is reviewed in the Prime bridge slice
+above. The
+content-retail public-event blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-142024-instance-2149-space-madness-raging-oxianbull-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+evidence for Creature2 `45728` objective ownership, spawn/import placement,
+objective credit behavior, combat behavior, rewards, medals, achievements,
+replay cleanup, Creature2 `69172` Prime runtime behavior, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Violent Oxiancow bridge review.
+Space Madness public-event creature relation `422` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps normal level-32 Jabbithole creature `3686` (`Violent Oxiancow`) to
+Creature2 `45729`. This was not promoted from scored-name matching alone. The
+bridge is backed by PE390 relation `422`, matching source/client level `32`,
+world `2149` / area `2421`, faction `218`, action set `885`, display group
+`25245`, display `22658`, 91 local source coordinate rows, and source spell
+rows for Bash, Ram, Bucking Frenzy, and Overwhelming Bellow. TargetGroups
+`6363` and `12672` list Creature2 `45729`, and TargetGroup `12677` lists the
+now-reviewed level-50 Creature2 `69139`, but the generated
+`public_event_objective_client_map.csv` has no current PE390 objective row that
+uses any of those target groups. `HallucinatingLivestockEntityScript` remains
+scoped to Creature2 `46483` and `46714`. The same-name level-50 row is
+reviewed in the Prime bridge slice above: Jabbithole creature `28018` / PE390
+relation `2003` -> Creature2 `69139`. No Space Madness objective ownership,
+phase spawn, objective-credit filter, runtime data import, or level-50 runtime
+behavior was widened in this normal bridge slice.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`422` as reviewed; relation `2003` is reviewed by the later Prime slice above.
+The content-retail public-event blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-140414-instance-2149-space-madness-violent-oxiancow-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+evidence for Creature2 `45729` objective ownership, spawn/import placement,
+objective credit behavior, combat behavior, rewards, medals, achievements,
+replay cleanup, Prime/level-50 Violent Oxiancow behavior, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Rampaging Oxian bridge review.
+Space Madness public-event creature relation `161` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps normal level-32 Jabbithole creature `3708` (`Rampaging Oxian`) to
+Creature2 `45730`. This was not promoted from scored-name matching alone. The
+bridge is backed by PE390 relation `161`, matching source/client level `32`,
+world `2149` / area `2419`, faction `218`, action set `2140`, display group
+`25209`, display `22622`, 82 local source coordinate rows, and source spell
+rows for Skull Smash, Resounding Charge, Ram, Bash, Bucking Frenzy, and
+Overwhelming Bellow. TargetGroup `6363` lists Creature2 `45730` with
+livestock-family rows, but the generated `public_event_objective_client_map.csv`
+has no current PE390 objective row that uses TargetGroup `6363`, and
+`HallucinatingLivestockEntityScript` remains scoped to Creature2 `46483` and
+`46714`. The same-name level-50 row remains separate: Jabbithole creature
+`28126` / PE390 relation `2027` still maps to Creature2 `69140` as
+`scored_name`. No Space Madness objective ownership, phase spawn,
+objective-credit filter, runtime data import, or level-50 bridge was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`161` as reviewed while relation `2027` remains `scored_name`. The
+content-retail public-event blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-134038-instance-2149-space-madness-rampaging-oxian-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+evidence for Creature2 `45730` objective ownership, spawn/import placement,
+objective credit behavior, combat behavior, rewards, medals, achievements,
+replay cleanup, Prime/level-50 Rampaging Oxian behavior, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Smoke Nightmare bridge review.
+Space Madness public-event creature relation `160` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps normal level-32 Jabbithole creature `3696` (`Smoke Nightmare`) to
+Creature2 `46722`. This was not promoted from scored-name matching alone. The
+bridge is backed by PE390 relation `160`, matching source/client level `32`,
+world `2149` / area `2416`, faction `218`, difficulty `1`, action set `2031`,
+display group `31154`, display `28700`, 67 local source coordinate rows, and
+source spell rows for Jab and Punch. TargetGroup `6449` lists Creature2
+`46722`, `46723`, and `46724`, but the generated
+`public_event_objective_client_map.csv` has no current PE390 objective row that
+uses TargetGroup `6449`, and objective `1590` /
+`SavePanickedWorkersNightmareEntityScript` evidence remains scoped to
+TargetGroups `6400`/`6401`. The same-name level-50 row remains separate:
+Jabbithole creature `28115` / PE390 relation `2022` still maps to Creature2
+`69208` as `scored_name`. No Space Madness objective ownership, phase spawn,
+objective-credit filter, runtime data import, or level-50 bridge was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed
+twice; the first run exposed comma-delimited override metadata drift in the
+Eye Nightmare, Foaming Roandoe, and new Smoke Nightmare reason fields, then the
+override rows were normalized back to eight CSV fields and the mapper was
+rerun. The content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`160` as reviewed while relation `2022` remains `scored_name`. The
+content-retail public-event blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-130819-instance-2149-space-madness-smoke-nightmare-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+evidence for Creature2 `46722` objective ownership, spawn/import placement,
+objective credit behavior, combat behavior, rewards, medals, achievements,
+replay cleanup, Prime/level-50 Smoke Nightmare behavior, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Foaming Roandoe bridge review.
+Space Madness public-event creature relation `159` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps normal level-32 Jabbithole creature `3684` (`Foaming Roandoe`) to
+Creature2 `45727`. This was not promoted from scored-name matching alone. The
+bridge is backed by PE390 relation `159`, matching source/client level `32`,
+world `2149` / area `2419`, faction `218`, action set `885`, display group
+`24049`, display `21462`, 62 local source coordinate rows, and source spell
+rows for Ram, Headbutt, and Bucking Frenzy. TargetGroup `6363` lists Creature2
+`45727` with livestock-family rows, but the generated
+`public_event_objective_client_map.csv` has no current PE390 objective row that
+uses TargetGroup `6363`, and `HallucinatingLivestockEntityScript` remains
+scoped to Creature2 `46483` and `46714`. The same-name level-50 row remains
+separate: Jabbithole creature `28056` / PE390 relation `2010` is now reviewed
+by the later Prime bridge slice above and remains runtime/client-smoke blocked.
+No Space Madness objective ownership, phase spawn, objective-credit filter, or
+runtime data import was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`159` as reviewed; the later Prime bridge slice above also reports relation
+`2010` as reviewed. The content-retail public-event blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-124849-instance-2149-space-madness-foaming-roandoe-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+evidence for Creature2 `45727` objective ownership, spawn/import placement,
+objective credit behavior, combat behavior, rewards, medals, achievements,
+replay cleanup, Prime/level-50 Foaming Roandoe behavior, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Masked Arachnid bridge review.
+Space Madness public-event creature relation `156` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps normal level-32 Jabbithole creature `3667` (`Masked Arachnid`) to
+Creature2 `46720`. This was not promoted from scored-name matching alone. The
+bridge is backed by PE390 relation `156`, matching source/client level `32`,
+world `2149` / area `2416`, faction `218`, difficulty `1`, action set `2056`,
+display group `24274`, display `21687`, 92 local source coordinate rows, and
+source spell rows for Pinch and Slice. TargetGroup `6448` lists Creature2
+`46720`, but the generated `public_event_objective_client_map.csv` has no
+current PE390 objective row that uses TargetGroup `6448`. The same-name
+level-50 row remains separate: Jabbithole creature `28170` / PE390 relation
+`2037` still maps to Creature2 `69206` as `scored_name`. No Space Madness
+objective ownership, phase spawn, objective-credit filter, runtime data import,
+or level-50 bridge was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`156` as reviewed while relation `2037` remains `scored_name`. The
+content-retail public-event blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-123039-instance-2149-space-madness-masked-arachnid-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+evidence for Creature2 `46720` objective ownership, spawn/import placement,
+objective credit behavior, combat behavior, rewards, medals, achievements,
+replay cleanup, Prime/level-50 Masked Arachnid behavior, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Eye Nightmare bridge review.
+Space Madness public-event creature relation `154` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps normal level-32 Jabbithole creature `3663` (`Eye Nightmare`) to Creature2
+`46723`. This was not promoted from scored-name matching alone. The bridge is
+backed by PE390 relation `154`, matching source/client level `32`, world
+`2149` / area `2416`, faction `218`, action set `2109`, display group
+`31553`, display `26022`, outfit group `10125`, outfit `9351`, 62 local source
+coordinate rows, and source spell rows for Punch, Jab, Flourishing Combo, and
+Haymaker. TargetGroup `6449` lists Creature2 `46723`, but the generated
+`public_event_objective_client_map.csv` has no current PE390 objective row that
+uses TargetGroup `6449`, and objective `1590` / `SavePanickedWorkers` script
+evidence remains scoped to TargetGroups `6400`/`6401`. The same-name level-50
+row is reviewed in the Prime bridge slice above: Jabbithole creature `28023` /
+PE390 relation `2005` -> Creature2 `69209`. No Space Madness objective
+ownership, phase spawn, objective-credit filter, runtime data import, or
+level-50 runtime behavior was widened in this normal bridge slice.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`154` as reviewed; relation `2005` is reviewed by the later Prime slice above.
+The content-retail public-event blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-121241-instance-2149-space-madness-eye-nightmare-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+evidence for Creature2 `46723` objective ownership, spawn/import placement,
+objective credit behavior, combat behavior, rewards, medals, achievements,
+replay cleanup, Prime/level-50 Eye Nightmare behavior, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Hallucinating Cubig bridge review.
+Space Madness public-event creature relation `152` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps normal level-32 Jabbithole creature `3654` (`Hallucinating Cubig`) to
+Creature2 `45724`. This was not promoted from scored-name matching alone. The
+bridge is backed by PE390 relation `152`, matching source/client level `32`,
+world `2149` / area `2421`, faction `218`, action set `885`, display group
+`24064`, display `21477`, 66 local source coordinate rows, and source spell
+rows for Chomp, Bite, Bruising Rush, and Pulverizing Vault. The same-name
+level-50 row is reviewed by the Prime bridge slice above: Jabbithole creature
+`28092` / PE390 relation `2016` -> Creature2 `69137`. No Space Madness phase
+spawn, objective-credit filter, runtime data import, or level-50 runtime
+behavior was widened in this normal bridge slice.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`152` as reviewed; relation `2016` is reviewed by the later Prime slice above. The
+content-retail public-event blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-115352-instance-2149-space-madness-hallucinating-cubig-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+evidence for Creature2 `45724` spawn/import placement, livestock objective
+credit ownership, combat behavior, rewards, medals, achievements, replay
+cleanup, Prime Cubig runtime behavior, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Maddened Roanstag bridge review.
+Space Madness public-event creature relation `149` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps Jabbithole creature `3643` (`Maddened Roanstag`) to Creature2 `45726`.
+This was not promoted from scored-name matching alone. The reviewed bridge is
+the normal level-32 row, backed by PE390 relation `149`, 63 world `2149` /
+area `2421` source coordinate rows, and source spell rows for Headbutt, Ram,
+and Bucking Frenzy. The same-name level-50 row remains separate:
+Jabbithole creature `28134` / PE390 relation `2119` still maps to Creature2
+`69138` as `scored_name`. No Space Madness phase spawn, objective-credit
+filter, runtime data import, or level-50 bridge was widened.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`149` as reviewed while relation `2119` remains `scored_name`. The
+content-retail public-event blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-114717-instance-2149-space-madness-maddened-roanstag-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+evidence for Creature2 `45726` spawn/import placement, livestock objective
+credit ownership, combat behavior, rewards, medals, achievements, replay
+cleanup, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Exact Change 3.1 bridge review.
+Space Madness public-event creature relation `2023` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps Jabbithole creature `28116` (`Exact Change 3.1`) to Creature2 `69204`.
+This was not promoted from unique-name matching alone. The reviewed bridge is
+supported by PE390 relation `2023`, quest objective relation `8027` for Q9883
+`Deconstruction`, contract relation `1112`, 59 world `2149` / area `2416`
+source coordinate rows, and matching Exact Change 3.x spell-family rows. This
+is a bridge-only review: no Space Madness phase spawn, objective-credit filter,
+contract objective behavior, or runtime data import was widened for Creature2
+`69204`.
+
+Verification: full `python Tools\DataMapping\map_wildstar_data.py` completed;
+and the content-retail audit regenerated against the refreshed outputs.
+Generated DataMapping now reports `creature_public_event_map.csv` relation
+`2023`, `creature_quest_map.csv` relation `8027`, and
+`contract_creature_map.csv` relation `1112` as reviewed. The content-retail
+public-event blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`; the Q9883
+creature row reports
+`reviewed_objective_creature_relation_pending_spawn_dialog_credit_smoke`; and
+the contract row reports
+`implemented_contract_creature_reviewed_bridge_objective_credit_pending_spawn_client_smoke`.
+Evidence bundle:
+`artifacts/blocker_evidence/20260618-112920-instance-2149-space-madness-exact-change-31-bridge-review`.
+Space Madness and Q9883 remain not retail-complete and still blocked on live
+build 16042 evidence for Creature2 `69204` spawn/import placement, objective
+credit ownership, Deconstruction/contract spawn availability and tap behavior,
+Prime/contract client smoke, rewards, medals, achievements, replay cleanup,
+and full negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Exact Change 3.0 bridge review.
+Space Madness public-event creature relation `151` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps Jabbithole creature `3645` (`Exact Change 3.0`) to Creature2 `46483`.
+This was not promoted from unique-name matching alone. PE390 objective `1593`
+(`Kill Hallucinating Livestock`) is a direct `KillEventObjectiveUnit` row with
+count `10` and WorldLocation2 `37709`. `SpaceMadnessEventScript` spawns Exact
+Change 3.0 entity `1100300009` as Creature2 `46483` during phase `4`, and
+`HallucinatingLivestockEntityScript` filters `46483` and `46714` while
+direct-crediting `PublicEventObjective.KillHallucinatingLivestock`. The source
+coordinate evidence has 94 world `2149` / area `2416` rows for Creature2
+`46483`, and the reviewed WIP instance entity row records the phase placement
+for entity `1100300009`. No runtime behavior, spawn import, objective logic, or
+Exact Change 3.1 bridge was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-exact-change-30-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `151` as
+`match_status=reviewed`, and the content-retail creature blocker row now
+reports `reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence
+bundle:
+`artifacts/blocker_evidence/20260618-111017-instance-2149-space-madness-exact-change-30-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for phase-four spawn/import placement, livestock combat behavior,
+objective `1593` UI timing and credit, rewards, medals, achievements, replay
+cleanup, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Party Down-Grazer bridge review.
+Space Madness public-event creature relation `2017` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps Jabbithole creature `28093` (`Party Down-Grazer`) to Creature2 `69901`.
+This was not promoted from unique-name matching alone. Build 16042 client
+objective `4711` (`Collect a Party Downgrazer from the third stage of madness`)
+uses object TargetGroup `12597`, whose sole member is Creature2 `69901`, and
+parent objective `4712`. `PartyDowngrazerEntityScript` filters `69901` while
+crediting `PublicEventObjectiveType.ActivateTargetGroup` TargetGroup `12597`
+plus parent `PublicEventObjective.CollectEscapedCreatures`. The source
+coordinate evidence has 71 world `2149` / area `2414` rows for Creature2
+`69901`. No runtime behavior, spawn import, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-party-downgrazer-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `2017` as
+`match_status=reviewed`, and the content-retail creature blocker row now
+reports `reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence
+bundle:
+`artifacts/blocker_evidence/20260618-104608-instance-2149-space-madness-party-downgrazer-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for escaped-experiment spawn/import placement, objective `4711`
+collection timing, parent objective `4712` aggregate UI behavior, rewards,
+medals, achievements, replay cleanup, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Talking Rockmite bridge review.
+Space Madness public-event creature relation `2020` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps Jabbithole creature `28112` (`Talking Rockmite`) to Creature2 `69900`.
+This was not promoted from unique-name matching alone. Build 16042 client
+objective `4710` (`Collect an Experimental Rockmite from the second stage of
+madness`) uses object TargetGroup `12596`, whose sole member is Creature2
+`69900`, and parent objective `4712`. `ExperimentalRockmiteEntityScript`
+filters `69900` while crediting `PublicEventObjectiveType.ActivateTargetGroup`
+TargetGroup `12596` plus parent `PublicEventObjective.CollectEscapedCreatures`.
+The source coordinate evidence has 85 world `2149` / area `2414` rows for
+Creature2 `69900`. No runtime behavior, spawn import, or objective logic was
+widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-talking-rockmite-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `2020` as
+`match_status=reviewed`, and the content-retail creature blocker row now
+reports `reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence
+bundle:
+`artifacts/blocker_evidence/20260618-102826-instance-2149-space-madness-talking-rockmite-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for escaped-experiment spawn/import placement, objective `4710`
+collection timing, parent objective `4712` aggregate UI behavior, rewards,
+medals, achievements, replay cleanup, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Air Scrubber Controls bridge review.
+Space Madness public-event creature relation `147` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `3638` (`Air Scrubber Controls`) to Creature2 `46437`.
+This was not promoted from unique-name matching alone. PE390 objective `1595`
+(`Activate Air Scrubber Controls`) uses object/reward-pane TargetGroup `6371`,
+whose members are Creature2 `45861` (`Main Vent Lever`) and Creature2 `46437`
+(`Air Scrubber Controls`). `AirScrubberControlsEntityScript` already filters
+`45861` and `46437` while crediting
+`PublicEventObjectiveType.ActivateTargetGroup` TargetGroup `6371`. The source
+coordinate evidence is a single world `2149` / area `2421` row for Creature2
+`46437`. No runtime behavior, spawn import, objective logic, or Main Vent
+Lever bridge was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from
+`artifacts\test-bin\space-madness-air-scrubber-controls-bridge`; full
+`python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `147` as
+`match_status=reviewed`, and the content-retail creature blocker row now
+reports `reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence
+bundle:
+`artifacts/blocker_evidence/20260618-100902-instance-2149-space-madness-air-scrubber-controls-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for objective `1595` UI timing/repeat behavior, objective `2115`
+air-scrubbing timer/wave behavior, Main Vent Lever `45861` bridge/placement
+proof, rewards, medals, achievements, replay cleanup, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Engineering Computer bridge review.
+Space Madness public-event creature relation `146` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `3635` (`Engineering Computer`) to Creature2 `45973`.
+This was not promoted from unique-name matching alone. PE390 objective `1603`
+(`Use the Engineering Computer to report that the lab is safe`) uses
+object/reward-pane TargetGroup `6372`, whose sole member is Creature2
+`45973`. `SpaceMadnessEventScript` spawns the all-clear Engineering Computer
+as Creature2 `45973`, and `EngineeringComputerEntityScript` filters `45973`
+while crediting `PublicEventObjectiveType.ActivateTargetGroup` TargetGroup
+`6372`. The source coordinate evidence is a single world `2149` / area `2421`
+row that aligns with the runtime phase placement. No runtime behavior, spawn
+import, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-engineering-computer-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `146` as
+`match_status=reviewed`, and the content-retail blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-094918-instance-2149-space-madness-engineering-computer-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for all-clear objective `1603` UI timing and credit, rewards, medals,
+achievements, replay cleanup, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Hazmat Suit bridge review.
+Space Madness public-event creature relation `145` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `3634` (`Hazmat Suit`) to Creature2 `45981`. This was not
+promoted from scored-name matching alone. PE390 objective `1656` (`Equip a
+Hazmat Suit from the storage closet in the lab`) uses reward-pane TargetGroup
+`6362`, whose sole member is Creature2 `45981`. `SpaceMadnessEventScript`
+spawns the phase Hazmat Suit as Creature2 `45981`, and
+`HazmatSuitEntityScript` filters `45981` while direct-crediting
+`PublicEventObjective.EquipAHazmatSuit`. Source coordinate evidence has local
+world `2149` / area `2417` candidates while the current runtime phase placement
+uses area `2415`, so placement/client smoke remains blocked. No runtime
+behavior, spawn import, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-hazmat-suit-bridge`; full
+`python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `145` as
+`match_status=reviewed`, and the content-retail blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-093151-instance-2149-space-madness-hazmat-suit-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Hazmat Suit spawn/import placement, equip-objective `1656` UI timing
+and credit, replay cleanup, rewards, medals, achievements, and full expedition
+negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Metallic Nightmare bridge review.
+Space Madness public-event creature relation `158` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `3674` (`Metallic Nightmare`) to Creature2 `58798`. This
+was not promoted from ambiguous-name matching alone. PE390 objective `1590`
+(`Save Panicked Workers from the nightmares attacking them`) uses reward-pane
+TargetGroup `6402`, which nests TargetGroup `6401`; TargetGroup `6401`
+contains Creature2 `58798`, and `SavePanickedWorkersNightmareEntityScript`
+filters `58798` while crediting `PublicEventObjective.SavePanickedWorkers`.
+The same source creature also has local world `2149` / area `2416` spawn
+candidates and creature spell rows mapped to `58798`. The separate same-name
+source creature `28077` / relation `2312` remains untouched. No runtime
+behavior, spawn import, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-metallic-nightmare-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `158` as
+`match_status=reviewed`, leaves relation `2312` as `scored_name`, and the
+content-retail blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-091305-instance-2149-space-madness-metallic-nightmare-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Metallic Nightmare spawn/import placement, panicked-worker objective
+`1590` UI timing and credit, worker combat choreography, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases. Objective
+`1662` hallucination-wave mechanics remain a separate blocked slice.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Hookfoot Nightmare bridge review.
+Space Madness public-event creature relation `157` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `3670` (`Hookfoot Nightmare`) to Creature2 `46721`. This
+was not promoted from scored-name matching alone. PE390 objective `1590`
+(`Save Panicked Workers from the nightmares attacking them`) uses reward-pane
+TargetGroup `6402`, which nests TargetGroup `6401`; TargetGroup `6401`
+contains Creature2 `46721`, and `SavePanickedWorkersNightmareEntityScript`
+filters `46721` while crediting `PublicEventObjective.SavePanickedWorkers`.
+The same source creature also has local world `2149` / area `2416` spawn
+candidates and creature spell rows mapped to `46721`. The separate same-name
+source creature `28166` / relation `2035` remains untouched. No runtime
+behavior, spawn import, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-hookfoot-nightmare-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `157` as
+`match_status=reviewed`, leaves relation `2035` as `scored_name`, and the
+content-retail blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-085151-instance-2149-space-madness-hookfoot-nightmare-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Hookfoot Nightmare spawn/import placement, panicked-worker objective
+`1590` UI timing and credit, worker combat choreography, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases. Objective
+`1662` hallucination-wave mechanics remain a separate blocked slice.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Gnarled Nightmare bridge review.
+Space Madness public-event creature relation `144` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `3628` (`Gnarled Nightmare`) to Creature2 `58783`. This
+was not promoted from scored-name matching alone. PE390 objective `1590`
+(`Save Panicked Workers from the nightmares attacking them`) uses reward-pane
+TargetGroup `6402`, which nests TargetGroup `6401`; TargetGroup `6401`
+contains Creature2 `58783`, and `SavePanickedWorkersNightmareEntityScript`
+filters `58783` while crediting `PublicEventObjective.SavePanickedWorkers`.
+The same source creature also has local world `2149` / area `2414` spawn
+candidates and creature spell rows mapped to `58783`. The separate same-name
+source creature `28121` / relation `2026` remains untouched. No runtime
+behavior, spawn import, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-gnarled-nightmare-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `144` as
+`match_status=reviewed`, leaves relation `2026` as `scored_name`, and the
+content-retail blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-083248-instance-2149-space-madness-gnarled-nightmare-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Gnarled Nightmare spawn/import placement, panicked-worker objective
+`1590` UI timing and credit, worker combat choreography, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases. Objective
+`1662` hallucination-wave mechanics remain a separate blocked slice.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Looming Nightmare bridge review.
+Space Madness public-event creature relation `155` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `884` (`Looming Nightmare`) to Creature2 `46135`. This was
+not promoted from scored-name matching alone. PE390 objective `1590` (`Save
+Panicked Workers from the nightmares attacking them`) uses reward-pane
+TargetGroup `6402`, which nests TargetGroup `6401`; TargetGroup `6401`
+contains Creature2 `46135`, and `SavePanickedWorkersNightmareEntityScript`
+filters `46135` while crediting `PublicEventObjective.SavePanickedWorkers`.
+The same source creature also has local world `2149` / area `2416` spawn
+candidates and creature spell rows mapped to `46135`. The separate same-name
+source creature `28114` / relation `2021` remains untouched. No runtime
+behavior, spawn import, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-looming-nightmare-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `155` as
+`match_status=reviewed`, leaves relation `2021` as `scored_name`, and the
+content-retail blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-081422-instance-2149-space-madness-looming-nightmare-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Looming Nightmare spawn/import placement, panicked-worker objective
+`1590` UI timing and credit, worker combat choreography, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases. Objective
+`1662` hallucination-wave mechanics remain a separate blocked slice.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Horrifying Nightmare bridge review.
+Space Madness public-event creature relation `31` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `1189` (`Horrifying Nightmare`) to Creature2 `46132`. This
+was not promoted from ambiguous-name matching alone. PE390 objective `1590`
+(`Save Panicked Workers from the nightmares attacking them`) uses reward-pane
+TargetGroup `6402`, which nests TargetGroup `6401`; TargetGroup `6401`
+contains Creature2 `46132`, and `SavePanickedWorkersNightmareEntityScript`
+filters `46132` while crediting `PublicEventObjective.SavePanickedWorkers`.
+The same source creature also has local world `2149` / area `2416` spawn
+candidates and creature spell rows mapped to `46132`. The separate same-name
+source creature `28148` / relation `2034` remains untouched. No runtime
+behavior, spawn import, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-horrifying-nightmare-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `31` as
+`match_status=reviewed`, leaves relation `2034` as `scored_name`, and the
+content-retail blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-075422-instance-2149-space-madness-horrifying-nightmare-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Horrifying Nightmare spawn/import placement, panicked-worker objective
+`1590` UI timing and credit, worker combat choreography, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases. Objective
+`1662` hallucination-wave mechanics remain a separate blocked slice.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Shocking Nightmare bridge review.
+Space Madness public-event creature relation `30` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `1128` (`Shocking Nightmare`) to Creature2 `46126`. This
+was not promoted from scored-name matching alone. PE390 objective `1590`
+(`Save Panicked Workers from the nightmares attacking them`) uses reward-pane
+TargetGroup `6402`, which nests TargetGroup `6400`; TargetGroup `6400`
+contains Creature2 `46126`, and `SavePanickedWorkersNightmareEntityScript`
+filters `46126` while crediting `PublicEventObjective.SavePanickedWorkers`.
+The same source creature also has local world `2149` / area `2414` spawn
+candidates and creature spell rows mapped to `46126`. The separate same-name
+source creature `28172` / relation `2038` remains untouched. No runtime
+behavior, spawn import, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-shocking-nightmare-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `30` as
+`match_status=reviewed`, leaves relation `2038` as `scored_name`, and the
+content-retail blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-073231-instance-2149-space-madness-shocking-nightmare-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Shocking Nightmare spawn/import placement, panicked-worker objective
+`1590` UI timing and credit, worker combat choreography, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases. Objective
+`1662` hallucination-wave mechanics remain a separate blocked slice.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Rending Nightmare bridge review.
+Space Madness public-event creature relation `29` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `1121` (`Rending Nightmare`) to Creature2 `46130`. This
+was not promoted from scored-name matching alone. PE390 objective `1590`
+(`Save Panicked Workers from the nightmares attacking them`) uses reward-pane
+TargetGroup `6402`, which nests TargetGroup `6400`; TargetGroup `6400`
+contains Creature2 `46130`, and `SavePanickedWorkersNightmareEntityScript`
+filters `46130` while crediting `PublicEventObjective.SavePanickedWorkers`.
+The same source creature also has local world `2149` / area `2414` spawn
+candidates and creature spell rows mapped to `46130`. The separate same-name
+source creature `28035` / relation `2006` is now reviewed by the later Prime
+bridge slice above and remains runtime/client-smoke blocked. No runtime
+behavior, spawn import, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-rending-nightmare-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `29` as
+`match_status=reviewed`; the later Prime bridge slice above also reports
+relation `2006` as `match_status=reviewed`; and the content-retail blocker row
+now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-071049-instance-2149-space-madness-rending-nightmare-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Rending Nightmare spawn/import placement, panicked-worker objective
+`1590` UI timing and credit, worker combat choreography, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases. Objective
+`1662` hallucination-wave mechanics remain a separate blocked slice.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Captain Tero bridge review.
+Space Madness public-event creature relations `28` and `2117` are now reviewed
+DataMapping bridges: tracked overrides `Tools/DataMapping/creature_bridge_overrides.csv`
+map Jabbithole creature `1097` (`Captain Tero`) and duplicate source creature
+`28243` (`Captain Tero`) to Creature2 `45900`. This was not promoted from
+scored-name matching alone. PE390 objective `1579` (`Talk to Captain Tero
+before leaving the shuttle`) uses TargetGroup `6342`, TargetGroup `6342`
+contains only Creature2 `45900`, `SpaceMadnessEventScript` spawns reviewed
+entity `1100300005` for event `390:0`, and `CaptainTeroEntityScript` filters
+`45900` while crediting TargetGroup `6342` through
+`PublicEventObjectiveType.TalkTo`. No runtime behavior, spawn placement,
+dialog timing, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-captain-tero-bridge`; full
+`python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relations `28` and
+`2117` as `match_status=reviewed`, and both content-retail blocker rows now
+report `reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence
+bundle:
+`artifacts/blocker_evidence/20260618-065133-instance-2149-space-madness-captain-tero-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Captain Tero shuttle placement, dialog timing, phase visibility,
+objective UI timing and credit, replay cleanup, rewards, medals, achievements,
+and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Observation Deck Computer bridge review.
+Space Madness public-event creature relation `27` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `979` (`Observation Deck Computer`) to Creature2 `45972`.
+This was not promoted from unique-name matching alone. PE390 objective `1589`
+(`Access the Observation Deck Computer in the observation deck overlooking the
+laboratory`) uses TargetGroup `6356`, TargetGroup `6356` contains only Creature2
+`45972`, `SpaceMadnessEventScript` spawns reviewed entity `1100300007` for
+event `390:2`, and `ObservationDeckComputerEntityScript` filters `45972` while
+crediting TargetGroup `6356` once through
+`PublicEventObjectiveType.ActivateTargetGroup`. No runtime behavior, spawn
+placement, coordinate precision, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from
+`artifacts\test-bin\space-madness-observation-deck-computer-bridge`; full
+`python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated DataMapping
+now reports `creature_public_event_map.csv` relation `27` as
+`match_status=reviewed`, and the content-retail blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-063502-instance-2149-space-madness-observation-deck-computer-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Observation Deck Computer coordinate precision, phase visibility,
+activation UI timing and credit, replay cleanup, rewards, medals, achievements,
+and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Ravenous Nightmare bridge review.
+Space Madness public-event creature relation `26` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `446` (`Ravenous Nightmare`) to Creature2 `46133`. This
+was not promoted from scored-name matching alone. PE390 objective `1590`
+(`Save Panicked Workers from the nightmares attacking them`) uses reward-pane
+TargetGroup `6402`, which nests TargetGroup `6401`; TargetGroup `6401`
+contains Creature2 `46133`, and `SavePanickedWorkersNightmareEntityScript`
+filters `46133` while crediting `PublicEventObjective.SavePanickedWorkers`.
+The same source creature also has local world `2149` / area `2415` spawn
+candidates and creature spell rows mapped to `46133`. The separate same-name
+source creature `28076` / relation `2013` is reviewed by the Prime bridge slice
+above and remains runtime/client-smoke blocked. No runtime behavior, spawn
+import, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-ravenous-nightmare-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `26` as
+`match_status=reviewed`; relation `2013` is reviewed by the Prime bridge slice
+above; and the
+content-retail blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-061645-instance-2149-space-madness-ravenous-nightmare-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Ravenous Nightmare spawn/import placement, panicked-worker objective
+`1590` UI timing and credit, worker combat choreography, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases. Objective
+`1662` hallucination-wave mechanics remain a separate blocked slice.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Writhing Nightmare bridge review.
+Space Madness public-event creature relation `25` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `392` (`Writhing Nightmare`) to Creature2 `46123`. This
+was not promoted from ambiguous-name matching alone. PE390 objective `1590`
+(`Save Panicked Workers from the nightmares attacking them`) uses reward-pane
+TargetGroup `6402`, which nests TargetGroup `6400`; TargetGroup `6400`
+contains Creature2 `46123`, and `SavePanickedWorkersNightmareEntityScript`
+filters `46123` while crediting `PublicEventObjective.SavePanickedWorkers`.
+The same source creature also has local world `2149` / area `2413` spawn
+candidates and creature spell rows mapped to `46123`. The separate same-name
+source creature `28046` / relation `2009` is now reviewed by the later Prime
+bridge slice above and remains runtime/client-smoke blocked. No runtime
+behavior, spawn import, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-writhing-nightmare-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `25` as
+`match_status=reviewed`; the later Prime bridge slice above also reports
+relation `2009` as `match_status=reviewed`; and the content-retail blocker row
+now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-055746-instance-2149-space-madness-writhing-nightmare-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Writhing Nightmare spawn/import placement, panicked-worker objective
+`1590` UI timing and credit, worker combat choreography, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases. Objective
+`1662` hallucination-wave mechanics remain a separate blocked slice.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Major Lee Barmy bridge review.
+Space Madness public-event creature relation `23` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `332` (`Major Lee Barmy`) to Creature2 `45812`. This was
+not promoted from unique-name matching alone. PE390 objective `1588` (`Talk to
+$creature=45812`) uses TargetGroup `6358`, TargetGroup `6358` contains only
+Creature2 `45812`, and `MajorLeeBarmyEntityScript` filters `45812` while
+crediting TargetGroup `6358` through `PublicEventObjectiveType.TalkTo`. The
+separate same-target source creature `28252` / relation `2120` is now tracked
+by the later duplicate bridge review above. No runtime behavior, spawn import,
+phase timing, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-major-lee-barmy-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `23` as
+`match_status=reviewed`; relation `2120` is now also reviewed by the later
+duplicate bridge slice above; and the content-retail blocker row reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-054032-instance-2149-space-madness-major-lee-barmy-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for relation `23` spawn/import placement, objective `1588` UI timing and
+talk credit, phase timing, replay cleanup, rewards, medals, achievements, and
+full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Electrifying Nightmare bridge review.
+Space Madness public-event creature relation `24` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `389` (`Electrifying Nightmare`) to Creature2 `46127`.
+This was not promoted from scored-name matching alone. PE390 objective `1590`
+(`Save Panicked Workers from the nightmares attacking them`) uses reward-pane
+TargetGroup `6402`, which nests TargetGroup `6400`; TargetGroup `6400`
+contains Creature2 `46127`, and `SavePanickedWorkersNightmareEntityScript`
+filters `46127` while crediting `PublicEventObjective.SavePanickedWorkers`.
+The same source creature also has local world `2149` / area `2414` spawn
+candidates and creature spell rows mapped to `46127`. The separate same-name
+source creature `28128` / relation `2029` remains untouched. No runtime
+behavior, spawn import, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from
+`artifacts\test-bin\space-madness-electrifying-nightmare-bridge`; full
+`python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `24` as
+`match_status=reviewed`, leaves relation `2029` as `scored_name`, and the
+content-retail blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-052313-instance-2149-space-madness-electrifying-nightmare-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Electrifying Nightmare spawn/import placement, panicked-worker
+objective `1590` UI timing and credit, worker combat choreography, replay
+cleanup, rewards, medals, achievements, and full expedition negative cases.
+Objective `1662` hallucination-wave mechanics remain a separate blocked slice.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Verminous Nightmare bridge review.
+Space Madness public-event creature relation `22` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `205` (`Verminous Nightmare`) to Creature2 `46131`. This
+was not promoted from unique-name matching alone. PE390 objective `1590` (`Save
+Panicked Workers from the nightmares attacking them`) uses reward-pane
+TargetGroup `6402`, which nests TargetGroup `6400`; TargetGroup `6400`
+contains Creature2 `46131`, and `SavePanickedWorkersNightmareEntityScript`
+filters `46131` while crediting `PublicEventObjective.SavePanickedWorkers`.
+Source creature `205` is represented only by PE390 relation `22`, and no
+competing same-name public-event creature row was found. No runtime behavior,
+spawn import, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from
+`artifacts\test-bin\space-madness-verminous-nightmare-bridge`; full
+`python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `22` as
+`match_status=reviewed` with source-row `last_seen_in=1`, and the
+content-retail blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-050409-instance-2149-space-madness-verminous-nightmare-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Verminous Nightmare spawn/import placement, panicked-worker objective
+`1590` UI timing and credit, worker combat choreography, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases. Objective
+`1662` hallucination-wave mechanics remain a separate blocked slice.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Venomous Nightmare bridge review.
+Space Madness public-event creature relation `20` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `64` (`Venomous Nightmare`) to Creature2 `46128`. This was
+not promoted from scored-name matching alone. PE390 objective `1590` (`Save
+Panicked Workers from the nightmares attacking them`) uses reward-pane
+TargetGroup `6402`, which nests TargetGroup `6400`; TargetGroup `6400`
+contains Creature2 `46128`, and `SavePanickedWorkersNightmareEntityScript`
+filters `46128` while crediting `PublicEventObjective.SavePanickedWorkers`.
+The separate same-name source creature `28183` / relation `2039` remains
+untouched. No runtime behavior, spawn import, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-venomous-nightmare-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `20` as
+`match_status=reviewed`, and the content-retail blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-044521-instance-2149-space-madness-venomous-nightmare-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Venomous Nightmare spawn/import placement, panicked-worker objective
+`1590` UI timing and credit, worker combat choreography, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases. Objective
+`1662` hallucination-wave mechanics remain a separate blocked slice.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Stinging Nightmare bridge review.
+Space Madness public-event creature relation `18` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `39` (`Stinging Nightmare`) to Creature2 `46124`. This was
+not promoted from scored-name matching alone. PE390 objective `1590` (`Save
+Panicked Workers from the nightmares attacking them`) uses reward-pane
+TargetGroup `6402`, which nests TargetGroup `6400`; TargetGroup `6400`
+contains Creature2 `46124`, and `SavePanickedWorkersNightmareEntityScript`
+filters `46124` while crediting `PublicEventObjective.SavePanickedWorkers`.
+The separate same-name source creature `28086` / relation `2014` is reviewed
+by the later Stinging Nightmare Prime bridge slice. No runtime behavior, spawn
+import, or objective logic was widened by this normal-row review.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-stinging-nightmare-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `18` as
+`match_status=reviewed`, and the content-retail blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-042832-instance-2149-space-madness-stinging-nightmare-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Stinging Nightmare spawn/import placement, panicked-worker objective
+`1590` UI timing and credit, worker combat choreography, replay cleanup,
+rewards, medals, achievements, and full expedition negative cases. Objective
+`1662` hallucination-wave mechanics remain a separate blocked slice.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Slinking Slank bridge review.
+Space Madness public-event creature relation `2033` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps Jabbithole creature `28141` (`Slinking Slank`) to Creature2 `69899`.
+This was not promoted from name matching alone. PE390 objective `4709`
+(`Collect an Experimental Slank from the first stage of madness`) uses
+object/TargetGroup `12595`, TargetGroup `12595` contains only Creature2
+`69899`, and `ExperimentalSlankEntityScript` already filters `69899` while
+crediting TargetGroup `12595` plus parent `CollectEscapedCreatures`. No runtime
+behavior, spawn import, or objective logic was widened.
+
+Verification: focused Space Madness/public-event objective-credit tests passed
+`624/624` from `artifacts\test-bin\space-madness-slinking-slank-bridge`;
+full `python Tools\DataMapping\map_wildstar_data.py` completed; and the
+content-retail audit regenerated against the refreshed outputs. Generated
+DataMapping now reports `creature_public_event_map.csv` relation `2033` as
+`match_status=reviewed`, and the content-retail blocker row now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`. Evidence bundle:
+`artifacts/blocker_evidence/20260618-040814-instance-2149-space-madness-slinking-slank-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Slinking Slank spawn/import placement, objective `4709` UI timing,
+parent objective `4712` progression, replay cleanup, rewards, medals,
+achievements, and full expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Hallucinating Worker multi-member bridge blocker.
+The content-retail audit now separates Space Madness public-event creature
+relation `153` from generic ambiguous bridge reviews. Generated PE390 evidence
+maps Jabbithole creature `3655` (`Hallucinating Worker`) to ambiguous Creature2
+`45903`, while build 16042 objective `1594` points at TargetGroup `6370`,
+whose members are Creature2 `45903` and `45904`. Because the DataMapping
+creature bridge override model is a one-to-one source creature bridge, approving
+relation `153` as `45903` would not prove which target-group member or spawn
+variant the relation owns. No runtime behavior or bridge override was widened.
+
+Verification: focused content-retail audit tests passed `98/98`, generated
+content-retail validation reports `31` files / `168,101` rows, and the full
+content-retail audit regenerated the CSVs and tracker. The generated blocker row
+for relation `153` now reports
+`blocked_public_event_creature_ambiguous_multi_member_targetgroup_requires_relation_smoke`
+with `target_group_id=6370`; the generic
+`blocked_public_event_creature_ambiguous_requires_bridge_review` bucket dropped
+to `118` next-slice rows, while the new multi-member blocker bucket accounts for
+`20` rows across affected instance slices. Space Madness remains blocked on a
+relation- or spawn-scoped bridge review, live client/server objective-credit
+smoke, or a captured placement/import artifact proving member selection without
+widening runtime behavior.
+
+Supplemental update: 2026-06-18 CEST F-024 Space Madness Datapad bridge review.
+Space Madness public-event creature relation `19` is now a reviewed DataMapping
+bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv` maps
+Jabbithole creature `48` (`Datapad`) to Creature2 `45993`. This was not
+promoted from name matching alone. Public-event objective `1596` (`Access log
+files contained on crew Datapads...`) maps object `6384`, TargetGroup `6384`
+contains Creature2 `45993`, Jabbithole creature `48` is only used by PE390
+relation `19` plus world `2149` / area `2416` Datapad spawn evidence, and
+`CrewDatapadEntityScript` / focused Space Madness tests pin `45993`
+target-group checklist credit. Generated DataMapping now reports
+`creature_public_event_map.csv` relation `19` as `match_status=reviewed`, and
+content-retail blocker rank `38` now reports
+`reviewed_public_event_creature_blocked_spawn_credit_smoke`.
+
+Verification: the inline mapper-loader check applied the override as a
+reviewed row preserving `original_creature2_id=34440` and
+`original_match_status=ambiguous_name`; focused Space Madness/public-event
+objective-credit tests passed `624/624` from
+`artifacts\test-bin\space-madness-datapad-bridge`; full
+`python Tools\DataMapping\map_wildstar_data.py` completed and wrote refreshed
+outputs; and the content-retail audit completed against those outputs. Evidence
+bundle:
+`artifacts/blocker_evidence/20260618-033257-instance-2149-space-madness-datapad-bridge-review`.
+Space Madness remains not retail-complete and still blocked on live build 16042
+smoke for Datapad spawn/import, objective `1596` UI timing, checklist count
+presentation, visual state, replay cleanup, rewards, achievements, and full
+expedition negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 Ultimate Protogames Gate Console bridge review.
+Ultimate Protogames public-event creature relation `2244` is now a reviewed
+DataMapping bridge: tracked override `Tools/DataMapping/creature_bridge_overrides.csv`
+maps Jabbithole creature `28533` (`Gate Console`) to Creature2 `62427`. This
+does not widen runtime behavior; it records the bridge already used by
+`UltimateProtogamesEventScript` for the Prototentiary room placement while
+`SneakyPrisonGateConsoleEntityScript` continues to credit build 16042
+TargetGroup `10569` / objective `2847` and accepts both `62987` and `62427`.
+The generated DataMapping output now shows `creature_public_event_map.csv`
+relation `2244` as `match_status=reviewed`, and
+`creature_bridge_override_audit.csv` row `33` as `status=applied`.
+
+Verification: an inline mapper-loader check proved the override is applied and
+builds a reviewed row preserving `original_match_status=ambiguous_name`;
+focused Ultimate Protogames/public-event objective-credit tests passed
+`620/620` from `artifacts\test-bin\ultimate-protogames-gate-console`, full
+`python Tools\DataMapping\map_wildstar_data.py` later completed, and the
+content-retail audit completed against refreshed output. Blocker rank `285`
+now reports `reviewed_public_event_creature_blocked_spawn_credit_smoke`.
+Evidence bundle:
+`artifacts/blocker_evidence/20260618-031106-instance-2980-gate-console-bridge-review`.
+Ultimate Protogames remains not retail-complete and still blocked on live build
+16042 smoke for Gate Console objective UI timing, door choreography, visual
+state, replay cleanup, rewards, achievements, and full dungeon negative cases.
+
+Supplemental update: 2026-06-18 CEST F-010 matching/raid cluster blocked recheck.
+The remaining F-010 matching/raid packet cluster is still mapped-only and
+blocked for semantic or producer widening. No runtime code, data, or generated
+content rows changed. `mcp__ghidra_mcp.list_instances` returned no running
+Ghidra instance; `Get-GhidraMcpWorkflowHints.ps1 -Targets WildStar64.exe`
+confirmed the local `NexusForeverClient64_WildStar64` project, and
+`Test-DecompileManifest.ps1 -Targets WildStar64.exe -FailOnMismatch` passed
+with `200` selected functions reused from canonical cache. Cached/source scans
+still prove only bounded facts: `140099110` is a shared raw-`uint32` reader for
+`0x05CF` / `0x085D`; `1405c41c0` writes a payload to matching-manager `+0xa0`
+without opcode-index or `ClientEvent` ownership; `140086e70` is a reused
+identity-plus-`uint32` reader for `0x0600`; `14008bf80`, `14008c010`, and
+`1406042b0` map the shared raid-info row through `0x071A`, not standalone
+non-zero `0x0718` timing; and `14007d010` / `14007d000` remain shared
+one-`uint32` helpers for `Client0x062A` / `Client0x0634`.
+
+Existing artifact scans found no newer F-010 packet-evidence bundle. The prior
+solo/LAN CDB bundles remain useful positive controls for neighboring
+queue/leave/average-wait/match-ready paths, but still have no real rows for
+`0x05CF`, `0x0600`, `0x062A`, `0x0634`, standalone non-zero `0x0718`,
+`0x0719`, or `0x071A`. Focused matching/raid packet and handler tests passed
+`168/168` from `artifacts\test-bin\f010-matching-raid-cluster`. The worksheet
+`artifacts/blocker_evidence/20260618-024435-F010-matching-raid-cluster-recheck`
+records the attempted evidence path and rejected shortcut cases. Keep
+`ServerMatching0x05CF`, `ServerMatchingGroupMemberRoleSelection`, non-zero
+`ServerRaidQueueStatus`, `Client0x062A`, and `Client0x0634` neutral or
+non-emitted until a real non-`.pdata` native producer/apply table, callback
+owner, or accepted live matching/raid capture proves timing and field meaning.
+
+Supplemental update: 2026-06-18 CEST F-008 crafting current-craft/aux blocked recheck.
+The consolidated F-008 producer gap for `ServerCraftingCurrentCraft`
+(`0x0854`), crafting aux `0x084B`/`0x0855`, and `ServerItemMicrochips`
+(`0x056C`) remains `Mapped only / Blocked`. No runtime code, data seeds, or
+generated content rows changed. The Ghidra MCP bridge again had no running
+CodeBrowser instance, so this pass used the current source, cached WildStar64
+selected fragments, and existing packet evidence. `Get-GhidraMcpWorkflowHints`
+confirmed the local `NexusForeverClient64_WildStar64` project, and
+`Test-DecompileManifest.ps1 -Targets WildStar64.exe -FailOnMismatch` passed
+with `200` selected functions reused from the canonical cache.
+
+The cached evidence is still reader/apply-side only: `0x084B` maps to
+`ServerCraftingAuxFourUInt32FloatUInt32_ReadPayload` (`1400a3af0`), `0x0855`
+to `ServerUInt32AndTwoFloats_ReadPayload` (`140081df0`), `0x0854` to
+`ServerCraftingCurrentCraft_ReadPayload` (`1400a46b0`) plus
+`Crafting_HandleServerCraftingCurrentCraft` (`1405e6830`) dispatching
+`CraftingUpdateCurrent`, and `0x056C` to `ServerItemMicrochips_ReadPayload`
+(`1400a3d50`) plus `Inventory_UpdateItemMicrochipsFromWire` (`1403b8540`) /
+`InventoryItem_ApplyMicrochipsFromWire` (`14056aa20`) dispatching
+`ItemModified`. Re-parsing prior F-008 packet evidence by `OpcodeHex` found
+`0x0111`, `0x0199`, `0x0569`, `0x084C`, `0x0852`, `0x0853`, and `0x0856`,
+but no `0x084B`, `0x0854`, `0x0855`, or `0x056C` records. Focused crafting
+packet/handler/discovery tests passed `58/58` from
+`artifacts\test-bin\f008-crafting-current-craft`. The new worksheet
+`artifacts/blocker_evidence/20260618-023758-F008-crafting-current-craft-aux-recheck`
+records the attempted evidence path and rejected shortcut cases. Keep
+current-craft, aux, discovery/non-success, service-key semantic names, and
+microchip producers blocked until an interactive Ghidra producer/send-site pass
+or accepted live crafting/item-replication capture proves enqueue cadence,
+field population, result-state boundaries, and `0x056C` patch timing.
+
+Supplemental update: 2026-06-18 CEST F-024 instance-1336 Ruins of Kel Voreth validation-gate recheck.
+Ruins of Kel Voreth (`world 1336`, public event `161`) remains partial,
+split-required, and not retail-complete. The generated next-slice queue still
+ranks it twenty-third with `split_required_high_blocker_volume`, `24`
+objective rows, `23` scripted objective producers, producer coverage `13/24`,
+handler count `0`, seed entity count `3`, achievements
+`2637;3463;5299;5300;5301;5302;5303;5304;5305`, `129` blocker details,
+primary blocker category `public_event_evidence`, required evidence
+`Verified`, and `datamapping_review` as the blocking evidence source. No
+runtime code, data seeds, or generated CSV rows changed in this pass. Current
+automation remains test-backed for main objective activation/advance, reviewed
+boss spawn anchors and duplicate guards for Grond, Drokk, and Forgemaster
+Trogun, death-credit producers for Grond `444`, Drokk `446`, Darkwitch Gurka
+`453`, powerful Battlesworn/Darkwitch Osun `447`, and Trogun `449`, plus
+checklist activation credit for Eldan Schematic Data Storage `456`, Kel Voreth
+War Supplies `451`, Eldan Phase Monitor `459`, and Kel Voreth Forge `461`.
+Residual objectives `457`, `845`, `847`, `869`, `975`, `976`, `977`, `1695`,
+`3202`, `5178`, and `5344` remain blocked pending challenge/timer/failure,
+health-station, hidden jump puzzle, rookie, kill-count, and client smoke proof.
+Drokk exo-defense `847` activation was rejected as failure/credit proof, WIP
+optional activation was rejected as optional-route availability proof, and boss
+death credit was rejected as retail-complete mechanics/reward proof. A fresh
+worksheet,
+`artifacts/blocker_evidence/20260618-023014-instance-1336-ruins-of-kel-voreth-recheck`,
+records the source/CSV recheck, focused test result, rejected shortcut cases,
+and exact next live-smoke command. Focused Ruins event/trigger/objective-credit
+tests passed `614/614` from alternate output path
+`artifacts\test-bin\ruins-of-kel-voreth`. Blocker harness presets passed
+`2/2`, and generated content-retail validation still reports `31` files /
+`168,101` rows, all `not_retail_complete`. Remaining external evidence: live
+or native proof for portal entry, public event `161` objective UI deltas, exact
+phase and trigger placement, Drokk exo-defense failure/credit, optional route
+selection/weights, spawn placement/count/cadence, boss mechanics, doors,
+interactable placement/visual state, faction communicator targeting, cinematic
+payload, rewards, achievements, cleanup/replay, negative cases, and full
+dungeon smoke before any retail-complete claim.
+
+Supplemental update: 2026-06-18 CEST F-024 instance-3041 Ultimate Protogames Downsizer validation-gate recheck.
+Map-bound Ultimate Protogames Downsizer (`world 3041`, public event `642`)
+remains validation-ready but not retail-complete. The generated next-slice
+queue still ranks it twenty-second with actionability `instance_validation_ready`,
+`5` objective rows, `6` scripted objective producers, producer coverage `5/5`,
+handler count `2`, seed entity count `0`, `26` blocker details, primary
+blocker category `instance_dependency`, required evidence `Verified`, and
+`client_smoke` as the blocking evidence source. No runtime code, data seeds, or
+generated CSV rows changed in this pass. The focused recheck keeps the
+test-backed scaffold for objective `3197` activation, Creature2 `61420`
+Downsizer death credit, public event `642` finish on `3197` success, challenge
+objective activation for `3266`/`3267`/`3268`/`3269`, map binding for world
+`3041`, and shared instance-settings packet behavior. The row remains blocked
+because exact portal entry routing, Downsizer challenge ability semantics,
+boss mechanics, reward/achievement side effects, cleanup/replay, and full
+dungeon smoke are not proven. Activation-only challenge rows were rejected as
+ability/scoring/failure proof, the `3197` death-credit/finalization path was
+rejected as retail-complete proof, and map binding alone was rejected as portal
+entry proof. A fresh worksheet,
+`artifacts/blocker_evidence/20260618-022350-instance-3041-map-ultimateprotogamesraid-recheck`,
+records the blocked classification and rejected shortcut cases. Focused
+Downsizer, map-binding, and instance-settings tests passed `35/35` from
+alternate output path `artifacts\test-bin\downsizer`. Blocker harness presets
+passed `2/2`, and generated content-retail validation still reports `31` files
+/ `168,101` rows, all `not_retail_complete`. Remaining external evidence:
+live or native proof for world `3041` entry routing, public event `642`
+objective UI deltas, Downsizer boss ability/challenge semantics, reward and
+achievement side effects, cleanup/replay, negative cases, and full dungeon
+smoke before any retail-complete claim.
+
+Supplemental update: 2026-06-18 CEST F-024 instance-2149 Space Madness wave/timer/Rowsdower blocked recheck.
+Space Madness (`world 2149`, public event `390`) remains split-required and
+not retail-complete. The generated next-slice queue still ranks it twenty-first
+with `split_required_high_blocker_volume`, `26` objective rows, `39` scripted
+objective producers, producer coverage `21/26`, handler count `1`, seed entity
+count `8`, `235` blocker details, primary blocker category
+`public_event_evidence`, required evidence `Verified`, and
+`datamapping_review` as the blocking evidence source. No runtime code, data
+seeds, or generated CSV rows changed in this pass. The focused recheck keeps
+the existing test-backed producers for Captain Tero `1579`, Major Lee Barmy
+`1588`, Observation Deck Computer `1589`, Panicked Workers `1590`, research
+and airlock trigger-volume rows `1591/1602`, Hazmat Control Panel
+`1592/4736`, Hallucinating Livestock `1593`, emergency air helms `1594`, Air
+Scrubber Controls `1595`, Crew Datapads `1596`, Engineering Computer `1603`,
+Hazmat Suit `1656`, escaped experiment rows `4709/4710/4711/4712`, and gold
+timer activation/final credit `4705`. Residual objectives `1662`, `2115`, and
+`4708` remain mapped-only because no reviewed runtime script, generated
+evidence row, or live-client/server smoke proves hallucination wave-count
+completion, air-scrubbing timer/wave completion, volatile Rowsdower explosion
+hit/failure tracking, replay cleanup, or reward/medal side effects.
+Activation-only rows were rejected as wave/timer completion proof, livestock
+death credit was rejected as Rowsdower avoidance proof, and air-scrubber
+control activation was rejected as air-scrubbing timer proof. A fresh
+worksheet,
+`artifacts/blocker_evidence/20260618-021942-instance-2149-space-madness-recheck`,
+records the blocked classification and rejected shortcut cases. Focused Space
+Madness event-script tests passed `45/45` from alternate output path
+`artifacts\test-bin\space-madness`. Blocker harness presets passed `2/2`, and
+generated content-retail validation still reports `31` files / `168,101` rows,
+all `not_retail_complete`. Remaining external evidence: live or native proof
+for objective `1662` wave spawns/count ownership, objective `2115`
+air-scrubbing timer/waves/failure behavior, objective `4708` volatile Rowsdower
+explosion hit/fail semantics, objective UI deltas, cleanup/replay, placement
+and visual/despawn states, rewards, medals, achievements, negative cases, and
+full expedition smoke before any implementation or retail-complete claim.
+
+Supplemental update: 2026-06-18 CEST F-024 instance-3404 Evil from the Ether exploding-portal blocked recheck.
+Evil from the Ether (`world 3404`, public event `781`) remains split-required
+and not retail-complete. The generated next-slice queue still ranks it
+twentieth with `split_required_high_blocker_volume`, `32` objective rows, `55`
+scripted objective producers, producer coverage `31/32`, handler count `1`,
+seed entity count `11`, `155` blocker details, primary blocker category
+`script_objective_producer`, required evidence `Verified`, and `runtime_test`
+as the blocking evidence source. No runtime code, data seeds, or generated CSV
+rows changed in this pass. The focused recheck keeps the existing test-backed
+producers for the medbay controls, Captain Weir talk objectives, main
+engineering generators, self-destruct controls, teleporter controls and gather
+objective, Katja Zarkhov defeat, Drive Diagnostics, Ether-Charged Ravenous,
+portal-kill objectives, and gold timer activation/final credit. Residual
+objective `4942` ("Don't get hit the exploding etheric portals appearing in
+Zarkhov's Shade") remains mapped-only because no reviewed runtime script,
+generated evidence row, or live-client/server smoke proves an exploding-portal
+hit/failure producer, objective owner/timing, replay cleanup, reward side
+effect, or medal side effect. `EthericPortalEntityScript` was rejected as proof
+for `4942` because portal death credits the mapped portal-kill objectives
+(`4921`/`4923` family), not the avoidance row. A fresh worksheet,
+`artifacts/blocker_evidence/20260618-021307-instance-3404-evil-from-the-ether-recheck`,
+records the blocked classification and rejected shortcut cases. Focused Evil
+from the Ether event/trigger tests passed `77/77` from alternate output path
+`artifacts\test-bin\evil-from-the-ether`. Blocker harness presets passed `2/2`,
+and generated content-retail validation still reports `31` files / `168,101`
+rows, all `not_retail_complete`. Remaining external evidence: live or native
+proof for exploding-portal hit/failure handling, objective `4942` UI deltas,
+objective owner/timing, replay cleanup, portal placement/visual/despawn,
+reward/medal presentation, exact timer failure semantics, negative cases, and
+full expedition smoke before any implementation or retail-complete claim.
+
+Supplemental update: 2026-06-18 CEST F-024 instance-2183 Gauntlet validation-gate recheck.
+Gauntlet (`world 2183`, public event `446`) remains split-required and not
+retail-complete. The generated next-slice queue still ranks it nineteenth with
+`split_required_high_blocker_volume`, `35` objective rows, `39` scripted
+objective producers, producer coverage `29/35`, handler count `0`, seed entity
+count `2`, `206` blocker details, primary blocker category
+`public_event_evidence`, required evidence `Verified`, and
+`datamapping_review` as the blocking evidence source. No runtime code, data
+seeds, or generated CSV rows changed in this pass. The focused recheck keeps
+the existing test-backed producers for Pilot Taboro `1821`, Judge Kain `1914`,
+Agent Lex `1915`, direct ScriptWithoutCount credit `1819`, first-arena
+objective `1854`, electric-room door lock `1837`, product endorsement `2001`,
+and selected boss/death-credit rows such as `1866`, `1870`, `1872`, and
+`1873`. Residual score/completion/timer rows `1875`, `1896`, `1942`, `1957`,
+`1967`, `1974`, `4670`, and `4707` remain mapped-only with concrete blockers
+for missing runtime-owned completion/score producers, objective deltas,
+rewards/medals, achievements, cleanup/replay, and full expedition smoke.
+Activation-only rows in `GauntletEventScript` were rejected as completion or
+medal proof. A fresh worksheet,
+`artifacts/blocker_evidence/20260618-020839-instance-2183-gauntlet-recheck`,
+records the blocked classification and rejected shortcut cases. Focused
+Gauntlet event-script tests passed `36/36` from alternate output path
+`artifacts\test-bin\gauntlet`. Blocker harness presets passed `2/2`, and
+generated content-retail validation still reports `31` files / `168,101` rows,
+all `not_retail_complete`. Remaining external evidence: reviewed runtime or
+client proof for score-token and Golden Skull collection, Splorg/main-event
+completion, second/third-arena flow, current score, gold timer, door/product
+side effects, cinematic/announcer timing, route selection, rewards, medals,
+achievements, cleanup/replay, negative cases, and full expedition smoke before
+any implementation or retail-complete claim.
+
+Supplemental update: 2026-06-18 CEST F-024 instance-1263 Skullcano validation-gate recheck.
+Skullcano (`world 1263`, public event `148`) remains split-required and not
+retail-complete. The generated next-slice queue still ranks it eighteenth with
+`split_required_high_blocker_volume`, `33` objective rows, `38` scripted
+objective producers, producer coverage `22/33`, handler count `0`, seed entity
+count `2`, `173` blocker details, primary blocker category
+`public_event_evidence`, required evidence `Verified`, and
+`datamapping_review` as the blocking evidence source. No runtime code, data
+seeds, or generated CSV rows changed in this pass. The focused recheck keeps
+the existing test-backed producers for opening boss objectives `321/322`, Lopp
+`335`, treasure `333`, lava nodes `338`, monitoring station `364`, Chief
+Kaskalak talk `820`, marauders `334`, route triggers `329/362/372/376`,
+missile panel `365`, Bosun `323`, Quartermaster Gruh'ar `440`, and Mordechai
+`324`. Residual objectives `328`, `336`, `337`, `339`, `340`, `838-841`,
+`941-944`, `1989`, `3203`, `5179`, and `5345` remain mapped-only with
+concrete blockers for escort/chasm shared object `2821`, jailor/release,
+primal-essence collection, path selectors, heat/deathless/Laveka hazards,
+boss challenge conditions, blank TalkTo target group `7028`, medal timer,
+rookie reward, and TargetGroup `14476` mismatch proof. A fresh worksheet,
+`artifacts/blocker_evidence/20260618-020259-instance-1263-skullcano-recheck`,
+records the blocked classification and rejected shortcut cases. Focused
+Skullcano event, trigger, and objective-credit tests passed `631/631` from
+alternate output path `artifacts\test-bin\skullcano`. Blocker harness presets
+passed `2/2`, and generated content-retail validation still reports `31` files
+/ `168,101` rows, all `not_retail_complete`. Remaining external evidence:
+reviewed DataMapping bridge confirmation for ambiguous/unmatched creature
+rows, spawn/import or script ownership, exact boss mechanics, route weights,
+Chief Kaskalak escort choreography, trigger ownership and placement,
+door/platform/communicator timing, hazard and challenge failure semantics,
+rewards, medals, achievements, cleanup/replay, negative cases, and full
+dungeon smoke before any implementation or retail-complete claim.
+
+Supplemental update: 2026-06-18 CEST F-024 instance-3180 Fragment Zero Skeech ambush blocked recheck.
+Fragment Zero (`world 3180`, public event `680`) remains split-required and
+not retail-complete. The generated next-slice queue still ranks it seventeenth
+with `split_required_high_blocker_volume`, `38` objective rows, `67` scripted
+objective producers, producer coverage `41/38`, handler count `1`, seed entity
+count `1`, `191` blocker details, primary blocker category
+`script_objective_producer`, required evidence `Verified`, and `runtime_test`
+as the blocking evidence source. No runtime behavior was changed in this pass.
+The focused source/CSV recheck confirms objective `4425` (`Survive the Skeech
+ambush`) is mapped to build 16042 as objectless Exterminate with `ObjectId=0`,
+`Count=0`, and `WorldLocation2=49225`; `FragmentZeroEventScript` activates the
+objective and sends the ambush communicator, but no TargetGroup, wave
+lifecycle, spawn completion rule, objective delta, reward side effect, or
+client smoke proves a safe completion producer. The existing Skeech horde
+death script remains limited to objectives `4416` and `4584/4585/4586`, so it
+was rejected as an unsupported source for `4425`. A fresh worksheet,
+`artifacts/blocker_evidence/20260618-015726-instance-3180-fragment-zero-recheck`,
+records the blocked classification and next live-smoke command. Focused
+Fragment Zero event/cinematic-hook tests passed `64/64` from alternate output
+path `artifacts\test-bin\fragment-zero`. Blocker harness presets passed
+`2/2`, and generated content-retail validation still reports `31` files /
+`168,101` rows, all `not_retail_complete`. Remaining external evidence:
+client/decompile/live capture or reviewed runtime data proving the `4425`
+ambush wave-completion producer, activation timing, objective delta, replay
+behavior, reward/medal side effects, and full expedition smoke before any
+implementation or retail-complete claim.
+
+Supplemental update: 2026-06-18 CEST F-024 instance-1271 Sanctuary Spiritual Revival public-event binding recheck.
+Sanctuary of the Swordmaiden (`world 1271`) remains split-required and not
+retail-complete. The generated next-slice queue still ranks it sixteenth with
+`split_required_high_blocker_volume`, public events `166;202`, `52` objective
+rows, `63` scripted objective producers, producer coverage `33/52`, handler
+count `0`, `229` blocker details, required evidence `Verified`, and
+`datamapping_review` as the blocking evidence source. This slice implemented
+the narrow map lifecycle gap: `SanctuaryOfTheSwordmaidenMapScript` now binds
+the mapped `Spiritual Revival` public event `202` through the existing
+`AdditionalPublicEventIds` path, and `InstanceMapBindingTests` asserts
+creation, player join, and match-finish propagation for public events `166`
+and `202`. No ritual, escort, protect, talk-objective, creature spawn/import,
+reward, achievement, route-weight, or challenge semantics were added. A fresh
+worksheet,
+`artifacts/blocker_evidence/20260618-014841-instance-1271-sanctuary-of-the-swordmaiden-recheck`,
+records the evidence and remaining live-smoke boundary. Focused Sanctuary
+event-script, trigger, objective-credit, and map-binding tests passed
+`657/657` from alternate output path `artifacts\test-bin\sanctuary`. Blocker
+harness presets passed `2/2`, and generated content-retail validation still
+reports `31` files / `168,101` rows, all `not_retail_complete`. Remaining
+external evidence: public event `202` objectives `489`, `677`, and `678`
+still need route/ritual producer, spawn/trigger placement, cleanup/replay,
+reward/medal, and client-smoke proof; PE202 creature rows still need manual
+bridge review for ambiguous Creature2/build variants before any spawn/import
+or credit behavior is widened; full Sanctuary dungeon smoke is still required
+for route order, boss/miniboss mechanics, PE202 UI presentation, rewards,
+achievements, and negative cases.
+
+Supplemental update: 2026-06-18 CEST F-024 instance-3009 Vault of the Archon public-event binding recheck.
+Vault of the Archon / Hall of the Hundred (`world 3009`) remains
+split-required and not retail-complete. The generated next-slice queue still
+ranks it fifteenth with `split_required_high_blocker_volume`, public events
+`666;668;669;677;678;693;696;874;875`, `85` objective rows, `132` scripted
+objective producers, producer coverage `73/85`, handler count `0`, `285`
+blocker details, required evidence `Verified`, and `runtime_test` as the
+blocking evidence source. This slice implemented the narrow map-binding gap:
+`HallOfTheHundredMapScript` now creates mapped additional public events `668`,
+`669`, `874`, and `875` through the existing additional-event path, and the
+optional-event tests now assert creation and player join for all nine generated
+Vault public-event dependencies. No producer, protect/fail-state, medal,
+reward, transport, escape, or completion semantics were added for those newly
+bound events. A fresh worksheet,
+`artifacts/blocker_evidence/20260618-013646-instance-3009-vault-of-the-archon-recheck`,
+records the evidence and remaining live-smoke boundary. Focused Hall/Vault
+event-script, optional-event, and map-binding tests passed `269/269` from
+alternate output path `artifacts\test-bin\vault` because a local
+`NexusForever.WorldServer` process (`PID 53392`) was holding the normal
+`NexusForever.Script.Instance.dll` output. Blocker harness presets passed
+`2/2`, and generated content-retail validation still reports `31` files /
+`168,101` rows, all `not_retail_complete`. Remaining external evidence:
+party-count semantics, portal/exit routing, reviewed
+NPC/boss/weak-point/elevator/key/fragment/lock/power-link placement, Varegor
+Pass cold/environment behavior, boss combat, exact NPC/statue choreography,
+inner-door `4321`, construct kills, Warhound/Yeti/Soulrot/Pell spawn and
+visual-state smoke, Soulless owner evidence, spell `83784` gating,
+jump-through/portal mechanics, Osun exit waves, PE668/PE669 protect-NPC
+lifecycle/fail states, PE874 medal/reward semantics, PE875 escape
+transport/mount lifecycle, rewards, achievements, replay, and full World Story
+smoke.
+
+Supplemental update: 2026-06-18 CEST F-024 instance-382 Stormtalon's Lair validation-gate recheck.
+Stormtalon's Lair (`world 382`, public event `145`) remains split-required
+and not retail-complete. The generated next-slice queue still ranks it
+fourteenth with `split_required_high_blocker_volume`, `27` objective rows,
+`31` scripted objective producers, producer coverage `17/27`, handler count
+`0`, `132` blocker details, achievements `2414;3462`, required evidence
+`Verified`, and `datamapping_review` as the blocking evidence source. The local
+build 16042 client executable plus log/error folders are present under
+`I:\WildStar`, but this pass created
+`artifacts/blocker_evidence/20260618-013255-instance-382-stormtalons-lair-recheck`
+with `-CreateBundleOnly`, so no new live server/client logs or screenshots
+were captured. No runtime code, data seeds, or generated CSV rows changed. The
+queue-specified Stormtalon event-script/trigger tests passed `43/43`, and the
+shared public-event objective-credit tests passed `579/579`, covering the
+current WIP main phase handoff, reviewed Blade-Wind and Aethros placements,
+High Priest trigger, final Stormtalon credit, optional producer scripts, and
+duplicate/negative guards present in automation. Blocker harness presets passed
+`2/2`, and generated content-retail validation still reports `31` files /
+`168,101` rows, all `not_retail_complete`. Remaining external evidence:
+reviewed DataMapping/live client-server proof for optional-route weights,
+residual rows `842`, `844`, `1692`, `2380`, `2381`, `2382`, `2487`, `3201`,
+`5177`, and `5343`, combat mechanics, cinematic payload, wave spawn/count/
+cadence, boss spawn/version selection, grenade spell/disable semantics, route
+visual/despawn states, portal/queue flow, rewards, loot, achievements, replay
+cleanup, and wrong-phase / missing-objective / repeat-interaction negative
+cases.
+
+Supplemental update: 2026-06-18 CEST F-024 instance-2980 Ultimate Protogames validation-gate recheck.
+Ultimate Protogames (`world 2980`, public event `594`) remains
+split-required and not retail-complete. The generated next-slice queue still
+ranks it thirteenth with `split_required_producer_gap`, `123` objective rows,
+`45` scripted objective producers, producer coverage `23/123`, handler count
+`0`, achievements `5864-5981;6001;6002;6003;6819;6875`, and `client_smoke`
+as the blocking evidence source. The local build 16042 client executable plus
+log/error folders are present under `I:\WildStar`, but this pass created
+`artifacts/blocker_evidence/20260618-012815-instance-2980-ultimate-protogames-recheck`
+with `-CreateBundleOnly`, so no new live server/client logs or screenshots
+were captured. No runtime code, data seeds, or generated CSV rows changed.
+Focused Ultimate Protogames event-script/objective-credit tests passed
+`620/620`, covering the deterministic WIP route and reviewed producers for the
+start button, Bev-O-Rage, tank room, Misplaced Mammoth / Mondo, Prototentiary,
+Ruffles, Power Plunge / Gilded Fowl, and Hut-Hut slices. Blocker harness
+presets passed `2/2`, and generated content-retail validation still reports
+`31` files / `168,101` rows, all `not_retail_complete`. Remaining external
+evidence: live client/server smoke for portal/queue/entry behavior, public
+event `594` start UI, start button objective `3250`, phase order and replay,
+room randomization, challenge timer/score/failure semantics, door/console and
+teleporter choreography, hidden-holder/rookie rows, detailed boss mechanics,
+rewards, loot, achievements, cleanup/replay behavior, and wrong-phase /
+missing-objective / repeat-interaction negative cases.
+
+Supplemental update: 2026-06-18 CEST F-022 Q3797 validation-gate recheck.
+Q3797 (`Securing the Area`) remains server-implemented but not retail-complete.
+The generated next-slice queue still ranks it twelfth with
+`quest_validation_ready`, objective `4918`, rewards `2480;2482;4770`, and
+script owner
+`Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3797SecuringTheArea.cs`.
+The local client executable is present at
+`I:\WildStar\Client64\WildStar64.exe`. This pass created
+`artifacts/blocker_evidence/20260618-012134-quest-3797-securing-the-area-recheck`
+with `-CreateBundleOnly`, so no new live server/client logs or screenshots were
+captured. No runtime code changed. Focused Q3797 tests passed `22/22`, covering
+TargetGroup `1177` nested expansion, generic KillTargetGroups credit for
+members `11945;11948;11962;11963;12212;12213`, Durek giver/receiver routing,
+Q3486 prerequisite and visible-Durek accept/reject guards, selectable rewards
+`2480;2482;4770` with item ids `13333;27870;27871`, cash grant, and achievement
+hook checks. Blocker harness presets passed `2/2`, and generated content-retail
+validation still reports `31` files / `168,101` rows, all
+`not_retail_complete`. DataMapping recheck keeps objective row `732` mapped to
+QuestObjective `4918` type `8` data `1177` count `8`, partial zone rows `96` /
+`166`, Durek starter/finisher relations `166` / `1693` reviewed at Creature2
+`11066`, Rootbrute Grimspore relation `105` reviewed at `12212`, Yeti
+Frostclaw relation `106` at `11948`, Rootbrute Deathcap relation `3055` at
+`12213`, and Yeti Snowstalker relation `5204` at reviewed `11945`. Remaining
+external evidence: live client/server smoke for Q3486-to-Q3797 visibility and
+acceptance, Durek accept/turn-in dialog, rootbrute/yeti combat credit timing,
+placement density/respawn/tap/threat behavior, type-9/non-spawned target
+branches, partial zone row review and quest routing, reward UI/inventory
+persistence, wrong-world/unrelated-kill and repeat-completion negative cases,
+and end-to-end Q3797 validation.
+
+Supplemental update: 2026-06-18 CEST F-022 Q5580 validation-gate recheck.
+Q5580 (`Enforced Radio Silence`) remains server-implemented but not
+retail-complete. The generated next-slice queue still ranks it eleventh with
+`quest_validation_ready`, objective `8227`, rewards
+`3005;3007;3008;3009;3010;3011`, achievement `4135`, and script owner
+`Source\NexusForever.Script.Main\Quests\CrimsonIsle\Q5580.cs`. The local
+client executable is present at `I:\WildStar\Client64\WildStar64.exe`, and the
+client log/error folders exist under `I:\WildStar\Logs` and
+`I:\WildStar\Errors`. This pass created
+`artifacts/blocker_evidence/20260618-011658-quest-5580-enforced-radio-silence-recheck`
+with `-CreateBundleOnly`, so no new live server/client logs or screenshots were
+captured. No runtime code changed. Focused Q5580 tests passed `2/2`, covering
+the Q5580 merge gate that does not grant Q5594 while Q5583 is missing and the
+two Tower Controls fallback placements/checklist indexes/activeProp ids.
+Blocker harness presets passed `2/2`, and generated content-retail validation
+still reports `31` files / `168,101` rows, all `not_retail_complete`.
+DataMapping recheck keeps objective row `1452` mapped to QuestObjective `8227`
+type `14` data `2889` count `2`, zone rows `309` / `620` mapped for Crimson
+Isle, episode row `2389` mapped to Operation Annihilator, Tower Controls
+relation `objective:1053` `3376->26559` with source-coordinate ids
+`15122;15123`, and reviewed Kezrek Warbringer relations `finisher:1559` /
+`starter:465` `3385->24158` with source-coordinate ids `15181;170390`.
+Remaining external evidence: live client/server smoke for Q5604-to-Q5580/Q5583
+grant/accept, Kezrek accept/turn-in dialog or confirmed script-grant-only
+route, both Tower Controls activation packets/timing/UI, active-prop visual
+state/despawn/respawn behavior, reward and achievement UI/persistence,
+quest-direction/episode presentation, wrong-world and repeat-completion
+negative cases, and the Q5594 merge gate before and after Q5583 completion.
+
+Supplemental update: 2026-06-18 CEST F-022 Q5575 validation-gate recheck.
+Q5575 (`Seizing Power`) remains server-implemented but not retail-complete. The
+generated next-slice queue still ranks it tenth with `quest_validation_ready`,
+objectives `8523;8371;12871`, rewards `2993;2994;2995`, achievement `4133`,
+and script owner `Source\NexusForever.Script.Main\Quests\CrimsonIsle\Q5575.cs`.
+The local client executable is present at `I:\WildStar\Client64\WildStar64.exe`.
+This pass created
+`artifacts/blocker_evidence/20260618-011114-quest-5575-seizing-power-recheck`
+with `-CreateBundleOnly`, so no new live server/client logs or screenshots were
+captured. No runtime code changed. Focused Q5575 tests passed `3/3`, covering
+Power Regulator completion crediting hidden objective `12871`, repeat
+suppression once achieved, and Q5575 completion grant of Q5596. Blocker harness
+presets passed `2/2`, and generated content-retail validation still reports
+`31` files / `168,101` rows, all `not_retail_complete`. DataMapping recheck
+keeps reviewed rows for Kezrek Warbringer `starter:2212` `3385->24158` and
+Power Regulator `objective:2561` `3382->24999`; objective evidence rows
+`2703` / `2704` map to objectives `8523` / `8371`; zone rows `810` and `1315`
+are matched Crimson Isle rows. Remaining external evidence: client smoke for
+Q5595-to-Q5575 grant/accept, Kezrek starter dialog, Shield Generator and Power
+Regulator objective timing/UI, reward and achievement UI/persistence,
+wrong-world and repeat-completion negative cases, and the `Q5575->Q5596` branch
+flow.
+
+Supplemental update: 2026-06-18 CEST F-022 Q5573 validation-gate recheck.
+Q5573 (`Powering Down`) remains server-implemented but not retail-complete. The
+generated next-slice queue still ranks it ninth with `quest_validation_ready`,
+objectives `8524;8229;12870`, rewards `2989;2991;2992`, achievement `4132`,
+and script owner
+`Source\NexusForever.Script.Main\Quests\CrimsonIsle\Q5573PoweringDown.cs`. The
+local client executable is present at `I:\WildStar\Client64\WildStar64.exe`.
+This pass created
+`artifacts/blocker_evidence/20260618-010811-quest-5573-powering-down-recheck`
+with `-CreateBundleOnly`, so no new live server/client logs or screenshots were
+captured. No runtime code changed, and the existing `WIP/GUESSED` immediate
+cinematic-complete credit remains blocked on client smoke. Focused Q5573 tests
+passed `3/3`, covering Power Regulator completion queuing
+`IQ5573PoweringDownCinematic`, hidden objective `12870` credit, repeat
+suppression once achieved, and Q5573 completion grant of Q5596. Blocker harness
+presets passed `2/2`, and generated content-retail validation still reports
+`31` files / `168,101` rows, all `not_retail_complete`. DataMapping recheck
+keeps reviewed rows for Mondo Zax `starter:1919` / `finisher:1558`
+`3367->24187` and Power Regulator `objective:1065` `3382->24999`; objective
+evidence rows `1450` / `1451` map to objectives `8524` / `8229`; zone rows
+`308` and `627` are matched Crimson Isle rows, while row `2122` remains a
+partial Crimson Badlands row. Remaining external evidence: client smoke for
+Q5593-to-Q5573 grant/accept, Mondo starter/completion dialog, Shield Generator
+and Power Regulator objective timing/UI, cinematic timing, reward and
+achievement UI/persistence, wrong-world and repeat-completion negative cases,
+and the `Q5573->Q5596` branch flow.
+
+Supplemental update: 2026-06-18 CEST F-022 Q3963 validation-gate recheck.
+Q3963 (`More Important Than Revenge`) remains server-implemented but not
+retail-complete. The generated next-slice queue still ranks it eighth with
+`quest_validation_ready`, objective `5201`, rewards `3706;3707;4771`,
+achievement `3491`, and script owner
+`Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3963MoreImportantThanRevenge.cs`.
+The local client executable is present at `I:\WildStar\Client64\WildStar64.exe`.
+This pass created
+`artifacts/blocker_evidence/20260618-010457-quest-3963-more-important-than-revenge-recheck`
+with `-CreateBundleOnly`, so no new live server/client logs or screenshots were
+captured. No runtime code changed. Focused Q3963 plus Ship Controls regression
+tests passed `16/16`, covering Ship Controls `27196` objective credit in
+Northern Wilds world `426`, outside-world rejection, non-teleporter behavior,
+Q3487 follow-up into Q3963, Galeras Deadeye `16622` receiver completion, current
+receiver indexing that does not treat Northern Wilds Deadeye `11063` as a Q3963
+receiver, selectable rewards, and achievement hook `3491`. Blocker harness
+presets passed `2/2`, and generated content-retail validation still reports
+`31` files / `168,101` rows, all `not_retail_complete`. Current DataMapping
+evidence keeps reviewed rows for Galeras Deadeye `finisher:96:201->16622`,
+Ship Controls `objective:445:1090->27196`, and Northern Wilds Deadeye
+`starter:1621:1073->11063`, but source creature `23645` remains `Unknown` /
+`unmatched` for starter relation `2130`; zone rows `67` and `259` remain partial
+Northern Wilds rows, and row `1888` bridges source zone `13` to world zone `17`.
+Remaining external evidence: client smoke for Q3487-to-Q3963 handoff, Ship
+Controls activation packet/timing and UI, Deadeye starter/receiver dialog,
+unmatched `23645` identity, zone routing, reward and achievement UI/persistence,
+wrong-world and repeat-completion negative cases, and end-to-end Q3963
+validation.
+
+Supplemental update: 2026-06-18 CEST F-022 Q3886 validation-gate recheck.
+Q3886 (`Fiery Distraction`) remains server-implemented but not
+retail-complete. The generated next-slice queue still ranks it seventh with
+`quest_validation_ready`, objectives `5053;5052`, rewards `2192;2430;4767`,
+achievement `3490`, and script owner
+`Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3886FieryDistraction.cs`.
+The local client executable is present at `I:\WildStar\Client64\WildStar64.exe`.
+This pass created
+`artifacts/blocker_evidence/20260618-010130-quest-3886-fiery-distraction-recheck`
+with `-CreateBundleOnly`, so no new live server/client logs or screenshots were
+captured. No runtime code changed. Focused Q3886 tests passed `11/11`, covering
+the Land's Reach Commander Durek `11066` starter/receiver route, Q3886 follow-up
+to Q3673, fallback Burning Torch `13630` and Skeech Hut `13623` availability,
+selectable rewards, and achievement hook `3490`. Blocker harness presets passed
+`2/2`, and generated content-retail validation still reports `31` files /
+`168,101` rows, all `not_retail_complete`. Current DataMapping evidence keeps
+the remaining row blockers explicit: Durek relations `finisher:102` and
+`starter:1231` are reviewed, but objective relations `343:577:13623`,
+`344:613:13630`, and duplicate Burning Torch relation `8506:32183:13630` still
+need client-visible placement/activation proof, while zone rows `76` and `235`
+remain partial and `5459` / `3439` bridge source zone `202` to world zone `219`.
+Remaining external evidence: client smoke for Durek accept/completion dialog,
+Burning Torch activation/CSI and duplicate-source behavior, Skeech Hut checklist
+activation and visual burn/despawn/respawn behavior, zone routing, reward and
+achievement UI/persistence, wrong-world and repeat-completion negative cases,
+and the `Q3886->Q3673` flow.
+
+Supplemental update: 2026-06-18 CEST F-022 Q3673 validation-gate recheck.
+Q3673 (`Contact with Thayd`) remains server-implemented but not
+retail-complete. The generated next-slice queue still ranks it sixth with
+`quest_validation_ready`, objectives `4748;4888;4889;4890;13391`, rewards
+`2187;2188;2189;2481;3001;3846`, achievement `3490`, and script owner
+`Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3673ContactWithThayd.cs`.
+The local client executable is present at `I:\WildStar\Client64\WildStar64.exe`.
+This pass created
+`artifacts/blocker_evidence/20260618-005717-quest-3673-contact-with-thayd-recheck`
+with `-CreateBundleOnly`, so no new live server/client logs or screenshots were
+captured. No runtime code changed, and the existing `WIP/GUESSED` cinematic
+timing boundary remains blocked on client smoke. Focused Q3673 tests passed
+`26/26`, covering hidden objective `13391` credit after checklist objective
+`4748`, duplicate callback suppression, Achieved-vs-Completed
+cinematic/follow-up timing, Deadeye receiver indexing, selectable reward grants,
+achievement hook `3490`, and Q3673 Signal Flare fallback spawns. Blocker
+harness presets passed `2/2`, and generated content-retail validation still
+reports `31` files / `168,101` rows, all `not_retail_complete`. Current
+DataMapping evidence still blocks finisher relation `1842`: source creature
+`23645` remains `Unknown` / `unmatched` with zero candidates, including the
+Q3673 relation row `finisher,1842,23645`. Remaining external evidence: reviewed
+current Creature2 bridge proof for `23645`, plus client smoke for Deadeye
+accept/completion dialog, Signal Flare activation/CSI and visibility, hidden
+completion/cinematic timing, reward and achievement UI/persistence, wrong-world
+and repeat-completion negative cases, and the `Q3886->Q3673->Q3670` flow.
+
+Supplemental update: 2026-06-18 CEST F-022 Q3668 validation-gate recheck.
+Q3668 (`Indigenous Intelligence`) remains server-implemented but not
+retail-complete. The generated next-slice queue still ranks it fifth with
+`quest_validation_ready`, objectives `4744;4745;4791`, rewards
+`2190;2191;4768`, achievement `3490`, and script owner
+`Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3668.cs`. The local
+client executable is present at `I:\WildStar\Client64\WildStar64.exe`. This
+pass created
+`artifacts/blocker_evidence/20260618-005208-quest-3668-indigenous-intelligence-recheck`
+with `-CreateBundleOnly`, so no new live server/client logs or screenshots were
+captured. No runtime code changed. Focused Q3668 tests passed `14/14`, covering
+server TargetGroup expansion/credit for blocked members `14054;11913` if
+present, current reviewed fallback spawns for Bartol/Lusk/imprisoned
+survivor/Skeech rows, selectable rewards, and achievement hook `3490`. Blocker
+harness presets passed `2/2`, and generated content-retail validation still
+reports `31` files / `168,101` rows, all `not_retail_complete`. Current
+DataMapping evidence still blocks target-member promotion: source creature
+`14054` maps only to Creature2 `25857` (`Enhanced Travel Speed Station`) in
+world `1061` / zone `2083`, and anchored searches found no source creature
+`11913` mapping/quest relation row. Remaining external evidence: reviewed
+current Creature2/source-coordinate proof for `14054` and `11913`, plus a
+client smoke pass for Deadeye/Bartol/Lusk dialog, survivor activation, Skeech
+combat/tap/respawn behavior, pushed item `6912`, reward/inventory persistence,
+achievement UI, repeat/negative cases, and the `Q3486->Q3671->Q3668` chain.
+
+Supplemental update: 2026-06-18 CEST F-022 Q3486 validation-gate recheck.
+Q3486 (`Empowered Tower`) remains server-implemented but not retail-complete.
+The generated next-slice queue still ranks it fourth with
+`quest_validation_ready`, objectives `4987;4485`, rewards `1706;1707;2147`,
+achievements `3469;5327`, and script owner
+`Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3486EmpoweredTower.cs`.
+The local client executable is present at `I:\WildStar\Client64\WildStar64.exe`.
+This pass created
+`artifacts/blocker_evidence/20260618-004908-quest-3486-empowered-tower-recheck`
+with `-CreateBundleOnly`, so no new live server/client logs or screenshots were
+captured. No runtime code changed, and the existing `WIP/GUESSED` comments for
+cinematic timing and Loftite crystal collision volume remain blocked on client
+smoke. Focused Q3486 tests passed `34/34`, covering arrival story/objective
+credit, Loftite crystal collection and duplicate guards, Crystal
+Guardian/Frostbite virtual collect credit, Master Control Panel route,
+selectable rewards/cash, achievement hooks, Q3671/Q3797 mentions, and Q3797
+prerequisite gating. Blocker harness presets passed `2/2`, and generated
+content-retail validation still reports `31` files / `168,101` rows, all
+`not_retail_complete`. Remaining external evidence: reconcile source reward
+row `5319` (`Item2 1377`, `game_reward_id 2147`) against canonical Quest2Reward
+`1707` / `2147`, and run the harness without `-CreateBundleOnly` for Master
+Control Panel dialog, arrival/story timing, Loftite/guardian/Frostbite client
+behavior, reward/inventory persistence, achievement UI, repeat/negative cases,
+and the `Q3667->Q3486->Q3797` chain.
+
+Supplemental update: 2026-06-18 CEST F-022 Q3480 validation-gate recheck.
+Q3480 (`Reporting for Duty`) remains server-implemented but not
+retail-complete. The generated next-slice queue still ranks it third with
+`quest_validation_ready`, objectives `4470;4565`, rewards `1676;1677;1678`,
+achievement `5327`, and script owner
+`Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3480.cs`. The local
+client executable is present at `I:\WildStar\Client64\WildStar64.exe`. This
+pass created
+`artifacts/blocker_evidence/20260618-004645-quest-3480-reporting-for-duty-recheck`
+with `-CreateBundleOnly`, so no new live server/client logs or screenshots were
+captured. No runtime code changed. Focused Q3480 tests passed `36/36`,
+covering Commander Durek accept gating, Q3479 branch exclusion, Trapped
+Survivor CSI objective `4470`, shared-yeti TargetGroup objective `4565`,
+Deadeye Brightland receiver completion, selectable rewards/cash, achievement
+hook `5327`, and Q3667 follow-up. Blocker harness presets passed `2/2`, and
+generated content-retail validation still reports `31` files / `168,101` rows,
+all `not_retail_complete`. Remaining external evidence: run the harness without
+`-CreateBundleOnly`, drive a Dominion client through Commander Durek accept
+dialog, three Trapped Survivor CSI interactions, eight shared-yeti kills,
+Deadeye completion dialog, reward-choice/inventory persistence, achievement
+UI, wrong-world/repeat negative cases, and the Q3480 client flow, then collect
+server/client logs.
+
+Supplemental update: 2026-06-18 CEST F-022 Q3479 validation-gate recheck.
+Q3479 (`From the Wreckage`) remains server-implemented but not
+retail-complete. The generated next-slice queue still ranks it second with
+`quest_validation_ready`, objectives `4467;4564`, rewards `2476;2479;8569`,
+achievements `1432;1433;1434`, and script owner
+`Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3479FromTheWreckage.cs`.
+The local client executable is present at `I:\WildStar\Client64\WildStar64.exe`.
+This pass created
+`artifacts/blocker_evidence/20260618-004411-quest-3479-from-the-wreckage-recheck`
+with `-CreateBundleOnly`, so no new live server/client logs or screenshots were
+captured. No runtime code changed. Focused Q3479 tests passed `38/38`,
+covering Bosun Redmark accept gating, Q3480 branch exclusion, Trapped Survivor
+CSI objective `4467`, shared-yeti TargetGroup objective `4564`, Deadeye
+Brightland receiver completion, selectable rewards/cash, achievement hooks,
+and Q3667 follow-up. Blocker harness presets passed `2/2`, and generated
+content-retail validation still reports `31` files / `168,101` rows, all
+`not_retail_complete`. Remaining external evidence: run the harness without
+`-CreateBundleOnly`, drive an Exile client through Bosun accept dialog, three
+Trapped Survivor CSI interactions, eight shared-yeti kills, Deadeye completion
+dialog, reward/inventory persistence, achievement UI, wrong-world/repeat
+negative cases, and the `Q3479->Q3667` chain, then collect server/client logs.
+
+Supplemental update: 2026-06-18 CEST F-022 Q5597 validation-gate recheck.
+Q5597 (`Dregs and Thieves`) remains server-implemented but not
+retail-complete. The generated next-slice queue still ranks it first with
+`quest_validation_ready`, objective `8256`, rewards `3000;5236`, achievement
+`4134`, and script owner
+`Source\NexusForever.Script.Main\Quests\CrimsonIsle\Q5597.cs`. This pass
+confirmed the local client dependency is present at
+`I:\WildStar\Client64\WildStar64.exe` and created the focused worksheet
+`artifacts/blocker_evidence/20260618-004018-quest-5597-dregs-and-thieves-recheck`
+with `-CreateBundleOnly`, so no new server/client session or UI screenshots
+were captured. No runtime code changed. Focused Q5597 tests passed `15/15`,
+covering Mondo accept/receiver gates, virtual collect credit for Chua
+Explosives, duplicate interaction suppression, fallback spawn coverage, fixed
+rewards, and achievement progress. Blocker harness presets passed `2/2`, and
+the generated content-retail validator still reports `31` files / `168,101`
+rows, all `not_retail_complete`. Remaining external evidence: run the same
+harness without `-CreateBundleOnly`, drive an interactive local client through
+Mondo Zax dialog, six Chua Explosives activations in world `870`, reward UI and
+inventory persistence, achievement toast/log, duplicate/negative cases, and
+the `Q5596->Q5597->Q5604` chain, then collect server/client logs into the
+bundle before any status upgrade.
+
+Supplemental update: 2026-06-18 CEST F-021 LAS update-in-progress blocked recheck.
+The F-021 `UpdateSpellInProgress` / async spell-update transaction remains
+`Mapped only / Blocked` beyond the existing LAS/AMP preflight handlers. Ghidra
+MCP was reachable but had no running instances; cached `WildStar64.exe`
+fragments prove the client/UI guard only: `ActionSet_CheckUpdateSpellInProgress`
+(`1403bb8d0`) resolves `GameFormula` row `0x41e` and scans the local entity
+spell/update list, `Lua_ActionSetLib_RequestActionSetChanges` (`1407580e0`)
+returns result `0x26` before sending `0x00B1`, `Lua_AbilityBook_UpdateSpellTier`
+(`140748390`) applies the same guard, `Lua_AbilityBook_ClearCachedLASUpdates`
+(`140748630`) clears the local `entity+0x1458` cache and resets
+`entity+0x6ddc`, and `ActionSet_SendPendingActionSetChanges` (`1403bb480`)
+builds `0x00B1` only after validation. Current source still validates then
+mutates LAS/AMP state synchronously, and local artifact searches found no live
+packet/client evidence for a real in-progress transition. No runtime code
+changed. Worksheet:
+`artifacts/blocker_evidence/20260618-002935-20260617-F021-las-update-in-progress-recheck`.
+Verification passed focused action-set/AMP/spell tests (`363/363`), blocker
+harness presets (`2/2`), generated content validation (`31` files / `168,101`
+`not_retail_complete` rows), and the `WildStar64.exe` manifest check
+(`200/200` reused fragments).
+
+Supplemental update: 2026-06-18 CEST F-009 service-token/global-route blocked recheck.
+The F-009 transport service-token/global-route boundary remains `Mapped only /
+Blocked` beyond the existing generic service-token spell path and captured
+credit-route rapid/flight behavior. No running Ghidra MCP instance was
+available; cached `WildStar64.exe` fragments still prove `0x00C2` as an
+18-bit context token plus `Spell4` id, `ServiceToken_HandleCastResult`
+gating on `Spell4.PropertyFlags & 0x20000000`, and
+`ServiceToken_SendClientSpellCastWithServiceToken` returning `0x014B` or
+sending `0x00C2`. Current source mirrors that generic service-token spell
+path, while `ClientRapidTransport` evidence remains `0x0141` credit-route
+evidence only. No `0x00C2` packet-evidence hits were present. No runtime code
+changed. Worksheet:
+`artifacts/blocker_evidence/20260618-002052-20260617-F009-service-token-global-route-recheck`.
+Verification passed focused transport/prerequisite/spell tests (`750/750`),
+blocker harness presets (`2/2`), generated content validation (`31` files /
+`168,101` `not_retail_complete` rows), and the `WildStar64.exe` manifest check
+(`200/200` reused fragments).
+
+Supplemental update: 2026-06-18 CEST F-012 chat aux blocked recheck.
+`ServerChatAuxBulk` (`0x01B8`), `ServerChatAuxPayload` (`0x01C1`),
+`ServerChatAuxPayloadAlt` (`0x01C4`), and `ServerChatAuxNotification`
+(`0x01EF`) remain `Mapped only / Blocked` for producer timing and runtime
+semantics. No running Ghidra MCP instance was available; cached
+`WildStar64.exe` fragments still prove the row/envelope/notification reader
+contracts (`140085ca0`, `140086410`, `140085fe0`, `1400a0890`) but not a
+chat, ICComm, cinematic, or social producer. Current source still has these
+packets only in opcode/model/test surfaces, runtime chat/ICComm paths emit
+named structured packets, and `artifacts\packet_evidence` had no target hits.
+No runtime code changed. Worksheet:
+`artifacts/blocker_evidence/20260618-000929-20260617-F012-chat-aux-recheck`.
+Verification passed focused packet/chat/ICComm/friendship tests (`114/114`),
+blocker harness presets (`2/2`), generated content validation (`31` files /
+`168,101` `not_retail_complete` rows), and the `WildStar64.exe` manifest check
+(`200/200` reused fragments).
+
+Supplemental update: 2026-06-18 CEST F-013 realm-info/mail aux `0x05A1` blocked recheck.
+`ServerRealmAuxUInt32TripletList` remains `Mapped only / Blocked` for runtime
+producer timing and row semantics. No running Ghidra MCP instance was
+available; cached `WildStar64.exe` registration still binds `0x05A1` size
+`0x10` to `ServerRealmAuxUInt32TripletList_ReadPayload` (`140080b00`), which
+proves only one `uint32` count plus counted rows of three `uint32` fields.
+Current source has no aux producer, and existing packet-evidence bundles had no
+target hits. No runtime code changed. Worksheet:
+`artifacts/blocker_evidence/20260618-000112-20260617-F013-realm-info-mail-05A1-recheck`.
+Verification passed focused realm/mail tests (`54/54`), blocker harness
+presets (`2/2`), generated content validation (`31` files / `168,101`
+`not_retail_complete` rows), and the `WildStar64.exe` manifest check
+(`200/200` reused fragments).
+
+Supplemental update: 2026-06-17 F-007 reward rotation content-context blocked recheck.
+The F-007 reward rotation content-context surface remains `Mapped only /
+Blocked` for exact `0x07CD` field semantics, trailing `Flag` meaning, and
+dynamic throttle-slot assignment. Ghidra MCP discovery again returned no
+running CodeBrowser instance, so this pass used the current cached
+`WildStar64.exe` fragments plus source/tests. Cached registration and reader
+evidence remains stable: `Network_RegisterServerOpcode_0351` registers
+`0x07CD` size `0x28` to `ServerRewardRotationContentContext_ReadPayload`
+(`14008fcb0`) and `0x07D3` size `0x10` to
+`ServerRewardRotationContentContextArray_ReadPayload` (`14008fdc0`).
+`140635840` still proves seven request-throttle slots, `140636ba0` sends only
+the index-only `0x07CC` refresh request, and `140636c40` proves loaded-schedule
+lookup/refresh-by-index rather than `0x07CD` apply assignment.
+
+Current source already performs the conservative runtime behavior: it emits
+content-context packets from game-table content ids, chunks `0x07D3` arrays by
+wire budget, keeps `UInt0`/`UInt1`/`UInt3` neutral/correlated and `Flag=false`,
+and records the missing apply-helper/flag/throttle blocker in reward runtime
+evidence artifacts. No runtime code changed. The worksheet
+`artifacts/blocker_evidence/20260617-231511-F007-reward-rotation-content-context-recheck`
+records the missing live/native evidence path and negative cases. Verification
+passed focused reward rotation / reward-property tests (`59/59`), blocker
+harness preset tests (`2/2`), content-retail output validation (`31` files /
+`168,101` rows, all `not_retail_complete`), and the `WildStar64.exe`
+decompile-manifest check (`200/200` reused fragments, `0` remaining).
+
+Supplemental update: 2026-06-17 F-005 marketplace aux blocked recheck.
+The F-005 marketplace auxiliary packet pair remains `Mapped only / Blocked`:
+`ServerAuctionPostAux` (`0x06DF`) and `ServerAuctionsByFilterAux` (`0x07D5`)
+are still packet-contract surfaces only, not runtime emit surfaces. Ghidra MCP
+discovery again returned no running CodeBrowser instance, so this pass used the
+current cached `WildStar64.exe` fragments plus source/tests. Cached registration
+and reader evidence remains unchanged: `Network_RegisterServerOpcode_0351`
+(`14006c290`) registers `0x07D5` size `0x14` to
+`ServerAuctionsByFilterAux_ReadPayload` (`14008fe80`) and `0x06DF` size
+`0x20` to `ServerAuctionPostAux_ReadPayload` (`140090090`); selected call
+edges stay reader-local through bit-read/allocation/copy helpers.
+
+Current source still has the aux models in
+`Source/NexusForever.Network.World/Message/Model/ServerClusterAuxPackets.cs`
+and packet-shape coverage in `PacketPlaceholderNamingTests`, while
+`ClientMarketplaceHandlers` continues to emit only the supported marketplace
+status/result/search/owned-list/commodity packets. No `WorldServer` aux emitter
+or live marketplace packet capture is available in this environment. The
+worksheet
+`artifacts/blocker_evidence/20260617-230906-F005-marketplace-aux-recheck`
+records the missing native producer or live capture path and negative cases.
+No runtime code changed. Verification passed the focused marketplace/auction
+and placeholder packet test bucket (`159/159`), blocker harness preset tests
+(`2/2`), content-retail output validation (`31` files / `168,101` rows, all
+`not_retail_complete`), and the `WildStar64.exe` decompile-manifest check
+(`200/200` reused fragments, `0` remaining).
+
+Supplemental update: 2026-06-17 F-010 matching/raid cluster blocked recheck.
+The F-010 matching/raid diagnostic cluster remains `Mapped only / Blocked` for
+the still-unimplemented producer/semantic surfaces: `ServerMatching0x05CF`
+(`0x05CF`), `ServerMatchingGroupMemberRoleSelection` (`0x0600`),
+`Client0x062A`, `Client0x0634`, and standalone non-zero
+`ServerRaidQueueStatus` (`0x0718`). Ghidra MCP discovery returned no running
+CodeBrowser instance, so this pass used the current cached `WildStar64.exe`
+fragments, current source/tests, and the existing 2026-06-08 solo/LAN CDB
+evidence bundles. Cached fragments still prove only wire/apply-adjacent facts:
+`140099110` reads the shared raw `uint32` used by `0x05CF` and `0x085D`;
+`1405c41c0` remains only a correlated matching-manager `+0xa0` apply candidate
+with no opcode index or `ClientEvent` owner; `140086e70` is the reused
+identity-plus-`uint32` reader for `0x0600`; `14008bf80` / `14008c010` /
+`1406042b0` map the raid-info row fields through `0x071A`, not standalone
+queue timing; and `14007d010` / `14007d000` remain shared one-`uint32`
+client helpers for `0x062A` / `0x0634`.
+
+Current source still keeps `ServerMatching0x05CF` neutral/non-emitted,
+`ServerMatchingGroupMemberRoleSelection.TrailingValue` neutral/non-emitted,
+`Client0x062A` / `Client0x0634` log-only, and `ServerRaidQueueStatus` emitted
+only as the zero-value raid-info compatibility packet. Prior local CDB bundles
+captured normal queue, leave, average-wait, and match-ready traffic but no real
+send/receive rows for these blocked candidates. The worksheet
+`artifacts/blocker_evidence/20260617-230330-F010-matching-raid-cluster-recheck`
+records the missing evidence path and negative cases. No runtime code changed.
+Verification passed focused matching/raid tests (`168/168`), blocker harness
+preset tests (`2/2`), content-retail output validation (`31` files /
+`168,101` rows, all `not_retail_complete`), and the `WildStar64.exe`
+decompile-manifest check (`200/200` reused fragments, `0` remaining).
+
+Supplemental update: 2026-06-17 F-001 STS token/optional auth blocked recheck.
+The F-001 token crypto and optional auth-route surface remains `Mapped only /
+Blocked` beyond the implemented password/SRP, key-data, login-finish,
+game-token, user-info, verified-IP stub, game-account, and presence
+compatibility paths. Current source still has handlers for `/Auth/LoginStart`,
+`/Auth/KeyData`, `/Auth/LoginFinish`, `/Auth/GetUserInfo`,
+`/Auth/GetMyUserInfo`, verified-IP stubs, `/Auth/RequestGameToken`, and
+`/Auth/ConsumeGameToken`, with session-state tests pinning non-`None` handler
+ordering; it still has no `/Auth/LoginTokenStart`, `/Auth/TokenKeyData`,
+`/Auth/RequestToken`, or `/Auth/AssociateMyExternalAccount` server models or
+handlers.
+
+Cached `StsConnLib64.MT.dll` fragments remain readable and map the client-side
+request/support paths: `StsConn_SendLoginTokenStart` (`180003d70`) sends
+`ClientRand` for transaction `0x61`; `StsConn_SendTokenKeyData`
+(`18000a730`) reads `ServerRand`, `ServerPublicKey`, and `ServerSignature`,
+calls `StsConn_ValidateTokenServerKeyMaterial` (`180012de0`), creates an RSA
+client with `StsCrypt_CreateRsaClient` (`180037cb0`), and sends
+`PremasterSecret`, `AuthnToken`, optional `AuthProviderCode`, and `AppId` for
+transaction `0x3b`; `StsConn_SendRequestToken` (`180004c40`),
+`StsConn_SendAssociateMyExternalAccount` (`1800067d0`), and
+`StsConn_OnAuthnTokenResponse` (`180008230`) remain support-path evidence.
+However, `Test-DecompileManifest.ps1 -Targets StsConnLib64.MT.dll
+-FailOnMismatch` currently fails with `label-fingerprint-mismatch`; the Ghidra
+project `NexusForeverClient64_StsConnLib64_MT` exists, but no running Ghidra
+MCP instance is available to refresh/verify it. The worksheet
+`artifacts/blocker_evidence/20260617-225659-F001-sts-token-optional-auth-recheck`
+records the missing evidence path. Keep token/RSA optional flows blocked until
+the STS export is refreshed/validated and native crypto proof or an accepted
+startup STS capture proves exact RSA key format, signature/trust anchor,
+premaster derivation, `TokenKeyData` reply fields, post-token session/crypto
+transition, and startup route ordering.
+
+Supplemental update: 2026-06-17 F-031 Fortune retail weights blocked recheck.
+The Phase 1 F-031 Fortune retail-weight and active-rotation gap remains
+`Mapped only / Blocked` for retail parity. Ghidra MCP discovery again found no
+running CodeBrowser instance, so this pass used the current cached
+`WildStar64.exe` fragments plus source/tests and the existing
+`FORTUNE_WEIGHT_AUDIT.md`. Cached fragments still prove only transport and
+client consumption: `ServerFortuneRewards_ReadPayload` (`140081f60`) reads
+`0x03D2` item2 ids, money rows, and parallel item/money probability arrays;
+`Fortune_ApplyRewards` (`1407292a0`) copies those server-provided arrays into
+Fortune UI state; `FortunesLib_GetFortunesLootList` (`140766370`) exposes the
+cached item2 rewards and displays `fProbability = serverFloat * 100`;
+`FortuneNode_ApplyServerFortunePackets` (`1404d60f0`) dispatches
+`0x03CF`-`0x03D2`; and `ServerFortuneCards_ReadPayload` (`1400a0b10`) remains
+card-state transport evidence.
+
+Current source still emits `ServerFortuneRewards` from the emulator
+rarity-tier `FortuneRewardPool`; `AccountItem.tbl` has no retail per-item
+weight column, the branch gacha arrays remain rejected/superseded, and F-007
+`RewardRotation*` schedules are still a rejected source for Madame Fay active
+rotation. Local NexusForever services are running, but there is no retail
+`ServerFortuneRewards` capture, storefront-server catalog dump, interactive
+Ghidra producer source, or live Fortune UI capture in this environment. The
+create-bundle-only LWS-066 worksheet
+`artifacts/blocker_evidence/20260617-225039-F031-fortune-retail-weights-recheck`
+records the missing evidence path and negative cases. Keep exact item
+probabilities, money reward arrays, and active rotation blocked until a retail
+packet capture, storefront-server catalog dump, or native/server producer
+artifact proves item ids and probabilities.
+
+Supplemental update: 2026-06-17 F-025 entity-stat aux blocked recheck.
+The Phase 1 F-025 entity-stat auxiliary gap remains `Mapped only / Blocked`.
+Ghidra MCP discovery again found no running CodeBrowser instance, so this pass
+used the current cached `WildStar64.exe` fragments plus source/tests. The
+cached evidence still proves only reader shapes: `0x0889` reuses
+`ServerSpellUInt32TripletListRow_ReadPayload` (`140080bf0`) for three
+`uint32` fields; `0x08CC` reuses `ServerUInt32WideString_ReadPayload`
+(`1400980f0`); `0x08F4` uses
+`ServerEntityStatUInt32UInt5UInt32_ReadPayload` (`140097620`); `0x0939` uses
+`ServerEntityStatUInt32UInt14UInt18WideString_ReadPayload` (`140097ee0`);
+`0x093D` uses `ServerEntityStatUInt32UInt5Pair_ReadPayload` (`140097690`);
+and `0x093E` uses `ServerEntityStatTwoUInt32UInt64_ReadPayload`
+(`140097f70`). The stale `FUN_140939650` lead remains rejected because the
+cached fragment recalculates viewport/grid globals rather than consuming packet
+payloads or opcode-specific apply state.
+
+Current source still finds the six `ServerEntityStat*` aux packets only in
+packet models, packet-shape tests, placeholder naming guards, and the negative
+entity-create emission guard. Runtime stat sends still use the proven
+`ServerEntityStatUpdateFloat` / `ServerEntityStatUpdateInteger` paths. Local
+NexusForever services are running, but there is no WildStar client or live
+combat/death/vehicle/emote/item-use/CSI capture in this environment; the
+worksheet
+`artifacts/blocker_evidence/20260617-224723-F025-entity-stat-aux-recheck`
+records the missing evidence path and negative cases. Keep producers and
+semantic field names blocked until a per-opcode `WorldSocket+0x15b0`
+`vtable+0x58` apply handler, apply-table classification, or accepted live
+sniff/order witness proves field semantics and emit timing.
+
+Supplemental update: 2026-06-17 F-025 map-tracked unit producer blocked recheck.
+The Phase 1 F-025 map-tracked producer gap remains `Mapped only / Blocked`.
+Ghidra MCP discovery again found no running CodeBrowser instance, so this pass
+used the current cached `WildStar64.exe` fragments plus source/tests. The
+cached evidence still proves only reader/apply/UI-consumer behavior:
+`Network_RegisterServerOpcode_0351` registers `0x0849` size `0x14` to
+`ServerMapTrackedUnitUpdate_ReadPayload` (`1400a6c10`) and `0x0848` size `4`
+to the shared `ServerUInt32_ReadPayload`; `MapTrackedUnitUpdate_ApplyAndDispatch`
+(`1403f4170`) caches tracked-unit position plus the 15-bit `TrackingSlotId`;
+`MapTrackedUnitDisable_ApplyAndDispatch` (`1403f4200`) removes cached state; and
+`ClientEvent_MapTrackedUnitUpdate_Dispatch` (`140430f80`) plus
+`Lua_GameLib_GetMapTrackedUnitData` (`140511c80`) expose the client-side marker
+data through Lua. `ClientDB_RegisterTrackingSlot` (`1402426a0`) remains
+`TrackingSlot.tbl` loader evidence only and does not prove server marker
+allocation or objective-to-slot selection.
+
+Current source still finds `ServerMapTrackedUnitUpdate` and
+`ServerMapTrackedUnitDisable` only in packet models, packet-shape tests, and the
+negative entity-create emission guard. `TrackingSlotHelper` remains a one-way
+15-bit slot lookup; duplicate `TrackingSlot.PublicEventObjectiveId` groups keep
+objective-only slot selection rejected. Local NexusForever services are running,
+but there is no WildStar client or live public-event marker capture in this
+environment; the worksheet
+`artifacts/blocker_evidence/20260617-224146-F025-map-tracked-unit-producer-recheck`
+records the missing evidence path and negative cases. Keep production emits,
+tracked-unit id allocation, update cadence, disable lifetime, and
+`TrackingSlotId` selection blocked until a native send-site path or accepted
+live public-event marker capture proves `0x0849`/`0x0848` timing and fields.
+
+Supplemental update: 2026-06-17 F-004 housing neighborhood list blocked recheck.
+The Phase 1 housing neighborhood producer gap remains `Mapped only / Blocked`.
+Ghidra MCP discovery still found no running CodeBrowser instance, so this pass
+used the current cached `WildStar64.exe` fragments plus source/tests. The
+cached reader/apply evidence is unchanged: `ServerHousingNeighborhoodEntry`
+(`0x0501`) is read by `ServerHousingNeighborhoodEntry_ReadPayload`
+(`14009cbe0`) as one `uint64`, two 14-bit realm fields, a second `uint64`, a
+wide string, and three `uint32` tail fields; `ServerHousingNeighborhoodList`
+(`0x0506`) is read by `ServerHousingNeighborhoodList_ReadPayload`
+(`14009ebf0`) as a 14-bit realm, count, and `0x30`-byte rows; and
+`Housing_HandleNeighborhoodList` (`1404ba4f0`) only clears/rebuilds the client
+neighborhood cache before dispatching `HousingNeighborhoodRecieved`.
+`ClientDB_RegisterHousingNeighborhoodInfo` (`140205900`) remains table-loader
+evidence only and still does not prove row backing, field names, or a server
+send trigger.
+
+Current source still keeps `ServerHousingNeighborhoodEntry` and
+`ServerHousingNeighborhoodList` limited to packet models, packet-shape tests,
+placeholder naming guards, and negative emission guards. The create-bundle-only
+worksheet
+`artifacts/blocker_evidence/20260617-223732-F004-housing-neighborhood-list-recheck`
+records the attempted evidence path and negative cases; no servers or client
+were launched by this worksheet. Keep `0x0501`/`0x0506` producers, semantic row
+tail names, and any `HousingNeighborhoodInfo.tbl` or residence-state backing
+blocked until either a native server-push/send-site path before
+`Housing_HandleNeighborhoodList` or an accepted live housing UI / realm-login
+capture proves trigger, row population, and realm/session timing.
+
+Supplemental update: 2026-06-17 F-008 crafting current-craft/aux blocked recheck.
+The Phase 1 crafting producer gap remains `Mapped only / Blocked`. Ghidra MCP
+was available as a bridge but `mcp__ghidra_mcp.list_instances` returned no
+running CodeBrowser instance; `Get-GhidraMcpWorkflowHints.ps1 -Targets
+WildStar64.exe` confirmed the local project
+`NexusForeverClient64_WildStar64` exists, and
+`Test-DecompileManifest.ps1 -FailOnMismatch` passed for `WildStar64.exe`
+(`200` selected functions, all reused from canonical cache). Cached fragments
+still map only readers/apply-side behavior: `0x084B` ->
+`ServerCraftingAuxFourUInt32FloatUInt32_ReadPayload` (`1400a3af0`), `0x0855`
+-> `ServerUInt32AndTwoFloats_ReadPayload` (`140081df0`), `0x0854` ->
+`ServerCraftingCurrentCraft_ReadPayload` (`1400a46b0`) plus
+`Crafting_HandleServerCraftingCurrentCraft` (`1405e6830`) dispatching
+`CraftingUpdateCurrent`, and `0x056C` ->
+`ServerItemMicrochips_ReadPayload` (`1400a3d50`) plus
+`Inventory_UpdateItemMicrochipsFromWire` (`1403b8540`) /
+`InventoryItem_ApplyMicrochipsFromWire` (`14056aa20`) dispatching
+`ItemModified`.
+
+The previous F-008 packet evidence under
+`artifacts/packet_evidence/F008-crafting-live/*.jsonl` was re-parsed by real
+`OpcodeHex` fields, not payload text. The captures contain `0x0111`, `0x0199`,
+`0x0569`, `0x084C`, `0x0852`, `0x0853`, and `0x0856`, but no actual
+`0x084B`, `0x0854`, `0x0855`, or `0x056C` records. Local NexusForever server
+processes and `I:\WildStar` are present, but no WildStar client or interactive
+crafting action is running in this environment, and the generic blocker harness
+has no F-008 crafting preset; the create-bundle-only worksheet
+`artifacts/blocker_evidence/20260617-223039-F008-crafting-current-craft-aux-recheck`
+records the missing live/manual evidence. No runtime code or data changed:
+current source still emits only `ServerCraftingFinish` for fixed-recipe craft
+paths, while focused tests continue to guard that `ServerCraftingCurrentCraft`,
+`0x084B`, and `0x0855` are not produced without native producer or accepted live
+capture proof. The exact next unblocker is an interactive Ghidra/producer pass
+or a live crafting/item-replication capture that exercises complex/discovery,
+non-success, rune/item-patch, and station cases while packet capture includes
+`0x084B`, `0x0854`, `0x0855`, `0x056C`, `0x0853`, `0x0860`, and item updates.
+
+Supplemental update: 2026-06-17 F-024 next-slice validation worksheet sweep.
+All `23` rows in the generated
+`content_retail_completeness_next_slice_queue.csv` have now been rechecked
+through the validation gate and recorded back into the durable tracker trail.
+The sweep covered quest rows `5597`, `3479`, `3480`, `3486`, `3668`, `3673`,
+`3886`, `3963`, `5573`, `5575`, `5580`, and `3797`, plus instance/public-event
+rows for Ultimate Protogames (`world 2980`), Stormtalon's Lair (`382`), Vault
+of the Archon / Hall of the Hundred (`3009`), Sanctuary of the Swordmaiden
+(`1271`), Fragment Zero (`3180`), Skullcano (`1263`), Gauntlet (`2183`), Evil
+from the Ether (`3404`), Space Madness (`2149`), Ultimate Protogames Downsizer
+(`3041`), and Ruins of Kel Voreth (`1336`). The follow-up evidence bundles live
+under `artifacts/blocker_evidence/20260617-*validation`; they are local
+evidence artifacts, not source-controlled runtime changes.
+
+This was a validation and blocker-classification pass only. Focused C# tests
+named in the per-row matrix notes passed for each row, the blocker evidence
+harness preset tests passed, and the generated content-retail output validator
+still reports `31` CSVs / `168,101` rows, all `not_retail_complete`. No runtime
+code, DataMapping import, generated content CSV, or runtime-owned SQL changed
+as part of this sweep, and runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`. Every queue row remains partial, split-required, or
+validation-ready pending named live-client smoke, native/decompile producer
+evidence, placement/import proof, reward/achievement semantics, or full
+instance/quest playthrough evidence already listed in
+`Decomp/Analysis/MISSING_FEATURE_MATRIX.md` and
+`Decomp/Analysis/BLOCKER_EVIDENCE_PLAN.md`. The next highest-leverage plan work
+returns to the five consolidated runtime producer gaps, starting with the F-008
+crafting current-craft/aux evidence path unless a live content-smoke dependency
+is made available first.
+
+Supplemental update: 2026-06-17 F-024 expedition gold-medal timer producer sweep.
+Outpost M-13 (`world 1319`, public event `108`), Infestation (`world 1232`,
+public event `95`), Space Madness (`world 2149`, public event `390`), and the
+prior Fragment Zero row now have runtime-backed WIP gold-medal timer producers
+for objectives `4702`, `4703`, `4705`, and `4690`. Build 16042 maps the three
+new rows to zero-count ScriptWithoutMax timers with `failureTimeMs` `1200000`,
+`1080000`, and `2100000`; Fragment Zero `4690` remains the zero-count
+ScriptWithoutCount timer with object `1176`, WorldLocation2 `48727`, and
+`failureTimeMs` `1800000`. The expedition scripts activate their timer rows
+when the public event loads and direct-credit them only after the final
+objective succeeds, before finishing the public event. Focused tests cover
+load-time activation and final credit/finish behavior across all four
+expeditions. Retail completion still needs exact gold-medal reward semantics,
+timer presentation/failure client smoke, achievement side effects, and full
+expedition smoke. Verification passed Python compile, focused C# tests
+(`189/189`), full content-retail regeneration, and generated-output validation
+(`31` CSVs / `168,101` rows / `2,495` blocker detail rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 Fragment Zero gold-medal timer producer.
+Fragment Zero (`world 3180`, public event `680`) now has a runtime-backed WIP
+producer for gold-medal timer objective `4690`. Build 16042 maps the row to a
+zero-count ScriptWithoutCount objective with object `1176`, WorldLocation2
+`48727`, and `failureTimeMs` `1800000`. `FragmentZeroEventScript` now activates
+the timer when PE680 loads and direct-credits it only after final
+`SpeakWithHugo` success, before finishing the public event. Focused tests cover
+load-time activation and final credit/finish behavior. Retail completion still
+needs exact gold-medal reward semantics, timer presentation/failure client
+smoke, achievement side effects, and full expedition smoke. Verification
+passed Python compile, focused Fragment Zero C# tests (`63/63`), full
+content-retail regeneration, and generated-output validation (`31` CSVs /
+`168,087` rows / `2,493` blocker detail rows, all `not_retail_complete`).
+Runtime code still does not query `wildstar_client`, `jabbithole`, or
+`nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 Fragment Zero search trigger producers.
+Fragment Zero (`world 3180`, public event `680`) now has runtime-backed WIP
+producers for the two mapped search Script rows that were still missing a
+completion bridge. Incubation search objective `4421` maps to Script object
+`7892`, WorldLocation2 `48521`; Biomatics search objective `4420` maps to
+Script object `7919`, WorldLocation2 `48732`. `FragmentZeroEventScript` now
+spawns one-unit grid triggers at the reviewed WorldLocation2 anchors, and
+owner-bound trigger scripts direct-credit the corresponding zero-count Script
+objective once when a player enters. Focused tests cover trigger spawn
+positions/ranges, owner filters, non-player ignore behavior, and duplicate
+entry guards. Retail completion still needs exact retail trigger row proof,
+replay/cleanup behavior, reward/achievement side effects, and full expedition
+smoke. Verification passed Python compile, focused Fragment Zero C# tests
+(`62/62`), full content-retail regeneration, and generated-output validation
+(`31` CSVs / `168,081` rows / `2,491` blocker detail rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 public-event creature bridge review.
+The public-event creature bridge review promoted `17` high-confidence
+existing-entity spatial decisions into tracked
+`Tools/DataMapping/creature_bridge_overrides.csv`. The affected public-event
+relations now map as reviewed for Kuralak the Defiler, Gloomclaw, Aethros,
+Bev-O-Rage, Forgemaster Trogun, Slavemaster Drokk, Avatus, Grond the
+Corpsemaker, Grand Warmonger Tar'gresh, Frostbringer Warlock, Blazing Crewman,
+Security Control Panel, and Captain Milo across public events `108`, `145`,
+`157`, `159`, `161`, `390`, and `594`. `creature_public_event_map.csv` now has
+`31` reviewed rows, `631` ambiguous rows, and `99` unmatched rows; the generated
+public-event evidence matrix now has `511` ambiguous creature bridge blockers
+and `89` unmatched creature bridge blockers. No runtime behavior or spawn SQL
+was added: reviewed rows still require spawn/import or script ownership,
+objective-credit behavior, event flow, reward/scoreboard behavior, and
+client/manual smoke before retail completion can be claimed. Verification passed
+the full DataMapping regeneration, authoring staging reload (`96/96` tables,
+zero missing CSV/required-column tables), Python compile, full content-retail
+regeneration, and generated-output validation (`31` CSVs / `168,073` rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 Coldblood boss, challenge, timer, and generic-bucket closure.
+Coldblood Citadel (`world 3522`, public event `907`) no longer has any
+instance dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket, and the global instance dependency CSV now has zero rows in that
+generic missing-producer bucket. Iceblood Coven `5314` and Risen Harizog
+`5315` are runtime-backed by existing phase activation plus boss death-credit
+scripts/tests. Rescue the Pell Architect `5324`, Save Winterfury Pell `5333`,
+Concurrent Coven Collapse `5335`, and Infusion Interdiction `5336` are
+activation-only pending completion/failure proof. The remaining `4` timer,
+deathless, Pell Protection Plan, and kill-count rows are mapped-only with
+concrete blockers pending row-specific producers, rewards, achievements, and
+full dungeon smoke. No runtime code changed in this pass. Verification passed
+Python compile, audit tests (`131` tests plus `128` subtests), focused
+Coldblood C# tests (`62/62`), full content-retail regeneration,
+generated-output validation (`31` CSVs / `168,073` rows, all
+`not_retail_complete`), and a direct CSV check showing zero Coldblood rows and
+zero global rows left in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Gauntlet opening, arena, score, and timer blockers.
+The Gauntlet (`world 2183`, public event `446`) no longer has any instance
+dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. What Happened `1819` and first-arena `1854` are runtime-backed by
+existing cinematic/direct-credit and first-arena objective-credit scripts/tests.
+Survive the Main Event `1875`, Golden Skulls `1957`, Survive the Splorg
+`1967`, and Score Tokens `1974` are activation-only pending completion/score
+producer proof. The remaining `4` second/third-arena, current-score,
+score-token kill-count, and gold-timer rows are mapped-only with concrete
+blockers pending score/timer producers, rewards, achievements, and full
+expedition smoke. No runtime code changed in this pass. Verification passed
+Python compile, audit tests (`130` tests plus `128` subtests), focused
+Gauntlet C# tests (`641/641`), full content-retail regeneration,
+generated-output validation (`31` CSVs / `168,073` rows, all
+`not_retail_complete`), and a direct CSV check showing zero Gauntlet rows left
+in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Ruins of Kel Voreth final-boss and residual blockers.
+Ruins of Kel Voreth (`world 1336`, public event `161`) no longer has any
+instance dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. Forgemaster Trogun row `449` is tracked as runtime-backed by existing
+event activation, reviewed script-owned boss spawn, objective-credit script,
+and focused tests. Drokk exo-defense challenge row `847` is activation-only
+pending failure/credit proof, while the remaining `10` health-station, hidden
+jump-puzzle, challenge, DNT talk, medal-timer, rookie, and kill-count rows are
+mapped-only with concrete blockers pending row-specific producers, rewards,
+achievements, and full dungeon smoke. No runtime code changed in this pass.
+Verification passed Python compile, audit tests (`129` tests plus `128`
+subtests), focused Kel Voreth C# tests (`633/633`), full content-retail
+regeneration, generated-output validation (`31` CSVs / `168,073` rows, all
+`not_retail_complete`), and a direct CSV check showing zero Kel Voreth rows
+left in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Rage Logic vehicle and asteroid objective blockers.
+Rage Logic (`world 1627`, public events `213`/`214`) no longer has any
+instance dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. Vehicle choice `781`, asteroid Ragebot assault `783`, and asteroid
+thruster `784` are tracked as runtime-backed by existing side-event/main-event
+activation plus vehicle, checklist, and death-credit scripts/tests. The
+remaining `10` factory, Freebot, teleporter, Axiom, scanner, relay,
+simultaneous-kill, hoverbike, and gold-timer rows are mapped-only with
+concrete blockers pending later-route producers, placement/cleanup proof,
+rewards, achievements, and full expedition smoke. No runtime code changed in
+this pass. Verification passed Python compile, audit tests (`128` tests plus
+`128` subtests), focused Rage Logic C# tests (`623/623`), full content-retail
+regeneration, generated-output validation (`31` CSVs / `168,073` rows, all
+`not_retail_complete`), and a direct CSV check showing zero Rage Logic rows
+left in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Protogames Academy challenge and start-button blockers.
+Protogames Academy (`world 3173`, public event `667`) no longer has any
+instance dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. Start button row `4341` is tracked as activation-only pending reviewed
+button placement and credit proof. The remaining `19` deathless, boss
+challenge, DNT talk, medal-timer, and rookie rows are mapped-only with
+concrete blockers pending row-specific producers, challenge/failure semantics,
+rewards, achievements, cleanup/replay behavior, and full dungeon smoke. No
+runtime code changed in this pass. Verification passed Python compile, audit
+tests (`127` tests plus `128` subtests), focused Protogames Academy C# tests
+(`646/646`), full content-retail regeneration, generated-output validation
+(`31` CSVs / `168,073` rows, all `not_retail_complete`), and a direct CSV
+check showing zero Academy rows left in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Deep Space residual later-route blockers.
+Deep Space Exploration (`world 2188`, public event `447`) no longer has any
+instance dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. Captain Tyrania `1844`, containment-cell `1845`, Steel Serpent
+mainframe-cortex `1849`, and crew checklist `1968` are tracked as
+runtime-backed by existing event activation, entity credit scripts, checklist
+bit routing, duplicate guards, and focused tests. The remaining `16` rescue,
+Engineer Clamp, defense-control, maintenance-drone, bridge, engine-room,
+Ikthian-gun, and gold-timer rows are mapped-only with concrete blockers
+pending later-route producers, placement/cleanup proof, rewards, achievements,
+real cinematics, and full expedition smoke. No runtime code changed in this
+pass. Verification passed Python compile, audit tests (`126` tests plus `128`
+subtests), focused Deep Space C# tests (`51/51`), full content-retail
+regeneration, generated-output validation (`31` CSVs / `168,073` rows, all
+`not_retail_complete`), and a direct CSV check showing zero Deep Space rows
+left in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Sanctuary residual route, challenge, and side-event blockers.
+Sanctuary of the Swordmaiden (`world 1271`, public events `166`/`202`) no
+longer has any instance dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. Soul Spore row `497` and distracted Moldwood Mauler row `627` are now
+tracked as runtime-backed by existing optional activation plus objective-credit
+scripts and focused tests. Selene escort `662`, totem-dodge challenge `1503`,
+and relic no-fall challenge `2211` are activation-only mapped blockers pending
+completion/failure proof, while the remaining `18` side-event ritual,
+teleporter/controller, timer/deathless/rookie/kill-count, and boss-achievement
+rows are mapped-only with concrete producer/client-smoke blockers. No runtime
+code changed in this pass. Verification passed Python compile, audit tests
+(`125` tests plus `128` subtests), focused Sanctuary C# tests (`656/656`),
+full content-retail regeneration, generated-output validation (`31` CSVs /
+`168,073` rows, all `not_retail_complete`), and a direct CSV check showing
+zero Sanctuary rows left in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Red Moon Terror residual late-chain and challenge blockers.
+Red Moon Terror (`world 3032`, public event `705`) no longer has any instance
+dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. Residual Starmap and Laveka rows `4620`/`4621` are now tracked as
+runtime-backed by existing event activation and objective-credit entity
+scripts. Waste-shaft route row `4604` is mapped-only pending objective
+completion proof, while the remaining `21` oxygen, heat, immortal, challenge,
+teleporter, elevator, crew-quarter, resurrection, awakening, and raid-mechanic
+rows are mapped-only with concrete blockers. No runtime code changed in this
+pass. Verification passed Python compile, audit tests (`124` tests plus `128`
+subtests), focused Red Moon Terror C# tests (`653/653`), full content-retail
+regeneration, generated-output validation (`31` CSVs / `168,073` rows, all
+`not_retail_complete`), and a direct CSV check showing zero Red Moon Terror
+rows left in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Genetic Archives residual route and raid-mechanic blockers.
+Genetic Archives (`world 1462`, public event `159`) no longer has any
+instance dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. Existing boss, malfunctioning miniboss, guardian, and branch endpoint
+anchors remain runtime-backed where separately listed. Route activation rows
+`415`, `416`, `2452`, `2453`, `2454`, and `2493` are mapped-only pending
+objective completion producers, while the remaining `30` power-core, genetic
+collection, challenge, timer, immortal, and raid-mechanics rows are
+mapped-only with concrete blockers. No runtime code changed in this pass.
+Verification passed Python compile, audit tests (`123` tests plus `128`
+subtests), focused Genetic Archives C# tests (`638/638`), full content-retail
+regeneration, generated-output validation (`31` CSVs / `168,073` rows, all
+`not_retail_complete`), and a direct CSV check showing zero Genetic Archives
+rows left in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Protostar SuperMall residual store-route blockers.
+Protostar SuperMall in the Sky (`world 3094`, public event `679`) no longer
+has any instance dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. The existing greeter gather gate remains runtime-backed to the coarse
+`RandomPath` phase. The remaining `40` store-route, score, timer,
+interactable, creature, and hidden controller rows are explicit mapped-only
+blockers pending store selection, event routing, objective producers,
+scoring/timer/failure semantics, placement, cleanup/replay behavior, rewards,
+achievements, and full event-instance smoke. No runtime code changed in this
+pass. Verification passed Python compile, audit tests (`122` tests plus `128`
+subtests), focused SuperMall C# tests (`36/36`), full content-retail
+regeneration, generated-output validation (`31` CSVs / `168,073` rows, all
+`not_retail_complete`), and a direct CSV check showing zero SuperMall rows
+left in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Shade's Eve residual route, vote, and event-objective blockers.
+Shade's Eve (`world 3044`, public events `597`/`632`) no longer has any
+instance dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. Opening rows `2705` and `2737` are tracked as runtime-backed by the
+existing main event script, reviewed fountain/Etty spawns, communicator
+preservation, and focused tests. Talk-with-locals row `2726` is mapped-only
+pending talk-credit and vote-follow-up proof, while the remaining `61`
+branch, invisible, interactable, escort, lab, costume, toast, horror, and side
+event rows are mapped-only with concrete missing producer/client-smoke
+blockers. No runtime code changed in this pass. Verification passed Python
+compile, audit tests (`121` tests plus `128` subtests), focused Shade's Eve
+C# tests (`44/44`), full content-retail regeneration, generated-output
+validation (`31` CSVs / `168,073` rows, all `not_retail_complete`), and a
+direct CSV check showing zero Shade's Eve rows left in the generic
+missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Datascape residual opening, route, and raid-mechanic blockers.
+Datascape (`world 1333`, public event `157`) no longer has any instance
+dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. Opening rows `385`, `648`, `649`, and `650` are tracked as
+runtime-backed by existing Datascape event activation, reviewed opening
+spawns, and objective-credit entity scripts. Route/checklist rows `386`,
+`391`, `392`, `394`, `395`, `396`, `397`, `398`, `1876`, `1883`, `1884`,
+`2048`, and `2049` are explicit mapped-only blockers pending objective
+completion producers. The remaining `66` resource, hazard, timer, challenge,
+room, and raid-mechanics rows are mapped-only with concrete blockers for
+encounter choreography, wing routing, cleanup/replay, rewards, achievements,
+and full raid client smoke. No runtime code changed in this pass. Verification
+passed Python compile, audit tests (`120` tests plus `128` subtests), focused
+Datascape C# tests (`695/695`), full content-retail regeneration,
+generated-output validation (`31` CSVs / `168,073` rows, all
+`not_retail_complete`), and a direct CSV check showing zero Datascape rows
+left in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Ultimate Protogames residual room/challenge blockers.
+Ultimate Protogames (`world 2980`, public event `594`) no longer has any
+instance dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. Existing tested room slices remain tracked for the initiation button,
+Bev-O-Rage, Sneaky Prison, Prototentiary, Ruffles, Power Plunge/Gilded Fowl,
+Hut-Hut, Misplaced Mammoth, Mondo, and the tank-room producers. The `92`
+remaining challenge, score, teleporter, hidden-holder, rookie, and
+room-mechanics rows are now explicit mapped-only blockers pending
+room-specific route selection, mechanics/timer/failure/scoreboard proof,
+placement, cleanup/replay behavior, rewards, achievements, and full dungeon
+client smoke. No runtime code changed in this pass. Verification passed Python
+compile, audit tests (`119` tests plus `128` subtests), focused Ultimate
+Protogames C# tests (`620/620`), full content-retail regeneration,
+generated-output validation (`31` CSVs / `168,073` rows, all
+`not_retail_complete`), and a direct CSV check showing zero Ultimate
+Protogames rows left in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Journey into OMNICore-1 downstream objective blockers.
+Journey into OMNICore-1 (`world 3045`, public event `605`) no longer has any
+instance dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. The existing opening route remains runtime-backed through the Belle
+Walker / Axis Pheydra talk rows, listen-script bridge, and first choose-path
+gate. The `115` downstream firewall, circuit-board, Power Continuum, cortex,
+teleporter, exo-suit, security-code, companion, and exit rows are now
+explicit mapped-only blockers pending route-selection proof, route-specific
+objective producers, cleanup/replay semantics, rewards, achievements, real
+cinematic payload, and client smoke. No runtime code changed in this pass.
+Verification passed Python compile, audit tests (`118` tests plus `128`
+subtests), focused OMNICore C# tests (`34/34`), full content-retail
+regeneration, generated-output validation (`31` CSVs / `168,073` rows, all
+`not_retail_complete`), and a direct CSV check showing zero OMNICore rows left
+in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Outpost M-13 residual defense, search, talk, hive, bonus, and timer rows.
+Outpost M-13 (`world 1319`, public event `108`) no longer has any instance
+dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. Talk rows `1440` and `1441`, hive cleanup row `256`, and Hive Queen
+row `257` are tracked as runtime-backed by existing event/entity script paths
+with focused tests. Defense row `252`, mine-search row `1439`, mining-charge
+row `4696`, bonus marauder row `4697`, and gold-medal timer row `4702` are
+mapped-only with concrete missing producer/client-smoke blockers. No runtime
+code changed in this pass. Verification passed Python compile, audit tests
+(`117` tests plus `128` subtests), focused Outpost M-13 C# tests (`607/607`),
+full content-retail regeneration, generated-output validation (`31` CSVs /
+`168,073` rows, all `not_retail_complete`), and a direct CSV check showing
+zero Outpost M-13 rows left in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Evil from the Ether residual teleporter, portal, log, door, pickup, and avoidance rows.
+Evil from the Ether (`world 3404`, public event `781`) no longer has any
+instance dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. Teleporter rows `4919` and `4927`, tethered portal rows `4921` and
+`4923`, crew-log row `4947`, crew-quarters entry row `4974`, and drive
+schematics row `5013` are tracked as runtime-backed by existing event,
+trigger, entity, door, and pickup script paths with focused tests. Exploding
+portal avoidance row `4942` is mapped-only with a concrete missing
+hit/failure producer blocker. No runtime code changed in this pass.
+Verification passed Python compile, audit tests (`116` tests plus `110`
+subtests), focused Evil from the Ether C# tests (`656/656`), full
+content-retail regeneration, generated-output validation (`31` CSVs /
+`168,073` rows, all `not_retail_complete`), and a direct CSV check showing
+zero Evil from the Ether rows left in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Fragment Zero residual search, corpse, ambush, and timer rows.
+Fragment Zero (`world 3180`, public event `680`) no longer has any instance
+dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. Objective `4397` is now tracked as runtime/WIP-backed by the existing
+Search for Missing Crew phase activation and scoped turnstile trigger spawn.
+Target-group rows `4424`, `4432`, and `4445` are tracked as runtime-backed by
+the existing Jo corpse, Syrus corpse, and locate-Hugo activation scripts.
+Residual rows `4420`, `4421`, `4425`, and `4690` are mapped-only with concrete
+blockers for Biomatics/Incubation search completion triggers, Skeech ambush
+wave-completion semantics, and the Fragment Zero gold-medal timer/reward
+producer. No runtime code changed in this pass. Verification passed Python
+compile, audit tests (`115` tests plus `90` subtests), focused Fragment Zero
+C# tests (`83/83`), full content-retail regeneration, generated-output
+validation (`31` CSVs / `168,073` rows, all `not_retail_complete`), and a
+direct CSV check showing zero Fragment Zero rows left in the generic
+missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Initialization Core quarantine door and boss challenge blockers.
+Initialization Core Y-83 / Augmentor's Raid (`world 3040`, public event `595`)
+no longer has any instance dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. Objectives `2681` and `2682` are tracked as runtime-backed by the
+existing quarantine panel/door activation and entity-credit paths for
+TargetGroups `12539`/`12462` and Creature2 `68824`/`66047`. Residual boss and
+challenge rows `2683`, `2684`, `4636`, and `4637` are mapped-only with
+concrete blockers for Prime Evolutionary Operant spawn/death credit, immortal
+party-death failure tracking, phagetech augmentation active-state proof, and
+Challenge 2 identity/mechanics/reward evidence. No runtime code changed in
+this pass. Verification passed Python compile, audit tests (`114` tests plus
+`72` subtests), focused Initialization Core C# tests (`44/44`), full
+content-retail regeneration, generated-output validation (`31` CSVs /
+`168,073` rows, all `not_retail_complete`), and a direct CSV check showing
+zero Initialization Core rows left in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Space Madness Hazmat Suit and residual script blockers.
+Space Madness (`world 2149`, public event `390`) no longer has any instance
+dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. Objective `1656`, `Equip a Hazmat Suit from the storage closet in the
+lab`, is now tracked as runtime-backed by the existing `SpaceMadnessEventScript`
+Hazmat Suit phase activation/spawn and `HazmatSuitEntityScript` direct-credit
+path. Residual rows `1662`, `2115`, `4705`, and `4708` are mapped-only with
+concrete blockers for hallucination wave counters, air-scrubbing wave/timer
+semantics, the 35-minute gold-medal timer/reward producer, and volatile
+Rowsdower explosion hit/failure tracking. No runtime code changed in this pass.
+Verification passed Python compile, audit tests (`113` tests plus `66`
+subtests), focused Space Madness C# tests (`44/44`), full content-retail
+regeneration, generated-output validation (`31` CSVs / `168,073` rows, all
+`not_retail_complete`), and a direct CSV check showing zero Space Madness rows
+left in the generic missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Red Moon Terror 40-man Laveka and hidden turnstile blockers.
+Red Moon Terror 40-man (`world 3102`, public event `650`) no longer has any
+instance dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. The audit now records objective `525` as runtime-backed by the existing
+`RedMoonTerror40ManEventScript` Laveka activation/spawn path and
+`RedMoonTerror40ManLavekaEntityScript` death-credit/finish path, with exact
+40-man route status, true 40-man placement proof, Laveka mechanics, rewards,
+achievements, and manual raid smoke still blocked. Hidden turnstile rows
+`4622` and `4624` are mapped-only with concrete missing evidence for object
+`8007`/`8008` trigger placement, WorldLocation2 rows, route routing, and client
+smoke. No runtime code changed in this pass. Verification passed Python
+compile, audit tests (`112` tests plus `62` subtests), focused RedMoon40 C#
+tests (`610/610`), full content-retail regeneration, generated-output
+validation (`31` CSVs / `168,073` rows, all `not_retail_complete`), and a
+direct CSV check showing zero RedMoon40 rows left in the generic
+missing-producer bucket.
+
+Supplemental update: 2026-06-17 F-024 Infestation residual script, trigger, and medal blockers.
+Infestation (`world 1232`, public event `95`) no longer has any instance
+dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. The audit now gives concrete mapped-only blocker statuses to residual
+rows `1006`, `1438`, and `4703`. Those statuses name the missing evidence
+source for shiphand rescue/release semantics beyond the separate runtime-backed
+Seal Hull Breaches `1007` checklist producer, Medical Bay trigger object
+`4899` placement/range proof, and the 18-minute gold-medal timer reward
+producer. No runtime code changed in this pass. Verification passed Python
+compile, audit tests (`111` tests plus `60` subtests), full content-retail
+regeneration, generated-output validation (`31` CSVs / `168,073` rows, all
+`not_retail_complete`), and a direct CSV check showing zero Infestation rows
+left in the generic missing-producer bucket. Runtime code still does not query
+`wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 Stormtalon residual script and bonus blockers.
+Stormtalon's Lair (`world 382`, public event `145`) no longer has any
+instance dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. The audit now gives concrete mapped-only blocker statuses to residual
+rows `842`, `844`, `1692`, `2380`, `2381`, `2382`, `2487`, `3201`, `5177`,
+and `5343`. Those statuses name the missing evidence source for party-death
+tracking, Aethros tornado hit tracking, blank TalkTo TargetGroup `6522`,
+Blade-Wind Lightning Strike/channeler challenge tracking, Aethros gust lifetime
+tracking, Stormtalon Lightning Strike hit tracking, the 15-second gust timer,
+40-minute medal timing, rookie reward qualification, and the Stormtalon `5343`
+TargetGroup `14476` collision with Coldblood objective `5337` / Creature2
+`75736` (`Liquid Soulfrost` sample). No runtime code changed in this pass.
+Verification passed Python compile, audit tests (`110` tests plus `57`
+subtests), full content-retail regeneration, and generated-output validation
+(`31` CSVs / `168,073` rows / `2,488` blocker detail rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 Skullcano residual script and bonus blockers.
+Skullcano (`world 1263`, public event `148`) no longer has any instance
+dependency row left in the generic
+`mapped_public_event_objective_blocked_missing_runtime_producer_evidence`
+bucket. The audit now gives concrete mapped-only blocker statuses to the
+remaining script/bonus rows `336`, `337`, `339`, `340`, `838`, `839`, `840`,
+`841`, `941`, `942`, `943`, `944`, `1989`, `3203`, `5179`, and `5345`. Those
+statuses name the missing evidence source for Redmoon jailor/prisoner release,
+Primal Fire essence collection, hidden path selectors, heat/Laveka/deathless
+bonus fail states, Mordechai timer/terraformer behavior, boss challenge
+mechanics, blank TalkTo TargetGroup `7028`, 45-minute medal timing, rookie
+reward qualification, and the Skullcano `5345` TargetGroup `14476` collision
+with Coldblood objective `5337` / Creature2 `75736` (`Liquid Soulfrost`
+sample). No runtime code changed in this pass. Verification passed Python
+compile, audit tests (`109` tests plus `47` subtests), full content-retail
+regeneration, and generated-output validation (`31` CSVs / `168,073` rows /
+`2,488` blocker detail rows, all `not_retail_complete`). Runtime code still
+does not query `wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 Skullcano chasm station and Chief Kaskalak talk producers.
+Skullcano (`world 1263`, public event `148`) now records objective `364`
+(`Find a more efficient way across the Lava-Flooded Chasm`) and objective
+`820` (`Speak to Chief Kaskalak to escort him through the Molten Cavern`) as
+runtime-backed dependency and producer rows. Build 16042 maps `364` to
+ActivateTargetGroup `2673` / Creature2 `25168` (`e364 - Explorer Station`) and
+maps `820` to TalkTo TargetGroup `3944` / Creature2 `33452` and `24788` at
+WorldLocation2 `18273`. `SkullcanoEventScript` already activates those rows on
+the chasm and post-find-chief phases, while
+`MoltenChasmMonitoringStationEntityScript` and `ChiefKaskalakEntityScript`
+credit the mapped objectives from the typed TargetGroup/Creature2 bindings.
+Exact station placement/visibility, route availability, Chief Kaskalak escort
+choreography, reward/achievement side effects, and full dungeon client smoke
+remain blockers. Verification passed focused Skullcano event/trigger tests
+(`52/52`), Python compile, audit tests (`108` tests plus `31` subtests), full
+content-retail regeneration, and generated-output validation (`31` CSVs /
+`168,073` rows / `2,488` blocker detail rows, all `not_retail_complete`).
+Runtime code still does not query `wildstar_client`, `jabbithole`, or
+`nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 Skullcano Chief Kaskalak escort blocker classification.
+Skullcano (`world 1263`, public event `148`) now classifies objective `328`
+(`Escort Chief Kaskalak through the Molten Cavern`) as an explicit mapped-only
+blocker instead of leaving it in the generic ParticipantsInTriggerVolume
+runtime bucket. Build 16042 maps `328` to object `2821`, count `1`, and
+WorldLocation2 `18110`; object `2821` is shared with chasm turnstile objective
+`329`, but `ChasmGridTriggerEntityScript` intentionally credits objective
+`329` directly and does not satisfy the escort row. Retail completion for
+`328` needs a concrete evidence source for Chief Kaskalak escort path
+ownership, trigger placement, movement/choreography, failure/replay behavior,
+reward/achievement side effects, and full dungeon client smoke. Verification
+passed Python compile, audit tests (`107` tests plus `29` subtests), full
+content-retail regeneration, and generated-output validation (`31` CSVs /
+`168,073` rows / `2,488` blocker detail rows, all `not_retail_complete`).
+Runtime code still does not query `wildstar_client`, `jabbithole`, or
+`nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 Skullcano Gold-Infused Lava Node dependency evidence.
+Skullcano (`world 1263`, public event `148`) now records objective `338`
+(`Mine Gold-Infused Lava Cores in the Molten Cavern`) as runtime-backed at the
+instance dependency and script-producer layers instead of leaving the
+dependency row under the generic KillTargetGroup runtime bucket. Build 16042
+maps `338` to TargetGroup `7766`, count `10`, WorldLocation2 `18129`, and
+Creature2 rows `24680`/`24921` (`Gold-Infused Lava Node`).
+`SkullcanoEventScript` already activates the objective during the WIP
+find-chief cave path, and `GoldInfusedLavaNodeEntityScript` credits the mapped
+direct objective once from those Creature2 rows. Exact node spawn
+placement/count, route availability, interaction/despawn semantics,
+reward/achievement side effects, and full dungeon client smoke remain
+blockers. Verification passed focused Skullcano/objective-credit tests
+(`631/631`), Python compile, audit tests (`106` tests plus `29` subtests),
+full content-retail regeneration, and generated-output validation (`31` CSVs /
+`168,073` rows / `2,488` blocker detail rows, all `not_retail_complete`).
+Runtime code still does not query `wildstar_client`, `jabbithole`, or
+`nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 Skullcano route trigger evidence.
+Skullcano (`world 1263`, public event `148`) no longer leaves route
+objectives `329` (`Make your way across the Lava-Flooded Chasm`), `362`
+(`Find Chief Kaskalak at the entrance to the Molten Cavern`), `372` (`Gather
+your party on the Redmoon Hauling Platform`), and `376` (`Fight your way
+through the cave that leads to the Eldan Terraformer`) in the generic
+trigger/turnstile runtime bucket. The audit now records the existing
+`SkullcanoEventScript` phase activations plus trigger-credit producers for
+owner ids `2821`, `362`, `2909`, and `8218`, with WorldLocation2 evidence
+`18109`, `18273`, `18879`, and `18093`. Objective `362` remains explicitly
+blocked on owner/object reconciliation because the runtime trigger owner is
+`362` while the client row maps object `3953`; objective `328` still remains
+separate and unimplemented because it shares object `2821` with the chasm row
+but needs escort choreography proof. Verification passed focused Skullcano
+event/trigger tests (`52/52`), Python compile, audit tests (`105` tests plus
+`29` subtests), full content-retail regeneration, and generated-output
+validation (`31` CSVs / `168,073` rows / `2,488` blocker detail rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 Sanctuary route turnstile evidence.
+Sanctuary of the Swordmaiden (`world 1271`, public event `166`) no longer
+leaves route objectives `613` (`Enter Lifeweaver Terrace`), `614` (`Reach the
+Moldwood Corruption`), and `615` (`Enter the Temple of the Life-Speaker`) in
+the generic turnstile runtime bucket. The audit now records the existing
+`SanctuaryOfTheSwordmaidenEventScript` phase activations plus the owner-id
+trigger scripts for Turnstile objects `3419`, `3420`, and `3421`, with
+WorldLocation2 evidence `22139`, `22140`, and `22141`. Exact trigger
+placement/import, door/path choreography, cleanup/replay behavior,
+reward/achievement side effects, and full dungeon client smoke remain explicit
+blockers. Verification passed focused Sanctuary event/trigger tests (`51/51`),
+Python compile, audit tests (`104` tests plus `25` subtests), full
+content-retail regeneration, and generated-output validation (`31` CSVs /
+`168,069` rows / `2,485` blocker detail rows, all `not_retail_complete`).
+Runtime code still does not query `wildstar_client`, `jabbithole`, or
+`nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 Ultimate Protogames Mondo Quick Reflexes objective.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+phase activation and death credit for Mondo's paired timed child objective
+`2941` (`QuickReflexes`). Build 16042 maps `2941` to the same objective text,
+`WorldLocation2 41745`, failure timer, and reviewed Mondo's Monstrosity
+Creature2 `62575` placement already used by objective `2926`; the Mondo entity
+script now credits both rows once from the same reviewed spawn, while the event
+script activates `2941` in the WIP Misplaced Mammoth/Mondo room phase. Exact
+60-second timer qualification, random room routing, boss mechanics,
+reward/achievement side effects, and full dungeon client smoke remain explicit
+blockers. Verification passed focused Ultimate Protogames/objective-credit
+tests (`620/620`), Python compile, audit tests (`103` tests plus `22`
+subtests), full content-retail regeneration, and generated-output validation
+(`31` CSVs / `168,069` rows / `2,485` blocker detail rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 instance objective dependency blocker evidence.
+The generated instance dependency matrix no longer leaves public-event
+objective rows in the generic
+`client_public_event_objective_row_pending_runtime_mechanics_smoke` bucket.
+All instance-scoped public-event objective dependencies now get row-specific
+evidence statuses and blocker summaries unless a stronger runtime override
+already exists. The generator reuses the public-event objective evidence
+taxonomy, so mapped rows now name their objective type, `ObjectId`, count,
+flags, `WorldLocation2`, `QuestDirection`, TargetGroup, and objective text when
+available, then state the missing evidence family: activate/talk producer,
+script timing/count semantics, trigger placement, TargetGroup/event-owned kill
+spawn proof, exterminate proof, virtual-item source, timer/resource/victory
+state transitions, collectable source, or decompile/live/client evidence. This
+also keeps runtime-backed generic objective families visible as tested runtime
+paths while still requiring row-specific instance phase, placement, cleanup,
+reward/medal, and smoke proof. Ultimate Protogames (`world 2980`) now has `0`
+generic objective dependency rows; its remaining rows are explicit mapped
+blockers or stronger runtime-backed WIP rows, including the Power Plunge,
+room-teleport, DNT holder, and bonus/timer rows. Verification passed Python
+compile, audit tests (`103` tests plus `21` subtests), full content-retail
+regeneration, and generated-output validation (`31` CSVs / `168,063` rows /
+`2,483` blocker rows, all `not_retail_complete`). Runtime code still does not
+query `wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-16 F-024 Vault of the Archon door and vault-exit route closure.
+Vault of the Archon / Hall of the Hundred (`world 3009`, public event `666`)
+now has test-backed PE666 producers for the post-key vault-door gather/wait
+rows `4986`/`4987`, vault-entry follow row `5249`, Harizog ice-prison witness
+row `4973`, vault-exit meet trigger `4994`, and the tree follow/dialog rows
+`5149`/`4980`. The Hall script now creates and cleans up mapped
+WorldLocation2/Object triggers for the vault door and vault exit, advances the
+phase chain through those gates, and credits the proven zero-count/script rows.
+The content-retail generator records those rows and their script-producer
+evidence as runtime-backed. The remaining Vault rows are explicit mapped-only
+blockers instead of generic leftovers: inner-door `4321` is blocked by a
+wrong-world `WorldLocation2` mapping, `4332` lacks cold/environment mechanics
+proof, `4955` has a TargetGroup/text creature mismatch with no owner spawn
+proof, `5220`/`5266` lack mount/vehicle summon semantics, PE668/669 protect
+rows `4347`-`4350` lack DefendObjectiveUnit lifecycle/fail-state evidence,
+PE874 medal rows `5153`/`5154` lack aggregation/reward proof, and PE875 escape
+row `4333` lacks event lifecycle/transport evidence. Verification passed
+focused Hall tests (`173/173`), the broader instance/public-event filter
+(`1904/1904`), Python compile, content-retail regeneration, generated-output
+validation (`31` CSVs / `168,063` rows / `2,483` blocker rows), and audit
+tests (`103` tests plus `21` subtests). Runtime code still does not query
+`wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 public-event auxiliary blocker evidence.
+The public-event auxiliary evidence matrix now uses explicit blocked statuses
+for client-side depot, virtual-item depot, bomb/gather/state, reward-modifier,
+and unreferenced vote rows that lack safe runtime producer evidence. The main
+blocked buckets are `63` unlinked vote rows missing script mapping, `29` linked
+depot rows missing depot interaction evidence, `9` unlinked virtual-item depot
+rows missing objective/depot mapping, `6` unlinked depots, `6` linked bomb
+deployment rows missing carrier/deploy evidence, `6` linked reward modifier
+rows missing reward-property timing evidence, `4` linked gather-resource rows
+missing carry/deposit evidence, and `1` linked state row missing progression
+evidence. Runtime-backed custom stat, stat display, depot-choice,
+VirtualCollect, and referenced-vote rows remain in their tested evidence
+buckets with row-specific smoke blockers. Verification passed Python compile,
+the focused public-event auxiliary audit unit test, full content-retail
+regeneration, and generated-output validation (`31` CSVs / `168,063` rows,
+`2,483` blocker detail rows, all `not_retail_complete`). Runtime code still
+does not query `wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 public-event mission, zone, and creature blocker evidence.
+The public-event evidence matrix now also replaces pending mission/zone/creature
+review buckets with explicit blocked statuses and row-specific missing evidence
+sources. `1,596` mapped creature rows are
+`mapped_public_event_creature_blocked_missing_reviewed_bridge_spawn_credit_smoke`,
+`528` ambiguous creature rows require bridge review, `89` unmatched creature
+rows require a client Creature2 bridge, and `14` reviewed creature rows remain
+blocked on spawn/import or script ownership plus objective-credit smoke. `445`
+zone rows are now
+`mapped_public_event_zone_blocked_missing_runtime_visibility_bridge_evidence`,
+and `40` text-only mission rows are
+`mapped_public_event_mission_text_blocked_missing_child_event_transition_evidence`.
+Runtime child-event mission routing remains in its tested bucket (`37` rows).
+Verification passed Python compile, the focused public-event evidence audit
+unit test, full content-retail regeneration, and generated-output validation
+(`31` CSVs / `168,063` rows, `2,483` blocker detail rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 public-event matched objective blocker evidence.
+The public-event objective evidence matrix no longer leaves matched objective
+rows in the vague generic mechanics bucket. The remaining `1,306` matched
+objective rows that do not have a verified safe runtime producer are now
+classified as `mapped_public_event_objective_blocked_missing_runtime_producer_evidence`.
+Each row's blocker text names its objective type, `ObjectId`, count,
+`WorldLocation2`, `QuestDirection`, TargetGroup reward pane when present, and
+the missing evidence source family: script producer, activate/talk producer,
+depot/carry/deposit flow, trigger placement, state/timer/resource-pool
+producer, collectable source, virtual-item source, or TargetGroup-backed
+event-owned kill object evidence. Runtime-backed public-event rows remain in
+their specific tested buckets. Verification passed Python compile, the focused
+public-event evidence audit unit test, and focused UnitEntity tests (`32/32`);
+full content-retail regeneration completed, and generated-output validation
+passed (`31` CSVs / `168,011` rows, all `not_retail_complete`). Runtime code
+still does not query `wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 public-event event-owned kill credit evidence.
+The public-event objective evidence matrix now separates event-owned unit kill
+credit from the remaining generic objective-mechanics bucket. `167` matched
+`KillEventUnit`, `KillEventObjectiveUnit`, `KillClusterEventUnit`, and
+`KillClusterEventObjectiveUnit` rows are classified as
+`runtime_public_event_event_owned_unit_kill_credit_tested_pending_event_spawn_smoke`.
+The promotion covers object `0` event-owned-unit credit plus nonzero
+TargetGroup-backed `ObjectId` rows; `1` type-8 row with a non-TargetGroup
+object remains mapped-only. The runtime `UnitEntity` path credits the owning
+`PublicEventId` event for zero-object and TargetGroup variants, and focused
+UnitEntity tests cover all four objective types. Event-owned spawn/import
+proof, event activation, objective timing, rewards/medals, replay/negative
+cases, and client smoke remain row-specific blockers. The generic matched
+public-event objective bucket is now `1,306` rows. Verification passed Python
+compile, the focused public-event evidence audit unit test, focused UnitEntity
+tests (`32/32`), full content-retail regeneration, and generated-output
+validation (`31` CSVs / `168,011` rows, all `not_retail_complete`). Runtime
+code still does not query `wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 public-event depot virtual-item choice metadata evidence.
+The public-event auxiliary evidence matrix now separates depot/virtual-item
+metadata already sent by runtime templates from depot carry/deposit gameplay
+that still needs retail proof. `1` linked `PublicEventDepot` row is classified
+as `runtime_public_event_depot_virtual_item_choices_tested_pending_depot_interaction_smoke`,
+and the matching `PublicEventVirtualItemDepot` row is classified as
+`runtime_public_event_virtual_item_depot_interact_depot_choices_tested_pending_depot_acquisition_smoke`.
+These rows are backed by typed `PublicEventDepot` /
+`PublicEventVirtualItemDepot` GameTable access in `PublicEventTemplate`,
+`PublicEventObjective` virtual-item-depot status construction, and focused
+metadata/join tests. The remaining linked depot bucket is now `29` rows and
+the unlinked virtual-item-depot bucket is now `9` rows. Runtime-visible depot
+choice metadata is covered, but object placement, acquisition/deposit
+interaction ownership, objective credit from that interaction, UI state,
+replay/negative cases, rewards/medals, and event smoke remain blocked.
+Verification passed Python compile, the focused public-event auxiliary audit
+unit test, full content-retail regeneration, and generated-output validation
+(`31` CSVs / `167,952` rows, all `not_retail_complete`). Runtime code still
+does not query `wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-022 quest-chain episode blocker evidence.
+The generated quest-episode evidence now gives the `1,175`
+`datamapping_episode_quest_matched_pending_order_progression_smoke` rows
+concrete quest-chain blockers instead of a shared generic note. Each matched
+EpisodeQuest row now names the EpisodeQuest id, Quest2 id, order, flags,
+current Episode id/name, WorldZone id/name, matched Jabbithole episode id/name,
+slug, episode quest count, enabled flag, and last-seen source marker. These
+rows remain mapped-only until runtime episode ordering/progression semantics,
+quest visibility and turn-in state, UI presentation, and quest-chain smoke are
+verified for the row. The `313` missing-episode-bridge rows and `9`
+non-current Quest2 rows keep their blocked/rejected evidence. Verification
+passed the focused quest-episode audit unit test, full content-retail
+regeneration, and generated-output validation (`31` CSVs / `168,011` rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-022 quest-loot blocker evidence.
+The generated quest-loot inventory now gives all `7,650` LaughingWS/runtime
+loot rows concrete blocker text. The mapped families are `5,296`
+entity-to-loot-group bindings, `1,168` loot groups, `1,168` loot items, and
+three `6`-row orphaned rejection buckets for entity, group, and item rows whose
+QuestObjective bridge is absent from current client data. Blockers now name the
+loot group, entity id, item type/staticId, QuestObjective id, condition
+type/id, probability, count range, and source comment, then separate the
+remaining spawn/encounter timing, objective-trigger ownership, drop cadence,
+inventory persistence/cleanup, and client loot smoke requirements. Verification
+passed the focused quest-loot audit unit test, full content-retail
+regeneration, and generated-output validation (`31` CSVs / `168,011` rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-022 quest achievement/checklist blocker evidence.
+The generated quest-achievement inventory now gives the `2,045`
+`client_achievement_checklist_row_pending_progression_hook_smoke` rows concrete
+checklist evidence instead of a generic hook note. Default achievement and
+checklist blockers now name the Achievement id/title/type/category/flags,
+WorldZone, progress text, source field, Checklist id, bit, object/objectAlt ids,
+achievement and checklist prerequisites, parent tier, and character-title
+reward where present. Runtime-tested checklist rows keep their custom evidence.
+Verification passed the focused achievement audit unit test, full
+content-retail regeneration, and generated-output validation after this note
+(`31` CSVs / `168,011` rows / `2,469` blocker detail rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 public-event VirtualCollect loot-delivery credit evidence.
+The public-event objective evidence matrix now recognizes generic
+virtual-item loot delivery for matched `VirtualCollect` rows with nonzero
+virtual item `ObjectId`. `9` objective rows are classified as
+`runtime_public_event_virtual_collect_loot_delivery_credit_tested_pending_source_smoke`,
+backed by `LootInstanceItem` dispatching `PublicEventObjectiveType.VirtualCollect`
+by granted virtual item id and amount when virtual loot is delivered. Focused
+loot delivery tests cover the public-event objective update shape. These rows
+remain not-retail-complete until their virtual-item source ownership,
+depot/collectable spawn or grant proof, timing, replay/negative cases,
+reward/medal behavior, and client smoke are verified; the generic matched
+public-event objective bucket is now `1,473` rows. Verification passed Python
+compile, the focused public-event audit unit test, focused loot delivery tests
+(`5/5`), full content-retail regeneration, and generated-output validation
+(`31` CSVs / `167,952` rows, `2,453` blocker detail rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-022 quest world-dependency blocker evidence.
+The generated quest world-dependency inventory now gives the large generic
+world/interaction families concrete row-level blockers while preserving
+runtime-backed custom evidence. The updated rows include `12,635`
+target-group members, `6,884` objective indicator locations, `4,954` quest
+WorldZone dependencies, `4,467` target groups, `3,738` QuestDirectionEntry
+locations, `3,234` receiver locations, `1,390` nested target groups, `1,122`
+QuestDirection rows, `334` alternate receivers, and `107` inactive direction
+locations. Blockers now name Quest2 ids, objective ids/types, TargetGroup ids
+and member slots, WorldLocation2/WorldZone ids, coordinates/radius,
+QuestDirection/entry ids, prerequisites, and missing-row fail-closed evidence.
+Verification passed the focused world-dependency audit unit test, full
+content-retail regeneration, and generated-output validation (`31` CSVs /
+`167,952` rows, all `not_retail_complete`). Runtime code still does not query
+`wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 public-event target-group kill credit evidence.
+The public-event objective evidence matrix now also recognizes the existing
+generic target-group kill routes for matched client rows with nonzero
+TargetGroup `ObjectId`. `141` `KillTargetGroup` rows are now classified as
+`runtime_public_event_kill_target_group_credit_tested_pending_spawn_event_smoke`,
+and `32` `KillClusterTargetGroup` rows are classified as
+`runtime_public_event_kill_cluster_target_group_credit_tested_pending_spawn_event_smoke`.
+Both buckets use the runtime `UnitEntity` / `AssetManager` path that resolves
+creature target groups and dispatches `KillTargetGroup` plus
+`KillClusterTargetGroup` objective updates, covered by focused mapped
+TargetGroup tests. Their tracker `target_group_id` now comes from objective
+`ObjectId`; spawn/import proof, event activation timing, rewards/medals,
+replay/negative cases, and client smoke remain row-specific blockers. The
+generic matched public-event objective bucket is now `1,482` rows. Verification
+passed Python compile, the focused public-event audit unit test, focused
+UnitEntity reward-routing tests (`28/28`), full content-retail regeneration,
+and generated-output validation (`31` CSVs / `167,952` rows, `2,453` blocker
+detail rows, all `not_retail_complete`). Runtime code still does not query
+`wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 public-event trigger-volume and turnstile credit evidence.
+The public-event objective evidence matrix now recognizes the existing
+runtime-tested trigger credit paths for matched rows that have both a nonzero
+client `ObjectId` and `WorldLocation2` placement evidence. `82`
+`ParticipantsInTriggerVolume` objective rows are now classified as
+`runtime_public_event_participants_trigger_volume_world_location_credit_tested_pending_trigger_placement_smoke`
+using `WorldLocationVolumeGridTriggerEntity` / `VolumeGridTriggerEntity`,
+which credit player entry and remove one count on leave with duplicate and
+vertical-clamp tests. `22` `Turnstile` objective rows are now classified as
+`runtime_public_event_turnstile_world_location_entry_credit_tested_pending_trigger_placement_smoke`
+using the tested one-shot `TurnstileTriggerEntity` path. Rows without
+world-location or object evidence remain mapped-only, and the generic matched
+public-event objective bucket is now `1,655` rows. Verification passed Python
+compile, the focused public-event audit unit test, focused trigger runtime tests
+(`10/10`), full content-retail regeneration, and generated-output validation
+after this note (`31` CSVs / `167,952` rows, `2,453` blocker detail rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-022 quest-prerequisite blocker evidence.
+The generated quest-prerequisite inventory now gives all `14,965` prerequisite
+rows concrete blocker text instead of generic prerequisite-family summaries.
+Rows now name the exact Quest2 id plus level gates, `questPlayerFactionEnum`,
+required/excluded quest ids, faction-level slots, preq item ids, Quest2
+`preq_flags`, Prerequisite row ids/flags/failure text, and Prerequisite slot
+`prerequisiteTypeId`/object/value/comparison data. The `2` missing
+Prerequisite rows still fail closed at runtime and remain blocked until the
+current client row or reviewed replacement evidence is recovered. Verification
+passed the focused prerequisite audit unit test, full content-retail
+regeneration, and quiet generated-output validation (`31` CSVs / `167,952`
+rows, all `not_retail_complete`). Runtime code still does not query
+`wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 public-event Exterminate TargetGroup kill credit.
+Public-event Exterminate objectives with a TargetGroup-backed `ObjectId` now
+share the generic creature kill reward path. `UnitEntity.RewardPublicEventKiller`
+dispatches `PublicEventObjectiveType.Exterminate` for every resolved
+TargetGroup alongside `KillTargetGroup` and `KillClusterTargetGroup`, preserving
+existing public-event membership/object gates and keeping all runtime behavior
+on typed runtime-owned data. Focused tests cover mapped evidence rows for the
+Etheric Energy Rod TargetGroup `14056` and Ultimate Protogames tank TargetGroup
+`12671`. The content-retail generator now classifies `41` matched public-event
+Exterminate objective rows with nonzero `objective_object_id` as
+`runtime_public_event_exterminate_target_group_kill_credit_tested_pending_spawn_event_smoke`
+and populates their tracker `target_group_id` from the objective `ObjectId`;
+the other `1,759` matched objective rows remain mapped-only pending their own
+mechanics, activation, reward, replay/negative, and client-smoke proof.
+Verification passed the focused UnitEntity filter (`28/28`), full
+`NexusForever.Game.Tests` (`4,808/4,808`), the focused public-event audit unit
+test, full content-retail regeneration, and generated-output validation (`31`
+CSVs / `167,909` rows, all `not_retail_complete`). Runtime code still does not
+query `wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-024 public-event checklist objective bitfield producers.
+Public-event checklist objective credit now uses the same durable bitfield
+shape as quest checklist progress instead of treating every producer as a
+scalar increment. `PublicEventObjective` routes
+`ActivateTargetGroupChecklist` and `TalkToChecklist` updates into
+`ObjectiveData`, exposes popcount as `Count`, rejects invalid bit positions,
+and ignores duplicate/replayed bit updates without rebroadcasting objective
+state. Scripted public-event producers that own an entity now pass the
+runtime-owned `QuestChecklistIdx` imported with placements, with a legacy
+fallback for tests/local rows that lack an index. The generator now classifies
+`33` owner-matched script objective producer rows as
+`runtime_public_event_checklist_objective_bitfield_routing_tested_pending_content_smoke`
+and keeps `13` checklist rows in owner-flow review where script/event routing
+is still unproven. Verification passed focused public-event objective/data
+metadata tests (`9/9`), the affected instance/public-event script filter
+(`588/588`), audit/validator unit tests (`103/103`), full content-retail
+regeneration, and generated-output validation (`31` CSVs / `167,909` rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-022 quest-reward bridge blockers.
+The generated quest-reward evidence inventory now gives matched Jabbithole
+reward rows concrete source and grant blockers: `3,228` item, `2,273` inline
+cash, `2,422` reputation, `365` currency, and `307` tradeskill rows now name
+the source reward id, Quest2 id, Jabbithole reward object id/name, current
+client reward object id/name, Quest2Reward id when present, amount, and
+`fixed_reward` value. Reward rows now also cite the object table for their
+kind (`Item2`, `CurrencyType`, `Faction2`, or `Tradeskill`), and the `17`
+non-current reward rows cite the DataMapping review path. Runtime promotion
+remains blocked until fixed/choice semantics, grant persistence, reward UI, and
+client quest smoke are verified. Verification passed the focused reward-evidence
+audit unit test, full content-retail regeneration, and generated-output
+validation (`31` CSVs / `167,909` rows, all `not_retail_complete`). Runtime code
+still does not query `wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-022 matched quest-objective bridge blockers.
+The generated quest-objective evidence inventory now gives the `2,113`
+`datamapping_jabbithole_objective_matched_pending_text_order_smoke` rows
+row-specific blocker text. Each matched row names the Jabbithole objective id,
+Quest2 id, objective order, source objective text, current QuestObjective id,
+and current objective type/data/count. These rows remain mapped-only until
+text/order reconciliation, runtime trigger ownership, objective-credit behavior,
+and client quest smoke are verified against the current QuestObjective row.
+Verification passed the focused objective-evidence audit unit test, full
+content-retail regeneration, and generated-output validation (`31` CSVs /
+`167,909` rows, all `not_retail_complete`). Runtime code still does not query
+`wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-022 matched quest-zone runtime blockers.
+The generated quest-zone evidence inventory now gives the `6,167`
+`datamapping_quest_zone_matched_pending_runtime_visibility_smoke` rows
+relation-level blocker text instead of the former generic zone note. Each
+matched row names the `quest_zones` or `quest_call_zones` source relation,
+source row id, Quest2 id, Jabbithole zone id/name, current WorldZone id/name,
+and `match_status matched`. These rows remain mapped-only until runtime quest
+visibility/routing uses the current WorldZone bridge, map guidance and
+episode/zone ordering are verified, and client quest smoke confirms the row.
+Verification passed the focused zone-evidence audit unit test, full
+content-retail regeneration, and generated-output validation (`31` CSVs /
+`167,909` rows, all `not_retail_complete`). Runtime code still does not query
+`wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-022 quest-creature bridge blockers.
+The generated quest-creature inventory now gives the `210`
+`datamapping_creature_bridge_unmatched_blocked` rows and `3,170`
+`datamapping_creature_bridge_ambiguous_pending_review` rows concrete
+relation-level blocker evidence. Each non-overridden row now cites
+`Tools/DataMapping/output/creature_quest_map.csv`,
+`Tools/DataMapping/output/creature_map.csv`,
+`Tools/DataMapping/output/creature_spawn_map.csv`, the Jabbithole creature and
+relation SQL source, current `Quest2`/`Creature2` client tables, and the
+DataMapping README where bridge review is required. Blocker text names the
+relation type, source relation id, Quest2 id, Jabbithole creature id/name, and
+candidate Creature2 id/name when present; unmatched rows are blocked on a
+reviewed current Creature2 bridge or replacement relation, while ambiguous
+rows are blocked on reviewed disambiguation before spawn/dialog/objective-credit
+and client/manual smoke can support promotion. Verification passed the focused
+quest-creature audit unit test, full content-retail regeneration, and
+generated-output validation (`31` CSVs / `167,909` rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-17 F-022 partial quest-zone bridge blockers.
+The generated quest-zone evidence inventory now gives all `5,019`
+`datamapping_quest_zone_partial_match_pending_zone_review` rows concrete
+missing bridge evidence. Each row cites
+`Tools/DataMapping/output/quest_zone_map.csv`,
+`jabbithole_mysql/quest_zones.sql`, `jabbithole_mysql/quest_call_zones.sql`,
+and the current `Quest2`/`WorldZone` client tables, and its blocker names the
+source relation, Quest2 id, Jabbithole zone id/name, current WorldZone id, and
+`match_status partial`. Runtime promotion remains blocked until a reviewed
+current WorldZone bridge reconciles the Jabbithole zone/name with build 16042
+WorldZone data, followed by quest visibility/routing, map guidance,
+episode/zone ordering, and client quest smoke. Verification passed the focused
+zone-evidence audit unit test, full content-retail regeneration, and
+generated-output validation (`31` CSVs / `167,909` rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-16 F-024 public-event data-backed child event routing.
+`PublicEventTemplate` already maps child events from typed `PublicEvent`
+`PublicEventIdParent` rows; the runtime now exposes that child list through
+`IPublicEvent`, and `EventBaseContentMapScript` consumes it during content-map
+load. Data-backed child events are created recursively with duplicate/cycle
+guards, de-duplicated against handwritten `AdditionalPublicEventIds`, joined
+for players alongside the parent, and finished with the parent on match
+completion. `PublicEventManager.CreateEvent` is now idempotent for replayed
+create requests, returning the already-loaded event without reinitialising it.
+Existing adventure scripts keep their explicit additional-event ordering.
+Focused tests cover recursive child creation, handwritten duplicate
+suppression, player join routing, match-finish routing, duplicate manager
+creates, and the guard that only the primary event can finish the owning match;
+the broader public-event/adventure filter passed `1512/1512`. The
+content-retail public-event evidence generator now promotes current
+parent/current child public-event mission rows to runtime template-routing
+evidence while leaving mission selection transitions, UI behavior, and
+client/event smoke pending. Runtime code still uses typed GameTable/runtime-owned
+data only and does not query `wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-16 F-024 public-event standard combat stat scoreboard producers.
+The public-event scoreboard path now has an additive runtime stat boundary for
+standard combat producers while preserving existing absolute script updates.
+`IPublicEventManager`/`IPublicEvent`/team/character layers expose
+`IncrementStat`, and `UnitEntity` routes player damage, hits, kills, healing,
+received damage, and deaths through the active map public-event manager. The
+manager still gates mutation by event membership, so players outside an active
+public event remain no-ops and runtime code continues to use typed
+runtime-owned data only. Focused tests cover additive scoreboard accumulation,
+absolute update compatibility, damage/hit/kill combat producers, and heal
+producers; the broader public-event/combat filter passed `1433/1433`. The
+content-retail auxiliary generator now promotes `PublicEventStatDisplay` rows to
+runtime-backed standard combat stat evidence while leaving display flags,
+scoreboard UI, end-screen ranking, and event smoke pending.
+
+Supplemental update: 2026-06-16 F-024 Evil from the Ether 4926 and gold timer producers.
+Build 16042 evidence maps Evil from the Ether public event `781` objective
+`4926` (`Kill the Ether-Charged Ravenous`) to Exterminate TargetGroup `14056`
+and Creature2 `71014` (`Etheric Energy Rod`). `EvilFromTheEtherEventScript`
+now activates `KillEtherChargedRavenous` with `DefeatKatjaZarkhov` and waits
+for both objectives before advancing to `PickUpDriveSchematics`;
+`EthericEnergyRodEntityScript` binds Creature2 `71014` and credits objective
+`4926` once on death through the shared public-event objective-credit script.
+The same event script now activates build 16042 objective `4944`, the
+zero-count `ScriptWithoutMax` Gold medal timer row with
+`failureTimeMs=1200000`, when PE781 loads and direct-credits it only after the
+final Captain Weir objective succeeds, leaving late completion blocked by the
+table-backed failure timer. The generated content-retail dependency rows now
+classify objective `4926` as
+`runtime_ether_charged_ravenous_exterminate_activation_and_credit_tested_pending_spawn_visual_and_client_smoke`
+and objective `4944` as
+`runtime_evil_ether_gold_timer_activation_and_final_credit_tested_pending_timer_medal_and_client_smoke`;
+the script-producer rows separately track the activation and credit paths as
+test-backed pending client smoke. Verification passed the focused Evil from the
+Ether event/trigger filter (`77/77`), the broader instance/public-event filter
+(`1843/1843`), the content-retail generator, generated-output validator (`31`
+generated CSVs / `167,909` rows, all still `not_retail_complete`), and the
+focused audit/validator unit tests (`103` passed, `21` subtests). Remaining
+mapped-only blockers are exact Etheric Energy Rod spawn/visual/despawn timing,
+Katja encounter choreography, exact Gold medal timer presentation/failure and
+reward semantics, placement/import smoke, rewards, achievements, and full
+expedition smoke. Objective `4942` remains blocked pending exploding-portal
+hit/avoidance evidence. No runtime code queries `wildstar_client`,
+`jabbithole`, or `nf_map_*`; those sources remain evidence/tracker inputs only.
+
+Supplemental update: 2026-06-16 F-024 Stormtalon's Lair producer coverage inventory.
+Stormtalon's Lair (`world 382`, public event `145`) now has generated
+script-objective producer coverage aligned with the runtime/test evidence that
+already exists for the dungeon scaffold. The coverage inventory promotes the
+event activation rows for objectives `312`, `313`, `539`, `540`, `556`, `557`,
+`828`, and `843`, the tested trigger/credit producers for `540`, `555`, `559`,
+and `562`, and the existing reviewed-placement activation rows to runtime-backed
+statuses pending route/combat/reward/client smoke. Objective `561` (`Use your
+Grenades to disable the Thundercall Pell`) is deliberately classified only as
+activation-tested; the exact grenade spell, target state, progress credit, and
+failure semantics remain blocked pending client/decompile evidence or live
+smoke. The generated Stormtalon script-producer inventory now has zero generic
+pending producer rows. Verification passed focused Stormtalon/objective-credit
+tests (`619/619`), the broader instance/public-event filter (`1848/1848`),
+content-retail regeneration, generated-output validation (`31` CSVs /
+`167,909` rows, all still `not_retail_complete`), and audit/validator unit
+tests (`103` passed, `21` subtests). The content-retail validator now raises the
+Python CSV field-size limit before loading generated inventories so large
+evidence/source fields validate reliably. Remaining Stormtalon blockers are
+grenade-disable mechanics for `561`, exact optional route weights and visual
+state, High Priest trigger placement/timing, combat choreography, cinematics,
+rewards, achievements, and full dungeon smoke. Runtime code still does not
+query `wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-16 F-024 Vault of the Archon producer coverage inventory.
+Vault of the Archon / Hall of the Hundred (`world 3009`, public event `666`)
+now has generated script-objective producer coverage aligned with the
+runtime/test evidence that already exists for the World Story scaffold. The
+generator now applies Hall dependency override classifications to matching
+single-objective producer rows and has explicit coverage for the shared opening
+gather/conversation trigger producers and the target-group base helper used by
+the concrete key, fragment, and lock scripts. Dependency rows `4971`, `4952`,
+`4953`, and `4954` are now runtime-backed for Holocube explanation activation
+and Harizog add activation/death-credit paths, pending presentation timing,
+spawn cadence, and client smoke. The Hall producer CSV now has `98` runtime
+rows and zero generic pending producer rows; `31` Vault objective dependency
+rows remain mapped-only pending real mechanics/smoke. Verification passed
+focused Hall/objective-credit/trigger tests (`739/739`), audit/validator unit
+tests (`103` passed, `21` subtests), content-retail regeneration, and generated
+output validation (`31` CSVs / `167,909` rows, all still
+`not_retail_complete`). Remaining Vault blockers include party-count semantics,
+portal/exit routing, reviewed placement for NPCs/bosses/weak points/elevator
+controls/keys/fragments/locks/power links, Varegor Pass cold behavior,
+Harizog/add and optional boss mechanics, Holocube presentation payloads,
+construct/spell `83784` portal mechanics, rewards, achievements, and full World
+Story smoke. Runtime code still does not query `wildstar_client`, `jabbithole`,
+or `nf_map_*`.
+
+Supplemental update: 2026-06-16 F-024 Vault of the Archon Cold and Hungry side event.
+The Hall/Vault scaffold now has runtime-backed producer coverage for the
+`Cold and Hungry` optional side event (`public event 677`). `HallOfTheHundredMapScript`
+registers the side event, `ColdAndHungryEventScript` activates the Yeti Cave
+parent objective `5292`, activation-only frozen-carcass checklist row `4378`,
+leave-cave trigger row `4379`, escape script gate `4380`, and Yeti kill row
+`4381`. `YetiCaveExitGridTriggerEntityScript` credits ParticipantsInTriggerVolume
+object `7855` and parent objective `5292` once per player entry, while
+`ColdAndHungryYetiEntityScript` binds Creature2 `67657` and credits objective
+`4381` once on death. The carcass row remains deliberately activation-only:
+TargetGroup `12213` / Creature2 `67659` is mapped, but exact four-carcass
+placements, visual state, and activation credit are still blocked. Generated
+coverage now records `107` Hall producer rows, all runtime-backed, with zero
+generic pending producer rows; world `3009` has `26` remaining generic
+objective-dependency blockers. Verification passed focused Hall optional-event
+and objective-credit tests (`629/629`), audit/validator unit tests (`103`
+passed, `21` subtests), content-retail regeneration, and generated-output
+validation (`31` CSVs / `167,952` rows, all still `not_retail_complete`).
+Remaining blockers include the frozen-carcass placements/credit path, exact Yeti
+chase timing/failure semantics, Creature2 `67657` spawn/combat smoke, Soulrot
+Cave side-event rows, optional medal rows, rewards, achievements, and full World
+Story smoke. Runtime code still does not query `wildstar_client`, `jabbithole`,
+or `nf_map_*`.
+
+Supplemental update: 2026-06-16 F-024 Vault of the Archon Cold Soup for the Soulrot side event.
+The adjacent Soulrot Cave side event (`public event 678`) now has runtime-backed
+producer coverage for every mapped row with a concrete owner. `HallOfTheHundredMapScript`
+registers PE678; `ColdSoupForTheSoulrotEventScript` activates the main Soulrot
+Cave parent objective `5293`, canister trigger `4391`, revive body rows
+`4392`/`4398`, Soulrot collection row `4393`, waste disposal row `4394`, and
+final Soulless kill row `4395`. `SoulrotCaveCanisterGridTriggerEntityScript`
+credits ParticipantsInTriggerVolume object `7864` and parent objective `5293`.
+`SoulrottedBodyEntityScript` credits ActivateTargetGroup `12240` plus script
+gate `4398`, `SoulrotSampleEntityScript` credits `4393` for Creature2
+`67841`/`67842`, and `SoulrotWasteDisposalEntityScript` credits
+ActivateTargetGroup `14232`. Objective `4395` is intentionally activation-only:
+the build row has object id `0`, no world location, and no reviewed
+TargetGroup/Creature2 owner, so credit remains blocked pending concrete
+Soulless owner evidence. Generated coverage now records `119` Hall producer
+rows, all runtime-backed, with zero generic pending producer rows; world `3009`
+has `19` remaining generic objective-dependency blockers. Verification passed
+focused Hall optional-event tests (`70/70`), the broader instance/public-event
+filter (`1884/1884`), audit/validator unit tests (`103` passed, `21` subtests),
+content-retail regeneration, and generated-output validation (`31` CSVs /
+`168,011` rows, all still `not_retail_complete`). Remaining blockers include
+reviewed body/sample/waste placements, Soulrot visual/despawn state, exact
+ten-count collection cadence, Soulless Creature2 owner/spawn/combat evidence,
+optional medal rows, rewards, achievements, and full World Story smoke. Runtime
+code still does not query `wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-16 F-022 quest-loot orphan rejection closure.
+The generated quest-loot inventory now explicitly rejects the `18` reviewed
+LaughingWS quest-loot rows whose `conditionType = 8` references QuestObjective
+ids `15958`, `15988`, or `19193` without any current Quest2 objective-column
+owner. The rows are split evenly across rejected loot-group, loot-item, and
+entity-loot statuses:
+`rejected_orphaned_loot_group_missing_current_client_quest_objective`,
+`rejected_orphaned_loot_item_missing_current_client_quest_objective`, and
+`rejected_orphaned_entity_loot_missing_current_client_quest_objective`.
+Runtime promotion remains blocked unless future current-client Quest2/
+QuestObjective ownership evidence or a reviewed replacement objective mapping
+plus source entity/drop smoke is recovered. Runtime code still uses only
+runtime-owned loot tables and typed quest state; it does not query
+`wildstar_client`, `jabbithole`, or `nf_map_*`. Verification passed the focused
+quest-loot audit unit test, full content-retail regeneration, and generated
+output validation (`31` CSVs / `167,903` rows, all `not_retail_complete`).
+
+Supplemental update: 2026-06-16 F-022 rotation-essence reward blocker evidence.
+The `86` Quest2Reward type-10 rows are still
+`blocked_active_reward_rotation_schedule`, but the generated quest-reward
+inventory now names the missing evidence source instead of using a generic
+reward caveat. The blocker points at `QuestRewardType.RotationEssence`,
+`RewardRotationEssence.tbl.sql`, QuestManager's current ungranted path,
+reward-rotation account systems, and reward-rotation opcodes, and requires
+active RewardRotation schedule/content-context, entry-state mutation, reward
+key, grant flags, and client claim timing evidence before runtime promotion.
+Verification passed the focused quest-reward audit unit test, full
+content-retail regeneration, and generated-output validation (`31` generated
+CSVs / `167,909` rows / `2,440` blocker detail rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-16 F-022 unmatched Jabbithole objective bridge blockers.
+The generated quest objective evidence inventory now gives all `2,385`
+`datamapping_jabbithole_objective_unmatched_blocked` rows concrete missing
+bridge evidence. Each row cites `jabbithole_mysql/quest_objectives.sql`,
+`Tools/DataMapping/output/quest_objective_map.csv`, and the current
+`Quest2`/`QuestObjective` client tables, and its blocker names the Jabbithole
+objective id, Quest2 id, objective order, `match_status unmatched`, and missing
+current QuestObjective id. Runtime promotion remains blocked until a current
+build Quest2 objective slot/QuestObjective row or a reviewed replacement bridge
+is recovered plus runtime trigger/objective-credit/client smoke. Verification
+passed the focused objective-evidence audit unit test, full content-retail
+regeneration, and generated-output validation (`31` CSVs / `167,909` rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-16 F-022 missing episode bridge blockers.
+The generated quest episode evidence inventory now gives all `313`
+`datamapping_episode_quest_missing_episode_bridge_blocked` rows concrete
+missing bridge evidence. Each row cites
+`Tools/DataMapping/output/episode_quest_client_map.csv`,
+`Tools/DataMapping/output/quest_episode_map.csv`,
+`jabbithole_mysql/quest_episodes.sql`, and the current `Episode`/
+`EpisodeQuest`/`Quest2` client tables, and its blocker names the EpisodeQuest
+row, Quest2 id, episode id/name, and quest order whose current Episode id has
+no `quest_episode_map.csv` bridge. Runtime promotion remains blocked until the
+current Episode/EpisodeQuest chain is reconciled with Jabbithole quest episode
+evidence or a reviewed replacement bridge, followed by quest order, episode
+visibility/progression, UI, and quest-chain smoke. Verification passed the
+focused episode-evidence audit unit test, full content-retail regeneration, and
+generated-output validation (`31` CSVs / `167,909` rows, all
+`not_retail_complete`). Runtime code still does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-16 F-024 public-event virtual-item depot credit slice.
+Virtual item loot delivery now routes successful `LootItemType.VirtualItem`
+grants into the active map public-event manager as `PublicEventObjectiveType.VirtualCollect`
+with the granted virtual item id and amount, while preserving the existing
+quest `VirtualCollect` update. The public-event type/object credit path now has
+focused coverage proving a `VirtualCollect` objective with matching `ObjectId`
+finalises through the normal public-event completion flow. The generated
+auxiliary tracker now classifies the linked public-event virtual item depot row
+(`source_row_id=12`, objective `3094`, public event `597`) as
+`runtime_public_event_virtual_item_depot_objective_linked_virtual_collect_credit_tested_pending_depot_acquisition_smoke`;
+the other `10` virtual item depot rows remain unlinked pending review. Focused
+verification passed `4/4` for `LootInstanceDeliveryTests` and
+`PublicEventFlowTests`; the focused auxiliary audit unit test and Python
+compile checks passed; the content-retail validator passed on `31` generated
+CSVs / `167,903` rows / `2,438` blocker detail rows. Remaining mapped-only
+blockers: depot acquisition/interaction ownership, UI state, unlinked virtual
+item depot rows, and event/client smoke. Runtime code still uses only
+runtime-owned managers and typed enum/object ids, with no runtime query against
+`wildstar_client`, `jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-16 F-024 public-event vote flow evidence slice.
+Public-event vote row `64` now has explicit test-backed runtime coverage for
+the only current script-referenced public-event vote path. Shades Eve event
+script routing starts vote `64` with default choice `1` after the mapped
+Talk-With-The-Locals objective succeeds; the public-event vote runtime loads
+typed `PublicEventVote` options/duration, emits detailed initiate/tally/end
+packets, handles timeout defaults, ignores unknown/invalid/duplicate responses,
+and now has event-boundary coverage that rejects a client vote envelope with a
+mismatched team id before mutating vote state. `ClientPublicEventVote` handler
+coverage verifies opcode `0x06EE` delegates event/vote/team/choice fields to
+the public-event manager. The auxiliary coverage artifact now classifies the
+script-referenced vote row as
+`runtime_public_event_vote_script_referenced_vote_flow_tested_pending_choice_semantics_and_client_smoke`,
+while the other `63` vote rows remain unmapped to scripts. Focused verification
+passed `19/19` for `PublicEventVoteTests`, `ClientPublicEventVoteHandlerTests`,
+and `ShadesEveEventScriptTests`; the broader public-event filter passed
+`1396/1396`, the focused auxiliary audit test passed, and the content-retail
+validator passed on `31` generated CSVs / `167,894` rows / `2,436` blocker
+detail rows. Remaining mapped-only blockers: exact choice-result semantics,
+vote UI flow, follow-up routing after the winner, the `63` unreferenced vote
+rows, and full Shades Eve/event client smoke. Runtime code still uses only
+typed GameTable/runtime-owned data and does not query `wildstar_client`,
+`jabbithole`, or `nf_map_*`.
+
+Supplemental update: 2026-06-16 F-022 no-objective quest script lifecycle row coverage.
+The quest-script inventory now promotes the three current no-objective
+Script.Main quest hooks with row-specific lifecycle tests: Q3670 `Calm Before
+the Storm`, Q3671 `Setting Up Camp`, and Q5610 `Dreg Mutations` are classified
+as `implemented_no_objective_script_lifecycle_tests_pending_dialog_smoke`.
+This is still not a retail-complete claim: client-visible dialog activation,
+exact reward/achievement side effects, and manual/client smoke remain open.
+Runtime behavior stays on typed Quest2/QuestManager data and does not query
+`wildstar_client`, `jabbithole`, or `nf_map_*`. Verification passed the
+no-objective QuestManager lifecycle filter (`8/8`; one transient PDB copy retry
+warning recovered), the focused quest-script audit unit test, full content-retail
+regeneration, and validation (`31` generated CSVs / `167,903` rows, all still
+`not_retail_complete`).
+
+Supplemental update: 2026-06-16 F-022 missing quest-direction-entry fail-closed coverage.
+Quest guidance now has row-level regression coverage for QuestDirection rows
+that reference missing QuestDirectionEntry ids. `Quest` leaves objective
+guidance unresolved when a typed GameTable direction-entry row is absent,
+instead of inventing a route target or querying `wildstar_client`,
+`jabbithole`, or `nf_map_*`. The generated quest world-dependency inventory
+now classifies all `9` affected rows as
+`blocked_missing_client_quest_direction_entry_row_runtime_fail_closed`: Q8208
+`The Broken Pods` QuestDirection `470` entries `880`-`884`, and Q8222
+`Before There Were Factions` QuestDirection `475` entries `893`-`896`.
+Retail completion remains blocked until those missing client QuestDirectionEntry
+rows or replacement route evidence are recovered. Verification passed the
+focused guidance regression test, the quest world-dependency audit unit test,
+full content-retail regeneration/tracker sync, and validation (`31` generated
+CSVs / `167,894` rows, all still `not_retail_complete`).
+
+Supplemental update: 2026-06-16 F-022 missing nested target-group fail-closed coverage.
+Quest world-dependency coverage now distinguishes missing nested TargetGroup
+child rows from ordinary target-group membership smoke. `AssetManager` already
+uses typed GameTable `TargetGroup` access and skips missing nested child rows
+without inventing objective targets; no runtime path queries `wildstar_client`,
+`jabbithole`, or `nf_map_*`. A focused regression test now pins that behavior
+for quest-objective target expansion. The generated quest world-dependency
+inventory now classifies all `12` affected rows as
+`blocked_missing_client_nested_target_group_row_runtime_fail_closed`: Q5306
+`Breathing Room` TargetGroup `10203` missing children `61647`, `61645`,
+`61632`, and `61630`, plus Q5577 `Redmoon's Ruin` TargetGroup `2578` missing
+children `24396` and `24397` across the duplicated objective rows. Retail
+completion remains blocked until those missing client TargetGroup rows or
+equivalent replacement member evidence are recovered. Verification passed
+`AssetManagerTargetGroupTests` (`17/17`), the quest world-dependency audit unit
+test, full content-retail regeneration, and validation (`31` generated CSVs /
+`167,894` rows, all still `not_retail_complete`).
+
+Supplemental update: 2026-06-16 F-024 instance settings packet validation.
+The shared instance portal/settings packet surface now has focused regression
+coverage for client dialog close, unsupported single-instance reset rejection,
+valid difficulty/prime/rally setting echo, and invalid difficulty rejection
+without mutating player state. This covers the server-owned negative cases for
+the current portal/settings validation boundary while keeping actual portal
+entry routing, queue selection, prime-level retail limits, and client smoke
+blocked. No runtime code queries `wildstar_client`, `jabbithole`, or `nf_map_*`;
+the generated 3041 Downsizer queue filter now includes
+`InstanceSettingsHandlerTests` alongside the Downsizer/map binding tests.
+
+Supplemental update: 2026-06-16 F-022 data-backed contract closure pass.
+
+Supplemental update: 2026-06-16 F-024 public-event custom-stat dependency slice.
+Public-event custom stat metadata now loads typed `PublicEventCustomStat` rows
+from both event-specific rows (`PublicEventId` matches the event) and
+type-scoped rows (`PublicEventId == 0` with matching `PublicEventTypeEnum`),
+with event-specific rows winning duplicate `StatIndex` ties. Runtime custom
+stat updates now validate sparse/non-contiguous `StatIndex` values directly
+instead of treating the stat list position as the stat id, so scoreboard masks,
+team totals, and per-player values are backed by the actual client table index.
+No runtime code queries `wildstar_client`, `jabbithole`, or `nf_map_*`; those
+sources remain evidence, mapper output, reviewed promotion, and test-fixture
+inputs only. Coverage artifacts now classify all `24` custom-stat auxiliary
+rows as runtime dependency-tested: `4` event-linked rows and `20` type-scoped
+rows remain pending only for stat producer/UI smoke. Focused verification
+passed `1395/1395` with
+`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo --filter "FullyQualifiedName~PublicEvent"`;
+the focused audit unit test passed, and the content retail validator passed on
+`31` generated CSVs / `167,894` rows / `2,436` blocker detail rows. Remaining
+mapped-only blockers: per-event stat producer semantics, stat display flags and
+ranking/end-screen presentation, event-specific client smoke, reward
+modifiers/rotation grants, depots and virtual item depots, state and vote
+flows, and exact lifecycle choreography.
+
+Supplemental update: 2026-06-16 F-022 missing prerequisite fail-closed coverage.
+Quest prerequisite validation now fails closed when a Quest2 row references a
+Prerequisite id missing from the loaded client Prerequisite table. The runtime
+path still uses typed GameTable access only and does not query
+`wildstar_client`, `jabbithole`, or `nf_map_*`; missing Prerequisite rows log a
+warning and return false instead of throwing during accept/visibility checks.
+The generated prerequisite tracker now classifies Q3524 prerequisite `2755` and
+Q5052 prerequisite `6338` as
+`blocked_missing_client_prerequisite_row_runtime_fail_closed`, with row-specific
+retail completion still blocked until the missing client prerequisite rows or a
+replacement evidence source is recovered. Focused verification passed the new
+`PrerequisiteManagerTests` fail-closed cases (`2/2`), the prerequisite audit
+unit test, and the content retail validator (`31` generated CSVs / `167,894`
+rows with `2,436` blocker detail rows, all still `not_retail_complete`).
+
+Supplemental update: 2026-06-16 F-022 data-backed contract closure pass.
+Contract support is now table-backed across the build-16042 Quest2 contract
+shape instead of Q9880-allowlist-backed. `IContractManager` /
+`ContractManager` build a validated contract set from typed `Quest2`,
+`QuestObjective`, `Quest2Reward`, `Item`/Item2, and `PeriodicQuestGroup` rows;
+accept requires the periodic group to be offered, below
+`MaxPeriodicQuestsAllowed`, and backed by runtime-owned objective/reward rows.
+Focused tests now cover all observed contract objective families
+(`KillCreature`, `ActivateEntity`, `KillTargetGroups`, `VirtualCollect`,
+`CompleteMaxLevelQuests`, `PvPKills`, `EarnCurrency`, `CombatMomentum`,
+`KillCreature2`), UI-safe rejection for missing objective/reward/item rows,
+active plus unexpired completed reset capacity, and contract-flagged rows with
+no periodic group. The Q9880 `Down in the Dregs` completion fixture still
+verifies receiverless accept/complete, creature objective progress, fixed
+Quest2Reward item grant, reset persistence, and QuestComplete/
+ContractComplete/ContractQualityComplete/ContractTypeComplete achievement
+hooks through the same manager; contract board interaction event `85` emits
+`ServerQuestContractGoodQualityChanged` from the validated good-quality set.
+Generated contract coverage now classifies `42` contract rows as
+`implemented_contract_quest_manager_backed_pending_rotation_client_smoke`,
+`29` reviewed creature bridges as implemented objective-credit evidence
+pending spawn/client smoke, `2,436` creature bridges as mapped-only pending
+review/spawn smoke, `38` creature bridges as blocked unmatched rows, and `736`
+`contract_reward_map` reward-track item rows as mapped-only pending
+choice/presentation/client smoke. Focused verification passed `220/220` with
+`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~NexusForever.Game.Tests.Quest.QuestTests" -v minimal --nologo`;
+the contract audit test, module-style content retail generator, and validator
+also passed on `31` generated CSVs / `167,894` rows / `2,436` blocker detail
+rows. No runtime code queries `wildstar_client`, `jabbithole`, or `nf_map_*`;
+those remain evidence, mapper output, reviewed promotion, and test-fixture
+inputs only. Remaining mapped-only blockers are exact random contract rotation
+seed, board timing/type-filter proof, full `contract_reward_map`
+reward-track choice/presentation semantics, spawn/tap smoke for mapped
+creatures, the four contract-flagged Quest2 rows without `PeriodicQuestGroup`,
+and end-to-end client smoke.
+
+Supplemental update: 2026-06-16 F-022 path mission closure tracker/status pass.
+Scientist creature-info scan credit now resolves from typed `PathMission` rows
+(`PathType=Scientist`, `PathMissionType=2`, `ObjectId`) and validates the target
+against `PathScientistCreatureInfo` before hydrating or granting scan credit,
+removing the hardcoded mission-to-creature-info helper. The Settler build-tier
+handler now treats a missing `PathSettlerImprovementGroup` table like a missing
+row, still attempting active mission completion but skipping malformed build
+acknowledgements. `content_retail_completeness_path_mission_evidence.csv` now
+classifies all `4623` DataMapping path rows as implemented Northern Wilds
+runtime-owned coverage, mapped-only rows, or blocked rows with concrete missing
+evidence; the tracker summary mirrors those buckets. Focused verification
+passed `PathManagerTests` `93/93`, `PathSettlerBuildHandlerTests` `7/7`, and the
+path evidence audit unit test. Remaining blockers are the unmapped type-`2`
+episode reward presentation/timing path, ambiguous/unmatched creature bridges,
+generic Soldier holdout runtime, generic Scientist minigame/scan-result flow,
+durable full Settler hub/resource/avenue state, broader episode completion, and
+end-to-end client smoke.
+
+Supplemental update: 2026-06-16 F-022 Northern Wilds path mission DataMapping bridge.
+Northern Wilds path activation now includes the reviewed DataMapping
+episode-zone bridge where client `PathEpisode.tbl` keeps PathEpisodes
+`8`/`9`/`28`/`82` on WorldZone `35`, while the runtime/source zone flow enters
+world `426` through WorldZone `1`. `PathManager` first resolves direct
+`PathEpisode` rows, then falls back only to that runtime-owned bridge and
+revalidates the bridged episode world/path before activating `PathMission` rows.
+Focused tests cover Soldier, Explorer, Scientist, and Settler activation from
+the bridged zone, Explorer node progress, Soldier tower-defense progress,
+Scientist scan credit, Settler hub progress, mission reward grant, type-`2`
+episode reward non-grant, and a missing bridged client episode fail-closed case.
+No runtime code queries `wildstar_client`, `jabbithole`, or `nf_map_*`; those
+remain evidence and promotion inputs only. Focused verification passed `92/92`
+with `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+--filter "FullyQualifiedName~PathManagerTests" -v minimal --nologo`. Remaining
+mapped-only blockers: exact type-`2` episode reward presentation/timing,
+ambiguous or unmatched path creature bridges such as Vitalium Crystal and Hacked
+Dominion Turret, generic Soldier holdout wave runtime, Scientist scan-result
+flow, Explorer surveillance/vista UI smoke, broader episode completion, and
+end-to-end client smoke.
+
+Supplemental update: 2026-06-16 F-024 public-event data-backed metadata slice.
+Public-event runtime metadata now promotes typed GameTable-backed client rows into
+packet-visible state without runtime queries against `wildstar_client`,
+`jabbithole`, or `nf_map_*`. `PublicEventTemplate` now carries
+`PublicEvent.WorldLocation2Id`, sorted child `PublicEvent` ids, and
+`InteractDepot` virtual-item choices joined through `PublicEventDepot` /
+`PublicEventVirtualItemDepot`; `ServerPublicEventStart` sends event location
+ids, and objective payloads send `PublicEventObjective.WorldLocation2Id` plus
+`VirtualItemDepot` status tails where depot rows provide choices. The existing
+script-owned public-event transition surface remains the implemented boundary
+for objective activation, direct objective-id credit, type/object credit,
+TargetGroup kill/activation credit, explicit `AdditionalPublicEventIds` /
+`PublicSubEventId` child-event routing, and zone/location visibility metadata.
+Reward rotation rows are mapped-only: `PublicEvent.RewardRotationContentId` is
+known, but `RewardType`, threshold, grant/claim timing, depot interaction item
+handling, and presentation smoke remain blocked pending client/lifecycle
+evidence. Broad table-driven child auto-routing and choreography/timing remain
+blocked until exact retail selection and phase evidence is captured. Focused
+verification passed `1394/1394` with
+`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -v minimal --nologo --filter "FullyQualifiedName~PublicEvent"`.
+
+Supplemental update: 2026-06-16 F-033 challenge objective/reward-track slice.
+Challenge runtime parity now covers the mapped DataMapping-backed objective,
+public progress, and reward-track slice without adding runtime queries against
+`wildstar_client`, `jabbithole`, or `nf_map_*`. `ChallengeManager` already
+handled combat target-group progress and Ability activation progress; the
+activation hook now also credits `ChallengeType.ChecklistActivate` rows through
+successful target activation, and `IChallengeManager.TryAdvanceProgress` /
+`ChallengeProgressHooks.OnChallengeProgress` expose the same validated progress
+path to script/runtime-owned producers by challenge id. Focused evidence rows:
+challenge `409` / Extraterrestrial
+Exterminator uses TargetGroup `3341` and Creature2 `50321` for combat kill
+progress, challenge `182` / Exploding Icetails uses TargetGroup `28780` and
+Creature2 `20775` for Ability activation progress, challenge `309` / Falkrin
+War Banners uses TargetGroup `6675` and Creature2 `25640` for checklist
+activation progress, and RewardTrack `24` / RewardTrackRewards row `475`
+grants the first supported item choice (`84760`) with
+`ItemUpdateReason.Challenge`. Focused challenge verification passed `52/52`.
+Remaining blockers: reward UI/selection transport, medal odds, timed scoring
+semantics, producer-specific retail evidence for collect/item/general challenge
+sources, share-init ownership, challenge-specific achievement trigger evidence,
+`Client0x00C8`, manual spawn/objective smoke, and full result/reward parity.
+
+Supplemental update: 2026-06-16 F-022 quest next-slice verification.
+The generated quest next-slice queue rows `Q5597`, `Q3479`, `Q3480`, `Q3486`,
+`Q3668`, `Q3673`, `Q3886`, `Q3963`, `Q5573`, `Q5575`, `Q5580`, and `Q3797`
+were rechecked against the current Script.Main/Game runtime surface and
+DataMapping/Jabbithole bridge evidence. The runtime-owned implementation remains
+server-side implemented for the strongest data-backed slice: reviewed
+Crimson Isle and Northern Wilds fallback placements, visible giver/receiver
+caches, generic interaction/activate/target-group/checklist credit paths,
+Q3963 activate-cast credit, hidden objective hooks, branch follow-up grants,
+Quest2 reward grants, and achievement checklist hooks are all covered by
+focused tests. The combined row filter passed `185/185` with:
+`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo --filter "FullyQualifiedName~Q5597|FullyQualifiedName~Q3479|FullyQualifiedName~Q3480|FullyQualifiedName~Q3486|FullyQualifiedName~Q3668|FullyQualifiedName~Q3673|FullyQualifiedName~Q3886|FullyQualifiedName~Q3963|FullyQualifiedName~Q5573|FullyQualifiedName~Q5575|FullyQualifiedName~Q5580|FullyQualifiedName~Q3797"`.
+No runtime code queries `wildstar_client`, `jabbithole`, or `nf_map_*`; those
+sources remain evidence and promotion inputs only. The rows are still not
+retail-complete: client-visible dialog, exact objective/UI timing, reward
+presentation/persistence, achievement UI, route/zone guidance, loot/drop cadence,
+unmatched or partial DataMapping rows, and end-to-end client smoke remain the
+named blockers in `Decomp/Analysis/CONTENT_RETAIL_COMPLETENESS_TRACKER.md` and
+`Decomp/Analysis/coverage/content_retail_completeness_next_slice_blockers.csv`.
+
+Supplemental update: 2026-06-16 F-022 Q9880 contract lifecycle slice.
+Contract `9880` / `Down in the Dregs` now has a conservative test-backed
+Quest2 lifecycle slice. DataMapping anchors: `contract_map.csv` row `11`
+maps Jabbithole contract `11` / quest `2889` to current `Quest2` `9880`;
+`quest_objective_client_map.csv` maps objective `18869` as
+`KillTargetGroups`, TargetGroup `12511`, count `30`; `contract_creature_map.csv`
+maps Dreg targets including Scarhide Raider Creature2 `24140` and Palehusk
+Howler `36027`; `quest_reward_client_map.csv` maps fixed reward `6867` to
+Contract Commission Item2 `92281`; and `PeriodicQuestGroup` `52` maps contract
+type `2` / quality `1`. This Q9880-focused lifecycle fixture is now superseded
+by the Quest2-backed contract manager slice above: Q9880 remains the focused
+completion proof, while receiverless lifecycle permission, offered-count and
+max-count validation, good-quality board ids, reward validation, and contract
+achievement hooks all run through the runtime contract manager. Remaining
+mapped-only blockers: exact random contract rotation seed, full contract
+reward-track choice/presentation semantics, client-side board timing, and
+end-to-end client smoke.
+
+Supplemental update: 2026-06-16 F-022 Northern Wilds path mission table activation cleanup.
+Northern Wilds path episode activation now routes through
+`PathManager.TryActivateCurrentZoneEpisode()` from `NorthernWildsMapScript`
+instead of the older hardcoded episode/mission dictionary with static `25` XP
+values. DataMapping path rows were checked for PathEpisodes `8`/`9`/`28`/`82`,
+their mission links (`33`/`34`/`156`, `35`/`36`/`158`/`1254`,
+`42`/`160`/`648`, `650`/`651`/`652`), the episode-zone bridge to world `426` /
+WorldZone `1`, and the client PathReward episode rows `319`-`322` plus
+Jabbithole episode reward items. Runtime ownership is now limited to
+`PathEpisode`/`PathMission`/`WorldZone` activation, active-mission completion
+helpers, and unflagged `PathRewardType.Mission` grants; type-`2` episode
+rewards and DataMapping `path_episode_reward_map.csv` grants remain blocked
+until client reward presentation/timing is smoked. Focused path/Northern Wilds
+verification passed `109/109`, and full `NexusForever.Game.Tests` verification
+passed `4750/4750`. Remaining client-smoke gaps: path-log
+activation visibility, exact episode reward grant/presentation, Soldier
+holdout wave behavior, Scientist scan-result flow, Explorer vista/surveillance
+flow, and broader episode completion.
+
+Supplemental update: 2026-06-16 F-024 Space Madness Engineering Computer final signal.
+Expedition: Space Madness (`world 2149`, public event `390`) now has
+test-backed runtime activation, reviewed simple placement, and credit coverage
+for public-event objective `1603`, `Use the Engineering Computer to report that
+the lab is safe`. The local MySQL reference databases and DataMapping outputs
+were checked first: build 16042 maps `PublicEventObjective` `1603` as
+`ActivateTargetGroup` object/TargetGroup `6372`, count `1`, at
+`WorldLocation2` `37714`; `TargetGroup` `6372` maps to `Creature2` `45973`;
+`Creature2` identifies the Engineering Computer; `WorldLocation2` places it in
+world `2149` / area `2421` at `241.969,3.34274,372.253`; Jabbithole objective
+row `6196` preserves the matching final-signal text; and DataMapping
+public-event rows `146` / `16538` bridge the Jabbithole Engineering Computer
+creature/coordinate to the client row. `SpaceMadnessEventScript` now activates
+objective `1603` during `SendTheAllClearSignal`, spawns script-owned simple
+entity `1100300013` for Creature2 `45973`, and `EngineeringComputerEntityScript`
+credits TargetGroup `6372` once on activation. Focused Space Madness tests
+passed `44/44`, and the Script.Instance project build passed. Remaining
+blockers: exact engineering-computer client UI/dialog/activation prompt,
+lab-safe report side effects, phase choreography, route randomness/branch
+routing, rewards, achievements, and full expedition/client smoke.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames Prototentiary Warden.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+runtime coverage for the Warden leg of the Prototentiary aggregate objective
+`2678`. The local MySQL reference databases were checked first:
+`wildstar_client.publiceventobjective` maps `2678` as the aggregate
+`ActivateTargetGroup` row for object `10583`, while the timed Warden bonus
+`2855` still points at object `10569` and remains blocked pending exact timer
+semantics; `wildstar_client.targetgroup` maps `10583` to Cage Console
+Creature2 `63037` and maps Warden group `12474` to Creature2 `62324`;
+`wildstar_client.creature2` identifies `62324` as the Sneaky Prison Warden.
+`jabbithole.public_event_objectives` row `8181` preserves the retail text
+requiring both killing the Warden and freeing the Protostar Interns, and
+`jabbithole.creatures` / `jabbithole.coordinates` plus DataMapping bridge rows
+map Warden creature `28413` to coordinate `7099765` at `-20718,-945,-6923` in
+world `2980` / area `4333`. `UltimateProtogamesEventScript` now activates
+objective `2678` with dynamic max `2`, spawns script-owned Warden entity
+`1100300092` with reviewed display/stat data, and `WardenEntityScript` credits
+`2678` once on death alongside the existing Cage Console free-intern credit.
+Focused Ultimate Protogames tests passed `41/41`; regenerated coverage validates
+`31` generated CSVs / `167,894` rows with `2,436` blocker detail rows, all still
+`not_retail_complete`. Remaining blockers: exact
+random-event routing, stealth/detection and no-alarm semantics, exact timer UI
+and failure behavior, cage/free-intern choreography, rewards, achievements, and
+full dungeon smoke.
+
+Supplemental update: 2026-06-16 F-024 Q3480 Commander Durek starter.
+Northern Wilds Q3480 `Reporting for Duty` now has test-backed server
+availability for its build-16042 Commander Durek starter route. The local MySQL
+reference databases were checked first: `wildstar_client.quest2` maps Q3480 to
+WorldLocation2 receiver `7726`, objective rows `4470` / `4565`, and mutual
+exclusion with Q3479; `wildstar_client.creature2` maps Creature2 `11061` as the
+Northern Wilds minor-hub Commander Durek with `QuestIdGiven00=3480`; and
+`jabbithole.quest_starter_creatures` maps source relation `821` to Commander
+Durek with `last_seen_in=7`. DataMapping exposes two Northern Wilds coordinates
+for source creature `435` / Creature2 `11061`: source_coordinate_id `1763` at
+the Land's Reach receiver already covered by build-16042 Creature2 `11066`, and
+source_coordinate_id `40899` at the starter-side position `4125,-686,-5246`.
+`NorthernWildsMapScript` now fallback-spawns Creature2 `11061` at the `40899`
+starter position while keeping the Land's Reach route on `11066`; focused map
+load coverage verifies the spawn id, enqueue order, and position, and the
+regenerated content-retail quest-creature row marks relation `821` as
+`runtime_q3480_commander_durek_starter_relation_spawn_and_giver_cache_tested_pending_dialog_smoke`.
+Focused Northern Wilds tests passed `25/25`; regenerated content-retail
+coverage validates `31` generated CSVs / `167,888` rows with `2,434` blocker
+detail rows, all still `not_retail_complete`. Remaining Q3480 blockers:
+client-visible Durek accept dialog/activation smoke, the older unmatched
+starter relation `2133`, alternate receiver `12354` / prerequisite `29356`
+routing smoke, survivor/yeti live objective smoke, rewards, achievements, and
+end-to-end Q3480 smoke.
+
+Supplemental update: 2026-06-16 F-024 Vault of the Archon holocube talk objective.
+Vault of the Archon / Hall of the Hundred (`world 3009`, public event `666`)
+now has test-backed runtime activation and player-scoped `TalkTo` credit
+coverage for objective `5100`, `Speak with ... about the Holocube`. Build 16042
+maps `5100` as `TalkTo` object/TargetGroup `14194`, count `1`; local MySQL
+reference data was checked first. `wildstar_client.publiceventobjective`
+confirms public event `666`, type `17`, object `14194`; `wildstar_client.targetgroup`
+maps `14194` to Creature2 `67423` and `67425`; `wildstar_client.creature2`
+identifies those rows as `w3009 - Dorian Walker` and `w3009 - Artemis Zin`.
+`jabbithole.public_event_objectives` returned no matching Vault/Hall rows for
+objective `5100` or public events `666`/`696`, so the slice is recorded from
+client tables and runtime source evidence. `HallOfTheHundredEventScript` already
+activates `5100` during the `SpeakAboutHolocube` phase, and the Dorian/Artemis
+holocube talk entity scripts now guard repeated activation per character while
+still allowing another player to receive `TalkTo` target-group credit. Focused
+Hall of the Hundred tests passed `153/153`; regenerated content-retail coverage
+validates `31` generated CSVs / `167,888` rows with `2,434` blocker detail rows, all still `not_retail_complete`.
+Remaining blockers: exact dialog/choreography timing, NPC presentation state,
+manual World Story smoke, rewards, achievements, and later Vault/Hall mechanics.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames Hut-Hut boss slice.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+runtime activation, reviewed placement, deterministic WIP route handoff, and
+boss-death credit coverage for Hut-Hut objective `2675` (`Defeat Hut-Hut`).
+Build 16042 maps `2675` as a direct `Script` objective at WorldLocation2
+`42036`; the local MySQL reference databases were checked first:
+`jabbithole.public_event_objectives` row `8164` maps `2675` under Ultimate
+Protogames row `299`, while side rows `8161`, `8169`, `8172`, `8180`, `8184`,
+`8195`, and `8221` identify the deathless, extra-point, fumble, shutout, timed,
+and no-fumble Hut-Hut objectives that still need football-scoring semantics.
+`wildstar_client.creature2` identifies Creature2 `61417` as `[UP] e2675 -
+Hut-Hut - Gorganoth Boss`; Jabbithole creature rows `28298` / `30591` and
+DataMapping `creature_map.csv` / `creature_spawn_map.csv` bridge it to world
+`2980`, area/worldzone `4376`, faction `1322`, display group `29048`, health
+`2400000`, and repeated coordinate evidence near source coordinate `8208290`
+(`-12480`, `-788`, `-6870`). Interrupt armor remains unset because the checked
+Jabbithole creature rows conflict (`0` vs `-1`) pending client/runtime smoke.
+`UltimateProtogamesEventScript` now advances from the paired Gilded Fowl
+objective `4442` into a WIP `HutHut` phase, activates `2675`, and spawns
+script-owned entity `1100300091`; `HutHutEntityScript` binds Creature2 `61417`
+and credits `2675` once on death. Focused Ultimate Protogames / objective-credit
+tests passed `615/615`; Python content-retail audit tests passed `103/103`;
+regenerated content-retail coverage validates `31` generated CSVs / `167,887` rows with `2,433` blocker detail rows, all still `not_retail_complete`.
+Remaining blockers: exact random room selection, Hut-Hut football scoring,
+fumble, shutout, deathless, extra-point, timer and interrupt-armor semantics,
+full boss mechanics, rewards, achievements, and full dungeon smoke.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames Bev-O-Rage timed child objectives.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+runtime activation and boss-death credit coverage for the Bev-O-Rage timed
+child objectives `3206` (`Caffeinated`) and `3210` (`Out of Order`) alongside
+parent objective `2680`. Build 16042 maps `3206` and `3210` as `Script` child
+rows under parent `2680` at WorldLocation2 `45901`, with `failureTimeMs`
+`420000` and `15000`; parent `2680` targets TargetGroup `12179`, whose member
+is Creature2 `61463`. Local MySQL reference data was checked first:
+`jabbithole.public_events` row `299` maps to game id `594`, and
+`jabbithole.public_event_objectives` rows `8155`, `8198`, and `8145` map
+`2680`, `3206`, and `3210`. Jabbithole public-event creature rows `2186` /
+`2445` and coordinate evidence corroborate Bev-O-Rage in world `2980` / zone
+`4331` near the reviewed placement. `UltimateProtogamesEventScript` now
+activates `3206` and `3210` during the `BevORage` phase, and
+`BevORageEntityScript` credits `2680`, `3206`, and `3210` once on boss death
+through the multi-objective `PublicEventObjectiveCreditEntityScript` path. The
+generated producer evidence now separately classifies the `2680` phase
+activation and `4669` Vend-A-Tron activation rows as runtime-backed, with the
+existing entity scripts providing boss and target-group credit. Focused Ultimate
+Protogames / objective-credit tests passed `620/620`; the broader
+instance/public-event filter passed `1846/1846`; Python content-retail audit
+tests passed `103` with `21` subtests; regenerated content-retail coverage
+validates `31` generated CSVs / `167,909` rows, all still
+`not_retail_complete`. Remaining blockers: exact timer start/fail semantics,
+`3210` 20-percent qualification, sparks/coin child objectives `3205` / `3207` /
+`3208` / `3209`, exact `4669` route/placement smoke, full boss mechanics,
+rewards, achievements, and full dungeon smoke.
+
+Supplemental update: 2026-06-16 F-024 Stormtalon's Lair optional producer placements.
+Stormtalon's Lair (`world 382`, public event `145`) now has test-backed
+runtime placement coverage for optional objective producers that previously had
+activation/credit scripts but no spawned reviewed entities. Build 16042 maps
+`555` to the Thundercall Data Altar (`TargetGroup 2978` / Creature2 `24314`),
+`562` to eight Thundercall Storm Totems (`TargetGroup 4419` / Creature2
+`27262`), `559` to two Launch Pads (`TargetGroup 3679` / Creature2 `31587`),
+and `558` / `4867` to the Improvement Construction Platform at WorldLocation2
+`20740` / Creature2 `27244`. The local Jabbithole database maps public-event
+row `4` to game id `145` and supplies reviewed producer coordinates: data altar
+`3201`, storm totems `5689`-`5693` plus `22995`-`22997`, launch pads `4296`
+and `4297`, and platform `2975`. `StormtalonsLairEventScript` now spawns
+script-owned entities `1100038242`-`1100038253` behind the existing optional
+objective gates, including interrupt armor `2` for the totems from DataMapping
+stats evidence; the existing altar, totem, platform, and launch-pad scripts
+credit the mapped objectives or checklist rows on activation. Focused
+Stormtalon's Lair tests passed `39/39`; Python content-retail audit tests
+passed `103/103`; regenerated content-retail coverage validates `31` generated
+CSVs / `167,855` rows with `2,423` blocker detail rows, all still
+`not_retail_complete`. Stormtalon's Lair remains partial: exact optional route
+availability/weights, visual/despawn state, launch travel behavior, combat,
+cinematics, rewards, achievements, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames Gilded Fowl placement producer.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+runtime activation, placement, and death-credit coverage for the paired Power
+Plunge Gilded Fowl objectives `2862` and `4442`. Build 16042 maps `2862` as a
+count-one `ResourcePool` row and `4442` as a count-`100`
+`KillClusterTargetGroup` row against TargetGroup `12263`, whose only member is
+Creature2 `63055` (`[UP] Divekick - Gilded Fowl`); the surrounding Power Plunge
+objective cluster shares WorldLocation2 `46473`. The local Jabbithole database
+maps public-event row `299` to game id `594`, public-event creature row `2185`
+to creature row `28278` (`Gilded Fowl`) in world `2980` / area `4347`, with
+level `50`, faction `1322`, health `461770`, shield `0`, and interrupt armor
+`0`. DataMapping bridges reviewed coordinate `8011506` (`-21242`, `-807`,
+`-10806`) to Creature2 `63055`; that coordinate is the nearest nonzero
+row-`28278` observation to the Power Plunge room cluster centroid and carries
+display `21895`. `UltimateProtogamesEventScript` now appends a WIP PowerPlunge
+phase after the Ruffles leg, activates `2862` and `4442`, and spawns
+script-owned entity `1100300089`; the existing `GildedFowlEntityScript` credits
+`2862` once and `4442` with the full count on death. Focused Ultimate Protogames
+tests passed `36/36`; full `NexusForever.Game.Tests` passed `4720/4720`;
+Python content-retail audit tests passed `70/70` plus `20` subtests;
+regenerated content-retail coverage validates `31` generated CSVs / `167,847` rows
+with `2,419` blocker detail rows, all still `not_retail_complete`.
+Ultimate Protogames remains partial: exact random room selection, full Power
+Plunge scoring/qualification, room timers, rewards, achievements, and full
+dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames Ruffles placement producer.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+runtime activation, placement, and death-credit coverage for objective `4561`,
+`Hunt Ruffles`. Build 16042 maps `4561` as a count-one
+`KillClusterTargetGroup` row against TargetGroup `12390`, whose only member is
+Creature2 `65794` (`[UP] Critter - Rampant Ravenok - Ruffles`), with no
+WorldLocation2 anchor. The local Jabbithole database maps public-event row
+`299` to game id `594`, public-event creature row `2217` to creature row
+`28408` (`Ruffles`) in world `2980` / area `4348`, with level `50`, faction
+`1322`, health `3420014`, shield `0`, and interrupt armor `2`. DataMapping
+bridges reviewed coordinate `7930052` (`-16866`, `-802`, `5570`) to Creature2
+`65794`; that coordinate is the nearest nonzero row-`28408` observation to the
+room cluster centroid and carries display `23396`. `UltimateProtogamesEventScript`
+now appends a WIP Ruffles phase after the Prototentiary Deputy leg, activates
+`4561`, and spawns script-owned entity `1100300088`; the existing
+`RufflesEntityScript` credits `4561` once on death. Focused Ultimate Protogames
+tests passed `33/33`; full `NexusForever.Game.Tests` passed `4717/4717`;
+Python content-retail audit tests passed `70/70` plus `20` subtests;
+regenerated content-retail coverage validates `31` generated CSVs / `167,835`
+rows with `2,416` blocker detail rows, all still `not_retail_complete`.
+Ultimate Protogames remains partial: exact random room selection, exact Ruffles
+hunt route/pathing and encounter behavior, Prototentiary Warden/stealth/no-alarm
+semantics, timed challenge semantics, rewards, achievements, and full dungeon
+smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames Mondo's Crate producer.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+runtime activation, placement, dynamic-max, and death-credit coverage for
+objective `2920`, `Break Mondo's Crate within the time limit`. Build 16042 maps
+`2920` as a `Script` row with count `0`, `failureTimeMs 60000`, and
+WorldLocation2 `41745` in world `2980` / area `4351`. The local Jabbithole
+database maps public-event row `299` to game id `594`, objective row `8190`,
+public-event creature row `2184`, creature row `28277`, and coordinate `6132219`
+(`-16500`, `-910`, `-10998`) to the reviewed crate placement. DataMapping
+bridges that placement to Creature2 `62549` (`Mondo's Crate`) with display
+`28700`, faction `1330`, level `50`, health `1410065408`, shield `0`, and
+interrupt armor `2`. `UltimateProtogamesEventScript` now activates `2920` with
+dynamic max `1` in the WIP Misplaced Mammoth phase and spawns script-owned
+entity `1100300090`; `MondosCrateEntityScript` credits `2920` once on death.
+Focused Ultimate Protogames/death-credit tests passed `610/610`; Python
+content-retail audit tests passed `103/103`; regenerated content-retail
+coverage validates `31` generated CSVs / `167,863` rows with `2,426` blocker detail rows,
+all still `not_retail_complete`. Ultimate Protogames remains
+partial: exact random room selection, exact `2920` script trigger timing,
+60-second timer start/fail semantics, crate row selection/despawn state, rewards,
+achievements, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames Mondo placement producer.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+runtime activation, placement, and death-credit coverage for objective `2926`,
+`Defeat $(creature=62575) within the time limit`. Build 16042 maps `2926` as a
+count-one `KillTargetGroup` row against TargetGroup `10657`, whose only member
+is Creature2 `62575` (`Mondo's Monstrosity`), with `failureTimeMs 60000` and
+WorldLocation2 `41745` in world `2980` / area `4351`. The local Jabbithole
+database maps public-event row `299` to game id `594`, public-event creature
+row `2415` to creature row `28306` (`Mondo's Monstrosity`), and DataMapping
+bridges reviewed coordinate `7903034` (`-16501`, `-910`, `-10991`) to Creature2
+`62575` with display `21714`, faction `1322`, level `50`, shield `0`, and
+health `1369030`. `UltimateProtogamesEventScript` now activates `2926` during
+the WIP Misplaced Mammoth phase and spawns script-owned entity `1100300087`;
+the existing `MondosMonstrosityEntityScript` credits `2926` once on death.
+Focused Ultimate Protogames tests passed `30/30`; full
+`NexusForever.Game.Tests` passed `4714/4714`; Python content-retail audit tests
+passed `70/70` plus `20` subtests; validator tests passed `33/33`; regenerated
+content-retail coverage validates `31` generated CSVs / `167,826` rows with
+`2,414` blocker detail rows, all still `not_retail_complete`. Ultimate
+Protogames remains partial: exact random room selection, exact timed challenge
+qualification and timer/failure smoke, full Mondo boss mechanics, Mammoth/Mondo
+visual/despawn state, rewards, achievements, and full dungeon smoke remain
+blocked.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames Deputy placement producer.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+runtime activation, placement, and death-credit coverage for Prototentiary
+objective `4657`, `Deputy`. Build 16042 maps `4657` as a count-one
+`KillTargetGroup` row against TargetGroup `12528`, whose only member is
+Creature2 `68949` (`Deputy`), with WorldLocation2 `41759` in world `2980` /
+area `4333`. The local Jabbithole database does not expose a matching public
+event objective row for `4657`, but it does map creature row `28416` (`Deputy`)
+to world `2980` / area `4333`, and DataMapping bridges reviewed coordinate
+`8024837` (`-20745`, `-945`, `-6885`) to Creature2 `68949` with display
+`36776`, faction `1322`, level `50`, and interrupt armor `24`.
+`UltimateProtogamesEventScript` now activates `4657` during the WIP
+Prototentiary phase and spawns script-owned entity `1100300086`; the existing
+`DeputyEntityScript` credits `4657` once on death. Focused Ultimate Protogames
+tests passed `30/30`; full `NexusForever.Game.Tests` passed `4714/4714`;
+Python content-retail audit tests passed `70/70` plus `20` subtests; validator
+tests passed `33/33`; regenerated content-retail coverage validates `31`
+generated CSVs / `167,821` rows with `2,412` blocker detail rows, all still
+`not_retail_complete`. Ultimate Protogames remains partial: exact random room
+selection, exact Deputy density/pathing, Prototentiary Warden/stealth/no-alarm
+semantics, timer/failure smoke, rewards, achievements, and full dungeon smoke
+remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames Prototentiary aggregate free-intern objective.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+runtime activation for Prototentiary aggregate objective `2678`, `Make your way
+through the Prototentiary without being detected, Kill the Warden and free the
+Protostar Interns`, scoped to its build-16042 TargetGroup `10583` free-intern
+Cage Console leg. Build 16042 maps `2678` as `ActivateTargetGroup`, object
+`10583`, count `0`, flags `2170880`; TargetGroup `10583` contains Creature2
+`63037` (`[UP] e2678 - Sneaky Prison - Cage Console`). The local Jabbithole
+database maps public-event row `299` to game id `594`, objective row `8181` to
+the same Prototentiary text, and Cage Console creature row `28535` / coordinate
+`6152147` to the reviewed world `2980` / area `4333` placement. The WIP
+Prototentiary phase now activates `2678` with dynamic max `1`, so the existing
+`SneakyPrisonCageConsoleEntityScript` TargetGroup `10583` credit can advance
+active `2678`, `2863`, and `2864` rows together. Focused Ultimate Protogames
+tests passed `30/30`; full `NexusForever.Game.Tests` passed `4714/4714`;
+Python content-retail audit and validator unit tests passed `103/103`;
+regenerated content-retail coverage validates `31` generated CSVs / `167,816` rows with
+`2,410` blocker detail rows, all still `not_retail_complete`.
+Ultimate Protogames remains partial: exact random room selection, Warden `62324`
+spawn/combat and TargetGroup `12474` semantics, stealth/detection behavior,
+cage/free-intern choreography, no-alarm objective `2858`, exact timer/failure
+semantics, rewards, achievements, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames Destruct-O-Derby tank-room objective.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+runtime activation and tank-death credit for tank-room main objective `2676`,
+`Destroy all three of the tanks`. Build 16042 maps `2676` as a TimedWin row,
+flags `2106368`, count `0`, with `failureTimeMs 180000`; the local Jabbithole
+database maps public-event row `299` to game id `594` and objective row `8193`
+to the same tank-room text. The restored runtime path reuses the reviewed tank
+placement/death evidence for TargetGroup `12671` / Creature2 `62542`, `62543`,
+and `62546` plus Jabbithole coordinate rows `6144867`, `6145453`, and `6150582`.
+`UltimateProtogamesEventScript` now activates `2676` with dynamic max `3` during
+the WIP TankRoom phase, and `MalfunctioningTankEntityScript` credits `2676` once
+per reviewed tank death alongside `2868`, `2869`, and `2872`. Full
+`NexusForever.Game.Tests` passed `4714/4714`; Python content-retail audit and
+validator unit tests passed `103/103`; regenerated content-retail coverage
+validates `31` generated CSVs / `167,813` rows with `2,409` blocker detail rows,
+all still `not_retail_complete`. Ultimate Protogames remains partial: exact
+random room selection, TimedWin timer start/failure/client UI smoke, tank
+visual/despawn state, Incinerate and 50%-health challenge semantics,
+Prototentiary aggregate/timer/no-alarm semantics, rewards, achievements, and
+full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Vault Pell Graveyard parent objective.
+Vault of the Archon / Hall of the Hundred (`world 3009`) now has test-backed
+runtime activation and trigger credit for main public event `666` objective
+`5295`, `Investigate the Pell Graveyard`. Build 16042 maps `5295` as a
+count-one Script row for object `7861`, flags `2052`, at WorldLocation2
+`48673` in world `3009` at `-579.698`, `-664.726`, `-813.349`; the side event
+`696` objective `4451` maps the same objective text to ParticipantsInTriggerVolume
+object `7895` at nearby WorldLocation2 `48675` (`-714.623`, `-684.77`,
+`-828.793`). The local Jabbithole import is present but does not contain matching
+Vault/Hall public-event rows for `666`/`696` or objective `5295`, so the slice is
+recorded from build-16042 client tables, DataMapping client maps, and the
+co-located side-event runtime script evidence. `TheGraveyardEchoedEventScript`
+now activates the main-event parent marker `5295` through the public-event
+manager when the Pell Graveyard phase opens, and `PellGraveyardGridTriggerEntityScript`
+credits `5295` once when the reviewed trigger is entered while retaining the
+existing `4451` typed trigger credit. Focused Hall optional tests passed
+`37/37`; full `NexusForever.Game.Tests` passed `4714/4714`; Python
+content-retail audit and validator unit tests passed `103/103`; regenerated
+content-retail coverage validates `31` generated CSVs / `167,807` rows with
+`2,407` blocker detail rows, all still `not_retail_complete`. Vault remains
+partial: exact optional-route availability/order, direct Jabbithole objective
+corroboration for this import, client-visible objective timing, side/main PE
+concurrency smoke, Pell Graveyard incense/altar placement and visual state,
+Primal Echo wave choreography, Primal Wraith spawn/combat, rewards, achievements,
+and full World Story smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Vault Warhound Kennel parent objective.
+Vault of the Archon / Hall of the Hundred (`world 3009`) now has test-backed
+runtime activation and trigger credit for main public event `666` objective
+`5294`, `Explore the Warhound Kennel`. Build 16042 maps `5294` as a count-one
+Script row for object `7861`, flags `2052`, at WorldLocation2 `48660` in world
+`3009` / zone `4644` (`Warhound Kennels`) at `-295.518`, `-679.848`,
+`-1181.76`; the side event `693` objective `4403` already uses the same
+WorldLocation2 for ParticipantsInTriggerVolume object `8426`. The local
+Jabbithole import does not contain a matching Hall/Vault public-event objective
+row for `5294`, so the restored slice is recorded from build-16042 client
+tables, DataMapping client maps, and the co-located side-event runtime script
+evidence rather than Jabbithole objective corroboration. `TheWarhoundsOfVaregorEventScript`
+now activates the main-event parent marker `5294` through the public-event
+manager when the Warhound side phase opens, and `WarhoundKennelGridTriggerEntityScript`
+credits `5294` once when the reviewed kennel trigger is entered while retaining
+the existing `4403` typed trigger credit. Focused Hall optional tests passed
+`36/36`; full `NexusForever.Game.Tests` passed `4713/4713`; Python
+content-retail audit and validator unit tests passed `103/103`; regenerated
+content-retail coverage validates `31` generated CSVs / `167,801` rows with
+`2,405` blocker detail rows, all still `not_retail_complete`. Vault remains
+partial: exact optional-route availability/order, direct Jabbithole objective
+corroboration for this import, client-visible objective timing, side/main PE
+concurrency smoke, Varegor Watchhound spawn/combat, Warhound pack routing,
+Frozen Lever destructible-state smoke, rewards, achievements, and full World
+Story smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames Fast Hands timed bonus.
+Ultimate Protogames (`world 2980`, public event `594`) now activates the
+Prototentiary Fast Hands bonus objective `2863`, `Fast Hands - Sneak through
+the Prototentiary within the time limit`, during the reviewed WIP Prototentiary
+phase. Build 16042 maps `2863` as `ActivateTargetGroup` object `10583`, count
+`0`, with `failureTimeMs 210000`; TargetGroup `10583` contains Creature2
+`63037` (`[UP] e2678 - Sneaky Prison - Cage Console`). The local jabbithole
+database maps public-event row `299` to game id `594` and objective row `8196`
+to the same Fast Hands text, while the existing Cage Console evidence maps
+creature row `28535` and coordinate `6152147` to the reviewed world `2980` /
+area `4333` placement. `UltimateProtogamesEventScript` now activates
+`FastHands` with dynamic max `1` beside the Cage Console objective, and the
+existing `SneakyPrisonCageConsoleEntityScript` TargetGroup `10583` credit can
+advance the active `2863` and `2864` rows together. Focused Ultimate Protogames
+tests passed `30/30`; full `NexusForever.Game.Tests` passed `4712/4712`;
+Python content-retail audit and validator unit tests passed `103/103`;
+regenerated content-retail coverage validates `31` generated CSVs / `167,795` rows with `2,403` blocker detail rows, all still `not_retail_complete`.
+Ultimate Protogames remains partial: exact random route selection, precise Fast
+Hands timer start/failure/client UI smoke, Gate Console alias proof/client
+smoke, door/cage choreography and visual state, remaining aggregate/no-alarm
+semantics for `2678`/`2858`, reward/achievement side effects, and full dungeon
+smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames Gate Console alias bridge.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+WIP runtime activation, placement, and credit coverage for the Prototentiary
+Gate Console objective `2847`, `Hack the Gate Console to enter the
+Prototentiary`. Build 16042 maps `2847` as `ActivateTargetGroup` object
+`10569`, count `0`, with TargetGroup `10569` containing Creature2 `62987`
+(`[UP] e2678 - Sneaky Prison - Gate Console`). The local jabbithole database
+maps public-event row `299` to game id `594`, objective row `8177` to the Gate
+Console text, creature row `28533` to the world `2980` Gate Console, and
+coordinate row `6152099` to `-20819,-942,-7005`. DataMapping outputs keep that
+placed Gate Console as an exact-name ambiguous bridge to Creature2 `62427`,
+while `62987` remains the build target-group alias. `UltimateProtogamesEventScript`
+now activates `HackThecreature62987` with dynamic max `1` and spawns
+script-owned simple entity `1100300085` from the reviewed placement;
+`SneakyPrisonGateConsoleEntityScript` accepts both `62987` and `62427` and
+credits TargetGroup `10569` once on activation. Focused Ultimate Protogames
+tests passed `30/30`; full `NexusForever.Game.Tests` passed `4712/4712`;
+Python content-retail audit and validator unit tests passed `103/103`;
+regenerated content-retail coverage validates `31` generated CSVs / `167,792` rows with `2,402` blocker detail rows, all still `not_retail_complete`.
+Ultimate Protogames remains partial: exact random route selection, Gate Console
+alias proof/client smoke, door choreography and visual state, Prototentiary
+aggregate/alarm/timer semantics, reward/achievement side effects, and full
+dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames Going Green dynamic max.
+Ultimate Protogames (`world 2980`, public event `594`) tank-room objective
+`2872`, `Completely destroy all three pieces of junk within the time limit`,
+now initializes the reviewed all-three runtime count instead of succeeding
+after the first tank death. Build 16042 maps objective `2872` as `Exterminate`
+object `12671`, count `0`, type-specific flags `64`, and `failureTimeMs
+150000`; TargetGroup `12671` contains Creature2 `62542`, `62543`, and `62546`.
+The local jabbithole MySQL database corroborates public-event row `299` to game
+id `594`, objective row `8182` to the all-three cleanup text, and coordinate
+rows `6144867`, `6145453`, and `6150582` to the three reviewed tank placements.
+`UltimateProtogamesEventScript` now activates `GoingGreen` with dynamic max
+count `3`, and `PublicEventObjective` honors a non-zero activation max even
+when the table objective flag bit is absent. Focused public-event and Ultimate
+Protogames tests passed `31/31`; full `NexusForever.Game.Tests` passed
+`4708/4708`; Python content-retail audit and validator unit tests passed
+`102/102`; regenerated content-retail coverage validates `31` generated CSVs /
+`167,777` rows, all still `not_retail_complete`. Ultimate Protogames remains
+partial: exact random room selection/order, Exterminate/timer start/fail
+semantics, tank/Mammoth visual/despawn/respawn state, negative interrupt-armor
+semantics, reward/achievement side effects, and full dungeon smoke remain
+blocked.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames Misplaced Mammoth placement.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+runtime activation, placement, and death-credit coverage for tank-room
+objectives `2868`, `2869`, and `2872`, including `2872`, `Completely destroy
+all three pieces of junk within the time limit`. Build 16042 maps all three
+rows as `Exterminate` objectives against TargetGroup `12671`; `2868` and
+`2869` are count-one rows, while `2872` has dynamic objective count `0` and
+`failureTimeMs 150000`. TargetGroup `12671` contains Creature2 `62542`
+(`Busted Red Tank`), `62543` (`Wrecked Blue Tank`), and `62546`
+(`Malfunctioning Yellow Tank`). The local jabbithole database maps public event
+row `299` to game id `594`, objective row `8182` to the all-three cleanup text,
+public-event creature rows `2232`, `2234`, `2243`, and `2628` to the tank-room
+creatures, and coordinate rows `6144867`, `6145453`, and `6150582` to the three
+reviewed world `2980` / area `4336` tank placements. `UltimateProtogamesEventScript`
+now routes the WIP start gate into a reviewed `TankRoom` phase, activates the
+three tank objectives, and spawns script-owned tank entities `1100300060`
+through `1100300062` from the reviewed placements; `MalfunctioningTankEntityScript`
+credits `2868`, `2869`, and `2872` once per tank death. The same WIP route now
+chains `GoingGreen` success into a reviewed `MisplacedMammoth` phase for
+objective `4692`: build 16042 maps it to TargetGroup `12577` / Creature2
+`63312`, `failureTimeMs 30000`, and local jabbithole maps objective row `8141`,
+creature row `28290`, and coordinate `8469464` to a world `2980` / area `4351`
+placement. The script spawns entity `1100300080` there and the existing
+`MisplacedMammothEntityScript` credits `4692` once on death. Focused Ultimate
+Protogames tests passed `26/26`; full `NexusForever.Game.Tests` passed
+`4707/4707`; Python content-retail audit tests passed `69/69` plus `20`
+subtests; validator tests passed `33/33`; regenerated content-retail coverage
+validates `31` generated CSVs / `167,777` rows / `2,398` blocker detail rows,
+all still `not_retail_complete`. Ultimate Protogames remains partial: exact
+random room selection/order, exact all-three 150-second timer/failure semantics,
+Mammoth 30-second timer start/fail semantics, tank/Mammoth
+visual/despawn/respawn state, negative interrupt-armor semantics,
+reward/achievement side effects, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Stormtalon's Lair Tainted Flower Stem producer.
+Stormtalon's Lair (`world 382`, public event `145`) now has test-backed
+runtime producer coverage for optional objective `554`, `Gather Tainted Stem
+samples from Tainted Flower Stems`. Build 16042 maps `554` as
+`ActivateTargetGroupChecklist` object/TargetGroup `2548`, count `15`;
+TargetGroup `2548` contains Creature2 `24307` (`Tainted Flower Stem`). The
+local jabbithole database maps public event row `4` to game id `145`, objective
+row `4199` to `554`, public-event creature row `1872` to jabbithole creature
+`26518`, and `32` coordinate rows for that source creature in world `382`.
+DataMapping reviews those rows as unique-name `Simple` producers in world
+`382`/area `271`. `StormtalonsLairEventScript` now spawns those `32` reviewed
+stems once when the WIP optional stem objective activates during the Enter
+phase, and `TaintedFlowerStemEntityScript` credits `554` on activation.
+Focused Stormtalon tests passed `38/38`; full `NexusForever.Game.Tests` passed
+`4702/4702`; Python content-retail audit tests passed `68/68` plus `20`
+subtests; validator tests passed `33/33`; regenerated content-retail coverage
+validates `31` generated CSVs / `167,755` rows / `2,392` blocker detail rows,
+all still `not_retail_complete`. Stormtalon's Lair remains partial: exact
+optional-route availability/weights, stem visual/despawn and repeat/respawn
+state, boss/encounter mechanics, rewards, achievements, and full dungeon smoke
+remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Infestation medbay Lashing Fiend producer.
+Infestation (`world 1232`, public event `95`) now has test-backed runtime
+coverage for objective `4698`, `Defeat the attack on medbay`. Build 16042
+maps `4698` as a count-one `KillTargetGroup` row against TargetGroup `12905`,
+whose only member is Creature2 `69871` (`Lashing Fiend`). The local
+jabbithole database maps public event row `6` to game id `95`, objective row
+`6211` to `4698`, public-event creature row `2484` to jabbithole creature
+`28012`, and coordinate row `8251634` places that Lashing Fiend in world
+`1232` / area `1172` at `-58,-525,28`. `InfestationEventScript` now spawns one
+reviewed phase-scoped NonPlayer Lashing Fiend during `DefeatTheAttackOnMedbay`,
+and the existing `LashingFiendEntityScript` credits objective `4698` on death.
+Focused Infestation tests passed `51/51`; full `NexusForever.Game.Tests`
+passed `4700/4700`; Python content-retail audit tests passed `68/68` plus
+`20` subtests; validator tests passed `33/33`; regenerated content-retail
+coverage validates `31` generated CSVs / `167,753` rows / `2,391` blocker
+detail rows, all still `not_retail_complete`. Infestation remains partial:
+exact medbay attack wave count/cadence, combat choreography, visual/despawn
+state, route triggers, rewards/achievements, and full expedition smoke remain
+blocked.
+
+Supplemental update: 2026-06-16 F-024 Fragment Zero Xenobite Egg producer.
+Fragment Zero (`world 3180`, public event `680`) now has test-backed runtime
+coverage for objective `4632`, `Smash Xenobite Eggs inside the Incubation
+Complex`. Build 16042 maps `4632` as a Script objective with object `7892`,
+count `30`; the local jabbithole database maps the Incubation Complex eggs to
+jabbithole creature ids `28247` and `28351`, and DataMapping bridges those
+rows to Creature2 `68811` (`Xenobite Egg Small`) and `68812` (`Xenobite Egg
+Large`) in world `3180`/zone `4625`. `FragmentZeroEventScript` already
+activates `4632` during `SearchForCrewmateJo`, and the new
+`XenobiteEggEntityScript` credits `4632` once on activation before removing
+the egg object. Focused Fragment Zero tests passed `56/56`; full
+`NexusForever.Game.Tests` passed `4679/4679`; Python content-retail audit
+tests passed `67/67` plus `20` subtests; regenerated content-retail coverage
+validates `31` generated CSVs / `167,724` rows / `2,389` blocker detail rows,
+all still `not_retail_complete`. Retail completion still needs exact egg
+placement/import smoke, smash animation/despawn lifecycle, reward/achievement
+side effects, and full expedition smoke.
+
+Supplemental update: 2026-06-16 F-024 Fragment Zero cargo 100-count tier producer.
+Fragment Zero (`world 3180`, public event `680`) now has test-backed runtime
+coverage for cargo-crate objective `4684`, the build 16042 100-count
+VirtualCollect tier. Client data maps both cargo objectives `4431` and `4684`
+to VirtualCollect object `1176` with objective text naming Cargo Crate
+Creature2 `67965`. `FragmentZeroEventScript` now activates `4684` alongside
+the existing 10-count `4431` row during the Life-Overseer search branch, and
+`CargoCrateEntityScript` now carries the explicit shared `VirtualCollect 1176`
+credit before removing the collected crate. Focused Fragment Zero tests passed
+`53/53`; full `NexusForever.Game.Tests` passed `4676/4676`; Python
+content-retail audit tests passed `66/66` plus `20` subtests; regenerated
+content-retail coverage validates `31` generated CSVs / `167,720` rows /
+`2,388` blocker detail rows, all still `not_retail_complete`. Retail
+completion still needs exact crate placement/import parity, client collect
+UI/animation, respawn/despawn lifecycle, reward/achievement side effects, and
+full expedition smoke.
+
+Supplemental update: 2026-06-16 F-024 Vault Warhound Frozen Lever producer.
+Vault of the Archon / Hall of the Hundred (`world 3009`) now has test-backed
+runtime coverage for Warhound cluster objective `4441`,
+`Defeat $(creature=67924), $(creature=67925), and $(creature=67935)`. Build
+16042 maps `4441` to `KillClusterEventObjectiveUnit` object `12262`, count
+`1`; TargetGroup `12262` contains Creature2 `67940`, `Frozen Lever`, while the
+objective text names Creature2 `67924` Cerebogg, `67925` Fenrogg, and `67935`
+Orthogg. WorldLocation2 `51165` places the cluster volume in world `3009` /
+zone `4645` at `-429.284`, `-679.613`, `-1269.92`.
+`TheWarhoundsOfVaregorEventScript` now activates `4441` with the deeper
+Warhound Kennel phase, and `FrozenLeverEntityScript` binds Creature2 `67940`
+and credits objective `4441` once on death. Focused Hall optional-event tests
+passed `35/35`; full `NexusForever.Game.Tests` passed `4676/4676`; Python
+content-retail audit/validator tests passed `98/98`; regenerated
+content-retail coverage validates `31` generated CSVs / `167,718` rows /
+`2,387` blocker detail rows, all still `not_retail_complete`.
+Vault remains partial: named Warhound pack spawn/combat routing, Frozen Lever
+placement/destructible-state smoke, Creature2 `67884` Watchhound
+spawn/placement/combat smoke, portal/exit routing, rewards, achievements, and
+full World Story smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames start button producer.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+runtime coverage for objective `3250`, `Click on the Start Button to initiate
+the Ultimate Protogames`. Build 16042 Creature2 `65900` is named `[UP] w2980 -
+Ultimate Protogames Initiation Button - HCon`, and DataMapping spawn row
+`6128905` places the matching Start Button in world `2980`/zone `4330` at
+`-12543`, `-776`, `-2766`. `UltimateProtogamesEventScript` now spawns that
+phase-0 `Simple` entity with an instance-specific script name, and
+`UltimateProtogamesStartButtonEntityScript` credits objective `3250` once on
+activation so the existing coarse entry gate can advance without inventing
+random room routing. A follow-up generated coverage pass now records the 3250
+dependency row as
+`runtime_up_start_button_datamapping_placement_activation_and_credit_tested_pending_client_smoke`
+and splits the phase activation/spawn and one-shot button credit into runtime
+script-producer evidence rows. Focused Ultimate Protogames/shared objective
+credit tests passed `620/620`; the broader instance/public-event filter passed
+`1846/1846`; Python content-retail audit/validator tests passed `103` with `21`
+subtests; regenerated content-retail coverage validates `31` generated CSVs /
+`167,909` rows, all still `not_retail_complete`.
+Ultimate Protogames remains partial: exact room randomization and route
+selection, start-button client smoke, Vend-A-Tron placement/import smoke,
+Prototentiary aggregate and timer semantics, Power Plunge qualification, exact
+tank-room activation and dynamic all-three timer semantics, boss mechanics,
+rewards, achievements, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Fragment Zero Skeech horde tier producers.
+Fragment Zero (`world 3180`, public event `680`) now has test-backed runtime
+coverage for the build 16042 Skeech horde tier objectives `4584`, `4585`, and
+`4586`. The client rows map those objectives as `KillTargetGroup 12254` with
+counts `50`/`100`/`200`, sharing the horde `WorldLocation2 48728` with base
+objective `4416`; TargetGroup `12254` includes `67516`, `67518`, `67519`, and
+`67520`, but runtime credit remains limited to the reviewed DataMapping-backed
+leaves `67519`/`67520`. `FragmentZeroEventScript` now activates the tier
+counters with the search-continuation branch, and
+`FragmentZeroSkeechHordeEntityScript` credits `4416` plus `4584`/`4585`/`4586`
+once per reviewed horde death. Focused Fragment Zero/objective-credit tests
+passed `623/623`; full `NexusForever.Game.Tests` passed `4671/4671`; Python
+content-retail audit/validator tests passed `98/98`; regenerated
+content-retail coverage validates `31` generated CSVs / `167,707` rows /
+`2,383` blocker detail rows, all still `not_retail_complete`.
+Fragment Zero remains partial: unresolved TargetGroup leaves `67516`/`67518`,
+exact horde spawn counts/cadence and tier balance, experimental Skeech row
+`4686` TargetGroup type `12` semantics, black-box/medal rows, rewards,
+achievements, and full expedition smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Fragment Zero Life-Overseer airlock trigger producer.
+Fragment Zero (`world 3180`, public event `680`) now has test-backed runtime
+coverage for objective `4446`, `Return to the airlock of the Life Overseer's
+Creche`. Build 16042 maps it as a `ParticipantsInTriggerVolume` objective
+with object `7893` at `WorldLocation2 48682`, in world `3180`/zone `4633` at
+`9830.69`, `-780.754`, `-6315.97`. `FragmentZeroEventScript` now advances
+Life-Overseer completion into a return-airlock phase, activates `4446` for the
+current player count, creates the mapped world-location trigger, and advances
+to the Hugo locate phase after `4446` succeeds. Focused Fragment Zero tests
+passed `53/53`; Python content-retail audit/validator tests passed `98/98`;
+regenerated content-retail coverage validates `31` generated CSVs /
+`167,689` rows / `2,377` blocker detail rows, all still
+`not_retail_complete`.
+Fragment Zero remains partial: exact trigger lifecycle/cleanup, Hugo timing,
+cinematic/communicator/door choreography, reward/achievement side effects, and
+full expedition smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Stormtalon's Lair Invoker's Holocrypt producer.
+Stormtalon's Lair (`world 382`, public event `145`) now has test-backed
+runtime coverage for objective `4867`, `Enable the Invoker's Holocrypt`.
+Build 16042 maps it as a Script objective count `1` at `WorldLocation2 20740`,
+the same holocrypt/platform surface as objective `558`; DataMapping ties the
+physical Improvement Construction Platform `Creature2 27244` / source
+coordinate `2975` to public event `145` in world `382`/area `271`.
+`StormtalonsLairEventScript` now includes `4867` in the WIP optional-route
+activation pool, and `ImprovementConstructionPlatformEntityScript` credits
+both `558` and `4867` once on activation. Focused Stormtalon tests passed
+`37/37`; full `NexusForever.Game.Tests` passed `4670/4670`; audit tests
+passed `98` tests plus `18` subtests; regenerated content-retail coverage
+validates `31` generated CSVs / `167,683` rows / `2,376` blocker detail rows,
+all still `not_retail_complete`.
+Stormtalon's Lair remains partial: exact optional route availability/weights,
+holocrypt visual state/side effects, boss/encounter mechanics, rewards,
+achievements, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Stormtalon's Lair Thundercall Cage producer.
+Stormtalon's Lair (`world 382`, public event `145`) now has test-backed
+runtime producer coverage for optional objective `464`, `Rescue the
+Thundercall Sacrificial Prisoners trapped in cages`. Build 16042 maps it as
+`ActivateTargetGroupChecklist` object/TargetGroup `1661`, count `5`; TargetGroup
+`1661` contains Creature2 `17191` (`Thundercall Cage`). Local Jabbithole and
+DataMapping evidence promote source coordinate IDs `3241`, `3242`, `3243`,
+`3244`, and `20323` as five unique-name `SimpleCollidable` cage rows in world
+`382`/area `271`. `StormtalonsLairEventScript` now spawns those five producers
+once when the optional prisoner objective activates during the Aethros phase,
+and `ThundercallSacrificialCageEntityScript` now binds the SimpleCollidable
+owner path while preserving the existing Creature2 activation credit. Focused
+Stormtalon tests passed `36/36`; full `NexusForever.Game.Tests` passed
+`4698/4698`; audit tests passed `68` tests plus `20` subtests; validator tests
+passed `33/33`; regenerated content-retail coverage validates `31` generated
+CSVs / `167,752` rows / `2,391` blocker detail rows, all still
+`not_retail_complete`.
+Stormtalon's Lair remains partial: exact optional-route availability/weights,
+cage visual/despawn state, prisoner release choreography, boss/encounter
+mechanics, rewards, achievements, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Protogames Academy final-leg producers.
+Protogames Academy (`world 3173`, public event `667`) now has test-backed
+runtime coverage for the final sequence after the intermediate assessment:
+objective `4499`, `Defeat the $(creature=68096)`, TargetGroup `12361`, now
+spawns a WIP Super-Invulnotron target from DataMapping/Jabbithole world `3173`
+zone `4507` placement evidence and credits the objective once on death;
+objective `4500` now creates the build 16042 `WorldLocation2 48846` / object
+`7939` turnstile trigger; objective `4345` now creates the build 16042
+`WorldLocation2 48850` / object `7940` Phineas meet trigger; and objective
+`4346`, `Defeat $(creature=67944)`, now spawns a WIP Wrathbone target from
+DataMapping/Jabbithole zone `4508` placement evidence and credits the
+objective once on death. Focused Protogames/public-event tests passed
+`614/614`; audit tests passed `64` tests plus `18` subtests; regenerated
+content-retail coverage validates `31` generated CSVs / `167,677` rows /
+`2,374` blocker detail rows, all still `not_retail_complete`.
+Protogames Academy remains partial: exact Super-Invulnotron/Wrathbone combat
+mechanics, Botherbot/challenge behavior, final teleporter semantics, Phineas
+choreography, communicator timing, platform/launcher cleanup, rewards,
+achievements, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Ruins of Kel Voreth Grond/Drokk boss producers.
+Ruins of Kel Voreth (`world 1336`, public event `161`, `Forging an
+Armageddon`) now has test-backed runtime main-boss death-credit producers for
+objective `444`, `Defeat Grond the Corpsemaker`, TargetGroup `3841`, and
+objective `446`, `Defeat Slavemaster Drokk`, TargetGroup `3842`. Build 16042
+maps TargetGroup `3841` to Creature2 `32534` and `32535`, Grond the
+Corpsemaker, and TargetGroup `3842` to Creature2 `32536` and `32539`,
+Slavemaster Drokk. `RuinsOfKelVorethEventScript` activates and spawns the
+reviewed phase rows, while `GrondTheCorpsemakerEntityScript` and
+`SlavemasterDrokkEntityScript` now bind the mapped Creature2 rows and credit
+once on death. Focused Ruins/public-event tests passed `600/600`; audit tests
+passed `63` tests plus `18` subtests; regenerated content-retail coverage
+validates `31` generated CSVs / `167,673` rows / `2,374` blocker detail rows,
+all still `not_retail_complete`.
+Ruins remains partial: exact Grond/Drokk boss mechanics, Gurka/Drokk
+choreography, spawn placement/version smoke, trigger/door choreography,
+rewards, achievements, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Vault of the Archon vault entrance trigger producer.
+Vault of the Archon (`world 3009`, public event `666`) now has test-backed
+runtime trigger-volume credit for objective `5260`, `Meet ... at the entrance
+of the Vault of the Archon`. Build 16042 maps this row to
+`ParticipantsInTriggerVolume` object `8298`, count `0`; QuestDirection `2445`
+starts at QuestDirectionEntry `3989`, which resolves to WorldLocation2 `50645`
+in world `3009` at `1361.12`, `-626.637`, `-414.843`.
+`HallOfTheHundredEventScript` now advances from the `4324`
+`FollowToVaultEntrance` script objective into a `MeetAtVaultEntrance` phase,
+creates/removes the mapped trigger, and then continues to access-terminal
+trigger `4325`. `VaultEntranceGridTriggerEntityScript` credits object `8298`
+once on player entry. Focused Hall of the Hundred tests passed `186/186`;
+audit tests passed `62/62` tests plus `16` subtests; regenerated
+content-retail coverage validates `31` generated CSVs / `167,673` rows /
+`2,374` blocker detail rows, all still `not_retail_complete`.
+Vault remains partial: exact companion path choreography, placement/import
+smoke, rewards, achievements, Warhound cluster objective `4441`
+target-group/Frozen Lever semantics, and full World Story client smoke remain
+blocked.
+
+Supplemental update: 2026-06-16 F-024 Vault of the Archon Varegor Pass navigation producer.
+Vault of the Archon (`world 3009`, public event `666`) now has test-backed
+runtime trigger-volume credit for objective `4384`, `Navigate to the end of
+Varegor Pass and protect yourself from the cold by utilizing Bloodhearth
+trees`. Build 16042 maps this row to `ParticipantsInTriggerVolume` object
+`7879`, count `0`, at WorldLocation2 `48658`, the same locked-gate/Varegor Pass
+volume used by objective `4299`. `HallOfTheHundredEventScript` now activates
+`NavigateVaregorPass` with the locked-gate investigation phase, and
+`LockedGateInvestigationGridTriggerEntityScript` credits object `7879` once on
+player entry while leaving route advancement controlled by objective `4299`.
+Focused Hall of the Hundred tests passed `146/146`; audit tests passed
+`94/94`; regenerated content-retail coverage validates `31`
+generated CSVs / `167,665` rows / `2,372` blocker detail rows, all still
+`not_retail_complete`.
+Vault remains partial: exact Bloodhearth/cold-environment behavior, route and
+NPC choreography, placement/import smoke, rewards, achievements, and full World
+Story client smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Gauntlet boss producer coverage.
+The Gauntlet (`world 2183`, public event `446`) now has test-backed runtime
+death-credit producers for objective `1866`, `Kill the Voodoo Kin`,
+TargetGroup `6854`; objective `1870`, `Defeat The Handler and his pets`,
+TargetGroup `6864`; objective `1872`, `Defeat Pyro Maniac`, TargetGroup
+`6868`; and objective `1873`, `Defeat Showtime`, TargetGroup `6866`. Build
+16042 target-group evidence maps these rows to the normal/veteran Creature2
+sets for Professor Doctor Voodoo and The Morticianatrix, The Handler with
+Chompers and Spud, Pyro and Maniac, and Showtime. `GauntletBossEntityScripts`
+now binds those Creature2 rows and credits the mapped objectives once on death.
+Focused objective-credit tests passed `569/569`; focused Gauntlet event tests
+passed `36/36`; audit tests passed `93`; regenerated content-retail coverage
+validates `31` generated CSVs / `167,660` rows / `2,370` blocker detail rows,
+all still `not_retail_complete`.
+The Gauntlet remains partial: exact second/main arena route selection,
+objective activation timing, spawn placement/import smoke, encounter behavior,
+rewards, achievements, and full expedition smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Outpost M-13 Exit Panel producer.
+Outpost M-13 (`world 1319`, public event `108`) now has test-backed runtime
+activation credit for objective `262`, `Exit the Steady Traveler and enter
+Outpost M-13`. Build 16042 maps this row to `ActivateTargetGroup` TargetGroup
+`5294`, count `1`; TargetGroup `5294` contains Creature2 `23470`, `Exit
+Panel`, and WorldLocation2 `28830` places the objective on the Steady Traveler.
+`OutpostM13EventScript` already activates the `GoToTheAsteroidSurface` phase
+after `KillRansackerRorgh`, and the new `ExitPanelEntityScript` binds Creature2
+`23470` and credits the mapped target group once on activation. Focused Outpost
+tests passed `29/29`; audit tests passed `92` tests plus `12` subtests;
+regenerated content-retail coverage validates `31` generated CSVs / `167,648`
+rows, all still `not_retail_complete`.
+Outpost M-13 remains partial: exact shuttle teleport/destination behavior,
+visual/despawn state, shuttle/door choreography, rewards, achievements, and
+full expedition smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Ruins of Kel Voreth Eldan Phase Monitor producer.
+Ruins of Kel Voreth (`world 1336`, public event `161`, `Forging an
+Armageddon`) now has test-backed runtime activation credit for optional
+objective `459`, `Disable the activated Exo-Lab defenses`. Build 16042 maps
+this row to `ActivateTargetGroupChecklist` TargetGroup `4022`, count `5`;
+TargetGroup `4022` contains Creature2 `33768`, `Eldan Phase Monitor`, with
+reviewed placement evidence in world `1336`. `RuinsOfKelVorethEventScript`
+now activates the optional row during the Drokk/exo-lab phase, and
+`EldanPhaseMonitorEntityScript` binds Creature2 `33768` and credits the mapped
+checklist target group once on activation. Focused Ruins/public-event tests
+passed `584/584`; audit tests passed `91` tests plus `12` subtests;
+regenerated content-retail coverage validates `31` generated CSVs / `167,647` rows / `2,366` blocker detail rows, all still `not_retail_complete`.
+Ruins remains partial: optional route availability, monitor placement/import
+smoke, repeat interaction and visual/despawn state, defense-system side
+effects, boss mechanics, rewards, achievements, and full dungeon smoke remain
+blocked.
+
+Supplemental update: 2026-06-16 F-024 Ruins of Kel Voreth Battlesworn/Darkwitch producer.
+Ruins of Kel Voreth (`world 1336`, public event `161`, `Forging an
+Armageddon`) now has test-backed runtime death credit for optional objective
+`447`, `Kill powerful Battlesworn and Darkwitch Osun`. Build 16042 maps this
+row to `KillTargetGroup` TargetGroup `3909`, count `5`; TargetGroup `3909`
+contains Voreth Battlesworn Creature2 rows `32555` and `32556` plus Voreth
+Darkwitch Creature2 rows `32618` and `32619`. `VorethBattleswornDarkwitchEntityScript`
+binds those exact rows and credits objective `447` once on death, while the
+existing Ruins event script still activates the WIP optional route objective.
+Focused Ruins/public-event credit tests passed `575/575`; audit tests passed
+`91` tests plus `11` subtests; regenerated content-retail coverage validates
+`31` generated CSVs / `167,844` rows, all still `not_retail_complete`.
+Ruins remains partial: optional route availability, exact spawn
+placement/count/cadence, enemy mechanics, boss mechanics, trigger placement,
+doors, communicator targeting, real cinematic payload, rewards, achievements,
+and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Skullcano opening boss producers.
+Skullcano (`world 1263`, public event `148`, `No Merrier Place Than Hell`) now
+has the opening `KillTargetGroup` boss producers promoted from script-name-only
+hooks to build 16042 Creature2 filters for objective `321`, `Defeat
+Stew-Shaman Tugga before he destroys the Lopp`, and objective `322`, `Defeat
+Thunderfoot to open the way up to the volcano`. TargetGroup `2599` contains
+normal/veteran Tugga Creature2 rows `24493` and `24898`; TargetGroup `2600`
+contains normal/veteran Thunderfoot Creature2 rows `24475` and `24893`.
+`StewShamanTuggaNormalEntityScript` and `ThunderfootNormalEntityScript` now
+bind those exact rows and credit their mapped objectives once on death, while
+the existing Skullcano event script still activates the opening objectives and
+advances the route after Thunderfoot succeeds. Focused Skullcano/public-event
+credit tests passed `584/584`; audit tests passed `91` tests plus `11`
+subtests; regenerated content-retail coverage validates `31` generated CSVs /
+`167,842` rows, all still `not_retail_complete`.
+Skullcano remains partial: Tugga and Thunderfoot boss mechanics, Tugga's Lopp
+failure condition, door/route side effects, spawn/version selection beyond the
+reviewed normal placements, rewards, achievements, and full dungeon smoke remain
+blocked.
+
+Supplemental update: 2026-06-16 F-024 Ruins of Kel Voreth checklist producers.
+Ruins of Kel Voreth (`world 1336`, public event `161`, `Forging an
+Armageddon`) now has test-backed runtime coverage for optional checklist
+interaction objectives `456`, `Access the hidden Eldan Data Storage devices`,
+`451`, `Burn Kel Voreth War Supplies`, and `461`, `Destroy the forges of Kel
+Voreth`. Build 16042 maps these rows to `ActivateTargetGroupChecklist`
+TargetGroups `4422`, `3916`, and `3903`; those target groups contain Creature2
+`33155` Eldan Schematic Data Storage, `33334` Kel Voreth War Supplies, and
+`33302` Kel Voreth Forge. `RuinsOfKelVorethObjectiveEntityScripts` binds the
+reviewed Creature2 rows and credits each mapped checklist target group once on
+activation. Focused Ruins tests passed `22/22`; audit tests passed `91` tests
+plus `11` subtests; regenerated content-retail coverage validates `31`
+generated CSVs / `167,842` rows / `2,566` blocker detail rows, all still
+`not_retail_complete`.
+Ruins remains partial: optional route availability, interactable placement and
+visual/despawn state, boss mechanics, trigger placement, doors, communicator
+targeting, real cinematic payload, rewards, achievements, and full dungeon smoke
+remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Vault Pell Graveyard checklist producers.
+Vault of the Archon / Hall of the Hundred (`world 3009`, public event `696`,
+`The Graveyard Echoed`) now has the Pell Graveyard side-event producer path
+corrected to the build 16042 objective types. Client objective rows map `4451`
+to `ParticipantsInTriggerVolume` object `7895` at WorldLocation2 `48675`,
+`4452` to `ActivateTargetGroupChecklist` object `12275` / Creature2 `67962`,
+`4453` to `ActivateTargetGroupChecklist` object `12302` / Creature2 `68012`,
+`4462` to a count-one Script gate at WorldLocation2 `48690`, and `4463` to
+the Creature2 `68013` Primal Wraith boss row. `UnlitIncenseEntityScript` and
+`SacredBasReliefEntityScript` now credit checklist target groups rather than
+plain activation groups, and the audit scanner now records typed-objective base
+constructor producers. Focused Hall/public-event objective tests passed
+`729/729`; audit tests passed `90` tests plus `8` subtests; regenerated
+content-retail coverage validates `31` generated CSVs / `167,839` rows /
+`2,566` blocker detail rows, all still `not_retail_complete`.
+The Vault queue row now records `86` scripted objective producers and `49/85`
+producer-objective coverage. Vault remains partial: Pell Graveyard
+incense/altar placement and visual state, exact Primal Echo wave choreography,
+Primal Wraith spawn/combat smoke, Warhound cluster objective `4441`, portal and
+exit routing, rewards, achievements, and full World Story smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Vault Warhound Watchhound death-credit producer.
+Vault of the Archon / Hall of the Hundred (`world 3009`) now registers
+optional public event `693`, `The Warhounds of Varegor`, alongside the existing
+Hall events and has test-backed runtime coverage for Warhound Kennel
+trigger objectives `4403`, `Explore the Warhound Kennel`, and `4434`,
+`Explore further into the Warhound Kennel`, plus combat objective `4404`,
+`Defeat the $(creature=67884)`. Build 16042 maps `4403` to
+`ParticipantsInTriggerVolume` object `8426` at WorldLocation2 `48660`
+(`-295.518`, `-679.848`, `-1181.76`), maps `4404` as
+`KillEventObjectiveUnit` count `1` for Creature2 `67884`, `Varegor Watchhound`,
+at WorldLocation2 `51164` (`-295.566`, `-679.848`, `-1181.82`), and maps
+`4434` to object `7881` at WorldLocation2 `48661` (`-429.241`, `-679.465`,
+`-1269.96`). `TheWarhoundsOfVaregorEventScript` activates `4403`, advances to
+`4404` after the first trigger succeeds, advances to `4434` after the
+watchhound objective succeeds, creates/removes both mapped triggers, and
+`WarhoundKennelGridTriggerEntityScript` credits objects `8426` and `7881` once
+when a player enters each trigger. `VaregorWatchhoundEntityScript` binds
+Creature2 `67884` and credits objective `4404` once on death. Focused Hall
+optional-event and public-event objective tests passed `584/584`; audit tests
+passed `89` tests plus `8` subtests; regenerated content-retail coverage
+validates `31` generated CSVs / `167,781` rows / `2,539` blocker detail rows,
+all still `not_retail_complete`.
+The Vault queue row now records `79` scripted objective producers and `49/85`
+producer-objective coverage. Vault remains partial: Creature2 `67884`
+spawn/placement/combat smoke, Warhound cluster objective `4441`, portal/exit
+routing, rewards, achievements, and full World Story smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames Gilded Fowl producer.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+runtime coverage for paired Gilded Fowl objectives `2862`, `Power Plunge the
+Gilded Fowl to destroy it`, and `4442`, the full-count Gilded Fowl row with
+the same objective text. Build 16042 maps both rows to TargetGroup `12263`;
+TargetGroup `12263` contains Creature2 `63055`, `Gilded Fowl`, with world
+`2980`/zone `4347` placement and WorldLocation2 `46473` evidence.
+`GildedFowlEntityScript` binds Creature2 `63055` and credits `2862` by `1`
+and `4442` by `100` once on death. Focused Ultimate Protogames and
+public-event objective tests passed `565/565`; audit tests passed `54` tests
+plus `4` subtests; regenerated content-retail coverage validates `31`
+generated CSVs with `167,750` rows and `2,530` blocker detail rows, all still
+`not_retail_complete`.
+The Ultimate Protogames queue row now records `16` scripted objective
+producers and `11/123` producer-objective coverage with `329` blocker detail
+rows. Ultimate Protogames remains partial: exact Power Plunge qualification,
+room randomization/timing, placements/import smoke, Prototentiary aggregate
+and alarm/timer semantics, exact tank-room activation and dynamic all-three
+timer semantics, boss mechanics, rewards, achievements, and full dungeon smoke
+remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Stormtalon's Lair Improvement Construction Platform producer.
+Stormtalon's Lair (`world 382`, public event `145`) now has test-backed
+runtime coverage for objective `558`, `Activate the Improvement Construction
+Platform to install an additional Holo-Crypt`. Build 16042 maps the objective
+as a Script row at WorldLocation2 `20740`, while DataMapping ties Improvement
+Construction Platform Creature2 `27244` to event `145` with source coordinate
+`2975` in world `382`/area `271`. `StormtalonsLairEventScript` now includes
+`558` in the WIP optional-route activation pool, and
+`ImprovementConstructionPlatformEntityScript` credits the mapped objective once
+on activation. Focused Stormtalon and public-event objective tests passed
+`584/584`; audit generator/validator tests passed `86` tests plus `4`
+subtests; regenerated content-retail coverage validates `31` generated CSVs
+with `167,744` rows and `2,528` blocker detail rows, all still
+`not_retail_complete`.
+The Stormtalon queue row now records `29` scripted objective producers and
+`16/27` producer-objective coverage with `124` blocker detail rows.
+Stormtalon's Lair remains partial: exact optional route availability/weights,
+platform visual state, Holo-Crypt side effects, boss and wave mechanics,
+rewards, achievements, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Ultimate Protogames tank-room Exterminate producer.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+runtime death credit for tank-room objectives `2868`, `Destroy a tank within
+the time limit`, and `2869`, `Completely destroy one tank`. Build 16042 maps
+both rows to Exterminate object/TargetGroup `12671`, count `1`; TargetGroup
+`12671` contains Busted Red Tank `62542`, Wrecked Blue Tank `62543`, and
+Malfunctioning Yellow Tank `62546`. `MalfunctioningTankEntityScript` binds
+those Creature2 rows and credits both objectives once on death without claiming
+the all-three timed cleanup objective `2872`. Focused Ultimate Protogames and
+public-event producer tests passed `562/562`; audit generator/validator tests
+passed `86` tests plus `4` subtests; regenerated content-retail coverage
+validates `31` CSVs / `167,738` rows with `2,526` blocker detail rows, all
+still `not_retail_complete`. Ultimate Protogames remains partial: exact room
+randomization, tank-room activation timing, Exterminate/timer semantics,
+Prototentiary aggregate/alarm/timer behavior, placements, boss mechanics,
+rewards, achievements, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Skullcano Redmoon Marauder nested TargetGroup kill credit.
+Skullcano (`world 1263`, public event `148`) now has test-backed runtime
+coverage for objective `334`, `Rid Skullcano Island of the space pirate
+scourge, the Redmoon Marauders`. Build 16042 maps objective `334` to
+`KillTargetGroup` object/TargetGroup `3947`, count `35`; TargetGroup `3947`
+nests target groups `2611`, `3946`, `7756`, `7757`, `2601`, and `7759`,
+covering Redmoon Marauder, prisoner/jailor, Bosun Octog, and Quartermaster
+Gruh'ar Creature2 rows. `SkullcanoEventScript` already activates the objective
+during the Bosun handoff path, `AssetManager` now has focused coverage for the
+exact nested `3947` membership expansion, and `UnitEntity` has focused coverage
+for KillTargetGroup credit from mapped members. Focused Skullcano, public-event
+credit, AssetManager, and UnitEntity tests passed `638/638`; regenerated
+content-retail coverage validates `31` CSVs / `167,732` rows with all rows
+still `not_retail_complete`; audit generator/validator tests passed `85/85`.
+Skullcano remains partial: exact route availability, spawn placement/count and
+cadence, threat/tap/respawn behavior, boss mechanics, terraformer timing,
+doors/platforms, rewards, achievements, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Malgrave Exodus supply object producer.
+The Malgrave Trail (`world 1181`, Exodus public event `56`) now has the first
+runtime producer for supply objective `186`, `Collect Kurg Feed Sacks, Water
+Barrels, and Food Crates`. Build 16042 maps objective `186` to
+`ActivateTargetGroup` object/TargetGroup `2199`, count `15`, and TargetGroup
+`2199` contains Food Crate `19918`, Water Barrel `19919`, and Feed Sack
+`19920`. `MalgraveSupplyEntityScript` binds those three Creature2 rows and
+credits TargetGroup `2199` once per activated supply entity. Focused Malgrave
+and map-binding tests passed `58/58`, and regenerated content-retail coverage
+validates `31` CSVs / `167,732` rows with `2,524` blocker detail rows, all
+still `not_retail_complete`. Malgrave remains partial: reviewed supply
+placements/import smoke, exact activation visuals/despawn/respawn, caravan
+stop child events, route producers, escort behavior, rookie/medal objectives,
+rewards, achievements, and full adventure smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Malgrave Exodus continuation and Gauntlet Rockstar Yeti producer.
+The Malgrave Trail (`world 1181`, Exodus public event `56`) now continues past
+the Braithwait story gate. Build 16042 PE objective rows `73` and `74` are
+Script count-one rally bridges (`Rally the Survivors around the Inn` and
+`Rally the Survivors near the Wrecked Ship`), objective `175` is the Town
+Center Caravan Master Braithwait TalkTo row, and objective `186` is the
+follow-up supply collection gate for Kurg Feed Sacks, Water Barrels, and Food
+Crates. `TheMalgraveTrailExodusEventScript` advances through `73`/`74`/`175`
+and activates `186` without direct-crediting the supply collection producer.
+Gauntlet (`world 2183`, public event `446`) now has a mapped producer-only
+Rockstar Yeti death-credit script for objective `1864`, TargetGroup `6855`,
+Creature2 `48491`/`69254`, without adding route, spawn, reward, medal, or
+completion assumptions. Focused Malgrave, Gauntlet, public-event producer, and
+map-binding tests passed `636/636`, and regenerated content-retail coverage
+validates `31` CSVs / `167,731` rows with `2,524` blocker detail rows, all
+still `not_retail_complete`. Malgrave remains partial: supply-object
+placements and interaction producers, caravan stop child events, Abandoned
+Mine objectives, route producers, spawn and escort behavior, rookie/medal
+objectives, rewards, achievements, and full adventure smoke remain blocked.
+Gauntlet remains partial: Rockstar Yeti activation timing, spawn lifecycle,
+encounter choreography, rewards, loot, medals, achievements, and manual
+expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 The Malgrave Trail Exodus setup opening route.
+The Malgrave Trail (`world 1181`, parent public event `53`, Exodus setup
+public event `56`) now creates and joins the PE `56` setup event alongside the
+parent adventure event. `TheMalgraveTrailExodusEventScript` activates objective
+`69`, `Rally the Survivors at the Town Center`, then advances through Caravan
+Master Braithwait talk objectives `70` (`Thirsty Creek`) and `71` (`near the
+kurg`) before activating timed story objective `72`, `Listen to Caravan Master
+Braithwait story`, without direct-crediting the timer. Build 16042 evidence
+maps objective `69` to TargetGroup `1951` / Creature2 `170` and `171` with
+QuestDirectionEntry `1951` pointing at WorldLocation2 `41303`; objectives
+`70` and `71` use object `3881` / Creature2 `33173`; objective `72` uses
+object/TargetGroup `2496` containing Creature2 `23639`. Focused Malgrave and
+map-binding tests passed `43/43`, audit override tests passed `85/85`, and
+regenerated content-retail coverage validates `31` CSVs / `167,704` rows with
+`2,523` blocker detail rows, all still `not_retail_complete`. Malgrave remains
+partial: later Exodus objectives `73`/`74`/`175`/`186`, caravan stop child
+events, Abandoned Mine objectives `947`/`948`, virtual resource collection
+objectives `952`/`953`, teleporter objective `959`, route producers, spawn and
+escort behavior, rookie/medal objectives, normal/veteran rewards, achievements,
+and full adventure smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 War of the Wilds Moodie Totem Health ResourcePool producer.
+War of the Wilds (`world 1393`, public event `158`) now credits the build
+16042 `MoodieTotemHealth` ResourcePool objective `1659` alongside the existing
+`DestroyTheGiantMoodieTotem` objective `408` when the mapped Giant Moodie Totem
+dies. Both rows use object `2812`, count `100`; TargetGroup `2812` contains
+Creature2 `25952`, `Giant Moodie Totem - NWAdv`. `GiantMoodieTotemEntityScript`
+now applies one-shot full-count updates for `408` and `1659`, and focused
+PvP/adventure, objective-credit, and map-binding tests passed `579/579`.
+Audit override tests passed `85/85`, and regenerated content-retail coverage
+validates `31` CSVs / `167,685` rows with `2,523` blocker detail rows, all
+still `not_retail_complete`. War of the Wilds remains partial: exact
+progressive health-pool damage semantics, Skeech health objective `1658`,
+Giant Skeech Totem `25956`, control-point rows `26291`/`26292`, faction start
+events `170`/`171`, route/vote timing, rewards, achievements, and manual
+adventure smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 The Siege of Tempest Refuge mirrored parent adventure route.
+The Siege of Tempest Refuge (`world 1233`, public events `173` and `174`) now
+has its first mirrored runtime adventure scaffold. `TheSiegeOfTempestRefugeMapScript`
+binds build 16042 `MatchingGameMap` `52` and `53` / `Map\AdventureGaleras`,
+creates both parent public events, and joins players to the Exile or Dominion
+route by `Faction1`. The Exile route activates objectives `564` (`Defend
+against the Dominion assault`), `1701` (`Defend the generator against Dominion
+attacks`), `1703` (`Fall back to the Generator`), and `2204` (`Hold out against
+the Assault`) before finishing PE `173`; the Dominion route mirrors that with
+`565`, `1702`, `1704`, and `2205` before finishing PE `174`. Focused Siege and
+map-binding tests passed `54/54`, audit override tests passed `52/52`, and
+regenerated content-retail coverage validates `31` CSVs / `167,683` rows with
+`2,523` blocker detail rows, all still `not_retail_complete`. Siege remains partial:
+exact faction/prerequisite queue selection, wave/spawn producers, generator
+`ResourcePool` damage/integrity semantics, `TimedWin` timer automation and
+client smoke, rookie objectives `5196`/`5197`, hidden objectives `5231`-`5236`,
+InstancePortal `88`/`89` placement and Creature2 `51545`/`51593` review,
+rewards, achievements, medals, and full adventure smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 The Malgrave Trail parent adventure route.
+The Malgrave Trail (`world 1181`, public event `53`) now has its first runtime
+adventure scaffold. `TheMalgraveTrailMapScript` binds build 16042
+`MatchingGameMap` `9` and `50` / `Map\AdventureMalgrave` to PE `53`.
+`TheMalgraveTrailEventScript` activates objective `66`, `Lead the caravan to
+Fort Westwatch safely`, and finishes PE `53` when that parent objective
+succeeds. Focused Malgrave and map-binding tests passed `33/33`, audit override
+tests passed `51/51`, and regenerated content-retail coverage validates `31`
+CSVs / `167,648` rows with `2,523` blocker detail rows, all still
+`not_retail_complete`. Malgrave remains partial: remaining Exodus PE `56`
+survivor/supply objectives, caravan stop child events, Abandoned Mine objectives
+`947`/`948`, virtual resource collection objectives `952`/`953`, teleporter
+objective `959`, route producers, spawn and escort behavior, rookie/medal
+objectives, normal/veteran rewards, achievements, and full adventure smoke
+remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Crimelords of Whitevale parent adventure route.
+Crimelords of Whitevale (`world 1323`, public event `146`) now has its first
+runtime adventure scaffold. `CrimelordsOfWhitevaleMapScript` binds build 16042
+`MatchingGameMap` `25` and `51` / `Map\AdventureWhitevale` to PE `146`.
+`CrimelordsOfWhitevaleEventScript` activates the parent objective spine:
+`309` (`Get on your Hoverbike`), `315` (`Find out who killed the Blood Scions`),
+`318` (`Become the biggest gangsters in Thermock`), `1482` (`Return to the
+Blood Scions Clubhouse`), `1483` (`Survive the final onslaught at the
+Clubhouse`), and `1484` (`Avenge the Blood Scions`). Each successful objective
+advances the next parent phase, and PE `146` finishes when `1484` succeeds.
+Focused Crimelords and map-binding tests passed `42/42`, audit override tests
+passed `50/50`, and regenerated content-retail coverage validates `31` CSVs /
+`167,642` rows with `2,523` blocker detail rows, all still
+`not_retail_complete`. Crimelords remains partial: normal/veteran
+queue/prerequisite smoke, hoverbike vehicle activation, Criminal Enterprise and
+War in the Streets branch routing, gang loyalty/score semantics, final
+clubhouse waves and boss/objective producers, rewards, achievements, and full
+adventure smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Bay of Betrayal opening adventure route.
+Bay of Betrayal (`world 3176`, main public event `673`, intro public event
+`672`) now has its first runtime adventure scaffold. `BayOfBetrayalMapScript`
+binds build 16042 `MatchingGameMap` `86` / `Map\AdventureLevianBay` to PE
+`673` and creates PE `672` as `The Truth Will Set You Free` intro. The
+intro script activates the Herald Anku'mar talk objective `4357`, direct-credits
+the speech row `4563` as a guarded dialog bridge, activates the protect-Herald
+objective `4564`, and finishes PE `672` when it succeeds. The parent script
+activates objective `4358`, `Survive the Trials`, and can finish PE `673` once
+the parent objective succeeds. Focused Bay and map-binding tests passed
+`39/39`, audit override tests passed `49/49`, and regenerated content-retail
+coverage validates `31` CSVs / `167,611` rows with `2,523` blocker detail rows,
+all still `not_retail_complete`. Bay remains partial: queue/prerequisite smoke,
+exact Herald placement/dialog/cinematic timing, protect encounter producers,
+child-event routing for PE `674`/`675`/`676`/`695`, technopathy/race/medal
+mechanics, rewards, achievements, and full adventure smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Riot in the Void opening adventure route.
+Riot in the Void (`world 1437`, main public event `179`, intro public event
+`178`) now has its first runtime adventure scaffold. `RiotInTheVoidMapScript`
+binds build 16042 `MatchingGameMap` `58` / `Map\AdventureAstrovoidPrison`
+to PE `179` and creates PE `178` as the `Running the Asylum` intro. The intro
+script activates the Agent Triphon report objective `2073`, direct-credits the
+count-one mission briefing row `610` as a guarded dialog bridge, activates the
+Warden holostation report objective `2074`, direct-credits the Warden situation
+briefing row `646`, then activates the first Warden's Office movement gate
+`608` and finishes PE `178` when it succeeds. The parent script activates
+objective `1714`, `Quell the riot in Astrovoid Prison`, and can finish PE
+`179` once the parent objective succeeds. Focused Riot and map-binding tests
+passed `42/42`, audit override tests passed `48/48`, and regenerated
+content-retail coverage validates `31` CSVs / `167,587` rows with `2,523`
+blocker detail rows, all still `not_retail_complete`. Riot remains partial:
+Dominion-only queue/prerequisite smoke, exact Agent Triphon / Warden
+dialog-cinematic timing, Warden's Office trigger placement, public-event vote
+routing, child-event semantics for PE `403`-`417` plus `180`/`182`/`184`,
+branch objective producers, rewards, achievements, and full adventure smoke
+remain blocked.
+
+Supplemental update: 2026-06-15 F-024 The Hycrest Insurrection opening adventure route.
+The Hycrest Insurrection (`world 1149`, main public event `419`, intro public
+event `418`) now has its first runtime adventure scaffold. `TheHycrestInsurrectionMapScript`
+binds build 16042 `MatchingGameMap` `57` / `Map\AdventureHycrest` to PE `419`
+and creates PE `418` as the drop-ship intro. The intro script activates the
+report-to-dropship objective `2113`, advances to and direct-credits the
+count-one briefing row `2155` as a guarded dialog bridge, then activates the
+meet-agent handoff objective `189` and finishes PE `418` when it succeeds. The
+parent script activates objective `1708`, `Lead the Hycrest Rebels to victory`,
+and can finish PE `419` once the parent objective succeeds. Focused Hycrest and
+map-binding tests passed `37/37`, audit override tests passed `47/47`, and
+regenerated content-retail coverage validates `31` CSVs / `167,551` rows with
+`2,523` blocker detail rows, all still `not_retail_complete`. Hycrest remains
+partial: Exile-only queue/prerequisite smoke, exact drop-ship dialog/cinematic
+timing, meet-agent placement, branch-selection proof for sub-events `420`-`434`,
+branch objective producers, rewards, achievements, and full adventure smoke
+remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Journey into OMNICore-1 opening event route.
+Journey into OMNICore-1 (`world 3045`, public event `605`) now has a focused
+runtime public-event script for the build 16042 opening route. Objectives
+`2740` and `2741` activate the Belle Walker and Axis Pheydra TalkTo rows
+(`TargetGroup` `10592`/`10593`, Creature2 `62807`/`62809`) and only advance
+after both succeed. Objectives `2742` and `2743`, the count-one Script rows
+`Listen to Belle Walker` and `Listen to Axis Pheydra`, are activated and
+direct-credited as a guarded dialog bridge, then objective `2744`, `Choose path
+A or B`, is activated as the first unresolved branch gate. Focused OMNICore
+and map-binding tests passed `29/29`, audit generator tests passed `79/79`,
+and regenerated content-retail coverage validates `31` CSVs / `167,527` rows
+with `2,523` blocker detail rows, all still `not_retail_complete`. OMNICore
+remains partial: exact NPC dialog/activation smoke, route selection,
+firewall/Power Continuum/cortex objective routing, real cinematic payload,
+rewards, achievements, and full World Story smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 War of the Wilds Giant Moodie Totem ResourcePool completion.
+War of the Wilds (`world 1393`, public event `158`) now credits the build
+16042 `DestroyTheGiantMoodieTotem` objective `408` with the full ResourcePool
+count needed for runtime completion. PublicEventObjective `408` is
+`ResourcePool` object `2812`, count `100`; TargetGroup `2812` contains
+Creature2 `25952`, `Giant Moodie Totem - NWAdv`. `GiantMoodieTotemEntityScript`
+now binds that Creature2 row and applies a one-shot `100` count update on death,
+so the objective can reach `Succeeded` and the existing event script can finish
+PE `158`. Focused PvP/adventure and shared objective-credit tests passed
+`553/553`, and regenerated content-retail coverage validates `31` CSVs /
+`167,503` rows with `2,523` blocker detail rows, all still
+`not_retail_complete`. War of the Wilds remains partial: exact progressive
+health-pool damage, Moodie/Skeech health objectives `1658`/`1659`, Giant
+Skeech Totem `25956`, control-point rows `26291`/`26292`, faction start events
+`170`/`171`, route/vote timing, rewards, achievements, and manual adventure
+smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Vault of the Archon Osun exit blocker producer.
+Vault of the Archon (`world 3009`, public event `666`) now has test-backed
+runtime credit for objective `4329`, `Kill the Osun blocking the way out of the
+Hall of the Hundred`. Build 16042 maps `4329` to `Exterminate` object `7839`,
+count `0`, with QuestDirection `2450` on the final Hall escape route; Creature2
+rows `67429` and `67430` are W3009 Part 6 Havik blocker rows and appear in
+late-Hall TargetGroup `14376`. `OsunBlockingTheWayEntityScript` binds those
+Creature2 rows and credits objective `4329` once on death. Focused Hall/objective
+tests passed `690/690`, audit generator tests passed `77/77`, and regenerated
+content-retail coverage validates `31` CSVs / `167,503` rows with `2,523`
+blocker detail rows, all still `not_retail_complete`. Vault remains partial:
+exact Osun exit wave/spawn choreography, reviewed placement/import smoke,
+reward/completion side effects, portal/exit behavior, achievements, and manual
+World Story smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Vault of the Archon World Story taxonomy correction.
+The content-retail tracker now counts build 16042 world `3009` as one
+released World Story instance, `Vault of the Archon`, with asset path
+`Map\HalloftheHundred` retained as internal route evidence rather than a
+separate Hall of the Hundred dungeon/adventure entry. Bridge of Bones, Kel
+Havik, and Hall of the Hundred remain route/act context inside the Vault flow,
+while Arcterra remains a zone/story dependency. World Story rows now share the
+milestone target scope with dungeons, expeditions, and raids, so the two
+released World Story restoration targets are `Journey into OMNICore-1`
+(`world 3045`) and `Vault of the Archon` (`world 3009`). Regenerated
+content-retail coverage reports `31` CSVs / `167,503` rows with `2,523 blocker detail rows`,
+all `not_retail_complete`. External corroboration:
+WildStar Elder Game lists OMNICore-1 and Vault under World Story, the archived
+Vault page describes Vault as story-driven content in Arcterra, and Chad
+Moore's Vault brief lays out Bridge of Bones / Kel Havik / Hall of the Hundred
+as acts/areas inside the single Vault route.
+
+Supplemental update: 2026-06-15 F-024 War of the Wilds Giant Moodie Totem producer.
+War of the Wilds (`world 1393`, public event `158`) now has a focused
+runtime producer for objective `408`, `Destroy the Giant Moodie Totem`.
+`GiantMoodieTotemEntityScript` binds build 16042 Creature2 `25952`,
+`Giant Moodie Totem - NWAdv`, the sole member of TargetGroup `2812`, to
+one-shot direct public-event objective credit; the existing event script
+already finishes PE `158` when objective `408` succeeds. Focused
+PvP/adventure branch and shared objective-credit tests passed `550/550`.
+This remains partial: faction start events `170`/`171`, route/vote timing,
+Moodie/Skeech resource-pool semantics for objectives `1658`/`1659`, Giant
+Skeech Totem `25956`, control-point rows `26291`/`26292`, adventure rewards,
+achievements, queue/portal flow, and manual adventure smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Initialization Core Quarantine Door panel producer.
+Initialization Core Y-83 (`world 3040`, public event `595`) now activates
+objective `2681`, `Activate the panels to unlock the Quarantine Door`, during
+the Enter phase. `QuarantineDoorPanelEntityScript` binds build 16042 Creature2
+`68824`, `[IC] Trash - Panel`, to ActivateTargetGroup `12539` with guarded
+one-shot activation credit; the existing Quarantine Door objective `2682`
+now also reports a direct typed update row for TargetGroup `12462` / Creature2
+`66047`. Focused Initialization Core event/trigger tests passed `18/18`.
+Regenerated content-retail coverage now reports `31` CSVs / `167,363` rows
+with `2,387` blocker detail rows, all `not_retail_complete`. This remains
+partial: exact six-panel placement/count, door choreography, communicator and
+cinematic timing, Phagetouched Freebot objective `4633` target-set proof, boss
+and challenge mechanics, rewards, achievements, and manual raid smoke remain
+blocked.
+
+Supplemental update: 2026-06-15 F-024 Red Moon Terror 40-man Laveka scaffold.
+Red Moon Terror 40-man (`world 3102`, public event `650`) now has a focused
+runtime scaffold for objective `525`, `Defeat Laveka the Dark-Hearted`.
+`RedMoonTerror40ManMapScript` binds the nested
+`Raid\RedMoonTerror\FortyMan` content folder to PE `650`,
+`RedMoonTerror40ManEventScript` activates objective `525`, and
+`RedMoonTerror40ManLavekaEntityScript` provides direct objective death credit
+and event completion. The Laveka anchor is intentionally WIP: it uses
+Creature2 `65997` plus reviewed Red Moon Terror Laveka placement/model
+evidence from the existing raid scaffold while separate 40-man placement proof
+is still missing. Hidden turnstile objectives `4622`/`4624`, exact 40-man
+route status, Laveka combat/awakening/challenge mechanics, rewards, loot,
+achievements, and manual raid smoke remain blocked. Focused 40-man/map/objective-credit
+tests passed `563/563`; regenerated content-retail coverage now reports `31`
+CSVs / `167,363` rows with `2,387` blocker detail rows, all
+`not_retail_complete`. The tracker generator also now keys nested content
+folders separately, so Ultimate Protogames/Downsizer and
+RedMoonTerror/FortyMan script inventories no longer bleed into their parent
+instance rows.
+
+Supplemental update: 2026-06-15 F-024 Deep Space phase-647 Steel Serpent forces slice.
+Deep Space Exploration (`world 2188`, public event `447`) now advances from
+the build 16042 containment-cell objective `1845` into phase `647` objective
+`1846`, `Kill Steelfin forces aboard the Steel Serpent`. The event script
+activates `1846` after containment success, and `SteelfinForcesEntityScript`
+binds the reviewed PE447/world-2188 Steelfin force Creature2 rows `49408`,
+`48740`, `48702`, `49406`, and `48762` to one-shot direct death credit. The
+route intentionally stops after `1846` succeeds; objective `1847` rescue-crew
+semantics, Engineer Clamp/mainframe/bridge route timing, exact combat
+choreography, rewards, loot, achievements, and manual expedition smoke remain
+blocked. Focused Deep Space tests passed `25/25`; regenerated content-retail
+coverage now reports `31` CSVs / `168,601` rows with `3,160` blocker detail
+rows, all `not_retail_complete`.
+
+Supplemental update: 2026-06-15 Hall of the Hundred released world-story taxonomy.
+World `3009` remains visible through its internal asset path
+`Map\HalloftheHundred`, but the counted restoration entry is now the released
+World Story instance `Vault of the Archon`. Build 16042 has `World.type=11`
+for the Hall asset row, while `MatchingGameMap` row `103` points to
+`MatchingGameType` `75` / `matchTypeEnum=9` (`WorldStory`) with team size `5`;
+the scripts remain under
+`Source\NexusForever.Script.Instance\WorldStory\HallOfTheHundred` because that
+is the local map segment. Hall of the Hundred, Bridge of Bones, and Kel Havik
+are internal Vault route evidence, not separately counted dungeon/adventure
+entries. The next-slice queue now proposes `instance-3009` as `Vault of the
+Archon` World Story work, not as standalone Hall work. Hall/Vault remains
+partial pending placement proof, mechanics, rewards, achievements, and manual
+World Story smoke.
+
+Supplemental update: 2026-06-15 Ultimate Protogames taxonomy cleanup.
+Build 16042 `MatchingGameMap` rows bind retail Ultimate Protogames world `2980`
+to match types `81`/`87`, and both `MatchingGameType` rows have team size `5`.
+Ultimate Protogames is therefore a 5-player dungeon, not a 20/40 raid. The
+stale world `3041` `Map\UltimateProtogamesRaid` scaffold is now tracked under
+the Ultimate Protogames dungeon family as the Downsizer scaffold for public
+event `642`, not as a raid row. Focused Ultimate Protogames
+Downsizer/map/objective-credit tests passed `554/554`, and the content retail
+validator reports `31` CSVs / `168,380` rows, all `not_retail_complete`. This
+remains partial: exact Downsizer challenge semantics, boss mechanics, rewards,
+loot, achievements, queue/portal flow, and manual dungeon-side smoke remain
+blocked.
+
+Supplemental update: 2026-06-15 F-024 Rage Logic asteroid assault expedition slice.
+Rage Logic (`world 1627`, public events `213`/`214`) now has focused runtime
+coverage for its first playable expedition slice. The map creates and joins
+primary public event `214` plus vehicle-choice side public event `213`.
+Objective `781` receives conservative vehicle-choice activation credit from
+the build 16042 vehicle rows `32249`/`43809`/`43810`; objective `783`
+receives death credit from the asteroid Ragebot/freebot defender target-group
+leaves; and objective `784` receives ActivateTargetGroupChecklist credit for
+TargetGroup `3770` / Asteroid Thruster `32365`. PE `214` now advances from
+`ObliterateRagebotsDefendingTheAsteroid` to `DestroyAsteroidEngines` and then
+stops at the evidence boundary. Focused Rage Logic/map/objective-credit tests
+passed `569/569`, full Game.Tests passed `4415/4415`, and the content retail
+validator reports `31` CSVs / `168,379` rows, all `not_retail_complete`. This
+remains partial: exact PE `213` to PE `214` handoff, vehicle selection effects,
+hoverbike ramming, factory/teleporter/Axiom flow, simultaneous Overseerbots,
+scanner/transmitter side objectives, rewards, loot, medals, achievements, and
+manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Sanctuary Corrupted Torine Sisters aggregate death-credit producer.
+Sanctuary of the Swordmaiden (`world 1271`, public event `166`) now has
+focused runtime coverage for optional objective `505`,
+`FreeTheSpiritsOfTheCorruptedTorineSisters`. Build 16042 maps it to
+KillTargetGroup type `0`, count `10`, TargetGroup `3385`, which nests
+TargetGroups `3386`/`3387` plus `3210`/`3211`/`3237`/`3238`/`3239` for
+Rayna, Selene, corrupted Torine minibosses, Corrupted Elder Priestess,
+Corrupted Deathbringer, and Corrupted Veteran Swordmaiden Creature2 leaves.
+`SanctuaryOfTheSwordmaidenEventScript` activates the WIP optional objective
+in the Moldwood Corruption phase, and `CorruptedTorineSistersEntityScript`
+binds the nested leaves to one-shot direct death credit. Focused
+Sanctuary/objective-credit tests passed `558/558`, and the content retail
+validator reports `31` CSVs / `168,376` rows, all `not_retail_complete`.
+This remains partial: exact optional route availability, spawn density and
+placement/import visibility, combat/choreography, count semantics, rewards,
+loot, achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Skullcano Molten Chasm Monitoring Station producer.
+Skullcano (`world 1263`, public event `148`) now has focused runtime coverage
+for chasm objective `364`, `FindAWayAcrossTheLava`. Build 16042 maps the row
+to ActivateTargetGroup type `3`, count `1`, TargetGroup `2673`; TargetGroup
+`2673` resolves to Creature2 `25168`, `[SK] e364 - Molten Chasm Monitoring
+Station`. `SkullcanoEventScript` activates `FindAWayAcrossTheLava` during
+`RandomPathChasm`, and `MoltenChasmMonitoringStationEntityScript` binds
+Creature2 `25168` to one-shot TargetGroup `2673` activation credit. Focused
+Skullcano tests passed `52/52`, and the content retail validator reports `31`
+CSVs / `168,374` rows, all `not_retail_complete`. This remains partial:
+exact station placement/visibility, activation visual/despawn state,
+cave/chasm route weights, door/platform choreography, rewards, loot,
+achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Fragment Zero Hugo locate producer.
+Fragment Zero (`world 3180`, public event `680`) now has focused runtime
+coverage for the late Hugo locate objective. PublicEventObjective `4445`,
+`LocateHugo`, is ActivateTargetGroup type `3`, object `12267`; build 16042
+TargetGroup `12267` resolves to Creature2 `67961` (`captain hugo - locate
+hugo - fragment zero - twh`). `FragmentZeroEventScript` already activates
+`4445` in the `LocateHugo` phase and advances to `WaitForHugo` on objective
+success. `CaptainHugoLocateEntityScript` now binds Creature2 `67961` to
+one-shot TargetGroup `12267` activation credit. Focused Fragment Zero tests
+passed `49/49`. This remains partial: exact Hugo placement/visibility/timing,
+trigger/cinematic/communicator proof, rewards, loot, achievements, and manual
+expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Coldblood Citadel Coven/Harizog boss producers.
+Coldblood Citadel (`world 3522`, public event `907`) now has focused runtime
+coverage for the late Iceblood Coven and Harizog boss objective producers.
+PublicEventObjective `5314`, `DefeatTheIcebloodCoven`, is a Script row type
+`9`, count `1`, object `14447`, with objective text naming Darksister Golag
+`75472`, Darksister Katla `75473`, and Darksister Ulfrid `75474`.
+PublicEventObjective `5315`, `DefeatTheRisenHarizog`, is Script type `5`,
+count `1`, object `14447`, and maps to Harizog Coldblood Creature2 `75459`.
+`IcebloodCovenEntityScript` credits `5314` once all three Darksisters die,
+while `HarizogColdbloodEntityScript` now uses the shared `CombatAI`, pins
+mapped Spell4 auto attacks `87944`/`87945`, and credits `5315` once on death.
+Focused Coldblood tests passed `36/36`. This remains partial: exact Iceblood
+resurrection/challenge timing, Harizog mechanics cadence beyond mapped auto
+attacks, rewards, loot, achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Vault of the Archon Harizog summoned add death-credit producers.
+Hall of the Hundred / Vault of the Archon (`world 3009`, public event `666`)
+now has focused runtime coverage for three Harizog summoned-add objectives in
+the final vault phase. PublicEventObjective `4952`,
+`DefeatHavikShiverhound`, is a Script row type `5`, count `1`, with object
+`12162` and objective text naming Creature2 `67851`; PublicEventObjective
+`4953`, `DefeatDarkwitchUhrga`, is KillEventObjectiveUnit type `8`, count
+`1`, also with object `12162` and Creature2 `67855`; PublicEventObjective
+`4954`, `DefeatHavikHonorguard`, is Script type `5`, count `1`, object
+`12162`, and Creature2 `67853`. Client TargetGroup `12162` maps Harizog
+`67444`, and TargetGroup `12211` groups the Harizog add set including
+`67851`/`67853`/`67855`. `HallOfTheHundredEventScript` now activates all
+three add objectives alongside `DefeatHarizog`, while
+`HavikShiverhoundEntityScript`, `DarkwitchUhrgaEntityScript`, and
+`HavikHonorguardEntityScript` bind their mapped rows to one-shot direct death
+credit. Focused Hall/objective-credit tests passed `662/662`. This remains
+partial: exact add spawn timing, add composition including `67852`/`67854`,
+Harizog encounter choreography, spell/portal/destruction behavior, rewards,
+loot, achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Sanctuary Deathsting and Veteran Swordmaiden death-credit producers.
+Sanctuary of the Swordmaiden (`world 1271`, public event `166`) now has
+focused runtime coverage for two late optional trash objectives.
+PublicEventObjective `503`, `DestroyDeathstingSwarms`, is
+KillClusterTargetGroup type `14`, count `4`, with TargetGroup `5701`;
+DataMapping event evidence links Corrupted Deathsting Swarmer/Defender rows
+`29249`/`29252` plus bridge source rows `15653`/`15691`.
+PublicEventObjective `628`, `KillCorruptedVeteranSwordmaidens`, is
+KillClusterTargetGroup type `14`, count `12`, with TargetGroup `3392`;
+DataMapping event evidence links Corrupted Veteran Swordmaiden row `29267`
+plus bridge source row `15658`. `SanctuaryOfTheSwordmaidenEventScript` now
+exposes both through the existing WIP optional gate in the Ondu Lifeweaver
+phase, and `CorruptedDeathstingSwarmEntityScript` /
+`CorruptedVeteranSwordmaidenEntityScript` bind the mapped rows to one-shot
+direct death credit. Focused Sanctuary/objective-credit tests passed
+`542/542`. This remains partial: exact optional route availability, spawn
+density and placement/import visibility, combat/choreography, target-group
+cluster semantics, rewards, loot, achievements, and manual dungeon smoke
+remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Fragment Zero Skeech horde death-credit producers.
+Fragment Zero (`world 3180`, public event `680`) now has focused runtime
+coverage for the active opening Skeech horde kill producer. PublicEventObjective
+`4416`, `EliminateSkeech`, is KillTargetGroup type `0`, count `20`, with
+TargetGroup `12254`. Build 16042 TargetGroup `12254` lists leaves `67516`,
+`67518`, `67519`, and `67520`; current DataMapping public-event and world
+candidate evidence backs Fragment Zero Creature2 rows `67519` (`Z-537
+"Berserker"`) and `67520` (`S-346 "Shaman"`). `FragmentZeroEventScript`
+already activates `4416` during `ContinueTheSearchForTheMissingCrew`, and
+`FragmentZeroSkeechHordeEntityScript` now binds `67519`/`67520` to one-shot
+direct death credit for `4416`. Focused Fragment Zero/objective-credit tests
+passed `545/545`. This remains partial: unresolved TargetGroup leaves
+`67516`/`67518`, broader Skeech variant inclusion, exact spawn counts and
+cadence, bonus/medal horde rows `4584`/`4585`/`4586`/`4686`, objective count
+semantics, combat/choreography, egg/defense/black-box side objectives, rewards,
+loot, achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Fragment Zero corpse activation producers.
+Fragment Zero (`world 3180`, public event `680`) now has focused runtime
+coverage for the two build 16042 corpse-search activation producers in the
+linear expedition chain. PublicEventObjective `4424`,
+`SearchJoInsideTheIncubationComplex`, is ActivateTargetGroup type `3`, count
+`1`, with TargetGroup `12274` / Creature2 `67966` (`Crewmate Jo` corpse).
+PublicEventObjective `4432`, `SearchCrewmateSyrusCorpse`, is
+ActivateTargetGroup type `3`, count `1`, with TargetGroup `12264` / Creature2
+`67931` (`Crewmate Syrus` corpse). `FragmentZeroEventScript` already activates
+`4424` in the `SearchJoscorpse` phase and `4432` in the
+`SearchCrewmateSyrusCorpse` phase, and advances the branch on each objective
+success. `CrewmateJoCorpseEntityScript` and `CrewmateSyrusCorpseEntityScript`
+now bind those Creature2 rows to one-shot ActivateTargetGroup credit. Focused
+Fragment Zero tests passed `45/45`. This remains partial: exact corpse
+placement/import visibility, client activation animation/UI timing, corpse
+visual/despawn or replay semantics, Skeech/egg/defense/black-box side
+objectives, Hugo choreography, rewards, loot, achievements, and manual
+expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Red Moon Terror mid/late-chain death-credit producers.
+Red Moon Terror (`world 3032`, public event `705`) now has focused runtime
+coverage for eight additional build 16042 middle and late main-chain death
+objectives. PublicEventObjective `4550`, `DefeatTheEngineers`, is
+KillClusterEventObjectiveUnit type `16`, count `1`, with Creature2 `65759`
+and `65758` in the objective text. PublicEventObjective `4555`,
+`DestroyTheAntiBoardingTurret`, is KillTargetGroup type `0`, count `7`, with
+TargetGroup `14458` / Creature2 `75645`. PublicEventObjective `4617`,
+`DefeatMarauderOfficers`, is KillClusterTargetGroup type `14`, count `4`, with
+TargetGroup `14460` / Creature2 `72884`, `72885`, `72886`, and `72887`.
+PublicEventObjective `4620`, `DefeatTheStarmapSimulation`, is KillTargetGroup
+type `0`, count `1`, with Creature2 `73622` in the objective text. The
+medbay/morgue objectives `4613`, `4623`, `5141`, and `4625` are
+KillClusterEventObjectiveUnit type `16`, count `1`, with Creature2 `72888`,
+`72889`, `72891`, and `72890`. `RedMoonTerrorEventScript` already activates
+all eight objectives in their matching phases and advances the branch on
+objective success. `RedMoonEngineerEntityScript`,
+`AntiBoardingTurretEntityScript`, `MarauderOfficerEntityScript`,
+`StarmapSimulationEntityScript`, `BonedoctorMuburuEntityScript`,
+`HeadshrinkerWgasaEntityScript`, `TinyEntityScript`, and
+`UntombedHorrorEntityScript` now bind those rows to one-shot direct objective
+death credit. Focused Red Moon Terror/objective-credit tests passed `544/544`.
+This remains partial: exact spawn/import visibility, multi-kill count and
+all-required semantics versus current per-objective handoffs, boss/trash
+combat and choreography, investigation/route/trigger objectives
+`4547`/`4557`/`4604`/`4619`, Brig side miniboss objectives `4592`-`4599`,
+Laveka awakening/challenges, doors/elevators, rewards, loot, achievements, and
+manual raid smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Red Moon Terror main-chain death-credit producers.
+Red Moon Terror (`world 3032`, public event `705`) now has focused runtime
+coverage for seven build 16042 direct KillEventObjectiveUnit boss objectives
+in the main raid chain. PublicEventObjective `4590`,
+`DefeatChiefWardenLockjaw`, maps to Creature2 `75214`; `4558`,
+`DefeatSwabbieSkiLi`, maps to Creature2 `68655`; `4549`,
+`DefeatTheRobomination`, maps to Creature2 `66085`; `4552`,
+`DefeatAssistantTechnicianSkooty`, maps to Creature2 `72872`; `4553`,
+`DefeatChiefEngineScrubberThrag`, maps to Creature2 `72873`; `4554`,
+`DefeatMordechaiRedmoon`, maps to Creature2 `65800`; and `4556`,
+`DefeatStarEaterTheVoracious`, maps to Creature2 `72758`. The build 16042
+objective map marks each row as type `8`, count `1`, with the Creature2 id in
+the objective text, and `RedMoonTerrorEventScript` already activates each
+objective in the corresponding phase and advances the branch on success.
+`ChiefWardenLockjawEntityScript`, `SwabbieSkiLiEntityScript`,
+`RobominationEntityScript`, `AssistantTechnicianSkootyEntityScript`,
+`ChiefEngineScrubberThragEntityScript`,
+`RedMoonTerrorMordechaiRedmoonEntityScript`, and
+`StarEaterTheVoraciousEntityScript` now bind those Creature2 rows to one-shot
+direct objective death credit. Focused Red Moon Terror/objective-credit tests
+passed `512/512`. This remains partial: exact spawn/import visibility,
+Skooty/Thrag all-required semantics versus current per-objective handoff, boss
+combat/choreography, anti-boarding turret TargetGroup objective `4555`, later
+officer/starmap/medbay/morgue objectives, doors/elevators, rewards, loot,
+achievements, and manual raid smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Genetic Archives malfunctioning miniboss death-credit producers.
+Genetic Archives (`world 1462`, public event `159`) now has focused runtime
+coverage for the four build 16042 malfunctioning miniboss KillTargetGroup
+objectives in the `Minibosses` phase. PublicEventObjective `2389`,
+`DefeatTheMalfunctioningPiston`, maps to TargetGroup `8515` / Creature2
+`56106`; `2388`, `DefeatTheMalfunctioningBattery`, maps to TargetGroup `8516`
+/ Creature2 `56174`; `2390`, `DefeatTheMalfunctioningDynamo`, maps to
+TargetGroup `8517` / Creature2 `54935`; and `2391`,
+`DefeatTheMalfunctioningGear`, maps to TargetGroup `8520` / Creature2 `55066`.
+DataMapping links all four Creature2 rows to public event `159` with unique
+names. `GeneticArchivesEventScript` already activates all four objectives in
+the `Minibosses` phase and advances to `Ohmna` on each objective success.
+`MalfunctioningPistonEntityScript`, `MalfunctioningBatteryEntityScript`,
+`MalfunctioningDynamoEntityScript`, and `MalfunctioningGearEntityScript` now
+bind the mapped Creature2 rows to one-shot direct objective death credit.
+Focused Genetic Archives/objective-credit tests passed `469/469`. This
+remains partial: exact miniboss placement/spawn visibility, all-four completion
+semantics versus current per-objective Ohmna handoff, combat/choreography,
+doors/elevators, rewards, loot, achievements, and manual raid smoke remain
+blocked.
+
+Supplemental update: 2026-06-15 F-024 Outpost M-13 cargo-hold Novaburn death-credit producers.
+Outpost M-13 (`world 1319`, public event `108`) now has focused runtime
+coverage for the opening cargo-hold combat objectives `253` and `254`.
+PublicEventObjective `253`, `KillNovaburnMarauders`, is KillEventObjectiveUnit
+type `8`, count `12`, with world location `23113`; PublicEventObjective `254`,
+`KillRansackerRorgh`, is KillEventObjectiveUnit type `8`, count `1`, also at
+world location `23113`. DataMapping links event `108` rows for Novaburn
+Corsair `23453`/`69074`, Novaburn Plunderer `23454`/`69075`, and `"Ransacker"
+Rorgh` `23455`. `OutpostM13EventScript` already activates `253` in the
+`KillTheNovaburnMarauders` phase, advances to `KillRansackerRorgh` on `253`
+success, activates `254`, and advances to `GoToTheAsteroidSurface` on `254`
+success. `CargoHoldNovaburnMarauderEntityScript` now binds the Corsair and
+Plunderer rows to one-shot direct objective credit for `253`, and
+`RansackerRorghEntityScript` binds Creature2 `23455` to one-shot direct
+objective credit for `254`. Focused Outpost M-13/objective-credit tests passed
+`445/445`, full Game.Tests passed `4252/4252`, and the content retail validator
+reports `31` CSVs / `168,371` rows, all `not_retail_complete`. This remains
+partial: exact cargo-hold spawn density, combat/choreography, client-visible
+objective credit and cleanup, later M-13 surface Novaburn rows `69878`/`69879`
+and objectives `4697`/`4700`/`4733`/`4734`, rewards, loot, achievements, and
+manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Space Madness panicked-worker nightmare death-credit producer.
+Space Madness (`world 2149`, public event `390`) now has focused runtime
+coverage for objective `1590`, `SavePanickedWorkers`. Build 16042 maps the
+objective to KillClusterEventObjectiveUnit type `16`, count `8`, with world
+location `37705` and reward-pane TargetGroup `6402`. TargetGroup `6402`
+expands through nested TargetGroups `6400`/`6401`; the client leaves are
+Nightmare Creature2 rows `46123`, `46124`, `46126`, `46127`, `46128`, `46130`,
+`46131`, `46132`, `46133`, `46135`, `46137`, `46721`, `58783`, and `58798`.
+DataMapping public-event evidence covers the listed event rows except `46137`,
+which is retained from the build 16042 target group as `Skittering Nightmare`
+and remains placement-smoke blocked. `SpaceMadnessEventScript` already
+activates `1590` from the `AccessTheObservationDeckComputer` branch.
+`SavePanickedWorkersNightmareEntityScript` now binds those Nightmare rows to
+one-shot direct objective death credit. Focused Space Madness/objective-credit
+tests passed `453/453`, full Game.Tests passed `4240/4240`, and the content
+retail validator reports `31` CSVs / `168,371` rows, all
+`not_retail_complete`. This remains partial: exact nightmare spawn/phase
+density, `46137` public-event placement proof, cluster objective UI semantics,
+panicked-worker rescue choreography, objective `1662` wave producer/timing,
+rewards, loot, achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Gauntlet first-arena Script producer.
+Gauntlet (`world 2183`, public event `446`) now has focused runtime coverage
+for objective `1854`, `SurviveTheFirstArena`. Build 16042 maps the objective
+to Script type `5`, count `3`, with object TargetGroup `6871`, reward-pane
+TargetGroup `12668`, and world location `39001`. TargetGroup `6871` expands
+through `6869`/`6870`, while reward-pane TargetGroup `12668` expands through
+`12664`-`12667`; the reviewed leaves are Arena-Frenzied Creature2 rows
+`48461`, `48765`, `48793`, `48833`, `48835`, `48842`, `48843`, `48844`,
+`48863`, `48865`, `48866`, `48867`, and veteran/alternate rows `69237`,
+`69239`, `69240`, `69241`, `69242`, `69243`, `69244`, `69246`, `69247`,
+`69248`, `69250`, and `69251`. DataMapping maps all rows as Gauntlet
+public-event evidence. `GauntletEventScript` already activates `1854` in the
+`SurviveTheFirstArena` phase and advances to `EnterTheChamberOfChoices` on
+objective success. `FirstArenaFrenziedCreatureEntityScript` now binds the
+mapped rows to one-shot direct Script objective credit. Focused
+Gauntlet/objective-credit tests passed `444/444`, full Game.Tests passed
+`4236/4236`, and the content retail validator reports `31` CSVs / `168,371`
+rows, all `not_retail_complete`. This remains partial: exact first-arena wave
+spawn/count/cadence, arena choreography and cleanup, client-visible survival
+credit timing, rewards, loot, achievements, later arena route smoke, and manual
+expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Outpost M-13 hive cleanup Script producer.
+Outpost M-13 (`world 1319`, public event `108`) now has focused runtime
+coverage for objective `256`, `DefeatHivePods`. Build 16042 maps the objective
+to Script type `5`, count `30`, with reward-pane TargetGroup `10835`. The
+TargetGroup row resolves to Creature2 `23536` (`Hive Infector`), `23514`
+(`Hive Pod`), `23500` (`Infected Miner`), and alternate/veteran rows `69080`,
+`69079`, and `69077`; DataMapping maps all six rows as Outpost M-13 public
+event evidence, with world `1319` spawn rows for the abandoned mine population.
+`OutpostM13EventScript` already activates `256` in the `DefeatHivePods` phase,
+advances from `SearchTheMine` to `DefeatHivePods` on objective `1439` success,
+and advances to `KillHiveQueen` on objective `256` success.
+`HivePodMinerInfectorEntityScript` now binds those six Creature2 rows to
+one-shot direct Script objective credit. Focused Outpost M-13/objective-credit
+tests passed `425/425`, full Game.Tests passed `4230/4230`, and the content
+retail validator reports `31` CSVs / `168,371` rows, all
+`not_retail_complete`. This remains partial: exact mine spawn and phase
+density, combat/choreography, the `SearchTheMine` producer still blocked on
+unresolved TargetGroup leaf `25168`, Hive Queen mechanics/spawn, reward, loot,
+achievement timing, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Outpost M-13 datachron VirtualCollect producer.
+Outpost M-13 (`world 1319`, public event `108`) now has focused runtime
+coverage for objective `656`, `CollectDatachrons`. Build 16042 maps the
+objective to VirtualCollect type `22`, count `10`, with virtual item/object
+`113`, world location `33132`, and reward-pane TargetGroup `10832`. TargetGroup
+`10832` expands through `10833`/`10834`; current reviewed DataMapping evidence
+resolves Creature2 `29512` (`Dead M-13 Miner`) as the only member with Outpost
+M-13 public-event evidence and world `1319` spawn rows (`21278`-`21286`,
+`24290`-`24295`, and `34403`). `OutpostM13EventScript` already activates `656`
+in the `CollectDatachrons` phase and advances to `SearchTheMine` on objective
+success. `DeadM13MinerEntityScript` now binds Creature2 `29512` to one-shot
+VirtualCollect `113` credit and removes the collected miner corpse. Focused
+Outpost M-13 tests passed `18/18`, full Game.Tests passed `4223/4223`, and the
+content retail validator reports `31` CSVs / `168,371` rows, all
+`not_retail_complete`. This remains partial: client smoke for corpse/datachron
+activation, exact despawn/respawn and collect timing, unresolved TargetGroup
+leaves `29578`/`29579`/`29581`/`29582`/`29583`/`29585`/`29586`/`29587`,
+reward/loot/achievement timing, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Outpost M-13 Foreman Krause TalkTo producer.
+Outpost M-13 (`world 1319`, public event `108`) now has focused runtime
+coverage for objective `1440`, `FindForemanKrause`. Build 16042 maps the
+objective to TalkTo type `17`, count `1`, with TargetGroup `5295`; the
+TargetGroup row contains Creature2 `29468` (`Foreman Krause`). DataMapping maps
+Creature2 `29468` as unique Outpost M-13 event evidence, with reviewed spawn
+rows in world `1319`. `OutpostM13EventScript` already activates `1440` in the
+`FindForemanKrause` phase and advances to `CollectDatachrons` on objective
+success. `ForemanKrauseEntityScript` now binds Creature2 `29468` to one-shot
+player-routed TalkTo target-group credit. Focused Outpost M-13 tests passed
+`14/14`, full Game.Tests passed `4219/4219`, and the content retail validator
+reports `31` CSVs / `168,371` rows, all `not_retail_complete`. This remains
+partial: exact Foreman Krause spawn visibility and variant selection,
+dialog/choreography, datachron follow-up placement and collect timing,
+reward/loot/achievement timing, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Fragment Zero Life-Overseer death-credit producer.
+Fragment Zero (`world 3180`, public event `680`) now has focused runtime
+coverage for objective `4444`, `DefeatTheLifeOverseer`. Build 16042 maps the
+objective to KillTargetGroup type `0`, count `1`, with TargetGroup `12266`;
+the TargetGroup row contains Creature2 `67522` and `69635`, both named
+`Life-Overseer`. DataMapping maps both rows as Fragment Zero event creatures in
+`They Came from Fragment Zero!`. `FragmentZeroEventScript` already activates
+`4444` in the `DefeatTheLifeOverseer` phase and advances to `LocateHugo` on
+objective success. `LifeOverseerEntityScript` now binds both Creature2 rows to
+one-shot direct objective death credit. Focused Fragment Zero/objective-credit
+tests passed `439/439`, full Game.Tests passed `4215/4215`, and the content
+retail validator reports `31` CSVs / `168,371` rows, all
+`not_retail_complete`. This remains partial: exact Life-Overseer spawn
+visibility and phase timing, normal/veteran variant selection,
+combat/choreography, reward/loot/achievement timing, and manual expedition
+smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Genetic Archives branch endpoint death-credit producers.
+Genetic Archives (`world 1462`, public event `159`) now has focused runtime
+coverage for branch endpoint objectives `411` and `413`, `DefeatPhageMaw` and
+`DefeatThePhagetechPrototypes`. Build 16042 maps objective `411` to
+KillTargetGroup `7217`, whose TargetGroup row contains Creature2 `52974`
+(`Phage Maw`), and maps objective `413` to KillTargetGroup `8304`, whose
+TargetGroup row contains Creature2 `54029`, `54030`, `54031`, and `54032`
+(`Phagetech Augmentor`, `Phagetech Fabricator`, `Phagetech Protector`, and
+`Phagetech Commander`). DataMapping maps those rows as Genetic Archives event
+creatures in the `From Archives into Armies` event. `GeneticArchivesEventScript`
+already activates `411` after `DefeatConstructsInTheCentrifuge` succeeds,
+activates `413` after `DefeatTheParagonsOfSymbiosis` succeeds, and advances to
+`ArchiveDefenseSystem` on either endpoint objective success. `PhageMawEntityScript`
+and `PhagetechPrototypesEntityScript` now bind those rows to one-shot direct
+objective death credit. Focused Genetic Archives/objective-credit tests passed
+`429/429`, full Game.Tests passed `4209/4209`, and the content retail validator
+reports `31` CSVs / `168,371` rows, all `not_retail_complete`. This remains
+partial: exact Phage Maw/prototype placement and spawn visibility, prototype
+group completion semantics, the exterminate branch objective semantics for
+`2453`/`2454`, combat/choreography, doors/elevators, raid
+reward/loot/achievement timing, and manual raid smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Genetic Archives second-floor guardian death-credit producers.
+Genetic Archives (`world 1462`, public event `159`) now has focused runtime
+coverage for objectives `2393` and `2394`, `DefeatPhagetechGuardianC148` and
+`DefeatPhagetechGuardianC432`. Build 16042 maps objective `2393` to
+KillTargetGroup `8417`, whose TargetGroup row contains Creature2 `54785`
+(`Phagetech Guardian C-148`), and maps objective `2394` to KillTargetGroup
+`8418`, whose TargetGroup row contains Creature2 `54787` (`Phagetech Guardian
+C-432`). DataMapping maps both Creature2 rows as unique Genetic Archives event
+creatures in the `From Archives into Armies` event. `GeneticArchivesEventScript`
+already activates both objectives in the `SecondFloor` phase and routes `2393`
+success to `DefeatConstructsInTheCentrifuge` and `2394` success to
+`DefeatTheParagonsOfSymbiosis`. `PhagetechGuardianC148EntityScript` and
+`PhagetechGuardianC432EntityScript` now bind those rows to one-shot direct
+objective death credit. Focused Genetic Archives/objective-credit tests passed
+`421/421`. This remains partial: exact guardian placement/spawn visibility,
+combat/choreography, branch objective semantics, doors/elevators, raid
+reward/loot/achievement timing, and manual raid smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Genetic Archives Fetid Miscreation death-credit producer.
+Genetic Archives (`world 1462`, public event `159`) now has focused runtime
+coverage for objective `2433`, `DefeatTheFetidMiscreation`. Build 16042 maps
+the objective to KillTargetGroup type `0`, count `1`, with TargetGroup `8519`;
+the TargetGroup row contains Creature2 `56377`, and DataMapping maps Creature2
+`56377` as Fetid Miscreation in the `From Archives into Armies` event.
+`GeneticArchivesEventScript` already activates `2433` in the `GetToNextLevel`
+phase and advances to `SecondFloor` on objective success.
+`FetidMiscreationEntityScript` now binds Creature2 `56377` to one-shot direct
+objective death credit. Focused Genetic
+Archives/objective-credit tests passed `413/413`, full Game.Tests passed
+`4193/4193`, and the content retail validator reports `31` CSVs / `168,371`
+rows, all `not_retail_complete`. Kierkegaard's read-only evidence pass
+confirmed this as a high-confidence additive producer slice. This remains
+partial: exact Fetid Miscreation placement/spawn visibility, combat and
+choreography, doors/elevators, raid reward/loot/achievement timing, and manual
+raid smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Skullcano Chief Kaskalak TalkTo producer.
+Skullcano (`world 1263`, public event `148`) now has focused runtime coverage
+for cave-path objective `820`, `SpeakToChiefKaskalak`. Build 16042 maps the
+objective to TalkTo type `17`, count `1`, with TargetGroup `3944`. The client
+TargetGroup row contains Creature2 `33452` and `24788`; DataMapping confirms
+`24788` as Chief Kaskalak, while `33452` remains retained from the client
+target group until the creature bridge is reviewed. `SkullcanoEventScript`
+already activates `820` after `FindChiefKaskalak` succeeds and advances to the
+cave escort phase on objective success. `ChiefKaskalakEntityScript` now binds
+both target-group rows to one-shot player-routed TalkTo credit. Focused
+Skullcano tests passed `50/50`. This remains partial: exact Chief
+placement/spawn visibility, the `33452` bridge, dialog/choreography, escort
+movement, route weights, rewards, loot, achievements, and manual dungeon smoke
+remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Gauntlet Faction Friction opposing-team death-credit producer.
+Gauntlet (`world 2183`, public event `446`) now has focused runtime coverage
+for objective `1835`, `KillTheOpposingFactionsTeam`. Build 16042 maps the
+objective to KillEventObjectiveUnit type `8`, count `3`, with no TargetGroup
+object id; DataMapping links the event-446 Exile/Dominion Faction Friction
+team rows: Dominion Garr `48666`/`69282`, Garrmaster Grazza `48670`/`69285`,
+Exile Hound `48667`/`69283`, and Houndmaster Hagan `48669`/`69284`.
+`GauntletEventScript` already activates `1835` after the
+`EnterTheFactionFrictionArena` branch succeeds and advances to the main-event
+arena on objective success. `OpposingFactionTeamEntityScript` now binds those
+Creature2 rows to one-shot direct objective death credit. Focused
+Gauntlet/objective-credit tests passed `410/410`, the affected static
+SpellHandler resolver tests passed `12/12` after being serialized, full
+Game.Tests passed `4187/4187`, and the content retail validator reports `31`
+CSVs / `168,371` rows, all `not_retail_complete`. This remains partial: exact
+faction-team spawn selection, count composition, arena choreography, combat
+behavior, rewards, loot, achievements, and manual expedition smoke remain
+blocked.
+
+Supplemental update: 2026-06-15 F-024 Sanctuary optional Moldwood branch death-credit producers.
+Sanctuary of the Swordmaiden (`world 1271`, public event `166`) now has
+focused runtime coverage for optional objectives `502`, `630`, and `641`.
+Build 16042 maps `DestroyMoldwoodSkurgeAndCrawlers` (`502`) to
+KillClusterTargetGroup `3380`; DataMapping links Moldwood Skurge
+Slasher/Tactician and Blighted Moldwood Crawler Creature2 rows `28930`,
+`28892`, `41204`, `15655`, `15654`, and `15666` to event `166`.
+`KillTheCorruptedTerrorantulas` (`630`) maps to KillClusterTargetGroup `5702`
+with Corrupted Terrorantula rows `28829` and `15664`, and
+`DestroyTheMoldwoodCorruptors` (`641`) maps to KillClusterTargetGroup `5704`
+with Moldwood Corruptor rows `30209` and `15683`. The Sanctuary event script
+already exposes `502` and `641` through the Moldwood Overlord Skash optional
+gate and `630` through the Ondu optional gate; the new entity scripts bind the
+mapped Creature2 rows to one-shot death credit. Focused
+Sanctuary/objective-credit tests passed `407/407`, full Game.Tests passed
+`4183/4183`, and the content retail validator reports `31` CSVs / `168,371`
+rows, all `not_retail_complete`. This remains partial: exact cluster
+semantics, optional route selection, spawn density, combat and choreography,
+rewards, loot, achievements, and manual dungeon smoke remain blocked.
+
+Last updated: 2026-06-16 (F-024 Ultimate Protogames Prototentiary cage/alarm placements; F-024 Stormtalon's Lair Tainted Flower Stem producer; F-024 Infestation jabbithole vent/cargo placements; F-024 Fragment Zero cargo 100-count tier producer; F-024 Protogames Academy final-leg producers; F-024 Deep Space sabotage cortex producer; F-024 Outpost M-13 cargo-hold Novaburn death-credit producers; F-024 Space Madness panicked-worker nightmare death-credit producer; F-024 Fragment Zero Project Matron death-credit producer; F-024 Space Madness Hazmat Suit activation-credit producer; F-024 Ultimate Protogames alarm-panel producer; F-024 Sanctuary Moldwood Mauler script objective producer; F-024 Ultimate Protogames Downsizer death-credit producer; F-024 Sanctuary Soul Spore mapped activation-credit hook; F-024 Deep Space opening talk and crew checklist producers; F-024 Infestation medbay attack death-credit producer; F-024 Fragment Zero prototype death-credit producers; F-024 Ultimate Protogames objective death-credit producers; F-024 Skullcano Gold-Infused Lava Node death-credit producer; F-024 Space Madness Hallucinating Livestock death-credit producer; F-024 Gauntlet Championator death-credit producer; F-024 Fragment Zero Cargo Crate runtime credit; F-024 Datascape Broodmother/Gloomclaw/Logic/Warmonger/Avatus reviewed placements; F-024 Shade's Eve reviewed Etty/fountain placements; F-024 Protogames Academy Iruki/Seek/Icebox reviewed placements; F-024 Datascape Second Frost Boulder and Frostbringer reviewed placements; F-024 Red Moon Terror Laveka reviewed placement; F-024 Protogames Academy Invulnotron and Gromka reviewed placements; F-024 Datascape First Frost Boulder reviewed placement; F-024 Genetic Archives reviewed opening placements; F-024 Infestation Captain Tolben reviewed placement; F-024 Space Madness reviewed console/control/suit placements; F-024 Outpost M-13 Hive Queen death-credit producer; F-024 Infestation contaminated shiphand heal producer; F-024 Hall of the Hundred final completion boundary; F-024 Space Madness phase-4 livestock reviewed placements; F-024 Fragment Zero Freight Supervisor Lola reviewed placement; F-024 Evil from the Ether Drive Spark reviewed placements; F-024 Space Madness opening talk NPC reviewed placements; F-024 Datascape opening reviewed placements; F-024 Gauntlet Pilot Taboro reviewed placement; F-024 Ultimate Protogames Bev-O-Rage reviewed placement; F-024 Skullcano opening boss reviewed placements; F-024 Sanctuary Flame-Crazed Demon reviewed placement; F-024 Stormtalon's Lair Aethros reviewed placement; F-024 Coldblood Citadel Hailstone reviewed placement; F-024 Stormtalon's Lair Blade-Wind reviewed placement; F-024 Evil from the Ether Etheric Organism producers; F-024 Space Madness Hallucinating Worker air-helm producer; F-024 Sanctuary opening Zealous Torine producer; F-024 Fragment Zero hidden recording producers; F-024 Stormtalon final-boss producer; F-024 Hall courtyard statue trigger; F-024 Sanctuary side-boss producers; F-024 Ultimate Protogames Sneaky Prison console producers; F-024 Gauntlet electric-room door lock producer; F-024 Fragment Zero automated defense panel producer; F-024 Space Madness escaped experiment collectible producers; F-024 Infestation parasite producers; F-024 Hall of the Hundred key-fragment producer; F-024 Ultimate Protogames Vend-A-Tron use producer; F-024 Coldblood Krovak/Frostguard kill target group producer; F-024 Skullcano Mordechai final-boss producer; F-024 Sanctuary branch miniboss producers; F-024 Stormtalon Thundercall rush producer; F-024 Stormtalon Blade-Wind/Aethros boss producers; F-024 Coldblood optional interactable producers; F-024 Sanctuary main boss producers; F-024 Ruins Darkwitch Gurka producer; F-024 Skullcano boss producers; F-024 Stormtalon optional miniboss producers; F-024 Sanctuary relic and tech-cluster producers; F-024 Evil from the Ether teleporter gather and Katja boss producers; F-024 Sanctuary Torine Totem of Flame producer; F-024 Skullcano optional interactable producers; F-024 Coldblood Citadel Rally Pell War Drum producer; F-024 Evil from the Ether Open Medbay producer; F-024 Stormtalon's Lair Launch Pad producer; F-024 Infestation Hull Breach and Cargo producers; F-024 Infestation Ship Vents producer; F-024 Infestation Medical Supplies producer; F-024 Space Madness Observation Deck Computer producer; F-024 Fragment Zero Hugo TalkTo producers; F-024 Evil from the Ether Teleporter Controls producer; F-024 Evil from the Ether self-destruct controls producer; F-024 Hall of the Hundred Unbound Flame Elemental producer; F-024 Hall of the Hundred power-link and Harizog producers; F-024 Hall of the Hundred access-terminal and force-field wait producers; F-024 Stormtalon's Lair optional interactable producers; F-024 Hall of the Hundred inside-Hall follow route producers; F-024 Hall of the Hundred courtyard key and gate placement producers; F-024 Hall of the Hundred watchtower floors and courtyard return route producers; F-024 Hall of the Hundred revive and bridge objective producers; F-024 Gauntlet opening and exit talk objective producers; F-024 Evil from the Ether main engineering generator producers; F-024 Stormtalon's Lair Thundercall Storm Totem producer; F-024 Space Madness opening talk objective producers; F-024 Hall of the Hundred locked-gate and Varegor producers; F-024 Hall of the Hundred rejoin/listen opening plan sequence; F-024 Hall of the Hundred Dorian/Artemis opening conversation trigger; F-024 Evil from the Ether Captain Weir talk objective producers; F-024 Hall of the Hundred opening gather type/object trigger credit; F-024 Stormtalon's Lair High Priest trigger creation; F-024 Hall of the Hundred opening gather trigger credit; F-024 Protogames Academy Gromka objective-id correction; F-024 Ultimate Protogames Bev-O-Rage boss death credit; F-024 Evil from the Ether medbay objective producers; F-022 Q5597 CollectableUnit Chua Explosives script binding; F-022 Q3963 activate-cast and Ultimate Protogames Bev-O-Rage runtime producers; F-022 Q5573/Q5575 Power Regulator runtime restoration; F-022 Q3479/Q3480 Trapped Survivor placement-density restoration; F-022 Q3741 Scattered Supplies placement-density restoration; F-022 Q5597 Chua Explosives placement-density restoration; F-022 Q5597 reward/progression hook validation; F-022 Kezrek Warbringer receiver runtime restoration; F-022 Q5583 Heavy Armor runtime restoration; F-022 Q5580 Tower Controls runtime restoration; F-022 Phase 1 validator closure and Q5604 cinematic duplicate guard; F-022 Galeras Q4694/Q4696 kill-credit duplicate guard; F-022 shared instance objective-credit duplicate guard; F-022 Q5604 Tactical Demolitions cannon runtime restoration; F-022 Q3486 Frostbite target-group dispatch; F-022 Evil from the Ether duplicate-credit hardening; F-022 Galeras Q4696 fallback duplicate guards; F-022 Coldblood Citadel Coven/Harizog objective producers; F-022 Q5597 Dregs and Thieves explosives runtime restoration; F-022 Q3673 hidden completion duplicate guard; F-022 Q3781/Q4526 duplicate-credit guards; F-022 Q3741 supply crate one-shot cleanup; F-022 Q3777 Loftite Crystal one-shot cleanup; F-022 composite public-event target-group runtime coverage; F-022 Q3479 Bosun starter and nested target-group runtime coverage; F-022 Q5596 Ordnance Recovery objective-evidence bridge reconciliation; F-022 Q3777 Loftite objective-evidence bridge reconciliation; F-022 Q3486 Loftite objective-evidence bridge reconciliation; F-022 Q3480 objective-evidence bridge reconciliation; F-022 Q3479 objective-evidence bridge reconciliation; F-022 Q3963 objective-evidence bridge reconciliation; F-022 content retail tracker comprehensive Top Gap partition; F-022 content retail tracker blocker expansion; F-022 item reward-evidence canonical ID reconciliation; F-022 Q3479/Q3480 fixed cash reward evidence; F-022 Q3668 Indigenous Intelligence reward and achievement hook evidence; F-022 Q3741 Scattered Supplies reward and achievement hook evidence; F-022 Q3886 Fiery Distraction reward and achievement hook evidence; F-022 Q3673 Contact with Thayd reward and achievement hook evidence; F-022 Q3963 More Important Than Revenge server playability evidence; F-022 Q3667 The Tower server playability evidence; F-022 Q3886 Fiery Distraction server playability evidence; F-022 Blood Pit direct objective-id producer correction; F-022 instance direct objective-id producer evidence; F-022 Q3783 Off with Her Head and Land's Reach Durek route evidence; F-022 Q3781 Captives of the Dominion server playability evidence; F-022 Q3777 By Leaps and Bounds server playability and instance script objective-type evidence; F-022 Gauntlet ScriptWithoutCount progression evidence; F-022 Q3741 Scattered Supplies server playability evidence; F-022 Q3797 Securing the Area server playability evidence; F-022 Q3668 Indigenous Intelligence server playability evidence; F-022 Q3479/Q3480 shared yeti kill target availability; F-022 Q3479/Q3480 Trapped Survivor CSI availability; F-022 Q3671 Setting Up Camp Deadeye receiver path; F-022 Q4696 retreat enemy kill-credit path; F-022 Q3673 Contact with Thayd signal-flare and Deadeye availability evidence; F-022 Q4526 Spatial Anomaly server playability evidence; F-022 row-level content retail tracker plus quest achievement/progression, script-hook, creature/NPC, Jabbithole objective-evidence, Jabbithole reward-evidence, Jabbithole zone-evidence, quest episode-evidence, public-event evidence, public-event auxiliary evidence, challenge evidence, path mission evidence, contract evidence, instance portal evidence, script presentation evidence, script event-flow evidence, script objective producer evidence, script quest progression evidence, script runtime action evidence, and instance script handler evidence inventories; decompile-evidence closure checkpoint; F-011 war-party boss-token packet boundary; F-011 guild recruitment packet-family cached-export recheck; F-004/F-009/F-024 remain partial)
+
+Supplemental update: 2026-06-16 F-024 Infestation jabbithole contaminated shiphand placements.
+Local `jabbithole` evidence now unblocks the strongest remaining Infestation
+(`world 1232`, public event `95`) Contaminated Shiphand placement gap for
+Heal Contaminated Shiphand `231`. Build 16042 maps objective `231` to
+reward-pane TargetGroup `2333` / Creature2 `23837`; local `jabbithole`
+public-event creature rows `1348` and `28034` both bridge to Creature2 `23837`
+through DataMapping. The runtime now promotes only the four overlapping
+current coordinates (`18403`/`6129103`, `18404`/`6129102`, `18405`/`6130630`,
+and `6130740`/`6129104`) as phase-scoped NonPlayer entities, excluding stale
+coordinate `5706` and zero-vector coordinate `6922138`. The existing
+`ContaminatedShiphandEntityScript` credits objective `231` once on activation.
+Focused Infestation tests passed `49/49`, and the content retail validator
+reports `31` generated CSVs / `167,747` rows, all still `not_retail_complete`.
+This remains partial: exact medicine cast/CSI timing, shiphand visual/despawn
+state, rewards, achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Infestation jabbithole medical/hull placements.
+Local `jabbithole` plus build-16042 client evidence now unblocks the remaining
+strong Infestation (`world 1232`, public event `95`) interactable placements
+for Find Medical Supplies `230` and Seal Hull Breaches `1007`. Build 16042
+maps `230` to TargetGroup `2323`, count `1`, Creature2 `22489`; jabbithole PE
+creature `1349` contributes coordinate `5707` at `(-78,-525,51)`.
+Build 16042 maps `1007` to TargetGroup `4516`, count `6`, Creature2 `36844`;
+jabbithole PE creature `1310` contributes nine candidate coordinates, and the
+runtime promotes the first contiguous six (`5593` through `5598`) because they
+match the client objective count. `InfestationEventScript` now spawns
+phase-scoped Simple entities for the supplies objective, its second objective
+reset phase, and the six hull breaches; the existing `MedicalSuppliesEntityScript`
+and `HullBreachEntityScript` credit their mapped target groups once per
+activation. Focused Infestation tests passed `47/47`. This remains partial:
+the three extra hull-breach coordinates (`41731` through `41733`), medical
+second-phase visual/despawn behavior, contaminated shiphand medicine-cast
+visual state, exact interaction visuals, rewards, achievements, and manual
+expedition smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Infestation jabbithole vent/cargo placements.
+Local `jabbithole` evidence now unblocks concrete Infestation (`world 1232`,
+public event `95`) placement gaps for Close the Ship Vents `228` and Tag
+Valuable Cargo `4699`. Build 16042 maps `228` to TargetGroup `2324`, count
+`3`, with Creature2 `22493`; jabbithole PE creature `1361` contributes exactly
+three coordinates (`5738`, `5739`, `5740`). Build 16042 maps `4699` to
+TargetGroup `12593`, count `6`, with Creature2 `69877`; jabbithole PE creature
+`28158` contributes exactly six cargo coordinates (`6130161` through
+`6130164`, `6131402`, `6131403`). `InfestationEventScript` now spawns those
+reviewed Simple interactables during the matching phases, and the existing
+`ShipVentEntityScript` / `CargoContainerEntityScript` credit the mapped
+checklist target groups once per activation. Focused Infestation tests passed
+`37/37`, and the regenerated tracker validates `31` generated CSVs / `167,734` rows
+with `2,389` blocker detail rows, all still `not_retail_complete`. This
+remains partial: exact rotations, interaction visuals, despawn state,
+hull-breach/medical-supply placement mismatches, parasite route/spawn cadence,
+rewards, achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Fragment Zero Project Matron death-credit producer.
+Fragment Zero (`world 3180`, public event `680`) now covers build 16042
+Biomatics Chamber objective `4417`, `DefeatProjectMatron`, with a focused
+runtime death-credit producer. PublicEventObjective `4417` maps to TargetGroup
+`12255`, count `1`; TargetGroup `12255` contains Project "Matron" Creature2
+rows `69088` and `69664`, both linked to public event `680` by DataMapping.
+`ProjectMatronEntityScript` binds those rows to one-shot direct objective
+credit. `FragmentZeroEventScript` already activates `4417`, advances from
+`SearchInsideTheBiomaticsChamberForSyrus` to Project Matron, and advances to
+`SearchCrewmateSyrusCorpse` on Matron success; focused tests now pin the
+activation, success handoff, objective ID, and script filter. Focused Fragment
+Zero/objective-credit tests passed `397/397`, full Game.Tests passed
+`4171/4171`, and the content retail validator reports `31` CSVs / `168,371`
+rows, all `not_retail_complete`. This remains partial: exact Project Matron
+placement/spawn timing, combat mechanics/choreography, rewards, loot,
+achievements, and manual expedition smoke remain blocked. Hubble's read-only
+Deep Space pass kept objective `1847` mapped-only because TargetGroup `6908`
+type `11` expands ambiguously, has nine leaves for objective count `8`, and
+post-`1845` route ordering is still unproven.
+
+Supplemental update: 2026-06-15 F-024 Gauntlet Goon Squad and Slice/Dice death-credit producers.
+Gauntlet (`world 2183`, public event `446`) now covers build 16042 main-event
+objectives `1869` and `1871` with focused runtime death-credit producers.
+PublicEventObjective `1869`, `DefeatTheGoonSquad`, maps to TargetGroup `6863`;
+the client TargetGroup row lists Creature2 `48588`, `48589`, `48591`, `69309`,
+`69310`, and `69311`, while DataMapping also maps the veteran Gauntlet Goonbot
+row as Creature2 `52112`. `GoonSquadEntityScript` binds those rows to one-shot
+direct objective credit. PublicEventObjective `1871`, `DefeatSliceAndDice`,
+maps to TargetGroup `6865` with Slice/Dice Creature2 rows `48557`, `48558`,
+`69306`, and `69307`; `SliceAndDiceEntityScript` binds those rows to one-shot
+direct objective credit. `GauntletEventScript` already activates `1869`, advances
+to `DefeatSliceAndDice` on Goon Squad success, activates `1871`, and advances
+to Shock King on Slice/Dice success; focused tests now pin those route handoffs
+plus the producer filters. Focused Gauntlet/objective-credit tests passed
+`390/390`, full Game.Tests passed `4165/4165`, and the content retail validator
+reports `31` CSVs / `168,371` rows, all `not_retail_complete`. This remains
+partial: exact Goon Squad and Slice/Dice spawn timing, combat/choreography,
+the `69311` versus DataMapping `52112` Goonbot bridge, rewards, loot,
+achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Space Madness Hazmat Suit activation-credit producer.
+Space Madness (`world 2149`, public event `390`) now has focused runtime
+coverage for objective `1656`, `EquipAHazmatSuit`. Build 16042 maps the
+objective to Script object `5628`, count `1`, target/reward pane `6362`, and
+world location `37708`; the reviewed phase-5 instance row is entity
+`1100300012` / Creature2 `45981` (`Hazmat Suit`). `HazmatSuitEntityScript`
+binds Creature2 `45981` and direct-credits `EquipAHazmatSuit` once on
+activation, while existing phase routing continues into `KillHallucinatingLivestock`
+only after objective success. Focused Space Madness tests passed `41/41`, full
+Game.Tests passed `4153/4153`, and the content retail validator reports `31`
+CSVs / `168,371` rows, all `not_retail_complete`. This remains partial:
+hazmat aura/equipment visuals, despawn/reuse semantics, exact client-visible
+completion timing, rewards, loot, achievements, and manual expedition smoke
+remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Ultimate Protogames alarm-panel producer.
+Ultimate Protogames (`world 2980`, public event `594`) now has focused runtime
+coverage for Sneaky Prison objective `4648`, `DisableTheAlarm`. Build 16042
+maps `4648` to `ActivateTargetGroup` object `12478`, count `0`; TargetGroup
+`12478` contains Creature2 `68916` (`[UP] e2678 - Sneaky Prison - Alarm Panel`),
+and DataMapping maps the unique `Alarm Panel` source row to world `2980`.
+`SneakyPrisonAlarmPanelEntityScript` credits TargetGroup `12478` once on
+activation and is filtered to Creature2 `68916`. Focused Ultimate Protogames
+tests passed `14/14`, full Game.Tests passed `4151/4151`, and the content
+retail validator reports `31` CSVs / `168,371` rows, all
+`not_retail_complete`. This remains partial: exact Prototentiary room selection,
+alarm objective activation timing, alarm visual state, rewards, achievements,
+and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-16 F-024 Ultimate Protogames Prototentiary cage/alarm placements.
+Ultimate Protogames (`world 2980`, public event `594`) now has a WIP
+Prototentiary phase that makes the Cage Console `2864` and Alarm Panel `4648`
+objectives playable from promoted Jabbithole/DataMapping placement evidence.
+Build 16042 maps `2864` to `ActivateTargetGroup` object `10583` / Creature2
+`63037`, while Jabbithole public-event objective row `8202` and coordinate
+`6152147` place the Cage Console in world `2980` / area `4333`. Build 16042
+maps `4648` to `ActivateTargetGroup` object `12478` / Creature2 `68916`, and
+Jabbithole creature row `30477` provides Alarm Panel coordinates `6494141`,
+`6494142`, and `6845485`. `UltimateProtogamesEventScript` now chains the WIP
+route from Misplaced Mammoth success into `Prototentiary`, activates `2864` and
+`4648` with dynamic max `1`, and spawns script-owned simple entities
+`1100300081` through `1100300084`; `SneakyPrisonCageConsoleEntityScript` and
+`SneakyPrisonAlarmPanelEntityScript` still perform the one-shot target-group
+credit. Focused Ultimate Protogames tests passed `29/29`, audit tests passed
+`103/103`, and the content-retail validator reports `31` CSVs / `167,789` rows
+with `2,401` blocker detail rows, all `not_retail_complete`. This remains
+partial: a later Gate Console alias bridge now covers the reviewed
+Jabbithole/DataMapping placement versus build TargetGroup alias mismatch, while
+exact random routing, cage/free-intern choreography, alarm/detection/timer
+semantics, rewards, achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Deep Space sabotage cortex producer.
+Deep Space Exploration (`world 2188`, public event `447`) now has a focused
+runtime producer for objective `1849`, `Sabotage $(creature=48996)`. Build
+16042 maps `1849` to `ActivateTargetGroup` object `6905`, count `1`;
+TargetGroup `6905` resolves to Steel Serpent Mainframe Cortex Creature2
+`48996`. `SteelSerpentMainframeCortexEntityScript` credits TargetGroup `6905`
+once on activation and is filtered to Creature2 `48996`. Focused Deep Space
+tests passed `20/20`, and the content retail validator reports `31` CSVs /
+`168,379` rows, all `not_retail_complete`. This remains partial: post-`1845`
+route timing and objective activation, objective `1847` rescue-crew semantics,
+placement/import visibility, interaction visuals, rewards, loot, achievements,
+and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Deep Space containment cell terminal producer.
+Deep Space Exploration (`world 2188`, public event `447`) now extends the
+opening route into objective `1845`, `DisableSpecimenContainmentCells`.
+Build 16042 maps `1845` to `ActivateTargetGroupChecklist` object `6902`, count
+`4`; TargetGroup `6902` resolves to containment-cell terminal Creature2 rows
+`48991`, `49800`, `49801`, and `49802`. `DeepSpaceExplorationEventScript` now
+advances from the crew checklist objective `1968` to a containment-cell phase,
+activates objective `1845`, and then stops again at that evidence boundary.
+`SpecimenContainmentCellTerminalEntityScript` credits TargetGroup `6902` once
+on activation for those terminal rows. Focused Deep Space tests passed `17/17`.
+This remains partial: exact terminal placement/import visibility, specimen-cell
+door state, released-creature/choreography effects, follow-up route ordering,
+rewards, loot, achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Sanctuary Moldwood Mauler script objective producer.
+Sanctuary of the Swordmaiden (`world 1271`, public event `166`) now has
+focused runtime coverage for objective `627`, `KillDistractedMoldwoodMaulers`.
+Build 16042 maps `627` to Script objective object `3391`, count `5`; TargetGroup
+`3391` resolves to the e627 Moldwood Mauler Creature2 rows `29311`, `29310`,
+`72988`, and `72999`. `SanctuaryOfTheSwordmaidenEventScript` now exposes the
+objective through the existing WIP optional gate in the Moldwood Overlord Skash
+phase, and `DistractedMoldwoodMaulerEntityScript` credits objective `627` once
+on death for those rows. Focused Sanctuary plus shared objective-credit tests
+passed `383/383`; the content retail validator reports `31` CSVs / `168,371`
+rows, all `not_retail_complete`. This remains partial: exact decoy-splorg
+distraction semantics, Moldwood Mauler placement/spawn density, visual/client
+credit timing, rewards, achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Ultimate Protogames Downsizer death-credit producer.
+Ultimate Protogames Downsizer scaffold (`world 3041`, public event `642`) now has focused
+runtime coverage for objective `3197`: `DownsizerEntityScript` binds Creature2
+`61420` (`The Downsizer`, `[UP20] Overcharger Boss`) to one-shot direct Script
+objective credit for `DefeatTheDownsizer`. The event script continues to
+activate the Downsizer objective set and finish the event when objective `3197`
+succeeds; generated dependency and producer evidence now marks `3197` as
+runtime death-credit/finish tested and marks objectives `3266`/`3267`/`3268`/
+`3269` as runtime activation-tested but still blocked on exact ability-state
+proof. Focused Ultimate Protogames Downsizer/shared objective-credit tests
+passed `620/620`, the broader instance/public-event filter passed `1846/1846`,
+Python content-retail audit/validator tests passed `103` with `21` subtests,
+and generated coverage validates `31` CSVs / `167,909` rows, all
+`not_retail_complete`. No retail-complete claim: reviewed `61420`
+placement/spawn visibility, boss mechanics/choreography, the four challenge
+objective semantics, rewards, loot, achievements, and manual dungeon-side smoke
+remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Sanctuary Soul Spore mapped activation-credit hook.
+Sanctuary of the Swordmaiden (`world 1271`, public event `166`) now has
+focused runtime coverage for mapped objective `497`: `SoulSporeEntityScript`
+binds Creature2 `70947` (localized `Soul Spore`, `[TS] e497 - Spirit Bomb 1 -
+Activatable Unit`) to one-shot direct Script objective credit for
+`UseTheSoulSporeOnMoldwoodGorgers`, while `SanctuaryOfTheSwordmaidenEventScript`
+continues to activate the WIP optional objective during the Moldwood Overlord
+Skash phase. Focused Sanctuary tests passed `391/391`, and the content retail
+validator reports `31` CSVs / `168,371` rows, all `not_retail_complete`.
+Tesla's read-only evidence pass confirmed the ID correlation but kept the slice
+partial: reviewed `70947` placement, Spell4 `80451` effect/destruction
+semantics, Soul Spore explosion/choreography, Moldwood Gorger count/destroy
+behavior, rewards, achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Deep Space opening talk and crew checklist producers.
+Deep Space Exploration (`world 2188`, public event `447`) now covers the
+opening Captain Tyrania talk objective `1844` and crew checklist objective
+`1968`: `DeepSpaceExplorationEventScript` starts in the Captain Tyrania
+phase, activates objective `1844`, advances to the crew checklist on Captain
+success, then activates objective `1968`. `CaptainTyraniaEntityScript` binds
+TargetGroup `6873` / Creature2 `48900`; `GalacticObserverCrewMemberEntityScript`
+binds TalkToChecklist TargetGroup `6966` / Creature2
+`49474`/`49475`/`49476`/`49477`/`49479`/`49480`. Focused Deep Space tests
+passed `12/12`, and the content retail validator reports `31` CSVs /
+`168,368` rows, all `not_retail_complete`. Remaining blockers are exact
+entity placement/import visibility, dialog/choreography, later route objectives,
+real cinematic payload, rewards, loot, achievements, and manual expedition
+smoke.
+
+Supplemental update: 2026-06-15 F-024 Gauntlet Shock King and Brick Braggor death-credit producers.
+Gauntlet (`world 2183`, public event `446`) now has focused runtime
+coverage for main-event boss objectives `1874` and `4671`: `GauntletEventScript`
+activates `DefeatTheShockKing`, advances to `DefeatBrickBraggor` on success,
+activates `DefeatBrickBraggor`, and advances to final NPC talk on Brick success.
+`ShockKingEntityScript` binds TargetGroup `6867` Creature2 rows `48554`/`69305`
+to one-shot direct death credit; `BrickBraggorEntityScript` binds Creature2
+`69688` while excluding Brick's Pet Splorg `69728`. Focused Gauntlet plus
+shared objective-credit tests passed `370/370`, and the content retail
+validator reports `31` CSVs / `168,360` rows, all `not_retail_complete`.
+Remaining blockers are exact Shock King/Brick spawn timing, boss/pet mechanics,
+arena/cinematic choreography, rewards, loot, achievements, and manual expedition
+smoke.
+
+Supplemental update: 2026-06-15 F-024 Infestation medbay attack death-credit producer.
+Infestation (`world 1232`, public event `95`) now credits objective `4698` /
+`DefeatTheAttackOnMedbay` from the build 16042 Lashing Fiend evidence:
+PublicEventObjective `4698` is `KillTargetGroup` object `12905`, TargetGroup
+`12905` contains Creature2 `69871`, and the creature/public-event map links
+Creature2 `69871` (`Lashing Fiend`) to `Shiphand: Infestation`. The existing
+`InfestationEventScript` phase route activates objective `4698` and advances to
+the second medical-supplies phase after success; `LashingFiendEntityScript`
+adds one-shot direct death credit. Focused Infestation plus shared objective
+credit tests passed `365/365`, and the content retail validator reports `31`
+CSVs / `168,358` rows, all `not_retail_complete`. Remaining blockers are exact
+Lashing Fiend spawn timing/count, medbay combat choreography, rewards,
+achievements, and manual expedition smoke.
+
+Supplemental update: 2026-06-15 F-024 Fragment Zero prototype death-credit producers.
+Fragment Zero (`world 3180`, public event `680`) now has focused runtime
+coverage for Incubation Complex prototype objectives `4423`, `4449`, and
+`4450`: `FragmentZeroEventScript` activates all three in `DefeatPrototypes`,
+and `PrototypeAlphaEntityScript`, `PrototypeBetaEntityScript`, and
+`PrototypeDeltaEntityScript` bind TargetGroups `12269`/`12270`/`12271` to
+Creature2 pairs `67526`/`69672`, `67527`/`69673`, and `67528`/`69674` for
+one-shot direct death credit. Focused Fragment Zero plus shared objective
+credit tests passed `364/364`. The content retail validator now reports `31`
+CSVs / `168,358` rows, all `not_retail_complete`. Remaining blockers include
+exact prototype spawn placement, combat mechanics/choreography, rewards, loot,
+achievements, and manual expedition smoke.
+
+Supplemental update: 2026-06-15 F-024 Hall of the Hundred Holocube explanation and talk producers.
+Hall of the Hundred / Vault of the Archon (`world 3009`, public event `666`)
+now covers the missing Holocube segment after force-field deactivation:
+`HallOfTheHundredEventScript` activates and credits objective `4971`
+(`WatchHolocubeExplainVault`), then activates objective `5100`
+(`SpeakAboutHolocube`) before continuing to the construct phase. Dorian Walker
+and Artemis Zin now have dedicated TalkTo producers for TargetGroup `14194`
+via Creature2 rows `67423` and `67425`. Focused Hall plus shared objective
+credit tests passed `463/463`. The content retail validator now reports `31`
+CSVs / `168,355` rows, all `not_retail_complete`. Remaining blockers include
+exact Holocube presentation/dialog timing, NPC choreography, construct
+mechanics, rewards, loot, achievements, and manual dungeon smoke.
+
+Supplemental update: 2026-06-15 F-024 Skullcano Gold-Infused Lava Node death-credit producer.
+Skullcano (`world 1263`, public event `148`) now has focused runtime
+coverage for cave-path objective `338`: `SkullcanoEventScript` activates
+`MineGoldInfusedLavaCores` during `RandomPathFindChief`, and
+`GoldInfusedLavaNodeEntityScript` binds TargetGroup `7766` Creature2 rows
+`24680` and `24921` to one-shot direct objective credit. Focused Skullcano and
+shared objective-credit tests passed `337/337`, and the content-retail
+validator reports `31` generated CSVs / `168,351` rows with `3,273` blocker
+detail rows, all `not_retail_complete`. The tracker marks the instance,
+dependency, objective-producer, and roll-up rows as runtime-tested while
+preserving blockers for exact lava-node placement/count, mining visual/despawn
+state, cave-route availability, rewards, loot, achievements, and manual
+dungeon smoke.
+
+Supplemental update: 2026-06-15 F-024 Space Madness Hallucinating Livestock death-credit producer.
+Space Madness (`world 2149`, public event `390`) now has focused runtime
+coverage for phase-4 objective `1593`: `HallucinatingLivestockEntityScript`
+binds reviewed Creature2 rows `46483` and `46714` to one-shot
+`KillHallucinatingLivestock` death credit, and `SpaceMadnessEventScript`
+advances the route to `ActivateAirScrubberControls` when that objective
+succeeds. Focused Space Madness and shared objective-credit tests passed
+`339/339`, and the content-retail validator reports `31` generated CSVs /
+`168,346` rows with `3,273` blocker detail rows, all `not_retail_complete`. The tracker
+marks the instance, queue, dependency, event-flow, objective-producer, and
+blocker rows as runtime-tested while preserving blockers for exact combat
+cadence, client-visible kill credit/cleanup, rewards, loot, achievements,
+later placement/import smoke, and manual expedition smoke.
+
+Supplemental update: 2026-06-15 F-024 Gauntlet Championator death-credit producer.
+Gauntlet (`world 2183`, public event `446`) now has focused runtime
+coverage for Charnel Chamber objective `1865`: `GauntletEventScript` already
+activates `KillTheChampionator` from the `EnterTheCharnelChamber` branch, and
+`ChampionatorEntityScript` binds TargetGroup `6856` Creature2 rows `48529`
+and `69255` to one-shot direct objective credit. Focused Gauntlet and shared
+objective-credit tests passed `323/323`, and the content-retail validator
+reports `31` CSVs / `168,344` rows, all `not_retail_complete`. The tracker
+marks the instance, queue, dependency, and objective-producer rows as
+runtime-tested while preserving blockers for exact Charnel Chamber spawn
+timing, Championator combat mechanics, branch/arena choreography, rewards,
+loot, achievements, and manual expedition smoke.
+
+Supplemental update: 2026-06-15 F-024 Fragment Zero Cargo Crate runtime credit.
+Fragment Zero (`world 3180`, public event `680`) now has focused runtime
+coverage for cargo crate objective `4431`: the Life Overseer search phase
+activates `CollectCargoCrate`, and `CargoCrateEntityScript` binds Creature2
+`67965`, credits `PublicEventObjectiveType.VirtualCollect` object `1176` once,
+and removes the collectable after activation. Focused Fragment Zero tests
+passed `32/32`. The tracker marks the instance, queue, dependency,
+event-flow, objective-producer, and blocker rows as runtime-tested while
+preserving `not_retail_complete` blockers for exact placement/import parity,
+client collect UI/animation, respawn/despawn lifecycle, rewards, achievements,
+and manual expedition smoke.
+
+Supplemental update: 2026-06-15 F-024 Evil from the Ether Crew Log runtime pinning.
+Evil from the Ether (`world 3404`, public event `781`) now has focused
+runtime coverage for the seven Crew Log `Creature2 71234` checklist mappings.
+`CrewLogEntityScript` maps checklist indexes `0..6` to `CrewLog1..CrewLog7`,
+broadcasts the client-linked communicator message to all current expedition
+players, credits `DownloadCrewLogs` / objective `4947` exactly once, repeats
+playback without duplicate credit, and no-ops unknown checklist indexes. The
+event-script side also keeps `DownloadCrewLogs` activated during `OpenMedbay`.
+Focused Evil from the Ether tests passed `71/71`, and the content-retail
+validator reports `31` CSVs / `168,342` rows, all `not_retail_complete`. The
+tracker marks the crew-log entity, presentation, objective-producer,
+event-flow, handler, dependency, instance, queue, and blocker rows as
+runtime-tested while preserving blockers for official import parity,
+client-visible communicator/UI timing, cleanup/replay behavior, rewards,
+achievements, and manual expedition smoke.
+
+Supplemental update: 2026-06-15 F-024 Datascape Broodmother/Gloomclaw/Logic/Warmonger/Avatus reviewed placements.
+Datascape (`world 1333`, public event `157`) now also spawns reviewed later
+boss/objective placements for Bio-Enhanced Broodmother entity `1100300067` /
+Creature2 `31885`, Gloomclaw `1100300068` / Creature2 `30498`,
+Hyper-Accelerated Skeledroid `1100300069` / Creature2 `48065`, Augmented
+Herald of Avatus `1100300070` / Creature2 `48374`, Warmongers
+`1100300071`-`1100300074`, and Avatus `1100300075` / Creature2 `30505`.
+The runtime hooks cover ED-1-to-Broodmother activation, phase `157:11`,
+GeneratorCharge2, GeneratorCharge8, Warmonger phases `157:19`-`157:22`, and
+Avatus phase `157:26`, preserving reviewed areas, positions, rotations,
+display/faction data, objective-credit scripts, and Health/Level overrides with
+duplicate-spawn guards. Focused Datascape tests passed `92/92`. Datascape
+remains `not_retail_complete`: exact boss mechanics/choreography,
+visibility/despawn cleanup, Hydroflux/Mnemesis mechanics, communicator and
+cinematic timing, doors/triggers, wing order, challenge mechanics, rewards,
+loot, achievements, and manual raid smoke remain blocked. The content-retail
+validator reports `31` CSVs / `168,342` rows, all `not_retail_complete`.
+
+Supplemental update: 2026-06-15 F-024 Shade's Eve reviewed Etty/fountain placements.
+Shade's Eve (`world 3044`, public event `597`) now spawns reviewed early
+event-instance anchors: Fountain Gathering Circle entity `1100300058` /
+Creature2 `64820` during phase `597:0`, and Etty Windsen entity `1100300057` /
+Creature2 `62747` during phase `597:1`. The runtime models preserve the
+reviewed positions, rotations, display/faction data, Etty outfit `7913`, and
+Etty Health `1` / Level `50` overrides, with duplicate-spawn guards. Focused
+Shade's Eve tests passed `12/12`, covering objective activation, TheAngel5
+broadcast preservation, model data, map enqueue, and duplicate guards. Shade's
+Eve remains `not_retail_complete`: exact trigger/gather credit, Etty TalkTo
+credit, cleanup/visibility timing, communicator/cinematic timing, vote follow-up,
+rewards, loot, achievements, and manual event-instance smoke remain blocked.
+The content-retail validator reports `31` CSVs / `168,342` rows, all
+`not_retail_complete`.
+
+Supplemental update: 2026-06-15 F-024 Protogames Academy Iruki/Seek/Icebox reviewed placements.
+Protogames Academy (`world 3173`, public event `667`) now also spawns the
+reviewed Iruki Boldbeard entity `1100300034` / Creature2 `67663` during phase
+`667:7`, Seek-N-Slaughter entity `1100300035` / Creature2 `67668` during phase
+`667:11`, and Icebox Mk. 2 entity `1100300036` / Creature2 `67757` during
+phase `667:13`. The runtime `EntityModel` rows preserve the reviewed areas,
+positions, displays, factions `1322` / `233`, event bindings,
+`IrukiBoldbeardEntityScript` / `SeekNSlaughterEntityScript` /
+`IceboxMk2EntityScript`, and Health `1` / Level `10` overrides. Focused
+Protogames Academy plus shared objective-credit tests passed `327/327`,
+covering objective activation, Phineas message preservation, model data, map
+enqueue, event/script/stat/faction wiring, and duplicate spawn guards for all
+five currently promoted boss placements. Protogames Academy remains
+`not_retail_complete`: exact boss telegraphs, interrupt/combat timing,
+Seek-N-Slaughter adds, Icebox behavior, trigger cleanup, platform/launcher
+choreography, rewards, loot, achievements, and manual dungeon smoke remain
+blocked. The content-retail validator reports `31` CSVs / `168,339` rows, all
+`not_retail_complete`.
+
+Supplemental update: 2026-06-15 F-024 Datascape Second Frost Boulder and Frostbringer reviewed placements.
+Datascape (`world 1333`, public event `157`) now spawns reviewed Frost wing
+placements for Second Frost Boulder Avalanche entity `1100300065` / Creature2
+`56200` during phase `157:4` and Frostbringer Warlock entity `1100300066` /
+Creature2 `31674` during phase `157:5`. The runtime `EntityModel` rows preserve
+area `4476`, positions `3635.073, -745.20, -3373.29` and
+`3328.50, -696.86, -3639.44`, rotations `1.11529, 0, 0` and
+`-1.42842, 0, 0`, displays `27434` / `23490`, faction `1171`,
+`FrostBoulderAvalancheSecondEntityScript` / `FrostbringerWarlockEntityScript`,
+and Health `14500000` / `15900000` plus Level `50` overrides. Focused Datascape
+plus shared objective-credit tests passed `364/364`, covering objective
+activation, phase model data, map enqueue, duplicate prevention, existing phase
+advancement, and both death-credit script bindings. Datascape remains
+`not_retail_complete`: exact Frost Boulder/Frostbringer mechanics,
+visibility/despawn cleanup, encounter choreography, wing order, rewards, loot,
+achievements, and manual raid smoke remain blocked. The content-retail validator
+still reports `31` CSVs / `168,339` rows, all `not_retail_complete`.
+
+Supplemental update: 2026-06-15 F-024 Red Moon Terror Laveka reviewed placement.
+Red Moon Terror (`world 3032`, public event `705`) now spawns reviewed Laveka
+entity `1100300056` / Creature2 `65997` when the event reaches the Laveka
+phase. The source row has no `entity_event` binding, so the runtime spawn is
+phase-owned by `RedMoonTerrorEventScript` and preserves area `5996`, position
+`-723.7178, 186.8427, -265.1872`, rotation `3.1415927, 0, 0`, display `38426`,
+faction `1351`, script `LavekaTheDarkHeartedEntityScript`, and Health `1` /
+Level `50` overrides. Focused Red Moon Terror plus shared objective-credit tests
+passed `340/340`, covering objective activation, static model data, map enqueue,
+duplicate prevention, and the Laveka death-credit binding. Red Moon Terror
+remains `not_retail_complete`: Laveka awakening, apparition challenge logic,
+combat choreography, communicator/cinematic timing, doors/elevators, rewards,
+loot, achievements, and manual raid smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Protogames Academy Invulnotron and Gromka reviewed placements.
+Protogames Academy (`world 3173`, public event `667`) now spawns the reviewed
+Invulnotron entity `1100300031` / Creature2 `67475` during phase `667:3` and
+Gromka entity `1100300033` / Creature2 `67594` during phase `667:5`. The
+runtime `EntityModel` rows preserve the reviewed areas, positions, displays,
+faction `1322`, event bindings, `InvulnotronEntityScript` /
+`GromkaEntityScript`, and Health `1` / Level `10` overrides. Focused Protogames
+Academy tests passed `29/29`, covering objective activation, Phineas message
+preservation, model data, map enqueue, event/script/stat wiring, and duplicate
+spawn guards. The tracker marks both boss placement/event/script/stat rows plus
+the objective activation and direct credit-script evidence as automated-test
+backed while Protogames Academy remains `not_retail_complete`: exact boss
+telegraphs, interrupt/combat timing, trigger cleanup, platform/launcher
+choreography, rewards, loot, achievements, and manual dungeon smoke remain
+blocked.
+
+Supplemental update: 2026-06-15 F-024 Datascape First Frost Boulder reviewed placement.
+Datascape (`world 1333`, public event `157`) now spawns reviewed phase-3
+First Frost Boulder Avalanche entity `1100300064` / Creature2 `31677` during
+`FirstFrostBoulder`, alongside objective `388` /
+`DefeatTheFirstFrostBoulderAvalanche`. The runtime `EntityModel` preserves area
+`4475`, event binding `157:3`, position `3356.48, -765.57, -3246.29`,
+rotation `0.17427, 0, 0`, display `27434`, faction `1171`, script
+`FrostBoulderAvalancheFirstEntityScript`, and Health `14500000` / Level `50`
+overrides. Focused Datascape plus shared objective-credit tests passed
+`360/360`, covering objective activation, phase-3 model data, map enqueue,
+duplicate prevention, existing branch advancement, and death-credit script
+binding. The tracker marks the First Frost Boulder entity/event/script/stat
+rows plus objective activation/credit evidence as automated-test-backed while
+Datascape remains `not_retail_complete`: exact avalanche mechanics,
+visibility/despawn cleanup, encounter choreography, wing order, rewards, loot,
+achievements, and manual raid smoke remain blocked. The content-retail
+validator still reports `31` CSVs / `168,339` rows, all `not_retail_complete`.
+
+Supplemental update: 2026-06-15 F-024 Genetic Archives reviewed opening placements.
+Genetic Archives (`world 1462`, public event `159`) now activates opening
+boss objectives `410` / `DefeatExperimentX89` and `412` /
+`DefeatKuralakTheDefiler` on `Enter`, then duplicate-guard spawns reviewed
+opening placements for Experiment X-89 entity `1100300052` / Creature2 `49198`,
+Kuralak the Defiler entity `1100300053` / Creature2 `52969`, and Kuralak
+pillar entity `1100300054` / Creature2 `53031`. The runtime models preserve
+the reviewed no-`entity_event` shape, world `1462`, area `0`, coordinates,
+rotations, displays, faction `1209`, script hooks, and Health `1` / Level `50`
+overrides. Focused Genetic Archives plus shared objective-credit tests passed
+`325/325`, covering objective activation, model data, map enqueue, duplicate
+prevention, existing phase advancement, and death-credit script bindings. The
+tracker marks the opening entity/script/stat rows and the new objective
+activation evidence as automated-test-backed while Genetic Archives remains
+`not_retail_complete`: boss mechanics, Kuralak pillar behavior,
+communicator/cinematic timing, weekly/random selection, choreography,
+doors/elevators, rewards, loot, achievements, and manual raid smoke remain
+blocked. The content-retail validator now reports `31` CSVs / `168,339` rows,
+all `not_retail_complete`.
+
+Supplemental update: 2026-06-15 F-024 Infestation Captain Tolben reviewed placement.
+Infestation (`world 1232`, public event `95`) now spawns reviewed Captain
+Tolben entity `1100300016` / Creature2 `71764` as a duplicate-guarded static
+opening NPC during `ProceedOntoTheCargoShip`. The runtime `EntityModel`
+preserves area `1158`, position `4.41241, -500, 14.0114`, display `28578`,
+faction `219`, no `entity_event` or script rows, and Health `1`; the existing
+cargo-ship turnstile remains the participant-credit producer. Focused
+Infestation tests passed `30/30`, covering Tolben model data, map enqueue,
+trigger creation, duplicate prevention, existing producers, branch advancement,
+and final parasite completion. The tracker marks Tolben entity/stat rows as
+automated-test-backed while Infestation remains `not_retail_complete`: exact
+NPC dialog/interaction, visibility/despawn timing, parasite route selection,
+combat choreography, rewards, achievements, and manual expedition smoke remain
+blocked. The content-retail validator still reports `31` CSVs / `168,335`
+rows, all `not_retail_complete`.
+
+Supplemental update: 2026-06-15 F-024 Ruins of Kel Voreth reviewed boss placements.
+Ruins of Kel Voreth (`world 1336`, public event `161`) now spawns the reviewed
+boss placements for the main chain: Grond the Corpsemaker entity `1100300045` /
+Creature2 `32534` in phase `161:1`, Slavemaster Drokk entity `1100300046` /
+Creature2 `32536` in phase `161:2`, and Forgemaster Trogun entity `1100300044`
+/ Creature2 `32531` in phase `161:3`. The runtime `EntityModel` rows preserve
+the reviewed coordinates, displays, faction `691`, script names, event phase
+bindings, and Level `25` stat overrides, with duplicate-spawn guards. Focused
+Ruins tests passed `16/16`, covering phase objective activation, model data,
+map enqueue, phase/script/stat wiring, duplicate prevention, and existing final
+event completion. The tracker marks the boss entity, entity-event, script, and
+stat rows as automated-test-backed. Ruins of Kel Voreth remains
+`not_retail_complete`: exact boss combat mechanics, encounter choreography,
+doors/triggers, optional routes, reward/loot hooks, achievements, and manual
+dungeon smoke remain blocked. The content-retail validator still reports `31`
+CSVs / `168,335` rows, all `not_retail_complete`.
+
+Supplemental update: 2026-06-15 F-024 Gauntlet airlock gather marker reviewed placement.
+Gauntlet (`world 2183`, public event `446`) now spawns reviewed Simple gather
+marker entity `1100300014` / Creature2 `58979` during `GetIntoAirlock`, at the
+build 16042 airlock position `523.0805, 0.1994047, -507.9437`. The runtime
+`EntityModel` preserves EntityType `Simple`, area `2620`, display `30327`,
+faction `219`, and the source's no-`entity_event`, no-script/stat shape while
+leaving the existing WorldLocation trigger `38909` / object `5735` in place for
+participant credit. Focused Gauntlet tests passed `27/27`, covering objective
+activation, marker model data, map enqueue, trigger creation, and duplicate
+marker prevention. The tracker marks the marker placement as
+automated-test-backed, while Gauntlet remains `not_retail_complete`: exact
+static-vs-phase visibility, cleanup timing, airlock choreography, encounter behavior, rewards,
+loot, achievements, and manual expedition smoke remain blocked. The
+content-retail validator still reports `31` CSVs / `168,335` rows, all
+`not_retail_complete`.
+
+Supplemental update: 2026-06-15 F-024 Outpost M-13 Captain Milo reviewed placement and talk producer.
+Outpost M-13 (`world 1319`, public event `108`) now spawns reviewed Captain
+Milo entity `1100300017` (Creature2 `41201`, event `108:0`) when the opening
+`TalkToCaptainMilo` phase activates. The runtime `EntityModel` preserves area
+`1540`, position `9791.18, -932.668, 5264.279`, display `28578`, faction
+`466`, and Health `1`. `CaptainMiloEntityScript` binds Creature2 `41201` and
+credits objective `1441` by TalkTo TargetGroup `5308` on activation. Focused
+Outpost tests passed `10/10`, covering initial phase, Captain Milo model/event/
+stat data, map enqueue, duplicate spawn prevention, TalkTo credit, Hive Queen
+phase activation, and shuttle completion. The tracker marks the Captain Milo
+entity, entity-event, stat, producer, and instance-dependency rows as
+automated-test-backed. The content-retail validator still reports `31` CSVs /
+`168,335` rows, all `not_retail_complete`. Outpost M-13 remains partial:
+client dialog/choreography, visibility/cleanup timing, boss mechanics, shuttle
+trigger behavior, rewards, achievements, and manual expedition smoke remain
+blocked.
+
+Supplemental update: 2026-06-15 F-024 Space Madness reviewed console/control/suit placements.
+Space Madness (`world 2149`, public event `390`) now spawns the reviewed
+Simple placement rows for the later utility phases: Observation Deck Computer
+entity `1100300007` (Creature2 `45972`, event `390:2`), Hazmat Control Panel
+entity `1100300008` (Creature2 `46092`, event `390:3`), and Hazmat Suit entity
+`1100300012` (Creature2 `45981`, event `390:5`). The runtime `EntityModel`
+rows preserve EntityType `Simple`, area `2415`, display `23951`, faction `219`,
+the source WIP/GUESSED coordinates, and duplicate spawn guards. Focused Space
+Madness tests passed `38/38`, covering phase objective activation, Simple model
+data, event bindings, map enqueue positions, and duplicate prevention. The
+tracker marks the three entity rows and three entity-event rows as
+automated-test-backed, while Space Madness remains `not_retail_complete`: the
+source comments still say the coordinates need fixing, and exact interaction
+visual states, console/control/suit choreography, hazmat door/suit behavior,
+cleanup timing, rewards, loot, achievements, and manual expedition smoke remain
+blocked.
+
+Supplemental update: 2026-06-15 F-024 Outpost M-13 Hive Queen death-credit producer.
+Outpost M-13 (`world 1319`, public event `108`) now credits objective `257` /
+`KillHiveQueen` from the build 16042 Hive Queen Creature2 `23513` death path.
+Build 16042 objective evidence maps `257` to
+`Kill the $(creature=23513) in the Abandoned Space Mine` with object/TargetGroup
+`5318`; DataMapping public-event creature evidence maps Hive Queen to Creature2
+`23513`, while TargetGroup `5318` also names the `69078` variant that remains
+blocked until route proof. Focused Outpost plus shared objective-credit tests
+passed `298/298`, covering Hive Queen phase activation, advancement to Captain
+Milo's shuttle, final event finish, non-succeeded objective guarding, Creature2
+script binding, and once-only death credit. The content-retail validator now
+reports `31` generated CSVs / `168,335` rows, all still
+`not_retail_complete`. The tracker marks objective `257` as
+automated-test-backed while Outpost M-13 remains `not_retail_complete`:
+exact boss mechanics, spawn/despawn timing, variant routing, shuttle trigger
+behavior, rewards, achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Infestation contaminated shiphand heal producer.
+Infestation (`world 1232`, public event `95`) now credits objective `231` /
+`HealContaminatedShiphand` from the build 16042 Contaminated Shiphand Creature2
+`23837` activation path. Build 16042 objective evidence maps `231` to
+`Use medicine to heal $m(creature=23837)`, and DataMapping maps Contaminated
+Shiphand public-event creature rows to Creature2 `23837`. Focused Infestation
+tests passed `28/28`, covering the Creature2 script binding, once-per-entity
+heal credit, phase activation, branch advancement, existing ship vent/medical
+supplies/hull breach/cargo/parasite producers, and final parasite completion.
+The tracker marks objective `231` as automated-test-backed while Infestation
+remains `not_retail_complete`: exact medicine cast/CSI timing, shiphand
+visibility/despawn state, parasite route selection, spawn timing, combat
+choreography, rewards, achievements, and manual expedition smoke remain
+blocked. A later 2026-06-16 supplemental update covers the Jabbithole-backed
+shiphand placement promotion.
+
+Supplemental update: 2026-06-15 F-024 Hall of the Hundred final completion boundary.
+Hall of the Hundred (`world 3009`, public event `666`) now finishes the
+public event when final objective `4329` / `DefeatOsunBlockingTheWay` succeeds.
+The existing route already advances through Harizog into the final Osun-blocker
+phase; this patch closes the server-side completion boundary with focused tests.
+Focused Hall tests passed `133/133`, covering final success `Finish(PublicTeam)`
+and guarding non-succeeded final objective status from premature completion. The
+tracker marks the new public-event Finish runtime-action evidence and Hall row
+as automated-test-backed, while Hall remains `not_retail_complete`: exact final
+Osun encounter semantics, reward/completion side effects, cleanup/replay timing,
+portal/exit behavior, loot, achievements, and manual dungeon smoke remain
+blocked.
+
+Supplemental update: 2026-06-15 F-024 Space Madness phase-4 livestock reviewed placements.
+Space Madness (`world 2149`, public event `390`) now spawns the reviewed
+phase-4 livestock/crew targets for the `KillHallucinatingLivestock` branch:
+Exact Change 3.0 entity `1100300009` (Creature2 `46483`) and Blazing Crewman
+entities `1100300010`/`1100300011` (Creature2 `46714`). The runtime
+`EntityModel` rows preserve event binding `390:4`, area `2415`, reviewed
+coordinates/rotations, displays `27827`/`26022`, outfit `9347` for the crewmen,
+faction `218`, and stat overrides `Health=1` and `Level=32`. Focused Space
+Madness tests passed `36/36`, covering branch objective activation, reviewed
+model data, map enqueue positions, phase bindings, stat overrides, and duplicate
+spawn guards. The tracker marks the three entity rows, three entity-event rows,
+and six stat rows as automated-test-backed, while Space Madness remains
+`not_retail_complete`: exact combat cadence, kill-credit/client smoke, cleanup
+timing, later reviewed console/control/suit placements, rewards, loot,
+achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Coldblood Citadel reviewed phase placements.
+Coldblood Citadel (`world 3522`, public event `907`) now spawns the reviewed
+Gather Ring entity `1100300002` in phase `0` and the reviewed Coldblood Gate
+entity `1100300003` in phase `2`. The Gather Ring runtime model preserves
+Creature2 `75624`, EntityType `Simple`, display `30327`, faction `219`, event
+binding `907:0`, and exact reviewed coordinates, while the Gate preserves
+Creature2 `75698`, EntityType `Door`, display `36619`, faction `219`, event
+binding `907:2`, reviewed rotation, and exact coordinates. Focused Coldblood
+tests passed `35/35`, covering trigger placement, entity model data, phase
+bindings, map enqueue positions, cleanup of the existing Gather Ring during the
+Hailstone transition, and duplicate spawn guards. The tracker marks the two
+entity/event row families as automated-test-backed, while Coldblood Citadel
+remains `not_retail_complete`: exact gate choreography, Hailstone/Iceblood/
+Harizog mechanics, rewards, loot, achievements, optional route weights,
+visual/despawn timing, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Fragment Zero Freight Supervisor Lola reviewed placement.
+Fragment Zero (`world 3180`, public event `680`) now spawns reviewed Freight
+Supervisor Lola entity `1100300015` during the current
+`ContinueTheSearchForTheMissingCrew` phase. The runtime `EntityModel` preserves
+Creature2 `71762`, area `4619`, display `32807`, faction `219`, no
+`entity_event` binding, exact reviewed coordinates, and stat overrides
+`Health=1`, `Shield=0`, and `Unknown22=0`. Focused Fragment Zero plus shared
+objective-credit tests passed `317/317`, covering objective activation,
+placement/model data, stat overrides, the existing trigger/cinematic paths, and
+duplicate spawn guards. The tracker marks the Lola entity/stat rows as
+automated-test-backed, while Fragment Zero remains `not_retail_complete`:
+exact NPC dialog/choreography timing, spawn/despawn lifecycle, broader
+encounter mechanics, rewards, loot, achievements, and manual expedition smoke
+remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Evil from the Ether Drive Spark reviewed placements.
+Evil from the Ether (`world 3404`, public event `781`) now spawns reviewed
+Drive Spark entities `1100300018` through `1100300028` during the current
+`PickUpDriveSchematics` phase. The runtime `EntityModel` rows preserve
+Creature2 `71847`, display `24324`, faction `219`, event binding `781:23`,
+and the reviewed coordinates/rotations. Focused Evil from the Ether plus shared
+objective-credit tests passed `311/311`, covering objective activation,
+spawn/model placement, and duplicate spawn guards. The tracker marks the
+Drive Spark entity/event rows as automated-test-backed, while Evil from the
+Ether remains `not_retail_complete`: exact diagnostics visual/despawn timing,
+medbay cleanup/phase timing, organism spawn/wave cadence, rewards,
+achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Space Madness opening talk NPC reviewed placements.
+Space Madness (`world 2149`, public event `390`) now spawns the reviewed
+opening TalkTo NPC placements for Captain Tero entity `1100300005` in phase `0`
+and Major Lee Barmy entity `1100300006` in phase `1`. The runtime `EntityModel`
+rows preserve build 16042 Creature2 ids `45900`/`45812`, areas `2483`/`2482`,
+displays `28578`/`29020`, outfit `9128` for Major Lee Barmy, factions `466` and
+`219`, event bindings `390:0`/`390:1`, exact reviewed coordinates, and the
+`Health=1` stat overrides. Existing Creature2-bound scripts continue to credit
+TalkTo TargetGroups `6342` and `6358`. Focused Space Madness tests passed
+`34/34`, covering phase activation, spawn/model placement, duplicate spawn
+guards, and the talk-credit paths. The tracker marks the two entity/event/stat
+row families, objectives `1579`/`1588`, and related script producer rows as
+automated-test-backed, while Space Madness remains `not_retail_complete`: exact
+dialog/choreography, later reviewed NPC/console/control placement/import smoke,
+door/trigger/teleport proof, communicator timing, real cinematic payload,
+rewards, loot, achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Datascape opening reviewed placements.
+Datascape (`world 1333`, public event `157`) now spawns the reviewed phase-0
+opening encounter rows for Optimized Memory Probe ED-1, TX-67, P2-Z, Null
+System Daemon, and Binary System Daemon: entities `1100300059` through
+`1100300063`. The runtime `EntityModel` rows preserve the build 16042
+Creature2 ids `61819`/`61818`/`31667`/`30495`/`30496`, areas `1301` and
+`1349`, displays `30425` and `33172`, faction `1171`, event binding `157:0`,
+reviewed rotations, objective-credit script names, `Level=50`, and the reviewed
+Health overrides `15900000` or `14400000`. Focused Datascape plus shared
+objective-credit tests passed `354/354`, covering opening phase activation,
+spawn/model placement, script binding, and the existing death-credit paths. The
+tracker marks the five entity/event/script/stat row families and opening
+objectives `385`, `648`, `649`, and `650` as automated-test-backed, while
+Datascape remains `not_retail_complete`: exact opening encounter mechanics,
+Hydroflux/Mnemesis mechanics, communicator/cinematic timing, encounter
+choreography, doors/triggers, wing order, challenge mechanics, rewards, loot,
+achievements, and manual raid smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Gauntlet Pilot Taboro reviewed placement.
+Gauntlet (`world 2183`, public event `446`) now spawns reviewed Pilot Taboro
+entity `1100300013` for opening objective `1821` in phase `0` at
+`(541.0117, 0.2229719, -513.6139)`. The runtime `EntityModel` uses Creature2
+`48580`, area `2620`, display `21338`, faction `219`, event binding `446:0`,
+and the build 16042 `Health=1` stat override. The existing
+`PilotTaboroEntityScript` binds by Creature2 and credits TalkTo TargetGroup
+`6818`. Focused Gauntlet plus objective-credit tests passed `315/315`,
+covering phase activation, spawn/model placement, and the talk-credit path. The
+tracker marks the Pilot Taboro entity/event/stat rows, objective `1821`, and
+related script producer rows as automated-test-backed, while Gauntlet remains
+`not_retail_complete`: exact door visual/despawn state, product side effects,
+cinematic completion timing, announcer timing, arena-door choreography,
+encounter behavior, rewards, loot, achievements, and manual expedition smoke
+remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Ultimate Protogames objective death-credit producers.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+death-credit producers for objectives `2926`, `4561`, `4657`, and `4692`.
+Build 16042 maps `2926` to KillTargetGroup `10657` containing Creature2
+`62575` Mondo's Monstrosity, `4561` to KillClusterTargetGroup `12390`
+containing Creature2 `65794` Ruffles, `4657` to KillTargetGroup `12528`
+containing Creature2 `68949` Deputy, and `4692` to KillTargetGroup `12577`
+containing Creature2 `63312` Misplaced Mammoth. The new
+`UltimateProtogamesObjectiveEntityScripts.cs` binds those Creature2 rows and
+uses the shared one-shot public-event objective-credit path. Focused Ultimate
+Protogames/objective-credit tests passed `332/332`, covering the new filters,
+direct objective credit, and duplicate suppression. The tracker marks the four
+objective rows and producer-evidence rows as automated-test-backed, while
+Ultimate Protogames remains `not_retail_complete`: room randomization,
+Prototentiary aggregate/alarm/timer semantics, cluster semantics, combat
+mechanics, rewards, loot, achievements, and manual dungeon smoke remain
+blocked.
+
+Supplemental update: 2026-06-15 F-024 Ultimate Protogames Bev-O-Rage reviewed placement.
+Ultimate Protogames (`world 2980`, public event `594`) now spawns reviewed
+Bev-O-Rage entity `1100300055` for objective `2680` in phase `5` at
+`(-12737.13, -797.0872, 1326.347)`. The runtime `EntityModel` uses Creature2
+`61463`, area `0`, display `36682`, faction `219`, event binding `594:5`,
+`BevORageEntityScript`, and the build 16042 `Level=50` stat override. Focused
+Ultimate Protogames plus objective-credit tests passed `300/300`, covering
+phase activation, spawn/model placement, script binding, and direct death-credit
+path. The tracker marks the Bev-O-Rage entity/event/stat rows, objective `2680`,
+and related script producer rows as automated-test-backed, while Ultimate
+Protogames remains `not_retail_complete`: room randomization, Bev-O-Rage combat
+mechanics, Prototentiary aggregate/alarm/timer semantics, boss routing, rewards,
+loot, achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Skullcano opening boss reviewed placements.
+Skullcano (`world 1263`, public event `148`) now spawns reviewed Thunderfoot
+entity `1100300049` and Stew-Shaman Tugga entity `1100300050` for objectives
+`322` and `321` in phase `0`. The runtime models use Creature2 `24475` /
+`24493`, areas `4793` / `1220`, displays `21318` / `27916`, factions `242` /
+`868`, event binding `148:0`, the `ThunderfootNormalEntityScript` and
+`StewShamanTuggaNormalEntityScript` objective-credit scripts, and the build
+16042 `Level=35` stat overrides at the reviewed placements. Focused Skullcano
+plus objective-credit tests passed `321/321`, covering activation, spawn/model
+placement, script binding, and direct death-credit paths. The tracker marks the
+Thunderfoot/Tugga entity/event/script/stat rows, objectives `321`/`322`, and
+related script producer rows as automated-test-backed, while Skullcano remains
+`not_retail_complete`: exact boss combat, Tugga's Diet and Jump Around challenge
+side effects, route/choreography, cleanup, rewards, loot, achievements, and
+manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Sanctuary Flame-Crazed Demon reviewed placement.
+Sanctuary of the Swordmaiden (`world 1271`, public event `166`) now spawns
+reviewed Flame-Crazed Demon entity `1100300051` for objective `504` in phase
+`4` at `(4877.322, -797.6906, -3318.368)`. The runtime `EntityModel` uses
+Creature2 `29254`, area `1556`, display `24811`, faction `978`, event binding
+`166:4`, `FlameCrazedDemonEntityScript`, and the build 16042 `Level=40` stat
+override. Focused Sanctuary plus objective-credit tests passed `323/323`,
+covering the phase spawn/model placement and the existing direct objective
+credit path. The tracker marks the Flame-Crazed Demon entity/event/script/stat
+rows, objective `504`, and related script producer rows as automated-test-backed,
+while Sanctuary remains `not_retail_complete`: exact miniboss combat,
+phase cleanup, rewards, loot, achievements, route/choreography details, and
+manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Stormtalon's Lair Aethros reviewed placement.
+Stormtalon's Lair (`world 382`, public event `145`) now spawns reviewed
+Aethros entity `1100300047` for objective `313` in phase `2` at
+`(-52.71065, -48.68514, 220.7862)`. The runtime `EntityModel` uses Creature2
+`32703`, display `27874`, faction `586`, event binding `145:2`,
+`AethrosVeteranEntityScript`, and stat overrides `Health=1` / `Level=50` from
+the build 16042 reviewed instance-entity evidence. Focused Stormtalon tests
+passed `31/31`, covering the phase spawn/model placement while existing
+objective-credit tests continue to cover Aethros Creature2 `17166`/`32703`.
+The tracker marks the Aethros entity/event/script/stat rows and objective
+`313` as automated-test-backed, while Stormtalon's Lair remains
+`not_retail_complete`: exact Aethros combat choreography, tornado/Gust
+challenge side effects, cleanup timing, rewards, loot, achievements, and manual
+dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Coldblood Citadel Hailstone reviewed placement.
+Coldblood Citadel (`world 3522`, public event `907`) now spawns reviewed
+Hailstone Gatecrasher entity `1100300001` for objective `5313` in phase `1`
+at `(459.544, -467.2018, -596.769)`. The runtime `EntityModel` uses
+Creature2 `75508`, display `24808`, faction `691`, event binding `907:1`,
+`HailstoneGatecrasherEntityScript`, and the build 16042 `Level=50` stat
+override. Focused Coldblood tests passed `31/31`, covering phase spawn/model
+placement and the once-only death-credit/removal path. The tracker marks the
+Hailstone entity/event/script/stat rows, objective `5313`, and the death-credit
+producer as automated-test-backed, while Coldblood Citadel remains
+`not_retail_complete`: exact Hailstone combat choreography, cleanup timing,
+rewards, loot, achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Stormtalon's Lair Blade-Wind reviewed placement.
+Stormtalon's Lair (`world 382`, public event `145`) now spawns reviewed
+Blade-Wind the Invoker entity `1100300048` for objective `312` in phase `1`
+at `(-88.49673, -11.51191, 123.5562)`. The runtime `EntityModel` uses
+Creature2 `33405`, display `23629`, faction `586`, event binding `145:1`,
+`BladeWindTheInvokerVeteranEntityScript`, and stat overrides `Health=1` /
+`Level=50` from the build 16042 reviewed instance-entity evidence. Focused
+Stormtalon tests passed `30/30`. The tracker marks the Blade-Wind
+entity/event/script/stat rows and objective `312` as automated-test-backed,
+while Stormtalon's Lair remains `not_retail_complete`: exact Blade-Wind
+combat, cleanup timing, rewards, loot, achievements, and manual dungeon smoke
+remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Evil from the Ether Etheric Organism producers.
+Evil from the Ether (`world 3404`, public event `781`) now has test-backed
+runtime coverage for objective `4975`, `Defeat the Etheric Organism feasting on
+the dead Mordesh`, and objective `4977`, `Defeat the waves of Etheric Organisms
+coming out of the teleporter`. Build 16042 maps `4975` to `KillTargetGroup`
+object `14105`, count `1`, with Creature2 `71621`/`71633`; it maps `4977` to
+`KillTargetGroup` object `14106`, count `2`, with Creature2 `71628`/`71634`.
+`EvilFromTheEtherEventScript` activates both organism objectives in the retail
+phase chain, and `EthericOrganismEntityScripts` binds the normal/veteran
+Creature2 rows and direct-credits each mapped objective once on death. Focused
+Evil from the Ether plus objective-credit tests passed `357/357`. The tracker
+records dependencies `4975` and `4977` plus producer rows with runtime evidence,
+and validates `31` generated CSVs / `168,334` rows with `3,272` blocker detail rows,
+all still `not_retail_complete`. Evil from the Ether remains partial:
+exact organism spawn placement, teleporter wave count/cadence, encounter
+choreography, rewards, achievements, and full expedition smoke remain blocked.
+
+Supplemental update: 2026-06-15 F-024 Space Madness Hallucinating Worker air-helm producer.
+Space Madness (`world 2149`, public event `390`) now has test-backed runtime
+coverage for objective `1594`, `Give emergency air helms to Hallucinating
+Workers`. Build 16042 maps `1594` to `TalkTo` object `6370`, count `6`;
+TargetGroup `6370` contains Creature2 `45903` and `45904`, the Hallucinating
+Venture Worker rows. `SpaceMadnessEventScript` activates
+`GiveAirHelmsToWorkers` in the hallucinating-livestock phase, and
+`HallucinatingVentureWorkerEntityScript` binds both worker rows and one-shot
+credits the player-scoped TalkTo target group on activation. Focused Space
+Madness tests passed `31/31`. The tracker records dependency `1594` plus
+activation and worker credit producer rows with runtime evidence, and validates
+`31` generated CSVs / `168,322` rows with `3,266` blocker detail rows, all
+still `not_retail_complete`. Space Madness remains partial: exact worker
+placement/import smoke, repeat-interaction visual state, door/trigger/teleport
+proof, communicator timing, real cinematic payload, rewards, achievements, and
+full expedition smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Sanctuary opening Zealous Torine producer.
+Sanctuary of the Swordmaiden (`world 1271`, public event `166`) now has
+test-backed runtime coverage for opening objective `495`, `Eliminate the
+Zealous Torine in Sanctuary's Approach`. Build 16042 maps `495` to
+`KillTargetGroup` object `3372`, count `8`; TargetGroup `3372` nests target
+groups `3373`, `3374`, and `7366`, covering Zealous Battlemaiden
+`28580`/`28585`, Zealous Clawsister `28612`/`28613`, Zealous Lifesinger
+`28646`, and Deadringer Shallaos `28599`/`28600`. The Sanctuary event script
+activates `EliminateZealousTorine` on the entry phase, and
+`ZealousTorineEntityScript` binds the nested target group and direct-credits
+objective `495` once on death. Focused Sanctuary/objective-credit tests passed
+`316/316`. The tracker records dependency `495` plus activation and
+death-credit producer rows with runtime evidence, and validates `31` generated
+CSVs / `168,316` rows with `3,263` blocker detail rows, all still
+`not_retail_complete`. Sanctuary remains partial: exact trash composition/count,
+spawn placement/version selection, encounter mechanics, rewards, achievements,
+and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Skullcano Gold-covered Treasure producer.
+Skullcano (`world 1263`, public event `148`) now has test-backed runtime
+coverage for optional Gold-covered Treasure objective `333`, `Gather Shiny
+Objects of pure gold for the Lopp in the golden Redmoon cavern`. Build 16042
+maps `333` to `ActivateTargetGroupChecklist` object `2610`, count `5`;
+TargetGroup `2610` contains Creature2 `24675`, `[SK] e333 - Gold-covered
+Treasure`. `SkullcanoEventScript` activates `GatherShinyGoldObjects` through
+the final-approach WIP optional-objective gate, and
+`GoldCoveredTreasureEntityScript` binds Creature2 `24675` and one-shot credits
+TargetGroup `2610`. Focused Skullcano tests passed `32/32`. The tracker records
+dependency `333` plus activation and target-group credit producer rows with
+runtime evidence, and validates `31` generated CSVs / `168,308` rows with
+`3,259` blocker detail rows, all still `not_retail_complete`. Skullcano remains
+partial: exact optional route selection proof, treasure placement/count,
+visual/despawn state, rewards, achievements, and full dungeon smoke remain
+blocked.
+
+Supplemental update: 2026-06-14 F-024 Fragment Zero hidden recording producers.
+Fragment Zero (`world 3180`, public event `680`) now has test-backed runtime
+coverage for the hidden recording chain: aggregate objective `4448`
+`Discover the two lost recordings somewhere on Fragment Zero`, Ohmna recording
+objective `4454`, and Lucent recording objective `4455`. Build 16042 maps
+`4448` to a Script objective with count `2`, maps `4454` to
+`ActivateTargetGroupChecklist` object `12276`, and maps `4455` to
+`ActivateTargetGroupChecklist` object `12279`; TargetGroups `12276`/`12279`
+contain Creature2 `67967` and `67968`, the Ohmna and Lucent journal recording
+objects. `FragmentZeroEventScript` activates the aggregate plus both child
+objectives in the active branch, and the two new recording entity scripts
+one-shot credit the mapped checklist target group plus aggregate `4448` on
+activation. Focused Fragment Zero tests passed `28/28`. The tracker records
+dependencies `4448`, `4454`, and `4455` plus the event activation and entity
+credit producer rows with runtime evidence, and validates `31` generated CSVs /
+`168,300` rows with `3,255` blocker detail rows, all still
+`not_retail_complete`. Fragment Zero remains partial: exact recording
+placement/import smoke, visual/despawn state, repeat-interaction client
+behavior, rewards, achievements, and full expedition smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Stormtalon final-boss producer.
+Stormtalon's Lair (`world 382`, public event `145`) now has test-backed
+runtime coverage for the final `Destroy Stormtalon before he is unleashed upon
+Nexus` objective `314`. Build 16042 maps `314` to a Script objective with
+count `1`, flags `33554432`, and WorldLocation2 `12736`; public-event
+creature evidence maps the normal and veteran Stormtalon Creature2 rows
+`17163` and `33406` to event `145`. `StormtalonsLairEventScript` activates
+`DestroyStormtalon` in the final phase, queues the existing WIP Reborn
+cinematic placeholder, and finishes the event when `314` succeeds.
+`StormtalonEntityScript` binds the two Creature2 rows and credits objective
+`314` once on death. Focused Stormtalon/PublicEvent objective tests passed
+`307/307`. The tracker records dependency `314` plus the event activation and
+death-credit producer rows with runtime evidence, and validates `31` generated
+CSVs / `168,281` rows with `3,245` blocker detail rows, all still
+`not_retail_complete`. Stormtalon's Lair remains partial: exact Stormtalon
+spawn/version selection, combat mechanics, real cinematic payload, rewards,
+achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Hall courtyard statue trigger.
+Hall of the Hundred / Vault of the Archon (`world 3009`, public event `666`)
+now has test-backed runtime coverage for the Kel Havik courtyard frozen-statue
+meet objective `4320`. Build 16042 maps `4320` to
+`ParticipantsInTriggerVolume` object `7894` with QuestDirection `2443`, whose
+endpoint resolves through QuestDirectionEntry `3980` to WorldLocation2 `50605`
+in world `3009` at `751.019, -647.451, -852.278`. The event route now inserts
+a guarded `MeetAtKelHavikCourtyard` phase between courtyard regroup `4340` and
+key collection `4314`/`5155`; `CourtyardStatueGridTriggerEntityScript`
+one-shot credits object `7894` on player entry. Focused Hall tests passed
+`131/131`. The tracker records dependency `4320` with runtime evidence and
+validates `31` generated CSVs / `168,281` rows with `3,245` blocker detail rows,
+all still `not_retail_complete`. Hall remains partial: exact NPC/statue
+choreography, inner-door `4321`, placement/import smoke, construct and portal
+semantics, rewards, achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Sanctuary side-boss producers.
+Sanctuary of the Swordmaiden (`world 1271`, public event `166`) now has
+test-backed runtime producer coverage for Corrupted Deathbringer Dareia `500`,
+Lifeweaver Guardian `629`, and Elder Moldwood Ravager `639`. Build 16042 maps
+`500` to TargetGroup `3239` with Creature2 `28995`/`28996`, and public-event
+creature evidence links Lifeweaver Guardian `28774`/`28775` and Elder Moldwood
+Ravager `29198`/`29199` to the Sanctuary event. The event script can now
+activate Dareia as an entry-phase WIP optional objective; Guardian and Ravager
+were already activated by the Ondu and Skash phases. The three new entity
+scripts direct-credit their mapped objectives once on death, and focused
+Sanctuary/objective-credit tests passed. The tracker records dependencies
+`500`, `629`, and `639` with runtime evidence and validates `31` generated
+CSVs / `168,263` rows with `3,236` blocker detail rows, all still
+`not_retail_complete`. Sanctuary remains partial: route weights, spawn
+placement/version selection, boss mechanics, rewards, achievements, and manual
+dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Ultimate Protogames Sneaky Prison console producers.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+runtime producer coverage for the Sneaky Prison / Prototentiary console
+objectives. Build 16042 maps `2847` to `ActivateTargetGroup` object `10569`,
+whose TargetGroup contains Creature2 `62987` (`[UP] e2678 - Sneaky Prison -
+Gate Console`), and maps `2864` to `ActivateTargetGroup` object `10583`, whose
+TargetGroup contains Creature2 `63037` (`[UP] e2678 - Sneaky Prison - Cage
+Console`). `SneakyPrisonGateConsoleEntityScript` and
+`SneakyPrisonCageConsoleEntityScript` bind those Creature2 rows and credit their
+mapped target groups exactly once on activation. Focused Ultimate Protogames
+tests passed `11/11`, covering both script filters and one-shot target-group
+credit. The tracker records dependencies `2847` and `2864` with
+`runtime_up_sneaky_prison_*_activation_credit_tested_pending_*_client_smoke`
+evidence and validates `31` generated CSVs / `168,247` rows with `3,228` blocker detail rows, all still `not_retail_complete`. Ultimate Protogames
+remains partial: random-event routing, door/cage choreography, Prototentiary
+aggregate/alarm/timer semantics, placement/import smoke, rewards, achievements,
+and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Evil from the Ether Drive Diagnostics producer.
+Evil from the Ether (`world 3404`, public event `781`) now has test-backed
+runtime coverage for Retrieve the Drive Diagnostics from Primary Cryo Access
+`4943`. Build 16042 maps `4943` to `ActivateTargetGroup` object `14430`, count
+`1`; TargetGroup `14430` contains Creature2 `75222` (`Drive Diagnostics -
+w3404 pe781 - DWS`), and en-US strings `690480`/`690481` match the retail
+objective text. `EvilFromTheEtherEventScript` now activates `DriveDiagnostics`
+alongside `PickUpDriveSchematics` and waits for both end-phase pickups before
+advancing to `EscapeToTheTeleporter`. `DriveDiagnosticsEntityScript` binds
+Creature2 `75222`, credits TargetGroup `14430` exactly once on activation, and
+removes the interacted diagnostics object. Focused Evil from the Ether tests
+passed `63/63`. The regenerated tracker records dependency `4943` with
+`runtime_drive_diagnostics_objective_activated_and_target_group_credited_tested_pending_visual_state_and_client_smoke`
+and validates `31` generated CSVs / `168,233` rows with `3,221` blocker detail rows,
+all still `not_retail_complete`. Evil from the Ether remains partial:
+drive sparks, exact diagnostics visual/despawn timing, medbay cleanup/phase
+timing, placement/import smoke, rewards, achievements, and manual expedition
+smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Gauntlet electric-room door lock producer.
+Gauntlet (`world 2183`, public event `446`) now has test-backed runtime
+producer coverage for Activate Switches to escape the electrified room `1837`.
+Build 16042 maps `1837` to `ActivateTargetGroup` object `6831`, count `3`;
+TargetGroup `6831` contains Creature2 `48682`, `48683`, and `48684`, the three
+electric-room Door Lock objects. `ElectricRoomDoorLockEntityScript` binds those
+Creature2 rows and credits TargetGroup `6831` exactly once per activation.
+Focused Gauntlet tests passed `26/26`, covering the script filter, one-shot
+target-group credit, and existing phase/cinematic scaffold. The regenerated
+tracker records dependency `1837` with
+`runtime_gauntlet_electric_room_door_lock_activation_credit_tested_pending_door_visual_state_and_client_smoke`
+and validates `31` generated CSVs / `168,215` rows with `3,212` blocker detail rows,
+all still `not_retail_complete`. Gauntlet remains partial: exact door
+visual/despawn state, product side effects, cinematic completion timing,
+announcer timing, arena-door choreography, encounter behavior, rewards,
+achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Fragment Zero automated defense panel producer.
+Fragment Zero (`world 3180`, public event `680`) now has test-backed runtime
+producer coverage for automated-defense objective `4635`. Build 16042 maps
+`4635` to `ActivateTargetGroupChecklist` object `12461`, count `3`; TargetGroup
+`12461` contains Creature2 `68856` (`Facility Defense Control Panel -
+Shiphand_level6 - KRW`). `FacilityDefenseControlPanelEntityScript` binds
+Creature2 `68856` and credits TargetGroup `12461` exactly once per activation.
+Focused Fragment Zero tests passed `24/24`, covering the script filter, one-shot
+checklist credit, and the existing phase/cinematic scaffold. The regenerated
+tracker records dependency `4635` with
+`runtime_fragment_zero_automated_defense_panel_checklist_activation_credit_tested_pending_panel_visuals_timing_and_client_smoke`
+and validates `31` generated CSVs / `168,208` rows with `3,209` blocker detail rows,
+all still `not_retail_complete`. Fragment Zero remains partial: exact panel
+visual/despawn/respawn timing, trigger/cinematic/communicator/door/entity proof,
+rewards, achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Space Madness escaped experiment collectible producers.
+Space Madness (`world 2149`, public event `390`) now has test-backed runtime
+coverage for the escaped experiment collectible chain `4709`/`4710`/`4711` and
+aggregate objective `4712`. Build 16042 maps `4709` to `ActivateTargetGroup`
+object `12595` with Creature2 `69899` (`Slinking Slank`), `4710` to object
+`12596` with Creature2 `69900` (`Talking Rockmite`), and `4711` to object
+`12597` with Creature2 `69901` (`Party Down-Grazer`); `4712` is the parent
+`Script` objective with count `3`. `SpaceMadnessEventScript` now activates all
+three child objectives alongside `CollectEscapedCreatures`, and the three new
+entity scripts credit the mapped target group plus one aggregate tick exactly
+once per activation. Focused Space Madness tests passed `28/28`. The
+regenerated tracker records dependencies `4709`, `4710`, `4711`, and `4712`
+with runtime evidence and validates `31` generated CSVs / `168,201` rows with
+`3,206` blocker detail rows, all still `not_retail_complete`. Space Madness
+remains partial: exact collectible spawn route, placement/import smoke,
+repeat-interaction and visual/despawn state, reward/medal side effects, and
+full expedition smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Infestation parasite producers.
+Infestation (`world 1232`, public event `95`) now has test-backed runtime
+coverage for the parasite kill objectives `229` and `1500`. Build 16042 maps
+objective `229` to text rows `191284`/`191285` referencing Creature2 `22669`
+(`Lumbering Parasite - Dracus - Standard - W1232`) and objective `1500` to text
+rows `407374`/`407375` referencing Creature2 `26833` (`W1232 - Cyclopean
+Parasite - Shiphand Infestation`). `InfestationEventScript` now advances from
+contaminated shiphand healing `231` into a `KillParasites` phase that activates
+both parasite objectives, and `LumberingParasiteEntityScript` /
+`CyclopeanParasiteEntityScript` bind the two Creature2 rows and direct-credit
+their objectives once on death. Focused Infestation/shared objective-credit
+tests passed `292/292`. The regenerated tracker records dependencies `229` and
+`1500` with runtime evidence and validates `31` generated CSVs / `168,182` rows
+with `3,197` blocker detail rows, all still `not_retail_complete`. Infestation
+remains partial: exact parasite route selection, spawn timing, combat
+choreography, contaminated shiphand healing mechanics, trigger/door/cinematic
+payloads, rewards, achievements, and full expedition smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Hall of the Hundred key-fragment producer.
+Hall of the Hundred / The Vault of the Archon (`world 3009`, public event
+`666`) now has test-backed runtime coverage for Collect Key Fragments `5155`
+inside the active Kel Havik courtyard key phase. Build 16042 maps `5155` to
+`ActivateTargetGroup` object `14276`, count `5`; TargetGroup `14276` contains
+Creature2 `72958` (`w3009 - Key Fragment - Vault Secret Room`), and the client
+text rows `741484`/`741485` read `Collect Key Fragments`. The Hall event now
+activates `5155` alongside key pickup objective `4314` and waits for both
+objectives before advancing to gate placement `4322`. `VaultSecretRoomKeyFragmentEntityScript`
+binds Creature2 `72958`, credits TargetGroup `14276` once on activation, and
+removes the interacted pickup. Focused Hall tests passed `123/123`. The
+regenerated tracker records dependency `5155` with runtime evidence and
+validates `31` generated CSVs / `168,170` rows with `3,197` blocker detail rows,
+all still `not_retail_complete`. Hall remains partial: reviewed fragment
+placement/import smoke, courtyard statue/door choreography `4320`/`4321`,
+construct/portal/vault mechanics, Osun exit semantics, rewards, achievements,
+and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Stormtalon Thundercall Pell kill target group producer.
+Stormtalon's Lair (`world 382`, public event `145`) now has test-backed
+runtime coverage for Eliminate Thundercall Pell `557` plus the timed Kill as
+many Thundercall Pell as you can before time expires `843` route. Build 16042
+maps both objectives to `KillTargetGroup` object `11121`; TargetGroup `11121`
+expands to normal/veteran child groups `11122` and `11123`, and focused
+coverage pins representative Creature2 members `17160` and `33405`.
+`StormtalonsLairEventScript` now activates `557` in the Enter phase and can
+activate timed `843` through the existing WIP optional-objective gate, while
+the shared `UnitEntity`/`AssetManager` death reward path emits public-event
+`KillTargetGroup` and `KillClusterTargetGroup` credit for `11121`. Focused
+Stormtalon, target-group, and reward-path tests passed `63/63`. The regenerated
+tracker records dependencies `557` and `843` with runtime evidence and
+validates `31` generated CSVs / `168,164` rows with `3,194` blocker detail rows,
+all still `not_retail_complete`. Stormtalon's Lair remains partial:
+exact Pell route/spawn/count cadence, timed bonus availability and timer
+behavior, rewards, achievements, optional route weights, and full dungeon smoke
+remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Ultimate Protogames Vend-A-Tron use producer.
+Ultimate Protogames (`world 2980`, public event `594`) now has test-backed
+runtime coverage for Use Bev-O-Rage `4669`. Build 16042 maps `4669` to
+`ActivateTargetGroup` object `12549`, flags `512`, and TargetGroup `12549`
+contains Creature2 `66051` `[UP] e2680 - Bev-O-Rage - Vendor - Vend-A-Tron`.
+`UltimateProtogamesEventScript` now activates `UseBevORage` alongside
+`DefeatBevORage` during the `BevORage` phase; `BevORageVendATronEntityScript`
+binds Creature2 `66051` and credits TargetGroup `12549` once on successful
+activation. Focused Ultimate Protogames/objective-credit tests passed
+`267/267`. The regenerated tracker records dependency `4669` and its script
+producer with runtime evidence and validates `31` generated CSVs / `168,156` rows
+with `3,190` blocker detail rows, all still `not_retail_complete`.
+Ultimate Protogames remains partial: exact room routing, placement/import
+smoke, repeat interaction and visual state, Bev-O-Rage boss mechanics, rewards,
+achievements, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Coldblood Krovak/Frostguard kill target group producer.
+Coldblood Citadel (`world 3522`, public event `907`) now has test-backed
+runtime coverage for Kill Krovak Summoners and their Bound Frostguards `5321`.
+Build 16042 maps `5321` to `KillTargetGroup` object `14470`, count `4`, and
+TargetGroup `14470` contains Creature2 rows `75621` Krovak Summoner and
+`75622` Bound Frostguard. `ColdbloodCitadelEventScript` already activates
+`KillKrovakSummonersAndTheirFrostguards` during the `IceBloodCoven` phase; the
+shared `UnitEntity` death reward path now has focused coverage proving it
+resolves the target group through `AssetManager` and emits `KillTargetGroup`
+plus `KillClusterTargetGroup` public-event credit for `14470`. Focused Krovak
+target-group tests passed `2/2`. The regenerated tracker records dependency
+`5321` with runtime evidence and validates `31` generated CSVs / `168,146` rows
+with `3,185` blocker detail rows, all still `not_retail_complete`. Coldblood
+remains partial: optional route weights, exact placement/count, repeat
+interaction and visual/despawn behavior, door/choreography, Hailstone cadence,
+rewards, achievements, and full dungeon route smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Skullcano Mordechai final-boss producer.
+Skullcano (`world 1263`, public event `148`) now has test-backed runtime
+producer coverage for Defeat Mordechai Redmoon `324`. Build 16042 exposes
+`324` as the final Script objective and TargetGroup `2602` identifies the
+normal/veteran Mordechai Redmoon Creature2 rows `24489` and `24895`.
+`SkullcanoEventScript` already activates `DefeatMordechaiRedmoon` during the
+`Redmoon` phase and finishes the public event when it succeeds;
+`MordechaiRedmoonEntityScript` now binds the mapped boss rows and credits the
+objective once on death. Focused Skullcano/objective-credit tests passed
+`289/289`. The regenerated tracker records dependency `324` and the script
+producer with runtime evidence and validates `31` generated CSVs / `168,146` rows
+with `3,185` blocker detail rows, all still `not_retail_complete`.
+Skullcano remains partial: exact Mordechai boss mechanics, terraformer timing,
+spawn placement/version selection, rewards, achievements, route choreography,
+and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Sanctuary branch miniboss producers.
+Sanctuary of the Swordmaiden (`world 1271`, public event `166`) now has
+test-backed runtime producer coverage for Defeat Hammerfist Moldjaw `1366`,
+Defeat Corrupted Edgesmith Torian `493`, Kill Corrupted Lifecaller Khalee
+`494`, and Defeat Moldwood Overlord Skash before he corrupts his prisoner
+`1504`. Build 16042 maps these objectives to `KillTargetGroup` objects `5316`,
+`3237`, `3238`, and `3209`; TargetGroups resolve to Creature2 rows
+`41219`/`41220`, `28985`/`28986`, `28993`/`28992`, and `28728`/`28727`.
+`SanctuaryOfTheSwordmaidenEventScript` already activates these branch
+objectives through the Temple, Moldwood, Lifeweaver Terrace, and Skash phases;
+`SanctuaryBossEntityScripts` now binds the mapped normal/veteran Creature2 rows
+and credits each objective once on death. Focused Sanctuary/objective-credit
+tests passed `289/289`. The regenerated tracker records dependencies `1366`,
+`493`, `494`, and `1504` plus their script producers with runtime evidence and
+validates `31` generated CSVs / `168,142` rows with `3,183` blocker detail rows,
+all still `not_retail_complete`. Sanctuary remains partial: exact route
+availability, spawn placement/version selection, prisoner timer/failure and
+corruption behavior, combat mechanics, rewards, achievements, route weights,
+doors/triggers, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Stormtalon Thundercall rush producer.
+Stormtalon's Lair (`world 382`, public event `145`) now has test-backed
+runtime producer coverage for Survive the rush of Thundercall Pell Zealots
+`539`. Build 16042 maps `539` to `KillTargetGroup` object `2977`, count `12`;
+TargetGroup `2977` resolves to intro Thundercall Pell rush Creature2 rows
+`16728` and `26448`. `StormtalonsLairEventScript` already activates the
+objective in the Enter phase, and `ThundercallZealotRushEntityScript` now binds
+the mapped Creature2 rows and credits the objective once on death. Focused
+Stormtalon/objective-credit tests passed `268/268`. The regenerated tracker
+records dependency `539` and the script producer with runtime evidence and
+validates `31` generated CSVs / `168,126` rows with `3,175` blocker detail rows,
+all still `not_retail_complete`. Stormtalon's Lair remains partial: exact wave
+spawn/count/cadence, threat/tap/respawn behavior, rewards/challenge side
+effects, boss mechanics, optional route weights, achievements, cinematic
+payload, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Stormtalon Blade-Wind/Aethros boss producers.
+Stormtalon's Lair (`world 382`, public event `145`) now has test-backed
+runtime producer coverage for Defeat Blade-Wind the Invoker `312` and
+Eliminate Aethros `313`. Build 16042 maps these objectives to
+`KillTargetGroup` objects `2585` and `2586`; TargetGroups resolve to Creature2
+rows `17160`/`33405` and `17166`/`32703`. `StormtalonsLairEventScript` already
+activates the objectives in the main phase chain; `BladeWindTheInvokerVeteranEntityScript`
+and `AethrosVeteranEntityScript` now bind the mapped normal/veteran Creature2
+rows and credit each objective once on death. Focused objective-credit tests
+passed `236/236`. The regenerated tracker records dependencies `312` and `313`
+with runtime evidence and validates `31` generated CSVs / `168,120` rows with
+`3,172` blocker detail rows, all still `not_retail_complete`. Stormtalon's
+Lair remains partial: exact boss mechanics, spawn/version selection, challenge
+side effects, optional route weights, rewards, achievements, cinematic payload,
+and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Coldblood optional interactable producers.
+Coldblood Citadel (`world 3522`, public event `907`) now has test-backed
+runtime producer coverage for Gather Soulfrost Shards `5317`, Destroy Soulrot
+Canisters `5318`, Rescue Winterfury Prisoners from Cages `5319`, Disable the
+Osun's Soulfrost Traps `5320`, and Steal Sample of Liquid Soulfrost `5337`.
+Build 16042 maps these objectives to `ActivateTargetGroupChecklist` objects
+`14473`, `14471`, `14474`, `14475`, and `14476`; TargetGroups resolve to
+Creature2 rows `75731`/`75732`/`75733`, `75708`, `75737`, `75747`, and
+`75736`. `ColdbloodCitadelEventScript` already activates these through the
+current WIP optional branch gates; `ColdbloodObjectiveEntityScripts` now binds
+the mapped Creature2 rows and credits each target group once per activation.
+Focused Coldblood tests passed `30/30`. The regenerated tracker records
+dependencies `5317`, `5318`, `5319`, `5320`, and `5337` with runtime evidence
+and validates `31` generated CSVs / `168,118` rows with `3,171` blocker detail rows,
+all still `not_retail_complete`. Coldblood remains partial: optional route
+weights, exact placement/count, repeat interaction and visual/despawn behavior,
+door/choreography, Hailstone/Iceblood/Harizog
+encounter cadence, rewards, achievements, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Sanctuary main boss producers.
+Sanctuary of the Swordmaiden (`world 1271`, public event `166`) now has
+test-backed runtime producer coverage for Deadringer Shallaos `479`, Ondu
+Lifeweaver `480`, Moldwood Overlord Skash `483`, Rayna Darkspeaker `486`, and
+Spiritmother Selene the Corrupted `492`. Build 16042 maps these objectives to
+`KillTargetGroup` objects `3208`, `3207`, `3209`, `3210`, and `3211`;
+TargetGroups resolve to Creature2 rows `28597`/`28599`/`28600`,
+`28719`/`28720`/`28721`, `28728`/`28727`, `28733`/`28732`, and
+`28736`/`28735`. `SanctuaryOfTheSwordmaidenEventScript` already activates the
+main boss objectives through its phase chain; `SanctuaryBossEntityScripts`
+binds the build-16042 target-group members and credits each objective once on
+death. Focused Sanctuary/objective-credit tests passed `271/271`. The
+regenerated tracker records dependencies `479`, `480`, `483`, `486`, and
+`492` with runtime evidence and validates `31` generated CSVs / `168,094` rows
+with `3,159` blocker detail rows, all still `not_retail_complete`. Sanctuary
+remains partial: exact boss/miniboss mechanics, spawn placement/version
+selection, route weights/objectives, doors/triggers, relic/cluster/totem
+placement and visual state, rewards, achievements, and full dungeon smoke
+remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Ruins Darkwitch Gurka producer.
+Ruins of Kel Voreth (`world 1336`, public event `161`) now has test-backed
+runtime producer coverage for Find and defeat Darkwitch Gurka `453`. Build
+16042 maps `453` to `KillTargetGroup` object `3850`, count `1`, with
+TargetGroup `3850` resolving to Creature2 `33049` and `33050`.
+`RuinsOfKelVorethEventScript` already activates Gurka alongside Slavemaster
+Drokk during the `SlaveMasterDrokk` phase; `DarkwitchGurkaEntityScript` now
+binds the mapped normal/veteran Creature2 rows and credits the objective once
+on death. Focused Ruins/objective-credit tests passed `228/228`. The
+regenerated tracker records dependency `453` with runtime evidence and validates
+`31` generated CSVs / `168,072` rows with `3,148` blocker detail rows, all still
+`not_retail_complete`. Ruins remains partial: Gurka/Drokk encounter
+choreography, spawn placement/version selection, boss rewards/achievements,
+optional route behavior, doors/triggers, real cinematic payload, and full
+dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Skullcano boss producers.
+Skullcano (`world 1263`, public event `148`) now has test-backed runtime
+producer coverage for Defeat Bosun Octog `323` and Find Quartermaster Gruh'ar
+`440`. Build 16042 maps `323` to `KillTargetGroup` object `2601`, count `1`,
+with TargetGroup `2601` resolving to Creature2 `24486` and `24894`; it maps
+`440` to `KillTargetGroup` object `2869`, count `1`, with TargetGroup `2869`
+resolving to Creature2 `24490` and `24896`. `SkullcanoEventScript` already
+activates Bosun during the `Bosun` phase and Quartermaster Gruh'ar during the
+`GetToRedmoon` phase; `BosunOctogEntityScript` and
+`QuartermasterGruharEntityScript` now bind the mapped normal/veteran Creature2
+rows and credit each objective once on death. Focused Skullcano/objective-credit
+tests passed `243/243`. The regenerated tracker records dependencies `323` and
+`440` with runtime evidence and validates `31` generated CSVs / `168,069` rows
+with `3,148` blocker detail rows, all still `not_retail_complete`. Skullcano
+remains partial: exact boss mechanics, spawn placement/version selection,
+Mordechai/terraformer script-objective timing, cave/chasm route weights, route
+doors/platforms, rewards/achievements, and full dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Stormtalon optional miniboss producers.
+Stormtalon's Lair (`world 382`, public event `145`) now has test-backed
+runtime producer coverage for the optional route miniboss objectives Defeat
+Arcanist Breeze-Binder `556` and Kill Overseer Drift-Catcher `828`. Build 16042
+maps `556` to `KillTargetGroup` object `3030`, count `1`, with TargetGroup
+`3030` resolving to Creature2 `24474` and `34711`; it maps `828` to
+`KillTargetGroup` object `3921`, count `1`, with TargetGroup `3921` resolving
+to Creature2 `33361` and `33362`. `StormtalonsLairEventScript` already
+activates one of those optional branch objectives during `EliminateAethros`;
+`ArcanistBreezeBinderEntityScript` and `OverseerDriftCatcherEntityScript` now
+bind the mapped normal/veteran Creature2 rows and credit the objective once on
+death. Focused Stormtalon/objective-credit tests passed `238/238`. The
+regenerated tracker records dependencies `556` and `828` with runtime evidence
+and validates `31` generated CSVs / `168,059` rows with `3,143` blocker detail rows,
+all still `not_retail_complete`. Stormtalon remains partial: exact optional
+route selection, miniboss spawn placement/version selection, encounter
+mechanics, boss rewards/achievements, final Stormtalon choreography, and full
+dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Hall optional boss producers.
+Hall of the Hundred (`world 3009`, public event `666`) now has test-backed
+runtime producer coverage for optional Icebound Overlord objective `4972` and
+optional Darkwitch Yotul objective `5001`, alongside the existing Unbound Flame
+Elemental objective `4318`. Build 16042 maps `4318` to `KillEventUnit` object
+`14128` with TargetGroup `14128` resolving to Creature2 `71414`; maps `4972`
+to `KillTargetGroup` object `14275` with TargetGroup `14275` resolving to
+Creature2 `71577`; and maps `5001` to `KillEventUnit` object `14048` with
+TargetGroup `14048` resolving to Creature2 `71173`. The Hall event script
+activates `4318` and `4972` during `ExploreUpperFloors`, then activates `5001`
+during `ExploreTopFloor`; the mapped death-credit scripts complete each
+optional boss objective once on the corresponding Creature2 death. Focused
+Hall/objective-credit tests passed `317/317`. Read-only subagent
+`019ec685-18c6-7d83-8624-08d1535aaad1` identified Hall objective `4318` as
+the best queue lane but placement-blocked; the lead selected the adjacent
+`4972`/`5001` objectives after confirming `4318` already had runtime wiring.
+The regenerated tracker records dependencies `4318`, `4972`, and `5001` with
+runtime evidence and validates `31` generated CSVs / `168,049` rows with
+`3,138` blocker detail rows, all still `not_retail_complete`. Hall remains
+partial: exact optional boss spawn placement, route availability, encounter
+mechanics, rewards, achievements, full dungeon smoke, and broader
+Varegor/Harizog/Osun/vault mechanics remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Sanctuary relic and tech-cluster producers.
+Sanctuary of the Swordmaiden (`world 1271`, public event `166`) now has
+test-backed runtime producer coverage for Torine Spirit-Relic collection
+objective `481`, Spirit-Relic placement objective `482`, and Sabotage
+Lifeweaver Tech Clusters objective `496`, alongside the existing Torine Totem
+objective `499`. Build 16042 maps `481` to `ActivateTargetGroupChecklist`
+object `3193`, count `3`, with TargetGroup `3193` resolving to Creature2
+`28638`, `28643`, `28652`, and `28644`; maps `482` to object `3164`, count
+`3`, with Creature2 `28459`; and maps `496` to object `5755`, count `3`, with
+Creature2 `43171`. `SanctuaryObjectiveEntityScripts` now binds those rows and
+credits each mapped target group once per activation. `481` and `482` were
+already phase-activated by the Sanctuary event chain, and `496` is now
+available through the existing WIP optional-objective gate in the entry phase
+without claiming exact route parity. Focused Sanctuary tests passed `47/47`.
+Read-only subagent `019ec673-658e-7220-be86-ddfa407ed29f` cross-checked the
+non-Evil queue and kept Ultimate Protogames `4669` blocked on TargetGroup
+`12549` membership and reviewed placement evidence. The regenerated tracker
+records dependencies `481`, `482`, `496`, and `499` with runtime evidence and
+validates `31` generated CSVs / `168,033` rows with `3,130` blocker detail rows,
+all still `not_retail_complete`. Sanctuary remains partial: exact
+relic/holder/cluster/totem placements, visual/despawn state, optional route
+weights, sabotage side effects, rewards, achievements, and full dungeon smoke
+remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Evil from the Ether teleporter gather and Katja boss producers.
+Evil from the Ether (`world 3404`, public event `781`) now has test-backed
+runtime coverage for the teleporter gather objective `4979` and Katja Zarkhov
+defeat objective `4925`. Build 16042 maps `4979` to
+`ParticipantsInTriggerVolume` object `8312`, count `0`, at WorldLocation2
+`50632` in the Auxiliary Power Plant; `EvilFromTheEtherEventScript` now
+activates the gather phase after the second Etheric Organism wave objective,
+spawns that exact gather volume, and advances to upper-deck teleport on
+success. Read-only subagent `019ec662-6606-7ae0-a074-c2f629960265`
+identified `4925` as a high-confidence missing producer: objective `4925`
+maps to target group `14051`, which contains Katja Zarkhov Creature2 rows
+`71037` and `71039`; `KatjaZarkhovEntityScript` now credits the defeat
+objective once on death while preserving the Ether Drive Schematics summon.
+Focused Evil from the Ether tests passed `58/58`. The regenerated tracker
+records dependencies `4979` and `4925` with runtime evidence and validates
+`31` generated CSVs / `168,017` rows with `3,122` blocker detail rows, all
+still `not_retail_complete`. Evil remains partial: drive sparks `4942`, Drive
+Diagnostics `4943`, exact encounter choreography, normal/veteran spawn
+selection, rewards, achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Sanctuary Torine Totem of Flame producer.
+Sanctuary of the Swordmaiden (`world 1271`, public event `166`) now has
+test-backed runtime producer coverage for Destroy Torine Totems of Flame
+objective `499`. Build 16042 maps `499` to
+`ActivateTargetGroupChecklist` object `5756`, count `8`; TargetGroup `5756`
+contains Creature2 `43173` (`Torine Totem of Flame`).
+`TorineTotemOfFlameEntityScript` binds that Creature2 row and credits
+TargetGroup `5756` once per activation, while
+`SanctuaryOfTheSwordmaidenEventScript` continues to activate the objective in
+the Rayna Darkspeaker phase. Focused Sanctuary tests passed `40/40`. The
+regenerated tracker records dependency `499` with runtime producer evidence
+and validates `31` generated CSVs / `168,001` rows with `3,114` blocker detail rows,
+all still `not_retail_complete`. Sanctuary remains partial: exact totem
+placement/count, visual/despawn state, burn/fail side effects for achievement
+objective `1503`, route weights/objectives, miniboss mechanics, triggers,
+doors, communicator timing, rewards, achievements, and full dungeon smoke
+remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Skullcano optional interactable producers.
+Skullcano (`world 1263`, public event `148`) now has test-backed runtime
+producer coverage for Free the Lopp captured by the Grim-Grim objective `335`
+and Hack the Redmoon's Cluster Missile Consoles objective `365`. Build 16042
+maps `335` to `ActivateTargetGroupChecklist` object `2627`, count `8`;
+TargetGroup `2627` contains Creature2 `24679`
+(`[SK] e335 - Grim-Grim Foe Sack`). Build 16042 maps `365` to
+`ActivateTargetGroupChecklist` object `2674`, count `3`; TargetGroup `2674`
+contains Creature2 `25230`
+(`[SK] e365 - Redmoon Cluster Missile Launch Panel`).
+`SkullcanoObjectiveEntityScripts` bind those Creature2 rows and credit their
+mapped TargetGroups once per activation, while `SkullcanoEventScript`
+continues to activate the optional objectives through WIP branch rolls.
+Focused Skullcano tests passed `44/44`. The regenerated tracker records
+dependencies `335` and `365` with runtime producer evidence and validates
+`31` generated CSVs / `167,993` rows with `3,110` blocker detail rows, all
+still `not_retail_complete`. Skullcano remains partial: optional objective
+availability/route weights, panel/sack placement and visual/despawn state,
+missile side effects, boss mechanics, Chief Kaskalak choreography,
+doors/platforms, communicator timing, rewards, achievements, and full dungeon
+smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Coldblood Citadel Rally Pell War Drum producer.
+Coldblood Citadel (`world 3522`, public event `907`) now has test-backed
+runtime producer coverage for Rally the Winterfury Pell with War Drums
+objective `5316`. Build 16042 maps `5316` to
+`ActivateTargetGroupChecklist` object `14469`, count `5`; TargetGroup `14469`
+contains Creature2 `75706` (`[CBC] e5316 - Rally Pell Drum`).
+`RallyPellDrumEntityScript` binds that Creature2 row and credits TargetGroup
+`14469` once per activation, while the existing Hailstone phase continues to
+activate the optional objective through `ActivateWipOptionalObjective`.
+Focused Coldblood Citadel tests passed `20/20`. The regenerated tracker
+records dependency `5316` with runtime producer evidence and validates `31`
+generated CSVs / `167,979` rows with `3,103` blocker detail rows, all still
+`not_retail_complete`. Coldblood Citadel remains partial: optional route
+weights, drum placement/count, repeat interaction client behavior,
+door/choreography, Hailstone cadence, rewards, loot, achievements, and full
+dungeon route smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Evil from the Ether Open Medbay producer.
+Evil from the Ether (`world 3404`, public event `781`) now has test-backed
+runtime producer coverage for Open the Medbay Door objective `4937`. Build
+16042 maps `4937` to `ActivateTargetGroup` object `14064`, count `1`;
+TargetGroup `14064` contains Creature2 `71283` (`Medbay Door Control`).
+`MedbayDoorControlEntityScript` binds that Creature2 row and credits
+TargetGroup `14064` once per activation, while the existing event phase
+continues to teleport players, remove the gather marker/trigger, and advance
+to spare parts on success. Focused Evil from the Ether tests passed `55/55`.
+The regenerated tracker records dependency `4937` with runtime producer
+evidence and validates `31` generated CSVs / `167,971` rows with `3,099` blocker detail rows,
+all still `not_retail_complete`. Evil from the Ether
+remains partial: exact medbay cleanup timing, placement/import smoke, drive
+sparks/diagnostics, rewards, achievements, and manual expedition smoke remain
+blocked.
+
+Supplemental update: 2026-06-14 F-024 Gauntlet product endorsement producer.
+Gauntlet (`world 2183`, public event `446`) now has test-backed runtime
+producer coverage for Choose a Sponsored Product to endorse objective `2001`.
+Build 16042 maps `2001` to `ActivateTargetGroup` object `7038`, count `1`;
+TargetGroup `7038` contains Creature2 `49218`, `49429`, `49486`, `49536`, and
+`49573` (`Endorse Beverage`, `Endorse Grundwich`, `Endorse Gauntlet Homegame`,
+`Endorse Plushie Grund`, and `Endorse Hanging Skull`). `ProductEndorsementEntityScript`
+binds those Creature2 rows and credits TargetGroup `7038` once per activation.
+Focused Gauntlet tests passed `24/24`, covering script filter binding, one-shot
+target-group credit, existing phase activation, talk-objective producers, and
+phase handoffs. The regenerated tracker records dependency `2001` with runtime
+producer evidence and validates `31` generated CSVs / `167,969` rows with
+`3,098` blocker detail rows, all still `not_retail_complete`. Gauntlet remains
+partial: product side effects, exact cinematic completion timing, announcer
+timing, arena-door choreography, encounter behavior, rewards, achievements,
+and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Fragment Zero final Hugo bridge producers.
+Fragment Zero (`world 3180`, public event `680`) now direct-credits the build
+16042 zero-count `ScriptWithoutMax` bridge objectives `4655` (`WaitForHugo`)
+and `4447` (`StayCloseToHugo`) after phase activation, keeping the existing
+Hugo TalkTo producers `4641`/`4642` mapped through TargetGroups `12471`/`12458`
+and Creature2 `68886`/`68854`. Focused Fragment Zero tests passed `22/22`,
+covering final-bridge activation, zero-count objective credit, and phase
+handoffs from wait to talk to stay-close to final talk. The regenerated tracker
+records dependencies `4655` and `4447` with runtime producer evidence and
+validates `31` generated CSVs / `167,961` rows with `3,094` blocker detail rows,
+all still `not_retail_complete`. Fragment Zero remains partial: exact
+Hugo timing, trigger/cinematic/communicator/door/entity proof, rewards,
+achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Space Madness control and datapad producers.
+Space Madness (`world 2149`, public event `390`) now has test-backed runtime
+producer coverage for Crew Datapads objective `1596`, Hazmat Storage Closet
+control-panel objectives `1592`/`4736`, Activate Air Scrubber Controls
+objective `1595`, and Engineering Computer all-clear objective `1603`. Build
+16042 maps `1596` to `ActivateTargetGroupChecklist` object `6384`, count `6`;
+TargetGroup `6384` contains Creature2 `45993` (`Datapad - Shiphand - Space
+Madness - CM1`). Build 16042 maps `1592`/`4736` to `ActivateTargetGroup`
+object `12651`, count `1`; TargetGroup `12651` contains Creature2 `46092`
+(`W2149 - Hazmat Control Panel - DWS`). Build 16042 maps `1595` to
+`ActivateTargetGroup` object `6371`, count `1`; TargetGroup `6371` contains
+Creature2 `45861` and `46437`. Build 16042 maps `1603` to
+`ActivateTargetGroup` object `6372`, count `1`; TargetGroup `6372` contains
+Creature2 `45973` (`W2149 - Shiphand - Space Madness - Engineering Computer -
+DWS`). `SpaceMadnessObjectiveEntityScripts` bind those Creature2 rows and
+credit their mapped TargetGroups once per activation. Focused Space Madness
+tests passed `22/22`, covering script filter bindings, one-shot target-group
+and checklist credit, and existing phase handoffs. The regenerated tracker
+records dependencies `1592`, `1595`, `1596`, `1603`, and `4736` with runtime
+producer evidence and validates `31` generated CSVs / `167,953` rows with
+`3,090` blocker detail rows, all still `not_retail_complete`. Space Madness
+remains partial: panicked workers, livestock/hallucination kill and wave
+mechanics, exact datapad/control placement counts, hazmat closet door state,
+air-scrubber timing, lab door/trigger/teleport proof, communicator/cinematic
+timing, rewards, achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Stormtalon's Lair Launch Pad producer.
+Stormtalon's Lair (`world 382`, public event `145`) now has test-backed
+runtime producer coverage for Activate the Launch Pads objective `559`. Build
+16042 maps `559` to `ActivateTargetGroupChecklist` object `3679`, count `2`;
+TargetGroup `3679` contains Creature2 `31587`
+(`e559 - Launch Pad - Event - Stormtalon`). `StormtalonsLairEventScript`
+activates the optional objective in the WIP Blade-Wind side route, and
+`LaunchPadEntityScript` binds Creature2 `31587`, credits TargetGroup `3679`
+once per launch-pad activation, and leaves route weights/placement/client
+smoke blocked. Focused Stormtalon tests passed `32/32`, covering optional
+phase activation, script filter binding, one-shot checklist credit, and the
+existing trigger/boss handoffs. The regenerated tracker records dependency
+`559` with
+`runtime_stormtalon_launch_pad_checklist_activation_credit_tested_pending_route_and_client_smoke`
+and validates `31` generated CSVs / `167,946` rows with `3,087` blocker detail rows,
+all still `not_retail_complete`. Stormtalon's Lair remains partial: exact
+boss combat, cinematic payload, optional route weights, boss spawn/version
+selection, remaining optional objectives, rewards, achievements, and manual
+dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Infestation Hull Breach and Cargo producers.
+Infestation (`world 1232`, public event `95`) now has test-backed runtime
+producer coverage for Seal Hull Breaches objective `1007` and Tag Valuable
+Cargo objective `4699`. Build 16042 maps `1007` to
+`ActivateTargetGroupChecklist` object `4516`, count `6`; TargetGroup `4516`
+contains Creature2 `36844`
+(`w1232 - Hull Breach - PQ Objective - Shiphand Infestation`). Build 16042
+maps `4699` to `ActivateTargetGroupChecklist` object `12593`, count `6`;
+TargetGroup `12593` contains Creature2 `69877`
+(`W1232 - Cargo Container - Shiphand Infestation`). `HullBreachEntityScript`
+and `CargoContainerEntityScript` bind those Creature2 rows and credit their
+mapped TargetGroups once per entity activation, while exact placement,
+visual-state, and client smoke remain blocked. Focused Infestation tests
+passed `21/21`, covering phase activation, hull-breach handoff, script filter
+bindings, and one-shot checklist credit. The regenerated tracker records
+dependencies `1007` and `4699` with
+`runtime_infestation_hull_breach_checklist_activation_credit_tested_pending_placement_visual_state_and_client_smoke`
+and
+`runtime_infestation_cargo_container_checklist_activation_credit_tested_pending_placement_visual_state_and_client_smoke`
+and validates `31` generated CSVs / `167,936` rows with `3,082` blocker detail rows,
+all still `not_retail_complete`. Infestation remains partial: parasite kills,
+contaminated shiphand healing, trigger timing, real cinematic payload,
+rewards, achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Infestation Ship Vents producer.
+Infestation (`world 1232`, public event `95`) now has test-backed runtime
+producer coverage for Close the Ship Vents objective `228`. Build 16042 maps
+`228` to `ActivateTargetGroupChecklist` object `2324`, count `3`; TargetGroup
+`2324` contains Creature2 `22493` (`Vent - Shiphand Infestation - W1232`).
+`ShipVentEntityScript` binds Creature2 `22493`, credits TargetGroup `2324`
+once per vent activation, and leaves visual-state/despawn behavior blocked
+until client smoke proves the exact retail interaction. Focused Infestation
+tests passed `16/16`, covering phase activation, existing phase handoffs,
+script filter binding, and one-shot checklist credit. The regenerated tracker
+records dependency `228` with
+`runtime_infestation_ship_vent_checklist_activation_credit_tested_pending_placement_visual_state_and_client_smoke`
+and validates `31` generated CSVs / `167,928` rows with `3,082` blocker detail rows,
+all still `not_retail_complete`. Infestation remains partial: hull breaches
+`1007`, cargo tagging `4699`, parasite kills, contaminated shiphand healing,
+trigger timing, real cinematic payload, rewards, achievements, and manual
+expedition smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Infestation Medical Supplies producer.
+Infestation (`world 1232`, public event `95`) now has test-backed runtime
+producer coverage for Find Medical Supplies objective `230`. Build 16042 maps
+`230` to `ActivateTargetGroup` object `2323`, count `1`; TargetGroup `2323`
+contains Creature2 `22489` (`W1232 - Medical Supplies - Shiphand Infestation`).
+`MedicalSuppliesEntityScript` binds Creature2 `22489`, credits TargetGroup
+`2323` once on activation, and leaves placement/despawn behavior blocked until
+client smoke proves the exact retail interaction. Focused Infestation tests
+passed `13/13`, covering phase activation, medical-supplies completion
+handoff, script filter binding, and one-shot target-group credit. The
+regenerated tracker records dependency `230` with
+`runtime_infestation_medical_supplies_activation_credit_tested_pending_placement_despawn_and_client_smoke`
+and validates `31` generated CSVs / `167,924` rows with `3,082` blocker detail rows,
+all still `not_retail_complete`. Infestation remains partial: vents `228`,
+hull breaches `1007`, cargo tagging `4699`, parasite kills, contaminated
+shiphand healing, trigger timing, real cinematic payload, rewards,
+achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Space Madness Observation Deck Computer producer.
+Space Madness (`world 2149`, public event `390`) now has test-backed runtime
+producer coverage for Access the Observation Deck Computer objective `1589`.
+Build 16042 maps `1589` to `ActivateTargetGroup` object `6356`, count `1`;
+TargetGroup `6356` contains Creature2 `45972` (`W2149 - Shiphand - Space
+Madness - Lab Computer - DWS`). `ObservationDeckComputerEntityScript` binds
+Creature2 `45972`, credits TargetGroup `6356` once on activation, and leaves
+the computer in place for reuse/visibility. Focused Space Madness tests passed
+`14/14`, covering script filters, phase objective activation, one-shot console
+credit, and existing talk producers. The regenerated tracker records dependency
+`1589` with
+`runtime_space_madness_observation_deck_computer_activation_credit_tested_pending_console_placement_and_client_smoke`
+and validates `31` generated CSVs / `167,920` rows with `3,082` blocker detail rows,
+all still `not_retail_complete`. Space Madness remains partial: panicked
+workers `1594`, crew datapads `1596`, lab door/trigger/teleport proof, hazmat
+closet/control panel, air scrubber/all-clear interactables, communicator/
+cinematic timing, rewards, achievements, and manual expedition smoke remain
+blocked.
+
+Supplemental update: 2026-06-14 F-024 Fragment Zero Hugo TalkTo producers.
+Fragment Zero (`world 3180`, public event `680`) now has test-backed runtime
+producer coverage for Hugo TalkTo objectives `4641` and `4642`. Build 16042
+maps `4641` to `TalkTo` object `12471`, whose TargetGroup contains Creature2
+`68886` (`captain hugo - aura hugo - fragment zero - twh`), and maps `4642`
+to `TalkTo` object `12458`, whose TargetGroup contains Creature2 `68854`
+(`captain hugo - event end hugo - fragment zero - twh`). `HugoTalkObjectiveEntityScripts`
+bind both Creature2 rows and credit the mapped TalkTo TargetGroups on
+activation. Focused Fragment Zero tests passed `17/17`, covering script filters,
+target-group credit, and the existing phase/cinematic scaffold. The regenerated
+tracker records dependencies `4641` and `4642` with
+`runtime_fragment_zero_hugo_aura_talk_objective_activated_and_target_group_credited_tested_pending_stay_close_and_client_smoke`
+and
+`runtime_fragment_zero_hugo_final_talk_objective_activated_and_target_group_credited_tested_pending_stay_close_and_client_smoke`,
+and validates `31` generated CSVs / `167,912` rows with `3,078` blocker detail rows,
+all still `not_retail_complete`. Fragment Zero remains partial: ScriptWithoutMax
+stay-close objective `4447`, wait timing `4655`, trigger/cinematic/communicator/
+door/entity proof, rewards, achievements, and manual expedition smoke remain
+blocked.
+
+Supplemental update: 2026-06-14 F-024 Evil from the Ether Teleporter Controls producer.
+Evil from the Ether (`world 3404`, public event `781`) now has test-backed
+runtime producer coverage for Restore Teleporter objective `4978`. Build 16042
+maps `4978` to `ActivateTargetGroupChecklist` object `14107`, count `1`, at
+WorldLocation2 `50625`; TargetGroup `14107` contains Creature2 `71631`
+(`Teleport Controls - PO4921 - W3404 PE781 - KLW`). `TeleporterControlsEntityScript`
+binds that Creature2 row and credits TargetGroup `14107` once on activation
+without removing the controls. Focused Evil from the Ether tests passed
+`53/53`, covering the new one-shot checklist producer and the existing route
+producers. The regenerated tracker records dependency `4978` with
+`runtime_teleporter_controls_objective_activated_and_target_group_checklist_credited_tested_pending_placement_and_client_smoke`
+and validates `31` generated CSVs / `167,905` rows with `3,075` blocker detail rows,
+all still `not_retail_complete`. Evil remains partial: drive sparks
+`4942`, Drive Diagnostics `4943`, Katja/encounter choreography,
+placement/import smoke, rewards, achievements, and manual expedition smoke
+remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Evil from the Ether self-destruct controls producer.
+Evil from the Ether (`world 3404`, public event `781`) now has test-backed
+runtime producer coverage for self-destruct objective `4924`. Build 16042 maps
+`4924` to `ActivateTargetGroup` object `14050`, count `1`, at WorldLocation2
+`50534`; TargetGroup `14050` contains Creature2 `71228` (`Etheric Drive
+Controls - W3404 PE781 - PO4924 - KLW`). `EthericDriveControlsEntityScript`
+keeps the controls in `Slide` movement mode and now credits TargetGroup
+`14050` once on activation without removing the controls. Focused Evil from
+the Ether tests passed `52/52`, covering movement mode setup, target-group
+credit, duplicate suppression, and non-removal. The regenerated tracker records
+dependency `4924` with
+`runtime_self_destruct_controls_objective_activated_and_target_group_credited_tested_pending_placement_and_client_smoke`
+and validates `31` generated CSVs / `167,903` rows with `3,074` blocker detail
+rows, all still `not_retail_complete`. Read-only evidence mapper `Godel`
+(`019ec577-7561-7993-9c72-2be055b9aa3a`) identified `4978` Teleporter Controls
+as the next high-confidence Evil slice (`TargetGroup 14107`, Creature2 `71631`,
+WorldLocation2 `50625`) and kept drive sparks `4942` blocked on weak
+Branch-only evidence. Evil remains partial: drive sparks, `4978` teleporter
+controls, `4943` drive diagnostics timing, Katja/encounter choreography,
+placement/import smoke, rewards, achievements, and manual expedition smoke
+remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Hall of the Hundred Unbound Flame Elemental producer.
+Hall of the Hundred / The Vault of the Archon (`world 3009`, public event
+`666`) now exposes and credits the optional Unbound Flame Elemental objective
+during the upper-watchtower route without advancing the mandatory dungeon path.
+Build 16042 maps objective `4318` to optional `KillEventUnit` object
+`14128`, count `1`, QuestDirection `2483`; TargetGroup `14128` contains
+Creature2 `71414` (`Unbound Flame Elemental - w3009 - WS2 - Optional Boss`).
+`HallOfTheHundredEventScript` activates `4318` alongside the upper-floor
+trigger-volume objective `5002`, and `UnboundFlameElementalEntityScript`
+credits `4318` once on Creature2 `71414` death. Focused instance producer
+tests passed `307/307`, covering optional activation, non-gating completion,
+death credit, duplicate suppression, and the exact Creature2 filter. The
+regenerated tracker validates `31` generated CSVs / `167,903` rows with
+`3,074` blocker detail rows, all still `not_retail_complete`. Hall
+remains partial: optional boss placement/spawn timing, boss combat mechanics,
+4327 construct/spell/portal semantics, 4329 Osun exterminate semantics,
+courtyard statue/door choreography `4320`/`4321`, rewards, achievements, and
+manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Hall of the Hundred power-link and Harizog producers.
+Hall of the Hundred / The Vault of the Archon (`world 3009`, public event
+`666`) now advances from the force-field wait through the power-link and
+Harizog handoffs before exposing the Osun exit objective as the next blocker.
+Build 16042 maps objective `4327` to a count-six `Script` row with
+QuestDirection `2447`; its text references spell `83784` and Creature2 `72903`,
+TargetGroup `14274` contains Creature2 `72903` (`Forcefield Power Link - w3009
+- Part 5`), and QuestDirectionEntry `3991` resolves to WorldLocation2 `51025`
+in world `3009` at `(1452.02, -672.141, -505.919)` radius `25`.
+`ForcefieldPowerLinkEntityScript` now credits `4327` once and removes the link
+on activation, without claiming the still-blocked construct kills, spell
+`83784` acquisition/gating, or jump-through/portal mechanics. Objective `4328`
+maps to TargetGroup `12162`, whose member is Creature2 `67444` (`Harizog
+Coldblood`), and `HarizogColdbloodEntityScript` credits the boss death. After
+that success the event activates `4329` only; the exact Osun exit/exterminate
+semantics remain blocked. Focused Hall tests now cover `116` route, trigger,
+interaction, target-group, cleanup, direct Script, boss-credit, power-link
+cleanup, and guarded handoff cases. The regenerated tracker validates `31`
+generated CSVs / `167,895` rows with `3,070` blocker detail rows, all still
+`not_retail_complete`. Hall remains partial: construct kill sources, spell
+`83784` behavior, portal/jump mechanics, Osun exit `4329`, placements/import
+smoke, Harizog combat mechanics, courtyard statue/door choreography
+`4320`/`4321`, rewards, achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Hall of the Hundred access-terminal and force-field wait producers.
+Hall of the Hundred / The Vault of the Archon (`world 3009`, public event
+`666`) now advances past the Vault access-terminal gate. Build 16042 maps
+objective `4325` to `ParticipantsInTriggerVolume` object `8295`, with
+QuestDirection `2446` entry `3990` resolving to WorldLocation2 `51020` in
+world `3009` at `(1451.66, -673.04, -498.369)` radius `12`. The Hall event now
+creates and cleans up that trigger, while `AccessTerminalGridTriggerEntityScript`
+credits the typed/object objective once for player entry. Objective `4326` is
+a count-one `Script` row using the same QuestDirection and is activated/credited
+as the force-field wait handoff before `4327` is exposed as the next blocked
+construct/power-link mechanic. Focused Hall tests now cover `107` route,
+trigger, interaction, target-group, cleanup, direct Script, and guarded handoff
+cases. The regenerated tracker validates `31` generated CSVs / `167,867` rows
+with `3,056` blocker detail rows, all still `not_retail_complete`. Hall remains
+partial: construct/power-link mechanics `4327`, Harizog/Osun combat, courtyard
+statue/door choreography `4320`/`4321`, reviewed placements, vault mechanics,
+rewards, achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Stormtalon's Lair optional interactable producers.
+Stormtalon's Lair (`world 382`, public event `145`) now has test-backed
+optional-route interaction producers for more of its build 16042 checklist
+objectives. Objective `554` maps to `ActivateTargetGroupChecklist` TargetGroup
+`2548` / Creature2 `24307` (`e554 - Tainted Flower Stem`), and objective `464`
+maps to TargetGroup `1661` / Creature2 `17191` (`e464 - Thundercall Cage`).
+`TaintedFlowerStemEntityScript` and `ThundercallSacrificialCageEntityScript`
+credit the mapped objectives on activation with exact Creature2 filters.
+The tracker also now records the already-focused Data Altar producer `555`
+through TargetGroup `2978` / Creature2 `24314` alongside the existing High
+Priest `540` and Storm Totem `562` coverage. Focused Stormtalon tests now cover
+`30` event/trigger/interactable cases. The regenerated tracker validates `31`
+generated CSVs / `167,835` rows with `3,040` blocker detail rows, all still
+`not_retail_complete`. Stormtalon's Lair remains partial: exact optional-route
+weights, placements/import smoke, boss combat, cinematic payload, boss
+spawn/version selection, remaining optional objectives, rewards, achievements,
+and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Hall of the Hundred inside-Hall follow route producers.
+Hall of the Hundred / The Vault of the Archon (`world 3009`, public event
+`666`) now advances after Kel Havik key placement into the first inside-Hall
+route steps. Build 16042 maps PublicEventObjective `4323` to a count-one
+`Script` row with QuestDirection `2444`, and `4324` to a zero-count `Script`
+row with QuestDirection `2445`. `HallOfTheHundredEventScript` now starts
+`4323` after `4322` succeeds, credits `4323` and `4324` with their table counts,
+and then activates `4325` as the next access-terminal blocker without creating
+an unproven trigger. Focused Hall tests now cover `97` route, trigger,
+interaction, target-group, cleanup, direct Script, and guarded handoff cases.
+The regenerated tracker validates `31` generated CSVs / `167,817` rows with
+`3,031` blocker detail rows, all still `not_retail_complete`. Hall remains
+partial: courtyard statue/door choreography `4320`/`4321`, access-terminal
+trigger `4325`, construct/portal mechanics `4327`, Harizog/Osun combat,
+reviewed key/lock/NPC/interior placements, vault mechanics, rewards,
+achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Hall of the Hundred courtyard key and gate placement producers.
+Hall of the Hundred / The Vault of the Archon (`world 3009`, public event
+`666`) now advances from Kel Havik courtyard regroup into key pickup and gate
+key placement. Build 16042 maps PublicEventObjective `4314` to
+`ActivateTargetGroup` `14104`, count `3`, at WorldLocation2 `51537`;
+TargetGroup `14104` contains Creature2 `71617` / `71618` / `71619`
+(`Kel Havik Staff`, `Kel Havik Hammer`, `Kel Havik Polearm`), and reward-pane
+TargetGroup `14306` also references frozen relic sources `73275` / `73276` /
+`73277`. Objective `4322` maps to `ActivateTargetGroupChecklist` `14212`,
+count `3`, at WorldLocation2 `51417`, with Creature2 `72367` (`Kel Havik Door
+Lock - Open Fortress`). `HallOfTheHundredEventScript` now activates `4314`,
+hands off to `4322` after successful key collection, and binds the key and lock
+Creature2 rows through one-shot scripts that credit the mapped target group and
+remove the interacted entity. Focused Hall tests now cover `90` route, trigger,
+interaction, target-group, cleanup, and guarded handoff cases. The regenerated
+tracker validates `31` generated CSVs / `167,779` rows with `3,012` blocker detail rows,
+all still `not_retail_complete`. Hall remains partial: courtyard
+statue/door choreography `4320`/`4321`, inside-Hall route `4323+`, optional
+boss/combat mechanics, reviewed elevator/NPC/key/lock placement, vault
+mechanics, rewards, achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Hall of the Hundred Kel Havik and watchtower route producers.
+Hall of the Hundred / The Vault of the Archon (`world 3009`, public event
+`666`) now advances from the bridge explosives into Kel Havik fortress routing
+and watchtower entry. Build 16042 maps PublicEventObjective `4305` to a
+zero-count `Script` row for object `8343`, `4306` to
+`ParticipantsInTriggerVolume` object `7857` at WorldLocation2 `50597`, `4308`
+to a `Script` row for object `7860` with count `1`, and `4310` to a
+`Turnstile` row for object `7861` at WorldLocation2 `48499` with radius
+`9.73506`. `HallOfTheHundredEventScript` now activates and credits the follow
+and tablet-study script rows, creates and cleans up the Kel Havik regroup
+trigger at `(618.068, -654.879, -987.026)`, and creates the watchtower
+turnstile at `(751.826, -657.249, -992.613)` using the runtime
+`ITurnstileGridTriggerEntity` path. Focused Hall tests cover objective
+activation, direct zero-count and count-one script credit, trigger placement,
+trigger cleanup, turnstile creation, and guarded phase handoffs from bridge
+explosives through watchtower entry. The regenerated tracker validates `31`
+generated CSVs / `167,686` rows with `2,966` blocker detail rows, all still
+`not_retail_complete`. Hall remains partial: exact NPC walk/tablet
+choreography, reviewed placements, combat and later courtyard/vault mechanics,
+rewards, achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Hall of the Hundred revive and bridge objective producers.
+Hall of the Hundred / The Vault of the Archon (`world 3009`, public event
+`666`) now advances past Varegor into the revive and bridge route. Build 16042
+maps PublicEventObjective `4301` (`Revive Dorian`) and `4302` (`Revive
+Artemis`) to `ActivateTargetGroup` TargetGroup `12158`, whose members are
+Creature2 `67423` (`w3009 - Dorian Walker`) and `67425` (`w3009 - Artemis
+Zin`). `DorianWalkerReviveEntityScript` and `ArtemisZinReviveEntityScript`
+bind those Creature2 rows and direct-credit the named objectives once, avoiding
+the shared target-group ambiguity. Objective `4303` is a
+`ParticipantsInTriggerVolume` row for object `7836` at WorldLocation2 `50596`
+in world `3009` at `(370.969, -654.254, -1260.47)`, and the event now creates
+and cleans up that trigger before starting `4304`. Objective `4304` maps to
+`ActivateTargetGroupChecklist` TargetGroup `14163`, whose member is Creature2
+`72108` (`w3009 - Weak Point - Bridge Crossing`), now credited by
+`BridgeWeakPointEntityScript`. Focused Hall tests cover phase activation,
+guarded two-revive handoff, bridge trigger placement/cleanup, exact owner and
+Creature2 filters, one-shot direct objective credit, and typed/object checklist
+credit. The regenerated tracker validates `31` generated CSVs / `167,634` rows
+with `2,940` blocker detail rows, all still `not_retail_complete`. Hall remains
+partial: placement/import smoke for Dorian, Artemis, and bridge weak points,
+Varegor combat, fortress/vault mechanics, rewards, achievements, and manual
+dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Gauntlet opening and exit talk objective producers.
+Gauntlet (`world 2183`, public event `446`) now has test-backed runtime
+producers for its opening Pilot Taboro `TalkTo` objective and final Judge
+Kain/Agent Lex exit objectives. Build 16042 maps PublicEventObjective `1821`
+to TargetGroup `6818`, whose member is Creature2 `48580` (`Shiphand: Gauntlet -
+W2183 - PE446 - Pilot Taboro - Shuttle Start - KLW`), and maps final
+objectives `1914` and `1915` to TargetGroups `6898` / `6899` with Creature2
+`48945` (`W2183 - Iconic Character - Judge Kain - CM1`) and `48950` (`W2183 -
+Iconic Character - Agent Lex Hologram - CM1`). `GauntletEventScript` already
+activates the opening and final talk phases; `GauntletTalkObjectiveEntityScripts`
+now bind the exact Creature2 rows and credit active `TalkTo` objectives for the
+activating player. Focused tests cover creature filters and typed/object public
+event credit. The regenerated tracker records dependencies `1821`, `1914`, and
+`1915` as runtime-covered pending client smoke and validates `31` generated
+CSVs / `167,572` rows with `2,909` blocker detail rows, all still
+`not_retail_complete`. Gauntlet remains partial: exact cinematic completion
+timing, announcer timing, arena-door choreography, encounter behavior, rewards,
+achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Evil from the Ether main engineering generator producers.
+Evil from the Ether (`world 3404`, public event `781`) now has test-backed
+runtime producers for the two Main Engineering Generator controls. Build 16042
+maps PublicEventObjective `4941` to `ActivateTargetGroup` object `14077` with
+count `2`; TargetGroup `14077` contains Creature2 `71374` (`Generator Alpha
+Controls 1 - W3404 PE781 - DWS`) and `71375` (`Generator Beta Controls 2 -
+W3404 PE781 - DWS`). Child objectives `4961` and `4962` map to TargetGroups
+`14083` and `14084`, respectively. `EvilFromTheEtherEventScript` now activates
+the aggregate and both child objectives in the RestartMainGenerators phase, and
+the generator-control scripts credit both their child target group and aggregate
+`14077` once per control activation. Focused tests cover phase activation,
+door/message behavior, exact Creature2 filters, duplicate suppression, and
+specific plus aggregate target-group credit. The regenerated tracker records
+dependencies `4941`, `4961`, and `4962` as runtime-covered pending placement
+and client smoke, and validates `31` generated CSVs / `167,565` rows with
+`2,906` blocker detail rows, all still `not_retail_complete`. Evil remains
+partial: main engineering placement/import smoke, drive-spark behavior, exact
+medbay cleanup/phase timing, encounter choreography, rewards, achievements, and
+manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Stormtalon's Lair Thundercall Storm Totem producer.
+Stormtalon's Lair (`world 382`, public event `145`) now has a test-backed
+producer for the optional Thundercall Storm Totem objective. Build 16042 maps
+PublicEventObjective `562` (`Use the Thundercall Storm Totems to steal their
+power`) to objective type `4`, object/TargetGroup `4419`, count `8`; TargetGroup
+`4419` contains Creature2 `27262` (`e562 - Thundercall Storm Totem - Event -
+Normal - Stormtalon`). `StormtalonsLairEventScript` already optionally
+activates `562` during the Blade-Wind route, and the new
+`ThundercallStormTotemEntityScript` binds Creature2 `27262` and credits the
+objective on activation. Focused tests cover optional activation, creature
+filtering, and objective credit. The regenerated tracker records dependency
+`562` as runtime-covered pending route/client smoke and validates `31`
+generated CSVs / `167,553` rows with `2,900` blocker detail rows, all still
+`not_retail_complete`. Stormtalon's Lair remains partial: exact optional route
+weights, totem placement/import smoke, combat mechanics, cinematic payload,
+boss spawn/version selection, rewards, achievements, and manual dungeon smoke
+remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Space Madness opening talk objective producers.
+Space Madness (`world 2149`, public event `390`) now has test-backed runtime
+producers for its two opening `TalkTo` objectives. Build 16042 maps
+PublicEventObjective `1579` (`Talk to $creature=45900 before leaving the
+shuttle`) to TargetGroup `6342`, whose member is Creature2 `45900` (`Captain
+Tero`), and maps PublicEventObjective `1588` (`Talk to $creature=45812`) to
+TargetGroup `6358`, whose member is Creature2 `45812` (`Major Lee Barmy`).
+`SpaceMadnessEventScript` already activates and chains those objectives;
+`CaptainTeroEntityScript` and `MajorLeeBarmyEntityScript` now bind the mapped
+Creature2 rows and credit the active `TalkTo` objective for the activating
+player. Focused tests cover creature filters, typed/object public-event credit,
+initial phase activation, and the existing phase handoff into the airlock. The
+regenerated tracker records dependencies `1579` and `1588` as runtime-covered
+pending client smoke and validates `31` generated CSVs / `167,543` rows with
+`2,895` blocker detail rows, all still `not_retail_complete`. Space Madness
+remains partial: reviewed NPC placement/import smoke, airlock and research-lab
+trigger proof, door/teleport routing, observation-deck computer, panicked
+workers, datapads, escaped creatures, hazmat/nightmare/livestock/air-scrubber
+phases, rewards, achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Hall of the Hundred locked-gate and Varegor producers.
+Hall of the Hundred / The Vault of the Archon (`world 3009`, public event
+`666`) now advances beyond the opening plan into Varegor Pass. Build 16042
+maps PublicEventObjective `4299` to a `Script` row for object `7834`, count
+`1`, at WorldLocation2 `48658`, and maps `4300` to KillTargetGroup `12157`,
+whose only TargetGroup member is `Creature2 67457` (`Varegor the Abominable`).
+`HallOfTheHundredEventScript` now creates the locked-gate investigation trigger
+at `(368.129, -620.752, -1459.28)`, credits `4299` through
+`LockedGateInvestigationGridTriggerEntityScript`, cleans the trigger up on
+success, and activates the Varegor defeat phase. `VaregorEntityScript` binds
+Creature2 `67457` and credits objective `4300` on death. Focused tests cover
+trigger placement, direct Script objective credit, duplicate guards, cleanup,
+phase handoff, objective activation, and the boss death-credit helper. The
+regenerated tracker records dependencies `4299` and `4300` as runtime-covered
+pending client smoke and validates `31` generated CSVs / `167,742` rows with
+`3,102` blocker detail rows, all still `not_retail_complete`. Hall remains
+partial: reviewed Varegor placement/spawn, Varegor combat mechanics, revive
+steps, bridge explosives, fortress routing, rewards, achievements, and manual
+client dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Hall of the Hundred rejoin/listen opening plan sequence.
+Hall of the Hundred / The Vault of the Archon (`world 3009`, public event
+`666`) now continues the opening route past Dorian/Artemis into the build 16042
+rejoin and plan objectives. PublicEventObjective `4949` is a
+`ParticipantsInTriggerVolume` row for object `8278` at WorldLocation2 `50547`,
+and `4950` is a `Script` row for object/TargetGroup `12283` with count `1`.
+`HallOfTheHundredEventScript` recreates the `8278` trigger for `4949`, cleans it
+up on success, starts the listen phase once, then activates and directly
+credits `4950`. Focused Hall tests cover the new trigger placement, objective
+activation, type/object credit reuse, duplicate phase guards, cleanup, and
+direct Script objective credit. The regenerated tracker records dependencies
+`4949` and `4950` as runtime-covered pending client smoke and validates `31`
+generated CSVs / `167,704` rows with `3,083` blocker detail rows, all still
+`not_retail_complete`. Hall remains partial: exact NPC conversation
+choreography, party-count semantics, portal/exit routing, entity placements,
+Varegor/Harizog and optional-boss mechanics, rewards, achievements, and manual
+client dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Hall of the Hundred Dorian/Artemis opening conversation trigger.
+Hall of the Hundred / The Vault of the Archon (`world 3009`, public event
+`666`) now advances the opening route beyond the crashed-ship gather into the
+build 16042 Dorian/Artemis conversation objectives. PublicEventObjective `4456`
+and sibling row `4457` are active together for the opening gather at
+WorldLocation2 `48684` / object `8396`; on success the event transitions to
+objectives `4458` and `4459`, both `ParticipantsInTriggerVolume` rows at
+WorldLocation2 `50547` / object `8278`. `OpeningConversationGridTriggerEntityScript`
+credits the active type/object objectives once for player entry, and focused
+tests cover phase handoff, trigger placement, exact type/object credit,
+duplicate suppression, non-player ignore, and cleanup. The regenerated tracker
+records dependencies `4457`, `4458`, and `4459` as runtime-covered pending
+client smoke and validates `31` generated CSVs / `167,682` rows with `3,072` blocker detail rows,
+all still `not_retail_complete`. Hall remains partial:
+party-count semantics, portal/exit routing, entity placements, Varegor/Harizog
+and optional-boss mechanics, rewards, achievements, and manual client dungeon
+smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Evil from the Ether Captain Weir talk objective producers.
+Evil from the Ether (`world 3404`, public event `781`) now activates and
+credits the build 16042 Captain Weir talk objectives at the start and end of
+the expedition. PublicEventObjective `4895` and `4948` are both `TalkTo`
+objectives with object/TargetGroup `12996`; TargetGroup `12996` contains
+`Creature2 70999` (`Captain Weir- Expedition: HftV!- w3404 - DWS`), and
+WorldLocation2 `50279` places that interaction area in world `3404` at
+`(-422.14, -844.951, 122.08)`. `EvilFromTheEtherEventScript` now handles the
+initial `TalkToCaptainWeir` phase, while `CaptainWeirEntityScript` binds
+`Creature2 70999` and credits the active `TalkTo` objective for object `12996`
+for the activating player; it intentionally does not suppress later reuse
+because the same NPC serves both `4895` and `4948`. Focused Evil tests cover
+initial/final objective activation, exact creature binding, typed/object
+public-event credit, and reuse. The regenerated content-retail tracker records
+dependencies `4895` and `4948` as
+`runtime_captain_weir_talk_objective_activation_and_credit_tested_pending_client_smoke`
+and validates `31` generated CSVs / `167,675` rows with `3,081` blocker detail rows,
+all still `not_retail_complete`. Evil remains partial: Captain Weir
+placement/import smoke, drive-spark behavior, medbay cleanup timing, encounter
+choreography, rewards, achievements, and manual expedition smoke remain blocked.
+
+Supplemental update: 2026-06-13 F-024 Stormtalon's Lair High Priest trigger creation.
+Stormtalon's Lair (`world 382`, public event `145`) now creates the build
+16042 High Priest trigger for objective `540` instead of only activating and
+crediting it when an external trigger happens to exist. Client table evidence
+maps PublicEventObjective `540` to `ParticipantsInTriggerVolume`, object
+`1831`, objective location `12736`, and `WorldLocation2 12736` in world `382`
+at `(54.2672, -11.5711, 257.232)`. `StormtalonsLairEventScript` activates
+objective `540` with the current player count, creates the matching
+`IWorldLocationVolumeGridTriggerEntity`, and removes it after the objective
+succeeds; `StopTheThundercallHighPriestGridTriggerEntityScript` still credits
+one objective tick per player. Focused Stormtalon tests cover player-count
+activation, trigger initialization/placement, per-player credit, duplicate
+suppression, non-player ignore, and cleanup. The regenerated content-retail
+tracker records dependency `540` as
+`runtime_stormtalon_high_priest_trigger_created_credited_and_cleaned_up_tested_pending_client_smoke`
+and validates `31` generated CSVs / `167,662` rows. The tracker has `3,074` blocker detail rows, all still `not_retail_complete`. Stormtalon's Lair remains partial:
+combat mechanics, cinematic payloads, optional route weights, boss spawn/version
+selection, rewards, achievements, and manual dungeon smoke remain blocked.
+
+Supplemental update: 2026-06-14 F-024 Hall of the Hundred opening gather type/object trigger credit.
+Hall of the Hundred / The Vault of the Archon (`world 3009`, public event
+`666`) now creates and credits the build 16042 opening gather trigger instead
+of only activating its objective. Client table evidence maps PublicEventObjective
+`4456` to `ParticipantsInTriggerVolume` object `8396`, objective location
+`48684`, and `WorldLocation2 48684` in world `3009` at
+`(-952.698, -710.584, -156.552)`. `HallOfTheHundredEventScript` starts an
+explicit opening phase, spawns that `IWorldLocationVolumeGridTriggerEntity`,
+activates objective `4456`, and removes the trigger after objective success;
+`OpeningGatherGridTriggerEntityScript` binds `ScriptFilterOwnerId(8396)` and
+credits the active `ParticipantsInTriggerVolume` objective for object `8396`
+once when a player enters, covering the same producer shape as sibling client
+row `4457`. Focused Hall tests cover event owner,
+phase startup, trigger initialization/placement, type/object credit, duplicate
+suppression, non-player ignore, and trigger cleanup. The regenerated
+retail-completeness tracker now records script owners `3009;666;8396` and
+marks dependency `4456` as
+`runtime_vault_archon_opening_gather_trigger_created_and_type_object_credited_tested_pending_client_smoke`.
+The content-retail validator now reports `31` generated CSVs / `167,661` rows,
+all still `not_retail_complete`.
+Hall remains `not_retail_complete`: party-count semantics, portal/exit routing,
+entity placements, Varegor/Harizog/optional-boss mechanics, rewards,
+achievements, and manual client dungeon smoke are still blocked.
+
+Supplemental update: 2026-06-13 F-024 Protogames Academy Gromka objective-id correction.
+Protogames Academy (`world 3173`, public event `667`) now targets the build
+16042 Gromka defeat objective for both phase activation and boss death credit.
+PublicEventObjective `4496` is the KillTargetGroup row for TargetGroup `12357`,
+whose members are `Creature2 67594` (`[UPJ] e4496 - Room 1 - Boss 2 - Osun
+Witch (N)`) and `71319` (veteran). The reviewed runtime seed has entity
+`1100300033` / `Creature2 67594` in event `667`, phase `5`, with
+`GromkaEntityScript`. `PublicEventObjective.DefeatGromka` now resolves to
+`4496` instead of stale trigger-volume row `4343`; focused tests cover phase
+activation and direct boss death credit. Protogames Academy remains
+`not_retail_complete`: exact spawn lifecycle, Gromka combat mechanics,
+communicator/trigger timing, rewards, achievements, and manual dungeon smoke
+are still blocked.
+
+Supplemental update: 2026-06-13 F-024 Ultimate Protogames Bev-O-Rage boss death credit.
+Ultimate Protogames (`world 2980`, public event `594`) now has a test-backed
+boss death-credit producer for the reviewed Bev-O-Rage placement. Build 16042
+maps PublicEventObjective `2680` (`Defeat Bev-O-Rage`) to KillTargetGroup
+TargetGroup `12179`, which contains only `Creature2 61463`; the runtime world
+DB has entity `1100300055` for `Creature2 61463` in world `2980`, event `594`,
+phase `5`, level stat `50`. `BevORageEntityScript` binds by
+`ScriptFilterCreatureId(61463)` and credits objective `2680` once on death,
+using the shared duplicate-suppressed instance objective-credit base. Focused
+tests cover Bev-O-Rage objective credit, duplicate suppression, and the exact
+creature filter. The dungeon remains `not_retail_complete`: route/random-event
+selection, detailed boss mechanics, rewards, achievements, and manual dungeon
+smoke are still blocked.
+
+Supplemental update: 2026-06-13 F-024 Evil from the Ether medbay objective producers.
+Evil from the Ether (`world 3404`, public event `781`) now has test-backed
+runtime objective producers for the mapped medbay interactables. Build 16042
+evidence maps Spare Parts Crate `Creature2 71322` / TargetGroup `14066` to
+objective `4956`, repaired Medbay Door Control `71323` / `14069` to objective
+`4957`, and Medbay Generator Controls `71371` / `14076` to objective `4938`;
+the local runtime world DB also contains those five `world 3404` entity rows.
+`MedbayObjectiveEntityScripts` updates only active target-group objectives,
+removes consumed spare-parts crates, and keeps repaired/generator controls as
+one-shot activators. Focused Evil public-event tests cover duplicate
+suppression and the exact objective-type/target-group pairs. Evil remains
+`not_retail_complete`: exact phase visibility, interactable cleanup timing,
+drive-spark behavior, encounters, rewards, achievements, and manual expedition
+smoke are still blocked.
+
+Supplemental update: 2026-06-13 F-022 Q5597 CollectableUnit Chua Explosives script binding.
+Q5597 (`Dregs and Thieves`) now restores Chua Explosives through the
+retail-shaped collectable path instead of only the handmade non-player fallback
+path. DataMapping evidence records the reviewed `Creature2 24286` Chua
+Explosives placements as entity type `8` (`CollectableUnit`), so
+`CrimsonIsleMapScript` now fallback-spawns them as `ICollectableUnitEntity`.
+`CollectableUnitEntity` initializes collectable-owned scripts, and Q5597 keeps
+both collectable and legacy creature script bindings for activation credit.
+Focused tests cover collectable activation, legacy creature compatibility, all
+30 fallback placements, and the entity-factory script initialization path.
+Q5597 remains `not_retail_complete` pending client activation/UI smoke, exact
+respawn/despawn and multi-player lifecycle proof, Mondo dialog, reward UI and
+inventory persistence, achievement UI, and end-to-end Q5596->Q5597->Q5604
+smoke.
+
+Supplemental update: 2026-06-13 F-022 Q3963 activate-cast and Ultimate Protogames Bev-O-Rage runtime producers.
+Q3963 (`More Important Than Revenge`) now has a focused Q3963-only
+activate-cast bridge for build 16042 Ship Controls (`Creature2 27196`) on
+Northern Wilds world `426`, so the cast activation path can credit
+ActivateEntity objective `5201` without broadening generic cast activations.
+Ultimate Protogames dungeon public event `594` now activates objective `2680`
+(`Defeat Bev-O-Rage`) when the mapped `BevORage` phase is selected. Focused
+tests cover both producers and negative scope for Q3963 outside world `426`.
+Both slices remain `not_retail_complete` pending client activation smoke,
+exact phase/routing proof, boss mechanics, rewards, loot, achievements, and
+end-to-end content smoke.
+
+Supplemental update: 2026-06-13 F-022 Q5573/Q5575 Power Regulator runtime restoration.
+Crimson Isle Q5573 (`Powering Down`) objective `8229` and Q5575 (`Seizing
+Power`) objective `8371` now share focused-test-backed runtime availability for
+the build 16042 Power Regulator objective cluster. `CrimsonIsleMapScript`
+replaces the stale single `Creature2 24219` Q5573 terminal fallback with three
+reviewed `Creature2 24999` Simple entities at the Megatech Shield Generator
+from DataMapping source_coordinate_ids `15176`, `15177`, and `15178`,
+preserving checklist indexes `1`, `2`, and `3` plus activePropIds `5708188`,
+`5708196`, and `5708174` for TargetGroup `2541`.
+Q5573 already queues the known completion cinematic and credits hidden
+objective `12870`; Q5575 now credits hidden objective `12871` after objective
+`8371` completes without inventing an unproven cinematic. Focused Crimson Isle
+tests cover the regulator spawn positions, rotations, activePropIds, checklist
+indexes, and Q5575 hidden-objective guard. The regenerated tracker validates `31` generated CSVs / `167,636` rows,
+with `3,069` blocker detail rows, all still `not_retail_complete`; remaining
+blockers are client activation/UI smoke, active-prop visual/despawn/respawn
+behavior, reward/progression side effects, and end-to-end
+Q5573/Q5575->Q5596 smoke.
+
+Supplemental update: 2026-06-13 F-022 Q3479/Q3480 Trapped Survivor placement-density restoration.
+Q3479 (`From the Wreckage`) objective `4467` and Q3480 (`Reporting for Duty`)
+objective `4470` now expand the Trapped Survivor CSI runtime fallback from the
+earlier three-placement slice to all `16` unique-name-mapped DataMapping
+`Creature2 11070` rows in world `426` / area `646`, covering
+source_coordinate_ids `3406`, `3407`, `3408`, `15032`, `17868`, `40681`,
+`40682`, `40683`, `41559`, `42765`, `114996`, `114997`, `115687`, `121680`,
+`156500`, and `156501`. Focused Northern Wilds map-load tests now cover every
+promoted survivor position, while existing generic interaction coverage still
+credits `QuestObjectiveType.SucceedCSI` for the interacted creature. Q3479 and
+Q3480 remain `not_retail_complete` pending exact client activate/CSI packet
+smoke, phase/visibility and full map-guidance review, reward/achievement side
+effects, shared-yeti kill live smoke, and end-to-end quest smoke.
+
+Supplemental update: 2026-06-13 F-022 Q3741 Scattered Supplies placement-density restoration.
+Q3741 (`Scattered Supplies`) now expands the Exile Supply Crate runtime
+fallback from the initial six-placement slice to `26` current reviewed
+DataMapping `Creature2 12919` rows in world `426` / area `597`, adding
+source_coordinate_ids `1224`-`1232`, `14881`, `17735`-`17737`, `51949`-`51952`,
+`87248`, `107347`, and `115540`. Focused Northern Wilds tests cover map-load
+spawning for all promoted crate positions, and the existing Q3741 activation
+tests cover one `VirtualCollect` item `363` update/removal per spawned script
+instance while Q3741 is accepted. The placement subagent classified the
+remaining mapped row `2634068` as same-objective evidence, but it remains
+blocked from runtime promotion because it is an older `coordinate_last_seen_in=4`
+row near the current `1220` placement. Q3741 remains `not_retail_complete`
+pending client-visible crate activation/UI smoke, live density proof for
+`2634068`, exact respawn/despawn behavior, Durek dialog, reward and achievement
+UI/persistence, and end-to-end Q3741 smoke.
+
+Supplemental update: 2026-06-13 F-022 Q5597 Chua Explosives placement-density restoration.
+Q5597 (`Dregs and Thieves`) now expands the Chua Explosives runtime fallback
+from the initial six-placement slice to all `30` reviewed DataMapping
+`Creature2 24286` rows in world `870` / worldzone `1218`, including the extra
+source_coordinate_ids `15857`-`15862`, `38874`, `51929`, `59776`-`59781`,
+`64334`, `101493`-`101494`, `127169`, `134970`-`134972`, `136408`, `136864`,
+and `147754`. Focused Crimson Isle tests cover map-load spawning for all
+reviewed fallbacks and one `VirtualCollect` item `364` update/removal per
+spawned script instance while Q5597 is accepted. The subagent placement audit
+classified the extra `24` rows as high-confidence same-objective Scarhide Camp
+cluster evidence, but Q5597 remains `not_retail_complete` pending client-visible
+retail density confirmation, respawn/despawn behavior, activation/UI smoke,
+Mondo dialog, reward and achievement UI/persistence, and end-to-end
+Q5596->Q5597->Q5604 smoke.
+
+Supplemental update: 2026-06-13 F-022 Q5597 reward/progression hook validation.
+Q5597 (`Dregs and Thieves`) now has focused server-side completion coverage for
+its build 16042 fixed reward and achievement rows. `QuestManager` completion at
+visible Mondo Zax (`Creature2 24187`) grants Quest2Reward rows `3000` (Item2
+`81917`, amount `1`) and `5236` (Item2 `29664`, amount `1`) with reward
+selection `0`, and the real `CharacterAchievementManager` path updates
+AchievementChecklist row `5495` for achievement `4134` (`Episode Completion:
+Bloodstone Canyon`) with prerequisite `18` satisfied. The Q5597 tracker rows
+now record these as runtime-tested pending client smoke. Q5597 remains
+`not_retail_complete` pending client-visible Mondo dialog, explosives
+activation/UI, reward UI and inventory persistence, achievement toast/log UI,
+Jabbithole-vs-client reward evidence reconciliation, duplicate-completion
+behavior proof, and end-to-end Q5596->Q5597->Q5604 smoke. The regenerated
+tracker validates `31` generated CSVs / `167,603` rows, all still
+`not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Kezrek Warbringer receiver runtime restoration.
+`CrimsonIsleMapScript` now fallback-spawns Kezrek Warbringer (`Creature2
+24158`) at Quest2 receiver `WorldLocation2 17902` for the shared
+Q5580/Q5583/Q5594 handoff, matching reviewed DataMapping
+source_coordinate_id `15181` at `-7587.97,-953.929,-1300.33` in Megatech
+Station. `GlobalQuestManager` adds reviewed receiver overrides for Q5580
+finisher relation `1559` and Q5583 finisher relation `1560` because build
+16042 Creature2 `24158` carries Q5594 directly but omits Q5580/Q5583 from
+direct receive slots. Focused tests cover fallback spawn, duplicate
+suppression, Q5594 direct giver/receiver cache, Q5580/Q5583 receiver
+overrides, and visible-Kezrek completion for achieved Q5580/Q5583. Q5580,
+Q5583, and Q5594 remain `not_retail_complete` pending client-visible Kezrek
+dialog smoke, Q5580/Q5583 starter-slot explanation or script-grant route proof,
+reward/progression side effects, and end-to-end Q5604->Q5580/Q5583->Q5594
+smoke. The regenerated tracker validates `31` generated CSVs / `167,603`
+rows, with `3,056` blocker detail rows, all still `not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Q5583 Heavy Armor runtime restoration.
+Q5583 (`Heavy Armor`) now has a server-side runtime slice for its build 16042
+tank and Megatech kill objectives. `CrimsonIsleMapScript` fallback-spawns
+reviewed target-group members for objective `8231` (`Hellfire Tank 24255`,
+`Vindicator Tank 24452`) and objective `8372` (`Megatech Gunner 24030`,
+`Swordsmaster 26591`, `Warbot 31792`, `Merc 31864`, `Contractor 31895`, and
+`Shock Trooper 38228`). `AssetManagerTargetGroupTests` pins exact TargetGroup
+`3737`/`3812` expansion, and the generic `UnitEntity` kill-credit path remains
+the runtime objective producer. `Q5594WarbotEntityScript` now grants Q5594
+objective `8249` and achievement `1730` only while Q5594 is accepted, keeping
+the shared `31792` target safe during Q5583. Q5583 remains
+`not_retail_complete` pending client tank/combat smoke, full target density
+review, Kezrek Warbringer dialog/turn-in smoke, rewards/progression side
+effects, achievement UI, and end-to-end Q5604->Q5580/Q5583->Q5594 smoke. The
+regenerated tracker validates `31` generated CSVs / `167,603` rows, with
+`3,056` blocker detail rows, all still `not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Q5580 Tower Controls runtime restoration.
+Q5580 (`Enforced Radio Silence`) now has a server-side runtime slice for its
+build 16042 Tower Controls objective. `CrimsonIsleMapScript` fallback-spawns
+the two `Creature2 26559` Simple Tower Controls rows at Megatech Station from
+reviewed DataMapping source_coordinate_ids `15122` and `15123`, preserving
+checklist indexes `1` and `2`, activePropIds `1137353` and `1137404`, and
+the reviewed small-world seed coordinates/rotations.
+Generic interaction and activate-spell paths credit
+`ActivateTargetGroupChecklist` objective `8227`; `Q5580QuestScript` still gates
+Q5594 until both Q5580 and Q5583 are completed. Q5580 remains
+`not_retail_complete` pending exact client activation/UI smoke, active-prop
+visual/despawn/respawn behavior, Kezrek Warbringer dialog/turn-in smoke,
+rewards/progression side effects, and end-to-end
+Q5604->Q5580/Q5583->Q5594 smoke. The regenerated tracker validates `31`
+generated CSVs / `167,595` rows, with `3,048` blocker detail rows, all still
+`not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Phase 1 validator closure and Q5604 cinematic duplicate guard.
+The content-retail Phase 1 tracker now has a green validation gate for the
+current outputs: `validate_content_retail_completeness_outputs.py` reports
+`31` generated CSVs / `167,604` rows, all still `not_retail_complete`, and the
+focused content-retail audit/validator unit tests pass from
+`Tools/WikiArchiveAudit`. Phase 2 runtime work has started on the Q5597->Q5604
+Crimson Isle chain: Q5597 Chua Explosives activation coverage now verifies one
+`VirtualCollect` item `364` update and removal per reviewed fallback placement
+on the accepted quest path, and Q5604 `Tactical Demolitions` now suppresses
+repeated completed-cannon callbacks after queuing the cinematic and hidden
+objective `15918`, while incomplete and already-achieved paths remain no-ops.
+Q5597/Q5604 remain
+`not_retail_complete` pending client-visible Mondo dialog, explosives/cannon
+activation, cinematic timing, reward presentation/grants, achievement UI,
+prerequisite visibility, and end-to-end Q5597->Q5604->Q5580/Q5583 smoke.
+
+Supplemental update: 2026-06-13 F-022 Galeras Q4694/Q4696 kill-credit duplicate guard.
+Galeras quest kill-credit producers now suppress repeated same-spawn kill
+callbacks after a real accepted-quest credit. Q4694 `Hold the Line` Stormwing
+Strikers credit CompleteEvent data `111` only once per script instance, and
+Q4696 `Leaving the Temple of Osiric` retreat enemies credit their
+ActivateEntity objective only once for Creature2 `17189`/`19595`. Negative
+paths still run before the guard, so non-player kills and missing-quest kills
+remain no-ops. Focused Galeras quest tests cover normal, missing-quest,
+non-player, and repeated-kill paths. Q4694/Q4696 remain
+`not_retail_complete` pending client-visible combat, holdout timing, Darby and
+Trooper Vog dialog/activation smoke, rewards, achievements, and end-to-end
+Galeras flow validation.
+
+Supplemental update: 2026-06-13 F-022 shared instance objective-credit duplicate guard.
+Shared instance boss/objective scripts deriving from
+`PublicEventObjectiveCreditEntityScript` now suppress repeated same-spawn death
+credit before calling `UpdateObjective`. This protects the mapped direct
+objective producers for Protogames Academy, Ruins of Kel Voreth, Sanctuary of
+the Swordmaiden, Skullcano, Stormtalon's Lair, Datascape, Genetic Archives,
+and Redmoon Terror from duplicate death callbacks while preserving one credit
+per spawned script instance. Focused shared tests cover the mapped objective id
+for each registered derived script and prove repeated `OnDeath()` callbacks
+credit exactly once. This is a duplicate-credit hardening slice, not a retail
+completion claim: exact encounter mechanics, phase choreography, rewards, loot,
+achievement side effects, owner/event routing, and client-visible instance
+smoke remain tracked blockers.
+
+Supplemental update: 2026-06-13 F-022 Q5604 Tactical Demolitions cannon runtime restoration.
+Q5604 (`Tactical Demolitions`) now has a server-side runtime slice for its
+build 16042 Exile Anti-Air Cannon objective. `CrimsonIsleMapScript`
+fallback-spawns the three reviewed `Creature2 24298` Simple cannon rows at the
+Megatech Gun Emplacement, preserving checklist indexes `1`, `2`, and `3` plus
+activePropIds `1085356`, `1085429`, and `1081959` from the small-world seed.
+Generic direct interaction and activate-spell paths credit
+`ActivateTargetGroupChecklist` objective `8268`; `Q5604TacticalDemolitionsQuestScript`
+then queues the cinematic, credits hidden objective `15918`, and grants Q5580
+and Q5583 on completion. Q5604 remains `not_retail_complete` pending exact
+client activate/destroy packet smoke, active-prop visual/despawn/respawn
+behavior, reward/progression side effects, and end-to-end
+Q5597->Q5604->Q5580/Q5583 smoke. The regenerated tracker validates `31`
+generated CSVs / `167,604` rows, with `3,054` blocker detail rows, all still
+`not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Q3486 Frostbite target-group dispatch.
+Q3486 (`Empowered Tower`) now routes build 16042 TargetGroup `4985` member
+`11924` Frostbite through the existing objective `4485` kill-credit script,
+so Frostbite kills credit VirtualCollect item `206` while Q3486 is accepted.
+The content retail tracker generator now records `11924` as
+`runtime_q3486_frostbite_target_group_member_script_credit_tested_pending_spawn_client_smoke`
+instead of a fully pending target-group member. Q3486 stays
+`not_retail_complete`: Frostbite runtime spawn availability, live combat/drop
+smoke, crystal respawn timing, reward/achievement UI, Master Control Panel
+dialog smoke, and end-to-end Q3667->Q3486->Q3797 validation remain open.
+
+Supplemental update: 2026-06-13 F-022 Evil from the Ether duplicate-credit hardening.
+Evil from the Ether (`world 3404`, public event `781`) now hardens the current
+runtime producers against same-spawn duplicate credit. The Katja-dropped Drive
+Schematics object (`Creature2 71821`, TargetGroup `14131`) credits objective
+`5013` (`PickUpDriveSchematics`) once, marks the spawned object collected, and
+removes it from the map. Etheric Portal deaths also apply their direct
+objectives only once per spawned portal, covering small portal objective `4921`
+and large portal objective `4923`, where duplicate death callbacks could
+otherwise over-advance the three-count bridge objective. Focused tests cover
+schematics credit/removal, duplicate schematics activation suppression, portal
+credit/removal, and duplicate portal death suppression. This remains a runtime
+safety slice, not a retail-complete claim: exact retail spawn cadence,
+respawn/despawn/replay behavior, phase timing, rewards, achievements, and
+client-visible Katja-death -> schematics -> escape smoke remain pending. The
+regenerated tracker validates `31` generated CSVs / `167,609` rows, with
+`3,059` blocker detail rows, all still `not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Galeras Q4696 fallback duplicate guards.
+Galeras (`world 51`) now keeps the Q4696 Temple of Osiric retreat trigger
+fallback aligned with the existing creature fallback policy: `GalerasMapScript`
+searches for an active `IWorldLocationVolumeGridTriggerEntity` with
+WorldLocation2 `12649` before spawning the Q4696 EnterArea trigger. Focused
+tests also pin that an already-active Corporal Darby receiver `17053` suppresses
+the Darby fallback, preserving the reviewed/promoted runtime seed path. The
+Galeras focused slice now validates `20/20` tests across Q4696 retreat enemy
+kill credit, Q4694 holdout credit, Loftite crystal compatibility, expected
+fallback spawns, and creature/trigger duplicate suppression. Q4696/Q4694 remain
+`not_retail_complete` pending client-visible scout combat, rally trigger, Darby
+completion dialog, Trooper Vog activation, holdout wave timing, rewards,
+achievements, exact spawn lifecycle, and end-to-end Galeras smoke.
+
+Supplemental update: 2026-06-13 F-022 Coldblood Citadel Coven/Harizog objective producers.
+Coldblood Citadel (`world 3522`, public event `907`) now has focused
+server-side objective producers for the build 16042 Iceblood Coven and Harizog
+boss rows. `IcebloodCovenEntityScript` tracks Creature2 `75472`, `75473`, and
+`75474` deaths on the map and credits public-event objective `5314` once all
+three Darksisters are defeated. `HarizogColdbloodEntityScript` maps Creature2
+`75459` to final boss objective `5315`. Focused tests cover all-three Coven
+credit, duplicate death suppression, Harizog death credit, the existing entry
+trigger, Hailstone credit, phase activation, and phase progression. The
+regenerated tracker records the new script producer and handler evidence while
+keeping Coldblood `not_retail_complete`; exact boss mechanics, placement proof,
+route choreography, rewards, loot, achievements, and client-visible dungeon
+smoke remain blocked. The regenerated tracker validates `31` generated CSVs /
+`167,607` rows and `3,058` blocker detail rows, all still
+`not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Q5597 Dregs and Thieves explosives runtime restoration.
+Q5597 (`Dregs and Thieves`) now has a server-side runtime slice for its build
+16042 explosives collection path. `CrimsonIsleMapScript` fallback-spawns `30`
+reviewed `Creature2 24286` Chua Explosives placements in Scarhide Camp from
+DataMapping source_coordinate_ids `15489`-`15494`, `15857`-`15862`, `38874`,
+`51929`, `59776`-`59781`, `64334`, `101493`-`101494`, `127169`,
+`134970`-`134972`, `136408`, `136864`, and `147754`, and
+`Q5597ChuaExplosivesEntityScript` credits `VirtualCollect` item `364` once per
+spawn before removing the collected entity. The generated tracker records
+QuestObjective `8256`, TargetGroup `4373`, Mondo Zax `24187` start/finish
+relations, and the Q5604 follow-up handoff while keeping Q5597
+`not_retail_complete`. Remaining blockers are client-visible Mondo dialog and
+explosives activation/UI smoke, exact retail density confirmation, respawn/despawn
+behavior, rewards, achievements, inventory persistence, and end-to-end
+Q5596->Q5597->Q5604 smoke. The regenerated tracker validates `31` generated
+CSVs / `167,593` rows and `3,051` blocker detail rows, all still
+`not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Q3673 hidden completion duplicate guard.
+Q3673 (`Contact with Thayd`) now suppresses duplicate hidden objective `13391`
+credit if the completed Signal Flare checklist objective `4748` is reported to
+the quest script more than once. Focused tests cover the normal complete path,
+the repeated complete-callback path, and the incomplete-then-complete path.
+The regenerated tracker validates `31` generated CSVs / `167,583` rows and
+keeps every row `not_retail_complete`. Broader Q3673 retail completion remains
+blocked by client-visible Deadeye dialog/activation smoke, exact flare
+activate/CSI packet timing, achieved-state/cinematic timing, prerequisite flow
+from Q3886, alternate receiver routing, reward-choice UI/persistence,
+achievement UI, and end-to-end quest smoke.
+
+Supplemental update: 2026-06-13 F-022 Q3781/Q4526 duplicate-credit guards.
+Q3781 (`Captives of the Dominion`) Captive Exile Soldiers now credit objective
+`4880` at most once per spawned captive while preserving accepted-quest gating
+and the build 16042 TargetGroup `2143` member coverage for `12537`/`21015`/
+`21016`. Q4526 (`Spatial Anomaly`) now suppresses same-player duplicate credit
+for catch objective `6165` across the proximity and activation paths. The
+regenerated tracker validates `31` generated CSVs / `167,583` rows and `3,043`
+blocker detail rows, all still `not_retail_complete`. Exact Q3781 captive
+transform/despawn/respawn behavior, Q3781 `21015`/`21016` placement review,
+Q4526 anomaly movement/chase/despawn timing, reward/achievement side effects,
+and client-visible end-to-end smoke remain pending.
+
+Supplemental update: 2026-06-13 F-022 Q3741 supply crate one-shot cleanup.
+Q3741 (`Scattered Supplies`) Exile Supply Crates now credit build 16042
+`VirtualCollect` item `363` once, then remove the collected crate from the map.
+Focused Q3741 tests cover accepted-quest credit/removal, missing-quest
+non-removal, and duplicate activation suppression. The regenerated tracker
+validates `31` generated CSVs / `167,583` rows and `3,043` blocker detail rows,
+all still `not_retail_complete`. Exact retail crate respawn/despawn timing,
+client-visible activation/UI smoke, Durek dialog, reward/inventory persistence,
+achievement UI, and end-to-end Q3741 smoke remain pending.
+
+Supplemental update: 2026-06-13 F-022 Q3777 Loftite Crystal one-shot cleanup.
+Q3777 (`By Leaps and Bounds`) now removes the collected Loftite Crystal from
+the map after crediting `ActivateEntity` data `6952` for objective row `5076`
+and `CollectItem` `6998`. Focused Q3777 tests cover the build 16042 TargetGroup
+member `13120`, the reviewed bridge `6987`, missing-quest non-removal, and
+duplicate range-entry suppression. The regenerated tracker validates `31`
+generated CSVs / `167,582` rows and `3,043` blocker detail rows, all still
+`not_retail_complete`. Exact retail respawn timing, Denner dialog, reward and
+reputation UI, achievement UI, and end-to-end Q3777 smoke remain pending.
+
+Supplemental update: 2026-06-13 F-022 composite public-event target-group runtime coverage.
+Runtime creature-kill routing now indexes nested build 16042 TargetGroups in
+`AssetManager.GetTargetGroupsForCreatureId`, so `UnitEntity` can advance
+composite `KillTargetGroup` public-event objectives through the existing
+player/team-aware path. Focused coverage pins the Ruins of Kel Voreth objective
+`448` TargetGroup `4973` and Stormtalon's Lair TargetGroup `11121` expansions.
+Ruins now activates objective `448` through the WIP optional-objective gate.
+Stormtalon objectives `557` and `843` have since been promoted to test-backed
+runtime activation/generic credit coverage; the exact retail activation route,
+timer behavior, and client smoke remain blocked. The unsafe one-off Pell
+producer evidence was removed; the regenerated tracker validates `31` generated
+CSVs / `167,581` rows and `3,043` blocker detail rows, all still
+`not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Stormtalon's Lair final objective producer.
+Stormtalon's Lair (`world 382`, public event `145`) now has a runtime
+producer for build 16042 public-event objective `314`
+(`DestroyStormtalon`). The new creature-filtered
+`StormtalonEntityScript` credits the objective for Stormtalon Creature2 rows
+`17163` and `33406`; focused public-event objective tests cover the normal
+and level-50 filters plus the direct objective-id route. This is not a
+retail-complete claim: exact spawn/version binding, phase timing, boss
+choreography, rewards, achievements, loot, and client-visible dungeon smoke
+remain pending. The regenerated tracker now validates `31` generated CSVs /
+`167,589` rows, the next-slice blocker detail CSV contains `3,047` blocker detail rows, and every
+generated row remains `not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Evil from the Ether drive schematics objective routing.
+Evil from the Ether (`world 3404`, public event `781`) now has a runtime
+producer for build 16042 public-event objective `5013`
+(`PickUpDriveSchematics`). Katja Zarkhov already summons the build-16042
+schematics object (`Creature2 71821`, TargetGroup `14131`); the new
+`EthericDriveSchematicsEntityScript` credits objective `5013` by direct ID on
+successful activation, and focused Evil from the Ether tests cover the new
+route. This is not a retail-complete claim: exact despawn/repeat behavior,
+negative cases, phase timing, rewards, achievements, and client-visible
+Katja-death -> schematics -> escape smoke remain pending. The generator now
+tracks the new script producer, leaving all generated rows
+`not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Evil from the Ether portal objective routing.
+Evil from the Ether (`world 3404`, public event `781`) portal deaths now credit
+the build 16042 objective IDs directly instead of the broad script-objective
+matcher. Small Etheric Portals (`Creature2 71132`) route through
+`PublicEventObjective.DefeatTetheredOrganisms` (`4921`), and large Etheric
+Portals (`Creature2 71221`) route through
+`PublicEventObjective.DefeatTetheredOrganisms2` (`4923`). Focused tests cover
+both objective routes and portal removal. This is not a retail-complete claim:
+spawn cadence, repeated/negative credit behavior, reward/challenge side
+effects, achievements, and client-visible phase flow still require expedition
+smoke. The generated script objective producer CSV remains pending refresh.
+
+Supplemental update: 2026-06-13 F-022 Q3479 Bosun starter and nested target-group runtime coverage.
+Q3479 (`From the Wreckage`) now has server-side runtime coverage for its
+client starter and a newly promoted nested-yeti member. `NorthernWildsMapScript`
+fallback-spawns Bosun Redmark (`Creature2 11062`) at the reviewed world `426`
+DataMapping position `3913,-699,-5336`, and focused quest accept tests prove
+Q3479 requires a visible Bosun starter before accept succeeds. The same map
+script now includes four representative Fierce Yeti Icefang (`Creature2
+36331`) fallbacks from the DataMapping-mapped area `651` cluster, while
+`AssetManagerTargetGroupTests` pins build 16042 TargetGroup `7288` expansion
+through nested groups `7287` and `1463` to Creature2
+`11945`/`11948`/`12844`/`13116`/`13117`/`13959`/`36331`/`36335`/`51126` and
+`QuestTests` prove Q3479 kill credit for every expanded member if encountered.
+Row-specific survivor CSI tests now also prove objectives `4467`/`4470`
+complete from three `11070` interactions. Q3479 remains `not_retail_complete`
+pending generated tracker promotion, client-visible Bosun/Deadeye dialog
+smoke, survivor CSI and yeti combat smoke, reward/achievement UI and
+persistence, placement proof for the other unpromoted TargetGroup members, and
+full Q3479->Q3667 smoke.
+
+Supplemental update: 2026-06-13 F-022 Q3486 reward/progression row coverage.
+Q3486 (`Empowered Tower`) now has focused server-side completion coverage for
+canonical build 16042 Quest2Reward rows `1706`/`1707`/`2147` granting Item2
+`13329`/`1377`/`14102`, fixed cash `1625`, visible Master Control Panel
+(`11194`) completion, and generic quest-complete achievement hook calls.
+`AchievementProgressTests` also pins row-specific `QuestCompleteChecklist`
+bits for achievements `3469` (`4245` for Q3486 and `4246` for Q3667) and
+`5327` (`6907` for Q3486, `6908` for Q3667, and `6910` for Q3480). Subagent
+audits confirmed stale Jabbithole reward rows `5318`/`5319`/`5320`/`5321`
+must remain provenance-only until reviewed. TargetGroup member `11924`
+Frostbite now has script-dispatch credit coverage through the Q3486 kill-credit
+path, but still lacks safe runtime spawn/drop/client evidence. Q3486 remains
+`not_retail_complete` pending client reward UI/inventory/cash persistence,
+achievement UI/progression, Master Control Panel dialog smoke, Frostbite
+`11924` spawn/drop/client smoke, and full
+Q3667->Q3486->Q3797 smoke.
+
+Supplemental update: 2026-06-13 F-022 Q3797 reward-path and Q3668 target-group credit evidence.
+Q3797 (`Securing the Area`) now has focused `QuestManager` reward-path
+coverage for build 16042 selectable Quest2Reward rows `2480`/`2482`/`4770`
+granting Item2 `13333`/`27870`/`27871`, fixed cash `145` from reward source
+`163`, visible Land's Reach Commander Durek (`11066`) completion, and the
+generic quest-complete achievement hook calls. Q3668 (`Indigenous
+Intelligence`) received a read-only subagent audit for TargetGroup `7293`;
+the audit confirmed nested TargetGroups `7292` and `960` include Creature2
+`14054` and `11913` and found no safe Northern Wilds placement/spawn proof.
+`AssetManagerTargetGroupTests` and `QuestTests` now prove the TargetGroup
+expansion and objective-credit path for those two Creature2 ids if encountered,
+while runtime spawn promotion remains blocked pending reviewed Creature2/spawn
+or live-client evidence. Both quests remain `not_retail_complete` pending
+client/manual smoke for dialog, reward UI/persistence, objective timing, and
+end-to-end chain behavior.
+
+Supplemental update: 2026-06-13 F-022 Q5596 Ordnance Recovery dead-expert checklist runtime restoration.
+Q5596 now has server-side runtime coverage for the second Ordnance Recovery
+objective: `CrimsonIsleMapScript` fallback-spawns six build-16042/LaughingWS
+dead Dominion Demolitions Expert interactables (`Creature2 24703`) at world
+`870` Crash Site Alpha positions with `QuestChecklistIdx` `1..6`, and uses a
+tight duplicate-placement check for these indexed targets so nearby checklist
+rows are not collapsed. `QuestObjectiveTests` now proves Q5596 objective `8468`
+(`ActivateTargetGroupChecklist`, TargetGroup `2619`, count `3`) completes from
+`24703` checklist indexes `1`, `2`, and `3`; `CrimsonIsleBranchInteractionTests`
+pins the six fallback spawn positions/rotations/checklist indexes. Q5596 is
+still `not_retail_complete`: remaining blockers are client-visible dead-expert
+activation/checklist UI smoke, Mondo Zax start/finish dialog smoke, reward
+choice/inventory persistence, achievement `4134` UI/progression, exact
+Crash Site Alpha guidance/zone-boundary timing, and full
+Q5573/Q5575->Q5596->Q5597 smoke.
+
+Supplemental update: 2026-06-13 F-022 Q5596 Ordnance Recovery objective-evidence bridge reconciliation.
+The generated content-retail tracker now reviews Q5596 Jabbithole objective
+rows `1453` and `1454` against build 16042 QuestObjective `8255` and `8468`
+as tracker-only `reviewed_match` evidence while keeping Q5596
+`not_retail_complete`. Row `1453` maps to the Crash Site Alpha EnterArea step
+with type `22`, data `2788`, count `1`, and WorldLocation2 `17853`; row
+`1454` maps to the dead Dominion Demolitions Expert
+ActivateTargetGroupChecklist step with TargetGroup `2619`, Creature2 `24703`,
+count `3`, and WorldLocation2 `17853`/`17852`. Q5596 remains
+`quest_validation_ready`, but its blocker-detail count is now `24` with no
+`quest_objective_evidence`; remaining blockers still require client-visible
+Crash Site Alpha trigger/map-guidance smoke, exact zone-boundary timing, Mondo
+Zax dialog/activation smoke, dead Dominion Demolitions Expert
+spawn/interaction/checklist smoke, reward/achievement UI,
+prerequisites/chain behavior, zone/creature bridge validation, and end-to-end
+Q5573/Q5575->Q5596->Q5597 smoke. The blocker detail CSV now has `3,026` rows
+(`355` quest, `2,671` instance), and the validator expects `31` CSVs /
+`167,547` rows, all `not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Q3777 Loftite objective-evidence bridge reconciliation.
+The generated content-retail tracker now reviews Q3777 Jabbithole objective
+rows `411` and `412` against build 16042 QuestObjective `5076` and `4859` as
+tracker-only `reviewed_match` evidence while keeping Q3777 `not_retail_complete`.
+Rows `411`/`412` cover the Loftite Crystal jump-through / Pure Loftite Fragment
+collection steps with Item2 `6998`, TargetGroup `7534`, Creature2 `13120`,
+Denner Hazefall `15759`, and WorldLocation2 `9578`. Q3777 remains
+`quest_mapping_then_smoke`, but its blocker-detail count is now `28` with no
+`quest_objective_evidence`; remaining blockers still require client-visible
+Denner dialog/activation smoke, exact crystal jump-through/collision and
+respawn/despawn timing, reward-choice and reputation UI, inventory/reputation
+persistence, achievement UI/progression, zone/creature bridge validation, and
+end-to-end Q3777 smoke. The blocker detail CSV now has `3,028` rows (`357`
+quest, `2,671` instance), and the validator expects `31` CSVs / `167,549`
+rows, all `not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Q3486 Loftite objective-evidence bridge reconciliation.
+The generated content-retail tracker now reviews Q3486 Jabbithole objective
+row `437` against build 16042 QuestObjective `4485` as tracker-only
+`reviewed_match` evidence while keeping Q3486 `not_retail_complete`. Row
+`437` maps to the Loftite Crystal / Crystal Guardian VirtualCollect step with
+virtual item `206`, count `5`, TargetGroup `4985`, Creature2 `11925`/`11924`,
+and WorldLocation2 `7807`. Q3486 remains `quest_validation_ready`, but its
+blocker-detail count is now `39` with no `quest_objective_evidence`; remaining
+blockers still require client crystal pickup/kill smoke, exact
+despawn/respawn/collection timing, Frostbite `11924` spawn/drop/client smoke, reward
+source `5319` collision resolution, Master Control Panel dialog/chain smoke,
+reward UI/inventory persistence, achievement UI/progression, and end-to-end
+Q3667->Q3486->Q3797 smoke. The blocker detail CSV now has `3,059` rows (`388`
+quest, `2,671` instance), and the validator expects `31` CSVs / `167,609`
+rows, all `not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Q3480 objective-evidence bridge reconciliation.
+The generated content-retail tracker now reviews Q3480 Jabbithole objective
+row `2337` against build 16042 QuestObjective `4565` as tracker-only
+`reviewed_match` evidence while keeping Q3480 `not_retail_complete`. Row
+`2337` maps to the KillTargetGroup yeti step with TargetGroup `1463`,
+Creature2 `11945`/`11948`, and WorldLocation2
+`12155`/`12156`/`12157`/`12158`. Q3480 remains `quest_validation_ready`, but
+its blocker-detail count is now `32` with no `quest_objective_evidence`;
+remaining blockers still require survivor CSI, live/client yeti combat kill,
+Deadeye dialog, alternate receiver/prerequisite routing, starter bridge
+review, reward UI/inventory persistence, achievement UI/progression,
+zone/creature review, and end-to-end Q3480 smoke. The blocker detail CSV now
+has `3,031` rows (`360` quest, `2,671` instance), and the validator expects
+`31` CSVs / `167,552` rows, all `not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Q3479 objective-evidence bridge reconciliation.
+The generated content-retail tracker now reviews Q3479 Jabbithole objective
+row `419` against build 16042 QuestObjective `4564` as tracker-only
+`reviewed_match` evidence while keeping Q3479 `not_retail_complete`. Row `419`
+maps to the KillTargetGroup yeti step with TargetGroup `7288`, nested
+TargetGroup `1463`, Creature2 `11945`/`11948`, and WorldLocation2
+`12155`/`12156`/`12157`/`12158`. Q3479 remains `quest_validation_ready`, but
+its blocker-detail count is now `44` with no `quest_objective_evidence`;
+remaining blockers still require survivor CSI, live/client yeti combat kill,
+Deadeye dialog, alternate receiver/prerequisite routing, reward UI/inventory
+persistence, achievement UI/progression, zone/creature review, and end-to-end
+Q3479 -> Q3667 smoke. The blocker detail CSV then had `3,032` rows (`361`
+quest, `2,671` instance), and the validator expected `31` CSVs / `167,553`
+rows, all `not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Q3963 objective-evidence bridge reconciliation.
+The generated content-retail tracker now reviews Q3963 Jabbithole objective
+row `389` against build 16042 QuestObjective `5201` as tracker-only
+`reviewed_match` evidence while keeping Q3963 `not_retail_complete`. Row `389`
+maps to the Ship Controls ActivateEntity step with TargetGroup `7573`,
+Creature2 `27196`, and WorldLocation2 `45401`/`45402`. Q3963 remains
+`quest_validation_ready`, but its blocker-detail count is now `21` with no
+`quest_objective_evidence`; remaining blockers still require Ship Controls
+activation packet/timing, Deadeye dialog, Q3487 -> Q3963 flow, reward
+UI/inventory persistence, achievement UI/progression, starter identity
+reconciliation (`11063`/`12959`/`23645`), and end-to-end Q3963 smoke. The
+blocker detail CSV then had `3,033` rows (`362` quest, `2,671` instance), and
+the validator expected `31` CSVs / `167,554` rows, all `not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Q3886 objective-evidence bridge reconciliation.
+The generated content-retail tracker now reviews Q3886 Jabbithole objective
+rows `429`/`430` against build 16042 QuestObjective rows `5053`/`5052` as
+tracker-only `reviewed_match` evidence while keeping Q3886
+`not_retail_complete`. Row `429` maps to Burning Torch SucceedCSI Creature2
+`13630`; row `430` maps to Skeech Hut TargetGroup `1460` / Creature2 `13623`,
+both at WorldLocation2 `7770`. Q3886 remains `quest_validation_ready`, but its
+blocker-detail count is now `23` with no `quest_objective_evidence`; remaining
+blockers still require Durek dialog/activation, exact torch/hut activate/CSI
+packet smoke, hut visual burn/despawn/respawn behavior, reward/achievement UI,
+and end-to-end Q3886 -> Q3673 smoke. The blocker detail CSV then had `3,034`
+rows (`363` quest, `2,671` instance), and the validator expected `31` CSVs /
+`167,555` rows, all `not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Q3673 objective-evidence bridge reconciliation.
+The generated content-retail tracker now reviews Q3673 Jabbithole objective
+rows `137`-`140` against build 16042 QuestObjective rows `4748`, `4888`,
+`4889`, and `4890` as tracker-only `reviewed_match` evidence while keeping
+Q3673 `not_retail_complete`. The aggregate Signal Flare row `137` now maps to
+TargetGroup checklist objective `4748`, and the three child Signal Flare rows
+retain exact Creature2/WorldLocation evidence. The next-slice queue keeps Q3673
+as `quest_validation_ready`, but its blocker-detail count is now `30` and no
+longer includes `quest_objective_evidence`; remaining blockers still require
+client-visible Deadeye dialog, activate/CSI packet, phased visibility, map
+guidance, reward/achievement UI, prerequisite/alternate-receiver, and end-to-end
+smoke. The blocker detail CSV then had `3,036` rows (`365` quest, `2,671`
+instance), and the validator expected `31` CSVs / `167,557` rows, all
+`not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 Q3668 objective/creature evidence tracker refinement.
+The generated content-retail tracker now reviews Q3668 Jabbithole objective
+`132` to build 16042 QuestObjective `4744` (Scientist Lusk TalkTo Creature2
+`12484`) and treats matched objective evidence rows `133`/`134` as
+`reviewed_match` tracker evidence while keeping Q3668 `not_retail_complete`.
+The Q3668 creature evidence inventory now demotes older duplicate/provenance
+objective relations `39`, `41`, `42`, and `44` for Creature2 `11907`, `11912`,
+`11910`, and `11917`; the runtime-covered target-group relation rows remain in
+the tracker, while true missing-member blockers `14054` and `11913` stay open.
+The blocker detail CSV then had `3,040` rows (`369` quest, `2,671` instance),
+and the validator expected `31` CSVs / `167,561` rows, all
+`not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 content retail tracker objective/reward reconciliation.
+The generated content-retail tracker now reviews Q3486 Jabbithole objective
+`436` to QuestObjective `4987` and Q3777 objective `410` to QuestObjective
+`5075` as tracker-only `reviewed_match` rows, while keeping both quests
+`not_retail_complete`. Reward evidence now separates stale source
+`game_reward_id` values from true same-quest collisions: Q3479 source_reward
+`5289` -> canonical `8569` and Q3777 source_reward `5284` -> canonical
+`8867` are stale-source canonical tuple matches, while Q3486 source_reward
+`5319` remains a collision blocker because source id `2147` is a current Q3486
+reward for a different item. At that checkpoint, the blocker detail CSV had `3,047` rows
+(`376` quest, `2,671` instance), and the validator expected `31` CSVs /
+`167,568` rows, all `not_retail_complete`.
+
+Supplemental update: 2026-06-13 F-022 content retail tracker comprehensive Top Gap partition.
+The generated row-level content retail-completeness tracker now partitions
+every non-blocker generated inventory into the `Top Gap Rollup` rather than
+listing only selected topical families. `Decomp/Analysis/CONTENT_RETAIL_COMPLETENESS_TRACKER.md`
+groups `164,521` non-blocker rows across quest identity/objectives, world/zone/
+creature placement, prerequisites/episodes, rewards/loot/achievements, public
+events/challenges/path missions/contracts, instance mechanics/portals/scripts,
+instance rewards, script producers/presentation/progression/runtime actions,
+and the `23`-row next restoration slice queue. The separate
+`Decomp/Analysis/coverage/content_retail_completeness_next_slice_blockers.csv`
+now owns the `3,033` queue blocker-detail rows. The validator now enforces
+the `Top Gap Rollup` source map as a complete, non-overlapping partition of
+all expected non-blocker CSVs, validates tracker paths and non-placeholder
+status/action text for each rollup row, and now reports `31` generated CSVs /
+`167,561` rows with every row `not_retail_complete`. This is tracker evidence
+coverage only; retail completion remains blocked by row-specific runtime,
+client/manual, reward/loot/achievement, and end-to-end smoke proof.
+
+Supplemental update: 2026-06-12 F-022 content retail tracker blocker expansion.
+The generated row-level content retail-completeness tracker now expands the
+current 23-row next restoration slice queue into
+`Decomp/Analysis/coverage/content_retail_completeness_next_slice_blockers.csv`
+with `3,033` blocker detail rows (`355` quest, `2,678` instance/dungeon/expedition/raid) and no
+duplicate blocker IDs. That blocker expansion added queued direct
+`quest_objective` rows (`25`),
+Quest2-owned `quest_script` rows (`12`), and safe queued
+`instance_portal_evidence` rows (`11`) while leaving contract/path,
+public-event auxiliary, and challenge evidence out of blocker expansion until
+they have a safe current-queue key. At that checkpoint, the validator passed on `31` generated
+CSVs / `167,561` rows, enforces the status/matrix rollup links back to
+`Decomp/Analysis/CONTENT_RETAIL_COMPLETENESS_TRACKER.md` and the blocker CSV,
+and keeps every generated row `not_retail_complete` pending implementation,
+client/manual smoke, reward/loot/achievement presentation, and exact retail
+mechanics proof.
+
+Supplemental update: 2026-06-12 F-022 item reward-evidence canonical ID reconciliation.
+The generated reward-evidence tracker now reconciles DataMapping/Jabbithole
+item reward rows against canonical build 16042 `Quest2Reward.tbl.sql` rows by
+quest, Item2 id, amount, and fixed/choice flags. The first pass flags four
+source rows where the item and amount have a canonical client match but the
+Jabbithole `game_reward_id` is not that canonical row: Q3479 source_reward
+`5289` Item2 `13327` (`2477` vs canonical `8569`), Q3486 source_reward `5319`
+Item2 `1377` (`2147` vs `1707`), Q3777 source_reward `5284` Item2 `28015`
+(`2389` vs `8867`), and Q4520 source_reward `5361` Item2 `28042` (`4311` vs
+`9361`). The tracker flags those rows as
+`datamapping_jabbithole_item_reward_game_reward_id_mismatch_pending_review`
+and cites `quest_reward_client_map.csv` plus `Quest2Reward.tbl.sql`, while the
+runtime item-grant evidence remains anchored to canonical Q3479 rows
+`2476`/`2479`/`8569`. This is tracker evidence-quality only; Q3479 remains
+`not_retail_complete` pending source provenance, reward-choice UI smoke,
+inventory persistence validation, objective/dialog smoke, achievement UI smoke,
+and end-to-end quest smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3479/Q3480 fixed cash reward evidence.
+Q3479 (`From the Wreckage`) and Q3480 (`Reporting for Duty`) now have
+focused server-side cash reward evidence for the build 16042 amount `83`.
+Quest2 rows `3479`/`3480` both use con level `3`, Quest2Difficulty `3`, and
+`reward_cashOverride=0`; Quest2Difficulty row `3` has
+`cashRewardMultiplier=10` and GameFormula `530` has `datafloat0=1.93`, which
+`QuestInfo.GetRewardMoney()` resolves to `83`. Focused `QuestManager` coverage
+now completes achieved Q3479/Q3480 at visible Deadeye Brightland `11063`,
+grants the selected item reward, and also grants `CurrencyType.Credits` amount
+`83`. The generated tracker promotes DataMapping/Jabbithole currency
+source_reward rows `2457` and `1147` to runtime cash-grant coverage while
+keeping both quests `not_retail_complete`. The follow-up reward-evidence
+reconciliation now flags the Q3479 item row `game_reward_id=2477` mismatch
+against canonical Quest2Reward row `8569` for Item2 `13327` instead of treating
+the bridge row as canonical reward-id proof. Remaining blockers are
+client-visible Deadeye dialog, survivor/yeti objective smoke, reward-choice UI
+plus inventory/currency persistence, achievement UI/progression and
+duplicate/tier behavior, alternate receiver/prerequisite routing, Q3480
+starter-bridge review, and end-to-end quest smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3479/Q3480 reward and achievement hook evidence.
+Q3479 (`From the Wreckage`) and Q3480 (`Reporting for Duty`) now have
+focused server-side `QuestManager` reward and achievement hook evidence on top
+of the existing Deadeye receiver, Trapped Survivor CSI, and shared-yeti route
+coverage. Build 16042 Q3479 Quest2Reward rows `2476`/`2479`/`8569` are
+selectable Item rewards for Item2 `1375`/`13335`/`13327`; Q3480 rows
+`1676`/`1677`/`1678` are selectable Item rewards for Item2
+`30459`/`30460`/`30461`. Focused coverage completes achieved Q3479/Q3480 at
+visible Deadeye Brightland `11063`, grants the selected row by
+default/index/reward-id/item-id path, grants no unselected item, and fires
+`QuestComplete`, `QuestCompleteChecklist`, and `QuestCompleteChecklistCount`
+hooks. The generated tracker promotes Q3479 achievement-checklist rows
+`836`/`839`/`840` for achievements `1432`/`1433`/`1434`, and Q3480 checklist
+`6910` for achievement `5327`, to server-side hook coverage only. Cash reward
+evidence is covered by the later fixed-cash update.
+Both quests remain `not_retail_complete` pending client-visible Deadeye dialog,
+survivor/yeti objective smoke, reward-choice UI plus inventory/currency
+persistence, achievement UI/progression and duplicate/tier behavior, alternate
+receiver/prerequisite routing, Q3480 starter-bridge review, and end-to-end
+quest smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3777 default reputation reward evidence and subagent blocker triage.
+Q3777 (`By Leaps and Bounds`) now has focused server-side reward and
+achievement hook evidence on top of its existing Denner Hazefall and Loftite
+Crystal route coverage. Build 16042 Quest2Reward rows
+`2244`/`2388`/`7191`/`7192`/`7193`/`7284`/`8867` are selectable Item rewards
+for Item2 `28048`/`28031`/`76391`/`76392`/`76393`/`76484`/`28015`. Focused
+`QuestManager` coverage completes achieved Q3777 at visible Denner Hazefall
+`15759`, grants each selected reward by default/index/reward-id/item-id or
+low-15-bit item-id path, and fires `QuestComplete`,
+`QuestCompleteChecklist`, and `QuestCompleteChecklistCount` hooks matching
+AchievementChecklist `4420` / achievement `3523`. `QuestInfo`/`QuestManager`
+now also grant the default inline reputation reward for
+`faction2IdRewardReputation00=260`: build 16042 `Quest2Difficulty`
+`repRewardMultiplier=0.5` times `XpPerLevel.baseRepRewardPerLevel=376` for
+Q3777 con level `6`, matching DataMapping/Jabbithole amount `188`. Q3777
+remains `not_retail_complete` pending client-visible Denner dialog/activation
+smoke, exact Loftite Crystal jump-through/collision/respawn/despawn behavior,
+reward-choice UI plus inventory/reputation persistence smoke, achievement
+UI/progression smoke, and end-to-end Q3777 smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3479/Q3480 Deadeye receiver path.
+Q3479 (`From the Wreckage`) and Q3480 (`Reporting for Duty`) now have
+focused server-side receiver availability for build 16042 Deadeye Brightland
+(`11063`) at primary Quest2 receiver WorldLocation2 `7726`. The location is
+confirmed by Quest2/WorldLocation2 position `4185.76,-722.095,-5695.75` and
+reviewed DataMapping source-coordinate `4370`; `NorthernWildsMapScript`
+fallback-spawns the shared Deadeye receiver there and
+`GlobalQuestManagerPartialTableTests` pins client-table receiver-cache indexing
+for both quests. Q3479/Q3480 remain `not_retail_complete` pending
+client-visible Deadeye completion dialog and activation smoke, alternate
+receiver `12354` / prerequisite `29356` routing smoke, row-specific reward UI
+and persistence smoke, achievement/progression UI smoke, prerequisite/exclusion
+visibility, survivor CSI packet smoke, combat/loot cadence, and end-to-end
+quest smoke. Subagent triage also keeps Q3668 TargetGroup members `14054` and
+`11913` blocked for spawn placement because the audit found no DataMapping
+spawn, creature bridge, Q3668 relation, reviewed override, or checked-in runtime
+placement for either.
+
+Supplemental update: 2026-06-12 F-022 Q3668 Indigenous Intelligence reward and achievement hook evidence.
+Q3668 (`Indigenous Intelligence`) now has focused server-side reward and
+achievement hook evidence on top of its existing Bartol, Lusk, survivor, and
+Skeech route coverage. Build 16042 Quest2Reward rows `2190`/`2191`/`4768`
+are selectable Item rewards for Item2 `81334`/`81331`/`81329`; Quest2 also
+pushes Item2 `6912` as a quest-state dependency. Focused `QuestManager`
+coverage completes achieved Q3668 at visible Bartol Sunward `12737`, grants
+each selected reward by default/index/reward-id/low-15-bit item-id path, and
+fires `QuestComplete`, `QuestCompleteChecklist`, and
+`QuestCompleteChecklistCount` hooks matching AchievementChecklist `4260` /
+achievement `3490`. Q3668 remains `not_retail_complete` pending
+client-visible Deadeye/Lusk/Bartol dialog and activation smoke, exact survivor
+transform/despawn behavior, spawn/placement proof for TargetGroup members
+`14054` and `11913`, reward-choice UI and inventory persistence smoke, achievement
+UI/progression smoke, Q3486/Q3671/Q3668 chain smoke, and end-to-end Q3668
+smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3741 Scattered Supplies fixed reward and achievement hook evidence.
+Q3741 (`Scattered Supplies`) now has focused server-side fixed reward and
+achievement hook evidence on top of its existing supply-crate and Durek route
+coverage. Build 16042 Quest2Reward rows `1712` and `3476` are fixed Item
+rewards (`flags 0`) for Item2 `81917` amount `3` and Item2 `29614` amount `1`.
+Focused `QuestManager` coverage completes achieved Q3741 at visible Land's
+Reach Commander Durek `11066`, grants both fixed reward rows with reward
+selection `0`, and fires `QuestComplete`, `QuestCompleteChecklist`, and
+`QuestCompleteChecklistCount` hooks matching AchievementChecklist `4261` /
+achievement `3490`. Q3741 remains `not_retail_complete` pending
+client-visible crate activation/UI smoke, exact full crate
+density/respawn/despawn behavior, Durek dialog/client smoke, reward UI and
+inventory persistence smoke, achievement UI/progression smoke, and end-to-end
+Q3741 smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3886 Fiery Distraction reward and achievement hook evidence.
+Q3886 (`Fiery Distraction`) now has focused server-side reward and achievement
+hook evidence on top of its existing Durek receiver, Burning Torch, Skeech Hut,
+and Q3673 follow-up coverage. Build 16042 Quest2Reward rows
+`2192`/`2430`/`4767` are selectable Item rewards for Item2
+`27868`/`13332`/`27869`. Focused `QuestManager` coverage completes achieved
+Q3886 at visible Land's Reach Commander Durek `11066`, grants each selected
+item by default/index/reward-id/item-id path, and fires `QuestComplete`,
+`QuestCompleteChecklist`, and `QuestCompleteChecklistCount` hooks matching
+AchievementChecklist `4263` / achievement `3490`. Q3886 remains
+`not_retail_complete` pending client-visible Durek dialog/activation smoke,
+exact torch/hut activate/CSI packet smoke, hut burn/despawn/respawn behavior,
+reward-choice UI and inventory persistence smoke, achievement UI/progression
+smoke, and end-to-end Q3886 -> Q3673 smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3673 Contact with Thayd reward and achievement hook evidence.
+Q3673 (`Contact with Thayd`) now has focused server-side reward and achievement
+hook evidence on top of its existing Deadeye receiver, signal-flare, hidden
+completion, cinematic, and Q3670 follow-up coverage. Build 16042
+Quest2Reward rows `2187`/`2188`/`2189`/`2481`/`3001`/`3846` are selectable
+Item rewards for Item2 `12654`/`12655`/`12656`/`13328`/`14571`/`17924`.
+Focused `QuestManager` coverage completes achieved Q3673 at visible Deadeye
+`11063`, grants each selected item by default/index/reward-id/item-id path, and
+fires `QuestComplete`, `QuestCompleteChecklist`, and
+`QuestCompleteChecklistCount` hooks matching AchievementChecklist `4262` /
+achievement `3490`. Q3673 remains `not_retail_complete` pending client-visible
+Deadeye dialog/activation smoke, exact activate/CSI packet smoke,
+achieved-state/cinematic timing smoke, prerequisite flow from Q3886, alternate
+receiver routing for location `12354` / prerequisite `29356`, reward-choice UI
+and inventory persistence smoke, achievement UI/progression smoke, and
+end-to-end quest smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3963 More Important Than Revenge reward and achievement hook evidence.
+Q3963 (`More Important Than Revenge`) now has focused server-side availability
+evidence for both its build 16042 Ship Controls objective and Galeras Deadeye
+receiver path. `NorthernWildsMapScript` fallback-spawns Ship Controls (`27196`)
+at WorldLocation2 `45401` and `45402`, matching reviewed DataMapping
+source-coordinate ids `5168` and `40678`, and generic ActivateEntity
+reward-pane target-group expansion covers objective `5201` through TargetGroup
+`7573`. `GalerasMapScript` fallback-spawns Deadeye Brightland (`16622`) at
+receiver WorldLocation2 `12354`, matching reviewed DataMapping
+source-coordinate id `837`; runtime seed also promotes another reviewed Tremor
+Ridge `16622` row at source-coordinate id `2587271`. `GlobalQuestManager`
+standard client-table indexing now has focused coverage for Q3963 receiver
+`16622`, and `QuestManager` completion coverage requires visible `16622` for
+the achieved Q3963 turn-in. The generated content tracker records the receiver
+location, finisher relation, script, selectable reward, and achievement
+checklist evidence rows. Focused `QuestManager` coverage now also completes
+achieved Q3963 at visible Deadeye `16622`, grants the selected build 16042
+reward item from Quest2Reward rows `3706`/`3707`/`4771`, and fires
+`QuestComplete`, `QuestCompleteChecklist`, and `QuestCompleteChecklistCount`
+achievement checks for quest `3963`. Starter relation `1621` / Creature2
+`11063` remains explicit follow-up context because build 16042 Creature2
+`11063` does not list Q3963 in `QuestIdGiven`. Q3963 remains
+`not_retail_complete` pending client-visible Ship Controls activation smoke,
+Deadeye receiver dialog smoke, reward-choice UI smoke, inventory persistence,
+achievement UI/progression smoke, Q3487 -> Q3963 client flow smoke, and
+end-to-end Q3963 validation.
+
+Supplemental update: 2026-06-12 F-022 Q3667 The Tower server playability evidence.
+Q3667 (`The Tower`) now has focused server-side availability evidence for the
+build 16042 Master Control Panel route. `NorthernWildsMapScript` already
+fallback-spawns Master Control Panel (`11194`) at Quest2 receiver/objective
+WorldLocation2 `7778`, matching reviewed DataMapping source-coordinate id
+`2501`, and Deadeye Brightland (`11063`) is the reviewed starter relation with
+existing Northern Wilds Deadeye fallback coverage. `Q3667ControlPanelEntityScript`
+now credits objective `4770` from direct activation plus the branch-proximity
+fallback while Q3667 is accepted, and the generated content tracker records the
+receiver, objective, creature relation, and script evidence rows. Q3667 remains
+`not_retail_complete` pending client-visible Deadeye accept dialog, panel
+completion dialog/activation smoke, exact trigger timing, prerequisite flow,
+reward/achievement side effects, and end-to-end Q3667 -> Q3486 smoke.
+
+Supplemental update: 2026-06-13 F-022 Q3886 Fiery Distraction placement-density restoration.
+Q3886 (`Fiery Distraction`) now has focused server-side availability evidence
+for its build 16042 Durek, torch, and Skeech hut path. `NorthernWildsMapScript`
+fallback-spawns Land's Reach Commander Durek (`11066`) at Quest2 receiver
+WorldLocation2 `7727`, four current reviewed Burning Torches (`13630`) from
+DataMapping source-coordinate ids `2425`, `124555`, `142844`, and `1585277`,
+and nine current reviewed Skeech Huts (`13623`) from source-coordinate ids
+`2309`, `2310`, `2311`, `2312`, `2313`, `2314`, `14843`, `115795`, and
+`115796`. The huts use unique checklist indexes `0` through `8`; QuestObjective
+`5052` still has count `3`, so checklist bit-count semantics complete after any
+three distinct huts. Generic activate-success coverage credits SucceedCSI
+objective `5053`, and generic interaction/activate-spell coverage credits
+ActivateTargetGroupChecklist objective `5052`; the Q3886 follow-up script
+continues the Q3886 -> Q3673
+handoff. Q3886 remains `not_retail_complete` pending client-visible Durek
+dialog/activation smoke, exact torch/hut activate/CSI packet smoke, hut burn
+visual/despawn/respawn behavior, reward-choice UI/persistence and achievement UI smoke, and
+end-to-end client smoke.
+
+Supplemental update: 2026-06-12 F-022 Blood Pit direct objective-id producer correction.
+BloodPitGladiator now credits build 16042 objective `445`
+(`FightYourWayThroughTheBloodPit`) directly instead of routing through
+`PublicEventObjectiveType.KillTargetGroup` objectId `3972`. The client table
+also maps timed objective `846` to `KillTargetGroup`/`3972`, so direct row
+credit keeps the WIP death hook scoped to the main Blood Pit gate until the
+timed route is proven. The regenerated producer evidence now has `373` direct
+objective rows, `2` exact typed rows, and only the shared Evil portal `Script 0`
+row in the broad typed bucket. It also separates `139` direct objective-id rows
+whose client rows are kill-style objectives into
+`direct_objective_id_matches_client_kill_type_pending_*_script_type_review`,
+while keeping `17` `ScriptWithoutCount` and `4` `ScriptWithoutMax` rows
+explicit; those rows must not be treated as generic kill routing until
+script-vs-kill semantics are proven. The dedicated tracker now also includes a
+script-scope/client-objective-type rollup that keeps those `ScriptWithout*`
+instance rows visible beside the `KillTargetGroup` rows. Blood Pit remains
+`not_retail_complete` pending exact timed route proof, combat/challenge smoke,
+rewards, and manual dungeon validation.
+
+Supplemental update: 2026-06-12 F-022 instance direct objective-id producer evidence.
+Instance trigger and boss scripts that already know the exact build 16042
+PublicEventObjective now credit those objectives directly instead of relying on
+ambiguous `PublicEventObjectiveType`/`objectId` matching. The affected rows are
+Skullcano objectives `329`, `362`, and `372`, Sanctuary objectives `613`,
+`614`, and `615`, Coldblood objectives `5326` and `5313`, and Evil from the
+Ether objectives `4919`, `4927`, and `4939`. The tracker now records these as
+direct objective producers while preserving their client row types (`Turnstile`,
+`ParticipantsInTriggerVolume`, `Script`, and `KillEventObjectiveUnit`). The
+shared Evil portal `Script 0` producer remains broad pending a separate
+phase-specific evidence pass. Focused direct instance objective tests pass
+`26/26`.
+
+Supplemental update: 2026-06-12 F-022 Q3783 Off with Her Head and Land's Reach Durek route evidence.
+Q3783 (`Off with Her Head!`) now has focused server-side availability and
+reward-turn-in evidence for its item-started no-objective route. Build 16042
+`Item2` row `6954` starts Q3783, `Quest2` routes completion to receiver
+WorldLocation2 `7727`, and `Quest2Reward` row `8830` grants item `17756`.
+The stronger client route is Land's Reach Commander Durek (`11066`):
+Creature2 `11066` carries Q3741/Q3797/Q3886 in `QuestIdGiven` and
+Q3783/Q3741/Q3797/Q3886 in `QuestIdReceive`. `NorthernWildsMapScript` now
+fallback-spawns `11066` at WL `7727` (`4339.04,-751.768,-5678.82`), and
+QuestManager coverage completes Q3783 at visible `11066` while granting the
+mapped reward. `GlobalQuestManager` still keeps the reviewed Q3797
+compatibility override for ambiguous Durek row `11061`. Q3783 and the shared
+Durek route remain `not_retail_complete` pending client-visible item-start and
+Durek dialog/activation smoke, reward UI/inventory persistence, Q3486->Q3797
+prerequisite smoke, crate density/respawn/despawn validation, achievement and
+progression side effects, and end-to-end client smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3781 Captives of the Dominion server playability evidence.
+Q3781 (`Captives of the Dominion`) now has focused server-side starter,
+objective, and receiver-route evidence. `NorthernWildsMapScript` fallback-spawns
+Dead Exile Soldier (`50668`) at reviewed DataMapping `source_coordinate_id
+2055` and eleven Captive Exile Soldier (`12537`) objective placements in Camp
+Icefury from reviewed source-coordinate ids `4344`, `4345`, `4346`, `4347`,
+`4348`, `5180`, `5181`, `17747`, `50498`, `6158136`, and `7153684`.
+`Q3781CaptiveExileSoldierEntityScript` now binds all build 16042 TargetGroup
+`2143` members (`12537`, `21015`, `21016`) and credits objective `4880` while
+the quest is accepted. `GlobalQuestManager` adds reviewed Q3781 giver/receiver
+overrides for starter `50668` and Galeras Deadeye Brightland receiver `16622`;
+the existing Galeras fallback covers alternate receiver WorldLocation2 `12354`.
+Q3781 remains `not_retail_complete` pending client-visible starter/Deadeye
+dialog and activation smoke, exact captive activate/CSI transform/despawn/respawn
+behavior, placement review for `21015`/`21016`, reward-choice
+UI/persistence, achievement/progression side effects, and end-to-end smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3777 By Leaps and Bounds server playability and instance script objective-type evidence.
+Q3777 (`By Leaps and Bounds`) now has focused server-side availability and
+credit-path evidence for Denner Hazefall and the Loftite Crystal route in
+Galeras. Build 16042 maps receiver WorldLocation2 `11687` to the Denner
+Hazefall handoff area, objective `5075` to `EnterZone` zone `219`, objective
+`5076` to the first `ActivateEntity` fragment step, and objective `4859` to
+`CollectItem` item `6998` count `8` through reward-pane TargetGroup `7534`.
+`GalerasMapScript` fallback-spawns Denner Hazefall (`15759`) at WL `11687` and
+eight Loftite Crystal (`13120`) placements in the WL `9578` area using reviewed
+DataMapping source-coordinate ids `4220179`, `8274745`, `5660859`, `5660860`,
+`1857375`, `7309210`, `8274743`, and `5660857`. The Q3777 crystal script binds
+both the reviewed bridge row `6987` and build 16042 TargetGroup member `13120`,
+then credits objective `5076` and `CollectItem` `6998`; QuestTests pin the
+zone `219` travel objective. The script-objective producer audit now also
+preserves matched public-event objective types for direct objective-id
+producers, so build rows such as `ScriptWithoutCount` and `ScriptWithoutMax`
+stay visibly distinct from `KillTargetGroup`/`KillEventUnit` producers in the
+tracker. Q3777 and the affected instance rows remain `not_retail_complete`
+pending Denner dialog/activation smoke, exact crystal jump-through collision,
+respawn/despawn behavior, reward/achievement side effects, and end-to-end
+client smoke.
+
+Supplemental update: 2026-06-12 F-022 Gauntlet ScriptWithoutCount progression evidence.
+Gauntlet public event `446` now credits the build 16042
+`ScriptWithoutCount` objective `1819` (`Find out what happened to you`) by
+direct objective id after activating it and queueing the branch-provided WIP
+cinematic. This intentionally avoids mapping the script-only objective to
+`KillTargetGroup` or `KillEventUnit` credit. The focused Gauntlet test now pins
+the cinematic queue and direct objective-id credit. Gauntlet remains
+`not_retail_complete` pending exact cinematic completion timing, announcer and
+communicator timing, arena-door choreography, encounter behavior, rewards, and
+manual expedition smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3741 Scattered Supplies server playability evidence.
+Q3741 (`Scattered Supplies`) now has focused server-side availability and
+script-credit evidence for its Settler's Reach supply-crate objective. Build
+16042 `QuestObjective` maps objective `4813` to `VirtualCollect` data `363`
+count `6`, indicator WorldLocation2 ids `9181`/`9182`/`9962`, and reward-pane
+TargetGroup `4372` containing Creature2 `12919` (`Exile Supply Crate`).
+DataMapping relation `234` reviews the objective creature mapping, and
+`NorthernWildsMapScript` fallback-spawns `26` current reviewed crate placements
+from source-coordinate ids `1218`-`1232`, `14881`, `17735`-`17737`,
+`51949`-`51952`, `87248`, `107347`, and `115540` in world `426` / area `597`;
+`Q3741ExileSupplyCrateEntityScript` credits objective `4813` on activation
+while Q3741 is accepted. The same map fallback now uses build 16042 Land's Reach
+Commander Durek (`11066`) for the Q3741 starter/receiver route at WL `7727`;
+DataMapping's `11061` rows stay documented as ambiguous compatibility evidence.
+Tracker rows for objective, indicators, target-group member, quest script, and
+objective creature relation are now runtime-tested evidence. Q3741 remains
+`not_retail_complete` pending client-visible crate activation/UI smoke, live
+density proof for mapped older row `2634068`, exact respawn/despawn behavior,
+Durek dialog/client smoke, reward UI/inventory persistence and achievement UI
+smoke, and end-to-end Q3741 smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3797 Securing the Area server playability evidence.
+Q3797 (`Securing the Area`) now has focused server-side availability and
+generic credit-path evidence for the Settler's Reach route. Build 16042
+`Quest2` maps Q3797 to objective `4918` (`KillTargetGroups` TargetGroup `1177`
+count `8`) with receiver WorldLocation2 `7727`; no `CommunicatorMessages` row
+delivers Q3797. Creature2 `11066` is the visible Land's Reach Commander Durek
+route and carries Q3797 in both `QuestIdGiven` and `QuestIdReceive`, while
+`GlobalQuestManager` retains the reviewed DataMapping `11061` override for
+relations `166`/`1693` as compatibility evidence. `NorthernWildsMapScript`
+fallback-spawns `11066` at WL `7727` and reviewed Rootbrute/Yeti targets
+(`12212`, `12213`, `11948`) around indicator WLs `9181`/`9182`/`9962`, and
+`AssetManager` expands `CreatureIdListGroup` target groups for quest
+objectives. Tracker records receiver, indicator, objective, member, script,
+prerequisite, and creature-relation rows as runtime-tested evidence. Q3797
+remains `not_retail_complete` pending client-visible Durek dialog/activation
+smoke, Q3486 prerequisite flow smoke, exact placement/density/respawn/tap/threat
+behavior, type-9/non-spawned branch review, loot, reward UI/persistence, and
+achievement UI/progression side effects, and end-to-end Q3797 smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3668 Indigenous Intelligence server playability evidence.
+Q3668 (`Indigenous Intelligence`) now has focused server-side availability and
+generic credit-path evidence for the Northern Wilds Coldburrow route. Build
+16042 `Quest2` maps receiver WorldLocation2 `9121` to Bartol Sunward, objective
+`4744` to TalkTo Creature2 `12484` Scientist Lusk at WorldLocation2 `8857`,
+objective `4745` to ActivateEntity count `5` with reward-pane TargetGroup
+`7261` / Creature2 `14124` Imprisoned Survivor, and objective `4791` to
+KillTargetGroups TargetGroup `7293` count `5` through nested TargetGroups
+`7292` and `960`. `NorthernWildsMapScript` now fallback-spawns Bartol,
+Scientist Lusk, seven reviewed Imprisoned Survivor placements, and reviewed
+Skeech members `36429`, `17545`, `11907`, `11910`, `11912`, `11917`, and
+`36884`; the existing generic TalkTo, ActivateEntity target-group, and nested
+KillTargetGroups paths provide the server-side objective credit. The generated
+content tracker records receiver, indicator, objective, target-group member,
+script, and creature-relation rows as runtime-tested evidence. Q3668 remains
+`not_retail_complete` pending client-visible Deadeye/Lusk/Bartol dialog and
+activation smoke, exact survivor transform/despawn behavior, spawn/placement
+proof for target group members `14054` and `11913`, reward-choice
+UI/inventory validation, achievement/progression side effects, and end-to-end
+Q3486/Q3671/Q3668 chain smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3479/Q3480 shared yeti kill target availability.
+Q3479 (`From the Wreckage`) objective `4564` and Q3480 (`Reporting for Duty`)
+objective `4565` now have focused server-side availability and generic
+`KillTargetGroup` credit coverage for the shared Northern Wilds yeti targets.
+Build 16042 `QuestObjective.tbl` marks Q3479 objective `4564` as TargetGroup
+`7288` count `8` and Q3480 objective `4565` as TargetGroup `1463` count `8`;
+TargetGroup `7288` is `OtherTargetGroupCreatures` over TargetGroups `7287` and
+`1463`, while TargetGroup `1463` contains Creature2 `11945` (`Yeti
+Snowstalker`) and `11948` (`Yeti Frostclaw`). DataMapping maps the Q3479/Q3480
+objective relations to those Creature2 rows, and `NorthernWildsMapScript` now
+fallback-spawns eight reviewed world `426` placements at source-coordinate ids
+`7915699`, `7915700`, `7956687`, `8401261`, `8110657`, `8158349`, `8204800`,
+and `8251657` across the `12155`/`12156`/`12157`/`12158` objective indicator
+areas. Generic target-group expansion and kill-credit coverage now credit those
+member IDs, and the content tracker records objective, objective-indicator,
+nested target-group/member, and creature-relation rows as tested runtime
+evidence. Q3479/Q3480 remain `not_retail_complete` pending live/client combat
+kill smoke, respawn/tap/threat behavior, loot cadence, reward/achievement side
+effects, exact client activate/CSI smoke for the survivor step, full map-guidance
+review, and end-to-end quest smoke.
+
+Supplemental update: 2026-06-13 F-022 Q3479/Q3480 Trapped Survivor placement-density restoration.
+Q3479 (`From the Wreckage`) objective `4467` and Q3480 (`Reporting for Duty`)
+objective `4470` now have focused server-side availability evidence for the
+shared Trapped Survivor CSI step. Build 16042 `QuestObjective.tbl` marks both
+objectives as `SucceedCSI` data `11070` with count `3`, and DataMapping maps
+both quest-objective relations to Creature2 `11070` (`Trapped Survivor`) with
+16 reviewed world `426` placements. `NorthernWildsMapScript` now
+fallback-spawns all 16 reviewed survivor positions at source-coordinate ids
+`3406`, `3407`, `3408`, `15032`, `17868`, `40681`, `40682`, `40683`, `41559`,
+`42765`, `114996`, `114997`, `115687`, `121680`, `156500`, and `156501` in
+world `426` / area `646`, and focused map-load tests cover every promoted
+position. Existing generic interaction coverage credits
+`QuestObjectiveType.SucceedCSI` for the interacted creature. The generated
+content tracker records objective rows `4467` and `4470`, objective-indicator
+WorldLocation2 `12156`, and the Q3479/Q3480 Trapped Survivor creature relations
+as tested runtime evidence. Q3479/Q3480 remain `not_retail_complete` pending
+exact client activate/CSI packet smoke, phase/visibility and full map-guidance
+review, reward/achievement side effects, the separately tracked shared-yeti kill
+objective live smoke, and end-to-end quest smoke.
+
+Supplemental update: 2026-06-12 F-022 Q4696 retreat enemy kill-credit path.
+Q4696 objective `6508` (`Help Skywatch Troopers retreat`) now has a
+row-specific Galeras entity-script producer for build 16042 TargetGroup `4323`.
+Creature2 `17189` (Flamewing Advance Scout) and `19595` (Stormwing Vanquisher)
+are both client-labeled Q4696 script-spawn enemies with no activate spell;
+`Q4696TempleRetreatEnemyEntityScript` credits
+`QuestObjectiveType.ActivateEntity` for either member on kill while Q4696 is
+accepted, and the existing target-group expansion maps the credit to objective
+`6508`. The tracker now records objective `6508` as
+`runtime_q4696_retreat_enemy_kill_to_activate_target_group_credit_tested_pending_client_smoke`,
+member `17189` as
+`runtime_q4696_script_spawn_enemy_kill_credit_tested_pending_client_smoke`, and
+member `19595` as
+`runtime_q4696_runtime_spawn_enemy_kill_credit_tested_pending_client_smoke`.
+Q4696 remains `not_retail_complete` pending live/client combat objective smoke,
+exact spawn/despawn and quest-state visibility timing, placement/density
+review, reward/achievement side effects, Darby dialog smoke, and surrounding
+Q4666/Q4667/Q4696 retreat/rally flow validation.
+
+Supplemental update: 2026-06-12 F-022 Q4696 Darby receiver location fallback.
+Q4696 (`Leaving the Temple of Osiric`) now has a tested Galeras map fallback
+for Corporal Darby (`17053`) at Quest2 receiver WorldLocation2 `17590`
+(`6204.08,-888.474,-2809.91` in world `51` / area `973`). The existing
+runtime seed already promotes reviewed DataMapping `source_coordinate_id 10020`
+for Darby near that receiver location, and the fallback uses the standard
+nearby-creature search so it does not duplicate the seeded Darby when present.
+The generated tracker now records Q4696's receiver-location row as
+`runtime_q4696_darby_receiver_location_spawn_and_receiver_cache_tested_pending_dialog_client_smoke`
+and updates the Darby finisher relation to include Galeras fallback evidence
+alongside the receiver-cache and visible-Darby completion-path tests. Q4696
+remains `not_retail_complete` pending client-visible Darby completion dialog
+and activation smoke, reward/achievement UI smoke, phase/placement visibility
+smoke, exact scout spawn/despawn and visibility timing, and surrounding
+Q4666/Q4667/Q4696 retreat/rally flow validation.
+
+Supplemental update: 2026-06-12 F-022 Q4526 Pristan receiver location path.
+Q4526 (`Spatial Anomaly`) now spawns Scientist Pristan (`12560`) from the
+authoritative Quest2 receiver WorldLocation2 row `11669` instead of a hardcoded
+fallback coordinate. Build 16042 WorldLocation2 `11669` is in world `426` /
+area `595` at `4357.81,-751.7,-5717`, matching reviewed DataMapping
+`source_coordinate_id 116070`; Creature2 `12560` has both `QuestIdGiven` and
+`QuestIdReceive` `4526`, so the standard quest giver/receiver cache covers
+accept and completion routing once Pristan is visible. The generated tracker
+now records the Q4526 receiver-location row as
+`runtime_q4526_pristan_receiver_location_spawn_tested_pending_dialog_client_smoke`
+and the Pristan starter/finisher relations as receiver-location-tested runtime
+rows. Q4526 remains `not_retail_complete` pending client-visible Pristan
+dialog/accept/completion activation smoke, exact Spatial Anomaly
+movement/chase/despawn timing, activation/proximity packet smoke,
+reward/achievement side effects, and end-to-end quest smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3673 Contact with Thayd hidden completion gate.
+Q3673 now has focused server-side completion-gate evidence for hidden required
+objective `13391`. Build 16042 Quest2 orders required Signal Flare checklist
+objective `4748` before hidden `ActivateEntity` data `0` objective `13391`;
+`Q3673ContactWithThaydQuestScript` now credits `13391` only after `4748` is
+complete, without widening generic data=0 objective semantics. Focused
+`NorthernWildsQuestChainTests` cover complete and incomplete checklist paths.
+Q3673 remains `not_retail_complete` pending client-visible Deadeye dialog and
+activation smoke, exact activate/CSI packet smoke, achieved-state/cinematic
+timing smoke, prerequisite flow from Q3886, alternate receiver routing for
+location `12354` / prerequisite `29356`, reward-choice UI/persistence and achievement UI smoke,
+and end-to-end quest smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3673 Contact with Thayd signal-flare availability.
+Q3673 (`Contact with Thayd`) now has focused server-side availability evidence
+for the Northern Wilds landing-site flare step. `NorthernWildsMapScript` spawns
+build 16042 Creature2 `11063` (Deadeye Brightland) at receiver location
+`29526`, plus Signal Flare Creature2 ids `12521`, `13150`, and `13151` at
+client objective indicator world locations `8867`, `8868`, and `8869`.
+The flare fallbacks set checklist indexes `0`, `1`, and `2`, matching
+TargetGroup `1106` data order, and the generic interaction path has focused
+coverage for `SucceedCSI` and `ActivateTargetGroupChecklist` credit. The
+generated content tracker records Q3673's Deadeye starter/finisher rows,
+primary receiver location, objective rows `4748`/`4888`/`4889`/`4890`,
+target-group members, and quest script row with tested runtime evidence.
+Q3673 remains `not_retail_complete` pending client-visible Deadeye dialog and
+activation smoke, exact activate/CSI packet smoke, achieved-state/cinematic
+timing smoke, prerequisite flow from Q3886, alternate receiver routing for
+location `12354` / prerequisite `29356`, reward-choice UI/persistence and achievement UI smoke,
+and end-to-end quest smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3671 Setting Up Camp Deadeye receiver path.
+Q3671 (`Setting Up Camp`) now has row-specific primary receiver availability,
+lifecycle, and item reward evidence on top of the shared no-objective coverage.
+`NorthernWildsMapScript` spawns build 16042 Creature2 `11063` (Deadeye
+Brightland) at Quest2 receiver WorldLocation2 `9340`, whose build 16042
+position is world `426` / area `595` at `4341.27,-751.765,-5682.93` and whose
+reviewed DataMapping placement sample is `source_coordinate_id 4368`. Creature2
+`11063` carries both `QuestIdGiven` and `QuestIdReceive` `3671` in client data,
+so the standard quest giver/receiver cache covers the visible Deadeye
+accept/completion route once the NPC is present. Focused `QuestManager` coverage
+now includes Q3671's accept-to-`Achieved` no-objective lifecycle, visible
+Deadeye receiver completion, Quest2Reward row `6662`, and item `19131` (`Life
+and Death`) grant. The generated content tracker records the Q3671 primary
+receiver location as
+`runtime_q3671_deadeye_receiver_location_spawn_and_quest_lifecycle_tested_pending_dialog_client_smoke`,
+the Deadeye starter/finisher relations as runtime spawn/receiver-location rows,
+and reward row `6662` as
+`runtime_q3671_item_reward_completion_grant_tested_pending_client_smoke`.
+Q3671 remains `not_retail_complete` pending client-visible Deadeye
+dialog/accept/completion activation smoke, Q3486/Q3671/Q3668 chain smoke,
+alternate-receiver routing for location `12354` / prerequisite `29356`, reward
+UI and inventory persistence smoke, achievement/progression side effects, and
+end-to-end quest smoke.
+
+Supplemental update: 2026-06-12 F-022 Q3670 Deadeye Brightland receiver paths.
+Q3670 (`Calm Before the Storm`) now has row-specific primary and Galeras
+alternate receiver availability evidence on top of the shared no-objective
+lifecycle coverage. `NorthernWildsMapScript` spawns build 16042 Creature2
+`11063` (Deadeye Brightland) at primary Quest2 receiver location `29526`,
+matching reviewed DataMapping `source_coordinate_id 5142` in world `426` / area
+`597` near `4486,-724,-5391`. `GalerasMapScript` now spawns build 16042
+Creature2 `16622` at alternate Quest2 receiver location `12354`, matching
+reviewed unpromoted DataMapping `source_coordinate_id 837` in world `51` /
+area `23` near `3833,-1018,-4642`; the same Creature2 also has promoted
+runtime seed coverage at reviewed source coordinate `2587271`. Build 16042
+prerequisite `29356` is `InSubZone` value `13`, and local WorldZone data
+confirms Tremor Ridge zone `23` parents through `459` to `13`.
+`GlobalQuestManager` now adds reviewed Q3670 receiver overrides for Creature2
+`11063` and `16622` when those client rows are loaded, and shared no-objective
+`QuestManager` tests cover the Q3670 accept-to-`Achieved` lifecycle,
+visible-receiver completion, item reward `19041`, and quest-complete
+achievement hooks. The generated content tracker now records Q3670's primary
+receiver row as
+`runtime_script_receiver_location_spawn_and_receiver_cache_tested_pending_dialog_client_smoke`,
+the Galeras alternate receiver row as
+`runtime_q3670_alt_receiver_location_spawn_and_receiver_cache_tested_pending_dialog_client_smoke`,
+and the two Deadeye finisher relations as receiver-cache-tested runtime rows.
+Q3670 remains `not_retail_complete` pending client-visible Deadeye dialog and
+completion activation smoke, prerequisite chain routing from Q3673,
+prerequisite-selection UI smoke for the Galeras path, exact reward and
+achievement side effects, and end-to-end quest smoke.
+
+Supplemental update: 2026-06-12 F-022 Q5610 Mondo Zax receiver fallback.
+Q5610 (`Dreg Mutations`) now has row-specific receiver availability evidence
+on top of the shared no-objective lifecycle coverage. `CrimsonIsleMapScript`
+spawns build 16042 Creature2 `24187` (Mondo Zax) at primary Quest2 receiver
+location `17803`, matching reviewed DataMapping `source_coordinate_id 15089`
+in world `870` / area `1885` near `-7664,-942,-672`, when no matching runtime
+entity is already active nearby. Focused map-load coverage in
+`CrimsonIsleBranchInteractionTests` pins the fallback spawn, and the generated
+content tracker now records Q5610's primary receiver location as
+`runtime_script_receiver_location_spawn_tested_pending_dialog_client_smoke`
+and its Mondo Zax finisher relation as
+`runtime_script_spawn_present_client_creature2_finisher_relation_tested_pending_dialog_smoke`.
+Q5610 remains `not_retail_complete` pending client-visible Mondo dialog and
+completion activation smoke, alternate receiver prerequisite routing, exact
+reward-choice/cash side effects, achievement/progression side effects, and
+end-to-end quest smoke.
+
+Supplemental update: 2026-06-12 F-022 zero-objective quest lifecycle coverage.
+Zero-objective `Quest2` rows now have shared accept-to-turn-in server lifecycle
+coverage: `QuestManager.QuestAdd(IQuestInfo)` moves accepted quests with no
+objective slots directly to `QuestState.Achieved`, and focused `QuestTests`
+pass 6/6 covering accept plus visible-receiver completion for Q3670 (`Calm
+Before the Storm`), Q3783 (`Off with Her Head!`), and Q5610 (`Dreg Mutations`).
+The representative turn-in coverage grants Q3670 item reward `19041` from
+reward row `7004`, grants Q3783 item reward `17756` from reward row `8830`,
+completes Q5610 without an item reward, and verifies the shared quest-complete
+achievement hooks. The
+generated content tracker now classifies all `1,291` no-objective quest rows,
+including the four Script.Main-owned no-objective quest hooks, as
+`runtime_no_objective_accept_turnin_reward_achievement_tests_pending_dialog_smoke`.
+Those rows remain `not_retail_complete` until quest availability, row-specific
+receiver/dialog routing, row-specific reward and achievement side effects, and
+client/manual smoke are proven.
+
+Supplemental update: 2026-06-11 F-022 content tracker objective evidence.
+`Decomp/Analysis/coverage/content_retail_completeness_quest_objectives.csv`
+now distinguishes `ActivateEntity` objectives with `data=0` and nonzero
+`TargetGroupIdRewardPane`; `AssetManagerTargetGroupTests` pins the Q4696-shaped
+objective `6508` expansion from target group `4323` to creatures `17189` and
+`19595`, `QuestObjectiveTests` pins objective-side target matching for those
+expanded creature ids, and `QuestTests` pins Q4696-shaped
+`Quest.ObjectiveUpdate` credit for both target-group members. The
+world-dependency tracker now detects promoted runtime seed rows for member
+`19595` (`67` Stormwing Vanquisher spawns in world `51` / area `976`) and
+records member `17189` as the client-labeled Q4696 script-spawn creature with
+Galeras map-load fallback coverage at objective indicator world locations
+`17586`, `17588`, and `17589`.
+`content_retail_completeness_quest_creatures.csv` now separately records
+runtime seed spawn evidence for Q4696 finisher `17053` (`1` Corporal Darby row
+in world `51` / area `973`) and objective creature `19595` (`67` rows). The
+Q4696 finisher row now also pins build 16042 Creature2 `17053` as the
+`GlobalQuestManager` quest-receiver cache entry and adds `QuestManager`
+completion-path coverage requiring visible Darby instead of starter `17175`;
+it also records the reviewed DataMapping `source_coordinate_id 10020` placement
+and exact promoted runtime seed entity `1000010020` match at world `51` / area
+`973` / position `6203,-888,-2809`. `GalerasMapScript` now has a
+focused-test-backed fallback spawn for Darby at Quest2 receiver WorldLocation2
+`17590` (`6204.08,-888.474,-2809.91`), and the fallback uses the standard
+nearby-creature search so it does not duplicate the seeded Darby when present;
+the tracker still records reviewed DataMapping `source_coordinate_id 99084` as
+an unpromoted Darby placement gap at world `51` / area `973` / position
+`6176,-880,-2910`.
+The Q4696 starter row now corrects the ambiguous DataMapping `11061` bridge to
+client Creature2 `17175`, records the tested Galeras fallback spawn at
+DataMapping `source_coordinate_id 9972`, and pins `GlobalQuestManager`
+quest-giver caching plus `QuestManager` accept-path coverage for visible
+`17175`, completed Q4667, Exile faction, and level 16 requirements. The
+Q4696 quest script now uses the standard follow-up handoff to grant Q4694 on
+completion, matching the client `Quest2` chain (`4667 -> 4696 -> 4694`) with
+focused `NorthernWildsQuestChainTests` coverage. The
+Q4694 target-group/member dependency now records build 16042 Creature2 `50904`
+as the Trooper Vog holdout flag unit with `QuestIdReceive` `4694`, and
+`GalerasMapScriptTests` pins a Galeras map-load fallback spawn at the
+Crosswind Fields DataMapping placement near source-coordinate ids `10201` /
+`3742220` (`6202,-888,-2816`). Q4694 objective `16116` now has a
+focused-test-backed holdout kill-credit producer: killing build 16042 Creature2
+`23953`, the client-labeled Q4694 Stormwing Falkrin, credits
+`QuestObjectiveType.CompleteEvent` data `111` only while Q4694 is accepted;
+`runtime_world_seed.sql` promotes `93` Creature2 `23953` rows in world `51` /
+area `973`, including `23` rows clustered near Trooper Vog's Crosswind Fields
+placement.
+Q4694 objective `16115` now has tested direct `ClientActivateUnit` credit for
+Trooper Vog (`QuestObjectiveType.ActivateEntity` data `50904`), and Creature2
+`50904` points to activate spell `50151` with a `Spell4Effects` `Activate` row
+for the activate-cast path. Q4694 remains not retail-complete until
+client-visible Vog dialog/activation smoke, exact client packet path
+confirmation, holdout wave/spawn timing, Murgh/ally participation, reward side
+effects, and client/manual quest smoke are verified. The
+prerequisite tracker now emits `quest_faction` rows for Exile/Dominion
+`QuestPlayerFactionEnum` gates (`3,939` rows) and records Q4696-specific
+server accept-path evidence for its level, faction, and required-quest rows.
+`VolumeGridTriggerEntityTests` pins Q4696 objective `6457` generic `EnterArea`
+credit for world location `12649`, and `GalerasMapScriptTests` pins the
+Galeras/world-51 map-load trigger placement for that same location plus the
+Darby receiver, three script-spawn scout placements, and the Q4694 Trooper Vog
+fallback. Q4696
+remains not retail-complete because
+exact `17189` spawn timing/despawn/quest-state gating, Durek dialog
+activation/client-visible prerequisite-denial/phase validation, Darby
+completion dialog/client activation smoke, live/client target-objective smoke,
+map guidance/client quest smoke, and Temple of Osiric retreat/rally script
+behavior are still unproven.
+Q4526 now has focused-test-backed server playability evidence: accepted players
+inside world location `9706` credit objective `6164`, Northern Wilds map load
+spawns Scientist Pristan (`12560`) at Quest2 receiver location `11669`
+matching reviewed DataMapping source coordinate `116070` and the Spatial
+Anomaly (`12535`) at world location `40764`, and direct activation/proximity
+on the anomaly credits objective `6165`. Q4526
+remains not retail-complete until exact anomaly movement/chase/despawn timing,
+client-visible Pristan dialog/accept/completion smoke, activation/proximity
+packet smoke, reward/achievement side effects, and end-to-end live quest smoke
+are verified. The generated content tracker and validator passed with the
+29-file expected inventory set, 164497 rows, local `evidence_sources`
+path/glob resolution, and no `retail_complete` claims. Focused Q4526
+NorthernWilds branch coverage passed 19/19; focused Q4696
+quest/objective/target-group/cache,
+accept-path/completion-path, and follow-up coverage passed, and the full
+`NexusForever.Game.Tests` project passed 3295/3295.
 
 Supplemental update: 2026-06-09 decompile-evidence closure checkpoint.
 The current evidence-gated protocol/native backlog now has a named state and
@@ -526,8 +13161,9 @@ of truth for feature-area completion.
 | Partial (real handlers/state exist; retail parity incomplete) | 21 (`F-016`..`F-020` count as five spell-runtime rows; includes F-031 retail-weight parity blocked) |
 | Blocked / diagnostic / structural-only | 2 (`F-002` diagnostic, `F-003` structurally closed; `F-001` is partial with token-crypto blocked) |
 | Consolidated runtime gaps (emit/producer proof) | 5 rows in **Remaining Blocked Items** |
-| Related trackers | `Decomp/Analysis/MISSING_FEATURE_MATRIX.md`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md`, `MATCHING_IMPLEMENTATION_STATUS.md`, `ENTITY_AUX_DECODE_ROADMAP.md`, `BLOCKER_EVIDENCE_PLAN.md` |
+| Related trackers | `Decomp/Analysis/MISSING_FEATURE_MATRIX.md`, `Decomp/Analysis/CONTENT_RETAIL_COMPLETENESS_TRACKER.md`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md`, `MATCHING_IMPLEMENTATION_STATUS.md`, `ENTITY_AUX_DECODE_ROADMAP.md`, `BLOCKER_EVIDENCE_PLAN.md` |
 | Placeholder inventory (2026-06-05) | 12 `Client0xNNNN`, 1 `Server0xNNNN` (`Server0x0015`), 16 client diagnostic log-only surfaces, 24 `PrerequisiteType.UnknownNNN`, and 2 quest objective unknowns (`Unknown27`, `Unknown29`); the audit-prompt ghost literal names are absent; pass 158 keeps `Client0x07E3` registration-only at `1400a8282` through `ClientUInt32_ReadPayload` (`14007d000`) / `ClientTradeskillResetTalents_WritePayload` (`14007d010`), with MCP still returning `Transport closed`, live-plugin helper xrefs shared, selected send-helper scans finding no `0x07E3` sender, and message-name slot `140c27018` unxrefed; pass 155 keeps `Client0x062A`/`Client0x0634` registration-only at `1400a82b6`/`1400a872c`; pass 154 keeps `Client0x00C8` registration-only; the 2026-06-09 cached recheck keeps `Client0x0701` registration/writer-only at `selected_decompiled.c:13899` / `1400a69d0` with no selected sender or `140dd0a74` owner; pass 152 keeps `Client0x0928` shared `uint32+5-bit` registration-only |
+| F-002 diagnostic client opcode cluster recheck (2026-06-17) | `mcp__ghidra_mcp.list_instances` again found no running Ghidra instance, so the pass used cached `WildStar64.exe` fragments, current source/tests, and existing packet-evidence artifacts. `14006c290` still registers `0x00C8`, `0x00ED`, `0x011B`, `0x011D`, `0x012D`, and `0x0701`; `1400a8190` still registers `0x0550`, `0x063E`, `0x07E3`, and `0x0928`. Helper fragments prove only the existing wire shapes: 5-bit `MatchType`; `uint64 + uint32 + uint64 + 3 bits`; empty; raw `uint32`; wide string; 2-bit plus `uint32`; and `uint32 + 5-bit`. Current source keeps these handlers log-only/no-emit, `artifacts/packet_evidence` had no target hits, and focused diagnostic/placeholder verification passed 106/106. Keep every listed opcode numerically named and diagnostic until an opcode-specific sender, post-read consumer, callback/table owner, indirect send rail, or accepted live capture proves semantics. Worksheet: `artifacts/blocker_evidence/20260617-233631-20260617-F002-client-diagnostic-opcodes-recheck`. |
 | Diagnostic `Client0x00C8` recheck (2026-06-09) | Cached `WildStar64.exe` fragments under `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` were sufficient. `Network_RegisterServerOpcode_0351` (`14006c290`) still registers decimal `200` (`0x00C8`) size `4` with `LAB_14008a140` / `ClientMatchType_ReadPayload` and `LAB_14008a150` / `ClientMatchType_WritePayload`, the same shared helper pair used by `0x05B5` `ClientMatchingQueueLeave` and `0x05B6` `ClientMatchingQueueLeaveAsGroup`. The reader advances 5 bits and the writer masks/writes one `0x1f` value, proving only the `MatchType` wire shape. Selected xrefs for `14008a150` are label-only, selected call edges are writer-local, and selected send-helper scans found no `0x00C8` sender or consumer. Challenge-choice positive controls send `0x00C5` through `ClientChallengeChoice_SendActivate` (`140710c10`), `ClientChallengeChoice_SendAbandon` (`140710d60`), `ClientChallengeChoice_SendAcceptShared` (`140711ea0`), and `ClientChallengeChoice_SendDeclineShared` (`140711f10`); matching queue dispatch `14076c830` sends `0x05EF`/`0x05F3`/`0x05F8`/`0x05F9`, not `0x00C8`. Current source keeps `Client0x00C8.MatchType` neutral and log-only; require an opcode-specific sender, consumer, callback/table owner, indirect send rail, or accepted `0x00C8` capture before any semantic rename or runtime mutation. |
 | Diagnostic `Client0x012D` recheck (2026-06-09) | Cached `WildStar64.exe` fragments under `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` were sufficient. `Network_RegisterServerOpcode_0351` (`14006c290`) still registers `0x012D` size `8` with `LAB_14007ae30` and shared `ClientSuggest_WritePayload` (`14007ae80`). The writer only calls `NetworkBitWriter_WriteWideString` (`140336040`), proving one wide-string field and no request semantics. The same writer is reused by support/account/status siblings including `0x0833`, `0x0233`, `0x07C6`, `0x063E`, `0x03E0`, `0x03AC`, and `0x039B`; selected xrefs for `14007ae80` are label-only and selected call edges only show the wide-string write. Positive controls stay separate: `Support_SendClientSuggest` (`14063b9f0`) sends `0x0833`, `AccountItem_SendClientClaimPendingItemGroup` (`140006ba0`) sends `0x0233`, `AccountItem_SendClientReturnPendingItemGroup` (`140006c50`) sends `0x07C6`, and `ClientRealmTransfer_SendFromLuaDispatch` (`140027d80`) sends separate `0x0142` plus `0x0244` follow-up traffic. Exact `0x012D` cache/export scans found only the registration row plus unrelated struct-offset/switch-helper hits, not a send-helper owner. Current source keeps `Client0x012D.Text` neutral and log-only; require an opcode-specific sender, consumer, callback/table owner, indirect send rail, or accepted `0x012D` capture before any semantic rename or runtime mutation. |
 | Diagnostic `Client0x063E` recheck (2026-06-09) | Cached `WildStar64.exe` fragments under `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` were sufficient. `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) registers `0x063E` size `8` with `LAB_14007ae30`, shared `ClientSuggest_WritePayload` (`14007ae80`), and `LAB_140080d20`. The writer only calls `NetworkBitWriter_WriteWideString` (`140336040`), proving one wide-string field; `LAB_140080d20` has no selected standalone body/label and is reused by `0x0724`, `0x058C`, and `0x00CE`, while nearby `140080d30` and `140080d70` are different server readers. Exact `0x063E` cache/export scans found only the registration row and shared-slot references, not an opcode-specific sender or consumer. Positive controls stay separate: `Support_SendClientSuggest` (`14063b9f0`) sends `0x0833`, account-item claim/return (`140006ba0`/`140006c50`) send `0x0233`/`0x07C6`, `ClientSupportTicket_WritePayload` (`14007cc20`) belongs to `0x06D1`, `Marketplace_RequestCommodityInfo_WritePayload` (`140085420`) belongs to `0x03E6`, and `Marketplace_AuctionsByFilterRequest_WritePayload` (`14009a7d0`) belongs to `0x07DC`. Current source keeps `Client0x063E.Text` neutral and log-only; require an opcode-specific sender, consumer, callback/table owner, indirect send rail, or accepted `0x063E` capture before any semantic rename or runtime mutation. |
@@ -536,7 +13172,7 @@ of truth for feature-area completion.
 | Diagnostic `Client0x0701` recheck (2026-06-09) | Cached `WildStar64.exe` fragments under `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` were sufficient for the writer and registration evidence. `Network_RegisterServerOpcode_0351` (`14006c290`) registers `0x0701` size `8` at the registration row (`selected_decompiled.c:13899`; setup literal `140079e05`) with `LAB_1400a69c0` and `ClientUInt2UInt32_WritePayload` (`1400a69d0`). The cached writer serialises one 2-bit field followed by one `uint32`; no standalone `1400a69c0` fragment is present in the selected cache. Selected xrefs for `1400a69d0` are label-only, selected call edges are writer-local plus generic bitstream helper calls, selected exact scans found `0x0701` only at registration/comment evidence, no selected `Network_SendOpcodePayloadHelper(...0x0701...)`, and no selected `140dd0a74` pointer-owner evidence. Positive controls stay separate: challenge-choice senders (`140710c10`, `140710d60`, `140711ea0`, `140711f10`) send `0x00C5`, `Matching_QueueDispatchFromUi` (`14076c830`) sends `0x05EF`/`0x05F3`/`0x05F8`/`0x05F9`, and `MatchingReplacement_SendStartLookingForReplacements` (`14076aa30`) sends `0x05D5`. Current source keeps `Client0x0701.LeadingBits` / `TrailingValue` neutral and log-only; require an opcode-specific sender, consumer, callback/table owner, indirect send rail, or accepted `0x0701` capture before any semantic rename or runtime mutation. |
 | Diagnostic `Client0x07E3` recheck (2026-06-09) | Cached `WildStar64.exe` fragments under `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` were sufficient. `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) registers `0x07E3` size `4` at `1400a8282` with `ClientUInt32_ReadPayload` (`14007d000`), shared `ClientTradeskillResetTalents_WritePayload` (`14007d010`), and `ServerUInt32_ReadPayload` (`14007ab50`). The helpers prove only one raw `uint32` in each direction; selected xrefs are label-only and selected call edges for `14007d010` remain writer-local plus `ClientCompoundTradeskillUInt32_WriteCluster` (`14007dc80`), not a `0x07E3` owner. Exact selected scans found `0x07E3` only at the registration row/comment evidence, found no `Network_SendOpcodePayloadHelper(...0x07E3...)`, and found no selected `140c27018` static name-rail evidence. Positive controls stay separate: `MatchingReplacement_SendStartLookingForReplacements` (`14076aa30`) sends `0x05D5`, `TargetSelection_SendClientMovementControlAck` (`14057a630`) sends `0x0635` plus possible `0x063A` follow-up, `ClientPlayerMovementSpeedUpdate_SendAndDispatch` (`1404dafb0`) sends `0x063B`, and `Tradeskill_SendClientTradeskillResetTalents` (`14059acb0`) sends `0x0858`. Current source keeps `Client0x07E3.Value` neutral and log-only; require an opcode-specific sender, consumer, callback/table owner, indirect send rail, or accepted `0x07E3` capture before any semantic rename or runtime mutation. |
 | Diagnostic `Client0x0928` recheck (2026-06-09) | Cached `WildStar64.exe` fragments under `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` were sufficient. `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) still registers `0x0928` size `8` at row `1400a8524` with read-advance `LAB_140089240`, writer `ClientUInt32UInt5_WritePayload` (`1400898b0`), and reader/apply helper `ServerUInt32UInt5_ReadPayload` (`14008ce80`). Those helpers prove only `uint32 + 5-bit` wire shape. The positive pet controls stay separate: `0x068E` registers the same writer in `Network_RegisterServerOpcode_0351` (`14006c290`) and has real sender `Pet_SetStance_SendClientPetSetStance` (`14050a270`), while `0x068F` registers the same reader and applies through `Pet_ApplyStanceChangedPayload` (`1403c0a80`) / `Pet_GetStance_ReadCachedStance` (`14050a130`). Selected xrefs for `1400898b0` are label-only, selected call edges are writer-local except positive pet send-helper evidence, and selected scans find `0x0928` only in registration. Current source keeps `Client0x0928.LeadingValue` / `TrailingBits` neutral, log-only, and packet-shape/test-pinned; require an opcode-specific sender, consumer, callback/table owner, indirect send rail, or accepted `0x0928` capture before any semantic rename or runtime mutation. |
-| Server placeholder recheck (2026-06-09) | `Server0x0015` remains mapped-only/test-pinned: cached-export/source recheck found no running Ghidra MCP instance, `140081f00` remains a shared 5-bit plus `uint32` reader registered for `0x0015` and `0x0628` and called as a Fortune money-reward row helper, while only `0x0628` has the positive `MatchingManager_ApplyMatchingAverageWaitTimeUpdated` (`1405c0e00`) apply path. It still needs an opcode-specific apply/producer path, post-read consumer, or live payload before semantic rename or production emit. |
+| Server placeholder recheck (2026-06-17) | `Server0x0015` remains mapped-only/test-pinned: cached-export/source/artifact recheck found no running Ghidra MCP instance, `140081f00` remains a shared 5-bit plus `uint32` reader registered for `0x0015` and `0x0628`, and `ServerFortuneRewards_ReadPayload` (`140081f60`) calls it only as a Fortune money-reward row helper inside `0x03D2`. The positive matching apply path remains `MatchingManager_ApplyMatchingAverageWaitTimeUpdated` (`1405c0e00`) for `0x0628`, current source has no `Server0x0015` emitter, and existing `artifacts/packet_evidence` rows had no `0x0015` target hits. Focused placeholder/matching/Fortune boundary verification passed 121/121. It still needs an opcode-specific apply/producer path, post-read consumer, or live payload before semantic rename or production emit. Worksheet: `artifacts/blocker_evidence/20260617-234147-20260617-F003-server-0015-recheck`. |
 | Prerequisite/objective placeholder recheck (2026-06-07) | The inventory still has exactly 24 `PrerequisiteType.UnknownNNN` entries and 2 quest objective placeholders. `PrerequisiteTypeNamingTests` plus new `QuestObjectiveTypeNamingTests` pin these as neutral until handler/table/objective-data ownership is proven; focused naming tests passed 119/119. |
 | Build | 0 errors, 0 warnings |
 | Tests | 2817 passed, 0 failed, 0 skipped |
@@ -795,6 +13431,24 @@ opcode-specific `0x011D` owner. Current source/tests keep `Client0x011B` empty,
 mail, loot-vacuum, and tradeskill-reset aliases remain rejected until a native
 sender/consumer, indirect send rail, or live payload proves semantics.
 
+A 2026-06-17 aggregate cached-export/source/artifact recheck kept the
+remaining non-matching numeric F-002 client diagnostic opcodes mapped-only and
+blocked. Ghidra MCP discovery found no running instance, cached
+`Network_RegisterServerOpcode_0351` (`14006c290`) and
+`ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) evidence still shows
+only registration rows for `Client0x00C8`, `Client0x00ED`, `Client0x011B`,
+`Client0x011D`, `Client0x012D`, `Client0x0550`, `Client0x063E`,
+`Client0x0701`, `Client0x07E3`, and `Client0x0928`, and helper fragments
+still prove wire shapes only. Existing `artifacts\packet_evidence` rows had no
+target hits. Current source/tests keep these models neutral and handlers
+log-only/no-emit, with false-name guards rejecting challenge, queue, duel,
+mail, loot, tradeskill, ICComm, marketplace, support, pet stance, reward, and
+movement aliases. Focused diagnostic verification passed `106/106`; blocker
+harness presets passed `2/2`; content-retail validation reported `31` files
+and `168,101` `not_retail_complete` rows; and the `WildStar64.exe` manifest
+check passed with `200/200` reused fragments. Worksheet:
+`artifacts/blocker_evidence/20260617-233631-20260617-F002-client-diagnostic-opcodes-recheck`.
+
 ### F-003 - Server Unresolved Output Opcodes - STRUCTURALLY CLOSED
 All 702 server opcodes have models. One `Server0xNNNN` enum/model placeholder
 remains: `Server0x0015`, whose native reader `ServerUInt5UInt32_ReadPayload`
@@ -810,6 +13464,18 @@ control remains `MatchingManager_ApplyMatchingAverageWaitTimeUpdated`
 (`1405c0e00`), which dispatches `MatchingAverageWaitTimeUpdated` for `0x0628`.
 No opcode-specific `0x0015` apply owner, producer, or post-read consumer
 surfaced.
+A 2026-06-17 cached-export/source/artifact recheck reconfirmed the same
+boundary: Ghidra MCP discovery found no running instance, `14006c290` still
+registers `0x0015` and `0x0628` to `140081f00`, `ServerFortuneRewards_ReadPayload`
+(`140081f60`) uses `140081f00` only as an internal `0x03D2` money-reward row
+helper, `MatchingManager_ApplyMatchingAverageWaitTimeUpdated` (`1405c0e00`)
+remains the positive `0x0628` apply witness, current source has no `Server0x0015`
+emitter, and existing `artifacts\packet_evidence` rows had no target hits.
+Focused placeholder/matching/Fortune boundary verification passed `121/121`;
+blocker harness presets passed `2/2`; content-retail validation reported `31`
+files and `168,101` `not_retail_complete` rows; and the `WildStar64.exe`
+manifest check passed with `200/200` reused fragments. Worksheet:
+`artifacts/blocker_evidence/20260617-234147-20260617-F003-server-0015-recheck`.
 Of the 62 shape-mapped aux/spell
 packets with neutral fields, 12 have controlled entity-create or selected
 housing emit paths and 50 remain gated behind consumer or producer evidence
@@ -851,9 +13517,35 @@ apply owner beyond registration, and current runtime time sync still emits the
 separate `ServerTimeOfDay` (`0x0845`) packet from `Player.SendInGameTime`.
 `Prerequisite_CheckTimeOfDay` (`14049dd10`) only proves the client-side
 time-of-day prerequisite comparison path, not `0x0846` producer timing.
+A 2026-06-17 cached-export/source/artifact recheck reconfirmed the same
+boundary: no running Ghidra MCP instance was available, `14006c290` still
+registers `0x0846` size `4` to unlabelled `LAB_140080c60` and `0x01A6` to the
+same selected slot, no standalone `140080c60.fragment.c` exists in the selected
+cache, `0x0845` remains the normal three-`uint32` time-of-day packet, and
+existing `artifacts\packet_evidence` rows had no `0x0846` target hits. Current
+source still emits only `ServerTimeOfDay` from `Player.SendInGameTime`, while
+`ServerTimeOfDayAuxUInt32` remains model/test-only. Focused aux/prerequisite
+verification passed `470/470`; blocker harness presets passed `2/2`;
+content-retail validation reported `31` files and `168,101`
+`not_retail_complete` rows; and the `WildStar64.exe` manifest check passed
+with `200/200` reused fragments. Worksheet:
+`artifacts/blocker_evidence/20260617-234715-20260617-F003-time-of-day-aux-recheck`.
 The story/recruitment boundary packets are also narrowed: `0x074A` now writes
 five `uint32` fields plus one `uint16`, and `0x077E` now writes the native
 count-plus-uint32-list shape shared with `ServerFlightPathUpdate`.
+A 2026-06-17 cached-export/source/artifact recheck kept those two packets
+mapped-only / producer-blocked. No running Ghidra MCP instance was available;
+cached `14006c290` still registers `0x074A` size `0x18` to
+`ServerStoryCommunicatorAux_ReadPayload` (`140080c80`) and `0x077E` size
+`0x10` to `ServerFlightPathUpdate_ReadPayload` (`14008eaa0`), current source
+still finds both aux packets only in opcode/model/test surfaces, and existing
+`artifacts\packet_evidence` rows had no target hits for either opcode/name or
+the `ServerFlightPathUpdate` control. Focused packet verification passed
+`101/101`; blocker harness presets passed `2/2`; content-retail validation
+reported `31` files and `168,101` `not_retail_complete` rows; and the
+`WildStar64.exe` manifest check passed with `200/200` reused fragments.
+Worksheet:
+`artifacts/blocker_evidence/20260617-235326-20260617-F003-story-recruitment-boundary-recheck`.
 
 ### F-004 - Housing - PARTIAL (21/22 handlers complete)
 **Implemented:** Residence create (level-14 gate), neighbor persistence,
@@ -1313,6 +14005,19 @@ and `Spell.TryConsumeServiceTokenCost`. Remaining F-009
 transport service-token/global-route blockers still need native/live evidence
 that a transport UI branch uses this path and proves route-state, cost, and
 teleport timing.
+A 2026-06-18 CEST cached/source/artifact recheck kept that boundary blocked:
+Ghidra MCP discovery again found no running instance; cached fragments still
+prove only the generic `0x00C2` service-token spell-cast shape and
+service-token result handler, while `14007ab80`/`1403993c0` and existing
+`artifacts\verify\spell-evidence` entries prove separate `ClientRapidTransport`
+(`0x0141`) credit-route evidence for spell `82922`. Source search found no
+rapid/taxi service-token bypass branch or global route-state producer, and
+`artifacts\packet_evidence` / `artifacts\verify\spell-evidence` had no
+`0x00C2` or `ClientSpellCastWithServiceToken` hits. Focused
+transport/prerequisite/spell verification passed 750/750; keep service-token
+bypass and global route-state blocked until a native transport producer or
+accepted live transport UI capture proves route id, source/destination, cost,
+and teleport timing for `0x00C2`.
 Focused transport verification passed 77/77.
 Vehicle handler boundary tests pin
 `ClientVehicleEmbark` as diagnostic/log-only and `ClientVehicleDisembark` as a
@@ -1526,6 +14231,15 @@ ownership. Source still contains these packets only in
 semantics and runtime emit conditions remain blocked pending a native
 producer/apply path, callback/table owner, dynamic dispatch proof, or accepted
 packet capture.
+A 2026-06-18 CEST recheck kept the same classification after searching source,
+cached fragments, and packet evidence: no running Ghidra MCP instance was
+available, the cached readers still prove only row/envelope/notification wire
+contracts, no runtime producer exists outside model/test surfaces, and existing
+`artifacts\packet_evidence` had no target opcode/name hits. Focused
+packet/chat/ICComm/friendship verification passed 114/114; keep the packets
+non-emitted until a native producer/apply owner, post-read consumer,
+callback/table owner, or accepted two-client chat/ICComm/cinematic/social
+capture proves timing and semantics.
 Chat item/quest link construction now treats missing `Item` and `Quest2`
 tables like missing rows, throwing the existing invalid link exception before
 appending chat text or format rows. Focused `ChatMessageBuilderTests` passed
@@ -1549,6 +14263,20 @@ save; final marketplace DB transaction/save parity remains under F-005.
 Known retail gaps remain for broader delete-state parity, exact expiration
 timing, VIP/trial social gates, and offline marketplace currency transaction
 atomicity.
+A 2026-06-18 CEST cached-export/source/artifact recheck kept
+`ServerRealmAuxUInt32TripletList` (`0x05A1`) mapped-only /
+producer-blocked. No running Ghidra MCP instance was available; cached
+`14006c290` still registers `0x05A1` size `0x10` to
+`ServerRealmAuxUInt32TripletList_ReadPayload` (`140080b00`), and the reader
+only proves a `uint32` count followed by counted three-`uint32` rows. Current
+source still finds the packet only in opcode/model/test surfaces; realm-info,
+realm-list, realm-transfer, and mail handlers use named structured packets or
+log-only request handling, and existing packet-evidence bundles had no
+`0x05A1` target hits. Focused realm/mail verification passed `54/54`; blocker
+harness presets passed `2/2`; content-retail validation reported `31` files
+and `168,101` `not_retail_complete` rows; and the `WildStar64.exe` manifest
+check passed with `200/200` reused fragments. Worksheet:
+`artifacts/blocker_evidence/20260618-000112-20260617-F013-realm-info-mail-05A1-recheck`.
 
 ### F-014 - Loot - COMPLETE
 Basic delivery, group roll/master-loot runtime, roll/assign/result packets,
@@ -1795,6 +14523,44 @@ models/tests. Keep this cluster mapped-only pending a native apply/producer
 path, callback/table owner, dynamic dispatch proof, or accepted spell packet
 capture.
 
+**Spell aux blocked recheck (2026-06-17):** `mcp__ghidra_mcp.list_instances`
+again found no running Ghidra instance, so this pass used the existing
+`WildStar64.exe` selected cache, source search, and local packet-evidence
+artifacts. `14006c290.fragment.c` still registers `0x07FC` size `0x0c` to
+`ServerSpellCastResult_ReadPayload` (`140094fb0`), `0x0810`/`0x080F` size
+`0x10` to `ServerSpellUInt32TripletList_ReadPayload` (`140095da0`), and
+`0x0812` size `0x10` to `ServerSpellFourUInt32_ReadPayload` (`14007fef0`).
+The exact fragments still prove only a leading `uint32` plus `Spell4Id` /
+`CastResult`, counted triplet rows through `140080bf0`, and four `uint32`
+fields. Current source keeps `ServerSpellCastResult` as mixed compatibility
+emitters (default-zero result sends plus support-stuck context-token echo) and
+finds `ServerSpellUInt32TripletList`, `ServerSpellUInt32TripletListVariant`,
+and `ServerSpellFourUInt32` only in packet models/tests. A bounded scan of
+`artifacts\packet_evidence` found no `0x07FC`, `0x080F`, `0x0810`, or `0x0812`
+rows. The worksheet
+`artifacts\blocker_evidence\20260617-232253-20260617-232300-F016-spell-aux-recheck`
+records the missing live/native path. Keep `ServerSpellCastResult.Unknown0`
+neutral at that point; the 2026-06-18 follow-up below supersedes only the
+`0x07FC` field-name conclusion. Keep the triplet/four-uint aux packets
+non-emitted until a native apply/producer path, callback/table owner, dynamic
+dispatch proof, or accepted spell packet capture proves field semantics and
+timing. Focused spell/support/transport/packet verification passed 439/439,
+blocker-harness presets passed 2/2, content-retail validation passed 31 files /
+168101 rows, and the WildStar64 decompile manifest passed 200/200.
+
+**Spell cast-result context-token proof (2026-06-18):** managed
+request/response correlation now proves the leading `0x07FC` `uint32` is the
+cast context token for NexusForever emitters. The packet model is renamed from
+`Unknown0` to `ContextToken`; central spell failures echo
+`SpellParameters.ClientContextToken`; support stuck, rapid transport direct
+rejects, service-token rejects, selected-spell rejects, guild-boss-token rejects,
+and activate-unit no-valid-spell rejects now preserve request context tokens.
+This is not native apply-owner proof for the remaining spell aux packets:
+`0x080F`, `0x0810`, and `0x0812` remain non-emitted with neutral `Value*`
+fields pending native producer/apply evidence or an accepted live capture.
+Focused context-token verification passed 32/32 from an isolated artifacts
+directory.
+
 ### F-021 - Action Set / LAS / AMP / Attributes - PARTIAL (blocked)
 LAS size/spec/tier/AMP preflight checks exist. `UpdateSpellInProgress`,
 async spell update transaction, authoritative attribute allocation,
@@ -1815,11 +14581,73 @@ category/id results before AMP mutation or refresh emits.
 Direct and persisted `ActionSet.AddAmp` materialization now also treats a
 missing `EldanAugmentation` table like a missing AMP row, preserving the
 existing invalid-AMP exception before owner-save or AMP-list mutation.
+2026-06-18 CEST recheck: `UpdateSpellInProgress` remains blocked after a
+focused native/source/artifact pass. Cached client fragments map the local guard
+and pending-cache fields (`GameFormula` `0x41e`, `entity+0x1458`,
+`entity+0x6ddc`, staged AMP cache at `entity+0x6eb0/+0x6eb8`), but do not prove
+a server-owned transaction lifecycle. Current handlers still apply successful
+requests synchronously, and no local packet/live artifact showed an actual
+in-progress transition. Keep synthetic server gates out until a live WildStar
+16042 client/server capture or native server evidence proves update start,
+clear, packet timing, and result surface.
 
 ### F-022 - Quests / Path Missions / Public Events - PARTIAL
-**Coverage audit:** see `Decomp/Analysis/QUEST_IMPLEMENTATION_STATUS.md`
-(5,194 client quests; no current unsupported objective-type blockers in client
-data; 56 hand-curated script rows).
+**Coverage audit:** see `Decomp/Analysis/QUEST_IMPLEMENTATION_STATUS.md` and
+the row-level retail tracker in
+`Decomp/Analysis/CONTENT_RETAIL_COMPLETENESS_TRACKER.md`. Current generated
+inventory: 5,194 client quests; no current unsupported objective-type blockers
+in client data; 49 hand-curated quest rows; 1,291 zero-objective Quest2 rows
+covered by shared QuestManager accept-to-turn-in lifecycle tests; 0 partial/stub
+quest rows in the quest implementation audit;
+7,108 quest objective rows; 8,767 quest reward/dependency rows; 14,965
+quest-prerequisite rows; 7,650 reviewed quest-loot rows; 39,038 quest
+world/interaction dependency rows; 2,056 quest achievement/progression rows;
+88 Script.Main quest/related owner-hook rows; 13,412 DataMapping quest
+creature/NPC relationship rows; 4,558 DataMapping/Jabbithole quest
+objective-evidence rows; 8,618 DataMapping/Jabbithole quest reward-evidence
+rows; 11,285 DataMapping/Jabbithole quest zone-evidence rows; 1,497
+DataMapping quest episode-evidence rows; 5,013 DataMapping public-event
+evidence rows; 162 public-event auxiliary evidence rows; 22,721
+DataMapping challenge-evidence rows; 4,623
+DataMapping path mission-evidence rows; 3,666 DataMapping contract-evidence
+rows; 282 instance portal evidence rows; 27 dungeon/raid/expedition/scripted-instance
+rows; 106 script communicator/cinematic presentation evidence rows; 1,042 script
+public-event flow evidence rows; 376 script objective producer evidence rows;
+35 Script.Main quest progression evidence rows; 92 script runtime action evidence rows with 12 Spell4 and 1 World client-row
+matches, source-trace statuses for routed dynamic spell/teleport/local-position
+calls, and no literal/constant Spell4/World or source-trace misses; 148 instance
+script handler evidence rows; 1,618 instance dependency rows; 271 reviewed instance
+entity/encounter rows; and 80 instance reward rows tracked separately with all
+generated rows marked `not_retail_complete` pending the listed evidence and
+smoke gates. The tracker now includes a 23-row generated next restoration
+slice queue plus `3,033` blocker detail rows (`355` quest, `2,678` instance/dungeon/expedition/raid) in
+`Decomp/Analysis/coverage/content_retail_completeness_next_slice_blockers.csv`
+and a generated parallel subagent lane
+snapshot and top-gap rollup for quest/objective, instance, reward/loot/
+achievement, script/encounter, DataMapping, decompile/client evidence,
+wiki/reference-data, and validation workstreams. The content-retail output
+validator currently passes on the expected `31` generated CSVs / `167,561`
+rows and rejects missing or stale
+inventory files, missing tracker links, missing evidence/status/manual-validation
+fields, missing local evidence source paths/globs, and unsafe
+`retail_complete` claims, including open `evidence_status` markers or blank /
+incoherent queue command fields; it also enforces this status/matrix rollup's
+links to `Decomp/Analysis/CONTENT_RETAIL_COMPLETENESS_TRACKER.md` and the
+generated blocker detail CSV. The next-slice queue now carries exact
+`narrow_test_filter`, `narrow_test_command`, `validation_bundle_name`, and
+`harness_command` fields for each queued row, plus instance automation
+coverage columns for objective row count, scripted producer count/coverage,
+handler count, and WIP seed entity count. Q5596's generated quest harness now
+derives Crimson Isle world `870` from the quest world-dependency inventory.
+Focused automated validation passes on the queue-backed quest slice (93/93 for
+Q3668, Q3673, Q3886, Q3963, Q3741, Q3777, Q3777 Loftite Crystal, and Northern
+Wilds chain coverage) and
+the queue-backed instance/public-event slice (344/344 for Evil from the Ether,
+Sanctuary of the Swordmaiden, Skullcano, Fragment Zero, Gauntlet, Datascape,
+Ruins of Kel Voreth, and Coldblood Citadel coverage), plus the widened
+Stormtalon's Lair / Ultimate Protogames dungeon and raid slice (45/45).
+Manual/client smoke, reward/loot/achievement presentation, and exact retail
+mechanics remain open blockers.
 Branch-derived `Q10510LearningToShopQuestScript` now has focused coverage for
 the Smart Shopper item/title objective snapshot; exact retail refresh timing is
 still marked WIP-guessed in code.
@@ -2020,7 +14848,8 @@ scoring, rewards, PvP stats, faction-start, vehicle-choice, and encounter
 parity still require completed bundles.
 Outpost M-13 (`world 1319`, public event `108`) now has a conservative
 branch-derived objective chain from Captain Milo through Hive Queen and shuttle
-return; the branch's unknown final shuttle world-location trigger remains
+return, and objective `257` / `KillHiveQueen` now has automated-test-backed
+Creature2 `23513` death credit. The branch's unknown final shuttle world-location trigger remains
 intentionally omitted because the branch candidate uses world-location id `5`
 at the zero vector and is not safe runtime behavior without retail/table proof.
 Space Madness (`world 2149`, public event `390`) now has a conservative
@@ -2057,11 +14886,13 @@ Gauntlet (`world 2183`, public event `446`) now uses the corrected
 `Expedition\Gauntlet` map binding path and has a conservative branch-derived
 objective chain from Pilot Taboro through Judge Kain/Agent Lex, with focused
 tests covering group objective counts, chamber branch activation, branch kill
-objective activation, finish behavior, and inactive-objective guarding. The
-airlock and swarm-pit participant-gather triggers are now ported as
-WIP-guessed code with comments/tests marking missing retail trigger-row/timing
-proof. Cinematics, announcer/communicator timing, arena door choreography, and
-manual expedition smoke remain blocked.
+objective activation, direct objective-id credit for the build 16042
+`ScriptWithoutCount` FindOutWhatHappened objective, finish behavior, and
+inactive-objective guarding. The airlock and swarm-pit participant-gather
+triggers are now ported as WIP-guessed code with comments/tests marking missing
+retail trigger-row/timing proof. Cinematic completion timing,
+announcer/communicator timing, arena door choreography, and manual expedition
+smoke remain blocked.
 Infestation (`world 1232`, public event `95`) now has a conservative
 branch-derived objective chain from cargo-ship entry through the medical-bay and
 heal-shorthand phase, with focused tests covering initial phase, dynamic group
@@ -2200,21 +15031,21 @@ comments/tests.
 Remaining branch map-only and entry/boss/phase/cinematic-hook scaffold content now covers Deep Space
 Exploration (`world 2188`, public event `447`), Rage Logic (`world 1627`,
 public event `213`), Ultimate Protogames dungeon (`world 2980`, public event
-`594`), Ultimate Protogames raid (`world 3041`, public event `642`), Protostar
+`594`), Ultimate Protogames Downsizer scaffold (`world 3041`, public event `642`), Protostar
 SuperMall in the Sky (`world 3094`, public event `679`), Journey into
 OMNICore-1 (`world 3045`, public event `605`), Fragment Zero, Infestation,
 Space Madness, Shade's Eve, Ruins of Kel Voreth, Stormtalon's Lair,
 Initialization Core Y-83, Genetic Archives, Datascape, and Gauntlet cinematic
 hooks. Focused map-binding
 tests pin `19/19` public event IDs. Deep Space, Rage Logic, Ultimate Protogames
-dungeon/raid, Protostar SuperMall, OMNICore, Fragment Zero, Infestation, Space
+dungeon and Downsizer scaffold, Protostar SuperMall, OMNICore, Fragment Zero, Infestation, Space
 Madness, Shade's Eve, Ruins of Kel Voreth, Stormtalon's Lair, Initialization
 Core Y-83, Genetic Archives, Datascape, and Gauntlet now also have WIP-guessed
 entry/boss/phase/cinematic-hook scaffolds covered by `22/22` map-entry tests and
 `155/155` event/trigger cinematic-hook tests: Deep Space activates
 `TalkToCrewMembers`, Rage Logic sets the branch vehicle-choice phase, Ultimate
 Protogames dungeon activates `InitiateUltimateProtogames` then stops at the
-coarse random-event gate, Ultimate Protogames raid activates the Downsizer
+coarse random-event gate, the Downsizer scaffold activates the Downsizer
 objective set and finishes on Downsizer defeat, and SuperMall activates the
 greeter gather objective then stops at the coarse random-path gate; OMNICore,
 Deep Space, SuperMall, Fragment Zero, Infestation, Space Madness, and Shade's
@@ -2234,6 +15065,17 @@ panel `1575` when an accepted player enters zone `729`; Crimson Isle Q5596
 credits crash-site objective `8255` when an accepted player enters zone `1611`.
 Focused `EarlyZoneEntityObjectiveCreditTests` cover accepted and missing-quest
 guards.
+Northern Wilds Q3486 now also has tested runtime availability for the shared
+Master Control Panel (`11194`) at Quest2 receiver WorldLocation2 `7778`, the
+Loftite Crystal fallback at objective location `7807`, and five Crystal
+Guardian (`11925`) fallbacks in Exo-Lab 729 from DataMapping source-coordinate
+ids `7798992`, `7798993`, `7855831`, `7857737`, and `8102237`. Crystal
+Guardian kills now credit Q3486 VirtualCollect item `206`, matching client
+objective `4485` and TargetGroup `4985`; the dedicated content tracker records
+the receiver, objective, target-group, and creature-relation evidence rows as
+runtime-tested but not retail-complete pending client collection/combat,
+dialog, reward UI/inventory/cash persistence, achievement UI/progression,
+respawn, and end-to-end chain smoke.
 The branch starter-zone intro cinematic hooks are now wired through current
 cinematic interfaces: Northern Wilds (`3480` missing), Crimson Isle (`5593`
 missing), Everstar Grove (`6296` missing), and Levian Bay (`6780` missing)
@@ -2304,10 +15146,100 @@ checklist objective credit from table-backed creature/checklist data.
 
 2026-05-25 Veteran Northern Wilds follow-up:
 
-- The 20-quest local block is now curated through `4696`: added scripts for
-  `3741`, `3777`, `3781`, `3783`, `4526`, `4666`, `4667`, and `4696`, with
-  Jabbithole/client objective evidence for supply crates, Loftite crystals, and
-  captive soldiers.
+- The 20-quest local block is now curated through `4696`: added implemented
+  scripts for `3741`, `3777`, `3781`, `3783`, `4666`, `4667`, and `4696`, and
+  Q4526 now has focused-test-backed server-side wreckage/anomaly credit plus
+  Scientist Pristan receiver-location spawn coverage at Quest2 WorldLocation2
+  `11669` while still pending client smoke. Q4696 objective `6508`
+  reward-pane target-group expansion, objective-side target matching, and
+  Q4696-shaped quest credit for both target-group members are now test-backed.
+  The content tracker recognizes member `19595` as already present in the
+  promoted runtime seed (`67` world-51/area-976 Stormwing Vanquisher rows), and
+  records member `17189` as the client-labeled Q4696 script-spawn creature with
+  Galeras map-load fallback coverage at objective indicator world locations
+  `17586`, `17588`, and `17589`; client smoke is still pending. The quest
+  creature/NPC tracker also records Q4696 finisher `17053` as one promoted
+  world-51/area-973 Corporal Darby spawn and objective creature `19595` as the
+  same `67` promoted rows; the finisher row now also pins `GlobalQuestManager`
+  receiver-cache coverage for `17053` and `QuestManager` completion-path
+  coverage requiring visible Darby instead of starter `17175`, and records the
+  reviewed DataMapping `source_coordinate_id 10020` placement plus exact
+  promoted runtime seed entity `1000010020` match at world `51` / area `973` /
+  position `6203,-888,-2809`, while also recording reviewed DataMapping
+  `source_coordinate_id 99084` as an unpromoted Darby placement gap at world
+  `51` / area `973` / position `6176,-880,-2910`. The Q4696 starter row now corrects the ambiguous
+  DataMapping `11061` bridge to client Creature2 `17175` and records the tested
+  Galeras fallback spawn at DataMapping `source_coordinate_id 9972` with
+  `GlobalQuestManager` quest-giver cache
+  coverage for `17175` instead of `11061` plus `QuestManager` accept-path
+  coverage for visible `17175`, completed Q4667, Exile faction, and level 16
+  requirements. The Q4696 quest script now grants Q4694 on completion through
+  the standard `FollowUpQuestScript` handoff, matching the client chain
+  `4667 -> 4696 -> 4694` with focused coverage in
+  `NorthernWildsQuestChainTests`. Q4694 now has tracker-backed Galeras
+  map-load fallback coverage for build 16042 Creature2 `50904`, the Trooper
+  Vog holdout flag unit with `QuestIdReceive` `4694`, at the Crosswind Fields
+  DataMapping placement near source-coordinate ids `10201` / `3742220`
+  (`6202,-888,-2816`), plus tested holdout kill credit from build 16042
+  Creature2 `23953` to `QuestObjectiveType.CompleteEvent` data `111` for
+  objective `16116`; `runtime_world_seed.sql` promotes `93` Creature2 `23953`
+  rows in world `51` / area `973`, including `23` near Trooper Vog, so the
+  follow-on kill target is present in the current runtime seed. The same pass
+  also added tested direct activation credit from Trooper Vog
+  (`50904`) to `QuestObjectiveType.ActivateEntity` data `50904` for objective
+  `16115`; Creature2 `50904` also points to activate spell `50151` with a
+  `Spell4Effects` `Activate` row for the activate-cast path. The prerequisite tracker now emits `quest_faction` rows for
+  Exile/Dominion gates and records Q4696-specific server accept-path evidence
+  for its level, faction, and required-quest rows. Q4696 objective `6457`
+  EnterArea world-location trigger credit plus Galeras/world-51 map-load
+  placement for world location `12649`, the Durek fallback, and the
+  three script-spawn scout placements plus the Q4694 Trooper Vog fallback are
+  now test-backed. Q3486 now has focused-test-backed Master Control Panel
+  (`11194`) availability at Quest2 receiver `7778`, Loftite Crystal fallback
+  availability at objective indicator `7807`, five Crystal Guardian (`11925`)
+  fallbacks in Exo-Lab 729, Crystal Guardian kill credit for VirtualCollect
+  item `206`, and Frostbite `11924` target-group dispatch through the same
+  kill-credit script; it remains blocked on client-visible panel
+  dialog/activation smoke, exact crystal collision/respawn timing, live combat
+  smoke, Frostbite `11924` runtime spawn/drop proof, reward
+  UI/inventory/cash persistence, achievement UI/progression, and end-to-end
+  Q3486/Q3671/Q3668 chain smoke. Q3668 now has
+  focused-test-backed Bartol Sunward (`12737`) receiver availability at Quest2
+  WorldLocation2 `9121`, Scientist Lusk (`12484`) talk-objective availability
+  at WorldLocation2 `8857`, seven Imprisoned Survivor (`14124`) TargetGroup
+  `7261` placements, and reviewed Skeech TargetGroup `7293` members `36429`,
+  `17545`, `11907`, `11910`, `11912`, `11917`, and `36884` with generic
+  TalkTo, ActivateEntity target-group, and nested KillTargetGroups credit
+  coverage, plus unit-tested TargetGroup expansion and kill-credit for
+  unplaced members `14054` and `11913`. It remains blocked on client-visible
+  Deadeye/Lusk/Bartol dialog and activation smoke, exact survivor
+  transform/despawn behavior, reviewed spawn/placement proof for `14054` and
+  `11913`, reward-choice UI/inventory validation, achievement/progression side
+  effects, and end-to-end Q3486/Q3671/Q3668 chain smoke. Q4526 now has
+  focused-test-backed wreckage investigation
+  credit for objective `6164`, a map-load fallback spawn for Scientist Pristan
+  (`12560`) at Quest2 receiver WorldLocation2 `11669`, a Spatial Anomaly
+  (`12535`) fallback spawn, and anomaly activation/proximity catch credit for
+  objective `6165`; it remains blocked on exact anomaly
+  movement/chase/despawn behavior, client-visible dialog/activation/completion
+  smoke, reward/achievement side effects, and end-to-end live quest smoke.
+  Q4696 remains blocked on exact script-spawn
+  timing/despawn/quest-state gating, Durek dialog
+  activation/client-visible prerequisite-denial/phase validation, Darby
+  completion dialog/client activation smoke, map guidance/client smoke, and
+  manual quest flow validation, and Q4694 remains blocked on Trooper Vog
+  client-visible dialog/activation smoke, exact client packet path confirmation,
+  exact holdout wave mechanics, Murgh/ally participation, rewards, and
+  client/manual quest smoke. Q3781 now has focused server-side coverage for
+  Dead Exile Soldier (`50668`) starter fallback at reviewed DataMapping
+  source-coordinate id `2055`, eleven Captive Exile Soldier (`12537`) fallbacks
+  in Camp Icefury, TargetGroup `2143` rescue credit for `12537`/`21015`/`21016`,
+  and Galeras Deadeye Brightland (`16622`) alternate receiver/cache coverage at
+  WorldLocation2 `12354`; it remains blocked on client-visible dialog and
+  activation smoke, exact captive transform/despawn/respawn behavior,
+  `21015`/`21016` placement review, rewards, achievements/progression, and
+  end-to-end Q3781 smoke. Jabbithole/client objective evidence covers supply
+  crates, Loftite crystals, and captive soldiers.
 - Public event `154` Dominion Ultrabot now starts for players in Camp Icefury
   and credits objective `371` when creature `12526` dies.
 - Combat challenge progress now resolves direct and nested target groups, which
@@ -2438,8 +15370,18 @@ medbay/upper-deck/escape teleports, cinematic queuing, communicator messages,
 crew-log callouts, portal/tether behavior, and Security Chief/Ravenous/Katja
 combat scaffolds. The branch-derived trigger, teleport, communicator, cinematic,
 and encounter assumptions are now explicitly marked WIP-guessed in code.
-Focused Evil from the Ether event/trigger regressions pass `12/12`, and the
-focused instance/public-event slice passes `436/436` with isolated output.
+Focused medbay objective producers now credit the build 16042 active
+target-group rows for spare-parts crates (`71322` / `14066` / objective
+`4956`), repaired door controls (`71323` / `14069` / objective `4957`), and
+generator controls (`71371` / `14076` / objective `4938`), with duplicate
+suppression and crate removal covered by Evil public-event tests. Additional
+test-backed producers now cover Captain Weir talk objectives `4895`/`4948`,
+main engineering generators `4941`/`4961`/`4962`, self-destruct controls
+`4924`, teleporter controls `4978`, teleporter gather objective `4979`, and
+Katja Zarkhov defeat objective `4925` while preserving the drive-schematics
+summon. Focused Evil from the Ether event/trigger regressions pass `58/58`,
+and the focused instance/public-event slice previously passed `436/436` with
+isolated output.
 Map-instance pending-removal runtime now resolves formula `1123` through a
 nullable `GameFormula` lookup, so unavailable static data uses the existing
 30-second client-default fallback instead of throwing before
@@ -2447,11 +15389,13 @@ nullable `GameFormula` lookup, so unavailable static data uses the existing
 and the broader map bucket passed `459/459` from the alternate output
 directory.
 
-**Blocked:** manual expedition playthrough, exact retail trigger rows and
-coordinates, direct medbay transition proof, cinematic ids and completion timing,
-door/marker cleanup choreography, boss spell cadence/mechanics, objective
-notification parity, rewards, and unsupported content/spell dependencies remain
-blocked before this can be called retail-complete.
+**Blocked:** manual expedition playthrough, drive sparks `4942`, Drive
+Diagnostics `4943`, exact retail trigger rows and coordinates, exact medbay
+phase visibility and cleanup timing, cinematic ids and completion timing,
+door/marker cleanup choreography, normal/veteran spawn selection, boss spell
+cadence/mechanics, objective notification parity, rewards, achievements, and
+unsupported content/spell dependencies remain blocked before this can be called
+retail-complete.
 
 ### F-025 - Entity Create/Update/Visibility/Interaction - PARTIAL
 
@@ -3101,6 +16045,33 @@ destinations/success results, `TransferFlag` semantics, `0x03EF` payload
 contents, PTR queue producer timing, copy mutation, new realm notices, and
 optional realm-message/admin packets remain incomplete.
 
+The 2026-06-17 F-030 realm-transfer/PTR blocked recheck found no new producer
+evidence. `mcp__ghidra_mcp.list_instances` returned no running Ghidra instance,
+so the pass used cached `WildStar64.exe` fragments, current source/tests, and
+existing local packet-evidence artifacts. `14007d790` still proves only the
+`0x03EF` raw destination aux envelope (`uint32`, byte count, counted bytes).
+`140022270` still proves `ClientInitiatePTRCharacterCopy` sends `0x06E7` with
+selected character id and then `0x0244`; `14063f540` and `140707d80` still prove
+zero-byte `0x06E8` client sends; `140020ea0` still proves only client
+consumption of server `0x06EA` into Lua `PTRCharacterCopyQueued`; and
+`14006c290.fragment.c` still registers `0x06EA` to `ServerEmpty_ReadPayload`
+while the adjacent complex writer `14007dd40` belongs to `0x0592`, not
+`0x06EA`. Current source still emits only the empty structured
+`ServerTransferDestinationRealmList` compatibility response and keeps
+`ClientInitiatePTRCharacterCopyHandler` / `ClientPtrCopyHandler` diagnostic-only
+with no `ServerRealmTransferDestinationsAux` or `ServerPtrCharacterCopyQueued`
+runtime emitters. A bounded scan of `artifacts\packet_evidence` found no
+target realm/PTR opcode or packet-name rows. The worksheet
+`artifacts\blocker_evidence\20260617-232905-20260617-234000-F030-realm-ptr-recheck`
+records the missing live/native path. Keep `0x03EF` non-emitted, keep `0x06EA`
+queue notices non-emitted, and do not mutate copy/transfer state until a native
+producer/apply path, callback/table owner, dynamic dispatch proof, server
+realm/catalog artifact, or accepted character-select packet capture proves
+destination payload semantics, queue timing, and copy mutation. Focused
+Realm/PTR/diagnostic packet verification passed 119/119, blocker-harness
+presets passed 2/2, content-retail validation passed 31 files / 168101 rows,
+and the WildStar64 decompile manifest passed 200/200.
+
 ### F-031 - Fortune Minigame - EMULATOR IMPLEMENTED / RETAIL WEIGHTS BLOCKED
 4 handlers functional, session persistence code path via `account_fortune_session`,
 reward payouts with account item grants, card flip state tracking.
@@ -3209,25 +16180,31 @@ Known retail gaps remain for exact retail row caps/refresh cadence and broader
 live score-ingestion coverage.
 
 ### F-033 - Challenges - COMPLETE
-609-line `ChallengeManager`. 4 choice types: Activate, Abandon, AcceptShared,
+Challenge runtime manager. 4 choice types: Activate, Abandon, AcceptShared,
 DeclineShared. Full lifecycle: activation, overflow-safe tier progress clamping,
 tier advancement (3 tiers),
 completion, sharing (30s timeout), retail two-active-challenge cap through
 `RetailCertainRules.MaxConcurrentActiveChallenges`, combat kill progress through
-direct/nested target groups, and `QuestObjectiveType.CompleteChallenge` hook. DB
+direct/nested target groups, mapped Ability and ChecklistActivate progress
+through the successful interaction updater, public challenge-id progress through
+`IChallengeManager.TryAdvanceProgress` / `ChallengeProgressHooks`, conservative
+`RewardTrack` / `RewardTrackRewards` first-supported item grants on completion,
+and `QuestObjectiveType.CompleteChallenge` hook. DB
 persistence. Missing `Challenge` data now returns `GenericFail`, and missing
 `ChallengeTier` data resolves tier goals to zero rather than crashing during
 partial game-table loads. Large progress deltas now clamp at the current tier
-goal without `uint` wrap; focused challenge-manager verification passed 12/12.
-A 2026-06-08 source/protocol recheck keeps reward tracks, medal win-chance, and
-share-init ownership blocked: `ChallengeEntry.RewardTrackId` and
-`RewardTrack*` tables exist, but no challenge reward-track runtime/packet
-surface is mapped; `ServerChallengeUpdate` only carries tier/count/timer fields
-and `ServerChallengeResult.Data` only carries the mapped tier/localized-string
-value; `ShareWithTarget()` is source-local with no mapped client share-init
-request. Focused challenge verification passed 45/45.
-Known retail gaps remain for `Client0x00C8` decode and full result/reward
-parity beyond the mapped tier/result packets.
+goal without `uint` wrap.
+A 2026-06-16 DataMapping-backed challenge slice covers mapped Ability activation
+target `182` / TargetGroup `28780`, mapped ChecklistActivate target `309` /
+TargetGroup `6675`, kill target `409` / TargetGroup `3341`, and RewardTrack
+`24` row `475` granting the first supported item choice through
+`ItemUpdateReason.Challenge`. This does not add reward UI, medal odds, timed
+scoring semantics, producer-specific collect/item/general routing evidence,
+challenge-specific achievement triggers, reward selection, or share-init
+behavior. Focused challenge verification passed 52/52. Known retail gaps remain
+for `Client0x00C8` decode, medal win-chance/reward selection transport,
+share-init ownership, manual content smoke, and full result/reward parity beyond
+the mapped tier/result packets and conservative item-grant slice.
 
 ### F-034 - Datacubes / Journals / Galactic Archive - COMPLETE
 `GalacticArchiveManager` handles unlock, view, rule-based auto-unlock

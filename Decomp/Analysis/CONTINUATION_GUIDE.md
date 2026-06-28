@@ -30,6 +30,7 @@ implement server behavior from the evidence in the existing C# codebase.
 | `Decomp/Analysis/INITIAL_FINDINGS.md` | Living summary of mapped behavior and follow-up implementation. |
 | `Decomp/Analysis/mapping_artifacts/README.md` | Seven-layer durable mapping workflow for opcode provenance, function evidence, structure offsets, dispatcher registrations, source traceability, live evidence bundles, and packet fixture planning. |
 | `Decomp/Analysis/Validate-DecompileMappingArtifacts.ps1` | Validates mapping artifact headers, evidence-ladder states, unique row ids, and review dates. |
+| `Decomp/Analysis/Get-DecompileMappingArtifactGaps.ps1` | Audits missing coverage between opcode inventory, function labels, and the seven mapping ledgers. |
 | `Decomp/Analysis/STOREFRONT_CATALOG_UNAVAILABLE.md` | Resolved local storefront *Catalogue Unavailable* chain (realm data center id, catalog timing, `0x0989`). |
 | `Decomp/Analysis/Get-DecompCoverageSnapshot.ps1` | Generates the current export and opcode coverage inventories from local artifacts and source. |
 | `Decomp/Analysis/exports/<binary>/selected_reasons_summary.csv` | Selection audit for the focused export, including why a function was selected and whether it is inside the current decompile cutoff. |
@@ -417,6 +418,23 @@ Validate the ledgers after edits:
 ```powershell
 .\Decomp\Analysis\Validate-DecompileMappingArtifacts.ps1
 ```
+
+When working toward full seven-layer coverage, run the gap audit:
+
+```powershell
+.\Decomp\Analysis\Get-DecompileMappingArtifactGaps.ps1
+```
+
+Use `-FailOnGap` only when checking whether the full seven-layer map is complete.
+Use `Update-FunctionEvidenceInventoryFromLabels.ps1` to backfill mapped
+function-evidence rows from durable `function_labels.csv` entries before doing
+manual source-correlation passes.
+Use `Update-NativeOpcodeProvenanceFromCoverage.ps1` to add conservative
+coverage-derived opcode provenance rows, then refine individual rows with exact
+native registration and payload functions during focused passes.
+Use `Update-SourceTraceabilityFromOpcodeProvenance.ps1` and
+`Update-LiveEvidenceManifestFromBlockedProvenance.ps1` to keep source and
+live-evidence ledgers aligned after opcode provenance backfills.
 
 ### 6. Add Durable Labels
 

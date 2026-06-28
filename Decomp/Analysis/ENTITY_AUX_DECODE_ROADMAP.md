@@ -421,6 +421,31 @@ Entity-stat aux cached-export recheck (2026-06-09):
   `vtable+0x58` apply handler, apply-table classification, or live sniff/order
   witness proving field semantics and emit timing.
 
+Entity-stat aux blocked recheck (2026-06-17):
+
+- `mcp__ghidra_mcp.list_instances` returned no running Ghidra instance, so this
+  pass used cached `WildStar64.exe` fragments and current source/tests only.
+- Cached fragments still prove only reader shapes:
+  `ServerSpellUInt32TripletListRow_ReadPayload` (`140080bf0`) for `0x0889`,
+  `ServerUInt32WideString_ReadPayload` (`1400980f0`) for `0x08CC`,
+  `ServerEntityStatUInt32UInt5UInt32_ReadPayload` (`140097620`) for `0x08F4`,
+  `ServerEntityStatUInt32UInt14UInt18WideString_ReadPayload` (`140097ee0`) for
+  `0x0939`, `ServerEntityStatUInt32UInt5Pair_ReadPayload` (`140097690`) for
+  `0x093D`, and `ServerEntityStatTwoUInt32UInt64_ReadPayload` (`140097f70`) for
+  `0x093E`.
+- Stale `FUN_140939650` remains rejected as an aux consumer/apply candidate:
+  the cached fragment recalculates viewport/grid globals and has no packet or
+  opcode-specific apply arguments.
+- Source search still finds the six `ServerEntityStat*` aux packets only in
+  packet models, packet-shape tests, placeholder naming guards, and negative
+  entity-create emission guards. Runtime stat sends remain the ordinary
+  `ServerEntityStatUpdateFloat` / `ServerEntityStatUpdateInteger` paths.
+- Worksheet:
+  `artifacts/blocker_evidence/20260617-224723-F025-entity-stat-aux-recheck`.
+  Required unblocker: per-opcode `WorldSocket+0x15b0` `vtable+0x58` apply
+  handler, apply-table classification, or accepted live combat/death/vehicle/
+  emote/item-use/CSI sniff-order witness proving field semantics and emit timing.
+
 Map-tracked unit producer recheck (2026-06-04):
 
 - Direct Ghidra MCP decompile of `ServerMapTrackedUnitUpdate_ReadPayload` (`1400a6c10`),
@@ -569,6 +594,32 @@ Map-tracked unit cached-export recheck (2026-06-09):
 - Result: disposition remains **Mapped only / Blocked producer**. The next
   evidence source is unchanged: native server send-site evidence or an accepted
   live public-event marker capture proving tracked-unit id allocation, update
+  cadence, disable lifetime, and `TrackingSlotId` selection for `0x0849` /
+  `0x0848`.
+
+Map-tracked unit blocked recheck (2026-06-17):
+
+- `mcp__ghidra_mcp.list_instances` returned no running Ghidra instance, so this
+  pass used cached `WildStar64.exe` fragments and current source/tests only.
+- Registration evidence is unchanged: `selected_decompiled.c` registers
+  `0x0849` size `0x14` to `ServerMapTrackedUnitUpdate_ReadPayload`
+  (`1400a6c10`) and `0x0848` size `4` to the shared `ServerUInt32_ReadPayload`.
+- Cached fragments still prove only client consumption:
+  `MapTrackedUnitUpdate_ApplyAndDispatch` (`1403f4170`),
+  `MapTrackedUnitDisable_ApplyAndDispatch` (`1403f4200`),
+  `ClientEvent_MapTrackedUnitUpdate_Dispatch` (`140430f80`),
+  `Lua_GameLib_GetMapTrackedUnitData` (`140511c80`), and
+  `ClientDB_RegisterTrackingSlot` (`1402426a0`) cover cache mutation, Lua
+  dispatch, and `TrackingSlot.tbl` lookup, not server producer timing.
+- Source search still finds no production emitter outside packet models,
+  packet-shape tests, and `EntityCreateAuxiliaryEmissionTests` negative guards.
+  `TrackingSlotHelper` remains a one-way 15-bit slot lookup; objective-only
+  `TrackingSlotId` selection stays rejected because duplicate
+  `TrackingSlot.PublicEventObjectiveId` groups exist.
+- Worksheet:
+  `artifacts/blocker_evidence/20260617-224146-F025-map-tracked-unit-producer-recheck`.
+  Required unblocker: native server send-site evidence or accepted live
+  public-event marker capture proving tracked-unit id allocation, update
   cadence, disable lifetime, and `TrackingSlotId` selection for `0x0849` /
   `0x0848`.
 
