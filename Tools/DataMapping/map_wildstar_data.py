@@ -27,11 +27,26 @@ DEFAULT_MYSQL = r"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
 REVIEWED_MATCH_STATUS = "reviewed"
 APPROVED_REVIEW_DECISIONS = {"approve", "approved", "use", "map", "mapped", "reviewed"}
 TRACKED_CREATURE_BRIDGE_OVERRIDES = Path("Tools/DataMapping/creature_bridge_overrides.csv")
+TRACKED_CREATURE_RELATION_BRIDGE_OVERRIDES = Path("Tools/DataMapping/creature_relation_bridge_overrides.csv")
 SPLINE_APPROVED_BRIDGE_STATUSES = {"unique_name", "scored_name", REVIEWED_MATCH_STATUS}
 
 CREATURE_BRIDGE_OVERRIDE_FIELDS = [
     "source_table",
     "source_id",
+    "source_name",
+    "chosen_creature2_id",
+    "decision",
+    "reason",
+    "reviewer",
+    "reviewed_at",
+]
+
+CREATURE_RELATION_BRIDGE_OVERRIDE_FIELDS = [
+    "relation_map",
+    "relation_type",
+    "source_relation_id",
+    "jabbithole_creature_id",
+    "quest2_id",
     "source_name",
     "chosen_creature2_id",
     "decision",
@@ -2737,6 +2752,9 @@ def ensure_review_templates(args: argparse.Namespace) -> None:
     override_path = args.review_dir / "creature_bridge_overrides.csv"
     if not override_path.exists():
         write_csv(override_path, CREATURE_BRIDGE_OVERRIDE_FIELDS, [])
+    relation_override_path = args.review_dir / "creature_relation_bridge_overrides.csv"
+    if not relation_override_path.exists():
+        write_csv(relation_override_path, CREATURE_RELATION_BRIDGE_OVERRIDE_FIELDS, [])
 
 
 def load_creature_bridge_overrides(
@@ -2796,6 +2814,95 @@ def load_creature_bridge_overrides(
                         "row_number": row_number,
                         "source_table": source_table,
                         "source_id": row.get("source_id", ""),
+                        "chosen_creature2_id": row.get("chosen_creature2_id") or row.get("candidate_creature2_id", ""),
+                        "decision": row.get("decision", ""),
+                        "status": status,
+                        "note": note,
+                        "reason": row.get("reason", ""),
+                        "reviewer": row.get("reviewer", ""),
+                        "reviewed_at": row.get("reviewed_at", ""),
+                    }
+                )
+    return overrides, audit_rows
+
+
+def creature_relation_override_key(
+    relation_map,
+    relation_type,
+    source_relation_id,
+) -> Optional[Tuple[str, str, int]]:
+    relation_map = clean_cell(relation_map)
+    relation_type = clean_cell(relation_type).lower()
+    source_relation_id = to_int(source_relation_id)
+    if not relation_map or not relation_type or source_relation_id is None:
+        return None
+    return relation_map, relation_type, source_relation_id
+
+
+def load_creature_relation_bridge_overrides(
+    args: argparse.Namespace,
+    client_creatures: Dict[int, Dict[str, object]],
+) -> Tuple[Dict[Tuple[str, str, int], Dict[str, object]], List[Dict[str, object]]]:
+    ensure_review_templates(args)
+    paths = [
+        args.repo_root / TRACKED_CREATURE_RELATION_BRIDGE_OVERRIDES,
+        args.review_dir / "creature_relation_bridge_overrides.csv",
+    ]
+    overrides: Dict[Tuple[str, str, int], Dict[str, object]] = {}
+    audit_rows: List[Dict[str, object]] = []
+    seen_paths = set()
+    for path in paths:
+        resolved_path = path.resolve()
+        if resolved_path in seen_paths or not resolved_path.exists():
+            continue
+        seen_paths.add(resolved_path)
+        try:
+            source_file = str(resolved_path.relative_to(args.repo_root))
+        except ValueError:
+            source_file = str(resolved_path)
+        with resolved_path.open("r", encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle)
+            for row_number, row in enumerate(reader, start=2):
+                relation_map = clean_cell(row.get("relation_map"))
+                relation_type = clean_cell(row.get("relation_type")).lower()
+                source_relation_id = to_int(row.get("source_relation_id"))
+                chosen_id = to_int(row.get("chosen_creature2_id") or row.get("candidate_creature2_id"))
+                decision = clean_cell(row.get("decision")).lower()
+                key = creature_relation_override_key(relation_map, relation_type, source_relation_id)
+                status = "skipped"
+                note = ""
+                if key is None:
+                    note = "missing relation_map, relation_type, or source_relation_id"
+                elif chosen_id is None:
+                    note = "missing chosen_creature2_id"
+                elif decision not in APPROVED_REVIEW_DECISIONS:
+                    note = "decision is not approved"
+                elif chosen_id not in client_creatures:
+                    note = "chosen_creature2_id not found in Creature2"
+                else:
+                    status = "applied"
+                    note = "reviewed creature relation bridge override"
+                    chosen = client_creatures.get(chosen_id, {})
+                    overrides[key] = {
+                        "chosen_creature2_id": chosen_id,
+                        "chosen_creature2_name": chosen.get("clientName", ""),
+                        "jabbithole_creature_id": to_int(row.get("jabbithole_creature_id")),
+                        "quest2_id": to_int(row.get("quest2_id")),
+                        "decision": row.get("decision", ""),
+                        "reason": row.get("reason", ""),
+                        "reviewer": row.get("reviewer", ""),
+                        "reviewed_at": row.get("reviewed_at", ""),
+                        "row_number": row_number,
+                    }
+                audit_rows.append(
+                    {
+                        "source_file": source_file,
+                        "row_number": row_number,
+                        "relation_map": relation_map,
+                        "relation_type": relation_type,
+                        "source_relation_id": row.get("source_relation_id", ""),
+                        "jabbithole_creature_id": row.get("jabbithole_creature_id", ""),
+                        "quest2_id": row.get("quest2_id", ""),
                         "chosen_creature2_id": row.get("chosen_creature2_id") or row.get("candidate_creature2_id", ""),
                         "decision": row.get("decision", ""),
                         "status": status,
@@ -3324,6 +3431,44 @@ def apply_creature_map(row: Dict[str, object], creature_map: Dict[int, Dict[str,
     return row
 
 
+def apply_creature_relation_override(
+    row: Dict[str, object],
+    relation_map: str,
+    relation_overrides: Optional[Dict[Tuple[str, str, int], Dict[str, object]]],
+) -> Dict[str, object]:
+    if not relation_overrides:
+        return row
+    key = creature_relation_override_key(
+        relation_map,
+        row.get("relation_type"),
+        row.get("source_relation_id"),
+    )
+    if key is None:
+        return row
+    override = relation_overrides.get(key)
+    if not override:
+        return row
+
+    expected_jabbithole_creature_id = override.get("jabbithole_creature_id")
+    if expected_jabbithole_creature_id is not None and expected_jabbithole_creature_id != to_int(row.get("jabbithole_creature_id")):
+        return row
+    expected_quest2_id = override.get("quest2_id")
+    if expected_quest2_id is not None and expected_quest2_id != to_int(row.get("quest2_id")):
+        return row
+
+    row["original_creature2_id"] = row.get("creature2_id", "")
+    row["original_creature2_name"] = row.get("creature2_name", "")
+    row["original_match_status"] = row.get("match_status", "")
+    row["creature2_id"] = override.get("chosen_creature2_id", "")
+    row["creature2_name"] = override.get("chosen_creature2_name", "")
+    row["match_status"] = REVIEWED_MATCH_STATUS
+    row["review_decision"] = override.get("decision", "")
+    row["review_reason"] = override.get("reason", "")
+    row["reviewer"] = override.get("reviewer", "")
+    row["reviewed_at"] = override.get("reviewed_at", "")
+    return row
+
+
 def query_relation(
     args: argparse.Namespace,
     name: str,
@@ -3333,6 +3478,7 @@ def query_relation(
     creature_map: Dict[int, Dict[str, object]],
     transform,
     limit: Optional[int],
+    relation_overrides: Optional[Dict[Tuple[str, str, int], Dict[str, object]]] = None,
 ) -> Tuple[str, int]:
     output = args.output_dir / f"{name}.csv"
     log(f"Writing {output.name}")
@@ -3340,6 +3486,7 @@ def query_relation(
     def rows():
         for row in mysql_rows(args, limited(query.strip(), limit), columns):
             row = apply_creature_map(row, creature_map)
+            row = apply_creature_relation_override(row, name, relation_overrides)
             yield transform(row)
 
     count = write_csv(output, fieldnames, rows())
@@ -5529,6 +5676,7 @@ def write_relation_maps(
     args: argparse.Namespace,
     creature_map: Dict[int, Dict[str, object]],
     client,
+    creature_relation_overrides: Optional[Dict[Tuple[str, str, int], Dict[str, object]]] = None,
 ) -> Dict[str, int]:
     counts: Dict[str, int] = {}
 
@@ -5775,6 +5923,13 @@ ORDER BY jabbithole_creature_id, relation_type, source_relation_id
             "source_name",
             "creature2_name",
             "match_status",
+            "original_creature2_id",
+            "original_creature2_name",
+            "original_match_status",
+            "review_decision",
+            "review_reason",
+            "reviewer",
+            "reviewed_at",
             "jabbithole_quest_id",
             "quest2_id",
             "quest_name",
@@ -5787,6 +5942,7 @@ ORDER BY jabbithole_creature_id, relation_type, source_relation_id
         creature_map,
         lambda row: row,
         args.limit_relation_rows,
+        creature_relation_overrides,
     )
     counts[name] = count
 
@@ -10420,7 +10576,9 @@ ORDER BY qo.quest_id, qo.`order`, qo.id
     def objective_rows():
         for row in mysql_rows(args, limited(objective_query, args.limit_relation_rows), objective_columns):
             quest = client["quests"].get(to_int(row.get("quest2_id"), -1) or -1, {})
-            order = to_int(row.get("objective_order"), -1) or -1
+            order = to_int(row.get("objective_order"))
+            if order is None:
+                order = -1
             objective_id = ""
             if 0 <= order < len(objective_slot_fields):
                 objective_id = quest.get(objective_slot_fields[order], "")
@@ -13015,6 +13173,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     client = load_client_sources(args)
     jabbithole_creatures = load_jabbithole_creatures(args)
     creature_overrides, creature_override_audit_rows = load_creature_bridge_overrides(args, client["creatures"])
+    creature_relation_overrides, creature_relation_override_audit_rows = load_creature_relation_bridge_overrides(args, client["creatures"])
     creature_rows, creature_map, creature_review_rows = build_creature_map(
         args,
         jabbithole_creatures,
@@ -13050,11 +13209,31 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         ],
         creature_override_audit_rows,
     )
+    counts["creature_relation_bridge_override_audit.csv"] = write_csv(
+        args.output_dir / "creature_relation_bridge_override_audit.csv",
+        [
+            "source_file",
+            "row_number",
+            "relation_map",
+            "relation_type",
+            "source_relation_id",
+            "jabbithole_creature_id",
+            "quest2_id",
+            "chosen_creature2_id",
+            "decision",
+            "status",
+            "note",
+            "reason",
+            "reviewer",
+            "reviewed_at",
+        ],
+        creature_relation_override_audit_rows,
+    )
     counts["creature_client_metadata_map.csv"] = write_creature_metadata(args, creature_rows, client["creatures"])
     counts.update(write_reference_maps(args, client))
     counts.update(write_world_location_reference_maps(args, client))
     counts.update(write_spawn_maps(args, creature_map, client["creatures"]))
-    counts.update(write_relation_maps(args, creature_map, client))
+    counts.update(write_relation_maps(args, creature_map, client, creature_relation_overrides))
     counts.update(write_spell_detail_maps(args, client))
     counts.update(write_achievement_contract_maps(args, creature_map, client))
     counts.update(write_housing_cosmetic_maps(args, client))

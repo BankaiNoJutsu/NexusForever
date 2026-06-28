@@ -1,6 +1,6 @@
 # WildStar Data Mapping Progress
 
-Last updated: 2026-05-14 13:53 Europe/Zurich
+Last updated: 2026-06-17 19:59 Europe/Zurich
 
 ## Current Goal
 
@@ -11,7 +11,7 @@ Map every usable relationship from `wildstar_client_mysql` and `jabbithole_mysql
 Command:
 
 ```powershell
-python Tools\DataMapping\map_wildstar_data.py --include-spline-candidates --output-dir Tools\DataMapping\output
+python Tools\DataMapping\map_wildstar_data.py --output-dir Tools\DataMapping\output
 ```
 
 Primary output folder:
@@ -53,7 +53,7 @@ The mapper now covers every split SQL file in both `wildstar_client_mysql` and `
 - `Tools\DataMapping\output\table_coverage_inventory.md`
 - `Tools\DataMapping\output\table_coverage_inventory.csv`
 
-Current generated output count: 484 files.
+Current generated output count: 485 files.
 
 ## Review Queue Snapshot
 
@@ -69,12 +69,12 @@ Creature bridge adjudication is now implemented.
 
 Current review queue:
 
-- `creature_bridge_review.csv`: 31,615 remaining candidate rows
-- `creature_bridge_override_audit.csv`: 944 rows
-- Current approved reviewed mappings: 944
-- Remaining prioritized sources: 7,067
-- Remaining medium-confidence suggestions: 527
-- Remaining high-confidence suggestions: 0
+- `creature_bridge_review.csv`: 31,528 remaining candidate rows
+- `creature_bridge_override_audit.csv`: 974 rows
+- Current approved reviewed mappings in `creature_map.csv`: 966
+- Remaining prioritized sources: 7,045
+- Remaining medium-confidence suggestions: 531
+- Remaining high-confidence suggestions: 16, none currently tied to public-event creature blockers
 
 Review behavior:
 
@@ -83,8 +83,8 @@ Review behavior:
 - Approved overrides become `match_status = reviewed` on the next mapper run.
 - Reviewed rows retain original candidate/status columns in `creature_map.csv`.
 - Vendor, loot, and creature-info apply scripts now treat `reviewed` as safe alongside `unique_name` and `scored_name`.
-- The first spatial evidence pass promoted 944 high-confidence creature bridge overrides. The remaining suggestions are medium-confidence and need manual review.
-- Current `creature_map.csv` statuses: 13,852 `unique_name`, 2,816 `scored_name`, 944 `reviewed`, 6,087 `ambiguous_name`, 980 `unmatched`.
+- The first spatial evidence pass promoted high-confidence creature bridge overrides. The 2026-06-17 public-event bridge pass promoted 17 additional high-confidence spatial overrides and left no high-confidence public-event suggestions.
+- Current `creature_map.csv` statuses: 13,852 `unique_name`, 2,816 `scored_name`, 966 `reviewed`, 6,068 `ambiguous_name`, 977 `unmatched`.
 
 ## Live Database Apply Snapshot
 
@@ -112,7 +112,7 @@ Inserted/updated live world data:
 - mapped item-container `loot_item`: 23,865 rows
 - `creature_info_property`: 9,308 rows
 - `creature_info_stat`: 1,414 rows
-- `nf_map_*`: 95 staging/reference tables loaded with 6,383,288 exact rows
+- `nf_map_*`: 96 staging/reference tables loaded with 6,160,158 exact rows
 
 Safety policy used:
 
@@ -123,6 +123,7 @@ Safety policy used:
 - Vendor stock was applied only for mapped vendor creatures that already have matching rows in `entity.creature`.
 - Vendor and creature-info backups were written under `Tools\DataMapping\output\backups` before live imports.
 - `nf_map_*` staging loads are additive development/reference data and must not be consumed by runtime code. Runtime features must first promote reviewed rows into explicit `nexus_forever_world` tables, scripts, or code-owned assets. `nf_map_creature` now includes review/original mapping audit columns.
+- Staging load compatibility permits older optional CSVs to omit nullable/defaulted schema columns. The current `nf_map_creature_spline_candidate` load uses the older optional spline CSV and omits expanded classification/runtime columns; regenerate with `--include-spline-candidates` before relying on those fields.
 - `Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql` can now repeat the same safe runtime import directly from loaded `nf_map_*` staging tables. It materialises mapped creature drops and item-container loot bags into the runtime loot tables. `Tools\DataMapping\sql\verify_safe_world_imports.sql` verifies counts and bridge-status distribution.
 
 ## Implemented Maps
@@ -133,7 +134,7 @@ Creature/entity foundation:
 - `creature_client_metadata_map.csv`: 24,679 rows
 - `creature_spawn_map.csv`: 732,694 rows
 - `world_entity_candidate.csv`: 732,694 rows
-- `world_entity_stats_candidate.csv`: 2,442,855 rows
+- `world_entity_stats_candidate.csv`: 2,217,390 rows
 - `creature_spline_candidate_map.csv`: 188,480 rows
 
 Creature relationships:
@@ -372,8 +373,8 @@ Other reference maps:
 ## Known Caveats
 
 - Jabbithole creature IDs are not client `Creature2.ID` values. The current bridge uses localized English names and scores duplicate names by faction, level range, difficulty, and datacube.
-- Current creature bridge statuses: 13,852 `unique_name`, 2,816 `scored_name`, 7,010 `ambiguous_name`, 1,001 `unmatched`.
-- Quest objective bridge statuses: 2,126 `matched`, 2,432 `unmatched`. Unmatched objective rows usually mean the Jabbithole objective order does not line up with a populated `Quest2.objective*` slot.
+- Current creature bridge statuses: 13,852 `unique_name`, 2,816 `scored_name`, 966 `reviewed`, 6,068 `ambiguous_name`, 977 `unmatched`.
+- Quest objective bridge statuses: 4,488 `matched`, 70 `unmatched`. The previous order-0 false-unmatched bucket is fixed; remaining unmatched rows are true missing/non-current objective-slot cases or require row review.
 - Public event objective bridge statuses: 1,800 `matched`, 36 `event_mismatch`, 3 `unmatched_objective`, 2 `unmatched_event`, 1 `unmatched`.
 - Item slot bridge statuses: 9 `matched`, 6 `unmatched`. Some Jabbithole slot IDs use older enum values, such as chest slot `game_id = 0`, that do not directly equal client `ItemSlot.ID`.
 - `item_drop_source_map.csv` preserves legacy `item_drops`, `item_drop4_drops`, and `item_drop5_drops` separately from the versioned loot map so later import logic can choose the preferred source.
@@ -390,7 +391,7 @@ Other reference maps:
 - Attribute tail statuses: contributions 44 `matched`, 10 `partial`; milestones 642 `matched`, 120 `partial`; item instance sigils 81 `matched`, 1,227 `unmatched`.
 - Legacy/raw loot tail statuses: legacy vendor rows use creature bridge statuses 16,042 `unique_name`, 3,552 `ambiguous_name`, 703 `scored_name`, 353 `unmatched`; item drop aggregates 46,438 `matched`; unknown-table loot rows 105,116 `unique_name` plus item matched, 40,749 `scored_name` plus item matched, 20,735 `ambiguous_name` plus item matched, 1,156 creature-unmatched plus item matched.
 - Character snapshot statuses: 4 character snapshots `matched`; 75 equipped items `matched`; 29 build abilities `matched`, 1 `unmatched`.
-- Contract creature rows use the same creature name bridge as other creature relations: 1,951 `unique_name`, 485 `scored_name`, 412 `ambiguous_name`, 40 `unmatched`.
+- Contract creature rows use the same creature name bridge as other creature relations: 1,951 `unique_name`, 485 `scored_name`, 373 `ambiguous_name`, 41 `reviewed`, 38 `unmatched`.
 - Generic `client_source_*_map.csv` files are complete source exports plus best-effort labels. Columns such as `objectId*`, enum payloads, and table-specific polymorphic IDs still need table-family-specific interpretation before they become safe import data.
 
 ## Completed Phases

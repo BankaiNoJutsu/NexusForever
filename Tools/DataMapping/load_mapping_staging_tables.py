@@ -45,6 +45,7 @@ class ColumnSpec:
     name: str
     type_sql: str
     is_numeric: bool
+    is_required: bool
 
 
 @dataclass(frozen=True)
@@ -180,8 +181,10 @@ def parse_schema(schema_sql: str) -> list[TableSpec]:
                 continue
             name = parts[0].strip("`")
             type_sql = parts[1].upper()
+            constraints = parts[2].upper() if len(parts) > 2 else ""
             is_numeric = any(marker in type_sql for marker in NUMERIC_TYPE_MARKERS)
-            columns.append(ColumnSpec(name=name, type_sql=parts[1], is_numeric=is_numeric))
+            is_required = "PRIMARY KEY" in constraints or ("NOT NULL" in constraints and "DEFAULT" not in constraints)
+            columns.append(ColumnSpec(name=name, type_sql=parts[1], is_numeric=is_numeric, is_required=is_required))
         specs.append(TableSpec(name=table_name, create_sql=create_sql, columns=columns))
     return specs
 
@@ -220,23 +223,25 @@ def escape_tsv_text(value: str) -> str:
     )
 
 
-def write_load_file(csv_path: Path, table: TableSpec, temp_dir: Path) -> tuple[Path, int, list[str]]:
+def write_load_file(csv_path: Path, table: TableSpec, temp_dir: Path) -> tuple[Path, int, list[str], list[str], list[ColumnSpec]]:
     output_path = temp_dir / f"{table.name}.tsv"
-    column_names = [column.name for column in table.columns]
     missing_columns: list[str] = []
+    omitted_optional_columns: list[str] = []
     row_count = 0
 
     with csv_path.open("r", encoding="utf-8", newline="") as input_handle:
         reader = csv.DictReader(input_handle)
         csv_fields = set(reader.fieldnames or [])
-        missing_columns = [column for column in column_names if column not in csv_fields]
+        load_columns = [column for column in table.columns if column.name in csv_fields]
+        missing_columns = [column.name for column in table.columns if column.name not in csv_fields and column.is_required]
+        omitted_optional_columns = [column.name for column in table.columns if column.name not in csv_fields and not column.is_required]
         if missing_columns:
-            return output_path, 0, missing_columns
+            return output_path, 0, missing_columns, omitted_optional_columns, load_columns
 
         with output_path.open("w", encoding="utf-8", newline="\n") as output_handle:
             for row in reader:
                 values: list[str] = []
-                for column in table.columns:
+                for column in load_columns:
                     value = row.get(column.name, "")
                     if value is None:
                         value = ""
@@ -249,12 +254,12 @@ def write_load_file(csv_path: Path, table: TableSpec, temp_dir: Path) -> tuple[P
                 output_handle.write("\n")
                 row_count += 1
 
-    return output_path, row_count, missing_columns
+    return output_path, row_count, missing_columns, omitted_optional_columns, load_columns
 
 
-def load_table_sql(args: argparse.Namespace, table: TableSpec, load_path: Path) -> str:
+def load_table_sql(args: argparse.Namespace, table: TableSpec, load_path: Path, load_columns: Sequence[ColumnSpec]) -> str:
     normalized_path = str(load_path).replace("\\", "/")
-    column_list = ",".join(f"`{column.name}`" for column in table.columns)
+    column_list = ",".join(f"`{column.name}`" for column in load_columns)
     truncate_sql = f"TRUNCATE TABLE `{table.name}`;" if args.replace_existing else ""
     load_mode = "REPLACE" if args.replace_existing else "IGNORE"
     return f"""
@@ -325,8 +330,10 @@ def load_tables(args: argparse.Namespace, tables: Sequence[TableSpec]) -> list[d
                 continue
 
             mysql_execute(args, args.world_db, create_table_sql(args, table))
-            load_path, row_count, missing_columns = write_load_file(csv_path, table, temp_root)
+            load_path, row_count, missing_columns, omitted_optional_columns, load_columns = write_load_file(csv_path, table, temp_root)
             table_result["csv_rows"] = row_count
+            if omitted_optional_columns:
+                table_result["omitted_optional_columns"] = omitted_optional_columns
             if missing_columns:
                 table_result["status"] = "missing_columns"
                 table_result["missing_columns"] = missing_columns
@@ -334,7 +341,7 @@ def load_tables(args: argparse.Namespace, tables: Sequence[TableSpec]) -> list[d
                 print(f"[{index}/{len(tables)}] skipped {table.name}: missing columns {', '.join(missing_columns)}")
                 continue
 
-            mysql_execute(args, args.world_db, load_table_sql(args, table, load_path))
+            mysql_execute(args, args.world_db, load_table_sql(args, table, load_path, load_columns))
             post_rows = table_count(args, table.name)
             table_result["status"] = "loaded"
             table_result["post_rows"] = post_rows
@@ -375,7 +382,11 @@ def dry_run_tables(args: argparse.Namespace, tables: Sequence[TableSpec]) -> lis
                 reader = csv.reader(handle)
                 headers = next(reader, [])
                 result["csv_columns"] = len(headers)
-                result["missing_columns"] = [column.name for column in table.columns if column.name not in headers]
+                header_set = set(headers)
+                result["missing_columns"] = [column.name for column in table.columns if column.name not in header_set and column.is_required]
+                result["omitted_optional_columns"] = [
+                    column.name for column in table.columns if column.name not in header_set and not column.is_required
+                ]
         results.append(result)
     return results
 

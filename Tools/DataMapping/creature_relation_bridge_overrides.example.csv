@@ -1,0 +1,2 @@
+relation_map,relation_type,source_relation_id,jabbithole_creature_id,quest2_id,source_name,chosen_creature2_id,decision,reason,reviewer,reviewed_at
+creature_quest_map,starter,1234,5678,9012,Example Creature,34567,reviewed,example_review: cite Quest2 or QuestObjective and spawn or script/test evidence; name the downstream row this relation unblocks,reviewer,YYYY-MM-DD

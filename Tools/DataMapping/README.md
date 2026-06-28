@@ -310,6 +310,7 @@ The mapper now generates a review queue for uncertain creature bridge rows:
 
 - `Tools\DataMapping\output\creature_bridge_review.csv`
 - `Tools\DataMapping\output\creature_bridge_override_audit.csv`
+- `Tools\DataMapping\output\creature_relation_bridge_override_audit.csv`
 
 `creature_bridge_review.csv` contains one row per candidate for every `ambiguous_name` creature, plus fuzzy-name candidates for `unmatched` creatures when a plausible name exists. It includes the source creature, current selected candidate, candidate rank, score delta, name similarity, faction match, level overlap, exact level match, difficulty match, datacube match, and blank review columns.
 
@@ -317,6 +318,8 @@ Approved decisions live outside the generated output folder so remaps do not ove
 
 - `Tools\DataMapping\creature_bridge_overrides.csv` for tracked, reviewed decisions
 - `Tools\DataMapping\review\creature_bridge_overrides.csv`
+- `Tools\DataMapping\creature_relation_bridge_overrides.csv` for tracked relation-scoped decisions
+- `Tools\DataMapping\review\creature_relation_bridge_overrides.csv`
 
 The mapper reads the tracked file first, then the local ignored review file.
 It creates the local review file with the required header when it is missing.
@@ -329,6 +332,17 @@ template. To approve a mapping, add a row with:
 - `decision`: `approved`
 - `reason`, `reviewer`, `reviewed_at`: short audit trail
 
+Use `creature_relation_bridge_overrides.csv` only when a Jabbithole creature is
+not safe as a global bridge but a specific relation is proven. Each row is keyed
+by `relation_map`, `relation_type`, and `source_relation_id`, with optional
+`jabbithole_creature_id` and `quest2_id` guards. The mapper currently applies
+these overrides to `creature_quest_map.csv`, records the original global bridge
+in `original_creature2_id` / `original_match_status`, and marks only the
+reviewed relation as `reviewed`. Do not use relation overrides from name
+similarity alone; cite Quest2, QuestObjective, TargetGroup, WorldLocation2,
+Jabbithole placement, script, or focused-test evidence, and name the downstream
+row the review unblocks.
+
 On the next mapper run, approved rows become `match_status = reviewed`, keep their original candidate/status in the `original_*` columns, and flow into downstream creature relationship maps. The live DB apply scripts treat `reviewed` the same as `unique_name` and `scored_name`.
 
 Two helper scripts make the remaining queue reviewable in smaller slices:
@@ -339,7 +353,7 @@ python Tools\DataMapping\promote_creature_bridge_suggestions.py
 python Tools\DataMapping\promote_creature_bridge_suggestions.py --apply
 ```
 
-`prioritize_creature_bridge_reviews.py` ranks uncertain bridge rows by downstream impact and optional existing-world spatial evidence. `promote_creature_bridge_suggestions.py` conservatively promotes only high-confidence spatial suggestions by default. The current localhost review pass promoted 944 approved overrides; 527 medium-confidence suggestions remain for manual review.
+`prioritize_creature_bridge_reviews.py` ranks uncertain bridge rows by downstream impact and optional existing-world spatial evidence. `promote_creature_bridge_suggestions.py` conservatively promotes only high-confidence spatial suggestions by default. The current localhost review pass has 974 global override-audit rows, 966 reviewed rows in `creature_map.csv`, and 10 relation-scoped override audit rows; 531 medium-confidence suggestions and 16 non-public-event high-confidence suggestions remain for manual review.
 
 ## Loading Into MySQL
 
@@ -360,8 +374,10 @@ python Tools\DataMapping\load_mapping_staging_tables.py --apply
 in `nexus_forever_mapping` and loads every curated staging CSV covered by
 `schema.sql`. It uses `LOAD DATA LOCAL INFILE`, temporarily enables the local
 MySQL server setting when the login can do so, and restores it afterward by
-default. The current localhost apply loaded 95 `nf_map_*` tables and 6,383,288
-exact rows.
+default. The current localhost apply loaded 96 `nf_map_*` tables and 6,160,158
+exact rows. Optional CSVs may omit nullable/defaulted schema columns; regenerate
+spline candidates with `--include-spline-candidates` before relying on expanded
+spline classification/runtime fields.
 
 Fresh machines do not need to run the mapper. Import the checked-in promoted
 runtime seed after the base world database has been loaded:
@@ -436,7 +452,7 @@ python Tools\DataMapping\apply_creature_info_overrides.py
 python Tools\DataMapping\apply_creature_info_overrides.py --apply
 ```
 
-`map_wildstar_data.py` reads tracked approved bridge decisions from `Tools\DataMapping\creature_bridge_overrides.csv` first, then local ignored review work from `Tools\DataMapping\review\creature_bridge_overrides.csv`. `apply_creature_info_overrides.py` imports high-confidence creature template overrides from `creature_map.csv` into `creature_info_property` and `creature_info_stat`. By default it inserts only missing `BaseHealth`, `ShieldCapacityMax`, and `InterruptArmour` rows for `unique_name`/`scored_name`/`reviewed` creature bridges, and skips duplicate creature mappings with conflicting values. `BaseHealth` uses the mapper-generated `template_base_health` value, so source health ranges such as `353-844` are not promoted as template-wide overrides.
+`map_wildstar_data.py` reads tracked approved bridge decisions from `Tools\DataMapping\creature_bridge_overrides.csv` first, then local ignored review work from `Tools\DataMapping\review\creature_bridge_overrides.csv`; relation-scoped quest creature reviews follow the same tracked/local pattern through `creature_relation_bridge_overrides.csv`. `apply_creature_info_overrides.py` imports high-confidence creature template overrides from `creature_map.csv` into `creature_info_property` and `creature_info_stat`. By default it inserts only missing `BaseHealth`, `ShieldCapacityMax`, and `InterruptArmour` rows for `unique_name`/`scored_name`/`reviewed` creature bridges, and skips duplicate creature mappings with conflicting values. `BaseHealth` uses the mapper-generated `template_base_health` value, so source health ranges such as `353-844` are not promoted as template-wide overrides.
 
 ## LaughingWS World Database Audit
 
@@ -601,7 +617,7 @@ branch-only residual rows blocked pending row-level proof, and leaves broad
 zone replacements blocked until
 stronger proof exists.
 The generated `Tools\DataMapping\sql\laughingws_instance_entity_wip_seed.sql`
-contains `75` WIP/guessed instance-local `entity` rows, `67` `entity_event`
+contains `72` WIP/guessed instance-local `entity` rows, `64` `entity_event`
 rows, `35` `entity_script` rows, and `80` `entity_stats` rows for Coldblood
 Citadel, Protostar SuperMall, Space Madness, Gauntlet, Fragment Zero,
 Infestation, Outpost M-13, Evil from the Ether drive-spark phase anchors,
@@ -627,7 +643,7 @@ known `Field_7` column typo, but still skips that file's hidden SMC placeholder
 with a generated WIP/GUESSED note because type `0` item `86919` exceeds the
 current 15-bit storefront wire/schema proof.
 The generated `Tools\DataMapping\sql\laughingws_live_event_wip_seed.sql`
-contains `440` WIP/guessed live-event entity/vendor rows: `198` `entity`, `68`
+contains `438` WIP/guessed live-event entity/vendor rows: `196` `entity`, `68`
 `entity_stats`, `8` `entity_vendor`, `24` `entity_vendor_category`, and `142`
 `entity_vendor_item` rows. It assigns deterministic high entity IDs in the
 `2100000000` range, filters official duplicate and placeholder coordinates, and

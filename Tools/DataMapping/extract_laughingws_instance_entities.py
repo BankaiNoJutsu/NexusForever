@@ -26,6 +26,15 @@ INSERT_ENTITY_RE = re.compile(
 
 BASE_INSTANCE_ENTITY_ID = 1_100_300_000
 
+# These WIP gather-marker rows duplicate already-promoted static markers at the
+# same visible coordinates. Keep spec ordering stable so existing high IDs do
+# not shift, but omit the duplicate static copies from regenerated seeds.
+SKIPPED_DUPLICATE_INSTANCE_ENTITY_LABELS = {
+    "Protogames Academy gather marker Iruki Boldbeard",
+    "Protogames Academy gather marker arena B",
+    "Protogames Academy gather marker final arena",
+}
+
 OUTPUT_COLUMNS = (
     "id",
     "type",
@@ -1133,6 +1142,8 @@ def build_instance_rows(root: Path) -> list[InstanceEntityRow]:
                 f"{spec.source_file}: expected row index {spec.source_match_index} for creature "
                 f"{spec.source_creature}, found {len(matches)} matching row(s)"
             )
+        if spec.label in SKIPPED_DUPLICATE_INSTANCE_ENTITY_LABELS:
+            continue
 
         instance_rows.append(
             InstanceEntityRow(

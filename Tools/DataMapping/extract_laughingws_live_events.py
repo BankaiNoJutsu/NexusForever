@@ -35,6 +35,13 @@ SOURCE_STRIDE = 2_000_000
 BLOCK_STRIDE = 10_000
 PLACEHOLDER_COORDINATE_EPSILON = 1.0
 
+# These hand-authored live-event rows visually duplicate current official world
+# rows. They are kept out even when an official-world checkout is unavailable.
+OFFICIAL_DUPLICATE_POSITION_KEYS = {
+    (51, 2546, 67312, 419363, -81322, -245825),
+    (51, 2546, 67312, 429142, -80819, -245461),
+}
+
 EVENT_TABLE_NAMES = (
     "entity",
     "entity_stats",
@@ -371,6 +378,10 @@ def parse_laughingws_event_rows(root: Path) -> ParseResult:
                     if row.is_placeholder_position:
                         skipped_entity_ids.add(row.entity_id)
                         skip("placeholder event entity coordinate skipped")
+                        continue
+                    if row.position_key in OFFICIAL_DUPLICATE_POSITION_KEYS:
+                        skipped_entity_ids.add(row.entity_id)
+                        skip("official duplicate event entity coordinate skipped")
                         continue
                     if row.position_key in source_position_keys:
                         skipped_entity_ids.add(row.entity_id)
