@@ -1,4 +1,5 @@
 using System.Numerics;
+using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Cinematic;
 using NexusForever.Game.Abstract.Cinematic.Cinematics;
 using NexusForever.Game.Abstract.Entity;
@@ -6,6 +7,7 @@ using NexusForever.Game.Abstract.Entity.Trigger;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
@@ -20,6 +22,7 @@ namespace NexusForever.Script.Instance.Expedition.FragmentZero
 
         private IPublicEvent publicEvent;
         private IMapInstance mapInstance;
+        private bool supervisorLolaSpawned;
 
         private const uint SearchCrewTurnstileTriggerId = 4397u;
         private const uint SearchCrewTurnstileObjectiveObjectId = 4397u;
@@ -33,6 +36,26 @@ namespace NexusForever.Script.Instance.Expedition.FragmentZero
         private const uint SearchContinuationWorldLocationId = 48711u;
         private const uint SearchContinuationObjectiveObjectId = 7903u;
         private static readonly Vector3 SearchContinuationTriggerPosition = new(9685.685f, -767.6072f, -6098.117f);
+
+        private const float SearchChamberScriptTriggerRange = 1f;
+        private const uint IncubationSearchScriptObjectId = 7892u;
+        private const uint BiomaticsSearchScriptObjectId = 7919u;
+        private static readonly Vector3 IncubationSearchTriggerPosition = new(9713.49f, -769.372f, -6096.29f);
+        private static readonly Vector3 BiomaticsSearchTriggerPosition = new(10402.6f, -840.416f, -6171.84f);
+
+        private const uint LifeOverseerAirlockWorldLocationId = 48682u;
+        private const uint LifeOverseerAirlockObjectiveObjectId = 7893u;
+        private static readonly Vector3 LifeOverseerAirlockTriggerPosition = new(9830.69f, -780.754f, -6315.97f);
+
+        private const ushort FragmentZeroWorldId = 3180;
+        private const uint SupervisorLolaEntityId = 1100300015u;
+        private const uint SupervisorLolaCreatureId = 71762u;
+        private const ushort SupervisorLolaAreaId = 4619;
+        private const uint SupervisorLolaDisplayInfo = 32807u;
+        private const ushort SupervisorLolaOutfitInfo = 0;
+        private const ushort SupervisorLolaFactionId = 219;
+        private static readonly Vector3 SupervisorLolaPosition = new(9873.75f, -765.9531f, -5848.58f);
+        private static readonly Vector3 SupervisorLolaRotation = Vector3.Zero;
 
         public FragmentZeroEventScript(
             IGlobalQuestManager globalQuestManager,
@@ -51,6 +74,10 @@ namespace NexusForever.Script.Instance.Expedition.FragmentZero
             mapInstance = publicEvent.Map as IMapInstance
                 ?? throw new InvalidOperationException("Fragment Zero requires a map instance.");
 
+            supervisorLolaSpawned = false;
+            // Build 16042 objective 4690 is a zero-count ScriptWithoutCount row
+            // with a 30-minute failure timer for Gold medal eligibility.
+            publicEvent.ActivateObjective(PublicEventObjective.GoldMedalTimer);
             publicEvent.SetPhase(PublicEventPhase.ContinueTheSearchForTheMissingCrew);
         }
 
@@ -82,9 +109,16 @@ namespace NexusForever.Script.Instance.Expedition.FragmentZero
                     BroadcastWipCommunicatorMessage(CommunicatorMessage.SupervisorLolax);
                     break;
                 case PublicEventPhase.ContinueTheSearchForTheMissingCrew:
+                    SpawnReviewedSupervisorLola();
                     publicEvent.ActivateObjective(PublicEventObjective.ContinueTheSearchForTheMissingCrew, mapInstance.PlayerCount);
                     publicEvent.ActivateObjective(PublicEventObjective.LocateTheShipsBlackBox);
                     publicEvent.ActivateObjective(PublicEventObjective.EliminateSkeech);
+                    publicEvent.ActivateObjective(PublicEventObjective.EliminateTheHordesOfSkeechInfestingTheArea);
+                    publicEvent.ActivateObjective(PublicEventObjective.EliminateTheHordesOfSkeechInfestingTheArea2);
+                    publicEvent.ActivateObjective(PublicEventObjective.EliminateTheHordesOfSkeechInfestingTheArea3);
+                    publicEvent.ActivateObjective(PublicEventObjective.DiscoverTheTwoLostRecordings, 2u);
+                    publicEvent.ActivateObjective(PublicEventObjective.FindOhmnasHiddenRecording);
+                    publicEvent.ActivateObjective(PublicEventObjective.FindLucentsHiddenRecording);
                     SpawnWipGuessedWorldLocationTrigger(
                         SearchContinuationWorldLocationId,
                         SearchContinuationObjectiveObjectId,
@@ -94,6 +128,10 @@ namespace NexusForever.Script.Instance.Expedition.FragmentZero
                 case PublicEventPhase.SearchForCrewmateJo:
                     publicEvent.ActivateObjective(PublicEventObjective.SearchInsideTheIncubationComplexForJo);
                     publicEvent.ActivateObjective(PublicEventObjective.SmashXenobiteEggsInsideTheIncubationComplex);
+                    SpawnWipGuessedScriptObjectiveTrigger(
+                        IncubationSearchScriptObjectId,
+                        SearchChamberScriptTriggerRange,
+                        IncubationSearchTriggerPosition);
                     break;
                 case PublicEventPhase.DefeatPrototypes:
                     publicEvent.ActivateObjective(PublicEventObjective.DefeatPrototypeAlphansideTheIncubationComplex);
@@ -109,10 +147,15 @@ namespace NexusForever.Script.Instance.Expedition.FragmentZero
                 case PublicEventPhase.ContinueTheSearchForTheMissingCrewLifeOverseer:
                     publicEvent.ActivateObjective(PublicEventObjective.ContinueTheSearchForTheMissingCrewLifeOverseer, mapInstance.PlayerCount);
                     publicEvent.ActivateObjective(PublicEventObjective.CollectCargoCrate);
+                    publicEvent.ActivateObjective(PublicEventObjective.CollectCargoCrate2);
                     break;
                 case PublicEventPhase.SearchInsideTheBiomaticsChamberForSyrus:
                     publicEvent.ActivateObjective(PublicEventObjective.SearchInsideTheBiomaticsChamberForSyrus);
                     publicEvent.ActivateObjective(PublicEventObjective.DeactivateAutomatedDefences);
+                    SpawnWipGuessedScriptObjectiveTrigger(
+                        BiomaticsSearchScriptObjectId,
+                        SearchChamberScriptTriggerRange,
+                        BiomaticsSearchTriggerPosition);
                     break;
                 case PublicEventPhase.DefeatProjectMatron:
                     publicEvent.ActivateObjective(PublicEventObjective.DefeatProjectMatron);
@@ -132,17 +175,30 @@ namespace NexusForever.Script.Instance.Expedition.FragmentZero
                 case PublicEventPhase.DefeatTheLifeOverseer:
                     publicEvent.ActivateObjective(PublicEventObjective.DefeatTheLifeOverseer);
                     break;
+                case PublicEventPhase.ReturnToTheAirlockOfTheLifeOverseersCreche:
+                    publicEvent.ActivateObjective(PublicEventObjective.ReturnToTheAirlockOfTheLifeOverseersCreche, mapInstance.PlayerCount);
+                    SpawnWipGuessedWorldLocationTrigger(
+                        LifeOverseerAirlockWorldLocationId,
+                        LifeOverseerAirlockObjectiveObjectId,
+                        LifeOverseerAirlockTriggerPosition);
+                    break;
                 case PublicEventPhase.LocateHugo:
                     publicEvent.ActivateObjective(PublicEventObjective.LocateHugo);
                     break;
                 case PublicEventPhase.WaitForHugo:
                     publicEvent.ActivateObjective(PublicEventObjective.WaitForHugo);
+                    // Build 16042 objective 4655 is a zero-count ScriptWithoutMax
+                    // wait row. Credit it directly until exact Hugo timing is proven.
+                    publicEvent.UpdateObjective(PublicEventObjective.WaitForHugo, 0);
                     break;
                 case PublicEventPhase.SeeIfHugoHasAWayOutOfThisMess:
                     publicEvent.ActivateObjective(PublicEventObjective.SeeIfHugoHasAWayOutOfThisMess);
                     break;
                 case PublicEventPhase.StayCloseToHugo:
                     publicEvent.ActivateObjective(PublicEventObjective.StayCloseToHugo);
+                    // Build 16042 objective 4447 is a zero-count ScriptWithoutMax
+                    // stay-close row bound to Hugo's final target group.
+                    publicEvent.UpdateObjective(PublicEventObjective.StayCloseToHugo, 0);
                     break;
                 case PublicEventPhase.SpeakWithHugo:
                     publicEvent.ActivateObjective(PublicEventObjective.SpeakWithHugo);
@@ -171,6 +227,17 @@ namespace NexusForever.Script.Instance.Expedition.FragmentZero
             AddToMap(triggerEntity, position);
         }
 
+        private void SpawnWipGuessedScriptObjectiveTrigger(uint objectId, float range, Vector3 position)
+        {
+            // Build 16042 maps the Fragment Zero search objectives to zero-count
+            // Script rows at one-unit WorldLocation2 anchors. Use a plain grid
+            // trigger so the owner-bound script credits the Script objective,
+            // not ParticipantsInTriggerVolume.
+            IGridTriggerEntity triggerEntity = publicEvent.CreateEntity<IGridTriggerEntity>();
+            triggerEntity.Initialise(objectId, range);
+            AddToMap(triggerEntity, position);
+        }
+
         private void AddToMap(IGridEntity entity, Vector3 position)
         {
             mapInstance.EnqueueAdd(entity, new ScriptMapPosition
@@ -182,6 +249,60 @@ namespace NexusForever.Script.Instance.Expedition.FragmentZero
                 },
                 Position = position
             });
+        }
+
+        private void SpawnReviewedSupervisorLola()
+        {
+            if (supervisorLolaSpawned)
+                return;
+
+            // Reviewed Fragment Zero instance rows place Freight Supervisor Lola as
+            // a static NPC without an entity_event row; exact dialog/choreography
+            // timing remains blocked pending client smoke.
+            INonPlayerEntity entity = publicEvent.CreateEntity<INonPlayerEntity>();
+            entity.Initialise(CreateSupervisorLolaModel());
+            AddToMap(entity, SupervisorLolaPosition);
+            supervisorLolaSpawned = true;
+        }
+
+        private static EntityModel CreateSupervisorLolaModel()
+        {
+            return new EntityModel
+            {
+                Id          = SupervisorLolaEntityId,
+                Type        = EntityType.NonPlayer,
+                Creature    = SupervisorLolaCreatureId,
+                World       = FragmentZeroWorldId,
+                Area        = SupervisorLolaAreaId,
+                X           = SupervisorLolaPosition.X,
+                Y           = SupervisorLolaPosition.Y,
+                Z           = SupervisorLolaPosition.Z,
+                Rx          = SupervisorLolaRotation.X,
+                Ry          = SupervisorLolaRotation.Y,
+                Rz          = SupervisorLolaRotation.Z,
+                DisplayInfo = SupervisorLolaDisplayInfo,
+                OutfitInfo  = SupervisorLolaOutfitInfo,
+                Faction1    = SupervisorLolaFactionId,
+                Faction2    = SupervisorLolaFactionId,
+                EntityStat =
+                {
+                    new EntityStatModel
+                    {
+                        Stat  = (byte)Stat.Health,
+                        Value = 1f
+                    },
+                    new EntityStatModel
+                    {
+                        Stat  = (byte)Stat.Shield,
+                        Value = 0f
+                    },
+                    new EntityStatModel
+                    {
+                        Stat  = (byte)Stat.Unknown22,
+                        Value = 0f
+                    }
+                }
+            };
         }
 
         /// <summary>
@@ -236,6 +357,9 @@ namespace NexusForever.Script.Instance.Expedition.FragmentZero
                     publicEvent.SetPhase(PublicEventPhase.DefeatTheLifeOverseer);
                     break;
                 case PublicEventObjective.DefeatTheLifeOverseer:
+                    publicEvent.SetPhase(PublicEventPhase.ReturnToTheAirlockOfTheLifeOverseersCreche);
+                    break;
+                case PublicEventObjective.ReturnToTheAirlockOfTheLifeOverseersCreche:
                     publicEvent.SetPhase(PublicEventPhase.LocateHugo);
                     break;
                 case PublicEventObjective.LocateHugo:
@@ -251,6 +375,7 @@ namespace NexusForever.Script.Instance.Expedition.FragmentZero
                     publicEvent.SetPhase(PublicEventPhase.SpeakWithHugo);
                     break;
                 case PublicEventObjective.SpeakWithHugo:
+                    publicEvent.UpdateObjective(PublicEventObjective.GoldMedalTimer, 0);
                     publicEvent.Finish(PublicEventTeam.PublicTeam);
                     break;
             }

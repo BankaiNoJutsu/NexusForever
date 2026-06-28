@@ -22,6 +22,7 @@ namespace NexusForever.Script.Instance.Expedition.FragmentZero
         WaitForHugo,
         SeeIfHugoHasAWayOutOfThisMess,
         StayCloseToHugo,
-        SpeakWithHugo
+        SpeakWithHugo,
+        ReturnToTheAirlockOfTheLifeOverseersCreche
     }
 }
