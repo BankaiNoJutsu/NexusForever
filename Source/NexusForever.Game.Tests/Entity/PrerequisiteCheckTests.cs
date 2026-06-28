@@ -816,6 +816,25 @@ public class PrerequisiteCheckTests
     }
 
     [Fact]
+    public void PrimalMatrixNode_UsesTableButRemainsFailClosedUntilAllocationStateExists()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tableProxy);
+        tableProxy.SetProperty(nameof(IGameTableManager.PrimalMatrixNode), CreateGameTable(new PrimalMatrixNodeEntry
+        {
+            Id             = 123u,
+            MaxAllocations = 1u
+        }));
+
+        var check = new PrerequisiteCheckPrimalMatrixNode(
+            tables,
+            NullLogger<PrerequisiteCheckPrimalMatrixNode>.Instance);
+
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, value: 1u, objectId: 123u, new PrerequisiteParameters()));
+        Assert.False(check.Meets(player, PrerequisiteComparison.NotEqual, value: 1u, objectId: 123u, new PrerequisiteParameters()));
+    }
+
+    [Fact]
     public void TradeSkill_ComparesTradeskillTierRankForObjectId()
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
@@ -1190,7 +1209,7 @@ public class PrerequisiteCheckTests
         accountProxy.SetProperty(nameof(IAccount.CurrencyManager), currencyManager);
         playerProxy.SetProperty(nameof(IPlayer.Account), account);
 
-        var check = new PrerequisiteCheckAccountCurrencyAmount();
+        var check = new PrerequisiteCheckAccountCurrencyAmount(CreateAccountCurrencyTypeTables((uint)AccountCurrencyType.CrimsonEssence));
 
         bool result = check.Meets(player, comparison, value, (uint)AccountCurrencyType.CrimsonEssence, new PrerequisiteParameters());
 
@@ -1209,10 +1228,30 @@ public class PrerequisiteCheckTests
         accountProxy.SetProperty(nameof(IAccount.CurrencyManager), currencyManager);
         playerProxy.SetProperty(nameof(IPlayer.Account), account);
 
-        var check = new PrerequisiteCheckAccountCurrencyAmount();
+        var check = new PrerequisiteCheckAccountCurrencyAmount(CreateAccountCurrencyTypeTables((uint)AccountCurrencyType.CrimsonEssence));
 
         Assert.True(check.Meets(player, PrerequisiteComparison.Equal, value: 0u, objectId: 19u, new PrerequisiteParameters()));
         Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.GetCurrencyAmount)));
+    }
+
+    [Fact]
+    public void AccountCurrencyAmount_UsesAccountCurrencyTypeTableForValidIds()
+    {
+        const uint tableBackedCurrencyId = 20u;
+
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out var accountProxy);
+        IAccountCurrencyManager currencyManager = RecordingDispatchProxy<IAccountCurrencyManager>.Create(out var currencyProxy);
+        currencyProxy.SetMethodReturn(nameof(IAccountCurrencyManager.GetCurrencyAmount), 7ul);
+        accountProxy.SetProperty(nameof(IAccount.CurrencyManager), currencyManager);
+        playerProxy.SetProperty(nameof(IPlayer.Account), account);
+
+        var check = new PrerequisiteCheckAccountCurrencyAmount(CreateAccountCurrencyTypeTables(tableBackedCurrencyId));
+
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, value: 7u, objectId: tableBackedCurrencyId, new PrerequisiteParameters()));
+
+        RecordingDispatchProxy<IAccountCurrencyManager>.Invocation call = Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.GetCurrencyAmount)));
+        Assert.Equal((AccountCurrencyType)tableBackedCurrencyId, call.Arguments[0]);
     }
 
     [Theory]
@@ -2136,6 +2175,14 @@ public class PrerequisiteCheckTests
             DefinedSocketCount    = 1u,
             DefinedSocketType00   = 7u,
         }));
+        return tables;
+    }
+
+    private static IGameTableManager CreateAccountCurrencyTypeTables(params uint[] ids)
+    {
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> proxy);
+        proxy.SetProperty(nameof(IGameTableManager.AccountCurrencyType), CreateGameTable(
+            ids.Select(id => new AccountCurrencyTypeEntry { Id = id }).ToArray()));
         return tables;
     }
 

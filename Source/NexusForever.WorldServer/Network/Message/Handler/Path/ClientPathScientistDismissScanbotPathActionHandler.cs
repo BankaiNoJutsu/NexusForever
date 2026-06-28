@@ -16,6 +16,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Path
         public void HandleMessage(IWorldSession session, ClientPathScientistDismissScanbotPathAction _)
         {
             log.LogDebug("ClientPathScientistDismissScanbotPathAction: player={Player}", session.Player?.Guid);
+
+            if (session.Player?.PathManager?.DismissScientistScanbot() != true)
+                log.LogDebug("ClientPathScientistDismissScanbotPathAction ignored: player={Player}", session.Player?.Guid);
         }
     }
 }

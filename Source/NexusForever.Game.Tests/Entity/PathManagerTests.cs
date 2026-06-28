@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,6 +37,14 @@ public class PathManagerTests
 {
     private GameTableManager configuredGameTableManager;
     private IPrerequisiteManager configuredPrerequisiteManager;
+
+    public static IEnumerable<object[]> NorthernWildsDataMappingEpisodeCases()
+    {
+        yield return [Path.Soldier, (ushort)8, Array.Empty<ushort>()];
+        yield return [Path.Explorer, (ushort)9, new ushort[] { 35, 36, 158, 1254 }];
+        yield return [Path.Scientist, (ushort)28, new ushort[] { 42, 160, 648 }];
+        yield return [Path.Settler, (ushort)82, new ushort[] { 650, 651, 652 }];
+    }
 
     [Fact]
     public void AddXp_AwardsInitialPathLevelRewardFromLevelRewardedState()
@@ -221,6 +230,53 @@ public class PathManagerTests
     }
 
     [Fact]
+    public void ActivateMissions_WithAdditionalMissionInSameEpisode_SendsNewMissionActivation()
+    {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }
+            ],
+            []);
+
+        {
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out _);
+
+            manager.ActivateMissions(8, new Dictionary<ushort, uint>
+            {
+                [156] = 0
+            });
+            int initialMessageCount = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count;
+
+            manager.ActivateMissions(8, new Dictionary<ushort, uint>
+            {
+                [33] = 0
+            });
+
+            IReadOnlyList<object> messages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Skip(initialMessageCount)
+                .Select(i => i.Arguments[0])
+                .ToList();
+
+            Assert.DoesNotContain(messages, message => message is ServerPathSetCurrentEpisode);
+            ServerPathEpisodeProgress episodeProgress = Assert.IsType<ServerPathEpisodeProgress>(messages[0]);
+            Assert.Equal(8u, episodeProgress.EpisodeId);
+            Assert.Equal([33u], episodeProgress.Missions.Select(m => m.PathMissionId).ToArray());
+
+            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[1]);
+            Assert.Equal([33u], missionActivate.Missions.Select(m => m.PathMissionId).ToArray());
+        }
+    }
+
+    [Fact]
     public void Constructor_WithPersistedCompletedMission_RestoresCompletionState()
     {
         PathManager manager = CreateManager(
@@ -251,6 +307,32 @@ public class PathManagerTests
     [Fact]
     public void Constructor_WithCompletedScientistScanMission_HydratesScanCredit()
     {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 42u,
+                    PathEpisodeId = 1u,
+                    PathTypeEnum = (uint)Path.Scientist,
+                    PathMissionTypeEnum = 0x0002u,
+                    ObjectId = 34u
+                }
+            ],
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            [
+                new PathScientistCreatureInfoEntry { Id = 34u }
+            ]);
+
         PathManager manager = CreateManager(
             Path.Scientist,
             totalXp: 0u,
@@ -333,6 +415,514 @@ public class PathManagerTests
         Assert.Equal((byte)DatacubeType.ScientistCreatureScan, entry.Entity.Type);
         Assert.Equal(130, entry.Entity.Datacube);
         Assert.Equal(7u, entry.Entity.Progress);
+    }
+
+    [Fact]
+    public void TryDeployScientistScanbot_WithUnlockedProfileQueuesScannerAndEmitsStateAfterMapAdd()
+    {
+        BuildScanbotGameTableProvider();
+        IScannerUnitEntity scanbot = CreateScanbot(out RecordingDispatchProxy<IScannerUnitEntity> scanbotProxy);
+        IEntityFactory entityFactory = CreateEntityFactory(scanbot, out RecordingDispatchProxy<IEntityFactory> entityFactoryProxy);
+
+        PathManager manager = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 1,
+            out _,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IGameSession> sessionProxy,
+            out _,
+            out _,
+            entityFactory: entityFactory);
+        ConfigureScanbotPlayer(playerProxy, scanbot, profileUnlocked: true, out RecordingDispatchProxy<IBaseMap> mapProxy);
+
+        Assert.True(manager.TryDeployScientistScanbot(77u));
+
+        Assert.Single(entityFactoryProxy.GetInvocations(nameof(IEntityFactory.CreateEntity)));
+
+        RecordingDispatchProxy<IScannerUnitEntity>.Invocation initialise =
+            Assert.Single(scanbotProxy.GetInvocations(nameof(IWorldEntity.Initialise)));
+        Assert.Equal(12664u, initialise.Arguments[0]);
+        Assert.Equal((uint?)500u, scanbot.SummonerGuid);
+        Assert.Equal(Faction.Exile, scanbot.Faction1);
+        Assert.Equal(Faction.Exile, scanbot.Faction2);
+
+        RecordingDispatchProxy<IBaseMap>.Invocation enqueueAdd =
+            Assert.Single(mapProxy.GetInvocations(nameof(IBaseMap.EnqueueAdd)));
+        Assert.Same(scanbot, enqueueAdd.Arguments[0]);
+        IMapPosition position = Assert.IsAssignableFrom<IMapPosition>(enqueueAdd.Arguments[1]);
+        Assert.Equal(426u, position.Info.Entry.Id);
+
+        Assert.Empty(GetEncryptedMessages<ServerPathScientistScanbotState>(sessionProxy));
+
+        scanbotProxy.SetProperty(nameof(IGridEntity.Guid), 9001u);
+        Assert.True(manager.OnScientistScanbotSummoned(scanbot));
+
+        ServerPathScientistScanbotState state =
+            Assert.Single(GetEncryptedMessages<ServerPathScientistScanbotState>(sessionProxy));
+        Assert.Equal(9001u, state.ScanbotUnitId);
+        Assert.Equal(0u, state.ScanbotCooldownMS);
+    }
+
+    [Fact]
+    public void TryDeployScientistScanbot_WithEarnedProfileMissingUnlock_RecoversAndQueuesScanner()
+    {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }
+            ],
+            [
+                new PathRewardEntry
+                {
+                    Id = 66u,
+                    PathRewardTypeEnum = PathRewardGrant.LevelRewardType,
+                    ObjectId = PathRewardGrant.GetLevelRewardObjectId(Path.Scientist, 1u),
+                    PathScientistScanBotProfileId = 77u
+                }
+            ],
+            scanBotProfiles:
+            [
+                new PathScientistScanBotProfileEntry { Id = 77u, Creature2Id = 12664u }
+            ],
+            creature2Entries:
+            [
+                new Creature2Entry { Id = 12664u }
+            ]);
+        IScannerUnitEntity scanbot = CreateScanbot(out RecordingDispatchProxy<IScannerUnitEntity> scanbotProxy);
+        IEntityFactory entityFactory = CreateEntityFactory(scanbot, out _);
+
+        PathManager manager = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 0,
+            out _,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IGameSession> sessionProxy,
+            out _,
+            out _,
+            entityFactory: entityFactory);
+        ConfigureScanbotPlayer(
+            playerProxy,
+            scanbot,
+            profileUnlocked: false,
+            out RecordingDispatchProxy<IBaseMap> mapProxy,
+            out RecordingDispatchProxy<IPetCustomisationManager> petCustomisationManagerProxy);
+
+        Assert.True(manager.TryDeployScientistScanbot(77u));
+
+        RecordingDispatchProxy<IPetCustomisationManager>.Invocation unlock =
+            Assert.Single(petCustomisationManagerProxy.GetInvocations(nameof(IPetCustomisationManager.UnlockScanBotProfile)));
+        Assert.Equal(77u, unlock.Arguments[0]);
+        Assert.Single(mapProxy.GetInvocations(nameof(IBaseMap.EnqueueAdd)));
+        Assert.Empty(GetEncryptedMessages<ServerPathScientistScanbotState>(sessionProxy));
+
+        scanbotProxy.SetProperty(nameof(IGridEntity.Guid), 9001u);
+        Assert.True(manager.OnScientistScanbotSummoned(scanbot));
+        Assert.Equal(9001u, Assert.Single(GetEncryptedMessages<ServerPathScientistScanbotState>(sessionProxy)).ScanbotUnitId);
+    }
+
+    [Fact]
+    public void TryDeployScientistScanbot_WithDefaultProfileMissingUnlock_RecoversAndQueuesScanner()
+    {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            scanBotProfiles:
+            [
+                new PathScientistScanBotProfileEntry { Id = 1u, Creature2Id = 12664u }
+            ],
+            creature2Entries:
+            [
+                new Creature2Entry { Id = 12664u }
+            ]);
+        IScannerUnitEntity scanbot = CreateScanbot(out RecordingDispatchProxy<IScannerUnitEntity> scanbotProxy);
+        IEntityFactory entityFactory = CreateEntityFactory(scanbot, out _);
+
+        PathManager manager = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 0,
+            out _,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IGameSession> sessionProxy,
+            out _,
+            out _,
+            entityFactory: entityFactory);
+        ConfigureScanbotPlayer(
+            playerProxy,
+            scanbot,
+            profileUnlocked: false,
+            out RecordingDispatchProxy<IBaseMap> mapProxy,
+            out RecordingDispatchProxy<IPetCustomisationManager> petCustomisationManagerProxy,
+            scanBotProfileId: 1u);
+
+        Assert.True(manager.TryDeployScientistScanbot(1u));
+
+        RecordingDispatchProxy<IPetCustomisationManager>.Invocation unlock =
+            Assert.Single(petCustomisationManagerProxy.GetInvocations(nameof(IPetCustomisationManager.UnlockScanBotProfile)));
+        Assert.Equal(1u, unlock.Arguments[0]);
+        Assert.Single(mapProxy.GetInvocations(nameof(IBaseMap.EnqueueAdd)));
+        Assert.Empty(GetEncryptedMessages<ServerPathScientistScanbotState>(sessionProxy));
+
+        scanbotProxy.SetProperty(nameof(IGridEntity.Guid), 9001u);
+        Assert.True(manager.OnScientistScanbotSummoned(scanbot));
+        Assert.Equal(9001u, Assert.Single(GetEncryptedMessages<ServerPathScientistScanbotState>(sessionProxy)).ScanbotUnitId);
+    }
+
+    [Fact]
+    public void TryDeployScientistScanbot_WithZeroProfileUsesDefaultProfile()
+    {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            scanBotProfiles:
+            [
+                new PathScientistScanBotProfileEntry { Id = 1u, Creature2Id = 12664u }
+            ],
+            creature2Entries:
+            [
+                new Creature2Entry { Id = 12664u }
+            ]);
+        IScannerUnitEntity scanbot = CreateScanbot(out RecordingDispatchProxy<IScannerUnitEntity> scanbotProxy);
+        IEntityFactory entityFactory = CreateEntityFactory(scanbot, out _);
+
+        PathManager manager = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 0,
+            out _,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IGameSession> sessionProxy,
+            out _,
+            out _,
+            entityFactory: entityFactory);
+        ConfigureScanbotPlayer(
+            playerProxy,
+            scanbot,
+            profileUnlocked: false,
+            out RecordingDispatchProxy<IBaseMap> mapProxy,
+            out RecordingDispatchProxy<IPetCustomisationManager> petCustomisationManagerProxy,
+            scanBotProfileId: 1u);
+
+        Assert.True(manager.TryDeployScientistScanbot(0u));
+
+        RecordingDispatchProxy<IPetCustomisationManager>.Invocation unlock =
+            Assert.Single(petCustomisationManagerProxy.GetInvocations(nameof(IPetCustomisationManager.UnlockScanBotProfile)));
+        Assert.Equal(1u, unlock.Arguments[0]);
+        Assert.Single(mapProxy.GetInvocations(nameof(IBaseMap.EnqueueAdd)));
+        Assert.Empty(GetEncryptedMessages<ServerPathScientistScanbotState>(sessionProxy));
+
+        scanbotProxy.SetProperty(nameof(IGridEntity.Guid), 9001u);
+        Assert.True(manager.OnScientistScanbotSummoned(scanbot));
+        Assert.Equal(9001u, Assert.Single(GetEncryptedMessages<ServerPathScientistScanbotState>(sessionProxy)).ScanbotUnitId);
+    }
+
+    [Fact]
+    public void TryDeployScientistScanbot_WithLockedProfileFailsClosed()
+    {
+        BuildScanbotGameTableProvider();
+        IScannerUnitEntity scanbot = CreateScanbot(out _);
+        IEntityFactory entityFactory = CreateEntityFactory(scanbot, out RecordingDispatchProxy<IEntityFactory> entityFactoryProxy);
+
+        PathManager manager = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 1,
+            out _,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IGameSession> sessionProxy,
+            out _,
+            out _,
+            entityFactory: entityFactory);
+        ConfigureScanbotPlayer(playerProxy, scanbot, profileUnlocked: false, out RecordingDispatchProxy<IBaseMap> mapProxy);
+
+        Assert.False(manager.TryDeployScientistScanbot(77u));
+
+        Assert.Empty(entityFactoryProxy.GetInvocations(nameof(IEntityFactory.CreateEntity)));
+        Assert.Empty(mapProxy.GetInvocations(nameof(IBaseMap.EnqueueAdd)));
+        Assert.Empty(GetEncryptedMessages<ServerPathScientistScanbotState>(sessionProxy));
+    }
+
+    [Fact]
+    public void TryDeployScientistScanbot_WithMissingCreatureRowFailsClosed()
+    {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            scanBotProfiles:
+            [
+                new PathScientistScanBotProfileEntry { Id = 77u, Creature2Id = 12664u }
+            ]);
+        IScannerUnitEntity scanbot = CreateScanbot(out _);
+        IEntityFactory entityFactory = CreateEntityFactory(scanbot, out RecordingDispatchProxy<IEntityFactory> entityFactoryProxy);
+
+        PathManager manager = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 1,
+            out _,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IGameSession> sessionProxy,
+            out _,
+            out _,
+            entityFactory: entityFactory);
+        ConfigureScanbotPlayer(playerProxy, scanbot, profileUnlocked: true, out RecordingDispatchProxy<IBaseMap> mapProxy);
+
+        Assert.False(manager.TryDeployScientistScanbot(77u));
+
+        Assert.Empty(entityFactoryProxy.GetInvocations(nameof(IEntityFactory.CreateEntity)));
+        Assert.Empty(mapProxy.GetInvocations(nameof(IBaseMap.EnqueueAdd)));
+        Assert.Empty(GetEncryptedMessages<ServerPathScientistScanbotState>(sessionProxy));
+    }
+
+    [Fact]
+    public void TryDeployScientistScanbot_WithNonScientistPathFailsClosed()
+    {
+        BuildScanbotGameTableProvider();
+        IScannerUnitEntity scanbot = CreateScanbot(out _);
+        IEntityFactory entityFactory = CreateEntityFactory(scanbot, out RecordingDispatchProxy<IEntityFactory> entityFactoryProxy);
+
+        PathManager manager = CreateManager(
+            Path.Explorer,
+            totalXp: 0u,
+            levelRewarded: 1,
+            out _,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IGameSession> sessionProxy,
+            out _,
+            out _,
+            entityFactory: entityFactory);
+        ConfigureScanbotPlayer(playerProxy, scanbot, profileUnlocked: true, out RecordingDispatchProxy<IBaseMap> mapProxy);
+
+        Assert.False(manager.TryDeployScientistScanbot(77u));
+
+        Assert.Empty(entityFactoryProxy.GetInvocations(nameof(IEntityFactory.CreateEntity)));
+        Assert.Empty(mapProxy.GetInvocations(nameof(IBaseMap.EnqueueAdd)));
+        Assert.Empty(GetEncryptedMessages<ServerPathScientistScanbotState>(sessionProxy));
+    }
+
+    [Fact]
+    public void DismissScientistScanbot_WithActiveScannerQueuesRemoveAndSendsDespawnState()
+    {
+        BuildScanbotGameTableProvider();
+        IScannerUnitEntity scanbot = CreateScanbot(out RecordingDispatchProxy<IScannerUnitEntity> scanbotProxy);
+        IEntityFactory entityFactory = CreateEntityFactory(scanbot, out _);
+
+        PathManager manager = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 1,
+            out _,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IGameSession> sessionProxy,
+            out _,
+            out _,
+            entityFactory: entityFactory);
+        ConfigureScanbotPlayer(playerProxy, scanbot, profileUnlocked: true, out _);
+
+        Assert.True(manager.TryDeployScientistScanbot(77u));
+        scanbotProxy.SetProperty(nameof(IGridEntity.Guid), 9001u);
+        scanbotProxy.SetProperty(nameof(IGridEntity.InWorld), true);
+        Assert.True(manager.OnScientistScanbotSummoned(scanbot));
+
+        Assert.True(manager.DismissScientistScanbot());
+
+        RecordingDispatchProxy<IScannerUnitEntity>.Invocation remove =
+            Assert.Single(scanbotProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+        Assert.Empty(remove.Arguments);
+
+        IReadOnlyList<ServerPathScientistScanbotState> states =
+            GetEncryptedMessages<ServerPathScientistScanbotState>(sessionProxy);
+        Assert.Equal(2, states.Count);
+        Assert.Equal(9001u, states[0].ScanbotUnitId);
+        Assert.Equal(0u, states[1].ScanbotUnitId);
+        Assert.Equal(0u, states[1].ScanbotCooldownMS);
+
+        Assert.False(manager.TryDeployScientistScanbot(77u));
+        Assert.True(manager.OnScientistScanbotUnsummoned(scanbot));
+    }
+
+    [Fact]
+    public void ProgressScientistCreatureScanMission_WithChecklistCount_CompletesAfterRequiredScans()
+    {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 160u,
+                    PathEpisodeId = 28u,
+                    PathTypeEnum = (uint)Path.Scientist,
+                    PathMissionTypeEnum = 0x0002u,
+                    ObjectId = 130u
+                }
+            ],
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            [
+                new PathScientistCreatureInfoEntry { Id = 130u, ChecklistCount = 3u }
+            ]);
+
+        PathManager manager = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 1,
+            out IPlayer player,
+            out _,
+            out RecordingDispatchProxy<IGameSession> sessionProxy,
+            out _,
+            out _);
+        manager.ActivateMissions(28, new Dictionary<ushort, uint>
+        {
+            [160] = 0u
+        });
+
+        Assert.True(manager.ProgressScientistCreatureScanMission(130u));
+        Assert.False(manager.IsMissionComplete(160u));
+        Assert.True(manager.ProgressScientistCreatureScanMission(130u));
+        Assert.False(manager.IsMissionComplete(160u));
+        Assert.True(manager.ProgressScientistCreatureScanMission(130u));
+
+        Assert.True(manager.IsMissionComplete(160u));
+        Assert.True(manager.HasScannedScientistCreature(130u));
+        Assert.Equal(7u, player.DatacubeManager.GetScientistCreatureScanProgress(130));
+
+        IReadOnlyList<ServerPathMissionUpdate> missionUpdates = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .OfType<ServerPathMissionUpdate>()
+            .ToList();
+
+        Assert.Equal(3, missionUpdates.Count);
+        Assert.False(missionUpdates[0].Mission.Completed);
+        Assert.Equal(1u, missionUpdates[0].Mission.ProgressCount);
+        Assert.Equal(1u, missionUpdates[0].Mission.ProgressData);
+        Assert.False(missionUpdates[1].Mission.Completed);
+        Assert.Equal(2u, missionUpdates[1].Mission.ProgressCount);
+        Assert.Equal(1u, missionUpdates[1].Mission.ProgressData);
+        Assert.True(missionUpdates[2].Mission.Completed);
+        Assert.Equal(3u, missionUpdates[2].Mission.ProgressCount);
+        Assert.Equal(0u, missionUpdates[2].Mission.ProgressData);
+    }
+
+    [Fact]
+    public void CompleteCurrentScientistDatacubeDiscoveryMission_WithMatchingZone_CompletesActiveMission()
+    {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 1877u,
+                    PathEpisodeId = 16u,
+                    PathTypeEnum = (uint)Path.Scientist,
+                    PathMissionTypeEnum = 0x0018u,
+                    ObjectId = 3u
+                }
+            ],
+            worldZones:
+            [
+                new WorldZoneEntry { Id = 483u },
+                new WorldZoneEntry { Id = 484u, ParentZoneId = 483u }
+            ],
+            pathScientistDatacubeDiscoveries:
+            [
+                new PathScientistDatacubeDiscoveryEntry { Id = 3u, WorldZoneId = 483u }
+            ]);
+
+        PathManager manager = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 1,
+            out _,
+            out var playerProxy,
+            out var sessionProxy,
+            out _,
+            out _);
+        playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 484u, ParentZoneId = 483u });
+        manager.ActivateMissions(16, new Dictionary<ushort, uint>
+        {
+            [1877] = 0u
+        });
+
+        Assert.True(manager.CompleteCurrentScientistDatacubeDiscoveryMission());
+
+        Assert.True(manager.IsMissionComplete(1877u));
+        ServerPathMissionAdvanced advanced = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .OfType<ServerPathMissionAdvanced>()
+            .Single();
+        Assert.Equal(1877u, advanced.PathMissionId);
+    }
+
+    [Fact]
+    public void CompleteCurrentScientistDatacubeDiscoveryMission_WithMismatchedZone_DoesNotCompleteMission()
+    {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 1877u,
+                    PathEpisodeId = 16u,
+                    PathTypeEnum = (uint)Path.Scientist,
+                    PathMissionTypeEnum = 0x0018u,
+                    ObjectId = 3u
+                }
+            ],
+            worldZones:
+            [
+                new WorldZoneEntry { Id = 483u },
+                new WorldZoneEntry { Id = 999u }
+            ],
+            pathScientistDatacubeDiscoveries:
+            [
+                new PathScientistDatacubeDiscoveryEntry { Id = 3u, WorldZoneId = 483u }
+            ]);
+
+        PathManager manager = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 1,
+            out _,
+            out var playerProxy,
+            out var sessionProxy,
+            out _,
+            out _);
+        playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 999u });
+        manager.ActivateMissions(16, new Dictionary<ushort, uint>
+        {
+            [1877] = 0u
+        });
+
+        Assert.False(manager.CompleteCurrentScientistDatacubeDiscoveryMission());
+
+        Assert.False(manager.IsMissionComplete(1877u));
+        Assert.Empty(sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .OfType<ServerPathMissionAdvanced>());
     }
 
     [Fact]
@@ -462,7 +1052,26 @@ public class PathManagerTests
                 new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }
             ],
             [],
-            [new PathMissionEntry { Id = 42u, PathEpisodeId = 1u }]);
+            [
+                new PathMissionEntry
+                {
+                    Id = 42u,
+                    PathEpisodeId = 1u,
+                    PathTypeEnum = (uint)Path.Scientist,
+                    PathMissionTypeEnum = 0x0002u,
+                    ObjectId = 34u
+                }
+            ],
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            [
+                new PathScientistCreatureInfoEntry { Id = 34u }
+            ]);
 
         {
             PathManager manager = CreateManager(
@@ -477,6 +1086,49 @@ public class PathManagerTests
 
             Assert.True(manager.CompleteMission(42));
             Assert.True(manager.HasScannedScientistCreature(34u));
+        }
+    }
+
+    [Fact]
+    public void CompleteMission_WithMissingScientistCreatureInfoRow_DoesNotMarkScan()
+    {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 42u,
+                    PathEpisodeId = 1u,
+                    PathTypeEnum = (uint)Path.Scientist,
+                    PathMissionTypeEnum = 0x0002u,
+                    ObjectId = 34u
+                }
+            ],
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            []);
+
+        {
+            PathManager manager = CreateManager(
+                Path.Scientist,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out _,
+                out _,
+                out _);
+
+            Assert.True(manager.CompleteMission(42));
+            Assert.False(manager.HasScannedScientistCreature(34u));
         }
     }
 
@@ -560,7 +1212,7 @@ public class PathManagerTests
     }
 
     [Fact]
-    public void SendInitialPackets_WithNewlyActivatedMission_DoesNotReplayEpisodeState()
+    public void SendInitialPackets_WithNewlyActivatedMissionWithoutCurrentZone_DoesNotReplayEpisodeState()
     {
         BuildGameTableProvider(
             [
@@ -601,7 +1253,7 @@ public class PathManagerTests
     }
 
     [Fact]
-    public void SendInitialPackets_WithPersistedActiveMission_DoesNotReplayEpisodeState()
+    public void SendInitialPackets_WithPersistedActiveMissionWithoutCurrentZone_DoesNotReplayEpisodeState()
     {
         BuildGameTableProvider(
             [
@@ -646,6 +1298,189 @@ public class PathManagerTests
                 .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
                 .Select(i => i.Arguments[0]));
             Assert.IsType<ServerPathInitialise>(message);
+        }
+    }
+
+    [Fact]
+    public void SendInitialPackets_WithCurrentZoneSoldierHoldoutBeforeInitialise_ReplaysHoldoutMissionAfterPathLog()
+    {
+        BuildGameTableProvider(
+            [new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }],
+            [],
+            CreateNorthernWildsPathMissionEntries(),
+            pathEpisodes: CreateNorthernWildsPathEpisodeEntries(),
+            worldZones: CreateNorthernWildsMissionZoneEntries(),
+            worldLocations: CreateNorthernWildsSoldierMissionWorldLocations());
+
+        {
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 651u, ParentZoneId = 596u });
+
+            Assert.True(manager.TryActivateCurrentZoneEpisode());
+            int preInitialiseMessageCount = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count;
+
+            manager.SendInitialPackets();
+
+            IReadOnlyList<object> replayMessages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Skip(preInitialiseMessageCount)
+                .Select(i => i.Arguments[0])
+                .ToList();
+
+            Assert.Equal(3, replayMessages.Count);
+            Assert.IsType<ServerPathInitialise>(replayMessages[0]);
+            ServerPathSetCurrentEpisode currentEpisode = Assert.IsType<ServerPathSetCurrentEpisode>(replayMessages[1]);
+            Assert.Equal(8u, currentEpisode.PathEpisodeId);
+            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(replayMessages[2]);
+            Mission mission = Assert.Single(missionActivate.Missions);
+            Assert.Equal(156u, mission.PathMissionId);
+            Assert.Equal(PathMissionState.Started, mission.State);
+            Assert.DoesNotContain(replayMessages, message => message is ServerPathEpisodeProgress);
+
+            int firstInitialiseMessageCount = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count;
+            manager.SendInitialPackets();
+
+            object secondInitialiseMessage = Assert.Single(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Skip(firstInitialiseMessageCount)
+                .Select(i => i.Arguments[0]));
+            Assert.IsType<ServerPathInitialise>(secondInitialiseMessage);
+        }
+    }
+
+    [Fact]
+    public void TryActivateCurrentZoneEpisode_WhilePlayerLoading_DoesNotSendMissionActivation()
+    {
+        BuildGameTableProvider(
+            [new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }],
+            [],
+            CreateNorthernWildsPathMissionEntries(),
+            pathEpisodes: CreateNorthernWildsPathEpisodeEntries(),
+            worldZones: CreateNorthernWildsMissionZoneEntries(),
+            worldLocations: CreateNorthernWildsSoldierMissionWorldLocations());
+
+        {
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 651u, ParentZoneId = 596u });
+            playerProxy.SetProperty(nameof(IPlayer.IsLoading), true);
+
+            Assert.False(manager.TryActivateCurrentZoneEpisode());
+            Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        }
+    }
+
+    [Fact]
+    public void SendInitialPackets_WhilePlayerLoading_ReplaysSoldierHoldoutEpisodeAfterPathLog()
+    {
+        BuildGameTableProvider(
+            [new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }],
+            [],
+            CreateNorthernWildsPathMissionEntries(),
+            pathEpisodes: CreateNorthernWildsPathEpisodeEntries(),
+            worldZones: CreateNorthernWildsMissionZoneEntries(),
+            worldLocations: CreateNorthernWildsSoldierMissionWorldLocations());
+
+        {
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 651u, ParentZoneId = 596u });
+            playerProxy.SetProperty(nameof(IPlayer.IsLoading), true);
+
+            manager.SendInitialPackets();
+
+            IReadOnlyList<object> messages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .ToList();
+
+            Assert.Equal(3, messages.Count);
+            Assert.IsType<ServerPathInitialise>(messages[0]);
+            ServerPathSetCurrentEpisode currentEpisode = Assert.IsType<ServerPathSetCurrentEpisode>(messages[1]);
+            Assert.Equal(8u, currentEpisode.PathEpisodeId);
+            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[2]);
+            Mission mission = Assert.Single(missionActivate.Missions);
+            Assert.Equal(156u, mission.PathMissionId);
+            Assert.Equal(PathMissionState.Started, mission.State);
+            Assert.DoesNotContain(messages, message => message is ServerPathEpisodeProgress);
+        }
+    }
+
+    [Fact]
+    public void UnlockPath_WithCurrentZoneSoldierHoldoutBeforePathLog_ReplaysHoldoutMissionAfterPathLog()
+    {
+        BuildGameTableProvider(
+            [new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }],
+            [],
+            CreateNorthernWildsPathMissionEntries(),
+            pathEpisodes: CreateNorthernWildsPathEpisodeEntries(),
+            worldZones: CreateNorthernWildsMissionZoneEntries(),
+            worldLocations: CreateNorthernWildsSoldierMissionWorldLocations());
+
+        {
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 651u, ParentZoneId = 596u });
+
+            Assert.True(manager.TryActivateCurrentZoneEpisode());
+            int preUnlockMessageCount = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count;
+
+            manager.UnlockPath(Path.Settler);
+
+            IReadOnlyList<object> replayMessages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Skip(preUnlockMessageCount)
+                .Select(i => i.Arguments[0])
+                .ToList();
+
+            Assert.Equal(4, replayMessages.Count);
+            Assert.IsType<ServerPathUnlockResult>(replayMessages[0]);
+            Assert.IsType<ServerPathInitialise>(replayMessages[1]);
+
+            ServerPathSetCurrentEpisode currentEpisode = Assert.IsType<ServerPathSetCurrentEpisode>(replayMessages[2]);
+            Assert.Equal(8u, currentEpisode.PathEpisodeId);
+            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(replayMessages[3]);
+            Mission mission = Assert.Single(missionActivate.Missions);
+            Assert.Equal(156u, mission.PathMissionId);
+            Assert.Equal(PathMissionState.Started, mission.State);
+            Assert.DoesNotContain(replayMessages, message => message is ServerPathEpisodeProgress);
         }
     }
 
@@ -1010,14 +1845,12 @@ public class PathManagerTests
             ServerPathEpisodeProgress episodeProgress = Assert.IsType<ServerPathEpisodeProgress>(messages[1]);
             Assert.Equal(82u, episodeProgress.EpisodeId);
             Assert.Equal([650u, 651u], episodeProgress.Missions.Select(m => m.PathMissionId).ToArray());
-
-            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[2]);
-            Assert.Equal([650u, 651u], missionActivate.Missions.Select(m => m.PathMissionId).ToArray());
+            Assert.DoesNotContain(messages, message => message is ServerPathMissionActivate);
         }
     }
 
     [Fact]
-    public void TryActivateCurrentZoneEpisode_WithPersistedActiveEpisode_DoesNotReemitActivationPackets()
+    public void TryActivateCurrentZoneEpisode_WithPersistedActiveEpisode_ReemitsActivationPacketsOnce()
     {
         BuildGameTableProvider(
             [
@@ -1061,7 +1894,21 @@ public class PathManagerTests
             playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 10u });
 
             Assert.True(manager.TryActivateCurrentZoneEpisode());
-            Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+            IReadOnlyList<object> messages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .ToList();
+
+            ServerPathSetCurrentEpisode currentEpisode = Assert.IsType<ServerPathSetCurrentEpisode>(messages[0]);
+            Assert.Equal(82u, currentEpisode.PathEpisodeId);
+
+            ServerPathEpisodeProgress episodeProgress = Assert.IsType<ServerPathEpisodeProgress>(messages[1]);
+            Assert.Equal(82u, episodeProgress.EpisodeId);
+            Assert.Equal([650u], episodeProgress.Missions.Select(m => m.PathMissionId).ToArray());
+            Assert.DoesNotContain(messages, message => message is ServerPathMissionActivate);
+
+            Assert.True(manager.TryActivateCurrentZoneEpisode());
+            Assert.Equal(messages.Count, sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count);
         }
     }
 
@@ -1120,8 +1967,7 @@ public class PathManagerTests
             Assert.IsType<ServerPathSetCurrentEpisode>(messages[0]);
             ServerPathEpisodeProgress episodeProgress = Assert.IsType<ServerPathEpisodeProgress>(messages[1]);
             Assert.Equal([650u], episodeProgress.Missions.Select(m => m.PathMissionId).ToArray());
-            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[2]);
-            Assert.Equal([650u], missionActivate.Missions.Select(m => m.PathMissionId).ToArray());
+            Assert.DoesNotContain(messages, message => message is ServerPathMissionActivate);
         }
     }
 
@@ -1210,6 +2056,731 @@ public class PathManagerTests
 
             Assert.False(manager.TryActivateCurrentZoneEpisode());
             Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(NorthernWildsDataMappingEpisodeCases))]
+    public void TryActivateCurrentZoneEpisode_WithNorthernWildsRuntimeZoneBridge_SetsCurrentClientPathEpisode(
+        Path path,
+        ushort expectedEpisodeId,
+        ushort[] expectedMissionIds)
+    {
+        BuildGameTableProvider(
+            [new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)path, PathLevel = 1u, PathXP = 0u }],
+            [],
+            CreateNorthernWildsPathMissionEntries(),
+            pathEpisodes: CreateNorthernWildsPathEpisodeEntries(),
+            worldZones:
+            [
+                new WorldZoneEntry { Id = 1u },
+                new WorldZoneEntry { Id = 35u }
+            ]);
+
+        {
+            PathManager manager = CreateManager(
+                path,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 1u });
+
+            Assert.True(manager.TryActivateCurrentZoneEpisode());
+
+            IReadOnlyList<object> messages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .ToList();
+
+            ServerPathSetCurrentEpisode currentEpisode = Assert.IsType<ServerPathSetCurrentEpisode>(messages[0]);
+            Assert.Equal(expectedEpisodeId, currentEpisode.PathEpisodeId);
+
+            if (expectedMissionIds.Length == 0)
+            {
+                Assert.Single(messages);
+                return;
+            }
+
+            ServerPathEpisodeProgress episodeProgress = Assert.IsType<ServerPathEpisodeProgress>(messages[1]);
+            Assert.Equal(expectedEpisodeId, episodeProgress.EpisodeId);
+            Assert.Equal(expectedMissionIds.Select(m => (uint)m).ToArray(), episodeProgress.Missions.Select(m => m.PathMissionId).ToArray());
+            Assert.DoesNotContain(messages, message => message is ServerPathMissionActivate);
+        }
+    }
+
+    [Fact]
+    public void TryActivateCurrentZoneEpisode_WithNorthernWildsCurrentEpisodeThenYetiMission_DoesNotStartHoldoutMission()
+    {
+        BuildGameTableProvider(
+            [new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }],
+            [],
+            CreateNorthernWildsPathMissionEntries(),
+            pathEpisodes: CreateNorthernWildsPathEpisodeEntries(),
+            worldZones: CreateNorthernWildsMissionZoneEntries(),
+            worldLocations: CreateNorthernWildsSoldierMissionWorldLocations());
+
+        {
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 1u });
+
+            Assert.True(manager.TryActivateCurrentZoneEpisode());
+            IReadOnlyList<object> initialMessages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .ToList();
+            ServerPathSetCurrentEpisode currentEpisode = Assert.IsType<ServerPathSetCurrentEpisode>(Assert.Single(initialMessages));
+            Assert.Equal(8u, currentEpisode.PathEpisodeId);
+
+            int initialMessageCount = initialMessages.Count;
+            Assert.True(manager.TryActivateCurrentZoneEpisode(651u));
+
+            IReadOnlyList<object> messages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Skip(initialMessageCount)
+                .Select(i => i.Arguments[0])
+                .ToList();
+
+            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(Assert.Single(messages));
+            Mission mission = Assert.Single(missionActivate.Missions);
+            Assert.Equal(156u, mission.PathMissionId);
+            Assert.Equal(PathMissionState.Started, mission.State);
+            Assert.True(manager.IsMissionActiveByObjectId(2u));
+        }
+    }
+
+    [Fact]
+    public void TryActivateCurrentZoneEpisode_WithPersistedNorthernWildsYetiMissionAfterCurrentEpisode_DoesNotReplayHoldoutProgress()
+    {
+        BuildGameTableProvider(
+            [new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }],
+            [],
+            CreateNorthernWildsPathMissionEntries(),
+            pathEpisodes: CreateNorthernWildsPathEpisodeEntries(),
+            worldZones: CreateNorthernWildsMissionZoneEntries(),
+            worldLocations: CreateNorthernWildsSoldierMissionWorldLocations());
+
+        {
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _,
+                pathMissionModels:
+                [
+                    new CharacterPathMissionModel
+                    {
+                        Id            = 42ul,
+                        PathMissionId = 156,
+                        PathEpisodeId = 8,
+                        State         = (byte)PathMissionState.Started
+                    }
+                ]);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 1u });
+
+            Assert.True(manager.TryActivateCurrentZoneEpisode());
+            IReadOnlyList<object> initialMessages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .ToList();
+            ServerPathSetCurrentEpisode currentEpisode = Assert.IsType<ServerPathSetCurrentEpisode>(Assert.Single(initialMessages));
+            Assert.Equal(8u, currentEpisode.PathEpisodeId);
+
+            int initialMessageCount = initialMessages.Count;
+            Assert.True(manager.TryActivateCurrentZoneEpisode(651u));
+
+            IReadOnlyList<object> messages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Skip(initialMessageCount)
+                .Select(i => i.Arguments[0])
+                .ToList();
+
+            Assert.True(manager.IsMissionActiveByObjectId(2u));
+            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(Assert.Single(messages));
+            Mission mission = Assert.Single(missionActivate.Missions);
+            Assert.Equal(156u, mission.PathMissionId);
+            Assert.Equal(PathMissionState.Started, mission.State);
+            Assert.DoesNotContain(messages, message => message is ServerPathEpisodeProgress);
+        }
+    }
+
+    [Fact]
+    public void TryActivateCurrentZoneEpisode_WithNorthernWildsYetiMissionZone_SetsEpisodeWithoutStartingHoldout()
+    {
+        BuildGameTableProvider(
+            [new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }],
+            [],
+            CreateNorthernWildsPathMissionEntries(),
+            pathEpisodes: CreateNorthernWildsPathEpisodeEntries(),
+            worldZones: CreateNorthernWildsMissionZoneEntries(),
+            worldLocations: CreateNorthernWildsSoldierMissionWorldLocations());
+
+        {
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 651u, ParentZoneId = 596u });
+
+            Assert.True(manager.TryActivateCurrentZoneEpisode());
+
+            IReadOnlyList<object> messages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .ToList();
+            Assert.Equal(2, messages.Count);
+            ServerPathSetCurrentEpisode currentEpisode = Assert.IsType<ServerPathSetCurrentEpisode>(messages[0]);
+            Assert.Equal(8u, currentEpisode.PathEpisodeId);
+            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[1]);
+            Mission mission = Assert.Single(missionActivate.Missions);
+            Assert.Equal(156u, mission.PathMissionId);
+            Assert.Equal(PathMissionState.Started, mission.State);
+            Assert.DoesNotContain(messages, message => message is ServerPathEpisodeProgress);
+            Assert.True(manager.IsMissionActiveByObjectId(2u));
+        }
+    }
+
+    [Fact]
+    public void TryActivateCurrentZoneEpisode_WithNorthernWildsLandingSiteZoneBridge_SetsEpisodeWithoutStartingHoldout()
+    {
+        BuildGameTableProvider(
+            [new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }],
+            [],
+            CreateNorthernWildsPathMissionEntries(),
+            pathEpisodes: CreateNorthernWildsPathEpisodeEntries(),
+            worldZones: CreateNorthernWildsMissionZoneEntries(),
+            worldLocations: CreateNorthernWildsSoldierMissionWorldLocations());
+
+        {
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 647u, ParentZoneId = 596u });
+
+            Assert.True(manager.TryActivateCurrentZoneEpisode());
+
+            IReadOnlyList<object> messages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .ToList();
+            Assert.Equal(2, messages.Count);
+            ServerPathSetCurrentEpisode currentEpisode = Assert.IsType<ServerPathSetCurrentEpisode>(messages[0]);
+            Assert.Equal(8u, currentEpisode.PathEpisodeId);
+            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[1]);
+            Mission mission = Assert.Single(missionActivate.Missions);
+            Assert.Equal(156u, mission.PathMissionId);
+            Assert.Equal(PathMissionState.Started, mission.State);
+            Assert.DoesNotContain(messages, message => message is ServerPathEpisodeProgress);
+            Assert.True(manager.IsMissionActiveByObjectId(2u));
+        }
+    }
+
+    [Fact]
+    public void TryActivateCurrentZoneEpisode_WithNorthernWildsRuntimeZoneBridgeMissingClientEpisode_DoesNotActivate()
+    {
+        BuildGameTableProvider(
+            [new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }],
+            [],
+            CreateNorthernWildsPathMissionEntries()
+                .Where(m => m.PathEpisodeId == 28u)
+                .ToArray(),
+            pathEpisodes: [],
+            worldZones:
+            [
+                new WorldZoneEntry { Id = 1u }
+            ]);
+
+        {
+            PathManager manager = CreateManager(
+                Path.Scientist,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 1u });
+
+            Assert.False(manager.TryActivateCurrentZoneEpisode());
+            Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        }
+    }
+
+    [Theory]
+    [InlineData(158u, 26u)]
+    [InlineData(35u, 37u)]
+    [InlineData(36u, 38u)]
+    public void NorthernWildsExplorerNodeMissions_WithRuntimeZoneBridgeAndExplorerNode_CompleteProgress(
+        uint pathMissionId,
+        uint pathExplorerAreaId)
+    {
+        BuildGameTableProvider(
+            [new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }],
+            [],
+            CreateNorthernWildsPathMissionEntries(),
+            pathExplorerNodes:
+            [
+                new PathExplorerNodeEntry { Id = 1u, PathExplorerAreaId = 26u },
+                new PathExplorerNodeEntry { Id = 2u, PathExplorerAreaId = 37u },
+                new PathExplorerNodeEntry { Id = 3u, PathExplorerAreaId = 38u }
+            ],
+            pathEpisodes: CreateNorthernWildsPathEpisodeEntries(),
+            worldZones:
+            [
+                new WorldZoneEntry { Id = 1u },
+                new WorldZoneEntry { Id = 35u }
+            ]);
+
+        {
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 1u });
+
+            Assert.Contains(configuredGameTableManager.PathExplorerNode.Entries, n => n.PathExplorerAreaId == pathExplorerAreaId);
+            Assert.True(manager.TryActivateCurrentZoneEpisode());
+            Assert.True(manager.CompleteExplorerProgressMission((ushort)pathMissionId, 0u));
+
+            Assert.True(manager.IsMissionComplete(pathMissionId));
+            ServerPathMissionAdvanced advanced = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerPathMissionAdvanced>()
+                .Single();
+            Assert.Equal((ushort)pathMissionId, advanced.PathMissionId);
+        }
+    }
+
+    [Fact]
+    public void NorthernWildsExplorerCartography_WithRuntimeZoneBridgeAndFullyExploredMap_CompletesSurvey()
+    {
+        BuildGameTableProvider(
+            [new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }],
+            [],
+            CreateNorthernWildsPathMissionEntries(),
+            pathEpisodes: CreateNorthernWildsPathEpisodeEntries(),
+            worldZones:
+            [
+                new WorldZoneEntry { Id = 1u },
+                new WorldZoneEntry { Id = 35u }
+            ],
+            mapZones:
+            [
+                new MapZoneEntry { Id = 1u, WorldZoneId = 35u }
+            ],
+            mapZoneWorldJoins:
+            [
+                new MapZoneWorldJoinEntry { Id = 1u, WorldId = 426u, MapZoneId = 1u }
+            ]);
+
+        {
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 1u });
+            playerProxy.SetProperty(nameof(IPlayer.ZoneMapManager), CreateZoneMapManagerWithExploredPercent(100));
+
+            Assert.True(manager.TryActivateCurrentZoneEpisode());
+            Assert.True(manager.CompleteCurrentExplorerExploreZoneMission());
+
+            Assert.True(manager.IsMissionComplete(1254u));
+            ServerPathMissionAdvanced advanced = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerPathMissionAdvanced>()
+                .Single();
+            Assert.Equal((ushort)1254, advanced.PathMissionId);
+        }
+    }
+
+    [Fact]
+    public void NorthernWildsSoldierMission_WithRuntimeZoneBridgeAndTowerDefenseRow_CompletesProgress()
+    {
+        BuildGameTableProvider(
+            [new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }],
+            [],
+            CreateNorthernWildsPathMissionEntries(),
+            soldierTowerDefense:
+            [
+                new PathSoldierTowerDefenseEntry { Id = 2u, PathSoldierEventId = 2u }
+            ],
+            pathEpisodes: CreateNorthernWildsPathEpisodeEntries(),
+            worldZones: CreateNorthernWildsMissionZoneEntries(),
+            worldLocations: CreateNorthernWildsSoldierMissionWorldLocations());
+
+        {
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 651u, ParentZoneId = 596u });
+
+            Assert.True(manager.TryActivateCurrentZoneEpisode());
+            Assert.True(manager.IsMissionActiveByObjectId(2u));
+
+            int discoveryMessageCount = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count;
+            Assert.True(manager.TryActivateSoldierMissionByEventId(2u));
+            IReadOnlyList<object> activationMessages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Skip(discoveryMessageCount)
+                .Select(i => i.Arguments[0])
+                .ToList();
+            Assert.Empty(activationMessages);
+
+            Assert.True(manager.CompleteMissionBySoldierTowerDefenseId(2u));
+
+            Assert.True(manager.IsMissionComplete(156u));
+        }
+    }
+
+    [Theory]
+    [InlineData(650u, 46u, 11u, 4u)]
+    [InlineData(652u, 48u, 14u, 4u)]
+    [InlineData(651u, 47u, 10u, 1u)]
+    public void NorthernWildsSettlerMission_WithRuntimeZoneBridgeAndHubRows_CompletesAfterVideoBackedBuildCount(
+        uint pathMissionId,
+        uint pathSettlerHubId,
+        uint pathSettlerImprovementGroupId,
+        uint requiredBuildCount)
+    {
+        BuildGameTableProvider(
+            [new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }],
+            [],
+            CreateNorthernWildsPathMissionEntries(),
+            settlerImprovementGroups:
+            [
+                new PathSettlerImprovementGroupEntry { Id = 10u, PathSettlerHubId = 47u },
+                new PathSettlerImprovementGroupEntry { Id = 11u, PathSettlerHubId = 46u },
+                new PathSettlerImprovementGroupEntry { Id = 14u, PathSettlerHubId = 48u }
+            ],
+            settlerHubs:
+            [
+                new PathSettlerHubEntry { Id = 46u, MissionCount = 4u },
+                new PathSettlerHubEntry { Id = 47u, MissionCount = 1u },
+                new PathSettlerHubEntry { Id = 48u, MissionCount = 4u }
+            ],
+            pathEpisodes: CreateNorthernWildsPathEpisodeEntries(),
+            worldZones:
+            [
+                new WorldZoneEntry { Id = 1u },
+                new WorldZoneEntry { Id = 35u }
+            ]);
+
+        {
+            PathManager manager = CreateManager(
+                Path.Settler,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out _,
+                out _,
+                out _);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 1u });
+
+            Assert.Contains(configuredGameTableManager.PathSettlerHub.Entries, hub => hub.Id == pathSettlerHubId);
+            Assert.True(manager.TryActivateCurrentZoneEpisode());
+            for (uint buildCount = 1u; buildCount <= requiredBuildCount; buildCount++)
+            {
+                Assert.True(manager.CompleteMissionBySettlerImprovementGroupId(pathSettlerImprovementGroupId));
+
+                Assert.Equal(buildCount == requiredBuildCount, manager.IsMissionComplete(pathMissionId));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(42u, 34u, 3u)]
+    [InlineData(160u, 130u, 3u)]
+    [InlineData(648u, 128u, 15u)]
+    public void NorthernWildsScientistMission_WithRuntimeZoneBridge_CompletesAfterChecklistScans(
+        uint pathMissionId,
+        uint pathScientistCreatureInfoId,
+        uint requiredScans)
+    {
+        BuildGameTableProvider(
+            [new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }],
+            [],
+            CreateNorthernWildsPathMissionEntries(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            CreateNorthernWildsPathEpisodeEntries(),
+            CreateNorthernWildsScientistCreatureInfoEntries(),
+            worldZones:
+            [
+                new WorldZoneEntry { Id = 1u },
+                new WorldZoneEntry { Id = 35u }
+            ]);
+
+        {
+            PathManager manager = CreateManager(
+                Path.Scientist,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 1u });
+
+            Assert.True(manager.TryActivateCurrentZoneEpisode());
+            for (uint scan = 1u; scan < requiredScans; scan++)
+            {
+                Assert.True(manager.ProgressScientistCreatureScanMission(pathScientistCreatureInfoId));
+                Assert.False(manager.IsMissionComplete(pathMissionId));
+            }
+            Assert.True(manager.ProgressScientistCreatureScanMission(pathScientistCreatureInfoId));
+
+            Assert.True(manager.IsMissionComplete(pathMissionId));
+            Assert.True(manager.HasScannedScientistCreature(pathScientistCreatureInfoId));
+
+            ServerPathMissionUpdate completeUpdate = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerPathMissionUpdate>()
+                .Last();
+            Assert.Equal(pathMissionId, completeUpdate.Mission.PathMissionId);
+            Assert.True(completeUpdate.Mission.Completed);
+            Assert.Equal(requiredScans, completeUpdate.Mission.ProgressCount);
+            Assert.Equal(0u, completeUpdate.Mission.ProgressData);
+        }
+    }
+
+    [Fact]
+    public void NorthernWildsMissionRewardGrant_GrantsMissionRewardAndCompletedEpisodeReward()
+    {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u },
+                new PathLevelEntry { Id = 2u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 2u, PathXP = 100u }
+            ],
+            [
+                new PathRewardEntry
+                {
+                    Id = 1u,
+                    PathRewardTypeEnum = PathRewardGrant.MissionRewardType,
+                    ObjectId = 33u,
+                    Item2Id = 9001u,
+                    Count = 2u
+                },
+                new PathRewardEntry
+                {
+                    Id = 319u,
+                    PathRewardTypeEnum = PathRewardGrant.EpisodeRewardType,
+                    ObjectId = 8u,
+                    Item2Id = 15486u,
+                    Count = 1u
+                }
+            ],
+            CreateNorthernWildsPathMissionEntries(),
+            pathEpisodes: CreateNorthernWildsPathEpisodeEntries(),
+            worldZones: CreateNorthernWildsMissionZoneEntries(),
+            worldLocations: CreateNorthernWildsSoldierMissionWorldLocations(),
+            gameFormulas:
+            [
+                new GameFormulaEntry { Id = 0x017Au, Dataint0 = 50u }
+            ]);
+
+        {
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out _,
+                out _,
+                out var inventoryProxy);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 604u, ParentZoneId = 596u });
+
+            Assert.True(manager.TryActivateCurrentZoneEpisode());
+            Assert.True(manager.TryActivateSoldierMissionByEventId(12u));
+            Assert.True(manager.CompleteActiveMission(33));
+
+            IReadOnlyList<RecordingDispatchProxy<IInventory>.Invocation> itemCreates =
+                inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate));
+            Assert.Equal(2, itemCreates.Count);
+            Assert.Equal(InventoryLocation.Inventory, itemCreates[0].Arguments[0]);
+            Assert.Equal(9001u, itemCreates[0].Arguments[1]);
+            Assert.Equal(2u, itemCreates[0].Arguments[2]);
+            Assert.Equal(ItemUpdateReason.PathReward, itemCreates[0].Arguments[3]);
+            Assert.Equal(InventoryLocation.Inventory, itemCreates[1].Arguments[0]);
+            Assert.Equal(15486u, itemCreates[1].Arguments[1]);
+            Assert.Equal(1u, itemCreates[1].Arguments[2]);
+            Assert.Equal(ItemUpdateReason.PathReward, itemCreates[1].Arguments[3]);
+        }
+    }
+
+    [Fact]
+    public void NorthernWildsSoldierMission_DoesNotGrantEpisodeRewardUntilAllActiveEpisodeMissionsComplete()
+    {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u },
+                new PathLevelEntry { Id = 2u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 2u, PathXP = 100u }
+            ],
+            [
+                new PathRewardEntry
+                {
+                    Id = 319u,
+                    PathRewardTypeEnum = PathRewardGrant.EpisodeRewardType,
+                    ObjectId = 8u,
+                    Item2Id = 15486u,
+                    Count = 1u
+                }
+            ],
+            [
+                new PathMissionEntry
+                {
+                    Id = 33u,
+                    PathEpisodeId = 8u,
+                    PathTypeEnum = (uint)Path.Soldier,
+                    ObjectId = 12u,
+                    PathMissionFactionEnum = 1u
+                },
+                new PathMissionEntry
+                {
+                    Id = 34u,
+                    PathEpisodeId = 8u,
+                    PathTypeEnum = (uint)Path.Soldier,
+                    ObjectId = 13u,
+                    PathMissionFactionEnum = 1u
+                },
+                new PathMissionEntry
+                {
+                    Id = 156u,
+                    PathEpisodeId = 8u,
+                    PathTypeEnum = (uint)Path.Soldier,
+                    ObjectId = 2u,
+                    PathMissionFactionEnum = 1u
+                }
+            ],
+            pathEpisodes:
+            [
+                new PathEpisodeEntry { Id = 8u, WorldId = 426u, WorldZoneId = 35u, PathTypeEnum = (uint)Path.Soldier }
+            ],
+            worldZones:
+            [
+                new WorldZoneEntry { Id = 1u },
+                new WorldZoneEntry { Id = 35u }
+            ],
+            gameFormulas:
+            [
+                new GameFormulaEntry { Id = 0x017Au, Dataint0 = 50u }
+            ]);
+
+        {
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out var inventoryProxy);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(426u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 1u });
+
+            Assert.True(manager.TryActivateCurrentZoneEpisode());
+            Assert.True(manager.TryActivateSoldierMissionByEventId(12u));
+            Assert.True(manager.TryActivateSoldierMissionByEventId(13u));
+            Assert.True(manager.TryActivateSoldierMissionByEventId(2u));
+            Assert.True(manager.CompleteActiveMission(33));
+
+            IReadOnlyList<object> messages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .ToList();
+
+            ServerPathUpdateXP xpUpdate = messages.OfType<ServerPathUpdateXP>().Single();
+            Assert.Equal(50u, xpUpdate.TotalXP);
+
+            Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+
+            Assert.True(manager.CompleteActiveMission(34));
+            Assert.True(manager.CompleteActiveMission(156));
+
+            RecordingDispatchProxy<IInventory>.Invocation itemCreate =
+                Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+            Assert.Equal(InventoryLocation.Inventory, itemCreate.Arguments[0]);
+            Assert.Equal(15486u, itemCreate.Arguments[1]);
+            Assert.Equal(1u, itemCreate.Arguments[2]);
+            Assert.Equal(ItemUpdateReason.PathReward, itemCreate.Arguments[3]);
         }
     }
 
@@ -1998,7 +3569,7 @@ public class PathManagerTests
     }
 
     [Fact]
-    public void CompleteExplorerProgressMission_WithActiveVistaAndNode_CompletesMission()
+    public void CompleteExplorerProgressMission_WithActiveNodeMissionAndNode_CompletesMission()
     {
         BuildGameTableProvider(
             [
@@ -2390,7 +3961,7 @@ public class PathManagerTests
     }
 
     [Fact]
-    public void CompleteCurrentExplorerExploreZoneMission_WithActiveMissionAndParentMappedZone_CompletesMission()
+    public void CompleteCurrentExplorerExploreZoneMission_WithFullyExploredParentMappedZone_CompletesMission()
     {
         BuildGameTableProvider(
             [
@@ -2427,6 +3998,7 @@ public class PathManagerTests
                 out _,
                 out _);
             playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 11u, ParentZoneId = 10u });
+            playerProxy.SetProperty(nameof(IPlayer.ZoneMapManager), CreateZoneMapManagerWithExploredPercent(100));
             manager.ActivateMissions(9, new Dictionary<ushort, uint>
             {
                 [41] = 0
@@ -2441,6 +4013,59 @@ public class PathManagerTests
                 .OfType<ServerPathMissionAdvanced>()
                 .Single();
             Assert.Equal(41, advanced.PathMissionId);
+        }
+    }
+
+    [Fact]
+    public void CompleteCurrentExplorerExploreZoneMission_WithIncompleteMapZone_DoesNotCompleteMission()
+    {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 41u,
+                    PathTypeEnum = (uint)Path.Explorer,
+                    PathMissionTypeEnum = 0x0010u,
+                    ObjectId = 700u
+                }
+            ],
+            worldZones:
+            [
+                new WorldZoneEntry { Id = 10u }
+            ],
+            mapZones:
+            [
+                new MapZoneEntry { Id = 700u, WorldZoneId = 10u }
+            ]);
+
+        {
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _);
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 10u });
+            playerProxy.SetProperty(nameof(IPlayer.ZoneMapManager), CreateZoneMapManagerWithExploredPercent(99));
+            manager.ActivateMissions(9, new Dictionary<ushort, uint>
+            {
+                [41] = 0
+            });
+
+            Assert.False(manager.CompleteCurrentExplorerExploreZoneMission());
+
+            Assert.False(manager.IsMissionComplete(41u));
+            Assert.Empty(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerPathMissionAdvanced>());
         }
     }
 
@@ -2482,6 +4107,7 @@ public class PathManagerTests
                 out _);
             playerProxy.SetProperty("Map", CreateMap(51u));
             playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 99u });
+            playerProxy.SetProperty(nameof(IPlayer.ZoneMapManager), CreateZoneMapManagerWithExploredPercent(100));
             manager.ActivateMissions(9, new Dictionary<ushort, uint>
             {
                 [42] = 0
@@ -2530,6 +4156,7 @@ public class PathManagerTests
                 out _,
                 out _);
             playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 10u });
+            playerProxy.SetProperty(nameof(IPlayer.ZoneMapManager), CreateZoneMapManagerWithExploredPercent(100));
             manager.ActivateMissions(9, new Dictionary<ushort, uint>
             {
                 [41] = 0
@@ -2585,6 +4212,7 @@ public class PathManagerTests
                 out _,
                 out _);
             playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 10u });
+            playerProxy.SetProperty(nameof(IPlayer.ZoneMapManager), CreateZoneMapManagerWithExploredPercent(100));
             manager.ActivateMissions(9, new Dictionary<ushort, uint>
             {
                 [41] = 0
@@ -2627,9 +4255,52 @@ public class PathManagerTests
                 [1254] = 0
             });
 
+            Assert.True(manager.IsMissionActiveByObjectId(1u));
+            Assert.False(manager.IsMissionComplete(1254u));
             Assert.True(manager.CompleteMissionByObjectId(1u));
 
             Assert.True(manager.IsMissionComplete(1254u));
+            Assert.True(manager.IsMissionCompleteByObjectId(1u));
+            Assert.False(manager.IsMissionActiveByObjectId(1u));
+        }
+    }
+
+    [Fact]
+    public void IsMissionCompleteByObjectId_WithCompletedMatchingMission_ReturnsTrue()
+    {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry { Id = 1254u, PathEpisodeId = 9u, PathTypeEnum = (uint)Path.Explorer, ObjectId = 1u }
+            ]);
+
+        {
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out _,
+                out _,
+                out _,
+                pathMissionModels:
+                [
+                    new CharacterPathMissionModel
+                    {
+                        Id = 1,
+                        PathMissionId = 1254,
+                        PathEpisodeId = 9,
+                        Completed = 1,
+                        State = (byte)PathMissionState.Complete
+                    }
+                ]);
+
+            Assert.True(manager.IsMissionCompleteByObjectId(1u));
+            Assert.False(manager.IsMissionActiveByObjectId(1u));
         }
     }
 
@@ -2660,6 +4331,7 @@ public class PathManagerTests
                 [1254] = 0
             });
 
+            Assert.False(manager.IsMissionActiveByObjectId(1u));
             Assert.False(manager.CompleteMissionByObjectId(1u));
             Assert.False(manager.IsMissionComplete(1254u));
         }
@@ -2695,6 +4367,7 @@ public class PathManagerTests
                 [1254] = 0
             });
 
+            Assert.False(manager.IsMissionActiveByObjectId(1u));
             Assert.False(manager.CompleteMissionByObjectId(1u));
             Assert.False(manager.IsMissionComplete(1254u));
         }
@@ -3486,7 +5159,8 @@ public class PathManagerTests
         out RecordingDispatchProxy<IInventory> inventoryProxy,
         IEnumerable<CharacterPathMissionModel> pathMissionModels = null,
         IEnumerable<CharacterDatacubeModel> datacubeModels = null,
-        IGameTableManager gameTableManager = null)
+        IGameTableManager gameTableManager = null,
+        IEntityFactory entityFactory = null)
     {
         player = RecordingDispatchProxy<IPlayer>.Create(out playerProxy);
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out sessionProxy);
@@ -3503,17 +5177,21 @@ public class PathManagerTests
         var characterModel = new CharacterModel
         {
             Id = 42ul,
-            Path =
-            [
-                new CharacterPathModel
+            Path = Enumerable
+                .Range((int)Path.Soldier, (int)Path.Explorer - (int)Path.Soldier + 1)
+                .Select(i =>
                 {
-                    Id = 42ul,
-                    Path = (byte)path,
-                    Unlocked = 1,
-                    TotalXp = totalXp,
-                    LevelRewarded = levelRewarded
-                }
-            ],
+                    var modelPath = (Path)i;
+                    return new CharacterPathModel
+                    {
+                        Id = 42ul,
+                        Path = (byte)modelPath,
+                        Unlocked = (byte)(modelPath == path ? 1 : 0),
+                        TotalXp = modelPath == path ? totalXp : 0u,
+                        LevelRewarded = modelPath == path ? levelRewarded : (byte)0
+                    };
+                })
+                .ToList(),
             PathMission = pathMissionModels?.ToList() ?? [],
             Datacube    = datacubeModels?.ToList() ?? []
         };
@@ -3524,7 +5202,7 @@ public class PathManagerTests
         var datacubeManager = new DatacubeManager(player, characterModel, gameTableManager);
         playerProxy.SetProperty(nameof(IPlayer.DatacubeManager), datacubeManager);
 
-        var manager = new PathManager(player, characterModel, prerequisiteManager, gameTableManager);
+        var manager = new PathManager(player, characterModel, prerequisiteManager, gameTableManager, entityFactory);
         playerProxy.SetProperty(nameof(IPlayer.PathManager), manager);
 
         return manager;
@@ -3547,6 +5225,97 @@ public class PathManagerTests
         IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> proxy);
         proxy.SetProperty(nameof(IGameTableManager.PathScientistCreatureInfo), CreateGameTable(entries));
         return gameTableManager;
+    }
+
+    private void BuildScanbotGameTableProvider()
+    {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            scanBotProfiles:
+            [
+                new PathScientistScanBotProfileEntry { Id = 77u, Creature2Id = 12664u }
+            ],
+            creature2Entries:
+            [
+                new Creature2Entry { Id = 12664u }
+            ]);
+    }
+
+    private static IScannerUnitEntity CreateScanbot(out RecordingDispatchProxy<IScannerUnitEntity> scanbotProxy)
+    {
+        return RecordingDispatchProxy<IScannerUnitEntity>.Create(out scanbotProxy);
+    }
+
+    private static IEntityFactory CreateEntityFactory(
+        IScannerUnitEntity scanbot,
+        out RecordingDispatchProxy<IEntityFactory> entityFactoryProxy)
+    {
+        IEntityFactory entityFactory = RecordingDispatchProxy<IEntityFactory>.Create(out entityFactoryProxy);
+        entityFactoryProxy.SetMethodHandler(nameof(IEntityFactory.CreateEntity), _ => scanbot);
+        return entityFactory;
+    }
+
+    private static void ConfigureScanbotPlayer(
+        RecordingDispatchProxy<IPlayer> playerProxy,
+        IScannerUnitEntity scanbot,
+        bool profileUnlocked,
+        out RecordingDispatchProxy<IBaseMap> mapProxy)
+    {
+        ConfigureScanbotPlayer(
+            playerProxy,
+            scanbot,
+            profileUnlocked,
+            out mapProxy,
+            out _);
+    }
+
+    private static void ConfigureScanbotPlayer(
+        RecordingDispatchProxy<IPlayer> playerProxy,
+        IScannerUnitEntity scanbot,
+        bool profileUnlocked,
+        out RecordingDispatchProxy<IBaseMap> mapProxy,
+        out RecordingDispatchProxy<IPetCustomisationManager> petCustomisationManagerProxy,
+        uint scanBotProfileId = 77u)
+    {
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out mapProxy);
+        mapProxy.SetProperty(nameof(IBaseMap.Entry), new WorldEntry { Id = 426u });
+        mapProxy.SetMethodHandler(nameof(IBaseMap.CanEnter), _ => true);
+        mapProxy.SetMethodHandler(nameof(IBaseMap.GetEntity), args =>
+            args.Length == 1 && (uint)args[0] == 9001u ? scanbot : null);
+
+        IPetCustomisationManager petCustomisationManager =
+            RecordingDispatchProxy<IPetCustomisationManager>.Create(out petCustomisationManagerProxy);
+        IPetCustomisation customisation = profileUnlocked
+            ? RecordingDispatchProxy<IPetCustomisation>.Create(out _)
+            : null;
+        IPetCustomisation unlockedCustomisation = RecordingDispatchProxy<IPetCustomisation>.Create(out _);
+        petCustomisationManagerProxy.SetMethodHandler(nameof(IPetCustomisationManager.GetCustomisation), args =>
+            (PetType)args[0] == PetType.ScanBot && (uint)args[1] == scanBotProfileId ? customisation : null);
+        petCustomisationManagerProxy.SetMethodHandler(nameof(IPetCustomisationManager.UnlockScanBotProfile), args =>
+        {
+            if ((uint)args[0] == scanBotProfileId)
+                customisation = unlockedCustomisation;
+
+            return null;
+        });
+
+        playerProxy.SetProperty(nameof(IGridEntity.Guid), 500u);
+        playerProxy.SetProperty("Map", map);
+        playerProxy.SetProperty(nameof(IPlayer.Faction1), Faction.Exile);
+        playerProxy.SetProperty(nameof(IPlayer.Faction2), Faction.Exile);
+        playerProxy.SetProperty(nameof(IPlayer.PetCustomisationManager), petCustomisationManager);
+    }
+
+    private static IReadOnlyList<T> GetEncryptedMessages<T>(RecordingDispatchProxy<IGameSession> sessionProxy)
+    {
+        return sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .OfType<T>()
+            .ToList();
     }
 
     private static IGameTableManager CreateEmptyGameTableManager()
@@ -3576,7 +5345,9 @@ public class PathManagerTests
         IEnumerable<PathExplorerNodeEntry> pathExplorerNodes = null,
         IEnumerable<PathExplorerPowerMapEntry> pathExplorerPowerMaps = null,
         IEnumerable<PathEpisodeEntry> pathEpisodes = null,
+        IEnumerable<PathScientistCreatureInfoEntry> pathScientistCreatureInfos = null,
         IEnumerable<WorldZoneEntry> worldZones = null,
+        IEnumerable<WorldLocation2Entry> worldLocations = null,
         IEnumerable<MapZoneEntry> mapZones = null,
         IEnumerable<MapZoneWorldJoinEntry> mapZoneWorldJoins = null,
         IEnumerable<Spell4Entry> spell4Entries = null,
@@ -3584,8 +5355,10 @@ public class PathManagerTests
         IEnumerable<PathScientistScanBotProfileEntry> scanBotProfiles = null,
         IEnumerable<PrerequisiteEntry> prerequisites = null,
         IEnumerable<GameFormulaEntry> gameFormulas = null,
+        IEnumerable<PathScientistDatacubeDiscoveryEntry> pathScientistDatacubeDiscoveries = null,
         bool includeSpell4Table = true,
-        bool includeScanBotProfileTable = true)
+        bool includeScanBotProfileTable = true,
+        IEnumerable<Creature2Entry> creature2Entries = null)
     {
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
@@ -3601,9 +5374,13 @@ public class PathManagerTests
         SetAutoProperty(gameTableManager, nameof(GameTableManager.PathExplorerNode), CreateGameTable((pathExplorerNodes ?? []).ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.PathExplorerPowerMap), CreateGameTable((pathExplorerPowerMaps ?? []).ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.PathEpisode), CreateGameTable((pathEpisodes ?? []).ToArray()));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.PathScientistCreatureInfo), CreateGameTable((pathScientistCreatureInfos ?? []).ToArray()));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.PathScientistDatacubeDiscovery), CreateGameTable((pathScientistDatacubeDiscoveries ?? []).ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.WorldZone), CreateGameTable((worldZones ?? []).ToArray()));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.WorldLocation2), CreateGameTable((worldLocations ?? []).ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.MapZone), CreateGameTable((mapZones ?? []).ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.MapZoneWorldJoin), CreateGameTable((mapZoneWorldJoins ?? []).ToArray()));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.Creature2), CreateGameTable((creature2Entries ?? []).ToArray()));
         if (includeSpell4Table)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.Spell4), CreateGameTable((spell4Entries ?? []).ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.CharacterTitle), CreateGameTable((characterTitles ?? []).ToArray()));
@@ -3676,10 +5453,193 @@ public class PathManagerTests
         field.SetValue(instance, value);
     }
 
+    private static PathEpisodeEntry[] CreateNorthernWildsPathEpisodeEntries()
+    {
+        return
+        [
+            new PathEpisodeEntry { Id = 8u, WorldId = 426u, WorldZoneId = 35u, PathTypeEnum = (uint)Path.Soldier },
+            new PathEpisodeEntry { Id = 9u, WorldId = 426u, WorldZoneId = 35u, PathTypeEnum = (uint)Path.Explorer },
+            new PathEpisodeEntry { Id = 28u, WorldId = 426u, WorldZoneId = 35u, PathTypeEnum = (uint)Path.Scientist },
+            new PathEpisodeEntry { Id = 82u, WorldId = 426u, WorldZoneId = 35u, PathTypeEnum = (uint)Path.Settler }
+        ];
+    }
+
+    private static PathMissionEntry[] CreateNorthernWildsPathMissionEntries()
+    {
+        return
+        [
+            new PathMissionEntry
+            {
+                Id = 33u,
+                PathEpisodeId = 8u,
+                PathTypeEnum = (uint)Path.Soldier,
+                PathMissionTypeEnum = 0x0000u,
+                ObjectId = 12u,
+                WorldLocation2Id00 = 7760u,
+                PathMissionFactionEnum = 1u
+            },
+            new PathMissionEntry
+            {
+                Id = 34u,
+                PathEpisodeId = 8u,
+                PathTypeEnum = (uint)Path.Soldier,
+                PathMissionTypeEnum = 0x0000u,
+                ObjectId = 13u,
+                WorldLocation2Id00 = 9285u,
+                PathMissionFactionEnum = 1u
+            },
+            new PathMissionEntry
+            {
+                Id = 156u,
+                PathEpisodeId = 8u,
+                PathTypeEnum = (uint)Path.Soldier,
+                PathMissionTypeEnum = 0x0000u,
+                ObjectId = 2u,
+                WorldLocation2Id00 = 8866u,
+                PathMissionFactionEnum = 1u
+            },
+            new PathMissionEntry
+            {
+                Id = 35u,
+                PathEpisodeId = 9u,
+                PathTypeEnum = (uint)Path.Explorer,
+                PathMissionTypeEnum = 0x000Fu,
+                PathMissionDisplayTypeEnum = 31u,
+                ObjectId = 37u,
+                PathMissionFactionEnum = 1u
+            },
+            new PathMissionEntry
+            {
+                Id = 36u,
+                PathEpisodeId = 9u,
+                PathTypeEnum = (uint)Path.Explorer,
+                PathMissionTypeEnum = 0x000Fu,
+                PathMissionDisplayTypeEnum = 29u,
+                ObjectId = 38u,
+                PathMissionFactionEnum = 1u
+            },
+            new PathMissionEntry
+            {
+                Id = 158u,
+                PathEpisodeId = 9u,
+                PathTypeEnum = (uint)Path.Explorer,
+                PathMissionTypeEnum = 0x000Fu,
+                PathMissionDisplayTypeEnum = 31u,
+                ObjectId = 26u,
+                PathMissionFactionEnum = 1u
+            },
+            new PathMissionEntry
+            {
+                Id = 1254u,
+                PathEpisodeId = 9u,
+                PathTypeEnum = (uint)Path.Explorer,
+                PathMissionTypeEnum = 0x0010u,
+                PathMissionDisplayTypeEnum = 24u,
+                ObjectId = 1u,
+                PathMissionFactionEnum = 1u
+            },
+            new PathMissionEntry
+            {
+                Id = 42u,
+                PathEpisodeId = 28u,
+                PathTypeEnum = (uint)Path.Scientist,
+                PathMissionTypeEnum = 0x0002u,
+                ObjectId = 34u,
+                PathMissionFactionEnum = 1u
+            },
+            new PathMissionEntry
+            {
+                Id = 160u,
+                PathEpisodeId = 28u,
+                PathTypeEnum = (uint)Path.Scientist,
+                PathMissionTypeEnum = 0x0002u,
+                ObjectId = 130u,
+                PathMissionFactionEnum = 1u
+            },
+            new PathMissionEntry
+            {
+                Id = 648u,
+                PathEpisodeId = 28u,
+                PathTypeEnum = (uint)Path.Scientist,
+                PathMissionTypeEnum = 0x0002u,
+                ObjectId = 128u,
+                PathMissionFactionEnum = 1u
+            },
+            new PathMissionEntry
+            {
+                Id = 650u,
+                PathEpisodeId = 82u,
+                PathTypeEnum = (uint)Path.Settler,
+                PathMissionTypeEnum = 0x0013u,
+                ObjectId = 46u,
+                PathMissionFactionEnum = 1u
+            },
+            new PathMissionEntry
+            {
+                Id = 651u,
+                PathEpisodeId = 82u,
+                PathTypeEnum = (uint)Path.Settler,
+                PathMissionTypeEnum = 0x0013u,
+                ObjectId = 47u,
+                PathMissionFactionEnum = 1u
+            },
+            new PathMissionEntry
+            {
+                Id = 652u,
+                PathEpisodeId = 82u,
+                PathTypeEnum = (uint)Path.Settler,
+                PathMissionTypeEnum = 0x0013u,
+                ObjectId = 48u,
+                PathMissionFactionEnum = 1u
+            }
+        ];
+    }
+
+    private static WorldZoneEntry[] CreateNorthernWildsMissionZoneEntries()
+    {
+        return
+        [
+            new WorldZoneEntry { Id = 35u },
+            new WorldZoneEntry { Id = 590u, ParentZoneId = 35u },
+            new WorldZoneEntry { Id = 596u, ParentZoneId = 590u },
+            new WorldZoneEntry { Id = 602u, ParentZoneId = 596u },
+            new WorldZoneEntry { Id = 604u, ParentZoneId = 596u },
+            new WorldZoneEntry { Id = 647u, ParentZoneId = 596u },
+            new WorldZoneEntry { Id = 651u, ParentZoneId = 596u }
+        ];
+    }
+
+    private static WorldLocation2Entry[] CreateNorthernWildsSoldierMissionWorldLocations()
+    {
+        return
+        [
+            new WorldLocation2Entry { Id = 7760u, WorldId = 426u, WorldZoneId = 604u },
+            new WorldLocation2Entry { Id = 8866u, WorldId = 426u, WorldZoneId = 651u },
+            new WorldLocation2Entry { Id = 9285u, WorldId = 426u, WorldZoneId = 602u }
+        ];
+    }
+
+    private static PathScientistCreatureInfoEntry[] CreateNorthernWildsScientistCreatureInfoEntries()
+    {
+        return
+        [
+            new PathScientistCreatureInfoEntry { Id = 34u, ChecklistCount = 3u },
+            new PathScientistCreatureInfoEntry { Id = 128u, ChecklistCount = 15u },
+            new PathScientistCreatureInfoEntry { Id = 130u, ChecklistCount = 3u }
+        ];
+    }
+
     private static IBaseMap CreateMap(uint worldId)
     {
         IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out RecordingDispatchProxy<IBaseMap> mapProxy);
         mapProxy.SetProperty(nameof(IBaseMap.Entry), new WorldEntry { Id = worldId });
         return map;
+    }
+
+    private static IZoneMapManager CreateZoneMapManagerWithExploredPercent(byte exploredPercent)
+    {
+        IZoneMapManager zoneMapManager = RecordingDispatchProxy<IZoneMapManager>.Create(out RecordingDispatchProxy<IZoneMapManager> zoneMapProxy);
+        zoneMapProxy.SetMethodReturn(nameof(IZoneMapManager.GetMapZoneExploredPercent), exploredPercent);
+        return zoneMapManager;
     }
 }

@@ -17,6 +17,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Path
         {
             log.LogDebug("ClientPathScientistRequestScanbot: player={Player} profile={Profile} isGameCommand={IsGameCommand}",
                 session.Player?.Guid, requestScanbot.ScanbotProfile, requestScanbot.IsGameCommand);
+
+            if (session.Player?.PathManager?.TryDeployScientistScanbot(requestScanbot.ScanbotProfile) != true)
+                log.LogDebug("ClientPathScientistRequestScanbot rejected: player={Player} profile={Profile}",
+                    session.Player?.Guid, requestScanbot.ScanbotProfile);
         }
     }
 }

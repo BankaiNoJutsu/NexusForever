@@ -46,9 +46,12 @@ namespace NexusForever.Game.Prerequisite
         /// </summary>
         public bool Meets(IPlayer player, uint prerequisiteId, IPrerequisiteParameters parameters)
         {
-            PrerequisiteEntry entry = gameTableManager.Prerequisite.GetEntry(prerequisiteId);
+            PrerequisiteEntry entry = gameTableManager?.Prerequisite?.GetEntry(prerequisiteId);
             if (entry == null)
-                throw new ArgumentException();
+            {
+                log.LogWarning("Missing prerequisite row {PrerequisiteId}; failing prerequisite check closed.", prerequisiteId);
+                return false;
+            }
 
             switch (entry.Flags)
             {

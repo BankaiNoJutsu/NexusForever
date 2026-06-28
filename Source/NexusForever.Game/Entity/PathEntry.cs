@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
@@ -105,15 +106,17 @@ namespace NexusForever.Game.Entity
 
             if ((saveMask & PathSaveMask.Create) != 0)
             {
-                // Path doesn't exist in database, all infomation must be saved
-                context.Add(new CharacterPathModel
+                CharacterPathModel model = new()
                 {
                     Id            = CharacterId,
                     Path          = (byte)Path,
                     Unlocked      = Convert.ToByte(Unlocked),
                     TotalXp       = TotalXp,
                     LevelRewarded = LevelRewarded
-                });
+                };
+
+                if (!TryUpsertCreatedPath(context, model))
+                    SaveCreatedPathWithChangeTracker(context, model);
             }
             else
             {
@@ -145,6 +148,87 @@ namespace NexusForever.Game.Entity
             }
 
             saveMask = PathSaveMask.None;
+        }
+
+        internal static void UpsertTrackedCreates(CharacterContext context)
+        {
+            List<CharacterPathModel> models = context.ChangeTracker.Entries<CharacterPathModel>()
+                .Where(e => e.State == EntityState.Added)
+                .Select(e => new CharacterPathModel
+                {
+                    Id            = e.Entity.Id,
+                    Path          = e.Entity.Path,
+                    Unlocked      = e.Entity.Unlocked,
+                    TotalXp       = e.Entity.TotalXp,
+                    LevelRewarded = e.Entity.LevelRewarded
+                })
+                .ToList();
+
+            foreach (CharacterPathModel model in models)
+                if (!TryUpsertCreatedPath(context, model))
+                    return;
+        }
+
+        private static bool TryUpsertCreatedPath(CharacterContext context, CharacterPathModel model)
+        {
+            string providerName = context.Database.ProviderName;
+            if (providerName == null)
+                return false;
+
+            if (providerName.Contains("MySql", StringComparison.OrdinalIgnoreCase))
+            {
+                DetachTrackedPath(context, model.Id, model.Path);
+                context.Database.ExecuteSqlInterpolated($@"
+                    INSERT INTO `character_path` (`id`, `path`, `unlocked`, `totalXp`, `levelRewarded`)
+                    VALUES ({model.Id}, {model.Path}, {model.Unlocked}, {model.TotalXp}, {model.LevelRewarded})
+                    ON DUPLICATE KEY UPDATE
+                        `unlocked` = {model.Unlocked},
+                        `totalXp` = {model.TotalXp},
+                        `levelRewarded` = {model.LevelRewarded};");
+                return true;
+            }
+
+            if (providerName.Contains("Sqlite", StringComparison.OrdinalIgnoreCase))
+            {
+                DetachTrackedPath(context, model.Id, model.Path);
+                long characterId = checked((long)model.Id);
+                context.Database.ExecuteSqlInterpolated($@"
+                    INSERT INTO ""character_path"" (""id"", ""path"", ""unlocked"", ""totalXp"", ""levelRewarded"")
+                    VALUES ({characterId}, {model.Path}, {model.Unlocked}, {model.TotalXp}, {model.LevelRewarded})
+                    ON CONFLICT(""id"", ""path"") DO UPDATE SET
+                        ""unlocked"" = excluded.""unlocked"",
+                        ""totalXp"" = excluded.""totalXp"",
+                        ""levelRewarded"" = excluded.""levelRewarded"";");
+                return true;
+            }
+
+            return false;
+        }
+
+        private static void DetachTrackedPath(CharacterContext context, ulong characterId, byte path)
+        {
+            foreach (EntityEntry<CharacterPathModel> entry in context.ChangeTracker.Entries<CharacterPathModel>().ToList())
+            {
+                if (entry.Entity.Id != characterId || entry.Entity.Path != path)
+                    continue;
+
+                entry.State = EntityState.Detached;
+            }
+        }
+
+        private static void SaveCreatedPathWithChangeTracker(CharacterContext context, CharacterPathModel model)
+        {
+            CharacterPathModel existing = context.CharacterPath.Find(model.Id, model.Path);
+            if (existing == null)
+            {
+                // Path doesn't exist in database, all information must be saved.
+                context.Add(model);
+                return;
+            }
+
+            existing.Unlocked      = model.Unlocked;
+            existing.TotalXp       = model.TotalXp;
+            existing.LevelRewarded = model.LevelRewarded;
         }
     }
 }

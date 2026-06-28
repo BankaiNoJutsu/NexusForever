@@ -47,6 +47,11 @@ namespace NexusForever.Game.Abstract.Entity
         bool TryActivateCurrentZoneEpisode();
 
         /// <summary>
+        /// Activates table-backed path missions for a specific entered world zone.
+        /// </summary>
+        bool TryActivateCurrentZoneEpisode(uint worldZoneId);
+
+        /// <summary>
         /// Completes a path mission if it is active or known.
         /// </summary>
         bool CompleteMission(ushort pathMissionId);
@@ -57,7 +62,7 @@ namespace NexusForever.Game.Abstract.Entity
         bool CompleteActiveMission(ushort pathMissionId);
 
         /// <summary>
-        /// Completes an active explorer progress mission when the mission and node tables match the client report.
+        /// Completes an active explorer node progress mission when the mission and node tables match the client report.
         /// </summary>
         bool CompleteExplorerProgressMission(ushort pathMissionId, uint explorerNodeIndex);
 
@@ -67,7 +72,7 @@ namespace NexusForever.Game.Abstract.Entity
         bool CompleteExplorerPowerMapMission(uint pathExplorerPowerMapId);
 
         /// <summary>
-        /// Completes active explorer explore-zone missions that match the player's current map zone.
+        /// Completes active explorer explore-zone missions that match the player's fully explored current map zone.
         /// </summary>
         bool CompleteCurrentExplorerExploreZoneMission();
 
@@ -77,9 +82,34 @@ namespace NexusForever.Game.Abstract.Entity
         bool CompleteMissionByObjectId(uint objectId);
 
         /// <summary>
+        /// Returns whether an active path mission has a PathMission objectId matching the supplied object id.
+        /// </summary>
+        bool IsMissionActiveByObjectId(uint objectId);
+
+        /// <summary>
+        /// Returns whether a completed path mission has a PathMission objectId matching the supplied object id.
+        /// </summary>
+        bool IsMissionCompleteByObjectId(uint objectId);
+
+        /// <summary>
+        /// Activates an eligible Soldier holdout mission for the supplied PathSoldierEvent id.
+        /// </summary>
+        bool TryActivateSoldierMissionByEventId(uint pathSoldierEventId);
+
+        /// <summary>
         /// Completes active soldier path missions associated with the supplied tower defense row.
         /// </summary>
         bool CompleteMissionBySoldierTowerDefenseId(uint pathSoldierTowerDefenseId);
+
+        /// <summary>
+        /// Progresses active Scientist creature-info scan missions for the supplied creature-info row.
+        /// </summary>
+        bool ProgressScientistCreatureScanMission(uint pathScientistCreatureInfoId);
+
+        /// <summary>
+        /// Completes active Scientist datacube-discovery missions for the player's current world zone.
+        /// </summary>
+        bool CompleteCurrentScientistDatacubeDiscoveryMission();
 
         /// <summary>
         /// Progresses active Soldier assassinate missions for a killed creature or target group.
@@ -105,6 +135,26 @@ namespace NexusForever.Game.Abstract.Entity
         /// Records scientist scan credit for <see cref="GameTable.Model.PathScientistCreatureInfoEntry.Id"/>.
         /// </summary>
         void MarkScientistCreatureScanned(uint pathScientistCreatureInfoId);
+
+        /// <summary>
+        /// Attempts to deploy the supplied Scientist scanbot profile.
+        /// </summary>
+        bool TryDeployScientistScanbot(uint pathScientistScanBotProfileId);
+
+        /// <summary>
+        /// Dismisses the currently deployed Scientist scanbot, if present.
+        /// </summary>
+        bool DismissScientistScanbot();
+
+        /// <summary>
+        /// Confirms a pending Scientist scanbot summon once the map has assigned a real unit id.
+        /// </summary>
+        bool OnScientistScanbotSummoned(IWorldEntity entity);
+
+        /// <summary>
+        /// Clears Scientist scanbot state when the owned scanner unit leaves the map.
+        /// </summary>
+        bool OnScientistScanbotUnsummoned(IWorldEntity entity);
 
         /// <summary>
         /// Returns settler infrastructure progress for <see cref="GameTable.Model.PathSettlerInfrastructureEntry.Id"/>.

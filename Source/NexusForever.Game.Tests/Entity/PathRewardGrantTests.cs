@@ -135,4 +135,73 @@ public class PathRewardGrantTests
 
         Assert.False(PathRewardGrant.IsGrantableMissionReward(entry, 35));
     }
+
+    [Theory]
+    [InlineData(nameof(PathRewardEntry.Item2Id), 15486u)]
+    [InlineData(nameof(PathRewardEntry.Spell4Id), 69661u)]
+    [InlineData(nameof(PathRewardEntry.CharacterTitleId), 18u)]
+    [InlineData(nameof(PathRewardEntry.PathScientistScanBotProfileId), 6u)]
+    public void IsGrantableEpisodeReward_AllowsSupportedEpisodeRewardKindsForMatchingEpisode(string field, uint value)
+    {
+        var entry = new PathRewardEntry
+        {
+            PathRewardTypeEnum = PathRewardGrant.EpisodeRewardType,
+            ObjectId = 8u
+        };
+        typeof(PathRewardEntry).GetField(field)!.SetValue(entry, value);
+
+        Assert.True(PathRewardGrant.IsGrantableEpisodeReward(entry, 8));
+    }
+
+    [Fact]
+    public void IsGrantableEpisodeReward_RejectsNonEpisodeRewards()
+    {
+        var entry = new PathRewardEntry
+        {
+            PathRewardTypeEnum = PathRewardGrant.MissionRewardType,
+            ObjectId = 8u,
+            Item2Id = 15486u
+        };
+
+        Assert.False(PathRewardGrant.IsGrantableEpisodeReward(entry, 8));
+    }
+
+    [Fact]
+    public void IsGrantableEpisodeReward_RejectsDifferentEpisodeObjectId()
+    {
+        var entry = new PathRewardEntry
+        {
+            PathRewardTypeEnum = PathRewardGrant.EpisodeRewardType,
+            ObjectId = 9u,
+            Item2Id = 15486u
+        };
+
+        Assert.False(PathRewardGrant.IsGrantableEpisodeReward(entry, 8));
+    }
+
+    [Fact]
+    public void IsGrantableEpisodeReward_RejectsFlaggedRewards()
+    {
+        var entry = new PathRewardEntry
+        {
+            PathRewardTypeEnum = PathRewardGrant.EpisodeRewardType,
+            ObjectId = 8u,
+            Item2Id = 15486u,
+            PathRewardFlags = 1
+        };
+
+        Assert.False(PathRewardGrant.IsGrantableEpisodeReward(entry, 8));
+    }
+
+    [Fact]
+    public void IsGrantableEpisodeReward_RejectsEmptyRewardRows()
+    {
+        var entry = new PathRewardEntry
+        {
+            PathRewardTypeEnum = PathRewardGrant.EpisodeRewardType,
+            ObjectId = 8u
+        };
+
+        Assert.False(PathRewardGrant.IsGrantableEpisodeReward(entry, 8));
+    }
 }

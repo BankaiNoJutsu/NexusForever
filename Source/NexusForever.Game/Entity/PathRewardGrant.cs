@@ -8,6 +8,7 @@ namespace NexusForever.Game.Entity
         public const uint MaxPathLevel = 30u;
         public const uint LevelRewardType = 0u;
         public const uint MissionRewardType = 1u;
+        public const uint EpisodeRewardType = 2u;
 
         public static uint GetLevelRewardObjectId(Path path, uint level)
         {
@@ -48,6 +49,26 @@ namespace NexusForever.Game.Entity
                 return false;
 
             if (entry.ObjectId != pathMissionId)
+                return false;
+
+            return entry.Item2Id > 0
+                || entry.Spell4Id > 0
+                || entry.CharacterTitleId > 0
+                || entry.PathScientistScanBotProfileId > 0;
+        }
+
+        public static bool IsGrantableEpisodeReward(PathRewardEntry entry, ushort pathEpisodeId)
+        {
+            if (entry == null)
+                throw new ArgumentNullException(nameof(entry));
+
+            if (entry.PathRewardFlags > 0)
+                return false;
+
+            if (entry.PathRewardTypeEnum != EpisodeRewardType)
+                return false;
+
+            if (entry.ObjectId != pathEpisodeId)
                 return false;
 
             return entry.Item2Id > 0

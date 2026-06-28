@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Prerequisite;
+using NexusForever.Game.Map;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
@@ -23,28 +25,62 @@ namespace NexusForever.Game.Entity
     {
         private const uint MaxPathCount = 4u;
         private const uint MaxPathLevel = PathRewardGrant.MaxPathLevel;
+        private const uint SoldierHoldoutMissionType = 0x0000;
         private const uint SoldierAssassinateMissionType = 0x0004;
-        private const uint ExplorerVistaMissionType = 0x000F;
+        private const uint ScientistCreatureInfoMissionType = 0x0002;
+        private const uint ScientistDatacubeDiscoveryMissionType = 0x0018;
+        private const uint ExplorerNodeMissionType = 0x000F;
         private const uint ExplorerExploreZoneMissionType = 0x0010;
         private const uint ExplorerPowerMapMissionType = 0x0012;
+        private const byte ExplorerExploreZoneCompletePercent = 100;
         private const uint SettlerHubMissionType = 0x0013;
         private const uint SettlerInfrastructureMissionType = 0x0015;
         private const uint SettlerImprovementMaxTier = 4u;
         private const uint PathMissionCompletionXpGameFormulaId = 0x017Au;
         private const uint DefaultMissionCompletionXp = 50u;
+        private const uint DefaultScientistScanBotProfileId = 1u;
         private const string PathLevelTableName = "PathLevel.tbl";
         private const string PathRewardTableName = "PathReward.tbl";
         private const string Spell4TableName = "Spell4.tbl";
         private const string CharacterTitleTableName = "CharacterTitle.tbl";
         private const string PathScientistScanBotProfileTableName = "PathScientistScanBotProfile.tbl";
 
+        private static readonly IReadOnlyDictionary<(uint WorldId, uint RuntimeWorldZoneId, Path Path), ushort> ReviewedRuntimePathEpisodeZoneBridges =
+            new Dictionary<(uint WorldId, uint RuntimeWorldZoneId, Path Path), ushort>
+            {
+                // DataMapping path_episode_zone_map.csv maps these build-16042 Northern Wilds
+                // path episodes to runtime/source zone 1, while PathEpisode.tbl keeps client
+                // WorldZoneId 35. Keep this as a reviewed runtime-owned bridge instead of
+                // querying authoring/staging tables at runtime.
+                [(426u, 1u, Path.Soldier)]   = 8,
+                [(426u, 1u, Path.Settler)]   = 82,
+                [(426u, 1u, Path.Scientist)] = 28,
+                [(426u, 1u, Path.Explorer)]  = 9
+            };
+
+        private static readonly IReadOnlyDictionary<(uint WorldId, uint RuntimeWorldZoneId, Path Path), IReadOnlySet<ushort>> ReviewedRuntimePathMissionZoneBridges =
+            new Dictionary<(uint WorldId, uint RuntimeWorldZoneId, Path Path), IReadOnlySet<ushort>>
+            {
+                // PathMission 156 / WorldLocation2 8866 is the Yeti holdout near the
+                // Landing Site creature/quest indicator area. The table row is in zone 651,
+                // while the player-visible area can report Landing Site zone 647.
+                [(426u, 647u, Path.Soldier)] = new HashSet<ushort> { 156 },
+                [(426u, 651u, Path.Soldier)] = new HashSet<ushort> { 156 }
+            };
+
         private readonly IPlayer player;
         private readonly IPrerequisiteManager prerequisiteManager;
         private readonly IGameTableManager gameTableManager;
+        private readonly IEntityFactory entityFactory;
         private readonly Dictionary<Path, IPathEntry> paths = new();
         private readonly Dictionary<ushort, PathMissionRuntimeState> pathMissions = [];
         private readonly HashSet<ushort> activatedEpisodes = [];
+        private readonly HashSet<ushort> activatedMissions = [];
         private readonly Dictionary<uint, SettlerImprovementGroupRuntimeStatus> settlerImprovementGroupStatus = new();
+        private IWorldEntity pendingScientistScanbot;
+        private uint activeScientistScanbotGuid;
+        private bool scientistScanbotDismissPending;
+        private bool initialPacketsSent;
 
         /// <summary>
         /// Create a new <see cref="IPathManager"/> from <see cref="IPlayer"/> database model.
@@ -53,11 +89,13 @@ namespace NexusForever.Game.Entity
             IPlayer owner,
             CharacterModel model,
             IPrerequisiteManager prerequisiteManager = null,
-            IGameTableManager gameTableManager = null)
+            IGameTableManager gameTableManager = null,
+            IEntityFactory entityFactory = null)
         {
             player = owner;
             this.prerequisiteManager = prerequisiteManager;
             this.gameTableManager = gameTableManager;
+            this.entityFactory = entityFactory;
             foreach (CharacterPathModel pathModel in model.Path)
                 paths.Add((Path)pathModel.Path, new PathEntry(pathModel));
 
@@ -76,17 +114,36 @@ namespace NexusForever.Game.Entity
 
         private void HydrateScientistScanStateFromCompletedMissions()
         {
-            foreach (KeyValuePair<ushort, uint> mapping in PathScientistPrerequisiteHelper.MissionToCreatureInfoId)
-            {
-                if (IsMissionComplete(mapping.Key))
-                    MarkScientistCreatureScanned(mapping.Value);
-            }
+            foreach (PathMissionRuntimeState state in pathMissions.Values)
+                if (state.Completed)
+                    TryMarkScientistScanFromMission(state.MissionId);
         }
 
         private void TryMarkScientistScanFromMission(ushort pathMissionId)
         {
-            if (PathScientistPrerequisiteHelper.MissionToCreatureInfoId.TryGetValue(pathMissionId, out uint creatureInfoId))
+            if (TryGetScientistCreatureInfoId(pathMissionId, out uint creatureInfoId))
                 MarkScientistCreatureScanned(creatureInfoId);
+        }
+
+        private bool TryGetScientistCreatureInfoId(ushort pathMissionId, out uint creatureInfoId)
+        {
+            creatureInfoId = 0u;
+
+            PathMissionEntry mission = gameTableManager?.PathMission?.GetEntry(pathMissionId);
+            if (mission == null
+                || mission.PathTypeEnum != (uint)Path.Scientist
+                || mission.PathMissionTypeEnum != ScientistCreatureInfoMissionType
+                || mission.ObjectId == 0u
+                || mission.ObjectId > ushort.MaxValue)
+            {
+                return false;
+            }
+
+            if (gameTableManager.PathScientistCreatureInfo?.GetEntry(mission.ObjectId) == null)
+                return false;
+
+            creatureInfoId = mission.ObjectId;
+            return true;
         }
 
         public bool HasScannedScientistCreature(uint pathScientistCreatureInfoId)
@@ -103,6 +160,234 @@ namespace NexusForever.Game.Entity
                 return;
 
             player.DatacubeManager.AddScientistCreatureScan((ushort)pathScientistCreatureInfoId);
+        }
+
+        public bool TryDeployScientistScanbot(uint pathScientistScanBotProfileId)
+        {
+            if (pendingScientistScanbot != null
+                || activeScientistScanbotGuid != 0u
+                || scientistScanbotDismissPending)
+            {
+                return false;
+            }
+
+            if (!TryGetDeployableScientistScanbotProfile(pathScientistScanBotProfileId, out PathScientistScanBotProfileEntry scanBotProfile))
+                return false;
+
+            IScannerUnitEntity scanbot = entityFactory.CreateEntity<IScannerUnitEntity>();
+            scanbot.Initialise(scanBotProfile.Creature2Id);
+            scanbot.SummonerGuid = player.Guid;
+            scanbot.Rotation     = player.Rotation;
+            scanbot.Faction1     = player.Faction1;
+            scanbot.Faction2     = player.Faction2;
+
+            var mapPosition = new MapPosition
+            {
+                Info = new MapInfo
+                {
+                    Entry   = player.Map.Entry,
+                    MapLock = (player.Map as IMapInstance)?.MapLock
+                },
+                Position = player.Position
+            };
+
+            if (!player.Map.CanEnter(scanbot, mapPosition))
+                return false;
+
+            pendingScientistScanbot = scanbot;
+
+            player.Map.EnqueueAdd(scanbot, mapPosition);
+            if (scanbot.Guid != 0u)
+                OnScientistScanbotSummoned(scanbot);
+
+            return true;
+        }
+
+        private bool TryGetDeployableScientistScanbotProfile(uint pathScientistScanBotProfileId, out PathScientistScanBotProfileEntry scanBotProfile)
+        {
+            scanBotProfile = null;
+
+            if (player.Path != Path.Scientist
+                || player.Guid == 0u
+                || player.Map == null
+                || entityFactory == null)
+            {
+                return false;
+            }
+
+            foreach (uint candidateProfileId in GetScientistScanbotProfileCandidates(pathScientistScanBotProfileId))
+            {
+                scanBotProfile = gameTableManager?.PathScientistScanBotProfile?.GetEntry(candidateProfileId);
+                if (scanBotProfile == null || scanBotProfile.Creature2Id == 0u)
+                    continue;
+
+                if (gameTableManager.Creature2?.GetEntry(scanBotProfile.Creature2Id) == null)
+                    continue;
+
+                if (player.PetCustomisationManager?.GetCustomisation(PetType.ScanBot, scanBotProfile.Id) != null)
+                    return true;
+
+                if (TryRecoverScientistScanbotProfileUnlock(scanBotProfile.Id))
+                    return true;
+            }
+
+            scanBotProfile = null;
+            return false;
+        }
+
+        private IEnumerable<uint> GetScientistScanbotProfileCandidates(uint pathScientistScanBotProfileId)
+        {
+            if (pathScientistScanBotProfileId != 0u)
+            {
+                yield return pathScientistScanBotProfileId;
+                yield break;
+            }
+
+            yield return DefaultScientistScanBotProfileId;
+
+            foreach (PathScientistScanBotProfileEntry entry in gameTableManager?.PathScientistScanBotProfile?.Entries ?? [])
+            {
+                if (entry.Id != 0u && entry.Id != DefaultScientistScanBotProfileId)
+                    yield return entry.Id;
+            }
+        }
+
+        private bool TryRecoverScientistScanbotProfileUnlock(uint pathScientistScanBotProfileId)
+        {
+            if (pathScientistScanBotProfileId == 0u
+                || player.PetCustomisationManager == null
+                || !IsEarnedScientistScanbotLevelReward(pathScientistScanBotProfileId))
+            {
+                return false;
+            }
+
+            player.PetCustomisationManager.UnlockScanBotProfile(pathScientistScanBotProfileId);
+            return player.PetCustomisationManager.GetCustomisation(PetType.ScanBot, pathScientistScanBotProfileId) != null;
+        }
+
+        private bool IsEarnedScientistScanbotLevelReward(uint pathScientistScanBotProfileId)
+        {
+            IPathEntry scientistEntry = GetPathEntry(Path.Scientist);
+            if (scientistEntry == null || !scientistEntry.Unlocked)
+                return false;
+
+            if (player.Path == Path.Scientist && pathScientistScanBotProfileId == DefaultScientistScanBotProfileId)
+                return true;
+
+            uint rewardedLevel = scientistEntry.LevelRewarded;
+            if (player.Path == Path.Scientist && rewardedLevel == 0u)
+                rewardedLevel = 1u;
+
+            if (rewardedLevel == 0u || gameTableManager?.PathReward?.Entries == null)
+                return false;
+
+            for (uint level = 1u; level <= rewardedLevel; level++)
+            {
+                uint rewardObjectId = PathRewardGrant.GetLevelRewardObjectId(Path.Scientist, level);
+                if (gameTableManager.PathReward.Entries.Any(entry =>
+                    entry.ObjectId == rewardObjectId
+                    && entry.PathScientistScanBotProfileId == pathScientistScanBotProfileId
+                    && PathRewardGrant.IsGrantableLevelReward(entry)
+                    && (entry.PrerequisiteId == 0u || GetPrerequisiteManager().Meets(player, entry.PrerequisiteId))))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public bool DismissScientistScanbot()
+        {
+            if (pendingScientistScanbot == null && activeScientistScanbotGuid == 0u)
+                return false;
+
+            scientistScanbotDismissPending = true;
+            SendScientistScanbotState(0u, GetScientistScanbotDismissCooldownMS());
+
+            bool removeQueued = TryRemoveScientistScanbot();
+            if (!removeQueued && pendingScientistScanbot == null)
+                ClearScientistScanbotState();
+
+            return true;
+        }
+
+        private bool TryRemoveScientistScanbot()
+        {
+            if (activeScientistScanbotGuid != 0u)
+            {
+                IWorldEntity activeScanbot = player.Map?.GetEntity<IWorldEntity>(activeScientistScanbotGuid);
+                if (activeScanbot?.SummonerGuid == player.Guid)
+                {
+                    activeScanbot.RemoveFromMap();
+                    return true;
+                }
+            }
+
+            if (pendingScientistScanbot?.InWorld == true)
+            {
+                pendingScientistScanbot.RemoveFromMap();
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool OnScientistScanbotSummoned(IWorldEntity entity)
+        {
+            if (!ReferenceEquals(entity, pendingScientistScanbot)
+                || entity.Guid == 0u
+                || entity.SummonerGuid != player.Guid)
+            {
+                return false;
+            }
+
+            if (scientistScanbotDismissPending)
+            {
+                entity.RemoveFromMap();
+                return true;
+            }
+
+            activeScientistScanbotGuid = entity.Guid;
+            pendingScientistScanbot = null;
+            SendScientistScanbotState(activeScientistScanbotGuid, 0u);
+            return true;
+        }
+
+        public bool OnScientistScanbotUnsummoned(IWorldEntity entity)
+        {
+            bool matchesPending = ReferenceEquals(entity, pendingScientistScanbot);
+            bool matchesActive = entity?.Guid != 0u && entity.Guid == activeScientistScanbotGuid;
+            if (!matchesPending && !matchesActive)
+                return false;
+
+            bool sendDespawn = !scientistScanbotDismissPending && activeScientistScanbotGuid != 0u;
+            ClearScientistScanbotState();
+
+            if (sendDespawn)
+                SendScientistScanbotState(0u, 0u);
+
+            return true;
+        }
+
+        private void ClearScientistScanbotState()
+        {
+            pendingScientistScanbot = null;
+            activeScientistScanbotGuid = 0u;
+            scientistScanbotDismissPending = false;
+        }
+
+        private uint GetScientistScanbotDismissCooldownMS()
+        {
+            // Cooldown timing is still blocked on retail evidence; avoid imposing a guessed client lockout.
+            return 0u;
+        }
+
+        private void SendScientistScanbotState(uint scanbotUnitId, uint scanbotCooldownMS)
+        {
+            player.Session.EnqueueMessageEncrypted(new ServerPathScientistScanbotState
+            {
+                ScanbotUnitId     = scanbotUnitId,
+                ScanbotCooldownMS = scanbotCooldownMS
+            });
         }
 
         private void Validate()
@@ -162,11 +447,15 @@ namespace NexusForever.Game.Entity
             if (IsPathActive(pathToActivate))
                 throw new ArgumentException("Path is already active.");
 
+            if (player.Path == Path.Scientist)
+                DismissScientistScanbot();
+
             player.Path = pathToActivate;
 
             SendServerPathActivateResult(GenericError.Ok);
             SendSetUnitPathTypePacket();
             SendPathLogPacket();
+            ReplayCurrentZoneEpisode(allowWhileLoading: false);
         }
 
         /// <summary>
@@ -192,6 +481,7 @@ namespace NexusForever.Game.Entity
 
             SendServerPathUnlockResult();
             SendPathLogPacket();
+            ReplayCurrentZoneEpisode(allowWhileLoading: false);
         }
 
         /// <summary>
@@ -260,6 +550,11 @@ namespace NexusForever.Game.Entity
 
         public void ActivateMissions(ushort episodeId, IReadOnlyDictionary<ushort, uint> missionXp)
         {
+            ActivateMissions(episodeId, missionXp, sendMissionActivate: true);
+        }
+
+        private void ActivateMissions(ushort episodeId, IReadOnlyDictionary<ushort, uint> missionXp, bool sendMissionActivate)
+        {
             if (episodeId == 0 || missionXp == null || missionXp.Count == 0)
                 return;
 
@@ -270,65 +565,187 @@ namespace NexusForever.Game.Entity
                 {
                     state = new PathMissionRuntimeState(player.CharacterId, missionId, episodeId);
                     pathMissions.Add(missionId, state);
-                    activatedMissionIds.Add(missionId);
                 }
 
                 state.EpisodeId = episodeId;
                 state.Xp = xp;
                 if (!state.Completed)
+                {
                     state.State = PathMissionState.Started;
+                    if (activatedMissions.Add(missionId))
+                        activatedMissionIds.Add(missionId);
+                }
             }
 
+            bool sendCurrentEpisode = activatedEpisodes.Add(episodeId);
             if (activatedMissionIds.Count == 0)
+            {
+                if (sendCurrentEpisode)
+                    SendPathCurrentEpisode(episodeId);
                 return;
+            }
 
-            if (!activatedEpisodes.Add(episodeId))
-                return;
-
-            SendPathCurrentEpisode(episodeId);
+            if (sendCurrentEpisode)
+                SendPathCurrentEpisode(episodeId);
             SendPathEpisodeProgress(episodeId, missionIds: activatedMissionIds);
-            SendPathMissionActivate(episodeId, missionIds: activatedMissionIds);
+            if (sendMissionActivate)
+                SendPathMissionActivate(episodeId, missionIds: activatedMissionIds);
+        }
+
+        private void DiscoverMissions(ushort episodeId, IReadOnlyDictionary<ushort, uint> missionXp)
+        {
+            if (episodeId == 0 || missionXp == null || missionXp.Count == 0)
+                return;
+
+            HashSet<ushort> discoveredMissionIds = [];
+            foreach ((ushort missionId, uint xp) in missionXp)
+            {
+                if (!pathMissions.TryGetValue(missionId, out PathMissionRuntimeState state))
+                {
+                    state = new PathMissionRuntimeState(player.CharacterId, missionId, episodeId);
+                    pathMissions.Add(missionId, state);
+                }
+
+                state.EpisodeId = episodeId;
+                state.Xp = xp;
+                if (state.Completed || state.State == PathMissionState.Complete)
+                    continue;
+
+                state.State = PathMissionState.Started;
+
+                if (activatedMissions.Add(missionId))
+                    discoveredMissionIds.Add(missionId);
+            }
+
+            bool sendCurrentEpisode = activatedEpisodes.Add(episodeId);
+            if (discoveredMissionIds.Count == 0)
+            {
+                if (sendCurrentEpisode)
+                    SendPathCurrentEpisode(episodeId);
+                return;
+            }
+
+            if (sendCurrentEpisode)
+                SendPathCurrentEpisode(episodeId);
+            SendPathMissionActivate(episodeId, missionIds: discoveredMissionIds);
         }
 
         public bool TryActivateCurrentZoneEpisode()
         {
-            uint worldId = player.Map?.Entry?.Id ?? 0u;
             WorldZoneEntry zone = player.Zone;
-            if (worldId == 0u || zone == null)
+            if (zone == null)
                 return false;
 
-            WorldZoneEntry rootZone = GetMostParentZone(zone);
-            if (rootZone == null)
+            return TryActivateCurrentZoneEpisode(zone.Id, allowWhileLoading: false);
+        }
+
+        public bool TryActivateCurrentZoneEpisode(uint worldZoneId)
+        {
+            return TryActivateCurrentZoneEpisode(worldZoneId, allowWhileLoading: false);
+        }
+
+        private bool TryActivateCurrentZoneEpisode(uint worldZoneId, bool allowWhileLoading)
+        {
+            uint worldId = player.Map?.Entry?.Id ?? 0u;
+            if (worldId == 0u || worldZoneId == 0u)
+                return false;
+
+            if (!allowWhileLoading && player.IsLoading)
                 return false;
 
             if (gameTableManager.PathEpisode?.Entries == null
                 || gameTableManager.PathMission?.Entries == null)
                 return false;
 
-            PathEpisodeEntry pathEpisode = gameTableManager.PathEpisode.Entries
-                .FirstOrDefault(e => e.WorldId == worldId
-                    && e.WorldZoneId == rootZone.Id
-                    && e.PathTypeEnum == (uint)player.Path);
+            IReadOnlyList<uint> zoneIds = GetCurrentAndAncestorZoneIds(worldZoneId);
+            if (zoneIds.Count == 0)
+                return false;
+
+            PathEpisodeEntry pathEpisode = GetCurrentZonePathEpisode(worldId, zoneIds);
             if (pathEpisode == null || pathEpisode.Id > 0x3FFFu)
                 return false;
 
-            Dictionary<ushort, uint> missions = gameTableManager.PathMission.Entries
+            List<PathMissionEntry> eligibleMissions = gameTableManager.PathMission.Entries
                 .Where(m => m.PathEpisodeId == pathEpisode.Id
                     && m.PathTypeEnum == (uint)player.Path
                     && IsMissionFactionAllowed(m)
                     && IsMissionPrerequisiteAllowed(m)
                     && m.Id <= 0x7FFFu)
                 .OrderBy(m => m.Id)
+                .ToList();
+
+            IReadOnlySet<ushort> reviewedZoneMissionIds = GetReviewedRuntimePathMissionIds(worldId, zoneIds);
+            bool hasLocationScopedMissions = eligibleMissions.Any(HasMissionWorldLocation);
+            List<PathMissionEntry> zoneMissions = eligibleMissions
+                .Where(m => reviewedZoneMissionIds.Contains((ushort)m.Id)
+                    || IsMissionLocationInZone(worldId, m, worldZoneId, zoneIds))
+                .ToList();
+            if (hasLocationScopedMissions)
+            {
+                eligibleMissions = zoneMissions
+                    .Concat(eligibleMissions.Where(m => !HasMissionWorldLocation(m)))
+                    .DistinctBy(m => m.Id)
+                    .OrderBy(m => m.Id)
+                    .ToList();
+            }
+            else if (zoneMissions.Count != 0)
+            {
+                eligibleMissions = zoneMissions;
+            }
+
+            Dictionary<ushort, uint> missionsToActivate = eligibleMissions
+                .Where(IsZoneEntryActivationAllowed)
                 .ToDictionary(m => (ushort)m.Id, _ => 0u);
-            if (missions.Count == 0)
-                return false;
+            Dictionary<ushort, uint> missionsToDiscover = eligibleMissions
+                .Where(m => !IsZoneEntryActivationAllowed(m))
+                .ToDictionary(m => (ushort)m.Id, _ => 0u);
+            if (missionsToActivate.Count == 0 && missionsToDiscover.Count == 0)
+            {
+                SendPathCurrentEpisodeIfNeeded((ushort)pathEpisode.Id);
+                return true;
+            }
 
             // WIP/GUESSED: LaughingWS activated the current PathEpisode on zone changes.
             // This keeps the safe table-backed episode/mission surface, but leaves durable
             // path persistence, exact per-mission reward precision, and broader
             // unlock sequencing blocked.
-            ActivateMissions((ushort)pathEpisode.Id, missions);
+            // Regular zone missions use progress-only activation to avoid replaying
+            // mission-start packets during world entry. Soldier holdouts still need
+            // an active mission packet so the client offers the beacon interaction,
+            // but the holdout lifecycle itself starts only from beacon activation.
+            if (missionsToActivate.Count != 0)
+                ActivateMissions((ushort)pathEpisode.Id, missionsToActivate, sendMissionActivate: false);
+            if (missionsToDiscover.Count != 0)
+                DiscoverMissions((ushort)pathEpisode.Id, missionsToDiscover);
             return true;
+        }
+
+        private PathEpisodeEntry GetCurrentZonePathEpisode(uint worldId, IReadOnlyList<uint> zoneIds)
+        {
+            Path activePath = player.Path;
+            foreach (uint zoneId in zoneIds)
+            {
+                PathEpisodeEntry pathEpisode = gameTableManager.PathEpisode.Entries
+                    .FirstOrDefault(e => e.WorldId == worldId
+                        && e.WorldZoneId == zoneId
+                        && e.PathTypeEnum == (uint)activePath);
+                if (pathEpisode != null)
+                    return pathEpisode;
+
+                if (!ReviewedRuntimePathEpisodeZoneBridges.TryGetValue((worldId, zoneId, activePath), out ushort bridgedEpisodeId))
+                    continue;
+
+                pathEpisode = gameTableManager.PathEpisode.GetEntry(bridgedEpisodeId);
+                if (pathEpisode == null)
+                    continue;
+
+                if (pathEpisode.WorldId != worldId || pathEpisode.PathTypeEnum != (uint)activePath)
+                    continue;
+
+                return pathEpisode;
+            }
+
+            return null;
         }
 
         public bool CompleteMission(ushort pathMissionId)
@@ -367,6 +784,7 @@ namespace NexusForever.Game.Entity
                 AddXp(xp);
 
             GrantMissionRewards(pathMissionId);
+            GrantEpisodeRewardsIfComplete(state.EpisodeId);
             TryMarkScientistScanFromMission(pathMissionId);
 
             return true;
@@ -409,7 +827,7 @@ namespace NexusForever.Game.Entity
             PathMissionEntry mission = gameTableManager.PathMission?.GetEntry(pathMissionId);
             if (mission == null
                 || mission.PathTypeEnum != (uint)Path.Explorer
-                || mission.PathMissionTypeEnum != ExplorerVistaMissionType)
+                || mission.PathMissionTypeEnum != ExplorerNodeMissionType)
                 return false;
 
             bool hasExplorerNode = gameTableManager.PathExplorerNode?.Entries
@@ -456,6 +874,13 @@ namespace NexusForever.Game.Entity
             if (mapZoneId == 0u)
                 return false;
 
+            if (mapZoneId > ushort.MaxValue)
+                return false;
+
+            byte exploredPercent = player.ZoneMapManager?.GetMapZoneExploredPercent((ushort)mapZoneId) ?? 0;
+            if (exploredPercent < ExplorerExploreZoneCompletePercent)
+                return false;
+
             bool completedAny = false;
             foreach (PathMissionRuntimeState state in pathMissions.Values.ToList())
             {
@@ -466,9 +891,10 @@ namespace NexusForever.Game.Entity
                     || mission.ObjectId != mapZoneId)
                     continue;
 
-                // WIP/GUESSED: LaughingWS marks Explorer_ExploreZone as ObjectId == MapZone.Id.
-                // Current server evidence is enough for active-only zone-entry completion, but
-                // durable path progress, exact reward timing, and non-map-zone edge cases remain blocked.
+                // LaughingWS marks Explorer_ExploreZone as ObjectId == MapZone.Id. Local
+                // Explorer video/transcript evidence for Northern Wilds cartography says the
+                // mission completes only after every visible map hex is filled in, so require
+                // the server-owned ZoneMap exploration percent to be complete before advancing.
                 completedAny |= CompleteMission(state.MissionId);
             }
 
@@ -490,6 +916,9 @@ namespace NexusForever.Game.Entity
                 if (entry.PathTypeEnum != (uint)player.Path)
                     continue;
 
+                if (state.State != PathMissionState.Started)
+                    continue;
+
                 // WIP/GUESSED: current path runtime is session-local, so object-id completion
                 // is limited to active-path rows. This mirrors the client visibility path gate
                 // while durable path episode/mission ownership remains blocked.
@@ -499,6 +928,106 @@ namespace NexusForever.Game.Entity
             return completedAny;
         }
 
+        public bool IsMissionActiveByObjectId(uint objectId)
+        {
+            if (objectId == 0u)
+                return false;
+
+            foreach (PathMissionRuntimeState state in pathMissions.Values)
+            {
+                if (state.Completed || state.State == PathMissionState.Complete)
+                    continue;
+
+                if (state.State != PathMissionState.Started)
+                    continue;
+
+                PathMissionEntry entry = gameTableManager.PathMission?.GetEntry(state.MissionId);
+                if (entry?.ObjectId != objectId)
+                    continue;
+
+                if (entry.PathTypeEnum != (uint)player.Path)
+                    continue;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool IsMissionCompleteByObjectId(uint objectId)
+        {
+            if (objectId == 0u)
+                return false;
+
+            foreach (PathMissionRuntimeState state in pathMissions.Values)
+            {
+                if (!state.Completed && state.State != PathMissionState.Complete)
+                    continue;
+
+                PathMissionEntry entry = gameTableManager.PathMission?.GetEntry(state.MissionId);
+                if (entry?.ObjectId != objectId)
+                    continue;
+
+                if (entry.PathTypeEnum != (uint)player.Path)
+                    continue;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool TryActivateSoldierMissionByEventId(uint pathSoldierEventId)
+        {
+            if (player.Path != Path.Soldier
+                || pathSoldierEventId == 0u
+                || gameTableManager?.PathMission?.Entries == null)
+            {
+                return false;
+            }
+
+            PathMissionEntry mission = gameTableManager.PathMission.Entries
+                .Where(m => m.PathTypeEnum == (uint)Path.Soldier
+                    && m.PathMissionTypeEnum == SoldierHoldoutMissionType
+                    && m.ObjectId == pathSoldierEventId
+                    && m.Id <= ushort.MaxValue
+                    && m.PathEpisodeId <= ushort.MaxValue
+                    && IsMissionFactionAllowed(m)
+                    && IsMissionPrerequisiteAllowed(m))
+                .OrderBy(m => m.Id)
+                .FirstOrDefault();
+            if (mission == null)
+                return false;
+
+            StartMission((ushort)mission.PathEpisodeId, (ushort)mission.Id, 0u);
+
+            return IsMissionActiveByObjectId(pathSoldierEventId)
+                || IsMissionCompleteByObjectId(pathSoldierEventId);
+        }
+
+        private void StartMission(ushort episodeId, ushort missionId, uint xp)
+        {
+            if (!pathMissions.TryGetValue(missionId, out PathMissionRuntimeState state))
+            {
+                state = new PathMissionRuntimeState(player.CharacterId, missionId, episodeId);
+                pathMissions.Add(missionId, state);
+            }
+
+            state.EpisodeId = episodeId;
+            state.Xp = xp;
+            if (state.Completed || state.State == PathMissionState.Complete)
+                return;
+
+            state.State = PathMissionState.Started;
+
+            bool sendCurrentEpisode = activatedEpisodes.Add(episodeId);
+            if (sendCurrentEpisode)
+                SendPathCurrentEpisode(episodeId);
+
+            if (activatedMissions.Add(missionId))
+                SendPathMissionActivate(episodeId, new HashSet<ushort> { missionId });
+        }
+
         public bool CompleteMissionBySoldierTowerDefenseId(uint pathSoldierTowerDefenseId)
         {
             if (pathSoldierTowerDefenseId == 0u)
@@ -506,6 +1035,93 @@ namespace NexusForever.Game.Entity
 
             PathSoldierTowerDefenseEntry entry = gameTableManager.PathSoldierTowerDefense?.GetEntry(pathSoldierTowerDefenseId);
             return entry != null && CompleteMissionByObjectId(entry.PathSoldierEventId);
+        }
+
+        public bool ProgressScientistCreatureScanMission(uint pathScientistCreatureInfoId)
+        {
+            if (player.Path != Path.Scientist)
+                return false;
+
+            if (pathScientistCreatureInfoId == 0u || pathScientistCreatureInfoId > ushort.MaxValue)
+                return false;
+
+            PathScientistCreatureInfoEntry creatureInfo = gameTableManager?.PathScientistCreatureInfo?.GetEntry(pathScientistCreatureInfoId);
+            if (creatureInfo == null)
+                return false;
+
+            MarkScientistCreatureScanned(pathScientistCreatureInfoId);
+
+            bool progressedAny = false;
+            foreach (PathMissionRuntimeState state in pathMissions.Values.ToList())
+            {
+                if (state.Completed)
+                    continue;
+
+                PathMissionEntry mission = gameTableManager.PathMission?.GetEntry(state.MissionId);
+                if (mission == null
+                    || mission.PathTypeEnum != (uint)Path.Scientist
+                    || mission.PathMissionTypeEnum != ScientistCreatureInfoMissionType
+                    || mission.ObjectId != pathScientistCreatureInfoId)
+                    continue;
+
+                uint requiredCount = Math.Max(creatureInfo.ChecklistCount, 1u);
+                state.ProgressCount = Math.Min(state.ProgressCount + 1u, requiredCount);
+                state.ProgressData = state.ProgressCount >= requiredCount ? 0u : 1u;
+                progressedAny = true;
+
+                if (state.ProgressCount >= requiredCount)
+                {
+                    CompleteMission(state.MissionId);
+                    continue;
+                }
+
+                // Client PathMission.GetNumCompleted reads the first progress payload for
+                // Scientist creature-info missions. ProgressData stays an in-progress marker
+                // until per-scan checklist-bit producer semantics are fully mapped.
+                player.Session.EnqueueMessageEncrypted(new ServerPathMissionUpdate
+                {
+                    Mission = BuildMission(state)
+                });
+            }
+
+            return progressedAny;
+        }
+
+        public bool CompleteCurrentScientistDatacubeDiscoveryMission()
+        {
+            if (player.Path != Path.Scientist)
+                return false;
+
+            if (player.Zone == null
+                || gameTableManager?.PathMission == null
+                || gameTableManager.PathScientistDatacubeDiscovery == null)
+            {
+                return false;
+            }
+
+            bool completedAny = false;
+            foreach (PathMissionRuntimeState state in pathMissions.Values.ToList())
+            {
+                if (state.Completed)
+                    continue;
+
+                PathMissionEntry mission = gameTableManager.PathMission.GetEntry(state.MissionId);
+                if (mission == null
+                    || mission.PathTypeEnum != (uint)Path.Scientist
+                    || mission.PathMissionTypeEnum != ScientistDatacubeDiscoveryMissionType
+                    || mission.ObjectId == 0u)
+                {
+                    continue;
+                }
+
+                PathScientistDatacubeDiscoveryEntry discovery = gameTableManager.PathScientistDatacubeDiscovery.GetEntry(mission.ObjectId);
+                if (discovery == null || !IsCurrentOrAncestorZone(discovery.WorldZoneId))
+                    continue;
+
+                completedAny |= CompleteMission(state.MissionId);
+            }
+
+            return completedAny;
         }
 
         public bool ProgressSoldierAssassinateMissionForCreatureKill(uint creature2Id, IReadOnlyCollection<uint> targetGroupIds)
@@ -944,6 +1560,40 @@ namespace NexusForever.Game.Entity
             }
         }
 
+        private void GrantEpisodeRewardsIfComplete(ushort pathEpisodeId)
+        {
+            if (pathEpisodeId == 0u)
+                return;
+
+            List<PathMissionRuntimeState> episodeMissions = pathMissions.Values
+                .Where(m => m.EpisodeId == pathEpisodeId)
+                .ToList();
+            if (episodeMissions.Count == 0 || episodeMissions.Any(m => !m.Completed))
+                return;
+
+            if (gameTableManager.PathReward?.Entries == null)
+            {
+                MissingGameDataDiagnostics.ReportMissingTable(
+                    PathRewardTableName,
+                    nameof(PathManager) + "." + nameof(GrantEpisodeRewardsIfComplete),
+                    MissingGameDataSeverity.PlayerImpacting,
+                    $"Cannot grant episode reward for pathEpisodeId={pathEpisodeId}.");
+                return;
+            }
+
+            foreach (PathRewardEntry pathRewardEntry in gameTableManager.PathReward.Entries
+                .Where(x => x.ObjectId == pathEpisodeId))
+            {
+                if (!PathRewardGrant.IsGrantableEpisodeReward(pathRewardEntry, pathEpisodeId))
+                    continue;
+
+                if (pathRewardEntry.PrerequisiteId > 0 && !GetPrerequisiteManager().Meets(player, pathRewardEntry.PrerequisiteId))
+                    continue;
+
+                GrantPathReward(pathRewardEntry);
+            }
+        }
+
         /// <summary>
         /// Grant the <see cref="IPlayer"/> rewards from the <see cref="PathRewardEntry"/>
         /// </summary>
@@ -1023,6 +1673,8 @@ namespace NexusForever.Game.Entity
             foreach (IPathEntry pathEntry in paths.Values)
                 pathEntry.Save(context);
 
+            PathEntry.UpsertTrackedCreates(context);
+
             foreach (PathMissionRuntimeState state in pathMissions.Values)
                 state.Save(context);
         }
@@ -1030,6 +1682,19 @@ namespace NexusForever.Game.Entity
         public void SendInitialPackets()
         {
             SendPathLogPacket();
+            if (initialPacketsSent)
+                return;
+
+            initialPacketsSent = true;
+            ReplayCurrentZoneEpisode(allowWhileLoading: true);
+        }
+
+        private bool ReplayCurrentZoneEpisode(bool allowWhileLoading)
+        {
+            activatedEpisodes.Clear();
+            activatedMissions.Clear();
+            WorldZoneEntry zone = player.Zone;
+            return zone != null && TryActivateCurrentZoneEpisode(zone.Id, allowWhileLoading);
         }
 
         /// <summary>
@@ -1064,6 +1729,101 @@ namespace NexusForever.Game.Entity
             }
 
             return currentZone;
+        }
+
+        private IReadOnlyList<uint> GetCurrentAndAncestorZoneIds(uint worldZoneId)
+        {
+            if (worldZoneId == 0u)
+                return [];
+
+            List<uint> zoneIds = [];
+            uint currentZoneId = worldZoneId;
+            for (int i = 0; i < 32 && currentZoneId != 0u; i++)
+            {
+                if (zoneIds.Contains(currentZoneId))
+                    break;
+
+                zoneIds.Add(currentZoneId);
+                WorldZoneEntry currentZone = gameTableManager.WorldZone?.GetEntry(currentZoneId);
+                if (currentZone == null || currentZone.ParentZoneId == 0u)
+                    break;
+
+                currentZoneId = currentZone.ParentZoneId;
+            }
+
+            return zoneIds;
+        }
+
+        private IReadOnlySet<ushort> GetReviewedRuntimePathMissionIds(uint worldId, IReadOnlyList<uint> zoneIds)
+        {
+            HashSet<ushort> missionIds = [];
+            foreach (uint zoneId in zoneIds)
+                if (ReviewedRuntimePathMissionZoneBridges.TryGetValue((worldId, zoneId, player.Path), out IReadOnlySet<ushort> reviewedMissionIds))
+                    missionIds.UnionWith(reviewedMissionIds);
+
+            return missionIds;
+        }
+
+        private bool IsMissionLocationInZone(uint worldId, PathMissionEntry mission, uint currentZoneId, IReadOnlyList<uint> currentZoneIds)
+        {
+            if (gameTableManager.WorldLocation2 == null)
+                return false;
+
+            foreach (uint worldLocationId in GetMissionWorldLocationIds(mission))
+            {
+                WorldLocation2Entry location = gameTableManager.WorldLocation2.GetEntry(worldLocationId);
+                if (location == null || location.WorldId != worldId || location.WorldZoneId == 0u)
+                    continue;
+
+                if (currentZoneIds.Contains(location.WorldZoneId))
+                    return true;
+
+                IReadOnlyList<uint> locationZoneIds = GetCurrentAndAncestorZoneIds(location.WorldZoneId);
+                if (locationZoneIds.Contains(currentZoneId))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static IEnumerable<uint> GetMissionWorldLocationIds(PathMissionEntry mission)
+        {
+            if (mission.WorldLocation2Id00 != 0u)
+                yield return mission.WorldLocation2Id00;
+            if (mission.WorldLocation2Id01 != 0u)
+                yield return mission.WorldLocation2Id01;
+            if (mission.WorldLocation2Id02 != 0u)
+                yield return mission.WorldLocation2Id02;
+            if (mission.WorldLocation2Id03 != 0u)
+                yield return mission.WorldLocation2Id03;
+        }
+
+        private static bool HasMissionWorldLocation(PathMissionEntry mission)
+        {
+            return mission.WorldLocation2Id00 != 0u
+                || mission.WorldLocation2Id01 != 0u
+                || mission.WorldLocation2Id02 != 0u
+                || mission.WorldLocation2Id03 != 0u;
+        }
+
+        private bool IsCurrentOrAncestorZone(uint worldZoneId)
+        {
+            if (worldZoneId == 0u)
+                return false;
+
+            WorldZoneEntry currentZone = player.Zone;
+            for (int i = 0; i < 32 && currentZone != null; i++)
+            {
+                if (currentZone.Id == worldZoneId)
+                    return true;
+
+                if (currentZone.ParentZoneId == 0u)
+                    break;
+
+                currentZone = gameTableManager.WorldZone?.GetEntry(currentZone.ParentZoneId);
+            }
+
+            return false;
         }
 
         private uint ResolveCurrentMapZoneId()
@@ -1127,6 +1887,14 @@ namespace NexusForever.Game.Entity
                 return allowed;
 
             return GetPrerequisiteManager().Meets(player, mission.PrerequisiteId);
+        }
+
+        private bool IsZoneEntryActivationAllowed(PathMissionEntry mission)
+        {
+            // Soldier holdout missions are advertised by the current episode, but the
+            // mission runtime starts when the player interacts with the holdout beacon.
+            return player.Path != Path.Soldier
+                || mission.PathMissionTypeEnum != SoldierHoldoutMissionType;
         }
 
         private IPrerequisiteManager GetPrerequisiteManager()
@@ -1230,6 +1998,14 @@ namespace NexusForever.Game.Entity
             });
         }
 
+        private void SendPathCurrentEpisodeIfNeeded(ushort episodeId)
+        {
+            if (!activatedEpisodes.Add(episodeId))
+                return;
+
+            SendPathCurrentEpisode(episodeId);
+        }
+
         private void SendPathEpisodeProgress(ushort episodeId, IReadOnlySet<ushort> missionIds = null)
         {
             player.Session.EnqueueMessageEncrypted(new ServerPathEpisodeProgress
@@ -1246,14 +2022,18 @@ namespace NexusForever.Game.Entity
 
         private void SendPathMissionActivate(ushort episodeId, IReadOnlySet<ushort> missionIds = null)
         {
+            List<Mission> missions = pathMissions.Values
+                .Where(m => m.EpisodeId == episodeId && !m.Completed)
+                .Where(m => missionIds == null || missionIds.Contains(m.MissionId))
+                .OrderBy(m => m.MissionId)
+                .Select(BuildMission)
+                .ToList();
+            if (missions.Count == 0)
+                return;
+
             player.Session.EnqueueMessageEncrypted(new ServerPathMissionActivate
             {
-                Missions = pathMissions.Values
-                    .Where(m => m.EpisodeId == episodeId && !m.Completed)
-                    .Where(m => missionIds == null || missionIds.Contains(m.MissionId))
-                    .OrderBy(m => m.MissionId)
-                    .Select(BuildMission)
-                    .ToList()
+                Missions = missions
             });
         }
 
