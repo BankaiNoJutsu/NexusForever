@@ -39,6 +39,28 @@ into this directory.
    .\Decomp\Analysis\Get-DecompCoverageSnapshot.ps1
    ```
 
+   Backfill missing function evidence rows from durable labels when closing the
+   label-inventory layer:
+
+   ```powershell
+   .\Decomp\Analysis\Update-FunctionEvidenceInventoryFromLabels.ps1
+   ```
+
+   Backfill missing opcode provenance rows from the coverage inventory when
+   closing the opcode-provenance layer:
+
+   ```powershell
+   .\Decomp\Analysis\Update-NativeOpcodeProvenanceFromCoverage.ps1
+   ```
+
+   Backfill source traceability and blocked live-evidence manifests from opcode
+   provenance:
+
+   ```powershell
+   .\Decomp\Analysis\Update-SourceTraceabilityFromOpcodeProvenance.ps1
+   .\Decomp\Analysis\Update-LiveEvidenceManifestFromBlockedProvenance.ps1
+   ```
+
 4. Fill the smallest ledger rows needed for the pass. Keep row text factual:
    field order, bit widths, function labels, source paths, confidence, and open
    blockers.
@@ -52,6 +74,16 @@ into this directory.
    ```powershell
    .\Decomp\Analysis\Validate-DecompileMappingArtifacts.ps1
    ```
+
+8. Run the gap audit when working toward full coverage:
+
+   ```powershell
+   .\Decomp\Analysis\Get-DecompileMappingArtifactGaps.ps1
+   ```
+
+   Add `-WriteReports` only when you intentionally want local CSV gap reports
+   under `mapping_artifacts/gap_reports/` for review. Add `-FailOnGap` when
+   using the audit as a completion gate.
 
 ## Evidence Status
 

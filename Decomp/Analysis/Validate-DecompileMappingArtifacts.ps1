@@ -176,7 +176,9 @@ function Get-HeaderColumns {
         return @()
     }
 
-    return $firstLine.TrimStart([char]0xfeff) -split ','
+    return $firstLine.TrimStart([char]0xfeff) -split ',' | ForEach-Object {
+        $_.Trim().Trim('"')
+    }
 }
 
 $errors = New-Object 'System.Collections.Generic.List[string]'
