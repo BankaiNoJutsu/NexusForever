@@ -1,7 +1,11 @@
+using System.Numerics;
+using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
@@ -41,7 +45,6 @@ public class RedMoonTerrorEventScriptTests
     [InlineData(PublicEventPhase.MarauderOfficers, PublicEventObjective.DefeatMarauderOfficers)]
     [InlineData(PublicEventPhase.FindTheNavigationCore, PublicEventObjective.FindTheNavigationCore)]
     [InlineData(PublicEventPhase.Starmap, PublicEventObjective.DefeatTheStarmapSimulation)]
-    [InlineData(PublicEventPhase.Laveka, PublicEventObjective.DefeatLavekaTheDarkHearted)]
     public void OnPublicEventPhase_SingleObjectivePhases_ActivateMappedObjective(PublicEventPhase phase, PublicEventObjective objective)
     {
         var script = CreateScript();
@@ -52,6 +55,43 @@ public class RedMoonTerrorEventScriptTests
 
         RecordingDispatchProxy<IPublicEvent>.Invocation activation = Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)));
         Assert.Equal(objective, activation.Arguments[0]);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_Laveka_SpawnsReviewedStaticPlacement()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEventWithReviewedSpawns(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out RecordingDispatchProxy<IMapInstance> mapProxy,
+            out List<CreatedNpc> createdNpcs);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Laveka);
+
+        RecordingDispatchProxy<IPublicEvent>.Invocation activation = Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)));
+        Assert.Equal(PublicEventObjective.DefeatLavekaTheDarkHearted, activation.Arguments[0]);
+
+        CreatedNpc npc = Assert.Single(createdNpcs);
+        AssertLavekaModel(npc);
+        AssertGridEntityAddedToMap(mapProxy, npc.Instance, new Vector3(-723.7178f, 186.8427f, -265.1872f));
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_Laveka_DoesNotDuplicateReviewedStaticPlacement()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEventWithReviewedSpawns(
+            out _,
+            out RecordingDispatchProxy<IMapInstance> mapProxy,
+            out List<CreatedNpc> createdNpcs);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Laveka);
+        script.OnPublicEventPhase((uint)PublicEventPhase.Laveka);
+
+        Assert.Single(createdNpcs);
+        Assert.Single(mapProxy.GetInvocations(nameof(IMap.EnqueueAdd)));
     }
 
     [Fact]
@@ -195,6 +235,30 @@ public class RedMoonTerrorEventScriptTests
         return publicEvent;
     }
 
+    private static IPublicEvent CreatePublicEventWithReviewedSpawns(
+        out RecordingDispatchProxy<IPublicEvent> eventProxy,
+        out RecordingDispatchProxy<IMapInstance> mapProxy,
+        out List<CreatedNpc> createdNpcs)
+    {
+        IMapInstance mapInstance = RecordingDispatchProxy<IMapInstance>.Create(out mapProxy);
+        mapProxy.SetProperty(nameof(IMap.Entry), new WorldEntry { Id = 3032u });
+        mapProxy.SetMethodReturn(nameof(IMapInstance.GetPlayers), Array.Empty<IPlayer>());
+
+        IPublicEvent publicEvent = RecordingDispatchProxy<IPublicEvent>.Create(out eventProxy);
+        eventProxy.SetProperty(nameof(IPublicEvent.Map), mapInstance);
+
+        List<CreatedNpc> npcs = [];
+        eventProxy.SetMethodReturnFactory(nameof(IPublicEvent.CreateEntity), () =>
+        {
+            CreatedNpc npc = CreateNpc();
+            npcs.Add(npc);
+            return npc.Instance;
+        });
+
+        createdNpcs = npcs;
+        return publicEvent;
+    }
+
     private static IPublicEventObjective CreateObjective(PublicEventObjective objective, PublicEventStatus status)
     {
         IPublicEventObjective eventObjective = RecordingDispatchProxy<IPublicEventObjective>.Create(out RecordingDispatchProxy<IPublicEventObjective> objectiveProxy);
@@ -222,4 +286,65 @@ public class RedMoonTerrorEventScriptTests
         playerProxy.SetProperty(nameof(IPlayer.Session), session);
         return player;
     }
+
+    private static CreatedNpc CreateNpc()
+    {
+        INonPlayerEntity npc = RecordingDispatchProxy<INonPlayerEntity>.Create(out RecordingDispatchProxy<INonPlayerEntity> npcProxy);
+        return new CreatedNpc(npc, npcProxy);
+    }
+
+    private static void AssertLavekaModel(CreatedNpc npc)
+    {
+        RecordingDispatchProxy<INonPlayerEntity>.Invocation initialise = Assert.Single(
+            npc.Proxy.GetInvocations(nameof(IWorldEntity.Initialise)));
+        EntityModel model = Assert.IsType<EntityModel>(initialise.Arguments[0]);
+        Assert.Equal(1100300056u, model.Id);
+        Assert.Equal(EntityType.NonPlayer, model.Type);
+        Assert.Equal(65997u, model.Creature);
+        Assert.Equal((ushort)3032u, model.World);
+        Assert.Equal((ushort)5996u, model.Area);
+        Assert.Equal(-723.7178f, model.X);
+        Assert.Equal(186.8427f, model.Y);
+        Assert.Equal(-265.1872f, model.Z);
+        Assert.Equal(MathF.PI, model.Rx);
+        Assert.Equal(0f, model.Ry);
+        Assert.Equal(0f, model.Rz);
+        Assert.Equal(38426u, model.DisplayInfo);
+        Assert.Equal((ushort)0u, model.OutfitInfo);
+        Assert.Equal((ushort)1351u, model.Faction1);
+        Assert.Equal((ushort)1351u, model.Faction2);
+        Assert.Null(model.EntityEvent);
+        Assert.Collection(model.EntityScript,
+            entityScript => Assert.Equal("LavekaTheDarkHeartedEntityScript", entityScript.ScriptName));
+        Assert.Collection(model.EntityStat.OrderBy(s => s.Stat),
+            health =>
+            {
+                Assert.Equal((byte)Stat.Health, health.Stat);
+                Assert.Equal(1f, health.Value);
+            },
+            level =>
+            {
+                Assert.Equal((byte)Stat.Level, level.Stat);
+                Assert.Equal(50f, level.Value);
+            });
+    }
+
+    private static void AssertGridEntityAddedToMap(
+        RecordingDispatchProxy<IMapInstance> mapProxy,
+        IGridEntity entity,
+        Vector3 expectedPosition)
+    {
+        RecordingDispatchProxy<IMapInstance>.Invocation enqueueAdd = Assert.Single(
+            mapProxy.GetInvocations(nameof(IMap.EnqueueAdd)),
+            i => ReferenceEquals(entity, i.Arguments[0]));
+        Assert.Same(entity, enqueueAdd.Arguments[0]);
+
+        IMapPosition position = Assert.IsAssignableFrom<IMapPosition>(enqueueAdd.Arguments[1]);
+        Assert.Equal(expectedPosition, position.Position);
+        Assert.Equal(3032u, position.Info.Entry.Id);
+    }
+
+    private sealed record CreatedNpc(
+        INonPlayerEntity Instance,
+        RecordingDispatchProxy<INonPlayerEntity> Proxy);
 }

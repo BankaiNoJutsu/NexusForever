@@ -1,7 +1,10 @@
+using System.Numerics;
+using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
@@ -15,6 +18,22 @@ namespace NexusForever.Script.Instance.Raid.RedMoonTerror
 
         private IPublicEvent publicEvent;
         private IMapInstance mapInstance;
+        private bool lavekaSpawned;
+
+        private const ushort RedMoonTerrorWorldId = 3032;
+        private const string LavekaScriptName = "LavekaTheDarkHeartedEntityScript";
+
+        private static readonly RedMoonTerrorSpawnModel LavekaSpawn = new(
+            1100300056u,
+            65997u,
+            5996,
+            new Vector3(-723.7178f, 186.8427f, -265.1872f),
+            new Vector3(MathF.PI, 0f, 0f),
+            38426u,
+            1351,
+            LavekaScriptName,
+            1f,
+            50f);
 
         public RedMoonTerrorEventScript(
             IGlobalQuestManager globalQuestManager)
@@ -31,6 +50,7 @@ namespace NexusForever.Script.Instance.Raid.RedMoonTerror
             mapInstance = publicEvent.Map as IMapInstance
                 ?? throw new InvalidOperationException("Red Moon Terror requires a map instance.");
 
+            lavekaSpawned = false;
             publicEvent.SetPhase(PublicEventPhase.Enter);
         }
 
@@ -105,6 +125,7 @@ namespace NexusForever.Script.Instance.Raid.RedMoonTerror
                     break;
                 case PublicEventPhase.Laveka:
                     publicEvent.ActivateObjective(PublicEventObjective.DefeatLavekaTheDarkHearted);
+                    SpawnLaveka();
                     break;
             }
         }
@@ -185,6 +206,74 @@ namespace NexusForever.Script.Instance.Raid.RedMoonTerror
             }
         }
 
+        private void SpawnLaveka()
+        {
+            if (lavekaSpawned)
+                return;
+
+            // Build 16042 reviewed LaughingWS rows place Laveka as a static raid
+            // boss row without entity_event phase binding. Exact awakening,
+            // apparition challenge, and encounter choreography remain blocked.
+            INonPlayerEntity entity = publicEvent.CreateEntity<INonPlayerEntity>();
+            entity.Initialise(CreateEntityModel(LavekaSpawn));
+            AddToMap(entity, LavekaSpawn.Position);
+            lavekaSpawned = true;
+        }
+
+        private static EntityModel CreateEntityModel(RedMoonTerrorSpawnModel spawn)
+        {
+            return new EntityModel
+            {
+                Id          = spawn.EntityId,
+                Type        = EntityType.NonPlayer,
+                Creature    = spawn.CreatureId,
+                World       = RedMoonTerrorWorldId,
+                Area        = spawn.AreaId,
+                X           = spawn.Position.X,
+                Y           = spawn.Position.Y,
+                Z           = spawn.Position.Z,
+                Rx          = spawn.Rotation.X,
+                Ry          = spawn.Rotation.Y,
+                Rz          = spawn.Rotation.Z,
+                DisplayInfo = spawn.DisplayInfo,
+                Faction1    = spawn.FactionId,
+                Faction2    = spawn.FactionId,
+                EntityScript =
+                {
+                    new EntityScriptModel
+                    {
+                        ScriptName = spawn.ScriptName
+                    }
+                },
+                EntityStat =
+                {
+                    new EntityStatModel
+                    {
+                        Stat  = (byte)Stat.Health,
+                        Value = spawn.Health
+                    },
+                    new EntityStatModel
+                    {
+                        Stat  = (byte)Stat.Level,
+                        Value = spawn.Level
+                    }
+                }
+            };
+        }
+
+        private void AddToMap(IGridEntity entity, Vector3 position)
+        {
+            mapInstance.EnqueueAdd(entity, new ScriptMapPosition
+            {
+                Info = new ScriptMapInfo
+                {
+                    Entry   = mapInstance.Entry,
+                    MapLock = mapInstance.MapLock
+                },
+                Position = position
+            });
+        }
+
         private void BroadcastWipCommunicatorMessage(CommunicatorMessage message)
         {
             // WIP-guessed from LaughingWS Instances-and-more. The branch pairs these Ish'amel
@@ -194,5 +283,17 @@ namespace NexusForever.Script.Instance.Raid.RedMoonTerror
             foreach (IPlayer player in mapInstance.GetPlayers())
                 communicatorMessage?.Send(player.Session);
         }
+
+        private sealed record RedMoonTerrorSpawnModel(
+            uint EntityId,
+            uint CreatureId,
+            ushort AreaId,
+            Vector3 Position,
+            Vector3 Rotation,
+            uint DisplayInfo,
+            ushort FactionId,
+            string ScriptName,
+            float Health,
+            float Level);
     }
 }
