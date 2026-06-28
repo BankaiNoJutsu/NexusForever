@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Extensions.Logging;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.GameTable;
@@ -149,7 +150,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 
         public void HandleMessage(IWorldSession session, ClientDashCast dashCast)
         {
-            log.LogDebug("Ignoring client dash-cast state request from player {PlayerGuid}: direction/state {DirectionOrState}.",
+            if (DashEnergyRules.TryConsumeCharge(session.Player, out float appliedAmount))
+            {
+                log.LogDebug("Applied client dash-cast stamina cost for player {PlayerGuid}: direction/state {DirectionOrState}, applied {AppliedAmount}.",
+                    session.Player?.Guid, dashCast.DirectionOrState, appliedAmount);
+                return;
+            }
+
+            log.LogDebug("Rejected client dash-cast stamina cost for player {PlayerGuid}: direction/state {DirectionOrState}, dash energy below one charge.",
                 session.Player?.Guid, dashCast.DirectionOrState);
         }
     }

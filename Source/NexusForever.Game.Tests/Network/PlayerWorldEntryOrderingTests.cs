@@ -16,7 +16,7 @@ namespace NexusForever.Game.Tests.Network;
 public class PlayerWorldEntryOrderingTests
 {
     [Fact]
-    public void OnEnteredWorld_SendsPathAndQuestRuntimeAfterPlayerEnteredWorld()
+    public void OnEnteredWorld_SendsQuestRuntimeBeforePathReplay()
     {
         var order = new List<string>();
         Player player = CreatePlayer(order);
@@ -26,8 +26,8 @@ public class PlayerWorldEntryOrderingTests
         Assert.Equal(
             [
                 nameof(ServerPlayerEnteredWorld),
-                nameof(IPathManager.SendInitialPackets),
-                nameof(IQuestManager.SendInitialPackets)
+                nameof(IQuestManager.SendInitialPackets),
+                nameof(IPathManager.SendInitialPackets)
             ],
             order.Take(3));
     }
@@ -54,8 +54,8 @@ public class PlayerWorldEntryOrderingTests
                 nameof(ServerEntityCreate),
                 nameof(ServerSetUnitPathType),
                 nameof(ServerEntityGroupAssociation),
-                nameof(IPathManager.SendInitialPackets),
-                nameof(IQuestManager.SendInitialPackets)
+                nameof(IQuestManager.SendInitialPackets),
+                nameof(IPathManager.SendInitialPackets)
             ],
             order.Take(7));
 

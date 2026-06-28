@@ -97,13 +97,14 @@ public class TransportHandlerTests
         tableProxy.SetProperty(nameof(IGameTableManager.TaxiNode), null);
 
         TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
-        handler.HandleMessage(session, BuildRapidTransport(destinationNodeId: 20));
+        handler.HandleMessage(session, BuildRapidTransport(destinationNodeId: 20, contextToken: 0x12345678u));
 
         Assert.Empty(playerProxy.GetInvocations(nameof(IUnitEntity.CastSpell)));
         Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
         ServerSpellCastResult result = GetEncryptedMessages(session)
             .OfType<ServerSpellCastResult>()
             .Single();
+        Assert.Equal(0x12345678u, result.ContextToken);
         Assert.Equal(0u, result.Spell4Id);
         Assert.Equal(CastResult.RapidTransportInvalid, result.CastResult);
     }

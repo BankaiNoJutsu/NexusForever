@@ -997,14 +997,14 @@ public class PacketPlaceholderNamingTests
     }
 
     [Fact]
-    public void ServerSpellCastResult_LeadingFieldRemainsNeutralUntilEchoSemanticsAreProven()
+    public void ServerSpellCastResult_LeadingFieldUsesContextTokenAfterEchoSemanticsProof()
     {
         Assert.Equal((ushort)0x07FC, (ushort)GameMessageOpcode.ServerSpellCastResult);
 
-        Assert.NotNull(typeof(ServerSpellCastResult).GetProperty(nameof(ServerSpellCastResult.Unknown0)));
+        Assert.NotNull(typeof(ServerSpellCastResult).GetProperty(nameof(ServerSpellCastResult.ContextToken)));
         Assert.NotNull(typeof(ServerSpellCastResult).GetProperty(nameof(ServerSpellCastResult.Spell4Id)));
         Assert.NotNull(typeof(ServerSpellCastResult).GetProperty(nameof(ServerSpellCastResult.CastResult)));
-        Assert.Null(typeof(ServerSpellCastResult).GetProperty("ContextToken"));
+        Assert.Null(typeof(ServerSpellCastResult).GetProperty("Unknown0"));
         Assert.Null(typeof(ServerSpellCastResult).GetProperty("ClientContextToken"));
         Assert.Null(typeof(ServerSpellCastResult).GetProperty("CastingId"));
     }

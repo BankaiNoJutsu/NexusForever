@@ -335,7 +335,7 @@ public class SupportStuckHandlerTests
             .OfType<ServerSpellCastResult>()
             .Single();
 
-        Assert.Equal(contextToken, result.Unknown0);
+        Assert.Equal(contextToken, result.ContextToken);
         Assert.Equal(spell4Id, result.Spell4Id);
         Assert.Equal(castResult, result.CastResult);
     }

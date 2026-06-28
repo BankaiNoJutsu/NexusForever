@@ -40,7 +40,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: taxi node table is unavailable.",
                     session.Player?.Guid);
-                SendRapidTransportCastResult(session, 0u, CastResult.RapidTransportInvalid);
+                SendRapidTransportCastResult(session, rapidTransport.ContextToken, 0u, CastResult.RapidTransportInvalid);
                 return;
             }
 
@@ -49,7 +49,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: destination taxi node {TaxiNode} was not found.",
                     session.Player?.Guid, rapidTransport.TaxiNode);
-                SendRapidTransportCastResult(session, 0u, CastResult.RapidTransportInvalid);
+                SendRapidTransportCastResult(session, rapidTransport.ContextToken, 0u, CastResult.RapidTransportInvalid);
                 return;
             }
 
@@ -57,7 +57,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: level {PlayerLevel} is below required {RequiredLevel} for taxi node {TaxiNode}.",
                     session.Player?.Guid, session.Player.Level, taxiNode.AutoUnlockLevel, rapidTransport.TaxiNode);
-                SendRapidTransportCastResult(session, 0u, CastResult.RapidTransportInvalid);
+                SendRapidTransportCastResult(session, rapidTransport.ContextToken, 0u, CastResult.RapidTransportInvalid);
                 return;
             }
 
@@ -65,7 +65,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: world location table is unavailable.",
                     session.Player?.Guid);
-                SendRapidTransportCastResult(session, 0u, CastResult.RapidTransportInvalid);
+                SendRapidTransportCastResult(session, rapidTransport.ContextToken, 0u, CastResult.RapidTransportInvalid);
                 return;
             }
 
@@ -74,7 +74,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: world location {WorldLocation2Id} for taxi node {TaxiNode} was not found.",
                     session.Player?.Guid, taxiNode.WorldLocation2Id, rapidTransport.TaxiNode);
-                SendRapidTransportCastResult(session, 0u, CastResult.RapidTransportInvalid);
+                SendRapidTransportCastResult(session, rapidTransport.ContextToken, 0u, CastResult.RapidTransportInvalid);
                 return;
             }
 
@@ -83,7 +83,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: rapid transport spell formula {GameFormulaId} is unavailable or empty.",
                     session.Player?.Guid, RapidTransportSpellGameFormulaId);
-                SendRapidTransportCastResult(session, 0u, CastResult.RapidTransportInvalid);
+                SendRapidTransportCastResult(session, rapidTransport.ContextToken, 0u, CastResult.RapidTransportInvalid);
                 return;
             }
 
@@ -91,7 +91,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: spell {Spell4Id} is on cooldown.",
                     session.Player?.Guid, formula.Dataint0);
-                SendRapidTransportCastResult(session, formula.Dataint0, CastResult.SpellCooldown);
+                SendRapidTransportCastResult(session, rapidTransport.ContextToken, formula.Dataint0, CastResult.SpellCooldown);
                 return;
             }
 
@@ -100,7 +100,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: no route found to destination taxi node {TaxiNode}.",
                     session.Player?.Guid, rapidTransport.TaxiNode);
-                SendRapidTransportCastResult(session, formula.Dataint0, CastResult.RapidTransportInvalid);
+                SendRapidTransportCastResult(session, rapidTransport.ContextToken, formula.Dataint0, CastResult.RapidTransportInvalid);
                 return;
             }
 
@@ -108,7 +108,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: insufficient credits for route {RouteId} with price {Price}.",
                     session.Player?.Guid, route.Id, route.Price);
-                SendRapidTransportCastResult(session, formula.Dataint0, CastResult.CasterVitalCostMoney);
+                SendRapidTransportCastResult(session, rapidTransport.ContextToken, formula.Dataint0, CastResult.CasterVitalCostMoney);
                 return;
             }
 
@@ -162,15 +162,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
                 .FirstOrDefault();
         }
 
-        private void SendRapidTransportCastResult(IWorldSession session, uint spell4Id, CastResult castResult)
+        private void SendRapidTransportCastResult(IWorldSession session, uint contextToken, uint spell4Id, CastResult castResult)
         {
             log.LogDebug("Sending rapid transport cast result {CastResult} for player {PlayerGuid} and spell {Spell4Id}.",
                 castResult, session.Player?.Guid, spell4Id);
 
             session.EnqueueMessageEncrypted(new ServerSpellCastResult
             {
-                Spell4Id = spell4Id,
-                CastResult = castResult
+                ContextToken = contextToken,
+                Spell4Id     = spell4Id,
+                CastResult   = castResult
             });
         }
     }

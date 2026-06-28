@@ -37,22 +37,22 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                 return;
             }
 
-            if (item.Info?.Entry?.Item2CategoryId != LOOT_BAG_CATEGORY_ID)
+            if (lootManager.HasLoot(item))
             {
-                if (!lootManager.TrySalvageItem(session.Player, item, out string salvageReason))
-                    SendItemError(session, item.Guid, GetSalvageError(salvageReason));
+                if (!lootManager.TryUseLootBag(session.Player, item, out string reason) && reason == "inventory-full")
+                    session.Player.SendGenericError(GenericError.ItemInventoryFull);
 
                 return;
             }
 
-            if (!lootManager.HasLoot(item))
+            if (item.Info?.Entry?.Item2CategoryId == LOOT_BAG_CATEGORY_ID)
             {
                 session.Player.SendGenericError(GenericError.ItemNoItems);
                 return;
             }
 
-            if (!lootManager.TryUseLootBag(session.Player, item, out string reason) && reason == "inventory-full")
-                session.Player.SendGenericError(GenericError.ItemInventoryFull);
+            if (!lootManager.TrySalvageItem(session.Player, item, out string salvageReason))
+                SendItemError(session, item.Guid, GetSalvageError(salvageReason));
         }
 
         private static IItem GetItemOrDefault(IWorldSession session, ClientItemUseLootBag itemUseLootBag)

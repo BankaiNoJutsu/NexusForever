@@ -57,7 +57,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                 uint leaderCount = (uint)globalGuildManager.GetCharacterGuilds(characterToDelete.Id)
                     .Count(g => g.LeaderId == characterDelete.CharacterId);
                 if (leaderCount > 0)
-                    return (CharacterModifyResult.DeleteFailed, leaderCount);
+                    return (CharacterModifyResult.DeleteFailed_GuildMaster, leaderCount);
 
                 return (CharacterModifyResult.DeleteOk, 0);
             }

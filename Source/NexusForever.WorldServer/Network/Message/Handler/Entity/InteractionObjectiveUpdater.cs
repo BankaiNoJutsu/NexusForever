@@ -5,6 +5,7 @@ using System.Numerics;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Challenges;
 using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -93,6 +94,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroup, entity.CreatureId, 1u);
                 player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroupChecklist, entity.CreatureId, entity.QuestChecklistIdx);
                 player.QuestManager.ObjectiveUpdate(QuestObjectiveType.GatheResource, entity.CreatureId, 1u);
+                ChallengeActivationHooks.OnTargetActivated(player, entity.CreatureId);
             }
 
             player.SyncStarterTutorialEntityVisibility();

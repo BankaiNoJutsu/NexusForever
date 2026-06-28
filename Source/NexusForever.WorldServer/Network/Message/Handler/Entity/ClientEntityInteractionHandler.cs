@@ -8,6 +8,7 @@ using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.GameTable;
+using NexusForever.WorldServer.Network.Message.Handler;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 {
@@ -16,6 +17,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
         private const ushort TutorialWorldId = 3460;
         private const uint TutorialHoverboardProjectorCreatureId = 73419u;
         private const uint TutorialHoverboardFinishCreatureId = 73735u;
+        private const byte ClientSideInteractionSuccessEvent = 101;
 
         #region Dependency Injection
 
@@ -48,6 +50,47 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                     return;
             }
 
+            if (entityInteraction.Event == ClientSideInteractionSuccessEvent)
+            {
+                if (PendingClientSideInteractionActivationStore.TryConsume(session, entityInteraction.Guid, out PendingClientSideInteractionActivation pendingActivation))
+                {
+                    IWorldEntity pendingEntity = ResolvePendingActivationTarget(session, pendingActivation.EntityGuid);
+                    if (pendingEntity == null)
+                    {
+                        log.LogWarning("Client-side interaction success could not resolve pending activation target: player={PlayerGuid}, requestedEntity={RequestedEntity}, pendingEntity={PendingEntity}, pendingCreature={PendingCreature}, clientSideInteractionId={ClientSideInteractionId}, selectedTarget={SelectedTarget}, world={WorldId}.",
+                            session.Player?.Guid,
+                            entityInteraction.Guid,
+                            pendingActivation.EntityGuid,
+                            pendingActivation.CreatureId,
+                            pendingActivation.ClientSideInteractionId,
+                            session.Player?.TargetGuid ?? 0u,
+                            session.Player?.Map?.Entry?.Id ?? 0u);
+                        return;
+                    }
+
+                    log.LogDebug("Completing client-side interaction activation for player {PlayerGuid}: requestedEntity={RequestedEntity}, pendingEntity={PendingEntity}, resolvedEntity={ResolvedEntity}, creature={CreatureId}, clientSideInteractionId={ClientSideInteractionId}, selectedTarget={SelectedTarget}, world={WorldId}.",
+                        session.Player?.Guid,
+                        entityInteraction.Guid,
+                        pendingActivation.EntityGuid,
+                        pendingEntity.Guid,
+                        pendingEntity.CreatureId,
+                        pendingActivation.ClientSideInteractionId,
+                        session.Player?.TargetGuid ?? 0u,
+                        session.Player?.Map?.Entry?.Id ?? 0u);
+
+                    ActivateCastCompletion.Complete(session, pendingEntity, assetManager, gameTableManager, pendingActivation.InvokeActivateCast);
+                    return;
+                }
+
+                log.LogDebug("Ignoring client-side interaction success event from player {PlayerGuid}: requestedEntity={RequestedEntity}, resolvedEntity={ResolvedEntity}, selectedTarget={SelectedTarget}, world={WorldId}.",
+                    session.Player?.Guid,
+                    entityInteraction.Guid,
+                    entity?.Guid ?? 0u,
+                    session.Player?.TargetGuid ?? 0u,
+                    session.Player?.Map?.Entry?.Id ?? 0u);
+                return;
+            }
+
             if (entity != null && ActivationInteractionGuards.TryRejectBusyTarget(session, entity))
                 return;
 
@@ -71,6 +114,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                     if (entity == null)
                         throw new InvalidPacketValueException();
 
+                    DialogSessionState.SetActiveDialog(session, entityInteraction.Guid);
                     session.EnqueueMessageEncrypted(new ServerDialogStart
                     {
                         DialogUnitId = entityInteraction.Guid
@@ -140,6 +184,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
         private void UpdateInteractionObjectives(IWorldSession session, IWorldEntity entity)
         {
             InteractionObjectiveUpdater.UpdateDirectInteractionObjectives(session.Player, entity, assetManager, gameTableManager);
+        }
+
+        private static IWorldEntity ResolvePendingActivationTarget(IWorldSession session, uint entityGuid)
+        {
+            IPlayer player = session?.Player;
+            if (player == null || entityGuid == 0u)
+                return null;
+
+            IWorldEntity entity = player.GetVisible<IWorldEntity>(entityGuid);
+            if (entity != null)
+                return entity;
+
+            entity = player.Map?.GetEntity<IWorldEntity>(entityGuid);
+            return entity != null && player.CanSeeEntity(entity) ? entity : null;
         }
 
         private void HandleVendor(IWorldSession session, IWorldEntity worldEntity)

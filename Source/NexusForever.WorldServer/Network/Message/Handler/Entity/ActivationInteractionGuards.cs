@@ -9,7 +9,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 {
     internal static class ActivationInteractionGuards
     {
-        private const float DefaultInteractionMaxRange = 5f;
+        private const float DefaultInteractionMaxRange = 10f;
 
         public static bool TryRejectBusyTarget(IWorldSession session, IWorldEntity entity)
         {

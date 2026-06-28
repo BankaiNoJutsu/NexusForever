@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text;
 using System.Xml;
+using NexusForever.Cryptography;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.Sts;
@@ -73,6 +74,52 @@ public class StsSessionStateTests
         Assert.Null(session.KeyExchange);
     }
 
+    [Fact]
+    public void LoginFinish_ResetsSessionStateForNextLoginStart()
+    {
+        var account = new AccountModel
+        {
+            Id = 1u,
+            Email = "player"
+        };
+        var session = new StsSession(new TestMessageManager(SessionState.None))
+        {
+            Account = account,
+            State = SessionState.LoginStart
+        };
+
+        AuthenticationHandler.HandleLoginFinish(session, new ClientLoginFinishMessage());
+
+        Assert.Equal(SessionState.Connected, session.State);
+        Assert.Same(account, session.Account);
+    }
+
+    [Fact]
+    public void KeyData_InvalidProof_ResetsSessionStateForNextLoginStart()
+    {
+        byte[] salt = [1, 2, 3, 4];
+        byte[] verifier = Srp6Provider.GenerateVerifier(salt, "player", "password");
+        var keyExchange = new Srp6Provider("player", salt, verifier);
+        keyExchange.GenerateServerCredentials();
+
+        var session = new StsSession(new TestMessageManager(SessionState.None))
+        {
+            Account = new AccountModel
+            {
+                Id = 1u,
+                Email = "player"
+            },
+            KeyExchange = keyExchange,
+            State = SessionState.LoginStart
+        };
+
+        AuthenticationHandler.HandleKeyData(session, CreateKeyData([1], [2, 3, 4]));
+
+        Assert.Equal(SessionState.Connected, session.State);
+        Assert.Null(session.Account);
+        Assert.Null(session.KeyExchange);
+    }
+
     private static ClientStsPacket CreatePacket(string uri)
     {
         byte[] data = Encoding.UTF8.GetBytes($"POST {uri} STS/1.0\r\nl:0\r\n\r\n");
@@ -86,6 +133,26 @@ public class StsSessionStateTests
         MethodInfo method = typeof(StsSession)
             .GetMethod("HandlePacket", BindingFlags.Instance | BindingFlags.NonPublic)!;
         method.Invoke(session, [packet]);
+    }
+
+    private static ClientKeyDataMessage CreateKeyData(byte[] a, byte[] m1)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, Encoding.UTF8, true))
+        {
+            writer.Write(a.Length);
+            writer.Write(a);
+            writer.Write(m1.Length);
+            writer.Write(m1);
+        }
+
+        string keyData = Convert.ToBase64String(stream.ToArray());
+        var document = new XmlDocument();
+        document.LoadXml($"<Request><KeyData>{keyData}</KeyData></Request>");
+
+        var message = new ClientKeyDataMessage();
+        message.Read(document);
+        return message;
     }
 
     private sealed class TestMessageManager : IMessageManager

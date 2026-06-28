@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 using NexusForever.Cryptography;
 using NexusForever.Database;
 using NexusForever.Database.Auth;
@@ -24,6 +25,9 @@ namespace NexusForever.StsServer.Network.Message.Handler
         [MessageHandler("/Auth/LoginStart", SessionState.Connected)]
         public static void HandleLoginStart(StsSession session, ClientLoginStartMessage loginStart)
         {
+            session.Account     = null;
+            session.KeyExchange = null;
+
             session.Events.EnqueueEvent(new TaskGenericEvent<AccountModel>(GetAuthDatabase().GetAccountByEmailAsync(loginStart.LoginName),
                 account =>
             {
@@ -61,12 +65,38 @@ namespace NexusForever.StsServer.Network.Message.Handler
         [MessageHandler("/Auth/KeyData", SessionState.LoginStart)]
         public static void HandleKeyData(StsSession session, ClientKeyDataMessage keyData)
         {
-            session.KeyExchange.CalculateSecret(keyData.A);
-
-            byte[] key = session.KeyExchange.CalculateSessionKey();
-            if (!session.KeyExchange.VerifyClientEvidenceMessage(keyData.M1))
+            if (session.KeyExchange == null)
             {
-                session.EnqueueMessageError(new ServerErrorMessage((int)ErrorCode.InvalidAccountNameOrPassword));
+                RejectKeyData(session);
+                return;
+            }
+
+            byte[] key;
+            try
+            {
+                session.KeyExchange.CalculateSecret(keyData.A);
+                key = session.KeyExchange.CalculateSessionKey();
+            }
+            catch (CryptographicException)
+            {
+                RejectKeyData(session);
+                return;
+            }
+
+            bool validEvidence;
+            try
+            {
+                validEvidence = session.KeyExchange.VerifyClientEvidenceMessage(keyData.M1);
+            }
+            catch (CryptographicException)
+            {
+                RejectKeyData(session);
+                return;
+            }
+
+            if (!validEvidence)
+            {
+                RejectKeyData(session);
                 return;
             }
 
@@ -110,6 +140,7 @@ namespace NexusForever.StsServer.Network.Message.Handler
             AddRoleIds(response.RoleIds, session.Account);
 
             session.EnqueueMessageOk(response);
+            session.State = SessionState.Connected;
         }
 
         [MessageHandler("/Auth/GetUserInfo", SessionState.None)]
@@ -312,6 +343,15 @@ namespace NexusForever.StsServer.Network.Message.Handler
         {
             AuthDatabase authDatabase = databaseManager?.GetDatabase<AuthDatabase>();
             return authDatabase ?? throw new InvalidOperationException("AuthDatabase is not available.");
+        }
+
+        private static void RejectKeyData(StsSession session)
+        {
+            session.Account     = null;
+            session.KeyExchange = null;
+            session.State       = SessionState.Connected;
+
+            session.EnqueueMessageError(new ServerErrorMessage((int)ErrorCode.InvalidAccountNameOrPassword));
         }
     }
 }

@@ -307,7 +307,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
         {
             session.EnqueueMessageEncrypted(new ServerSpellCastResult
             {
-                Unknown0   = contextToken,
+                ContextToken = contextToken,
                 Spell4Id   = spell4Id,
                 CastResult = castResult
             });

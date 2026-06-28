@@ -2,13 +2,17 @@
 
 namespace NexusForever.Network.World.Message.Model
 {
-    // Not captured in any sniffs so maybe was not needed
+    /// <summary>
+    /// Native opcode <c>0x0358</c> uses shared <c>ServerUInt32_ReadPayload</c> for the dialog unit id.
+    /// </summary>
     [Message(GameMessageOpcode.ServerDialogEnd)]
     public class ServerDialogEnd : IWritable
     {
+        public uint DialogUnitId { get; set; }
+
         public void Write(GamePacketWriter writer)
         {
-            // zero byte message
+            writer.Write(DialogUnitId);
         }
     }
 }
