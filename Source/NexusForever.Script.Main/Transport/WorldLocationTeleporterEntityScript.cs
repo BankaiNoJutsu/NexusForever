@@ -23,6 +23,9 @@ namespace NexusForever.Script.Main.Transport
     {
         public readonly record struct DirectTransportDestination(ushort WorldId, Vector3 Position, Vector3 Rotation);
 
+        private const uint NorthernWildsWorldId = 426u;
+        private const uint Q3963ShipControlsCreatureId = 27196u;
+
         private static readonly IReadOnlyDictionary<uint, uint> creatureWorldLocationIds = new ReadOnlyDictionary<uint, uint>(
             new Dictionary<uint, uint>
             {
@@ -61,6 +64,13 @@ namespace NexusForever.Script.Main.Transport
                 [45102u] = 1594u,  // Landing Site, Northern Wilds
                 [70663u] = 1594u,  // Landing Site, Northern Wilds
                 [46185u] = 37772u  // Thayd, Halon Ring
+            });
+
+        private static readonly IReadOnlyDictionary<uint, IReadOnlySet<uint>> creatureWorldLocationBlockedSourceWorlds = new ReadOnlyDictionary<uint, IReadOnlySet<uint>>(
+            new Dictionary<uint, IReadOnlySet<uint>>
+            {
+                // Creature2 27196 is also Q3963 Ship Controls in Northern Wilds; those controls are quest targets, not the Algoroc teleporter.
+                [Q3963ShipControlsCreatureId] = new HashSet<uint> { NorthernWildsWorldId }
             });
 
         private static readonly IReadOnlyDictionary<uint, DirectTransportDestination> directCreatureDestinations = new ReadOnlyDictionary<uint, DirectTransportDestination>(
@@ -137,7 +147,7 @@ namespace NexusForever.Script.Main.Transport
             if (activator == null || owner == null)
                 return;
 
-            if (creatureWorldLocationIds.TryGetValue(owner.CreatureId, out uint worldLocationId))
+            if (TryGetCreatureWorldLocation(owner.CreatureId, out uint worldLocationId))
             {
                 TryTeleportWorldLocation(activator, worldLocationId);
                 return;
@@ -152,6 +162,28 @@ namespace NexusForever.Script.Main.Transport
             log.LogWarning("World-location teleporter {EntityGuid} has no destination mapping for creature {CreatureId}.",
                 owner.Guid,
                 owner.CreatureId);
+        }
+
+        private bool TryGetCreatureWorldLocation(uint creatureId, out uint worldLocationId)
+        {
+            worldLocationId = 0u;
+            if (!creatureWorldLocationIds.TryGetValue(creatureId, out uint mappedWorldLocationId))
+                return false;
+
+            uint? sourceWorldId = owner?.Map?.Entry?.Id;
+            if (sourceWorldId.HasValue
+                && creatureWorldLocationBlockedSourceWorlds.TryGetValue(creatureId, out IReadOnlySet<uint> blockedWorlds)
+                && blockedWorlds.Contains(sourceWorldId.Value))
+            {
+                log.LogDebug("World-location teleporter {EntityGuid} skipped creature {CreatureId} on source world {WorldId}: creature row is quest-owned on this world.",
+                    owner.Guid,
+                    creatureId,
+                    sourceWorldId.Value);
+                return false;
+            }
+
+            worldLocationId = mappedWorldLocationId;
+            return true;
         }
 
         private void TryTeleportWorldLocation(IPlayer activator, uint worldLocationId)

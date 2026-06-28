@@ -150,6 +150,31 @@ public class WorldLocationTeleporterEntityScriptTests
     }
 
     [Fact]
+    public void OnActivateSuccess_WithShipControlsOnNorthernWilds_DoesNotTeleport()
+    {
+        var destination = new WorldLocation2Entry
+        {
+            Id        = 9801u,
+            WorldId   = 51u,
+            Position0 = 1f,
+            Position1 = 2f,
+            Position2 = 3f,
+            Facing3   = 1f
+        };
+
+        WorldLocationTeleporterEntityScript script = CreateScript(
+            27196u,
+            CreateGameTable(destination),
+            sourceWorldId: 426u);
+        IPlayer player = CreatePlayer(true, out RecordingDispatchProxy<IPlayer> playerProxy);
+
+        script.OnActivateSuccess(player);
+
+        Assert.Empty(playerProxy.GetInvocations("set_" + nameof(IWorldEntity.Rotation)));
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
+    }
+
+    [Fact]
     public void OnActivateSuccess_WithKnownDirectDestination_TeleportsToBranchCoordinate()
     {
         WorldLocationTeleporterEntityScript script = CreateScript(
@@ -321,6 +346,11 @@ public class WorldLocationTeleporterEntityScriptTests
         return CreateScript(creatureId, worldLocationTable, ownerPosition, out _);
     }
 
+    private static WorldLocationTeleporterEntityScript CreateScript(uint creatureId, GameTable<WorldLocation2Entry> worldLocationTable, uint sourceWorldId)
+    {
+        return CreateScript(creatureId, worldLocationTable, Vector3.Zero, null, out _, sourceWorldId);
+    }
+
     private static WorldLocationTeleporterEntityScript CreateScript(
         uint creatureId,
         GameTable<WorldLocation2Entry> worldLocationTable,
@@ -343,7 +373,8 @@ public class WorldLocationTeleporterEntityScriptTests
         GameTable<WorldLocation2Entry> worldLocationTable,
         Vector3 ownerPosition,
         GameTable<WorldEntry> worldTable,
-        out RecordingDispatchProxy<ICreatureEntity> ownerProxy)
+        out RecordingDispatchProxy<ICreatureEntity> ownerProxy,
+        uint? sourceWorldId = null)
     {
         IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> gameTableManagerProxy);
         gameTableManagerProxy.SetProperty(nameof(IGameTableManager.WorldLocation2), worldLocationTable);
@@ -354,6 +385,12 @@ public class WorldLocationTeleporterEntityScriptTests
         ownerProxy.SetProperty(nameof(IWorldEntity.Guid), 900u);
         ownerProxy.SetProperty(nameof(IWorldEntity.CreatureId), creatureId);
         ownerProxy.SetProperty(nameof(IGridEntity.Position), ownerPosition);
+        if (sourceWorldId.HasValue)
+        {
+            IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out RecordingDispatchProxy<IBaseMap> mapProxy);
+            mapProxy.SetProperty(nameof(IBaseMap.Entry), new WorldEntry { Id = sourceWorldId.Value });
+            ownerProxy.SetProperty(nameof(IGridEntity.Map), map);
+        }
 
         var script = new WorldLocationTeleporterEntityScript(
             NullLogger<WorldLocationTeleporterEntityScript>.Instance,
