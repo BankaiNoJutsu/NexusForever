@@ -39,6 +39,9 @@ CUSTOM_TABLES = [
 ]
 REQUIRED_RUNTIME_TABLES = [
     "entity",
+    "entity_event",
+    "entity_property",
+    "entity_spline",
     "entity_stats",
     "entity_vendor",
     "entity_vendor_category",
@@ -244,6 +247,63 @@ SET type = 0,
     END
 WHERE world = 3460
   AND creature IN (73494, 74862);
+
+-- Northern Wilds Deadeye Brightland Q3479/Q3480 static quest-giver correction.
+-- Retail video proof shows the dialog NPC at WorldLocation2 7726 standing still;
+-- reject the generated/official spline 2900 attachment when it is present.
+DELETE es
+FROM entity_spline es
+JOIN entity e ON e.id = es.id
+WHERE e.world = 426
+  AND e.area = 596
+  AND e.creature = 11063
+  AND ABS(e.x - 4185.583) < 5.0
+  AND ABS(e.y - (-722.691)) < 5.0
+  AND ABS(e.z - (-5695.496)) < 5.0;
+
+-- Official world visible duplicate cleanup promoted from duplicate audit.
+DELETE es
+FROM entity_spline es
+JOIN entity e ON e.id = es.id
+WHERE
+  (e.id = 47922 AND e.world = 3404 AND e.creature = 71468 AND e.area = 4826 AND ABS(e.x - (-72.8101)) < 0.001 AND ABS(e.y - (-844.8)) < 0.001 AND ABS(e.z - 7.84299) < 0.001)
+  OR (e.id = 47937 AND e.world = 3404 AND e.creature = 71628 AND e.area = 1622 AND ABS(e.x - 37.2705) < 0.001 AND ABS(e.y - (-840.065)) < 0.001 AND ABS(e.z - 173.363) < 0.001)
+  OR (e.id = 29208 AND e.world = 3460 AND e.creature = 73690 AND e.area = 5969 AND ABS(e.x - 1290.97) < 0.001 AND ABS(e.y - (-495.031)) < 0.001 AND ABS(e.z - 354.958) < 0.001)
+  OR (e.id = 29209 AND e.world = 3460 AND e.creature = 73690 AND e.area = 5969 AND ABS(e.x - 1294.33) < 0.001 AND ABS(e.y - (-495.328)) < 0.001 AND ABS(e.z - 337.609) < 0.001);
+
+DELETE ep
+FROM entity_property ep
+JOIN entity e ON e.id = ep.id
+WHERE
+  (e.id = 47922 AND e.world = 3404 AND e.creature = 71468 AND e.area = 4826 AND ABS(e.x - (-72.8101)) < 0.001 AND ABS(e.y - (-844.8)) < 0.001 AND ABS(e.z - 7.84299) < 0.001)
+  OR (e.id = 47937 AND e.world = 3404 AND e.creature = 71628 AND e.area = 1622 AND ABS(e.x - 37.2705) < 0.001 AND ABS(e.y - (-840.065)) < 0.001 AND ABS(e.z - 173.363) < 0.001)
+  OR (e.id = 29208 AND e.world = 3460 AND e.creature = 73690 AND e.area = 5969 AND ABS(e.x - 1290.97) < 0.001 AND ABS(e.y - (-495.031)) < 0.001 AND ABS(e.z - 354.958) < 0.001)
+  OR (e.id = 29209 AND e.world = 3460 AND e.creature = 73690 AND e.area = 5969 AND ABS(e.x - 1294.33) < 0.001 AND ABS(e.y - (-495.328)) < 0.001 AND ABS(e.z - 337.609) < 0.001);
+
+DELETE ev
+FROM entity_event ev
+JOIN entity e ON e.id = ev.id
+WHERE
+  (e.id = 47922 AND e.world = 3404 AND e.creature = 71468 AND e.area = 4826 AND ABS(e.x - (-72.8101)) < 0.001 AND ABS(e.y - (-844.8)) < 0.001 AND ABS(e.z - 7.84299) < 0.001)
+  OR (e.id = 47937 AND e.world = 3404 AND e.creature = 71628 AND e.area = 1622 AND ABS(e.x - 37.2705) < 0.001 AND ABS(e.y - (-840.065)) < 0.001 AND ABS(e.z - 173.363) < 0.001)
+  OR (e.id = 29208 AND e.world = 3460 AND e.creature = 73690 AND e.area = 5969 AND ABS(e.x - 1290.97) < 0.001 AND ABS(e.y - (-495.031)) < 0.001 AND ABS(e.z - 354.958) < 0.001)
+  OR (e.id = 29209 AND e.world = 3460 AND e.creature = 73690 AND e.area = 5969 AND ABS(e.x - 1294.33) < 0.001 AND ABS(e.y - (-495.328)) < 0.001 AND ABS(e.z - 337.609) < 0.001);
+
+DELETE est
+FROM entity_stats est
+JOIN entity e ON e.id = est.id
+WHERE
+  (e.id = 47922 AND e.world = 3404 AND e.creature = 71468 AND e.area = 4826 AND ABS(e.x - (-72.8101)) < 0.001 AND ABS(e.y - (-844.8)) < 0.001 AND ABS(e.z - 7.84299) < 0.001)
+  OR (e.id = 47937 AND e.world = 3404 AND e.creature = 71628 AND e.area = 1622 AND ABS(e.x - 37.2705) < 0.001 AND ABS(e.y - (-840.065)) < 0.001 AND ABS(e.z - 173.363) < 0.001)
+  OR (e.id = 29208 AND e.world = 3460 AND e.creature = 73690 AND e.area = 5969 AND ABS(e.x - 1290.97) < 0.001 AND ABS(e.y - (-495.031)) < 0.001 AND ABS(e.z - 354.958) < 0.001)
+  OR (e.id = 29209 AND e.world = 3460 AND e.creature = 73690 AND e.area = 5969 AND ABS(e.x - 1294.33) < 0.001 AND ABS(e.y - (-495.328)) < 0.001 AND ABS(e.z - 337.609) < 0.001);
+
+DELETE FROM entity
+WHERE
+  (id = 47922 AND world = 3404 AND creature = 71468 AND area = 4826 AND ABS(x - (-72.8101)) < 0.001 AND ABS(y - (-844.8)) < 0.001 AND ABS(z - 7.84299) < 0.001)
+  OR (id = 47937 AND world = 3404 AND creature = 71628 AND area = 1622 AND ABS(x - 37.2705) < 0.001 AND ABS(y - (-840.065)) < 0.001 AND ABS(z - 173.363) < 0.001)
+  OR (id = 29208 AND world = 3460 AND creature = 73690 AND area = 5969 AND ABS(x - 1290.97) < 0.001 AND ABS(y - (-495.031)) < 0.001 AND ABS(z - 354.958) < 0.001)
+  OR (id = 29209 AND world = 3460 AND creature = 73690 AND area = 5969 AND ABS(x - 1294.33) < 0.001 AND ABS(y - (-495.328)) < 0.001 AND ABS(z - 337.609) < 0.001);
 """.lstrip()
     )
 
@@ -280,6 +340,20 @@ def write_footer(handle) -> None:
     primary_entity_filter = primary_entity_range_sql("id")
     handle.write(
         f"""
+-- Algoroc Dodger stale DataMapping coordinate reject.
+-- Source coordinate 1556666 is superseded by official/current coordinate 4460.
+DELETE FROM entity_stats
+WHERE id = 1001556666;
+
+DELETE FROM entity
+WHERE id = 1001556666
+  AND creature = 54640
+  AND world = 51
+  AND area = 23
+  AND ABS(x - 3773) < 0.001
+  AND ABS(y - (-999)) < 0.001
+  AND ABS(z - (-4500)) < 0.001;
+
 COMMIT;
 
 SET FOREIGN_KEY_CHECKS = @NF_OLD_FOREIGN_KEY_CHECKS;

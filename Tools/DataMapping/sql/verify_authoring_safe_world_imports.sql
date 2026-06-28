@@ -70,6 +70,8 @@ UNION ALL SELECT 'entity_laughingws_northern_wilds_wip', COUNT(*) FROM entity WH
 UNION ALL SELECT 'expected_entity_laughingws_northern_wilds_wip_7_mismatch', IF(COUNT(*) = 7, 0, 1) FROM entity WHERE id BETWEEN @laughingws_small_world_entity_id_base AND @laughingws_small_world_entity_id_max AND world = 426 AND creature IN (11063, 12484, 12521, 12737, 12959, 13150, 13151)
 UNION ALL SELECT 'entity_laughingws_northern_wilds_q3673_signal_flares_wip', COUNT(*) FROM entity WHERE id BETWEEN @laughingws_small_world_entity_id_base AND @laughingws_small_world_entity_id_max AND world = 426 AND ((creature = 12521 AND questChecklistIdx = 1) OR (creature = 13150 AND questChecklistIdx = 2) OR (creature = 13151 AND questChecklistIdx = 3))
 UNION ALL SELECT 'expected_entity_laughingws_northern_wilds_q3673_signal_flares_wip_3_mismatch', IF(COUNT(*) = 3, 0, 1) FROM entity WHERE id BETWEEN @laughingws_small_world_entity_id_base AND @laughingws_small_world_entity_id_max AND world = 426 AND ((creature = 12521 AND questChecklistIdx = 1) OR (creature = 13150 AND questChecklistIdx = 2) OR (creature = 13151 AND questChecklistIdx = 3))
+UNION ALL SELECT 'northern_wilds_deadeye_brightland_wl7726_spline_rows', COUNT(*) FROM entity e JOIN entity_spline es ON es.id = e.id WHERE e.world = 426 AND e.area = 596 AND e.creature = 11063 AND ABS(e.x - 4185.583) < 5.0 AND ABS(e.y - (-722.691)) < 5.0 AND ABS(e.z - (-5695.496)) < 5.0
+UNION ALL SELECT 'expected_northern_wilds_deadeye_brightland_wl7726_spline_rows_0_mismatch', IF(COUNT(*) = 0, 0, 1) FROM entity e JOIN entity_spline es ON es.id = e.id WHERE e.world = 426 AND e.area = 596 AND e.creature = 11063 AND ABS(e.x - 4185.583) < 5.0 AND ABS(e.y - (-722.691)) < 5.0 AND ABS(e.z - (-5695.496)) < 5.0
 UNION ALL SELECT 'entity_laughingws_levian_bay_quest_checklist_updates', COUNT(*) FROM entity WHERE world = 1387 AND (
   (creature = 26016 AND questChecklistIdx = 1 AND area = 1411 AND displayInfo = 24366 AND ABS(x - (-3518.27)) < 0.001 AND ABS(y - (-979.4003)) < 0.001 AND ABS(z - (-6106.71)) < 0.001)
   OR (creature = 26016 AND questChecklistIdx = 2 AND area = 1411 AND displayInfo = 24366 AND ABS(x - (-3548.95)) < 0.001 AND ABS(y - (-978.6245)) < 0.001 AND ABS(z - (-6129.68)) < 0.001)
@@ -190,8 +192,8 @@ UNION ALL SELECT 'entity_laughingws_instance_wip', COUNT(*) FROM entity WHERE id
 UNION ALL SELECT 'entity_event_laughingws_instance_wip', COUNT(*) FROM entity_event WHERE id BETWEEN @laughingws_instance_entity_id_base AND @laughingws_instance_entity_id_max
 UNION ALL SELECT 'entity_script_laughingws_instance_wip', COUNT(*) FROM entity_script WHERE id BETWEEN @laughingws_instance_entity_id_base AND @laughingws_instance_entity_id_max
 UNION ALL SELECT 'entity_stats_laughingws_instance_wip', COUNT(*) FROM entity_stats WHERE id BETWEEN @laughingws_instance_entity_id_base AND @laughingws_instance_entity_id_max
-UNION ALL SELECT 'expected_entity_laughingws_instance_wip_75_mismatch', IF(COUNT(*) = 75, 0, 1) FROM entity WHERE id BETWEEN @laughingws_instance_entity_id_base AND @laughingws_instance_entity_id_max
-UNION ALL SELECT 'expected_entity_event_laughingws_instance_wip_67_mismatch', IF(COUNT(*) = 67, 0, 1) FROM entity_event WHERE id BETWEEN @laughingws_instance_entity_id_base AND @laughingws_instance_entity_id_max
+UNION ALL SELECT 'expected_entity_laughingws_instance_wip_72_mismatch', IF(COUNT(*) = 72, 0, 1) FROM entity WHERE id BETWEEN @laughingws_instance_entity_id_base AND @laughingws_instance_entity_id_max
+UNION ALL SELECT 'expected_entity_event_laughingws_instance_wip_64_mismatch', IF(COUNT(*) = 64, 0, 1) FROM entity_event WHERE id BETWEEN @laughingws_instance_entity_id_base AND @laughingws_instance_entity_id_max
 UNION ALL SELECT 'expected_entity_script_laughingws_instance_wip_35_mismatch', IF(COUNT(*) = 35, 0, 1) FROM entity_script WHERE id BETWEEN @laughingws_instance_entity_id_base AND @laughingws_instance_entity_id_max
 UNION ALL SELECT 'expected_entity_stats_laughingws_instance_wip_80_mismatch', IF(COUNT(*) = 80, 0, 1) FROM entity_stats WHERE id BETWEEN @laughingws_instance_entity_id_base AND @laughingws_instance_entity_id_max
 UNION ALL SELECT 'entity_laughingws_instance_datascape_wip', COUNT(*) FROM entity WHERE id BETWEEN @laughingws_instance_entity_id_base AND @laughingws_instance_entity_id_max AND world = 1333
@@ -259,7 +261,7 @@ UNION ALL SELECT 'entity_stats_laughingws_live_event_wip', COUNT(*) FROM entity_
 UNION ALL SELECT 'entity_vendor_laughingws_live_event_wip', COUNT(*) FROM entity_vendor WHERE id BETWEEN @laughingws_live_event_entity_id_base AND @laughingws_live_event_entity_id_max
 UNION ALL SELECT 'entity_vendor_category_laughingws_live_event_wip', COUNT(*) FROM entity_vendor_category WHERE id BETWEEN @laughingws_live_event_entity_id_base AND @laughingws_live_event_entity_id_max
 UNION ALL SELECT 'entity_vendor_item_laughingws_live_event_wip', COUNT(*) FROM entity_vendor_item WHERE id BETWEEN @laughingws_live_event_entity_id_base AND @laughingws_live_event_entity_id_max
-UNION ALL SELECT 'expected_entity_laughingws_live_event_wip_198_mismatch', IF(COUNT(*) = 198, 0, 1) FROM entity WHERE id BETWEEN @laughingws_live_event_entity_id_base AND @laughingws_live_event_entity_id_max
+UNION ALL SELECT 'expected_entity_laughingws_live_event_wip_196_mismatch', IF(COUNT(*) = 196, 0, 1) FROM entity WHERE id BETWEEN @laughingws_live_event_entity_id_base AND @laughingws_live_event_entity_id_max
 UNION ALL SELECT 'expected_entity_stats_laughingws_live_event_wip_68_mismatch', IF(COUNT(*) = 68, 0, 1) FROM entity_stats WHERE id BETWEEN @laughingws_live_event_entity_id_base AND @laughingws_live_event_entity_id_max
 UNION ALL SELECT 'expected_entity_vendor_laughingws_live_event_wip_8_mismatch', IF(COUNT(*) = 8, 0, 1) FROM entity_vendor WHERE id BETWEEN @laughingws_live_event_entity_id_base AND @laughingws_live_event_entity_id_max
 UNION ALL SELECT 'expected_entity_vendor_category_laughingws_live_event_wip_24_mismatch', IF(COUNT(*) = 24, 0, 1) FROM entity_vendor_category WHERE id BETWEEN @laughingws_live_event_entity_id_base AND @laughingws_live_event_entity_id_max
@@ -288,6 +290,18 @@ UNION ALL SELECT 'expected_store_offer_group_laughingws_shades_eve_10_mismatch',
 UNION ALL SELECT 'expected_store_offer_group_laughingws_winterfest_21_mismatch', IF(COUNT(*) = 21, 0, 1) FROM store_offer_group WHERE id IN (1839, 1841, 1899, 2074, 2076, 2077, 2091, 2968, 2969, 2970, 2971, 2972, 2985, 3312, 3315, 3318, 3327, 3328, 3329, 3330, 3332)
 UNION ALL SELECT 'creature_info_property', COUNT(*) FROM creature_info_property
 UNION ALL SELECT 'creature_info_stat', COUNT(*) FROM creature_info_stat
+UNION ALL SELECT 'entity_visible_duplicate_extras', COALESCE(SUM(duplicate_groups.row_count - 1), 0) FROM (
+  SELECT COUNT(*) AS row_count
+  FROM entity
+  GROUP BY world, area, type, creature, ROUND(x, 3), ROUND(y, 3), ROUND(z, 3), displayInfo, outfitInfo, faction1, faction2, questChecklistIdx, activePropId, worldSocketId, mode
+  HAVING COUNT(*) > 1
+) duplicate_groups
+UNION ALL SELECT 'expected_entity_visible_duplicate_extras_0_mismatch', IF(COALESCE(SUM(duplicate_groups.row_count - 1), 0) = 0, 0, 1) FROM (
+  SELECT COUNT(*) AS row_count
+  FROM entity
+  GROUP BY world, area, type, creature, ROUND(x, 3), ROUND(y, 3), ROUND(z, 3), displayInfo, outfitInfo, faction1, faction2, questChecklistIdx, activePropId, worldSocketId, mode
+  HAVING COUNT(*) > 1
+) duplicate_groups
 UNION ALL SELECT 'nf_map_tables', COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'nexus_forever_mapping' AND TABLE_NAME LIKE 'nf_map_%';
 
 SELECT match_status, COUNT(*) AS row_count

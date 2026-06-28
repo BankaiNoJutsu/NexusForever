@@ -101,6 +101,21 @@ PREPARE nfMissingMappingTablesStatement FROM @nf_missing_mapping_tables_sql;
 EXECUTE nfMissingMappingTablesStatement;
 DEALLOCATE PREPARE nfMissingMappingTablesStatement;
 
+DROP TEMPORARY TABLE IF EXISTS tmp_nf_world_entity_coordinate_reject;
+CREATE TEMPORARY TABLE tmp_nf_world_entity_coordinate_reject (
+  source_coordinate_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  jabbithole_creature_id BIGINT UNSIGNED NOT NULL,
+  creature2_id BIGINT UNSIGNED NOT NULL,
+  world SMALLINT UNSIGNED NOT NULL,
+  area SMALLINT UNSIGNED NOT NULL,
+  reason VARCHAR(255) NOT NULL
+) ENGINE=Memory;
+
+INSERT INTO tmp_nf_world_entity_coordinate_reject (
+  source_coordinate_id, jabbithole_creature_id, creature2_id, world, area, reason
+) VALUES
+  (1556666, 1086, 54640, 51, 23, 'Dodger stale Jabbithole coordinate superseded by official/current coordinate 4460');
+
 SET @nf_truncate_loot_sql := IF(
   @nf_safe_import_replace_existing = 1,
   'TRUNCATE TABLE creature_loot',
@@ -160,6 +175,15 @@ WHERE @nf_safe_import_entity_spawns = 1
   AND IFNULL(c.Creature, 0) > 0
   AND IFNULL(c.World, 0) > 0
   AND IFNULL(c.Area, 0) > 0
+  AND NOT EXISTS (
+    SELECT 1
+    FROM tmp_nf_world_entity_coordinate_reject rejected
+    WHERE rejected.source_coordinate_id = c.source_coordinate_id
+      AND rejected.jabbithole_creature_id = c.jabbithole_creature_id
+      AND rejected.creature2_id = c.Creature
+      AND rejected.world = c.World
+      AND rejected.area = c.Area
+  )
   AND c.X IS NOT NULL
   AND c.Y IS NOT NULL
   AND c.Z IS NOT NULL
@@ -267,6 +291,15 @@ SET @nfJabbitholeCoordinateImportSql := IF(
         AND IFNULL(co.id, 0) > 0
         AND (@nf_entity_id_base + co.id) BETWEEN @nf_entity_id_base AND @nf_entity_id_max
         AND IFNULL(m.creature2_id, 0) > 0
+        AND NOT EXISTS (
+          SELECT 1
+          FROM tmp_nf_world_entity_coordinate_reject rejected
+          WHERE rejected.source_coordinate_id = co.id
+            AND rejected.jabbithole_creature_id = c.id
+            AND rejected.creature2_id = m.creature2_id
+            AND rejected.world = @nf_safe_import_entity_spawn_world
+            AND rejected.area = COALESCE(NULLIF(c.worldzoneid, 0), NULLIF(@nf_safe_import_entity_spawn_area, 0), rejected.area)
+        )
         AND co.x IS NOT NULL
         AND co.y IS NOT NULL
         AND co.z IS NOT NULL
@@ -913,6 +946,50 @@ SET type = 0,
 WHERE world = 3460
   AND creature IN (73494, 74862);
 
+-- Official world visible duplicate cleanup.
+DELETE es
+FROM entity_spline es
+JOIN entity e ON e.id = es.id
+WHERE
+  (e.id = 47922 AND e.world = 3404 AND e.creature = 71468 AND e.area = 4826 AND ABS(e.x - (-72.8101)) < 0.001 AND ABS(e.y - (-844.8)) < 0.001 AND ABS(e.z - 7.84299) < 0.001)
+  OR (e.id = 47937 AND e.world = 3404 AND e.creature = 71628 AND e.area = 1622 AND ABS(e.x - 37.2705) < 0.001 AND ABS(e.y - (-840.065)) < 0.001 AND ABS(e.z - 173.363) < 0.001)
+  OR (e.id = 29208 AND e.world = 3460 AND e.creature = 73690 AND e.area = 5969 AND ABS(e.x - 1290.97) < 0.001 AND ABS(e.y - (-495.031)) < 0.001 AND ABS(e.z - 354.958) < 0.001)
+  OR (e.id = 29209 AND e.world = 3460 AND e.creature = 73690 AND e.area = 5969 AND ABS(e.x - 1294.33) < 0.001 AND ABS(e.y - (-495.328)) < 0.001 AND ABS(e.z - 337.609) < 0.001);
+
+DELETE ep
+FROM entity_property ep
+JOIN entity e ON e.id = ep.id
+WHERE
+  (e.id = 47922 AND e.world = 3404 AND e.creature = 71468 AND e.area = 4826 AND ABS(e.x - (-72.8101)) < 0.001 AND ABS(e.y - (-844.8)) < 0.001 AND ABS(e.z - 7.84299) < 0.001)
+  OR (e.id = 47937 AND e.world = 3404 AND e.creature = 71628 AND e.area = 1622 AND ABS(e.x - 37.2705) < 0.001 AND ABS(e.y - (-840.065)) < 0.001 AND ABS(e.z - 173.363) < 0.001)
+  OR (e.id = 29208 AND e.world = 3460 AND e.creature = 73690 AND e.area = 5969 AND ABS(e.x - 1290.97) < 0.001 AND ABS(e.y - (-495.031)) < 0.001 AND ABS(e.z - 354.958) < 0.001)
+  OR (e.id = 29209 AND e.world = 3460 AND e.creature = 73690 AND e.area = 5969 AND ABS(e.x - 1294.33) < 0.001 AND ABS(e.y - (-495.328)) < 0.001 AND ABS(e.z - 337.609) < 0.001);
+
+DELETE ev
+FROM entity_event ev
+JOIN entity e ON e.id = ev.id
+WHERE
+  (e.id = 47922 AND e.world = 3404 AND e.creature = 71468 AND e.area = 4826 AND ABS(e.x - (-72.8101)) < 0.001 AND ABS(e.y - (-844.8)) < 0.001 AND ABS(e.z - 7.84299) < 0.001)
+  OR (e.id = 47937 AND e.world = 3404 AND e.creature = 71628 AND e.area = 1622 AND ABS(e.x - 37.2705) < 0.001 AND ABS(e.y - (-840.065)) < 0.001 AND ABS(e.z - 173.363) < 0.001)
+  OR (e.id = 29208 AND e.world = 3460 AND e.creature = 73690 AND e.area = 5969 AND ABS(e.x - 1290.97) < 0.001 AND ABS(e.y - (-495.031)) < 0.001 AND ABS(e.z - 354.958) < 0.001)
+  OR (e.id = 29209 AND e.world = 3460 AND e.creature = 73690 AND e.area = 5969 AND ABS(e.x - 1294.33) < 0.001 AND ABS(e.y - (-495.328)) < 0.001 AND ABS(e.z - 337.609) < 0.001);
+
+DELETE est
+FROM entity_stats est
+JOIN entity e ON e.id = est.id
+WHERE
+  (e.id = 47922 AND e.world = 3404 AND e.creature = 71468 AND e.area = 4826 AND ABS(e.x - (-72.8101)) < 0.001 AND ABS(e.y - (-844.8)) < 0.001 AND ABS(e.z - 7.84299) < 0.001)
+  OR (e.id = 47937 AND e.world = 3404 AND e.creature = 71628 AND e.area = 1622 AND ABS(e.x - 37.2705) < 0.001 AND ABS(e.y - (-840.065)) < 0.001 AND ABS(e.z - 173.363) < 0.001)
+  OR (e.id = 29208 AND e.world = 3460 AND e.creature = 73690 AND e.area = 5969 AND ABS(e.x - 1290.97) < 0.001 AND ABS(e.y - (-495.031)) < 0.001 AND ABS(e.z - 354.958) < 0.001)
+  OR (e.id = 29209 AND e.world = 3460 AND e.creature = 73690 AND e.area = 5969 AND ABS(e.x - 1294.33) < 0.001 AND ABS(e.y - (-495.328)) < 0.001 AND ABS(e.z - 337.609) < 0.001);
+
+DELETE FROM entity
+WHERE
+  (id = 47922 AND world = 3404 AND creature = 71468 AND area = 4826 AND ABS(x - (-72.8101)) < 0.001 AND ABS(y - (-844.8)) < 0.001 AND ABS(z - 7.84299) < 0.001)
+  OR (id = 47937 AND world = 3404 AND creature = 71628 AND area = 1622 AND ABS(x - 37.2705) < 0.001 AND ABS(y - (-840.065)) < 0.001 AND ABS(z - 173.363) < 0.001)
+  OR (id = 29208 AND world = 3460 AND creature = 73690 AND area = 5969 AND ABS(x - 1290.97) < 0.001 AND ABS(y - (-495.031)) < 0.001 AND ABS(z - 354.958) < 0.001)
+  OR (id = 29209 AND world = 3460 AND creature = 73690 AND area = 5969 AND ABS(x - 1294.33) < 0.001 AND ABS(y - (-495.328)) < 0.001 AND ABS(z - 337.609) < 0.001);
+
 -- Northern Wilds bulk coordinate cleanup.
 -- Jabbithole/source coordinate observations for world 426 currently overpopulate
 -- tiny map grids and are not safe retail spawn groups. Keep legacy/manual rows
@@ -931,6 +1008,20 @@ DELETE FROM entity
 WHERE @nf_safe_import_allow_unsafe_northern_wilds_spawns = 0
   AND world = 426
   AND id BETWEEN @nf_entity_id_base AND @nf_entity_id_max;
+
+-- Algoroc Dodger: reject stale source coordinate 1556666. The official/current
+-- coordinate is source 4460, promoted as static entity 3894 at 3857,-1005,-4524.
+DELETE FROM entity_stats
+WHERE id = @nf_entity_id_base + 1556666;
+
+DELETE FROM entity
+WHERE id = @nf_entity_id_base + 1556666
+  AND creature = 54640
+  AND world = 51
+  AND area = 23
+  AND ABS(x - 3773) < 0.001
+  AND ABS(y - (-999)) < 0.001
+  AND ABS(z - (-4500)) < 0.001;
 
 COMMIT;
 

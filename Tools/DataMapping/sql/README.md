@@ -114,7 +114,7 @@ python Tools\DataMapping\extract_laughingws_small_world_overlays.py `
 
 `laughingws_instance_entity_wip_seed.sql` is generated from selected
 LaughingWS instance SQL where current WIP scripts or map bindings already exist.
-It keeps `75` WIP/GUESSED instance-local `entity` rows, `67` `entity_event`
+It keeps `72` WIP/GUESSED instance-local `entity` rows, `64` `entity_event`
 rows, `35` `entity_script` rows, and `80` `entity_stats` rows for Coldblood
 Citadel, Protostar SuperMall, Space Madness, Gauntlet, Fragment Zero,
 Infestation, Outpost M-13, Evil from the Ether drive-spark phase anchors,
@@ -270,10 +270,10 @@ updates, `67` official Auroria `questChecklistIdx` updates, and `24` official
 Crimson Isle `questChecklistIdx` updates with optional `107` Everstar Grove/
 Levian Bay/Auroria/Crimson Isle fallback `entity` rows and up to `219` fallback
 `entity_stats` rows on older local imports), the WIP instance seed
-(`75` `entity`, `67` `entity_event`, `35` `entity_script`, `80`
+(`72` `entity`, `64` `entity_event`, `35` `entity_script`, `80`
 `entity_stats`), the WIP Skyplot housing seed (`3` `entity`, `12`
 `entity_stats`, `2` `entity_vendor`, `72` `entity_vendor_category`, `322`
-`entity_vendor_item`), the WIP live-event seed (`198` `entity`, `68`
+`entity_vendor_item`), the WIP live-event seed (`196` `entity`, `68`
 `entity_stats`, `8` `entity_vendor`, `24` `entity_vendor_category`, `142`
 `entity_vendor_item`), the LaughingWS quest-loot overlay (`1,174` `loot_group`,
 `5,302` `entity_loot`, `1,174` `loot_item`), the checked Valentine's
@@ -359,6 +359,26 @@ default, removes any older DataMapping-owned rows, and keeps only legacy/manual
 rows plus script-owned quest spawns. Set
 `@nf_safe_import_allow_unsafe_northern_wilds_spawns = 1` only during focused
 review work, not for normal local world imports.
+`verify_safe_world_imports.sql` keeps the bulk-import guard separate from the
+reviewed `laughingws_small_world_wip_seed.sql` Northern Wilds rows, so the
+`northern_wilds_unsafe_datamapping_spawns` metric stays `0` when only the
+approved WIP small-world overlay is present.
+
+Deadeye Brightland at the Q3479/Q3480 receiver location is a targeted static
+correction. Retail video proof shows Creature2 `11063` standing still at
+WorldLocation2 `7726`, so `runtime_world_seed.sql` removes any matching
+`entity_spline` row near `4185.583/-722.691/-5695.496` and
+`verify_safe_world_imports.sql` expects
+`northern_wilds_deadeye_brightland_wl7726_spline_rows = 0`. This rejects the
+generated `auto_safe_spline_import_wip.sql` candidate `17972 -> 2900`; it does
+not promote the broader Northern Wilds spline candidate set.
+
+The WIP `auto_safe_spline_import_wip.sql` file now auto-imports only candidates
+whose nearest client spline path distance and same-creature runtime distance are
+both strictly less than `1.0`. The earlier `3m` pass matched Deadeye at
+`2.968609` path distance and `1.031446` runtime distance, so rows in the old
+`1m`-to-`3m` band are cleanup/audit-only until they have row-level movement
+proof.
 
 The reviewed Northern Wilds `Yeti Snowstalker` bridge is tracked in
 `Tools/DataMapping/creature_bridge_overrides.csv`, not as a SQL special-case.
@@ -401,6 +421,45 @@ query staging/reference tables and reports mismatches when `nf_map_*`,
 `nexus_forever_mapping`, `jabbithole`, or `wildstar_client` are present. Use
 `verify_authoring_safe_world_imports.sql` on authoring machines after applying
 staging-backed imports.
+
+## Verified Run - 2026-06-17
+
+Local operational reconciliation:
+
+```powershell
+python Tools\DataMapping\map_wildstar_data.py
+
+python Tools\DataMapping\load_mapping_staging_tables.py --apply
+
+Get-Content -Raw Tools\DataMapping\sql\laughingws_small_world_wip_seed.sql |
+  & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" `
+  --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
+
+Get-Content -Raw Tools\DataMapping\sql\verify_safe_world_imports.sql |
+  & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" `
+  --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
+```
+
+Result: mapper output was regenerated at `2026-06-17 18:59:12`.
+`quest_objective_map.csv` now reports `4,488` matched rows and `70` unmatched
+rows; the false-unmatched order-0 objective bucket is closed. Authoring staging
+was rebuilt into `nexus_forever_mapping` at `2026-06-17 19:06:24` with `96/96`
+tables loaded, zero missing CSV tables, and zero missing required-column
+tables. `nf_map_creature` loaded `24,679` rows and
+`nf_map_creature_spline_candidate` loaded `188,480` rows. The current spline
+CSV is an older optional output; missing nullable/defaulted expanded columns are
+omitted during load. Regenerate with `map_wildstar_data.py
+--include-spline-candidates` before relying on expanded spline
+classification/runtime fields. The Q3668 relation-scoped creature reviews for
+Bartol Sunward `12737` and Scientist Lusk `12484` are present in
+`creature_quest_map.csv` while their Arkship same-name variants remain excluded
+from global creature overrides. Runtime `nf_map_*` residue was removed from
+`nexus_forever_world`. The verifier reported
+`runtime_world_nf_map_tables=0`, `entity_laughingws_small_world_wip=16`,
+`entity_stats_laughingws_small_world_wip=59`,
+`entity_laughingws_northern_wilds_wip=7`,
+`entity_laughingws_northern_wilds_q3673_signal_flares_wip=3`, and
+`northern_wilds_unsafe_datamapping_spawns=0`.
 
 ## Verified Run - 2026-05-25
 

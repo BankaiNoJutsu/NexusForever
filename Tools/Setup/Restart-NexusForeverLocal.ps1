@@ -60,7 +60,7 @@ param(
     [ValidateSet('None', 'LooseData', 'HostsRedirect', 'Both')]
     [string] $StoreBannerMode = 'LooseData',
     [switch] $SkipLocalStoreBannerData,
-    [int] $WaitTimeoutSeconds = 120,
+    [int] $WaitTimeoutSeconds = 180,
 
     [string] $MySqlExe = 'mysql',
     [string] $MySqlHost = '127.0.0.1',

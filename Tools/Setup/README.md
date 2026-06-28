@@ -400,8 +400,8 @@ Promoted runtime world data:
   indices remain WIP/GUESSED pending placement/stat/interaction or quest-smoke
   proof.
 - `Tools\DataMapping\sql\laughingws_instance_entity_wip_seed.sql` is imported
-  after the WIP small world seed when present. It adds `75` WIP/GUESSED
-  instance-local `entity` rows plus `67` `entity_event`, `35` `entity_script`,
+  after the WIP small world seed when present. It adds `72` WIP/GUESSED
+  instance-local `entity` rows plus `64` `entity_event`, `35` `entity_script`,
   and `80` `entity_stats` rows for Coldblood Citadel, Protostar SuperMall,
   Space Madness, Gauntlet, Fragment Zero, Infestation, Outpost M-13,
   Evil from the Ether drive-spark phase anchors, Protogames Academy,

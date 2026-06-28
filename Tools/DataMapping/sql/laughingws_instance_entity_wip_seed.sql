@@ -47,10 +47,7 @@ START TRANSACTION;
 --   1100300037: Protogames Academy Initiation Button; source creature 68339; no source entity_event row; Branch SQL supplies a static initiation button but no entity_event row, and the source questions the ActivePropId; current C# starts the initiation objective, so this remains WIP/GUESSED placement data.
 --   1100300038: Protogames Academy gather marker Invulnotron; source creature 70003; event 667 phase 1; Branch SQL supplies the first event 667 gather marker; current C# creates WIP gather triggers dynamically, so the static placement remains WIP/GUESSED pending trigger cleanup proof.
 --   1100300039: Protogames Academy gather marker Gromka; source creature 70003; event 667 phase 4; Branch SQL supplies the second event 667 gather marker; current C# creates WIP gather triggers dynamically, so the static placement remains WIP/GUESSED pending trigger cleanup proof.
---   1100300040: Protogames Academy gather marker Iruki Boldbeard; source creature 70003; event 667 phase 6; Branch SQL supplies the third event 667 gather marker; current C# creates WIP gather triggers dynamically, so the static placement remains WIP/GUESSED pending trigger cleanup proof.
 --   1100300041: Protogames Academy gather marker arena A; source creature 70003; event 667 phase 9; Branch SQL supplies the fourth event 667 gather marker; current C# creates WIP gather triggers dynamically, so the static placement remains WIP/GUESSED pending trigger cleanup proof.
---   1100300042: Protogames Academy gather marker arena B; source creature 70003; event 667 phase 12; Branch SQL supplies the fifth event 667 gather marker; current C# creates WIP gather triggers dynamically, so the static placement remains WIP/GUESSED pending trigger cleanup proof.
---   1100300043: Protogames Academy gather marker final arena; source creature 70003; event 667 phase 14; Branch SQL supplies the sixth event 667 gather marker; current C# creates WIP gather triggers dynamically, so the static placement remains WIP/GUESSED pending trigger cleanup proof.
 --   1100300044: Ruins of Kel Voreth Forgemaster Trogun; source creature 32531; event 161 phase 3; Branch SQL supplies event 161 phase 3 and ForgemasterTrogunEntityScript; current C# has a WIP objective-credit script, while exact boss combat and door choreography remain blocked.
 --   1100300045: Ruins of Kel Voreth Grond the Corpsemaker; source creature 32534; event 161 phase 1; Branch SQL supplies event 161 phase 1 and GrondTheCorpsemakerEntityScript; current C# has a WIP objective-credit script, while exact boss combat and encounter choreography remain blocked.
 --   1100300046: Ruins of Kel Voreth Slavemaster Drokk; source creature 32536; event 161 phase 2; Branch SQL supplies event 161 phase 2 and SlavemasterDrokkEntityScript; current C# has a WIP objective-credit script, while exact boss combat and faction-specific messaging remain blocked.
@@ -84,7 +81,7 @@ START TRANSACTION;
 --   1100300074: Datascape Grand Warmonger Targresh; source creature 48177; event 157 phase 22; Branch SQL supplies placed Grand Warmonger Targresh coordinates; phase 22 is WIP-guessed from the current Datascape event script.
 --   1100300075: Datascape Avatus; source creature 30505; event 157 phase 26; Branch SQL supplies placed Avatus coordinates; phase 26 is WIP-guessed from the current Datascape event script's Avatus phase.
 
--- entity: 75 row(s)
+-- entity: 72 row(s)
 INSERT INTO `entity` (`id`, `type`, `creature`, `world`, `area`, `x`, `y`, `z`, `rx`, `ry`, `rz`, `displayInfo`, `outfitInfo`, `faction1`, `faction2`, `questChecklistIdx`, `activePropId`, `worldSocketId`, `mode`) VALUES
   (1100300001, 0, 75508, 3522, 0, 459.544, -467.2018, -596.769, 0, 0, 0, 24808, 0, 691, 691, 0, 0, 0, 0),
   (1100300002, 10, 75624, 3522, 0, 604.33, -475.452, -322.957, 0, 0, 0, 30327, 0, 219, 219, 0, 0, 0, 0),
@@ -125,10 +122,7 @@ INSERT INTO `entity` (`id`, `type`, `creature`, `world`, `area`, `x`, `y`, `z`, 
   (1100300037, 10, 68339, 3173, 4509, -29439.2, -776.479, -29381.5, 0, 0, 0, 25115, 0, 219, 219, 0, 202490, 0, 0),
   (1100300038, 10, 70003, 3173, 4651, -24400.12, -974.6682, -28977.07, 0, 0, 0, 30327, 0, 219, 219, 0, 0, 0, 0),
   (1100300039, 10, 70003, 3173, 4507, -24504.89, -974.7488, -28857.48, 0, 0, 0, 30327, 0, 219, 219, 0, 0, 0, 0),
-  (1100300040, 10, 70003, 3173, 4651, -24400.12, -974.6682, -28977.07, 0, 0, 0, 30327, 0, 219, 219, 0, 0, 0, 0),
   (1100300041, 10, 70003, 3173, 4507, -19804.34, -945.5437, -29483.94, 0, 0, 0, 30327, 0, 219, 219, 0, 0, 0, 0),
-  (1100300042, 10, 70003, 3173, 4507, -19804.34, -945.5437, -29483.94, 0, 0, 0, 30327, 0, 219, 219, 0, 0, 0, 0),
-  (1100300043, 10, 70003, 3173, 4507, -19804.34, -945.5437, -29483.94, 0, 0, 0, 30327, 0, 219, 219, 0, 0, 0, 0),
   (1100300044, 0, 32531, 1336, 0, -24.77, -737.08, 990.32, 0, 0, 0, 29203, 0, 691, 691, 0, 0, 0, 0),
   (1100300045, 0, 32534, 1336, 0, 195.41, -899.36, 225.65, 0, 0, 0, 27715, 0, 691, 691, 0, 0, 0, 0),
   (1100300046, 0, 32536, 1336, 0, 596.36, -882.84, 976.53, 0, 0, 0, 27104, 0, 691, 691, 0, 0, 0, 0),
@@ -163,7 +157,7 @@ INSERT INTO `entity` (`id`, `type`, `creature`, `world`, `area`, `x`, `y`, `z`, 
   (1100300075, 0, 30505, 1333, 1301, 618, -198.7, -174, 1.61258, 0, 0, 28937, 0, 1171, 1171, 0, 0, 0, 0)
 ON DUPLICATE KEY UPDATE `type` = VALUES(`type`), `creature` = VALUES(`creature`), `world` = VALUES(`world`), `area` = VALUES(`area`), `x` = VALUES(`x`), `y` = VALUES(`y`), `z` = VALUES(`z`), `rx` = VALUES(`rx`), `ry` = VALUES(`ry`), `rz` = VALUES(`rz`), `displayInfo` = VALUES(`displayInfo`), `outfitInfo` = VALUES(`outfitInfo`), `faction1` = VALUES(`faction1`), `faction2` = VALUES(`faction2`), `questChecklistIdx` = VALUES(`questChecklistIdx`), `activePropId` = VALUES(`activePropId`), `worldSocketId` = VALUES(`worldSocketId`), `mode` = VALUES(`mode`);
 
--- entity_event: 67 row(s)
+-- entity_event: 64 row(s)
 INSERT INTO `entity_event` (`id`, `eventId`, `phase`) VALUES
   (1100300001, 907, 1),
   (1100300002, 907, 0),
@@ -200,10 +194,7 @@ INSERT INTO `entity_event` (`id`, `eventId`, `phase`) VALUES
   (1100300036, 667, 13),
   (1100300038, 667, 1),
   (1100300039, 667, 4),
-  (1100300040, 667, 6),
   (1100300041, 667, 9),
-  (1100300042, 667, 12),
-  (1100300043, 667, 14),
   (1100300044, 161, 3),
   (1100300045, 161, 1),
   (1100300046, 161, 2),
