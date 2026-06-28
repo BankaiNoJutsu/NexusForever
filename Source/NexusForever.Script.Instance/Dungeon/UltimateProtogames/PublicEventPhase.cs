@@ -8,6 +8,11 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames
         RandomEvent2,
         BevORage,
         RandomEvent3,
-        HutHut
+        HutHut,
+        TankRoom = 7,
+        MisplacedMammoth = 8,
+        Prototentiary = 9,
+        Ruffles = 10,
+        PowerPlunge = 11
     }
 }

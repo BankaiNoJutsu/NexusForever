@@ -1,4 +1,4 @@
-namespace NexusForever.Script.Instance.Raid.UltimateProtogames
+namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames.Downsizer
 {
     public enum PublicEventObjective
     {

@@ -2,11 +2,11 @@ using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
-using NexusForever.Script.Instance.Raid.UltimateProtogames;
+using NexusForever.Script.Instance.Dungeon.UltimateProtogames.Downsizer;
 
 namespace NexusForever.Game.Tests.Instances;
 
-public class UltimateProtogamesRaidEventScriptTests
+public class UltimateProtogamesDownsizerEventScriptTests
 {
     [Fact]
     public void OnLoad_ActivatesWipDownsizerObjectiveSet()
@@ -16,6 +16,7 @@ public class UltimateProtogamesRaidEventScriptTests
         List<RecordingDispatchProxy<IPublicEvent>.Invocation> activations = eventProxy
             .GetInvocations(nameof(IPublicEvent.ActivateObjective))
             .ToList();
+        Assert.Equal(5, activations.Count);
         Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.DefeatTheDownsizer);
         Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.VoltaicConversion);
         Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.Overcharge);
@@ -35,6 +36,19 @@ public class UltimateProtogamesRaidEventScriptTests
 
         RecordingDispatchProxy<IPublicEvent>.Invocation finish = Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.Finish)));
         Assert.Equal(PublicEventTeam.PublicTeam, finish.Arguments[0]);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_DownsizerActive_DoesNotFinishEvent()
+    {
+        UltimateProtogamesEventScript script = CreateScript(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        eventProxy.Invocations.Clear();
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.DefeatTheDownsizer,
+            PublicEventStatus.Active));
+
+        Assert.Empty(eventProxy.GetInvocations(nameof(IPublicEvent.Finish)));
     }
 
     [Fact]

@@ -3,7 +3,7 @@ using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
 
-namespace NexusForever.Script.Instance.Raid.UltimateProtogames
+namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames.Downsizer
 {
     [ScriptFilterOwnerId(642)]
     public class UltimateProtogamesEventScript : IPublicEventScript, IOwnedScript<IPublicEvent>
@@ -17,9 +17,9 @@ namespace NexusForever.Script.Instance.Raid.UltimateProtogames
         {
             publicEvent = owner;
 
-            // WIP-guessed from LaughingWS Instances-and-more: the branch supplies
-            // only this raid objective catalog and a map binding. Activate the
-            // Downsizer objective set, but leave exact boss mechanics/rewards blocked.
+            // Build 16042 maps public event 642 to the Downsizer objective set.
+            // Only objective 3197 has a mapped Creature2 death-credit producer;
+            // the four challenge rows remain blocked on ability/mechanic proof.
             publicEvent.ActivateObjective(PublicEventObjective.DefeatTheDownsizer);
             publicEvent.ActivateObjective(PublicEventObjective.VoltaicConversion);
             publicEvent.ActivateObjective(PublicEventObjective.Overcharge);
@@ -38,8 +38,8 @@ namespace NexusForever.Script.Instance.Raid.UltimateProtogames
             switch ((PublicEventObjective)objective.Entry.Id)
             {
                 case PublicEventObjective.DefeatTheDownsizer:
-                    // WIP-guessed completion boundary. Challenge objective semantics,
-                    // encounter choreography, and rewards remain blocked pending proof.
+                    // Completion boundary for the mapped Downsizer kill objective.
+                    // Challenge semantics, encounter choreography, and rewards remain blocked.
                     publicEvent.Finish(PublicEventTeam.PublicTeam);
                     break;
             }
