@@ -1,4 +1,5 @@
 using System.Numerics;
+using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Cinematic;
 using NexusForever.Game.Abstract.Cinematic.Cinematics;
 using NexusForever.Game.Abstract.Entity;
@@ -6,6 +7,7 @@ using NexusForever.Game.Abstract.Entity.Trigger;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script;
 using NexusForever.Script.Template;
@@ -21,6 +23,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
 
         private uint gatherRingGuid;
         private uint gatherRingTriggerGuid;
+        private bool driveDiagnosticsComplete;
+        private bool driveSchematicsComplete;
         private uint medbayDoorControlGuid;
         private uint medbayDoorGuid;
         private uint securityChiefKondovichDoorGuid;
@@ -31,8 +35,39 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
         private uint gatherMarker1Guid;
         private uint gatherMarker2Guid;
         private uint floatingKatjaGuid;
+        private bool driveSparksSpawned;
+        private bool katjaZarkhovDefeated;
+        private bool etherChargedRavenousKilled;
 
         private readonly List<uint> ravenousRefugeeGuids = [];
+
+        private const ushort EvilFromTheEtherWorldId = 3404;
+        private const uint EvilFromTheEtherPublicEventId = 781u;
+        private const uint DriveSparkCreatureId = 71847u;
+        // Reviewed entity_event rows store phase 23; keep this raw evidence value
+        // even though the current script phase method is PickUpDriveSchematics.
+        private const uint DriveSparkEventPhase = 23u;
+        private const uint DriveSparkDisplayInfo = 24324u;
+        private const ushort DriveSparkAreaId = 0;
+        private const ushort DriveSparkOutfitInfo = 0;
+        private const ushort DriveSparkFactionId = 219;
+
+        private static readonly Vector3 DriveSparkRotation = new(-3.1415925f, 0f, 0f);
+
+        private static readonly DriveSparkSpawnModel[] DriveSparkSpawns =
+        [
+            new(1100300018u, new Vector3(-62.29986f, -826.7423f, 315.39798f)),
+            new(1100300019u, new Vector3(-42.11708f, -819.4943f, 316.413f)),
+            new(1100300020u, new Vector3(-50.01624f, -826.74396f, 309.8f)),
+            new(1100300021u, new Vector3(-63.714478f, -817.7603f, 312.456f)),
+            new(1100300022u, new Vector3(-43.03138f, -826.57556f, 313.40698f)),
+            new(1100300023u, new Vector3(-51.01272f, -819.90674f, 320.367f)),
+            new(1100300024u, new Vector3(-59.60385f, -818.0261f, 320.757f)),
+            new(1100300025u, new Vector3(-47.63262f, -813.7216f, 320.81198f)),
+            new(1100300026u, new Vector3(-55.35622f, -815.50745f, 306.914f)),
+            new(1100300027u, new Vector3(-58.10405f, -818.83215f, 310.94598f)),
+            new(1100300028u, new Vector3(-51.504288f, -820.1912f, 304.748f))
+        ];
 
         #region Dependency Injection
 
@@ -58,6 +93,10 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
             mapInstance = publicEvent.Map as IMapInstance
                 ?? throw new InvalidOperationException("Evil from the Ether requires a map instance.");
 
+            driveSparksSpawned = false;
+            // Build 16042 objective 4944 is a zero-count ScriptWithoutMax row
+            // with a 20-minute failure timer for Gold medal eligibility.
+            publicEvent.ActivateObjective(PublicEventObjective.CompleteWithinGoldTimer);
             publicEvent.SetPhase(PublicEventPhase.TalkToCaptainWeir);
         }
 
@@ -181,6 +220,9 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
         {
             switch ((PublicEventPhase)phase)
             {
+                case PublicEventPhase.TalkToCaptainWeir:
+                    OnPhaseTalkToCaptainWeir();
+                    break;
                 case PublicEventPhase.GoToAirlock:
                     OnPhaseGoToAirlock();
                     break;
@@ -223,6 +265,9 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
                 case PublicEventPhase.DefeatEthericOrganisms2:
                     OnPhaseDefeatEthericOrganisms2();
                     break;
+                case PublicEventPhase.GatherAroundTeleporter:
+                    OnPhaseGatherAroundTeleporter();
+                    break;
                 case PublicEventPhase.TeleportToUpperDeck:
                     OnPhaseTeleportToUpperDeck();
                     break;
@@ -254,6 +299,11 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
                     OnPhaseTalkToCaptainWeir2();
                     break;
             }
+        }
+
+        private void OnPhaseTalkToCaptainWeir()
+        {
+            publicEvent.ActivateObjective(PublicEventObjective.TalkToCaptainWeir);
         }
 
         private void OnPhaseGoToAirlock()
@@ -335,6 +385,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
         private void OnPhaseRestartMainGenerators()
         {
             publicEvent.ActivateObjective(PublicEventObjective.RestartMainGenerators);
+            publicEvent.ActivateObjective(PublicEventObjective.RestoreGeneratorAlphaPower);
+            publicEvent.ActivateObjective(PublicEventObjective.RestoreGeneratorBetaPower);
             mapInstance.GetEntity<IDoorEntity>(primaryPowerPlantDoorGuid)?.OpenDoor();
             BroadcastCommunicatorMessage(CommunicatorMessage.InsaneCrewChief);
             BroadcastCommunicatorMessage(CommunicatorMessage.CaptainWeir10);
@@ -374,6 +426,17 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
         private void OnPhaseDefeatEthericOrganisms2()
         {
             publicEvent.ActivateObjective(PublicEventObjective.DefeatEthericOrganisms2);
+        }
+
+        private void OnPhaseGatherAroundTeleporter()
+        {
+            publicEvent.ActivateObjective(PublicEventObjective.GatherAroundTeleporter, mapInstance.PlayerCount);
+
+            // Build 16042 maps objective 4979 to ParticipantsInTriggerVolume
+            // object 8312 at WorldLocation2 50632 in Auxiliary Power Plant.
+            var triggerEntity = publicEvent.CreateEntity<IWorldLocationVolumeGridTriggerEntity>();
+            triggerEntity.Initialise(50632, 8312);
+            AddToMap(triggerEntity, new Vector3(24.1576f, -840.142f, 173.326f));
         }
 
         private void OnPhaseTeleportToUpperDeck()
@@ -442,14 +505,24 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
 
         private void OnPhaseDefeatKatjaZarkhov()
         {
+            katjaZarkhovDefeated       = false;
+            etherChargedRavenousKilled = false;
+
             publicEvent.ActivateObjective(PublicEventObjective.DefeatKatjaZarkhov);
+            publicEvent.ActivateObjective(PublicEventObjective.KillEtherChargedRavenous);
             mapInstance.GetEntity<INonPlayerEntity>(floatingKatjaGuid)?.InvokeScriptCollection<KatjaZarkhovFloatingEntityScript>(s => s.KnockbackToFloor());
             BroadcastCommunicatorMessage(CommunicatorMessage.KatjaZarkov5);
         }
 
         private void OnPhasePickUpDriveSchematics()
         {
+            driveDiagnosticsComplete = false;
+            driveSchematicsComplete  = false;
+
+            publicEvent.ActivateObjective(PublicEventObjective.DriveDiagnostics);
             publicEvent.ActivateObjective(PublicEventObjective.PickUpDriveSchematics);
+
+            SpawnReviewedDriveSparks();
         }
 
         private void OnPhaseEscapeToTheTeleporter()
@@ -466,6 +539,48 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
         private void OnPhaseTalkToCaptainWeir2()
         {
             publicEvent.ActivateObjective(PublicEventObjective.TalkToCaptainWeir2);
+        }
+
+        private void SpawnReviewedDriveSparks()
+        {
+            if (driveSparksSpawned)
+                return;
+
+            foreach (DriveSparkSpawnModel spawn in DriveSparkSpawns)
+            {
+                INonPlayerEntity entity = publicEvent.CreateEntity<INonPlayerEntity>();
+                entity.Initialise(CreateDriveSparkModel(spawn));
+                AddToMap(entity, spawn.Position);
+            }
+
+            driveSparksSpawned = true;
+        }
+
+        private static EntityModel CreateDriveSparkModel(DriveSparkSpawnModel spawn)
+        {
+            return new EntityModel
+            {
+                Id          = spawn.EntityId,
+                Type        = EntityType.NonPlayer,
+                Creature    = DriveSparkCreatureId,
+                World       = EvilFromTheEtherWorldId,
+                Area        = DriveSparkAreaId,
+                X           = spawn.Position.X,
+                Y           = spawn.Position.Y,
+                Z           = spawn.Position.Z,
+                Rx          = DriveSparkRotation.X,
+                Ry          = DriveSparkRotation.Y,
+                Rz          = DriveSparkRotation.Z,
+                DisplayInfo = DriveSparkDisplayInfo,
+                OutfitInfo  = DriveSparkOutfitInfo,
+                Faction1    = DriveSparkFactionId,
+                Faction2    = DriveSparkFactionId,
+                EntityEvent = new EntityEventModel
+                {
+                    EventId = EvilFromTheEtherPublicEventId,
+                    Phase   = DriveSparkEventPhase
+                }
+            };
         }
 
         private void AddToMap(IGridEntity entity, Vector3 position)
@@ -572,6 +687,9 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
                     publicEvent.SetPhase(PublicEventPhase.DefeatEthericOrganisms2);
                     break;
                 case PublicEventObjective.DefeatEthericOrganisms2:
+                    publicEvent.SetPhase(PublicEventPhase.GatherAroundTeleporter);
+                    break;
+                case PublicEventObjective.GatherAroundTeleporter:
                     publicEvent.SetPhase(PublicEventPhase.TeleportToUpperDeck);
                     break;
                 case PublicEventObjective.TeleportToUpperDeck:
@@ -593,18 +711,53 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
                     publicEvent.SetPhase(PublicEventPhase.DefeatKatjaZarkhov);
                     break;
                 case PublicEventObjective.DefeatKatjaZarkhov:
-                    publicEvent.SetPhase(PublicEventPhase.PickUpDriveSchematics);
+                case PublicEventObjective.KillEtherChargedRavenous:
+                    OnKatjaFightObjectiveComplete((PublicEventObjective)objective.Entry.Id);
                     break;
+                case PublicEventObjective.DriveDiagnostics:
                 case PublicEventObjective.PickUpDriveSchematics:
-                    publicEvent.SetPhase(PublicEventPhase.EscapeToTheTeleporter);
+                    OnEndPhasePickupObjectiveComplete((PublicEventObjective)objective.Entry.Id);
                     break;
                 case PublicEventObjective.EscapeToTheTeleporter:
                     publicEvent.SetPhase(PublicEventPhase.TalkToCaptainWeir2);
                     break;
                 case PublicEventObjective.TalkToCaptainWeir2:
+                    publicEvent.UpdateObjective(PublicEventObjective.CompleteWithinGoldTimer, 0);
                     publicEvent.Finish(PublicEventTeam.PublicTeam);
                     break;
             }
+        }
+
+        private void OnKatjaFightObjectiveComplete(PublicEventObjective objective)
+        {
+            switch (objective)
+            {
+                case PublicEventObjective.DefeatKatjaZarkhov:
+                    katjaZarkhovDefeated = true;
+                    break;
+                case PublicEventObjective.KillEtherChargedRavenous:
+                    etherChargedRavenousKilled = true;
+                    break;
+            }
+
+            if (katjaZarkhovDefeated && etherChargedRavenousKilled)
+                publicEvent.SetPhase(PublicEventPhase.PickUpDriveSchematics);
+        }
+
+        private void OnEndPhasePickupObjectiveComplete(PublicEventObjective objective)
+        {
+            switch (objective)
+            {
+                case PublicEventObjective.DriveDiagnostics:
+                    driveDiagnosticsComplete = true;
+                    break;
+                case PublicEventObjective.PickUpDriveSchematics:
+                    driveSchematicsComplete = true;
+                    break;
+            }
+
+            if (driveDiagnosticsComplete && driveSchematicsComplete)
+                publicEvent.SetPhase(PublicEventPhase.EscapeToTheTeleporter);
         }
 
         /// <summary>
@@ -627,5 +780,7 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
                     break;
             }
         }
+
+        private sealed record DriveSparkSpawnModel(uint EntityId, Vector3 Position);
     }
 }

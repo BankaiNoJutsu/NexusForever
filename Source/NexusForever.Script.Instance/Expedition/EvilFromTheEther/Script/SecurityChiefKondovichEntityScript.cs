@@ -1,6 +1,5 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Spell;
-using NexusForever.Game.Static.PublicEvent;
 using NexusForever.GameTable;
 using NexusForever.Script.Main.AI;
 using NexusForever.Script.Template.Event;
@@ -11,13 +10,14 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
 {
     /// <summary>
     /// Current implementation uses FocusedAssualt 46790 and CrushingRush 46797 from
-    /// <see cref="Spell"/>, then credits
-    /// <see cref="PublicEventObjectiveType.KillEventObjectiveUnit"/> on death;
-    /// encounter parity is still pending smoke.
+    /// <see cref="Spell"/>, then credits the build 16042 Security Chief objective
+    /// directly on death; encounter parity is still pending smoke.
     /// </summary>
     [ScriptFilterScriptName("SecurityChiefKondovichEntityScript")]
     public class SecurityChiefKondovichEntityScript : CombatAI
     {
+        private bool defeated;
+
         private enum Spell
         {
             FocusedAssualt = 46790,
@@ -104,7 +104,11 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
         /// </summary>
         public override void OnDeath()
         {
-            entity.Map.PublicEventManager.UpdateObjective(PublicEventObjectiveType.KillEventObjectiveUnit, 0, 1);
+            if (defeated)
+                return;
+
+            defeated = true;
+            entity.Map.PublicEventManager.UpdateObjective(PublicEventObjective.KillSecurityChiefKondovich, 1);
         }
     }
 }

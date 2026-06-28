@@ -10,6 +10,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
     [ScriptFilterCreatureId(71132)]
     public class EthericPortalSmallEntityScript : EthericPortalEntityScript
     {
+        protected override PublicEventObjective Objective => PublicEventObjective.DefeatTetheredOrganisms;
+
         #region Dependency Injection
 
         public EthericPortalSmallEntityScript(

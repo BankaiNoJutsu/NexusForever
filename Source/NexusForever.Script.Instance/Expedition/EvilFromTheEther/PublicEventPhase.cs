@@ -17,6 +17,7 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
         RestoreTeleporter,
         FindTeleporter,
         DefeatEthericOrganisms2,
+        GatherAroundTeleporter,
         TeleportToUpperDeck,
         GatherInBridgeAccessHall,
         DefeatTetheredOrganisms,

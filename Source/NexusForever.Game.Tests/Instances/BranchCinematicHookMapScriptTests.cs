@@ -6,6 +6,7 @@ using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Tests.TestSupport;
 using DeepSpaceExplorationMapScript = NexusForever.Script.Instance.Expedition.DeepSpaceExploration.DeepSpaceExplorationMapScript;
+using EvilFromTheEtherMapScript = NexusForever.Script.Instance.Expedition.EvilFromTheEther.EvilFromTheEtherMapScript;
 using FragmentZeroMapScript = NexusForever.Script.Instance.Expedition.FragmentZero.FragmentZeroMapScript;
 using InfestationMapScript = NexusForever.Script.Instance.Expedition.Infestation.InfestationMapScript;
 using ProtostarsSuperMallInTheSkyMapScript = NexusForever.Script.Instance.EventInstances.ProtostarsSuperMallInTheSky.ProtostarsSuperMallInTheSkyMapScript;
@@ -49,6 +50,20 @@ public class BranchCinematicHookMapScriptTests
     {
         ICinematicBase cinematic = RecordingDispatchProxy<ICinematicBase>.Create(out _);
         var script = new FragmentZeroMapScript(CreateCinematicFactory(cinematic));
+        script.OnLoad(CreateMap(out RecordingDispatchProxy<IPublicEvent> eventProxy));
+
+        IPlayer player = CreatePlayer(out RecordingDispatchProxy<ICinematicManager> cinematicManagerProxy);
+
+        script.OnAddToMap(player);
+
+        AssertPlayerJoinedAndCinematicQueued(player, cinematic, eventProxy, cinematicManagerProxy);
+    }
+
+    [Fact]
+    public void EvilFromTheEther_OnAddToMap_Player_QueuesWipOnCreateCinematic()
+    {
+        ICinematicBase cinematic = RecordingDispatchProxy<ICinematicBase>.Create(out _);
+        var script = new EvilFromTheEtherMapScript(CreateCinematicFactory(cinematic));
         script.OnLoad(CreateMap(out RecordingDispatchProxy<IPublicEvent> eventProxy));
 
         IPlayer player = CreatePlayer(out RecordingDispatchProxy<ICinematicManager> cinematicManagerProxy);

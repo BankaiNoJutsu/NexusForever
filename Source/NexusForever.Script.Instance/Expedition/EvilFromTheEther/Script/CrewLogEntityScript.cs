@@ -10,6 +10,7 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
     public class CrewLogEntityScript : IWorldEntityScript, IOwnedScript<IWorldEntity>
     {
         private IWorldEntity entity;
+        private bool downloaded;
 
         #region Dependency Injection
 
@@ -39,7 +40,26 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
             if (entity.Map is not IMapInstance mapInstance)
                 return;
 
-            CommunicatorMessage communicatorMessageId = entity.QuestChecklistIdx switch
+            if (!TryGetCommunicatorMessage(entity.QuestChecklistIdx, out CommunicatorMessage communicatorMessageId))
+                return;
+
+            // Creature 71234 maps checklist indexes 0..6 to CrewLog1..CrewLog7 in the
+            // current slice. Exact playback targeting and any retail filtering remain
+            // unverified.
+            ICommunicatorMessage communicatorMessage = globalQuestManager.GetCommunicatorMessage(communicatorMessageId);
+            foreach (IPlayer player in mapInstance.GetPlayers())
+                communicatorMessage?.Send(player.Session);
+
+            if (downloaded)
+                return;
+
+            downloaded = true;
+            entity.Map.PublicEventManager.UpdateObjective(PublicEventObjective.DownloadCrewLogs, 1);
+        }
+
+        private static bool TryGetCommunicatorMessage(byte checklistIndex, out CommunicatorMessage communicatorMessage)
+        {
+            communicatorMessage = checklistIndex switch
             {
                 0 => CommunicatorMessage.CrewLog1,
                 1 => CommunicatorMessage.CrewLog2,
@@ -51,12 +71,7 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
                 _ => 0
             };
 
-            // Creature 71234 maps checklist indexes 0..6 to CrewLog1..CrewLog7 in the
-            // current slice. Exact playback targeting and any retail filtering remain
-            // unverified.
-            ICommunicatorMessage communicatorMessage = globalQuestManager.GetCommunicatorMessage(communicatorMessageId);
-            foreach (IPlayer player in mapInstance.GetPlayers())
-                communicatorMessage?.Send(player.Session);
+            return communicatorMessage != 0;
         }
     }
 }

@@ -20,6 +20,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
     [ScriptFilterScriptName("KatjaZarkhovEntityScript")]
     public class KatjaZarkhovEntityScript : CombatAI
     {
+        private bool defeated;
+
         private enum Spell
         {
             ClawedFury     = 56037,
@@ -150,6 +152,12 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
         /// </summary>
         public override void OnDeath()
         {
+            if (defeated)
+                return;
+
+            defeated = true;
+            entity.Map.PublicEventManager.UpdateObjective(PublicEventObjective.DefeatKatjaZarkhov, 1);
+
             ICreatureInfo creatureInfo = creatureInfoManager.GetCreatureInfo(Creature.EtherDriveSchematics);
             if (creatureInfo == null)
                 return;

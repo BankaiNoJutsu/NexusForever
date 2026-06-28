@@ -7,6 +7,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
     [ScriptFilterActivePropId(7024519)]
     public class CrewQuatersDoorEntityScript : AutomaticDoorEntityScript
     {
+        private bool entered;
+
         /// <summary>
         /// Invoked when <see cref="IGridEntity"/> is added to range check range.
         /// </summary>
@@ -17,6 +19,10 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
             if (entity is not IPlayer)
                 return;
 
+            if (entered)
+                return;
+
+            entered = true;
             door.Map.PublicEventManager.UpdateObjective(PublicEventObjective.EnterCrewQuarters, 1);
         }
     }

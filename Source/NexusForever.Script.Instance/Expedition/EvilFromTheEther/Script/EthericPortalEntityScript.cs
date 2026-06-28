@@ -2,8 +2,8 @@ using System.Numerics;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.Map;
-using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Static.Spell;
+using NexusForever.Script.Instance.Expedition.EvilFromTheEther;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Event;
 using NexusForever.Shared;
@@ -13,9 +13,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
     /// <summary>
     /// Current implementation queues summons of tethered creature 71133, tracks
     /// active summons through <c>portalCount</c>, self-destructs the portal when the
-    /// last summon unsummons, and credits
-    /// <see cref="PublicEventObjectiveType.Script"/> on portal death; cadence and
-    /// native mechanic parity are still pending smoke.
+    /// last summon unsummons, and credits the mapped build 16042 portal objective
+    /// on portal death; cadence and native mechanic parity are still pending smoke.
     /// </summary>
     public abstract class EthericPortalEntityScript : INonPlayerScript, IOwnedScript<INonPlayerEntity>
     {
@@ -26,6 +25,7 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
 
         private INonPlayerEntity entity;
         private uint portalCount;
+        private bool deathCreditApplied;
 
         #region Dependency Injection
 
@@ -44,6 +44,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
         }
 
         #endregion
+
+        protected abstract PublicEventObjective Objective { get; }
 
         /// <summary>
         /// Invoked when <see cref="IScript"/> is loaded.
@@ -113,7 +115,11 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
         /// </summary>
         public void OnDeath()
         {
-            entity.Map.PublicEventManager.UpdateObjective(PublicEventObjectiveType.Script, 0, 1);
+            if (deathCreditApplied)
+                return;
+
+            deathCreditApplied = true;
+            entity.Map.PublicEventManager.UpdateObjective(Objective, 1);
             entity.RemoveFromMap();
         }
 
