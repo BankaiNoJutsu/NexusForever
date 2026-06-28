@@ -3615,6 +3615,7 @@ def build_lore_report(archive_dir: Path, client_sql_dir: Path, root: Path) -> tu
     archive_viewed_handler_text = read_text(root / "Source" / "NexusForever.WorldServer" / "Network" / "Message" / "Handler" / "GalacticArchive" / "ClientGalacticArchiveViewedHandler.cs")
     server_archive_update_text = read_text(root / "Source" / "NexusForever.Network.World" / "Message" / "Model" / "GalacticArchive" / "ServerGalacticArchiveUpdate.cs")
     server_archive_refresh_text = read_text(root / "Source" / "NexusForever.Network.World" / "Message" / "Model" / "GalacticArchive" / "ServerGalacticArchiveRefresh.cs")
+    path_manager_text = read_text(root / "Source" / "NexusForever.Game" / "Entity" / "PathManager.cs")
     story_builder_text = read_text(root / "Source" / "NexusForever.Game" / "Story" / "StoryBuilder.cs")
     story_message_builder_text = read_text(root / "Source" / "NexusForever.Game" / "Story" / "StoryMessageBuilder.cs")
     archive_chat_formatter_text = read_text(root / "Source" / "NexusForever.Game" / "Chat" / "Format" / "Formatter" / "ArchiveArticleChatFormatter.cs")
@@ -3635,6 +3636,8 @@ def build_lore_report(archive_dir: Path, client_sql_dir: Path, root: Path) -> tu
         "SimpleEntity activation grants datacubes and journal volumes": "CreatureEntry.DatacubeId" in simple_entity_text
         and "CreatureEntry.DatacubeVolumeId" in simple_entity_text
         and "OnActivateCast" in simple_entity_text,
+        "SimpleEntity datacube reveals advance Scientist datacube-discovery missions": "CompleteCurrentScientistDatacubeDiscoveryMission" in simple_entity_text
+        and "PathScientistDatacubeDiscovery" in path_manager_text,
         "Datacube save tracks create/progress": "DatacubeSaveMask.Create" in datacube_text
         and "DatacubeSaveMask.Progress" in datacube_text,
         "Galactic Archive client unlock/view packets are parsed": "ClientGalacticArchiveUnlock" in archive_unlock_handler_text
@@ -3687,14 +3690,17 @@ def build_lore_report(archive_dir: Path, client_sql_dir: Path, root: Path) -> tu
         warnings.append("Datacube rows include unlock-count fields; server currently tracks progress flags but not client unlock-count semantics")
     if datacubes_with_direction:
         warnings.append("Datacube rows include quest-direction ids; activation routing/waypoint behavior remains blocked")
-    if table_counts["PathScientistDatacubeDiscovery"] and "PathScientistDatacubeDiscovery" not in simple_entity_text + datacube_manager_text:
+    if table_counts["PathScientistDatacubeDiscovery"] and (
+        "CompleteCurrentScientistDatacubeDiscoveryMission" not in simple_entity_text
+        or "PathScientistDatacubeDiscovery" not in path_manager_text
+    ):
         warnings.append("PathScientistDatacubeDiscovery rows exist, but Scientist datacube discovery mission completion is not mapped to runtime code")
     if story_panels_with_prereq and "PrerequisiteManager" not in story_builder_text:
         warnings.append("StoryPanel rows include prerequisites; StoryBuilder does not enforce prerequisite ids")
 
     lines.append("")
     lines.append(
-        "- Result: INFO, datacube/journal persistence, activation, progress packets, story-panel display, Galactic Archive unlock/view persistence, achievement and quest archive rules, archive title rewards, and archive packet models are covered; PathMission-backed type-1 archive rules remain blocked on server-owned mission progress/completion state, and Scientist discovery missions, StoryPanel prerequisites, and some datacube routing semantics remain blocked."
+        "- Result: INFO, datacube/journal persistence, activation, progress packets, story-panel display, Galactic Archive unlock/view persistence, achievement and quest archive rules, archive title rewards, archive packet models, and Scientist discovery mission advancement are covered; PathMission-backed type-1 archive rules remain blocked on server-owned mission progress/completion state, while StoryPanel prerequisites and some datacube routing semantics remain blocked."
     )
     lines.append("")
 

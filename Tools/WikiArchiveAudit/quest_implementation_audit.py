@@ -118,8 +118,20 @@ PARTIAL = set()
 UNSUPPORTED = {19, 27, 29}
 SCRIPT_FILTER_RE = re.compile(r"ScriptFilterOwnerId\(([^)]+)\)")
 IMPLEMENTATION_MARKER_RE = re.compile(
-    r"FollowUpQuestScript|protected override ushort NextQuestId|GrantNext(?:Quest)?\s*\(|ObjectiveUpdate\s*\("
+    r"FollowUpQuestScript|protected override ushort NextQuestId|GrantNext(?:Quest)?\s*\(|GrantQuestsIfMissing\s*\(|ObjectiveUpdate\s*\("
 )
+
+# Terminal path-chain quests have a script owner for lifecycle logging, but their
+# final objectives are covered by generic objective handlers rather than custom
+# quest script behavior.
+TERMINAL_PATH_OBSERVER_QUESTS = {
+    10546,
+    10549,
+    10552,
+    10555,
+    10557,
+    10559,
+}
 
 # Hand-verified quest chains called out in CURRENT_STATUS / focused script work.
 CURATED_FULL = {
@@ -157,6 +169,7 @@ CURATED_FULL = {
     5580,
     5583,
     5584,
+    5593,
     5594,
     5595,
     5596,
@@ -209,6 +222,8 @@ def load_script_quality(script_main: Path) -> set[int]:
     stub_only: set[int] = set()
     for quest_id, text in quest_text.items():
         if IMPLEMENTATION_MARKER_RE.search(text):
+            continue
+        if quest_id in TERMINAL_PATH_OBSERVER_QUESTS:
             continue
 
         stub_only.add(quest_id)
@@ -273,8 +288,10 @@ def build_report(sql_dir: Path, script_main: Path) -> list[str]:
 
     total = len(quests)
     with_objectives = sum(1 for quest in quests if quest["objective_ids"])
+    quest_ids = {quest["id"] for quest in quests}
     curated_full = buckets["curated_full"]
-    any_script = len(script_ids)
+    any_script_owner = len(script_ids)
+    current_quest_script_owner = len(script_ids & quest_ids)
     generic_playable = buckets["generic_table_driven"] + buckets["generic_with_script"]
     no_objectives = buckets["no_objectives"]
     blocked = buckets["blocked_objectives"] + buckets["blocked_objectives_with_script"]
@@ -299,12 +316,13 @@ def build_report(sql_dir: Path, script_main: Path) -> list[str]:
         "| --- | ---: | ---: |",
         f"| Total client quests (`Quest2`) | {total} | 100% |",
         f"| Quests with at least one objective | {with_objectives} | {with_objectives * 100 / total:.1f}% |",
-        f"| Quests with **no objectives** (mention/placeholder rows) | {no_objectives} | {no_objectives * 100 / total:.1f}% |",
+        f"| Quests with **no objectives** (shared accept-to-turn-in lifecycle, pending dialog/client smoke) | {no_objectives} | {no_objectives * 100 / total:.1f}% |",
         f"| **Fully curated** (hand-tuned script chains) | {curated_full} | {curated_full * 100 / total:.1f}% |",
         f"| **Generic table-driven** (supported objective types) | {generic_playable} | {generic_playable * 100 / total:.1f}% |",
         f"| **Partial** (partial objective mix or stub path scripts) | {partial} | {partial * 100 / total:.1f}% |",
         f"| **Blocked / missing gameplay** (unsupported objective types) | {blocked} | {blocked * 100 / total:.1f}% |",
-        f"| Distinct quest ids with `ScriptFilterOwnerId` | {any_script} | {any_script * 100 / total:.1f}% |",
+        f"| Current `Quest2` ids with `ScriptFilterOwnerId` | {current_quest_script_owner} | {current_quest_script_owner * 100 / total:.1f}% |",
+        f"| Distinct `ScriptFilterOwnerId` owner ids in `Script.Main` | {any_script_owner} | {any_script_owner * 100 / total:.1f}% |",
         "",
         "### Quests with objectives only",
         "",
@@ -320,7 +338,7 @@ def build_report(sql_dir: Path, script_main: Path) -> list[str]:
         "- **Fully curated** means a dedicated `IQuestScript` chain was hand-built and verified (tutorial, Northern Wilds, Crimson Isle focus areas).",
         "- **Generic table-driven** quests can progress through shared kill/talk/activate/CSI/enter-zone/virtual-collect handlers without a per-quest script.",
         "- **Blocked** quests contain objective types with no mapped server trigger; no current client quest objectives use the remaining unsupported types.",
-        "- Counts are objective-type coverage, not in-game QA. Generic quests still need world spawns, volumes, and loot.",
+        "- Counts are objective-type coverage, not in-game QA. Generic and no-objective quests still need world spawns, row-specific dialog/receiver validation, volumes, and loot.",
         "",
         "## Bucket detail",
         "",
@@ -337,7 +355,7 @@ def build_report(sql_dir: Path, script_main: Path) -> list[str]:
         "partial_objectives_with_script": "Partial objective types plus a script hook",
         "blocked_objectives": "Contains unsupported objective types; will not progress without new handlers",
         "blocked_objectives_with_script": "Unsupported objectives; script present but cannot fix type gaps alone",
-        "no_objectives": "No objective slots populated in Quest2",
+        "no_objectives": "No objective slots populated in Quest2; shared QuestManager accept and visible-receiver turn-in paths are test-backed pending row-specific receiver/dialog and reward smoke",
     }
 
     for bucket, count in buckets.most_common():
