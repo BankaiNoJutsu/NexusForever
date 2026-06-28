@@ -1,7 +1,10 @@
+using System.Numerics;
+using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Script.Template;
@@ -12,6 +15,29 @@ namespace NexusForever.Script.Instance.Dungeon.Skullcano
     [ScriptFilterOwnerId(148)]
     public class SkullcanoEventScript : IPublicEventScript, IOwnedScript<IPublicEvent>
     {
+        private const uint ThunderfootEntityId = 1100300049u;
+        private const uint ThunderfootCreatureId = 24475u;
+        private const ushort ThunderfootWorldId = 1263;
+        private const ushort ThunderfootAreaId = 4793;
+        private const uint ThunderfootPublicEventId = 148u;
+        private const uint ThunderfootPublicEventPhase = 0u;
+        private const uint ThunderfootDisplayInfo = 21318u;
+        private const ushort ThunderfootFactionId = 242;
+        private const string ThunderfootScriptName = "ThunderfootNormalEntityScript";
+
+        private const uint TuggaEntityId = 1100300050u;
+        private const uint TuggaCreatureId = 24493u;
+        private const ushort TuggaWorldId = 1263;
+        private const ushort TuggaAreaId = 1220;
+        private const uint TuggaPublicEventId = 148u;
+        private const uint TuggaPublicEventPhase = 0u;
+        private const uint TuggaDisplayInfo = 27916u;
+        private const ushort TuggaFactionId = 868;
+        private const string TuggaScriptName = "StewShamanTuggaNormalEntityScript";
+
+        private static readonly Vector3 ThunderfootPosition = new(115.26f, -923.71f, -491.56f);
+        private static readonly Vector3 TuggaPosition = new(508.5147f, -978.8553f, -367.8973f);
+
         private readonly IGlobalQuestManager globalQuestManager;
 
         private IPublicEvent publicEvent;
@@ -44,7 +70,9 @@ namespace NexusForever.Script.Instance.Dungeon.Skullcano
             {
                 case PublicEventPhase.Enter:
                     publicEvent.ActivateObjective(PublicEventObjective.DefeatThunderfoot);
+                    SpawnThunderfoot();
                     publicEvent.ActivateObjective(PublicEventObjective.DefeatStewShamanTugga);
+                    SpawnStewShamanTugga();
                     ActivateWipOptionalObjective(PublicEventObjective.FreeCapturedLopp);
                     break;
                 case PublicEventPhase.RandomPath:
@@ -74,6 +102,7 @@ namespace NexusForever.Script.Instance.Dungeon.Skullcano
                     break;
                 case PublicEventPhase.RandomPathChasm:
                     publicEvent.ActivateObjective(PublicEventObjective.CrossTheLavaFilledChasm, mapInstance.PlayerCount);
+                    publicEvent.ActivateObjective(PublicEventObjective.FindAWayAcrossTheLava);
                     publicEvent.ActivateObjective(PublicEventObjective.GatherPrimalFireEssences);
                     publicEvent.ActivateObjective(PublicEventObjective.DontGetStruckByLaveka);
                     // WIP-guessed from LaughingWS Instances-and-more: branch sends Dorian/Artemis
@@ -101,6 +130,7 @@ namespace NexusForever.Script.Instance.Dungeon.Skullcano
                 case PublicEventPhase.GetToRedmoon:
                     publicEvent.ActivateObjective(PublicEventObjective.KillGruharAndTakeStash);
                     publicEvent.ActivateObjective(PublicEventObjective.ReachTheEldanTerraformer);
+                    ActivateWipOptionalObjective(PublicEventObjective.GatherShinyGoldObjects);
                     if (ActivateWipOptionalObjective(PublicEventObjective.HackMissileConsoles))
                         BroadcastFactionPair(CommunicatorMessage.DorianWalker9, CommunicatorMessage.ArtemisZin9);
                     break;
@@ -153,6 +183,102 @@ namespace NexusForever.Script.Instance.Dungeon.Skullcano
             }
         }
 
+        private void SpawnThunderfoot()
+        {
+            // Build 16042 reviewed instance entity 1100300049 places
+            // Thunderfoot in event 148 phase 0 with the normal objective-credit script.
+            INonPlayerEntity thunderfoot = publicEvent.CreateEntity<INonPlayerEntity>();
+            thunderfoot.Initialise(CreateThunderfootEntityModel());
+            AddToMap(thunderfoot, ThunderfootPosition);
+        }
+
+        private static EntityModel CreateThunderfootEntityModel()
+        {
+            return CreateOpeningBossEntityModel(
+                ThunderfootEntityId,
+                ThunderfootCreatureId,
+                ThunderfootWorldId,
+                ThunderfootAreaId,
+                ThunderfootPublicEventId,
+                ThunderfootPublicEventPhase,
+                ThunderfootPosition,
+                ThunderfootDisplayInfo,
+                ThunderfootFactionId,
+                ThunderfootScriptName);
+        }
+
+        private void SpawnStewShamanTugga()
+        {
+            // Build 16042 reviewed instance entity 1100300050 places
+            // Stew-Shaman Tugga in event 148 phase 0 with the normal objective-credit script.
+            INonPlayerEntity tugga = publicEvent.CreateEntity<INonPlayerEntity>();
+            tugga.Initialise(CreateTuggaEntityModel());
+            AddToMap(tugga, TuggaPosition);
+        }
+
+        private static EntityModel CreateTuggaEntityModel()
+        {
+            return CreateOpeningBossEntityModel(
+                TuggaEntityId,
+                TuggaCreatureId,
+                TuggaWorldId,
+                TuggaAreaId,
+                TuggaPublicEventId,
+                TuggaPublicEventPhase,
+                TuggaPosition,
+                TuggaDisplayInfo,
+                TuggaFactionId,
+                TuggaScriptName);
+        }
+
+        private static EntityModel CreateOpeningBossEntityModel(
+            uint entityId,
+            uint creatureId,
+            ushort worldId,
+            ushort areaId,
+            uint publicEventId,
+            uint publicEventPhase,
+            Vector3 position,
+            uint displayInfo,
+            ushort factionId,
+            string scriptName)
+        {
+            return new EntityModel
+            {
+                Id          = entityId,
+                Type        = EntityType.NonPlayer,
+                Creature    = creatureId,
+                World       = worldId,
+                Area        = areaId,
+                X           = position.X,
+                Y           = position.Y,
+                Z           = position.Z,
+                DisplayInfo = displayInfo,
+                Faction1    = factionId,
+                Faction2    = factionId,
+                EntityEvent = new EntityEventModel
+                {
+                    EventId = publicEventId,
+                    Phase   = publicEventPhase
+                },
+                EntityScript =
+                {
+                    new EntityScriptModel
+                    {
+                        ScriptName = scriptName
+                    }
+                },
+                EntityStat =
+                {
+                    new EntityStatModel
+                    {
+                        Stat  = (byte)Stat.Level,
+                        Value = 35f
+                    }
+                }
+            };
+        }
+
         private void BroadcastFactionPair(CommunicatorMessage exileMessage, CommunicatorMessage dominionMessage)
         {
             foreach (IPlayer player in mapInstance.GetPlayers())
@@ -185,6 +311,19 @@ namespace NexusForever.Script.Instance.Dungeon.Skullcano
         protected virtual bool ShouldUseWipFindChiefPath()
         {
             return Random.Shared.Next(2) == 1;
+        }
+
+        private void AddToMap(IGridEntity entity, Vector3 position)
+        {
+            mapInstance.EnqueueAdd(entity, new ScriptMapPosition
+            {
+                Info = new ScriptMapInfo
+                {
+                    Entry   = mapInstance.Entry,
+                    MapLock = mapInstance.MapLock
+                },
+                Position = position
+            });
         }
     }
 }

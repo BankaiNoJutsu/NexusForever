@@ -6,10 +6,10 @@ using NexusForever.Shared;
 namespace NexusForever.Script.Instance.Dungeon.Skullcano.Script
 {
     /// <summary>
-    /// WIP-guessed from LaughingWS worlddb SQL: the branch only maps this boss script
-    /// to the Skullcano objective. Combat mechanics remain blocked.
+    /// Build 16042 maps public-event objective 322 to TargetGroup 2600,
+    /// whose Creature2 members are Thunderfoot 24475 and 24893.
     /// </summary>
-    [ScriptFilterScriptName("ThunderfootNormalEntityScript")]
+    [ScriptFilterCreatureId(24475u, 24893u)]
     public class ThunderfootNormalEntityScript : PublicEventObjectiveCreditEntityScript
     {
         public ThunderfootNormalEntityScript(
