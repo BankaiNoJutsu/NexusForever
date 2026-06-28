@@ -1,8 +1,12 @@
+using System.Numerics;
+using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Cinematic;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
@@ -13,6 +17,11 @@ namespace NexusForever.Game.Tests.Instances;
 
 public class DatascapeEventScriptTests
 {
+    private const uint OpeningPhase = 0u;
+    private const uint FirstFrostBoulderPhase = 3u;
+    private const uint SecondFrostBoulderPhase = 4u;
+    private const uint FrostbringerWarlockPhase = 5u;
+
     [Fact]
     public void OnLoad_SetsEnterPhase()
     {
@@ -31,7 +40,7 @@ public class DatascapeEventScriptTests
     public void OnPublicEventPhase_Opening_ActivatesInitialWingObjectives(PublicEventPhase phase)
     {
         var script = CreateScript();
-        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        IPublicEvent publicEvent = CreatePublicEventWithReviewedSpawns(out RecordingDispatchProxy<IPublicEvent> eventProxy, out _, out _);
         script.OnLoad(publicEvent);
 
         script.OnPublicEventPhase((uint)phase);
@@ -43,6 +52,260 @@ public class DatascapeEventScriptTests
         Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.DefeatOptimizedMemoryProbeED1);
         Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.DefeatOptimizedMemoryProbeP2Z);
         Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.DefeatOptimizedMemoryProbeTX67);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_Enter_SpawnsReviewedOpeningPlacements()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEventWithReviewedSpawns(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out RecordingDispatchProxy<IMapInstance> mapProxy,
+            out List<CreatedNpc> createdNpcs);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.DefeatTheSystemDaemons);
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.DefeatOptimizedMemoryProbeED1);
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.DefeatOptimizedMemoryProbeP2Z);
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.DefeatOptimizedMemoryProbeTX67);
+        Assert.Collection(createdNpcs,
+            npc => AssertDatascapeSpawnModel(npc, 1100300059u, 61819u, 1301, OpeningPhase, new Vector3(618.551f, -215.61023f, 75f), Vector3.Zero, 30425u, "OptimizedMemoryProbeED1EntityScript", 15900000f),
+            npc => AssertDatascapeSpawnModel(npc, 1100300060u, 61818u, 1301, OpeningPhase, new Vector3(865f, -215.6028f, -173.5f), new Vector3(1.55485f, 0f, 0f), 30425u, "OptimizedMemoryProbeTX-67EntityScript", 15900000f),
+            npc => AssertDatascapeSpawnModel(npc, 1100300061u, 31667u, 1301, OpeningPhase, new Vector3(618f, -216.15657f, -421f), new Vector3(3.10206f, 0f, 0f), 30425u, "OptimizedMemoryProbeP2ZEntityScript", 15900000f),
+            npc => AssertDatascapeSpawnModel(npc, 1100300062u, 30495u, 1349, OpeningPhase, new Vector3(132.5f, -226.5f, -67f), Vector3.Zero, 33172u, "NullSystemDaemonEntityScript", 14400000f),
+            npc => AssertDatascapeSpawnModel(npc, 1100300063u, 30496u, 1349, OpeningPhase, new Vector3(132.5f, -226.5f, -263f), new Vector3(3.08953f, 0f, 0f), 33172u, "BinarySystemDaemonEntityScript", 14400000f));
+        AssertGridEntitiesAddedToMap(mapProxy, createdNpcs);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_OpeningPhases_DoNotDuplicateReviewedSpawns()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEventWithReviewedSpawns(
+            out _,
+            out RecordingDispatchProxy<IMapInstance> mapProxy,
+            out List<CreatedNpc> createdNpcs);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+        script.OnPublicEventPhase((uint)PublicEventPhase.HallsOfTheInfiniteMind);
+
+        Assert.Equal(5, createdNpcs.Count);
+        Assert.Equal(5, mapProxy.GetInvocations(nameof(IMap.EnqueueAdd)).Count());
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_FirstFrostBoulder_SpawnsReviewedPlacement()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEventWithReviewedSpawns(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out RecordingDispatchProxy<IMapInstance> mapProxy,
+            out List<CreatedNpc> createdNpcs);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.FirstFrostBoulder);
+
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.DefeatTheFirstFrostBoulderAvalanche);
+        CreatedNpc npc = Assert.Single(createdNpcs);
+        AssertDatascapeSpawnModel(
+            npc,
+            1100300064u,
+            31677u,
+            4475,
+            FirstFrostBoulderPhase,
+            new Vector3(3356.48f, -765.57f, -3246.29f),
+            new Vector3(0.17427f, 0f, 0f),
+            27434u,
+            "FrostBoulderAvalancheFirstEntityScript",
+            14500000f);
+        AssertGridEntitiesAddedToMap(mapProxy, createdNpcs);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_FirstFrostBoulder_DoesNotDuplicateReviewedPlacement()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEventWithReviewedSpawns(
+            out _,
+            out RecordingDispatchProxy<IMapInstance> mapProxy,
+            out List<CreatedNpc> createdNpcs);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.FirstFrostBoulder);
+        script.OnPublicEventPhase((uint)PublicEventPhase.FirstFrostBoulder);
+
+        Assert.Single(createdNpcs);
+        Assert.Single(mapProxy.GetInvocations(nameof(IMap.EnqueueAdd)));
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_SecondFrostBoulder_SpawnsReviewedPlacement()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEventWithReviewedSpawns(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out RecordingDispatchProxy<IMapInstance> mapProxy,
+            out List<CreatedNpc> createdNpcs);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.SecondFrostBoulder);
+
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.DefeatTheSecondFrostBoulderAvalanche);
+        CreatedNpc npc = Assert.Single(createdNpcs);
+        AssertDatascapeSpawnModel(
+            npc,
+            1100300065u,
+            56200u,
+            4476,
+            SecondFrostBoulderPhase,
+            new Vector3(3635.073f, -745.20f, -3373.29f),
+            new Vector3(1.11529f, 0f, 0f),
+            27434u,
+            "FrostBoulderAvalancheSecondEntityScript",
+            14500000f);
+        AssertGridEntitiesAddedToMap(mapProxy, createdNpcs);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_FrostbringerWarlock_SpawnsReviewedPlacement()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEventWithReviewedSpawns(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out RecordingDispatchProxy<IMapInstance> mapProxy,
+            out List<CreatedNpc> createdNpcs);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.FrostbringerWarlock);
+
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.DefeatTheFrostbringerWarlock);
+        CreatedNpc npc = Assert.Single(createdNpcs);
+        AssertDatascapeSpawnModel(
+            npc,
+            1100300066u,
+            31674u,
+            4476,
+            FrostbringerWarlockPhase,
+            new Vector3(3328.50f, -696.86f, -3639.44f),
+            new Vector3(-1.42842f, 0f, 0f),
+            23490u,
+            "FrostbringerWarlockEntityScript",
+            15900000f);
+        AssertGridEntitiesAddedToMap(mapProxy, createdNpcs);
+    }
+
+    [Theory]
+    [InlineData(PublicEventPhase.SecondFrostBoulder)]
+    [InlineData(PublicEventPhase.FrostbringerWarlock)]
+    public void OnPublicEventPhase_ReviewedFrostWingPlacements_DoNotDuplicate(PublicEventPhase phase)
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEventWithReviewedSpawns(
+            out _,
+            out RecordingDispatchProxy<IMapInstance> mapProxy,
+            out List<CreatedNpc> createdNpcs);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)phase);
+        script.OnPublicEventPhase((uint)phase);
+
+        Assert.Single(createdNpcs);
+        Assert.Single(mapProxy.GetInvocations(nameof(IMap.EnqueueAdd)));
+    }
+
+    [Theory]
+    [MemberData(nameof(DatascapePhaseSpawnCases))]
+    public void OnPublicEventPhase_ReviewedLaterPlacement_SpawnsAndActivatesObjective(
+        PublicEventPhase phase,
+        PublicEventObjective objective,
+        ExpectedDatascapeSpawn expectedSpawn)
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEventWithReviewedSpawns(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out RecordingDispatchProxy<IMapInstance> mapProxy,
+            out List<CreatedNpc> createdNpcs);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)phase);
+
+        AssertObjectiveActivated(eventProxy, objective);
+        CreatedNpc npc = Assert.Single(createdNpcs);
+        AssertDatascapeSpawnModel(npc, expectedSpawn);
+        AssertGridEntitiesAddedToMap(mapProxy, createdNpcs);
+    }
+
+    [Theory]
+    [MemberData(nameof(DatascapePhaseSpawnCases))]
+    public void OnPublicEventPhase_ReviewedLaterPlacement_DoesNotDuplicate(
+        PublicEventPhase phase,
+        PublicEventObjective ignoredObjective,
+        ExpectedDatascapeSpawn ignoredSpawn)
+    {
+        _ = ignoredObjective;
+        _ = ignoredSpawn;
+
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEventWithReviewedSpawns(
+            out _,
+            out RecordingDispatchProxy<IMapInstance> mapProxy,
+            out List<CreatedNpc> createdNpcs);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)phase);
+        script.OnPublicEventPhase((uint)phase);
+
+        Assert.Single(createdNpcs);
+        Assert.Single(mapProxy.GetInvocations(nameof(IMap.EnqueueAdd)));
+    }
+
+    [Theory]
+    [MemberData(nameof(DatascapeObjectiveStatusSpawnCases))]
+    public void OnPublicEventObjectiveStatus_ReviewedSubObjectivePlacement_SpawnsAndActivatesObjective(
+        PublicEventObjective sourceObjective,
+        PublicEventObjective activatedObjective,
+        ExpectedDatascapeSpawn expectedSpawn)
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEventWithReviewedSpawns(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out RecordingDispatchProxy<IMapInstance> mapProxy,
+            out List<CreatedNpc> createdNpcs);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(sourceObjective, PublicEventStatus.Succeeded));
+
+        AssertObjectiveActivated(eventProxy, activatedObjective);
+        CreatedNpc npc = Assert.Single(createdNpcs);
+        AssertDatascapeSpawnModel(npc, expectedSpawn);
+        AssertGridEntitiesAddedToMap(mapProxy, createdNpcs);
+    }
+
+    [Theory]
+    [MemberData(nameof(DatascapeObjectiveStatusSpawnCases))]
+    public void OnPublicEventObjectiveStatus_ReviewedSubObjectivePlacement_DoesNotDuplicate(
+        PublicEventObjective sourceObjective,
+        PublicEventObjective ignoredObjective,
+        ExpectedDatascapeSpawn ignoredSpawn)
+    {
+        _ = ignoredObjective;
+        _ = ignoredSpawn;
+
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEventWithReviewedSpawns(
+            out _,
+            out RecordingDispatchProxy<IMapInstance> mapProxy,
+            out List<CreatedNpc> createdNpcs);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(sourceObjective, PublicEventStatus.Succeeded));
+        script.OnPublicEventObjectiveStatus(CreateObjective(sourceObjective, PublicEventStatus.Succeeded));
+
+        Assert.Single(createdNpcs);
+        Assert.Single(mapProxy.GetInvocations(nameof(IMap.EnqueueAdd)));
     }
 
     [Theory]
@@ -298,11 +561,39 @@ public class DatascapeEventScriptTests
 
     private static IPublicEvent CreatePublicEvent(IReadOnlyList<IPlayer> players, out RecordingDispatchProxy<IPublicEvent> eventProxy)
     {
-        IMapInstance mapInstance = RecordingDispatchProxy<IMapInstance>.Create(out RecordingDispatchProxy<IMapInstance> mapProxy);
+        return CreatePublicEvent(players, out eventProxy, out _, out _);
+    }
+
+    private static IPublicEvent CreatePublicEventWithReviewedSpawns(
+        out RecordingDispatchProxy<IPublicEvent> eventProxy,
+        out RecordingDispatchProxy<IMapInstance> mapProxy,
+        out List<CreatedNpc> createdNpcs)
+    {
+        return CreatePublicEvent([], out eventProxy, out mapProxy, out createdNpcs);
+    }
+
+    private static IPublicEvent CreatePublicEvent(
+        IReadOnlyList<IPlayer> players,
+        out RecordingDispatchProxy<IPublicEvent> eventProxy,
+        out RecordingDispatchProxy<IMapInstance> mapProxy,
+        out List<CreatedNpc> createdNpcs)
+    {
+        IMapInstance mapInstance = RecordingDispatchProxy<IMapInstance>.Create(out mapProxy);
+        mapProxy.SetProperty(nameof(IMap.Entry), new WorldEntry { Id = 1333u });
         mapProxy.SetMethodReturn(nameof(IMapInstance.GetPlayers), players);
 
         IPublicEvent publicEvent = RecordingDispatchProxy<IPublicEvent>.Create(out eventProxy);
         eventProxy.SetProperty(nameof(IPublicEvent.Map), mapInstance);
+
+        List<CreatedNpc> npcs = [];
+        eventProxy.SetMethodReturnFactory(nameof(IPublicEvent.CreateEntity), () =>
+        {
+            CreatedNpc npc = CreateNpc();
+            npcs.Add(npc);
+            return npc.Instance;
+        });
+
+        createdNpcs = npcs;
         return publicEvent;
     }
 
@@ -354,4 +645,122 @@ public class DatascapeEventScriptTests
         cinematicFactoryProxy.SetMethodReturn(nameof(ICinematicFactory.CreateCinematic), cinematic);
         return cinematicFactory;
     }
+
+    private static void AssertObjectiveActivated(RecordingDispatchProxy<IPublicEvent> eventProxy, PublicEventObjective objective)
+    {
+        Assert.Contains(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)),
+            i => (PublicEventObjective)i.Arguments[0] == objective);
+    }
+
+    private static CreatedNpc CreateNpc()
+    {
+        INonPlayerEntity npc = RecordingDispatchProxy<INonPlayerEntity>.Create(out RecordingDispatchProxy<INonPlayerEntity> npcProxy);
+        return new CreatedNpc(npc, npcProxy);
+    }
+
+    private static void AssertDatascapeSpawnModel(
+        CreatedNpc npc,
+        uint entityId,
+        uint creatureId,
+        ushort areaId,
+        uint phase,
+        Vector3 position,
+        Vector3 rotation,
+        uint displayInfo,
+        string scriptName,
+        float health)
+    {
+        RecordingDispatchProxy<INonPlayerEntity>.Invocation initialise = Assert.Single(
+            npc.Proxy.GetInvocations(nameof(IWorldEntity.Initialise)));
+        EntityModel model = Assert.IsType<EntityModel>(initialise.Arguments[0]);
+        Assert.Equal(entityId, model.Id);
+        Assert.Equal(EntityType.NonPlayer, model.Type);
+        Assert.Equal(creatureId, model.Creature);
+        Assert.Equal((ushort)1333u, model.World);
+        Assert.Equal(areaId, model.Area);
+        Assert.Equal(position.X, model.X);
+        Assert.Equal(position.Y, model.Y);
+        Assert.Equal(position.Z, model.Z);
+        Assert.Equal(rotation.X, model.Rx);
+        Assert.Equal(rotation.Y, model.Ry);
+        Assert.Equal(rotation.Z, model.Rz);
+        Assert.Equal(displayInfo, model.DisplayInfo);
+        Assert.Equal((ushort)1171u, model.Faction1);
+        Assert.Equal((ushort)1171u, model.Faction2);
+        Assert.Equal(157u, model.EntityEvent.EventId);
+        Assert.Equal(phase, model.EntityEvent.Phase);
+        Assert.Collection(model.EntityScript,
+            entityScript => Assert.Equal(scriptName, entityScript.ScriptName));
+        Assert.Contains(model.EntityStat, stat => stat.Stat == (byte)Stat.Health && stat.Value == health);
+        Assert.Contains(model.EntityStat, stat => stat.Stat == (byte)Stat.Level && stat.Value == 50f);
+    }
+
+    private static void AssertDatascapeSpawnModel(CreatedNpc npc, ExpectedDatascapeSpawn spawn)
+    {
+        AssertDatascapeSpawnModel(
+            npc,
+            spawn.EntityId,
+            spawn.CreatureId,
+            spawn.AreaId,
+            spawn.Phase,
+            spawn.Position,
+            spawn.Rotation,
+            spawn.DisplayInfo,
+            spawn.ScriptName,
+            spawn.Health);
+    }
+
+    private static void AssertGridEntitiesAddedToMap(
+        RecordingDispatchProxy<IMapInstance> mapProxy,
+        IReadOnlyList<CreatedNpc> createdNpcs)
+    {
+        List<RecordingDispatchProxy<IMapInstance>.Invocation> enqueueAdds = mapProxy
+            .GetInvocations(nameof(IMap.EnqueueAdd))
+            .ToList();
+        Assert.Equal(createdNpcs.Count, enqueueAdds.Count);
+
+        for (int i = 0; i < createdNpcs.Count; i++)
+        {
+            Assert.Same(createdNpcs[i].Instance, enqueueAdds[i].Arguments[0]);
+
+            IMapPosition position = Assert.IsAssignableFrom<IMapPosition>(enqueueAdds[i].Arguments[1]);
+            RecordingDispatchProxy<INonPlayerEntity>.Invocation initialise = Assert.Single(
+                createdNpcs[i].Proxy.GetInvocations(nameof(IWorldEntity.Initialise)));
+            EntityModel model = Assert.IsType<EntityModel>(initialise.Arguments[0]);
+            Assert.Equal(new Vector3(model.X, model.Y, model.Z), position.Position);
+            Assert.Equal(1333u, position.Info.Entry.Id);
+        }
+    }
+
+    private sealed record CreatedNpc(
+        INonPlayerEntity Instance,
+        RecordingDispatchProxy<INonPlayerEntity> Proxy);
+
+    public static IEnumerable<object[]> DatascapePhaseSpawnCases()
+    {
+        yield return [PublicEventPhase.Gloomclaw, PublicEventObjective.DefeatGloomclaw, new ExpectedDatascapeSpawn(1100300068u, 30498u, 1609, (uint)PublicEventPhase.Gloomclaw, new Vector3(4310f, -567.817f, -16812f), new Vector3(-3.08841f, 0f, 0f), 32992u, "GloomclawEntityScript", 21000000f)];
+        yield return [PublicEventPhase.WarmongerAgratha, PublicEventObjective.DefeatWarmongerAgratha, new ExpectedDatascapeSpawn(1100300071u, 48295u, 1594, (uint)PublicEventPhase.WarmongerAgratha, new Vector3(-4018.35f, -905.709f, 2575.45f), new Vector3(-1.7226f, 0f, 0f), 36939u, "WarmongerAgrathaEntityScript", 12500000f)];
+        yield return [PublicEventPhase.WarmongerChuna, PublicEventObjective.DefeatWarmongerChuna, new ExpectedDatascapeSpawn(1100300072u, 48916u, 4478, (uint)PublicEventPhase.WarmongerChuna, new Vector3(-4350.04f, -913.187f, 2404.41f), new Vector3(-1.44454f, 0f, 0f), 36939u, "WarmongerChunaEntityScript", 12500000f)];
+        yield return [PublicEventPhase.WarmongerTalarii, PublicEventObjective.DefeatWarmongerTalarii, new ExpectedDatascapeSpawn(1100300073u, 48917u, 4479, (uint)PublicEventPhase.WarmongerTalarii, new Vector3(-4359.49f, -903.383f, 2590.74f), new Vector3(0.19367f, 0f, 0f), 36939u, "WarmongerTalariiEntityScript", 12500000f)];
+        yield return [PublicEventPhase.GrandWarmongerTargresh, PublicEventObjective.DefeatGrandWarmongerTargresh, new ExpectedDatascapeSpawn(1100300074u, 48177u, 1479, (uint)PublicEventPhase.GrandWarmongerTargresh, new Vector3(-4403.72f, -821.913f, 2679.14f), new Vector3(-1.63275f, 0f, 0f), 36938u, "GrandWarmongerTargreshEntityScript", 14500000f)];
+        yield return [PublicEventPhase.Avatus, PublicEventObjective.DefeatAvatus, new ExpectedDatascapeSpawn(1100300075u, 30505u, 1301, (uint)PublicEventPhase.Avatus, new Vector3(618f, -198.7f, -174f), new Vector3(1.61258f, 0f, 0f), 28937u, "DatascapeAvatusEntityScript", 72000000f)];
+    }
+
+    public static IEnumerable<object[]> DatascapeObjectiveStatusSpawnCases()
+    {
+        yield return [PublicEventObjective.DefeatOptimizedMemoryProbeED1, PublicEventObjective.DefeatTheBioEnhancedBroodmother, new ExpectedDatascapeSpawn(1100300067u, 31885u, 1590, OpeningPhase, new Vector3(2985.78f, -794.348f, 3396.41f), new Vector3(-0.693315f, 0f, 0f), 27107u, "BioEnhancedBroodmotherEntityScript", 18000000f)];
+        yield return [PublicEventObjective.GeneratorCharge2, PublicEventObjective.DefeatTheHyperAcceleratedSkeledroid, new ExpectedDatascapeSpawn(1100300069u, 48065u, 2371, (uint)PublicEventPhase.LogicWingRoom1, new Vector3(-22076.3f, 598.146f, -15934.1f), new Vector3(1f, 0f, 0f), 28678u, "HyperAcceleratedSkeledroidEntityScript", 21300000f)];
+        yield return [PublicEventObjective.GeneratorCharge8, PublicEventObjective.DefeatTheAugmentedHeraldOfAvatus, new ExpectedDatascapeSpawn(1100300070u, 48374u, 2373, (uint)PublicEventPhase.LogicWingRoom3, new Vector3(-22050.2f, 619.71f, -14309.2f), new Vector3(2.56983f, 0f, 0f), 28901u, "AugmentedHeraldOfAvatusEntityScript", 9100000f)];
+    }
+
+    public sealed record ExpectedDatascapeSpawn(
+        uint EntityId,
+        uint CreatureId,
+        ushort AreaId,
+        uint Phase,
+        Vector3 Position,
+        Vector3 Rotation,
+        uint DisplayInfo,
+        string ScriptName,
+        float Health);
 }
