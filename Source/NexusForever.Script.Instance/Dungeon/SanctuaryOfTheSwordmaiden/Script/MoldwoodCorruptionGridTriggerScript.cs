@@ -1,6 +1,5 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Trigger;
-using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
 
@@ -27,10 +26,10 @@ namespace NexusForever.Script.Instance.Dungeon.SanctuaryOfTheSwordmaiden.Script
             if (entity is not IPlayer)
                 return;
 
-            // WIP-guessed from LaughingWS Instances-and-more: trigger owner 3420
-            // appears to satisfy the Moldwood corruption route script objective.
-            // Exact route selection is still not retail-proven.
-            trigger.Map.PublicEventManager.UpdateObjective(PublicEventObjectiveType.Script, 3420u, 1);
+            // Build 16042 objective 614 is the Moldwood corruption Turnstile row
+            // for objectId 3420. Credit the direct route objective; exact route
+            // selection is still not retail-proven.
+            trigger.Map.PublicEventManager.UpdateObjective(PublicEventObjective.ReachTheMoldwoodCorruption, 1);
         }
     }
 }

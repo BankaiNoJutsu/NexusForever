@@ -1,7 +1,11 @@
+using System.Numerics;
+using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
@@ -25,7 +29,6 @@ public class SanctuaryOfTheSwordmaidenEventScriptTests
     }
 
     [Theory]
-    [InlineData(PublicEventPhase.Enter, PublicEventObjective.DefeatDeadringerShallaos)]
     [InlineData(PublicEventPhase.RandomPath, PublicEventObjective.CollectTorineSpiritRelics)]
     [InlineData(PublicEventPhase.GoToLifeWeaverTerracePath1, PublicEventObjective.EnterLifeweaverTerrace)]
     [InlineData(PublicEventPhase.SpiritmotherSelene, PublicEventObjective.EscortSpiritmotherSelene)]
@@ -40,6 +43,22 @@ public class SanctuaryOfTheSwordmaidenEventScriptTests
 
         RecordingDispatchProxy<IPublicEvent>.Invocation activation = Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)));
         Assert.Equal(objective, activation.Arguments[0]);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_Enter_ActivatesOpeningObjectives()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+
+        List<RecordingDispatchProxy<IPublicEvent>.Invocation> activations = eventProxy
+            .GetInvocations(nameof(IPublicEvent.ActivateObjective))
+            .ToList();
+        Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.DefeatDeadringerShallaos);
+        Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.EliminateZealousTorine);
     }
 
     [Fact]
@@ -87,10 +106,37 @@ public class SanctuaryOfTheSwordmaidenEventScriptTests
     }
 
     [Fact]
+    public void OnPublicEventPhase_Enter_ActivatesLifeweaverTechClusterOptionalObjective()
+    {
+        var script = CreateScriptWithOptionalObjectives([PublicEventObjective.SabotageLifeweaverTechClusters]);
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.SabotageLifeweaverTechClusters);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_Enter_ActivatesDareiaOptionalObjective()
+    {
+        var script = CreateScriptWithOptionalObjectives([PublicEventObjective.KillCorruptedDeathbringerDareia]);
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.KillCorruptedDeathbringerDareia);
+    }
+
+    [Fact]
     public void OnPublicEventPhase_Rayna_ActivatesBossAndChallengeObjectives()
     {
         var script = CreateScript();
-        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        IPublicEvent publicEvent = CreatePublicEventWithFlameCrazedDemon(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out _,
+            out _);
         script.OnLoad(publicEvent);
 
         script.OnPublicEventPhase((uint)PublicEventPhase.RaynaDarkspeaker);
@@ -102,6 +148,42 @@ public class SanctuaryOfTheSwordmaidenEventScriptTests
         Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.DestroyTheFlameCrazedDemon);
         Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.DodgeTorineTotemOfFlame);
         Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.DestroyTorineTotemsOfFlame);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_Rayna_SpawnsReviewedFlameCrazedDemonPlacement()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEventWithFlameCrazedDemon(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out RecordingDispatchProxy<IMapInstance> mapProxy,
+            out CreatedFlameCrazedDemon createdFlameCrazedDemon);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.RaynaDarkspeaker);
+
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.DestroyTheFlameCrazedDemon);
+
+        RecordingDispatchProxy<INonPlayerEntity>.Invocation initialise = Assert.Single(
+            createdFlameCrazedDemon.Proxy.GetInvocations(nameof(IWorldEntity.Initialise)));
+        EntityModel model = Assert.IsType<EntityModel>(initialise.Arguments[0]);
+        Assert.Equal(1100300051u, model.Id);
+        Assert.Equal(EntityType.NonPlayer, model.Type);
+        Assert.Equal(29254u, model.Creature);
+        Assert.Equal((ushort)1271u, model.World);
+        Assert.Equal((ushort)1556u, model.Area);
+        Assert.Equal(4877.322f, model.X);
+        Assert.Equal(-797.6906f, model.Y);
+        Assert.Equal(-3318.368f, model.Z);
+        Assert.Equal(24811u, model.DisplayInfo);
+        Assert.Equal((ushort)978u, model.Faction1);
+        Assert.Equal((ushort)978u, model.Faction2);
+        Assert.Equal(166u, model.EntityEvent.EventId);
+        Assert.Equal(4u, model.EntityEvent.Phase);
+        Assert.Collection(model.EntityScript,
+            entityScript => Assert.Equal("FlameCrazedDemonEntityScript", entityScript.ScriptName));
+        Assert.Contains(model.EntityStat, stat => stat.Stat == (byte)Stat.Level && stat.Value == 40f);
+        AssertGridEntityAddedToMap(mapProxy, createdFlameCrazedDemon.Instance, new Vector3(4877.322f, -797.6906f, -3318.368f));
     }
 
     [Fact]
@@ -128,6 +210,7 @@ public class SanctuaryOfTheSwordmaidenEventScriptTests
             [
                 PublicEventObjective.DestroyTheMoldwoodCorruptors,
                 PublicEventObjective.DestroyMoldwoodSkurgeAndCrawlers,
+                PublicEventObjective.KillDistractedMoldwoodMaulers,
                 PublicEventObjective.UseTheSoulSporeOnMoldwoodGorgers
             ]);
         IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
@@ -137,6 +220,7 @@ public class SanctuaryOfTheSwordmaidenEventScriptTests
 
         AssertObjectiveActivated(eventProxy, PublicEventObjective.DestroyTheMoldwoodCorruptors);
         AssertObjectiveActivated(eventProxy, PublicEventObjective.DestroyMoldwoodSkurgeAndCrawlers);
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.KillDistractedMoldwoodMaulers);
         AssertObjectiveActivated(eventProxy, PublicEventObjective.UseTheSoulSporeOnMoldwoodGorgers);
     }
 
@@ -177,6 +261,8 @@ public class SanctuaryOfTheSwordmaidenEventScriptTests
     {
         var script = CreateScriptWithOptionalObjectives(
             [
+                PublicEventObjective.DestroyDeathstingSwarms,
+                PublicEventObjective.KillCorruptedVeteranSwordmaidens,
                 PublicEventObjective.KillTheCorruptedTerrorantulas,
                 PublicEventObjective.DefeatCorruptedLifeweaverPell
             ]);
@@ -185,6 +271,8 @@ public class SanctuaryOfTheSwordmaidenEventScriptTests
 
         script.OnPublicEventPhase((uint)PublicEventPhase.OnduLifeWeaver);
 
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.DestroyDeathstingSwarms);
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.KillCorruptedVeteranSwordmaidens);
         AssertObjectiveActivated(eventProxy, PublicEventObjective.KillTheCorruptedTerrorantulas);
         AssertObjectiveActivated(eventProxy, PublicEventObjective.DefeatCorruptedLifeweaverPell);
     }
@@ -315,6 +403,32 @@ public class SanctuaryOfTheSwordmaidenEventScriptTests
         return publicEvent;
     }
 
+    private static IPublicEvent CreatePublicEventWithFlameCrazedDemon(
+        out RecordingDispatchProxy<IPublicEvent> eventProxy,
+        out RecordingDispatchProxy<IMapInstance> mapProxy,
+        out CreatedFlameCrazedDemon createdFlameCrazedDemon)
+    {
+        IMapInstance mapInstance = RecordingDispatchProxy<IMapInstance>.Create(out mapProxy);
+        mapProxy.SetProperty(nameof(IMap.Entry), new WorldEntry { Id = 1271u });
+        mapProxy.SetMethodReturn(nameof(IMapInstance.GetPlayers), Array.Empty<IPlayer>());
+
+        IPublicEvent publicEvent = RecordingDispatchProxy<IPublicEvent>.Create(out eventProxy);
+        eventProxy.SetProperty(nameof(IPublicEvent.Map), mapInstance);
+
+        CreatedFlameCrazedDemon flameCrazedDemon = CreateCreatedFlameCrazedDemon();
+        eventProxy.SetMethodReturnFactory(nameof(IPublicEvent.CreateEntity), () => flameCrazedDemon.Instance);
+
+        createdFlameCrazedDemon = flameCrazedDemon;
+        return publicEvent;
+    }
+
+    private static CreatedFlameCrazedDemon CreateCreatedFlameCrazedDemon()
+    {
+        INonPlayerEntity flameCrazedDemon = RecordingDispatchProxy<INonPlayerEntity>.Create(
+            out RecordingDispatchProxy<INonPlayerEntity> flameCrazedDemonProxy);
+        return new CreatedFlameCrazedDemon(flameCrazedDemon, flameCrazedDemonProxy);
+    }
+
     private static IPublicEventObjective CreateObjective(PublicEventObjective objective, PublicEventStatus status)
     {
         IPublicEventObjective eventObjective = RecordingDispatchProxy<IPublicEventObjective>.Create(out RecordingDispatchProxy<IPublicEventObjective> objectiveProxy);
@@ -377,6 +491,23 @@ public class SanctuaryOfTheSwordmaidenEventScriptTests
         Assert.Contains(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)),
             i => (PublicEventObjective)i.Arguments[0] == objective);
     }
+
+    private static void AssertGridEntityAddedToMap(
+        RecordingDispatchProxy<IMapInstance> mapProxy,
+        IGridEntity entity,
+        Vector3 expectedPosition)
+    {
+        RecordingDispatchProxy<IMapInstance>.Invocation enqueueAdd = Assert.Single(mapProxy.GetInvocations(nameof(IMap.EnqueueAdd)));
+        Assert.Same(entity, enqueueAdd.Arguments[0]);
+
+        IMapPosition position = Assert.IsAssignableFrom<IMapPosition>(enqueueAdd.Arguments[1]);
+        Assert.Equal(expectedPosition, position.Position);
+        Assert.Equal(1271u, position.Info.Entry.Id);
+    }
+
+    private sealed record CreatedFlameCrazedDemon(
+        INonPlayerEntity Instance,
+        RecordingDispatchProxy<INonPlayerEntity> Proxy);
 
     private sealed class TestSanctuaryOfTheSwordmaidenEventScript : SanctuaryOfTheSwordmaidenEventScript
     {

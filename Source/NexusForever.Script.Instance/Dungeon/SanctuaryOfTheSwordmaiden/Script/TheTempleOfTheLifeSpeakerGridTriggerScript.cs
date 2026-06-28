@@ -1,6 +1,5 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Trigger;
-using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
 
@@ -27,10 +26,10 @@ namespace NexusForever.Script.Instance.Dungeon.SanctuaryOfTheSwordmaiden.Script
             if (entity is not IPlayer)
                 return;
 
-            // WIP-guessed from LaughingWS Instances-and-more: trigger owner 3421
-            // appears to satisfy the Life Speaker temple entry script objective.
-            // Placement and route timing still need Sanctuary manual smoke.
-            trigger.Map.PublicEventManager.UpdateObjective(PublicEventObjectiveType.Script, 3421u, 1);
+            // Build 16042 objective 615 is the Life Speaker temple Turnstile row
+            // for objectId 3421. Credit the direct route objective; placement and
+            // route timing still need Sanctuary manual smoke.
+            trigger.Map.PublicEventManager.UpdateObjective(PublicEventObjective.EnterTheTempleOfTheLifeSpeaker, 1);
         }
     }
 }

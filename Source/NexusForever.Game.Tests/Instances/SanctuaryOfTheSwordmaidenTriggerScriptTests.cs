@@ -9,16 +9,18 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network.Session;
 using NexusForever.Script.Instance.Dungeon.SanctuaryOfTheSwordmaiden;
 using NexusForever.Script.Instance.Dungeon.SanctuaryOfTheSwordmaiden.Script;
+using NexusForever.Script.Template;
+using NexusForever.Script.Template.Filter;
 
 namespace NexusForever.Game.Tests.Instances;
 
 public class SanctuaryOfTheSwordmaidenTriggerScriptTests
 {
     [Theory]
-    [InlineData(typeof(TheTempleOfTheLifeSpeakerGridTriggerScript), 3421u)]
-    [InlineData(typeof(MoldwoodCorruptionGridTriggerScript), 3420u)]
-    [InlineData(typeof(LifeweaverTerraceGridTriggerEntityScript), 3419u)]
-    public void ScriptObjectiveTriggers_PlayerEnter_UpdatesMappedScriptObjective(Type scriptType, uint objectId)
+    [InlineData(typeof(TheTempleOfTheLifeSpeakerGridTriggerScript), PublicEventObjective.EnterTheTempleOfTheLifeSpeaker)]
+    [InlineData(typeof(MoldwoodCorruptionGridTriggerScript), PublicEventObjective.ReachTheMoldwoodCorruption)]
+    [InlineData(typeof(LifeweaverTerraceGridTriggerEntityScript), PublicEventObjective.EnterLifeweaverTerrace)]
+    public void ScriptObjectiveTriggers_PlayerEnter_UpdatesMappedDirectObjective(Type scriptType, PublicEventObjective objective)
     {
         dynamic script = Activator.CreateInstance(scriptType);
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
@@ -28,9 +30,8 @@ public class SanctuaryOfTheSwordmaidenTriggerScriptTests
         script.OnEnterRange(player);
 
         RecordingDispatchProxy<IPublicEventManager>.Invocation update = Assert.Single(publicEventManagerProxy.GetInvocations(nameof(IPublicEventManager.UpdateObjective)));
-        Assert.Equal(PublicEventObjectiveType.Script, update.Arguments[0]);
-        Assert.Equal(objectId, update.Arguments[1]);
-        Assert.Equal(1, update.Arguments[2]);
+        Assert.Equal(objective, update.Arguments[0]);
+        Assert.Equal(1, update.Arguments[1]);
     }
 
     [Fact]
@@ -85,6 +86,112 @@ public class SanctuaryOfTheSwordmaidenTriggerScriptTests
         Assert.Empty(globalQuestManagerProxy.GetInvocations(nameof(IGlobalQuestManager.GetCommunicatorMessage)));
     }
 
+    [Theory]
+    [MemberData(nameof(SanctuaryTargetGroupObjectiveScriptCredits))]
+    public void SanctuaryTargetGroupObjectiveScripts_OnActivateSuccess_UpdatesChecklistTargetGroupObjectiveOnce(
+        Type scriptType,
+        uint targetGroupId)
+    {
+        dynamic script = Activator.CreateInstance(scriptType);
+        IWorldEntity entity = CreateWorldEntity(out RecordingDispatchProxy<IPublicEventManager> publicEventManagerProxy, out RecordingDispatchProxy<IWorldEntity> entityProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+
+        script.OnLoad(entity);
+        script.OnActivateSuccess(player);
+        script.OnActivateSuccess(player);
+
+        RecordingDispatchProxy<IPublicEventManager>.Invocation update = Assert.Single(
+            publicEventManagerProxy.GetInvocations(nameof(IPublicEventManager.UpdateObjective)));
+        Assert.Equal(PublicEventObjectiveType.ActivateTargetGroupChecklist, update.Arguments[0]);
+        Assert.Equal(targetGroupId, update.Arguments[1]);
+        Assert.Equal(0, update.Arguments[2]);
+        Assert.Empty(entityProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+    }
+
+    [Theory]
+    [MemberData(nameof(SanctuaryTargetGroupObjectiveScriptFilters))]
+    public void SanctuaryTargetGroupObjectiveScripts_UseCreatureFiltersForMappedCreatureRows(
+        Type scriptType,
+        uint[] mappedCreatureIds,
+        uint unrelatedCreatureId)
+    {
+        ScriptFilterParameters parameters = new(RecordingDispatchProxy<IServiceProvider>.Create(out _));
+        parameters.Initialise(scriptType);
+        var match = new ScriptFilterMatch();
+
+        foreach (uint mappedCreatureId in mappedCreatureIds)
+        {
+            IScriptFilterSearch matchingSearch = new ScriptFilterSearch()
+                .FilterByScriptType<IOwnedScript<IWorldEntity>>()
+                .FilterByCreatureId(mappedCreatureId);
+            Assert.True(match.Match(matchingSearch, parameters));
+        }
+
+        IScriptFilterSearch unrelatedSearch = new ScriptFilterSearch()
+            .FilterByScriptType<IOwnedScript<IWorldEntity>>()
+            .FilterByCreatureId(unrelatedCreatureId);
+
+        Assert.False(match.Match(unrelatedSearch, parameters));
+    }
+
+    [Fact]
+    public void SoulSporeEntityScript_OnActivateSuccess_UpdatesMappedScriptObjectiveOnce()
+    {
+        var script = new SoulSporeEntityScript();
+        IWorldEntity entity = CreateWorldEntity(out RecordingDispatchProxy<IPublicEventManager> publicEventManagerProxy, out RecordingDispatchProxy<IWorldEntity> entityProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+
+        script.OnLoad(entity);
+        script.OnActivateSuccess(player);
+        script.OnActivateSuccess(player);
+
+        RecordingDispatchProxy<IPublicEventManager>.Invocation update = Assert.Single(
+            publicEventManagerProxy.GetInvocations(nameof(IPublicEventManager.UpdateObjective)));
+        Assert.Equal(PublicEventObjective.UseTheSoulSporeOnMoldwoodGorgers, update.Arguments[0]);
+        Assert.Equal(1, update.Arguments[1]);
+        Assert.Empty(entityProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+    }
+
+    [Fact]
+    public void SoulSporeEntityScript_UsesCreatureFilterForSpiritBombUnit()
+    {
+        ScriptFilterParameters parameters = new(RecordingDispatchProxy<IServiceProvider>.Create(out _));
+        parameters.Initialise(typeof(SoulSporeEntityScript));
+
+        IScriptFilterSearch spiritBombSearch = new ScriptFilterSearch()
+            .FilterByScriptType<IOwnedScript<IWorldEntity>>()
+            .FilterByCreatureId(70947u);
+        IScriptFilterSearch unrelatedSearch = new ScriptFilterSearch()
+            .FilterByScriptType<IOwnedScript<IWorldEntity>>()
+            .FilterByCreatureId(43139u);
+
+        var match = new ScriptFilterMatch();
+        Assert.True(match.Match(spiritBombSearch, parameters));
+        Assert.False(match.Match(unrelatedSearch, parameters));
+    }
+
+    public static TheoryData<Type, uint> SanctuaryTargetGroupObjectiveScriptCredits()
+    {
+        return new TheoryData<Type, uint>
+        {
+            { typeof(TorineSpiritRelicEntityScript), 3193u },
+            { typeof(TorineSpiritRelicHolderEntityScript), 3164u },
+            { typeof(LifeweaverTechClusterEntityScript), 5755u },
+            { typeof(TorineTotemOfFlameEntityScript), 5756u },
+        };
+    }
+
+    public static TheoryData<Type, uint[], uint> SanctuaryTargetGroupObjectiveScriptFilters()
+    {
+        return new TheoryData<Type, uint[], uint>
+        {
+            { typeof(TorineSpiritRelicEntityScript), [28638u, 28643u, 28652u, 28644u], 43173u },
+            { typeof(TorineSpiritRelicHolderEntityScript), [28459u], 28638u },
+            { typeof(LifeweaverTechClusterEntityScript), [43171u], 43173u },
+            { typeof(TorineTotemOfFlameEntityScript), [43173u], 43171u },
+        };
+    }
+
     private static RecordingDispatchProxy<IPublicEventManager> CreateTrigger(out IGridTriggerEntity trigger)
     {
         trigger = RecordingDispatchProxy<IGridTriggerEntity>.Create(out RecordingDispatchProxy<IGridTriggerEntity> triggerProxy);
@@ -95,6 +202,20 @@ public class SanctuaryOfTheSwordmaidenTriggerScriptTests
         triggerProxy.SetProperty(nameof(IGridEntity.Map), map);
 
         return publicEventManagerProxy;
+    }
+
+    private static IWorldEntity CreateWorldEntity(
+        out RecordingDispatchProxy<IPublicEventManager> publicEventManagerProxy,
+        out RecordingDispatchProxy<IWorldEntity> entityProxy)
+    {
+        IWorldEntity entity = RecordingDispatchProxy<IWorldEntity>.Create(out entityProxy);
+        IPublicEventManager publicEventManager = RecordingDispatchProxy<IPublicEventManager>.Create(out publicEventManagerProxy);
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out RecordingDispatchProxy<IBaseMap> mapProxy);
+
+        mapProxy.SetProperty(nameof(IBaseMap.PublicEventManager), publicEventManager);
+        entityProxy.SetProperty(nameof(IGridEntity.Map), map);
+
+        return entity;
     }
 
     private static IGridTriggerEntity CreateTriggerWithMapInstance(IReadOnlyList<IPlayer> players)

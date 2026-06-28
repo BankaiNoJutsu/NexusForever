@@ -1,6 +1,5 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Trigger;
-using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
 
@@ -27,10 +26,10 @@ namespace NexusForever.Script.Instance.Dungeon.SanctuaryOfTheSwordmaiden.Script
             if (entity is not IPlayer)
                 return;
 
-            // WIP-guessed from LaughingWS Instances-and-more: trigger owner 3419
-            // appears to satisfy the Lifeweaver Terrace script objective for
-            // both branch paths. Exact trigger placement still needs smoke.
-            trigger.Map.PublicEventManager.UpdateObjective(PublicEventObjectiveType.Script, 3419u, 1);
+            // Build 16042 objective 613 is the Lifeweaver Terrace Turnstile row
+            // for objectId 3419. Credit the direct route objective; exact trigger
+            // placement still needs smoke.
+            trigger.Map.PublicEventManager.UpdateObjective(PublicEventObjective.EnterLifeweaverTerrace, 1);
         }
     }
 }
