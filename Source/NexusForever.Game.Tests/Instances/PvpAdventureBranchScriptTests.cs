@@ -6,6 +6,7 @@ using NexusForever.Game.Static.Matching;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
+using NexusForever.Script.Instance.Adventure.WarOfTheWilds.Script;
 using CryoCreature = NexusForever.Script.Instance.Arena.TheCryoPlex.PublicEventCreature;
 using CryoEventScript = NexusForever.Script.Instance.Arena.TheCryoPlex.TheCryoPlexEventScript;
 using CryoObjective = NexusForever.Script.Instance.Arena.TheCryoPlex.PublicEventObjective;
@@ -52,6 +53,38 @@ public class PvpAdventureBranchScriptTests
 
         RecordingDispatchProxy<IPublicEvent>.Invocation finish = Assert.Single(publicEventProxy.GetInvocations(nameof(IPublicEvent.Finish)));
         Assert.Equal(PublicEventTeam.PublicTeam, finish.Arguments[0]);
+    }
+
+    [Fact]
+    public void WarOfTheWilds_GiantMoodieTotemDeath_CreditsDestroyAndHealthResourcePoolsToFullCount()
+    {
+        GiantMoodieTotemEntityScript script = CreateGiantMoodieTotemScript(out var publicEventManagerProxy);
+
+        script.OnDeath();
+
+        List<RecordingDispatchProxy<IPublicEventManager>.Invocation> updates = publicEventManagerProxy
+            .GetInvocations(nameof(IPublicEventManager.UpdateObjective))
+            .Where(invocation => invocation.Arguments.Length == 2)
+            .ToList();
+        Assert.Contains(updates, invocation =>
+            (WarObjective)invocation.Arguments[0] == WarObjective.DestroyTheGiantMoodieTotem &&
+            (int)invocation.Arguments[1] == 100);
+        Assert.Contains(updates, invocation =>
+            (WarObjective)invocation.Arguments[0] == WarObjective.MoodieTotemHealth &&
+            (int)invocation.Arguments[1] == 100);
+    }
+
+    [Fact]
+    public void WarOfTheWilds_GiantMoodieTotemDeath_WhenRepeated_CreditsOnce()
+    {
+        GiantMoodieTotemEntityScript script = CreateGiantMoodieTotemScript(out var publicEventManagerProxy);
+
+        script.OnDeath();
+        script.OnDeath();
+
+        Assert.Equal(2, publicEventManagerProxy
+            .GetInvocations(nameof(IPublicEventManager.UpdateObjective))
+            .Count(invocation => invocation.Arguments.Length == 2));
     }
 
     [Fact]
@@ -152,6 +185,21 @@ public class PvpAdventureBranchScriptTests
         if (!preserveLoadInvocations)
             publicEventProxy.Invocations.Clear();
 
+        return script;
+    }
+
+    private static GiantMoodieTotemEntityScript CreateGiantMoodieTotemScript(out RecordingDispatchProxy<IPublicEventManager> publicEventManagerProxy)
+    {
+        IPublicEventManager publicEventManager = RecordingDispatchProxy<IPublicEventManager>.Create(out publicEventManagerProxy);
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
+        mapProxy.SetProperty(nameof(IBaseMap.PublicEventManager), publicEventManager);
+
+        ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out var creatureProxy);
+        creatureProxy.SetProperty(nameof(IGridEntity.Map), map);
+        creatureProxy.SetProperty(nameof(IWorldEntity.CreatureId), 25952u);
+
+        var script = new GiantMoodieTotemEntityScript();
+        script.OnLoad(creature);
         return script;
     }
 
