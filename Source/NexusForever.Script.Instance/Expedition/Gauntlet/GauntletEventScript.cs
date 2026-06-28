@@ -1,10 +1,12 @@
 using System.Numerics;
+using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Cinematic;
 using NexusForever.Game.Abstract.Cinematic.Cinematics;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Trigger;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.PublicEvent;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
@@ -18,14 +20,32 @@ namespace NexusForever.Script.Instance.Expedition.Gauntlet
 
         private IPublicEvent publicEvent;
         private IMapInstance mapInstance;
+        private bool airlockGatherMarkerSpawned;
 
         private const uint AirlockWorldLocationId = 38909u;
         private const uint AirlockObjectiveObjectId = 5735u;
         private static readonly Vector3 AirlockTriggerPosition = new(523.0805f, 0.1994047f, -507.9437f);
 
+        private const uint AirlockGatherMarkerEntityId = 1100300014u;
+        private const uint AirlockGatherMarkerCreatureId = 58979u;
+        private const ushort AirlockGatherMarkerWorldId = 2183;
+        private const ushort AirlockGatherMarkerAreaId = 2620;
+        private const uint AirlockGatherMarkerDisplayInfo = 30327u;
+        private const ushort AirlockGatherMarkerFactionId = 219;
+
         private const uint SwarmPitWorldLocationId = 39001u;
         private const uint SwarmPitObjectiveObjectId = 5753u;
         private static readonly Vector3 SwarmPitTriggerPosition = new(-1007.078f, 5.185604E-06f, 1063.784f);
+
+        private const uint PilotTaboroEntityId = 1100300013u;
+        private const uint PilotTaboroCreatureId = 48580u;
+        private const ushort PilotTaboroWorldId = 2183;
+        private const ushort PilotTaboroAreaId = 2620;
+        private const uint PilotTaboroPublicEventId = 446u;
+        private const uint PilotTaboroPublicEventPhase = 0u;
+        private const uint PilotTaboroDisplayInfo = 21338u;
+        private const ushort PilotTaboroFactionId = 219;
+        private static readonly Vector3 PilotTaboroPosition = new(541.0117f, 0.2229719f, -513.6139f);
 
         public GauntletEventScript(
             ICinematicFactory cinematicFactory)
@@ -42,6 +62,7 @@ namespace NexusForever.Script.Instance.Expedition.Gauntlet
             mapInstance = publicEvent.Map as IMapInstance
                 ?? throw new InvalidOperationException("Gauntlet requires a map instance.");
 
+            airlockGatherMarkerSpawned = false;
             publicEvent.SetPhase(PublicEventPhase.TalkToPilotTaboro);
         }
 
@@ -54,14 +75,19 @@ namespace NexusForever.Script.Instance.Expedition.Gauntlet
             {
                 case PublicEventPhase.TalkToPilotTaboro:
                     publicEvent.ActivateObjective(PublicEventObjective.TalkToPilotTaboro);
+                    SpawnPilotTaboro();
                     break;
                 case PublicEventPhase.GetIntoAirlock:
                     publicEvent.ActivateObjective(PublicEventObjective.GetIntoAirlock, mapInstance.PlayerCount);
+                    SpawnReviewedAirlockGatherMarker();
                     SpawnWipGuessedWorldLocationTrigger(AirlockWorldLocationId, AirlockObjectiveObjectId, AirlockTriggerPosition);
                     break;
                 case PublicEventPhase.WhatHappened:
                     publicEvent.ActivateObjective(PublicEventObjective.FindOutWhatHappenedToYou);
                     QueueWipGuessedCinematic<IGauntletFindOutWhatHappened>();
+                    // Build 16042 objective 1819 is ScriptWithoutCount. Credit the
+                    // objective directly rather than mapping it to a kill objective type.
+                    publicEvent.UpdateObjective(PublicEventObjective.FindOutWhatHappenedToYou, 1);
                     break;
                 case PublicEventPhase.ActivateSwitches:
                     publicEvent.ActivateObjective(PublicEventObjective.ActivateSwitches);
@@ -141,6 +167,78 @@ namespace NexusForever.Script.Instance.Expedition.Gauntlet
             // hook still needs a real payload and exact post-cinematic choreography.
             foreach (IPlayer player in mapInstance.GetPlayers())
                 player.CinematicManager.QueueCinematic(cinematicFactory.CreateCinematic<T>());
+        }
+
+        private void SpawnPilotTaboro()
+        {
+            // Build 16042 reviewed instance entity 1100300013 places Pilot Taboro
+            // in event 446 phase 0. The talk objective script binds by Creature2 48580.
+            INonPlayerEntity pilotTaboro = publicEvent.CreateEntity<INonPlayerEntity>();
+            pilotTaboro.Initialise(CreatePilotTaboroEntityModel());
+            AddToMap(pilotTaboro, PilotTaboroPosition);
+        }
+
+        private void SpawnReviewedAirlockGatherMarker()
+        {
+            if (airlockGatherMarkerSpawned)
+                return;
+
+            // Build 16042 reviewed instance entity 1100300014 is a static Simple
+            // gather marker with no entity_event row. Spawn it with the matching
+            // airlock gather phase until retail visibility/cleanup timing is smoked.
+            ISimpleEntity marker = publicEvent.CreateEntity<ISimpleEntity>();
+            marker.Initialise(CreateAirlockGatherMarkerEntityModel());
+            AddToMap(marker, AirlockTriggerPosition);
+            airlockGatherMarkerSpawned = true;
+        }
+
+        private static EntityModel CreateAirlockGatherMarkerEntityModel()
+        {
+            return new EntityModel
+            {
+                Id          = AirlockGatherMarkerEntityId,
+                Type        = EntityType.Simple,
+                Creature    = AirlockGatherMarkerCreatureId,
+                World       = AirlockGatherMarkerWorldId,
+                Area        = AirlockGatherMarkerAreaId,
+                X           = AirlockTriggerPosition.X,
+                Y           = AirlockTriggerPosition.Y,
+                Z           = AirlockTriggerPosition.Z,
+                DisplayInfo = AirlockGatherMarkerDisplayInfo,
+                Faction1    = AirlockGatherMarkerFactionId,
+                Faction2    = AirlockGatherMarkerFactionId
+            };
+        }
+
+        private static EntityModel CreatePilotTaboroEntityModel()
+        {
+            return new EntityModel
+            {
+                Id          = PilotTaboroEntityId,
+                Type        = EntityType.NonPlayer,
+                Creature    = PilotTaboroCreatureId,
+                World       = PilotTaboroWorldId,
+                Area        = PilotTaboroAreaId,
+                X           = PilotTaboroPosition.X,
+                Y           = PilotTaboroPosition.Y,
+                Z           = PilotTaboroPosition.Z,
+                DisplayInfo = PilotTaboroDisplayInfo,
+                Faction1    = PilotTaboroFactionId,
+                Faction2    = PilotTaboroFactionId,
+                EntityEvent = new EntityEventModel
+                {
+                    EventId = PilotTaboroPublicEventId,
+                    Phase   = PilotTaboroPublicEventPhase
+                },
+                EntityStat =
+                {
+                    new EntityStatModel
+                    {
+                        Stat  = (byte)Stat.Health,
+                        Value = 1f
+                    }
+                }
+            };
         }
 
         /// <summary>
