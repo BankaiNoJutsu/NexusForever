@@ -21,6 +21,11 @@ namespace NexusForever.Game.Abstract.Challenges
         void ReceiveShare(ushort challengeId, uint sharerUnitId);
 
         /// <summary>
+        /// Advance progress for an active challenge by challenge id.
+        /// </summary>
+        bool TryAdvanceProgress(ushort challengeId, uint progress = 1u);
+
+        /// <summary>
         /// Returns the number of recorded completions for the supplied challenge.
         /// </summary>
         uint GetCompletionCount(ushort challengeId);

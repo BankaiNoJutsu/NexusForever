@@ -199,6 +199,39 @@ public class ChallengeManagerTests
     }
 
     [Fact]
+    public void TryAdvanceProgress_ThroughPublicHook_CompletesActiveChallenge()
+    {
+        GameTableManager gameTables = CreateGameTables(tierOneCount: 1);
+        IPlayer player = CreatePlayer(RecipientGuid, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTables, out RecordingDispatchProxy<IQuestManager> questProxy);
+        IChallengeManager manager = player.ChallengeManager;
+
+        manager.HandleChoice(ChallengeId, ChallengeChoice.Activate);
+        Assert.True(ChallengeProgressHooks.OnChallengeProgress(player, ChallengeId));
+
+        ServerChallengeResult completed = GetMessages<ServerChallengeResult>(sessionProxy)
+            .Single(result => result.Result == ChallengeResult.Completed);
+        Assert.Equal(ChallengeId, completed.ChallengeId);
+
+        RecordingDispatchProxy<IQuestManager>.Invocation questUpdate = Assert.Single(
+            questProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+        Assert.Equal(QuestObjectiveType.CompleteChallenge, questUpdate.Arguments[0]);
+    }
+
+    [Fact]
+    public void TryAdvanceProgress_WhenChallengeInactive_ReturnsFalseWithoutPackets()
+    {
+        GameTableManager gameTables = CreateGameTables(tierOneCount: 1);
+        IPlayer player = CreatePlayer(RecipientGuid, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTables, out RecordingDispatchProxy<IQuestManager> questProxy);
+        IChallengeManager manager = player.ChallengeManager;
+
+        Assert.False(manager.TryAdvanceProgress(ChallengeId));
+
+        Assert.Empty(GetMessages<ServerChallengeResult>(sessionProxy));
+        Assert.Empty(GetMessages<ServerChallengeUpdate>(sessionProxy));
+        Assert.Empty(questProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+    }
+
+    [Fact]
     public void TryAdvanceProgress_LargeProgressClampsAtGoalWithoutWrapping()
     {
         GameTableManager gameTables = CreateGameTables(tierOneCount: uint.MaxValue);

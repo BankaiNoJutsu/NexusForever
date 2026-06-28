@@ -20,6 +20,7 @@ public class ChallengeCombatHooksTests
 {
     private const ushort CombatChallengeId = 1001;
     private const uint TargetCreatureId = 4242u;
+    private const uint AutoActivateOnProgressFlag = 0x20u;
 
     [Fact]
     public void OnCreatureKilled_AdvancesMatchingCombatChallenge()
@@ -105,9 +106,43 @@ public class ChallengeCombatHooksTests
             result => result.Result is ChallengeResult.TierAchieved or ChallengeResult.Completed);
     }
 
+    [Fact]
+    public void OnCreatureKilled_AutoActivatesFlaggedCombatChallengeAndCreditsKill()
+    {
+        GameTableManager gameTables = CreateCombatGameTablesWithFlags(AutoActivateOnProgressFlag);
+        IPlayer player = CreatePlayer(9001u, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTables);
+
+        ChallengeCombatHooks.OnCreatureKilled(player, TargetCreatureId);
+
+        ServerChallengeResult activate = GetMessages<ServerChallengeResult>(sessionProxy)
+            .Single(result => result.Result == ChallengeResult.Activate);
+        Assert.Equal(CombatChallengeId, activate.ChallengeId);
+
+        ServerChallengeResult completed = GetMessages<ServerChallengeResult>(sessionProxy)
+            .Single(result => result.Result == ChallengeResult.Completed);
+        Assert.Equal(CombatChallengeId, completed.ChallengeId);
+    }
+
+    [Fact]
+    public void OnCreatureKilled_DoesNotAutoActivateUnflaggedCombatChallenge()
+    {
+        GameTableManager gameTables = CreateCombatGameTablesWithFlags(0u);
+        IPlayer player = CreatePlayer(9001u, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTables);
+
+        ChallengeCombatHooks.OnCreatureKilled(player, TargetCreatureId);
+
+        Assert.Empty(GetMessages<ServerChallengeResult>(sessionProxy));
+        Assert.Empty(GetMessages<ServerChallengeUpdate>(sessionProxy));
+    }
+
     private const uint CooldownTypeFlag = 0x10u;
 
     private static GameTableManager CreateCombatGameTables(uint target = TargetCreatureId, params TargetGroupEntry[] targetGroups)
+    {
+        return CreateCombatGameTablesWithFlags(CooldownTypeFlag, target, targetGroups);
+    }
+
+    private static GameTableManager CreateCombatGameTablesWithFlags(uint challengeFlags, uint target = TargetCreatureId, params TargetGroupEntry[] targetGroups)
     {
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
@@ -125,7 +160,7 @@ public class ChallengeCombatHooksTests
             Id                      = CombatChallengeId,
             ChallengeTypeEnum       = (uint)ChallengeType.Combat,
             Target                  = target,
-            ChallengeFlags          = CooldownTypeFlag,
+            ChallengeFlags          = challengeFlags,
             TargetGroupIdRewardPane = 42u,
             ChallengeTierId00       = 2001,
             CompletionCount         = 1u

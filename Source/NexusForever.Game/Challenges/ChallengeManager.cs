@@ -4,10 +4,12 @@ using NexusForever.Game.Abstract.Challenges;
 using NexusForever.Game.Retail;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Challenges;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model.Challenges;
+using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared;
 
 namespace NexusForever.Game.Challenges
@@ -20,6 +22,26 @@ namespace NexusForever.Game.Challenges
         private const double DefaultAreaFailSeconds = 10d;
         private const uint TimeTieredFlag = 0x8u;
         private const uint CooldownTypeFlag = 0x10u;
+        private const uint AutoActivateOnProgressFlag = 0x20u;
+        private const uint RewardTrackItemRewardType = 0u;
+        private const uint SkeechSlayerChallengeId = 103u;
+        private const uint NorthernWildsWorldId = 426u;
+        private const uint NorthernWildsRuntimeWorldZoneId = 1u;
+        private const uint NorthernWildsClientWorldZoneId = 35u;
+
+        private static readonly IReadOnlyDictionary<(uint WorldId, uint RuntimeWorldZoneId), uint> ReviewedRuntimeChallengeZoneBridges =
+            new Dictionary<(uint WorldId, uint RuntimeWorldZoneId), uint>
+            {
+                // DataMapping challenge/path evidence maps Northern Wilds runtime/source
+                // zone 1 to client WorldZoneId 35. Keep the bridge runtime-owned and
+                // scoped to world 426 instead of querying authoring tables at runtime.
+                [(NorthernWildsWorldId, NorthernWildsRuntimeWorldZoneId)] = NorthernWildsClientWorldZoneId
+            };
+
+        private static readonly IReadOnlyDictionary<uint, uint[]> MappedChallengeCreatureTargets = new Dictionary<uint, uint[]>
+        {
+            [SkeechSlayerChallengeId] = [11907u, 11910u, 11912u, 11917u, 12518u, 15728u, 36884u]
+        };
 
         private readonly IPlayer player;
         private readonly ulong characterId;
@@ -277,6 +299,11 @@ namespace NexusForever.Game.Challenges
                 return;
             }
 
+            ActivateChallenge(challengeId);
+        }
+
+        private void ActivateChallenge(ushort challengeId)
+        {
             ChallengeRuntimeState state = GetOrCreateState(challengeId);
             state.Activated    = true;
             state.OnCooldown   = false;
@@ -389,7 +416,67 @@ namespace NexusForever.Game.Challenges
             if (entry.WorldZoneIdRestriction == 0u || player.Zone == null)
                 return true;
 
-            return player.Zone.Id == entry.WorldZoneIdRestriction;
+            return IsZoneOrDescendantOfRestriction(player.Zone, entry.WorldZoneIdRestriction)
+                || MatchesReviewedRuntimeZoneBridge(entry.WorldZoneIdRestriction);
+        }
+
+        private bool MeetsAutoActivationZoneRestriction(ChallengeEntry entry)
+        {
+            if (entry.WorldZoneIdRestriction == 0u)
+                return true;
+
+            if (player.Zone == null)
+                return false;
+
+            return IsZoneOrDescendantOfRestriction(player.Zone, entry.WorldZoneIdRestriction)
+                || IsRestrictionDescendantOfZone(player.Zone, entry.WorldZoneIdRestriction)
+                || MatchesReviewedRuntimeZoneBridge(entry.WorldZoneIdRestriction);
+        }
+
+        private bool MatchesReviewedRuntimeZoneBridge(uint restrictionId)
+        {
+            uint worldId = player.Map?.Entry?.Id ?? 0u;
+            uint runtimeZoneId = player.Zone?.Id ?? 0u;
+            if (!ReviewedRuntimeChallengeZoneBridges.TryGetValue((worldId, runtimeZoneId), out uint bridgedWorldZoneId))
+                return false;
+
+            if (restrictionId == bridgedWorldZoneId)
+                return true;
+
+            WorldZoneEntry restrictedZone = gameTableManager.WorldZone?.GetEntry(restrictionId);
+            return restrictedZone != null && ZoneLineageContains(restrictedZone, bridgedWorldZoneId);
+        }
+
+        private bool IsZoneOrDescendantOfRestriction(WorldZoneEntry zone, uint restrictionId)
+        {
+            return ZoneLineageContains(zone, restrictionId);
+        }
+
+        private bool IsRestrictionDescendantOfZone(WorldZoneEntry zone, uint restrictionId)
+        {
+            WorldZoneEntry restrictedZone = gameTableManager.WorldZone?.GetEntry(restrictionId);
+            return restrictedZone != null && ZoneLineageContains(restrictedZone, zone.Id);
+        }
+
+        private bool ZoneLineageContains(WorldZoneEntry zone, uint expectedZoneId)
+        {
+            if (zone == null || expectedZoneId == 0u)
+                return false;
+
+            var visitedZoneIds = new HashSet<uint>();
+            WorldZoneEntry current = zone;
+            while (current != null && visitedZoneIds.Add(current.Id))
+            {
+                if (current.Id == expectedZoneId)
+                    return true;
+
+                if (current.ParentZoneId == 0u)
+                    return false;
+
+                current = gameTableManager.WorldZone?.GetEntry(current.ParentZoneId);
+            }
+
+            return false;
         }
 
         private bool HasCooldownType(uint challengeId)
@@ -416,6 +503,15 @@ namespace NexusForever.Game.Challenges
 
         internal void TryAdvanceCombatKill(uint creatureId)
         {
+            if (TryAdvanceActiveCombatKill(creatureId))
+                return;
+
+            TryAutoActivateCombatKill(creatureId);
+        }
+
+        private bool TryAdvanceActiveCombatKill(uint creatureId)
+        {
+            bool advanced = false;
             foreach ((ushort challengeId, ChallengeRuntimeState state) in activeChallenges)
             {
                 if (!state.Activated)
@@ -425,23 +521,101 @@ namespace NexusForever.Game.Challenges
                 if (entry == null || entry.ChallengeTypeEnum != (uint)ChallengeType.Combat)
                     continue;
 
-                if (!MatchesCombatTarget(entry, creatureId))
+                if (!MatchesChallengeTarget(entry, creatureId))
+                    continue;
+
+                if (TryAdvanceProgress(challengeId))
+                    advanced = true;
+            }
+
+            return advanced;
+        }
+
+        private void TryAutoActivateCombatKill(uint creatureId)
+        {
+            if (creatureId == 0u)
+                return;
+
+            if (HasActiveChallengeOfType((uint)ChallengeType.Combat))
+                return;
+
+            if (CountActivatedChallenges() >= RetailCertainRules.MaxConcurrentActiveChallenges)
+                return;
+
+            foreach (ChallengeEntry entry in gameTableManager.Challenge?.Entries ?? [])
+            {
+                if (entry.Id > ushort.MaxValue)
+                    continue;
+
+                if (entry.ChallengeTypeEnum != (uint)ChallengeType.Combat)
+                    continue;
+
+                if (!HasAutoActivateOnProgressFlag(entry))
+                    continue;
+
+                ushort challengeId = (ushort)entry.Id;
+                if (activeChallenges.TryGetValue(challengeId, out ChallengeRuntimeState existing)
+                    && (existing.Activated || existing.OnCooldown))
+                    continue;
+
+                if (!MatchesChallengeTarget(entry, creatureId))
+                    continue;
+
+                if (!MeetsAutoActivationZoneRestriction(entry))
+                    continue;
+
+                ActivateChallenge(challengeId);
+                TryAdvanceProgress(challengeId);
+                return;
+            }
+        }
+
+        private static bool HasAutoActivateOnProgressFlag(ChallengeEntry entry)
+        {
+            return (entry.ChallengeFlags & AutoActivateOnProgressFlag) != 0u;
+        }
+
+        internal void TryAdvanceActivationTarget(uint creatureId)
+        {
+            foreach ((ushort challengeId, ChallengeRuntimeState state) in activeChallenges)
+            {
+                if (!state.Activated)
+                    continue;
+
+                ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(challengeId);
+                if (entry == null || !IsActivationChallengeType(entry.ChallengeTypeEnum))
+                    continue;
+
+                if (!MatchesChallengeTarget(entry, creatureId))
                     continue;
 
                 TryAdvanceProgress(challengeId);
             }
         }
 
-        private bool MatchesCombatTarget(ChallengeEntry entry, uint creatureId)
+        private static bool IsActivationChallengeType(uint challengeType)
+        {
+            return challengeType == (uint)ChallengeType.Ability
+                || challengeType == (uint)ChallengeType.ChecklistActivate;
+        }
+
+        private bool MatchesChallengeTarget(ChallengeEntry entry, uint creatureId)
         {
             if (entry.Target == 0u)
-                return false;
+                return MatchesMappedChallengeCreatureTarget(entry, creatureId);
 
             if (entry.Target == creatureId)
                 return true;
 
             TargetGroupEntry targetGroup = gameTableManager.TargetGroup?.GetEntry(entry.Target);
-            return TargetGroupContainsCreature(targetGroup, creatureId, new HashSet<uint>());
+            return TargetGroupContainsCreature(targetGroup, creatureId, new HashSet<uint>())
+                || MatchesMappedChallengeCreatureTarget(entry, creatureId);
+        }
+
+        private static bool MatchesMappedChallengeCreatureTarget(ChallengeEntry entry, uint creatureId)
+        {
+            return MappedChallengeCreatureTargets.TryGetValue(entry.Id, out uint[] mappedCreatureIds)
+                && mappedCreatureIds.Contains(creatureId);
         }
 
         private bool TargetGroupContainsCreature(TargetGroupEntry entry, uint creatureId, ISet<uint> visitedTargetGroups)
@@ -469,7 +643,7 @@ namespace NexusForever.Game.Challenges
             }
         }
 
-        internal bool TryAdvanceProgress(ushort challengeId, uint progress = 1u)
+        public bool TryAdvanceProgress(ushort challengeId, uint progress = 1u)
         {
             if (!activeChallenges.TryGetValue(challengeId, out ChallengeRuntimeState state) || !state.Activated)
                 return false;
@@ -517,8 +691,48 @@ namespace NexusForever.Game.Challenges
             state.CompletionCount++;
             MarkDirty((ushort)state.ChallengeId);
             SendResult((ushort)state.ChallengeId, ChallengeResult.Completed, (int)state.LastRewardTier);
+            GrantRewardTrackItem(entry, state.LastRewardTier);
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.CompleteChallenge, 0u, 1u);
             SendChallengeUpdate();
+        }
+
+        private void GrantRewardTrackItem(ChallengeEntry entry, uint achievedTier)
+        {
+            if (entry.RewardTrackId == 0u || achievedTier >= 32u || player.Inventory == null)
+                return;
+
+            RewardTrackEntry rewardTrack = gameTableManager.RewardTrack?.GetEntry(entry.RewardTrackId);
+            if (rewardTrack == null || gameTableManager.RewardTrackRewards?.Entries == null)
+                return;
+
+            uint rewardPointFlag = 1u << (int)achievedTier;
+            RewardTrackRewardsEntry reward = gameTableManager.RewardTrackRewards.Entries
+                .Where(r => r.RewardTrackId == rewardTrack.Id && (r.RewardPointFlags & rewardPointFlag) != 0u)
+                .OrderBy(r => r.Id)
+                .FirstOrDefault();
+            if (reward == null)
+                return;
+
+            if (TryGrantRewardTrackChoice(reward.RewardTrackRewardTypeEnum00, reward.RewardChoiceId00, reward.RewardChoiceCount00))
+                return;
+
+            if (TryGrantRewardTrackChoice(reward.RewardTrackRewardTypeEnum01, reward.RewardChoiceId01, reward.RewardChoiceCount01))
+                return;
+
+            TryGrantRewardTrackChoice(reward.RewardTrackRewardTypeEnum02, reward.RewardChoiceId02, reward.RewardChoiceCount02);
+        }
+
+        private bool TryGrantRewardTrackChoice(uint rewardType, uint choiceId, uint count)
+        {
+            if (rewardType != RewardTrackItemRewardType || choiceId == 0u)
+                return false;
+
+            player.Inventory.ItemCreate(
+                InventoryLocation.Inventory,
+                choiceId,
+                count == 0u ? 1u : count,
+                ItemUpdateReason.Challenge);
+            return true;
         }
 
         private uint[] GetTierGoalCounts(ChallengeEntry entry)
