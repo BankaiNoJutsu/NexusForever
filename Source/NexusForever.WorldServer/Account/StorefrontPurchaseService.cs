@@ -398,7 +398,7 @@ namespace NexusForever.WorldServer.Account
                     return false;
                 }
 
-                if (entry.AccountCurrencyEnum != 0u && !TryAddDirectCurrencyGrant(itemData, entry, plan, out reason))
+                if (entry.AccountCurrencyEnum != 0u && !TryAddDirectCurrencyGrant(gameTableManager, itemData, entry, plan, out reason))
                 {
                     error = StoreError.CannotUseOffer;
                     return false;
@@ -465,6 +465,7 @@ namespace NexusForever.WorldServer.Account
         }
 
         private static bool TryAddDirectCurrencyGrant(
+            IGameTableManager gameTableManager,
             IOfferItemData itemData,
             AccountItemEntry entry,
             DirectAccountGrantPlan plan,
@@ -472,8 +473,8 @@ namespace NexusForever.WorldServer.Account
         {
             reason = string.Empty;
 
-            var currencyType = (AccountCurrencyType)entry.AccountCurrencyEnum;
-            if (!Enum.IsDefined(typeof(AccountCurrencyType), currencyType) || entry.AccountCurrencyAmount == 0ul)
+            AccountCurrencyTypeEntry currencyEntry = gameTableManager?.AccountCurrencyType?.GetEntry(entry.AccountCurrencyEnum);
+            if (currencyEntry == null || entry.AccountCurrencyAmount == 0ul)
             {
                 reason = $"account item {itemData.ItemId} has invalid account currency grant";
                 return false;
@@ -486,6 +487,7 @@ namespace NexusForever.WorldServer.Account
             }
 
             ulong amount = entry.AccountCurrencyAmount * itemData.Amount;
+            var currencyType = (AccountCurrencyType)currencyEntry.Id;
             if (plan.CurrencyGrants.TryGetValue(currencyType, out ulong pendingAmount))
             {
                 if (ulong.MaxValue - pendingAmount < amount)

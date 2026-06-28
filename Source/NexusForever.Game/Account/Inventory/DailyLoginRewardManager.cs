@@ -74,7 +74,7 @@ namespace NexusForever.Game.Account.Inventory
         public void SendDailyLoginUpdate()
         {
             RefreshDayCounters();
-            account.Session.EnqueueMessageEncrypted(BuildUpdatePacket());
+            SendDailyLoginUpdatePacket();
         }
 
         public AccountOperationResult TryClaimReward()
@@ -82,7 +82,10 @@ namespace NexusForever.Game.Account.Inventory
             RefreshDayCounters();
 
             if (rewardsAvailable == 0u)
+            {
+                SendDailyLoginUpdatePacket();
                 return AccountOperationResult.AlreadyClaimed;
+            }
 
             DailyLoginRewardEntry rewardEntry = GetNextClaimableReward();
             if (rewardEntry == null || rewardEntry.RewardObjectValue == 0u)
@@ -99,7 +102,7 @@ namespace NexusForever.Game.Account.Inventory
             lastClaimUtc        = DateTime.UtcNow;
             dirty               = true;
 
-            account.Session.EnqueueMessageEncrypted(BuildUpdatePacket());
+            SendDailyLoginUpdatePacket();
             return AccountOperationResult.Ok;
         }
 
@@ -157,6 +160,11 @@ namespace NexusForever.Game.Account.Inventory
                 FloatValue = NextRewardDayDuration,
                 UInt3Value = premiumKeyStatus
             };
+        }
+
+        private void SendDailyLoginUpdatePacket()
+        {
+            account.Session.EnqueueMessageEncrypted(BuildUpdatePacket());
         }
 
         private uint GetClaimableRewardCount()

@@ -327,6 +327,76 @@ public class AccountItemHandlerTests
     }
 
     [Fact]
+    public void TakeItem_AccountCurrencyGrant_UsesAccountCurrencyTypeTableForValidIds()
+    {
+        const uint tableBackedCurrencyId = 20u;
+        GameTableManager gameTableManager = BuildGameTableProvider(
+            [
+                new AccountItemEntry
+                {
+                    Id                    = 905u,
+                    AccountCurrencyEnum   = tableBackedCurrencyId,
+                    AccountCurrencyAmount = 610ul
+                }
+            ],
+            [],
+            accountCurrencyTypes:
+            [
+                new AccountCurrencyTypeEntry
+                {
+                    Id = tableBackedCurrencyId
+                }
+            ]);
+
+        AccountInventoryManager manager = CreateAccountInventoryManager(
+            accountItemId: 905u,
+            out _,
+            out RecordingDispatchProxy<IAccountCurrencyManager> currencyProxy,
+            out _,
+            gameTableManager);
+
+        AccountOperationResult result = manager.TakeItem(null, 1ul);
+
+        Assert.Equal(AccountOperationResult.Ok, result);
+        RecordingDispatchProxy<IAccountCurrencyManager>.Invocation add =
+            Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+        Assert.Equal((AccountCurrencyType)tableBackedCurrencyId, add.Arguments[0]);
+        Assert.Equal(610ul, add.Arguments[1]);
+        Assert.Null(manager.GetItem(1ul));
+    }
+
+    [Fact]
+    public void TakeItem_AccountCurrencyGrantWithMissingCurrencyRow_ReturnsInvalidWithoutDeletingItem()
+    {
+        const uint tableBackedCurrencyId = 20u;
+        GameTableManager gameTableManager = BuildGameTableProvider(
+            [
+                new AccountItemEntry
+                {
+                    Id                    = 905u,
+                    AccountCurrencyEnum   = tableBackedCurrencyId,
+                    AccountCurrencyAmount = 610ul
+                }
+            ],
+            [],
+            accountCurrencyTypes: []);
+
+        AccountInventoryManager manager = CreateAccountInventoryManager(
+            accountItemId: 905u,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out RecordingDispatchProxy<IAccountCurrencyManager> currencyProxy,
+            out _,
+            gameTableManager);
+
+        AccountOperationResult result = manager.TakeItem(null, 1ul);
+
+        Assert.Equal(AccountOperationResult.InvalidAccountItem, result);
+        Assert.NotNull(manager.GetItem(1ul));
+        Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+        Assert.Empty(GetEncryptedMessages<ServerAccountItemDelete>(sessionProxy));
+    }
+
+    [Fact]
     public void TakeItem_GenericUnlockWithMissingUnlockSetTableReturnsInvalidWithoutDeletingItem()
     {
         GameTableManager gameTableManager = BuildGameTableProvider(
@@ -645,10 +715,12 @@ public class AccountItemHandlerTests
         AccountItemEntry[] accountItems,
         EntitlementEntry[] entitlements,
         GenericUnlockSetEntry[] genericUnlockSets = null,
-        GenericUnlockEntryEntry[] genericUnlockEntries = null)
+        GenericUnlockEntryEntry[] genericUnlockEntries = null,
+        AccountCurrencyTypeEntry[] accountCurrencyTypes = null)
     {
         var gameTableManager = (GameTableManager)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItem), CreateGameTable(accountItems));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountCurrencyType), CreateGameTable(accountCurrencyTypes ?? CreateDefaultAccountCurrencyTypeEntries()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItemCooldownGroup), CreateGameTable<AccountItemCooldownGroupEntry>());
         SetAutoProperty(gameTableManager, nameof(GameTableManager.DailyLoginReward), CreateGameTable<DailyLoginRewardEntry>());
         SetAutoProperty(gameTableManager, nameof(GameTableManager.Entitlement), CreateGameTable(entitlements));
@@ -664,6 +736,7 @@ public class AccountItemHandlerTests
     {
         var gameTableManager = (GameTableManager)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItem), CreateGameTable(accountItems));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountCurrencyType), CreateGameTable(CreateDefaultAccountCurrencyTypeEntries()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItemCooldownGroup), CreateGameTable<AccountItemCooldownGroupEntry>());
         SetAutoProperty(gameTableManager, nameof(GameTableManager.DailyLoginReward), CreateGameTable<DailyLoginRewardEntry>());
 
@@ -677,6 +750,17 @@ public class AccountItemHandlerTests
         SetAutoProperty(gameTableManager, nameof(GameTableManager.DailyLoginReward), CreateGameTable<DailyLoginRewardEntry>());
 
         return gameTableManager;
+    }
+
+    private static AccountCurrencyTypeEntry[] CreateDefaultAccountCurrencyTypeEntries()
+    {
+        return
+        [
+            new AccountCurrencyTypeEntry
+            {
+                Id = (uint)AccountCurrencyType.Omnibit
+            }
+        ];
     }
 
     private static AccountItemEntry CreateCharacterSlotAccountItemEntry()

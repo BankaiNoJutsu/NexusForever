@@ -25,6 +25,7 @@ namespace NexusForever.Game.Account.Inventory
 {
     public class AccountInventoryManager : IAccountInventoryManager
     {
+        private const string AccountCurrencyTypeTableName = "AccountCurrencyType.tbl";
         private const string EntitlementTableName = "Entitlement.tbl";
         private const string GenericUnlockSetTableName = "GenericUnlockSet.tbl";
         private const string GenericUnlockEntryTableName = "GenericUnlockEntry.tbl";
@@ -947,18 +948,30 @@ namespace NexusForever.Game.Account.Inventory
                 .Any(i => i.Info.Id == itemInfo.Id && i.StackCount < i.Info.Entry.MaxStackCount);
         }
 
-        private static bool TryAddAccountCurrencyGrant(AccountItemEntry entry, List<IAccountItemGrant> grants, out GenericError error)
+        private bool TryAddAccountCurrencyGrant(AccountItemEntry entry, List<IAccountItemGrant> grants, out GenericError error)
         {
             error = GenericError.Ok;
 
-            var currencyType = (AccountCurrencyType)entry.AccountCurrencyEnum;
-            if (!Enum.IsDefined(typeof(AccountCurrencyType), currencyType) || entry.AccountCurrencyAmount == 0ul)
+            AccountCurrencyTypeEntry currencyEntry = gameTableManager.AccountCurrencyType?.GetEntry(entry.AccountCurrencyEnum);
+            if (currencyEntry == null)
+            {
+                ReportMissingAccountItemStaticData(
+                    gameTableManager.AccountCurrencyType == null,
+                    AccountCurrencyTypeTableName,
+                    entry.AccountCurrencyEnum,
+                    nameof(TryAddAccountCurrencyGrant),
+                    $"accountItemId={entry.Id}");
+                error = GenericError.ItemBadStaticData;
+                return false;
+            }
+
+            if (entry.AccountCurrencyAmount == 0ul)
             {
                 error = GenericError.ItemBadStaticData;
                 return false;
             }
 
-            grants.Add(new AccountCurrencyGrant(currencyType, entry.AccountCurrencyAmount));
+            grants.Add(new AccountCurrencyGrant((AccountCurrencyType)currencyEntry.Id, entry.AccountCurrencyAmount));
             return true;
         }
 

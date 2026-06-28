@@ -474,10 +474,22 @@ public class FortuneSessionManagerTests
     {
         var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItem), CreateGameTable(accountItems));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountCurrencyType), CreateGameTable(CreateDefaultAccountCurrencyTypeEntries()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItemCooldownGroup), CreateGameTable<AccountItemCooldownGroupEntry>());
         SetAutoProperty(gameTableManager, nameof(GameTableManager.DailyLoginReward), CreateGameTable<DailyLoginRewardEntry>());
 
         return gameTableManager;
+    }
+
+    private static AccountCurrencyTypeEntry[] CreateDefaultAccountCurrencyTypeEntries()
+    {
+        return
+        [
+            new AccountCurrencyTypeEntry
+            {
+                Id = (uint)AccountCurrencyType.FortuneCoin
+            }
+        ];
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

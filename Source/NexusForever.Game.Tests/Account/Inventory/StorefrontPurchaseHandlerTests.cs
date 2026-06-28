@@ -519,6 +519,50 @@ public class StorefrontPurchaseHandlerTests
     }
 
     [Fact]
+    public void DirectAccountGrantPlan_AccountCurrencyUsesAccountCurrencyTypeTableForValidIds()
+    {
+        const uint tableBackedCurrencyId = 20u;
+        IWorldSession session = CreateSession(out _);
+        IGlobalStorefrontManager storefrontManager = CreateStorefrontManager(
+            offerId: 1702u,
+            accountItemId: 903u,
+            priceCurrency: AccountCurrencyType.Protobuck,
+            price: 1f,
+            accountItemEntry: new AccountItemEntry
+            {
+                Id                    = 903u,
+                AccountCurrencyEnum   = tableBackedCurrencyId,
+                AccountCurrencyAmount = 610ul
+            });
+        IOfferItem offerItem = storefrontManager.GetStoreOfferItem(1702u);
+        IStorefrontPurchaseService service = CreateStorefrontPurchaseService(storefrontManager);
+        IGameTableManager gameTableManager = CreateGameTableManagerWithAccountCurrencies(
+        [
+            new AccountCurrencyTypeEntry
+            {
+                Id = tableBackedCurrencyId
+            }
+        ]);
+
+        bool result = service.TryBuildDirectAccountGrantPlan(
+            session,
+            gameTableManager,
+            offerItem,
+            requireDirectAccountGrant: true,
+            out DirectAccountGrantPlan plan,
+            out StoreError error,
+            out string reason);
+
+        Assert.True(result);
+        Assert.Equal(StoreError.GenericFail, error);
+        Assert.Equal(string.Empty, reason);
+        KeyValuePair<AccountCurrencyType, ulong> grant = Assert.Single(plan.CurrencyGrants);
+        Assert.Equal((AccountCurrencyType)tableBackedCurrencyId, grant.Key);
+        Assert.Equal(610ul, grant.Value);
+        Assert.Empty(plan.EntitlementGrants);
+    }
+
+    [Fact]
     public void AccountPurchase_DirectAccountGrantThrows_RollsBackGrantedCurrencyAndRefundsCharge()
     {
         IWorldSession session = CreateSession(
@@ -753,7 +797,22 @@ public class StorefrontPurchaseHandlerTests
 
     private static IGameTableManager CreateGameTableManager(params EntitlementEntry[] entitlementEntries)
     {
+        return CreateGameTableManagerWithAccountCurrencies(
+            [
+                new AccountCurrencyTypeEntry
+                {
+                    Id = (uint)AccountCurrencyType.Omnibit
+                }
+            ],
+            entitlementEntries);
+    }
+
+    private static IGameTableManager CreateGameTableManagerWithAccountCurrencies(
+        AccountCurrencyTypeEntry[] accountCurrencyTypeEntries,
+        params EntitlementEntry[] entitlementEntries)
+    {
         IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> gameTableProxy);
+        gameTableProxy.SetProperty(nameof(IGameTableManager.AccountCurrencyType), CreateGameTable(accountCurrencyTypeEntries));
         gameTableProxy.SetProperty(nameof(IGameTableManager.Entitlement), CreateGameTable(entitlementEntries));
         return gameTableManager;
     }

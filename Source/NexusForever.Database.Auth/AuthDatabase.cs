@@ -432,19 +432,34 @@ namespace NexusForever.Database.Auth
 
         public bool TryAddStorePurchaseHistory(AccountStorePurchaseHistoryModel model, DateTime sinceUtc, int maxPurchases)
         {
-            using var context = new AuthContext(config);
-            using var transaction = context.Database.BeginTransaction(IsolationLevel.Serializable);
+            using var strategyContext = new AuthContext(config);
+            var strategy = strategyContext.Database.CreateExecutionStrategy();
+            return strategy.Execute(() =>
+            {
+                using var context = new AuthContext(config);
+                using var transaction = context.Database.BeginTransaction(IsolationLevel.Serializable);
 
-            int purchaseCount = context.AccountStorePurchaseHistory
-                .AsNoTracking()
-                .Count(h => h.AccountId == model.AccountId && h.PurchasedUtc >= sinceUtc);
-            if (purchaseCount >= maxPurchases)
-                return false;
+                int purchaseCount = context.AccountStorePurchaseHistory
+                    .AsNoTracking()
+                    .Count(h => h.AccountId == model.AccountId && h.PurchasedUtc >= sinceUtc);
+                if (purchaseCount >= maxPurchases)
+                    return false;
 
-            context.AccountStorePurchaseHistory.Add(model);
-            context.SaveChanges();
-            transaction.Commit();
-            return true;
+                var attemptModel = new AccountStorePurchaseHistoryModel
+                {
+                    AccountId    = model.AccountId,
+                    OfferId      = model.OfferId,
+                    CurrencyId   = model.CurrencyId,
+                    Price        = model.Price,
+                    PurchasedUtc = model.PurchasedUtc
+                };
+
+                context.AccountStorePurchaseHistory.Add(attemptModel);
+                context.SaveChanges();
+                transaction.Commit();
+                model.Id = attemptModel.Id;
+                return true;
+            });
         }
 
         public List<AccountStorePurchaseHistoryModel> GetStorePurchaseHistory(uint accountId, int maxRows)
