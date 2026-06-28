@@ -440,11 +440,11 @@ if ($RaidEventSmoke) {
     }
 
     if ($WorldIds.Count -eq 0) {
-        $WorldIds = @(1333, 1462, 3032, 3040, 3041, 3044, 3045, 3094)
+        $WorldIds = @(1333, 1462, 3032, 3040, 3044, 3045, 3094)
     }
 
     if ($PublicEventIds.Count -eq 0) {
-        $PublicEventIds = @(157, 159, 595, 597, 605, 642, 679, 705)
+        $PublicEventIds = @(157, 159, 595, 597, 605, 679, 705)
     }
 
     if ($NegativeCases.Count -eq 0) {
@@ -457,7 +457,7 @@ if ($RaidEventSmoke) {
         )
     }
 
-    $raidEventNotes = 'LWS-110 through LWS-117 raid/event-instance smoke for Initialization Core Y-83, Red Moon Terror, Genetic Archives, Datascape, Ultimate Protogames raid, Shade''s Eve, Protostar SuperMall in the Sky, and Journey into OMNICore-1. Capture target sets, route/wing/room selection, triggers, doors/elevators/town gates, communicators, cinematics, encounter mechanics, cleanup, rewards, logs, screenshots/video, and negative cases before widening WIP scaffolds or replacing completion-only cinematic placeholders.'
+    $raidEventNotes = 'LWS-110 through LWS-117 raid/event-instance smoke for Initialization Core Y-83, Red Moon Terror, Genetic Archives, Datascape, Shade''s Eve, Protostar SuperMall in the Sky, and Journey into OMNICore-1. Capture target sets, route/wing/room selection, triggers, doors/elevators/town gates, communicators, cinematics, encounter mechanics, cleanup, rewards, logs, screenshots/video, and negative cases before widening WIP scaffolds or replacing completion-only cinematic placeholders.'
     if ([string]::IsNullOrWhiteSpace($Notes)) {
         $Notes = $raidEventNotes
     } else {
@@ -1416,7 +1416,6 @@ concrete runtime surface.
 | LWS-111 | Red Moon Terror | `3032` | `705` | Ish'amel/engineering timing, Laveka choreography, awakening/challenge mechanics, door/elevator movement, and raid smoke. |
 | LWS-112 | Genetic Archives | `1462` | `159` | Experiment X-89, Kuralak, Kuralak pillar, Ohmna, weekly/random encounter selection, boss choreography, communicator and cinematic timing, door/elevator movement, and raid smoke. |
 | LWS-113 | Datascape | `1333` | `157` | Hydroflux and Mnemesis mechanics, communicator and cinematic timing, encounter choreography, door/trigger placement, exact wing-order proof, challenge mechanics, and raid smoke. |
-| LWS-114 | Ultimate Protogames raid | `3041` | `642` | Downsizer challenge semantics, boss mechanics, rewards, and raid smoke. |
 | LWS-115 | Shade's Eve | `3044` | `597` | Gather-ring cleanup, town-gate opening, communicator/cinematic timing, real cinematic payload, exact vote follow-up, Etty/fountain seed interaction smoke, and event smoke. |
 | LWS-116 | Protostar SuperMall in the Sky | `3094` | `679` | Store/room routing, encounter logic, real cinematic payload, rewards, and full route smoke. |
 | LWS-117 | Journey into OMNICore-1 | `3045` | `605` | Real cinematic actor/camera/text/timing payload, event routing, rewards, and encounter behavior before replacing the immediate completion placeholder. |
@@ -1544,10 +1543,9 @@ Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $RepoRoot '.nexusforever-r
 Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $RepoRoot 'Source\NexusForever.WorldServer\bin\Debug\net10.0\logs\NexusForever.WorldServer_*.log')"
 Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $RepoRoot '.nexusforever-runtime\logs\NexusForever_Group.stdout.log')"
 Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $RepoRoot '.nexusforever-runtime\logs\NexusForever_Friendship.stdout.log')"
-if (![string]::IsNullOrWhiteSpace($ClientDirectory)) {
-    $clientRoot = Split-Path -Parent $ClientDirectory
-    Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $clientRoot 'Logs\*.txt')"
-    Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $clientRoot 'Errors\WildStar64*.log')"
+if (![string]::IsNullOrWhiteSpace($clientLogRoot)) {
+    Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $clientLogRoot 'Logs\*.txt')"
+    Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $clientLogRoot 'Errors\WildStar64*.log')"
 }
 Write-Host ''
 Write-Host 'Bundle helpers:' -ForegroundColor Yellow

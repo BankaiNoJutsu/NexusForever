@@ -7,6 +7,46 @@ from pathlib import Path
 
 
 class BlockerEvidenceHarnessPresetTests(unittest.TestCase):
+    def test_client_log_tail_uses_install_root_when_client_directory_contains_client64(self) -> None:
+        repo_root = _find_repo_root()
+        script = repo_root / "Decomp" / "Analysis" / "Start-BlockerEvidenceHarness.ps1"
+        output_root = Path(tempfile.mkdtemp(prefix="nf-blocker-harness-"))
+        client_root = Path(tempfile.mkdtemp(prefix="nf-wildstar-root-"))
+        try:
+            (client_root / "Client64").mkdir()
+
+            command = [
+                "powershell",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(script),
+                "-RepoRoot",
+                str(repo_root),
+                "-BundleName",
+                "client-log-root",
+                "-ClientDirectory",
+                str(client_root),
+                "-CreateBundleOnly",
+                "-OutputRoot",
+                str(output_root),
+            ]
+            result = subprocess.run(command, cwd=repo_root, check=True, capture_output=True, text=True)
+            bundles = [path for path in output_root.iterdir() if path.is_dir()]
+
+            self.assertEqual(1, len(bundles))
+            self.assertIn(str(client_root / "Logs" / "*.txt"), result.stdout)
+            self.assertIn(str(client_root / "Errors" / "WildStar64*.log"), result.stdout)
+
+            tail_script = (bundles[0] / "Tail-BlockerEvidenceLogs.ps1").read_text(encoding="utf-8-sig")
+            collect_script = (bundles[0] / "Collect-BlockerEvidenceBundle.ps1").read_text(encoding="utf-8-sig")
+            self.assertIn(str(client_root), tail_script)
+            self.assertIn(str(client_root), collect_script)
+        finally:
+            shutil.rmtree(output_root, ignore_errors=True)
+            shutil.rmtree(client_root, ignore_errors=True)
+
     def test_worlddb_special_blocker_presets_create_required_bundles(self) -> None:
         repo_root = _find_repo_root()
         script = repo_root / "Decomp" / "Analysis" / "Start-BlockerEvidenceHarness.ps1"
@@ -136,10 +176,10 @@ class BlockerEvidenceHarnessPresetTests(unittest.TestCase):
                 "RaidEventSmoke",
                 "LWS-110-117-raid-event-instances",
                 "lws-110-117-raid-event-targets.md",
-                [1333, 1462, 3032, 3040, 3041, 3044, 3045, 3094],
+                [1333, 1462, 3032, 3040, 3044, 3045, 3094],
                 [],
                 ["Datascape", "Journey into OMNICore-1"],
-                [157, 159, 595, 597, 605, 642, 679, 705],
+                [157, 159, 595, 597, 605, 679, 705],
             ),
         ]
 

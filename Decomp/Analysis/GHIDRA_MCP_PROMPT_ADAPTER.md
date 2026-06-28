@@ -29,6 +29,25 @@ mcp__ghidra_mcp.load_tool_group(group="function")
 Load other groups only when needed, such as `datatype`, data-analysis, dynamic
 analysis, or debugger groups.
 
+For live `debugger_*` MCP proxy tools, start the standalone debugger bridge in a
+separate PowerShell session before attaching:
+
+```powershell
+I:\ghidra_12.1_PUBLIC\Start-GhidraDebuggerBridge.ps1
+```
+
+The bridge listens on `http://127.0.0.1:8099` by default. For first-time setup,
+create the local debugger venv and install the optional Windows dependencies:
+
+```powershell
+I:\ghidra_12.1_PUBLIC\Start-GhidraDebuggerBridge.ps1 -CreateVenv -InstallRequirements -ValidateOnly
+```
+
+If the optional `debugger` Python package was not copied with the Ghidra MCP
+checkout, pass `-GhidraMcpSourceRoot <path-to-ghidra-mcp>`. When the local
+`.venv-ghidra-debugger` exists, the launcher uses it automatically unless a
+specific `-Python` is supplied.
+
 ## Pick The Prompt
 
 | Nexus task | Upstream prompt | Nexus adaptation |
