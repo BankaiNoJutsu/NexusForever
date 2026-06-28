@@ -10,16 +10,20 @@ namespace NexusForever.Script.Instance
     {
         protected ICreatureEntity entity;
 
-        private readonly uint objectiveId;
+        private readonly uint[] objectiveIds;
+        private bool credited;
 
         protected PublicEventObjectiveCreditEntityScript(
             IFactory<ISpellParameters> spellParametersFactory,
             IGameTableManager gameTableManager,
-            uint objectiveId)
+            params uint[] objectiveIds)
         {
             _ = spellParametersFactory;
             _ = gameTableManager;
-            this.objectiveId = objectiveId;
+            if (objectiveIds.Length == 0)
+                throw new ArgumentException("At least one public event objective id is required.", nameof(objectiveIds));
+
+            this.objectiveIds = objectiveIds;
         }
 
         public virtual void OnLoad(ICreatureEntity owner)
@@ -32,7 +36,12 @@ namespace NexusForever.Script.Instance
         /// </summary>
         public virtual void OnDeath()
         {
-            entity.Map.PublicEventManager.UpdateObjective(objectiveId, 1);
+            if (credited)
+                return;
+
+            credited = true;
+            foreach (uint objectiveId in objectiveIds)
+                entity.Map.PublicEventManager.UpdateObjective(objectiveId, 1);
         }
     }
 }

@@ -9,9 +9,11 @@ namespace NexusForever.Script.Instance
     public abstract class EventBaseContentMapScript : IContentMapScript, IOwnedScript<IContentMapInstance>
     {
         public abstract uint PublicEventId { get; }
+        protected virtual IEnumerable<uint> AdditionalPublicEventIds => [];
 
         protected IContentMapInstance map;
         protected IPublicEvent publicEvent;
+        private readonly List<IPublicEvent> additionalPublicEvents = [];
 
         /// <summary>
         /// Invoked when <see cref="IContentMapInstance"/> is loaded.
@@ -20,6 +22,36 @@ namespace NexusForever.Script.Instance
         {
             map         = owner;
             publicEvent = map.PublicEventManager.CreateEvent(PublicEventId);
+            var createdEventIds = new HashSet<uint> { PublicEventId };
+
+            foreach (uint additionalPublicEventId in AdditionalPublicEventIds)
+                CreateAdditionalPublicEvent(additionalPublicEventId, createdEventIds);
+
+            CreateChildPublicEvents(publicEvent, createdEventIds);
+        }
+
+        private void CreateChildPublicEvents(IPublicEvent owner, ISet<uint> createdEventIds)
+        {
+            if (owner?.ChildEventIds == null)
+                return;
+
+            foreach (uint childEventId in owner.ChildEventIds)
+                CreateAdditionalPublicEvent(childEventId, createdEventIds);
+        }
+
+        private IPublicEvent CreateAdditionalPublicEvent(uint publicEventId, ISet<uint> createdEventIds)
+        {
+            if (publicEventId == 0u || !createdEventIds.Add(publicEventId))
+                return null;
+
+            IPublicEvent additionalPublicEvent = map.PublicEventManager.GetEvent(publicEventId)
+                ?? map.PublicEventManager.CreateEvent(publicEventId);
+            if (additionalPublicEvent == null)
+                return null;
+
+            additionalPublicEvents.Add(additionalPublicEvent);
+            CreateChildPublicEvents(additionalPublicEvent, createdEventIds);
+            return additionalPublicEvent;
         }
 
         /// <summary>
@@ -30,7 +62,9 @@ namespace NexusForever.Script.Instance
             if (entity is not IPlayer player)
                 return;
 
-            publicEvent.JoinEvent(player, PublicEventTeam.PublicTeam);
+            publicEvent?.JoinEvent(player, PublicEventTeam.PublicTeam);
+            foreach (IPublicEvent additionalPublicEvent in additionalPublicEvents)
+                additionalPublicEvent.JoinEvent(player, PublicEventTeam.PublicTeam);
         }
 
         /// <summary>
@@ -49,7 +83,9 @@ namespace NexusForever.Script.Instance
         /// </summary>
         public void OnMatchFinish()
         {
-            publicEvent.Finish(PublicEventTeam.PublicTeam);
+            publicEvent?.Finish(PublicEventTeam.PublicTeam);
+            foreach (IPublicEvent additionalPublicEvent in additionalPublicEvents)
+                additionalPublicEvent.Finish(PublicEventTeam.PublicTeam);
         }
     }
 }
