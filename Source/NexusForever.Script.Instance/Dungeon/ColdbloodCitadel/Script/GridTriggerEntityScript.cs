@@ -1,6 +1,5 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Trigger;
-using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
 
@@ -9,6 +8,8 @@ namespace NexusForever.Script.Instance.Dungeon.ColdbloodCitadel.Script
     [ScriptFilterOwnerId(8656)]
     public class GridTriggerEntityScript : IGridEntityScript, IOwnedScript<IGridTriggerEntity>
     {
+        private bool entered;
+
         private IGridTriggerEntity trigger;
 
         /// <summary>
@@ -27,7 +28,14 @@ namespace NexusForever.Script.Instance.Dungeon.ColdbloodCitadel.Script
             if (entity is not IPlayer)
                 return;
 
-            trigger.Map.PublicEventManager.UpdateObjective(PublicEventObjectiveType.Script, 8656, 1);
+            if (entered)
+                return;
+
+            entered = true;
+            // Build 16042 objective 5326 is ParticipantsInTriggerVolume with
+            // objectId 8656. Credit the entry objective directly rather than
+            // classifying the trigger as a Script objective.
+            trigger.Map.PublicEventManager.UpdateObjective(PublicEventObjective.FindThePellAttackingColdbloodCitadel, 1);
         }
     }
 }
