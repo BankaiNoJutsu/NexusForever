@@ -91,6 +91,26 @@ public class CombatAITests
     }
 
     [Fact]
+    public void DefaultCombatProfileProvider_WhenArtillerybotUsesManualOverride_ReturnsSummonerAssistPolicy()
+    {
+        ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out RecordingDispatchProxy<ICreatureEntity> creatureProxy);
+        creatureProxy.SetProperty(nameof(ICreatureEntity.CreatureId), 42683u);
+
+        CombatProfileResolution resolution = DefaultCombatProfileProvider.Instance.GetResolution(creature);
+
+        Assert.Equal(CombatProfileResolutionSource.ManualOverride, resolution.Source);
+        Assert.Equal("engineer-artillerybot", resolution.ProfileId);
+        Assert.Equal(new uint[] { 34521u }, resolution.Profile.AutoAttackSpell4Ids);
+        Assert.True(resolution.Profile.AllowNonPlayerTargets);
+        Assert.True(resolution.Profile.AssistSummoner);
+        Assert.Equal(35f, resolution.Profile.SummonerAssistRange);
+        Assert.Equal(4f, resolution.Profile.SummonerFollowDistance);
+        Assert.Equal(8f, resolution.Profile.SummonerFollowRepathDistance);
+        Assert.Equal(27002u, resolution.Profile.SummonerTierSourceBaseSpell4Id);
+        Assert.Equal(20491u, resolution.Profile.SummonerTieredAutoAttackBaseSpell4Id);
+    }
+
+    [Fact]
     public void OnLoad_WhenStarterTutorialExileLaneCreatureLoads_NormalizesToDominionCombatFaction()
     {
         CombatHarness harness = CreateHarness(
@@ -148,14 +168,14 @@ public class CombatAITests
     {
         CombatProfileAudit audit = DefaultCombatProfileProvider.Instance.GetAudit();
 
-        Assert.Equal(2, audit.ManualOverrideCreatureCount);
+        Assert.Equal(4, audit.ManualOverrideCreatureCount);
         Assert.Equal(185, audit.ReviewedKitMappingCreatureCount);
         Assert.Equal(0, audit.ActionDerivedProfileCount);
         Assert.Equal(0, audit.ActionIgnoredRuleRowCount);
         Assert.Equal(0, audit.ActionRejectedRuleRowCount);
         Assert.Equal(0, audit.ActionUnknownRowCount);
         Assert.Equal(0, audit.ActionMissingSpellRowCount);
-        Assert.Equal(187, audit.MappedCreatureCount);
+        Assert.Equal(189, audit.MappedCreatureCount);
         Assert.Equal(0, audit.UnmappedCreatureCount);
     }
 
@@ -189,6 +209,20 @@ public class CombatAITests
         Assert.Equal(35f, profile.MinimumLeashRange);
         Assert.Equal(0u, profile.AggroSpell4Id);
         Assert.False(profile.AllowNonPlayerTargets);
+    }
+
+    [Fact]
+    public void DefaultCombatProfileProvider_WhenDominionUltrabotLoads_UsesQuestAreaLeash()
+    {
+        ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out RecordingDispatchProxy<ICreatureEntity> creatureProxy);
+        creatureProxy.SetProperty(nameof(ICreatureEntity.CreatureId), 12526u);
+
+        CombatProfileResolution resolution = DefaultCombatProfileProvider.Instance.GetResolution(creature);
+
+        Assert.Equal(CombatProfileResolutionSource.ReviewedKitMapping, resolution.Source);
+        Assert.Equal("northern-wilds-ultrabot", resolution.KitId);
+        Assert.Equal(80f, resolution.Profile.MinimumLeashRange);
+        Assert.False(resolution.Profile.Stationary);
     }
 
     [Fact]
@@ -581,6 +615,10 @@ public class CombatAITests
         Assert.False(profile.Stationary);
         Assert.False(profile.TraceCombat);
         Assert.False(profile.AllowNonPlayerTargets);
+        Assert.False(profile.AssistSummoner);
+        Assert.Equal(0f, profile.SummonerAssistRange);
+        Assert.Equal(0f, profile.SummonerFollowDistance);
+        Assert.Equal(0f, profile.SummonerFollowRepathDistance);
         Assert.Empty(profile.SpecialAttacks);
     }
 
@@ -644,6 +682,80 @@ public class CombatAITests
 
         Assert.NotNull(harness.CreatureThreat.GetHostile(harness.Player.Guid));
         Assert.Null(allyThreat.GetHostile(harness.Player.Guid));
+    }
+
+    [Fact]
+    public void Update_WhenSummonedAssistProfileOwnerTargetsHostileCreature_AssistsOwnerTarget()
+    {
+        ICreatureEntity hostileCreature = CreateHostileCreature(400u, new Vector3(12f, 0f, 0f));
+        CombatProfile profile = CombatProfile.Default with
+        {
+            AllowNonPlayerTargets = true,
+            AssistSummoner = true,
+            SummonerAssistRange = 35f,
+            SummonerFollowDistance = 4f,
+            SummonerFollowRepathDistance = 8f
+        };
+        CombatHarness harness = CreateHarness(
+            new Vector3(10f, 0f, 0f),
+            extraInRange: [hostileCreature],
+            canAttack: unit => ReferenceEquals(unit, hostileCreature),
+            profileProvider: new FixedCombatProfileProvider(profile),
+            summonerGuid: 200u,
+            playerTargetGuid: hostileCreature.Guid);
+
+        harness.Script.Update(0.5d);
+
+        Assert.NotNull(harness.CreatureThreat.GetHostile(hostileCreature.Guid));
+        Assert.Equal(hostileCreature.Guid, harness.Creature.TargetGuid);
+    }
+
+    [Fact]
+    public void Update_WhenSummonedAssistProfileHostileTargetsOwner_AssistsOwnerAttacker()
+    {
+        ICreatureEntity hostileCreature = CreateHostileCreature(400u, new Vector3(12f, 0f, 0f), targetGuid: 200u);
+        CombatProfile profile = CombatProfile.Default with
+        {
+            AllowNonPlayerTargets = true,
+            AssistSummoner = true,
+            SummonerAssistRange = 35f,
+            SummonerFollowDistance = 4f,
+            SummonerFollowRepathDistance = 8f
+        };
+        CombatHarness harness = CreateHarness(
+            new Vector3(10f, 0f, 0f),
+            extraInRange: [hostileCreature],
+            canAttack: unit => ReferenceEquals(unit, hostileCreature),
+            profileProvider: new FixedCombatProfileProvider(profile),
+            summonerGuid: 200u);
+
+        harness.Script.Update(0.5d);
+
+        Assert.NotNull(harness.CreatureThreat.GetHostile(hostileCreature.Guid));
+        Assert.Equal(hostileCreature.Guid, harness.Creature.TargetGuid);
+    }
+
+    [Fact]
+    public void Update_WhenSummonedAssistProfileIdleAndOwnerMovesAway_FollowsOwner()
+    {
+        CombatProfile profile = CombatProfile.Default with
+        {
+            AssistSummoner = true,
+            SummonerFollowDistance = 4f,
+            SummonerFollowRepathDistance = 8f
+        };
+        CombatHarness harness = CreateHarness(
+            new Vector3(12f, 0f, 0f),
+            dispositionToPlayer: Disposition.Friendly,
+            profileProvider: new FixedCombatProfileProvider(profile),
+            summonerGuid: 200u);
+
+        harness.Script.Update(1d);
+
+        RecordingDispatchProxy<IMovementManager>.Invocation follow =
+            Assert.Single(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Follow)));
+        Assert.Same(harness.Player, follow.Arguments[0]);
+        Assert.Equal(4f, follow.Arguments[1]);
     }
 
     [Fact]
@@ -1013,7 +1125,11 @@ public class CombatAITests
         harness.Script.Update(0.5d);
         harness.Script.Update(1d);
 
-        RecordingDispatchProxy<ICreatureEntity>.Invocation autoAttack = Assert.Single(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.CastSpell)));
+        List<RecordingDispatchProxy<ICreatureEntity>.Invocation> casts = harness.CreatureProxy
+            .GetInvocations(nameof(ICreatureEntity.TryCastSpell))
+            .ToList();
+        Assert.Equal(2, casts.Count);
+        RecordingDispatchProxy<ICreatureEntity>.Invocation autoAttack = casts[1];
         Assert.Equal(777u, autoAttack.Arguments[0]);
     }
 
@@ -1061,7 +1177,11 @@ public class CombatAITests
         harness.Script.Update(0.1d);
         harness.Script.Update(1.5d);
 
-        RecordingDispatchProxy<ICreatureEntity>.Invocation autoAttack = Assert.Single(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.CastSpell)));
+        List<RecordingDispatchProxy<ICreatureEntity>.Invocation> casts = harness.CreatureProxy
+            .GetInvocations(nameof(ICreatureEntity.TryCastSpell))
+            .ToList();
+        Assert.Equal(2, casts.Count);
+        RecordingDispatchProxy<ICreatureEntity>.Invocation autoAttack = casts[1];
         Assert.Equal(779u, autoAttack.Arguments[0]);
     }
 
@@ -1103,8 +1223,11 @@ public class CombatAITests
         harness.CreatureProxy.SetProperty(nameof(ICreatureEntity.ActiveCCStateMask), 1u << (int)CCState.Interrupt);
         harness.Script.Update(1.5d);
 
-        Assert.Single(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.TryCastSpell)));
-        RecordingDispatchProxy<ICreatureEntity>.Invocation autoAttack = Assert.Single(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.CastSpell)));
+        List<RecordingDispatchProxy<ICreatureEntity>.Invocation> casts = harness.CreatureProxy
+            .GetInvocations(nameof(ICreatureEntity.TryCastSpell))
+            .ToList();
+        Assert.Equal(2, casts.Count);
+        RecordingDispatchProxy<ICreatureEntity>.Invocation autoAttack = casts[1];
         Assert.Equal(778u, autoAttack.Arguments[0]);
     }
 
@@ -1322,8 +1445,138 @@ public class CombatAITests
 
         harness.Script.Update(1.5d);
 
-        RecordingDispatchProxy<ICreatureEntity>.Invocation cast = Assert.Single(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.CastSpell)));
+        RecordingDispatchProxy<ICreatureEntity>.Invocation cast = Assert.Single(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.TryCastSpell)));
         Assert.Equal(spell4Id, cast.Arguments[0]);
+    }
+
+    [Fact]
+    public void Update_WhenArtillerybotSummonerHasTier2_UsesTier2AutoAttack()
+    {
+        const uint summonBaseSpell4Id = 27002u;
+        const uint autoAttackBaseSpell4Id = 20491u;
+        const uint tier1AutoAttackSpell4Id = 34521u;
+        const uint tier2AutoAttackSpell4Id = 56257u;
+
+        ICreatureEntity target = CreateHostileCreature(300u, new Vector3(5f, 0f, 0f));
+        var profileProvider = new FixedCombatProfileProvider(CombatProfile.Default with
+        {
+            AutoAttackSpell4Ids = [tier1AutoAttackSpell4Id],
+            AllowNonPlayerTargets = true,
+            SummonerTierSourceBaseSpell4Id = summonBaseSpell4Id,
+            SummonerTieredAutoAttackBaseSpell4Id = autoAttackBaseSpell4Id
+        });
+        CombatHarness harness = CreateHarness(
+            Vector3.Zero,
+            targetSelected: true,
+            extraInRange: [target],
+            creatureId: 42683u,
+            canAttack: unit => unit.Guid == target.Guid,
+            initialTargetGuid: target.Guid,
+            profileProvider: profileProvider,
+            autoAttacks: [tier1AutoAttackSpell4Id],
+            spell4Entries:
+            [
+                new Spell4Entry
+                {
+                    Id                    = tier1AutoAttackSpell4Id,
+                    Spell4BaseIdBaseSpell = autoAttackBaseSpell4Id,
+                    TierIndex             = 1u,
+                    TargetMaxRange        = 10f
+                },
+                new Spell4Entry
+                {
+                    Id                    = tier2AutoAttackSpell4Id,
+                    Spell4BaseIdBaseSpell = autoAttackBaseSpell4Id,
+                    TierIndex             = 2u,
+                    TargetMaxRange        = 10f
+                }
+            ],
+            summonerGuid: 200u);
+
+        ISpellManager spellManager = RecordingDispatchProxy<ISpellManager>.Create(out RecordingDispatchProxy<ISpellManager> spellManagerProxy);
+        ICharacterSpell summonSpell = RecordingDispatchProxy<ICharacterSpell>.Create(out _);
+        spellManagerProxy.SetMethodHandler(nameof(ISpellManager.GetSpell), args =>
+            (uint)args[0] == summonBaseSpell4Id ? summonSpell : null);
+        spellManagerProxy.SetMethodReturn(nameof(ISpellManager.GetSpellTier), (byte)2);
+        harness.PlayerProxy.SetProperty(nameof(IPlayer.SpellManager), spellManager);
+
+        harness.Script.Update(1.5d);
+
+        RecordingDispatchProxy<ICreatureEntity>.Invocation cast = Assert.Single(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.TryCastSpell)));
+        Assert.Equal(tier2AutoAttackSpell4Id, cast.Arguments[0]);
+    }
+
+    [Fact]
+    public void Update_WhenAutoAttackCastReentersAi_DoesNotCastAgainInSameStack()
+    {
+        const uint spell4Id = 777u;
+        CombatHarness harness = CreateHarness(
+            new Vector3(5f, 0f, 0f),
+            targetSelected: true,
+            autoAttacks: [spell4Id],
+            spell4Entries:
+            [
+                new Spell4Entry
+                {
+                    Id             = spell4Id,
+                    TargetMaxRange = 10f
+                }
+            ]);
+
+        bool reentered = false;
+        harness.CreatureProxy.SetMethodHandler(nameof(ICreatureEntity.TryCastSpell), _ =>
+        {
+            if (!reentered)
+            {
+                reentered = true;
+                harness.Script.Update(1.5d);
+            }
+
+            return CastResult.Ok;
+        });
+
+        harness.Script.Update(1.5d);
+
+        Assert.True(reentered);
+        RecordingDispatchProxy<ICreatureEntity>.Invocation cast = Assert.Single(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.TryCastSpell)));
+        Assert.Equal(spell4Id, cast.Arguments[0]);
+    }
+
+    [Fact]
+    public void Update_WhenAutoAttackCastIsRejected_DoesNotRotateAutoAttack()
+    {
+        const uint firstSpell4Id = 777u;
+        const uint secondSpell4Id = 778u;
+        CombatHarness harness = CreateHarness(
+            new Vector3(5f, 0f, 0f),
+            targetSelected: true,
+            autoAttacks: [firstSpell4Id, secondSpell4Id],
+            spell4Entries:
+            [
+                new Spell4Entry
+                {
+                    Id             = firstSpell4Id,
+                    TargetMaxRange = 10f
+                },
+                new Spell4Entry
+                {
+                    Id             = secondSpell4Id,
+                    TargetMaxRange = 10f
+                }
+            ]);
+
+        harness.CreatureProxy.SetMethodReturn(nameof(ICreatureEntity.TryCastSpell), CastResult.SpellAlreadyCasting);
+        harness.Script.Update(1.5d);
+
+        harness.CreatureProxy.SetMethodReturn(nameof(ICreatureEntity.TryCastSpell), CastResult.Ok);
+        harness.Script.Update(1.5d);
+
+        List<RecordingDispatchProxy<ICreatureEntity>.Invocation> casts = harness.CreatureProxy
+            .GetInvocations(nameof(ICreatureEntity.TryCastSpell))
+            .ToList();
+        Assert.Equal(2, casts.Count);
+        Assert.Equal(firstSpell4Id, casts[0].Arguments[0]);
+        Assert.Equal(firstSpell4Id, casts[1].Arguments[0]);
     }
 
     [Fact]
@@ -1346,7 +1599,7 @@ public class CombatAITests
 
         harness.Script.Update(1.5d);
 
-        Assert.Empty(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.CastSpell)));
+        Assert.Empty(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.TryCastSpell)));
     }
 
     [Fact]
@@ -1389,6 +1642,171 @@ public class CombatAITests
         Assert.False((bool)patrol.Arguments[3]);
     }
 
+    [Fact]
+    public void OnExitRange_WhenCombatTargetLeavesMovingRangeCheckButIsInsideLeash_DoesNotDropThreat()
+    {
+        CombatHarness harness = CreateHarness(
+            new Vector3(35f, 0f, 0f),
+            targetSelected: true,
+            creaturePosition: new Vector3(-20f, 0f, 0f),
+            leashPosition: Vector3.Zero);
+        harness.CreatureThreat.UpdateThreat(harness.Player, 10);
+        harness.CreatureProxy.Invocations.Clear();
+        harness.MovementProxy.Invocations.Clear();
+
+        harness.Script.OnExitRange(harness.Player);
+
+        Assert.NotNull(harness.CreatureThreat.GetHostile(harness.Player.Guid));
+        Assert.NotNull(harness.Player.ThreatManager.GetHostile(harness.Creature.Guid));
+        Assert.Equal(harness.Player.Guid, harness.Creature.TargetGuid);
+        Assert.Empty(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.SetTarget)));
+        Assert.Empty(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.ModifyHealth)));
+        Assert.Empty(harness.MovementProxy.GetInvocations(nameof(IMovementManager.LaunchPath)));
+        Assert.Empty(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Finalise)));
+    }
+
+    [Fact]
+    public void Update_WhenCurrentTargetTemporarilyMissingFromVisibleSetButStillOnMap_DoesNotDropThreat()
+    {
+        bool targetVisible = true;
+        CombatHarness harness = CreateHarness(
+            new Vector3(35f, 0f, 0f),
+            targetSelected: true,
+            creaturePosition: Vector3.Zero,
+            leashPosition: Vector3.Zero,
+            isVisible: _ => targetVisible);
+        harness.CreatureThreat.UpdateThreat(harness.Player, 10);
+        harness.CreatureProxy.Invocations.Clear();
+        harness.MovementProxy.Invocations.Clear();
+        harness.SessionProxy.Invocations.Clear();
+
+        targetVisible = false;
+        harness.Script.OnRemoveVisibleEntity(harness.Player);
+        harness.Script.Update(1d);
+
+        Assert.NotNull(harness.CreatureThreat.GetHostile(harness.Player.Guid));
+        Assert.NotNull(harness.Player.ThreatManager.GetHostile(harness.Creature.Guid));
+        Assert.Equal(harness.Player.Guid, harness.Creature.TargetGuid);
+        Assert.Empty(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.ModifyHealth)));
+        Assert.Empty(harness.MovementProxy.GetInvocations(nameof(IMovementManager.LaunchPath)));
+        Assert.Empty(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Finalise)));
+        Assert.Empty(harness.SessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+    }
+
+    [Fact]
+    public void Update_WhenCurrentTargetLeavesLeashBriefly_DoesNotDropThreat()
+    {
+        CombatHarness harness = CreateHarness(
+            new Vector3(55f, 0f, 0f),
+            targetSelected: true,
+            creaturePosition: Vector3.Zero,
+            leashPosition: Vector3.Zero);
+        harness.CreatureThreat.UpdateThreat(harness.Player, 10);
+        harness.CreatureProxy.Invocations.Clear();
+        harness.MovementProxy.Invocations.Clear();
+
+        harness.Script.Update(1d);
+
+        Assert.NotNull(harness.CreatureThreat.GetHostile(harness.Player.Guid));
+        Assert.NotNull(harness.Player.ThreatManager.GetHostile(harness.Creature.Guid));
+        Assert.Equal(harness.Player.Guid, harness.Creature.TargetGuid);
+        Assert.Empty(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.ModifyHealth)));
+        Assert.Empty(harness.MovementProxy.GetInvocations(nameof(IMovementManager.LaunchPath)));
+        Assert.Empty(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Finalise)));
+    }
+
+    [Fact]
+    public void Update_WhenCurrentTargetStaysOutsideLeashPastGrace_DropsThreatAndResets()
+    {
+        CombatHarness harness = CreateHarness(
+            new Vector3(55f, 0f, 0f),
+            targetSelected: true,
+            creaturePosition: new Vector3(10f, 0f, 0f),
+            leashPosition: Vector3.Zero);
+        harness.CreatureThreat.UpdateThreat(harness.Player, 10);
+        harness.CreatureProxy.Invocations.Clear();
+        harness.MovementProxy.Invocations.Clear();
+        harness.SessionProxy.Invocations.Clear();
+
+        harness.Script.Update(0.25d);
+        harness.Script.Update(3d);
+
+        Assert.Null(harness.CreatureThreat.GetHostile(harness.Player.Guid));
+        Assert.Null(harness.Player.ThreatManager.GetHostile(harness.Creature.Guid));
+        Assert.Null(harness.Creature.TargetGuid);
+        Assert.Single(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.ModifyHealth)));
+        Assert.Single(harness.SessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        Assert.Single(harness.MovementProxy.GetInvocations(nameof(IMovementManager.LaunchPath)));
+    }
+
+    [Fact]
+    public void Update_WhenDominionUltrabotFightsAtQuestMarker_DoesNotLeashBackToStaticHome()
+    {
+        Vector3 staticHome = new(4387.59f, -699.195f, -5131.24f);
+        Vector3 questMarker = new(4438.33f, -701.694f, -5154.24f);
+        CombatHarness harness = CreateHarness(
+            questMarker,
+            targetSelected: true,
+            creatureId: 12526u,
+            creaturePosition: questMarker,
+            leashPosition: staticHome,
+            leashRange: 15f);
+        harness.CreatureThreat.UpdateThreat(harness.Player, 10);
+        harness.CreatureProxy.Invocations.Clear();
+        harness.MovementProxy.Invocations.Clear();
+        harness.SessionProxy.Invocations.Clear();
+
+        harness.Script.Update(0.25d);
+        harness.Script.Update(3d);
+
+        Assert.NotNull(harness.CreatureThreat.GetHostile(harness.Player.Guid));
+        Assert.NotNull(harness.Player.ThreatManager.GetHostile(harness.Creature.Guid));
+        Assert.Equal(harness.Player.Guid, harness.Creature.TargetGuid);
+        Assert.Empty(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.ModifyHealth)));
+        Assert.Empty(harness.SessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        Assert.Empty(harness.MovementProxy.GetInvocations(nameof(IMovementManager.LaunchPath)));
+    }
+
+    [Fact]
+    public void OnThreatChange_WhenCurrentTargetOutsideLeash_DoesNotBypassLeashGrace()
+    {
+        CombatHarness harness = CreateHarness(
+            new Vector3(55f, 0f, 0f),
+            targetSelected: true,
+            creaturePosition: Vector3.Zero,
+            leashPosition: Vector3.Zero);
+        harness.CreatureThreat.UpdateThreat(harness.Player, 10);
+        harness.CreatureProxy.Invocations.Clear();
+        harness.MovementProxy.Invocations.Clear();
+
+        harness.CreatureThreat.UpdateThreat(harness.Player, 1);
+
+        Assert.NotNull(harness.CreatureThreat.GetHostile(harness.Player.Guid));
+        Assert.NotNull(harness.Player.ThreatManager.GetHostile(harness.Creature.Guid));
+        Assert.Equal(harness.Player.Guid, harness.Creature.TargetGuid);
+        Assert.Empty(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.ModifyHealth)));
+        Assert.Empty(harness.MovementProxy.GetInvocations(nameof(IMovementManager.LaunchPath)));
+    }
+
+    [Fact]
+    public void OnThreatRemoveTarget_WhenCreatureIsDead_DoesNotResetCorpsePosition()
+    {
+        CombatHarness harness = CreateHarness(
+            new Vector3(20f, 0f, 0f),
+            targetSelected: true,
+            creaturePosition: new Vector3(10f, 0f, 0f),
+            leashPosition: Vector3.Zero,
+            creatureIsAlive: false);
+
+        harness.Script.OnThreatRemoveTarget(null);
+
+        Assert.Empty(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.SetTarget)));
+        Assert.Empty(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.ModifyHealth)));
+        Assert.Empty(harness.MovementProxy.GetInvocations(nameof(IMovementManager.SetPosition)));
+        Assert.Empty(harness.MovementProxy.GetInvocations(nameof(IMovementManager.LaunchPath)));
+        Assert.Empty(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Finalise)));
+    }
+
     private static CombatHarness CreateHarness(
         Vector3 playerPosition,
         bool targetSelected = false,
@@ -1409,7 +1827,11 @@ public class CombatAITests
         bool includeSelfInRange = false,
         bool armRangeCheck = true,
         Disposition dispositionToPlayer = Disposition.Hostile,
-        bool enableDefaultProfileFallback = false)
+        bool enableDefaultProfileFallback = false,
+        bool creatureIsAlive = true,
+        float leashRange = 50f,
+        uint? summonerGuid = null,
+        uint? playerTargetGuid = null)
     {
         ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out RecordingDispatchProxy<ICreatureEntity> creatureProxy);
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
@@ -1423,16 +1845,17 @@ public class CombatAITests
 
         creatureProxy.SetProperty(nameof(ICreatureEntity.Guid), 100u);
         creatureProxy.SetProperty(nameof(ICreatureEntity.CreatureId), creatureId);
-        creatureProxy.SetProperty(nameof(ICreatureEntity.IsAlive), true);
+        creatureProxy.SetProperty(nameof(ICreatureEntity.IsAlive), creatureIsAlive);
         creatureProxy.SetProperty(nameof(ICreatureEntity.InCombat), false);
         creatureProxy.SetProperty(nameof(ICreatureEntity.Position), creaturePosition ?? Vector3.Zero);
         creatureProxy.SetProperty(nameof(ICreatureEntity.LeashPosition), leashPosition ?? Vector3.Zero);
-        creatureProxy.SetProperty(nameof(ICreatureEntity.LeashRange), 50f);
+        creatureProxy.SetProperty(nameof(ICreatureEntity.LeashRange), leashRange);
         creatureProxy.SetProperty(nameof(ICreatureEntity.HitRadius), creatureHitRadius);
         creatureProxy.SetProperty(nameof(ICreatureEntity.Faction1), Faction.Dominion);
         creatureProxy.SetProperty(nameof(ICreatureEntity.Faction2), Faction.None);
         creatureProxy.SetProperty(nameof(ICreatureEntity.Map), map);
         creatureProxy.SetProperty(nameof(ICreatureEntity.Spline), patrolSpline);
+        creatureProxy.SetProperty(nameof(ICreatureEntity.SummonerGuid), summonerGuid);
         if (targetSelected)
             creatureProxy.SetProperty(nameof(ICreatureEntity.TargetGuid), initialTargetGuid ?? 200u);
 
@@ -1499,6 +1922,7 @@ public class CombatAITests
         playerProxy.SetProperty(nameof(IPlayer.Faction2), Faction.None);
         playerProxy.SetProperty(nameof(IPlayer.ThreatManager), playerThreat);
         playerProxy.SetProperty(nameof(IPlayer.Session), session);
+        playerProxy.SetProperty(nameof(IPlayer.TargetGuid), playerTargetGuid);
 
         script = new TestCombatAI(CreateSpellParametersFactory(), CreateGameTableManager(spell4Entries), profileProvider, autoAttacks, enableDefaultProfileFallback);
         script.OnLoad(creature);
@@ -1542,13 +1966,14 @@ public class CombatAITests
         return ally;
     }
 
-    private static ICreatureEntity CreateHostileCreature(uint guid, Vector3 position)
+    private static ICreatureEntity CreateHostileCreature(uint guid, Vector3 position, uint? targetGuid = null)
     {
         ICreatureEntity hostileCreature = RecordingDispatchProxy<ICreatureEntity>.Create(out RecordingDispatchProxy<ICreatureEntity> hostileProxy);
         var threat = new ThreatManager(hostileCreature);
         hostileProxy.SetProperty(nameof(ICreatureEntity.Guid), guid);
         hostileProxy.SetProperty(nameof(ICreatureEntity.Position), position);
         hostileProxy.SetProperty(nameof(ICreatureEntity.IsAlive), true);
+        hostileProxy.SetProperty(nameof(ICreatureEntity.TargetGuid), targetGuid);
         hostileProxy.SetProperty(nameof(ICreatureEntity.ThreatManager), threat);
         return hostileCreature;
     }

@@ -648,8 +648,19 @@ namespace NexusForever.Game.Combat
         /// <remarks>Calculates chance to deflect an attack, avoiding all damage from that attack.</remarks>
         private bool CalculateDeflect(IUnitEntity attacker, IUnitEntity victim)
         {
-            float deflectChance = GetRatingPercentMod(Property.RatingAvoidIncrease, victim);
+            float deflectChance = CalculateEffectiveDeflectChance(attacker, victim);
+            if (deflectChance <= 0f)
+                return false;
+
             return IsSuccessfulChance(deflectChance);
+        }
+
+        internal float CalculateEffectiveDeflectChance(IUnitEntity attacker, IUnitEntity victim)
+        {
+            float deflectChance = MathF.Max(0f, GetRatingPercentMod(Property.RatingAvoidIncrease, victim));
+            float strikethroughChance = MathF.Max(0f, GetRatingPercentMod(Property.RatingAvoidReduce, attacker));
+
+            return MathF.Max(0f, deflectChance - strikethroughChance);
         }
 
         /// <summary>
@@ -802,7 +813,7 @@ namespace NexusForever.Game.Combat
                     baseValue = entity.GetPropertyValue(Property.BaseCritChance);
                     break;
                 case Property.RatingCritSeverityIncrease:
-                    // baseValue = entity.GetPropertyValue(Property.CriticalHitSeverityMultiplier);
+                    baseValue = entity.GetPropertyValue(Property.CriticalHitSeverityMultiplier);
                     break;
                 case Property.RatingDamageReflectAmount:
                 case Property.BaseDamageReflectAmount:
