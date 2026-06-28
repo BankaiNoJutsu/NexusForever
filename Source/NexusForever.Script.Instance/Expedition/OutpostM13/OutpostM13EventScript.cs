@@ -1,5 +1,9 @@
+using System.Numerics;
+using NexusForever.Database.World.Model;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.PublicEvent;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
@@ -11,6 +15,22 @@ namespace NexusForever.Script.Instance.Expedition.OutpostM13
     {
         private IPublicEvent publicEvent;
         private IMapInstance mapInstance;
+        private bool captainMiloSpawned;
+
+        private const ushort OutpostM13WorldId = 1319;
+        private const uint OutpostM13PublicEventId = 108u;
+
+        private static readonly OutpostM13SpawnModel CaptainMiloSpawn = new(
+            1100300017u,
+            41201u,
+            1540,
+            0u,
+            new Vector3(9791.18f, -932.668f, 5264.279f),
+            Vector3.Zero,
+            28578u,
+            0,
+            466,
+            new OutpostM13Stat(Stat.Health, 1f));
 
         /// <summary>
         /// Invoked when <see cref="IScript"/> is loaded.
@@ -20,6 +40,10 @@ namespace NexusForever.Script.Instance.Expedition.OutpostM13
             publicEvent = owner;
             mapInstance = publicEvent.Map as IMapInstance ?? throw new InvalidOperationException("Outpost M-13 requires a map instance.");
 
+            captainMiloSpawned = false;
+            // Build 16042 objective 4702 is a zero-count ScriptWithoutMax row
+            // with a 20-minute failure timer for Gold medal eligibility.
+            publicEvent.ActivateObjective(PublicEventObjective.GoldMedalTimer);
             publicEvent.SetPhase(PublicEventPhase.TalkToCaptainMilo);
         }
 
@@ -69,6 +93,7 @@ namespace NexusForever.Script.Instance.Expedition.OutpostM13
         private void OnPhaseTalkToCaptainMilo()
         {
             publicEvent.ActivateObjective(PublicEventObjective.TalkToCaptainMilo);
+            SpawnReviewedCaptainMilo();
         }
 
         private void OnPhaseGoToTheCargoHold()
@@ -121,6 +146,70 @@ namespace NexusForever.Script.Instance.Expedition.OutpostM13
             publicEvent.ActivateObjective(PublicEventObjective.HeadToMilosShuttle, mapInstance.PlayerCount);
         }
 
+        private void SpawnReviewedCaptainMilo()
+        {
+            if (captainMiloSpawned)
+                return;
+
+            // Build 16042 reviewed instance rows place Captain Milo in event 108
+            // phase 0. Coordinates remain WIP/GUESSED until expedition smoke.
+            INonPlayerEntity entity = publicEvent.CreateEntity<INonPlayerEntity>();
+            entity.Initialise(CreateEntityModel(CaptainMiloSpawn));
+            AddToMap(entity, CaptainMiloSpawn.Position);
+            captainMiloSpawned = true;
+        }
+
+        private static EntityModel CreateEntityModel(OutpostM13SpawnModel spawn)
+        {
+            EntityModel model = new()
+            {
+                Id          = spawn.EntityId,
+                Type        = EntityType.NonPlayer,
+                Creature    = spawn.CreatureId,
+                World       = OutpostM13WorldId,
+                Area        = spawn.AreaId,
+                X           = spawn.Position.X,
+                Y           = spawn.Position.Y,
+                Z           = spawn.Position.Z,
+                Rx          = spawn.Rotation.X,
+                Ry          = spawn.Rotation.Y,
+                Rz          = spawn.Rotation.Z,
+                DisplayInfo = spawn.DisplayInfo,
+                OutfitInfo  = spawn.OutfitInfo,
+                Faction1    = spawn.FactionId,
+                Faction2    = spawn.FactionId,
+                EntityEvent = new EntityEventModel
+                {
+                    EventId = OutpostM13PublicEventId,
+                    Phase   = spawn.Phase
+                }
+            };
+
+            foreach (OutpostM13Stat stat in spawn.Stats)
+            {
+                model.EntityStat.Add(new EntityStatModel
+                {
+                    Stat  = (byte)stat.Stat,
+                    Value = stat.Value
+                });
+            }
+
+            return model;
+        }
+
+        private void AddToMap(IGridEntity entity, Vector3 position)
+        {
+            mapInstance.EnqueueAdd(entity, new ScriptMapPosition
+            {
+                Info = new ScriptMapInfo
+                {
+                    Entry   = mapInstance.Entry,
+                    MapLock = mapInstance.MapLock
+                },
+                Position = position
+            });
+        }
+
         /// <summary>
         /// Invoked when the <see cref="IPublicEventObjective"/> status changes.
         /// </summary>
@@ -162,9 +251,26 @@ namespace NexusForever.Script.Instance.Expedition.OutpostM13
                     publicEvent.SetPhase(PublicEventPhase.HeadToMilosShuttle);
                     break;
                 case PublicEventObjective.HeadToMilosShuttle:
+                    publicEvent.UpdateObjective(PublicEventObjective.GoldMedalTimer, 0);
                     publicEvent.Finish(PublicEventTeam.PublicTeam);
                     break;
             }
         }
+
+        private sealed record OutpostM13SpawnModel(
+            uint EntityId,
+            uint CreatureId,
+            ushort AreaId,
+            uint Phase,
+            Vector3 Position,
+            Vector3 Rotation,
+            uint DisplayInfo,
+            ushort OutfitInfo,
+            ushort FactionId,
+            params OutpostM13Stat[] Stats);
+
+        private sealed record OutpostM13Stat(
+            Stat Stat,
+            float Value);
     }
 }

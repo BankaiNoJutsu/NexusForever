@@ -17,6 +17,7 @@ namespace NexusForever.Script.Instance.Expedition.OutpostM13
         KillTheNovaburnMarauders     = 4697,
         KillTheNovaburnLeader        = 4700,
         GatherOutsideTheSpaceMine    = 4701,
+        GoldMedalTimer               = 4702,
         MarauderWave1                = 4733,
         MarauderWave2                = 4734,
         HeadToMilosShuttle           = 5134
