@@ -67,7 +67,7 @@ namespace NexusForever.Game.PublicEvent
                     continue;
 
                 IPublicEventObjective objective = objectiveFactory.Resolve();
-                objective.Initialise(this, objectiveEntry);
+                objective.Initialise(this, objectiveEntry, template.GetObjectiveVirtualItems(objectiveEntry));
                 objectives.Add(objectiveEntry.Id, objective);
             }
 
@@ -224,6 +224,25 @@ namespace NexusForever.Game.PublicEvent
             teamStats.UpdateStat(stat, total);
 
             log.LogTrace($"Updated public event team {Team} stat {stat} to {total}.");
+        }
+
+        /// <summary>
+        /// Increment stat character with the supplied <see cref="PublicEventStat"/> and value.
+        /// </summary>
+        public void IncrementStat(ulong characterId, PublicEventStat stat, uint value)
+        {
+            if (value == 0u || !members.ContainsKey(characterId))
+                return;
+
+            uint current = 0u;
+            if (memberStatValues.TryGetValue(characterId, out Dictionary<PublicEventStat, uint> memberStats))
+                memberStats.TryGetValue(stat, out current);
+
+            uint updated = uint.MaxValue - current < value
+                ? uint.MaxValue
+                : current + value;
+
+            UpdateStat(characterId, stat, updated);
         }
 
         /// <summary>

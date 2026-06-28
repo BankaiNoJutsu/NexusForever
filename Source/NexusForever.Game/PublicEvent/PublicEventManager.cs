@@ -100,6 +100,9 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public IPublicEvent CreateEvent(uint id)
         {
+            if (publicEvents.TryGetValue(id, out IPublicEvent existingEvent))
+                return existingEvent;
+
             IPublicEventTemplate template = publicEventTemplateManager.GetTemplate(id);
             if (template == null)
                 return null;
@@ -255,6 +258,17 @@ namespace NexusForever.Game.PublicEvent
                 return;
 
             character.UpdateStat(player, stat, value);
+        }
+
+        /// <summary>
+        /// Increment stat for any public event <see cref="IPlayer"/> is part of with the supplied <see cref="PublicEventStat"/> and value.
+        /// </summary>
+        public void IncrementStat(IPlayer player, PublicEventStat stat, uint value)
+        {
+            if (!characters.TryGetValue(player.CharacterId, out IPublicEventCharacter character))
+                return;
+
+            character.IncrementStat(player, stat, value);
         }
 
         /// <summary>

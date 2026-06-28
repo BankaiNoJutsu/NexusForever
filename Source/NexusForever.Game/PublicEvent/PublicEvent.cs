@@ -24,6 +24,7 @@ namespace NexusForever.Game.PublicEvent
         public bool IsFinalised { get; private set; }
         public uint Phase { get; private set; }
         public bool IsBusy { get; set; }
+        public IReadOnlyList<uint> ChildEventIds => template?.ChildEventIds ?? [];
 
         /// <summary>
         /// Map the <see cref="IPublicEvent"/> is on.
@@ -233,6 +234,7 @@ namespace NexusForever.Game.PublicEvent
                 Objectives        = objectives
                     .Select(o => o.Build())
                     .ToList(),
+                Locations = template.Locations.ToList(),
                 Busy = IsBusy
             });
         }
@@ -401,6 +403,17 @@ namespace NexusForever.Game.PublicEvent
         }
 
         /// <summary>
+        /// Increment stat for the <see cref="IPlayer"/> with the supplied <see cref="PublicEventStat"/> and value.
+        /// </summary>
+        public void IncrementStat(IPlayer player, PublicEventStat stat, uint value)
+        {
+            if (!memberTeams.TryGetValue(player.CharacterId, out IPublicEventTeam publicEventTeam))
+                return;
+
+            publicEventTeam.IncrementStat(player.CharacterId, stat, value);
+        }
+
+        /// <summary>
         /// Update custom stat for the <see cref="IPlayer"/> with the supplied index and value.
         /// </summary>
         public void UpdateCustomStat(IPlayer player, uint index, uint value)
@@ -408,7 +421,7 @@ namespace NexusForever.Game.PublicEvent
             if (!memberTeams.TryGetValue(player.CharacterId, out IPublicEventTeam publicEventTeam))
                 return;
 
-            if (template.CustomStats.ElementAtOrDefault((int)index) == null)
+            if (!template.CustomStats.Any(s => s.StatIndex == index))
                 return;
 
             publicEventTeam.UpdateCustomStat(player.CharacterId, index, value);

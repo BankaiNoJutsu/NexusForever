@@ -1,4 +1,5 @@
 ﻿using NexusForever.Game.Abstract.PublicEvent;
+using System.Numerics;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Quest;
 using NexusForever.Game.Static.Achievement;
@@ -8,6 +9,8 @@ using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.PublicEvent;
 using NexusForever.Script.Template;
 using NexusForever.Shared.Game;
+using NetworkPublicEventObjective = NexusForever.Network.World.Message.Model.Shared.PublicEventObjective;
+using NetworkPublicEventObjectiveStatus = NexusForever.Network.World.Message.Model.Shared.PublicEventObjectiveStatus;
 
 namespace NexusForever.Game.PublicEvent
 {
@@ -21,6 +24,10 @@ namespace NexusForever.Game.PublicEvent
 
         public bool IsBusy { get; private set; }
 
+        private uint objectiveData;
+        private IReadOnlyCollection<NetworkPublicEventObjectiveStatus.VirtualItem> virtualItems
+            = Array.Empty<NetworkPublicEventObjectiveStatus.VirtualItem>();
+
         private double elapsedTimer;
         private UpdateTimer failureTimer;
         private readonly IPlayerManager playerManager;
@@ -33,10 +40,15 @@ namespace NexusForever.Game.PublicEvent
         /// <summary>
         /// Initialise <see cref="PublicEventObjective"/> with suppled <see cref="IPublicEventTeam"/> and <see cref="PublicEventObjectiveEntry"/>.
         /// </summary>
-        public void Initialise(IPublicEventTeam team, PublicEventObjectiveEntry entry)
+        public void Initialise(
+            IPublicEventTeam team,
+            PublicEventObjectiveEntry entry,
+            IReadOnlyCollection<NetworkPublicEventObjectiveStatus.VirtualItem> virtualItems = null)
         {
             Team  = team;
             Entry = entry;
+            this.virtualItems = virtualItems?.ToArray()
+                ?? Array.Empty<NetworkPublicEventObjectiveStatus.VirtualItem>();
             ResetProgress();
 
             Status = entry.PublicEventObjectiveFlags.HasFlag(PublicEventObjectiveFlag.InitialObjective)
@@ -143,22 +155,63 @@ namespace NexusForever.Game.PublicEvent
             if (Status != PublicEventStatus.Active)
                 return;
 
-            uint oldCount = Count;
-            Count = (uint)Math.Max(0, (int)Count + count);
+            if (IsChecklist())
+            {
+                UpdateChecklistObjective(count);
+            }
+            else
+            {
+                uint oldCount = Count;
+                Count = (uint)Math.Max(0, (int)Count + count);
 
-            if (oldCount != Count)
-                BroadcastObjectiveUpdate();
+                if (oldCount != Count)
+                    BroadcastObjectiveUpdate();
+            }
 
             if (IsComplete())
                 SetStatus(PublicEventStatus.Succeeded);
         }
 
+        private void UpdateChecklistObjective(int checklistIndex)
+        {
+            if (checklistIndex < 0 || checklistIndex >= sizeof(uint) * 8)
+                return;
+
+            uint oldObjectiveData = objectiveData;
+            objectiveData |= 1u << checklistIndex;
+            if (oldObjectiveData == objectiveData)
+                return;
+
+            Count = (uint)BitOperations.PopCount(objectiveData);
+            BroadcastObjectiveUpdate();
+        }
+
         private bool IsComplete()
         {
+            if (IsChecklist())
+                return Count >= GetMaxCount();
+
+            if (DynamicMax > 0u)
+                return Count >= DynamicMax;
+
             if (Entry.PublicEventObjectiveFlags.HasFlag(PublicEventObjectiveFlag.UsesDynamicMaxCount))
                 return Count >= DynamicMax;
 
             return Count >= Entry.Count;
+        }
+
+        private bool IsChecklist()
+        {
+            return Entry.PublicEventObjectiveTypeEnum is PublicEventObjectiveType.ActivateTargetGroupChecklist
+                or PublicEventObjectiveType.TalkToChecklist;
+        }
+
+        private uint GetMaxCount()
+        {
+            if (DynamicMax > 0u)
+                return DynamicMax;
+
+            return Entry.Count;
         }
 
         /// <summary>
@@ -191,6 +244,7 @@ namespace NexusForever.Game.PublicEvent
         {
             Count        = 0;
             DynamicMax   = 0;
+            objectiveData = 0;
             elapsedTimer = 0d;
             failureTimer = CreateFailureTimer();
         }
@@ -202,25 +256,41 @@ namespace NexusForever.Game.PublicEvent
                 : null;
         }
 
-        public Network.World.Message.Model.Shared.PublicEventObjective Build()
+        public NetworkPublicEventObjective Build()
         {
-            return new Network.World.Message.Model.Shared.PublicEventObjective
+            return new NetworkPublicEventObjective
             {
                 ObjectiveId      = Entry.Id,
                 ObjectiveStatus  = BuildObjectiveStatus(),
                 Busy             = IsBusy,
-                ElapsedTimeMs    = (uint)(elapsedTimer * 1000d)
+                ElapsedTimeMs    = (uint)(elapsedTimer * 1000d),
+                Locations        = Entry.WorldLocation2Id == 0u ? [] : [Entry.WorldLocation2Id]
             };
         }
 
-        private Network.World.Message.Model.Shared.PublicEventObjectiveStatus BuildObjectiveStatus()
+        private NetworkPublicEventObjectiveStatus BuildObjectiveStatus()
         {
-            return new Network.World.Message.Model.Shared.PublicEventObjectiveStatus
+            var status = new NetworkPublicEventObjectiveStatus
             {
                 Status     = Status,
+                ObjectiveData = objectiveData,
                 Count      = Count,
                 DynamicMax = DynamicMax
             };
+
+            if (virtualItems.Count != 0)
+            {
+                status.DataType = PublicEventObjectiveDataType.VirtualItemDepot;
+                status.VirtualItems = virtualItems
+                    .Select(item => new NetworkPublicEventObjectiveStatus.VirtualItem
+                    {
+                        ItemId = item.ItemId,
+                        Count  = item.Count
+                    })
+                    .ToList();
+            }
+
+            return status;
         }
     }
 }

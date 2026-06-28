@@ -87,6 +87,15 @@ namespace NexusForever.Game.PublicEvent
         }
 
         /// <summary>
+        /// Increment stat for any public event <see cref="IPlayer"/> is part of with the supplied <see cref="PublicEventStat"/> and value.
+        /// </summary>
+        public void IncrementStat(IPlayer player, PublicEventStat stat, uint value)
+        {
+            foreach (IPublicEvent @event in events.Values)
+                @event.IncrementStat(player, stat, value);
+        }
+
+        /// <summary>
         /// Update custom stat for any public event <see cref="IPlayer"/> is part of with the supplied index and value.
         /// </summary>
         public void UpdateCustomStat(IPlayer player, uint index, uint value)

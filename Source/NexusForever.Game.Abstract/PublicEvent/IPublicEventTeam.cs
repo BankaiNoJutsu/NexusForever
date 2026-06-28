@@ -72,6 +72,11 @@ namespace NexusForever.Game.Abstract.PublicEvent
         void UpdateStat(ulong characterId, PublicEventStat stat, uint value);
 
         /// <summary>
+        /// Increment stat character with the supplied <see cref="PublicEventStat"/> and value.
+        /// </summary>
+        void IncrementStat(ulong characterId, PublicEventStat stat, uint value);
+
+        /// <summary>
         /// Update custom stat character with the supplied index and value.
         /// </summary>
         void UpdateCustomStat(ulong characterId, uint index, uint value);

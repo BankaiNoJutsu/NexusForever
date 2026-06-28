@@ -19,7 +19,10 @@ namespace NexusForever.Game.Abstract.PublicEvent
         /// <summary>
         /// Initialise <see cref="IPublicEventObjective"/> with suppled <see cref="IPublicEventTeam"/> and <see cref="PublicEventObjectiveEntry"/>.
         /// </summary>
-        void Initialise(IPublicEventTeam team, PublicEventObjectiveEntry entry);
+        void Initialise(
+            IPublicEventTeam team,
+            PublicEventObjectiveEntry entry,
+            IReadOnlyCollection<PublicEventObjectiveStatus.VirtualItem> virtualItems = null);
 
         /// <summary>
         /// Set busy state for the objective.

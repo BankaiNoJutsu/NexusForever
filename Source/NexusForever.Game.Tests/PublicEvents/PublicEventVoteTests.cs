@@ -1,7 +1,9 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging.Abstractions;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.PublicEvent;
 using NexusForever.Game.Static.PublicEvent;
@@ -9,7 +11,11 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.PublicEvent;
+using NexusForever.Script;
+using RuntimePublicEventStats = NexusForever.Game.PublicEvent.PublicEventStats;
+using SharedPublicEventObjectiveStatus = NexusForever.Network.World.Message.Model.Shared.PublicEventObjectiveStatus;
 using PublicEventTeamId = NexusForever.Game.Static.PublicEvent.PublicEventTeam;
 
 namespace NexusForever.Game.Tests.PublicEvents;
@@ -99,6 +105,29 @@ public class PublicEventVoteTests
             message => AssertVoteEnd(message, winner: 2u));
     }
 
+    [Fact]
+    public void PublicEventRespondVote_IgnoresMismatchedTeamId()
+    {
+        EventVoteHarness harness = CreateEventVoteHarness(durationMs: 30000u);
+        harness.Event.JoinEvent(harness.Player, PublicEventTeamId.PublicTeam);
+        harness.Event.StartVote(PublicEventTeamId.PublicTeam, voteId: 64u, defaultChoice: 1u);
+
+        int beforeWrongTeamVote = harness.SessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count;
+
+        harness.Event.RespondVote(harness.Player, voteId: 64u, teamId: (uint)PublicEventTeamId.RedTeam, choice: 2u);
+
+        Assert.Equal(beforeWrongTeamVote, harness.SessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count);
+
+        harness.Event.RespondVote(harness.Player, voteId: 64u, teamId: (uint)PublicEventTeamId.PublicTeam, choice: 2u);
+
+        IReadOnlyList<IWritable> messages = harness.SessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => Assert.IsAssignableFrom<IWritable>(i.Arguments[0]))
+            .ToList();
+        Assert.Contains(messages, message => message is ServerPublicEventVoteTally);
+        Assert.Contains(messages, message => message is ServerPublicEventVoteEnd);
+    }
+
     private static void AssertVoteTally(IWritable message, uint choice)
     {
         ServerPublicEventVoteTally tally = Assert.IsType<ServerPublicEventVoteTally>(message);
@@ -173,7 +202,7 @@ public class PublicEventVoteTests
             new PublicEventTestSupport.DelegateFactory<IPublicEventVote>(() => new PublicEventVote(
                 gameTableManager,
                 new PublicEventTestSupport.DelegateFactory<IPublicEventVoteResponse>(() => new PublicEventVoteResponse(NullLogger<PublicEventVoteResponse>.Instance)))),
-            new PublicEventStats());
+            new RuntimePublicEventStats());
 
         IPublicEvent publicEvent = RecordingDispatchProxy<IPublicEvent>.Create(out RecordingDispatchProxy<IPublicEvent> publicEventProxy);
         publicEventProxy.SetProperty(nameof(IPublicEvent.Id), 9001u);
@@ -190,6 +219,53 @@ public class PublicEventVoteTests
         }
 
         return new TeamHarness(team, players, broadcasts);
+    }
+
+    private static EventVoteHarness CreateEventVoteHarness(uint durationMs)
+    {
+        GameTable<PublicEventVoteEntry> voteTable = CreateGameTable(new PublicEventVoteEntry
+        {
+            Id = 64u,
+            LocalizedTextIdOption = [0u, 1001u, 1002u, 1003u, 0u],
+            LocalizedTextIdLabel  = [0u, 2001u, 2002u, 2003u, 0u],
+            DurationMS = durationMs
+        });
+
+        IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> gameTableProxy);
+        gameTableProxy.SetProperty(nameof(IGameTableManager.PublicEventVote), voteTable);
+
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 101ul);
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] == 101ul ? player : null);
+
+        IRealmContext realmContext = RecordingDispatchProxy<IRealmContext>.Create(out _);
+
+        var publicEvent = new NexusForever.Game.PublicEvent.PublicEvent(
+            NullLogger<NexusForever.Game.PublicEvent.PublicEvent>.Instance,
+            RecordingDispatchProxy<IScriptManager>.Create(out _),
+            new PublicEventTestSupport.DelegateFactory<IPublicEventTeam>(() => new NexusForever.Game.PublicEvent.PublicEventTeam(
+                NullLogger<NexusForever.Game.PublicEvent.PublicEventTeam>.Instance,
+                new PublicEventTestSupport.ThrowingFactory<IPublicEventObjective>(),
+                new PublicEventTestSupport.DelegateFactory<IPublicEventTeamMember>(() => new PublicEventTeamMember(
+                    NullLogger<PublicEventTeamMember>.Instance,
+                    playerManager,
+                    realmContext)),
+                new PublicEventTestSupport.DelegateFactory<IPublicEventVote>(() => new PublicEventVote(
+                    gameTableManager,
+                    new PublicEventTestSupport.DelegateFactory<IPublicEventVoteResponse>(() => new PublicEventVoteResponse(NullLogger<PublicEventVoteResponse>.Instance)))),
+                new RuntimePublicEventStats())),
+            RecordingDispatchProxy<IPublicEventEntityFactory>.Create(out _));
+
+        IPublicEventManager manager = RecordingDispatchProxy<IPublicEventManager>.Create(out _);
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
+        var template = new VoteOnlyTemplate(PublicEventTeamId.PublicTeam);
+        publicEvent.Initialise(manager, template, map);
+
+        return new EventVoteHarness(publicEvent, player, sessionProxy);
     }
 
     private static IPublicEventTeamMember CreateMember(ulong characterId)
@@ -258,6 +334,11 @@ public class PublicEventVoteTests
         Dictionary<ulong, IPlayer> Players,
         List<IWritable> Broadcasts);
 
+    private sealed record EventVoteHarness(
+        NexusForever.Game.PublicEvent.PublicEvent Event,
+        IPlayer Player,
+        RecordingDispatchProxy<IGameSession> SessionProxy);
+
     private sealed class VoteOnlyTemplate(PublicEventTeamId teamId) : IPublicEventTemplate
     {
         public PublicEventEntry Entry { get; } = new()
@@ -276,8 +357,11 @@ public class PublicEventVoteTests
         ];
 
         public List<PublicEventCustomStatEntry> CustomStats { get; } = [];
+        public IReadOnlyList<uint> Locations { get; } = [];
+        public IReadOnlyList<uint> ChildEventIds { get; } = [];
 
         public void Initialise(PublicEventEntry entry) => throw new NotSupportedException();
+        public IReadOnlyList<SharedPublicEventObjectiveStatus.VirtualItem> GetObjectiveVirtualItems(PublicEventObjectiveEntry entry) => [];
 
         public bool HasLiveStats() => false;
     }

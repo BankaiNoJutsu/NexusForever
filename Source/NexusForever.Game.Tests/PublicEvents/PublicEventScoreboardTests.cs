@@ -73,6 +73,65 @@ public class PublicEventScoreboardTests
     }
 
     [Fact]
+    public void IncrementStat_AddsDeltasWithoutChangingAbsoluteUpdateSemantics()
+    {
+        PublicEventHarness harness = CreatePublicEventHarness();
+
+        harness.Event.JoinEvent(harness.PlayerOne, PublicEventTeamId.PublicTeam);
+        harness.Event.JoinEvent(harness.PlayerTwo, PublicEventTeamId.PublicTeam);
+        harness.Event.IncrementStat(harness.PlayerOne, PublicEventStat.Damage, 10u);
+        harness.Event.IncrementStat(harness.PlayerOne, PublicEventStat.Damage, 5u);
+        harness.Event.UpdateStat(harness.PlayerTwo, PublicEventStat.Damage, 20u);
+        harness.Event.UpdateStat(harness.PlayerTwo, PublicEventStat.Damage, 7u);
+
+        harness.Event.SendScoreboardUpdate(harness.PlayerOne);
+
+        ServerPublicEventStatsUpdate update = Assert.IsType<ServerPublicEventStatsUpdate>(
+            harness.PlayerOneSession.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Last().Arguments[0]);
+
+        PublicEventTeamStats teamStats = Assert.Single(update.TeamStats);
+        AssertStats(teamStats.Stats, 0x00000001u, 22u);
+
+        PublicEventParticipantStats one = update.ParticipantStats.Single(s => s.Player.Id == 101ul);
+        AssertStats(one.Stats, 0x00000001u, 15u);
+
+        PublicEventParticipantStats two = update.ParticipantStats.Single(s => s.Player.Id == 102ul);
+        AssertStats(two.Stats, 0x00000001u, 7u);
+    }
+
+    [Fact]
+    public void UpdateCustomStat_UsesTableBackedStatIndex()
+    {
+        PublicEventHarness harness = CreatePublicEventHarness(new PublicEventCustomStatEntry
+        {
+            Id = 1u,
+            PublicEventId = 9001u,
+            StatIndex = 2u
+        });
+
+        harness.Event.JoinEvent(harness.PlayerOne, PublicEventTeamId.PublicTeam);
+        harness.Event.JoinEvent(harness.PlayerTwo, PublicEventTeamId.PublicTeam);
+        harness.Event.UpdateCustomStat(harness.PlayerOne, 2u, 5u);
+        harness.Event.UpdateCustomStat(harness.PlayerTwo, 2u, 7u);
+        harness.Event.UpdateCustomStat(harness.PlayerOne, 0u, 99u);
+        harness.Event.UpdateCustomStat(harness.PlayerTwo, 2u, 9u);
+
+        harness.Event.SendScoreboardUpdate(harness.PlayerOne);
+
+        ServerPublicEventStatsUpdate update = Assert.IsType<ServerPublicEventStatsUpdate>(
+            harness.PlayerOneSession.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Last().Arguments[0]);
+
+        PublicEventTeamStats teamStats = Assert.Single(update.TeamStats);
+        AssertStats(teamStats.Stats, 0x00100000u, 14u);
+
+        PublicEventParticipantStats one = update.ParticipantStats.Single(s => s.Player.Id == 101ul);
+        AssertStats(one.Stats, 0x00100000u, 5u);
+
+        PublicEventParticipantStats two = update.ParticipantStats.Single(s => s.Player.Id == 102ul);
+        AssertStats(two.Stats, 0x00100000u, 9u);
+    }
+
+    [Fact]
     public void ScoreboardHandler_SubscribeSendsSnapshotForRequestedEvent()
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
@@ -118,7 +177,7 @@ public class PublicEventScoreboardTests
         Assert.Empty(eventProxy.GetInvocations(nameof(IPublicEvent.SendScoreboardUpdate)));
     }
 
-    private static PublicEventHarness CreatePublicEventHarness()
+    private static PublicEventHarness CreatePublicEventHarness(params PublicEventCustomStatEntry[] customStats)
     {
         IGameSession playerOneSession = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> playerOneSessionProxy);
         IGameSession playerTwoSession = RecordingDispatchProxy<IGameSession>.Create(out _);
@@ -172,7 +231,7 @@ public class PublicEventScoreboardTests
 
         IPublicEventManager manager = RecordingDispatchProxy<IPublicEventManager>.Create(out _);
         IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
-        publicEvent.Initialise(manager, new ScoreboardTemplate(), map);
+        publicEvent.Initialise(manager, new ScoreboardTemplate(customStats), map);
 
         return new PublicEventHarness(publicEvent, playerOne, playerTwo, playerOneSessionProxy);
     }
@@ -205,7 +264,7 @@ public class PublicEventScoreboardTests
         return message;
     }
 
-    private sealed class ScoreboardTemplate : IPublicEventTemplate
+    private sealed class ScoreboardTemplate(params PublicEventCustomStatEntry[] customStats) : IPublicEventTemplate
     {
         public PublicEventEntry Entry { get; } = new()
         {
@@ -220,9 +279,12 @@ public class PublicEventScoreboardTests
                 Id = PublicEventTeamId.PublicTeam
             }
         ];
-        public List<PublicEventCustomStatEntry> CustomStats { get; } = [];
+        public List<PublicEventCustomStatEntry> CustomStats { get; } = [..customStats];
+        public IReadOnlyList<uint> Locations { get; } = [];
+        public IReadOnlyList<uint> ChildEventIds { get; } = [];
 
         public void Initialise(PublicEventEntry entry) => throw new NotSupportedException();
+        public IReadOnlyList<PublicEventObjectiveStatus.VirtualItem> GetObjectiveVirtualItems(PublicEventObjectiveEntry entry) => [];
         public bool HasLiveStats() => false;
     }
 

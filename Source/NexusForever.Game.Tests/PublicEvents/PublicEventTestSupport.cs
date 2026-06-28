@@ -5,6 +5,7 @@ using NexusForever.Game.PublicEvent;
 using NexusForever.GameTable.Model;
 using NexusForever.Script;
 using NexusForever.Shared;
+using SharedPublicEventObjectiveStatus = NexusForever.Network.World.Message.Model.Shared.PublicEventObjectiveStatus;
 
 namespace NexusForever.Game.Tests.PublicEvents;
 
@@ -64,7 +65,10 @@ internal static class PublicEventTestSupport
         public T Resolve() => throw new NotSupportedException($"{typeof(T).Name} should not be resolved in this test.");
     }
 
-    internal sealed class TestPublicEventTemplate(PublicEventObjectiveEntry objectiveEntry) : IPublicEventTemplate
+    internal sealed class TestPublicEventTemplate(
+        PublicEventObjectiveEntry objectiveEntry,
+        IReadOnlyList<uint> locations = null,
+        IReadOnlyList<SharedPublicEventObjectiveStatus.VirtualItem> virtualItems = null) : IPublicEventTemplate
     {
         public PublicEventEntry Entry { get; } = new()
         {
@@ -85,8 +89,16 @@ internal static class PublicEventTestSupport
         ];
 
         public List<PublicEventCustomStatEntry> CustomStats { get; } = [];
+        public IReadOnlyList<uint> Locations { get; } = locations ?? [];
+        public IReadOnlyList<uint> ChildEventIds { get; } = [];
+        private IReadOnlyList<SharedPublicEventObjectiveStatus.VirtualItem> VirtualItems { get; } = virtualItems ?? [];
 
         public void Initialise(PublicEventEntry entry) => throw new NotSupportedException();
+
+        public IReadOnlyList<SharedPublicEventObjectiveStatus.VirtualItem> GetObjectiveVirtualItems(PublicEventObjectiveEntry entry)
+        {
+            return entry?.Id == objectiveEntry.Id ? VirtualItems : [];
+        }
 
         public bool HasLiveStats() => false;
     }

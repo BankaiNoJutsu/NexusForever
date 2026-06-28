@@ -20,6 +20,11 @@ namespace NexusForever.Game.Abstract.PublicEvent
         IBaseMap Map { get; }
 
         /// <summary>
+        /// Child public event ids linked to this event through typed public-event data.
+        /// </summary>
+        IReadOnlyList<uint> ChildEventIds { get; }
+
+        /// <summary>
         /// Initialise the <see cref="IPublicEvent"/> with the supplied <see cref="IPublicEventManager"/>, <see cref="IPublicEventTemplate"/> and <see cref="IBaseMap"/>.
         /// </summary>
         void Initialise(IPublicEventManager manager, IPublicEventTemplate template, IBaseMap map);
@@ -110,6 +115,11 @@ namespace NexusForever.Game.Abstract.PublicEvent
         /// Update stat for the <see cref="IPlayer"/> with the supplied <see cref="PublicEventStat"/> and value.
         /// </summary>
         void UpdateStat(IPlayer player, PublicEventStat stat, uint value);
+
+        /// <summary>
+        /// Increment stat for the <see cref="IPlayer"/> with the supplied <see cref="PublicEventStat"/> and value.
+        /// </summary>
+        void IncrementStat(IPlayer player, PublicEventStat stat, uint value);
 
         /// <summary>
         /// Update custom stat for the <see cref="IPlayer"/> with the supplied index and value.
