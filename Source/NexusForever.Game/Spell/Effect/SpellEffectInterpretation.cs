@@ -27,6 +27,10 @@ namespace NexusForever.Game.Spell.Effect
 
     public sealed record SpellEffectDamageSemantics(float TypeMultiplier, float TypeBaseValue);
 
+    public sealed record SpellEffectProxyRandomExclusiveCandidate(uint Spell4Id, uint Weight);
+
+    public sealed record SpellEffectProxyRandomExclusiveSemantics(IReadOnlyList<SpellEffectProxyRandomExclusiveCandidate> Candidates);
+
     public sealed record SpellEffectTransferenceSemantics(
         Vital HealedVital,
         Vital SourceVital,
@@ -99,6 +103,18 @@ namespace NexusForever.Game.Spell.Effect
     public sealed record SpellEffectSummonCreatureSemantics(
         uint CreatureId,
         uint DataBits01,
+        uint DataBits02,
+        uint DataBits03,
+        uint DataBits04,
+        uint DataBits05,
+        uint DataBits06,
+        uint DataBits07,
+        uint DataBits08,
+        uint DataBits09);
+
+    public sealed record SpellEffectSummonPetSemantics(
+        uint CreatureId,
+        uint PetType,
         uint DataBits02,
         uint DataBits03,
         uint DataBits04,
@@ -395,6 +411,14 @@ namespace NexusForever.Game.Spell.Effect
         uint DataBits04,
         uint DataBits05);
 
+    public sealed record SpellEffectGiveLootTableToPlayerSemantics(
+        uint LootGroupId,
+        uint RollCount,
+        uint DataBits02,
+        uint DataBits03,
+        uint DataBits04,
+        uint DataBits05);
+
     public sealed record SpellEffectGiveSchematicSemantics(
         uint TradeskillSchematic2Id,
         uint DataBits01,
@@ -446,6 +470,14 @@ namespace NexusForever.Game.Spell.Effect
     public sealed record SpellEffectMimicDisguiseSemantics(
         uint DataBits00,
         uint DataBits01,
+        uint DataBits02,
+        uint DataBits03,
+        uint DataBits04,
+        uint DataBits05);
+
+    public sealed record SpellEffectPetCastSpellSemantics(
+        uint RequiredSummonSpell4Id,
+        uint PetSpell4Id,
         uint DataBits02,
         uint DataBits03,
         uint DataBits04,
@@ -571,6 +603,7 @@ namespace NexusForever.Game.Spell.Effect
         public SpellEffectSetBusySemantics SetBusy { get; internal set; }
         public SpellEffectSapVitalSemantics SapVital { get; internal set; }
         public SpellEffectSummonCreatureSemantics SummonCreature { get; internal set; }
+        public SpellEffectSummonPetSemantics SummonPet { get; internal set; }
         public SpellEffectSummonVehicleSemantics SummonVehicle { get; internal set; }
         public SpellEffectSummonTrapSemantics SummonTrap { get; internal set; }
         public SpellEffectNpcExecutionDelaySemantics NpcExecutionDelay { get; internal set; }
@@ -603,6 +636,7 @@ namespace NexusForever.Game.Spell.Effect
         public SpellEffectAchievementAdvanceSemantics AchievementAdvance { get; internal set; }
         public SpellEffectReputationModifySemantics ReputationModify { get; internal set; }
         public SpellEffectGiveItemToPlayerSemantics GiveItemToPlayer { get; internal set; }
+        public SpellEffectGiveLootTableToPlayerSemantics GiveLootTableToPlayer { get; internal set; }
         public SpellEffectGiveSchematicSemantics GiveSchematic { get; internal set; }
         public SpellEffectRewardPropertyModifierSemantics RewardPropertyModifier { get; internal set; }
         public SpellEffectItemVisualSwapSemantics ItemVisualSwap { get; internal set; }
@@ -610,9 +644,11 @@ namespace NexusForever.Game.Spell.Effect
         public SpellEffectActionBarSetSemantics ActionBarSet { get; internal set; }
         public SpellEffectDisguiseOutfitSemantics DisguiseOutfit { get; internal set; }
         public SpellEffectMimicDisguiseSemantics MimicDisguise { get; internal set; }
+        public SpellEffectPetCastSpellSemantics PetCastSpell { get; internal set; }
         public SpellEffectForceFacingSemantics ForceFacing { get; internal set; }
         public SpellEffectForcedMoveSemantics ForcedMove { get; internal set; }
         public SpellEffectProxySemantics Proxy { get; internal set; }
+        public SpellEffectProxyRandomExclusiveSemantics ProxyRandomExclusive { get; internal set; }
         public SpellEffectTeleportSemantics Teleport { get; internal set; }
         public SpellEffectHousingTeleportSemantics HousingTeleport { get; internal set; }
         public SpellEffectSupportStuckSemantics SupportStuck { get; internal set; }
@@ -636,6 +672,7 @@ namespace NexusForever.Game.Spell.Effect
             || SetBusy != null
             || SapVital != null
             || SummonCreature != null
+            || SummonPet != null
             || SummonVehicle != null
             || SummonTrap != null
             || NpcExecutionDelay != null
@@ -668,6 +705,7 @@ namespace NexusForever.Game.Spell.Effect
             || AchievementAdvance != null
             || ReputationModify != null
             || GiveItemToPlayer != null
+            || GiveLootTableToPlayer != null
             || GiveSchematic != null
             || RewardPropertyModifier != null
             || ItemVisualSwap != null
@@ -675,9 +713,11 @@ namespace NexusForever.Game.Spell.Effect
             || ActionBarSet != null
             || DisguiseOutfit != null
             || MimicDisguise != null
+            || PetCastSpell != null
             || ForceFacing != null
             || ForcedMove != null
             || Proxy != null
+            || ProxyRandomExclusive != null
             || Teleport != null
             || HousingTeleport != null
             || SupportStuck != null
@@ -788,6 +828,19 @@ namespace NexusForever.Game.Spell.Effect
                     break;
                 case SpellEffectType.SummonCreature:
                     interpretation.SummonCreature = new SpellEffectSummonCreatureSemantics(
+                        entry.DataBits00,
+                        entry.DataBits01,
+                        entry.DataBits02,
+                        entry.DataBits03,
+                        entry.DataBits04,
+                        entry.DataBits05,
+                        entry.DataBits06,
+                        entry.DataBits07,
+                        entry.DataBits08,
+                        entry.DataBits09);
+                    break;
+                case SpellEffectType.SummonPet:
+                    interpretation.SummonPet = new SpellEffectSummonPetSemantics(
                         entry.DataBits00,
                         entry.DataBits01,
                         entry.DataBits02,
@@ -1118,6 +1171,15 @@ namespace NexusForever.Game.Spell.Effect
                         entry.DataBits04,
                         entry.DataBits05);
                     break;
+                case SpellEffectType.GiveLootTableToPlayer:
+                    interpretation.GiveLootTableToPlayer = new SpellEffectGiveLootTableToPlayerSemantics(
+                        entry.DataBits00,
+                        entry.DataBits01,
+                        entry.DataBits02,
+                        entry.DataBits03,
+                        entry.DataBits04,
+                        entry.DataBits05);
+                    break;
                 case SpellEffectType.GiveSchematic:
                     interpretation.GiveSchematic = new SpellEffectGiveSchematicSemantics(
                         entry.DataBits00,
@@ -1174,6 +1236,15 @@ namespace NexusForever.Game.Spell.Effect
                     break;
                 case SpellEffectType.MimicDisguise:
                     interpretation.MimicDisguise = new SpellEffectMimicDisguiseSemantics(
+                        entry.DataBits00,
+                        entry.DataBits01,
+                        entry.DataBits02,
+                        entry.DataBits03,
+                        entry.DataBits04,
+                        entry.DataBits05);
+                    break;
+                case SpellEffectType.PetCastSpell:
+                    interpretation.PetCastSpell = new SpellEffectPetCastSpellSemantics(
                         entry.DataBits00,
                         entry.DataBits01,
                         entry.DataBits02,
@@ -1275,8 +1346,16 @@ namespace NexusForever.Game.Spell.Effect
                 case SpellEffectType.ProxyLinearAE:
                 case SpellEffectType.ProxyChannel:
                 case SpellEffectType.ProxyChannelVariableTime:
-                case SpellEffectType.ProxyRandomExclusive:
                     interpretation.Proxy = new SpellEffectProxySemantics(entry.DataBits00);
+                    break;
+                case SpellEffectType.ProxyRandomExclusive:
+                    interpretation.ProxyRandomExclusive = new SpellEffectProxyRandomExclusiveSemantics(
+                    [
+                        new(entry.DataBits00, entry.DataBits01),
+                        new(entry.DataBits02, entry.DataBits03),
+                        new(entry.DataBits04, entry.DataBits05),
+                        new(entry.DataBits06, entry.DataBits07)
+                    ]);
                     break;
                 case SpellEffectType.Teleport:
                     interpretation.Teleport = new SpellEffectTeleportSemantics(entry.DataBits00);

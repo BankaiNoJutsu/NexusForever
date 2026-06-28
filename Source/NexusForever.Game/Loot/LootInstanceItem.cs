@@ -7,6 +7,7 @@ using NexusForever.Game.Achievement;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
+using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -472,6 +473,8 @@ namespace NexusForever.Game.Loot
                     break;
                 case LootItemType.VirtualItem:
                     player.QuestManager.ObjectiveUpdate(QuestObjectiveType.VirtualCollect, StaticId, Amount);
+                    int publicEventProgress = Amount > (uint)int.MaxValue ? int.MaxValue : (int)Amount;
+                    player.Map?.PublicEventManager.UpdateObjective(player, PublicEventObjectiveType.VirtualCollect, StaticId, publicEventProgress);
                     break;
                 default:
                     log.Warn($"Loot item type {Type} is not supported for delivery.");

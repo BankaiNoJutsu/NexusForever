@@ -38,6 +38,9 @@ namespace NexusForever.Game.Spell
         private const uint ValidTargetDeadMask = 0x08u;
         private const uint TargetTypeTargetAoe = 3u;
         private const uint TargetTypePositionAoe = 4u;
+        private const uint WhirlwindSpell4BaseId = 19778u;
+        private const uint RampageSpell4BaseId = 37968u;
+        private const uint WarriorKineticAbilityCost = 250u;
 
         public ISpellParameters Parameters { get; }
         public uint CastingId { get; }
@@ -55,6 +58,7 @@ namespace NexusForever.Game.Spell
         private bool cancelled;
         private bool awaitingInitialImpact;
         private bool channelCompletePending;
+        private bool casterVitalCostsPerChannelPulse;
 
         private readonly List<ISpellTargetInfo> targets = new();
         private readonly List<ITelegraph> telegraphs = new();
@@ -68,6 +72,13 @@ namespace NexusForever.Game.Spell
         private IScriptCollection scriptCollection;
 
         private sealed record PendingSpellGoEffect(ISpellTargetInfo TargetInfo, ISpellTargetEffectInfo EffectInfo);
+        private readonly record struct CasterVitalCost(Vital Vital, uint Amount, CasterVitalCostCadence Cadence);
+
+        private enum CasterVitalCostCadence
+        {
+            Once,
+            ChannelPulse
+        }
 
         public Spell(
             IUnitEntity caster,
@@ -110,12 +121,14 @@ namespace NexusForever.Game.Spell
 
             if (status == SpellStatus.Executing && !events.HasPendingEvent)
             {
+                if (Parameters.WaitForClientSideInteractionResponse)
+                    return;
+
                 // spell effects have finished executing
                 status = SpellStatus.Finished;
                 log.Trace($"Spell {Parameters.SpellInfo.Entry.Id} has finished.");
 
-                scriptCollection.Invoke<ISpellScript>(s => s.OnFinish(this, cancelled));
-                SendSpellFinish();
+                Finish();
             }
 
             if (status == SpellStatus.Finished)
@@ -152,8 +165,8 @@ namespace NexusForever.Game.Spell
             }
 
             if (Caster is IPlayer player)
-                if (!Parameters.IgnoreGlobalCooldown && Parameters.SpellInfo.GlobalCooldown != null)
-                    player.SpellManager.SetGlobalSpellCooldown(Parameters.SpellInfo.GlobalCooldown.CooldownTime / 1000d);
+                if (UsesGlobalCooldown())
+                    player.SpellManager.SetGlobalSpellCooldown(Parameters.SpellInfo.GlobalCooldown.Id, Parameters.SpellInfo.GlobalCooldown.CooldownTime / 1000d);
 
             if (Caster is not IPlayer || IsChargeReleaseThresholdSpell())
                 InitialiseTelegraphs();
@@ -162,10 +175,11 @@ namespace NexusForever.Game.Spell
             SendSpellStart();
 
             status = SpellStatus.Casting;
-            if (Parameters.SpellInfo.Entry.CastTime == 0u)
+            uint castTime = GetEffectiveCastTime();
+            if (castTime == 0u)
                 Execute();
             else
-                events.EnqueueEvent(new SpellEvent(Parameters.SpellInfo.Entry.CastTime / 1000d, Execute));
+                events.EnqueueEvent(new SpellEvent(castTime / 1000d, Execute));
 
             if (IsChargeReleaseThresholdSpell())
                 ScheduleChargeThresholdEvents();
@@ -197,14 +211,15 @@ namespace NexusForever.Game.Spell
                 if (player.SpellManager.GetSpellCooldown(Parameters.SpellInfo.Entry.Id) > 0d)
                     return CastResult.SpellCooldown;
 
-                // this isn't entirely correct, research GlobalCooldownEnum
-                if (!Parameters.IgnoreGlobalCooldown
-                    && Parameters.SpellInfo.Entry.GlobalCooldownEnum == 0
-                    && player.SpellManager.GetGlobalSpellCooldown() > 0d)
+                if (UsesGlobalCooldown() && player.SpellManager.GetGlobalSpellCooldown() > 0d)
                     return CastResult.SpellGlobalCooldown;
 
                 if (Parameters.CharacterSpell?.MaxAbilityCharges > 0 && Parameters.CharacterSpell?.AbilityCharges == 0)
                     return CastResult.SpellNoCharges;
+
+                CastResult casterVitalCostResult = CheckCasterVitalCosts();
+                if (casterVitalCostResult != CastResult.Ok)
+                    return casterVitalCostResult;
 
                 CastResult serviceTokenCostResult = CheckServiceTokenCost(player);
                 if (serviceTokenCostResult != CastResult.Ok)
@@ -216,6 +231,13 @@ namespace NexusForever.Game.Spell
                 return targetResult;
 
             return CastResult.Ok;
+        }
+
+        private bool UsesGlobalCooldown()
+        {
+            return !Parameters.IgnoreGlobalCooldown
+                && Parameters.SpellInfo.GlobalCooldown != null
+                && Parameters.SpellInfo.Entry.GlobalCooldownEnum < 2u;
         }
 
         private CastResult CheckServiceTokenCost(IPlayer player)
@@ -293,6 +315,9 @@ namespace NexusForever.Game.Spell
         private CastResult CheckPrimaryTargetValidMask(IWorldEntity target)
         {
             uint validTargetMask = Parameters.SpellInfo.BaseInfo.ValidTargets?.TargetBitmask ?? 0u;
+            if (validTargetMask == 0u)
+                return CastResult.Ok;
+
             if ((validTargetMask & ValidTargetObjectMask) != 0u && IsInteractableObjectTarget(target))
                 return CastResult.Ok;
 
@@ -321,11 +346,26 @@ namespace NexusForever.Game.Spell
             if ((validTargetMask & ValidTargetObjectMask) == 0u)
                 return false;
 
+            if (IsTargetActivateSpell(target))
+                return true;
+
             if (ReferenceEquals(target, Caster) || (target.Guid != 0u && target.Guid == Caster.Guid))
                 return true;
 
             TargetGroupEntry castGroup = Parameters.SpellInfo.BaseInfo.CastGroup;
             return castGroup != null && TargetGroupCriteriaEvaluator.Evaluate(castGroup, target, GetGameTableManager());
+        }
+
+        private bool IsTargetActivateSpell(IUnitEntity target)
+        {
+            uint spell4Id = Parameters.SpellInfo?.Entry?.Id ?? 0u;
+            Creature2Entry creatureEntry = target.CreatureEntry;
+            return spell4Id != 0u
+                && creatureEntry != null
+                && (creatureEntry.Spell4IdActivate00 == spell4Id
+                    || creatureEntry.Spell4IdActivate01 == spell4Id
+                    || creatureEntry.Spell4IdActivate02 == spell4Id
+                    || creatureEntry.Spell4IdActivate03 == spell4Id);
         }
 
         private CastResult CheckPrimaryTargetCastGroup(IWorldEntity target)
@@ -334,7 +374,11 @@ namespace NexusForever.Game.Spell
             if (castGroup == null)
                 return CastResult.Ok;
 
-            return TargetGroupCriteriaEvaluator.Evaluate(castGroup, target, GetGameTableManager())
+            IWorldEntity castGroupTarget = target;
+            if (Parameters.UseCreatureOverrides && target is IUnitEntity unitTarget && IsTargetActivateSpell(unitTarget))
+                castGroupTarget = Caster;
+
+            return TargetGroupCriteriaEvaluator.Evaluate(castGroup, castGroupTarget, GetGameTableManager())
                 ? CastResult.Ok
                 : CastResult.TargetUnknown;
         }
@@ -392,6 +436,9 @@ namespace NexusForever.Game.Spell
 
         private CastResult CheckPrimaryTargetRange(float horizontalRange, float effectiveRange, float verticalDelta)
         {
+            if (Parameters.SkipPrimaryTargetRangeValidation)
+                return CastResult.Ok;
+
             Spell4Entry entry = Parameters.SpellInfo.Entry;
             if (entry.TargetMinRange > 0f && horizontalRange < entry.TargetMinRange)
                 return CastResult.TargetRangeMin;
@@ -883,24 +930,32 @@ namespace NexusForever.Game.Spell
 
             SpellRuntimeEvidenceCollector.RecordCancellation(this, result);
 
-            if (Caster is IPlayer player && !player.IsLoading)
-            {
-                player.Session.EnqueueMessageEncrypted(new ServerSpellCastCancel
-                {
-                    ServerUniqueId = CastingId,
-                    CastResult     = result,
-                    CancelCast     = true
-                });
-            }
+            SendSpellCastCancel(result);
 
             if (IsChargeReleaseThresholdSpell())
                 SendThresholdClear();
 
             events.CancelEvents();
+            awaitingInitialImpact = false;
+            channelCompletePending = false;
             cancelled = true;
-            status = SpellStatus.Executing;
+            status = SpellStatus.Finished;
 
             log.Trace($"Spell {Parameters.SpellInfo.Entry.Id} cast was cancelled.");
+            Finish();
+        }
+
+        private void SendSpellCastCancel(CastResult result)
+        {
+            if (Caster is not IPlayer player || player.IsLoading)
+                return;
+
+            player.Session.EnqueueMessageEncrypted(new ServerSpellCastCancel
+            {
+                ServerUniqueId = CastingId,
+                CastResult     = result,
+                CancelCast     = true
+            });
         }
 
         public bool TryCancelEffect(IUnitEntity requester)
@@ -948,14 +1003,27 @@ namespace NexusForever.Game.Spell
             {
                 cancelled = true;
                 status = SpellStatus.Finished;
-                scriptCollection.Invoke<ISpellScript>(s => s.OnFinish(this, cancelled));
-                SendSpellFinish();
+                Finish();
             }
 
             return true;
         }
 
         bool ISpell.TryCancelEffect(IUnitEntity requester) => TryCancelEffect(requester);
+
+        public bool TryCompleteClientSideInteraction(bool wasCancelled)
+        {
+            if (!Parameters.WaitForClientSideInteractionResponse || status != SpellStatus.Executing)
+                return false;
+
+            events.CancelEvents();
+            cancelled = wasCancelled;
+            status = SpellStatus.Finished;
+
+            log.Trace($"Spell {Parameters.SpellInfo.Entry.Id} client-side interaction completed, cancelled={wasCancelled}.");
+            Finish();
+            return true;
+        }
 
         public bool TryReleaseChargeSpell(ICharacterSpell characterSpell, uint rootSpell4Id, uint primaryTargetId, uint clientContextToken = 0u, string clientRequestSource = null)
         {
@@ -1005,6 +1073,7 @@ namespace NexusForever.Game.Spell
             scriptCollection.Invoke<ISpellScript>(s => s.OnExecute(this, targets.AsReadOnly()));
             ExecuteEffects();
             ScheduleChannelCompletion();
+            ScheduleClientSideInteractionTimeout();
 
             if (Caster is IPlayer executingPlayer)
                 SpellQuestObjectiveUpdater.UpdateSpellSuccessObjectives(executingPlayer, Parameters.SpellInfo.Entry.Id);
@@ -1017,6 +1086,18 @@ namespace NexusForever.Game.Spell
             }
 
             CostSpell();
+        }
+
+        private void ScheduleClientSideInteractionTimeout()
+        {
+            if (!Parameters.WaitForClientSideInteractionResponse)
+                return;
+
+            uint durationMs = Parameters.ClientSideInteractionDurationMs;
+            if (durationMs == 0u)
+                return;
+
+            events.EnqueueEvent(new SpellEvent(durationMs / 1000d, () => TryCompleteClientSideInteraction(wasCancelled: true)));
         }
 
         private void ScheduleChannelCompletion()
@@ -1033,6 +1114,174 @@ namespace NexusForever.Game.Spell
         {
             if (Parameters.CharacterSpell?.MaxAbilityCharges > 0)
                 Parameters.CharacterSpell.UseCharge();
+
+            if (!casterVitalCostsPerChannelPulse)
+                ConsumeCasterVitalCosts(CasterVitalCostCadence.Once);
+        }
+
+        private CastResult CheckCasterVitalCosts(CasterVitalCostCadence? cadence = null)
+        {
+            if (Caster is not IPlayer)
+                return CastResult.Ok;
+
+            IEnumerable<(Vital Vital, uint Amount)> costs = cadence.HasValue
+                ? GetCasterVitalCosts(cadence.Value)
+                : GetCasterVitalCostsForCheck();
+
+            foreach ((Vital vital, uint amount) in costs)
+            {
+                if (WarriorOverdriveMechanic.FreezesKineticVital(Caster, vital))
+                    continue;
+
+                if (!Caster.TryGetVitalValue(vital, out float value) || value + 0.0001f < amount)
+                    return GetCasterVitalCostResult(vital);
+            }
+
+            return CastResult.Ok;
+        }
+
+        private void ConsumeCasterVitalCosts(CasterVitalCostCadence cadence)
+        {
+            if (Caster is not IPlayer)
+                return;
+
+            foreach ((Vital vital, uint amount) in GetCasterVitalCosts(cadence))
+            {
+                if (WarriorOverdriveMechanic.FreezesKineticVital(Caster, vital))
+                    continue;
+
+                Caster.TryModifyVital(vital, -(float)amount, out _);
+            }
+        }
+
+        private bool TryConsumeCasterVitalCosts(CasterVitalCostCadence cadence, out CastResult result)
+        {
+            result = CheckCasterVitalCosts(cadence);
+            if (result != CastResult.Ok)
+                return false;
+
+            ConsumeCasterVitalCosts(cadence);
+            return true;
+        }
+
+        private bool TryConsumeChannelPulseCasterVitalCosts()
+        {
+            if (!casterVitalCostsPerChannelPulse)
+                return true;
+
+            if (TryConsumeCasterVitalCosts(CasterVitalCostCadence.ChannelPulse, out CastResult result))
+                return true;
+
+            StopChannelForCasterVitalCost(result);
+            return false;
+        }
+
+        private IEnumerable<(Vital Vital, uint Amount)> GetCasterVitalCostsForCheck()
+        {
+            Spell4Entry entry = Parameters.SpellInfo.Entry;
+            foreach ((Vital vital, uint amount) in GetEntryCasterVitalCosts(entry))
+                yield return (vital, amount);
+
+            foreach (CasterVitalCost cost in GetSupplementalCasterVitalCosts(entry))
+                yield return (cost.Vital, cost.Amount);
+        }
+
+        private IEnumerable<(Vital Vital, uint Amount)> GetCasterVitalCosts(CasterVitalCostCadence cadence)
+        {
+            Spell4Entry entry = Parameters.SpellInfo.Entry;
+            if (casterVitalCostsPerChannelPulse == (cadence == CasterVitalCostCadence.ChannelPulse))
+                foreach ((Vital vital, uint amount) in GetEntryCasterVitalCosts(entry))
+                    yield return (vital, amount);
+
+            foreach (CasterVitalCost cost in GetSupplementalCasterVitalCosts(entry))
+                if (cost.Cadence == cadence)
+                    yield return (cost.Vital, cost.Amount);
+        }
+
+        private static IEnumerable<(Vital Vital, uint Amount)> GetEntryCasterVitalCosts(Spell4Entry entry)
+        {
+            if (TryCreateCasterVitalCost(entry.InnateCostType0, entry.InnateCost0, out (Vital Vital, uint Amount) cost0))
+                yield return cost0;
+
+            if (TryCreateCasterVitalCost(entry.InnateCostType1, entry.InnateCost1, out (Vital Vital, uint Amount) cost1))
+                yield return cost1;
+        }
+
+        private static bool TryCreateCasterVitalCost(uint vitalType, uint amount, out (Vital Vital, uint Amount) cost)
+        {
+            cost = default;
+            if (vitalType == 0u || amount == 0u || !Enum.IsDefined(typeof(Vital), (int)vitalType))
+                return false;
+
+            Vital vital = (Vital)vitalType;
+            if (vital == Vital.Invalid)
+                return false;
+
+            cost = (vital, amount);
+            return true;
+        }
+
+        private static bool HasChannelPulseCasterVitalCosts(Spell4Entry entry)
+        {
+            return GetEntryCasterVitalCosts(entry).Any()
+                || GetSupplementalCasterVitalCosts(entry).Any(c => c.Cadence == CasterVitalCostCadence.ChannelPulse);
+        }
+
+        private static IEnumerable<CasterVitalCost> GetSupplementalCasterVitalCosts(Spell4Entry entry)
+        {
+            if (HasEntryKineticCost(entry))
+                yield break;
+
+            if (entry.Spell4BaseIdBaseSpell == WhirlwindSpell4BaseId)
+                yield return new CasterVitalCost(Vital.Resource1, WarriorKineticAbilityCost, CasterVitalCostCadence.ChannelPulse);
+
+            if (entry.Spell4BaseIdBaseSpell == RampageSpell4BaseId)
+                yield return new CasterVitalCost(Vital.Resource1, WarriorKineticAbilityCost, CasterVitalCostCadence.Once);
+        }
+
+        private static bool HasEntryKineticCost(Spell4Entry entry)
+        {
+            return GetEntryCasterVitalCosts(entry)
+                .Any(c => c.Amount != 0u && IsKineticVital(c.Vital));
+        }
+
+        private static bool IsKineticVital(Vital vital)
+        {
+            return vital is Vital.KineticCell or Vital.Resource1;
+        }
+
+        private static CastResult GetCasterVitalCostResult(Vital vital)
+        {
+            return vital switch
+            {
+                Vital.Health            => CastResult.CasterVitalCostHealth,
+                Vital.ShieldCapacity    => CastResult.CasterVitalCostShieldCapacity,
+                Vital.KineticCell       => CastResult.CasterVitalCostResource1,
+                Vital.Resource0         => CastResult.CasterVitalCostResource0,
+                Vital.Resource1         => CastResult.CasterVitalCostResource1,
+                Vital.Resource2         => CastResult.CasterVitalCostResource2,
+                Vital.Resource3         => CastResult.CasterVitalCostResource3,
+                Vital.Resource4         => CastResult.CasterVitalCostResource4,
+                Vital.Resource5         => CastResult.CasterVitalCostResource5,
+                Vital.Resource6         => CastResult.CasterVitalCostResource6,
+                Vital.StalkerA          => CastResult.CasterVitalCostResource3,
+                Vital.StalkerB          => CastResult.CasterVitalCostResource3,
+                Vital.StalkerC          => CastResult.CasterVitalCostResource3,
+                Vital.Focus             => CastResult.CasterVitalCostFocus,
+                Vital.Resource7         => CastResult.CasterVitalCostResource7,
+                Vital.MedicCore         => CastResult.CasterVitalCostResource1,
+                Vital.SpellSurge        => CastResult.CasterVitalCostResource4,
+                Vital.InterruptArmor    => CastResult.CasterVitalCostInterruptArmor,
+                Vital.Absorption        => CastResult.CasterVitalCostAbsorption,
+                Vital.PublicResource0   => CastResult.CasterVitalCostPublicResource0,
+                Vital.PublicResource1   => CastResult.CasterVitalCostPublicRes,
+                Vital.PublicResource2   => CastResult.CasterVitalCostPublicResource2,
+                Vital.Volatility        => CastResult.CasterVitalCostResource1,
+                Vital.Resource8         => CastResult.CasterVitalCostResource8,
+                Vital.Resource9         => CastResult.CasterVitalCostResource9,
+                Vital.Resource10        => CastResult.CasterVitalCostResource10,
+                _                       => CastResult.CasterVitalCost
+            };
         }
 
         private bool IsChargeReleaseThresholdSpell()
@@ -1109,8 +1358,7 @@ namespace NexusForever.Game.Spell
             cancelled = wasCancelled;
             SendThresholdClear();
             status = SpellStatus.Finished;
-            scriptCollection.Invoke<ISpellScript>(s => s.OnFinish(this, cancelled));
-            SendSpellFinish();
+            Finish();
         }
 
         private void SelectTargets()
@@ -1132,6 +1380,17 @@ namespace NexusForever.Game.Spell
                 AddTarget(SpellEffectTargetFlags.Telegraph, entity);
 
             SpellEffectDiagnostics.TraceTargetSelection(this, targets, telegraphs.Count);
+        }
+
+        private uint GetEffectiveCastTime()
+        {
+            uint spellCastTime = Parameters.SpellInfo.Entry.CastTime;
+            if (!Parameters.UseCreatureOverrides)
+                return spellCastTime;
+
+            IWorldEntity primaryTarget = GetPrimaryTargetWorldEntity();
+            uint creatureCastTime = primaryTarget?.CreatureEntry?.ActivateSpellCastTime ?? 0u;
+            return creatureCastTime != 0u ? creatureCastTime : spellCastTime;
         }
 
         private void AddTarget(SpellEffectTargetFlags flags, IWorldEntity entity)
@@ -1296,7 +1555,7 @@ namespace NexusForever.Game.Spell
 
             else
             {
-                position = Caster.Position;
+                position = GetCurrentCasterPosition();
                 source = "caster-centered";
             }
 
@@ -1316,10 +1575,20 @@ namespace NexusForever.Game.Spell
 
         private Vector3 GetRotationToward(Vector3 position)
         {
-            if (GetHorizontalDistance(Caster.Position, position) <= 0.001f)
+            Vector3 casterPosition = GetCurrentCasterPosition();
+            if (GetHorizontalDistance(casterPosition, position) <= 0.001f)
                 return Caster.Rotation;
 
-            return new Vector3(Caster.Position.GetAngle(position), Caster.Rotation.Y, Caster.Rotation.Z);
+            return new Vector3(casterPosition.GetAngle(position), Caster.Rotation.Y, Caster.Rotation.Z);
+        }
+
+        private Vector3 GetCurrentCasterPosition()
+        {
+            Vector3 position = Caster.MovementManager?.GetPosition() ?? Caster.Position;
+            if (float.IsFinite(position.X) && float.IsFinite(position.Y) && float.IsFinite(position.Z))
+                return position;
+
+            return Caster.Position;
         }
 
         private IUnitEntity GetPrimaryTargetEntity()
@@ -1341,10 +1610,17 @@ namespace NexusForever.Game.Spell
         private void ExecuteEffects()
         {
             bool scheduledEffects = false;
+            List<SpellEffectInterpretation> channelPulseEffects = [];
 
             foreach (Spell4EffectsEntry spell4EffectsEntry in Parameters.SpellInfo.Effects)
             {
                 SpellEffectInterpretation effect = SpellEffectInterpreter.Interpret(spell4EffectsEntry);
+                if (IsChannelPulseEffect(effect))
+                {
+                    channelPulseEffects.Add(effect);
+                    continue;
+                }
+
                 if (ScheduleEffect(effect))
                 {
                     scheduledEffects = true;
@@ -1354,8 +1630,124 @@ namespace NexusForever.Game.Spell
                 ExecuteEffect(effect);
             }
 
+            if (ScheduleChannelPulseEffects(channelPulseEffects))
+                scheduledEffects = true;
+
+            if (status == SpellStatus.Finished)
+                return;
+
             awaitingInitialImpact = scheduledEffects;
             SendSpellGo(!scheduledEffects);
+        }
+
+        private bool ScheduleChannelPulseEffects(IReadOnlyList<SpellEffectInterpretation> channelPulseEffects)
+        {
+            if (channelPulseEffects.Count == 0)
+                return false;
+
+            Spell4Entry entry = Parameters.SpellInfo.Entry;
+            if (entry.ChannelPulseTime == 0u || entry.ChannelMaxTime == 0u)
+                return false;
+
+            uint initialDelay = entry.ChannelInitialDelay;
+            if (initialDelay > entry.ChannelMaxTime)
+                return false;
+
+            casterVitalCostsPerChannelPulse = HasChannelPulseCasterVitalCosts(entry);
+
+            if (initialDelay == 0u)
+            {
+                if (!TryConsumeChannelPulseCasterVitalCosts())
+                    return true;
+
+                ExecuteChannelPulseEffects(channelPulseEffects);
+                ScheduleNextChannelPulse(channelPulseEffects, entry.ChannelPulseTime);
+                return true;
+            }
+
+            SpellEffectDiagnostics.TraceChannelPulseSchedule(this, initialDelay, entry.ChannelPulseTime, entry.ChannelMaxTime, channelPulseEffects);
+            ScheduleChannelPulse(channelPulseEffects, initialDelay, initialDelay);
+            return true;
+        }
+
+        private bool IsChannelPulseEffect(SpellEffectInterpretation effect)
+        {
+            Spell4Entry entry = Parameters.SpellInfo.Entry;
+            return entry.ChannelPulseTime > 0u
+                && entry.ChannelMaxTime > 0u
+                && effect.Timing.DelayTime == 0u
+                && effect.Timing.TickTime == 0u
+                && effect.Timing.DurationTime == 0u
+                && IsChannelPulseEffectType(effect.Entry.EffectType);
+        }
+
+        private static bool IsChannelPulseEffectType(SpellEffectType effectType)
+        {
+            return effectType
+                is SpellEffectType.VitalModifier
+                or SpellEffectType.Transference
+                or SpellEffectType.Damage
+                or SpellEffectType.Heal
+                or SpellEffectType.DistanceDependentDamage
+                or SpellEffectType.ProxyLinearAE
+                or SpellEffectType.ProxyChannel
+                or SpellEffectType.Proxy
+                or SpellEffectType.ProxyRandomExclusive
+                or SpellEffectType.Absorption
+                or SpellEffectType.SapVital
+                or SpellEffectType.DistributedDamage
+                or SpellEffectType.ProxyChannelVariableTime
+                or SpellEffectType.HealShields
+                or SpellEffectType.DamageShields
+                or SpellEffectType.HealingAbsorption;
+        }
+
+        private void ScheduleChannelPulse(IReadOnlyList<SpellEffectInterpretation> channelPulseEffects, uint delayTime, uint elapsedTime)
+        {
+            events.EnqueueEvent(new SpellEvent(delayTime / 1000d, () =>
+            {
+                if (!TryConsumeChannelPulseCasterVitalCosts())
+                    return;
+
+                if (ExecuteChannelPulseEffects(channelPulseEffects))
+                    SendSpellGo();
+
+                uint pulseTime = Parameters.SpellInfo.Entry.ChannelPulseTime;
+                if (elapsedTime <= uint.MaxValue - pulseTime)
+                    ScheduleNextChannelPulse(channelPulseEffects, elapsedTime + pulseTime);
+            }));
+        }
+
+        private void ScheduleNextChannelPulse(IReadOnlyList<SpellEffectInterpretation> channelPulseEffects, uint nextElapsedTime)
+        {
+            Spell4Entry entry = Parameters.SpellInfo.Entry;
+            if (nextElapsedTime == 0u || nextElapsedTime > entry.ChannelMaxTime)
+                return;
+
+            SpellEffectDiagnostics.TraceChannelPulseSchedule(this, entry.ChannelPulseTime, entry.ChannelPulseTime, entry.ChannelMaxTime, channelPulseEffects);
+            ScheduleChannelPulse(channelPulseEffects, entry.ChannelPulseTime, nextElapsedTime);
+        }
+
+        private bool ExecuteChannelPulseEffects(IReadOnlyList<SpellEffectInterpretation> channelPulseEffects)
+        {
+            bool executed = false;
+            foreach (SpellEffectInterpretation effect in channelPulseEffects)
+                executed |= ExecuteEffect(effect);
+
+            return executed;
+        }
+
+        private void StopChannelForCasterVitalCost(CastResult result)
+        {
+            SpellRuntimeEvidenceCollector.RecordCancellation(this, result);
+            SendSpellCastCancel(result);
+            events.CancelEvents();
+            awaitingInitialImpact = false;
+            channelCompletePending = false;
+            cancelled = true;
+            status = SpellStatus.Finished;
+            log.Trace($"Spell {Parameters.SpellInfo.Entry.Id} channel stopped because caster vital cost could not be paid.");
+            Finish();
         }
 
         private bool ScheduleEffect(SpellEffectInterpretation effect)
@@ -1559,6 +1951,9 @@ namespace NexusForever.Game.Spell
             {
                 case SpellEffectType.Proxy:
                     SpellHandler.HandleEffectProxyWorld(this, target, info);
+                    return true;
+                case SpellEffectType.ProxyRandomExclusive:
+                    SpellHandler.HandleEffectProxyRandomExclusiveWorld(this, target, info);
                     return true;
                 case SpellEffectType.SpellForceRemove:
                     SpellHandler.HandleEffectSpellForceRemoveWorld(this, target, info);
@@ -2015,6 +2410,18 @@ namespace NexusForever.Game.Spell
                                 entity.RemoveFromMap();
                         }
                     };
+                case SpellEffectType.SummonPet:
+                    if (effect.SummonPet == null || info.CreatedEntities.Count == 0)
+                        return null;
+
+                    return () =>
+                    {
+                        foreach (IGridEntity entity in info.CreatedEntities)
+                        {
+                            if (entity.InWorld)
+                                entity.RemoveFromMap();
+                        }
+                    };
                 case SpellEffectType.SummonTrap:
                     if (effect.SummonTrap == null || info.CreatedEntities.Count == 0)
                         return null;
@@ -2061,6 +2468,7 @@ namespace NexusForever.Game.Spell
             {
                 player.Session.EnqueueMessageEncrypted(new ServerSpellCastResult
                 {
+                    ContextToken = Parameters.ClientContextToken,
                     Spell4Id   = Parameters.SpellInfo.Entry.Id,
                     CastResult = castResult
                 });
@@ -2080,6 +2488,7 @@ namespace NexusForever.Game.Spell
                 FieldPosition          = new Position(Caster.Position),
                 Yaw                    = Caster.Rotation.X,
                 UserInitiatedSpellCast = Parameters.UserInitiatedSpellCast,
+                UseCreatureOverrides   = Parameters.UseCreatureOverrides,
                 InitialPositionData    = new List<ServerSpellStart.InitialPosition>(),
                 TelegraphPositionData  = new List<ServerSpellStart.TelegraphPosition>()
             };
@@ -2127,6 +2536,13 @@ namespace NexusForever.Game.Spell
             {
                 ServerUniqueId = CastingId,
             }, true);
+        }
+
+        private void Finish()
+        {
+            scriptCollection.Invoke<ISpellScript>(s => s.OnFinish(this, cancelled));
+            Parameters.FinishCallback?.Invoke(this, cancelled);
+            SendSpellFinish();
         }
 
         private void SendThresholdStart()
@@ -2242,7 +2658,7 @@ namespace NexusForever.Game.Spell
 
                     networkTargetInfo.EffectInfoData.Add(networkTargetEffectInfo);
 
-                    combatLogs.AddRange(targetEffectInfo.CombatLogs);
+                    AddStandaloneCombatLogs(combatLogs, targetEffectInfo);
                 }
 
                 serverSpellGo.TargetInfoData.Add(networkTargetInfo);
@@ -2297,6 +2713,24 @@ namespace NexusForever.Game.Spell
             SendDiagnosticSpellBroadcasts();
             SendPostSpellGoEffectMessages(pendingEffects);
 
+        }
+
+        private static void AddStandaloneCombatLogs(List<ICombatLog> combatLogs, ISpellTargetEffectInfo targetEffectInfo)
+        {
+            foreach (ICombatLog combatLog in targetEffectInfo.CombatLogs)
+            {
+                if (ShouldSuppressStandaloneCombatLog(targetEffectInfo, combatLog))
+                    continue;
+
+                combatLogs.Add(combatLog);
+            }
+        }
+
+        private static bool ShouldSuppressStandaloneCombatLog(ISpellTargetEffectInfo targetEffectInfo, ICombatLog combatLog)
+        {
+            // Plain damage is already carried by ServerSpellGo target effect rows.
+            return targetEffectInfo.Damage != null
+                && combatLog.GetType() == typeof(CombatLogDamage);
         }
 
         private void SendPostSpellGoEffectMessages(IEnumerable<PendingSpellGoEffect> pendingEffects)

@@ -379,8 +379,8 @@ namespace NexusForever.Network.Message
         ClientCharacterDelete           = 0x0352,
         ServerEntityDestroy             = 0x0355,
         ClientDialogOpened              = 0x0356,  
-        ServerDialogStart               = 0x0357,
-        ServerDialogEnd                 = 0x0358,
+        ServerDialogStart               = 0x0357, // native 14006c290 binds to ServerUInt32AndFlag_ReadPayload
+        ServerDialogEnd                 = 0x0358, // native 14006c290 binds to ServerUInt32_ReadPayload
         ServerQuestLuaEvent             = 0x0359, // native 14006c290 binds 0x0359 size 0x10 to ServerQuestLuaEvent_ReadPayload 14008f530; typed arg tail uses PTR table 140c1eb98 (Int/String/Unit/Bool/Item/Quest readers); apply consumer still unmapped
         ClientQuestAbandon              = 0x035A,
         ClientQuestAccept               = 0x035B,
@@ -889,6 +889,7 @@ namespace NexusForever.Network.Message
         ClientSpellStopCast             = 0x0801,
         ClientCancelEffect              = 0x0802,
         ServerCooldown                  = 0x0804,
+        ClientSpellClientSideInteraction = 0x0805, // native 1400943d0 writes uint32 + 3-bit action + uint32; sender 1405465a0 is the spell client-side interaction callback
         ServerSpellUInt32TripletList    = 0x080F, // count + uint32 triplet rows; semantics unresolved
         ServerSpellUInt32TripletListVariant = 0x0810, // shares 0x080F reader; semantics unresolved
         ServerSpellCastTargetList       = 0x0811, // spell broadcast casting-id target list

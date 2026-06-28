@@ -47,9 +47,6 @@ namespace NexusForever.Game.Entity
                     Flag = true
                 });
 
-                foreach (var auxiliary in BuildEntityCreateAuxPackets())
-                    player.Session.EnqueueMessageEncrypted(auxiliary);
-
                 player.Session.EnqueueMessageEncrypted(BuildCreatePacket(false));
             }
         }

@@ -7,6 +7,7 @@ using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement.Force;
 using NexusForever.Game.Abstract.Housing;
+using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Static.Spell;
@@ -291,6 +292,11 @@ public class SpellCollectionEffectTests
         }
 
         public IGlobalResidenceManager GetGlobalResidenceManager()
+        {
+            return null;
+        }
+
+        public IGlobalLootManager GetGlobalLootManager()
         {
             return null;
         }

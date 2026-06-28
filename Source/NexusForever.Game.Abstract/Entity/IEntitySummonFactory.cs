@@ -34,6 +34,16 @@ namespace NexusForever.Game.Abstract.Entity
         void TrackSummon(IWorldEntity entity);
 
         /// <summary>
+        /// Try to resolve an active summoned entity by creature id.
+        /// </summary>
+        bool TryGetSummonCreature(uint creatureId, out IWorldEntity entity);
+
+        /// <summary>
+        /// Returns the number of active summoned entities with supplied creature id.
+        /// </summary>
+        uint GetSummonCreatureCount(uint creatureId);
+
+        /// <summary>
         /// Stop tracking a summon.
         /// </summary>
         void UntrackSummon(IWorldEntity entity);

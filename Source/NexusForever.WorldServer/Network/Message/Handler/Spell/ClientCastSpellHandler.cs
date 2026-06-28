@@ -6,6 +6,7 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Spell
 {
@@ -38,7 +39,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
             var spellParameters = new SpellParameters
             {
                 CharacterSpell         = characterSpell,
-                SpellInfo              = characterSpell.SpellInfo,
+                SpellInfo              = characterSpell.GetSpellInfoForCast(),
+                RootSpellInfo          = characterSpell.SpellInfo,
                 PrimaryTargetId        = primaryTargetId,
                 Position               = position,
                 UserInitiatedSpellCast = true,
@@ -47,7 +49,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
             };
 
             ClientSpellEvidenceCaptureHelper.ApplyPendingCapture(session, spellParameters);
-            session.Player.CastSpell(spellParameters);
+            CastResult castResult = session.Player.TryCastSpell(spellParameters.SpellInfo.Entry.Id, spellParameters);
+            characterSpell.CompleteSpellInfoCast(spellParameters.SpellInfo, castResult);
         }
     }
 }

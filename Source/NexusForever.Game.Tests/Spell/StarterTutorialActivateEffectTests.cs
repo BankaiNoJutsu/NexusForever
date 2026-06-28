@@ -12,6 +12,7 @@ using static NexusForever.Game.Static.Tutorial.StarterTutorialDefinition;
 
 namespace NexusForever.Game.Tests.Spell;
 
+[Collection(MissingGameDataDiagnosticsCollection.Name)]
 public sealed class StarterTutorialActivateEffectTests : IDisposable
 {
     private readonly ISpellEffectDependencyResolver previousDependencyResolver;
@@ -48,6 +49,20 @@ public sealed class StarterTutorialActivateEffectTests : IDisposable
         AssertObjectiveUpdate(questProxy, QuestObjectiveType.ActivateTargetGroupChecklist, ExileEverstarGroveDepartureTerminalCreatureId, 4u);
     }
 
+    [Fact]
+    public void HandleEffectActivateWorld_WithDeferredObjectiveCredit_DoesNotCreditObjectives()
+    {
+        IPlayer player = CreatePlayer(out RecordingDispatchProxy<IQuestManager> questProxy, out RecordingDispatchProxy<IPlayer> playerProxy);
+        IWorldEntity terminal = CreateTerminal(ExileEverstarGroveDepartureTerminalCreatureId, checklistIndex: 4);
+        ISpell spell = CreateSpell(player, deferActivateEffectObjectiveCredit: true);
+        ISpellTargetEffectInfo effectInfo = CreateActivateEffectInfo();
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectActivateWorld(spell, terminal, effectInfo);
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.RecordStarterTutorialDepartureTerminal)));
+        Assert.Empty(questProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+    }
+
     private static IPlayer CreatePlayer(
         out RecordingDispatchProxy<IQuestManager> questProxy,
         out RecordingDispatchProxy<IPlayer> playerProxy)
@@ -68,7 +83,7 @@ public sealed class StarterTutorialActivateEffectTests : IDisposable
         return terminal;
     }
 
-    private static ISpell CreateSpell(IPlayer player)
+    private static ISpell CreateSpell(IPlayer player, bool deferActivateEffectObjectiveCredit = false)
     {
         ISpellInfo spellInfo = RecordingDispatchProxy<ISpellInfo>.Create(out RecordingDispatchProxy<ISpellInfo> spellInfoProxy);
         spellInfoProxy.SetProperty(nameof(ISpellInfo.Entry), new Spell4Entry
@@ -78,6 +93,7 @@ public sealed class StarterTutorialActivateEffectTests : IDisposable
 
         ISpellParameters parameters = RecordingDispatchProxy<ISpellParameters>.Create(out RecordingDispatchProxy<ISpellParameters> parametersProxy);
         parametersProxy.SetProperty(nameof(ISpellParameters.SpellInfo), spellInfo);
+        parametersProxy.SetProperty(nameof(ISpellParameters.DeferActivateEffectObjectiveCredit), deferActivateEffectObjectiveCredit);
 
         ISpell spell = RecordingDispatchProxy<ISpell>.Create(out RecordingDispatchProxy<ISpell> spellProxy);
         spellProxy.SetProperty(nameof(ISpell.Caster), player);

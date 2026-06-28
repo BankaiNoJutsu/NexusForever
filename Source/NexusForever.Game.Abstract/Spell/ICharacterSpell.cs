@@ -1,5 +1,6 @@
 ﻿using NexusForever.Database.Character;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared;
 
 namespace NexusForever.Game.Abstract.Spell
@@ -15,6 +16,16 @@ namespace NexusForever.Game.Abstract.Spell
         uint MaxAbilityCharges { get; }
         double AbilityRechargeTimeRemaining { get; }
         double AbilityRechargePercentRemaining { get; }
+
+        /// <summary>
+        /// Return the concrete spell tier to cast for this request.
+        /// </summary>
+        ISpellInfo GetSpellInfoForCast();
+
+        /// <summary>
+        /// Commit any pending per-cast spell state after the cast result is known.
+        /// </summary>
+        void CompleteSpellInfoCast(ISpellInfo spellInfo, CastResult castResult);
 
         /// <summary>
         /// Used for when the client does not have continuous casting enabled

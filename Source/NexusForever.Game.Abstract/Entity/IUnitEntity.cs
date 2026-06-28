@@ -204,6 +204,11 @@ namespace NexusForever.Game.Abstract.Entity
         bool TryCancelSpellEffect(uint serverUniqueId);
 
         /// <summary>
+        /// Complete an active spell that is waiting for a client-side interaction response.
+        /// </summary>
+        bool TryCompleteClientSideInteractionSpell(uint castingId, bool wasCancelled);
+
+        /// <summary>
         /// Determine if this <see cref="IUnitEntity"/> can attack supplied <see cref="IUnitEntity"/>.
         /// </summary>
         bool CanAttack(IUnitEntity target);

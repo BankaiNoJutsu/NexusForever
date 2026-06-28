@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
@@ -46,6 +47,15 @@ public class ClientSetStanceHandlerTests
             Assert.Single(sessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)));
         ServerStanceChanged response = Assert.IsType<ServerStanceChanged>(invocation.Arguments[0]);
         Assert.Equal((byte)1, response.InnateIndex);
+
+        RecordingDispatchProxy<IPlayer>.Invocation cast =
+            Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.CastSpell)));
+        Assert.Equal(222u, cast.Arguments[0]);
+        ISpellParameters spellParameters = Assert.IsAssignableFrom<ISpellParameters>(cast.Arguments[1]);
+        Assert.Equal(1234u, spellParameters.PrimaryTargetId);
+        Assert.True(spellParameters.UserInitiatedSpellCast);
+        Assert.True(spellParameters.IgnoreGlobalCooldown);
+        Assert.Equal(nameof(ClientSetStanceHandler), spellParameters.ClientRequestSource);
     }
 
     private static IWorldSession CreateSession(
@@ -56,6 +66,7 @@ public class ClientSetStanceHandlerTests
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out playerProxy);
 
         playerProxy.SetProperty(nameof(IPlayer.Class), Class.Warrior);
+        playerProxy.SetProperty(nameof(IPlayer.Guid), 1234u);
         sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
         return session;
     }

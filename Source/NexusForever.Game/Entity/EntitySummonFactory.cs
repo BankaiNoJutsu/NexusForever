@@ -122,6 +122,69 @@ namespace NexusForever.Game.Entity
         }
 
         /// <summary>
+        /// Try to resolve an active summoned entity by creature id.
+        /// </summary>
+        public bool TryGetSummonCreature(uint creatureId, out IWorldEntity entity)
+        {
+            entity = null;
+            if (creatureId == 0u || owner?.Map == null)
+                return false;
+
+            if (!creatureGuids.TryGetValue(creatureId, out List<uint> guids))
+                return false;
+
+            foreach (uint guid in guids.ToList())
+            {
+                IWorldEntity summon = owner.Map.GetEntity<IWorldEntity>(guid);
+                if (summon == null || summon.SummonerGuid != owner.Guid)
+                {
+                    summonGuids.Remove(guid);
+                    guids.Remove(guid);
+                    continue;
+                }
+
+                entity = summon;
+                return true;
+            }
+
+            if (guids.Count == 0)
+                creatureGuids.Remove(creatureId);
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the number of active summoned entities with supplied creature id.
+        /// </summary>
+        public uint GetSummonCreatureCount(uint creatureId)
+        {
+            if (creatureId == 0u || owner?.Map == null)
+                return 0u;
+
+            if (!creatureGuids.TryGetValue(creatureId, out List<uint> guids))
+                return 0u;
+
+            uint count = 0u;
+            foreach (uint guid in guids.ToList())
+            {
+                IWorldEntity summon = owner.Map.GetEntity<IWorldEntity>(guid);
+                if (summon == null || summon.SummonerGuid != owner.Guid)
+                {
+                    summonGuids.Remove(guid);
+                    guids.Remove(guid);
+                    continue;
+                }
+
+                count++;
+            }
+
+            if (guids.Count == 0)
+                creatureGuids.Remove(creatureId);
+
+            return count;
+        }
+
+        /// <summary>
         /// Stop tracking a summon.
         /// </summary>
         public void UntrackSummon(IWorldEntity entity)

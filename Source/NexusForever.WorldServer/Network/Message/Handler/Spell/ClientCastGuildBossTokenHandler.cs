@@ -23,8 +23,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
 
             session.EnqueueMessageEncrypted(new ServerSpellCastResult
             {
-                Spell4Id   = request.Item2Id,
-                CastResult = CastResult.BossTokenNotReady
+                ContextToken = request.ContextToken,
+                Spell4Id     = request.Item2Id,
+                CastResult   = CastResult.BossTokenNotReady
             });
         }
     }

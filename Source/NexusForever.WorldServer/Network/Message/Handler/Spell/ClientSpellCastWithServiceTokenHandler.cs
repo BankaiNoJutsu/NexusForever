@@ -35,7 +35,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
 
             if (!spellInfo.HasServiceTokenCost || spellInfo.ServiceTokenCostEntry == null)
             {
-                SendSpellCastResult(session, serviceTokenCast.Spell4Id, CastResult.ServiceTokensInsufficentFunds);
+                SendSpellCastResult(session, serviceTokenCast.ContextToken, serviceTokenCast.Spell4Id, CastResult.ServiceTokensInsufficentFunds);
                 return;
             }
 
@@ -62,12 +62,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
             return spellBaseInfo?.GetSpellInfo((byte)spell4Entry.TierIndex);
         }
 
-        private static void SendSpellCastResult(IWorldSession session, uint spell4Id, CastResult castResult)
+        private static void SendSpellCastResult(IWorldSession session, uint contextToken, uint spell4Id, CastResult castResult)
         {
             session.EnqueueMessageEncrypted(new ServerSpellCastResult
             {
-                Spell4Id   = spell4Id,
-                CastResult = castResult
+                ContextToken = contextToken,
+                Spell4Id     = spell4Id,
+                CastResult   = castResult
             });
         }
     }

@@ -699,6 +699,31 @@ public class GlobalLootManagerTests
         Assert.Equal($"invalid-loot-item:{type}:{staticId}", reason);
     }
 
+    [Fact]
+    public void CanDeliverGeneratedLoot_AccountCurrencyUsesAccountCurrencyTypeTableForValidIds()
+    {
+        const uint tableBackedCurrencyId = 20u;
+        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
+        IPlayer player = CreatePlayer(out _, out _, out _);
+        var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
+        {
+            GameTablePath = string.Empty
+        }));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountCurrencyType), CreateGameTable(new AccountCurrencyTypeEntry
+        {
+            Id = tableBackedCurrencyId
+        }));
+        var manager = new GlobalLootManager(groupStateManager, gameTableManager: gameTableManager);
+
+        bool result = manager.CanDeliverGeneratedLoot(
+            player,
+            [new GeneratedLootItem(LootItemType.AccountCurrency, tableBackedCurrencyId, 1u)],
+            out string reason);
+
+        Assert.True(result);
+        Assert.Equal(string.Empty, reason);
+    }
+
     private static IPlayer CreatePlayer(
         out RecordingDispatchProxy<IAccountCurrencyManager> currencyProxy,
         out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy,

@@ -121,7 +121,7 @@ namespace NexusForever.Game.Entity
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
         private const ushort TutorialWorldId = 3460;
-        private const float DefaultInteractionMaxRange = 5f;
+        private const float DefaultInteractionMaxRange = 10f;
         private const uint ChairBusyEffectId = uint.MaxValue;
         private const uint MaxTradeskillTalentTiers = 10u;
         private const uint TutorialHoverboardProjectorCreatureId = 73419u;
@@ -477,6 +477,7 @@ namespace NexusForever.Game.Entity
         private readonly IItemManager itemManager;
         private readonly IDatabaseManager databaseManager;
         private readonly ISharedConfiguration sharedConfiguration;
+        private readonly IContractManager contractManager;
 
         public Player(
             IMovementManager movementManager,
@@ -513,7 +514,8 @@ namespace NexusForever.Game.Entity
             IPlayerManager playerManager = null,
             IItemManager itemManager = null,
             IDatabaseManager databaseManager = null,
-            ISharedConfiguration sharedConfiguration = null)
+            ISharedConfiguration sharedConfiguration = null,
+            IContractManager contractManager = null)
             : base(movementManager, sharedConfiguration)
         {
             this.messagePublisher = messagePublisher;
@@ -549,6 +551,7 @@ namespace NexusForever.Game.Entity
             this.itemManager       = itemManager;
             this.databaseManager   = databaseManager;
             this.sharedConfiguration = sharedConfiguration;
+            this.contractManager   = contractManager;
             saveTimer              = new UpdateTimer(GetSaveDuration());
 
             InitialiseScriptManager(() => scriptManager);
@@ -655,7 +658,7 @@ namespace NexusForever.Game.Entity
             CostumeManager          = new CostumeManager(this, model, itemManager, gameTableManager);
             Inventory               = new Inventory(this, model, realmBankManager, prerequisiteManager, itemManager, gameTableManager);
             CurrencyManager.Initialise(this, model);
-            PathManager             = new PathManager(this, model, prerequisiteManager, gameTableManager);
+            PathManager             = new PathManager(this, model, prerequisiteManager, gameTableManager, entityFactory);
             TitleManager            = new TitleManager(this, model, gameTableManager);
             SpellManager            = new SpellManager(this, model, prerequisiteManager, globalSpellManager, gameTableManager);
             PetCustomisationManager = new PetCustomisationManager(this, model, gameTableManager, textFilterManager, prerequisiteManager);
@@ -665,7 +668,7 @@ namespace NexusForever.Game.Entity
             MailManager             = new MailManager(this, model, assetManager, characterManager, realmContext?.RealmId ?? Identity.RealmId, playerManager, itemManager, gameTableManager, sharedConfiguration);
             ZoneMapManager          = new ZoneMapManager(this, model, gameTableManager);
             ChallengeManager        = new ChallengeManager(this, model, gameTableManager);
-            QuestManager            = new QuestManager(this, model, disableManager, assetManager, prerequisiteManager, globalQuestManager, scriptManager, gameTableManager);
+            QuestManager            = new QuestManager(this, model, disableManager, assetManager, prerequisiteManager, globalQuestManager, scriptManager, gameTableManager, contractManager);
             AchievementManager      = new CharacterAchievementManager(this, model, groupStateManager, disableManager, globalAchievementManager, prerequisiteManager, playerManager, gameTableManager);
             SupplySatchelManager    = new SupplySatchelManager(this, model, gameTableManager);
             XpManager               = new XpManager(this, model, gameTableManager, sharedConfiguration);
@@ -1185,6 +1188,7 @@ namespace NexusForever.Game.Entity
             saveMask |= PlayerSaveMask.Location;
 
             ZoneMapManager.OnRelocate(vector);
+            PathManager.CompleteCurrentExplorerExploreZoneMission();
             ClearSelectedVendorIfOutOfRange();
             TryRecoverStarterTutorialOnRelocate();
 
@@ -1381,6 +1385,19 @@ namespace NexusForever.Game.Entity
         {
             DestroyDependents();
             base.OnRemoveFromMap();
+        }
+
+        public override void OnSummon(IWorldEntity entity)
+        {
+            base.OnSummon(entity);
+            PathManager?.OnScientistScanbotSummoned(entity);
+        }
+
+        public override void OnUnsummon(IWorldEntity entity)
+        {
+            PathManager?.OnScientistScanbotUnsummoned(entity);
+            base.OnUnsummon(entity);
+            SpellHandler.UnregisterEngineerArtillerybotBarrageAction(this, entity);
         }
 
         /// <summary>
@@ -1666,8 +1683,8 @@ namespace NexusForever.Game.Entity
 
             Session.EnqueueMessageEncrypted(new ServerPlayerEnteredWorld());
             RefreshVisiblePlayersForNearbyList();
-            PathManager.SendInitialPackets();
             QuestManager.SendInitialPackets();
+            PathManager.SendInitialPackets();
             SyncDeferredLoadingWorldZoneRuntimeState();
 
             TryRecoverStarterTutorialOnEnteredWorld();
@@ -1693,8 +1710,8 @@ namespace NexusForever.Game.Entity
             AchievementManager.CheckAchievements(this, AchievementType.EnterWorldZone, Zone.Id);
             QuestManager.ObjectiveUpdate(QuestObjectiveType.EnterZone, Zone.Id, 1);
 
-            // Current path content activates table-backed zone episodes and Explorer map-zone
-            // objectives; keep the callback-triggering deltas out of the pre-player-create burst.
+            // Current path content activates table-backed zone episodes and checks already-complete
+            // Explorer map-zone objectives; relocation handles newly revealed hexes.
             PathManager.TryActivateCurrentZoneEpisode();
             PathManager.CompleteCurrentExplorerExploreZoneMission();
         }
@@ -2292,8 +2309,14 @@ namespace NexusForever.Game.Entity
             if (PlatformGuid == null)
                 return;
 
-            IVehicleEntity vehicle = GetVisible<IVehicleEntity>(PlatformGuid.Value);
-            vehicle?.PassengerRemove(this);
+            IWorldEntity platform = GetVisible<IWorldEntity>(PlatformGuid.Value);
+            if (platform is IVehicleEntity vehicle)
+            {
+                vehicle.PassengerRemove(this);
+                return;
+            }
+
+            SetPlatform(null);
         }
 
         public void RecordStarterTutorialDepartureTerminal(uint creatureId)

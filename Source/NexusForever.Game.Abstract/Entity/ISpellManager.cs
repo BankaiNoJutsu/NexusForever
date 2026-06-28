@@ -25,6 +25,46 @@ namespace NexusForever.Game.Abstract.Entity
         ICharacterSpell GetSpellForSpell4Id(uint spell4Id);
 
         /// <summary>
+        /// Track the currently active floating action bar spell shortcuts.
+        /// </summary>
+        void SetActiveFloatingActionBarShortcutSet(uint actionBarShortcutSetId, uint ownerSpell4Id);
+
+        /// <summary>
+        /// Returns whether the supplied spell is currently available from the active floating action bar.
+        /// </summary>
+        bool IsActiveFloatingActionBarSpell(uint spell4Id);
+
+        /// <summary>
+        /// Clear the active floating action bar shortcut set.
+        /// </summary>
+        void ClearActiveFloatingActionBarShortcutSet();
+
+        /// <summary>
+        /// Clear the active floating action bar shortcut set when its owner spell belongs to the supplied spell group.
+        /// </summary>
+        bool ClearActiveFloatingActionBarShortcutSetForSpellGroup(uint spellGroupId);
+
+        /// <summary>
+        /// Track an active pet command selector and the spell that should be cast when it is selected.
+        /// </summary>
+        void SetActivePetActionSpell(uint petSwitchSpell4Id, uint actionSpell4Id, uint ownerSpell4Id);
+
+        /// <summary>
+        /// Resolve an active pet command selector to the spell that should be cast.
+        /// </summary>
+        bool TryResolveActivePetActionSpell(uint selectedSpell4Id, out uint actionSpell4Id);
+
+        /// <summary>
+        /// Clear active pet command selectors.
+        /// </summary>
+        void ClearActivePetActionSpells();
+
+        /// <summary>
+        /// Clear active pet command selectors when their owner spell belongs to the supplied spell group.
+        /// </summary>
+        bool ClearActivePetActionSpellsForSpellGroup(uint spellGroupId);
+
+        /// <summary>
         /// Add a new <see cref="ICharacterSpell"/> created from supplied spell base id and tier.
         /// </summary>
         void AddSpell(uint spell4BaseId, byte tier = 1);
@@ -60,6 +100,7 @@ namespace NexusForever.Game.Abstract.Entity
         void ResetAllSpellCooldowns();
         double GetGlobalSpellCooldown();
         void SetGlobalSpellCooldown(double cooldown);
+        void SetGlobalSpellCooldown(uint cooldownId, double cooldown);
 
         /// <summary>
         /// Add bonus AMP power to all action sets.

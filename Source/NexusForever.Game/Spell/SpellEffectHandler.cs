@@ -4,6 +4,7 @@ using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement.Force;
 using NexusForever.Game.Abstract.Housing;
+using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Combat;
@@ -47,10 +48,22 @@ namespace NexusForever.Game.Spell
         private const uint ActionBarShortcutSetPacketMax = 0x3FFFu;
         private const uint OutfitInfoPacketMax = 0x7FFFu;
         private const uint StarterTutorialScanSpellId = 81662u;
+        private const uint EngineerArtillerybotExileCreatureId = 42683u;
+        private const uint EngineerArtillerybotDominionCreatureId = 59846u;
+        private const uint EngineerArtillerybotMaxActive = 2u;
+        private const uint EngineerArtillerybotSummonBaseSpell4Id = 27002u;
+        private const uint EngineerArtillerybotPetSwitchBaseSpell4Id = 34051u;
+        private const uint EngineerArtillerybotPlayerBarrageBaseSpell4Id = 20884u;
         private const string GenericUnlockEntryTableName = "GenericUnlockEntry.tbl";
         private const string Spell4TableName = "Spell4.tbl";
         private const string PetFlairTableName = "PetFlair.tbl";
         private const string CharacterTitleTableName = "CharacterTitle.tbl";
+
+        private static readonly uint[] EngineerArtillerybotCreatureIds =
+        [
+            EngineerArtillerybotExileCreatureId,
+            EngineerArtillerybotDominionCreatureId
+        ];
 
         private static ISpellEffectDependencyResolver dependencyResolver;
 
@@ -94,6 +107,11 @@ namespace NexusForever.Game.Spell
         {
             return dependencyResolver?.GetGlobalResidenceManager()
                 ?? throw new InvalidOperationException("Spell effect dependency resolver has not been initialised.");
+        }
+
+        private static IGlobalLootManager GetGlobalLootManager()
+        {
+            return dependencyResolver?.GetGlobalLootManager();
         }
 
         private static IMapLockManager GetMapLockManager()
@@ -492,6 +510,252 @@ namespace NexusForever.Game.Spell
             SpellEffectDiagnostics.TraceSummonCreature(spell, target, summonCreature, position, true, summoned.Guid, string.Empty);
         }
 
+        [SpellEffectHandler(SpellEffectType.SummonPet)]
+        public static void HandleEffectSummonPet(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectSummonPetSemantics summonPet = SpellEffectInterpreter.Interpret(info).SummonPet;
+            if (summonPet == null)
+                return;
+
+            IPlayer player = GetPlayerSpellOwner(spell, target);
+            Vector3 position = ResolveSummonPetPosition(spell, target, player);
+            if (player == null)
+            {
+                SpellEffectDiagnostics.TraceSummonPet(spell, target, summonPet, position, 0u, false, 0u, "no-player-owner");
+                return;
+            }
+
+            if (summonPet.CreatureId == 0u)
+            {
+                SpellEffectDiagnostics.TraceSummonPet(spell, target, summonPet, position, player.Guid, false, 0u, "missing-creature-id");
+                return;
+            }
+
+            Creature2Entry creatureEntry = GetGameTableManager().Creature2?.GetEntry(summonPet.CreatureId);
+            if (creatureEntry == null)
+            {
+                SpellEffectDiagnostics.TraceSummonPet(spell, target, summonPet, position, player.Guid, false, 0u, "unknown-creature-id");
+                return;
+            }
+
+            if (player.SummonFactory == null)
+            {
+                SpellEffectDiagnostics.TraceSummonPet(spell, target, summonPet, position, player.Guid, false, 0u, "missing-summon-factory");
+                return;
+            }
+
+            var map = player.Map ?? target.Map ?? spell.Caster.Map;
+            if (map == null)
+            {
+                SpellEffectDiagnostics.TraceSummonPet(spell, target, summonPet, position, player.Guid, false, 0u, "target-not-in-world");
+                return;
+            }
+
+            if (IsSummonPetActiveCapReached(player.SummonFactory, summonPet))
+            {
+                SpellEffectDiagnostics.TraceSummonPet(spell, target, summonPet, position, player.Guid, false, 0u, "active-cap-reached");
+                return;
+            }
+
+            IEntityFactory factory = GetEntityFactory();
+            if (factory == null)
+            {
+                SpellEffectDiagnostics.TraceSummonPet(spell, target, summonPet, position, player.Guid, false, 0u, "missing-entity-factory");
+                return;
+            }
+
+            IWorldEntity summoned = factory.CreateWorldEntity((EntityType)creatureEntry.CreationTypeEnum);
+            if (summoned == null)
+            {
+                SpellEffectDiagnostics.TraceSummonPet(spell, target, summonPet, position, player.Guid, false, 0u, "unsupported-entity-type");
+                return;
+            }
+
+            summoned.Initialise(summonPet.CreatureId);
+            if (IsEngineerArtillerybotCreature(summonPet.CreatureId))
+                ApplyEngineerArtillerybotSummonerLevel(summoned, player, creatureEntry);
+
+            summoned.Rotation     = player.Rotation;
+            summoned.SummonerGuid = player.Guid;
+            summoned.Faction1     = player.Faction1;
+            summoned.Faction2     = player.Faction2;
+
+            var mapPosition = new MapPosition
+            {
+                Position = position
+            };
+
+            if (!map.CanEnter(summoned, mapPosition))
+            {
+                SpellEffectDiagnostics.TraceSummonPet(spell, target, summonPet, position, player.Guid, false, summoned.Guid, "map-rejected-position");
+                return;
+            }
+
+            map.EnqueueAdd(summoned, mapPosition);
+            info.AddCreatedEntity(summoned);
+            if (IsEngineerArtillerybotCreature(summonPet.CreatureId))
+                RegisterEngineerArtillerybotBarrageAction(player, spell.Parameters.SpellInfo?.Entry);
+
+            SpellEffectDiagnostics.TraceSummonPet(spell, target, summonPet, position, player.Guid, true, summoned.Guid, null);
+        }
+
+        private static bool IsSummonPetActiveCapReached(IEntitySummonFactory summonFactory, SpellEffectSummonPetSemantics summonPet)
+        {
+            if (!IsEngineerArtillerybotCreature(summonPet.CreatureId))
+                return false;
+
+            uint activeCount = 0u;
+            foreach (uint creatureId in EngineerArtillerybotCreatureIds)
+                activeCount += summonFactory.GetSummonCreatureCount(creatureId);
+
+            return activeCount >= EngineerArtillerybotMaxActive;
+        }
+
+        private static bool IsEngineerArtillerybotCreature(uint creatureId)
+        {
+            return creatureId is EngineerArtillerybotExileCreatureId or EngineerArtillerybotDominionCreatureId;
+        }
+
+        private static void ApplyEngineerArtillerybotSummonerLevel(IWorldEntity summoned, IPlayer player, Creature2Entry creatureEntry)
+        {
+            uint minLevel = creatureEntry.MinLevel == 0u ? 1u : creatureEntry.MinLevel;
+            uint maxLevel = creatureEntry.MaxLevel >= minLevel ? creatureEntry.MaxLevel : minLevel;
+            uint playerLevel = player.Level == 0u ? minLevel : player.Level;
+            uint summonLevel = Math.Min(Math.Max(playerLevel, minLevel), maxLevel);
+
+            summoned.Level = summonLevel;
+            summoned.RecalculateCreatureProperties();
+        }
+
+        private static void RegisterEngineerArtillerybotBarrageAction(IPlayer player, Spell4Entry summonSpellEntry)
+        {
+            if (summonSpellEntry == null
+                || summonSpellEntry.Spell4BaseIdBaseSpell != EngineerArtillerybotSummonBaseSpell4Id
+                || summonSpellEntry.Spell4IdPetSwitch == 0u)
+                return;
+
+            Spell4Entry barrageEntry = ResolveSpell4Entry(
+                EngineerArtillerybotPlayerBarrageBaseSpell4Id,
+                summonSpellEntry.TierIndex);
+            if (barrageEntry == null)
+                return;
+
+            player.SpellManager.SetActivePetActionSpell(summonSpellEntry.Spell4IdPetSwitch, barrageEntry.Id, summonSpellEntry.Id);
+            ShowEngineerArtillerybotBarrageAction(player, summonSpellEntry);
+        }
+
+        public static void UnregisterEngineerArtillerybotBarrageAction(IPlayer player, IWorldEntity entity)
+        {
+            if (player == null || entity == null || !IsEngineerArtillerybotCreature(entity.CreatureId))
+                return;
+
+            uint activeCount = 0u;
+            foreach (uint creatureId in EngineerArtillerybotCreatureIds)
+                activeCount += player.SummonFactory?.GetSummonCreatureCount(creatureId) ?? 0u;
+
+            if (activeCount != 0u)
+                return;
+
+            player.SpellManager.ClearActivePetActionSpells();
+            HideEngineerArtillerybotBarrageAction(player);
+        }
+
+        private static void ShowEngineerArtillerybotBarrageAction(IPlayer player, Spell4Entry summonSpellEntry)
+        {
+            Spell4Entry petSwitchEntry = GetGameTableManager().Spell4?.GetEntry(summonSpellEntry.Spell4IdPetSwitch);
+            if (petSwitchEntry == null || petSwitchEntry.Spell4BaseIdBaseSpell != EngineerArtillerybotPetSwitchBaseSpell4Id)
+                return;
+
+            SendEngineerArtillerybotBarrageSpellUpdate(
+                player,
+                petSwitchEntry.Spell4BaseIdBaseSpell,
+                (byte)Math.Clamp(petSwitchEntry.TierIndex, 1u, (uint)byte.MaxValue),
+                true);
+            SendEngineerArtillerybotActionSetSwap(player, petSwitchEntry.Spell4BaseIdBaseSpell);
+        }
+
+        private static void HideEngineerArtillerybotBarrageAction(IPlayer player)
+        {
+            if (player.Session == null)
+                return;
+
+            SendEngineerArtillerybotBarrageSpellUpdate(
+                player,
+                EngineerArtillerybotPetSwitchBaseSpell4Id,
+                0,
+                false);
+
+            IActionSet actionSet = player.SpellManager.GetActionSet(player.SpellManager.ActiveActionSet);
+            ServerActionSet packet = actionSet?.BuildServerActionSet();
+            if (packet != null)
+                player.Session?.EnqueueMessageEncrypted(packet);
+        }
+
+        private static void SendEngineerArtillerybotBarrageSpellUpdate(IPlayer player, uint spell4BaseId, byte tierIndex, bool activated)
+        {
+            if (player.Session == null)
+                return;
+
+            player.Session.EnqueueMessageEncrypted(new ServerSpellUpdate
+            {
+                Spell4BaseId = spell4BaseId,
+                TierIndex    = tierIndex,
+                SpecIndex    = player.SpellManager.ActiveActionSet,
+                Activated    = activated
+            });
+        }
+
+        private static void SendEngineerArtillerybotActionSetSwap(IPlayer player, uint petSwitchSpell4BaseId)
+        {
+            if (player.Session == null)
+                return;
+
+            IActionSet actionSet = player.SpellManager.GetActionSet(player.SpellManager.ActiveActionSet);
+            if (actionSet == null)
+                return;
+
+            var packet = new ServerActionSet
+            {
+                SpecIndex = actionSet.Index,
+                Unlocked  = 1,
+                Result    = LimitedActionSetResult.Ok
+            };
+
+            bool replaced = false;
+            for (byte slot = 0; slot < ActionSet.MaxActionCount; slot++)
+            {
+                var location = (UILocation)slot;
+                IActionSetShortcut shortcut = actionSet.GetShortcut(location);
+                bool replace = shortcut?.ShortcutType == ShortcutType.SpellbookItem
+                    && shortcut.ObjectId == EngineerArtillerybotSummonBaseSpell4Id;
+                if (replace)
+                    replaced = true;
+
+                packet.Actions.Add(new ServerActionSet.Action
+                {
+                    ShortcutType = shortcut?.ShortcutType ?? ShortcutType.None,
+                    ObjectId     = replace ? petSwitchSpell4BaseId : shortcut?.ObjectId ?? 0u,
+                    Location     = new NexusForever.Network.World.Message.Model.Shared.ItemLocation
+                    {
+                        Location = shortcut == null ? (InventoryLocation)300 : InventoryLocation.Ability,
+                        BagIndex = slot
+                    }
+                });
+            }
+
+            if (replaced)
+                player.Session.EnqueueMessageEncrypted(packet);
+        }
+
+        private static Spell4Entry ResolveSpell4Entry(uint spell4BaseId, uint tierIndex)
+        {
+            if (spell4BaseId == 0u || tierIndex == 0u)
+                return null;
+
+            return GetGameTableManager().Spell4?.Entries?
+                .FirstOrDefault(e => e?.Spell4BaseIdBaseSpell == spell4BaseId && e.TierIndex == tierIndex);
+        }
+
         [SpellEffectHandler(SpellEffectType.SummonVehicle)]
         public static void HandleEffectSummonVehicle(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
@@ -674,6 +938,16 @@ namespace NexusForever.Game.Spell
                 return casterForwardAngle;
 
             return casterForwardAngle + summonCreature.DataBits05 * MathF.PI / 180f;
+        }
+
+        private static Vector3 ResolveSummonPetPosition(ISpell spell, IUnitEntity target, IPlayer player)
+        {
+            if (player?.Map != null)
+                return player.Position;
+
+            return target.Map != null
+                ? target.Position
+                : spell.Caster.Position;
         }
 
         [SpellEffectHandler(SpellEffectType.NpcExecutionDelay)]
@@ -1317,6 +1591,80 @@ namespace NexusForever.Game.Spell
             HandleProxySpell(spell, target, target, info);
         }
 
+        [SpellEffectHandler(SpellEffectType.ProxyRandomExclusive)]
+        public static void HandleEffectProxyRandomExclusive(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectProxySemantics proxy = SelectProxyRandomExclusive(SpellEffectInterpreter.Interpret(info).ProxyRandomExclusive);
+            HandleProxySpell(spell, target, target, info, proxy);
+        }
+
+        public static void HandleEffectProxyRandomExclusiveWorld(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectProxySemantics proxy = SelectProxyRandomExclusive(SpellEffectInterpreter.Interpret(info).ProxyRandomExclusive);
+            HandleProxySpell(spell, spell.Caster, target, info, proxy);
+        }
+
+        [SpellEffectHandler(SpellEffectType.PetCastSpell)]
+        public static void HandleEffectPetCastSpell(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectPetCastSpellSemantics petCastSpell = SpellEffectInterpreter.Interpret(info).PetCastSpell;
+            if (petCastSpell == null)
+                return;
+
+            IPlayer player = GetPlayerSpellOwner(spell, target);
+            if (player == null)
+            {
+                SpellEffectDiagnostics.TracePetCastSpell(spell, target, petCastSpell, 0u, 0u, 0u, [], false, "no-player-owner");
+                return;
+            }
+
+            if (petCastSpell.RequiredSummonSpell4Id == 0u)
+            {
+                SpellEffectDiagnostics.TracePetCastSpell(spell, target, petCastSpell, player.Guid, 0u, 0u, [], false, "missing-required-summon-spell");
+                return;
+            }
+
+            if (GetGameTableManager().Spell4?.GetEntry(petCastSpell.RequiredSummonSpell4Id) == null)
+            {
+                SpellEffectDiagnostics.TracePetCastSpell(spell, target, petCastSpell, player.Guid, 0u, 0u, [], false, "unknown-required-summon-spell");
+                return;
+            }
+
+            if (petCastSpell.PetSpell4Id == 0u || GetGameTableManager().Spell4?.GetEntry(petCastSpell.PetSpell4Id) == null)
+            {
+                SpellEffectDiagnostics.TracePetCastSpell(spell, target, petCastSpell, player.Guid, 0u, 0u, [], false, "unknown-pet-spell");
+                return;
+            }
+
+            IReadOnlyList<uint> summonCreatureIds = ResolvePetCastSummonCreatureIds(petCastSpell.RequiredSummonSpell4Id);
+            if (summonCreatureIds.Count == 0)
+            {
+                SpellEffectDiagnostics.TracePetCastSpell(spell, target, petCastSpell, player.Guid, 0u, 0u, summonCreatureIds, false, "missing-summon-pet-link");
+                return;
+            }
+
+            if (!TryGetActivePetCastSource(player, summonCreatureIds, out IUnitEntity petCaster))
+            {
+                SpellEffectDiagnostics.TracePetCastSpell(spell, target, petCastSpell, player.Guid, 0u, 0u, summonCreatureIds, false, "missing-active-pet");
+                return;
+            }
+
+            uint primaryTargetId = spell.Parameters.PrimaryTargetId != 0u
+                ? spell.Parameters.PrimaryTargetId
+                : target.Guid;
+            petCaster.CastSpell(petCastSpell.PetSpell4Id, new SpellParameters
+            {
+                ParentSpellInfo        = spell.Parameters.SpellInfo,
+                RootSpellInfo          = spell.Parameters.RootSpellInfo,
+                PrimaryTargetId        = primaryTargetId,
+                UserInitiatedSpellCast = false,
+                ClientContextToken     = spell.Parameters.ClientContextToken,
+                ClientRequestSource    = spell.Parameters.ClientRequestSource
+            });
+
+            SpellEffectDiagnostics.TracePetCastSpell(spell, target, petCastSpell, player.Guid, petCaster.Guid, primaryTargetId, summonCreatureIds, true, null);
+        }
+
         [SpellEffectHandler(SpellEffectType.SettlerCampfire)]
         public static void HandleEffectSettlerCampfire(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
@@ -1371,11 +1719,75 @@ namespace NexusForever.Game.Spell
             });
         }
 
+        private static SpellEffectProxySemantics SelectProxyRandomExclusive(SpellEffectProxyRandomExclusiveSemantics randomExclusive)
+        {
+            if (randomExclusive?.Candidates == null || randomExclusive.Candidates.Count == 0)
+                return null;
+
+            List<SpellEffectProxyRandomExclusiveCandidate> weightedCandidates = randomExclusive.Candidates
+                .Where(c => c.Spell4Id != 0u && c.Weight > 0u)
+                .ToList();
+
+            if (weightedCandidates.Count == 0)
+            {
+                SpellEffectProxyRandomExclusiveCandidate fallback = randomExclusive.Candidates.FirstOrDefault(c => c.Spell4Id != 0u);
+                return fallback.Spell4Id == 0u ? null : new SpellEffectProxySemantics(fallback.Spell4Id);
+            }
+
+            long totalWeight = weightedCandidates.Sum(c => (long)c.Weight);
+            long roll = Random.Shared.NextInt64(totalWeight);
+            foreach (SpellEffectProxyRandomExclusiveCandidate candidate in weightedCandidates)
+            {
+                if (roll < candidate.Weight)
+                    return new SpellEffectProxySemantics(candidate.Spell4Id);
+
+                roll -= candidate.Weight;
+            }
+
+            return new SpellEffectProxySemantics(weightedCandidates[^1].Spell4Id);
+        }
+
         private static bool ShouldRouteProxyToOriginalCaster(ISpell spell, SpellEffectProxySemantics proxy)
         {
             return spell.Parameters.SpellInfo.Entry.Id == RelentlessStrikesTelegraphSpell4Id
                 && proxy?.Spell4Id == RelentlessStrikesAddCellSpell4Id
                 && spell.Caster is IPlayer;
+        }
+
+        private static IReadOnlyList<uint> ResolvePetCastSummonCreatureIds(uint requiredSummonSpell4Id)
+        {
+            IGlobalSpellManager globalSpellManager = dependencyResolver?.GetGlobalSpellManager();
+            if (globalSpellManager == null)
+                return [];
+
+            IEnumerable<Spell4EffectsEntry> entries = globalSpellManager.GetSpell4EffectEntries(requiredSummonSpell4Id) ?? [];
+            return entries
+                .Where(e => e.EffectType == SpellEffectType.SummonPet && e.DataBits00 != 0u)
+                .Select(e => e.DataBits00)
+                .Distinct()
+                .ToList();
+        }
+
+        private static bool TryGetActivePetCastSource(IPlayer player, IEnumerable<uint> summonCreatureIds, out IUnitEntity petCaster)
+        {
+            petCaster = null;
+            IEntitySummonFactory summonFactory = player?.SummonFactory;
+            if (summonFactory == null)
+                return false;
+
+            foreach (uint creatureId in summonCreatureIds)
+            {
+                if (!summonFactory.TryGetSummonCreature(creatureId, out IWorldEntity summon))
+                    continue;
+
+                if (summon is IUnitEntity unit)
+                {
+                    petCaster = unit;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         [SpellEffectHandler(SpellEffectType.DespawnUnit)]
@@ -1421,6 +1833,13 @@ namespace NexusForever.Game.Spell
             if (player == null || activatedEntity == null || activatedEntity.Guid == player.Guid)
             {
                 SpellEffectDiagnostics.TraceActivate(spell, target, activate, player?.Guid ?? 0u, 0u, 0);
+                return;
+            }
+
+            if (spell.Parameters.DeferActivateEffectObjectiveCredit)
+            {
+                IReadOnlyCollection<uint> deferredTargetGroupIds = GetAssetManager()?.GetTargetGroupsForCreatureId(activatedEntity.CreatureId);
+                SpellEffectDiagnostics.TraceActivate(spell, target, activate, player.Guid, activatedEntity.CreatureId, deferredTargetGroupIds?.Count ?? 0);
                 return;
             }
 
@@ -1724,6 +2143,7 @@ namespace NexusForever.Game.Spell
                 ActionBarShortcutSetId = (ushort)actionBarSet.ActionBarShortcutSetId,
                 AssociatedUnitId       = associatedUnitId
             });
+            player.SpellManager.SetActiveFloatingActionBarShortcutSet(actionBarSet.ActionBarShortcutSetId, spell.Parameters.SpellInfo.Entry.Id);
             SpellEffectDiagnostics.TraceActionBarSet(spell, target, actionBarSet, player.Guid, associatedUnitId, shortcutSet, true, null);
         }
 
@@ -2403,6 +2823,11 @@ namespace NexusForever.Game.Spell
             bool removedProperties = removals.Any(r => r.Kind == SpellStateRemovalKind.PropertyModifier);
             IReadOnlyCollection<SpellStateRemoval> removedCCStates = removals.Where(r => r.Kind == SpellStateRemovalKind.CrowdControl).ToArray();
             SpellEffectDiagnostics.TraceForceRemove(spell, target, forceRemove, removeScope, removals.Count, removedProperties, removedCCStates.Count, null);
+            if (removeScope == "spell4-group" && target is IPlayer player)
+            {
+                player.SpellManager.ClearActiveFloatingActionBarShortcutSetForSpellGroup(forceRemove.Spell4Id);
+                player.SpellManager.ClearActivePetActionSpellsForSpellGroup(forceRemove.Spell4Id);
+            }
 
             SendTrackedStateRemovalMessages(spell, target, info, removals, false);
         }
@@ -2916,6 +3341,58 @@ namespace NexusForever.Game.Spell
             SpellEffectDiagnostics.TraceGiveItemToPlayer(spell, target, giveItem, player.Guid, count, true, null);
         }
 
+        [SpellEffectHandler(SpellEffectType.GiveLootTableToPlayer)]
+        public static void HandleEffectGiveLootTableToPlayer(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectGiveLootTableToPlayerSemantics giveLoot = SpellEffectInterpreter.Interpret(info).GiveLootTableToPlayer;
+            if (giveLoot == null)
+                return;
+
+            IPlayer player = GetPlayerSpellOwner(spell, target);
+            if (player == null)
+            {
+                SpellEffectDiagnostics.TraceGiveLootTableToPlayer(spell, target, giveLoot, 0u, 0u, 0, false, "no-player-owner");
+                return;
+            }
+
+            if (giveLoot.LootGroupId == 0u)
+            {
+                SpellEffectDiagnostics.TraceGiveLootTableToPlayer(spell, target, giveLoot, player.Guid, 0u, 0, false, "missing-loot-group");
+                return;
+            }
+
+            IGlobalLootManager lootManager = GetGlobalLootManager();
+            if (lootManager == null)
+            {
+                SpellEffectDiagnostics.TraceGiveLootTableToPlayer(spell, target, giveLoot, player.Guid, 0u, 0, false, "missing-loot-manager");
+                return;
+            }
+
+            uint rollCount = giveLoot.RollCount == 0u ? 1u : giveLoot.RollCount;
+            if (!lootManager.TryGenerateLoot(giveLoot.LootGroupId, player, rollCount, out IReadOnlyList<GeneratedLootItem> items, out string reason))
+            {
+                SpellEffectDiagnostics.TraceGiveLootTableToPlayer(spell, target, giveLoot, player.Guid, rollCount, 0, false, reason);
+                return;
+            }
+
+            items ??= [];
+            if (items.Count == 0)
+            {
+                SpellEffectDiagnostics.TraceGiveLootTableToPlayer(spell, target, giveLoot, player.Guid, rollCount, 0, false, "empty-generated-loot");
+                return;
+            }
+
+            if (!lootManager.CanDeliverGeneratedLoot(player, items, out reason))
+            {
+                SpellEffectDiagnostics.TraceGiveLootTableToPlayer(spell, target, giveLoot, player.Guid, rollCount, items.Count, false, reason);
+                return;
+            }
+
+            uint ownerUnitId = target.Guid != 0u ? target.Guid : player.Guid;
+            lootManager.GiveGeneratedLoot(player, items, ownerUnitId, sendGrantedNotify: true, parentUnitId: spell.Caster.Guid);
+            SpellEffectDiagnostics.TraceGiveLootTableToPlayer(spell, target, giveLoot, player.Guid, rollCount, items.Count, true, null);
+        }
+
         [SpellEffectHandler(SpellEffectType.GiveSchematic)]
         public static void HandleEffectGiveSchematic(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
@@ -3306,6 +3783,14 @@ namespace NexusForever.Game.Spell
 
             switch (forceRemove.RemoveType)
             {
+                case 1u:
+                    removeScope = "spell4-group";
+                    predicate = spell4Id =>
+                    {
+                        Spell4Entry spell4Entry = GetGameTableManager().Spell4?.GetEntry(spell4Id);
+                        return spell4Entry != null && Spell4GroupListContainsSpellGroup(spell4Entry.Spell4GroupListId, forceRemove.Spell4Id);
+                    };
+                    return true;
                 case 3u:
                     removeScope = "spell4-base";
                     predicate = spell4Id =>
@@ -3325,6 +3810,54 @@ namespace NexusForever.Game.Spell
                     predicate = spell4Id => spell4Id == forceRemove.Spell4Id;
                     return true;
             }
+        }
+
+        private static bool Spell4GroupListContainsSpellGroup(uint spell4GroupListId, uint spellGroupId)
+        {
+            if (spell4GroupListId == 0u || spellGroupId == 0u)
+                return false;
+
+            Spell4GroupListEntry entry = GetGameTableManager().Spell4GroupList?.GetEntry(spell4GroupListId);
+            if (entry == null)
+                return false;
+
+            uint[] spellGroupIds =
+            [
+                entry.SpellGroupId00,
+                entry.SpellGroupId01,
+                entry.SpellGroupId02,
+                entry.SpellGroupId03,
+                entry.SpellGroupId04,
+                entry.SpellGroupId05,
+                entry.SpellGroupId06,
+                entry.SpellGroupId07,
+                entry.SpellGroupId08,
+                entry.SpellGroupId09,
+                entry.SpellGroupId10,
+                entry.SpellGroupId11,
+                entry.SpellGroupId12,
+                entry.SpellGroupId13,
+                entry.SpellGroupId14,
+                entry.SpellGroupId15,
+                entry.SpellGroupId16,
+                entry.SpellGroupId17,
+                entry.SpellGroupId18,
+                entry.SpellGroupId19,
+                entry.SpellGroupId20,
+                entry.SpellGroupId21,
+                entry.SpellGroupId22,
+                entry.SpellGroupId23,
+                entry.SpellGroupId24,
+                entry.SpellGroupId25,
+                entry.SpellGroupId26,
+                entry.SpellGroupId27,
+                entry.SpellGroupId28,
+                entry.SpellGroupId29,
+                entry.SpellGroupId30,
+                entry.SpellGroupId31
+            ];
+
+            return spellGroupIds.Contains(spellGroupId);
         }
 
         private static bool TryLearnCollectionSpell(IPlayer player, uint spell4Id, string collectionGrantType, out uint spell4BaseId, out string skippedReason)

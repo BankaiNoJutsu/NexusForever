@@ -78,6 +78,7 @@ public class ClientItemUseLootBagHandlerTests
             out _,
             out RecordingDispatchProxy<IWorldSession> sessionProxy);
         IGlobalLootManager lootManager = RecordingDispatchProxy<IGlobalLootManager>.Create(out RecordingDispatchProxy<IGlobalLootManager> lootManagerProxy);
+        lootManagerProxy.SetMethodReturn(nameof(IGlobalLootManager.HasLoot), false);
         lootManagerProxy.SetMethodHandler(nameof(IGlobalLootManager.TrySalvageItem), args =>
         {
             args[2] = "missing-item-salvage:80875";
@@ -91,8 +92,36 @@ public class ClientItemUseLootBagHandlerTests
         RecordingDispatchProxy<IGlobalLootManager>.Invocation salvageCall = Assert.Single(lootManagerProxy.GetInvocations(nameof(IGlobalLootManager.TrySalvageItem)));
         Assert.Same(session.Player, salvageCall.Arguments[0]);
         Assert.Same(item, salvageCall.Arguments[1]);
-        Assert.Empty(lootManagerProxy.GetInvocations(nameof(IGlobalLootManager.HasLoot)));
+        Assert.Single(lootManagerProxy.GetInvocations(nameof(IGlobalLootManager.HasLoot)));
         Assert.Empty(lootManagerProxy.GetInvocations(nameof(IGlobalLootManager.TryUseLootBag)));
+    }
+
+    [Fact]
+    public void HandleMessage_WithMappedNonCategoryLootContainerUsesLootBag()
+    {
+        IItem item = CreateItem(item2CategoryId: 105u);
+        IWorldSession session = CreateSession(
+            item,
+            out _,
+            out _,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        IGlobalLootManager lootManager = RecordingDispatchProxy<IGlobalLootManager>.Create(out RecordingDispatchProxy<IGlobalLootManager> lootManagerProxy);
+        lootManagerProxy.SetMethodReturn(nameof(IGlobalLootManager.HasLoot), true);
+        lootManagerProxy.SetMethodHandler(nameof(IGlobalLootManager.TryUseLootBag), args =>
+        {
+            args[2] = string.Empty;
+            return true;
+        });
+        var handler = new ClientItemUseLootBagHandler(lootManager);
+
+        handler.HandleMessage(session, CreateRequest());
+
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)));
+        RecordingDispatchProxy<IGlobalLootManager>.Invocation lootBagCall = Assert.Single(lootManagerProxy.GetInvocations(nameof(IGlobalLootManager.TryUseLootBag)));
+        Assert.Same(session.Player, lootBagCall.Arguments[0]);
+        Assert.Same(item, lootBagCall.Arguments[1]);
+        Assert.Single(lootManagerProxy.GetInvocations(nameof(IGlobalLootManager.HasLoot)));
+        Assert.Empty(lootManagerProxy.GetInvocations(nameof(IGlobalLootManager.TrySalvageItem)));
     }
 
     [Fact]
@@ -105,6 +134,7 @@ public class ClientItemUseLootBagHandlerTests
             out _,
             out RecordingDispatchProxy<IWorldSession> sessionProxy);
         IGlobalLootManager lootManager = RecordingDispatchProxy<IGlobalLootManager>.Create(out RecordingDispatchProxy<IGlobalLootManager> lootManagerProxy);
+        lootManagerProxy.SetMethodReturn(nameof(IGlobalLootManager.HasLoot), false);
         lootManagerProxy.SetMethodHandler(nameof(IGlobalLootManager.TrySalvageItem), args =>
         {
             args[2] = string.Empty;
@@ -118,7 +148,7 @@ public class ClientItemUseLootBagHandlerTests
         RecordingDispatchProxy<IGlobalLootManager>.Invocation salvageCall = Assert.Single(lootManagerProxy.GetInvocations(nameof(IGlobalLootManager.TrySalvageItem)));
         Assert.Same(session.Player, salvageCall.Arguments[0]);
         Assert.Same(item, salvageCall.Arguments[1]);
-        Assert.Empty(lootManagerProxy.GetInvocations(nameof(IGlobalLootManager.HasLoot)));
+        Assert.Single(lootManagerProxy.GetInvocations(nameof(IGlobalLootManager.HasLoot)));
         Assert.Empty(lootManagerProxy.GetInvocations(nameof(IGlobalLootManager.TryUseLootBag)));
     }
 
@@ -131,6 +161,7 @@ public class ClientItemUseLootBagHandlerTests
             out _,
             out RecordingDispatchProxy<IWorldSession> sessionProxy);
         IGlobalLootManager lootManager = RecordingDispatchProxy<IGlobalLootManager>.Create(out RecordingDispatchProxy<IGlobalLootManager> lootManagerProxy);
+        lootManagerProxy.SetMethodReturn(nameof(IGlobalLootManager.HasLoot), false);
         lootManagerProxy.SetMethodHandler(nameof(IGlobalLootManager.TrySalvageItem), args =>
         {
             args[2] = "inventory-full";
@@ -142,7 +173,7 @@ public class ClientItemUseLootBagHandlerTests
 
         AssertItemError(sessionProxy, ItemGuid, GenericError.ItemInventoryFull);
         Assert.Single(lootManagerProxy.GetInvocations(nameof(IGlobalLootManager.TrySalvageItem)));
-        Assert.Empty(lootManagerProxy.GetInvocations(nameof(IGlobalLootManager.HasLoot)));
+        Assert.Single(lootManagerProxy.GetInvocations(nameof(IGlobalLootManager.HasLoot)));
         Assert.Empty(lootManagerProxy.GetInvocations(nameof(IGlobalLootManager.TryUseLootBag)));
     }
 

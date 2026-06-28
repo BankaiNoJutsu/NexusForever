@@ -5,10 +5,13 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.Loot;
+using NexusForever.Game.Abstract.Map;
+using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Chat;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
+using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
@@ -201,11 +204,15 @@ public class LootInstanceDeliveryTests
 
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
         IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out var questManagerProxy);
+        IPublicEventManager publicEventManager = RecordingDispatchProxy<IPublicEventManager>.Create(out var publicEventManagerProxy);
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
+        mapProxy.SetProperty(nameof(IBaseMap.PublicEventManager), publicEventManager);
         TestPlayerBuilder playerBuilder = TestPlayerBuilder.Create()
             .WithSession(session)
             .WithCharacterId(42ul)
             .WithGuid(4242u);
         playerBuilder.PlayerProxy.SetProperty(nameof(IPlayer.QuestManager), questManager);
+        playerBuilder.PlayerProxy.SetProperty(nameof(IPlayer.Map), map);
         IPlayer player = playerBuilder.Build();
         var lootInstance = new LootInstance(
             ownerUnitId: 99u,
@@ -226,6 +233,13 @@ public class LootInstanceDeliveryTests
         Assert.Equal(QuestObjectiveType.VirtualCollect, objectiveUpdate.Arguments[0]);
         Assert.Equal(265u, objectiveUpdate.Arguments[1]);
         Assert.Equal(2u, objectiveUpdate.Arguments[2]);
+
+        RecordingDispatchProxy<IPublicEventManager>.Invocation publicEventObjectiveUpdate = Assert.Single(
+            publicEventManagerProxy.GetInvocations(nameof(IPublicEventManager.UpdateObjective)));
+        Assert.Same(player, publicEventObjectiveUpdate.Arguments[0]);
+        Assert.Equal(PublicEventObjectiveType.VirtualCollect, publicEventObjectiveUpdate.Arguments[1]);
+        Assert.Equal(265u, publicEventObjectiveUpdate.Arguments[2]);
+        Assert.Equal(2, publicEventObjectiveUpdate.Arguments[3]);
 
         IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
         RecordingDispatchProxy<IGameSession>.Invocation grantCall = Assert.Single(sessionCalls);

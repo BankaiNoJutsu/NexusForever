@@ -15,6 +15,12 @@ namespace NexusForever.Game.Spell
         public bool UseServiceTokenCost { get; set; }
         public bool CaptureRuntimeEvidence { get; set; }
         public bool EmitDiagnosticSpellBroadcasts { get; set; }
+        public bool UseCreatureOverrides { get; set; }
+        public bool SkipPrimaryTargetRangeValidation { get; set; }
+        public bool DeferActivateEffectObjectiveCredit { get; set; }
+        public bool WaitForClientSideInteractionResponse { get; set; }
+        public uint ClientSideInteractionDurationMs { get; set; }
+        public System.Action<ISpell, bool> FinishCallback { get; set; }
         public uint ClientContextToken { get; set; }
         public string ClientRequestSource { get; set; }
         public uint PrimaryTargetId { get; set; }

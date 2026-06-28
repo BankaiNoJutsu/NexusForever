@@ -6,6 +6,7 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Static;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Spell;
 
@@ -44,8 +45,9 @@ public class ClientCastSpellContinuousHandlerTests
         characterSpell.Cast(true, PrimaryTargetId, ClientContextToken, nameof(ClientCastSpellContinuous));
 
         RecordingDispatchProxy<IPlayer>.Invocation invocation =
-            Assert.Single(playerProxy.GetInvocations(nameof(IUnitEntity.CastSpell)));
-        SpellParameters parameters = Assert.IsType<SpellParameters>(invocation.Arguments[0]);
+            Assert.Single(playerProxy.GetInvocations(nameof(IUnitEntity.TryCastSpell)));
+        Assert.Equal(20u, Assert.IsType<uint>(invocation.Arguments[0]));
+        SpellParameters parameters = Assert.IsType<SpellParameters>(invocation.Arguments[1]);
         Assert.Same(characterSpell, parameters.CharacterSpell);
         Assert.Equal(PrimaryTargetId, parameters.PrimaryTargetId);
         Assert.Equal(ClientContextToken, parameters.ClientContextToken);
@@ -60,7 +62,7 @@ public class ClientCastSpellContinuousHandlerTests
 
         characterSpell.Cast(false, PrimaryTargetId, ClientContextToken, nameof(ClientCastSpellContinuous));
 
-        Assert.Empty(playerProxy.GetInvocations(nameof(IUnitEntity.CastSpell)));
+        Assert.Empty(playerProxy.GetInvocations(nameof(IUnitEntity.TryCastSpell)));
     }
 
     private static IWorldSession CreateSession(out RecordingDispatchProxy<ICharacterSpell> characterSpellProxy)

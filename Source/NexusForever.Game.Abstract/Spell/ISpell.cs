@@ -29,6 +29,11 @@ namespace NexusForever.Game.Abstract.Spell
         /// </summary>
         bool TryCancelEffect(IUnitEntity requester);
 
+        /// <summary>
+        /// Complete a spell that is waiting for a client-side interaction response.
+        /// </summary>
+        bool TryCompleteClientSideInteraction(bool wasCancelled);
+
         bool IsMovingInterrupted();
     }
 }

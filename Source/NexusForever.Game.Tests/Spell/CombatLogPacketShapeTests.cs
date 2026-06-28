@@ -230,6 +230,44 @@ public class CombatLogPacketShapeTests
         AssertCastData(reader);
     }
 
+    [Fact]
+    public void CombatLogDeflect_WriteSerializesMultiHitAndCastContext()
+    {
+        byte[] data = WritePacket(new ServerCombatLog
+        {
+            CombatLog = new CombatLogDeflect
+            {
+                BMultiHit = true,
+                CastData  = CreateCastData()
+            }
+        });
+
+        using var reader = CreateReader(data);
+        Assert.Equal(CombatLogType.Deflect, reader.ReadEnum<CombatLogType>(6u));
+        Assert.True(reader.ReadBit());
+        AssertCastData(reader);
+    }
+
+    [Fact]
+    public void CombatLogKillStreak_WriteSerializesKillChainPayload()
+    {
+        byte[] data = WritePacket(new ServerCombatLog
+        {
+            CombatLog = new CombatLogKillStreak
+            {
+                UnitId       = 0x01020304u,
+                StatType     = CombatMomentumStat.KillChain,
+                StreakAmount = 3u
+            }
+        });
+
+        using var reader = CreateReader(data);
+        Assert.Equal(CombatLogType.KillStreak, reader.ReadEnum<CombatLogType>(6u));
+        Assert.Equal(0x01020304u, reader.ReadUInt());
+        Assert.Equal(CombatMomentumStat.KillChain, reader.ReadEnum<CombatMomentumStat>(5u));
+        Assert.Equal(3u, reader.ReadUInt());
+    }
+
     [Theory]
     [InlineData(1000u, 6000u, true)]
     [InlineData(1000u, 0u, false)]

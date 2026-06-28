@@ -1,5 +1,6 @@
 ﻿using NexusForever.Network.Message;
 using NexusForever.GameTable;
+using NexusForever.Game.Spell;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
 using NexusForever.Network.World.Message.Model;
@@ -31,11 +32,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
                 || classEntry.Spell4IdInnateAbilityActive[innateChange.InnateIndex] == 0u)
                 throw new InvalidPacketValueException();
 
+            uint activeSpell4Id = classEntry.Spell4IdInnateAbilityActive[innateChange.InnateIndex];
             session.Player.InnateIndex = innateChange.InnateIndex;
 
             session.EnqueueMessageEncrypted(new ServerStanceChanged
             {
                 InnateIndex = session.Player.InnateIndex
+            });
+
+            session.Player.CastSpell(activeSpell4Id, new SpellParameters
+            {
+                PrimaryTargetId         = session.Player.Guid,
+                UserInitiatedSpellCast = true,
+                IgnoreGlobalCooldown   = true,
+                ClientRequestSource    = nameof(ClientSetStanceHandler)
             });
         }
     }

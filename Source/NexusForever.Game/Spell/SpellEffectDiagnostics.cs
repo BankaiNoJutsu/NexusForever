@@ -154,6 +154,24 @@ namespace NexusForever.Game.Spell
                 repeats);
         }
 
+        public static void TraceChannelPulseSchedule(ISpell spell, uint delayMs, uint pulseMs, uint maxTimeMs, IReadOnlyCollection<SpellEffectInterpretation> effects)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            var context = new SpellDiagnosticContext(spell);
+            log.Trace(
+                "SpellDiagnostics channel-pulse-schedule spell4Id={0} baseSpell4Id={1} castingId={2} delayMs={3} pulseMs={4} maxTimeMs={5} effectCount={6} effects=[{7}]",
+                context.Spell4Id,
+                context.BaseSpell4Id,
+                context.CastingId,
+                delayMs,
+                pulseMs,
+                maxTimeMs,
+                effects.Count,
+                string.Join("; ", effects.Select(e => $"{e.Entry.Id}:{e.Entry.EffectType}:{e.Entry.TargetFlags}")));
+        }
+
         public static void TraceEffectLifetime(ISpell spell, SpellEffectInterpretation effect, uint targetGuid, uint durationMs)
         {
             if (!log.IsTraceEnabled)
@@ -295,6 +313,35 @@ namespace NexusForever.Game.Spell
                 summonCreature.DataBits07,
                 summonCreature.DataBits08,
                 summonCreature.DataBits09);
+        }
+
+        public static void TraceSummonPet(ISpell spell, IUnitEntity target, SpellEffectSummonPetSemantics summonPet, Vector3 position, uint playerGuid, bool created, uint summonedGuid, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics summon-pet spell4Id={0} castingId={1} target={2} player={3} creatureId={4} petType={5} created={6} summonedGuid={7} skippedReason={8} position={9:R}/{10:R}/{11:R} dataBits02={12} dataBits03={13} dataBits04={14} dataBits05={15} dataBits06={16} dataBits07={17} dataBits08={18} dataBits09={19}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                playerGuid,
+                summonPet.CreatureId,
+                summonPet.PetType,
+                created,
+                summonedGuid,
+                skippedReason,
+                position.X,
+                position.Y,
+                position.Z,
+                summonPet.DataBits02,
+                summonPet.DataBits03,
+                summonPet.DataBits04,
+                summonPet.DataBits05,
+                summonPet.DataBits06,
+                summonPet.DataBits07,
+                summonPet.DataBits08,
+                summonPet.DataBits09);
         }
 
         public static void TraceSummonVehicle(ISpell spell, IUnitEntity target, SpellEffectSummonVehicleSemantics summonVehicle, Vector3 position, bool created, bool boarded, uint vehicleGuid, string skippedReason)
@@ -1357,6 +1404,28 @@ namespace NexusForever.Game.Spell
                 giveItem.DataBits05);
         }
 
+        public static void TraceGiveLootTableToPlayer(ISpell spell, IUnitEntity target, SpellEffectGiveLootTableToPlayerSemantics giveLoot, uint playerGuid, uint rollCount, int generatedItemCount, bool applied, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics give-loot-table-to-player spell4Id={0} castingId={1} target={2} player={3} lootGroupId={4} rollCount={5} generatedItemCount={6} applied={7} skippedReason={8} dataBits02={9} dataBits03={10} dataBits04={11} dataBits05={12}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                playerGuid,
+                giveLoot.LootGroupId,
+                rollCount,
+                generatedItemCount,
+                applied,
+                skippedReason,
+                giveLoot.DataBits02,
+                giveLoot.DataBits03,
+                giveLoot.DataBits04,
+                giveLoot.DataBits05);
+        }
+
         public static void TraceGiveSchematic(ISpell spell, IUnitEntity target, SpellEffectGiveSchematicSemantics giveSchematic, uint playerGuid, uint tradeskillId, bool applied, string skippedReason)
         {
             if (!log.IsTraceEnabled)
@@ -1791,6 +1860,30 @@ namespace NexusForever.Game.Spell
                 info.Entry.DelayTime,
                 info.Entry.TickTime,
                 info.Entry.DurationTime);
+        }
+
+        public static void TracePetCastSpell(ISpell spell, IUnitEntity target, SpellEffectPetCastSpellSemantics petCastSpell, uint playerGuid, uint petCasterGuid, uint primaryTargetId, IReadOnlyCollection<uint> requiredCreatureIds, bool applied, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics pet-cast-spell spell4Id={0} castingId={1} target={2} player={3} requiredSummonSpell4Id={4} petSpell4Id={5} petCaster={6} primaryTarget={7} requiredCreatureIds=[{8}] applied={9} skippedReason={10} dataBits02={11} dataBits03={12} dataBits04={13} dataBits05={14}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                playerGuid,
+                petCastSpell.RequiredSummonSpell4Id,
+                petCastSpell.PetSpell4Id,
+                petCasterGuid,
+                primaryTargetId,
+                string.Join(",", requiredCreatureIds ?? Array.Empty<uint>()),
+                applied,
+                skippedReason,
+                petCastSpell.DataBits02,
+                petCastSpell.DataBits03,
+                petCastSpell.DataBits04,
+                petCastSpell.DataBits05);
         }
 
         public static void TraceDespawnUnit(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info, bool removed)

@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Combat;
@@ -106,6 +107,7 @@ namespace NexusForever.Game.Entity
 
         public IThreatManager ThreatManager { get; private set; }
 
+        private static readonly ConditionalWeakTable<IPlayer, KillChainTracker> killChainTrackers = new();
         private readonly UpdateTimer statUpdateTimer = new UpdateTimer(0.25);
         private double shieldRebootRemainingSeconds;
         private double shieldRegenElapsedSeconds;
@@ -748,11 +750,16 @@ namespace NexusForever.Game.Entity
 
         public void AddScale(uint effectId, uint spell4Id, uint castingId, float previousScale, uint restoreTimeMs)
         {
+            // Repeated casts of the same scale spell should refresh/overlap from the original baseline,
+            // otherwise the final expiry can restore to an already-scaled value.
+            ScaleState existingScaleState = scaleStates.Values.FirstOrDefault(s => s.Spell4Id == spell4Id);
+            float baselineScale = existingScaleState?.PreviousScale ?? previousScale;
+
             scaleStates[effectId] = new ScaleState
             {
                 Spell4Id      = spell4Id,
                 CastingId     = castingId,
-                PreviousScale = previousScale,
+                PreviousScale = baselineScale,
                 RestoreTimeMs = restoreTimeMs
             };
         }
@@ -761,6 +768,9 @@ namespace NexusForever.Game.Entity
         {
             if (!scaleStates.Remove(effectId, out ScaleState scaleState))
                 return false;
+
+            if (scaleStates.Values.Any(s => s.Spell4Id == scaleState.Spell4Id))
+                return true;
 
             RestoreScale(scaleState);
             return true;
@@ -1114,6 +1124,9 @@ namespace NexusForever.Game.Entity
             appliedAmount = 0f;
             if (!float.IsFinite(amount) || MathF.Abs(amount) < 0.0001f)
                 return false;
+
+            if (WarriorOverdriveMechanic.FreezesKineticVital(this, vital))
+                return true;
 
             if (!TryGetVitalValue(vital, out float currentValue))
                 return false;
@@ -1843,7 +1856,26 @@ namespace NexusForever.Game.Entity
             if (!InCombat && Health < MaxHealth)
                 ModifyHealth((uint)(MaxHealth / 200f), DamageType.Heal, null);
 
+            HandleDashEnergyRegenUpdate();
             HandleShieldRegenUpdate();
+        }
+
+        private void HandleDashEnergyRegenUpdate()
+        {
+            if (!TryGetVitalValue(Vital.Resource7, out float dashEnergy)
+                || !TryGetVitalMax(Vital.Resource7, out float maxDashEnergy)
+                || dashEnergy >= maxDashEnergy)
+                return;
+
+            float regenMultiplier = GetPropertyValue(Property.ResourceRegenMultiplier7);
+            if (!float.IsFinite(regenMultiplier) || regenMultiplier <= 0f)
+                return;
+
+            float regenAmount = maxDashEnergy * regenMultiplier * (float)statUpdateTimer.Duration;
+            if (regenAmount <= 0f)
+                return;
+
+            TryModifyVital(Vital.Resource7, regenAmount, out _);
         }
 
         private void RestartShieldReboot()
@@ -2099,6 +2131,12 @@ namespace NexusForever.Game.Entity
             return spell.TryCancelEffect(this);
         }
 
+        public bool TryCompleteClientSideInteractionSpell(uint castingId, bool wasCancelled)
+        {
+            ISpell spell = pendingSpells.SingleOrDefault(s => s.CastingId == castingId);
+            return spell?.TryCompleteClientSideInteraction(wasCancelled) ?? false;
+        }
+
         /// <summary>
         /// Returns an active <see cref="ISpell"/> that is affecting this <see cref="IUnitEntity"/>
         /// </summary>
@@ -2247,6 +2285,8 @@ namespace NexusForever.Game.Entity
             damageDescription.KilledTarget = wasAlive && !IsAlive;
             damageDescription.OverkillAmount = CalculateHealthOverkill(healthBefore, damageDescription.AdjustedDamage, damageDescription.KilledTarget);
 
+            UpdatePublicEventDamageStats(attacker, damageDescription);
+
             if (damageDescription.AdjustedDamage != 0u || damageDescription.ShieldAbsorbAmount != 0u)
             {
                 attacker.ProbeProcEvent("deal-damage", ProcTriggerEventCandidate.DealDamage, attacker, this, null, null, damageDescription, "after-apply");
@@ -2260,6 +2300,39 @@ namespace NexusForever.Game.Entity
 
                 attacker.ProbeProcEvent("target-killed", ProcTriggerEventCandidate.KillTarget, attacker, this, null, null, damageDescription, "after-apply");
             }
+        }
+
+        private void UpdatePublicEventDamageStats(IUnitEntity attacker, IDamageDescription damageDescription)
+        {
+            uint damage = SaturatingAdd(damageDescription.AdjustedDamage, damageDescription.ShieldAbsorbAmount);
+
+            if (attacker is IPlayer attackerPlayer)
+            {
+                if (damage != 0u)
+                {
+                    attackerPlayer.Map?.PublicEventManager.IncrementStat(attackerPlayer, PublicEventStat.Damage, damage);
+                    attackerPlayer.Map?.PublicEventManager.IncrementStat(attackerPlayer, PublicEventStat.Hits, 1u);
+                }
+
+                if (damageDescription.KilledTarget)
+                    attackerPlayer.Map?.PublicEventManager.IncrementStat(attackerPlayer, PublicEventStat.Kills, 1u);
+            }
+
+            if (this is IPlayer targetPlayer)
+            {
+                if (damage != 0u)
+                    targetPlayer.Map?.PublicEventManager.IncrementStat(targetPlayer, PublicEventStat.DamageReceived, damage);
+
+                if (damageDescription.KilledTarget)
+                    targetPlayer.Map?.PublicEventManager.IncrementStat(targetPlayer, PublicEventStat.Deaths, 1u);
+            }
+        }
+
+        private static uint SaturatingAdd(uint left, uint right)
+        {
+            return uint.MaxValue - left < right
+                ? uint.MaxValue
+                : left + right;
         }
 
         internal static uint CalculateHealthOverkill(uint healthBefore, uint adjustedDamage, bool killedTarget)
@@ -2294,7 +2367,16 @@ namespace NexusForever.Game.Entity
             scriptCollection?.Invoke<IUnitScript>(s => s.OnHealthChange(source, amount, type));
 
             if (type == DamageType.Heal && source != null && source.Guid != Guid && Health > previousHealth)
+            {
+                uint healed = Health - previousHealth;
+                if (source is IPlayer sourcePlayer)
+                    sourcePlayer.Map?.PublicEventManager.IncrementStat(sourcePlayer, PublicEventStat.Healed, healed);
+
+                if (this is IPlayer targetPlayer)
+                    targetPlayer.Map?.PublicEventManager.IncrementStat(targetPlayer, PublicEventStat.HealingReceived, healed);
+
                 source.ProbeProcEvent("heal-other", ProcTriggerEventCandidate.HealOther, source, this, null, null, null, "after-apply");
+            }
 
             if (Health == 0)
             {
@@ -2434,11 +2516,7 @@ namespace NexusForever.Game.Entity
 
             Map?.PublicEventManager.OnDeath(this);
 
-            foreach (ISpell spell in pendingSpells)
-            {
-                if (spell.IsCasting)
-                    spell.CancelCast(CastResult.CasterCannotBeDead);
-            }
+            CancelCastingSpells(CastResult.CasterCannotBeDead);
 
             GenerateRewards();
             ClearCombatState();
@@ -2483,6 +2561,8 @@ namespace NexusForever.Game.Entity
 
             if (CreatureId > 0u)
             {
+                UpdateCreatureKillChain(player, Guid);
+
                 uint groupValue = CreatureInfo?.DifficultyEntry?.GroupValue
                     ?? GetGameTableManager().Creature2Difficulty.GetEntry(CreatureEntry?.Creature2DifficultyId ?? 0u)?.GroupValue
                     ?? 0u;
@@ -2493,12 +2573,67 @@ namespace NexusForever.Game.Entity
             GetGlobalLootManager()?.DropLoot(player, this);
         }
 
+        private static void UpdateCreatureKillChain(IPlayer player, uint killedUnitId)
+        {
+            if (player?.Session == null)
+                return;
+
+            uint killCount = killChainTrackers
+                .GetValue(player, _ => new KillChainTracker())
+                .RecordKill(DateTimeOffset.UtcNow, GetKillChainWindow(player));
+
+            if (killCount < KillChainTracker.FirstAnnouncedKillCount)
+                return;
+
+            player.Session.EnqueueMessageEncrypted(new ServerCombatReward
+            {
+                Stat           = (byte)CombatMomentumStat.KillChain,
+                NewValue       = killCount,
+                CombatRewardId = GetKillChainCombatRewardId(killCount),
+                TargetUnitId   = killedUnitId
+            });
+
+            player.Session.EnqueueMessageEncrypted(new ServerCombatLog
+            {
+                CombatLog = new CombatLogKillStreak
+                {
+                    UnitId       = player.Guid,
+                    StatType     = CombatMomentumStat.KillChain,
+                    StreakAmount = killCount
+                }
+            });
+        }
+
+        private static uint GetKillChainCombatRewardId(uint killCount)
+        {
+            return killCount switch
+            {
+                2u => 4u,  // Double Kill
+                3u => 5u,  // Triple Kill
+                4u => 6u,  // Mega Kill
+                5u => 7u,  // Uber Kill
+                6u => 20u, // Super Kill
+                7u => 21u, // Epic Kill
+                _  => 22u  // Godly Kill
+            };
+        }
+
+        private static TimeSpan GetKillChainWindow(IPlayer player)
+        {
+            float configuredMilliseconds = player.GetPropertyValue(Property.KillingSpreeOutOfCombatGracePeriodMS);
+            if (!float.IsFinite(configuredMilliseconds) || configuredMilliseconds <= 0f)
+                return KillChainTracker.DefaultWindow;
+
+            return TimeSpan.FromMilliseconds(configuredMilliseconds);
+        }
+
         private void RewardPublicEventKiller(IPlayer player, IEnumerable<uint> targetGroupIds)
         {
             foreach (uint targetGroupId in targetGroupIds)
             {
                 Map.PublicEventManager.UpdateObjective(player, PublicEventObjectiveType.KillTargetGroup, targetGroupId, 1);
                 Map.PublicEventManager.UpdateObjective(player, PublicEventObjectiveType.KillClusterTargetGroup, targetGroupId, 1);
+                Map.PublicEventManager.UpdateObjective(player, PublicEventObjectiveType.Exterminate, targetGroupId, 1);
             }
 
             if (PublicEventId == 0u)
@@ -2527,6 +2662,7 @@ namespace NexusForever.Game.Entity
             SetTarget((IWorldEntity)null);
             ThreatManager.ClearThreatList();
             UpdateCombatState();
+            MovementManager.Finalise();
         }
 
         private void ScheduleRespawn()
@@ -2554,10 +2690,38 @@ namespace NexusForever.Game.Entity
         private void Respawn()
         {
             RemoveLootForOwner();
+            RestorePositionForRespawn();
+            RestoreRotationForRespawn();
             ResetVitalsForRespawn();
             DeathState = null;
             SendLootRemoveForOwnerToVisiblePlayers();
             RefreshVisiblePlayersAfterRespawn();
+        }
+
+        private void RestorePositionForRespawn()
+        {
+            if (this is not INonPlayerEntity || !IsFinite(LeashPosition))
+                return;
+
+            MovementManager.SetPosition(LeashPosition, false);
+
+            if (Map != null && Position != LeashPosition)
+                Relocate(LeashPosition);
+        }
+
+        private void RestoreRotationForRespawn()
+        {
+            if (this is not INonPlayerEntity || !IsFinite(LeashRotation))
+                return;
+
+            MovementManager.SetRotation(LeashRotation, false);
+        }
+
+        private static bool IsFinite(Vector3 vector)
+        {
+            return float.IsFinite(vector.X)
+                && float.IsFinite(vector.Y)
+                && float.IsFinite(vector.Z);
         }
 
         protected virtual void ResetVitalsForRespawn()

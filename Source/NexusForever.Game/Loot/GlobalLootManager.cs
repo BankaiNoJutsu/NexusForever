@@ -1389,13 +1389,11 @@ namespace NexusForever.Game.Loot
 
         private static bool IsDefinedAccountCurrency(uint staticId, IGameTableManager gameTableManager)
         {
-            return staticId <= int.MaxValue
-                && Enum.IsDefined(typeof(AccountCurrencyType), (int)staticId)
-                && HasRewardTableEntry(
-                    gameTableManager?.AccountCurrencyType,
-                    AccountCurrencyTypeTableName,
-                    staticId,
-                    nameof(IsDefinedAccountCurrency));
+            return HasRewardTableEntry(
+                gameTableManager?.AccountCurrencyType,
+                AccountCurrencyTypeTableName,
+                staticId,
+                nameof(IsDefinedAccountCurrency));
         }
 
         private static bool HasAccountItem(uint staticId, IGameTableManager gameTableManager)
