@@ -194,6 +194,76 @@ python Tools\WikiArchiveAudit\quest_implementation_audit.py
 That writes `Decomp/Analysis/coverage/QUEST_IMPLEMENTATION_AUDIT.md` and is
 summarized in `Decomp/Analysis/QUEST_IMPLEMENTATION_STATUS.md`.
 
+Row-level retail-completeness tracking for quests plus dungeon/raid/scripted
+instance rows is generated separately:
+
+```powershell
+python Tools\WikiArchiveAudit\content_retail_completeness_audit.py
+python Tools\WikiArchiveAudit\validate_content_retail_completeness_outputs.py
+```
+
+When a slice only changes one evidence lane, restrict the files written by the
+generator instead of rewriting every generated CSV:
+
+```powershell
+python Tools\WikiArchiveAudit\content_retail_completeness_audit.py --only public-event-evidence,next-slice
+python Tools\WikiArchiveAudit\content_retail_completeness_audit.py --only content_retail_completeness_quest_creatures.csv
+python Tools\WikiArchiveAudit\content_retail_completeness_audit.py --list-outputs
+```
+
+`--only` accepts repeated or comma-separated CSV filenames, filename stems, and
+aliases such as `next-slice`, `public-event`, `public-event-evidence`, `all-csv`,
+and `tracker`. The `next-slice` alias writes both the queue and blocker-detail
+CSVs; requesting blocker details directly also refreshes the queue dependency.
+
+That writes `Decomp/Analysis/CONTENT_RETAIL_COMPLETENESS_TRACKER.md` plus
+generated quest, quest-objective, quest-reward/dependency,
+quest-prerequisite, quest-loot, quest world/interaction, quest
+achievement/progression, quest script-hook,
+quest creature/NPC relationship with DataMapping source-coordinate samples and
+runtime seed placement matches plus reviewed/unpromoted placement gaps,
+quest Jabbithole/objective evidence,
+quest Jabbithole/reward evidence, quest Jabbithole/zone evidence,
+quest episode evidence, public-event DataMapping evidence,
+public-event auxiliary evidence, challenge DataMapping evidence,
+path mission DataMapping evidence,
+contract DataMapping evidence,
+instance portal evidence,
+script communicator/cinematic presentation evidence,
+script public-event flow evidence,
+script objective producer evidence,
+script quest progression evidence,
+script runtime action evidence with literal/constant Spell4 and World
+client-reference status plus source traces for routed dynamic references,
+instance script handler evidence,
+dungeon/raid/expedition/scripted-instance, instance-dependency, instance
+entity/encounter, and instance reward CSVs under
+`Decomp/Analysis/coverage/content_retail_completeness_*.csv`, plus
+`content_retail_completeness_next_slice_queue.csv` for the generated advisory
+queue of not-retail-complete rows with the strongest current validation
+evidence. Queue rows include stable source keys plus exact
+`narrow_test_filter`, `narrow_test_command`, `validation_bundle_name`, and
+`harness_command` fields for the next automated/manual validation pass, plus
+instance `objective_row_count`, scripted producer count/coverage, handler
+count, and WIP seed entity count columns that distinguish scaffold evidence
+from retail mechanics coverage. The companion
+`content_retail_completeness_next_slice_blockers.csv` expands current queue
+rows into one row per actionable blocker from quest reward/reward-provenance/objective/objective-provenance/zone/
+episode/creature/world-dependency/achievement/prerequisite/loot/quest-script/script quest-progression evidence and queued instance dependency/instance-portal/public-event/script presentation/script event-flow/script objective producer/script runtime action/entity/reward/script-handler
+evidence, preserving source inventory keys, compact related ids, evidence
+status, blocker summaries, and conservative next actions.
+The validator checks that the full expected CSV inventory set is present with
+no stale extras, every generated CSV is linked from the tracker, required
+evidence/status/manual-validation columns are present, local `evidence_sources`
+paths and globs resolve against the repo root, and no row can be marked
+`retail_complete` while manual validation is pending, evidence status still has
+open markers, blockers remain open, queue command fields are blank or
+incoherent, or blocker-detail metadata is missing/duplicated.
+The generated tracker also includes a parallel subagent lane snapshot and a
+top-gap rollup so quest, instance, reward/loot/achievement, script/encounter,
+DataMapping, decompile/client, wiki/reference-data, and validation lanes keep
+IDs, evidence paths, confidence, blockers, and next actions visible.
+
 Current quest notes:
 
 - Item, money/currency, reputation, XP, cash, tradeskill XP, tradeskill unlock,
