@@ -40,11 +40,13 @@ namespace NexusForever.GameTable
         [GameData]
         public GameTable<AchievementSubGroupEntry> AchievementSubGroup { get; private set; }
 
+        [GameData]
         public GameTable<AchievementTextEntry> AchievementText { get; private set; }
 
         [GameData]
         public GameTable<ActionBarShortcutSetEntry> ActionBarShortcutSet { get; private set; }
 
+        [GameData]
         public GameTable<ActionSlotPrereqEntry> ActionSlotPrereq { get; private set; }
         [GameData]
         public GameTable<ArchiveArticleEntry> ArchiveArticle { get; private set; }
@@ -61,6 +63,7 @@ namespace NexusForever.GameTable
         public GameTable<ArchiveLinkEntry> ArchiveLink { get; private set; }
         public GameTable<AttributeMilestoneGroupEntry> AttributeMilestoneGroup { get; private set; }
         public GameTable<AttributeMiniMilestoneGroupEntry> AttributeMiniMilestoneGroup { get; private set; }
+        [GameData]
         public GameTable<BindPointEntry> BindPoint { get; private set; }
         public GameTable<BinkMovieEntry> BinkMovie { get; private set; }
         public GameTable<BinkMovieSubtitleEntry> BinkMovieSubtitle { get; private set; }
@@ -220,6 +223,7 @@ namespace NexusForever.GameTable
         [GameData]
         public GameTable<EntitlementEntry> Entitlement { get; private set; }
 
+        [GameData]
         public GameTable<EpisodeEntry> Episode { get; private set; }
 
         [GameData]
@@ -237,6 +241,7 @@ namespace NexusForever.GameTable
         [GameData]
         public GameTable<GameFormulaEntry> GameFormula { get; private set; }
 
+        [GameData]
         public GameTable<GenericMapEntry> GenericMap { get; private set; }
 
         [GameData]
@@ -297,6 +302,7 @@ namespace NexusForever.GameTable
         public GameTable<HousingWarplotPlugInfoEntry> HousingWarplotPlugInfo { get; private set; }
         public GameTable<InputActionEntry> InputAction { get; private set; }
         public GameTable<InputActionCategoryEntry> InputActionCategory { get; private set; }
+        [GameData]
         public GameTable<InstancePortalEntry> InstancePortal { get; private set; }
 
         [GameData("Item2.tbl")]
@@ -361,7 +367,9 @@ namespace NexusForever.GameTable
         [GameData]
         public GameTable<LevelUpUnlockTypeEntry> LevelUpUnlockType { get; private set; }
         
+        [GameData]
         public GameTable<LiveEventEntry> LiveEvent { get; private set; }
+        [GameData]
         public GameTable<LiveEventDisplayItemEntry> LiveEventDisplayItem { get; private set; }
         public GameTable<LoadingScreenTipEntry> LoadingScreenTip { get; private set; }
         public GameTable<LocalizedEnumEntry> LocalizedEnum { get; private set; }
@@ -427,15 +435,21 @@ namespace NexusForever.GameTable
         public GameTable<ModelSkinFXEntry> ModelSkinFX { get; private set; }
         [GameData]
         public GameTable<PathEpisodeEntry> PathEpisode { get; private set; }
+        [GameData]
         public GameTable<PathExplorerActivateEntry> PathExplorerActivate { get; private set; }
+        [GameData]
         public GameTable<PathExplorerAreaEntry> PathExplorerArea { get; private set; }
+        [GameData]
         public GameTable<PathExplorerDoorEntry> PathExplorerDoor { get; private set; }
+        [GameData]
         public GameTable<PathExplorerDoorEntranceEntry> PathExplorerDoorEntrance { get; private set; }
         [GameData]
         public GameTable<PathExplorerNodeEntry> PathExplorerNode { get; private set; }
         [GameData]
         public GameTable<PathExplorerPowerMapEntry> PathExplorerPowerMap { get; private set; }
+        [GameData]
         public GameTable<PathExplorerScavengerClueEntry> PathExplorerScavengerClue { get; private set; }
+        [GameData]
         public GameTable<PathExplorerScavengerHuntEntry> PathExplorerScavengerHunt { get; private set; }
 
         [GameData]
@@ -450,15 +464,21 @@ namespace NexusForever.GameTable
         [GameData]
         public GameTable<PathScientistCreatureInfoEntry> PathScientistCreatureInfo { get; private set; }
 
+        [GameData]
         public GameTable<PathScientistDatacubeDiscoveryEntry> PathScientistDatacubeDiscovery { get; private set; }
+        [GameData]
         public GameTable<PathScientistExperimentationEntry> PathScientistExperimentation { get; private set; }
+        [GameData]
         public GameTable<PathScientistExperimentationPatternEntry> PathScientistExperimentationPattern { get; private set; }
+        [GameData]
         public GameTable<PathScientistFieldStudyEntry> PathScientistFieldStudy { get; private set; }
         [GameData]
         public GameTable<PathScientistScanBotProfileEntry> PathScientistScanBotProfile { get; private set; }
+        [GameData]
         public GameTable<PathScientistSpecimenSurveyEntry> PathScientistSpecimenSurvey { get; private set; }
         [GameData]
         public GameTable<PathSettlerHubEntry> PathSettlerHub { get; private set; }
+        [GameData]
         public GameTable<PathSettlerImprovementEntry> PathSettlerImprovement { get; private set; }
         [GameData]
         public GameTable<PathSettlerImprovementGroupEntry> PathSettlerImprovementGroup { get; private set; }
@@ -466,13 +486,19 @@ namespace NexusForever.GameTable
         [GameData]
         public GameTable<PathSettlerInfrastructureEntry> PathSettlerInfrastructure { get; private set; }
 
+        [GameData]
         public GameTable<PathSettlerMayorEntry> PathSettlerMayor { get; private set; }
+        [GameData]
         public GameTable<PathSettlerSheriffEntry> PathSettlerSheriff { get; private set; }
+        [GameData]
         public GameTable<PathSoldierActivateEntry> PathSoldierActivate { get; private set; }
         [GameData]
         public GameTable<PathSoldierAssassinateEntry> PathSoldierAssassinate { get; private set; }
+        [GameData]
         public GameTable<PathSoldierEventEntry> PathSoldierEvent { get; private set; }
+        [GameData]
         public GameTable<PathSoldierEventWaveEntry> PathSoldierEventWave { get; private set; }
+        [GameData]
         public GameTable<PathSoldierSWATEntry> PathSoldierSWAT { get; private set; }
         [GameData]
         public GameTable<PathSoldierTowerDefenseEntry> PathSoldierTowerDefense { get; private set; }
@@ -480,7 +506,9 @@ namespace NexusForever.GameTable
         [GameData]
         public GameTable<PeriodicQuestGroupEntry> PeriodicQuestGroup { get; private set; }
 
+        [GameData]
         public GameTable<PeriodicQuestSetEntry> PeriodicQuestSet { get; private set; }
+        [GameData]
         public GameTable<PeriodicQuestSetCategoryEntry> PeriodicQuestSetCategory { get; private set; }
 
         [GameData]
@@ -493,8 +521,11 @@ namespace NexusForever.GameTable
         [GameData]
         public GameTable<PrerequisiteEntry> Prerequisite { get; private set; }
 
+        [GameData]
         public GameTable<PrerequisiteTypeEntry> PrerequisiteType { get; private set; }
+        [GameData]
         public GameTable<PrimalMatrixNodeEntry> PrimalMatrixNode { get; private set; }
+        [GameData]
         public GameTable<PrimalMatrixRewardEntry> PrimalMatrixReward { get; private set; }
         public GameTable<PropAdditionalDetailEntry> PropAdditionalDetail { get; private set; }
 
@@ -504,20 +535,27 @@ namespace NexusForever.GameTable
         [GameData]
         public GameTable<PublicEventCustomStatEntry> PublicEventCustomStat { get; private set; }
 
+        [GameData]
         public GameTable<PublicEventDepotEntry> PublicEventDepot { get; private set; }
 
         [GameData]
         public GameTable<PublicEventObjectiveEntry> PublicEventObjective { get; private set; }
 
+        [GameData]
         public GameTable<PublicEventObjectiveBombDeploymentEntry> PublicEventObjectiveBombDeployment { get; private set; }
+        [GameData]
         public GameTable<PublicEventObjectiveGatherResourceEntry> PublicEventObjectiveGatherResource { get; private set; }
+        [GameData]
         public GameTable<PublicEventObjectiveStateEntry> PublicEventObjectiveState { get; private set; }
+        [GameData]
         public GameTable<PublicEventRewardModifierEntry> PublicEventRewardModifier { get; private set; }
+        [GameData]
         public GameTable<PublicEventStatDisplayEntry> PublicEventStatDisplay { get; private set; }
 
         [GameData]
         public GameTable<PublicEventTeamEntry> PublicEventTeam { get; private set; }
 
+        [GameData]
         public GameTable<PublicEventVirtualItemDepotEntry> PublicEventVirtualItemDepot { get; private set; }
 
         [GameData]
@@ -535,6 +573,7 @@ namespace NexusForever.GameTable
 
         [GameData]
         public GameTable<Quest2RewardEntry> Quest2Reward { get; private set; }
+        [GameData]
         public GameTable<QuestCategoryEntry> QuestCategory { get; private set; }
 
         [GameData]
@@ -542,7 +581,9 @@ namespace NexusForever.GameTable
 
         [GameData]
         public GameTable<QuestDirectionEntryEntry> QuestDirectionEntry { get; private set; }
+        [GameData]
         public GameTable<QuestGroupEntry> QuestGroup { get; private set; }
+        [GameData]
         public GameTable<QuestHubEntry> QuestHub { get; private set; }
 
         [GameData]
@@ -580,7 +621,9 @@ namespace NexusForever.GameTable
 
         [GameData]
         public GameTable<RewardRotationModifierEntry> RewardRotationModifier { get; private set; }
+        [GameData]
         public GameTable<RewardTrackEntry> RewardTrack { get; private set; }
+        [GameData]
         public GameTable<RewardTrackRewardsEntry> RewardTrackRewards { get; private set; }
         public GameTable<SalvageEntry> Salvage { get; private set; }
         public GameTable<SalvageExceptionEntry> SalvageException { get; private set; }
@@ -611,6 +654,7 @@ namespace NexusForever.GameTable
 
         [GameData]
         public GameTable<Spell4CCConditionsEntry> Spell4CCConditions { get; private set; }
+        [GameData]
         public GameTable<Spell4CastResultEntry> Spell4CastResult { get; private set; }
         public GameTable<Spell4ClientMissileEntry> Spell4ClientMissile { get; private set; }
 
@@ -660,6 +704,7 @@ namespace NexusForever.GameTable
 
         [GameData]
         public GameTable<Spell4ThresholdsEntry> Spell4Thresholds { get; private set; }
+        [GameData]
         public GameTable<Spell4TierRequirementsEntry> Spell4TierRequirements { get; private set; }
 
         [GameData]
@@ -706,6 +751,7 @@ namespace NexusForever.GameTable
 
         public GameTable<TicketCategoryEntry> TicketCategory { get; private set; }
         public GameTable<TicketSubCategoryEntry> TicketSubCategory { get; private set; }
+        [GameData]
         public GameTable<TrackingSlotEntry> TrackingSlot { get; private set; }
 
         [GameData]
@@ -831,6 +877,9 @@ namespace NexusForever.GameTable
 
             if (configuration.ValidateRequiredTablesOnStartup || configuration.StrictRequiredTables)
                 ValidateRequiredTables(configuration.StrictRequiredTables);
+
+            if (configuration.LoadOptionalTablesOnStartup)
+                await InitialiseOptionalTables();
         }
 
         public async Task Initialise(GameTableLoader loader)
@@ -904,7 +953,7 @@ namespace NexusForever.GameTable
             Stopwatch sw = Stopwatch.StartNew();
             try
             {
-                await LoadGameTablesAsync(properties);
+                await LoadGameTablesAsync(properties, true);
             }
             catch (Exception exception)
             {
@@ -915,7 +964,25 @@ namespace NexusForever.GameTable
             log.Info($"Loaded GameTables in {sw.ElapsedMilliseconds}ms.");
         }
 
-        private async Task LoadGameTablesAsync(IEnumerable<PropertyInfo> properties)
+        private async Task InitialiseOptionalTables()
+        {
+            IReadOnlyList<PropertyInfo> properties = GetOptionalGameDataProperties();
+            if (properties.Count == 0)
+                return;
+
+            log.Info("Loading optional GameTables...");
+
+            Stopwatch sw = Stopwatch.StartNew();
+            int failureCount = await LoadGameTablesAsync(properties, false);
+
+            if (failureCount == 0)
+                log.Info("Loaded optional GameTables in {0}ms.", sw.ElapsedMilliseconds);
+            else
+                log.Warn("Loaded optional GameTables in {0}ms with {1}/{2} failures.",
+                    sw.ElapsedMilliseconds, failureCount, properties.Count);
+        }
+
+        private async Task<int> LoadGameTablesAsync(IEnumerable<PropertyInfo> properties, bool throwOnFailure)
         {
             var exceptions = new List<Exception>();
             int loadCount = Environment.ProcessorCount * 2;
@@ -929,19 +996,40 @@ namespace NexusForever.GameTable
             {
                 Task next = await Task.WhenAny(tasks);
                 tasks.Remove(next);
+                await next;
             }
 
-            async Task<bool> ExceptionHandler(Task task)
+            async Task LoadGameTableWithLogging(PropertyInfo property, string fileName, DateTime loadStarted)
             {
                 try
                 {
-                    await task;
-                    return true;
+                    await LoadGameTableAsync(property, fileName);
+                    log.Info("Completed loading {0} in {1}ms", fileName,
+                        (DateTime.Now - loadStarted).TotalMilliseconds);
                 }
                 catch (Exception ex)
                 {
-                    exceptions.Add(ex);
-                    return false;
+                    lock (exceptions)
+                    {
+                        exceptions.Add(ex);
+                    }
+
+                    if (throwOnFailure)
+                    {
+                        log.Error(ex, "Failed to load {0} in {1}ms", fileName,
+                            (DateTime.Now - loadStarted).TotalMilliseconds);
+                        return;
+                    }
+
+                    property.SetValue(this, null);
+                    MissingGameDataDiagnostics.ReportMissingTable(
+                        fileName,
+                        nameof(GameTableManager) + ".OptionalLoad",
+                        MissingGameDataSeverity.Optional,
+                        ex.GetBaseException().Message);
+                    log.Warn(ex, "Failed to load optional GameTable {0} in {1}ms; continuing.",
+                        fileName,
+                        (DateTime.Now - loadStarted).TotalMilliseconds);
                 }
             }
 
@@ -951,20 +1039,7 @@ namespace NexusForever.GameTable
 
                 DateTime loadStarted = DateTime.Now;
 
-                tasks.Add(LoadGameTableAsync(property, fileName)
-                    .ContinueWith(ExceptionHandler)
-                    .Unwrap()
-                    .ContinueWith(
-                        async task =>
-                        {
-                            bool result = await task;
-                            if (result)
-                                log.Info("Completed loading {0} in {1}ms", fileName,
-                                    (DateTime.Now - loadStarted).TotalMilliseconds);
-                            else
-                                log.Error("Failed to load {0} in {1}ms", fileName,
-                                    (DateTime.Now - loadStarted).TotalMilliseconds);
-                        }).Unwrap());
+                tasks.Add(LoadGameTableWithLogging(property, fileName, loadStarted));
 
                 if (tasks.Count > loadCount)
                     await WaitForNextTaskToFinish();
@@ -973,8 +1048,10 @@ namespace NexusForever.GameTable
             while (tasks.Count > 0)
                 await WaitForNextTaskToFinish();
 
-            if (exceptions.Count > 0)
+            if (throwOnFailure && exceptions.Count > 0)
                 throw new AggregateException(exceptions);
+
+            return exceptions.Count;
         }
 
         private static IReadOnlyList<PropertyInfo> GetGameDataProperties()
@@ -996,13 +1073,35 @@ namespace NexusForever.GameTable
             return properties;
         }
 
+        private static IReadOnlyList<PropertyInfo> GetOptionalGameDataProperties()
+        {
+            var properties = new List<PropertyInfo>();
+
+            foreach (PropertyInfo property in typeof(GameTableManager).GetProperties())
+            {
+                if (property.GetCustomAttribute<GameDataAttribute>() != null)
+                    continue;
+
+                if (IsLoadableGameDataProperty(property))
+                    properties.Add(property);
+            }
+
+            return properties;
+        }
+
+        private static bool IsLoadableGameDataProperty(PropertyInfo property)
+        {
+            if (property.PropertyType == typeof(TextTable))
+                return true;
+
+            return property.PropertyType.IsGenericType
+                && property.PropertyType.GetGenericTypeDefinition() == typeof(GameTable<>);
+        }
+
         private static string GetGameDataFileName(PropertyInfo property)
         {
             GameDataAttribute attribute = property.GetCustomAttribute<GameDataAttribute>();
-            if (attribute == null)
-                return null;
-
-            string fileName = attribute.FileName;
+            string fileName = attribute?.FileName;
             if (!string.IsNullOrWhiteSpace(fileName))
                 return fileName;
 

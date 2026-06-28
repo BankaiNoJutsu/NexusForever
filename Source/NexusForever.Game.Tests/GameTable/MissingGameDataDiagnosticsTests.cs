@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.Extensions.Options;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
@@ -52,6 +53,52 @@ public class MissingGameDataDiagnosticsTests
         finally
         {
             MissingGameDataDiagnostics.ResetForTests();
+        }
+    }
+
+    [Fact]
+    public async Task OptionalTableLoad_WithMissingTableReportsOptionalDiagnostic()
+    {
+        MissingGameDataDiagnostics.ResetForTests();
+        string gameTablePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(gameTablePath);
+
+        try
+        {
+            var manager = new GameTableManager(Options.Create(new GameTableConfig
+            {
+                GameTablePath = gameTablePath
+            }));
+
+            PropertyInfo property = typeof(GameTableManager).GetProperty(nameof(GameTableManager.AchievementText));
+            MethodInfo loadMethod = typeof(GameTableManager).GetMethod(
+                "LoadGameTablesAsync",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.NotNull(property);
+            Assert.NotNull(loadMethod);
+
+            var loadTask = Assert.IsAssignableFrom<Task<int>>(loadMethod.Invoke(
+                manager,
+                new object[] { new[] { property }, false }));
+
+            int failureCount = await loadTask;
+
+            Assert.Equal(1, failureCount);
+            Assert.Null(manager.AchievementText);
+
+            IReadOnlyList<MissingGameDataDiagnostic> snapshot = MissingGameDataDiagnostics.GetSnapshot();
+            Assert.Contains(snapshot, d =>
+                d.Kind == MissingGameDataDiagnosticKind.MissingTable
+                && d.Severity == MissingGameDataSeverity.Optional
+                && d.TableName == "AchievementText.tbl"
+                && d.Context == "GameTableManager.OptionalLoad"
+                && d.Count == 1);
+        }
+        finally
+        {
+            MissingGameDataDiagnostics.ResetForTests();
+            Directory.Delete(gameTablePath, true);
         }
     }
 
