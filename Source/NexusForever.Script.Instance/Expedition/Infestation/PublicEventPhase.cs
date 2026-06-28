@@ -10,6 +10,7 @@ namespace NexusForever.Script.Instance.Expedition.Infestation
         FindMedicalSupplies,
         DefeatTheAttackOnMedbay,
         FindMedicalSupplies2,
-        HealContaminatedShiphands
+        HealContaminatedShiphands,
+        KillParasites
     }
 }

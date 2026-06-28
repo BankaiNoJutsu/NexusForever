@@ -12,6 +12,7 @@ namespace NexusForever.Script.Instance.Expedition.Infestation
         FindTheMedicalBay        = 1438,
         KillCyclopeanParasite    = 1500,
         DefeatTheAttackOnMedbay  = 4698,
-        TagValuableCargo         = 4699
+        TagValuableCargo         = 4699,
+        GoldMedalTimer           = 4703
     }
 }
