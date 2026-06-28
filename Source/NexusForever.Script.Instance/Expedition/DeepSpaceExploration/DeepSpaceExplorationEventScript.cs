@@ -16,7 +16,7 @@ namespace NexusForever.Script.Instance.Expedition.DeepSpaceExploration
         public void OnLoad(IPublicEvent owner)
         {
             publicEvent = owner;
-            publicEvent.SetPhase(PublicEventPhase.TalkToCrewMembers);
+            publicEvent.SetPhase(PublicEventPhase.TalkToCaptainTyrania);
         }
 
         /// <summary>
@@ -26,12 +26,25 @@ namespace NexusForever.Script.Instance.Expedition.DeepSpaceExploration
         {
             switch ((PublicEventPhase)phase)
             {
+                case PublicEventPhase.TalkToCaptainTyrania:
+                    // Build 16042 PublicEventObjective 1844 is the opening Captain Tyrania
+                    // TalkTo step before the aggregate crew checklist.
+                    publicEvent.ActivateObjective(PublicEventObjective.TalkTo48900InTheGalacticObserversStarhelmCommandDeck);
+                    break;
                 case PublicEventPhase.TalkToCrewMembers:
                     // WIP-guessed from LaughingWS Instances-and-more: the branch exposes
-                    // this single phase/objective pairing but no event script. Keep the
-                    // implementation to the first visible objective until route evidence
-                    // proves the follow-up phases, doors, cinematics, and encounter order.
+                    // this phase/objective pairing but no event script. Keep the
+                    // follow-up route to the build-16042 containment-cell objective until
+                    // stronger proof maps the later doors, cinematics, and encounter order.
                     publicEvent.ActivateObjective(PublicEventObjective.TalkToCrewMembers);
+                    break;
+                case PublicEventPhase.DisableSpecimenContainmentCells:
+                    publicEvent.ActivateObjective(PublicEventObjective.DisableSpecimenContainmentCells);
+                    break;
+                case PublicEventPhase.KillSteelfinForces:
+                    // Build 16042 PublicEventObjective 1846 is the immediate
+                    // post-containment Steel Serpent combat step, phase 647.
+                    publicEvent.ActivateObjective(PublicEventObjective.KillSteelfinForces);
                     break;
             }
         }
@@ -46,9 +59,19 @@ namespace NexusForever.Script.Instance.Expedition.DeepSpaceExploration
 
             switch ((PublicEventObjective)objective.Entry.Id)
             {
+                case PublicEventObjective.TalkTo48900InTheGalacticObserversStarhelmCommandDeck:
+                    publicEvent.SetPhase(PublicEventPhase.TalkToCrewMembers);
+                    break;
                 case PublicEventObjective.TalkToCrewMembers:
-                    // No safe follow-up phase exists in the branch. The objective can
-                    // complete, but expedition routing remains blocked pending proof.
+                    publicEvent.SetPhase(PublicEventPhase.DisableSpecimenContainmentCells);
+                    break;
+                case PublicEventObjective.DisableSpecimenContainmentCells:
+                    publicEvent.SetPhase(PublicEventPhase.KillSteelfinForces);
+                    break;
+                case PublicEventObjective.KillSteelfinForces:
+                    // Stop at the first proven Steel Serpent combat objective.
+                    // Later rescue, Engineer Clamp, mainframe, and bridge routing
+                    // remain blocked pending retail interaction/encounter proof.
                     break;
             }
         }
