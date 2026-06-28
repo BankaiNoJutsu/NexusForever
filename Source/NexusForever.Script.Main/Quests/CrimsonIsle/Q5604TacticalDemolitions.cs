@@ -23,6 +23,7 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
         private readonly ICinematicFactory cinematicFactory;
         private readonly IGlobalQuestManager globalQuestManager;
         private readonly ILogger<Q5604TacticalDemolitionsQuestScript> log;
+        private bool completionCinematicQueued;
 
         public Q5604TacticalDemolitionsQuestScript(
             ICinematicFactory cinematicFactory,
@@ -44,12 +45,17 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
             if (objective.ObjectiveInfo.Id != QObjExileCannons)
                 return;
 
-            if (objective.IsComplete() && owner.State != QuestState.Achieved)
-            {
-                // WIP/GUESSED: Questing-and-more advances the cinematic-complete objective immediately; exact retail cinematic timing is not live-smoked.
-                owner.Player.CinematicManager.QueueCinematic(cinematicFactory.CreateCinematic<IQ5604TacticalDemolitionsCinematic>());
-                owner.ObjectiveUpdate(QObjCinematicComplete, 1u);
-            }
+            if (!objective.IsComplete())
+                return;
+
+            if (owner.State == QuestState.Achieved || completionCinematicQueued)
+                return;
+
+            completionCinematicQueued = true;
+
+            // WIP/GUESSED: Questing-and-more advances the cinematic-complete objective immediately; exact retail cinematic timing is not live-smoked.
+            owner.Player.CinematicManager.QueueCinematic(cinematicFactory.CreateCinematic<IQ5604TacticalDemolitionsCinematic>());
+            owner.ObjectiveUpdate(QObjCinematicComplete, 1u);
         }
 
         public void OnQuestStateChange(QuestState newState, QuestState oldState)

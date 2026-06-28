@@ -44,6 +44,7 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
     [ScriptFilterCreatureId(31792u)]
     public class Q5594WarbotEntityScript : IUnitScript, IOwnedScript<ICreatureEntity>
     {
+        private const ushort Q5594LastResistance = 5594;
         private const ushort AchievementWarbot = 1730;
         private const uint QObjWarbotKill      = 8249u;
 
@@ -57,6 +58,9 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
         public void OnKilled(IUnitEntity killer)
         {
             if (killer is not IPlayer player)
+                return;
+
+            if (player.QuestManager.GetQuestState(Q5594LastResistance) != QuestState.Accepted)
                 return;
 
             if (!player.AchievementManager.HasCompletedAchievement(AchievementWarbot))

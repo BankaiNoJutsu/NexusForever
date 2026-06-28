@@ -13,9 +13,13 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
     [ScriptFilterOwnerId(5575u)]
     public class Q5575QuestScript : IQuestScript, IOwnedScript<IQuest>
     {
+        private const uint QObjPowerRegulators = 8371u;
+        private const uint QObjPowerRegulatorsComplete = 12871u;
+
         private readonly ILogger<Q5575QuestScript> log;
         private readonly IGlobalQuestManager globalQuestManager;
         private IQuest owner;
+        private bool powerRegulatorsCompleteCredited;
 
         public Q5575QuestScript(
             ILogger<Q5575QuestScript> log,
@@ -26,6 +30,22 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
         }
 
         public void OnLoad(IQuest owner) { this.owner = owner; }
+
+        public void OnObjectiveUpdate(IQuestObjective objective)
+        {
+            if (objective.ObjectiveInfo.Id != QObjPowerRegulators)
+                return;
+
+            if (!objective.IsComplete())
+                return;
+
+            if (owner.State == QuestState.Achieved || powerRegulatorsCompleteCredited)
+                return;
+
+            powerRegulatorsCompleteCredited = true;
+            owner.ObjectiveUpdate(QObjPowerRegulatorsComplete, 1u);
+        }
+
         public void OnQuestStateChange(QuestState newState, QuestState oldState)
         {
             log.LogDebug("Quest {QuestId} state: {OldState} -> {NewState}.", owner.Id, oldState, newState);

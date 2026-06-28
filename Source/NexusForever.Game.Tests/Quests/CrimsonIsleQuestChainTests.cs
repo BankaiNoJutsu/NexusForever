@@ -147,6 +147,25 @@ public class CrimsonIsleQuestChainTests
         Assert.Equal(1u, objectiveUpdate.Arguments[1]);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData(QuestState.Completed)]
+    public void Q5594Warbot_OnKilled_WhenLastResistanceNotAccepted_DoesNotGrantAchievementOrCredit(QuestState? questState)
+    {
+        IPlayer player = CreatePlayerWithQuestAndAchievementManagers(
+            alreadyCompleted: false,
+            lastResistanceQuestState: questState,
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementManagerProxy,
+            out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+        var script = new Q5594WarbotEntityScript();
+
+        script.OnKilled(player);
+
+        Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.HasCompletedAchievement)));
+        Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Empty(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+    }
+
     private static IQuest CreateQuest(
         ushort questId,
         IReadOnlyDictionary<ushort, QuestState?> questStates,
@@ -215,6 +234,19 @@ public class CrimsonIsleQuestChainTests
         out RecordingDispatchProxy<ICharacterAchievementManager> achievementManagerProxy,
         out RecordingDispatchProxy<IQuestManager> questManagerProxy)
     {
+        return CreatePlayerWithQuestAndAchievementManagers(
+            alreadyCompleted,
+            QuestState.Accepted,
+            out achievementManagerProxy,
+            out questManagerProxy);
+    }
+
+    private static IPlayer CreatePlayerWithQuestAndAchievementManagers(
+        bool alreadyCompleted,
+        QuestState? lastResistanceQuestState,
+        out RecordingDispatchProxy<ICharacterAchievementManager> achievementManagerProxy,
+        out RecordingDispatchProxy<IQuestManager> questManagerProxy)
+    {
         ICharacterAchievementManager achievementManager = RecordingDispatchProxy<ICharacterAchievementManager>.Create(out achievementManagerProxy);
         achievementManagerProxy.SetMethodHandler(nameof(ICharacterAchievementManager.HasCompletedAchievement), args =>
         {
@@ -223,6 +255,11 @@ public class CrimsonIsleQuestChainTests
         });
 
         IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out questManagerProxy);
+        questManagerProxy.SetMethodHandler(nameof(IQuestManager.GetQuestState), args =>
+        {
+            Assert.Equal((ushort)5594, args[0]);
+            return lastResistanceQuestState;
+        });
 
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
         playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
