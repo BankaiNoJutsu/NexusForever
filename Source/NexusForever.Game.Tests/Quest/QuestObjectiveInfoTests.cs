@@ -26,4 +26,25 @@ public class QuestObjectiveInfoTests
 
         Assert.False(info.DisablesDynamicProgress());
     }
+
+    [Fact]
+    public void UsesDynamicProgress_ReturnsTrueWhenFlagSet()
+    {
+        var entry = new QuestObjectiveEntry
+        {
+            Flags = (uint)QuestObjectiveFlags.UsesDynamicProgress
+        };
+
+        var info = new QuestObjectiveInfo(entry);
+
+        Assert.True(info.UsesDynamicProgress());
+    }
+
+    [Fact]
+    public void UsesDynamicProgress_ReturnsFalseWhenFlagNotSet()
+    {
+        var info = new QuestObjectiveInfo(new QuestObjectiveEntry());
+
+        Assert.False(info.UsesDynamicProgress());
+    }
 }

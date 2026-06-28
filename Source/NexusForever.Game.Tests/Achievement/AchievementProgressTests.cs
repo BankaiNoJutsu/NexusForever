@@ -130,6 +130,101 @@ public class AchievementProgressTests
     }
 
     [Fact]
+    public void QuestCompleteChecklist_Q3486CreditsArrivalAchievement3469Rows()
+    {
+        var info = new TestAchievementInfo(
+            new AchievementEntry
+            {
+                Id                = 3469,
+                AchievementTypeId = (uint)AchievementType.QuestCompleteChecklist
+            },
+            new AchievementChecklistEntry { Id = 4245u, AchievementId = 3469u, Bit = 0u, ObjectId = 3486u },
+            new AchievementChecklistEntry { Id = 4246u, AchievementId = 3469u, Bit = 1u, ObjectId = 3667u });
+
+        var manager = new TestAchievementManager(info);
+
+        manager.Check(info, 3486u);
+
+        IAchievement achievement = manager.Get(info.Id);
+        Assert.False(achievement.IsComplete());
+        Assert.Equal(1u, achievement.CompletedChecklistMask);
+        Assert.Single(manager.SentUpdates);
+
+        manager.Check(info, 3667u);
+
+        Assert.True(achievement.IsComplete());
+        Assert.Equal(3u, achievement.CompletedChecklistMask);
+        Assert.Equal(2, manager.SentUpdates.Count);
+    }
+
+    [Fact]
+    public void QuestCompleteChecklist_Q3486CreditsArrivalAchievement5327Rows()
+    {
+        var info = new TestAchievementInfo(
+            new AchievementEntry
+            {
+                Id                = 5327,
+                AchievementTypeId = (uint)AchievementType.QuestCompleteChecklist
+            },
+            new AchievementChecklistEntry { Id = 6907u, AchievementId = 5327u, Bit = 0u, ObjectId = 3486u },
+            new AchievementChecklistEntry { Id = 6908u, AchievementId = 5327u, Bit = 1u, ObjectId = 3667u },
+            new AchievementChecklistEntry { Id = 6910u, AchievementId = 5327u, Bit = 2u, ObjectId = 3480u });
+
+        var manager = new TestAchievementManager(info);
+
+        manager.Check(info, 3486u);
+        manager.Check(info, 3667u);
+
+        IAchievement achievement = manager.Get(info.Id);
+        Assert.False(achievement.IsComplete());
+        Assert.Equal(3u, achievement.CompletedChecklistMask);
+        Assert.Equal(2, manager.SentUpdates.Count);
+
+        manager.Check(info, 3480u);
+
+        Assert.True(achievement.IsComplete());
+        Assert.Equal(7u, achievement.CompletedChecklistMask);
+        Assert.Equal(3, manager.SentUpdates.Count);
+    }
+
+    [Fact]
+    public void QuestCompleteChecklist_Q5597CreditsBloodstoneAchievement4134Rows()
+    {
+        var info = new TestAchievementInfo(
+            new AchievementEntry
+            {
+                Id                   = 4134,
+                AchievementTypeId    = (uint)AchievementType.QuestCompleteChecklist,
+                PrerequisiteId       = 18u,
+                PrerequisiteIdServer = 18u
+            },
+            new AchievementChecklistEntry { Id = 5494u, AchievementId = 4134u, Bit = 0u, ObjectId = 5596u },
+            new AchievementChecklistEntry { Id = 5495u, AchievementId = 4134u, Bit = 1u, ObjectId = 5597u },
+            new AchievementChecklistEntry { Id = 5496u, AchievementId = 4134u, Bit = 2u, ObjectId = 5604u });
+
+        var manager = new TestAchievementManager(info);
+
+        manager.Check(info, 5596u);
+
+        IAchievement achievement = manager.Get(info.Id);
+        Assert.False(achievement.IsComplete());
+        Assert.Equal(1u, achievement.CompletedChecklistMask);
+        Assert.Single(manager.SentUpdates);
+
+        manager.Check(info, 5597u);
+
+        Assert.False(achievement.IsComplete());
+        Assert.Equal(3u, achievement.CompletedChecklistMask);
+        Assert.Equal(2, manager.SentUpdates.Count);
+
+        manager.Check(info, 5604u);
+
+        Assert.True(achievement.IsComplete());
+        Assert.Equal(7u, achievement.CompletedChecklistMask);
+        Assert.Equal(3, manager.SentUpdates.Count);
+    }
+
+    [Fact]
     public void KillCreatureGroup_DoesNotTreatZeroObjectAsWildcard()
     {
         var info = new TestAchievementInfo(

@@ -30,5 +30,10 @@ namespace NexusForever.Game.Abstract.Quest
         /// Return money rewarded on completion.
         /// </summary>
         uint GetRewardMoney();
+
+        /// <summary>
+        /// Return reputation rewarded on completion.
+        /// </summary>
+        float GetRewardReputation(float overrideValue);
     }
 }

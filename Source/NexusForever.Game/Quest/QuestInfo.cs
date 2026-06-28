@@ -143,6 +143,24 @@ namespace NexusForever.Game.Quest
             return (uint)(MathF.Pow(Entry.ConLevel, entry.Datafloat0) * DifficultyEntry.CashRewardMultiplier);
         }
 
+        /// <summary>
+        /// Return reputation rewarded on completion.
+        /// </summary>
+        public float GetRewardReputation(float overrideValue)
+        {
+            if (overrideValue != 0f)
+                return overrideValue;
+
+            if (DifficultyEntry == null)
+                return 0f;
+
+            XpPerLevelEntry entry = gameTableManager.XpPerLevel?.GetEntry(Entry.ConLevel);
+            if (entry == null)
+                return 0f;
+
+            return DifficultyEntry.RepRewardMultiplier * entry.BaseRepRewardPerLevel;
+        }
+
         private IGlobalQuestManager GetGlobalQuestManager()
         {
             return globalQuestManager ?? throw new InvalidOperationException($"{nameof(QuestInfo)} requires an {nameof(IGlobalQuestManager)}.");

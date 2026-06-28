@@ -76,6 +76,12 @@ public class GlobalQuestManagerPartialTableTests
                     QuestIdDelivered = 44u,
                     Quests           = CommunicatorValues(44u),
                     States           = CommunicatorValues((uint)QuestState.Accepted)
+                },
+                new CommunicatorMessagesEntry
+                {
+                    Id     = 203u,
+                    Quests = CommunicatorValues(45u),
+                    States = CommunicatorValues(11u)
                 }));
         });
 
@@ -88,6 +94,303 @@ public class GlobalQuestManagerPartialTableTests
         Assert.Equal([200u], manager.GetQuestCommunicatorMessages(42).Select(c => c.Id));
         Assert.Equal([201u], manager.GetQuestCommunicatorQuestStateTriggers(42, QuestState.Accepted).Select(c => c.Id));
         Assert.Empty(manager.GetQuestCommunicatorQuestStateTriggers(44, QuestState.Accepted));
+        Assert.Empty(Enum.GetValues<QuestState>()
+            .SelectMany(s => manager.GetQuestCommunicatorQuestStateTriggers(45, s)));
+    }
+
+    [Fact]
+    public void Initialise_Q4696GalerasDurekIndexesClientStarterCreature()
+    {
+        var manager = CreateManager(gameTableManager =>
+        {
+            SetTable(gameTableManager, nameof(GameTableManager.Creature2), CreateGameTable(
+                new Creature2Entry
+                {
+                    Id             = 11061u,
+                    QuestIdGiven   = QuestIds(3480u),
+                    QuestIdReceive = QuestIds()
+                },
+                new Creature2Entry
+                {
+                    Id             = 17175u,
+                    QuestIdGiven   = QuestIds(4696u),
+                    QuestIdReceive = QuestIds()
+                }));
+        });
+
+        manager.Initialise();
+
+        Assert.Equal([17175u], manager.GetQuestGivers(4696));
+        Assert.DoesNotContain(11061u, manager.GetQuestGivers(4696));
+    }
+
+    [Fact]
+    public void Initialise_Q4696GalerasDarbyIndexesClientFinisherCreature()
+    {
+        var manager = CreateManager(gameTableManager =>
+        {
+            SetTable(gameTableManager, nameof(GameTableManager.Creature2), CreateGameTable(
+                new Creature2Entry
+                {
+                    Id             = 11061u,
+                    QuestIdGiven   = QuestIds(3480u),
+                    QuestIdReceive = QuestIds()
+                },
+                new Creature2Entry
+                {
+                    Id             = 17053u,
+                    QuestIdGiven   = QuestIds(4666u),
+                    QuestIdReceive = QuestIds(4696u)
+                },
+                new Creature2Entry
+                {
+                    Id             = 17175u,
+                    QuestIdGiven   = QuestIds(4696u),
+                    QuestIdReceive = QuestIds()
+                }));
+        });
+
+        manager.Initialise();
+
+        Assert.Equal([17053u], manager.GetQuestReceivers(4696));
+        Assert.DoesNotContain(17175u, manager.GetQuestReceivers(4696));
+        Assert.DoesNotContain(11061u, manager.GetQuestReceivers(4696));
+    }
+
+    [Fact]
+    public void Initialise_Q3797IndexesReviewedDurekGiverAndReceiverOverrides()
+    {
+        var manager = CreateManager(gameTableManager =>
+        {
+            SetTable(gameTableManager, nameof(GameTableManager.Creature2), CreateGameTable(
+                new Creature2Entry
+                {
+                    Id             = 11061u,
+                    QuestIdGiven   = QuestIds(3480u),
+                    QuestIdReceive = QuestIds(9071u, 9112u)
+                }));
+        });
+
+        manager.Initialise();
+
+        Assert.Equal([11061u], manager.GetQuestGivers(3480));
+        Assert.Equal([11061u], manager.GetQuestGivers(3797));
+        Assert.Equal([11061u], manager.GetQuestReceivers(3797));
+        Assert.Equal([11061u], manager.GetQuestReceivers(9071));
+        Assert.Equal([11061u], manager.GetQuestReceivers(9112));
+    }
+
+    [Fact]
+    public void Initialise_LandsReachDurekIndexesBuild16042QuestRoutes()
+    {
+        var manager = CreateManager(gameTableManager =>
+        {
+            SetTable(gameTableManager, nameof(GameTableManager.Creature2), CreateGameTable(
+                new Creature2Entry
+                {
+                    Id             = 11066u,
+                    QuestIdGiven   = QuestIds(3797u, 3886u, 3741u),
+                    QuestIdReceive = QuestIds(3783u, 3797u, 3895u, 3741u, 3886u)
+                }));
+        });
+
+        manager.Initialise();
+
+        Assert.Equal([11066u], manager.GetQuestGivers(3741));
+        Assert.Equal([11066u], manager.GetQuestGivers(3797));
+        Assert.Equal([11066u], manager.GetQuestGivers(3886));
+        Assert.Equal([11066u], manager.GetQuestReceivers(3783));
+        Assert.Equal([11066u], manager.GetQuestReceivers(3797));
+        Assert.Equal([11066u], manager.GetQuestReceivers(3895));
+        Assert.Equal([11066u], manager.GetQuestReceivers(3741));
+        Assert.Equal([11066u], manager.GetQuestReceivers(3886));
+    }
+
+    [Fact]
+    public void Initialise_Q3670IndexesReviewedDeadeyeReceiverOverrides()
+    {
+        var manager = CreateManager(gameTableManager =>
+        {
+            SetTable(gameTableManager, nameof(GameTableManager.Creature2), CreateGameTable(
+                new Creature2Entry
+                {
+                    Id             = 11063u,
+                    QuestIdGiven   = QuestIds(3670u),
+                    QuestIdReceive = QuestIds(3673u)
+                },
+                new Creature2Entry
+                {
+                    Id             = 16622u,
+                    QuestIdGiven   = QuestIds(4969u, 3770u, 3780u, 3782u),
+                    QuestIdReceive = QuestIds(3766u, 3780u, 4540u, 3963u)
+                }));
+        });
+
+        manager.Initialise();
+
+        Assert.Equal([11063u], manager.GetQuestGivers(3670));
+        Assert.Equal([11063u, 16622u], manager.GetQuestReceivers(3670));
+        Assert.Equal([11063u], manager.GetQuestReceivers(3673));
+        Assert.DoesNotContain(16622u, manager.GetQuestGivers(3670));
+        Assert.DoesNotContain(16622u, manager.GetQuestReceivers(3673));
+    }
+
+    [Fact]
+    public void Initialise_Q3963IndexesClientDeadeyeReceiver()
+    {
+        var manager = CreateManager(gameTableManager =>
+        {
+            SetTable(gameTableManager, nameof(GameTableManager.Creature2), CreateGameTable(
+                new Creature2Entry
+                {
+                    Id             = 11063u,
+                    QuestIdGiven   = QuestIds(3670u, 3667u, 3671u, 3668u, 3673u),
+                    QuestIdReceive = QuestIds(3673u, 3479u, 3671u, 3480u)
+                },
+                new Creature2Entry
+                {
+                    Id             = 16622u,
+                    QuestIdGiven   = QuestIds(4969u, 3770u, 3780u, 3782u),
+                    QuestIdReceive = QuestIds(3766u, 3780u, 4540u, 3963u)
+                }));
+        });
+
+        manager.Initialise();
+
+        Assert.Equal([16622u], manager.GetQuestReceivers(3963));
+        Assert.Empty(manager.GetQuestGivers(3963));
+        Assert.DoesNotContain(11063u, manager.GetQuestReceivers(3963));
+    }
+
+    [Fact]
+    public void Initialise_Q3671IndexesCampIcefuryDeadeyeReceiverOnly()
+    {
+        var manager = CreateManager(gameTableManager =>
+        {
+            SetTable(gameTableManager, nameof(GameTableManager.Creature2), CreateGameTable(
+                new Creature2Entry
+                {
+                    Id             = 11063u,
+                    QuestIdGiven   = QuestIds(3671u),
+                    QuestIdReceive = QuestIds(3671u)
+                },
+                new Creature2Entry
+                {
+                    Id             = 12959u,
+                    QuestIdGiven   = QuestIds(3487u, 3963u),
+                    QuestIdReceive = QuestIds(3670u, 3673u, 3479u, 3671u, 3480u, 3781u, 3487u)
+                }));
+        });
+
+        manager.Initialise();
+
+        Assert.Equal([12959u], manager.GetQuestReceivers(3671));
+        Assert.DoesNotContain(11063u, manager.GetQuestReceivers(3671));
+        Assert.Equal([11063u], manager.GetQuestGivers(3671));
+    }
+
+    [Fact]
+    public void Initialise_Q3479IndexesBosunStarterAndQ3479Q3480IndexesClientDeadeyeReceiver()
+    {
+        var manager = CreateManager(gameTableManager =>
+        {
+            SetTable(gameTableManager, nameof(GameTableManager.Creature2), CreateGameTable(
+                new Creature2Entry
+                {
+                    Id             = 11062u,
+                    QuestIdGiven   = QuestIds(3479u),
+                    QuestIdReceive = QuestIds()
+                },
+                new Creature2Entry
+                {
+                    Id             = 11063u,
+                    QuestIdGiven   = QuestIds(3670u, 3667u, 3671u, 3668u, 3673u),
+                    QuestIdReceive = QuestIds(3673u, 3479u, 3671u, 3480u)
+                }));
+        });
+
+        manager.Initialise();
+
+        Assert.Equal([11062u], manager.GetQuestGivers(3479));
+        Assert.Equal([11063u], manager.GetQuestReceivers(3479));
+        Assert.Equal([11063u], manager.GetQuestReceivers(3480));
+    }
+
+    [Fact]
+    public void Initialise_Q3781IndexesReviewedStarterAndReceiverOverrides()
+    {
+        var manager = CreateManager(gameTableManager =>
+        {
+            SetTable(gameTableManager, nameof(GameTableManager.Creature2), CreateGameTable(
+                new Creature2Entry
+                {
+                    Id             = 50668u,
+                    QuestIdGiven   = QuestIds(),
+                    QuestIdReceive = QuestIds()
+                },
+                new Creature2Entry
+                {
+                    Id             = 16622u,
+                    QuestIdGiven   = QuestIds(4969u, 3770u, 3780u, 3782u),
+                    QuestIdReceive = QuestIds(3766u, 3780u, 4540u, 3963u)
+                }));
+        });
+
+        manager.Initialise();
+
+        Assert.Equal([50668u], manager.GetQuestGivers(3781));
+        Assert.Equal([16622u], manager.GetQuestReceivers(3781));
+        Assert.DoesNotContain(16622u, manager.GetQuestGivers(3781));
+        Assert.DoesNotContain(50668u, manager.GetQuestReceivers(3781));
+    }
+
+    [Fact]
+    public void Initialise_CrimsonIsleKezrekIndexesBuild16042DirectAndReviewedReceiverRoutes()
+    {
+        var manager = CreateManager(gameTableManager =>
+        {
+            SetTable(gameTableManager, nameof(GameTableManager.Creature2), CreateGameTable(
+                new Creature2Entry
+                {
+                    Id             = 24158u,
+                    QuestIdGiven   = QuestIds(5575u, 5594u, 7036u, 8856u),
+                    QuestIdReceive = QuestIds(5575u, 5594u, 5595u, 8856u)
+                }));
+        });
+
+        manager.Initialise();
+
+        Assert.Empty(manager.GetQuestGivers(5580));
+        Assert.Empty(manager.GetQuestGivers(5583));
+        Assert.Equal([24158u], manager.GetQuestGivers(5575));
+        Assert.Equal([24158u], manager.GetQuestReceivers(5575));
+        Assert.Equal([24158u], manager.GetQuestGivers(5594));
+        Assert.Equal([24158u], manager.GetQuestReceivers(5580));
+        Assert.Equal([24158u], manager.GetQuestReceivers(5583));
+        Assert.Equal([24158u], manager.GetQuestReceivers(5594));
+    }
+
+    [Fact]
+    public void Initialise_CrimsonIsleMondoIndexesBuild16042Q5573AndQ5597Routes()
+    {
+        var manager = CreateManager(gameTableManager =>
+        {
+            SetTable(gameTableManager, nameof(GameTableManager.Creature2), CreateGameTable(
+                new Creature2Entry
+                {
+                    Id             = 24187u,
+                    QuestIdGiven   = QuestIds(5573u, 5604u, 5596u, 5597u, 5814u, 5593u, 8855u),
+                    QuestIdReceive = QuestIds(5573u, 5609u, 5814u, 5596u, 5597u, 5604u, 5610u, 7036u, 5593u, 8855u, 5582u, 9127u, 9131u, 9132u)
+                }));
+        });
+
+        manager.Initialise();
+
+        Assert.Equal([24187u], manager.GetQuestGivers(5573));
+        Assert.Equal([24187u], manager.GetQuestReceivers(5573));
+        Assert.Equal([24187u], manager.GetQuestGivers(5597));
+        Assert.Equal([24187u], manager.GetQuestReceivers(5597));
+        Assert.Equal([24187u], manager.GetQuestReceivers(5610));
     }
 
     private static uint[] QuestIds(params uint[] questIds)

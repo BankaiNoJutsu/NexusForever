@@ -53,6 +53,11 @@ namespace NexusForever.Game.Quest
             return ((QuestObjectiveFlags)Entry.Flags & QuestObjectiveFlags.Optional) != 0;
         }
 
+        public bool UsesDynamicProgress()
+        {
+            return ((QuestObjectiveFlags)Entry.Flags & QuestObjectiveFlags.UsesDynamicProgress) != 0;
+        }
+
         public bool DisablesDynamicProgress()
         {
             return ((QuestObjectiveFlags)Entry.Flags & QuestObjectiveFlags.DisablesDynamicProgress) != 0;

@@ -175,14 +175,28 @@ namespace NexusForever.Game.Quest
 
         private bool IsDynamic()
         {
-            // dynamic objectives have their progress based on percentage rather than count
+            // Dynamic objectives store client progress on a 0-1000 scale. Checklist
+            // objectives keep progress as bit flags even when the table flag is set.
+            if (IsChecklist())
+                return false;
+
+            // SucceedCSI rows such as Q3479/Q3480 trapped survivors carry the dynamic
+            // flag, but the client still compares the wire progress to the row count.
+            if (ObjectiveInfo.Type == QuestObjectiveType.SucceedCSI)
+                return false;
+
+            return ObjectiveInfo.Entry.Count > 1u
+                && !ObjectiveInfo.DisablesDynamicProgress()
+                && (ObjectiveInfo.UsesDynamicProgress() || IsDynamicObjectiveType());
+        }
+
+        private bool IsDynamicObjectiveType()
+        {
             return ObjectiveInfo.Type is QuestObjectiveType.KillCreature
                     or QuestObjectiveType.KillTargetGroups
                     or QuestObjectiveType.KillNamedCreature
                     or QuestObjectiveType.KillTargetGroup
-                    or QuestObjectiveType.KillCreature2
-                && ObjectiveInfo.Entry.Count > 1u
-                && !ObjectiveInfo.DisablesDynamicProgress();
+                    or QuestObjectiveType.KillCreature2;
         }
 
         private bool IsChecklist()

@@ -5,6 +5,7 @@ using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
+using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Story;
@@ -19,16 +20,19 @@ namespace NexusForever.Game.Quest
 
         private readonly CommunicatorMessagesEntry entry;
         private readonly IPrerequisiteManager prerequisiteManager;
+        private readonly IGameTableManager gameTableManager;
 
         /// <summary>
         /// Create a new <see cref="ICommunicatorMessage"/> with supplied <see cref="CommunicatorMessagesEntry"/>.
         /// </summary>
         public CommunicatorMessage(
             CommunicatorMessagesEntry entry,
-            IPrerequisiteManager prerequisiteManager = null)
+            IPrerequisiteManager prerequisiteManager = null,
+            IGameTableManager gameTableManager = null)
         {
             this.entry = entry;
             this.prerequisiteManager = prerequisiteManager;
+            this.gameTableManager = gameTableManager;
         }
 
         /// <summary>
@@ -42,7 +46,7 @@ namespace NexusForever.Game.Quest
             if (entry.WorldId != 0u && entry.WorldId != player.Map.Entry.Id)
                 return false;
 
-            if (entry.WorldZoneId != 0u && player.Zone?.Id != entry.WorldZoneId)
+            if (entry.WorldZoneId != 0u && !IsInWorldZone(player.Zone, entry.WorldZoneId))
                 return false;
 
             if (entry.MinLevel != 0u && player.Level < entry.MinLevel)
@@ -57,7 +61,7 @@ namespace NexusForever.Game.Quest
                 if (questId == 0)
                     continue;
 
-                if (player.QuestManager.GetQuestState(questId) != (QuestState)entry.States[i])
+                if (!CommunicatorQuestState.Meets(player.QuestManager.GetQuestState(questId), entry.States[i]))
                     return false;
             }
 
@@ -74,6 +78,30 @@ namespace NexusForever.Game.Quest
                 return false;
 
             return true;
+        }
+
+        private bool IsInWorldZone(WorldZoneEntry zone, uint worldZoneId)
+        {
+            if (zone == null || worldZoneId == 0u)
+                return false;
+
+            HashSet<uint> visitedZones = [];
+            WorldZoneEntry currentZone = zone;
+            while (currentZone != null && visitedZones.Add(currentZone.Id))
+            {
+                if (currentZone.Id == worldZoneId)
+                    return true;
+
+                if (currentZone.ParentZoneId == 0u)
+                    return false;
+
+                if (currentZone.ParentZoneId == worldZoneId)
+                    return true;
+
+                currentZone = gameTableManager?.WorldZone?.GetEntry(currentZone.ParentZoneId);
+            }
+
+            return false;
         }
 
         private IPrerequisiteManager GetPrerequisiteManager()

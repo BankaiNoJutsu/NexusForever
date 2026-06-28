@@ -104,19 +104,22 @@ namespace NexusForever.Game
 
         private void CacheCreatureTargetGroups()
         {
-            var entries = ImmutableDictionary.CreateBuilder<uint, List<uint>>();
+            var entries = new Dictionary<uint, SortedSet<uint>>();
             IGameTableManager manager = GetGameTableManager();
             IEnumerable<TargetGroupEntry> targetGroupEntries =
                 manager.TargetGroup?.Entries ?? Enumerable.Empty<TargetGroupEntry>();
             foreach (TargetGroupEntry entry in targetGroupEntries)
             {
-                if ((TargetGroupType)entry.Type != TargetGroupType.CreatureIdGroup)
+                var targetIds = new HashSet<uint>();
+                var unhandledTargetGroups = new HashSet<TargetGroupType>();
+                AddToTargets(entry, targetIds, unhandledTargetGroups, new HashSet<uint>());
+                if (unhandledTargetGroups.Count != 0)
                     continue;
 
-                foreach (uint creatureId in entry.DataEntries)
+                foreach (uint creatureId in targetIds)
                 {
                     if (!entries.ContainsKey(creatureId))
-                        entries.Add(creatureId, new List<uint>());
+                        entries.Add(creatureId, []);
 
                     entries[creatureId].Add(entry.Id);
                 }
@@ -133,6 +136,7 @@ namespace NexusForever.Game
             switch ((TargetGroupType)entry.Type)
             {
                 case TargetGroupType.CreatureIdGroup:
+                case TargetGroupType.CreatureIdListGroup:
                     foreach (uint targetId in entry.DataEntries.Where(id => id != 0u))
                         targetIds.Add(targetId);
                     break;

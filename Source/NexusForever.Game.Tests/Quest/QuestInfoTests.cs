@@ -43,15 +43,17 @@ public class QuestInfoTests
                 {
                     Id                   = 1u,
                     XpMultiplier         = 1.5f,
-                    CashRewardMultiplier = 2f
+                    CashRewardMultiplier = 2f,
+                    RepRewardMultiplier  = 1.5f
                 }
             ],
             xpEntries:
             [
                 new XpPerLevelEntry
                 {
-                    Id                  = 3u,
-                    BaseQuestXpPerLevel = 100u
+                    Id                    = 3u,
+                    BaseQuestXpPerLevel   = 100u,
+                    BaseRepRewardPerLevel = 20u
                 }
             ],
             formulaEntries:
@@ -75,6 +77,7 @@ public class QuestInfoTests
 
         Assert.Equal(150u, info.GetRewardExperience());
         Assert.Equal(18u, info.GetRewardMoney());
+        Assert.Equal(30f, info.GetRewardReputation(0f));
         Assert.Single(info.Rewards);
     }
 
@@ -96,6 +99,7 @@ public class QuestInfoTests
 
         Assert.Equal(0u, info.GetRewardExperience());
         Assert.Equal(0u, info.GetRewardMoney());
+        Assert.Equal(0f, info.GetRewardReputation(0f));
     }
 
     [Fact]
@@ -124,6 +128,7 @@ public class QuestInfoTests
         Assert.Null(info.DifficultyEntry);
         Assert.Equal(0u, info.GetRewardExperience());
         Assert.Equal(0u, info.GetRewardMoney());
+        Assert.Equal(0f, info.GetRewardReputation(0f));
     }
 
     [Fact]
@@ -137,6 +142,40 @@ public class QuestInfoTests
 
         Assert.Equal(123u, info.GetRewardExperience());
         Assert.Equal(456u, info.GetRewardMoney());
+        Assert.Equal(789f, info.GetRewardReputation(789f));
+    }
+
+    [Theory]
+    [InlineData(3479u)]
+    [InlineData(3480u)]
+    public void RewardCalculations_Q3479Q3480Build16042CashFormulaReturnsMappedAmount(uint questId)
+    {
+        GameTableManager gameTableManager = CreateGameTableManager(
+            difficultyEntries:
+            [
+                new Quest2DifficultyEntry
+                {
+                    Id                   = 3u,
+                    CashRewardMultiplier = 10f
+                }
+            ],
+            formulaEntries:
+            [
+                new GameFormulaEntry
+                {
+                    Id         = 530u,
+                    Datafloat0 = 1.93f
+                }
+            ]);
+
+        var info = new QuestInfo(
+            CreateEntry(
+                id: questId,
+                conLevel: 3u,
+                difficultyId: 3u),
+            gameTableManager: gameTableManager);
+
+        Assert.Equal(83u, info.GetRewardMoney());
     }
 
     private static Quest2Entry CreateEntry(

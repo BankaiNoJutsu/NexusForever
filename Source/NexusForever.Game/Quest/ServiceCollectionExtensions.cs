@@ -8,6 +8,7 @@ namespace NexusForever.Game.Quest
         public static void AddGameQuest(this IServiceCollection sc)
         {
             sc.AddSingleton<IGlobalQuestManager, GlobalQuestManager>();
+            sc.AddSingleton<IContractManager, ContractManager>();
         }
     }
 }
