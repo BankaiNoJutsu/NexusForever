@@ -211,7 +211,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             session.Player.SelectedVendorInfo = vendorEntity.VendorInfo;
 
             ServerVendorItemsUpdated vendorItemsUpdated = vendorEntity.VendorInfo.Build();
-            vendorItemsUpdated.Guid = vendorEntity.Guid;
+            vendorItemsUpdated.VendorUnitId = vendorEntity.Guid;
             session.EnqueueMessageEncrypted(vendorItemsUpdated);
         }
 

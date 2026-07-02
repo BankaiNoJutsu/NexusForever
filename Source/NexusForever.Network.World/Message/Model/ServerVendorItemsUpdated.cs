@@ -6,19 +6,19 @@ namespace NexusForever.Network.World.Message.Model
     [Message(GameMessageOpcode.ServerVendorItemsUpdated)]
     public class ServerVendorItemsUpdated : IWritable
     {
-        public class Category : IWritable
+        public class VendorGroup : IWritable
         {
-            public uint Index { get; set; }
+            public uint GroupIndex { get; set; }
             public uint LocalisedTextId { get; set; }
 
             public void Write(GamePacketWriter writer)
             {
-                writer.Write(Index);
+                writer.Write(GroupIndex);
                 writer.Write(LocalisedTextId);
             }
         }
 
-        public class Item : IWritable
+        public class VendorItem : IWritable
         {
             public class ItemExtraCost : IWritable
             {
@@ -34,61 +34,61 @@ namespace NexusForever.Network.World.Message.Model
                 }
             }
 
-            public uint Index { get; set; }
-            public byte Unknown1 { get; set; }
-            public uint ItemId { get; set; }
-            public uint Unknown3 { get; set; }
-            public uint Unknown4 { get; set; }
-            public uint Unknown5 { get; set; }
-            public uint Unknown6 { get; set; }
-            public uint CategoryIndex { get; set; }
-            public uint Unknown8 { get; set; }
-            public ulong Unknown9 { get; set; }
-            public uint UnknownA { get; set; }
+            public uint StockUniqueId { get; set; }
+            public byte VendorItemType { get; set; }
+            public uint StaticDbId { get; set; }
+            public uint RewardOption { get; set; }
+            public uint StockCount { get; set; }
+            public uint PrerequisiteId { get; set; }
+            public uint ExchangeRate { get; set; }
+            public uint VendorGroupId { get; set; }
+            public uint Flags { get; set; }
+            public ulong CircuitData { get; set; }
+            public uint GlyphData { get; set; }
             public ItemExtraCost ExtraCost1 { get; set; }
             public ItemExtraCost ExtraCost2 { get; set; }
 
             public void Write(GamePacketWriter writer)
             {
-                writer.Write(Index);
-                writer.Write(Unknown1, 4);
-                writer.Write(ItemId);
-                writer.Write(Unknown3);
-                writer.Write(Unknown4);
-                writer.Write(Unknown5, 17);
-                writer.Write(Unknown6);
-                writer.Write(CategoryIndex);
-                writer.Write(Unknown8);
-                writer.Write(Unknown9);
-                writer.Write(UnknownA);
+                writer.Write(StockUniqueId);
+                writer.Write(VendorItemType, 4);
+                writer.Write(StaticDbId);
+                writer.Write(RewardOption);
+                writer.Write(StockCount);
+                writer.Write(PrerequisiteId, 17);
+                writer.Write(ExchangeRate);
+                writer.Write(VendorGroupId);
+                writer.Write(Flags);
+                writer.Write(CircuitData);
+                writer.Write(GlyphData);
                 ExtraCost1.Write(writer);
                 ExtraCost2.Write(writer);
             }
         }
 
-        public uint Guid { get; set; }
-        public List<Category> Categories { get; } = new();
-        public List<Item> Items { get; } = new();
+        public uint VendorUnitId { get; set; }
+        public List<VendorGroup> VendorGroups { get; } = new();
+        public List<VendorItem> VendorItems { get; } = new();
         public float SellPriceMultiplier { get; set; }
         public float BuyPriceMultiplier { get; set; }
-        public bool Unknown2 { get; set; }
-        public bool Unknown3 { get; set; }
-        public bool Unknown4 { get; set; }
+        public bool InitialList { get; set; }
+        public bool Failed { get; set; }
+        public bool ClearList { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(Guid);
+            writer.Write(VendorUnitId);
 
-            writer.Write(Categories.Count);
-            Categories.ForEach(c => c.Write(writer));
-            writer.Write(Items.Count);
-            Items.ForEach(i => i.Write(writer));
+            writer.Write(VendorGroups.Count);
+            VendorGroups.ForEach(c => c.Write(writer));
+            writer.Write(VendorItems.Count);
+            VendorItems.ForEach(i => i.Write(writer));
 
             writer.Write(SellPriceMultiplier);
             writer.Write(BuyPriceMultiplier);
-            writer.Write(Unknown2);
-            writer.Write(Unknown3);
-            writer.Write(Unknown4);
+            writer.Write(InitialList);
+            writer.Write(Failed);
+            writer.Write(ClearList);
         }
     }
 }

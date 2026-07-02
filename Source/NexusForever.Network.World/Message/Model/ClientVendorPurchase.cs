@@ -5,13 +5,13 @@ namespace NexusForever.Network.World.Message.Model
     [Message(GameMessageOpcode.ClientVendorPurchase)]
     public class ClientVendorPurchase : IReadable
     {
-        public uint VendorIndex { get; set; }
-        public uint VendorItemQty { get; set; }
+        public uint StockUniqueId { get; private set; }
+        public uint PurchaseQuantity { get; private set; }
 
         public void Read(GamePacketReader reader)
         {
-            VendorIndex = reader.ReadUInt();
-            VendorItemQty = reader.ReadUInt();
+            StockUniqueId = reader.ReadUInt();
+            PurchaseQuantity = reader.ReadUInt();
         }
     }
 }
