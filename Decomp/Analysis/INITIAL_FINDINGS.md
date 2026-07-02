@@ -2046,6 +2046,184 @@ Twenty-sixth Game.Spell Lua accessor follow-up implemented from this pass:
   current Artillerybot summon tier. Verification: focused
   `SpellEffectCombatRegressionTests`, `FloatingActionBarSpellTests`, and
   Artillerybot `CombatAITests` slices passed with isolated output directories.
+- 2026-06-28 Artillerybot LAS/pet-command correction: live client smoke showed
+  the naive `ServerActionSet` rewrite from summon base `27002` to pet-switch
+  base `34051` leaves the slot locked/invalid, so NexusForever must not model
+  Barrage as a normal persisted LAS shortcut replacement. External retail UI
+  evidence and the client API still support an active Engineer bot command
+  surface: the slotted bot summon is expected to expose its command while the
+  bot is active, and Engineer bot stance/dismiss controls use pet/action-bar
+  shortcut surfaces (`PrimaryPetBar`/`PetMiniBar`/`ShowActionBarShortcut`), but
+  the exact packet sequence for that transform remains unmapped. Implementation
+  keeps the table-backed pet-switch activation and server-side
+  `Spell4IdPetSwitch -> Barrage` cast mapping, rejects duplicate active bot
+  families, and caps active Engineer combat bots at two total across Repair,
+  Artillery, Diminisher, and Bruiser creature rows.
+- 2026-06-29 Engineer bot primary pet-bar correction: addon-corpus evidence
+  from `BetterBotBar`/`RemovePetPanel` hooks stock `ClassResources` /
+  `ResourceReplace` `OnShowActionBarShortcut` and hardcodes `nWhichBar == 1` as
+  the Engineer pet bar. That lines up with native `CodeEnumShortcutSet`
+  `PrimaryPetBar = 1`; the initially tested `ActionBarShortcutSet.tbl` row `1`
+  paints a partial/stale command surface (`GameCommand 8`, `Spell 22465`,
+  `VehicleAction 22466`), while row `299` contains the live client-data pet
+  command row (`MiscSkill` object ids `0..2` plus Go To spell `41693`).
+  Implementation now emits `ServerPetSpawned` with the concrete summoned unit id,
+  then `ServerActionBarSet(PrimaryPetBar, 299, petUnitId)` when an Engineer combat
+  bot enters the map, and clears the bar with
+  `ServerActionBarSet(PrimaryPetBar, 0, 0)` when the last bot in that family is
+  gone. Focused `SpellEffectCombatRegressionTests` and related floating-bar /
+  pet-stance tests passed against an isolated output directory.
+- 2026-06-28 Artillerybot formula/scaling correction: `wildstar_client`
+  `Spell4Effects` rows confirm the tooltip formulas are data-owned. Auto-attack
+  base `20491` tier 1 (`34521` effect `68333`) is physical damage with
+  `AssaultPower=0.1509` and `PerLevel=4.77`; Barrage damage base `21229` tier 1
+  (`35548` effect `71574`) is physical damage with `AssaultPower=0.13` and
+  `PerLevel=4.13`. Higher tiers keep the same per-level constants and increase
+  only the AP coefficient. Because the damaging casts execute from the summoned
+  Artillerybot, NexusForever now snapshots the summoning player's current
+  `AssaultRating` onto the bot immediately after the player-level clamp and
+  creature-default recalculation, keeping the damage calculator's existing
+  GameFormula `1266` AP conversion and `PerLevel` handling table-driven.
+  Verification: focused `DamageCalculatorRetailParityTests`,
+  `SpellEffectCombatRegressionTests`, and `FloatingActionBarSpellTests` slices
+  passed with isolated output directories.
+- 2026-06-28 Artillerybot Barrage visibility/follow correction: the current
+  table audit found no `ActionBarShortcutSet` row for Artillerybot pet-switch
+  base `34051` or player-cast Barrage base `20884`, and live smoke showed
+  `ServerSpellUpdate` alone does not create a clickable control. A temporary
+  `ServerQuestSpellShortcut` compatibility bridge was tested and then
+  superseded by later retail UI screenshots showing the normal Engineer pet
+  command bar plus a temporary LAS presentation of the bot command. Separately,
+  `MovementManager.Follow`/`Chase` now preserve the follower's current path
+  height for the final follow point instead of copying a jumping target's Y
+  coordinate into the generated path. Verification: focused Artillerybot
+  shortcut/follow tests and full `NexusForever.Game.Tests` passed with isolated
+  output directories.
+- 2026-06-28 Engineer combat-bot command implementation: `wildstar_client`
+  `Creature2`/`Spell4` evidence maps the four Engineer combat-bot families to
+  distinct summon/pet-switch/player-command rows: Repairbot (`42682`/`59845`,
+  summon base `26998`, Shield Boost base `21307`), Artillerybot
+  (`42683`/`59846`, summon base `27002`, pet-switch base `34051`, Barrage base
+  `20884`), Diminisherbot (`42684`/`59847`, summon base `27021`, pet-switch
+  base `47569`, Strobe base `58362`), and Bruiserbot (`42685`/`59848`, summon
+  base `27082`, pet-switch base `21192`, Blitz base `34410`). NexusForever now
+  uses one generic Engineer combat-bot definition path for summon creation,
+  player-level clamp, summoner `AssaultRating` snapshot, duplicate-family
+  rejection, two-active-bot cap, command selector registration, and cleanup.
+  The visible surface now follows the retail screenshot evidence: summon emits
+  `ServerPetSpawned` with the all-Engineer-bots pet id `0` for the command bar,
+  `ServerSpellUpdate` for the player-facing command spell, and a
+  non-persistent `ServerActionSet` projection that shows Barrage/Shield
+  Boost/Strobe/Blitz in the slotted summon position while the real saved LAS
+  remains unchanged. Cleanup emits `ServerPetDespawned` for pet id `0`,
+  deactivates the command spell, and restores the current saved action set.
+  `ClientCastSpellSelected` resolves the selector through the active pet-action
+  map and `PetCastSpell` still verifies an active owned summon before routing
+  the pet action. `ClientPetSetStance` also accepts owned summoned combat bots
+  and treats pet id `0` as the all-Engineer-bots command when an Engineer combat
+  bot is active, so the command bar stance dropdown can update the client-side
+  stance cache via `ServerPetStanceChanged`. `SpellManager` tracks temporary pet
+  commands by owner spell group so clearing or unsummoning one bot family does
+  not drop commands for a different active bot family. Verification: focused
+  `SpellEffectCombatRegressionTests`, `FloatingActionBarSpellTests`, and
+  `DamageCalculatorRetailParityTests` slices passed `44/44`; full
+  `dotnet vstest` on the built `NexusForever.Game.Tests.dll` passed
+  `5251/5251`; owning `NexusForever.Game` build passed with isolated artifact
+  directories before this follow-up.
+- 2026-06-29 Artillerybot command projection correction: live follow-up
+  corrected the projected command row to a direct
+  `ShortcutType.Spell` exact Spell4 id, with `ServerActionSetClearCache` before
+  both command projection and saved-LAS restore. This keeps the persisted
+  summon shortcut untouched while allowing the client-selected exact Barrage row
+  to resolve through the active pet-action map. Verification:
+  `SpellEffectCombatRegressionTests`, `FloatingActionBarSpellTests`, and
+  `ClientPetSetStanceHandlerTests` focused slices passed `32/32` with
+  redirected `OutDir`.
+- 2026-06-29 Artillerybot pet-bar lifecycle correction: live follow-up showed
+  Barrage visible in the slotted summon position but no Engineer pet command
+  minibar. The world trace showed `ServerPetSpawned` was still emitted during
+  `HandleEffectSummonPet`, before the summoned bot had a map guid
+  (`summonedGuid=0`). NexusForever now records the pending combat-bot pet-bar
+  context during summon creation, emits `ServerPetSpawned` from
+  `Player.OnSummon` after the bot has its concrete unit id, and emits
+  `ServerPetDespawned` with that same concrete id during unsummon cleanup.
+  `ServerPetSpawned`/`ServerPetDespawned` comments now document the concrete
+  cached pet-row key; the `ClientPetSetStance` pet id `0` compatibility path
+  remains only as an all-active-Engineer-bots stance fallback. Verification:
+  `SpellEffectCombatRegressionTests`, `FloatingActionBarSpellTests`, and
+  `ClientPetSetStanceHandlerTests` focused slices passed `32/32` with
+  redirected `OutDir`.
+- 2026-06-29 / 2026-06-30 pet stance wire-value correction: cached fragments
+  `Pet_SetStance_SendClientPetSetStance` (`14050a270`),
+  `Pet_GetStance_ReadCachedStance` (`14050a130`), and
+  `Pet_ApplyStanceChangedPayload` (`1403c0a80`) showed that the packet/cache
+  field is a one-bit stance mask, not a Lua/game ordinal. A direct PE `.rdata`
+  dump confirmed `DAT_140b6a860[0..4] = 4,5,3,2,1` and
+  `DAT_140b6a874[1..5] = 0x10,0x08,0x04,0x01,0x02`: script stance ids are
+  `Aggressive=1`, `Defensive=2`, `Passive=3`, `Assist=4`, and `Stay=5`, while
+  wire/cache masks are `Assist=0x01`, `Stay=0x02`, `Passive=0x04`,
+  `Defensive=0x08`, and `Aggressive=0x10`. NexusForever now keeps `PetStance`
+  as the script/game id and converts through `PetStanceEncoding` at
+  `ClientPetSetStance`, `ServerPetSpawned`, and `ServerPetStanceChanged`
+  packet boundaries. Verification: focused pet-stance/artillerybot packet
+  slices passed with redirected output directories; the earlier local stack
+  restart registered `ClientPetSetStance` with no strict error/fatal/exception
+  hits.
+- 2026-06-30 Engineer combat-bot command blocker pass: cached fragment
+  `Pet_GetValidStances_ReadCachedMask` (`14050a030`) maps the third pet script
+  binding in the same UI cluster as `Pet_SetStance`/`Pet_GetStance`; it resolves
+  the pet command context, reads the cached row's valid-stance mask at row `+4`,
+  and returns it to the addon. This backs the current `ServerPetSpawned`
+  `ValidStances=0b11101` for Engineer combat bots: Assist, Passive, Defensive,
+  and Aggressive are exposed while Stay is not. Stock `ClassResources.lua` /
+  `ClassResources.xml` extraction maps `ActionBarShortcut.12` to Attack,
+  `ActionBarShortcut.13` to Stop, `ActionBarShortcut.15` to Go To, and stance
+  dropdown data `1..5` to Aggressive/Defensive/Passive/Assist/Stay. Static
+  strings, selected fragments, and `inputaction` row `8=Shift` still do not
+  prove distinct Attack/Stop/GoTo client opcodes or payloads. The client-data
+  owner for the visible command bar is `ActionBarShortcutSet` row `299`
+  (`MiscSkill` object ids `0..2` plus Go To spell `41693`), not stale row `1`,
+  so the server now sends row `299`; actual Attack/Stop click semantics remain
+  blocked on a live packet capture or Ghidra callback/send-site owner.
+  Follow-up cached-export review found `Lua_RegisterTooltipLib` (`1406f26c0`)
+  registering `TooltipGenerateType_PetCommand`, `FUN_140702c60` returning
+  `GameLib.GetGameCommand` metadata (`nGameCommandId`, name, icon, optional
+  item/spell ability), and `FUN_1406c8bf0`/`FUN_1406c9280` handling
+  `DDGameCommand` drag/drop or non-spell shortcut-add surfaces. None of those
+  fragments is a command-click sender or maps `SBar` content ids `12`/`13`/`15`
+  to a world opcode, target payload, or server-visible pet order.
+  Server-side stance behavior was tightened where it is already backed:
+  commanded summons in Aggressive stance now idle-aggro visible units that
+  `entity.CanAttack(target)` accepts, rather than requiring incomplete
+  faction-disposition rows to say Hostile. Verification: focused
+  combat/pet/action/Barrage slice passed `114/114`.
+- 2026-06-30 Engineer command-surface pet id correction: live
+  `WorldServer` trace for the visible row-`299` command bar showed the stance
+  dropdown sending `ClientPetSetStance` with pet id `0` while the concrete
+  Artillerybot unit was `656`. The same native pet Lua fragments read the
+  command-context pet id before looking up `ServerPetSpawned` cache rows, so
+  NexusForever now emits an all-Engineer-bots command-surface pet row keyed by
+  `0` alongside the concrete summoned pet row, shows `PrimaryPetBar` row `299`
+  with associated unit id `0`, and removes the command-surface row when the
+  final active Engineer combat bot despawns. The concrete row remains for the
+  actual summoned unit lifecycle. The same pass fixed the remaining Assist-mode
+  aggro leak: commanded summons only idle-aggro through range entry in
+  Aggressive stance, and ambient NPC idle aggro now ignores non-aggressive
+  player-controlled summons so reciprocal threat cannot make Assist behave
+  like Aggressive. Verification: focused combat, spell-effect, and pet-stance
+  slice passed `125/125`.
+- 2026-06-30 Artillerybot follow/Barrage target-origin correction:
+  `CombatAI.ValidateCurrentTarget` now re-runs target selection after dropping
+  an invalid current target, so a summoned combat bot with no recoverable threat
+  resets and resumes the existing summoner-follow path instead of staying stuck
+  on a stale target. `SpellTargetValidationTests` now pins Artillerybot Barrage
+  as both hostile-only (`Caster.CanAttack`) and position-field centered when the
+  cast request carries an explicit `Position`; selected-cast and
+  activate-position handlers already forward that position through
+  `PetCastSpell` to the active bot caster. Verification: focused pet stance,
+  combat follow, Barrage target-origin, summon, and floating-action-bar slice
+  passed `36/36` with redirected output directory
+  `artifacts/codex-test-bin/petbot-final-slice`.
 - 2026-06-20 `GiveLootTableToPlayer` loot-data promotion audit: current
   `wildstar_client.spell4effects` still has `29` effect-type `44` rows with
   `21` distinct `DataBits00` ids

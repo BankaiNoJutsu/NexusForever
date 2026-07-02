@@ -15616,6 +15616,20 @@ ownership or emit timing. Source still finds `ServerItemModdableData`,
 packet-shape tests. Keep all three packets non-emitted pending a native server
 producer path, apply-table classification, callback/table owner, or accepted
 item-replication capture.
+Engineer combat-bot command support now covers the four table-backed bot
+families without modeling them as persisted LAS rewrites: Repairbot Shield
+Boost, Artillerybot Barrage, Diminisherbot Strobe, and Bruiserbot Blitz. Summon
+creation shares a generic Engineer bot path for player-level clamp, summoner
+`AssaultRating` snapshot, duplicate-family rejection, the two-active-bot cap,
+command selector registration, and cleanup. The current runtime bridge emits
+the concrete summon pet row plus an all-bots command-surface pet row, shows
+`PrimaryPetBar` shortcut-set row `299`, projects the active bot command over the
+slotted summon with a transient `ServerActionSet`, and resolves selected
+commands through the active pet-action map while preserving the saved LAS.
+Focused spell/action-bar/pet-command verification passed as part of the full
+`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj`
+run on 2026-07-02: 5340/5340 passed. The full
+`dotnet build Source\NexusForever.sln` also passed with isolated artifacts.
 
 **Blocked:** `ClientItemContextActionHandler` still keeps `SelectedBranch`
 diagnostic-only for non-use item actions until right-click branch semantics are
