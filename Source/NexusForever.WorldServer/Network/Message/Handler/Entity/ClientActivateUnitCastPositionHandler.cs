@@ -31,7 +31,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 activateUnitCastPosition.TargetEntityId,
                 activateUnitCastPosition.ContextToken,
                 nameof(ClientActivateUnitCastPosition),
-                activateUnitCastPosition.Position);
+                activateUnitCastPosition.Position,
+                activateUnitCastPosition.SelectorA,
+                activateUnitCastPosition.SelectorB);
         }
     }
 }

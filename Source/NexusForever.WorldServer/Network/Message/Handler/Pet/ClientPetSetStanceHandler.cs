@@ -11,18 +11,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pet
 {
     public class ClientPetSetStanceHandler : IMessageHandler<IWorldSession, ClientPetSetStance>
     {
-        private static readonly uint[] EngineerCombatBotCreatureIds =
-        [
-            42682u,
-            59845u,
-            42683u,
-            59846u,
-            42684u,
-            59847u,
-            42685u,
-            59848u
-        ];
-
         private readonly ILogger<ClientPetSetStanceHandler> log;
 
         public ClientPetSetStanceHandler(ILogger<ClientPetSetStanceHandler> log)
@@ -40,7 +28,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pet
 
             if (petSetStance.PetUnitId == 0u)
             {
-                IReadOnlyCollection<IWorldEntity> engineerBots = GetActiveEngineerCombatBots(session.Player);
+                IReadOnlyCollection<IWorldEntity> engineerBots = EngineerCombatBotPetCommandHelper.GetActiveEngineerCombatBots(session.Player);
                 if (engineerBots.Count != 0)
                 {
                     session.EnqueueMessageEncrypted(new ServerPetStanceChanged
@@ -110,19 +98,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pet
                 session.Player.Guid, petUnitId.Value, petSetStance.Stance);
         }
 
-        private static IReadOnlyCollection<IWorldEntity> GetActiveEngineerCombatBots(IPlayer player)
-        {
-            IEntitySummonFactory summonFactory = player?.SummonFactory;
-            if (summonFactory == null)
-                return [];
-
-            var engineerBots = new List<IWorldEntity>();
-            foreach (uint creatureId in EngineerCombatBotCreatureIds)
-                engineerBots.AddRange(summonFactory.GetSummonCreatures(creatureId));
-
-            return engineerBots;
-        }
-
         private static void ApplySummonCommandStance(IWorldEntity entity, PetStance stance)
         {
             entity.SummonCommandStance = stance;
@@ -134,9 +109,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pet
             if (stance is not (PetStance.Passive or PetStance.Stay))
                 return;
 
-            unit.SetTarget((IWorldEntity)null);
-            unit.ThreatManager?.ClearThreatList();
-            unit.MovementManager?.Finalise();
+            EngineerCombatBotPetCommandHelper.ClearCombat(entity);
         }
     }
 }

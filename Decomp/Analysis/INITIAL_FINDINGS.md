@@ -2212,6 +2212,26 @@ Twenty-sixth Game.Spell Lua accessor follow-up implemented from this pass:
   player-controlled summons so reciprocal threat cannot make Assist behave
   like Aggressive. Verification: focused combat, spell-effect, and pet-stance
   slice passed `125/125`.
+- 2026-07-02 Engineer combat-bot action button implementation: cached native
+  action-bar apply/click fragments now map the row-`299` button path far enough
+  to implement the visible command buttons. `ServerActionBarSet` apply
+  (`1403b9920`) loads the `ActionBarShortcutSet` row and stores the row slot
+  index in the slot payload; the misc-skill slot constructor (`1405c7f20`) keeps
+  `ShortcutSet`, slot index, and object id, while the click handler
+  (`1405c9b90`) sends world opcode `0x0073` with `{ ShortcutSet, SlotIndex }`
+  for shortcut type `0x0C`. Stock `ClassResources` maps SBar content ids
+  `12`, `13`, and `15` to PrimaryPetBar slots `0`, `1`, and `3`: Attack,
+  Stop/Return, and Go To. NexusForever now reads `ClientPetCommand` `0x0073`
+  for Attack/Stop, commanding all active owned Engineer combat bots to attack
+  the player's selected valid target or clear combat and return. Go To remains
+  the row-`299` spell slot and is handled through `ClientActivateUnitCastPosition`
+  selector pair `PrimaryPetBar/3`; it clears combat, path-moves the bots to the
+  requested field position, and holds them there instead of falling through to
+  Barrage's active-pet-action path. Verification: redirected
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-build --artifacts-path I:\GIT\NexusForever\artifacts\pet-command-test-artifacts
+  --filter "FullyQualifiedName~ClientPetSetStanceHandlerTests|FullyQualifiedName~ClientPetCommandHandlerTests|FullyQualifiedName~ClientActivateUnitCastHandlerTests"`
+  passed `38/38`.
 - 2026-06-30 Artillerybot follow/Barrage target-origin correction:
   `CombatAI.ValidateCurrentTarget` now re-runs target selection after dropping
   an invalid current target, so a summoned combat bot with no recoverable threat

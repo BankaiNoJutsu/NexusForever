@@ -1,9 +1,13 @@
+using System.Collections.Generic;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Spell;
+using NexusForever.Game.Static.Entity.Movement.Spline;
+using NexusForever.Game.Static.Pet;
 using NexusForever.Game.Static.Quest;
+using NexusForever.Game.Static.Spell;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
@@ -11,6 +15,7 @@ using NexusForever.Network.World.Message.Static;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Entity;
+using NexusForever.WorldServer.Network.Message.Handler.Pet;
 using NexusForever.WorldServer.Network.Message.Handler.Spell;
 using NLog;
 
@@ -57,7 +62,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             HandleMessageInternal(session, activateUnitCast.ActivateUnitId, activateUnitCast.ContextToken, nameof(ClientActivateUnitCast));
         }
 
-        internal void HandleMessageInternal(IWorldSession session, uint activateUnitId, uint contextToken, string clientRequestSource, Position position = null)
+        internal void HandleMessageInternal(IWorldSession session, uint activateUnitId, uint contextToken, string clientRequestSource, Position position = null, byte? selectorA = null, byte? selectorB = null)
         {
             IWorldEntity entity = session.Player.GetVisible<IWorldEntity>(activateUnitId);
             if (entity == null)
@@ -116,6 +121,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                     return;
 
                 if (TryCompleteNorthernWildsSoldierHoldoutActivationWithoutSpell(session, entity, 0u, CastResult.NoValidActivateSpell))
+                    return;
+
+                if (TryHandlePrimaryPetBarGoToCommand(session, entity, clientRequestSource, position, selectorA, selectorB))
                     return;
 
                 if (TryCastActivePetActionFromActivateShortcut(session, entity, contextToken, clientRequestSource, position))
@@ -233,6 +241,34 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             }
 
             log.Debug($"Active pet-action activate-cast succeeded: player={session.Player.Guid}, spell4Id={actionSpell4Id}, contextToken={contextToken}, source={clientRequestSource}.");
+            return true;
+        }
+
+        private static bool TryHandlePrimaryPetBarGoToCommand(IWorldSession session, IWorldEntity entity, string clientRequestSource, Position position, byte? selectorA, byte? selectorB)
+        {
+            if (session?.Player == null
+                || entity?.Guid != session.Player.Guid
+                || clientRequestSource != nameof(ClientActivateUnitCastPosition)
+                || position == null
+                || selectorA != (byte)ShortcutSet.PrimaryPetBar
+                || selectorB != (byte)EngineerCombatBotPetCommandHelper.PrimaryPetBarGoToSlotIndex)
+                return false;
+
+            IReadOnlyCollection<IWorldEntity> engineerBots = EngineerCombatBotPetCommandHelper.GetActiveEngineerCombatBots(session.Player);
+            uint commandedCount = 0u;
+            foreach (IWorldEntity engineerBot in engineerBots)
+            {
+                EngineerCombatBotPetCommandHelper.ClearCombat(engineerBot);
+                engineerBot.SummonCommandStance = PetStance.Stay;
+                engineerBot.SummonCommandFollowRequested = false;
+                engineerBot.MovementManager?.LaunchPath(
+                    position.Vector,
+                    EngineerCombatBotPetCommandHelper.GetCommandMovementSpeed(engineerBot),
+                    SplineMode.OneShot);
+                commandedCount++;
+            }
+
+            log.Debug($"Primary pet-bar Go To command: player={session.Player.Guid}, commandedBots={commandedCount}, position=({position.Vector.X}, {position.Vector.Y}, {position.Vector.Z}).");
             return true;
         }
 

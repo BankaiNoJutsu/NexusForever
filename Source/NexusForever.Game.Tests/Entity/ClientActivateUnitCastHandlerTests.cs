@@ -7,11 +7,15 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Combat;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Entity.Movement.Spline;
+using NexusForever.Game.Static.Pet;
 using NexusForever.Game.Static.Quest;
+using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Game.Spell;
 using NexusForever.GameTable;
@@ -322,6 +326,60 @@ public class ClientActivateUnitCastHandlerTests
     }
 
     [Fact]
+    public void HandleMessageInternal_WithPrimaryPetBarGoTo_CommandsEngineerBotAndDoesNotCastPetAction()
+    {
+        ClientActivateUnitCastHandler handler = CreateHandler();
+        IWorldSession session = CreateSession(
+            creatureId: 0u,
+            castResult: CastResult.Ok,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IWorldEntity> entityProxy,
+            activateSpellId: 0u);
+        entityProxy.SetProperty(nameof(IGridEntity.Guid), 17u);
+
+        IUnitEntity bot = CreateEngineerBot(
+            333u,
+            17u,
+            out RecordingDispatchProxy<IUnitEntity> botProxy,
+            out RecordingDispatchProxy<IThreatManager> threatProxy,
+            out RecordingDispatchProxy<IMovementManager> movementProxy);
+        AttachSummonFactory(session.Player, 42683u, bot);
+
+        ISpellManager spellManager = RecordingDispatchProxy<ISpellManager>.Create(out RecordingDispatchProxy<ISpellManager> spellManagerProxy);
+        spellManagerProxy.SetMethodHandler(nameof(ISpellManager.TryResolveSingleActivePetActionSpell), args =>
+        {
+            args[0] = ArtillerybotBarrageSpell4Id;
+            return true;
+        });
+        playerProxy.SetProperty(nameof(IPlayer.SpellManager), spellManager);
+
+        var position = new Position(new Vector3(10f, 20f, 30f));
+
+        InvokeHandleMessageInternal(
+            handler,
+            session,
+            17u,
+            1234u,
+            nameof(ClientActivateUnitCastPosition),
+            position,
+            (byte)ShortcutSet.PrimaryPetBar,
+            3);
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
+        Assert.Equal(PetStance.Stay, bot.SummonCommandStance);
+        Assert.False(bot.SummonCommandFollowRequested);
+        RecordingDispatchProxy<IUnitEntity>.Invocation setTarget =
+            Assert.Single(botProxy.GetInvocations(nameof(IUnitEntity.SetTarget)));
+        Assert.Null(setTarget.Arguments[0]);
+        Assert.Single(threatProxy.GetInvocations(nameof(IThreatManager.ClearThreatList)));
+        RecordingDispatchProxy<IMovementManager>.Invocation launchPath =
+            Assert.Single(movementProxy.GetInvocations(nameof(IMovementManager.LaunchPath)));
+        Assert.Equal(position.Vector, launchPath.Arguments[0]);
+        Assert.Equal(10f, launchPath.Arguments[1]);
+        Assert.Equal(SplineMode.OneShot, launchPath.Arguments[2]);
+    }
+
+    [Fact]
     public void HandleMessageInternal_WithSelfActivatePositionAndAmbiguousPetActions_FailsActivation()
     {
         ClientActivateUnitCastHandler handler = CreateHandler();
@@ -512,6 +570,41 @@ public class ClientActivateUnitCastHandlerTests
         return session;
     }
 
+    private static IUnitEntity CreateEngineerBot(
+        uint guid,
+        uint summonerGuid,
+        out RecordingDispatchProxy<IUnitEntity> botProxy,
+        out RecordingDispatchProxy<IThreatManager> threatProxy,
+        out RecordingDispatchProxy<IMovementManager> movementProxy)
+    {
+        IUnitEntity bot = RecordingDispatchProxy<IUnitEntity>.Create(out botProxy);
+        IThreatManager threatManager = RecordingDispatchProxy<IThreatManager>.Create(out threatProxy);
+        IMovementManager movementManager = RecordingDispatchProxy<IMovementManager>.Create(out movementProxy);
+        botProxy.SetProperty(nameof(IUnitEntity.Guid), guid);
+        botProxy.SetProperty(nameof(IUnitEntity.SummonerGuid), summonerGuid);
+        botProxy.SetProperty(nameof(IUnitEntity.CreatureId), 42683u);
+        botProxy.SetProperty(nameof(IUnitEntity.SummonCommandStance), PetStance.Assist);
+        botProxy.SetProperty(nameof(IUnitEntity.SummonCommandFollowRequested), true);
+        botProxy.SetProperty(nameof(IUnitEntity.ThreatManager), threatManager);
+        botProxy.SetProperty(nameof(IUnitEntity.MovementManager), movementManager);
+        botProxy.SetMethodHandler(nameof(IUnitEntity.GetPropertyValue), args =>
+            args.Length == 1 && args[0] is Property property && property == Property.MoveSpeedMultiplier ? 1f : 0f);
+        return bot;
+    }
+
+    private static void AttachSummonFactory(IPlayer player, uint activeCreatureId, params IWorldEntity[] activeSummons)
+    {
+        IEntitySummonFactory summonFactory = RecordingDispatchProxy<IEntitySummonFactory>.Create(
+            out RecordingDispatchProxy<IEntitySummonFactory> summonFactoryProxy);
+        summonFactoryProxy.SetMethodHandler(nameof(IEntitySummonFactory.GetSummonCreatureCount), args =>
+            (uint)args[0] == activeCreatureId ? (uint)activeSummons.Length : 0u);
+        summonFactoryProxy.SetMethodHandler(nameof(IEntitySummonFactory.GetSummonCreatures), args =>
+            (uint)args[0] == activeCreatureId ? activeSummons : []);
+
+        RecordingDispatchProxy<IPlayer> playerProxy = (RecordingDispatchProxy<IPlayer>)(object)player;
+        playerProxy.SetProperty(nameof(IPlayer.SummonFactory), summonFactory);
+    }
+
     private static GameTableManager CreateGameTableManager()
     {
         GameTableManager gameTableManager = new(Options.Create(new GameTableConfig()));
@@ -617,13 +710,21 @@ public class ClientActivateUnitCastHandlerTests
         field.SetValue(instance, value);
     }
 
-    private static void InvokeHandleMessageInternal(ClientActivateUnitCastHandler handler, IWorldSession session, uint activateUnitId, uint contextToken, string clientRequestSource, Position position = null)
+    private static void InvokeHandleMessageInternal(
+        ClientActivateUnitCastHandler handler,
+        IWorldSession session,
+        uint activateUnitId,
+        uint contextToken,
+        string clientRequestSource,
+        Position position = null,
+        byte? selectorA = null,
+        byte? selectorB = null)
     {
         MethodInfo method = typeof(ClientActivateUnitCastHandler).GetMethod(
             "HandleMessageInternal",
             BindingFlags.Instance | BindingFlags.NonPublic);
 
         Assert.NotNull(method);
-        method.Invoke(handler, [session, activateUnitId, contextToken, clientRequestSource, position]);
+        method.Invoke(handler, [session, activateUnitId, contextToken, clientRequestSource, position, selectorA, selectorB]);
     }
 }

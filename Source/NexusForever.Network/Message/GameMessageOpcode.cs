@@ -11,6 +11,7 @@ namespace NexusForever.Network.Message
         ServerPlayerEnteredWorld        = 0x0061,
         ServerPetSpawned                = 0x0068, // native reader LAB_14008ce70 reads unit id + 18-bit spell id + 5-bit valid stances + 5-bit stance; apply path Pet_ApplySpawnedPayload 1403c08d0 dispatches PetSpawned
         ServerClientEntityUpdateInterval = 0x0070,
+        ClientPetCommand                = 0x0073, // native misc-skill action-bar click 1405c9b90 sends { ShortcutSet, SlotIndex }; row 299 PrimaryPetBar uses this for Engineer Attack/Stop buttons
         ServerAuthEncrypted             = 0x0076,
         ServerItemTradePartners         = 0x007E, // krakal/inventory item trade-partner identity-list research; non-conflicting opcode
         ServerGameCameraRotation        = 0x0091,
