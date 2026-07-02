@@ -4,7 +4,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Combat;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Spell;
+using NexusForever.Game.Spell.Effect;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Static.Spell.Effect;
@@ -25,6 +27,51 @@ public class DamageCalculatorRetailParityTests
         float damage = DamageCalculator.ApplyPowerCoefficient(rating, coefficient);
 
         Assert.Equal(expected, damage);
+    }
+
+    [Theory]
+    [InlineData(0.1509f, 4.77f, 57u)]
+    [InlineData(0.13f, 4.13f, 49u)]
+    public void CalculateBaseDamage_WithArtillerybotFormulaShape_UsesCasterAssaultPowerAndLevel(
+        float assaultPowerCoefficient,
+        float levelCoefficient,
+        uint expectedDamage)
+    {
+        var calculator = new DamageCalculator(
+            NullLogger<DamageCalculator>.Instance,
+            CreateGameTableManager(CreatePowerCoefficientFormula()));
+        IUnitEntity attacker = CreateUnit(
+            level: 4u,
+            new Dictionary<Property, float>
+            {
+                [Property.AssaultRating] = 1000f,
+                [Property.DamageDealtMultiplierPhysical] = 1f
+            });
+        IUnitEntity victim = CreateUnit(level: 4u, new Dictionary<Property, float>());
+        var effectEntry = new Spell4EffectsEntry
+        {
+            EffectType = SpellEffectType.Damage,
+            DamageType = DamageType.Physical,
+            DataBits00 = BitConverter.SingleToUInt32Bits(1f),
+            ParameterType =
+            [
+                SpellEffectParameterType.AssaultPower,
+                SpellEffectParameterType.PerLevel,
+                SpellEffectParameterType.None,
+                SpellEffectParameterType.None
+            ],
+            ParameterValue =
+            [
+                assaultPowerCoefficient,
+                levelCoefficient,
+                0f,
+                0f
+            ]
+        };
+
+        uint damage = InvokeBaseDamage(calculator, attacker, victim, effectEntry);
+
+        Assert.Equal(expectedDamage, damage);
     }
 
     [Theory]
@@ -240,6 +287,16 @@ public class DamageCalculatorRetailParityTests
         };
     }
 
+    private static GameFormulaEntry CreatePowerCoefficientFormula()
+    {
+        return new GameFormulaEntry
+        {
+            Id          = 1266u,
+            Datafloat0  = 0.25f,
+            Datafloat01 = 0.25f
+        };
+    }
+
     private static GameFormulaEntry CreateAvoidFormula()
     {
         return CreateBaseOnlyPercentFormula(1235u);
@@ -293,8 +350,21 @@ public class DamageCalculatorRetailParityTests
             Property property = (Property)args[0];
             return propertyValues.TryGetValue(property, out float value) ? value : 0f;
         });
+        proxy.SetMethodHandler(nameof(IUnitEntity.GetProperty), args =>
+        {
+            Property property = (Property)args[0];
+            return new PropertyValue(property, propertyValues.TryGetValue(property, out float value) ? value : 0f);
+        });
 
         return unit;
+    }
+
+    private static uint InvokeBaseDamage(DamageCalculator calculator, IUnitEntity caster, IUnitEntity target, Spell4EffectsEntry effectEntry)
+    {
+        MethodInfo method = typeof(DamageCalculator)
+            .GetMethod("CalculateBaseDamage", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        return (uint)method.Invoke(calculator, [caster, target, SpellEffectInterpreter.Interpret(effectEntry)]);
     }
 
     private static float InvokeRatingPercentMod(DamageCalculator calculator, Property property, IUnitEntity entity)

@@ -13,6 +13,7 @@ using NexusForever.Game.Static.Combat.CrowdControl;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Entity.Movement.Command.Mode;
 using NexusForever.Game.Static.Entity.Movement.Spline;
+using NexusForever.Game.Static.Pet;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Tests.TestSupport;
@@ -685,7 +686,7 @@ public class CombatAITests
     }
 
     [Fact]
-    public void Update_WhenSummonedAssistProfileOwnerTargetsHostileCreature_AssistsOwnerTarget()
+    public void Update_WhenSummonedAssistProfileOwnerOnlyTargetsHostileCreature_DoesNotAssistSelectedTarget()
     {
         ICreatureEntity hostileCreature = CreateHostileCreature(400u, new Vector3(12f, 0f, 0f));
         CombatProfile profile = CombatProfile.Default with
@@ -706,8 +707,62 @@ public class CombatAITests
 
         harness.Script.Update(0.5d);
 
+        Assert.Null(harness.CreatureThreat.GetHostile(hostileCreature.Guid));
+        Assert.Null(harness.Creature.TargetGuid);
+    }
+
+    [Fact]
+    public void Update_WhenSummonedAssistProfileOwnerTargetsEngagedHostileCreature_AssistsOwnerTarget()
+    {
+        ICreatureEntity hostileCreature = CreateHostileCreature(400u, new Vector3(12f, 0f, 0f));
+        CombatProfile profile = CombatProfile.Default with
+        {
+            AllowNonPlayerTargets = true,
+            AssistSummoner = true,
+            SummonerAssistRange = 35f,
+            SummonerFollowDistance = 4f,
+            SummonerFollowRepathDistance = 8f
+        };
+        CombatHarness harness = CreateHarness(
+            new Vector3(10f, 0f, 0f),
+            extraInRange: [hostileCreature],
+            canAttack: unit => ReferenceEquals(unit, hostileCreature),
+            profileProvider: new FixedCombatProfileProvider(profile),
+            summonerGuid: 200u,
+            playerTargetGuid: hostileCreature.Guid);
+        harness.Player.ThreatManager.UpdateThreat(hostileCreature, 1);
+
+        harness.Script.Update(0.5d);
+
         Assert.NotNull(harness.CreatureThreat.GetHostile(hostileCreature.Guid));
         Assert.Equal(hostileCreature.Guid, harness.Creature.TargetGuid);
+    }
+
+    [Fact]
+    public void Update_WhenSummonedAssistProfilePassiveOwnerTargetsHostileCreature_DoesNotAssistOwnerTarget()
+    {
+        ICreatureEntity hostileCreature = CreateHostileCreature(400u, new Vector3(12f, 0f, 0f));
+        CombatProfile profile = CombatProfile.Default with
+        {
+            AllowNonPlayerTargets = true,
+            AssistSummoner = true,
+            SummonerAssistRange = 35f,
+            SummonerFollowDistance = 4f,
+            SummonerFollowRepathDistance = 8f
+        };
+        CombatHarness harness = CreateHarness(
+            new Vector3(10f, 0f, 0f),
+            extraInRange: [hostileCreature],
+            canAttack: unit => ReferenceEquals(unit, hostileCreature),
+            profileProvider: new FixedCombatProfileProvider(profile),
+            summonerGuid: 200u,
+            playerTargetGuid: hostileCreature.Guid,
+            summonCommandStance: PetStance.Passive);
+
+        harness.Script.Update(0.5d);
+
+        Assert.Null(harness.CreatureThreat.GetHostile(hostileCreature.Guid));
+        Assert.Null(harness.Creature.TargetGuid);
     }
 
     [Fact]
@@ -736,6 +791,200 @@ public class CombatAITests
     }
 
     [Fact]
+    public void Update_WhenSummonedDefensiveProfileHostileTargetsOwner_AssistsOwnerAttacker()
+    {
+        ICreatureEntity hostileCreature = CreateHostileCreature(400u, new Vector3(12f, 0f, 0f), targetGuid: 200u);
+        CombatProfile profile = CombatProfile.Default with
+        {
+            AllowNonPlayerTargets = true,
+            AssistSummoner = true,
+            SummonerAssistRange = 35f,
+            SummonerFollowDistance = 4f,
+            SummonerFollowRepathDistance = 8f
+        };
+        CombatHarness harness = CreateHarness(
+            new Vector3(10f, 0f, 0f),
+            extraInRange: [hostileCreature],
+            canAttack: unit => ReferenceEquals(unit, hostileCreature),
+            profileProvider: new FixedCombatProfileProvider(profile),
+            summonerGuid: 200u,
+            summonCommandStance: PetStance.Defensive);
+
+        harness.Script.Update(0.5d);
+
+        Assert.NotNull(harness.CreatureThreat.GetHostile(hostileCreature.Guid));
+        Assert.Equal(hostileCreature.Guid, harness.Creature.TargetGuid);
+    }
+
+    [Fact]
+    public void Update_WhenSummonedDefensiveProfileOwnerOnlyTargetsHostile_DoesNotAssistSelectedTarget()
+    {
+        ICreatureEntity hostileCreature = CreateHostileCreature(400u, new Vector3(12f, 0f, 0f));
+        CombatProfile profile = CombatProfile.Default with
+        {
+            AllowNonPlayerTargets = true,
+            AssistSummoner = true,
+            SummonerAssistRange = 35f,
+            SummonerFollowDistance = 4f,
+            SummonerFollowRepathDistance = 8f
+        };
+        CombatHarness harness = CreateHarness(
+            new Vector3(10f, 0f, 0f),
+            extraInRange: [hostileCreature],
+            canAttack: unit => ReferenceEquals(unit, hostileCreature),
+            profileProvider: new FixedCombatProfileProvider(profile),
+            summonerGuid: 200u,
+            playerTargetGuid: hostileCreature.Guid,
+            summonCommandStance: PetStance.Defensive);
+
+        harness.Script.Update(0.5d);
+
+        Assert.Null(harness.CreatureThreat.GetHostile(hostileCreature.Guid));
+        Assert.Null(harness.Creature.TargetGuid);
+    }
+
+    [Fact]
+    public void Update_WhenSummonedAggressiveProfileSeesHostileCreature_IdleAggros()
+    {
+        ICreatureEntity hostileCreature = CreateHostileCreature(400u, new Vector3(12f, 0f, 0f));
+        CombatProfile profile = CombatProfile.Default with
+        {
+            AllowNonPlayerTargets = true,
+            AssistSummoner = true,
+            AggroRange = 30f,
+            MinimumLeashRange = 45f,
+            SummonerAssistRange = 35f,
+            SummonerFollowDistance = 4f,
+            SummonerFollowRepathDistance = 8f
+        };
+        CombatHarness harness = CreateHarness(
+            new Vector3(10f, 0f, 0f),
+            extraInRange: [hostileCreature],
+            canAttack: unit => ReferenceEquals(unit, hostileCreature),
+            profileProvider: new FixedCombatProfileProvider(profile),
+            summonerGuid: 200u,
+            summonCommandStance: PetStance.Aggressive);
+
+        harness.Script.Update(0.5d);
+
+        Assert.NotNull(harness.CreatureThreat.GetHostile(hostileCreature.Guid));
+        Assert.Equal(hostileCreature.Guid, harness.Creature.TargetGuid);
+    }
+
+    [Fact]
+    public void OnEnterRange_WhenSummonedAggressiveProfileSeesHostileCreature_IdleAggros()
+    {
+        ICreatureEntity hostileCreature = CreateHostileCreature(400u, new Vector3(12f, 0f, 0f));
+        CombatProfile profile = CombatProfile.Default with
+        {
+            AllowNonPlayerTargets = true,
+            AssistSummoner = true,
+            AggroRange = 30f,
+            MinimumLeashRange = 45f,
+            SummonerAssistRange = 35f,
+            SummonerFollowDistance = 4f,
+            SummonerFollowRepathDistance = 8f
+        };
+        CombatHarness harness = CreateHarness(
+            new Vector3(10f, 0f, 0f),
+            extraInRange: [hostileCreature],
+            canAttack: unit => ReferenceEquals(unit, hostileCreature),
+            profileProvider: new FixedCombatProfileProvider(profile),
+            summonerGuid: 200u,
+            summonCommandStance: PetStance.Aggressive);
+
+        harness.Script.OnEnterRange(hostileCreature);
+
+        Assert.NotNull(harness.CreatureThreat.GetHostile(hostileCreature.Guid));
+        Assert.Equal(hostileCreature.Guid, harness.Creature.TargetGuid);
+    }
+
+    [Fact]
+    public void Update_WhenSummonedAggressiveProfileSeesAttackableCreatureWithIncompleteDisposition_IdleAggros()
+    {
+        ICreatureEntity hostileCreature = CreateHostileCreature(400u, new Vector3(12f, 0f, 0f));
+        CombatProfile profile = CombatProfile.Default with
+        {
+            AllowNonPlayerTargets = true,
+            AssistSummoner = true,
+            AggroRange = 30f,
+            MinimumLeashRange = 45f,
+            SummonerAssistRange = 35f,
+            SummonerFollowDistance = 4f,
+            SummonerFollowRepathDistance = 8f
+        };
+        CombatHarness harness = CreateHarness(
+            new Vector3(10f, 0f, 0f),
+            extraInRange: [hostileCreature],
+            canAttack: unit => ReferenceEquals(unit, hostileCreature),
+            dispositionToPlayer: Disposition.Friendly,
+            profileProvider: new FixedCombatProfileProvider(profile),
+            summonerGuid: 200u,
+            summonCommandStance: PetStance.Aggressive);
+
+        harness.Script.Update(0.5d);
+
+        Assert.NotNull(harness.CreatureThreat.GetHostile(hostileCreature.Guid));
+        Assert.Equal(hostileCreature.Guid, harness.Creature.TargetGuid);
+    }
+
+    [Fact]
+    public void Update_WhenSummonedAssistProfileSeesHostileCreature_DoesNotIdleAggro()
+    {
+        ICreatureEntity hostileCreature = CreateHostileCreature(400u, new Vector3(12f, 0f, 0f));
+        CombatProfile profile = CombatProfile.Default with
+        {
+            AllowNonPlayerTargets = true,
+            AssistSummoner = true,
+            AggroRange = 30f,
+            MinimumLeashRange = 45f,
+            SummonerAssistRange = 35f,
+            SummonerFollowDistance = 4f,
+            SummonerFollowRepathDistance = 8f
+        };
+        CombatHarness harness = CreateHarness(
+            new Vector3(10f, 0f, 0f),
+            extraInRange: [hostileCreature],
+            canAttack: unit => ReferenceEquals(unit, hostileCreature),
+            profileProvider: new FixedCombatProfileProvider(profile),
+            summonerGuid: 200u,
+            summonCommandStance: PetStance.Assist);
+
+        harness.Script.Update(0.5d);
+
+        Assert.Null(harness.CreatureThreat.GetHostile(hostileCreature.Guid));
+        Assert.Null(harness.Creature.TargetGuid);
+    }
+
+    [Fact]
+    public void OnEnterRange_WhenSummonedAssistProfileSeesHostileCreature_DoesNotIdleAggro()
+    {
+        ICreatureEntity hostileCreature = CreateHostileCreature(400u, new Vector3(12f, 0f, 0f));
+        CombatProfile profile = CombatProfile.Default with
+        {
+            AllowNonPlayerTargets = true,
+            AssistSummoner = true,
+            AggroRange = 30f,
+            MinimumLeashRange = 45f,
+            SummonerAssistRange = 35f,
+            SummonerFollowDistance = 4f,
+            SummonerFollowRepathDistance = 8f
+        };
+        CombatHarness harness = CreateHarness(
+            new Vector3(10f, 0f, 0f),
+            extraInRange: [hostileCreature],
+            canAttack: unit => ReferenceEquals(unit, hostileCreature),
+            profileProvider: new FixedCombatProfileProvider(profile),
+            summonerGuid: 200u,
+            summonCommandStance: PetStance.Assist);
+
+        harness.Script.OnEnterRange(hostileCreature);
+
+        Assert.Null(harness.CreatureThreat.GetHostile(hostileCreature.Guid));
+        Assert.Null(harness.Creature.TargetGuid);
+    }
+
+    [Fact]
     public void Update_WhenSummonedAssistProfileIdleAndOwnerMovesAway_FollowsOwner()
     {
         CombatProfile profile = CombatProfile.Default with
@@ -750,6 +999,92 @@ public class CombatAITests
             profileProvider: new FixedCombatProfileProvider(profile),
             summonerGuid: 200u);
 
+        harness.Script.Update(1d);
+
+        RecordingDispatchProxy<IMovementManager>.Invocation follow =
+            Assert.Single(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Follow)));
+        Assert.Same(harness.Player, follow.Arguments[0]);
+        Assert.Equal(4f, follow.Arguments[1]);
+    }
+
+    [Fact]
+    public void Update_WhenSummonedPassiveCommandRequestsFollow_FollowsOwnerWithoutTimerDelay()
+    {
+        CombatProfile profile = CombatProfile.Default with
+        {
+            AssistSummoner = true,
+            SummonerFollowDistance = 4f,
+            SummonerFollowRepathDistance = 8f
+        };
+        CombatHarness harness = CreateHarness(
+            new Vector3(6f, 0f, 0f),
+            dispositionToPlayer: Disposition.Friendly,
+            profileProvider: new FixedCombatProfileProvider(profile),
+            summonerGuid: 200u,
+            summonCommandStance: PetStance.Passive,
+            summonCommandFollowRequested: true);
+
+        harness.Script.Update(0d);
+
+        RecordingDispatchProxy<IMovementManager>.Invocation follow =
+            Assert.Single(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Follow)));
+        Assert.Same(harness.Player, follow.Arguments[0]);
+        Assert.Equal(4f, follow.Arguments[1]);
+        Assert.False(harness.Creature.SummonCommandFollowRequested);
+    }
+
+    [Fact]
+    public void Update_WhenSummonedCurrentTargetIsInvalidWithoutThreat_FollowsOwner()
+    {
+        ICreatureEntity hostileCreature = CreateHostileCreature(400u, new Vector3(100f, 0f, 0f));
+        CombatProfile profile = CombatProfile.Default with
+        {
+            AllowNonPlayerTargets = true,
+            AssistSummoner = true,
+            SummonerFollowDistance = 4f,
+            SummonerFollowRepathDistance = 8f
+        };
+        CombatHarness harness = CreateHarness(
+            Vector3.Zero,
+            targetSelected: true,
+            extraInRange: [hostileCreature],
+            canAttack: unit => ReferenceEquals(unit, hostileCreature),
+            creaturePosition: new Vector3(12f, 0f, 0f),
+            initialTargetGuid: hostileCreature.Guid,
+            profileProvider: new FixedCombatProfileProvider(profile),
+            leashRange: 20f,
+            summonerGuid: 200u);
+
+        harness.Script.Update(0d);
+        harness.Script.Update(3.1d);
+
+        Assert.Null(harness.Creature.TargetGuid);
+        RecordingDispatchProxy<IMovementManager>.Invocation follow =
+            Assert.Single(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Follow)));
+        Assert.Same(harness.Player, follow.Arguments[0]);
+        Assert.Equal(4f, follow.Arguments[1]);
+    }
+
+    [Fact]
+    public void OnPositionEntityCommandFinalise_WhenSummonerFollowFinalises_AllowsFollowRepathBelowNormalThreshold()
+    {
+        CombatProfile profile = CombatProfile.Default with
+        {
+            AssistSummoner = true,
+            SummonerFollowDistance = 4f,
+            SummonerFollowRepathDistance = 8f
+        };
+        CombatHarness harness = CreateHarness(
+            new Vector3(6f, 0f, 0f),
+            dispositionToPlayer: Disposition.Friendly,
+            profileProvider: new FixedCombatProfileProvider(profile),
+            summonerGuid: 200u);
+
+        harness.Script.Update(1d);
+        Assert.Single(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Follow)));
+        harness.MovementProxy.Invocations.Clear();
+
+        harness.Script.OnPositionEntityCommandFinalise(null);
         harness.Script.Update(1d);
 
         RecordingDispatchProxy<IMovementManager>.Invocation follow =
@@ -774,6 +1109,58 @@ public class CombatAITests
         Assert.Null(harness.CreatureThreat.GetHostile(hostileCreature.Guid));
         Assert.Empty(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.CastSpell)));
         Assert.Empty(harness.MovementProxy.GetInvocations(nameof(IMovementManager.SetRotationFaceUnit)));
+    }
+
+    [Fact]
+    public void OnHealthChange_WhenSummonedUnitDamagesCreature_AggroesSummonTarget()
+    {
+        IUnitEntity summonedUnit = CreateSummonedUnit(400u, new Vector3(6f, 0f, 0f), 200u);
+        CombatHarness harness = CreateHarness(
+            new Vector3(100f, 0f, 0f),
+            includePlayer: false,
+            extraInRange: [summonedUnit],
+            creatureId: 200u,
+            canAttack: unit => ReferenceEquals(unit, summonedUnit));
+
+        harness.Script.OnHealthChange(summonedUnit, 1u, DamageType.Physical);
+
+        Assert.NotNull(harness.CreatureThreat.GetHostile(summonedUnit.Guid));
+        Assert.Equal(summonedUnit.Guid, harness.Creature.TargetGuid);
+        Assert.NotNull(summonedUnit.ThreatManager.GetHostile(harness.Creature.Guid));
+    }
+
+    [Fact]
+    public void Update_WhenProfiledCreatureSeesAssistPlayerControlledSummon_DoesNotIdleAggro()
+    {
+        IUnitEntity summonedUnit = CreateSummonedUnit(400u, new Vector3(6f, 0f, 0f), 200u, PetStance.Assist);
+        CombatHarness harness = CreateHarness(
+            new Vector3(100f, 0f, 0f),
+            includePlayer: false,
+            extraInRange: [summonedUnit],
+            canAttack: unit => ReferenceEquals(unit, summonedUnit));
+
+        harness.Script.Update(0.5d);
+
+        Assert.Null(harness.CreatureThreat.GetHostile(summonedUnit.Guid));
+        Assert.Null(summonedUnit.ThreatManager.GetHostile(harness.Creature.Guid));
+        Assert.Null(harness.Creature.TargetGuid);
+    }
+
+    [Fact]
+    public void Update_WhenProfiledCreatureSeesAggressivePlayerControlledSummon_IdleAggros()
+    {
+        IUnitEntity summonedUnit = CreateSummonedUnit(400u, new Vector3(6f, 0f, 0f), 200u, PetStance.Aggressive);
+        CombatHarness harness = CreateHarness(
+            new Vector3(100f, 0f, 0f),
+            includePlayer: false,
+            extraInRange: [summonedUnit],
+            canAttack: unit => ReferenceEquals(unit, summonedUnit));
+
+        harness.Script.Update(0.5d);
+
+        Assert.NotNull(harness.CreatureThreat.GetHostile(summonedUnit.Guid));
+        Assert.NotNull(summonedUnit.ThreatManager.GetHostile(harness.Creature.Guid));
+        Assert.Equal(summonedUnit.Guid, harness.Creature.TargetGuid);
     }
 
     [Fact]
@@ -1831,7 +2218,9 @@ public class CombatAITests
         bool creatureIsAlive = true,
         float leashRange = 50f,
         uint? summonerGuid = null,
-        uint? playerTargetGuid = null)
+        uint? playerTargetGuid = null,
+        PetStance summonCommandStance = PetStance.Assist,
+        bool summonCommandFollowRequested = false)
     {
         ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out RecordingDispatchProxy<ICreatureEntity> creatureProxy);
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
@@ -1856,6 +2245,8 @@ public class CombatAITests
         creatureProxy.SetProperty(nameof(ICreatureEntity.Map), map);
         creatureProxy.SetProperty(nameof(ICreatureEntity.Spline), patrolSpline);
         creatureProxy.SetProperty(nameof(ICreatureEntity.SummonerGuid), summonerGuid);
+        creatureProxy.SetProperty(nameof(ICreatureEntity.SummonCommandStance), summonCommandStance);
+        creatureProxy.SetProperty(nameof(ICreatureEntity.SummonCommandFollowRequested), summonCommandFollowRequested);
         if (targetSelected)
             creatureProxy.SetProperty(nameof(ICreatureEntity.TargetGuid), initialTargetGuid ?? 200u);
 
@@ -1976,6 +2367,21 @@ public class CombatAITests
         hostileProxy.SetProperty(nameof(ICreatureEntity.TargetGuid), targetGuid);
         hostileProxy.SetProperty(nameof(ICreatureEntity.ThreatManager), threat);
         return hostileCreature;
+    }
+
+    private static IUnitEntity CreateSummonedUnit(uint guid, Vector3 position, uint summonerGuid, PetStance stance = PetStance.Assist)
+    {
+        IUnitEntity summonedUnit = RecordingDispatchProxy<IUnitEntity>.Create(out RecordingDispatchProxy<IUnitEntity> summonedProxy);
+        var threat = new ThreatManager(summonedUnit);
+        summonedProxy.SetProperty(nameof(IUnitEntity.Guid), guid);
+        summonedProxy.SetProperty(nameof(IUnitEntity.Position), position);
+        summonedProxy.SetProperty(nameof(IUnitEntity.IsAlive), true);
+        summonedProxy.SetProperty(nameof(IUnitEntity.Faction1), Faction.Exile);
+        summonedProxy.SetProperty(nameof(IUnitEntity.Faction2), Faction.None);
+        summonedProxy.SetProperty(nameof(IUnitEntity.SummonerGuid), summonerGuid);
+        summonedProxy.SetProperty(nameof(IUnitEntity.SummonCommandStance), stance);
+        summonedProxy.SetProperty(nameof(IUnitEntity.ThreatManager), threat);
+        return summonedUnit;
     }
 
     private static IFactory<ISpellParameters> CreateSpellParametersFactory()

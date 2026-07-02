@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
@@ -19,6 +20,7 @@ using NexusForever.Game.Spell.Effect;
 using NexusForever.Game.Static.Combat.CrowdControl;
 using NexusForever.Game.Static.Entity.Movement.Command.State;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Pet;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Spell;
@@ -31,6 +33,7 @@ using NexusForever.Network.World.Message.Model.Crafting;
 using NexusForever.Network.World.Message.Model.Entity;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Pet;
+using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared;
 
@@ -48,24 +51,95 @@ namespace NexusForever.Game.Spell
         private const uint ActionBarShortcutSetPacketMax = 0x3FFFu;
         private const uint OutfitInfoPacketMax = 0x7FFFu;
         private const uint StarterTutorialScanSpellId = 81662u;
+        private const uint EngineerCombatBotMaxActive = 2u;
+        private const uint EngineerRepairbotExileCreatureId = 42682u;
+        private const uint EngineerRepairbotDominionCreatureId = 59845u;
         private const uint EngineerArtillerybotExileCreatureId = 42683u;
         private const uint EngineerArtillerybotDominionCreatureId = 59846u;
-        private const uint EngineerArtillerybotMaxActive = 2u;
+        private const uint EngineerDiminisherbotExileCreatureId = 42684u;
+        private const uint EngineerDiminisherbotDominionCreatureId = 59847u;
+        private const uint EngineerBruiserbotExileCreatureId = 42685u;
+        private const uint EngineerBruiserbotDominionCreatureId = 59848u;
+        private const uint EngineerRepairbotSummonBaseSpell4Id = 26998u;
+        private const uint EngineerRepairbotShieldBoostPetSwitchBaseSpell4Id = 21307u;
         private const uint EngineerArtillerybotSummonBaseSpell4Id = 27002u;
         private const uint EngineerArtillerybotPetSwitchBaseSpell4Id = 34051u;
         private const uint EngineerArtillerybotPlayerBarrageBaseSpell4Id = 20884u;
+        private const uint EngineerArtillerybotBarragePetSpell4Id = 49502u;
+        private const uint EngineerArtillerybotBarragePetBaseSpell4Id = 32710u;
+        private const uint EngineerArtillerybotBarragePulseProxySpell4Id = 34589u;
+        private const uint EngineerArtillerybotBarragePulseProxyBaseSpell4Id = 20559u;
+        private const uint EngineerArtillerybotBarrageDamageSpell4Id = 35548u;
+        private const uint EngineerArtillerybotBarrageVisualProxySpell4Id = 63375u;
+        private const uint EngineerDiminisherbotSummonBaseSpell4Id = 27021u;
+        private const uint EngineerDiminisherbotStrobePetSwitchBaseSpell4Id = 47569u;
+        private const uint EngineerDiminisherbotPlayerStrobeBaseSpell4Id = 58362u;
+        private const uint EngineerBruiserbotSummonBaseSpell4Id = 27082u;
+        private const uint EngineerBruiserbotBlitzPetSwitchBaseSpell4Id = 21192u;
+        private const uint EngineerBruiserbotPlayerBlitzBaseSpell4Id = 34410u;
+        private const uint EngineerCombatBotAttackCommandBaseSpell4Id = 46724u;
+        private const uint EngineerCombatBotStopCommandBaseSpell4Id = 46725u;
+        private const uint EngineerCombatBotGoToCommandBaseSpell4Id = 25888u;
+        private const ushort EngineerCombatBotPrimaryPetBarShortcutSetId = 299;
+        private const uint EngineerCombatBotCommandSurfacePetUnitId = 0u;
+        private const uint EngineerCombatBotValidStances = 0b11101u; // Assist, Passive, Defensive, Aggressive.
         private const string GenericUnlockEntryTableName = "GenericUnlockEntry.tbl";
         private const string Spell4TableName = "Spell4.tbl";
         private const string PetFlairTableName = "PetFlair.tbl";
         private const string CharacterTitleTableName = "CharacterTitle.tbl";
 
-        private static readonly uint[] EngineerArtillerybotCreatureIds =
+        private static readonly EngineerCombatBotDefinition[] EngineerCombatBotDefinitions =
         [
-            EngineerArtillerybotExileCreatureId,
-            EngineerArtillerybotDominionCreatureId
+            new(
+                "repairbot",
+                [EngineerRepairbotExileCreatureId, EngineerRepairbotDominionCreatureId],
+                EngineerRepairbotSummonBaseSpell4Id,
+                [new EngineerCombatBotCommandDefinition(EngineerRepairbotShieldBoostPetSwitchBaseSpell4Id, EngineerRepairbotShieldBoostPetSwitchBaseSpell4Id)]),
+            new(
+                "artillerybot",
+                [EngineerArtillerybotExileCreatureId, EngineerArtillerybotDominionCreatureId],
+                EngineerArtillerybotSummonBaseSpell4Id,
+                [new EngineerCombatBotCommandDefinition(EngineerArtillerybotPetSwitchBaseSpell4Id, EngineerArtillerybotPlayerBarrageBaseSpell4Id)]),
+            new(
+                "diminisherbot",
+                [EngineerDiminisherbotExileCreatureId, EngineerDiminisherbotDominionCreatureId],
+                EngineerDiminisherbotSummonBaseSpell4Id,
+                [new EngineerCombatBotCommandDefinition(EngineerDiminisherbotStrobePetSwitchBaseSpell4Id, EngineerDiminisherbotPlayerStrobeBaseSpell4Id)]),
+            new(
+                "bruiserbot",
+                [EngineerBruiserbotExileCreatureId, EngineerBruiserbotDominionCreatureId],
+                EngineerBruiserbotSummonBaseSpell4Id,
+                [new EngineerCombatBotCommandDefinition(EngineerBruiserbotBlitzPetSwitchBaseSpell4Id, EngineerBruiserbotPlayerBlitzBaseSpell4Id)])
         ];
 
         private static ISpellEffectDependencyResolver dependencyResolver;
+        private static readonly ConditionalWeakTable<IWorldEntity, EngineerCombatBotPetBarContext> EngineerCombatBotPetBarContexts = new();
+        private static readonly ConditionalWeakTable<ISpell, EngineerArtillerybotBarrageProxyContext> EngineerArtillerybotBarrageProxyContexts = new();
+
+        private sealed record EngineerCombatBotDefinition(
+            string Key,
+            IReadOnlyList<uint> CreatureIds,
+            uint SummonBaseSpell4Id,
+            IReadOnlyList<EngineerCombatBotCommandDefinition> Commands);
+
+        private sealed record EngineerCombatBotCommandDefinition(
+            uint PetSwitchBaseSpell4Id,
+            uint PlayerActionBaseSpell4Id);
+
+        private sealed class EngineerCombatBotPetBarContext
+        {
+            public uint SummonSpell4Id { get; init; }
+        }
+
+        private sealed class EngineerArtillerybotBarrageProxyContext
+        {
+            public HashSet<EngineerArtillerybotBarrageProxyKey> HandledEffects { get; } = [];
+        }
+
+        private readonly record struct EngineerArtillerybotBarrageProxyKey(
+            uint EffectId,
+            uint Spell4EffectId,
+            uint ProxySpell4Id);
 
         internal static ISpellEffectDependencyResolver InitialiseDependencyResolver(ISpellEffectDependencyResolver resolver)
         {
@@ -571,9 +645,11 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
+            EngineerCombatBotDefinition engineerCombatBot = GetEngineerCombatBotDefinition(summonPet.CreatureId);
+
             summoned.Initialise(summonPet.CreatureId);
-            if (IsEngineerArtillerybotCreature(summonPet.CreatureId))
-                ApplyEngineerArtillerybotSummonerLevel(summoned, player, creatureEntry);
+            if (engineerCombatBot != null)
+                ApplyEngineerCombatBotSummonerCombatStats(summoned, player, creatureEntry);
 
             summoned.Rotation     = player.Rotation;
             summoned.SummonerGuid = player.Guid;
@@ -593,30 +669,60 @@ namespace NexusForever.Game.Spell
 
             map.EnqueueAdd(summoned, mapPosition);
             info.AddCreatedEntity(summoned);
-            if (IsEngineerArtillerybotCreature(summonPet.CreatureId))
-                RegisterEngineerArtillerybotBarrageAction(player, spell.Parameters.SpellInfo?.Entry);
+            if (engineerCombatBot != null)
+                RegisterEngineerCombatBotActions(player, summoned, engineerCombatBot, spell.Parameters.SpellInfo?.Entry);
 
             SpellEffectDiagnostics.TraceSummonPet(spell, target, summonPet, position, player.Guid, true, summoned.Guid, null);
         }
 
         private static bool IsSummonPetActiveCapReached(IEntitySummonFactory summonFactory, SpellEffectSummonPetSemantics summonPet)
         {
-            if (!IsEngineerArtillerybotCreature(summonPet.CreatureId))
+            EngineerCombatBotDefinition summonDefinition = GetEngineerCombatBotDefinition(summonPet.CreatureId);
+            if (summonDefinition == null)
                 return false;
 
+            uint activeCount = GetActiveEngineerCombatBotCount(summonFactory);
+            uint activeSameBotCount = GetActiveEngineerCombatBotCount(summonFactory, summonDefinition);
+
+            return activeSameBotCount != 0u || activeCount >= EngineerCombatBotMaxActive;
+        }
+
+        private static uint GetActiveEngineerCombatBotCount(IEntitySummonFactory summonFactory)
+        {
             uint activeCount = 0u;
-            foreach (uint creatureId in EngineerArtillerybotCreatureIds)
+            foreach (EngineerCombatBotDefinition definition in EngineerCombatBotDefinitions)
+                activeCount += GetActiveEngineerCombatBotCount(summonFactory, definition);
+
+            return activeCount;
+        }
+
+        private static uint GetActiveEngineerCombatBotCount(IEntitySummonFactory summonFactory, EngineerCombatBotDefinition definition)
+        {
+            if (summonFactory == null || definition == null)
+                return 0u;
+
+            uint activeCount = 0u;
+            foreach (uint creatureId in definition.CreatureIds)
                 activeCount += summonFactory.GetSummonCreatureCount(creatureId);
 
-            return activeCount >= EngineerArtillerybotMaxActive;
+            return activeCount;
         }
 
-        private static bool IsEngineerArtillerybotCreature(uint creatureId)
+        private static EngineerCombatBotDefinition GetEngineerCombatBotDefinition(uint creatureId)
         {
-            return creatureId is EngineerArtillerybotExileCreatureId or EngineerArtillerybotDominionCreatureId;
+            foreach (EngineerCombatBotDefinition definition in EngineerCombatBotDefinitions)
+            {
+                foreach (uint engineerBotCreatureId in definition.CreatureIds)
+                {
+                    if (engineerBotCreatureId == creatureId)
+                        return definition;
+                }
+            }
+
+            return null;
         }
 
-        private static void ApplyEngineerArtillerybotSummonerLevel(IWorldEntity summoned, IPlayer player, Creature2Entry creatureEntry)
+        private static void ApplyEngineerCombatBotSummonerCombatStats(IWorldEntity summoned, IPlayer player, Creature2Entry creatureEntry)
         {
             uint minLevel = creatureEntry.MinLevel == 0u ? 1u : creatureEntry.MinLevel;
             uint maxLevel = creatureEntry.MaxLevel >= minLevel ? creatureEntry.MaxLevel : minLevel;
@@ -625,75 +731,175 @@ namespace NexusForever.Game.Spell
 
             summoned.Level = summonLevel;
             summoned.RecalculateCreatureProperties();
+            summoned.SetBaseProperty(Property.AssaultRating, player.GetPropertyValue(Property.AssaultRating));
         }
 
-        private static void RegisterEngineerArtillerybotBarrageAction(IPlayer player, Spell4Entry summonSpellEntry)
+        private static void RegisterEngineerCombatBotActions(IPlayer player, IWorldEntity summoned, EngineerCombatBotDefinition definition, Spell4Entry summonSpellEntry)
         {
             if (summonSpellEntry == null
-                || summonSpellEntry.Spell4BaseIdBaseSpell != EngineerArtillerybotSummonBaseSpell4Id
+                || summoned == null
+                || definition == null
+                || summonSpellEntry.Spell4BaseIdBaseSpell != definition.SummonBaseSpell4Id
                 || summonSpellEntry.Spell4IdPetSwitch == 0u)
                 return;
 
-            Spell4Entry barrageEntry = ResolveSpell4Entry(
-                EngineerArtillerybotPlayerBarrageBaseSpell4Id,
-                summonSpellEntry.TierIndex);
-            if (barrageEntry == null)
+            foreach (EngineerCombatBotCommandDefinition command in definition.Commands)
+            {
+                Spell4Entry petSwitchEntry = GetGameTableManager().Spell4?.GetEntry(summonSpellEntry.Spell4IdPetSwitch);
+                if (petSwitchEntry == null || petSwitchEntry.Spell4BaseIdBaseSpell != command.PetSwitchBaseSpell4Id)
+                    continue;
+
+                Spell4Entry actionEntry = ResolveSpell4Entry(command.PlayerActionBaseSpell4Id, petSwitchEntry.TierIndex);
+                if (actionEntry == null)
+                    continue;
+
+                player.SpellManager.SetActivePetActionSpell(petSwitchEntry.Id, actionEntry.Id, summonSpellEntry.Id);
+                TrackEngineerCombatBotPetBar(summoned, summonSpellEntry.Id);
+                ShowEngineerCombatBotCommand(player, summoned, definition, summonSpellEntry, petSwitchEntry, actionEntry);
+                return;
+            }
+        }
+
+        public static void OnEngineerCombatBotSummoned(IPlayer player, IWorldEntity entity)
+        {
+            if (player == null
+                || entity == null
+                || entity.Guid == 0u
+                || GetEngineerCombatBotDefinition(entity.CreatureId) == null)
                 return;
 
-            player.SpellManager.SetActivePetActionSpell(summonSpellEntry.Spell4IdPetSwitch, barrageEntry.Id, summonSpellEntry.Id);
-            ShowEngineerArtillerybotBarrageAction(player, summonSpellEntry);
+            if (!TryTakeEngineerCombatBotPetBar(entity, out EngineerCombatBotPetBarContext context))
+                return;
+
+            SendEngineerCombatBotPetSpawned(player, EngineerCombatBotCommandSurfacePetUnitId, context.SummonSpell4Id);
+            SendEngineerCombatBotPetSpawned(player, entity.Guid, context.SummonSpell4Id);
+            ShowEngineerCombatBotPrimaryPetBar(player, EngineerCombatBotCommandSurfacePetUnitId);
         }
 
         public static void UnregisterEngineerArtillerybotBarrageAction(IPlayer player, IWorldEntity entity)
         {
-            if (player == null || entity == null || !IsEngineerArtillerybotCreature(entity.CreatureId))
-                return;
-
-            uint activeCount = 0u;
-            foreach (uint creatureId in EngineerArtillerybotCreatureIds)
-                activeCount += player.SummonFactory?.GetSummonCreatureCount(creatureId) ?? 0u;
-
-            if (activeCount != 0u)
-                return;
-
-            player.SpellManager.ClearActivePetActionSpells();
-            HideEngineerArtillerybotBarrageAction(player);
+            UnregisterEngineerCombatBotActions(player, entity);
         }
 
-        private static void ShowEngineerArtillerybotBarrageAction(IPlayer player, Spell4Entry summonSpellEntry)
+        public static void UnregisterEngineerCombatBotActions(IPlayer player, IWorldEntity entity)
         {
-            Spell4Entry petSwitchEntry = GetGameTableManager().Spell4?.GetEntry(summonSpellEntry.Spell4IdPetSwitch);
-            if (petSwitchEntry == null || petSwitchEntry.Spell4BaseIdBaseSpell != EngineerArtillerybotPetSwitchBaseSpell4Id)
+            EngineerCombatBotDefinition definition = GetEngineerCombatBotDefinition(entity?.CreatureId ?? 0u);
+            if (player == null || entity == null || definition == null)
                 return;
 
-            SendEngineerArtillerybotBarrageSpellUpdate(
+            ClearEngineerCombatBotPetBar(entity);
+            SendEngineerCombatBotPetDespawned(player, entity.Guid);
+
+            bool hasActiveSameBotFamily = GetActiveEngineerCombatBotCount(player.SummonFactory, definition) != 0u;
+            bool hasActiveEngineerCombatBots = GetActiveEngineerCombatBotCount(player.SummonFactory) != 0u;
+
+            if (!hasActiveEngineerCombatBots)
+            {
+                HideEngineerCombatBotPrimaryPetBar(player);
+                SendEngineerCombatBotPetDespawned(player, EngineerCombatBotCommandSurfacePetUnitId);
+            }
+
+            if (!hasActiveSameBotFamily)
+            {
+                ClearEngineerCombatBotCommands(player, definition);
+                HideEngineerCombatBotCommands(player, definition);
+            }
+        }
+
+        private static void ShowEngineerCombatBotCommand(
+            IPlayer player,
+            IWorldEntity summoned,
+            EngineerCombatBotDefinition definition,
+            Spell4Entry summonSpellEntry,
+            Spell4Entry petSwitchEntry,
+            Spell4Entry actionEntry)
+        {
+            if (summoned == null || definition == null || summonSpellEntry == null || petSwitchEntry == null || actionEntry == null)
+                return;
+
+            SendEngineerCombatBotCommandSpellUpdate(
                 player,
-                petSwitchEntry.Spell4BaseIdBaseSpell,
-                (byte)Math.Clamp(petSwitchEntry.TierIndex, 1u, (uint)byte.MaxValue),
+                actionEntry.Spell4BaseIdBaseSpell,
+                (byte)Math.Clamp(actionEntry.TierIndex, 1u, (uint)byte.MaxValue),
                 true);
-            SendEngineerArtillerybotActionSetSwap(player, petSwitchEntry.Spell4BaseIdBaseSpell);
+            SendEngineerCombatBotActionSetProjection(
+                player,
+                definition.SummonBaseSpell4Id,
+                summonSpellEntry.Id,
+                actionEntry.Id);
         }
 
-        private static void HideEngineerArtillerybotBarrageAction(IPlayer player)
+        private static void HideEngineerCombatBotCommands(IPlayer player, EngineerCombatBotDefinition definition)
         {
-            if (player.Session == null)
+            if (player.Session == null || definition == null)
                 return;
 
-            SendEngineerArtillerybotBarrageSpellUpdate(
-                player,
-                EngineerArtillerybotPetSwitchBaseSpell4Id,
-                0,
-                false);
+            foreach (EngineerCombatBotCommandDefinition command in definition.Commands)
+            {
+                SendEngineerCombatBotCommandSpellUpdate(
+                    player,
+                    command.PlayerActionBaseSpell4Id,
+                    0,
+                    false);
+            }
 
-            IActionSet actionSet = player.SpellManager.GetActionSet(player.SpellManager.ActiveActionSet);
-            ServerActionSet packet = actionSet?.BuildServerActionSet();
-            if (packet != null)
-                player.Session?.EnqueueMessageEncrypted(packet);
+            RestoreEngineerCombatBotActionSet(player);
         }
 
-        private static void SendEngineerArtillerybotBarrageSpellUpdate(IPlayer player, uint spell4BaseId, byte tierIndex, bool activated)
+        private static void ClearEngineerCombatBotCommands(IPlayer player, EngineerCombatBotDefinition definition)
         {
-            if (player.Session == null)
+            if (player?.SpellManager == null || definition == null)
+                return;
+
+            foreach (EngineerCombatBotCommandDefinition command in definition.Commands)
+            {
+                foreach (Spell4Entry petSwitchEntry in EnumerateSpell4EntriesByBaseId(command.PetSwitchBaseSpell4Id))
+                {
+                    Spell4Entry actionEntry = ResolveSpell4Entry(command.PlayerActionBaseSpell4Id, petSwitchEntry.TierIndex);
+                    player.SpellManager.ClearActivePetActionSpell(petSwitchEntry.Id, actionEntry?.Id ?? 0u);
+                }
+            }
+        }
+
+        private static void TrackEngineerCombatBotPetBar(IWorldEntity entity, uint summonSpell4Id)
+        {
+            if (entity == null || summonSpell4Id == 0u)
+                return;
+
+            lock (EngineerCombatBotPetBarContexts)
+            {
+                EngineerCombatBotPetBarContexts.Remove(entity);
+                EngineerCombatBotPetBarContexts.Add(entity, new EngineerCombatBotPetBarContext
+                {
+                    SummonSpell4Id = summonSpell4Id
+                });
+            }
+        }
+
+        private static bool TryTakeEngineerCombatBotPetBar(IWorldEntity entity, out EngineerCombatBotPetBarContext context)
+        {
+            lock (EngineerCombatBotPetBarContexts)
+            {
+                if (!EngineerCombatBotPetBarContexts.TryGetValue(entity, out context))
+                    return false;
+
+                EngineerCombatBotPetBarContexts.Remove(entity);
+                return true;
+            }
+        }
+
+        private static void ClearEngineerCombatBotPetBar(IWorldEntity entity)
+        {
+            if (entity == null)
+                return;
+
+            lock (EngineerCombatBotPetBarContexts)
+                EngineerCombatBotPetBarContexts.Remove(entity);
+        }
+
+        private static void SendEngineerCombatBotCommandSpellUpdate(IPlayer player, uint spell4BaseId, byte tierIndex, bool activated)
+        {
+            if (player?.Session == null || player.SpellManager == null)
                 return;
 
             player.Session.EnqueueMessageEncrypted(new ServerSpellUpdate
@@ -705,46 +911,160 @@ namespace NexusForever.Game.Spell
             });
         }
 
-        private static void SendEngineerArtillerybotActionSetSwap(IPlayer player, uint petSwitchSpell4BaseId)
+        private static void SendEngineerCombatBotPetSpawned(IPlayer player, uint petUnitId, uint summonSpell4Id)
+        {
+            if (player.Session == null || summonSpell4Id == 0u)
+                return;
+
+            player.Session.EnqueueMessageEncrypted(new ServerPetSpawned
+            {
+                PetUnitId        = petUnitId,
+                SummoningSpell4Id = summonSpell4Id,
+                ValidStances     = EngineerCombatBotValidStances,
+                Stance           = PetStance.Assist
+            });
+        }
+
+        private static void SendEngineerCombatBotPetDespawned(IPlayer player, uint petUnitId)
         {
             if (player.Session == null)
+                return;
+
+            player.Session.EnqueueMessageEncrypted(new ServerPetDespawned
+            {
+                PetUnitId = petUnitId
+            });
+        }
+
+        private static void ShowEngineerCombatBotPrimaryPetBar(IPlayer player, uint petUnitId)
+        {
+            SendEngineerCombatBotPrimaryPetBarCommandAvailability(player, true);
+            SendEngineerCombatBotPrimaryPetBar(player, EngineerCombatBotPrimaryPetBarShortcutSetId, petUnitId);
+        }
+
+        private static void HideEngineerCombatBotPrimaryPetBar(IPlayer player)
+        {
+            SendEngineerCombatBotPrimaryPetBar(player, 0, 0u);
+            SendEngineerCombatBotPrimaryPetBarCommandAvailability(player, false);
+        }
+
+        private static void SendEngineerCombatBotPrimaryPetBarCommandAvailability(IPlayer player, bool activated)
+        {
+            byte tierIndex = activated ? (byte)1 : (byte)0;
+            SendEngineerCombatBotCommandSpellUpdate(player, EngineerCombatBotAttackCommandBaseSpell4Id, tierIndex, activated);
+            SendEngineerCombatBotCommandSpellUpdate(player, EngineerCombatBotStopCommandBaseSpell4Id, tierIndex, activated);
+            SendEngineerCombatBotCommandSpellUpdate(player, EngineerCombatBotGoToCommandBaseSpell4Id, tierIndex, activated);
+        }
+
+        private static void SendEngineerCombatBotPrimaryPetBar(IPlayer player, ushort actionBarShortcutSetId, uint petUnitId)
+        {
+            if (player?.Session == null)
+                return;
+
+            player.Session.EnqueueMessageEncrypted(new ServerActionBarSet
+            {
+                ShortcutSet            = ShortcutSet.PrimaryPetBar,
+                ActionBarShortcutSetId = actionBarShortcutSetId,
+                AssociatedUnitId       = petUnitId
+            });
+        }
+
+        private static void SendEngineerCombatBotActionSetProjection(
+            IPlayer player,
+            uint summonBaseSpell4Id,
+            uint summonSpell4Id,
+            uint commandSpell4Id)
+        {
+            if (player?.Session == null || player.SpellManager == null || summonBaseSpell4Id == 0u || commandSpell4Id == 0u)
                 return;
 
             IActionSet actionSet = player.SpellManager.GetActionSet(player.SpellManager.ActiveActionSet);
             if (actionSet == null)
                 return;
 
-            var packet = new ServerActionSet
+            ServerActionSet serverActionSet = BuildEngineerCombatBotActionSet(
+                actionSet,
+                summonBaseSpell4Id,
+                summonSpell4Id,
+                commandSpell4Id,
+                out bool replaced);
+            if (!replaced)
+                return;
+
+            player.Session.EnqueueMessageEncrypted(new ServerActionSetClearCache());
+            player.Session.EnqueueMessageEncrypted(serverActionSet);
+        }
+
+        private static void RestoreEngineerCombatBotActionSet(IPlayer player)
+        {
+            if (player?.Session == null || player.SpellManager == null)
+                return;
+
+            IActionSet actionSet = player.SpellManager.GetActionSet(player.SpellManager.ActiveActionSet);
+            if (actionSet == null)
+                return;
+
+            player.Session.EnqueueMessageEncrypted(new ServerActionSetClearCache());
+            player.Session.EnqueueMessageEncrypted(actionSet.BuildServerActionSet());
+        }
+
+        private static ServerActionSet BuildEngineerCombatBotActionSet(
+            IActionSet actionSet,
+            uint summonBaseSpell4Id,
+            uint summonSpell4Id,
+            uint commandSpell4Id,
+            out bool replaced)
+        {
+            replaced = false;
+            var serverActionSet = new ServerActionSet
             {
                 SpecIndex = actionSet.Index,
                 Unlocked  = 1,
                 Result    = LimitedActionSetResult.Ok
             };
 
-            bool replaced = false;
-            for (byte slot = 0; slot < ActionSet.MaxActionCount; slot++)
+            for (UILocation i = 0; i < (UILocation)ActionSet.MaxActionCount; i++)
             {
-                var location = (UILocation)slot;
-                IActionSetShortcut shortcut = actionSet.GetShortcut(location);
-                bool replace = shortcut?.ShortcutType == ShortcutType.SpellbookItem
-                    && shortcut.ObjectId == EngineerArtillerybotSummonBaseSpell4Id;
+                IActionSetShortcut action = actionSet.GetShortcut(i);
+                bool replace = action?.ShortcutType == ShortcutType.SpellbookItem
+                    && (action.ObjectId == summonBaseSpell4Id || action.ObjectId == summonSpell4Id);
                 if (replace)
                     replaced = true;
 
-                packet.Actions.Add(new ServerActionSet.Action
+                serverActionSet.Actions.Add(new ServerActionSet.Action
                 {
-                    ShortcutType = shortcut?.ShortcutType ?? ShortcutType.None,
-                    ObjectId     = replace ? petSwitchSpell4BaseId : shortcut?.ObjectId ?? 0u,
-                    Location     = new NexusForever.Network.World.Message.Model.Shared.ItemLocation
-                    {
-                        Location = shortcut == null ? (InventoryLocation)300 : InventoryLocation.Ability,
-                        BagIndex = slot
-                    }
+                    ShortcutType = replace ? ShortcutType.Spell : action?.ShortcutType ?? ShortcutType.None,
+                    ObjectId     = replace ? commandSpell4Id : action?.ObjectId ?? 0u,
+                    Location     = BuildEngineerCombatBotShortcutItemLocation(action, i)
                 });
             }
 
-            if (replaced)
-                player.Session.EnqueueMessageEncrypted(packet);
+            return serverActionSet;
+        }
+
+        private static ItemLocation BuildEngineerCombatBotShortcutItemLocation(IActionSetShortcut action, UILocation slot)
+        {
+            if (action == null)
+            {
+                return new ItemLocation
+                {
+                    Location = (InventoryLocation)300,
+                    BagIndex = (uint)slot
+                };
+            }
+
+            return new ItemLocation
+            {
+                Location = InventoryLocation.Ability,
+                BagIndex = (uint)slot
+            };
+        }
+
+        private static IEnumerable<Spell4Entry> EnumerateSpell4EntriesByBaseId(uint spell4BaseId)
+        {
+            return dependencyResolver?.GetGameTableManager()?.Spell4?.Entries?
+                .Where(e => e?.Spell4BaseIdBaseSpell == spell4BaseId)
+                ?? Enumerable.Empty<Spell4Entry>();
         }
 
         private static Spell4Entry ResolveSpell4Entry(uint spell4BaseId, uint tierIndex)
@@ -1565,6 +1885,20 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
+            if (ShouldRouteEngineerArtillerybotBarragePetProxyToCaster(spell, proxy))
+            {
+                if (TryMarkEngineerArtillerybotBarrageProxyHandled(spell, info, proxy.Spell4Id))
+                    HandleProxySpell(spell, spell.Caster, spell.Caster, info, proxy);
+
+                return;
+            }
+
+            if (ShouldRouteEngineerArtillerybotBarrageDamageProxyToCaster(spell, proxy))
+            {
+                HandleProxySpell(spell, spell.Caster, spell.Caster, info, proxy);
+                return;
+            }
+
             HandleProxySpell(spell, target, target, info);
         }
 
@@ -1657,6 +1991,7 @@ namespace NexusForever.Game.Spell
                 ParentSpellInfo        = spell.Parameters.SpellInfo,
                 RootSpellInfo          = spell.Parameters.RootSpellInfo,
                 PrimaryTargetId        = primaryTargetId,
+                Position               = spell.Parameters.Position,
                 UserInitiatedSpellCast = false,
                 ClientContextToken     = spell.Parameters.ClientContextToken,
                 ClientRequestSource    = spell.Parameters.ClientRequestSource
@@ -1690,6 +2025,7 @@ namespace NexusForever.Game.Spell
                 ParentSpellInfo        = spell.Parameters.SpellInfo,
                 RootSpellInfo          = spell.Parameters.RootSpellInfo,
                 PrimaryTargetId        = target.Guid,
+                Position               = spell.Parameters.Position,
                 UserInitiatedSpellCast = false,
                 ClientContextToken     = spell.Parameters.ClientContextToken,
                 ClientRequestSource    = spell.Parameters.ClientRequestSource
@@ -1713,6 +2049,7 @@ namespace NexusForever.Game.Spell
                 ParentSpellInfo        = spell.Parameters.SpellInfo,
                 RootSpellInfo          = spell.Parameters.RootSpellInfo,
                 PrimaryTargetId        = target.Guid,
+                Position               = spell.Parameters.Position,
                 UserInitiatedSpellCast = false,
                 ClientContextToken     = spell.Parameters.ClientContextToken,
                 ClientRequestSource    = spell.Parameters.ClientRequestSource
@@ -1752,6 +2089,39 @@ namespace NexusForever.Game.Spell
             return spell.Parameters.SpellInfo.Entry.Id == RelentlessStrikesTelegraphSpell4Id
                 && proxy?.Spell4Id == RelentlessStrikesAddCellSpell4Id
                 && spell.Caster is IPlayer;
+        }
+
+        private static bool ShouldRouteEngineerArtillerybotBarragePetProxyToCaster(ISpell spell, SpellEffectProxySemantics proxy)
+        {
+            return SpellMatches(spell?.Parameters?.SpellInfo, EngineerArtillerybotBarragePetSpell4Id, EngineerArtillerybotBarragePetBaseSpell4Id)
+                && proxy?.Spell4Id is EngineerArtillerybotBarragePulseProxySpell4Id or EngineerArtillerybotBarrageVisualProxySpell4Id;
+        }
+
+        private static bool ShouldRouteEngineerArtillerybotBarrageDamageProxyToCaster(ISpell spell, SpellEffectProxySemantics proxy)
+        {
+            return SpellMatches(spell?.Parameters?.SpellInfo, EngineerArtillerybotBarragePulseProxySpell4Id, EngineerArtillerybotBarragePulseProxyBaseSpell4Id)
+                && SpellMatches(spell?.Parameters?.ParentSpellInfo, EngineerArtillerybotBarragePetSpell4Id, EngineerArtillerybotBarragePetBaseSpell4Id)
+                && proxy?.Spell4Id == EngineerArtillerybotBarrageDamageSpell4Id;
+        }
+
+        private static bool TryMarkEngineerArtillerybotBarrageProxyHandled(ISpell spell, ISpellTargetEffectInfo info, uint proxySpell4Id)
+        {
+            EngineerArtillerybotBarrageProxyContext context = EngineerArtillerybotBarrageProxyContexts.GetValue(spell, _ => new EngineerArtillerybotBarrageProxyContext());
+            var key = new EngineerArtillerybotBarrageProxyKey(info.EffectId, info.Entry.Id, proxySpell4Id);
+            lock (context.HandledEffects)
+                return context.HandledEffects.Add(key);
+        }
+
+        private static bool SpellMatches(ISpellInfo spellInfo, uint spell4Id, uint spell4BaseId)
+        {
+            Spell4Entry entry = spellInfo?.Entry;
+            if (entry == null)
+                return false;
+
+            if (entry.Id == spell4Id || entry.Spell4BaseIdBaseSpell == spell4BaseId)
+                return true;
+
+            return spellInfo.BaseInfo?.Entry?.Id == spell4BaseId;
         }
 
         private static IReadOnlyList<uint> ResolvePetCastSummonCreatureIds(uint requiredSummonSpell4Id)
@@ -3640,7 +4010,7 @@ namespace NexusForever.Game.Spell
             IItemVisual previousVisual = target.GetVisuals().FirstOrDefault(v => v.Slot == slot);
             previousVisuals[slot] = previousVisual == null
                 ? null
-                : new ItemVisual
+                : new Entity.ItemVisual
                 {
                     Slot        = previousVisual.Slot,
                     DisplayId   = previousVisual.DisplayId,
@@ -3651,7 +4021,7 @@ namespace NexusForever.Game.Spell
 
         private static IItemVisual CloneVisual(IItemVisual visual)
         {
-            return new ItemVisual
+            return new Entity.ItemVisual
             {
                 Slot        = visual.Slot,
                 DisplayId   = visual.DisplayId,

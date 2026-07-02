@@ -11,6 +11,7 @@ using NexusForever.Game.Static.Combat.CrowdControl;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Entity.Movement.Command.Mode;
 using NexusForever.Game.Static.Entity.Movement.Spline;
+using NexusForever.Game.Static.Pet;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
@@ -239,6 +240,9 @@ namespace NexusForever.Script.Main.AI
 
         private void UpdateIdleAggroScan(double lastTick)
         {
+            if (IsCommandedSummon() && GetCommandStance() != PetStance.Aggressive)
+                return;
+
             idleAggroScanTimer.Update(lastTick);
             if (!idleAggroScanTimer.HasElapsed)
                 return;
@@ -578,6 +582,7 @@ namespace NexusForever.Script.Main.AI
                 return;
 
             activeChaseTargetGuid = null;
+            activeSummonerFollowGuid = null;
 
             if (!entity.TargetGuid.HasValue)
             {
@@ -714,6 +719,14 @@ namespace NexusForever.Script.Main.AI
             }
 
             unit = visibleUnit;
+
+            if (!CanCommandedSummonAcceptAggro(unit, requireAggroRange))
+            {
+                if (ShouldLogStarterTutorialCombat(unit))
+                    log.LogTrace("Starter tutorial combat AI aggro skipped for creature {CreatureId} guid {Guid}: commanded summon stance {Stance} does not allow this aggro source {SourceGuid}.", entity.CreatureId, entity.Guid, GetCommandStance(), unit.Guid);
+
+                return;
+            }
 
             if (!CanAcquireTarget(unit))
             {
@@ -1017,9 +1030,11 @@ namespace NexusForever.Script.Main.AI
                     mapTarget != null && IsWithinLeash(mapTarget));
             }
 
+            uint invalidTargetGuid = entity.TargetGuid.Value;
             if (target != null)
                 entity.ThreatManager.RemoveHostile(target.Guid);
-            else
+
+            if (entity.TargetGuid == invalidTargetGuid)
                 SelectTarget();
 
             return false;
@@ -1179,18 +1194,30 @@ namespace NexusForever.Script.Main.AI
         private void UpdateSummonerFollow(double lastTick)
         {
             if (!CanFollowSummoner())
+            {
+                entity.SummonCommandFollowRequested = false;
                 return;
+            }
 
-            summonerFollowTimer.Update(lastTick);
-            if (!summonerFollowTimer.HasElapsed)
-                return;
+            bool forceFollow = entity.SummonCommandFollowRequested;
+            if (!forceFollow)
+            {
+                summonerFollowTimer.Update(lastTick);
+                if (!summonerFollowTimer.HasElapsed)
+                    return;
 
-            summonerFollowTimer.Reset();
-            TryFollowSummoner(false);
+                summonerFollowTimer.Reset();
+            }
+
+            if (TryFollowSummoner(forceFollow))
+                entity.SummonCommandFollowRequested = false;
         }
 
         private bool CanAssistSummoner()
         {
+            if (IsCommandedSummon() && GetCommandStance() is PetStance.Passive or PetStance.Stay)
+                return false;
+
             return profile.AssistSummoner
                 && profile.SummonerAssistRange > 0f
                 && entity.SummonerGuid is { } summonerGuid
@@ -1199,6 +1226,9 @@ namespace NexusForever.Script.Main.AI
 
         private bool CanFollowSummoner()
         {
+            if (IsCommandedSummon() && GetCommandStance() == PetStance.Stay)
+                return false;
+
             return profile.AssistSummoner
                 && !profile.Stationary
                 && profile.SummonerFollowDistance > 0f
@@ -1221,16 +1251,26 @@ namespace NexusForever.Script.Main.AI
             if (summoner == null)
                 return null;
 
-            if (summoner.TargetGuid.HasValue && summoner.TargetGuid.Value != 0u)
+            PetStance commandStance = GetCommandStance();
+            bool canAssistOwnerTarget = !IsCommandedSummon()
+                || commandStance is PetStance.Assist or PetStance.Aggressive;
+            bool canAssistOwnerThreats = !IsCommandedSummon()
+                || commandStance is PetStance.Assist or PetStance.Defensive or PetStance.Aggressive;
+
+            if (canAssistOwnerTarget && summoner.TargetGuid.HasValue && summoner.TargetGuid.Value != 0u)
             {
                 IUnitEntity target = GetCombatTarget(summoner.TargetGuid.Value);
-                if (CanAssistSummonerAgainst(summoner, target))
+                if (CanAssistSummonerAgainst(summoner, target)
+                    && CanAssistSelectedSummonerTarget(commandStance, summoner, target))
                     return target;
             }
 
             foreach (IUnitEntity unit in entity.GetInRange<IUnitEntity>(0u).Where(unit => unit != null).ToList())
             {
                 if (unit.Guid == entity.Guid || unit.Guid == summoner.Guid)
+                    continue;
+
+                if (!canAssistOwnerThreats)
                     continue;
 
                 if (unit.TargetGuid == summoner.Guid && CanAssistSummonerAgainst(summoner, unit))
@@ -1246,6 +1286,19 @@ namespace NexusForever.Script.Main.AI
             return null;
         }
 
+        private bool IsCommandedSummon()
+        {
+            return profile.AssistSummoner
+                && entity.SummonerGuid is { } summonerGuid
+                && summonerGuid > 0u;
+        }
+
+        private PetStance GetCommandStance()
+        {
+            PetStance stance = entity.SummonCommandStance;
+            return Enum.IsDefined(stance) ? stance : PetStance.Assist;
+        }
+
         private bool CanAssistSummonerAgainst(IUnitEntity summoner, IUnitEntity target)
         {
             return target != null
@@ -1256,6 +1309,28 @@ namespace NexusForever.Script.Main.AI
                 && entity.CanAttack(target)
                 && IsWithinRange(summoner.Position, target.Position, profile.SummonerAssistRange)
                 && IsWithinLeash(target);
+        }
+
+        private bool CanAssistSelectedSummonerTarget(PetStance commandStance, IUnitEntity summoner, IUnitEntity target)
+        {
+            if (!IsCommandedSummon() || commandStance != PetStance.Assist)
+                return true;
+
+            return summoner.ThreatManager?.GetHostile(target.Guid) != null
+                || target.ThreatManager?.GetHostile(summoner.Guid) != null
+                || target.TargetGuid == summoner.Guid;
+        }
+
+        private bool CanCommandedSummonAcceptAggro(IUnitEntity source, bool requireAggroRange)
+        {
+            if (!IsCommandedSummon())
+                return true;
+
+            PetStance commandStance = GetCommandStance();
+            if (requireAggroRange)
+                return commandStance == PetStance.Aggressive;
+
+            return commandStance is not (PetStance.Passive or PetStance.Stay);
         }
 
         private bool TryFollowSummoner(bool force)
@@ -1354,8 +1429,25 @@ namespace NexusForever.Script.Main.AI
 
         private bool CanIdleAggroTarget(IUnitEntity target)
         {
-            return CanAcquireTarget(target)
-                && entity.GetDispositionTo(target.Faction1) == Disposition.Hostile;
+            if (!CanAcquireTarget(target))
+                return false;
+
+            if (IsCommandedSummon())
+                return entity.CanAttack(target);
+
+            if (IsNonAggressivePlayerControlledSummon(target))
+                return false;
+
+            return entity.GetDispositionTo(target.Faction1) == Disposition.Hostile;
+        }
+
+        private static bool IsNonAggressivePlayerControlledSummon(IUnitEntity target)
+        {
+            if (!IsPlayerControlledSummon(target))
+                return false;
+
+            PetStance stance = target.SummonCommandStance;
+            return !Enum.IsDefined(stance) || stance != PetStance.Aggressive;
         }
 
         private void NormalizeStarterTutorialCombatFaction()
@@ -1388,7 +1480,12 @@ namespace NexusForever.Script.Main.AI
         private static bool CanAcquireTarget(CombatProfile ownerProfile, IUnitEntity target)
         {
             return target != null
-                && (ownerProfile.AllowNonPlayerTargets || target is IPlayer);
+                && (ownerProfile.AllowNonPlayerTargets || target is IPlayer || IsPlayerControlledSummon(target));
+        }
+
+        private static bool IsPlayerControlledSummon(IUnitEntity target)
+        {
+            return target.SummonerGuid is { } summonerGuid && summonerGuid != 0u;
         }
 
         private static bool IsWithinRange(Vector3 source, Vector3 target, float range)

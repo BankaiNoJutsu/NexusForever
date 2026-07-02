@@ -1391,13 +1391,14 @@ namespace NexusForever.Game.Entity
         {
             base.OnSummon(entity);
             PathManager?.OnScientistScanbotSummoned(entity);
+            SpellHandler.OnEngineerCombatBotSummoned(this, entity);
         }
 
         public override void OnUnsummon(IWorldEntity entity)
         {
             PathManager?.OnScientistScanbotUnsummoned(entity);
             base.OnUnsummon(entity);
-            SpellHandler.UnregisterEngineerArtillerybotBarrageAction(this, entity);
+            SpellHandler.UnregisterEngineerCombatBotActions(this, entity);
         }
 
         /// <summary>

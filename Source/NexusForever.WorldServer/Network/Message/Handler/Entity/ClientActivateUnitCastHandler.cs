@@ -10,6 +10,7 @@ using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Network.World.Entity;
 using NexusForever.WorldServer.Network.Message.Handler.Spell;
 using NLog;
 
@@ -56,7 +57,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             HandleMessageInternal(session, activateUnitCast.ActivateUnitId, activateUnitCast.ContextToken, nameof(ClientActivateUnitCast));
         }
 
-        internal void HandleMessageInternal(IWorldSession session, uint activateUnitId, uint contextToken, string clientRequestSource)
+        internal void HandleMessageInternal(IWorldSession session, uint activateUnitId, uint contextToken, string clientRequestSource, Position position = null)
         {
             IWorldEntity entity = session.Player.GetVisible<IWorldEntity>(activateUnitId);
             if (entity == null)
@@ -115,6 +116,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                     return;
 
                 if (TryCompleteNorthernWildsSoldierHoldoutActivationWithoutSpell(session, entity, 0u, CastResult.NoValidActivateSpell))
+                    return;
+
+                if (TryCastActivePetActionFromActivateShortcut(session, entity, contextToken, clientRequestSource, position))
                     return;
 
                 log.Warn($"Unhandled activate-cast request: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}, entityId={entity.EntityId}, world={session.Player.Map?.Entry?.Id ?? 0u}, contextToken={contextToken}, source={clientRequestSource}, reason=no-valid-activate-spell.");
@@ -200,6 +204,36 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 log.Debug($"Tutorial activate-cast success: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}, spell4Id={spell4Id}.");
             if (isNorthernWildsShipControlsActivation)
                 log.Debug($"Northern Wilds ship controls activate-cast success: player={session.Player.Guid}, requestedEntity={activateUnitId}, entity={entity.Guid}, creature={entity.CreatureId}, spell4Id={spell4Id}, clientSideInteractionId={clientSideInteractionId}, deferred={deferClientSideInteractionActivation}, contextToken={contextToken}, source={clientRequestSource}.");
+        }
+
+        private static bool TryCastActivePetActionFromActivateShortcut(IWorldSession session, IWorldEntity entity, uint contextToken, string clientRequestSource, Position position)
+        {
+            if (session?.Player == null
+                || entity?.Guid != session.Player.Guid
+                || clientRequestSource != nameof(ClientActivateUnitCastPosition)
+                || session.Player.SpellManager == null
+                || !session.Player.SpellManager.TryResolveSingleActivePetActionSpell(out uint actionSpell4Id))
+                return false;
+
+            var spellParameters = new SpellParameters
+            {
+                PrimaryTargetId        = entity.Guid,
+                Position               = position,
+                UserInitiatedSpellCast = true,
+                ClientContextToken     = contextToken,
+                ClientRequestSource    = clientRequestSource
+            };
+
+            ClientSpellEvidenceCaptureHelper.ApplyPendingCapture(session, spellParameters);
+            CastResult castResult = session.Player.TryCastSpell(actionSpell4Id, spellParameters);
+            if (castResult != CastResult.Ok)
+            {
+                SendSpellCastResult(session, contextToken, actionSpell4Id, castResult);
+                return true;
+            }
+
+            log.Debug($"Active pet-action activate-cast succeeded: player={session.Player.Guid}, spell4Id={actionSpell4Id}, contextToken={contextToken}, source={clientRequestSource}.");
+            return true;
         }
 
         private static bool IsNorthernWildsShipControlsActivation(IWorldSession session, IWorldEntity entity)

@@ -4,6 +4,7 @@ using NexusForever.Game.Abstract.Chat;
 using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Pet;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
@@ -76,6 +77,16 @@ namespace NexusForever.Game.Abstract.Entity
         /// Guid of the <see cref="IWorldEntity"/> that summoned this entity.
         /// </summary>
         uint? SummonerGuid { get; set; }
+
+        /// <summary>
+        /// Command stance for entities controlled through the pet command bar.
+        /// </summary>
+        PetStance SummonCommandStance { get; set; }
+
+        /// <summary>
+        /// Determines if the next idle update should force a return to the summoner.
+        /// </summary>
+        bool SummonCommandFollowRequested { get; set; }
 
         /// <summary>
         /// Factory used to summon child entities owned by this <see cref="IWorldEntity"/>.

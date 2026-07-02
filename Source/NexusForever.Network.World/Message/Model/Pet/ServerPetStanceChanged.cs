@@ -13,13 +13,13 @@ namespace NexusForever.Network.World.Message.Model.Pet
     [Message(GameMessageOpcode.ServerPetStanceChanged)]
     public class ServerPetStanceChanged : IWritable
     {
-        public uint PetUnitId { get; set; } // 0 means all engineer pets
+        public uint PetUnitId { get; set; } // Concrete pet row id cached by ServerPetSpawned.
         public PetStance Stance { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
             writer.Write(PetUnitId);
-            writer.Write(Stance, 5u);
+            writer.Write(PetStanceEncoding.ToWireMask(Stance), 5u);
         }
     }
 }

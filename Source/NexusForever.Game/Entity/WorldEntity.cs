@@ -12,6 +12,7 @@ using NexusForever.Game.Reputation;
 using NexusForever.Game.Static.Combat;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Option;
+using NexusForever.Game.Static.Pet;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Chat;
 using NexusForever.GameTable;
@@ -201,6 +202,16 @@ namespace NexusForever.Game.Entity
         /// Guid of the <see cref="IWorldEntity"/> that summoned this entity.
         /// </summary>
         public uint? SummonerGuid { get; set; }
+
+        /// <summary>
+        /// Command stance for entities controlled through the pet command bar.
+        /// </summary>
+        public PetStance SummonCommandStance { get; set; } = PetStance.Assist;
+
+        /// <summary>
+        /// Determines if the next idle update should force a return to the summoner.
+        /// </summary>
+        public bool SummonCommandFollowRequested { get; set; }
 
         private IEntitySummonFactory summonFactory;
         private Func<IEntitySummonFactory> summonFactoryResolver;

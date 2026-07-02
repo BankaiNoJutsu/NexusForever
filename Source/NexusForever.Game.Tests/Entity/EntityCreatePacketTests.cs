@@ -553,6 +553,11 @@ public class EntityCreatePacketTests
             throw new NotSupportedException();
         }
 
+        public IReadOnlyCollection<IWorldEntity> GetSummonCreatures(uint creatureId)
+        {
+            throw new NotSupportedException();
+        }
+
         public uint GetSummonCreatureCount(uint creatureId)
         {
             throw new NotSupportedException();

@@ -1,4 +1,5 @@
 ﻿using NexusForever.Network.Message;
+using NexusForever.Game.Static.Pet;
 
 namespace NexusForever.Network.World.Message.Model.Pet
 {
@@ -11,17 +12,17 @@ namespace NexusForever.Network.World.Message.Model.Pet
     [Message(GameMessageOpcode.ServerPetSpawned)]
     public class ServerPetSpawned : IWritable
     {
-        public uint PetUnitId { get; set; } // 0 means all engineer pets
+        public uint PetUnitId { get; set; } // Cached pet row key. Engineer bot command surfaces use 0 for all active bots.
         public uint SummoningSpell4Id { get; set; }
         public uint ValidStances { get; set; }
-        public uint Stance { get; set; }
+        public PetStance Stance { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
             writer.Write(PetUnitId);
             writer.Write(SummoningSpell4Id, 18u);
             writer.Write(ValidStances, 5u);
-            writer.Write(Stance, 5u);
+            writer.Write(PetStanceEncoding.ToWireMask(Stance), 5u);
         }
     }
 }

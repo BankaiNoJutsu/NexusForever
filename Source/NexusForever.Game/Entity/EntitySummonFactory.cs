@@ -127,11 +127,26 @@ namespace NexusForever.Game.Entity
         public bool TryGetSummonCreature(uint creatureId, out IWorldEntity entity)
         {
             entity = null;
+            foreach (IWorldEntity summon in GetSummonCreatures(creatureId))
+            {
+                entity = summon;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns active summoned entities with supplied creature id.
+        /// </summary>
+        public IReadOnlyCollection<IWorldEntity> GetSummonCreatures(uint creatureId)
+        {
+            var summons = new List<IWorldEntity>();
             if (creatureId == 0u || owner?.Map == null)
-                return false;
+                return summons;
 
             if (!creatureGuids.TryGetValue(creatureId, out List<uint> guids))
-                return false;
+                return summons;
 
             foreach (uint guid in guids.ToList())
             {
@@ -143,14 +158,13 @@ namespace NexusForever.Game.Entity
                     continue;
                 }
 
-                entity = summon;
-                return true;
+                summons.Add(summon);
             }
 
             if (guids.Count == 0)
                 creatureGuids.Remove(creatureId);
 
-            return false;
+            return summons;
         }
 
         /// <summary>
@@ -158,30 +172,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public uint GetSummonCreatureCount(uint creatureId)
         {
-            if (creatureId == 0u || owner?.Map == null)
-                return 0u;
-
-            if (!creatureGuids.TryGetValue(creatureId, out List<uint> guids))
-                return 0u;
-
-            uint count = 0u;
-            foreach (uint guid in guids.ToList())
-            {
-                IWorldEntity summon = owner.Map.GetEntity<IWorldEntity>(guid);
-                if (summon == null || summon.SummonerGuid != owner.Guid)
-                {
-                    summonGuids.Remove(guid);
-                    guids.Remove(guid);
-                    continue;
-                }
-
-                count++;
-            }
-
-            if (guids.Count == 0)
-                creatureGuids.Remove(creatureId);
-
-            return count;
+            return (uint)GetSummonCreatures(creatureId).Count;
         }
 
         /// <summary>

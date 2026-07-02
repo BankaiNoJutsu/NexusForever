@@ -23,6 +23,7 @@ using NexusForever.WorldServer.Network.Message.Handler.Spell;
 
 namespace NexusForever.Game.Tests.Spell;
 
+[Collection(MissingGameDataDiagnosticsCollection.Name)]
 public class FloatingActionBarSpellTests
 {
     private const uint LockboxSpell4Id = 55640u;
@@ -37,6 +38,11 @@ public class FloatingActionBarSpellTests
     private const uint ArtillerybotSpellGroupId = 445u;
     private const uint ArtillerybotPetSwitchSpell4Id = 51365u;
     private const uint ArtillerybotPlayerBarrageSpell4Id = 35123u;
+    private const uint ArtillerybotPlayerBarrageBaseSpell4Id = 20884u;
+    private const uint RepairbotSummonSpell4Id = 42810u;
+    private const uint RepairbotSummonSpellGroupListId = 1178u;
+    private const uint RepairbotSpellGroupId = 446u;
+    private const uint RepairbotShieldBoostSpell4Id = 35657u;
 
     [Fact]
     public void ActionBarSet_RegistersFloatingSpellShortcuts()
@@ -115,6 +121,11 @@ public class FloatingActionBarSpellTests
             {
                 Id                = ArtillerybotSummonSpell4Id,
                 Spell4GroupListId = ArtillerybotSummonSpellGroupListId
+            },
+            new Spell4Entry
+            {
+                Id                    = ArtillerybotPlayerBarrageSpell4Id,
+                Spell4BaseIdBaseSpell = ArtillerybotPlayerBarrageBaseSpell4Id
             }),
             spell4GroupLists: CreateGameTable(new Spell4GroupListEntry
             {
@@ -129,9 +140,84 @@ public class FloatingActionBarSpellTests
         Assert.Equal(ArtillerybotPlayerBarrageSpell4Id, actionSpell4Id);
         Assert.True(manager.TryResolveActivePetActionSpell(ArtillerybotPlayerBarrageSpell4Id, out actionSpell4Id));
         Assert.Equal(ArtillerybotPlayerBarrageSpell4Id, actionSpell4Id);
+        Assert.True(manager.TryResolveActivePetActionSpell(ArtillerybotPlayerBarrageBaseSpell4Id, out actionSpell4Id));
+        Assert.Equal(ArtillerybotPlayerBarrageSpell4Id, actionSpell4Id);
+        Assert.True(manager.TryResolveSingleActivePetActionSpell(out actionSpell4Id));
+        Assert.Equal(ArtillerybotPlayerBarrageSpell4Id, actionSpell4Id);
 
         Assert.True(manager.ClearActivePetActionSpellsForSpellGroup(ArtillerybotSpellGroupId));
         Assert.False(manager.TryResolveActivePetActionSpell(ArtillerybotPetSwitchSpell4Id, out _));
+        Assert.False(manager.TryResolveActivePetActionSpell(ArtillerybotPlayerBarrageBaseSpell4Id, out _));
+        Assert.False(manager.TryResolveSingleActivePetActionSpell(out _));
+    }
+
+    [Fact]
+    public void SpellManager_ClearsOnlyMatchingActivePetActionSpellGroup()
+    {
+        IGameTableManager gameTableManager = CreateGameTableManager(
+            spell4Entries: CreateGameTable(
+                new Spell4Entry
+                {
+                    Id                = ArtillerybotSummonSpell4Id,
+                    Spell4GroupListId = ArtillerybotSummonSpellGroupListId
+                },
+                new Spell4Entry
+                {
+                    Id                    = ArtillerybotPlayerBarrageSpell4Id,
+                    Spell4BaseIdBaseSpell = ArtillerybotPlayerBarrageBaseSpell4Id
+                },
+                new Spell4Entry
+                {
+                    Id                = RepairbotSummonSpell4Id,
+                    Spell4GroupListId = RepairbotSummonSpellGroupListId
+                }),
+            spell4GroupLists: CreateGameTable(
+                new Spell4GroupListEntry
+                {
+                    Id             = ArtillerybotSummonSpellGroupListId,
+                    SpellGroupId00 = ArtillerybotSpellGroupId
+                },
+                new Spell4GroupListEntry
+                {
+                    Id             = RepairbotSummonSpellGroupListId,
+                    SpellGroupId00 = RepairbotSpellGroupId
+                }));
+        global::NexusForever.Game.Entity.SpellManager manager = CreateSpellManager(gameTableManager);
+
+        manager.SetActivePetActionSpell(ArtillerybotPetSwitchSpell4Id, ArtillerybotPlayerBarrageSpell4Id, ArtillerybotSummonSpell4Id);
+        manager.SetActivePetActionSpell(RepairbotShieldBoostSpell4Id, RepairbotShieldBoostSpell4Id, RepairbotSummonSpell4Id);
+
+        Assert.True(manager.ClearActivePetActionSpellsForSpellGroup(ArtillerybotSpellGroupId));
+
+        Assert.False(manager.TryResolveActivePetActionSpell(ArtillerybotPetSwitchSpell4Id, out _));
+        Assert.False(manager.TryResolveActivePetActionSpell(ArtillerybotPlayerBarrageSpell4Id, out _));
+        Assert.False(manager.TryResolveActivePetActionSpell(ArtillerybotPlayerBarrageBaseSpell4Id, out _));
+        Assert.True(manager.TryResolveActivePetActionSpell(RepairbotShieldBoostSpell4Id, out uint repairbotActionSpell4Id));
+        Assert.Equal(RepairbotShieldBoostSpell4Id, repairbotActionSpell4Id);
+        Assert.True(manager.TryResolveSingleActivePetActionSpell(out uint singleActionSpell4Id));
+        Assert.Equal(RepairbotShieldBoostSpell4Id, singleActionSpell4Id);
+    }
+
+    [Fact]
+    public void SpellManager_DoesNotResolveSingleActivePetActionWhenMultipleCommandsAreActive()
+    {
+        IGameTableManager gameTableManager = CreateGameTableManager(
+            spell4Entries: CreateGameTable(
+                new Spell4Entry
+                {
+                    Id                    = ArtillerybotPlayerBarrageSpell4Id,
+                    Spell4BaseIdBaseSpell = ArtillerybotPlayerBarrageBaseSpell4Id
+                },
+                new Spell4Entry
+                {
+                    Id = RepairbotShieldBoostSpell4Id
+                }));
+        global::NexusForever.Game.Entity.SpellManager manager = CreateSpellManager(gameTableManager);
+
+        manager.SetActivePetActionSpell(ArtillerybotPetSwitchSpell4Id, ArtillerybotPlayerBarrageSpell4Id, ArtillerybotSummonSpell4Id);
+        manager.SetActivePetActionSpell(RepairbotShieldBoostSpell4Id, RepairbotShieldBoostSpell4Id, RepairbotSummonSpell4Id);
+
+        Assert.False(manager.TryResolveSingleActivePetActionSpell(out _));
     }
 
     [Fact]
@@ -374,6 +460,7 @@ public class FloatingActionBarSpellTests
         SetPrivateField(manager, "activeFloatingActionBarOwnerSpellGroupIds", new HashSet<uint>());
         SetPrivateField(manager, "activePetActionSpell4Ids", new Dictionary<uint, uint>());
         SetPrivateField(manager, "activePetActionOwnerSpellGroupIds", new HashSet<uint>());
+        SetPrivateField(manager, "activePetActionOwnerSpellGroupIdsBySpell4Id", new Dictionary<uint, HashSet<uint>>());
         return manager;
     }
 

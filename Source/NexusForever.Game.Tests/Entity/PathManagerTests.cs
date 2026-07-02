@@ -1845,7 +1845,9 @@ public class PathManagerTests
             ServerPathEpisodeProgress episodeProgress = Assert.IsType<ServerPathEpisodeProgress>(messages[1]);
             Assert.Equal(82u, episodeProgress.EpisodeId);
             Assert.Equal([650u, 651u], episodeProgress.Missions.Select(m => m.PathMissionId).ToArray());
-            Assert.DoesNotContain(messages, message => message is ServerPathMissionActivate);
+
+            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[2]);
+            Assert.Equal([650u, 651u], missionActivate.Missions.Select(m => m.PathMissionId).ToArray());
         }
     }
 
@@ -1905,7 +1907,11 @@ public class PathManagerTests
             ServerPathEpisodeProgress episodeProgress = Assert.IsType<ServerPathEpisodeProgress>(messages[1]);
             Assert.Equal(82u, episodeProgress.EpisodeId);
             Assert.Equal([650u], episodeProgress.Missions.Select(m => m.PathMissionId).ToArray());
-            Assert.DoesNotContain(messages, message => message is ServerPathMissionActivate);
+
+            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[2]);
+            Mission mission = Assert.Single(missionActivate.Missions);
+            Assert.Equal(650u, mission.PathMissionId);
+            Assert.Equal(PathMissionState.Started, mission.State);
 
             Assert.True(manager.TryActivateCurrentZoneEpisode());
             Assert.Equal(messages.Count, sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count);
@@ -1967,7 +1973,8 @@ public class PathManagerTests
             Assert.IsType<ServerPathSetCurrentEpisode>(messages[0]);
             ServerPathEpisodeProgress episodeProgress = Assert.IsType<ServerPathEpisodeProgress>(messages[1]);
             Assert.Equal([650u], episodeProgress.Missions.Select(m => m.PathMissionId).ToArray());
-            Assert.DoesNotContain(messages, message => message is ServerPathMissionActivate);
+            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[2]);
+            Assert.Equal([650u], missionActivate.Missions.Select(m => m.PathMissionId).ToArray());
         }
     }
 
@@ -2110,7 +2117,8 @@ public class PathManagerTests
             ServerPathEpisodeProgress episodeProgress = Assert.IsType<ServerPathEpisodeProgress>(messages[1]);
             Assert.Equal(expectedEpisodeId, episodeProgress.EpisodeId);
             Assert.Equal(expectedMissionIds.Select(m => (uint)m).ToArray(), episodeProgress.Missions.Select(m => m.PathMissionId).ToArray());
-            Assert.DoesNotContain(messages, message => message is ServerPathMissionActivate);
+            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[2]);
+            Assert.Equal(expectedMissionIds.Select(m => (uint)m).ToArray(), missionActivate.Missions.Select(m => m.PathMissionId).ToArray());
         }
     }
 

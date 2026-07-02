@@ -40,6 +40,12 @@ namespace NexusForever.Game.Spell
         private const uint TargetTypePositionAoe = 4u;
         private const uint WhirlwindSpell4BaseId = 19778u;
         private const uint RampageSpell4BaseId = 37968u;
+        private const uint EngineerArtillerybotBarrageTargetFinderSpell4Id = 49502u;
+        private const uint EngineerArtillerybotBarrageTargetFinderBaseSpell4Id = 32710u;
+        private const uint EngineerArtillerybotBarragePulseSpell4Id = 34589u;
+        private const uint EngineerArtillerybotBarragePulseBaseSpell4Id = 20559u;
+        private const uint EngineerArtillerybotBarrageDamageSpell4Id = 35548u;
+        private const uint EngineerArtillerybotBarrageDamageBaseSpell4Id = 21229u;
         private const uint WarriorKineticAbilityCost = 250u;
 
         public ISpellParameters Parameters { get; }
@@ -1434,6 +1440,9 @@ namespace NexusForever.Game.Spell
             if (!IsTargetLivingStateAllowed(entity))
                 return false;
 
+            if (IsEngineerArtillerybotBarrageHostileAoeSpell() && !Caster.CanAttack(entity))
+                return false;
+
             if (constraints != null)
             {
                 float range = GetHorizontalDistance(selectionOrigin, entity.Position);
@@ -1452,6 +1461,28 @@ namespace NexusForever.Game.Spell
                 return false;
 
             return true;
+        }
+
+        private bool IsEngineerArtillerybotBarrageHostileAoeSpell()
+        {
+            Spell4Entry entry = Parameters.SpellInfo?.Entry;
+            if (entry == null)
+                return false;
+
+            if (entry.Id is EngineerArtillerybotBarrageTargetFinderSpell4Id
+                or EngineerArtillerybotBarragePulseSpell4Id
+                or EngineerArtillerybotBarrageDamageSpell4Id)
+                return true;
+
+            if (entry.Spell4BaseIdBaseSpell is EngineerArtillerybotBarrageTargetFinderBaseSpell4Id
+                or EngineerArtillerybotBarragePulseBaseSpell4Id
+                or EngineerArtillerybotBarrageDamageBaseSpell4Id)
+                return true;
+
+            uint baseSpell4Id = Parameters.SpellInfo?.BaseInfo?.Entry?.Id ?? 0u;
+            return baseSpell4Id is EngineerArtillerybotBarrageTargetFinderBaseSpell4Id
+                or EngineerArtillerybotBarragePulseBaseSpell4Id
+                or EngineerArtillerybotBarrageDamageBaseSpell4Id;
         }
 
         private IEnumerable<IUnitEntity> OrderAoeTargetCandidates(IEnumerable<IUnitEntity> candidates, Spell4AoeTargetConstraintsEntry constraints, Vector3 selectionOrigin)

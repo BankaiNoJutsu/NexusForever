@@ -55,9 +55,19 @@ namespace NexusForever.Game.Abstract.Entity
         bool TryResolveActivePetActionSpell(uint selectedSpell4Id, out uint actionSpell4Id);
 
         /// <summary>
+        /// Resolve the only currently active pet command action, when unambiguous.
+        /// </summary>
+        bool TryResolveSingleActivePetActionSpell(out uint actionSpell4Id);
+
+        /// <summary>
         /// Clear active pet command selectors.
         /// </summary>
         void ClearActivePetActionSpells();
+
+        /// <summary>
+        /// Clear a single active pet command selector and resolved action spell.
+        /// </summary>
+        void ClearActivePetActionSpell(uint petSwitchSpell4Id, uint actionSpell4Id);
 
         /// <summary>
         /// Clear active pet command selectors when their owner spell belongs to the supplied spell group.

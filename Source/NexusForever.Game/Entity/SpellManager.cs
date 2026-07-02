@@ -23,6 +23,17 @@ namespace NexusForever.Game.Entity
         private const ushort MaxBonusAmpPower = 10;
         private const byte GlobalCooldownType = 0;
         private const byte SpellCooldownType = 1;
+        private static readonly UILocation[] AutoSlotLasLocations =
+        [
+            UILocation.LAS1,
+            UILocation.LAS2,
+            UILocation.LAS3,
+            UILocation.LAS4,
+            UILocation.LAS5,
+            UILocation.LAS6,
+            UILocation.LAS7,
+            UILocation.LAS8
+        ];
 
         /// <summary>
         /// Determines which fields need saving for <see cref="ISpellManager"/> when being saved to the database.
@@ -62,6 +73,7 @@ namespace NexusForever.Game.Entity
         private readonly HashSet<uint> activeFloatingActionBarOwnerSpellGroupIds = new();
         private readonly Dictionary<uint, uint> activePetActionSpell4Ids = new();
         private readonly HashSet<uint> activePetActionOwnerSpellGroupIds = new();
+        private readonly Dictionary<uint, HashSet<uint>> activePetActionOwnerSpellGroupIdsBySpell4Id = new();
         private ushort bonusAmpPower;
 
         private readonly IActionSet[] actionSets = new ActionSet[ActionSet.MaxActionSets];
@@ -123,6 +135,7 @@ namespace NexusForever.Game.Entity
         public void GrantSpells()
         {
             IGameTableManager gameTables = GetGameTableManager();
+            bool actionSetUpdated = false;
             foreach (SpellLevelEntry spellLevel in gameTables.SpellLevel.Entries
                 .Where(s => s.ClassId == (byte)player.Class && s.CharacterLevel <= player.Level)
                 .OrderBy(s => s.CharacterLevel))
@@ -135,8 +148,14 @@ namespace NexusForever.Game.Entity
                     continue;
 
                 if (GetSpell(spell4Entry.Spell4BaseIdBaseSpell) == null)
+                {
                     AddSpell(spell4Entry.Spell4BaseIdBaseSpell);
+                    actionSetUpdated |= TryAddSpellToFirstEmptyLasSlot(spell4Entry.Spell4BaseIdBaseSpell);
+                }
             }
+
+            if (actionSetUpdated)
+                SendActiveActionSet();
 
             ClassEntry classEntry = gameTables.Class.GetEntry((byte)player.Class);
             foreach (uint classSpell in classEntry.Spell4IdInnateAbilityActive
@@ -151,6 +170,40 @@ namespace NexusForever.Game.Entity
                 if (GetSpell(spell4Entry.Spell4BaseIdBaseSpell) == null)
                     AddSpell(spell4Entry.Spell4BaseIdBaseSpell);
             }
+        }
+
+        private bool TryAddSpellToFirstEmptyLasSlot(uint spell4BaseId)
+        {
+            if (player.IsLoading)
+                return false;
+
+            if (ActiveActionSet >= ActionSet.MaxActionSets)
+                return false;
+
+            IActionSet actionSet = actionSets[ActiveActionSet];
+            if (actionSet == null || actionSet.GetShortcut(ShortcutType.SpellbookItem, spell4BaseId) != null)
+                return false;
+
+            foreach (UILocation location in AutoSlotLasLocations)
+            {
+                if (actionSet.GetShortcut(location) != null || !IsLasSlotUnlocked(location))
+                    continue;
+
+                actionSet.AddShortcut(location, ShortcutType.SpellbookItem, spell4BaseId, 1);
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool IsLasSlotUnlocked(UILocation location)
+        {
+            ActionSlotPrereqEntry slotPrerequisite = GetGameTableManager().ActionSlotPrereq?.Entries
+                .FirstOrDefault(e => e.SlotIndex == (uint)location);
+            if (slotPrerequisite == null || slotPrerequisite.PrerequisiteIdUnlock == 0u)
+                return true;
+
+            return GetPrerequisiteManager().Meets(player, slotPrerequisite.PrerequisiteIdUnlock);
         }
 
         public void Update(double lastTick)
@@ -256,11 +309,12 @@ namespace NexusForever.Game.Entity
             if (actionSpell4Id == 0u)
                 return;
 
-            if (petSwitchSpell4Id != 0u)
-                activePetActionSpell4Ids[petSwitchSpell4Id] = actionSpell4Id;
+            HashSet<uint> ownerSpellGroupIds = GetOwnerSpellGroups(ownerSpell4Id);
+            TrackActivePetActionSpell(petSwitchSpell4Id, actionSpell4Id, ownerSpellGroupIds);
+            TrackActivePetActionSpell(actionSpell4Id, actionSpell4Id, ownerSpellGroupIds);
 
-            activePetActionSpell4Ids[actionSpell4Id] = actionSpell4Id;
-            TrackOwnerSpellGroups(ownerSpell4Id, activePetActionOwnerSpellGroupIds);
+            Spell4Entry actionEntry = GetGameTableManager().Spell4?.GetEntry(actionSpell4Id);
+            TrackActivePetActionSpell(actionEntry?.Spell4BaseIdBaseSpell ?? 0u, actionSpell4Id, ownerSpellGroupIds);
         }
 
         public bool TryResolveActivePetActionSpell(uint selectedSpell4Id, out uint actionSpell4Id)
@@ -274,10 +328,39 @@ namespace NexusForever.Game.Entity
             return activePetActionSpell4Ids.TryGetValue(selectedSpell4Id, out actionSpell4Id);
         }
 
+        public bool TryResolveSingleActivePetActionSpell(out uint actionSpell4Id)
+        {
+            uint[] actionSpell4Ids = activePetActionSpell4Ids.Values
+                .Where(id => id != 0u)
+                .Distinct()
+                .ToArray();
+
+            if (actionSpell4Ids.Length == 1)
+            {
+                actionSpell4Id = actionSpell4Ids[0];
+                return true;
+            }
+
+            actionSpell4Id = 0u;
+            return false;
+        }
+
         public void ClearActivePetActionSpells()
         {
             activePetActionSpell4Ids.Clear();
             activePetActionOwnerSpellGroupIds.Clear();
+            activePetActionOwnerSpellGroupIdsBySpell4Id.Clear();
+        }
+
+        public void ClearActivePetActionSpell(uint petSwitchSpell4Id, uint actionSpell4Id)
+        {
+            ClearActivePetActionSpellKey(petSwitchSpell4Id);
+            ClearActivePetActionSpellKey(actionSpell4Id);
+
+            Spell4Entry actionEntry = GetGameTableManager().Spell4?.GetEntry(actionSpell4Id);
+            ClearActivePetActionSpellKey(actionEntry?.Spell4BaseIdBaseSpell ?? 0u);
+
+            RebuildActivePetActionOwnerSpellGroups();
         }
 
         public bool ClearActivePetActionSpellsForSpellGroup(uint spellGroupId)
@@ -285,7 +368,15 @@ namespace NexusForever.Game.Entity
             if (spellGroupId == 0u || !activePetActionOwnerSpellGroupIds.Contains(spellGroupId))
                 return false;
 
-            ClearActivePetActionSpells();
+            uint[] spell4Ids = activePetActionOwnerSpellGroupIdsBySpell4Id
+                .Where(e => e.Value.Contains(spellGroupId))
+                .Select(e => e.Key)
+                .ToArray();
+
+            foreach (uint spell4Id in spell4Ids)
+                ClearActivePetActionSpellKey(spell4Id);
+
+            RebuildActivePetActionOwnerSpellGroups();
             return true;
         }
 
@@ -410,6 +501,49 @@ namespace NexusForever.Game.Entity
 
             foreach (uint spellGroupId in EnumerateSpell4GroupList(ownerSpell.Spell4GroupListId))
                 ownerSpellGroupIds.Add(spellGroupId);
+        }
+
+        private HashSet<uint> GetOwnerSpellGroups(uint ownerSpell4Id)
+        {
+            var ownerSpellGroupIds = new HashSet<uint>();
+            TrackOwnerSpellGroups(ownerSpell4Id, ownerSpellGroupIds);
+            return ownerSpellGroupIds;
+        }
+
+        private void TrackPetActionOwnerSpellGroups(uint spell4Id, HashSet<uint> ownerSpellGroupIds)
+        {
+            if (spell4Id == 0u || ownerSpellGroupIds.Count == 0)
+                return;
+
+            activePetActionOwnerSpellGroupIdsBySpell4Id[spell4Id] = [.. ownerSpellGroupIds];
+            foreach (uint spellGroupId in ownerSpellGroupIds)
+                activePetActionOwnerSpellGroupIds.Add(spellGroupId);
+        }
+
+        private void TrackActivePetActionSpell(uint selectedSpell4Id, uint actionSpell4Id, HashSet<uint> ownerSpellGroupIds)
+        {
+            if (selectedSpell4Id == 0u)
+                return;
+
+            activePetActionSpell4Ids[selectedSpell4Id] = actionSpell4Id;
+            TrackPetActionOwnerSpellGroups(selectedSpell4Id, ownerSpellGroupIds);
+        }
+
+        private void ClearActivePetActionSpellKey(uint spell4Id)
+        {
+            if (spell4Id == 0u)
+                return;
+
+            activePetActionSpell4Ids.Remove(spell4Id);
+            activePetActionOwnerSpellGroupIdsBySpell4Id.Remove(spell4Id);
+        }
+
+        private void RebuildActivePetActionOwnerSpellGroups()
+        {
+            activePetActionOwnerSpellGroupIds.Clear();
+            foreach (HashSet<uint> ownerSpellGroupIds in activePetActionOwnerSpellGroupIdsBySpell4Id.Values)
+                foreach (uint spellGroupId in ownerSpellGroupIds)
+                    activePetActionOwnerSpellGroupIds.Add(spellGroupId);
         }
 
         /// <summary>
@@ -723,6 +857,13 @@ namespace NexusForever.Game.Entity
                 IActionSet actionSet = GetActionSet(i);
                 player.Session.EnqueueMessageEncrypted(actionSet.BuildServerActionSet());
             }
+        }
+
+        private void SendActiveActionSet()
+        {
+            IActionSet actionSet = GetActionSet(ActiveActionSet);
+            player.Session.EnqueueMessageEncrypted(new ServerActionSetClearCache());
+            player.Session.EnqueueMessageEncrypted(actionSet.BuildServerActionSet());
         }
 
         private void SendServerAmpLists()

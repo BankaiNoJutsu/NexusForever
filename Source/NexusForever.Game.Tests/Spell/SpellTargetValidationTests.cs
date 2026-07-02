@@ -12,6 +12,7 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Combat;
+using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Static;
@@ -822,6 +823,63 @@ public class SpellTargetValidationTests
         AssertChannelPulseCadence(spell, () => pulses);
     }
 
+    [Fact]
+    public void Cast_WithArtillerybotBarrageDamageAoe_FiltersToAttackableTargetsBeforeDispatch()
+    {
+        IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> casterProxy);
+        IUnitEntity owner = CreateUnit(2002u, new Vector3(1f, 0f, 0f), out _);
+        IUnitEntity hostile = CreateUnit(3003u, new Vector3(2f, 0f, 0f), out _);
+        IBaseMap map = CreateSearchMap(caster, owner, hostile);
+        casterProxy.SetProperty(nameof(IUnitEntity.Map), map);
+        casterProxy.SetMethodHandler(nameof(IUnitEntity.CanAttack), args => ReferenceEquals(args[0], hostile));
+
+        List<uint> dispatchedTargets = [];
+        SpellEffectDelegate handler = (_, target, _) =>
+        {
+            dispatchedTargets.Add(target.Guid);
+        };
+
+        var parameters = new NexusForever.Game.Spell.SpellParameters
+        {
+            SpellInfo = CreateArtillerybotBarrageDamageSpellInfo()
+        };
+
+        NexusForever.Game.Spell.Spell spell = CreateSpell(caster, parameters, CreateGlobalSpellManager(handler, SpellEffectType.Damage));
+
+        Assert.Equal(CastResult.Ok, spell.Cast());
+
+        Assert.Equal([hostile.Guid], dispatchedTargets);
+    }
+
+    [Fact]
+    public void Cast_WithArtillerybotBarrageDamageAoe_UsesExplicitPositionField()
+    {
+        IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> casterProxy);
+        IUnitEntity nearCasterHostile = CreateUnit(2002u, new Vector3(1f, 0f, 0f), out _);
+        IUnitEntity fieldHostile = CreateUnit(3003u, new Vector3(42f, 0f, 0f), out _);
+        IBaseMap map = CreateSearchMap(caster, nearCasterHostile, fieldHostile);
+        casterProxy.SetProperty(nameof(IUnitEntity.Map), map);
+        casterProxy.SetMethodHandler(nameof(IUnitEntity.CanAttack), args => args[0] is IUnitEntity unit && unit.Guid != caster.Guid);
+
+        List<uint> dispatchedTargets = [];
+        SpellEffectDelegate handler = (_, target, _) =>
+        {
+            dispatchedTargets.Add(target.Guid);
+        };
+
+        var parameters = new NexusForever.Game.Spell.SpellParameters
+        {
+            SpellInfo = CreateArtillerybotBarrageDamageSpellInfo(),
+            Position  = new Position(new Vector3(40f, 0f, 0f))
+        };
+
+        NexusForever.Game.Spell.Spell spell = CreateSpell(caster, parameters, CreateGlobalSpellManager(handler, SpellEffectType.Damage));
+
+        Assert.Equal(CastResult.Ok, spell.Cast());
+
+        Assert.Equal([fieldHostile.Guid], dispatchedTargets);
+    }
+
     [Theory]
     [InlineData(5u, PrerequisiteComparison.LessThan, 6u, true)]
     [InlineData(8u, PrerequisiteComparison.LessThan, 6u, false)]
@@ -1149,6 +1207,53 @@ public class SpellTargetValidationTests
             DataBits00   = BitConverter.SingleToUInt32Bits(1.3f),
             DataBits01   = 500u,
             DataBits02   = 1000u
+        });
+
+        return spellInfo;
+    }
+
+    private static ISpellInfo CreateArtillerybotBarrageDamageSpellInfo()
+    {
+        ISpellBaseInfo baseInfo = RecordingDispatchProxy<ISpellBaseInfo>.Create(out RecordingDispatchProxy<ISpellBaseInfo> baseInfoProxy);
+        baseInfoProxy.SetProperty(nameof(ISpellBaseInfo.Entry), new Spell4BaseEntry { Id = 21229u });
+        baseInfoProxy.SetProperty(nameof(ISpellBaseInfo.TargetMechanics), new Spell4TargetMechanicsEntry
+        {
+            TargetType = 4u
+        });
+
+        ISpellInfo spellInfo = RecordingDispatchProxy<ISpellInfo>.Create(out RecordingDispatchProxy<ISpellInfo> spellInfoProxy);
+        spellInfoProxy.SetProperty(nameof(ISpellInfo.Entry), new Spell4Entry
+        {
+            Id                     = 35548u,
+            Spell4BaseIdBaseSpell = 21229u
+        });
+        spellInfoProxy.SetProperty(nameof(ISpellInfo.BaseInfo), baseInfo);
+        spellInfoProxy.SetProperty(nameof(ISpellInfo.AoeTargetConstraints), new Spell4AoeTargetConstraintsEntry
+        {
+            TargetCount     = 10u,
+            MaxRange        = 10f,
+            TargetSelection = 1u,
+            Angle           = 360f
+        });
+        spellInfoProxy.SetProperty(nameof(ISpellInfo.Telegraphs), new List<TelegraphDamageEntry>
+        {
+            new()
+            {
+                Id              = 116u,
+                DamageShapeEnum = (uint)DamageShape.Circle,
+                Param00         = 10f
+            }
+        });
+        spellInfoProxy.SetProperty(nameof(ISpellInfo.Effects), new List<Spell4EffectsEntry>
+        {
+            new()
+            {
+                Id          = 71574u,
+                SpellId     = 35548u,
+                TargetFlags = (uint)SpellEffectTargetFlags.Telegraph,
+                EffectType  = SpellEffectType.Damage,
+                DamageType  = DamageType.Physical
+            }
         });
 
         return spellInfo;

@@ -2272,7 +2272,7 @@ public class PacketPlaceholderNamingTests
             using (var writer = new GamePacketWriter(stream))
             {
                 writer.Write(0x01020304u);
-                writer.Write(PetStance.Aggressive, 5u);
+                writer.Write(PetStanceEncoding.ToWireMask(PetStance.Aggressive), 5u);
                 writer.Write(0x5u, 3u);
                 writer.FlushBits();
             }
@@ -2287,6 +2287,7 @@ public class PacketPlaceholderNamingTests
         message.Read(reader);
 
         Assert.Equal(0x01020304u, message.PetUnitId);
+        Assert.Equal(0x10u, message.StanceMask);
         Assert.Equal(PetStance.Aggressive, message.Stance);
         Assert.Equal(0x5u, reader.ReadUInt(3u));
     }

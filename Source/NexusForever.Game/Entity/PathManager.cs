@@ -708,13 +708,12 @@ namespace NexusForever.Game.Entity
             // WIP/GUESSED: LaughingWS activated the current PathEpisode on zone changes.
             // This keeps the safe table-backed episode/mission surface, but leaves durable
             // path persistence, exact per-mission reward precision, and broader
-            // unlock sequencing blocked.
-            // Regular zone missions use progress-only activation to avoid replaying
-            // mission-start packets during world entry. Soldier holdouts still need
-            // an active mission packet so the client offers the beacon interaction,
-            // but the holdout lifecycle itself starts only from beacon activation.
+            // unlock sequencing blocked. Regular zone missions send both progress and
+            // activation state because ZoneMap expects an activated mission entry when
+            // rendering current-zone path missions. Soldier holdouts remain discovered-only
+            // until the player interacts with the holdout beacon.
             if (missionsToActivate.Count != 0)
-                ActivateMissions((ushort)pathEpisode.Id, missionsToActivate, sendMissionActivate: false);
+                ActivateMissions((ushort)pathEpisode.Id, missionsToActivate, sendMissionActivate: true);
             if (missionsToDiscover.Count != 0)
                 DiscoverMissions((ushort)pathEpisode.Id, missionsToDiscover);
             return true;

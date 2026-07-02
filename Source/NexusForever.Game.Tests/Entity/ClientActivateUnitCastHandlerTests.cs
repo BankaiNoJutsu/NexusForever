@@ -17,6 +17,8 @@ using NexusForever.Game.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
+using NexusForever.Network.Session;
+using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.WorldServer.Network;
@@ -26,6 +28,8 @@ namespace NexusForever.Game.Tests.Entity;
 
 public class ClientActivateUnitCastHandlerTests
 {
+    private const uint ArtillerybotBarrageSpell4Id = 35123u;
+
     [Fact]
     public void HandleMessageInternal_WithAttackableUnit_TargetsAndStartsThreatWithoutCastingActivateSpell()
     {
@@ -280,6 +284,71 @@ public class ClientActivateUnitCastHandlerTests
         Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
         Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
         Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
+    }
+
+    [Fact]
+    public void HandleMessageInternal_WithSelfActivatePositionAndSingleActivePetAction_CastsPetAction()
+    {
+        ClientActivateUnitCastHandler handler = CreateHandler();
+        IWorldSession session = CreateSession(
+            creatureId: 0u,
+            castResult: CastResult.Ok,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IWorldEntity> entityProxy,
+            activateSpellId: 0u);
+        entityProxy.SetProperty(nameof(IGridEntity.Guid), 17u);
+
+        ISpellManager spellManager = RecordingDispatchProxy<ISpellManager>.Create(out RecordingDispatchProxy<ISpellManager> spellManagerProxy);
+        spellManagerProxy.SetMethodHandler(nameof(ISpellManager.TryResolveSingleActivePetActionSpell), args =>
+        {
+            args[0] = ArtillerybotBarrageSpell4Id;
+            return true;
+        });
+        playerProxy.SetProperty(nameof(IPlayer.SpellManager), spellManager);
+
+        var position = new Position(new Vector3(1f, 2f, 3f));
+
+        InvokeHandleMessageInternal(handler, session, 17u, 1234u, nameof(ClientActivateUnitCastPosition), position);
+
+        RecordingDispatchProxy<IPlayer>.Invocation cast =
+            Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
+        Assert.Equal(ArtillerybotBarrageSpell4Id, cast.Arguments[0]);
+        SpellParameters parameters = Assert.IsType<SpellParameters>(cast.Arguments[1]);
+        Assert.Equal(17u, parameters.PrimaryTargetId);
+        Assert.Same(position, parameters.Position);
+        Assert.True(parameters.UserInitiatedSpellCast);
+        Assert.Equal(1234u, parameters.ClientContextToken);
+        Assert.Equal(nameof(ClientActivateUnitCastPosition), parameters.ClientRequestSource);
+    }
+
+    [Fact]
+    public void HandleMessageInternal_WithSelfActivatePositionAndAmbiguousPetActions_FailsActivation()
+    {
+        ClientActivateUnitCastHandler handler = CreateHandler();
+        IWorldSession session = CreateSession(
+            creatureId: 0u,
+            castResult: CastResult.Ok,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IWorldEntity> entityProxy,
+            activateSpellId: 0u);
+        entityProxy.SetProperty(nameof(IGridEntity.Guid), 17u);
+
+        ISpellManager spellManager = RecordingDispatchProxy<ISpellManager>.Create(out RecordingDispatchProxy<ISpellManager> spellManagerProxy);
+        spellManagerProxy.SetMethodHandler(nameof(ISpellManager.TryResolveSingleActivePetActionSpell), args =>
+        {
+            args[0] = 0u;
+            return false;
+        });
+        playerProxy.SetProperty(nameof(IPlayer.SpellManager), spellManager);
+
+        InvokeHandleMessageInternal(handler, session, 17u, 1234u, nameof(ClientActivateUnitCastPosition), new Position(new Vector3(1f, 2f, 3f)));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
+        RecordingDispatchProxy<IWorldSession> sessionProxy = (RecordingDispatchProxy<IWorldSession>)(object)session;
+        ServerSpellCastResult result = Assert.IsType<ServerSpellCastResult>(
+            Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))).Arguments[0]);
+        Assert.Equal(CastResult.NoValidActivateSpell, result.CastResult);
+        Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
     }
 
     private static ClientActivateUnitCastHandler CreateHandler(IPrerequisiteManager prerequisiteManager = null)
@@ -548,13 +617,13 @@ public class ClientActivateUnitCastHandlerTests
         field.SetValue(instance, value);
     }
 
-    private static void InvokeHandleMessageInternal(ClientActivateUnitCastHandler handler, IWorldSession session, uint activateUnitId, uint contextToken, string clientRequestSource)
+    private static void InvokeHandleMessageInternal(ClientActivateUnitCastHandler handler, IWorldSession session, uint activateUnitId, uint contextToken, string clientRequestSource, Position position = null)
     {
         MethodInfo method = typeof(ClientActivateUnitCastHandler).GetMethod(
             "HandleMessageInternal",
             BindingFlags.Instance | BindingFlags.NonPublic);
 
         Assert.NotNull(method);
-        method.Invoke(handler, [session, activateUnitId, contextToken, clientRequestSource]);
+        method.Invoke(handler, [session, activateUnitId, contextToken, clientRequestSource, position]);
     }
 }

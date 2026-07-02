@@ -39,6 +39,11 @@ namespace NexusForever.Game.Abstract.Entity
         bool TryGetSummonCreature(uint creatureId, out IWorldEntity entity);
 
         /// <summary>
+        /// Returns active summoned entities with supplied creature id.
+        /// </summary>
+        IReadOnlyCollection<IWorldEntity> GetSummonCreatures(uint creatureId);
+
+        /// <summary>
         /// Returns the number of active summoned entities with supplied creature id.
         /// </summary>
         uint GetSummonCreatureCount(uint creatureId);
