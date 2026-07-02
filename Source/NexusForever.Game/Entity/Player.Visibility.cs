@@ -16,16 +16,21 @@ namespace NexusForever.Game.Entity
     public partial class Player
     {
         private const ushort SettingUpCampQuestId = 3671;
+        private const ushort EmpoweredTowerQuestId = 3486;
         private const uint NorthernWildsWorldId = 426u;
         private const uint NorthernWildsLandingSiteDeadeyeCreatureId = 11063u;
         private const uint DeadeyeNeutralPresentationCreatureId = 16962u;
+        private const uint NorthernWildsAvalancheVisualCreatureId = 15615u;
+        private const uint NorthernWildsAvalancheCasterCreatureId = 67662u;
 
         public override bool CanSeeEntity(IGridEntity entity)
         {
             if (ShouldForceStarterTutorialEntityVisibility(entity))
                 return true;
 
-            return base.CanSeeEntity(entity) && !ShouldHideStarterTutorialEntity(entity);
+            return base.CanSeeEntity(entity)
+                && !ShouldHideStarterTutorialEntity(entity)
+                && !ShouldHideNorthernWildsAvalanche(entity);
         }
 
         public override void AddVisible(IGridEntity entity)
@@ -138,6 +143,12 @@ namespace NexusForever.Game.Entity
 
         internal void RefreshQuestPresentation(ushort questId)
         {
+            if (questId == EmpoweredTowerQuestId)
+            {
+                RemoveStoppedNorthernWildsAvalanches();
+                return;
+            }
+
             if (questId != SettingUpCampQuestId)
                 return;
 
@@ -163,6 +174,38 @@ namespace NexusForever.Game.Entity
                 return false;
 
             return QuestManager?.GetQuestState(SettingUpCampQuestId) == QuestState.Achieved;
+        }
+
+        private bool ShouldHideNorthernWildsAvalanche(IGridEntity entity)
+        {
+            if (entity is not IWorldEntity worldEntity)
+                return false;
+
+            if (Map?.Entry?.Id != NorthernWildsWorldId)
+                return false;
+
+            if (worldEntity.CreatureId is not (NorthernWildsAvalancheVisualCreatureId or NorthernWildsAvalancheCasterCreatureId))
+                return false;
+
+            return HasStoppedNorthernWildsAvalanches();
+        }
+
+        private bool HasStoppedNorthernWildsAvalanches()
+        {
+            return QuestManager?.GetQuestState(EmpoweredTowerQuestId) is QuestState.Achieved or QuestState.Completed;
+        }
+
+        private void RemoveStoppedNorthernWildsAvalanches()
+        {
+            if (Map?.Entry?.Id != NorthernWildsWorldId || !HasStoppedNorthernWildsAvalanches())
+                return;
+
+            foreach (IWorldEntity worldEntity in GetVisibleCreature<IWorldEntity>(NorthernWildsAvalancheVisualCreatureId)
+                .Concat(GetVisibleCreature<IWorldEntity>(NorthernWildsAvalancheCasterCreatureId))
+                .ToList())
+            {
+                RemoveVisible(worldEntity);
+            }
         }
 
         private static void AddPlayerPositionSnapshot(ServerEntityCreate createPacket, IPlayer playerEntity)

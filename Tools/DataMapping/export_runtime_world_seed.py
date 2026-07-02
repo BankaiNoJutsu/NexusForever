@@ -41,6 +41,7 @@ REQUIRED_RUNTIME_TABLES = [
     "entity",
     "entity_event",
     "entity_property",
+    "entity_script",
     "entity_spline",
     "entity_stats",
     "entity_vendor",
@@ -260,6 +261,68 @@ WHERE e.world = 426
   AND ABS(e.x - 4185.583) < 5.0
   AND ABS(e.y - (-722.691)) < 5.0
   AND ABS(e.z - (-5695.496)) < 5.0;
+
+-- Northern Wilds avalanche static row cleanup.
+-- Creature2 15615 rows are imported visible static chute/runout markers and
+-- Creature2 67662 rows are legacy caster markers. The moving avalanche hazards
+-- are script-owned fallbacks that loop downhill from their source.
+DELETE es
+FROM entity_spline es
+JOIN entity e ON e.id = es.id
+WHERE e.world = 426
+  AND e.creature IN (15615, 67662);
+
+DELETE ep
+FROM entity_property ep
+JOIN entity e ON e.id = ep.id
+WHERE e.world = 426
+  AND e.creature IN (15615, 67662);
+
+DELETE ev
+FROM entity_event ev
+JOIN entity e ON e.id = ev.id
+WHERE e.world = 426
+  AND e.creature IN (15615, 67662);
+
+DELETE esc
+FROM entity_script esc
+JOIN entity e ON e.id = esc.id
+WHERE e.world = 426
+  AND e.creature IN (15615, 67662);
+
+DELETE est
+FROM entity_stats est
+JOIN entity e ON e.id = est.id
+WHERE e.world = 426
+  AND e.creature IN (15615, 67662);
+
+DELETE el
+FROM entity_loot el
+JOIN entity e ON e.id = el.id
+WHERE e.world = 426
+  AND e.creature IN (15615, 67662);
+
+DELETE evi
+FROM entity_vendor_item evi
+JOIN entity e ON e.id = evi.id
+WHERE e.world = 426
+  AND e.creature IN (15615, 67662);
+
+DELETE evc
+FROM entity_vendor_category evc
+JOIN entity e ON e.id = evc.id
+WHERE e.world = 426
+  AND e.creature IN (15615, 67662);
+
+DELETE evn
+FROM entity_vendor evn
+JOIN entity e ON e.id = evn.id
+WHERE e.world = 426
+  AND e.creature IN (15615, 67662);
+
+DELETE FROM entity
+WHERE world = 426
+  AND creature IN (15615, 67662);
 
 -- Official world visible duplicate cleanup promoted from duplicate audit.
 DELETE es

@@ -109,8 +109,8 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         private const uint DominionUltrabotPublicEventId = 154u;
         private const uint CampIcefuryZoneId = 602u;
 
-        private const uint AvalancheCreatureId = 67662u;
-        private const float AvalancheDuplicateSearchRange = 8f;
+        private const uint AvalancheVisualCreatureId = NorthernWildsAvalancheEntityScript.AvalancheVisualCreatureId;
+        private const uint AvalancheCasterCreatureId = NorthernWildsAvalancheEntityScript.AvalancheCasterCreatureId;
 
         private const uint GranokDropPodCreatureId = 13747u;
         private const uint GranokDropPodDecalCreatureId = 14126u;
@@ -118,18 +118,14 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         private const float DropPodVisibilityDuplicateSearchRange = 7f;
 
         private static readonly MatchAllPlayerSearchCheck matchAllPlayers = new();
-        private static readonly CreatureSearchCheck avalancheSearchCheck = new(AvalancheCreatureId);
         private static readonly CreatureSearchCheck granokDropPodSearchCheck = new(GranokDropPodCreatureId);
         private static readonly CreatureSearchCheck granokDropPodDecalSearchCheck = new(GranokDropPodDecalCreatureId);
 
-        // Source-region position for the repeating Northern Wilds avalanche hazard, reviewed from
-        // Tools/DataMapping/output/creature_spawn_map.csv for Creature2 67662, jabbithole mapping
-        // 3293, world 426 / worldzone 722. Lower runout rows are debris/path evidence, not
-        // independent avalanche starts.
-        private static readonly Vector3[] AvalancheFallbackPositions =
-        [
-            new(3952f, -664f, -5672f)
-        ];
+        // Runtime-owned source positions for repeating Northern Wilds avalanche hazards.
+        // Imported Creature2 15615 visual rows and legacy 67662 caster rows are
+        // removed so static runout placements cannot replace the moving hazards.
+        private static readonly IReadOnlyList<Vector3> AvalancheFallbackPositions =
+            NorthernWildsAvalancheEntityScript.FallbackSourcePositions;
 
         // The imported Northern Wilds data includes two Granok drop-pod door/collider rows near
         // 4110, -5215 without matching visible pod body/decal rows. These match the existing pod
@@ -187,6 +183,19 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
 
         public void OnAddToMap(IGridEntity entity)
         {
+            if (ShouldRemoveImportedAvalancheRow(entity))
+            {
+                IWorldEntity worldEntity = (IWorldEntity)entity;
+                log.LogInformation("Removing imported static Northern Wilds avalanche row on map {MapId}: creature={CreatureId}, entity={EntityId}, guid={Guid}, position={Position}.",
+                    owner?.Entry?.Id,
+                    worldEntity.CreatureId,
+                    worldEntity.EntityId,
+                    worldEntity.Guid,
+                    worldEntity.Position);
+                entity.RemoveFromMap();
+                return;
+            }
+
             if (entity is not IPlayer player)
                 return;
 
@@ -229,6 +238,19 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
 
             storyBuilder.SendServerStoryPanelShow(player, Q3486ArrivedAtTowerStoryPanel);
             player.QuestManager.ObjectiveUpdate(Q3486ArrivedAtTowerObjective, 1u);
+        }
+
+        private static bool ShouldRemoveImportedAvalancheRow(IGridEntity entity)
+        {
+            return entity is IWorldEntity worldEntity
+                && IsImportedStaticAvalancheCreature(worldEntity.CreatureId)
+                && !NorthernWildsAvalancheEntityScript.IsManagedAvalancheFallback(worldEntity);
+        }
+
+        private static bool IsImportedStaticAvalancheCreature(uint creatureId)
+        {
+            return creatureId == AvalancheVisualCreatureId
+                || creatureId == AvalancheCasterCreatureId;
         }
 
         private void TryCollectEmpoweredTowerCrystals()
@@ -314,15 +336,8 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
                 return;
 
             int spawned = 0;
-            int skipped = 0;
             foreach (Vector3 position in AvalancheFallbackPositions)
             {
-                if (owner.Search(position, AvalancheDuplicateSearchRange, avalancheSearchCheck).Any())
-                {
-                    skipped++;
-                    continue;
-                }
-
                 INonPlayerEntity avalanche = entityFactory.CreateEntity<INonPlayerEntity>();
                 if (avalanche == null)
                 {
@@ -330,7 +345,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
                     continue;
                 }
 
-                avalanche.Initialise(AvalancheCreatureId);
+                avalanche.Initialise(AvalancheVisualCreatureId);
                 avalanche.CreateFlags |= EntityCreateFlag.Immediate;
                 owner.EnqueueAdd(avalanche, new NorthernWildsMapPosition
                 {
@@ -341,10 +356,10 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
             }
 
             avalancheFallbacksSpawned = true;
-            log.LogDebug("Northern Wilds avalanche fallbacks initialised on map {MapId}: spawned={Spawned}, skippedExisting={Skipped}.",
+            log.LogInformation("Northern Wilds avalanche fallbacks initialised on map {MapId}: creature={CreatureId}, spawned={Spawned}.",
                 owner.Entry.Id,
-                spawned,
-                skipped);
+                AvalancheVisualCreatureId,
+                spawned);
         }
 
         private void EnsureDropPodVisibilityFallbacks()

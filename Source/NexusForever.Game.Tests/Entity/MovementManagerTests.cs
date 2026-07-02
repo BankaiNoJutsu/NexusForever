@@ -300,6 +300,18 @@ public class MovementManagerTests
     }
 
     [Fact]
+    public void Follow_WhenTargetIsAirborne_KeepsFinalPositionAtFollowerHeight()
+    {
+        MovementManagerHarness harness = MovementManagerHarness.Create();
+        harness.PositionProxy.SetMethodReturn(nameof(IPositionCommandGroup.GetPosition), new Vector3(0f, 2f, 0f));
+        IWorldEntity target = CreateFollowTarget(new Vector3(10f, 25f, 0f));
+
+        harness.Manager.Follow(target, 2f);
+
+        AssertVector(GetFinalPathNode(harness), 10f, 2f, 2f);
+    }
+
+    [Fact]
     public void Chase_UsesCurrentApproachForFinalPosition()
     {
         MovementManagerHarness harness = MovementManagerHarness.Create();
@@ -355,12 +367,12 @@ public class MovementManagerTests
         Assert.Equal(TimeSpan.FromMilliseconds(365339u), Assert.IsType<TimeSpan>(timeInvocation.Arguments[0]));
     }
 
-    private static IWorldEntity CreateFollowTarget()
+    private static IWorldEntity CreateFollowTarget(Vector3? position = null)
     {
         IWorldEntity target = RecordingDispatchProxy<IWorldEntity>.Create(out RecordingDispatchProxy<IWorldEntity> targetProxy);
         IMovementManager targetMovement = RecordingDispatchProxy<IMovementManager>.Create(out RecordingDispatchProxy<IMovementManager> targetMovementProxy);
         targetProxy.SetProperty(nameof(IWorldEntity.Guid), 2u);
-        targetProxy.SetProperty(nameof(IWorldEntity.Position), new Vector3(10f, 0f, 0f));
+        targetProxy.SetProperty(nameof(IWorldEntity.Position), position ?? new Vector3(10f, 0f, 0f));
         targetProxy.SetProperty(nameof(IWorldEntity.Rotation), Vector3.Zero);
         targetProxy.SetProperty(nameof(IWorldEntity.MovementManager), targetMovement);
         targetMovementProxy.SetMethodReturn(nameof(IMovementManager.GetVelocity), Vector3.Zero);

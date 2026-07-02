@@ -26,6 +26,11 @@ namespace NexusForever.Game.Tests.Entity;
 
 public class PlayerVisibilityPacketTests
 {
+    private const uint NorthernWildsWorld = 426u;
+    private const ushort EmpoweredTowerQuest = 3486;
+    private const uint NorthernWildsAvalancheVisualCreature = 15615u;
+    private const uint NorthernWildsAvalancheCasterCreature = 67662u;
+
     [Fact]
     public void AddVisible_WhenBaseRejectsEntity_DoesNotEmitCreatePacket()
     {
@@ -136,6 +141,46 @@ public class PlayerVisibilityPacketTests
         ServerEntityCreate refreshedCreate = Assert.IsType<ServerEntityCreate>(invocations[1].Arguments[0]);
         Assert.Equal(16962u, Assert.IsType<NonPlayerEntityModel>(refreshedCreate.EntityModel).CreatureId);
         Assert.Equal(11063u, entity.CreatureId);
+    }
+
+    [Theory]
+    [InlineData(NorthernWildsAvalancheVisualCreature)]
+    [InlineData(NorthernWildsAvalancheCasterCreature)]
+    public void AddVisible_WhenEmpoweredTowerStoppedStorm_HidesNorthernWildsAvalanches(uint creatureId)
+    {
+        TestPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        SetMap(player, CreateMap(NorthernWildsWorld));
+        SetQuestState(player, questId => questId == EmpoweredTowerQuest ? QuestState.Achieved : null);
+        TestWorldEntity entity = CreateNonPlayerEntity(55u, creatureId);
+
+        player.AddVisible(entity);
+
+        Assert.Null(player.GetVisible<IGridEntity>(entity.Guid));
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+    }
+
+    [Fact]
+    public void RefreshQuestPresentation_WhenEmpoweredTowerStopsStorm_RemovesVisibleAvalanche()
+    {
+        QuestState? state = null;
+        TestPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        SetMap(player, CreateMap(NorthernWildsWorld));
+        SetQuestState(player, questId => questId == EmpoweredTowerQuest ? state : null);
+        TestWorldEntity entity = CreateNonPlayerEntity(55u, NorthernWildsAvalancheVisualCreature);
+
+        player.AddVisible(entity);
+        Assert.Same(entity, player.GetVisible<IGridEntity>(entity.Guid));
+
+        state = QuestState.Achieved;
+        sessionProxy.Invocations.Clear();
+        player.RefreshQuestPresentation(EmpoweredTowerQuest);
+
+        Assert.Null(player.GetVisible<IGridEntity>(entity.Guid));
+        RecordingDispatchProxy<IGameSession>.Invocation invocation =
+            Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        ServerEntityDestroy destroy = Assert.IsType<ServerEntityDestroy>(invocation.Arguments[0]);
+        Assert.Equal(entity.Guid, destroy.Guid);
+        Assert.True(destroy.Flag);
     }
 
     [Fact]

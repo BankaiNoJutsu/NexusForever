@@ -909,7 +909,7 @@ namespace NexusForever.Game.Entity.Movement
             var generator = new PathMovementGenerator
             {
                 Begin = begin,
-                Final = entity.Position.GetPoint2D(angle, followDistance),
+                Final = GetGroundedFollowPosition(begin, entity.Position, angle, followDistance),
                 Map   = entity.Map
             };
 
@@ -919,6 +919,13 @@ namespace NexusForever.Game.Entity.Movement
                 ? Math.Max(targetSpeed, 8f)
                 : 8f;
             SetPositionPath(nodes, SplineType.Linear, SplineMode.OneShot, speed);
+        }
+
+        private static Vector3 GetGroundedFollowPosition(Vector3 begin, Vector3 targetPosition, float angle, float followDistance)
+        {
+            Vector3 final = targetPosition.GetPoint2D(angle, followDistance);
+            final.Y = begin.Y;
+            return final;
         }
 
         private float GetFollowSpreadAngleOffset(IWorldEntity target, float followDistance)

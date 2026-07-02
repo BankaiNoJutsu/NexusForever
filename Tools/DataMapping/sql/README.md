@@ -373,6 +373,16 @@ WorldLocation2 `7726`, so `runtime_world_seed.sql` removes any matching
 generated `auto_safe_spline_import_wip.sql` candidate `17972 -> 2900`; it does
 not promote the broader Northern Wilds spline candidate set.
 
+Northern Wilds avalanche hazards are script-owned moving fallbacks. Official or
+imported static Creature2 `15615` rows in `world = 426` are visible avalanche
+chute/runout markers, while Creature2 `67662` is the legacy caster marker. Both
+can leave avalanches parked at their runout positions, so
+`runtime_world_seed.sql` and `apply_safe_world_imports_from_staging.sql` remove
+those static entity rows and their child rows. `verify_safe_world_imports.sql`
+expects `northern_wilds_static_avalanche_rows = 0`; the runtime
+`NorthernWildsMapScript` remains the owner that spawns looping downhill
+Creature2 `15615` hazards.
+
 The WIP `auto_safe_spline_import_wip.sql` file now auto-imports only candidates
 whose nearest client spline path distance and same-creature runtime distance are
 both strictly less than `1.0`. The earlier `3m` pass matched Deadeye at
