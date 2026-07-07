@@ -79,7 +79,7 @@ public class PlayerVisibilityPacketTests
     }
 
     [Fact]
-    public void AddVisible_WhenSettingUpCampAchievedForLandingSiteDeadeye_UsesNeutralPresentationCreature()
+    public void AddVisible_WhenSettingUpCampAchievedForLandingSiteDeadeye_KeepsQuestReceiverPresentationCreature()
     {
         TestPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
         SetMap(player, CreateMap(426u));
@@ -91,7 +91,7 @@ public class PlayerVisibilityPacketTests
         ServerEntityCreate create = Assert.IsType<ServerEntityCreate>(
             Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))).Arguments[0]);
         NonPlayerEntityModel model = Assert.IsType<NonPlayerEntityModel>(create.EntityModel);
-        Assert.Equal(16962u, model.CreatureId);
+        Assert.Equal(11063u, model.CreatureId);
         Assert.Equal(11063u, entity.CreatureId);
     }
 
@@ -113,7 +113,7 @@ public class PlayerVisibilityPacketTests
     }
 
     [Fact]
-    public void RefreshQuestPresentation_WhenSettingUpCampBecomesAchieved_RecreatesLandingSiteDeadeyeWithNeutralPresentation()
+    public void RefreshQuestPresentation_WhenSettingUpCampBecomesAchieved_RecreatesLandingSiteDeadeyeWithReceiverPresentation()
     {
         QuestState? state = null;
         TestPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy);
@@ -139,7 +139,7 @@ public class PlayerVisibilityPacketTests
         Assert.True(destroy.Flag);
 
         ServerEntityCreate refreshedCreate = Assert.IsType<ServerEntityCreate>(invocations[1].Arguments[0]);
-        Assert.Equal(16962u, Assert.IsType<NonPlayerEntityModel>(refreshedCreate.EntityModel).CreatureId);
+        Assert.Equal(11063u, Assert.IsType<NonPlayerEntityModel>(refreshedCreate.EntityModel).CreatureId);
         Assert.Equal(11063u, entity.CreatureId);
     }
 

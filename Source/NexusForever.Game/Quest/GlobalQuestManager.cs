@@ -30,9 +30,8 @@ namespace NexusForever.Game.Quest
             // Build 16042 Quest2 routes Q3670 through Deadeye Brightland at receiver WL 29526 and alt receiver WL 12354.
             // Creature2 omits Q3670 from QuestIdReceive, while reviewed DataMapping finisher relations 38 and 1492 map these creature ids.
             [3670] = [11063u, 16622u],
-            // Build 16042 Creature2 12959 is the Camp Icefury Deadeye Brightland receiver for Q3671.
-            // Creature2 11063 also lists Q3671, but that is the major-hub/landing-site Deadeye and is suppressed below for this quest.
-            [3671] = [12959u],
+            // Build 16042 Quest2 routes Q3671 through receiver WL 9340, matching the reviewed Northern Wilds Deadeye 11063 spawn.
+            [3671] = [11063u],
             // Build 16042 Quest2 alt receiver WL 12354 and reviewed DataMapping finisher relation 1841 map Q3781 to Galeras Deadeye Brightland.
             [3781] = [16622u],
             // Build 16042 Quest2 receiver WL 7727 and reviewed DataMapping finisher relation 1693 map Q3797 to Commander Durek.
@@ -45,8 +44,8 @@ namespace NexusForever.Game.Quest
 
         private static readonly IReadOnlyDictionary<ushort, uint[]> questReceiverCreatureSuppressions = new Dictionary<ushort, uint[]>
         {
-            // Q3671 completes at Camp Icefury Deadeye 12959 only; do not allow the outside-camp Deadeye 11063.
-            [3671] = [11063u]
+            // Creature2 12959 is placed at Q3670 receiver WL 29526, not Q3671 receiver WL 9340.
+            [3671] = [12959u]
         };
 
         /// <summary>

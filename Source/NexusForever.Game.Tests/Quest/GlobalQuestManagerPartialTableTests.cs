@@ -263,7 +263,7 @@ public class GlobalQuestManagerPartialTableTests
     }
 
     [Fact]
-    public void Initialise_Q3671IndexesCampIcefuryDeadeyeReceiverOnly()
+    public void Initialise_Q3671IndexesClientLandingSiteDeadeyeReceiver()
     {
         var manager = CreateManager(gameTableManager =>
         {
@@ -284,8 +284,8 @@ public class GlobalQuestManagerPartialTableTests
 
         manager.Initialise();
 
-        Assert.Equal([12959u], manager.GetQuestReceivers(3671));
-        Assert.DoesNotContain(11063u, manager.GetQuestReceivers(3671));
+        Assert.Equal([11063u], manager.GetQuestReceivers(3671));
+        Assert.DoesNotContain(12959u, manager.GetQuestReceivers(3671));
         Assert.Equal([11063u], manager.GetQuestGivers(3671));
     }
 

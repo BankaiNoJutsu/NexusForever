@@ -833,7 +833,7 @@ public class QuestTests
 
     [Theory]
     [InlineData(3670, 16622u, 7004u, 19041u)]
-    [InlineData(3671, 12959u, 6662u, 19131u)]
+    [InlineData(3671, 11063u, 6662u, 19131u)]
     [InlineData(3783, 11066u, 8830u, 17756u)]
     [InlineData(5610, 24187u, 0u, 0u)]
     public void QuestComplete_NoObjectiveQuestCompletesAtVisibleReceiverAndGrantsReward(
@@ -904,11 +904,10 @@ public class QuestTests
     }
 
     [Fact]
-    public void QuestComplete_Q3671RejectsVisibleLandingSiteDeadeyeReceiver()
+    public void QuestComplete_Q3671AllowsVisibleLandingSiteDeadeyeReceiver()
     {
         const ushort questId = 3671;
         const uint landingSiteDeadeye = 11063u;
-        const uint campIcefuryDeadeye = 12959u;
 
         IQuestInfo questInfo = CreateNoObjectiveQuestInfo(questId);
         IPlayer player = CreateQuestLifecyclePlayer(
@@ -924,13 +923,15 @@ public class QuestTests
                 },
                 questReceivers: new Dictionary<ushort, ImmutableList<uint>>
                 {
-                    [questId] = ImmutableList.Create(campIcefuryDeadeye)
+                    [questId] = ImmutableList.Create(landingSiteDeadeye)
                 }));
 
         manager.QuestAdd(questInfo);
         Assert.Equal(QuestState.Achieved, manager.GetQuestState(questId));
 
-        Assert.Throws<QuestException>(() => manager.QuestComplete(questId, reward: 0, communicator: false));
+        manager.QuestComplete(questId, reward: 0, communicator: false);
+
+        Assert.Equal(QuestState.Completed, manager.GetQuestState(questId));
     }
 
     [Fact]

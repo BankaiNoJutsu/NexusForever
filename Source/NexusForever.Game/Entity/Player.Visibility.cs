@@ -7,7 +7,6 @@ using NexusForever.Game.Static.Quest;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Command;
-using NexusForever.Network.World.Entity.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Shared;
 
@@ -19,7 +18,6 @@ namespace NexusForever.Game.Entity
         private const ushort EmpoweredTowerQuestId = 3486;
         private const uint NorthernWildsWorldId = 426u;
         private const uint NorthernWildsLandingSiteDeadeyeCreatureId = 11063u;
-        private const uint DeadeyeNeutralPresentationCreatureId = 16962u;
         private const uint NorthernWildsAvalancheVisualCreatureId = 15615u;
         private const uint NorthernWildsAvalancheCasterCreatureId = 67662u;
 
@@ -128,7 +126,6 @@ namespace NexusForever.Game.Entity
                 Session.EnqueueMessageEncrypted(auxiliary);
 
             ServerEntityCreate createPacket = worldEntity.BuildCreatePacket(IsLoading);
-            ApplyQuestPresentationOverrides(worldEntity, createPacket);
 
             IPlayer playerEntity = worldEntity as IPlayer;
             if (playerEntity != null)
@@ -154,26 +151,6 @@ namespace NexusForever.Game.Entity
 
             foreach (IWorldEntity worldEntity in GetVisibleCreature<IWorldEntity>(NorthernWildsLandingSiteDeadeyeCreatureId).ToList())
                 SendVisibleEntityCreate(worldEntity, refreshExistingEntity: true);
-        }
-
-        private void ApplyQuestPresentationOverrides(IWorldEntity worldEntity, ServerEntityCreate createPacket)
-        {
-            if (!ShouldSuppressSettingUpCampReceiverPresentation(worldEntity))
-                return;
-
-            if (createPacket.EntityModel is NonPlayerEntityModel nonPlayerEntityModel)
-                nonPlayerEntityModel.CreatureId = DeadeyeNeutralPresentationCreatureId;
-        }
-
-        private bool ShouldSuppressSettingUpCampReceiverPresentation(IWorldEntity worldEntity)
-        {
-            if (worldEntity.CreatureId != NorthernWildsLandingSiteDeadeyeCreatureId)
-                return false;
-
-            if (Map?.Entry?.Id != NorthernWildsWorldId)
-                return false;
-
-            return QuestManager?.GetQuestState(SettingUpCampQuestId) == QuestState.Achieved;
         }
 
         private bool ShouldHideNorthernWildsAvalanche(IGridEntity entity)
