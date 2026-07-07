@@ -24,6 +24,7 @@
     <ProjectReference Include="..\NexusForever.Database.Group\NexusForever.Database.Group.csproj" />
     <ProjectReference Include="..\NexusForever.Database.Sqlite.Migrations\NexusForever.Database.Sqlite.Migrations.csproj" />
     <ProjectReference Include="..\NexusForever.Database.World\NexusForever.Database.World.csproj" />
+    <ProjectReference Include="..\NexusForever.Aspire.Database.Migrations\NexusForever.Aspire.Database.Migrations.csproj" />
     <ProjectReference Include="..\NexusForever.Game\NexusForever.Game.csproj" />
     <ProjectReference Include="..\NexusForever.Network.Sts\NexusForever.Network.Sts.csproj" />
     <ProjectReference Include="..\NexusForever.Script.Instance\NexusForever.Script.Instance.csproj" />

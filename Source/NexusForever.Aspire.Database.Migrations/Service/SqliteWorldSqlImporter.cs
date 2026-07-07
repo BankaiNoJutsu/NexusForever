@@ -17,6 +17,7 @@ namespace NexusForever.Aspire.Database.Migrations.Service
         private static readonly Regex SetMaxIdRegex = new(@"^\s*SET\s+@(?<name>[A-Za-z0-9_]+)\s*(?:=|:=)\s*\(\s*SELECT\s+IFNULL\s*\(\s*MAX\s*\(\s*`?(?<column>[A-Za-z0-9_]+)`?\s*\)\s*,\s*0\s*\)\s+FROM\s+`?(?<table>[A-Za-z0-9_]+)`?\s*\)\s*$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex VariableRegex = new(@"@(?<name>[A-Za-z0-9_]+)", RegexOptions.Compiled);
         private static readonly Regex ConvertHexRegex = new(@"CONVERT\s*\(\s*0x(?<hex>[0-9A-Fa-f]+)\s+USING\s+utf8mb4\s*\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex DeleteJoinRegex = new(@"^\s*DELETE\s+(?<deleteAlias>`?[A-Za-z0-9_]+`?)\s+FROM\s+`?(?<table>[A-Za-z0-9_]+)`?\s+(?<sourceAlias>`?[A-Za-z0-9_]+`?)\s+(?<joinAndWhere>JOIN\s+.+)$", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
         private static readonly Regex InsertRegex = new(@"^\s*INSERT\s+(?:IGNORE\s+)?INTO\s+`?(?<table>[A-Za-z0-9_]+)`?\s*\((?<columns>.*?)\)\s*(?<body>.*)$", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
         private static readonly Regex OnDuplicateRegex = new(@"\s+ON\s+DUPLICATE\s+KEY\s+UPDATE\s+", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
         private static readonly Regex ValuesFunctionRegex = new(@"VALUES\s*\(\s*(?<column>`?[A-Za-z0-9_]+`?)\s*\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -191,16 +192,25 @@ namespace NexusForever.Aspire.Database.Migrations.Service
 
         private string TranslateDeleteJoin(string statement)
         {
-            if (!Regex.IsMatch(statement, @"^\s*DELETE\s+li\s+FROM\s+loot_item\s+li\s+JOIN\s+loot_group\s+lg\s+ON\s+lg\.id\s*=\s*li\.id\s+WHERE\s+lg\.comment\s+LIKE\s+'DataMapping %'\s*$", RegexOptions.IgnoreCase | RegexOptions.Singleline))
+            Match match = DeleteJoinRegex.Match(statement);
+            if (!match.Success)
                 return statement;
 
-            return """
-                DELETE FROM loot_item
-                WHERE id IN (
-                    SELECT li.id
-                    FROM loot_item li
-                    JOIN loot_group lg ON lg.id = li.id
-                    WHERE lg.comment LIKE 'DataMapping %'
+            string deleteAlias = UnquoteIdentifier(match.Groups["deleteAlias"].Value);
+            string sourceAlias = UnquoteIdentifier(match.Groups["sourceAlias"].Value);
+            if (!string.Equals(deleteAlias, sourceAlias, StringComparison.OrdinalIgnoreCase))
+                throw new NotSupportedException($"SQLite import only supports DELETE JOIN statements that delete the source table alias: {statement}");
+
+            string table = match.Groups["table"].Value;
+            string idColumn = GetRequiredColumn(table, "id");
+            string joinAndWhere = match.Groups["joinAndWhere"].Value.Trim();
+
+            return $"""
+                DELETE FROM {QuoteIdentifier(table)}
+                WHERE {QuoteIdentifier(idColumn)} IN (
+                    SELECT {deleteAlias}.{QuoteIdentifier(idColumn)}
+                    FROM {QuoteIdentifier(table)} {deleteAlias}
+                    {joinAndWhere}
                 )
                 """;
         }
@@ -245,6 +255,17 @@ namespace NexusForever.Aspire.Database.Migrations.Service
             return string.Join(", ", conflictColumns.Select(QuoteIdentifier));
         }
 
+        private string GetRequiredColumn(string table, string column)
+        {
+            if (!_tableMetadata.TryGetValue(table, out TableConflictMetadata metadata))
+                throw new NotSupportedException($"SQLite import cannot find EF metadata for table '{table}'.");
+
+            if (!metadata.ColumnNames.Contains(column))
+                throw new NotSupportedException($"SQLite import cannot translate DELETE JOIN for table '{table}' because column '{column}' was not found.");
+
+            return column;
+        }
+
         private async Task<object> ExecuteScalarAsync(string sql, CancellationToken cancellationToken)
         {
             DbConnection connection = _context.Database.GetDbConnection();
@@ -270,6 +291,10 @@ namespace NexusForever.Aspire.Database.Migrations.Service
 
                 var storeObject = StoreObjectIdentifier.Table(table, entityType.GetSchema());
                 var uniqueColumnSets = new List<string[]>();
+                HashSet<string> columnNames = entityType.GetProperties()
+                    .Select(p => p.GetColumnName(storeObject))
+                    .Where(c => c != null)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
                 IKey primaryKey = entityType.FindPrimaryKey();
                 if (primaryKey != null)
@@ -278,7 +303,7 @@ namespace NexusForever.Aspire.Database.Migrations.Service
                 foreach (IIndex index in entityType.GetIndexes().Where(i => i.IsUnique))
                     uniqueColumnSets.Add(index.Properties.Select(p => p.GetColumnName(storeObject)).Where(c => c != null).ToArray());
 
-                result[table] = new TableConflictMetadata(uniqueColumnSets.Where(c => c.Length != 0).ToArray());
+                result[table] = new TableConflictMetadata(uniqueColumnSets.Where(c => c.Length != 0).ToArray(), columnNames);
             }
 
             return result;
@@ -472,6 +497,6 @@ namespace NexusForever.Aspire.Database.Migrations.Service
             return value.Length <= maxLength ? value : value[..maxLength] + "...";
         }
 
-        private sealed record TableConflictMetadata(IReadOnlyList<string[]> UniqueColumnSets);
+        private sealed record TableConflictMetadata(IReadOnlyList<string[]> UniqueColumnSets, ISet<string> ColumnNames);
     }
 }
