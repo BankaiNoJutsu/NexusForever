@@ -40,6 +40,8 @@ public class ChallengeManagerTests
         ServerChallengeUpdate.Challenge row = Assert.Single(update.ActiveChallenges);
         Assert.Equal((uint)ChallengeId, row.ChallengeId);
         Assert.True(row.Activated);
+        Assert.Equal(300_000u, row.TimeActivatedDt);
+        Assert.Equal(300_000u, row.TimeTotalActive);
     }
 
     [Fact]
@@ -248,7 +250,10 @@ public class ChallengeManagerTests
 
         ServerChallengeUpdate.Challenge finalRow = Assert.Single(GetMessages<ServerChallengeUpdate>(sessionProxy).Last().ActiveChallenges);
         Assert.False(finalRow.Activated);
+        Assert.True(finalRow.OnCooldown);
         Assert.Equal(uint.MaxValue, finalRow.CurrentCount);
+        Assert.Equal(1_800_000u, finalRow.TimeCooldownDt);
+        Assert.Equal(1_800_000u, finalRow.TimeTotalCooldown);
 
         RecordingDispatchProxy<IQuestManager>.Invocation questUpdate = Assert.Single(
             questProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));

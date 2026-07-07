@@ -234,9 +234,53 @@ public class ChallengeDataMappingSliceTests
         ServerChallengeUpdate.Challenge row = Assert.Single(GetMessages<ServerChallengeUpdate>(sessionProxy).Last().ActiveChallenges);
         Assert.Equal((uint)RootbruteSlayerChallengeId, row.ChallengeId);
         Assert.Equal(ChallengeType.Combat, row.Type);
+        Assert.Equal(RootbruteSlayerTargetGroupId, row.TargetGroupId);
         Assert.Equal(1u, row.CurrentCount);
         Assert.Equal(5u, row.GoalCount);
         Assert.True(row.Activated);
+        Assert.Equal(300_000u, row.TimeActivatedDt);
+        Assert.Equal(300_000u, row.TimeTotalActive);
+    }
+
+    [Fact]
+    public void RootbruteSlayer_RepeatAutoActivationStartsFreshProgress()
+    {
+        GameTableManager gameTables = CreateRootbruteSlayerGameTables(
+            [
+                new WorldZoneEntry
+                {
+                    Id = RootbruteSlayerWorldZoneId
+                }
+            ]);
+        ChallengeManager manager = CreateManager(
+            gameTables,
+            out IPlayer player,
+            out RecordingDispatchProxy<IGameSession> sessionProxy,
+            out _,
+            out _,
+            new WorldZoneEntry
+            {
+                Id = RootbruteSlayerWorldZoneId
+            });
+
+        for (int i = 0; i < 5; i++)
+            ChallengeCombatHooks.OnCreatureKilled(player, RootbruteGrimsporeCreature2Id);
+
+        ServerChallengeResult completed = GetMessages<ServerChallengeResult>(sessionProxy)
+            .Single(result => result.Result == ChallengeResult.Completed);
+        Assert.Equal(RootbruteSlayerChallengeId, completed.ChallengeId);
+
+        ChallengeCombatHooks.OnCreatureKilled(player, RootbruteGrimsporeCreature2Id);
+
+        ServerChallengeUpdate.Challenge row = Assert.Single(GetMessages<ServerChallengeUpdate>(sessionProxy).Last().ActiveChallenges);
+        Assert.Equal((uint)RootbruteSlayerChallengeId, row.ChallengeId);
+        Assert.True(row.Activated);
+        Assert.Equal(1u, row.CurrentCount);
+        Assert.Equal(5u, row.GoalCount);
+        Assert.Equal(1u, row.CompletionCount);
+        Assert.Equal(300_000u, row.TimeActivatedDt);
+        Assert.Equal(300_000u, row.TimeTotalActive);
+        Assert.Single(GetMessages<ServerChallengeResult>(sessionProxy), result => result.Result == ChallengeResult.Completed);
     }
 
     [Fact]
@@ -463,8 +507,8 @@ public class ChallengeDataMappingSliceTests
         ServerChallengeUpdate.Challenge row = Assert.Single(GetMessages<ServerChallengeUpdate>(sessionProxy).Last().ActiveChallenges);
         Assert.Equal((uint)SkeechSlayerChallengeId, row.ChallengeId);
         Assert.True(row.Activated);
-        Assert.Equal(300u, row.TimeActivatedDt);
-        Assert.Equal(300u, row.TimeTotalActive);
+        Assert.Equal(300_000u, row.TimeActivatedDt);
+        Assert.Equal(300_000u, row.TimeTotalActive);
     }
 
     [Fact]

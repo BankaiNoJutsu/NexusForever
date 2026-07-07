@@ -305,10 +305,13 @@ namespace NexusForever.Game.Challenges
         private void ActivateChallenge(ushort challengeId)
         {
             ChallengeRuntimeState state = GetOrCreateState(challengeId);
-            state.Activated    = true;
-            state.OnCooldown   = false;
-            state.LeftArea       = false;
-            state.ActiveTimer  = DefaultActiveSeconds;
+            state.Activated     = true;
+            state.OnCooldown    = false;
+            state.LeftArea      = false;
+            state.CurrentCount  = 0u;
+            state.CurrentTier   = 0u;
+            state.LastRewardTier = 0u;
+            state.ActiveTimer   = DefaultActiveSeconds;
             state.AreaFailTimer = 0d;
             MarkDirty(challengeId);
 
@@ -684,6 +687,7 @@ namespace NexusForever.Game.Challenges
         private void CompleteChallenge(ChallengeRuntimeState state, ChallengeEntry entry)
         {
             state.Activated = false;
+            state.ActiveTimer = 0d;
             state.OnCooldown = HasCooldownType(state.ChallengeId);
             if (state.OnCooldown)
                 state.CooldownTimer = DefaultCooldownSeconds;
@@ -782,7 +786,7 @@ namespace NexusForever.Game.Challenges
                 {
                     ChallengeId         = state.ChallengeId,
                     Type                  = (ChallengeType)entry.ChallengeTypeEnum,
-                    TargetGroupId         = entry.TargetGroupIdRewardPane,
+                    TargetGroupId         = ResolveRewardPaneTargetGroupId(entry),
                     QualifyCount          = 0u,
                     QualityTotal          = 0u,
                     CurrentCount          = state.CurrentCount,
@@ -795,12 +799,12 @@ namespace NexusForever.Game.Challenges
                     Activated             = state.Activated,
                     OnCooldown            = state.OnCooldown,
                     LeftArea              = state.LeftArea,
-                    TimeActivatedDt       = state.Activated ? ToTimerUnits(state.ActiveTimer, DefaultActiveSeconds) : 0u,
-                    TimeTotalActive       = (uint)DefaultActiveSeconds,
-                    TimeCooldownDt        = state.OnCooldown ? ToTimerUnits(state.CooldownTimer, DefaultCooldownSeconds) : 0u,
-                    TimeTotalCooldown     = (uint)DefaultCooldownSeconds,
-                    TimeAreaFailDt        = state.LeftArea ? ToTimerUnits(state.AreaFailTimer, DefaultAreaFailSeconds) : 0u,
-                    TimeTotalAreaFail     = (uint)DefaultAreaFailSeconds,
+                    TimeActivatedDt       = state.Activated ? ToTimerMilliseconds(state.ActiveTimer) : 0u,
+                    TimeTotalActive       = ToTimerMilliseconds(DefaultActiveSeconds),
+                    TimeCooldownDt        = state.OnCooldown ? ToTimerMilliseconds(state.CooldownTimer) : 0u,
+                    TimeTotalCooldown     = ToTimerMilliseconds(DefaultCooldownSeconds),
+                    TimeAreaFailDt        = state.LeftArea ? ToTimerMilliseconds(state.AreaFailTimer) : 0u,
+                    TimeTotalAreaFail     = ToTimerMilliseconds(DefaultAreaFailSeconds),
                     TierGoalCount         = PadTierGoals(tierGoals)
                 });
             }
@@ -808,12 +812,23 @@ namespace NexusForever.Game.Challenges
             player.Session?.EnqueueMessageEncrypted(update);
         }
 
-        private static uint ToTimerUnits(double remainingSeconds, double totalSeconds)
+        private uint ResolveRewardPaneTargetGroupId(ChallengeEntry entry)
         {
-            if (totalSeconds <= 0d)
+            if (entry.TargetGroupIdRewardPane != 0u)
+                return entry.TargetGroupIdRewardPane;
+
+            if (entry.Target != 0u && gameTableManager.TargetGroup?.GetEntry(entry.Target) != null)
+                return entry.Target;
+
+            return 0u;
+        }
+
+        private static uint ToTimerMilliseconds(double seconds)
+        {
+            if (seconds <= 0d)
                 return 0u;
 
-            return (uint)Math.Max(0d, Math.Round(remainingSeconds));
+            return (uint)Math.Min(uint.MaxValue, Math.Round(seconds * 1000d));
         }
 
         private static uint[] PadTierGoals(uint[] tierGoals)

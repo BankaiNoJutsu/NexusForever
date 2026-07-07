@@ -23,12 +23,12 @@ namespace NexusForever.Network.World.Message.Model.Challenges
             public bool Activated { get; set; }
             public bool OnCooldown { get; set; }
             public bool LeftArea { get; set; }
-            public uint TimeActivatedDt { get; set; }
-            public uint TimeTotalActive { get; set; } // varies, most commonly 5 minutes
-            public uint TimeCooldownDt { get; set; }
-            public uint TimeTotalCooldown { get; set; } // typically 30 minutes
-            public uint TimeAreaFailDt { get; set; }
-            public uint TimeTotalAreaFail { get; set; } // typically 10 seconds
+            public uint TimeActivatedDt { get; set; } // remaining milliseconds; client converts to a local deadline
+            public uint TimeTotalActive { get; set; } // total milliseconds; varies, most commonly 5 minutes
+            public uint TimeCooldownDt { get; set; } // remaining milliseconds; client converts to a local deadline
+            public uint TimeTotalCooldown { get; set; } // total milliseconds; typically 30 minutes
+            public uint TimeAreaFailDt { get; set; } // remaining milliseconds; client converts to a local deadline
+            public uint TimeTotalAreaFail { get; set; } // total milliseconds; typically 10 seconds
             public uint[] TierGoalCount { get; set; } = new uint[3];
 
             public void Write(GamePacketWriter writer)
