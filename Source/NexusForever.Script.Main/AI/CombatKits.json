@@ -10,11 +10,13 @@
     },
     {
       "id": "northern-wilds-common",
+      "aggroSpell4Id": 41368,
       "aggroRange": 14.0,
       "minimumLeashRange": 35.0
     },
     {
       "id": "open-world-common",
+      "aggroSpell4Id": 41368,
       "aggroRange": 14.0,
       "minimumLeashRange": 35.0
     }

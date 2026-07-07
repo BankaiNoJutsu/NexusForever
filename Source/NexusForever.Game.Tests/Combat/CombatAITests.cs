@@ -208,7 +208,7 @@ public class CombatAITests
             }, profile.SpecialAttacks);
         Assert.Equal(14f, profile.AggroRange);
         Assert.Equal(35f, profile.MinimumLeashRange);
-        Assert.Equal(0u, profile.AggroSpell4Id);
+        Assert.Equal(41368u, profile.AggroSpell4Id);
         Assert.False(profile.AllowNonPlayerTargets);
     }
 
@@ -244,6 +244,7 @@ public class CombatAITests
             }, resolution.Profile.SpecialAttacks);
         Assert.Equal(14f, resolution.Profile.AggroRange);
         Assert.Equal(35f, resolution.Profile.MinimumLeashRange);
+        Assert.Equal(41368u, resolution.Profile.AggroSpell4Id);
     }
 
     [Fact]
@@ -1177,7 +1178,7 @@ public class CombatAITests
     }
 
     [Fact]
-    public void Update_WhenNorthernWildsProfiledCreatureSeesHostilePlayer_AggroesWithoutAwarenessSpell()
+    public void Update_WhenNorthernWildsProfiledCreatureSeesHostilePlayer_AggroesWithAwarenessSpell()
     {
         CombatHarness harness = CreateHarness(new Vector3(10f, 0f, 0f), creatureId: 11910u);
 
@@ -1186,7 +1187,8 @@ public class CombatAITests
         Assert.NotNull(harness.CreatureThreat.GetHostile(harness.Player.Guid));
         RecordingDispatchProxy<ICreatureEntity>.Invocation rangeCheck = Assert.Single(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.SetInRangeCheck)));
         Assert.Equal(50f, rangeCheck.Arguments[0]);
-        Assert.Empty(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.CastSpell)));
+        RecordingDispatchProxy<ICreatureEntity>.Invocation cast = Assert.Single(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.CastSpell)));
+        Assert.Equal(41368u, cast.Arguments[0]);
         RecordingDispatchProxy<IMovementManager>.Invocation face = Assert.Single(harness.MovementProxy.GetInvocations(nameof(IMovementManager.SetRotationFaceUnit)));
         Assert.Equal(harness.Player.Guid, face.Arguments[0]);
     }
