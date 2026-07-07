@@ -3,6 +3,7 @@ using System.Reflection;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Map;
+using NexusForever.Game.Abstract.Map.Search;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Spell;
@@ -323,6 +324,34 @@ public class SpellTargetValidationTests
 
         Assert.Equal(CastResult.Ok, spell.Cast());
         Assert.Equal(1, hitCount);
+    }
+
+    [Theory]
+    [InlineData(1f, 79090u)]
+    [InlineData(4f, 79092u)]
+    [InlineData(8f, 79093u)]
+    public void Cast_WithOverlappingPhaseTelegraphs_DispatchesOnlySelectedBand(float targetDistance, uint expectedEffectId)
+    {
+        IUnitEntity target = CreateUnit(2002u, new Vector3(targetDistance, 0f, 0f), out _);
+        IBaseMap map = CreateFilteredSearchMap(target);
+        IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out _, map);
+
+        List<uint> effectIds = [];
+        SpellEffectDelegate damageHandler = (_, selectedTarget, info) =>
+        {
+            Assert.Same(target, selectedTarget);
+            effectIds.Add(info.Entry.Id);
+        };
+
+        var parameters = new NexusForever.Game.Spell.SpellParameters
+        {
+            SpellInfo = CreatePhaseBandedTelegraphSpellInfo()
+        };
+
+        var spell = CreateSpell(caster, parameters, CreateGlobalSpellManager(damageHandler));
+
+        Assert.Equal(CastResult.Ok, spell.Cast());
+        Assert.Equal([expectedEffectId], effectIds);
     }
 
     [Fact]
@@ -977,6 +1006,19 @@ public class SpellTargetValidationTests
         return map;
     }
 
+    private static IBaseMap CreateFilteredSearchMap(params IUnitEntity[] targets)
+    {
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out RecordingDispatchProxy<IBaseMap> proxy);
+        proxy.SetMethodHandler(nameof(IBaseMap.Search), args =>
+        {
+            if (args[2] is ISearchCheck<IUnitEntity> check)
+                return targets.Where(check.CheckEntity).ToArray();
+
+            return targets;
+        });
+        return map;
+    }
+
     private static IMovementManager CreateMovementPositionManager(Vector3 position)
     {
         IMovementManager movementManager = RecordingDispatchProxy<IMovementManager>.Create(out RecordingDispatchProxy<IMovementManager> proxy);
@@ -1122,6 +1164,67 @@ public class SpellTargetValidationTests
             }
         });
         spellInfoProxy.SetProperty(nameof(ISpellInfo.Effects), new List<Spell4EffectsEntry>());
+
+        return spellInfo;
+    }
+
+    private static ISpellInfo CreatePhaseBandedTelegraphSpellInfo()
+    {
+        ISpellInfo spellInfo = CreateSpellInfo(37302u, 22522u);
+        spellInfo.Telegraphs.AddRange(
+        [
+            new TelegraphDamageEntry
+            {
+                Id              = 213u,
+                DamageShapeEnum = (uint)DamageShape.Circle,
+                Param00         = 2f,
+                PhaseFlags      = 2u
+            },
+            new TelegraphDamageEntry
+            {
+                Id              = 217u,
+                DamageShapeEnum = (uint)DamageShape.Circle,
+                Param00         = 5f,
+                PhaseFlags      = 4u
+            },
+            new TelegraphDamageEntry
+            {
+                Id              = 218u,
+                DamageShapeEnum = (uint)DamageShape.Circle,
+                Param00         = 10f,
+                PhaseFlags      = 8u
+            }
+        ]);
+        spellInfo.Effects.AddRange(
+        [
+            new Spell4EffectsEntry
+            {
+                Id          = 79090u,
+                SpellId     = 37302u,
+                TargetFlags = (uint)SpellEffectTargetFlags.Telegraph,
+                EffectType  = SpellEffectType.Damage,
+                DamageType  = DamageType.Physical,
+                PhaseFlags  = 2u
+            },
+            new Spell4EffectsEntry
+            {
+                Id          = 79092u,
+                SpellId     = 37302u,
+                TargetFlags = (uint)SpellEffectTargetFlags.Telegraph,
+                EffectType  = SpellEffectType.Damage,
+                DamageType  = DamageType.Physical,
+                PhaseFlags  = 4u
+            },
+            new Spell4EffectsEntry
+            {
+                Id          = 79093u,
+                SpellId     = 37302u,
+                TargetFlags = (uint)SpellEffectTargetFlags.Telegraph,
+                EffectType  = SpellEffectType.Damage,
+                DamageType  = DamageType.Physical,
+                PhaseFlags  = 8u
+            }
+        ]);
 
         return spellInfo;
     }

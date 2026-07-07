@@ -73,18 +73,25 @@ namespace NexusForever.Game.Spell
         }
 
         public SpellEffectTargetFlags Flags { get; private set; }
+        internal uint TelegraphPhaseFlags { get; private set; }
         public IWorldEntity Entity { get; }
         public List<ISpellTargetEffectInfo> Effects { get; } = new List<ISpellTargetEffectInfo>();
 
-        public SpellTargetInfo(SpellEffectTargetFlags flags, IWorldEntity entity)
+        public SpellTargetInfo(SpellEffectTargetFlags flags, IWorldEntity entity, uint telegraphPhaseFlags = 0u)
         {
-            Flags  = flags;
-            Entity = entity;
+            Flags               = flags;
+            Entity              = entity;
+            TelegraphPhaseFlags = telegraphPhaseFlags;
         }
 
         public void AddFlags(SpellEffectTargetFlags flags)
         {
             Flags |= flags;
+        }
+
+        internal void SetTelegraphPhaseFlags(uint phaseFlags)
+        {
+            TelegraphPhaseFlags = phaseFlags;
         }
     }
 }

@@ -103,6 +103,7 @@ namespace NexusForever.Game.Spell
             spellTelegraphEntries = spell4TelegraphEntries
                 .GroupBy(e => e.Spell4Id)
                 .ToImmutableDictionary(g => g.Key, g => g
+                    .OrderBy(e => e.Id)
                     .Select(e => gameTableManager.TelegraphDamage?.GetEntry(e.TelegraphDamageId))
                     .ToImmutableList());
 

@@ -1382,8 +1382,8 @@ namespace NexusForever.Game.Spell
             if (Caster is IPlayer)
                 InitialiseTelegraphs();
 
-            foreach (IUnitEntity entity in SelectTelegraphTargets())
-                AddTarget(SpellEffectTargetFlags.Telegraph, entity);
+            foreach (TelegraphTargetCandidate candidate in SelectTelegraphTargets())
+                AddTarget(SpellEffectTargetFlags.Telegraph, candidate.Entity, candidate.PhaseFlags);
 
             SpellEffectDiagnostics.TraceTargetSelection(this, targets, telegraphs.Count);
         }
@@ -1399,31 +1399,37 @@ namespace NexusForever.Game.Spell
             return creatureCastTime != 0u ? creatureCastTime : spellCastTime;
         }
 
-        private void AddTarget(SpellEffectTargetFlags flags, IWorldEntity entity)
+        private void AddTarget(SpellEffectTargetFlags flags, IWorldEntity entity, uint telegraphPhaseFlags = 0u)
         {
             SpellTargetInfo target = targets.OfType<SpellTargetInfo>().FirstOrDefault(t => t.Entity.Guid == entity.Guid);
             if (target != null)
             {
                 target.AddFlags(flags);
+                if ((flags & SpellEffectTargetFlags.Telegraph) != 0)
+                    target.SetTelegraphPhaseFlags(telegraphPhaseFlags);
+
                 return;
             }
 
-            targets.Add(new SpellTargetInfo(flags, entity));
+            targets.Add(new SpellTargetInfo(flags, entity, telegraphPhaseFlags));
         }
 
-        private IEnumerable<IUnitEntity> SelectTelegraphTargets()
+        private readonly record struct TelegraphTargetCandidate(IUnitEntity Entity, uint PhaseFlags);
+
+        private IEnumerable<TelegraphTargetCandidate> SelectTelegraphTargets()
         {
-            Dictionary<uint, IUnitEntity> candidates = [];
+            Dictionary<uint, TelegraphTargetCandidate> candidates = [];
             foreach (ITelegraph telegraph in telegraphs)
             {
                 foreach (IUnitEntity entity in telegraph.GetTargets())
-                    candidates.TryAdd(entity.Guid, entity);
+                    candidates.TryAdd(entity.Guid, new TelegraphTargetCandidate(entity, telegraph.TelegraphDamage.PhaseFlags));
             }
 
             Spell4AoeTargetConstraintsEntry constraints = Parameters.SpellInfo.AoeTargetConstraints;
             Vector3 selectionOrigin = GetAoeSelectionOrigin();
             Vector3 selectionRotation = GetAoeSelectionRotation(selectionOrigin);
             IEnumerable<IUnitEntity> constrainedCandidates = candidates.Values
+                .Select(c => c.Entity)
                 .Where(e => MeetsAoeTargetConstraints(e, constraints, selectionOrigin, selectionRotation));
 
             IEnumerable<IUnitEntity> orderedCandidates = OrderAoeTargetCandidates(constrainedCandidates, constraints, selectionOrigin);
@@ -1432,7 +1438,7 @@ namespace NexusForever.Game.Spell
             if (targetCount > 0u)
                 orderedCandidates = orderedCandidates.Take((int)targetCount);
 
-            return orderedCandidates;
+            return orderedCandidates.Select(e => candidates[e.Guid]);
         }
 
         private bool MeetsAoeTargetConstraints(IUnitEntity entity, Spell4AoeTargetConstraintsEntry constraints, Vector3 selectionOrigin, Vector3 selectionRotation)
@@ -1833,7 +1839,7 @@ namespace NexusForever.Game.Spell
             // select targets for effect
             List<ISpellTargetInfo> effectTargets = targets
                 .Where(t => (t.Flags & effectTargetFlags) != 0)
-                .Where(t => IsEffectTargetStillValid(effectTargetFlags, t))
+                .Where(t => IsEffectTargetStillValid(effect, t))
                 .ToList();
 
             SpellEffectDelegate handler = GetGlobalSpellManager().GetEffectHandler((SpellEffectType)effect.Entry.EffectType);
@@ -1958,11 +1964,21 @@ namespace NexusForever.Game.Spell
 
         private void RefreshTelegraphTargets()
         {
-            foreach (IUnitEntity entity in SelectTelegraphTargets())
-                AddTarget(SpellEffectTargetFlags.Telegraph, entity);
+            foreach (TelegraphTargetCandidate candidate in SelectTelegraphTargets())
+                AddTarget(SpellEffectTargetFlags.Telegraph, candidate.Entity, candidate.PhaseFlags);
         }
 
         internal bool IsEffectTargetStillValid(SpellEffectTargetFlags effectTargetFlags, ISpellTargetInfo targetInfo)
+        {
+            return IsEffectTargetStillValid(effectTargetFlags, targetInfo, 0u);
+        }
+
+        private bool IsEffectTargetStillValid(SpellEffectInterpretation effect, ISpellTargetInfo targetInfo)
+        {
+            return IsEffectTargetStillValid((SpellEffectTargetFlags)effect.Entry.TargetFlags, targetInfo, effect.Entry.PhaseFlags);
+        }
+
+        private bool IsEffectTargetStillValid(SpellEffectTargetFlags effectTargetFlags, ISpellTargetInfo targetInfo, uint effectPhaseFlags)
         {
             if ((effectTargetFlags & SpellEffectTargetFlags.Telegraph) == 0)
                 return true;
@@ -1973,7 +1989,34 @@ namespace NexusForever.Game.Spell
             if (targetInfo.Entity is not IUnitEntity unitTarget)
                 return false;
 
-            return telegraphs.Any(t => t.InsideTelegraph(unitTarget.Position, unitTarget.HitRadius));
+            IEnumerable<ITelegraph> matchingTelegraphs = GetMatchingTelegraphs(effectPhaseFlags);
+            if (!matchingTelegraphs.Any(t => t.InsideTelegraph(unitTarget.Position, unitTarget.HitRadius)))
+                return false;
+
+            if (targetInfo is SpellTargetInfo spellTargetInfo
+                && IsSpecificPhase(effectPhaseFlags)
+                && IsSpecificPhase(spellTargetInfo.TelegraphPhaseFlags)
+                && (spellTargetInfo.TelegraphPhaseFlags & effectPhaseFlags) == 0u)
+                return false;
+
+            return true;
+        }
+
+        private IEnumerable<ITelegraph> GetMatchingTelegraphs(uint effectPhaseFlags)
+        {
+            if (!IsSpecificPhase(effectPhaseFlags))
+                return telegraphs;
+
+            List<ITelegraph> matchingTelegraphs = telegraphs
+                .Where(t => !IsSpecificPhase(t.TelegraphDamage.PhaseFlags) || (t.TelegraphDamage.PhaseFlags & effectPhaseFlags) != 0u)
+                .ToList();
+
+            return matchingTelegraphs.Count != 0 ? matchingTelegraphs : telegraphs;
+        }
+
+        private static bool IsSpecificPhase(uint phaseFlags)
+        {
+            return phaseFlags != 0u && phaseFlags != uint.MaxValue;
         }
 
         private bool ExecuteWorldEntityEffect(SpellEffectInterpretation effect, IWorldEntity target, ISpellTargetEffectInfo info)
