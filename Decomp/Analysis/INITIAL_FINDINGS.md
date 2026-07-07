@@ -16849,7 +16849,7 @@ CombatAI Northern Wilds profile promotion pass (2026-05-25):
   Rootbrutes, Xenobites, and holdout bosses real idle range aggro and
   table-backed spell rotations while preserving the safety invariant that
   profiled default combat does not acquire non-player targets.
-- Focused tests now prove the provider loads a Northern Wilds reviewed kit,
+- Focused tests from that pass proved the provider loads a Northern Wilds reviewed kit,
   reports manual/catalog/action audit counts, keeps unproven `Creature2Action`
   rows audit-only, rejects unsafe active action rules, skips missing `Spell4`
   rows, exposes detailed creature/action audit rows for the standalone audit
@@ -16863,6 +16863,25 @@ CombatAI Northern Wilds profile promotion pass (2026-05-25):
   passed 44/44.
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo -m:1 -p:UseSharedCompilation=false`
   passed 2790/2790.
+
+CombatAI reviewed-profile awareness-eye follow-up (2026-07-06):
+
+- Player-facing aggro presentation now uses the existing mapped split instead of
+  a broad fallback: unprofiled/default combat still keeps `aggroSpell4Id=0`,
+  but reviewed `northern-wilds-common` and `open-world-common` combat-kit
+  behaviors opt into spell `41368` (`Generic - Choose Color of Awareness Eye -
+  Tier 1`) on accepted player aggro. `CombatAI.AggroEntity(...)` already casts
+  the configured `AggroSpell4Id` before target/threat/facing side effects, and
+  `CreatureEntity.SetTarget(...)` still sends `ServerEntityAggroSwitch` for the
+  client aggro sound/hint path.
+- This keeps the previous NPC/NPC safety boundary: the default fallback and
+  commanded summon profile remain silent, while reviewed player-only hostile
+  creature profiles now show the expected awareness-eye cue when they spot and
+  aggro a player. Exact per-creature retail exceptions remain blocked on
+  stronger live-client/profile evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~CombatAITests" -v minimal --nologo -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-aggro-eye\`
+  passed 83/83.
 
 Northern Wilds spawn-density rollback and shield underflow fix (2026-05-25):
 
@@ -25998,3 +26017,49 @@ Deflect combat-log and strikethrough parity pass (2026-06-27):
   deflect-vs-crit-deflect ordering, multi-hit `bMultiHit` producer behavior,
   and any live/server-specific roll edge cases remain blocked pending retail
   combat captures or stronger native/server evidence.
+
+Challenge HUD timer unit follow-up (2026-07-07):
+
+- **Client evidence**: `ServerChallengeUpdate` row reader `1400aa930` reads
+  timer fields at row offsets `+0x3c`, `+0x40`, `+0x44`, `+0x48`, `+0x4c`,
+  and `+0x50`. The challenge update consumer `14048ded0` copies the row into
+  runtime state, then adds `DAT_140c636a8` to offsets `+0x3c`, `+0x44`, and
+  `+0x4c`. `Lua_Challenges_GetTimer` (`1406862d0`) calls
+  `ChallengesService_GetTimerRemaining` (`14048dd20`), which subtracts
+  `DAT_140c636a8` from the stored deadline and returns seconds. `GetDuration`
+  (`1406863e0`) reads offset `+0x40` and divides by `1000`.
+- **Implementation**: NexusForever now emits challenge active, cooldown, and
+  area-fail timer deltas and totals as milliseconds. The server still stores
+  runtime challenge timers as seconds internally; only the outbound
+  `ServerChallengeUpdate` fields convert to the native packet units. This fixes
+  the previous `300` value displaying as a 0.3-second active challenge window
+  instead of the intended five-minute HUD timer.
+
+Pulse Blast phase-banded telegraph damage follow-up (2026-07-07):
+
+- **Table evidence**: local `wildstar_client` rows show player Pulse Blast base
+  `42276` proxies to damage spell `37302` (base `22522`). Damage spell `37302`
+  has three Telegraph-targeted physical damage effects: center `79090`
+  `PhaseFlags=2` with `AssaultPower 0.3493` and `PerLevel 11.07`, middle
+  `79092` `PhaseFlags=4` with `AssaultPower 0.2898` and `PerLevel 9.18`, and
+  outer `79093` `PhaseFlags=8` with `AssaultPower 0.2342` and `PerLevel 7.42`.
+  Its telegraphs map one-to-one through `Spell4Telegraph` to
+  `TelegraphDamage` ids `213`/`217`/`218` with matching phase flags `2`/`4`/`8`.
+- **Damage calculation**: the existing `DamageCalculator` formula is the right
+  owner for the numeric portion: AP/SP parameter rows use `GameFormula 1266`
+  (`0.25` coefficient) and the resulting base value then goes through damage
+  type multiplier, variance, mitigation, damage-taken multiplier, crit/glance,
+  absorption, and shield absorb. No new raw formula change was needed.
+- **Implementation**: telegraph target selection now records the first matching
+  telegraph phase for each target, and telegraph-targeted effects with specific
+  `PhaseFlags` only dispatch to targets selected by that band. This prevents
+  overlapping phase-banded telegraphs such as Pulse Blast from stacking center,
+  middle, and outer damage on the same target while preserving unphased
+  telegraph behavior. `GlobalSpellManager` now orders cached telegraphs by
+  `Spell4Telegraph.Id` so the table's center/middle/outer order is stable.
+- **Verification**: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseSharedCompilation=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-pulse\ -m:1
+  -v minimal --nologo` passed `5349/5349`. Focused
+  `SpellTargetValidationTests` passed `60/60`, including the new overlapping
+  phase-telegraph regression.
