@@ -26035,6 +26035,43 @@ Challenge HUD timer unit follow-up (2026-07-07):
   the previous `300` value displaying as a 0.3-second active challenge window
   instead of the intended five-minute HUD timer.
 
+Challenge HUD activation ordering follow-up (2026-07-07):
+
+- **Client/addon evidence**: `UI\Challenges\ChallengeDisplay.lua` builds the
+  top-center radial challenge timer only from `ChallengesLib.GetActiveChallengeList()`
+  rows where both `GetTimer()` and `IsActivated()` are truthy. Its
+  `OnChallengeActivate` handler calls `BuildActiveListItems()`, while the
+  later `OnChallengeUpdated` path calls `UpdateActiveListItem()` and assumes
+  `wndActiveChallenges` already exists. The client consumer `14048ded0`
+  dispatches `ChallengeUpdated` after copying `ServerChallengeUpdate` rows into
+  runtime state; `Lua_Challenges_IsActivated` (`1406859e0`) reads runtime
+  offset `+0x30`, matching the second lifecycle bit in the update row.
+- **Implementation**: challenge activation now sends the active
+  `ServerChallengeUpdate` row before `ServerChallengeResult.Activate`, so the
+  activate event rebuild sees the challenge as already active and can create
+  the top-center rounded timer/progress widget. This is aimed at Rootbrute-style
+  auto-activation where the right tracker could show a timer but the top HUD
+  did not appear.
+- **Verification**: focused isolated test slices passed:
+  `ChallengeManagerTests` `14/14` and Rootbrute filters `3/3`, each run with
+  `--artifacts-path .nexusforever-runtime\dotnet-artifacts\...` to avoid live
+  server DLL locks.
+
+Player level-up splash delivery follow-up (2026-07-07):
+
+- **Client/addon evidence**: `UI\LevelUpUnlocks\LevelUpUnlocks.lua` shows the
+  reminder/splash from the `PlayerLevelChange` event. `GameLib.ReplayLevelUp`
+  only replays the fanfare spell; seeing fireworks therefore proves the spell
+  path but not the UI event path.
+- **Implementation**: `WorldEntity.EnqueueToVisible(..., includeSelf: true)`
+  now direct-delivers to the owning `IPlayer.Session` before broadcasting to
+  visible players. Player stat updates such as `Stat.Level` no longer depend on
+  the player being present in their own visibility dictionary, so the client can
+  receive the level stat delta that drives `PlayerLevelChange`.
+- **Verification**: `WorldEntityVitalPacketTests` passed `2/2` with the new
+  regression proving a player `Stat.Level` update reaches the player's own
+  session even without a self-visible entry.
+
 Pulse Blast phase-banded telegraph damage follow-up (2026-07-07):
 
 - **Table evidence**: local `wildstar_client` rows show player Pulse Blast base

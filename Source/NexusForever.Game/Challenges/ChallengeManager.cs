@@ -315,8 +315,8 @@ namespace NexusForever.Game.Challenges
             state.AreaFailTimer = 0d;
             MarkDirty(challengeId);
 
-            SendResult(challengeId, ChallengeResult.Activate);
             SendChallengeUpdate();
+            SendResult(challengeId, ChallengeResult.Activate);
         }
 
         private void TryAbandon(ushort challengeId)

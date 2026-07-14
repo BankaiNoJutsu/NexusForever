@@ -1,9 +1,15 @@
+using System.Reflection;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
+using NexusForever.Game.Abstract.Matching.Match;
+using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable;
 using NexusForever.Network.Message;
+using NexusForever.Network.Internal;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Model;
@@ -13,6 +19,31 @@ namespace NexusForever.Game.Tests.Entity;
 
 public class WorldEntityVitalPacketTests
 {
+    [Fact]
+    public void StatChange_ForOwningPlayerWithoutSelfVisible_SendsStatToOwnSession()
+    {
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        var player = new TestPlayerEntity();
+        player.SetGuidForTest(1001u);
+        SetAutoProperty(player, nameof(Player.Identity), new Identity
+        {
+            Id      = 1ul,
+            RealmId = 1
+        });
+        SetAutoProperty(player, nameof(Player.Session), session);
+
+        player.SetIntegerStatForTest(Stat.Level, 2u);
+
+        ServerEntityStatUpdateInteger update = Assert.Single(sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0])
+            .OfType<ServerEntityStatUpdateInteger>());
+        Assert.Equal(player.Guid, update.UnitId);
+        Assert.Equal(Stat.Level, update.Stat.Stat);
+        Assert.Equal(StatType.Integer, update.Stat.Type);
+        Assert.Equal(2f, update.Stat.Value);
+    }
+
     [Fact]
     public void ShieldChange_ForVisiblePlayer_SendsShieldStatThenHealthRefresh()
     {
@@ -52,6 +83,57 @@ public class WorldEntityVitalPacketTests
             .WithGuid(guid)
             .WithSession(session)
             .Build();
+    }
+
+    private static IInternalMessagePublisher CreateMessagePublisher()
+    {
+        IInternalMessagePublisher messagePublisher = RecordingDispatchProxy<IInternalMessagePublisher>.Create(out RecordingDispatchProxy<IInternalMessagePublisher> proxy);
+        proxy.SetMethodReturn(nameof(IInternalMessagePublisher.PublishAsync), Task.CompletedTask);
+        return messagePublisher;
+    }
+
+    private static T CreateProxy<T>() where T : class
+    {
+        return RecordingDispatchProxy<T>.Create(out _);
+    }
+
+    private static void SetAutoProperty(object instance, string propertyName, object value)
+    {
+        FieldInfo backingField = null;
+        for (Type type = instance.GetType(); type != null; type = type.BaseType)
+        {
+            backingField = type.GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (backingField != null)
+                break;
+        }
+
+        Assert.NotNull(backingField);
+        backingField.SetValue(instance, value);
+    }
+
+    private sealed class TestPlayerEntity : Player
+    {
+        public TestPlayerEntity()
+            : base(
+                CreateProxy<IMovementManager>(),
+                CreateMessagePublisher(),
+                CreateProxy<IEntityFactory>(),
+                CreateProxy<IMatchingManager>(),
+                CreateProxy<IMatchManager>(),
+                CreateProxy<IGameTableManager>(),
+                CreateProxy<ICurrencyManager>())
+        {
+        }
+
+        public void SetGuidForTest(uint guid)
+        {
+            Guid = guid;
+        }
+
+        public void SetIntegerStatForTest(Stat stat, uint value)
+        {
+            SetStat(stat, value);
+        }
     }
 
     private sealed class TestWorldUnitEntity : UnitEntity

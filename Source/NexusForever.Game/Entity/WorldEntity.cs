@@ -1159,19 +1159,34 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void EnqueueToVisible(IWritable message, bool includeSelf = false)
         {
+            bool sentToOwningPlayer = false;
+            if (includeSelf && this is IPlayer selfPlayer)
+            {
+                EnqueueToVisiblePlayer(selfPlayer, message);
+                sentToOwningPlayer = true;
+            }
+
             foreach (IGridEntity entity in visibleEntities.Values)
             {
                 if (entity is not IPlayer player)
                     continue;
 
+                if (sentToOwningPlayer && entity.Guid == Guid)
+                    continue;
+
                 if (!includeSelf && (Guid == entity.Guid || ControllerGuid == entity.Guid))
                     continue;
 
-                if (message is ServerCombatLog combatLog && ShouldSuppressCombatLogForPlayer(player, combatLog))
-                    continue;
-
-                player.Session.EnqueueMessageEncrypted(message);
+                EnqueueToVisiblePlayer(player, message);
             }
+        }
+
+        private void EnqueueToVisiblePlayer(IPlayer player, IWritable message)
+        {
+            if (message is ServerCombatLog combatLog && ShouldSuppressCombatLogForPlayer(player, combatLog))
+                return;
+
+            player.Session.EnqueueMessageEncrypted(message);
         }
 
         private bool ShouldSuppressCombatLogForPlayer(IPlayer player, ServerCombatLog combatLog)

@@ -32,6 +32,13 @@ public class ChallengeManagerTests
 
         manager.HandleChoice(ChallengeId, ChallengeChoice.Activate);
 
+        List<IWritable> orderedMessages = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(invocation => Assert.IsAssignableFrom<IWritable>(invocation.Arguments[0]))
+            .ToList();
+        Assert.IsType<ServerChallengeUpdate>(orderedMessages[0]);
+        Assert.IsType<ServerChallengeResult>(orderedMessages[1]);
+
         ServerChallengeResult result = Assert.Single(GetMessages<ServerChallengeResult>(sessionProxy));
         Assert.Equal(ChallengeId, result.ChallengeId);
         Assert.Equal(ChallengeResult.Activate, result.Result);
