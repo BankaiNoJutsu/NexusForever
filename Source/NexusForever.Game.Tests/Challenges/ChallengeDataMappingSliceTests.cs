@@ -227,6 +227,19 @@ public class ChallengeDataMappingSliceTests
 
         ChallengeCombatHooks.OnCreatureKilled(player, RootbruteGrimsporeCreature2Id);
 
+        List<IWritable> sentMessages = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0])
+            .OfType<IWritable>()
+            .ToList();
+        int activateIndex = sentMessages.FindIndex(message =>
+            message is ServerChallengeResult result && result.Result == ChallengeResult.Activate);
+        Assert.True(activateIndex > 0);
+        ServerChallengeUpdate activationUpdate = Assert.IsType<ServerChallengeUpdate>(sentMessages[activateIndex - 1]);
+        ServerChallengeUpdate.Challenge activationRow = Assert.Single(activationUpdate.ActiveChallenges);
+        Assert.Equal(1u, activationRow.CurrentCount);
+        Assert.Equal(20u, activationRow.ObjectiveCompletion);
+
         ServerChallengeResult activate = GetMessages<ServerChallengeResult>(sessionProxy)
             .Single(result => result.Result == ChallengeResult.Activate);
         Assert.Equal(RootbruteSlayerChallengeId, activate.ChallengeId);
@@ -237,6 +250,7 @@ public class ChallengeDataMappingSliceTests
         Assert.Equal(RootbruteSlayerTargetGroupId, row.TargetGroupId);
         Assert.Equal(1u, row.CurrentCount);
         Assert.Equal(5u, row.GoalCount);
+        Assert.Equal(20u, row.ObjectiveCompletion);
         Assert.True(row.Activated);
         Assert.Equal(300_000u, row.TimeActivatedDt);
         Assert.Equal(300_000u, row.TimeTotalActive);

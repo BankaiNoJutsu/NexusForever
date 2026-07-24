@@ -27,6 +27,7 @@ namespace NexusForever.Game.Entity
         private const uint MaxPathLevel = PathRewardGrant.MaxPathLevel;
         private const uint SoldierHoldoutMissionType = 0x0000;
         private const uint SoldierAssassinateMissionType = 0x0004;
+        private const uint SoldierSwatMissionType = 0x0007;
         private const uint ScientistCreatureInfoMissionType = 0x0002;
         private const uint ScientistDatacubeDiscoveryMissionType = 0x0018;
         private const uint ExplorerNodeMissionType = 0x000F;
@@ -1169,6 +1170,45 @@ namespace NexusForever.Game.Entity
             }
 
             return progressedAny;
+        }
+
+        public bool ProgressSoldierSwatMission(ushort pathMissionId, uint amount)
+        {
+            if (player.Path != Path.Soldier || amount == 0u)
+                return false;
+
+            if (!pathMissions.TryGetValue(pathMissionId, out PathMissionRuntimeState state)
+                || state.Completed
+                || state.State != PathMissionState.Started)
+            {
+                return false;
+            }
+
+            PathMissionEntry mission = gameTableManager?.PathMission?.GetEntry(pathMissionId);
+            if (mission == null
+                || mission.PathTypeEnum != (uint)Path.Soldier
+                || mission.PathMissionTypeEnum != SoldierSwatMissionType)
+            {
+                return false;
+            }
+
+            PathSoldierSWATEntry swat = gameTableManager.PathSoldierSWAT?.GetEntry(mission.ObjectId);
+            if (swat == null)
+                return false;
+
+            uint requiredCount = Math.Max(swat.Count, 1u);
+            uint remaining = state.ProgressCount >= requiredCount ? 0u : requiredCount - state.ProgressCount;
+            state.ProgressCount += Math.Min(amount, remaining);
+            state.ProgressData = state.ProgressCount >= requiredCount ? 0u : 1u;
+
+            if (state.ProgressCount >= requiredCount)
+                return CompleteMission(state.MissionId);
+
+            player.Session.EnqueueMessageEncrypted(new ServerPathMissionUpdate
+            {
+                Mission = BuildMission(state)
+            });
+            return true;
         }
 
         public bool CompleteMissionBySettlerImprovementGroupId(uint pathSettlerImprovementGroupId)

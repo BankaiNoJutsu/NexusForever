@@ -23,6 +23,7 @@ namespace NexusForever.Game.Challenges
         private const uint TimeTieredFlag = 0x8u;
         private const uint CooldownTypeFlag = 0x10u;
         private const uint AutoActivateOnProgressFlag = 0x20u;
+        private const uint MaxScoreExcludedFlags = 0x140u;
         private const uint RewardTrackItemRewardType = 0u;
         private const uint SkeechSlayerChallengeId = 103u;
         private const uint NorthernWildsWorldId = 426u;
@@ -151,6 +152,7 @@ namespace NexusForever.Game.Challenges
 
         public void Update(double lastTick)
         {
+            bool challengeUpdateRequired = false;
             foreach (ChallengeRuntimeState state in activeChallenges.Values.ToList())
             {
                 if (state.Activated && state.ActiveTimer > 0d)
@@ -164,7 +166,12 @@ namespace NexusForever.Game.Challenges
                 {
                     state.CooldownTimer -= lastTick;
                     if (state.CooldownTimer <= 0d)
+                    {
                         state.OnCooldown = false;
+                        state.CooldownTimer = 0d;
+                        MarkDirty((ushort)state.ChallengeId);
+                        challengeUpdateRequired = true;
+                    }
                 }
 
                 if (state.LeftArea && state.AreaFailTimer > 0d)
@@ -188,7 +195,7 @@ namespace NexusForever.Game.Challenges
                 });
             }
 
-            if (activeChallenges.Count > 0)
+            if (challengeUpdateRequired)
                 SendChallengeUpdate();
         }
 
@@ -302,13 +309,17 @@ namespace NexusForever.Game.Challenges
             ActivateChallenge(challengeId);
         }
 
-        private void ActivateChallenge(ushort challengeId)
+        private void ActivateChallenge(ushort challengeId, uint initialProgress = 0u)
         {
             ChallengeRuntimeState state = GetOrCreateState(challengeId);
+            ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(challengeId);
+            uint[] tierGoals = entry == null ? [] : GetTierGoalCounts(entry);
+            uint goalCount = tierGoals.Length > 0 ? tierGoals[0] : 0u;
+
             state.Activated     = true;
             state.OnCooldown    = false;
             state.LeftArea      = false;
-            state.CurrentCount  = 0u;
+            state.CurrentCount  = goalCount == 0u ? 0u : Math.Min(initialProgress, goalCount);
             state.CurrentTier   = 0u;
             state.LastRewardTier = 0u;
             state.ActiveTimer   = DefaultActiveSeconds;
@@ -317,6 +328,9 @@ namespace NexusForever.Game.Challenges
 
             SendChallengeUpdate();
             SendResult(challengeId, ChallengeResult.Activate);
+
+            if (entry != null && goalCount > 0u && state.CurrentCount >= goalCount)
+                HandleTierGoalReached(challengeId, state, entry, tierGoals);
         }
 
         private void TryAbandon(ushort challengeId)
@@ -567,8 +581,7 @@ namespace NexusForever.Game.Challenges
                 if (!MeetsAutoActivationZoneRestriction(entry))
                     continue;
 
-                ActivateChallenge(challengeId);
-                TryAdvanceProgress(challengeId);
+                ActivateChallenge(challengeId, 1u);
                 return;
             }
         }
@@ -667,6 +680,16 @@ namespace NexusForever.Game.Challenges
             if (state.CurrentCount < goalCount)
                 return true;
 
+            HandleTierGoalReached(challengeId, state, entry, tierGoals);
+            return true;
+        }
+
+        private void HandleTierGoalReached(
+            ushort challengeId,
+            ChallengeRuntimeState state,
+            ChallengeEntry entry,
+            uint[] tierGoals)
+        {
             uint achievedTier = state.CurrentTier;
             state.LastRewardTier = achievedTier;
             SendResult(challengeId, ChallengeResult.TierAchieved, (int)achievedTier);
@@ -674,14 +697,13 @@ namespace NexusForever.Game.Challenges
             if (achievedTier + 1u >= tierGoals.Length)
             {
                 CompleteChallenge(state, entry);
-                return true;
+                return;
             }
 
             state.CurrentTier++;
             state.CurrentCount = 0u;
             MarkDirty(challengeId);
             SendChallengeUpdate();
-            return true;
         }
 
         private void CompleteChallenge(ChallengeRuntimeState state, ChallengeEntry entry)
@@ -791,7 +813,7 @@ namespace NexusForever.Game.Challenges
                     QualityTotal          = 0u,
                     CurrentCount          = state.CurrentCount,
                     GoalCount             = goalCount,
-                    ObjectiveCompletion   = 0u,
+                    ObjectiveCompletion   = CalculateSingleTierMaxScoreCompletionPercentage(entry, state, goalCount, tierGoals),
                     CurrentTier           = state.CurrentTier,
                     LastRewardTier        = state.LastRewardTier,
                     CompletionCount       = state.CompletionCount,
@@ -838,6 +860,22 @@ namespace NexusForever.Game.Challenges
                 padded[i] = tierGoals[i];
 
             return padded;
+        }
+
+        private static uint CalculateSingleTierMaxScoreCompletionPercentage(
+            ChallengeEntry entry,
+            ChallengeRuntimeState state,
+            uint goalCount,
+            uint[] tierGoals)
+        {
+            if (entry.ChallengeTypeEnum != (uint)ChallengeType.Combat
+                || (entry.ChallengeFlags & MaxScoreExcludedFlags) != 0u
+                || tierGoals.Length != 1
+                || goalCount <= 1u)
+                return 0u;
+
+            ulong scaledProgress = Math.Min(state.CurrentCount, goalCount) * 100ul;
+            return (uint)Math.Min(scaledProgress / goalCount, 100ul);
         }
 
         /// <summary>

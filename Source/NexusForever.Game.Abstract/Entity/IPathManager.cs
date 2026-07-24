@@ -117,6 +117,11 @@ namespace NexusForever.Game.Abstract.Entity
         bool ProgressSoldierAssassinateMissionForCreatureKill(uint creature2Id, IReadOnlyCollection<uint> targetGroupIds);
 
         /// <summary>
+        /// Increments an active Soldier SWAT mission by its PathMission id.
+        /// </summary>
+        bool ProgressSoldierSwatMission(ushort pathMissionId, uint amount);
+
+        /// <summary>
         /// Progresses active Settler hub missions associated with the supplied improvement group row.
         /// </summary>
         bool CompleteMissionBySettlerImprovementGroupId(uint pathSettlerImprovementGroupId);

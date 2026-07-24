@@ -4669,6 +4669,125 @@ public class PathManagerTests
     }
 
     [Fact]
+    public void ProgressSoldierSwatMission_WithActiveMission_UsesSwatCountAndCompletes()
+    {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 2424u,
+                    PathEpisodeId = 294u,
+                    PathTypeEnum = (uint)Path.Soldier,
+                    PathMissionTypeEnum = 0x0007u,
+                    ObjectId = 93u
+                }
+            ],
+            soldierSwat:
+            [
+                new PathSoldierSWATEntry { Id = 93u, Creature2Id = 41146u, Count = 5u }
+            ]);
+
+        {
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out _);
+            manager.ActivateMissions(294, new Dictionary<ushort, uint>
+            {
+                [2424] = 0
+            });
+
+            Assert.True(manager.ProgressSoldierSwatMission(2424, 2u));
+
+            Assert.False(manager.IsMissionComplete(2424u));
+            ServerPathMissionUpdate partialUpdate = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerPathMissionUpdate>()
+                .Single();
+            Assert.False(partialUpdate.Mission.Completed);
+            Assert.Equal(2u, partialUpdate.Mission.ProgressCount);
+            Assert.Equal(1u, partialUpdate.Mission.ProgressData);
+
+            Assert.True(manager.ProgressSoldierSwatMission(2424, 10u));
+
+            Assert.True(manager.IsMissionComplete(2424u));
+            ServerPathMissionUpdate completeUpdate = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerPathMissionUpdate>()
+                .Last();
+            Assert.True(completeUpdate.Mission.Completed);
+            Assert.Equal(5u, completeUpdate.Mission.ProgressCount);
+            Assert.Equal(0u, completeUpdate.Mission.ProgressData);
+        }
+    }
+
+    [Theory]
+    [InlineData("path-mission")]
+    [InlineData("soldier-swat")]
+    public void ProgressSoldierSwatMission_WithMissingStaticTable_DoesNotProgressMission(string missingTable)
+    {
+        BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 2424u,
+                    PathEpisodeId = 294u,
+                    PathTypeEnum = (uint)Path.Soldier,
+                    PathMissionTypeEnum = 0x0007u,
+                    ObjectId = 93u
+                }
+            ],
+            soldierSwat:
+            [
+                new PathSoldierSWATEntry { Id = 93u, Count = 5u }
+            ]);
+
+        {
+            GameTableManager gameTableManager = configuredGameTableManager;
+            SetAutoProperty(
+                gameTableManager,
+                missingTable == "path-mission" ? nameof(GameTableManager.PathMission) : nameof(GameTableManager.PathSoldierSWAT),
+                null);
+
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out _);
+            manager.ActivateMissions(294, new Dictionary<ushort, uint>
+            {
+                [2424] = 0
+            });
+
+            Assert.False(manager.ProgressSoldierSwatMission(2424, 1u));
+            Assert.False(manager.IsMissionComplete(2424u));
+            Assert.Empty(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerPathMissionUpdate>());
+        }
+    }
+
+    [Fact]
     public void CompleteMissionBySettlerImprovementGroupId_WithHubMissionCount_CompletesAfterRequiredBuilds()
     {
         BuildGameTableProvider(
@@ -5366,7 +5485,8 @@ public class PathManagerTests
         IEnumerable<PathScientistDatacubeDiscoveryEntry> pathScientistDatacubeDiscoveries = null,
         bool includeSpell4Table = true,
         bool includeScanBotProfileTable = true,
-        IEnumerable<Creature2Entry> creature2Entries = null)
+        IEnumerable<Creature2Entry> creature2Entries = null,
+        IEnumerable<PathSoldierSWATEntry> soldierSwat = null)
     {
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
@@ -5377,6 +5497,7 @@ public class PathManagerTests
         SetAutoProperty(gameTableManager, nameof(GameTableManager.PathMission), CreateGameTable((pathMissions ?? []).ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.PathSoldierTowerDefense), CreateGameTable((soldierTowerDefense ?? []).ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.PathSoldierAssassinate), CreateGameTable((soldierAssassinate ?? []).ToArray()));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.PathSoldierSWAT), CreateGameTable((soldierSwat ?? []).ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.PathSettlerImprovementGroup), CreateGameTable((settlerImprovementGroups ?? []).ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.PathSettlerHub), CreateGameTable((settlerHubs ?? []).ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.PathExplorerNode), CreateGameTable((pathExplorerNodes ?? []).ToArray()));

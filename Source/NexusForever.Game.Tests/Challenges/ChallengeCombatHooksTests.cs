@@ -135,6 +135,37 @@ public class ChallengeCombatHooksTests
         Assert.Empty(GetMessages<ServerChallengeUpdate>(sessionProxy));
     }
 
+    [Fact]
+    public void Update_DuringActiveTimer_DoesNotResendUnchangedChallengeState()
+    {
+        GameTableManager gameTables = CreateCombatGameTables();
+        IPlayer player = CreatePlayer(9001u, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTables);
+        player.ChallengeManager.HandleChoice(CombatChallengeId, ChallengeChoice.Activate);
+        int updateCount = GetMessages<ServerChallengeUpdate>(sessionProxy).Count;
+
+        player.ChallengeManager.Update(1d);
+
+        Assert.Equal(updateCount, GetMessages<ServerChallengeUpdate>(sessionProxy).Count);
+    }
+
+    [Fact]
+    public void Update_WhenCooldownExpires_SendsUpdatedChallengeState()
+    {
+        GameTableManager gameTables = CreateCombatGameTables();
+        IPlayer player = CreatePlayer(9001u, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTables);
+        player.ChallengeManager.HandleChoice(CombatChallengeId, ChallengeChoice.Activate);
+        ChallengeCombatHooks.OnCreatureKilled(player, TargetCreatureId);
+        int updateCount = GetMessages<ServerChallengeUpdate>(sessionProxy).Count;
+
+        player.ChallengeManager.Update(1800d);
+
+        IReadOnlyList<ServerChallengeUpdate> updates = GetMessages<ServerChallengeUpdate>(sessionProxy);
+        Assert.Equal(updateCount + 1, updates.Count);
+        ServerChallengeUpdate.Challenge row = Assert.Single(updates.Last().ActiveChallenges);
+        Assert.False(row.OnCooldown);
+        Assert.Equal(0u, row.TimeCooldownDt);
+    }
+
     private const uint CooldownTypeFlag = 0x10u;
 
     private static GameTableManager CreateCombatGameTables(uint target = TargetCreatureId, params TargetGroupEntry[] targetGroups)
