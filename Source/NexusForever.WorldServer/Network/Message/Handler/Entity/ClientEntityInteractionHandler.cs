@@ -209,10 +209,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 throw new InvalidOperationException();
 
             session.Player.SelectedVendorInfo = vendorEntity.VendorInfo;
-
-            ServerVendorItemsUpdated vendorItemsUpdated = vendorEntity.VendorInfo.Build();
-            vendorItemsUpdated.VendorUnitId = vendorEntity.Guid;
-            session.EnqueueMessageEncrypted(vendorItemsUpdated);
+            session.Player.RefreshSelectedVendorInfo(vendorEntity.Guid);
         }
 
         private bool TryRecoverTutorialInteractionTarget(IWorldSession session, uint targetId, out IWorldEntity entity)

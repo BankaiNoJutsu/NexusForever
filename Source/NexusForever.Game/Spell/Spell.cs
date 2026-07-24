@@ -2066,8 +2066,7 @@ namespace NexusForever.Game.Spell
 
         private void ScheduleEffectLifetime(SpellEffectInterpretation effect, IWorldEntity target, ISpellTargetEffectInfo info)
         {
-            uint durationTime = GetEffectLifetimeDuration(effect);
-            if (durationTime == 0u)
+            if (!TryGetEffectLifetimeDelay(effect, out uint durationTime))
                 return;
 
             Action removalAction = BuildLifetimeRemovalAction(effect, target, info);
@@ -2088,8 +2087,7 @@ namespace NexusForever.Game.Spell
 
         private void ScheduleEffectLifetime(SpellEffectInterpretation effect, IUnitEntity target, ISpellTargetEffectInfo info)
         {
-            uint durationTime = GetEffectLifetimeDuration(effect);
-            if (durationTime == 0u)
+            if (!TryGetEffectLifetimeDelay(effect, out uint durationTime))
                 return;
 
             Action removalAction = BuildLifetimeRemovalAction(effect, target, info);
@@ -2177,6 +2175,42 @@ namespace NexusForever.Game.Spell
                     return () =>
                     {
                         if (target.RemoveSpellProperty(effect.UnitPropertyModifier.Property, info.EffectId))
+                            SendRemoveBuff(target.Guid);
+                    };
+                case SpellEffectType.UnitPropertyConversion:
+                    if (effect.UnitPropertyConversion == null)
+                        return null;
+
+                    return () =>
+                    {
+                        if (target.RemoveSpellProperty(effect.UnitPropertyConversion.TargetProperty, info.EffectId))
+                            SendRemoveBuff(target.Guid);
+                    };
+                case SpellEffectType.VendorPriceModifier:
+                    if (effect.VendorPriceModifier == null || target is not IPlayer vendorPlayer)
+                        return null;
+
+                    return () =>
+                    {
+                        if (vendorPlayer.RemoveVendorPriceModifier(info.EffectId))
+                            SendRemoveBuff(target.Guid);
+                    };
+                case SpellEffectType.HazardEnable:
+                    if (effect.HazardEnable == null || target is not IPlayer hazardPlayer)
+                        return null;
+
+                    return () =>
+                    {
+                        if (hazardPlayer.RemoveHazard(info.EffectId))
+                            SendRemoveBuff(target.Guid);
+                    };
+                case SpellEffectType.HazardSuspend:
+                    if (effect.HazardSuspend == null || target is not IPlayer suspendedHazardPlayer)
+                        return null;
+
+                    return () =>
+                    {
+                        if (suspendedHazardPlayer.RemoveHazardSuspension(info.EffectId))
                             SendRemoveBuff(target.Guid);
                     };
                 case SpellEffectType.PersonalDmgHealMod:
@@ -2331,6 +2365,15 @@ namespace NexusForever.Game.Spell
                     };
                 case SpellEffectType.ForcedMove:
                     if (effect.ForcedMove == null)
+                        return null;
+
+                    return () =>
+                    {
+                        target.MovementManager.SetVelocity(Vector3.Zero, false);
+                        target.MovementManager.SetState(target.MovementManager.GetState() & ~StateFlags.Velocity);
+                    };
+                case SpellEffectType.VectorSlide:
+                    if (effect.VectorSlide == null)
                         return null;
 
                     return () =>
@@ -2524,6 +2567,16 @@ namespace NexusForever.Game.Spell
                 return effect.ForcedMove.DurationTime;
 
             return effect.Timing.DurationTime;
+        }
+
+        internal static bool TryGetEffectLifetimeDelay(SpellEffectInterpretation effect, out uint durationTime)
+        {
+            durationTime = GetEffectLifetimeDuration(effect);
+
+            // Zero-duration VectorSlide rows are one-shot velocity commands. Queue
+            // their removal for the next spell update so the movement owner can
+            // broadcast the impulse once without leaving velocity latched.
+            return durationTime > 0u || effect.VectorSlide != null;
         }
 
         public bool IsMovingInterrupted()

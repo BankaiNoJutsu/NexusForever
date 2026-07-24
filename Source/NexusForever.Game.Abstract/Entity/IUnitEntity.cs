@@ -145,6 +145,11 @@ namespace NexusForever.Game.Abstract.Entity
         void AddSpellModifierProperty(ISpellPropertyModifier modifier, uint effectId, uint spell4Id, uint spell4EffectId, uint castingId);
 
         /// <summary>
+        /// Add an acyclic live property conversion owned by a concrete spell effect instance.
+        /// </summary>
+        bool TryAddSpellPropertyConversion(ISpellPropertyConversion conversion, uint effectId, uint spell4Id, uint spell4EffectId, uint castingId, out string skippedReason);
+
+        /// <summary>
         /// Remove a <see cref="Property"/> modifier by a concrete spell effect instance that is currently affecting this <see cref="IUnitEntity"/>.
         /// </summary>
         bool RemoveSpellProperty(Property property, uint effectId);

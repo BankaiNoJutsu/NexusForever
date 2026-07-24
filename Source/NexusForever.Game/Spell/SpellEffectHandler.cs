@@ -18,7 +18,9 @@ using NexusForever.Game.Map.Lock;
 using NexusForever.Game.Map.Search;
 using NexusForever.Game.Spell.Effect;
 using NexusForever.Game.Static.Combat.CrowdControl;
+using NexusForever.Game.Static.Crafting;
 using NexusForever.Game.Static.Entity.Movement.Command.State;
+using NexusForever.Game.Static.Entity.Movement.Spline;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Pet;
 using NexusForever.Game.Static.Quest;
@@ -80,6 +82,9 @@ namespace NexusForever.Game.Spell
         private const uint EngineerCombatBotAttackCommandBaseSpell4Id = 46724u;
         private const uint EngineerCombatBotStopCommandBaseSpell4Id = 46725u;
         private const uint EngineerCombatBotGoToCommandBaseSpell4Id = 25888u;
+        private const uint SmallVendorPriceDiscountBaseSpell4Id = 15098u;
+        private const uint LargeVendorPriceDiscountBaseSpell4Id = 15099u;
+        private const float EngineerCombatBotDefaultCommandMovementSpeed = 10f;
         private const ushort EngineerCombatBotPrimaryPetBarShortcutSetId = 299;
         private const uint EngineerCombatBotCommandSurfacePetUnitId = 0u;
         private const uint EngineerCombatBotValidStances = 0b11101u; // Assist, Passive, Defensive, Aggressive.
@@ -722,6 +727,51 @@ namespace NexusForever.Game.Spell
             return null;
         }
 
+        public static uint CommandEngineerCombatBotsToPosition(IPlayer player, Vector3 position)
+        {
+            if (player?.SummonFactory == null
+                || !float.IsFinite(position.X)
+                || !float.IsFinite(position.Y)
+                || !float.IsFinite(position.Z))
+                return 0u;
+
+            uint commandedCount = 0u;
+            var commandedGuids = new HashSet<uint>();
+            foreach (EngineerCombatBotDefinition definition in EngineerCombatBotDefinitions)
+            {
+                foreach (uint creatureId in definition.CreatureIds)
+                {
+                    foreach (IWorldEntity engineerBot in player.SummonFactory.GetSummonCreatures(creatureId))
+                    {
+                        if (engineerBot == null
+                            || engineerBot.SummonerGuid != player.Guid
+                            || GetEngineerCombatBotDefinition(engineerBot.CreatureId) == null
+                            || !commandedGuids.Add(engineerBot.Guid))
+                            continue;
+
+                        if (engineerBot is IUnitEntity unit)
+                        {
+                            unit.SetTarget((IWorldEntity)null);
+                            unit.ThreatManager?.ClearThreatList();
+                            unit.MovementManager?.Finalise();
+                        }
+
+                        engineerBot.SummonCommandStance = PetStance.Stay;
+                        engineerBot.SummonCommandFollowRequested = false;
+
+                        float speed = engineerBot.GetPropertyValue(Property.MoveSpeedMultiplier) * EngineerCombatBotDefaultCommandMovementSpeed;
+                        if (!float.IsFinite(speed) || speed <= 0f)
+                            speed = EngineerCombatBotDefaultCommandMovementSpeed;
+
+                        engineerBot.MovementManager?.LaunchPath(position, speed, SplineMode.OneShot);
+                        commandedCount++;
+                    }
+                }
+            }
+
+            return commandedCount;
+        }
+
         private static void ApplyEngineerCombatBotSummonerCombatStats(IWorldEntity summoned, IPlayer player, Creature2Entry creatureEntry)
         {
             uint minLevel = creatureEntry.MinLevel == 0u ? 1u : creatureEntry.MinLevel;
@@ -1280,6 +1330,95 @@ namespace NexusForever.Game.Spell
             SpellEffectDiagnostics.TraceNpcExecutionDelay(spell, target, info, executionDelay);
         }
 
+        [SpellEffectHandler(SpellEffectType.NPCForceAIMovement)]
+        public static void HandleEffectNpcForceAiMovement(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectNpcForceAiMovementSemantics movement = SpellEffectInterpreter.Interpret(info).NpcForceAiMovement;
+            if (movement == null)
+                return;
+
+            if (spell.Parameters.SpellInfo.BaseInfo.Entry.Id != EngineerCombatBotGoToCommandBaseSpell4Id)
+            {
+                SpellEffectDiagnostics.TraceNpcForceAiMovement(spell, target, movement, 0u, "unsupported-base-spell");
+                return;
+            }
+
+            if (spell.Caster is not IPlayer player || target.Guid != player.Guid)
+            {
+                SpellEffectDiagnostics.TraceNpcForceAiMovement(spell, target, movement, 0u, "not-player-caster-target");
+                return;
+            }
+
+            if (spell.Parameters.Position == null)
+            {
+                SpellEffectDiagnostics.TraceNpcForceAiMovement(spell, target, movement, 0u, "missing-position");
+                return;
+            }
+
+            uint commandedCount = CommandEngineerCombatBotsToPosition(player, spell.Parameters.Position.Vector);
+            SpellEffectDiagnostics.TraceNpcForceAiMovement(spell, target, movement, commandedCount, null);
+        }
+
+        [SpellEffectHandler(SpellEffectType.HazardEnable)]
+        public static void HandleEffectHazardEnable(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectHazardEnableSemantics hazard = SpellEffectInterpreter.Interpret(info).HazardEnable;
+            if (hazard == null)
+                return;
+
+            bool applied = false;
+            string skippedReason = null;
+            if (target is not IPlayer player)
+                skippedReason = "target-not-player";
+            else
+                applied = player.TryEnableHazard(info.EffectId, hazard.HazardId, out skippedReason);
+
+            SpellEffectDiagnostics.TraceHazardEnable(spell, target, hazard, applied, skippedReason);
+        }
+
+        [SpellEffectHandler(SpellEffectType.HazardModify)]
+        public static void HandleEffectHazardModify(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectHazardModifySemantics hazard = SpellEffectInterpreter.Interpret(info).HazardModify;
+            if (hazard == null)
+                return;
+
+            bool applied = false;
+            string skippedReason = null;
+            if (target is not IPlayer player)
+                skippedReason = "target-not-player";
+            else if (hazard.TargetMode != 1u
+                || hazard.Operation > 2u
+                || hazard.ModifierValue != 0f
+                || hazard.DataBits05 != 0u)
+                skippedReason = "unsupported-modifier-mode";
+            else if (!float.IsFinite(hazard.Amount))
+                skippedReason = "invalid-amount";
+            else
+                applied = player.TryModifyHazard(hazard.HazardId, hazard.Amount, out skippedReason);
+
+            SpellEffectDiagnostics.TraceHazardModify(spell, target, hazard, applied, skippedReason);
+        }
+
+        [SpellEffectHandler(SpellEffectType.HazardSuspend)]
+        public static void HandleEffectHazardSuspend(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectHazardSuspendSemantics hazard = SpellEffectInterpreter.Interpret(info).HazardSuspend;
+            if (hazard == null)
+                return;
+
+            bool applied = false;
+            string skippedReason = null;
+            if (target is not IPlayer player)
+                skippedReason = "target-not-player";
+            else if (hazard.DataBits02 != 0u || hazard.DataBits03 != 0u || hazard.DataBits04 != 0u || hazard.DataBits05 != 0u)
+                skippedReason = "unsupported-payload";
+            else
+                applied = player.TrySuspendHazard(info.EffectId, hazard.HazardId, hazard.TargetMode, out skippedReason);
+
+            SpellEffectDiagnostics.TraceHazardSuspend(spell, target, hazard, applied, skippedReason);
+        }
+
         [SpellEffectHandler(SpellEffectType.RavelSignal)]
         public static void HandleEffectRavelSignal(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
@@ -1307,6 +1446,40 @@ namespace NexusForever.Game.Spell
 
             target.SendSignal(ravelSignal.SignalId);
             SpellEffectDiagnostics.TraceRavelSignal(spell, target, info, ravelSignal, null);
+        }
+
+        [SpellEffectHandler(SpellEffectType.VendorPriceModifier)]
+        public static void HandleEffectVendorPriceModifier(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectVendorPriceModifierSemantics modifier = SpellEffectInterpreter.Interpret(info).VendorPriceModifier;
+            if (modifier == null)
+                return;
+
+            uint baseSpell4Id = spell.Parameters.SpellInfo.BaseInfo.Entry.Id;
+            if (baseSpell4Id is not (SmallVendorPriceDiscountBaseSpell4Id or LargeVendorPriceDiscountBaseSpell4Id))
+            {
+                SpellEffectDiagnostics.TraceVendorPriceModifier(spell, target, modifier, false, "unsupported-base-spell");
+                return;
+            }
+
+            if (target is not IPlayer player)
+            {
+                SpellEffectDiagnostics.TraceVendorPriceModifier(spell, target, modifier, false, "target-not-player");
+                return;
+            }
+
+            Spell4StackGroupEntry stackGroup = spell.Parameters.SpellInfo.StackGroup;
+            bool applied = player.TryAddVendorPriceModifier(
+                info.EffectId,
+                modifier.VendorSellMultiplier,
+                modifier.VendorBuyMultiplier,
+                spell.Parameters.SpellInfo.Entry.Id,
+                info.Entry.Id,
+                spell.CastingId,
+                spell.Parameters.SpellInfo.Entry.Spell4StackGroupId,
+                stackGroup?.StackCap ?? 1u,
+                out string skippedReason);
+            SpellEffectDiagnostics.TraceVendorPriceModifier(spell, target, modifier, applied, skippedReason);
         }
 
         [SpellEffectHandler(SpellEffectType.ModifyInterruptArmor)]
@@ -1661,6 +1834,76 @@ namespace NexusForever.Game.Spell
                     ApplyKeyedForcedMove(spell, target, forcedMove, mover, position, angle, flightTime, gravity, speed);
                     break;
             }
+        }
+
+        [SpellEffectHandler(SpellEffectType.VectorSlide)]
+        public static void HandleEffectVectorSlide(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectVectorSlideSemantics vectorSlide = SpellEffectInterpreter.Interpret(info).VectorSlide;
+            if (vectorSlide == null)
+                return;
+
+            if (!TryResolveVectorSlideVelocity(spell, target, vectorSlide, out Vector3 velocity, out string skippedReason))
+            {
+                SpellEffectDiagnostics.TraceVectorSlide(spell, target, vectorSlide, Vector3.Zero, false, skippedReason);
+                return;
+            }
+
+            target.MovementManager.SetState(target.MovementManager.GetState() | StateFlags.Velocity);
+            target.MovementManager.SetVelocity(velocity, false);
+            SpellEffectDiagnostics.TraceVectorSlide(spell, target, vectorSlide, velocity, true, null);
+        }
+
+        private static bool TryResolveVectorSlideVelocity(
+            ISpell spell,
+            IUnitEntity target,
+            SpellEffectVectorSlideSemantics vectorSlide,
+            out Vector3 velocity,
+            out string skippedReason)
+        {
+            velocity = Vector3.Zero;
+            skippedReason = null;
+            if (vectorSlide.Mode > 1u)
+            {
+                skippedReason = "unsupported-mode";
+                return false;
+            }
+
+            if (!float.IsFinite(vectorSlide.Magnitude) || vectorSlide.Magnitude == 0f || MathF.Abs(vectorSlide.Magnitude) >= 100f)
+            {
+                skippedReason = "invalid-magnitude";
+                return false;
+            }
+
+            Vector3 direction;
+            if (vectorSlide.Mode == 0u)
+            {
+                Vector3 anchor = spell.Parameters.Position?.Vector ?? spell.Caster.Position;
+                direction = anchor - target.Position;
+                direction.Y = 0f;
+
+                if (direction.LengthSquared() < 0.0001f && anchor != spell.Caster.Position)
+                {
+                    direction = spell.Caster.Position - target.Position;
+                    direction.Y = 0f;
+                }
+
+                if (direction.LengthSquared() < 0.0001f)
+                {
+                    skippedReason = "missing-anchor-direction";
+                    return false;
+                }
+
+                direction = Vector3.Normalize(direction);
+            }
+            else
+            {
+                float angle = -spell.Caster.Rotation.X + MathF.PI / 2f;
+                direction = new Vector3(MathF.Cos(angle), 0f, MathF.Sin(angle));
+            }
+
+            velocity = direction * vectorSlide.Magnitude;
+            return true;
         }
 
         private static bool TryResolveForcedMove(
@@ -3248,6 +3491,12 @@ namespace NexusForever.Game.Spell
             if (immunity == null)
                 return;
 
+            if (!SpellImmunityModeCandidate.IsConservativelySupported(immunity.Mode))
+            {
+                SpellEffectDiagnostics.TraceSpellImmunity(spell, target, immunity, false, false, "unsupported-mode");
+                return;
+            }
+
             Spell4Entry immuneSpell = GetGameTableManager().Spell4.GetEntry(immunity.Spell4Id);
             if (immuneSpell == null)
             {
@@ -3517,6 +3766,93 @@ namespace NexusForever.Game.Spell
             }
         }
 
+        [SpellEffectHandler(SpellEffectType.TradeSkillProfession)]
+        public static void HandleEffectTradeSkillProfession(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectTradeSkillProfessionSemantics profession = SpellEffectInterpreter.Interpret(info).TradeSkillProfession;
+            if (profession == null)
+                return;
+
+            IPlayer player = GetPlayerSpellOwner(spell, target);
+            if (player == null)
+            {
+                SpellEffectDiagnostics.TraceTradeSkillProfession(spell, target, profession, 0u, false, "no-player-owner");
+                return;
+            }
+
+            if (!Enum.IsDefined(profession.Tradeskill))
+            {
+                SpellEffectDiagnostics.TraceTradeSkillProfession(spell, target, profession, player.Guid, false, "invalid-tradeskill");
+                return;
+            }
+
+            if (profession.DataBits01 != 0u
+                || profession.DataBits02 != 0u
+                || profession.DataBits03 != 0u
+                || profession.DataBits04 != 0u
+                || profession.DataBits05 != 0u
+                || profession.DataBits06 != 0u
+                || profession.DataBits07 != 0u
+                || profession.DataBits08 != 0u
+                || profession.DataBits09 != 0u)
+            {
+                SpellEffectDiagnostics.TraceTradeSkillProfession(spell, target, profession, player.Guid, false, "unsupported-payload");
+                return;
+            }
+
+            bool applied = player.LearnTradeskill(profession.Tradeskill, 0);
+            SpellEffectDiagnostics.TraceTradeSkillProfession(spell, target, profession, player.Guid, applied, applied ? null : "learn-rejected");
+        }
+
+        [SpellEffectHandler(SpellEffectType.PathMissionIncrement)]
+        public static void HandleEffectPathMissionIncrement(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectPathMissionIncrementSemantics increment = SpellEffectInterpreter.Interpret(info).PathMissionIncrement;
+            if (increment == null)
+                return;
+
+            IPlayer player = GetPlayerSpellOwner(spell, target);
+            if (player == null)
+            {
+                SpellEffectDiagnostics.TracePathMissionIncrement(spell, target, increment, 0u, false, "no-player-owner");
+                return;
+            }
+
+            if (increment.PathMissionId == 0u || increment.PathMissionId > ushort.MaxValue)
+            {
+                SpellEffectDiagnostics.TracePathMissionIncrement(spell, target, increment, player.Guid, false, "invalid-mission-id");
+                return;
+            }
+
+            if (increment.Amount == 0u)
+            {
+                SpellEffectDiagnostics.TracePathMissionIncrement(spell, target, increment, player.Guid, false, "zero-amount");
+                return;
+            }
+
+            if (increment.DataBits02 != 0u
+                || increment.DataBits03 != 0u
+                || increment.DataBits04 != 0u
+                || increment.DataBits05 != 0u
+                || increment.DataBits06 != 0u
+                || increment.DataBits07 != 0u
+                || increment.DataBits08 != 0u
+                || increment.DataBits09 != 0u)
+            {
+                SpellEffectDiagnostics.TracePathMissionIncrement(spell, target, increment, player.Guid, false, "unsupported-payload");
+                return;
+            }
+
+            bool applied = player.PathManager.ProgressSoldierSwatMission((ushort)increment.PathMissionId, increment.Amount);
+            SpellEffectDiagnostics.TracePathMissionIncrement(
+                spell,
+                target,
+                increment,
+                player.Guid,
+                applied,
+                applied ? null : "inactive-or-non-swat-mission");
+        }
+
         [SpellEffectHandler(SpellEffectType.GrantLevelScaledXP)]
         public static void HandleEffectGrantLevelScaledXp(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
@@ -3531,6 +3867,12 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
+            if (levelScaledXp.Mode != 1u)
+            {
+                SpellEffectDiagnostics.TraceGrantLevelScaledXp(spell, target, levelScaledXp, 0u, false, "unsupported-mode");
+                return;
+            }
+
             uint amount = CalculateLevelScaledXp(player, levelScaledXp, out string skippedReason);
             if (amount == 0u)
             {
@@ -3540,6 +3882,35 @@ namespace NexusForever.Game.Spell
 
             player.XpManager.GrantXp(amount, ExpReason.Spell);
             SpellEffectDiagnostics.TraceGrantLevelScaledXp(spell, target, levelScaledXp, amount, true, null);
+        }
+
+        [SpellEffectHandler(SpellEffectType.GrantLevelScaledPrestige)]
+        public static void HandleEffectGrantLevelScaledPrestige(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectGrantLevelScaledPrestigeSemantics levelScaledPrestige = SpellEffectInterpreter.Interpret(info).GrantLevelScaledPrestige;
+            if (levelScaledPrestige == null)
+                return;
+
+            IPlayer player = GetPlayerSpellOwner(spell, target);
+            if (player == null)
+            {
+                SpellEffectDiagnostics.TraceGrantLevelScaledPrestige(spell, target, levelScaledPrestige, 0u, false, "no-player-owner");
+                return;
+            }
+
+            if (levelScaledPrestige.Mode != 1u)
+            {
+                SpellEffectDiagnostics.TraceGrantLevelScaledPrestige(spell, target, levelScaledPrestige, 0u, false, "unsupported-mode");
+                return;
+            }
+
+            SpellEffectDiagnostics.TraceGrantLevelScaledPrestige(
+                spell,
+                target,
+                levelScaledPrestige,
+                0u,
+                false,
+                "unverified-prestige-formula");
         }
 
         [SpellEffectHandler(SpellEffectType.ModifyRestedXP)]
@@ -3589,6 +3960,40 @@ namespace NexusForever.Game.Spell
 
             player.SpellManager.AddAmpPower((ushort)augmentPower.Amount);
             SpellEffectDiagnostics.TraceGiveAugmentPowerToPlayer(spell, target, augmentPower, true, null);
+        }
+
+        [SpellEffectHandler(SpellEffectType.GiveAbilityPointsToPlayer)]
+        public static void HandleEffectGiveAbilityPointsToPlayer(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectGiveAbilityPointsToPlayerSemantics abilityPoints = SpellEffectInterpreter.Interpret(info).GiveAbilityPointsToPlayer;
+            if (abilityPoints == null)
+                return;
+
+            IPlayer player = GetPlayerSpellOwner(spell, target);
+            if (player == null)
+            {
+                SpellEffectDiagnostics.TraceGiveAbilityPointsToPlayer(spell, target, abilityPoints, false, "no-player-owner");
+                return;
+            }
+
+            // The single retail row is a one-point unlock. Keep unexpected payloads diagnostic-only.
+            if (abilityPoints.Amount != ActionSet.MaxBonusTierPoints
+                || abilityPoints.DataBits01 != 0u
+                || abilityPoints.DataBits02 != 0u
+                || abilityPoints.DataBits03 != 0u
+                || abilityPoints.DataBits04 != 0u
+                || abilityPoints.DataBits05 != 0u
+                || abilityPoints.DataBits06 != 0u
+                || abilityPoints.DataBits07 != 0u
+                || abilityPoints.DataBits08 != 0u
+                || abilityPoints.DataBits09 != 0u)
+            {
+                SpellEffectDiagnostics.TraceGiveAbilityPointsToPlayer(spell, target, abilityPoints, false, "unsupported-payload");
+                return;
+            }
+
+            player.SpellManager.AddAbilityTierPoints((byte)abilityPoints.Amount);
+            SpellEffectDiagnostics.TraceGiveAbilityPointsToPlayer(spell, target, abilityPoints, true, null);
         }
 
         [SpellEffectHandler(SpellEffectType.QuestAdvanceObjective)]
@@ -4082,6 +4487,43 @@ namespace NexusForever.Game.Spell
             // Timed removal is scheduled centrally by Spell after the handler succeeds.
         }
 
+        [SpellEffectHandler(SpellEffectType.UnitPropertyConversion)]
+        public static void HandleEffectUnitPropertyConversion(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectUnitPropertyConversionSemantics conversion = SpellEffectInterpreter.Interpret(info).UnitPropertyConversion;
+            if (conversion == null)
+                return;
+
+            if (!Enum.IsDefined(conversion.SourceProperty) || !Enum.IsDefined(conversion.TargetProperty))
+            {
+                SpellEffectDiagnostics.TraceUnitPropertyConversion(spell, target, conversion, false, "unknown-property");
+                return;
+            }
+
+            if (!float.IsFinite(conversion.Multiplier) || conversion.Multiplier <= 0f)
+            {
+                SpellEffectDiagnostics.TraceUnitPropertyConversion(spell, target, conversion, false, "invalid-multiplier");
+                return;
+            }
+
+            Spell4StackGroupEntry stackGroup = spell.Parameters.SpellInfo.StackGroup;
+            if (stackGroup != null && stackGroup.StackCap > 0u)
+                target.EnforceSpellPropertyStackGroupCap(spell.Parameters.SpellInfo.Entry.Spell4StackGroupId, stackGroup.StackCap);
+
+            var modifier = new SpellPropertyConversion(
+                conversion.SourceProperty,
+                conversion.TargetProperty,
+                conversion.Multiplier);
+            bool applied = target.TryAddSpellPropertyConversion(
+                modifier,
+                info.EffectId,
+                spell.Parameters.SpellInfo.Entry.Id,
+                info.Entry.Id,
+                spell.CastingId,
+                out string skippedReason);
+            SpellEffectDiagnostics.TraceUnitPropertyConversion(spell, target, conversion, applied, skippedReason);
+        }
+
         private static void ApplyScale(IUnitEntity target, float previousScale, float targetScale, uint transitionTimeMs)
         {
             if (transitionTimeMs > 0u && MathF.Abs(previousScale - targetScale) > 0.0001f)
@@ -4306,15 +4748,30 @@ namespace NexusForever.Game.Spell
 
         private static uint CalculateLevelScaledXp(IPlayer player, SpellEffectGrantLevelScaledXpSemantics levelScaledXp, out string skippedReason)
         {
+            return CalculateLevelScaledReward(
+                player,
+                levelScaledXp.PercentOfLevel,
+                levelScaledXp.MaxLevel,
+                "invalid-resolved-xp",
+                out skippedReason);
+        }
+
+        private static uint CalculateLevelScaledReward(
+            IPlayer player,
+            float percentOfLevel,
+            uint configuredMaxLevel,
+            string invalidResolvedReason,
+            out string skippedReason)
+        {
             skippedReason = null;
 
-            if (!float.IsFinite(levelScaledXp.PercentOfLevel) || levelScaledXp.PercentOfLevel <= 0f)
+            if (!float.IsFinite(percentOfLevel) || percentOfLevel <= 0f)
             {
                 skippedReason = "invalid-percent";
                 return 0u;
             }
 
-            uint maxLevel = levelScaledXp.MaxLevel == 0u ? 50u : levelScaledXp.MaxLevel;
+            uint maxLevel = configuredMaxLevel == 0u ? 50u : configuredMaxLevel;
             if (player.Level >= maxLevel)
             {
                 skippedReason = "at-or-above-level-cap";
@@ -4336,10 +4793,10 @@ namespace NexusForever.Game.Spell
             }
 
             float levelSpan = nextLevel.MinXpForLevel - currentLevel.MinXpForLevel;
-            float resolvedAmount = levelSpan * (levelScaledXp.PercentOfLevel / 100f);
+            float resolvedAmount = levelSpan * (percentOfLevel / 100f);
             if (!float.IsFinite(resolvedAmount) || resolvedAmount <= 0f)
             {
-                skippedReason = "invalid-resolved-xp";
+                skippedReason = invalidResolvedReason;
                 return 0u;
             }
 

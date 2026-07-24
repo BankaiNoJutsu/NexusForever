@@ -143,6 +143,7 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary</*effectId*/uint, AbsorptionState> healingAbsorptionStates = new();
 
         private readonly Dictionary<Property, Dictionary</*effectId*/uint, SpellPropertyState>> spellProperties = new();
+        private readonly HashSet<Property> recalculatingSpellPropertyConversions = [];
         private readonly List<PendingDelayDeathTrigger> pendingDelayDeathTriggers = new();
 
         public uint ActiveCCStateMask => ccStates.Keys.Aggregate(0u, (mask, state) => mask | (1u << (int)state));
@@ -423,12 +424,13 @@ namespace NexusForever.Game.Entity
 
         public bool IsImmuneToSpell(uint spell4Id)
         {
-            return spell4Id != 0u && spellImmunityStates.Values.Any(state => state.ImmuneSpell4Id == spell4Id);
+            return spell4Id != 0u && spellImmunityStates.Values.Any(state =>
+                state.Mode == SpellImmunityModeCandidate.ConcreteSpell && state.ImmuneSpell4Id == spell4Id);
         }
 
         public void AddSpellImmunity(uint effectId, uint spell4Id, uint castingId, uint immuneSpell4Id, uint mode)
         {
-            if (immuneSpell4Id == 0u)
+            if (immuneSpell4Id == 0u || !SpellImmunityModeCandidate.IsConservativelySupported(mode))
                 return;
 
             spellImmunityStates[effectId] = new SpellImmunityState
@@ -1696,6 +1698,50 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void AddSpellModifierProperty(ISpellPropertyModifier spellModifier, uint effectId, uint spell4Id, uint spell4EffectId, uint castingId)
         {
+            AddSpellModifierPropertyState(spellModifier, effectId, spell4Id, spell4EffectId, castingId);
+            CalculateProperty(spellModifier.Property);
+        }
+
+        public bool TryAddSpellPropertyConversion(ISpellPropertyConversion conversion, uint effectId, uint spell4Id, uint spell4EffectId, uint castingId, out string skippedReason)
+        {
+            skippedReason = null;
+            if (conversion == null)
+            {
+                skippedReason = "missing-conversion";
+                return false;
+            }
+
+            if (!Enum.IsDefined(conversion.SourceProperty) || !Enum.IsDefined(conversion.Property))
+            {
+                skippedReason = "unknown-property";
+                return false;
+            }
+
+            if (conversion.SourceProperty == conversion.Property)
+            {
+                skippedReason = "self-referential-conversion";
+                return false;
+            }
+
+            if (!float.IsFinite(conversion.Multiplier) || conversion.Multiplier <= 0f)
+            {
+                skippedReason = "invalid-multiplier";
+                return false;
+            }
+
+            if (HasSpellPropertyConversionPath(conversion.Property, conversion.SourceProperty, []))
+            {
+                skippedReason = "conversion-cycle";
+                return false;
+            }
+
+            AddSpellModifierPropertyState(conversion, effectId, spell4Id, spell4EffectId, castingId);
+            CalculateProperty(conversion.Property);
+            return true;
+        }
+
+        private void AddSpellModifierPropertyState(ISpellPropertyModifier spellModifier, uint effectId, uint spell4Id, uint spell4EffectId, uint castingId)
+        {
             if (!spellProperties.TryGetValue(spellModifier.Property, out Dictionary<uint, SpellPropertyState> spellDict))
             {
                 spellDict = new Dictionary<uint, SpellPropertyState>();
@@ -1715,8 +1761,21 @@ namespace NexusForever.Game.Entity
                 EffectEntryId = spell4EffectId,
                 Modifier      = spellModifier
             };
+        }
 
-            CalculateProperty(spellModifier.Property);
+        private bool HasSpellPropertyConversionPath(Property sourceProperty, Property targetProperty, HashSet<Property> visited)
+        {
+            if (!visited.Add(sourceProperty))
+                return false;
+
+            foreach (ISpellPropertyConversion conversion in GetSpellPropertyConversions().Where(c => c.SourceProperty == sourceProperty))
+            {
+                if (conversion.Property == targetProperty
+                    || HasSpellPropertyConversionPath(conversion.Property, targetProperty, visited))
+                    return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -1820,6 +1879,14 @@ namespace NexusForever.Game.Entity
                 : Enumerable.Empty<ISpellPropertyModifier>();
         }
 
+        private IEnumerable<ISpellPropertyConversion> GetSpellPropertyConversions()
+        {
+            return spellProperties.Values
+                .SelectMany(states => states.Values)
+                .Select(state => state.Modifier)
+                .OfType<ISpellPropertyConversion>();
+        }
+
         protected override void CalculatePropertyValue(IPropertyValue propertyValue)
         {
             base.CalculatePropertyValue(propertyValue);
@@ -1827,6 +1894,7 @@ namespace NexusForever.Game.Entity
             // Run through spell adjustments first because they could adjust base properties
             // dataBits01 appears to be some form of Priority or Math Operator
             foreach (ISpellPropertyModifier spellModifier in GetSpellPropertyModifiers(propertyValue.Property)
+                .Where(modifier => modifier is not ISpellPropertyConversion)
                 .OrderByDescending(s => s.Priority))
             {
                 foreach (IPropertyModifier alteration in spellModifier.Alterations)
@@ -1842,6 +1910,37 @@ namespace NexusForever.Game.Entity
                             break;
                     }
                 }
+            }
+
+            foreach (ISpellPropertyConversion conversion in GetSpellPropertyModifiers(propertyValue.Property).OfType<ISpellPropertyConversion>())
+            {
+                float convertedValue = GetPropertyValue(conversion.SourceProperty) * conversion.Multiplier;
+                if (float.IsFinite(convertedValue))
+                    propertyValue.Value += convertedValue;
+            }
+        }
+
+        protected override void OnPropertyUpdate(IPropertyValue propertyValue)
+        {
+            base.OnPropertyUpdate(propertyValue);
+
+            if (!recalculatingSpellPropertyConversions.Add(propertyValue.Property))
+                return;
+
+            try
+            {
+                Property[] dependantProperties = GetSpellPropertyConversions()
+                    .Where(conversion => conversion.SourceProperty == propertyValue.Property)
+                    .Select(conversion => conversion.Property)
+                    .Distinct()
+                    .ToArray();
+
+                foreach (Property dependantProperty in dependantProperties)
+                    CalculateProperty(dependantProperty);
+            }
+            finally
+            {
+                recalculatingSpellPropertyConversions.Remove(propertyValue.Property);
             }
         }
 

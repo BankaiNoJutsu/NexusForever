@@ -424,6 +424,52 @@ namespace NexusForever.Game.Entity
 
         private IVendorInfo selectedVendorInfo;
         private uint? selectedVendorGuid;
+        private readonly VendorPriceModifierCollection vendorPriceModifiers = new();
+
+        public float VendorSellPriceMultiplier => vendorPriceModifiers.VendorSellMultiplier;
+        public float VendorBuyPriceMultiplier => vendorPriceModifiers.VendorBuyMultiplier;
+
+        public bool TryAddVendorPriceModifier(uint effectId, float vendorSellMultiplier, float vendorBuyMultiplier, uint spell4Id, uint spell4EffectId, uint castingId, uint stackGroupId, uint stackCap, out string skippedReason)
+        {
+            bool added = vendorPriceModifiers.TryAdd(
+                effectId,
+                vendorSellMultiplier,
+                vendorBuyMultiplier,
+                spell4Id,
+                spell4EffectId,
+                castingId,
+                stackGroupId,
+                stackCap,
+                out skippedReason);
+            if (added)
+                RefreshSelectedVendorInfo();
+
+            return added;
+        }
+
+        public bool RemoveVendorPriceModifier(uint effectId)
+        {
+            bool removed = vendorPriceModifiers.Remove(effectId);
+            if (removed)
+                RefreshSelectedVendorInfo();
+
+            return removed;
+        }
+
+        public void RefreshSelectedVendorInfo(uint? vendorGuid = null)
+        {
+            if (vendorGuid.HasValue)
+                selectedVendorGuid = vendorGuid;
+
+            if (selectedVendorInfo == null || !selectedVendorGuid.HasValue || Session == null)
+                return;
+
+            ServerVendorItemsUpdated update = selectedVendorInfo.Build();
+            update.VendorUnitId = selectedVendorGuid.Value;
+            update.SellPriceMultiplier *= VendorSellPriceMultiplier;
+            update.BuyPriceMultiplier  *= VendorBuyPriceMultiplier;
+            Session.EnqueueMessageEncrypted(update);
+        }
 
         public uint? StarterTutorialDepartureTerminalCreatureId { get; private set; }
 
@@ -3193,6 +3239,8 @@ namespace NexusForever.Game.Entity
         /// </summary>
         protected override void OnPropertyUpdate(IPropertyValue propertyValue)
         {
+            base.OnPropertyUpdate(propertyValue);
+
             messagePublisher.PublishAsync(new PlayerPropertyUpdatedMessage
             {
                 Identity = Identity.ToInternalIdentity(),

@@ -846,7 +846,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 : "flagged/no-row";
         }
 
-        private string DescribeEffectSemantics(SpellEffectInterpretation effect)
+        internal string DescribeEffectSemantics(SpellEffectInterpretation effect)
         {
             if (effect.Absorption != null)
                 return $"absorption amount formula multiplier {effect.Absorption.TypeMultiplier:R}, base value {effect.Absorption.TypeBaseValue:R}, type {effect.Absorption.AbsorptionType}, data {effect.Absorption.DataBits02}/{effect.Absorption.DataBits03}/{effect.Absorption.DataBits05}";
@@ -884,8 +884,23 @@ namespace NexusForever.WorldServer.Command.Handler
             if (effect.NpcExecutionDelay != null)
                 return $"npc execution delay payload {effect.NpcExecutionDelay.DataBits00}/{effect.NpcExecutionDelay.DataBits01}/{effect.NpcExecutionDelay.DataBits02}/{effect.NpcExecutionDelay.DataBits03}/{effect.NpcExecutionDelay.DataBits04}/{effect.NpcExecutionDelay.DataBits05}/{effect.NpcExecutionDelay.DataBits06}/{effect.NpcExecutionDelay.DataBits07}/{effect.NpcExecutionDelay.DataBits08}/{effect.NpcExecutionDelay.DataBits09}";
 
+            if (effect.NpcForceAiMovement != null)
+                return $"npc force AI movement using cast position, payload {effect.NpcForceAiMovement.DataBits00}/{effect.NpcForceAiMovement.DataBits01}/{effect.NpcForceAiMovement.DataBits02}/{effect.NpcForceAiMovement.DataBits03}/{effect.NpcForceAiMovement.DataBits04}/{effect.NpcForceAiMovement.DataBits05}/{effect.NpcForceAiMovement.DataBits06}/{effect.NpcForceAiMovement.DataBits07}/{effect.NpcForceAiMovement.DataBits08}/{effect.NpcForceAiMovement.DataBits09}";
+
             if (effect.RavelSignal != null)
                 return $"ravel signal mode {effect.RavelSignal.Mode}{DescribeRavelSignalReceiverCandidate(effect.RavelSignal.Mode)}, signal {effect.RavelSignal.SignalId}, data {effect.RavelSignal.DataBits02}/{effect.RavelSignal.DataBits03}/{effect.RavelSignal.DataBits04}/{effect.RavelSignal.DataBits05}/{effect.RavelSignal.DataBits06}/{effect.RavelSignal.DataBits07}/{effect.RavelSignal.DataBits08}/{effect.RavelSignal.DataBits09}";
+
+            if (effect.VendorPriceModifier != null)
+                return $"vendor sell multiplier {effect.VendorPriceModifier.VendorSellMultiplier:R}, vendor buy multiplier {effect.VendorPriceModifier.VendorBuyMultiplier:R}, data {effect.VendorPriceModifier.DataBits02}/{effect.VendorPriceModifier.DataBits03}/{effect.VendorPriceModifier.DataBits04}/{effect.VendorPriceModifier.DataBits05}";
+
+            if (effect.HazardEnable != null)
+                return $"hazard enable id {effect.HazardEnable.HazardId}";
+
+            if (effect.HazardModify != null)
+                return $"hazard modify operation {effect.HazardModify.Operation}, target mode {effect.HazardModify.TargetMode}, modifier {effect.HazardModify.ModifierValue:R}, amount {effect.HazardModify.Amount:R}, hazard id {effect.HazardModify.HazardId}, data {effect.HazardModify.DataBits05}";
+
+            if (effect.HazardSuspend != null)
+                return $"hazard suspend id {effect.HazardSuspend.HazardId}, target mode {effect.HazardSuspend.TargetMode}, data {effect.HazardSuspend.DataBits02}/{effect.HazardSuspend.DataBits03}/{effect.HazardSuspend.DataBits04}/{effect.HazardSuspend.DataBits05}";
 
             if (effect.ModifyInterruptArmor != null)
                 return $"modify interrupt armor amount {effect.ModifyInterruptArmor.Amount}, remove on interrupt {effect.ModifyInterruptArmor.RemoveOnInterrupt}, data {effect.ModifyInterruptArmor.DataBits02}/{effect.ModifyInterruptArmor.DataBits03}/{effect.ModifyInterruptArmor.DataBits04}/{effect.ModifyInterruptArmor.DataBits05}{DescribeCombatLogHandlerCandidate(effect.Entry.EffectType)}";
@@ -914,17 +929,32 @@ namespace NexusForever.WorldServer.Command.Handler
             if (effect.PathXpModify != null)
                 return $"path xp modify amount {effect.PathXpModify.Amount}, mode {effect.PathXpModify.Mode}, data {effect.PathXpModify.DataBits02}/{effect.PathXpModify.DataBits03}/{effect.PathXpModify.DataBits04}/{effect.PathXpModify.DataBits05}";
 
+            if (effect.TradeSkillProfession != null)
+                return $"learn tradeskill {effect.TradeSkillProfession.Tradeskill} ({(uint)effect.TradeSkillProfession.Tradeskill}), data {effect.TradeSkillProfession.DataBits01}/{effect.TradeSkillProfession.DataBits02}/{effect.TradeSkillProfession.DataBits03}/{effect.TradeSkillProfession.DataBits04}/{effect.TradeSkillProfession.DataBits05}/{effect.TradeSkillProfession.DataBits06}/{effect.TradeSkillProfession.DataBits07}/{effect.TradeSkillProfession.DataBits08}/{effect.TradeSkillProfession.DataBits09}";
+
+            if (effect.PathMissionIncrement != null)
+                return $"increment path mission {effect.PathMissionIncrement.PathMissionId} by {effect.PathMissionIncrement.Amount}, data {effect.PathMissionIncrement.DataBits02}/{effect.PathMissionIncrement.DataBits03}/{effect.PathMissionIncrement.DataBits04}/{effect.PathMissionIncrement.DataBits05}/{effect.PathMissionIncrement.DataBits06}/{effect.PathMissionIncrement.DataBits07}/{effect.PathMissionIncrement.DataBits08}/{effect.PathMissionIncrement.DataBits09}";
+
             if (effect.GrantLevelScaledXp != null)
                 return $"grant level-scaled xp percent {effect.GrantLevelScaledXp.PercentOfLevel:R}, max level {effect.GrantLevelScaledXp.MaxLevel}, mode {effect.GrantLevelScaledXp.Mode}, data {effect.GrantLevelScaledXp.DataBits03}/{effect.GrantLevelScaledXp.DataBits04}/{effect.GrantLevelScaledXp.DataBits05}";
 
+            if (effect.GrantLevelScaledPrestige != null)
+                return $"grant level-scaled prestige (diagnostic only; formula unverified) percent {effect.GrantLevelScaledPrestige.PercentOfLevel:R}, max level {effect.GrantLevelScaledPrestige.MaxLevel}, mode {effect.GrantLevelScaledPrestige.Mode}, data {effect.GrantLevelScaledPrestige.DataBits03}/{effect.GrantLevelScaledPrestige.DataBits04}/{effect.GrantLevelScaledPrestige.DataBits05}";
+
             if (effect.GiveAugmentPowerToPlayer != null)
                 return $"give augment power amount {effect.GiveAugmentPowerToPlayer.Amount}, data {effect.GiveAugmentPowerToPlayer.DataBits01}/{effect.GiveAugmentPowerToPlayer.DataBits02}/{effect.GiveAugmentPowerToPlayer.DataBits03}/{effect.GiveAugmentPowerToPlayer.DataBits04}/{effect.GiveAugmentPowerToPlayer.DataBits05}";
+
+            if (effect.GiveAbilityPointsToPlayer != null)
+                return $"give ability tier points amount {effect.GiveAbilityPointsToPlayer.Amount}, data {effect.GiveAbilityPointsToPlayer.DataBits01}/{effect.GiveAbilityPointsToPlayer.DataBits02}/{effect.GiveAbilityPointsToPlayer.DataBits03}/{effect.GiveAbilityPointsToPlayer.DataBits04}/{effect.GiveAbilityPointsToPlayer.DataBits05}/{effect.GiveAbilityPointsToPlayer.DataBits06}/{effect.GiveAbilityPointsToPlayer.DataBits07}/{effect.GiveAbilityPointsToPlayer.DataBits08}/{effect.GiveAbilityPointsToPlayer.DataBits09}";
 
             if (effect.ForceFacing != null)
                 return $"force facing angle offset {effect.ForceFacing.AngleDegrees:R} degrees, uses offset {effect.ForceFacing.UsesAngleOffset}, turn {effect.ForceFacing.TurnDurationMs}ms, data {effect.ForceFacing.DataBits01}/{effect.ForceFacing.DataBits02}/{effect.ForceFacing.DataBits04}/{effect.ForceFacing.DataBits05}/{effect.ForceFacing.DataBits06}/{effect.ForceFacing.DataBits07}/{effect.ForceFacing.DataBits08}/{effect.ForceFacing.DataBits09}";
 
             if (effect.ForcedMove != null)
                 return $"forced move type {effect.ForcedMove.MovementType}, duration {effect.ForcedMove.DurationTime}ms, flags {effect.ForcedMove.Flags}, floats {effect.ForcedMove.DataFloat01:R}/{effect.ForcedMove.DataFloat02:R}/{effect.ForcedMove.DataFloat06:R}/{effect.ForcedMove.DataFloat07:R}/{effect.ForcedMove.DataFloat08:R}";
+
+            if (effect.VectorSlide != null)
+                return $"vector slide mode {effect.VectorSlide.Mode}, magnitude {effect.VectorSlide.Magnitude:R}, flags {effect.VectorSlide.Flags}, data {effect.VectorSlide.DataBits03}/{effect.VectorSlide.DataBits04}/{effect.VectorSlide.DataBits05}";
 
             if (effect.Proxy != null)
                 return $"proxy spell4 {DescribeSpell4(effect.Proxy.Spell4Id)}";
@@ -985,6 +1015,9 @@ namespace NexusForever.WorldServer.Command.Handler
 
             if (effect.UnitPropertyModifier != null)
                 return $"property {effect.UnitPropertyModifier.Property}, priority {effect.UnitPropertyModifier.Priority}, mod hint {effect.UnitPropertyModifier.ModifierTypeHint?.ToString() ?? "unknown"}, percentage {effect.UnitPropertyModifier.PercentageValue:R}, flat {effect.UnitPropertyModifier.FlatValue:R}, level scale {effect.UnitPropertyModifier.LevelScaleValue:R}";
+
+            if (effect.UnitPropertyConversion != null)
+                return $"convert {effect.UnitPropertyConversion.SourceProperty} into {effect.UnitPropertyConversion.TargetProperty} at {effect.UnitPropertyConversion.Multiplier:R}, data {effect.UnitPropertyConversion.DataBits03}/{effect.UnitPropertyConversion.DataBits04}/{effect.UnitPropertyConversion.DataBits05}";
 
             return "unknown";
         }

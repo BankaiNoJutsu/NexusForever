@@ -38,6 +38,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
             if (info == null)
                 return;
 
+            if (!VendorPriceCalculator.TryCalculateGrantedItemCount(
+                vendorPurchase.PurchaseQuantity,
+                info.Entry.BuyFromVendorStackCount,
+                out uint grantedItemCount))
+                return;
+
             var vendorItemPurchaseCost = new VendorItemPurchaseCost();
 
             if (vendorItem.ExtraCost1Type == ItemExtraCostType.None
@@ -49,9 +55,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
                     if (currencyType == CurrencyType.None)
                         continue;
 
-                    ulong cost = info.GetVendorBuyAmount(i) * vendorPurchase.PurchaseQuantity;
+                    ulong cost = VendorPriceCalculator.CalculatePurchaseCost(
+                        info.GetVendorBuyAmount(i),
+                        vendorPurchase.PurchaseQuantity);
                     if (currencyType == CurrencyType.Credits)
-                        cost *= (ulong)Math.Ceiling(vendorInfo.BuyPriceMultiplier);
+                        cost = VendorPriceCalculator.ApplyPurchaseMultiplier(
+                            cost,
+                            VendorPriceCalculator.GetPurchaseMultiplier(session.Player));
 
                     vendorItemPurchaseCost.AddCurrencyCost(currencyType, cost);
                 }
@@ -82,7 +92,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
                 return;
 
             vendorItemPurchaseCost.Charge(session.Player);
-            session.Player.Inventory.ItemCreate(InventoryLocation.Inventory, info.Id, vendorPurchase.PurchaseQuantity * info.Entry.BuyFromVendorStackCount);
+            session.Player.Inventory.ItemCreate(InventoryLocation.Inventory, info.Id, grantedItemCount);
         }
     }
 }

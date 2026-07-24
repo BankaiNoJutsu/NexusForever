@@ -254,19 +254,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 || selectorB != (byte)EngineerCombatBotPetCommandHelper.PrimaryPetBarGoToSlotIndex)
                 return false;
 
-            IReadOnlyCollection<IWorldEntity> engineerBots = EngineerCombatBotPetCommandHelper.GetActiveEngineerCombatBots(session.Player);
-            uint commandedCount = 0u;
-            foreach (IWorldEntity engineerBot in engineerBots)
-            {
-                EngineerCombatBotPetCommandHelper.ClearCombat(engineerBot);
-                engineerBot.SummonCommandStance = PetStance.Stay;
-                engineerBot.SummonCommandFollowRequested = false;
-                engineerBot.MovementManager?.LaunchPath(
-                    position.Vector,
-                    EngineerCombatBotPetCommandHelper.GetCommandMovementSpeed(engineerBot),
-                    SplineMode.OneShot);
-                commandedCount++;
-            }
+            uint commandedCount = SpellHandler.CommandEngineerCombatBotsToPosition(session.Player, position.Vector);
 
             log.Debug($"Primary pet-bar Go To command: player={session.Player.Guid}, commandedBots={commandedCount}, position=({position.Vector.X}, {position.Vector.Y}, {position.Vector.Z}).");
             return true;

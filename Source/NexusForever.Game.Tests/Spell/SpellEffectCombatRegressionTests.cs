@@ -9,7 +9,9 @@ using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Spell;
+using NexusForever.Game.Static.Crafting;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Static.Pet;
@@ -30,6 +32,301 @@ namespace NexusForever.Game.Tests.Spell;
 [Collection(MissingGameDataDiagnosticsCollection.Name)]
 public class SpellEffectCombatRegressionTests
 {
+    [Fact]
+    public void HandleEffectVendorPriceModifier_WithSmallDiscountRow_AddsExactPacketChannelMultipliers()
+    {
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetMethodHandler(nameof(IPlayer.TryAddVendorPriceModifier), args =>
+        {
+            args[8] = null;
+            return true;
+        });
+
+        ISpell spell = CreateSpell(new Spell4Entry
+        {
+            Id                        = 28618u,
+            Spell4BaseIdBaseSpell     = 15098u,
+            Spell4StackGroupId        = 349u
+        }, player);
+        ISpellTargetEffectInfo info = CreateEffectInfo(
+            49392u,
+            28618u,
+            SpellEffectType.VendorPriceModifier,
+            BitConverter.SingleToUInt32Bits(0.95f),
+            BitConverter.SingleToUInt32Bits(1.05f));
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectVendorPriceModifier(spell, player, info);
+
+        RecordingDispatchProxy<IPlayer>.Invocation add =
+            Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TryAddVendorPriceModifier)));
+        Assert.Equal(49392u, (uint)add.Arguments[0]);
+        Assert.Equal(0.95f, (float)add.Arguments[1]);
+        Assert.Equal(1.05f, (float)add.Arguments[2]);
+        Assert.Equal(28618u, (uint)add.Arguments[3]);
+        Assert.Equal(49392u, (uint)add.Arguments[4]);
+        Assert.Equal(349u, (uint)add.Arguments[6]);
+    }
+
+    [Fact]
+    public void HandleEffectUnitPropertyConversion_WithMountainRow_AddsLiveDependency()
+    {
+        IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out RecordingDispatchProxy<IUnitEntity> targetProxy);
+        targetProxy.SetMethodHandler(nameof(IUnitEntity.TryAddSpellPropertyConversion), args =>
+        {
+            args[5] = null;
+            return true;
+        });
+
+        ISpell spell = CreateSpell(new Spell4Entry
+        {
+            Id                    = 82056u,
+            Spell4BaseIdBaseSpell = 58340u
+        }, target);
+        ISpellTargetEffectInfo info = CreateEffectInfo(
+            215867u,
+            82056u,
+            SpellEffectType.UnitPropertyConversion,
+            (uint)Property.BaseHealth,
+            (uint)Property.Armor,
+            BitConverter.SingleToUInt32Bits(0.01f));
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectUnitPropertyConversion(spell, target, info);
+
+        RecordingDispatchProxy<IUnitEntity>.Invocation add =
+            Assert.Single(targetProxy.GetInvocations(nameof(IUnitEntity.TryAddSpellPropertyConversion)));
+        var conversion = Assert.IsType<SpellPropertyConversion>(add.Arguments[0]);
+        Assert.Equal(Property.BaseHealth, conversion.SourceProperty);
+        Assert.Equal(Property.Armor, conversion.Property);
+        Assert.Equal(0.01f, conversion.Multiplier);
+        Assert.Equal(215867u, (uint)add.Arguments[1]);
+    }
+
+    [Fact]
+    public void HandleEffectGrantLevelScaledPrestige_WithSupportedMode_RemainsDiagnosticOnly()
+    {
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.Level), 10u);
+
+        ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out RecordingDispatchProxy<ICurrencyManager> currencyManagerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CurrencyManager), currencyManager);
+
+        ISpell spell = CreateSpell(42932u, player);
+        ISpellTargetEffectInfo info = CreateLevelScaledRewardInfo(
+            effectId: 100001u,
+            spellId: 42932u,
+            effectType: SpellEffectType.GrantLevelScaledPrestige,
+            percentOfLevel: 10f,
+            maxLevel: 50u,
+            mode: 1u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectGrantLevelScaledPrestige(spell, player, info);
+
+        Assert.Empty(currencyManagerProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+    }
+
+    [Fact]
+    public void HandleEffectGrantLevelScaledXp_UsesSharedLevelSpanCalculation()
+    {
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.Level), 10u);
+
+        IXpManager xpManager = RecordingDispatchProxy<IXpManager>.Create(out RecordingDispatchProxy<IXpManager> xpManagerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.XpManager), xpManager);
+
+        IGameTableManager gameTableManager = CreateGameTableManager(
+            CreateGameTable(
+                new XpPerLevelEntry { Id = 10u, MinXpForLevel = 1_000u },
+                new XpPerLevelEntry { Id = 11u, MinXpForLevel = 2_501u }));
+        using IDisposable resolverScope = UseDependencyResolver(gameTableManager);
+
+        ISpell spell = CreateSpell(42932u, player);
+        ISpellTargetEffectInfo info = CreateLevelScaledRewardInfo(
+            effectId: 100002u,
+            spellId: 42932u,
+            effectType: SpellEffectType.GrantLevelScaledXP,
+            percentOfLevel: 10f,
+            maxLevel: 50u,
+            mode: 1u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectGrantLevelScaledXp(spell, player, info);
+
+        RecordingDispatchProxy<IXpManager>.Invocation grant =
+            Assert.Single(xpManagerProxy.GetInvocations(nameof(IXpManager.GrantXp)));
+        Assert.Equal(151u, (uint)grant.Arguments[0]);
+        Assert.Equal(ExpReason.Spell, (ExpReason)grant.Arguments[1]);
+    }
+
+    [Fact]
+    public void HandleEffectGrantLevelScaledPrestige_WithUnsupportedMode_DoesNotGrantCurrency()
+    {
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.Level), 10u);
+
+        ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out RecordingDispatchProxy<ICurrencyManager> currencyManagerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CurrencyManager), currencyManager);
+
+        ISpell spell = CreateSpell(42932u, player);
+        ISpellTargetEffectInfo info = CreateLevelScaledRewardInfo(
+            effectId: 100003u,
+            spellId: 42932u,
+            effectType: SpellEffectType.GrantLevelScaledPrestige,
+            percentOfLevel: 10f,
+            maxLevel: 50u,
+            mode: 2u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectGrantLevelScaledPrestige(spell, player, info);
+
+        Assert.Empty(currencyManagerProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+    }
+
+    [Fact]
+    public void HandleEffectTradeSkillProfession_WithFishingRow_LearnsFishingWithoutDroppingProfession()
+    {
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetMethodHandler(nameof(IPlayer.LearnTradeskill), _ => true);
+
+        ISpell spell = CreateSpell(32135u, player);
+        ISpellTargetEffectInfo info = CreateProgressionEffectInfo(
+            effectId: 100010u,
+            spellId: 32135u,
+            effectType: SpellEffectType.TradeSkillProfession,
+            dataBits00: (uint)TradeskillType.Fishing);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectTradeSkillProfession(spell, player, info);
+
+        RecordingDispatchProxy<IPlayer>.Invocation learn =
+            Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.LearnTradeskill)));
+        Assert.Equal(TradeskillType.Fishing, (TradeskillType)learn.Arguments[0]);
+        Assert.Equal((TradeskillType)0, (TradeskillType)learn.Arguments[1]);
+    }
+
+    [Fact]
+    public void HandleEffectTradeSkillProfession_WithUnmappedPayload_DoesNotLearnTradeskill()
+    {
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
+        ISpell spell = CreateSpell(32135u, player);
+        ISpellTargetEffectInfo info = CreateProgressionEffectInfo(
+            effectId: 100011u,
+            spellId: 32135u,
+            effectType: SpellEffectType.TradeSkillProfession,
+            dataBits00: (uint)TradeskillType.Fishing,
+            dataBits01: 1u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectTradeSkillProfession(spell, player, info);
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.LearnTradeskill)));
+    }
+
+    [Fact]
+    public void HandleEffectPathMissionIncrement_WithSoldierSwatRow_DelegatesExactMissionAndAmount()
+    {
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
+        IPathManager pathManager = RecordingDispatchProxy<IPathManager>.Create(out RecordingDispatchProxy<IPathManager> pathManagerProxy);
+        pathManagerProxy.SetMethodHandler(nameof(IPathManager.ProgressSoldierSwatMission), _ => true);
+        playerProxy.SetProperty(nameof(IPlayer.PathManager), pathManager);
+
+        ISpell spell = CreateSpell(42373u, player);
+        ISpellTargetEffectInfo info = CreateProgressionEffectInfo(
+            effectId: 100012u,
+            spellId: 42373u,
+            effectType: SpellEffectType.PathMissionIncrement,
+            dataBits00: 2424u,
+            dataBits01: 1u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectPathMissionIncrement(spell, player, info);
+
+        RecordingDispatchProxy<IPathManager>.Invocation increment =
+            Assert.Single(pathManagerProxy.GetInvocations(nameof(IPathManager.ProgressSoldierSwatMission)));
+        Assert.Equal((ushort)2424, (ushort)increment.Arguments[0]);
+        Assert.Equal(1u, (uint)increment.Arguments[1]);
+    }
+
+    [Fact]
+    public void HandleEffectGiveAbilityPointsToPlayer_WithUnlockRow_GrantsOneTierPoint()
+    {
+        IPlayer player = CreatePlayer(out RecordingDispatchProxy<ISpellManager> spellManagerProxy, out _);
+        ISpell spell = CreateSpell(67478u, player);
+        ISpellTargetEffectInfo info = CreateProgressionEffectInfo(
+            effectId: 169485u,
+            spellId: 67478u,
+            effectType: SpellEffectType.GiveAbilityPointsToPlayer,
+            dataBits00: 1u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectGiveAbilityPointsToPlayer(spell, player, info);
+
+        RecordingDispatchProxy<ISpellManager>.Invocation grant =
+            Assert.Single(spellManagerProxy.GetInvocations(nameof(ISpellManager.AddAbilityTierPoints)));
+        Assert.Equal((byte)1, (byte)grant.Arguments[0]);
+    }
+
+    [Fact]
+    public void HandleEffectGiveAbilityPointsToPlayer_WithUnobservedPayload_DoesNotGrantTierPoint()
+    {
+        IPlayer player = CreatePlayer(out RecordingDispatchProxy<ISpellManager> spellManagerProxy, out _);
+        ISpell spell = CreateSpell(67478u, player);
+        ISpellTargetEffectInfo info = CreateProgressionEffectInfo(
+            effectId: 169485u,
+            spellId: 67478u,
+            effectType: SpellEffectType.GiveAbilityPointsToPlayer,
+            dataBits00: 2u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectGiveAbilityPointsToPlayer(spell, player, info);
+
+        Assert.Empty(spellManagerProxy.GetInvocations(nameof(ISpellManager.AddAbilityTierPoints)));
+    }
+
+    [Fact]
+    public void HandleEffectGiveAbilityPointsToPlayer_WithUnobservedTail_DoesNotGrantTierPoint()
+    {
+        IPlayer player = CreatePlayer(out RecordingDispatchProxy<ISpellManager> spellManagerProxy, out _);
+        ISpell spell = CreateSpell(67478u, player);
+        ISpellTargetEffectInfo info = CreateProgressionEffectInfo(
+            effectId: 169485u,
+            spellId: 67478u,
+            effectType: SpellEffectType.GiveAbilityPointsToPlayer,
+            dataBits00: 1u,
+            dataBits09: 1u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectGiveAbilityPointsToPlayer(spell, player, info);
+
+        Assert.Empty(spellManagerProxy.GetInvocations(nameof(ISpellManager.AddAbilityTierPoints)));
+    }
+
+    [Fact]
+    public void HandleEffectSpellImmunity_WithConcreteSpellMode_AddsImmunity()
+    {
+        IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out RecordingDispatchProxy<IUnitEntity> targetProxy);
+        targetProxy.SetProperty(nameof(IUnitEntity.Guid), 170u);
+        ISpell spell = CreateSpell(48019u, target);
+        ISpellTargetEffectInfo info = CreateSpellImmunityInfo(100004u, 48019u, 0u, 48020u);
+
+        using IDisposable resolverScope = UseDependencyResolver(CreateGameTableManager(new Spell4Entry { Id = 48020u }));
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectSpellImmunity(spell, target, info);
+
+        RecordingDispatchProxy<IUnitEntity>.Invocation add =
+            Assert.Single(targetProxy.GetInvocations(nameof(IUnitEntity.AddSpellImmunity)));
+        Assert.Equal(48020u, (uint)add.Arguments[3]);
+        Assert.Equal(0u, (uint)add.Arguments[4]);
+    }
+
+    [Theory]
+    [InlineData(1u, 1316u)]
+    [InlineData(2u, 7u)]
+    public void HandleEffectSpellImmunity_WithUnsupportedMode_DoesNotTreatPayloadAsSpellId(uint mode, uint payload)
+    {
+        IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out RecordingDispatchProxy<IUnitEntity> targetProxy);
+        targetProxy.SetProperty(nameof(IUnitEntity.Guid), 170u);
+        ISpell spell = CreateSpell(48019u, target);
+        ISpellTargetEffectInfo info = CreateSpellImmunityInfo(100005u + mode, 48019u, mode, payload);
+
+        using IDisposable resolverScope = UseDependencyResolver(CreateGameTableManager(new Spell4Entry { Id = payload }));
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectSpellImmunity(spell, target, info);
+
+        Assert.Empty(targetProxy.GetInvocations(nameof(IUnitEntity.AddSpellImmunity)));
+    }
+
     [Fact]
     public void HandleEffectModifySpellCooldown_WithOnslaughtCategoryPayload_DoesNotResetCurrentSpellCooldown()
     {
@@ -936,6 +1233,95 @@ public class SpellEffectCombatRegressionTests
         return info;
     }
 
+    private static ISpellTargetEffectInfo CreateLevelScaledRewardInfo(
+        uint effectId,
+        uint spellId,
+        SpellEffectType effectType,
+        float percentOfLevel,
+        uint maxLevel,
+        uint mode)
+    {
+        ISpellTargetEffectInfo info = RecordingDispatchProxy<ISpellTargetEffectInfo>.Create(out RecordingDispatchProxy<ISpellTargetEffectInfo> infoProxy);
+        infoProxy.SetProperty(nameof(ISpellTargetEffectInfo.EffectId), effectId);
+        infoProxy.SetProperty(nameof(ISpellTargetEffectInfo.Entry), new Spell4EffectsEntry
+        {
+            Id         = effectId,
+            SpellId    = spellId,
+            TargetFlags = 1u,
+            EffectType  = effectType,
+            DataBits00  = BitConverter.SingleToUInt32Bits(percentOfLevel),
+            DataBits01  = maxLevel,
+            DataBits02  = mode
+        });
+        return info;
+    }
+
+    private static ISpellTargetEffectInfo CreateProgressionEffectInfo(
+        uint effectId,
+        uint spellId,
+        SpellEffectType effectType,
+        uint dataBits00,
+        uint dataBits01 = 0u,
+        uint dataBits09 = 0u)
+    {
+        ISpellTargetEffectInfo info = RecordingDispatchProxy<ISpellTargetEffectInfo>.Create(out RecordingDispatchProxy<ISpellTargetEffectInfo> infoProxy);
+        infoProxy.SetProperty(nameof(ISpellTargetEffectInfo.EffectId), effectId);
+        infoProxy.SetProperty(nameof(ISpellTargetEffectInfo.Entry), new Spell4EffectsEntry
+        {
+            Id          = effectId,
+            SpellId     = spellId,
+            TargetFlags = 1u,
+            EffectType  = effectType,
+            DataBits00  = dataBits00,
+            DataBits01  = dataBits01,
+            DataBits09  = dataBits09
+        });
+        return info;
+    }
+
+    private static ISpellTargetEffectInfo CreateEffectInfo(
+        uint effectId,
+        uint spellId,
+        SpellEffectType effectType,
+        uint dataBits00,
+        uint dataBits01 = 0u,
+        uint dataBits02 = 0u)
+    {
+        ISpellTargetEffectInfo info = RecordingDispatchProxy<ISpellTargetEffectInfo>.Create(out RecordingDispatchProxy<ISpellTargetEffectInfo> infoProxy);
+        infoProxy.SetProperty(nameof(ISpellTargetEffectInfo.EffectId), effectId);
+        infoProxy.SetProperty(nameof(ISpellTargetEffectInfo.Entry), new Spell4EffectsEntry
+        {
+            Id          = effectId,
+            SpellId     = spellId,
+            TargetFlags = 1u,
+            EffectType  = effectType,
+            DataBits00  = dataBits00,
+            DataBits01  = dataBits01,
+            DataBits02  = dataBits02
+        });
+        return info;
+    }
+
+    private static ISpellTargetEffectInfo CreateSpellImmunityInfo(
+        uint effectId,
+        uint spellId,
+        uint mode,
+        uint payload)
+    {
+        ISpellTargetEffectInfo info = RecordingDispatchProxy<ISpellTargetEffectInfo>.Create(out RecordingDispatchProxy<ISpellTargetEffectInfo> infoProxy);
+        infoProxy.SetProperty(nameof(ISpellTargetEffectInfo.EffectId), effectId);
+        infoProxy.SetProperty(nameof(ISpellTargetEffectInfo.Entry), new Spell4EffectsEntry
+        {
+            Id         = effectId,
+            SpellId    = spellId,
+            TargetFlags = 1u,
+            EffectType  = SpellEffectType.SpellImmunity,
+            DataBits00  = mode,
+            DataBits01  = payload
+        });
+        return info;
+    }
+
     private static ISpellTargetEffectInfo CreateGiveLootTableToPlayerInfo(
         uint effectId,
         uint spellId,
@@ -1152,6 +1538,13 @@ public class SpellEffectCombatRegressionTests
     {
         IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> proxy);
         proxy.SetProperty(nameof(IGameTableManager.Spell4), CreateGameTable(spellEntries));
+        return gameTableManager;
+    }
+
+    private static IGameTableManager CreateGameTableManager(GameTable<XpPerLevelEntry> xpPerLevelEntries)
+    {
+        IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> proxy);
+        proxy.SetProperty(nameof(IGameTableManager.XpPerLevel), xpPerLevelEntries);
         return gameTableManager;
     }
 

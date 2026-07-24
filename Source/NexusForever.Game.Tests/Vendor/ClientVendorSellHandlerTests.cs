@@ -19,7 +19,7 @@ public class ClientVendorSellHandlerTests
         IItem item = CreateItem(stackCount: 3u, sellAmount: 7u);
         IWorldSession session = CreateSession(
             item,
-            sellPriceMultiplier: 2.0f,
+            vendorBuyPriceMultiplier: 2.0f,
             out IPlayer player,
             out RecordingDispatchProxy<IInventory> inventoryProxy,
             out RecordingDispatchProxy<ICurrencyManager> currencyProxy,
@@ -56,7 +56,7 @@ public class ClientVendorSellHandlerTests
         IItem item = CreateItem(stackCount: 3u, sellAmount: 7u);
         IWorldSession session = CreateSession(
             item,
-            sellPriceMultiplier: 1.0f,
+            vendorBuyPriceMultiplier: 1.0f,
             out _,
             out RecordingDispatchProxy<IInventory> inventoryProxy,
             out RecordingDispatchProxy<ICurrencyManager> currencyProxy,
@@ -73,7 +73,7 @@ public class ClientVendorSellHandlerTests
 
     private static IWorldSession CreateSession(
         IItem item,
-        float sellPriceMultiplier,
+        float vendorBuyPriceMultiplier,
         out IPlayer player,
         out RecordingDispatchProxy<IInventory> inventoryProxy,
         out RecordingDispatchProxy<ICurrencyManager> currencyProxy,
@@ -87,7 +87,7 @@ public class ClientVendorSellHandlerTests
         ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out currencyProxy);
 
         IVendorInfo vendorInfo = RecordingDispatchProxy<IVendorInfo>.Create(out RecordingDispatchProxy<IVendorInfo> vendorProxy);
-        vendorProxy.SetProperty(nameof(IVendorInfo.SellPriceMultiplier), sellPriceMultiplier);
+        vendorProxy.SetProperty(nameof(IVendorInfo.BuyPriceMultiplier), vendorBuyPriceMultiplier);
 
         player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
         playerProxy.SetProperty(nameof(IPlayer.SelectedVendorInfo), vendorInfo);

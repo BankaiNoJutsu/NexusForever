@@ -49,7 +49,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
             if (quantity == 0u || quantity > item.StackCount)
                 return false;
 
-            float costMultiplier = player.SelectedVendorInfo.SellPriceMultiplier * quantity;
+            float costMultiplier = VendorPriceCalculator.GetSalePayoutMultiplier(player) * quantity;
             var currencyChange = new List<(CurrencyType CurrencyTypeId, ulong CurrencyAmount)>();
             for (byte i = 0; i < 2; i++)
             {
@@ -57,7 +57,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
                 if (currencyId == CurrencyType.None)
                     continue;
 
-                ulong currencyAmount = (ulong)(item.GetVendorSellAmount(i) * costMultiplier);
+                ulong currencyAmount = VendorPriceCalculator.ApplySalePayoutMultiplier(item.GetVendorSellAmount(i), costMultiplier);
                 if (currencyAmount == 0ul)
                     continue;
 

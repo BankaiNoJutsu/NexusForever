@@ -1,6 +1,7 @@
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static.Combat.CrowdControl;
+using NexusForever.Game.Static.Crafting;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable.Model;
@@ -165,6 +166,44 @@ namespace NexusForever.Game.Spell.Effect
         uint DataBits07,
         uint DataBits08,
         uint DataBits09);
+
+    public sealed record SpellEffectVendorPriceModifierSemantics(
+        float VendorSellMultiplier,
+        float VendorBuyMultiplier,
+        uint DataBits02,
+        uint DataBits03,
+        uint DataBits04,
+        uint DataBits05);
+
+    public sealed record SpellEffectNpcForceAiMovementSemantics(
+        uint DataBits00,
+        uint DataBits01,
+        uint DataBits02,
+        uint DataBits03,
+        uint DataBits04,
+        uint DataBits05,
+        uint DataBits06,
+        uint DataBits07,
+        uint DataBits08,
+        uint DataBits09);
+
+    public sealed record SpellEffectHazardEnableSemantics(uint HazardId);
+
+    public sealed record SpellEffectHazardModifySemantics(
+        uint Operation,
+        uint TargetMode,
+        float ModifierValue,
+        float Amount,
+        uint HazardId,
+        uint DataBits05);
+
+    public sealed record SpellEffectHazardSuspendSemantics(
+        uint HazardId,
+        uint TargetMode,
+        uint DataBits02,
+        uint DataBits03,
+        uint DataBits04,
+        uint DataBits05);
 
     public sealed record SpellEffectSettlerCampfireSemantics(
         uint TierIndex,
@@ -355,7 +394,39 @@ namespace NexusForever.Game.Spell.Effect
         uint DataBits04,
         uint DataBits05);
 
+    public sealed record SpellEffectTradeSkillProfessionSemantics(
+        TradeskillType Tradeskill,
+        uint DataBits01,
+        uint DataBits02,
+        uint DataBits03,
+        uint DataBits04,
+        uint DataBits05,
+        uint DataBits06,
+        uint DataBits07,
+        uint DataBits08,
+        uint DataBits09);
+
+    public sealed record SpellEffectPathMissionIncrementSemantics(
+        uint PathMissionId,
+        uint Amount,
+        uint DataBits02,
+        uint DataBits03,
+        uint DataBits04,
+        uint DataBits05,
+        uint DataBits06,
+        uint DataBits07,
+        uint DataBits08,
+        uint DataBits09);
+
     public sealed record SpellEffectGrantLevelScaledXpSemantics(
+        float PercentOfLevel,
+        uint MaxLevel,
+        uint Mode,
+        uint DataBits03,
+        uint DataBits04,
+        uint DataBits05);
+
+    public sealed record SpellEffectGrantLevelScaledPrestigeSemantics(
         float PercentOfLevel,
         uint MaxLevel,
         uint Mode,
@@ -378,6 +449,18 @@ namespace NexusForever.Game.Spell.Effect
         uint DataBits03,
         uint DataBits04,
         uint DataBits05);
+
+    public sealed record SpellEffectGiveAbilityPointsToPlayerSemantics(
+        uint Amount,
+        uint DataBits01,
+        uint DataBits02,
+        uint DataBits03,
+        uint DataBits04,
+        uint DataBits05,
+        uint DataBits06,
+        uint DataBits07,
+        uint DataBits08,
+        uint DataBits09);
 
     public sealed record SpellEffectQuestAdvanceObjectiveSemantics(
         uint ObjectiveId,
@@ -508,6 +591,14 @@ namespace NexusForever.Game.Spell.Effect
         float DataFloat08,
         uint DataBits09);
 
+    public sealed record SpellEffectVectorSlideSemantics(
+        uint Mode,
+        float Magnitude,
+        uint Flags,
+        uint DataBits03,
+        uint DataBits04,
+        uint DataBits05);
+
     public sealed record SpellEffectProxySemantics(uint Spell4Id);
 
     public sealed record SpellEffectTeleportSemantics(uint WorldLocation2Id);
@@ -587,6 +678,14 @@ namespace NexusForever.Game.Spell.Effect
         uint DataBits04,
         uint DataBits05);
 
+    public sealed record SpellEffectUnitPropertyConversionSemantics(
+        Property SourceProperty,
+        Property TargetProperty,
+        float Multiplier,
+        uint DataBits03,
+        uint DataBits04,
+        uint DataBits05);
+
     public sealed class SpellEffectInterpretation
     {
         public Spell4EffectsEntry Entry { get; }
@@ -608,6 +707,11 @@ namespace NexusForever.Game.Spell.Effect
         public SpellEffectSummonTrapSemantics SummonTrap { get; internal set; }
         public SpellEffectNpcExecutionDelaySemantics NpcExecutionDelay { get; internal set; }
         public SpellEffectRavelSignalSemantics RavelSignal { get; internal set; }
+        public SpellEffectVendorPriceModifierSemantics VendorPriceModifier { get; internal set; }
+        public SpellEffectNpcForceAiMovementSemantics NpcForceAiMovement { get; internal set; }
+        public SpellEffectHazardEnableSemantics HazardEnable { get; internal set; }
+        public SpellEffectHazardModifySemantics HazardModify { get; internal set; }
+        public SpellEffectHazardSuspendSemantics HazardSuspend { get; internal set; }
         public SpellEffectSettlerCampfireSemantics SettlerCampfire { get; internal set; }
         public SpellEffectModifyInterruptArmorSemantics ModifyInterruptArmor { get; internal set; }
         public SpellEffectThreatModificationSemantics ThreatModification { get; internal set; }
@@ -629,9 +733,13 @@ namespace NexusForever.Game.Spell.Effect
         public SpellEffectShieldOverloadSemantics ShieldOverload { get; internal set; }
         public SpellEffectGrantXpSemantics GrantXp { get; internal set; }
         public SpellEffectPathXpModifySemantics PathXpModify { get; internal set; }
+        public SpellEffectTradeSkillProfessionSemantics TradeSkillProfession { get; internal set; }
+        public SpellEffectPathMissionIncrementSemantics PathMissionIncrement { get; internal set; }
         public SpellEffectGrantLevelScaledXpSemantics GrantLevelScaledXp { get; internal set; }
+        public SpellEffectGrantLevelScaledPrestigeSemantics GrantLevelScaledPrestige { get; internal set; }
         public SpellEffectModifyRestedXpSemantics ModifyRestedXp { get; internal set; }
         public SpellEffectGiveAugmentPowerToPlayerSemantics GiveAugmentPowerToPlayer { get; internal set; }
+        public SpellEffectGiveAbilityPointsToPlayerSemantics GiveAbilityPointsToPlayer { get; internal set; }
         public SpellEffectQuestAdvanceObjectiveSemantics QuestAdvanceObjective { get; internal set; }
         public SpellEffectAchievementAdvanceSemantics AchievementAdvance { get; internal set; }
         public SpellEffectReputationModifySemantics ReputationModify { get; internal set; }
@@ -647,6 +755,7 @@ namespace NexusForever.Game.Spell.Effect
         public SpellEffectPetCastSpellSemantics PetCastSpell { get; internal set; }
         public SpellEffectForceFacingSemantics ForceFacing { get; internal set; }
         public SpellEffectForcedMoveSemantics ForcedMove { get; internal set; }
+        public SpellEffectVectorSlideSemantics VectorSlide { get; internal set; }
         public SpellEffectProxySemantics Proxy { get; internal set; }
         public SpellEffectProxyRandomExclusiveSemantics ProxyRandomExclusive { get; internal set; }
         public SpellEffectTeleportSemantics Teleport { get; internal set; }
@@ -662,6 +771,7 @@ namespace NexusForever.Game.Spell.Effect
         public SpellEffectStateSemantics AggroImmune { get; internal set; }
         public SpellEffectUnitPropertyModifierSemantics UnitPropertyModifier { get; internal set; }
         public SpellEffectPersonalDmgHealModSemantics PersonalDmgHealMod { get; internal set; }
+        public SpellEffectUnitPropertyConversionSemantics UnitPropertyConversion { get; internal set; }
 
         public bool HasKnownFamilySemantics => Damage != null
             || Transference != null
@@ -677,6 +787,11 @@ namespace NexusForever.Game.Spell.Effect
             || SummonTrap != null
             || NpcExecutionDelay != null
             || RavelSignal != null
+            || VendorPriceModifier != null
+            || NpcForceAiMovement != null
+            || HazardEnable != null
+            || HazardModify != null
+            || HazardSuspend != null
             || SettlerCampfire != null
             || ModifyInterruptArmor != null
             || ThreatModification != null
@@ -698,9 +813,13 @@ namespace NexusForever.Game.Spell.Effect
             || ShieldOverload != null
             || GrantXp != null
             || PathXpModify != null
+            || TradeSkillProfession != null
+            || PathMissionIncrement != null
             || GrantLevelScaledXp != null
+            || GrantLevelScaledPrestige != null
             || ModifyRestedXp != null
             || GiveAugmentPowerToPlayer != null
+            || GiveAbilityPointsToPlayer != null
             || QuestAdvanceObjective != null
             || AchievementAdvance != null
             || ReputationModify != null
@@ -716,6 +835,7 @@ namespace NexusForever.Game.Spell.Effect
             || PetCastSpell != null
             || ForceFacing != null
             || ForcedMove != null
+            || VectorSlide != null
             || Proxy != null
             || ProxyRandomExclusive != null
             || Teleport != null
@@ -730,7 +850,8 @@ namespace NexusForever.Game.Spell.Effect
             || RemoveStealth != null
             || AggroImmune != null
             || UnitPropertyModifier != null
-            || PersonalDmgHealMod != null;
+            || PersonalDmgHealMod != null
+            || UnitPropertyConversion != null;
 
         internal SpellEffectInterpretation(
             Spell4EffectsEntry entry,
@@ -897,6 +1018,49 @@ namespace NexusForever.Game.Spell.Effect
                         entry.DataBits07,
                         entry.DataBits08,
                         entry.DataBits09);
+                    break;
+                case SpellEffectType.VendorPriceModifier:
+                    interpretation.VendorPriceModifier = new SpellEffectVendorPriceModifierSemantics(
+                        BitConverter.UInt32BitsToSingle(entry.DataBits00),
+                        BitConverter.UInt32BitsToSingle(entry.DataBits01),
+                        entry.DataBits02,
+                        entry.DataBits03,
+                        entry.DataBits04,
+                        entry.DataBits05);
+                    break;
+                case SpellEffectType.NPCForceAIMovement:
+                    interpretation.NpcForceAiMovement = new SpellEffectNpcForceAiMovementSemantics(
+                        entry.DataBits00,
+                        entry.DataBits01,
+                        entry.DataBits02,
+                        entry.DataBits03,
+                        entry.DataBits04,
+                        entry.DataBits05,
+                        entry.DataBits06,
+                        entry.DataBits07,
+                        entry.DataBits08,
+                        entry.DataBits09);
+                    break;
+                case SpellEffectType.HazardEnable:
+                    interpretation.HazardEnable = new SpellEffectHazardEnableSemantics(entry.DataBits00);
+                    break;
+                case SpellEffectType.HazardModify:
+                    interpretation.HazardModify = new SpellEffectHazardModifySemantics(
+                        entry.DataBits00,
+                        entry.DataBits01,
+                        BitConverter.UInt32BitsToSingle(entry.DataBits02),
+                        BitConverter.UInt32BitsToSingle(entry.DataBits03),
+                        entry.DataBits04,
+                        entry.DataBits05);
+                    break;
+                case SpellEffectType.HazardSuspend:
+                    interpretation.HazardSuspend = new SpellEffectHazardSuspendSemantics(
+                        entry.DataBits00,
+                        entry.DataBits01,
+                        entry.DataBits02,
+                        entry.DataBits03,
+                        entry.DataBits04,
+                        entry.DataBits05);
                     break;
                 case SpellEffectType.SettlerCampfire:
                     interpretation.SettlerCampfire = new SpellEffectSettlerCampfireSemantics(
@@ -1108,8 +1272,43 @@ namespace NexusForever.Game.Spell.Effect
                         entry.DataBits04,
                         entry.DataBits05);
                     break;
+                case SpellEffectType.TradeSkillProfession:
+                    interpretation.TradeSkillProfession = new SpellEffectTradeSkillProfessionSemantics(
+                        (TradeskillType)entry.DataBits00,
+                        entry.DataBits01,
+                        entry.DataBits02,
+                        entry.DataBits03,
+                        entry.DataBits04,
+                        entry.DataBits05,
+                        entry.DataBits06,
+                        entry.DataBits07,
+                        entry.DataBits08,
+                        entry.DataBits09);
+                    break;
+                case SpellEffectType.PathMissionIncrement:
+                    interpretation.PathMissionIncrement = new SpellEffectPathMissionIncrementSemantics(
+                        entry.DataBits00,
+                        entry.DataBits01,
+                        entry.DataBits02,
+                        entry.DataBits03,
+                        entry.DataBits04,
+                        entry.DataBits05,
+                        entry.DataBits06,
+                        entry.DataBits07,
+                        entry.DataBits08,
+                        entry.DataBits09);
+                    break;
                 case SpellEffectType.GrantLevelScaledXP:
                     interpretation.GrantLevelScaledXp = new SpellEffectGrantLevelScaledXpSemantics(
+                        BitConverter.UInt32BitsToSingle(entry.DataBits00),
+                        entry.DataBits01,
+                        entry.DataBits02,
+                        entry.DataBits03,
+                        entry.DataBits04,
+                        entry.DataBits05);
+                    break;
+                case SpellEffectType.GrantLevelScaledPrestige:
+                    interpretation.GrantLevelScaledPrestige = new SpellEffectGrantLevelScaledPrestigeSemantics(
                         BitConverter.UInt32BitsToSingle(entry.DataBits00),
                         entry.DataBits01,
                         entry.DataBits02,
@@ -1134,6 +1333,19 @@ namespace NexusForever.Game.Spell.Effect
                         entry.DataBits03,
                         entry.DataBits04,
                         entry.DataBits05);
+                    break;
+                case SpellEffectType.GiveAbilityPointsToPlayer:
+                    interpretation.GiveAbilityPointsToPlayer = new SpellEffectGiveAbilityPointsToPlayerSemantics(
+                        entry.DataBits00,
+                        entry.DataBits01,
+                        entry.DataBits02,
+                        entry.DataBits03,
+                        entry.DataBits04,
+                        entry.DataBits05,
+                        entry.DataBits06,
+                        entry.DataBits07,
+                        entry.DataBits08,
+                        entry.DataBits09);
                     break;
                 case SpellEffectType.QuestAdvanceObjective:
                     interpretation.QuestAdvanceObjective = new SpellEffectQuestAdvanceObjectiveSemantics(
@@ -1332,6 +1544,15 @@ namespace NexusForever.Game.Spell.Effect
                         BitConverter.UInt32BitsToSingle(entry.DataBits08),
                         entry.DataBits09);
                     break;
+                case SpellEffectType.VectorSlide:
+                    interpretation.VectorSlide = new SpellEffectVectorSlideSemantics(
+                        entry.DataBits00,
+                        BitConverter.UInt32BitsToSingle(entry.DataBits01),
+                        entry.DataBits02,
+                        entry.DataBits03,
+                        entry.DataBits04,
+                        entry.DataBits05);
+                    break;
                 case SpellEffectType.Damage:
                 case SpellEffectType.Heal:
                 case SpellEffectType.DistanceDependentDamage:
@@ -1389,6 +1610,15 @@ namespace NexusForever.Game.Spell.Effect
                         entry.DataBits01,
                         BitConverter.UInt32BitsToSingle(entry.DataBits02),
                         BitConverter.UInt32BitsToSingle(entry.DataBits03),
+                        entry.DataBits04,
+                        entry.DataBits05);
+                    break;
+                case SpellEffectType.UnitPropertyConversion:
+                    interpretation.UnitPropertyConversion = new SpellEffectUnitPropertyConversionSemantics(
+                        (Property)entry.DataBits00,
+                        (Property)entry.DataBits01,
+                        BitConverter.UInt32BitsToSingle(entry.DataBits02),
+                        entry.DataBits03,
                         entry.DataBits04,
                         entry.DataBits05);
                     break;

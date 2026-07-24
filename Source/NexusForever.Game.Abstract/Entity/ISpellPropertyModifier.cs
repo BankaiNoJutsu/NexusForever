@@ -9,4 +9,13 @@ namespace NexusForever.Game.Abstract.Entity
         Property Property { get; }
         uint StackCount { get; }
     }
+
+    /// <summary>
+    /// A live property dependency contributed by a spell effect.
+    /// </summary>
+    public interface ISpellPropertyConversion : ISpellPropertyModifier
+    {
+        Property SourceProperty { get; }
+        float Multiplier { get; }
+    }
 }

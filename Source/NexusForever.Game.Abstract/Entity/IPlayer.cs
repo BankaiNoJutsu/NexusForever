@@ -118,6 +118,18 @@ namespace NexusForever.Game.Abstract.Entity
         IResurrectionManager ResurrectionManager { get; }
 
         IVendorInfo SelectedVendorInfo { get; set; }
+        float VendorSellPriceMultiplier { get; }
+        float VendorBuyPriceMultiplier { get; }
+
+        bool TryAddVendorPriceModifier(uint effectId, float vendorSellMultiplier, float vendorBuyMultiplier, uint spell4Id, uint spell4EffectId, uint castingId, uint stackGroupId, uint stackCap, out string skippedReason);
+        bool RemoveVendorPriceModifier(uint effectId);
+        void RefreshSelectedVendorInfo(uint? vendorGuid = null);
+
+        bool TryEnableHazard(uint effectId, uint hazardId, out string skippedReason);
+        bool RemoveHazard(uint effectId);
+        bool TryModifyHazard(uint hazardId, float amount, out string skippedReason);
+        bool TrySuspendHazard(uint effectId, uint hazardId, uint targetMode, out string skippedReason);
+        bool RemoveHazardSuspension(uint effectId);
 
         /// <summary>
         /// Save <see cref="IPlayer"/> to database, invoke supplied <see cref="Action"/> once save is complete.

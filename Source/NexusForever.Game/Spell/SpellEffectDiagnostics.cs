@@ -449,6 +449,54 @@ namespace NexusForever.Game.Spell
                 ravelSignal.DataBits09);
         }
 
+        public static void TraceVendorPriceModifier(ISpell spell, IUnitEntity target, SpellEffectVendorPriceModifierSemantics modifier, bool applied, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics vendor-price-modifier spell4Id={0} baseSpell4Id={1} castingId={2} target={3} vendorSellMultiplier={4:R} vendorBuyMultiplier={5:R} applied={6} skippedReason={7} dataBits02={8} dataBits03={9} dataBits04={10} dataBits05={11}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.Parameters.SpellInfo.BaseInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                modifier.VendorSellMultiplier,
+                modifier.VendorBuyMultiplier,
+                applied,
+                skippedReason,
+                modifier.DataBits02,
+                modifier.DataBits03,
+                modifier.DataBits04,
+                modifier.DataBits05);
+        }
+
+        public static void TraceNpcForceAiMovement(ISpell spell, IUnitEntity target, SpellEffectNpcForceAiMovementSemantics movement, uint commandedCount, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            Vector3? position = spell.Parameters.Position?.Vector;
+            log.Trace(
+                "SpellDiagnostics npc-force-ai-movement spell4Id={0} baseSpell4Id={1} castingId={2} target={3} position={4} commandedCount={5} skippedReason={6} dataBits00={7} dataBits01={8} dataBits02={9} dataBits03={10} dataBits04={11} dataBits05={12} dataBits06={13} dataBits07={14} dataBits08={15} dataBits09={16}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.Parameters.SpellInfo.BaseInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                position.HasValue ? $"{position.Value.X:R},{position.Value.Y:R},{position.Value.Z:R}" : "none",
+                commandedCount,
+                skippedReason,
+                movement.DataBits00,
+                movement.DataBits01,
+                movement.DataBits02,
+                movement.DataBits03,
+                movement.DataBits04,
+                movement.DataBits05,
+                movement.DataBits06,
+                movement.DataBits07,
+                movement.DataBits08,
+                movement.DataBits09);
+        }
+
         public static void TraceModifyInterruptArmor(ISpell spell, IUnitEntity target, SpellEffectModifyInterruptArmorSemantics interruptArmor, uint appliedAmount, bool removed)
         {
             if (!log.IsTraceEnabled)
@@ -1257,6 +1305,57 @@ namespace NexusForever.Game.Spell
                 pathXp.DataBits05);
         }
 
+        public static void TraceTradeSkillProfession(ISpell spell, IUnitEntity target, SpellEffectTradeSkillProfessionSemantics profession, uint playerGuid, bool applied, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics tradeskill-profession spell4Id={0} castingId={1} target={2} player={3} tradeskill={4} tradeskillId={5} applied={6} skippedReason={7} payload={8}/{9}/{10}/{11}/{12}/{13}/{14}/{15}/{16}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                playerGuid,
+                profession.Tradeskill,
+                (uint)profession.Tradeskill,
+                applied,
+                skippedReason,
+                profession.DataBits01,
+                profession.DataBits02,
+                profession.DataBits03,
+                profession.DataBits04,
+                profession.DataBits05,
+                profession.DataBits06,
+                profession.DataBits07,
+                profession.DataBits08,
+                profession.DataBits09);
+        }
+
+        public static void TracePathMissionIncrement(ISpell spell, IUnitEntity target, SpellEffectPathMissionIncrementSemantics increment, uint playerGuid, bool applied, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics path-mission-increment spell4Id={0} castingId={1} target={2} player={3} pathMissionId={4} amount={5} applied={6} skippedReason={7} payload={8}/{9}/{10}/{11}/{12}/{13}/{14}/{15}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                playerGuid,
+                increment.PathMissionId,
+                increment.Amount,
+                applied,
+                skippedReason,
+                increment.DataBits02,
+                increment.DataBits03,
+                increment.DataBits04,
+                increment.DataBits05,
+                increment.DataBits06,
+                increment.DataBits07,
+                increment.DataBits08,
+                increment.DataBits09);
+        }
+
         public static void TraceGrantLevelScaledXp(ISpell spell, IUnitEntity target, SpellEffectGrantLevelScaledXpSemantics levelScaledXp, uint resolvedAmount, bool applied, string skippedReason)
         {
             if (!log.IsTraceEnabled)
@@ -1276,6 +1375,27 @@ namespace NexusForever.Game.Spell
                 levelScaledXp.DataBits03,
                 levelScaledXp.DataBits04,
                 levelScaledXp.DataBits05);
+        }
+
+        public static void TraceGrantLevelScaledPrestige(ISpell spell, IUnitEntity target, SpellEffectGrantLevelScaledPrestigeSemantics levelScaledPrestige, uint resolvedAmount, bool applied, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics grant-level-scaled-prestige spell4Id={0} castingId={1} target={2} percentOfLevel={3:R} maxLevel={4} mode={5} resolvedAmount={6} applied={7} skippedReason={8} dataBits03={9} dataBits04={10} dataBits05={11}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                levelScaledPrestige.PercentOfLevel,
+                levelScaledPrestige.MaxLevel,
+                levelScaledPrestige.Mode,
+                resolvedAmount,
+                applied,
+                skippedReason,
+                levelScaledPrestige.DataBits03,
+                levelScaledPrestige.DataBits04,
+                levelScaledPrestige.DataBits05);
         }
 
         public static void TraceModifyRestedXp(ISpell spell, IUnitEntity target, SpellEffectModifyRestedXpSemantics modifyRestedXp, uint previousRestBonusXp, uint currentRestBonusXp, bool applied, string skippedReason)
@@ -1318,6 +1438,30 @@ namespace NexusForever.Game.Spell
                 augmentPower.DataBits03,
                 augmentPower.DataBits04,
                 augmentPower.DataBits05);
+        }
+
+        public static void TraceGiveAbilityPointsToPlayer(ISpell spell, IUnitEntity target, SpellEffectGiveAbilityPointsToPlayerSemantics abilityPoints, bool applied, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics give-ability-points-to-player spell4Id={0} castingId={1} target={2} amount={3} applied={4} skippedReason={5} payload={6}/{7}/{8}/{9}/{10}/{11}/{12}/{13}/{14}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                abilityPoints.Amount,
+                applied,
+                skippedReason,
+                abilityPoints.DataBits01,
+                abilityPoints.DataBits02,
+                abilityPoints.DataBits03,
+                abilityPoints.DataBits04,
+                abilityPoints.DataBits05,
+                abilityPoints.DataBits06,
+                abilityPoints.DataBits07,
+                abilityPoints.DataBits08,
+                abilityPoints.DataBits09);
         }
 
         public static void TraceQuestAdvanceObjective(ISpell spell, IUnitEntity target, SpellEffectQuestAdvanceObjectiveSemantics questAdvance, uint playerGuid, bool applied, string skippedReason)
@@ -1593,6 +1737,40 @@ namespace NexusForever.Game.Spell
                 personalMod.DataFloat03,
                 personalMod.DataBits04,
                 personalMod.DataBits05);
+        }
+
+        public static void TraceUnitPropertyConversion(
+            ISpell spell,
+            IUnitEntity target,
+            SpellEffectUnitPropertyConversionSemantics conversion,
+            bool applied,
+            string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            float sourceValue = Enum.IsDefined(conversion.SourceProperty)
+                ? target.GetPropertyValue(conversion.SourceProperty)
+                : float.NaN;
+            float targetValue = Enum.IsDefined(conversion.TargetProperty)
+                ? target.GetPropertyValue(conversion.TargetProperty)
+                : float.NaN;
+
+            log.Trace(
+                "SpellDiagnostics unit-property-conversion spell4Id={0} castingId={1} target={2} sourceProperty={3} targetProperty={4} multiplier={5:R} sourceValue={6:R} targetValue={7:R} applied={8} skippedReason={9} dataBits03={10} dataBits04={11} dataBits05={12}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                conversion.SourceProperty,
+                conversion.TargetProperty,
+                conversion.Multiplier,
+                sourceValue,
+                targetValue,
+                applied,
+                skippedReason,
+                conversion.DataBits03,
+                conversion.DataBits04,
+                conversion.DataBits05);
         }
 
         public static void TraceDisembark(ISpell spell, IUnitEntity target, SpellEffectDisembarkSemantics disembark, uint playerGuid, bool wasMounted, bool applied, string skippedReason)
@@ -1960,6 +2138,77 @@ namespace NexusForever.Game.Spell
                 aggroImmune.DataBits03,
                 aggroImmune.DataBits04,
                 aggroImmune.DataBits05);
+        }
+
+        public static void TraceHazardEnable(ISpell spell, IUnitEntity target, SpellEffectHazardEnableSemantics hazard, bool applied, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics hazard-enable spell4Id={0} castingId={1} target={2} hazardId={3} applied={4} skippedReason={5}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                hazard.HazardId,
+                applied,
+                skippedReason ?? "none");
+        }
+
+        public static void TraceHazardModify(ISpell spell, IUnitEntity target, SpellEffectHazardModifySemantics hazard, bool applied, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics hazard-modify spell4Id={0} castingId={1} target={2} hazardId={3} operation={4} targetMode={5} modifierValue={6:R} amount={7:R} applied={8} skippedReason={9} dataBits05={10}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                hazard.HazardId,
+                hazard.Operation,
+                hazard.TargetMode,
+                hazard.ModifierValue,
+                hazard.Amount,
+                applied,
+                skippedReason ?? "none",
+                hazard.DataBits05);
+        }
+
+        public static void TraceHazardSuspend(ISpell spell, IUnitEntity target, SpellEffectHazardSuspendSemantics hazard, bool applied, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics hazard-suspend spell4Id={0} castingId={1} target={2} hazardId={3} targetMode={4} applied={5} skippedReason={6}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                hazard.HazardId,
+                hazard.TargetMode,
+                applied,
+                skippedReason ?? "none");
+        }
+
+        public static void TraceVectorSlide(ISpell spell, IUnitEntity target, SpellEffectVectorSlideSemantics vectorSlide, Vector3 velocity, bool applied, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics vector-slide spell4Id={0} castingId={1} target={2} mode={3} magnitude={4:R} flags={5} velocity={6:R},{7:R},{8:R} applied={9} skippedReason={10}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                vectorSlide.Mode,
+                vectorSlide.Magnitude,
+                vectorSlide.Flags,
+                velocity.X,
+                velocity.Y,
+                velocity.Z,
+                applied,
+                skippedReason ?? "none");
         }
 
         public static void TraceSpellGo(ISpell spell, int targetInfoCount, int effectInfoCount, int combatLogCount)

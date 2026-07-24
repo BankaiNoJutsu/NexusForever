@@ -118,7 +118,7 @@ public class ClientVendorSellJunkHandlerTests
         if (selectedVendor)
         {
             IVendorInfo vendorInfo = RecordingDispatchProxy<IVendorInfo>.Create(out RecordingDispatchProxy<IVendorInfo> vendorProxy);
-            vendorProxy.SetProperty(nameof(IVendorInfo.SellPriceMultiplier), 1.0f);
+            vendorProxy.SetProperty(nameof(IVendorInfo.BuyPriceMultiplier), 1.0f);
             playerProxy.SetProperty(nameof(IPlayer.SelectedVendorInfo), vendorInfo);
         }
 
