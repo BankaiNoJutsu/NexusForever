@@ -86,9 +86,11 @@ function Read-KeyValuePropertiesFile {
         }
 
         $value = $trimmed.Substring($separatorIndex + 1).Trim()
+        $escapedBackslash = [string] [char] 0xE000
+        $value = $value.Replace('\\', $escapedBackslash)
         $value = $value.Replace('\:', ':').Replace('\=', '=').Replace('\ ', ' ')
         $value = $value.Replace('\t', "`t").Replace('\n', "`n").Replace('\r', "`r").Replace('\f', [string] [char] 12)
-        $value = $value.Replace('\\', [string] [char] 92)
+        $value = $value.Replace($escapedBackslash, [string] [char] 92)
         $properties[$key] = $value
     }
 

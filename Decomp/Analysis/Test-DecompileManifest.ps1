@@ -44,9 +44,11 @@ function Read-KeyValuePropertiesFile {
         }
 
         $value = $trimmed.Substring($separatorIndex + 1).Trim()
+        $escapedBackslash = [string] [char] 0xE000
+        $value = $value.Replace('\\', $escapedBackslash)
         $value = $value.Replace('\:', ':').Replace('\=', '=').Replace('\ ', ' ')
         $value = $value.Replace('\t', "`t").Replace('\n', "`n").Replace('\r', "`r").Replace('\f', [string] [char] 12)
-        $value = $value.Replace('\\', [string] [char] 92)
+        $value = $value.Replace($escapedBackslash, [string] [char] 92)
         $properties[$key] = $value
     }
 
@@ -85,6 +87,36 @@ function ConvertTo-NullableBool {
     }
 
     return $null
+}
+
+function Get-CurrentCanonicalCacheFragmentCount {
+    param(
+        [object[]] $Functions,
+        [string] $CacheDirectory
+    )
+
+    if ([string]::IsNullOrWhiteSpace($CacheDirectory) -or
+        -not (Test-Path -LiteralPath $CacheDirectory -PathType Container) -or
+        $Functions.Count -eq 0) {
+        return $null
+    }
+
+    $currentEntries = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($function in $Functions) {
+        if ([string] $function.external -ne 'True') {
+            [void] $currentEntries.Add([string] $function.entry)
+        }
+    }
+
+    $count = 0
+    foreach ($fragment in Get-ChildItem -LiteralPath $CacheDirectory -File -Filter '*.fragment.properties' -ErrorAction SilentlyContinue) {
+        $entry = $fragment.Name.Substring(0, $fragment.Name.Length - '.fragment.properties'.Length)
+        if ($currentEntries.Contains($entry)) {
+            $count += 1
+        }
+    }
+
+    return $count
 }
 
 function Get-ExpectedTargetSummary {
@@ -136,6 +168,24 @@ $records = foreach ($target in $Targets) {
     if ($null -eq $cacheProperties) {
         $cacheProperties = @{}
     }
+
+    $canonicalCachedFragments = ConvertTo-NullableInt -Value $cacheProperties['cache.canonicalCachedFragments']
+    $remainingUncached = ConvertTo-NullableInt -Value $cacheProperties['cache.remainingUncached']
+    $functionsPath = Join-Path (Split-Path -Parent $manifestPath) 'functions.csv'
+    $functions = if (Test-Path -LiteralPath $functionsPath -PathType Leaf) {
+        @(Import-Csv -LiteralPath $functionsPath)
+    }
+    else {
+        @()
+    }
+    $currentCanonicalCachedFragments = Get-CurrentCanonicalCacheFragmentCount `
+        -Functions $functions `
+        -CacheDirectory ([string] $cacheProperties['cache.directory'])
+    if ($null -ne $currentCanonicalCachedFragments) {
+        $canonicalCachedFragments = $currentCanonicalCachedFragments
+        $remainingUncached = [Math]::Max(0, $functions.Count - $canonicalCachedFragments)
+    }
+
     if ($null -eq $properties) {
         $issues.Add('missing-manifest')
         [pscustomobject]@{
@@ -144,9 +194,9 @@ $records = foreach ($target in $Targets) {
             selectedCount               = $null
             reusedFragments             = $null
             decompiledFragments         = $null
-            canonicalCachedFragments    = ConvertTo-NullableInt -Value $cacheProperties['cache.canonicalCachedFragments']
+            canonicalCachedFragments    = $canonicalCachedFragments
             warmedThisRun               = ConvertTo-NullableInt -Value $cacheProperties['cache.warmedThisRun']
-            remainingUncached           = ConvertTo-NullableInt -Value $cacheProperties['cache.remainingUncached']
+            remainingUncached           = $remainingUncached
             skippedAlreadyExported      = ConvertTo-NullableInt -Value $cacheProperties['cache.skippedAlreadyExported']
             outputExists                = $null
             binaryFingerprintMatchesRun = $null
@@ -184,9 +234,9 @@ $records = foreach ($target in $Targets) {
         selectedCount               = ConvertTo-NullableInt -Value $properties['selected.count']
         reusedFragments             = ConvertTo-NullableInt -Value $properties['cache.reusedFragments']
         decompiledFragments         = ConvertTo-NullableInt -Value $properties['cache.decompiledFragments']
-        canonicalCachedFragments    = ConvertTo-NullableInt -Value $cacheProperties['cache.canonicalCachedFragments']
+        canonicalCachedFragments    = $canonicalCachedFragments
         warmedThisRun               = ConvertTo-NullableInt -Value $cacheProperties['cache.warmedThisRun']
-        remainingUncached           = ConvertTo-NullableInt -Value $cacheProperties['cache.remainingUncached']
+        remainingUncached           = $remainingUncached
         skippedAlreadyExported      = ConvertTo-NullableInt -Value $cacheProperties['cache.skippedAlreadyExported']
         outputExists                = $outputExists
         binaryFingerprintMatchesRun = $binaryFingerprintMatchesRun

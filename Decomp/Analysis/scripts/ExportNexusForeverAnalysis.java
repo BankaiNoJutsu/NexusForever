@@ -800,8 +800,14 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 
 	private void refreshCacheWarmSummary(FunctionManager functionManager,
 			DecompileCache decompileCache, CacheWarmSummary summary) {
-		summary.totalInternalFunctions = getInternalFunctions(functionManager).size();
-		summary.canonicalCachedFragments = decompileCache.countCanonicalFragments();
+		ArrayList<Function> functions = getInternalFunctions(functionManager);
+		summary.totalInternalFunctions = functions.size();
+		summary.canonicalCachedFragments = 0;
+		for (Function function : functions) {
+			if (decompileCache.tryReadCanonical(function) != null) {
+				summary.canonicalCachedFragments++;
+			}
+		}
 		summary.remainingUncached = Math.max(0,
 			summary.totalInternalFunctions - summary.canonicalCachedFragments);
 	}
@@ -1703,16 +1709,6 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		DecompileFragment tryReadCanonical(Function function) {
 			File metadataFile = getDecompileFragmentMetadataFile(canonicalCacheDir, function);
 			return tryReadDecompileFragment(metadataFile, function, true, programCacheToken);
-		}
-
-		int countCanonicalFragments() {
-			if (!canonicalCacheDir.isDirectory()) {
-				return 0;
-			}
-
-			File[] files = canonicalCacheDir.listFiles((dir, name) ->
-				name.endsWith(".fragment.properties"));
-			return files == null ? 0 : files.length;
 		}
 
 		void writeCanonicalFragment(Function function, String body) throws Exception {

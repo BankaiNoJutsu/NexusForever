@@ -71,9 +71,11 @@ function Read-KeyValuePropertiesFile {
         }
 
         $value = $trimmed.Substring($separatorIndex + 1).Trim()
+        $escapedBackslash = [string] [char] 0xE000
+        $value = $value.Replace('\\', $escapedBackslash)
         $value = $value.Replace('\:', ':').Replace('\=', '=').Replace('\ ', ' ')
         $value = $value.Replace('\t', "`t").Replace('\n', "`n").Replace('\r', "`r").Replace('\f', [string] [char] 12)
-        $value = $value.Replace('\\', [string] [char] 92)
+        $value = $value.Replace($escapedBackslash, [string] [char] 92)
         $properties[$key] = $value
     }
 
@@ -166,6 +168,36 @@ function Get-Percent {
     return [Math]::Round(($Numerator / $Denominator) * 100, 2)
 }
 
+function Get-CurrentCanonicalCacheFragmentCount {
+    param(
+        [object[]] $Functions,
+        [string] $CacheDirectory
+    )
+
+    if ([string]::IsNullOrWhiteSpace($CacheDirectory) -or
+        -not (Test-Path -LiteralPath $CacheDirectory -PathType Container) -or
+        $Functions.Count -eq 0) {
+        return $null
+    }
+
+    $currentEntries = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($function in $Functions) {
+        if ([string] $function.external -ne 'True') {
+            [void] $currentEntries.Add([string] $function.entry)
+        }
+    }
+
+    $count = 0
+    foreach ($fragment in Get-ChildItem -LiteralPath $CacheDirectory -File -Filter '*.fragment.properties' -ErrorAction SilentlyContinue) {
+        $entry = $fragment.Name.Substring(0, $fragment.Name.Length - '.fragment.properties'.Length)
+        if ($currentEntries.Contains($entry)) {
+            $count += 1
+        }
+    }
+
+    return $count
+}
+
 function Test-IsDefaultGhidraFunctionName {
     param(
         [string] $Name
@@ -223,7 +255,14 @@ function Get-ExportCoverageRecord {
     $canonicalCacheFragments = if ($null -eq $cacheSummary) { $null } else { ConvertTo-NullableInt -Value $cacheSummary['cache.canonicalCachedFragments'] }
     $remainingUncachedFragments = if ($null -eq $cacheSummary) { $null } else { ConvertTo-NullableInt -Value $cacheSummary['cache.remainingUncached'] }
     $totalInternalFunctions = if ($null -eq $cacheSummary) { $null } else { ConvertTo-NullableInt -Value $cacheSummary['functions.totalInternal'] }
-    if ($null -eq $canonicalCacheFragments -or $canonicalCacheFragments -eq 0) {
+    $canonicalCacheDirectory = if ($null -eq $cacheSummary) { '' } else { [string] $cacheSummary['cache.directory'] }
+    $currentCanonicalCacheFragments = Get-CurrentCanonicalCacheFragmentCount `
+        -Functions $functions `
+        -CacheDirectory $canonicalCacheDirectory
+    if ($null -ne $currentCanonicalCacheFragments) {
+        $canonicalCacheFragments = $currentCanonicalCacheFragments
+    }
+    elseif ($null -eq $canonicalCacheFragments -or $canonicalCacheFragments -eq 0) {
         $cacheRoot = Join-Path $ExportPath 'selected_decompiled_cache\functions'
         if (Test-Path -LiteralPath $cacheRoot -PathType Container) {
             $canonicalCacheFragments = @(
@@ -236,7 +275,7 @@ function Get-ExportCoverageRecord {
         $totalInternalFunctions = $functionCount
     }
 
-    if ($null -eq $remainingUncachedFragments) {
+    if ($null -ne $currentCanonicalCacheFragments -or $null -eq $remainingUncachedFragments) {
         $remainingUncachedFragments = [Math]::Max(0, $totalInternalFunctions - [int]$canonicalCacheFragments)
     }
 
