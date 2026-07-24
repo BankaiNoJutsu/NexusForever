@@ -17,12 +17,16 @@ if (args.Length > 0 && args[0].Equals("--target-groups", StringComparison.Ordina
 if (args.Length > 0 && args[0].Equals("--spell-action-set", StringComparison.OrdinalIgnoreCase))
     return RunSpellActionSet(args.Skip(1).ToArray());
 
+if (args.Length > 0 && args[0].Equals("--spell-effects", StringComparison.OrdinalIgnoreCase))
+    return RunSpellEffects(args.Skip(1).ToArray());
+
 if (args.Length == 0)
 {
     Console.Error.WriteLine("Usage:");
     Console.Error.WriteLine("  QuestTableInspector <tbl-path> [quest-id ...]");
     Console.Error.WriteLine("  QuestTableInspector --target-groups <tbl-path> <target-group-id ...>");
     Console.Error.WriteLine("  QuestTableInspector --spell-action-set <tbl-path> [spell-id ...] [--xp <total-xp>] [--shortcut-set-id <id>]");
+    Console.Error.WriteLine("  QuestTableInspector --spell-effects <tbl-path> <spell4-id ...>");
     Console.Error.WriteLine("  QuestTableInspector --riders-reef-crosswalk <world-sql-path> [--out <artifact-path>]");
     return 1;
 }
@@ -297,6 +301,89 @@ static int RunSpellActionSet(string[] args)
     string actionBarShortcutSetPath = Path.Combine(gameTablePath, "ActionBarShortcutSet.tbl");
     if (File.Exists(actionBarShortcutSetPath))
         PrintActionBarShortcutSets(actionBarShortcutSetPath, spellIds, shortcutSetId);
+
+    return 0;
+}
+
+static int RunSpellEffects(string[] args)
+{
+    if (args.Length < 2)
+    {
+        Console.Error.WriteLine("Usage: QuestTableInspector --spell-effects <tbl-path> <spell4-id ...>");
+        return 1;
+    }
+
+    string gameTablePath = Path.GetFullPath(args[0]);
+    if (!Directory.Exists(gameTablePath))
+    {
+        Console.Error.WriteLine($"Table directory not found: {gameTablePath}");
+        return 1;
+    }
+
+    string? spell4BasePath = GetRequiredTablePath(gameTablePath, "Spell4Base.tbl");
+    string? spell4Path = GetRequiredTablePath(gameTablePath, "Spell4.tbl");
+    string? spell4EffectsPath = GetRequiredTablePath(gameTablePath, "Spell4Effects.tbl");
+    string textPath = Path.Combine(gameTablePath, "en-US.bin");
+    if (spell4BasePath is null || spell4Path is null || spell4EffectsPath is null)
+        return 1;
+    if (!File.Exists(textPath))
+    {
+        Console.Error.WriteLine($"Required text file not found: {textPath}");
+        return 1;
+    }
+
+    uint[] spell4Ids = args.Skip(1)
+        .Select(value => uint.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture))
+        .ToArray();
+
+    var spell4BaseTable = new GameTable<Spell4BaseEntry>(spell4BasePath);
+    var spell4Table = new GameTable<Spell4Entry>(spell4Path);
+    var spell4EffectsTable = new GameTable<Spell4EffectsEntry>(spell4EffectsPath);
+    var textTable = new TextTable(textPath);
+
+    foreach (uint spell4Id in spell4Ids)
+    {
+        Spell4Entry? spell4 = spell4Table.GetEntry(spell4Id);
+        if (spell4 is null)
+        {
+            Console.WriteLine($"SPELL4 {spell4Id} missing");
+            continue;
+        }
+
+        Spell4BaseEntry? spell4Base = spell4BaseTable.GetEntry(spell4.Spell4BaseIdBaseSpell);
+        string name = spell4Base is null
+            ? "-"
+            : textTable.GetEntry(spell4Base.LocalizedTextIdName) ?? "-";
+        string tooltip = textTable.GetEntry(spell4.LocalizedTextIdActionBarTooltip) ?? "-";
+
+        Console.WriteLine(
+            $"SPELL4 {spell4Id} base={spell4.Spell4BaseIdBaseSpell} tier={spell4.TierIndex} name={name} tooltip={tooltip}");
+
+        foreach (Spell4EffectsEntry effect in spell4EffectsTable.Entries
+            .Where(effect => effect.SpellId == spell4Id)
+            .OrderBy(effect => effect.OrderIndex)
+            .ThenBy(effect => effect.Id))
+        {
+            uint[] data =
+            [
+                effect.DataBits00,
+                effect.DataBits01,
+                effect.DataBits02,
+                effect.DataBits03,
+                effect.DataBits04,
+                effect.DataBits05,
+                effect.DataBits06,
+                effect.DataBits07,
+                effect.DataBits08,
+                effect.DataBits09
+            ];
+
+            Console.WriteLine(
+                $"  EFFECT {effect.Id} type={effect.EffectType}({(uint)effect.EffectType}) targetFlags={effect.TargetFlags} " +
+                $"delay={effect.DelayTime} tick={effect.TickTime} duration={effect.DurationTime} flags={effect.Flags} " +
+                $"data=[{string.Join(',', data)}] float=[{string.Join(',', data.Select(BitConverter.UInt32BitsToSingle))}]");
+        }
+    }
 
     return 0;
 }

@@ -531,7 +531,9 @@ Most `ShieldOverload` rows have all-zero payload plus a duration. The current ru
 
 ## Progression Reward Fixtures
 
-`PathXpModify` now supports raw path XP and path-level grants through `PathManager`. `GrantLevelScaledXP` now grants a percent of the current level span through `XpManager`, capped by the encoded max level. `GiveAugmentPowerToPlayer` now grants runtime AMP bonus power through `ServerAmpPowerUpdate`. `GrantLevelScaledPrestige`, ability points, and inlaid augment unlocks remain evidence-only until their storage/runtime surfaces are identified.
+`PathXpModify` now supports raw path XP and path-level grants through `PathManager`. `GrantLevelScaledXP` grants a percent of the current level span through `XpManager`, capped by the encoded max level. `GrantLevelScaledPrestige` decodes the paired mode-`1` percent/cap layout for diagnostics, but it no longer mutates persistent currency: table pairing does not prove that prestige uses the XP span, the exact rounding rule, or the elder/max-level conversion. `GiveAugmentPowerToPlayer` grants runtime AMP bonus power through `ServerAmpPowerUpdate`. `GiveAbilityPointsToPlayer` grants and persists the single observed bonus tier point across action sets through the client-proven `ServerAbilityPoints` available/total budget. Inlaid augment unlocks remain evidence-only until their storage/runtime surface is identified.
+
+`TradeSkillProfession` now has direct fixtures for all three known rows: `32135` learns Fishing (`19`), `33501` learns Farming (`20`), and `34699` learns Cooking (`2`) through the persistent player profession owner. `PathMissionIncrement` now has direct Soldier SWAT fixtures `42373` (`PathMission=2424`, amount `1`, required count `5`) and `47614` (`PathMission=3085`, amount `1`, required count `15`). Validate the former against profession update/objective packets and the latter with an already-active mission against partial `ServerPathMissionUpdate` followed by normal completion/reward output.
 
 | Fixture | Context | Concrete spell | Progression evidence | Commands |
 | --- | --- | --- | --- | --- |
@@ -544,6 +546,7 @@ Most `ShieldOverload` rows have all-zero payload plus a duration. The current ru
 | Walatiki Win XP | Global PvP reward spell | `Spell4=42933`, base `26969`, tier `1` | `GrantLevelScaledXP` percent `10`, max level `50`, mode `1`. | `/spell inspect4 42933` then `/spell cast4 42933` |
 | Sabotage Bomb XP | Global PvP objective spell | `Spell4=80298`, base `56884`, tier `1` | `GrantLevelScaledXP` percent `5`, targetFlags `4`; validates player-owner resolution. | `/spell inspect4 80298` then `/spell cast4 80298` |
 | AMP Power Unlock | Global class unlock spell | `Spell4=67476`, base `44968`, tier `1` | `GiveAugmentPowerToPlayer` amount `1`; validates `ServerAmpPowerUpdate` and action-set bonus-power grant. | `/spell inspect4 67476` then `/spell cast4 67476` |
+| Ability Tier Point Unlock | Global class unlock spell | `Spell4=67478`, base `44831`, tier `1` | `GiveAbilityPointsToPlayer` amount `1`; validates `ServerAbilityPoints` available/total `43/43`, all-action-set propagation, and persisted reload. | `/spell inspect4 67478` then `/spell cast4 67478` |
 
 ## Housing And Stuck Utility Fixtures
 

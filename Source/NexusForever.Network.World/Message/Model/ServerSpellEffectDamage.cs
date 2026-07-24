@@ -9,7 +9,7 @@ namespace NexusForever.Network.World.Message.Model
     /// opcode <c>0x07F6</c> to reader <c>ServerSpellEffectDamage_ReadPayload</c> @ <c>140095910</c>
     /// with a <c>0x48</c>-byte parsed object and no dedicated post-read apply handler.
     /// Retail apply is indirect: <c>WorldSocket_ProcessServerMessage</c> handler
-    /// <c>vtable+0x58</c> -> <c>Entity_ExecuteSpellEffectHighRange</c> case
+    /// <c>vtable+0x58</c> -> <c>Entity_DispatchHighRangeMessage</c> case
     /// <c>1403ee268</c> -> <c>SpellWrapper_ApplyServerEffectDamage</c> ->
     /// <c>SpellWrapper_DispatchEffectDamageCombatLog</c> (combat-log floaters).
     /// </summary>

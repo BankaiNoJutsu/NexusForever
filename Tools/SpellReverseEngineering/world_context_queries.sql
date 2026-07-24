@@ -1809,10 +1809,11 @@ ORDER BY
     s.ID,
     e.ID;
 
--- 44. Reward progression surfaces that are not all fully mutable yet.
+-- 44. Reward progression surfaces.
 -- GiveAugmentPowerToPlayer is wired through ServerAmpPowerUpdate.
--- GiveAbilityPointsToPlayer and UnlockInlaidAugment are evidence-only until
--- dynamic ability-point and inlaid-augment unlock storage is identified.
+-- GiveAbilityPointsToPlayer is wired through the persisted ServerAbilityPoints
+-- available/total budget. UnlockInlaidAugment remains evidence-only until its
+-- unlock storage is identified.
 SELECT
     e.effectType,
     n.effectName,

@@ -1,6 +1,6 @@
 # Spell And Creature Remaining Implementation Plan
 
-Last updated: 2026-06-17
+Last updated: 2026-07-14
 
 ## Purpose
 
@@ -30,33 +30,43 @@ partially implemented, but not retail-complete.
 ### Spell Effects
 
 - `SpellEffectType` currently has 150 enum values.
-- 89 unique effect families have direct `[SpellEffectHandler]` handlers.
-- 61 enum names have no direct handler.
+- 104 unique effect families have direct `[SpellEffectHandler]` handlers.
+- 46 enum names have no direct handler.
 - 14 of the missing names are `UNUSED*`.
-- Excluding `UNUSED*`, 47 of 136 named non-unused effect families lack direct
-  handlers, which is approximately 34.6 percent.
+- Excluding `UNUSED*`, 32 of 136 named non-unused effect families lack direct
+  handlers, which is approximately 23.5 percent.
 
-Important missing named effect families include:
+The current named non-unused effect families without direct handlers are:
 
+- `SpellCounter`
 - `Script`
-- `NPCForceAIMovement`
-- `PathMissionIncrement`
-- `HazardEnable`
-- `HazardModify`
-- `HazardSuspend`
+- `UnlockActionBar`
+- `ForcedAction`
 - `ChangePhase`
-- `ModifyCreatureFlags`
-- `SharedHealthPool`
-- `SummonPet`
-- `PetCastSpell`
-- `ProxyRandomExclusive`
-- `ModifySpell`
-- `ModifySpellEffect`
-- `SuppressSpellEffect`
-- `UnitPropertyConversion`
-- `VectorSlide`
-- `VacuumLoot`
+- `NpcLootTableModify`
 - `WarplotTeleport`
+- `CraftItem`
+- `ModifySpell`, `ModifySpellEffect`, `AddSpellEffect`, and
+  `SuppressSpellEffect`
+- `ModifyCreatureFlags`
+- `VacuumLoot`
+- `ApplyLASChanges`
+- `FacilityModification`
+- `ChangeIcon`
+- `ChangeDisplayName`
+- `PathActionExplorerDig`
+- `MimicDisplayName`
+- `RestedXpDecorBonus`
+- `RewardBuffModifier`
+- `WarplotPlugUpgrade`
+- `UnlockInlaidAugment`
+- `TemporarilyUnflagPvp`
+- `MiniMapIcon`
+- `ChangePlane`
+- `HousingPlantSeed`
+- `DisallowPvP`
+- `GoMap` and `ReturnMap`
+- `SharedHealthPool`
 
 ### Spell Protocol And Aux Packets
 
@@ -106,6 +116,125 @@ conditions:
 - `ServerEntityVisualInfoUpdate (0x08A8)`
 
 ## Current Slice Notes
+
+### 2026-07-14 Strong-Candidate Proof And Implementation Closure
+
+- `UnitPropertyConversion` is implemented as a live acyclic property
+  dependency. Build-16042 rows use `DataBits00=source Property`,
+  `DataBits01=target Property`, and float-bitcast `DataBits02=multiplier`.
+  Spell `82056` encodes `BaseHealth -> Armor * 0.01`; its archived/client
+  tooltip says that Mountain increases Armor by 1% of Max Health. Source
+  changes now recalculate dependent targets, lifetime removal restores the
+  unconverted target, chained acyclic conversions propagate, and feedback
+  loops are rejected. The only reciprocal table pair is explicitly
+  `[TEST] [DNT]`.
+- `VendorPriceModifier` is implemented for the two production Settler discount
+  bases (`15098` and `15099`). Their rows encode packet-order vendor-sell and
+  vendor-buy multipliers `0.95/1.05` and `0.85/1.15`, share stack group `349`
+  with cap `1`, and otherwise have zero payloads. Active player modifiers now
+  update open vendor lists and both transaction paths. The transaction owner
+  was corrected to use the vendor-sell channel when the player purchases and
+  the vendor-buy channel when the player sells; multiplication now occurs
+  before currency rounding.
+- `NPCForceAIMovement` is implemented for its sole row, spell `41693` / base
+  `25888`, `Pet Command - Go To Location`. The spell handler accepts only the
+  player-caster target and cast position, then calls the same Engineer-bot
+  ownership, combat-clear, Stay/follow, speed, and `LaunchPath` algorithm used
+  by the primary pet-bar Go To request.
+- The former native proof route at `0x1403ec6a0` was rejected and corrected:
+  it is `Entity_DispatchHighRangeMessage`, not a `SpellEffectType` dispatcher.
+  Focused inspection of the previously claimed `0x091` case at `0x1403eeb67`
+  reaches an orientation-angle updater, not a property conversion. No behavior
+  in this closure relies on that numeric-ID coincidence.
+- A follow-up in the same slice implemented `HazardEnable`, the proven direct
+  `HazardModify` modes, `HazardSuspend`, and `VectorSlide`. Native opcodes
+  `0x0109`/`0x010A`/`0x010B` prove the action, full active-row list, and
+  exact-id/type modifier contracts; the client hazard manager proves list before
+  enable ordering and lifetime state. Table/tooltips prove signed direct meter
+  deltas for `HazardModify` operations `0..2`, selector `0` exact-id versus
+  selector `2` type suspension, and VectorSlide mode `0` anchor versus mode `1`
+  caster-facing signed velocity.
+- Still mapped-only after this pass: housing seed planting lacks inventory/plot mutation;
+  temporary/disallowed PvP lacks effective attackability and restoration
+  semantics; reward/rest modifiers lack grant/accrual owners; and shared health lacks
+  damage-distribution/pool membership semantics. `GoMap`, `ReturnMap`, and
+  `DisallowPvP` have no build-16042 effect rows. The proportional/type-wide
+  `HazardModify` operation `4` (`Clean Air`, `0.07/0.07`) and VectorSlide's
+  optional `DataBits02` flag remain decoded/diagnostic but unassigned.
+- Focused regressions cover exact interpretation, handler delegation, dynamic
+  conversion/recalculation/removal/cycle rejection, vendor stack cap and price
+  rounding, vendor sell paths, and the reused Engineer bot Go To command.
+- Verification on 2026-07-14 after the hazard/VectorSlide follow-up: all
+  `5,391` Game tests passed. The full `Source/NexusForever.sln` build passed
+  with zero errors and only the existing `SQLitePCLRaw.lib.e_sqlite3` `NU1903`
+  advisory.
+
+### 2026-07-14 Ability Tier Point Reuse Closure
+
+- `GiveAbilityPointsToPlayer` has one build-16042 row: effect `169485` on
+  `Spell4=67478` / base `44831`, named `Class - Ability Tier Point Unlock`.
+  It targets the caster, encodes `DataBits00=1`, and has an otherwise zero
+  payload.
+- The client Lua method table maps `GetAbilityPoints` to `1406feb50` and
+  `GetTotalAbilityPoints` to `1406feb90`. The former reads the pending tier
+  budget at player `+0x6ddc` with committed `+0x6dd8` fallback; the latter
+  reads total budget at `+0x6de0`.
+- `SpellBook_UpdateTierPointBudget` (`1403b95c0`) consumes two unsigned packet
+  values, stores available at `+0x6dd8` and total at `+0x6de0`, then adjusts
+  the pending value at `+0x6ddc` by the available-point delta and clamps it to
+  the new total. This directly identifies the existing two-field
+  `ServerAbilityPoints` packet as the runtime owner; opcode `0x016E` is not
+  required for this grant.
+- The handler now accepts only the observed one-point/zero-tail payload,
+  increases available tier points across all four action sets, caps the
+  account at the single observed bonus point, and sends available/total
+  `43/43` through `ServerAbilityPoints` for an unspent action set.
+- The bonus point is persisted on `character.bonusAbilityTierPoints`; both
+  MySQL and SQLite migrations are present, and action sets restore the
+  expanded budget before saved shortcuts are loaded. This prevents a spent
+  43-point loadout from rebuilding against the old 42-point ceiling.
+- Focused handler, budget, model-mapping, and SQLite migration verification
+  passed `7/7`; the full game suite then passed `5,373/5,373`. The only build
+  warning was the pre-existing NU1903 advisory for
+  `SQLitePCLRaw.lib.e_sqlite3` `2.1.10`.
+- At the end of that earlier pass these candidates remained mapped-only; the
+  later strong-candidate closure above proves and implements
+  `UnitPropertyConversion`, `VendorPriceModifier`, and `NPCForceAIMovement`.
+
+### 2026-07-13 Spell Behavior Reuse Closure
+
+- Review correction on 2026-07-24: `GrantLevelScaledPrestige` retains the
+  decoded mode-`1` percent/cap layout, but no longer reuses the
+  `GrantLevelScaledXP` current-level span or mutates `CurrencyType.Prestige`.
+  All twelve known rows use mode `1`, ten are paired with level-scaled XP on
+  the same `Spell4`, and all encode cap `50`; those correlations do not prove
+  the prestige curve, rounding, or elder/max-level conversion.
+- Supported and unsupported prestige modes remain visible through diagnostics
+  and `/spell inspect4`. Persistent currency mutation is blocked until direct
+  client/runtime evidence proves the calculation.
+- `SpellImmunity` now applies and stores only evidenced concrete-spell mode
+  `0`. Modes `1` and `2` are rejected before `DataBits01` lookup and again at
+  `UnitEntity` storage/matching; regressions prove payloads `1316` and `7` do
+  not become immunities even when those values resolve to valid `Spell4` rows.
+- `TradeSkillProfession` now decodes `DataBits00` as `TradeskillType` and
+  routes the three clean hobby rows (`Cooking=2`, `Fishing=19`, `Farmer=20`)
+  through the existing persistent `Player.LearnTradeskill` owner without
+  dropping another profession. Unknown ids and non-zero tail payloads remain
+  diagnostic-only.
+- `PathMissionIncrement` now supports the two clean Soldier SWAT rows:
+  `PathMission 2424 -> PathSoldierSWAT 93 (Count=5)` and `PathMission 3085 ->
+  PathSoldierSWAT 125 (Count=15)`. The handler accepts the encoded mission id
+  and amount only for an already-active Soldier SWAT mission, reuses the
+  existing saturating mission-progress packet path, and completes at the
+  table-backed SWAT count.
+- Focused follow-up verification passed `6/6` handler and `PathManager`
+  regressions; the owning test-project build succeeded with only the existing
+  NU1903 advisory, and the full game suite passed `5,367/5,367`.
+- Focused verification: `SpellEffectCombatRegressionTests` plus entity-state
+  immunity regressions passed `31/31`.
+- Owning test-project build succeeded, and the full game suite passed
+  `5,361/5,361`. The build retained the pre-existing NU1903 advisory for
+  `SQLitePCLRaw.lib.e_sqlite3` `2.1.10`.
 
 ### 2026-06-17 Q3479 Creature Relation Reclassification
 
@@ -508,11 +637,6 @@ client data, DataMapping output, scripts, live logs, and blocked content rows.
 Priority group A:
 
 - `Script`
-- `NPCForceAIMovement`
-- `PathMissionIncrement`
-- `HazardEnable`
-- `HazardModify`
-- `HazardSuspend`
 - `ChangePhase`
 - `ModifyCreatureFlags`
 - `SharedHealthPool`
@@ -525,8 +649,6 @@ Priority group B:
 - `ModifySpell`
 - `ModifySpellEffect`
 - `SuppressSpellEffect`
-- `UnitPropertyConversion`
-- `VectorSlide`
 - `RewardBuffModifier`
 - `SpellCounter`
 - `ForcedAction`

@@ -9098,89 +9098,44 @@ is now safely implementable.
   mutation, harvest node/material grants, and
   `UpdateSpellInProgress` still lack the required server-owned state model or
   receiver/transaction evidence. They remain blocked rather than guessed.
-- `RavelSignal` receiver behavior is now implemented at the script-dispatch
-  level: `HandleEffectRavelSignal` calls `target.SendSignal(signalId)`, which
-  invokes `IWorldEntityScript.OnSignal(signalId)` on the target entity's script
-  collection. The binary dispatch architecture is mapped in the section below.
+- `RavelSignal` receiver behavior is implemented conservatively for the proven
+  mode-1 row family: `HandleEffectRavelSignal` calls
+  `target.SendSignal(signalId)`, which invokes
+  `IWorldEntityScript.OnSignal(signalId)` on the resolved target's scripts.
 
-### RavelSignal spell effect dispatch architecture
+### Corrected entity-message dispatcher identification (2026-07-14)
 
-`SpellEffectType.RavelSignal = 0x51 = 81`. The WildStar client has two
-spell-effect dispatch tables split at `DespawnUnit = 0x61 = 97`:
+The function at `0x1403ec6a0` is **not** a `SpellEffectType` dispatcher. It is
+now labeled `Entity_DispatchHighRangeMessage`: it guards on the entity's live
+network session at `entity+0x7928`, compares the incoming channel id with the
+session value at `+0x98`, and dispatches decoded entity-message ids through the
+jump table at `0x1403f1344`.
 
-**High-range dispatch** (effectTypes `0x61`-`0x972`): `Entity_ExecuteSpellEffectHighRange`
-at `0x1403ec6a0`, dispatch index = `effectType ? 0x61`, jump table at `0x1403f1344`
-(raw int32 RVA offsets relative to `0x140000000` image base, readable directly from
-the PE `.text` section at file offset `0x3F0744`).
+The former spell-effect mapping came from aligning those message ids with
+same-valued `SpellEffectType` enum members. A focused instruction inspection at
+the previously claimed `UnitPropertyConversion` case `0x1403eeb67` disproved
+that alignment: the case loads floating-point payload values, passes
+`entity+0x71a0` to `0x14062d0f0`, and the callee updates/clamps orientation
+angles. It does not read source/target unit-property ids or apply a property
+conversion.
 
-Jump table statistics: 2322 total entries, **645 non-default**, default handler
-`0x1403F12D2`. The dispatch function also guards on `entity+0x7928 != 0` (network
-connection live) and `param_2 == entity+0x7928+0x98` (channel ID match) before dispatch;
-stores a tick at `entity+0x7b4c`.
+Consequences:
 
-First non-default entries (effectType ? handler):
+- The old `0x091 -> UnitPropertyConversion -> 0x1403eeb67` claim is rejected.
+- Cases `0x0814`-`0x0819` remain useful entity-message apply routes for spell
+  threshold/wrapper state, but do not make the containing table a spell-effect
+  dispatcher.
+- The table at `0x1406b1300` is no longer accepted as a low-range
+  `SpellEffectType` dispatcher solely from numeric correspondence. Its owner
+  must be independently recovered before any spell behavior is inferred from
+  it.
+- `RavelSignal` remains table- and receiver-boundary-backed, not native-dispatch
+  backed. Modes other than the proven mode-1 receiver route remain
+  diagnostics-only.
 
-| effectType | Name (SpellEffectType.cs) | Handler |
-|---|---|---|
-| 0x061 | DespawnUnit | 0x1403EC9FF |
-| 0x068 | UNUSED104 | 0x1403F0B50 |
-| 0x070 | DisguiseOutfit | 0x1403F102F |
-| 0x07E | SetMatchingEligibility | 0x1403EEF04 |
-| 0x091 | UnitPropertyConversion | 0x1403EEB67 |
-| 0x092 | ActivateSpellCooldown | 0x1403F103D |
-
-Full table saved to `session-state/files/highrange-dispatch-table.csv`.
-
-The high-range handler addresses in this table are embedded jump-table case
-targets inside `Entity_ExecuteSpellEffectHighRange`, not independent Ghidra
-function entries. Keep them in this finding/tracker context rather than in
-`function_labels.csv`; the durable function label belongs on the containing
-entry point at `0x1403ec6a0`.
-
-**Low-range dispatch** (effectTypes `0x01`-`0x60`): Function at `0x1406b1300`,
-dispatch index = `effectType ? 1`, two-level table:
-```asm
-1406b1503: lea  eax, [r13 ? 1]      ; effectType ? 1 = index
-1406b1507: cmp  eax, 0x5f           ; bounds check (max index 95)
-1406b150a: ja   0x1406b321e         ; out of range ? epilogue
-1406b1510: lea  rdx, [rip ? 0x6b1517]  ; rdx = 0x140000000
-1406b1517: movzx eax, byte ptr [rdx + rax + 0x6b338c]  ; byte compression table
-1406b151f: mov  ecx, dword ptr [rdx + rax*4 + 0x6b3364] ; int32 offset table
-1406b1526: add  rcx, rdx
-1406b1529: jmp  rcx
-```
-
-RavelSignal (effectType `0x51`, index `0x50`) maps to the low-range dispatch
-epilogue at `0x1406b321e` - the same default path as `SpellForceRemove`,
-`Stealth`, and most other types in that range. Only effectTypes 4, 5, 6, 8,
-and 27 have dedicated handlers in the low-range table; all others, including
-RavelSignal, fall through to the shared epilogue. This means the client routes
-RavelSignal entirely through the Ravel/Lua scripting runtime rather than a
-dedicated C++ spell-effect handler. (The actual CRavel component offset is not
-yet mapped - see **Remaining unknowns** below.)
-
-**Server implementation** (verified with `dotnet build`; 200/200 tests pass):
-- `IWorldEntityScript.OnSignal(uint signalId)` - new script callback (default
-  no-op); implementing this in a C# entity script fires when any
-  `RavelSignal` effect targets that entity.
-- `IWorldEntity.SendSignal(uint signalId)` / `WorldEntity.SendSignal` - invokes
-  `IWorldEntityScript.OnSignal` via the entity's script collection.
-- `HandleEffectRavelSignalCore` now calls `target.SendSignal(ravelSignal.SignalId)`.
-- `SpellEffectDiagnostics.TraceRavelSignal` - `skippedReason` parameter removed
-  since dispatch is now live.
-
-**Remaining unknowns:**
-- `RavelSignalSemantics.Mode` (DataBits00): values 1-5 dominant in the 5,262
-  game-table rows. Mode is structurally decoded but not semantically confirmed.
-  The target entity is already resolved by the spell targeting system before the
-  effect handler runs, so Mode may select a sub-receiver within the CRavel
-  component (own instance vs. group vs. summoner) rather than changing the
-  C++-level dispatch. Current implementation ignores Mode and always calls
-  `OnSignal` on the resolved target; refine when mode semantics are confirmed.
-- CRavel class layout: the actual entity offset for the CRavel component is
-  **unknown** - `entity+0x7928` was previously misidentified as CRavel but is
-  the network connection handle (see `entity+0x7928` row in the field offset
-  table below). The CRavel component offset remains unrecovered.
+Verification: focused Ghidra `InspectCodeAddress.java` export for
+`0x1403eeb67`, with callee fragment `14062d0f0.fragment.c` and log
+`Decomp/Analysis/logs/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`.
 
 ---
 
@@ -9245,8 +9200,8 @@ TargetGroup schema: `(ID, localizedTextIdDisplayString, type, data0..data6)`.
 | +0x118 | ptr    | Faction2 component; vtable[+0x18]() = Faction2Id | EntityCriteria_GetFaction2Id + TargetGroup xref |
 | +0x140 | int32  | Creature2Id (template/prototype creature ID) | EntityCriteria_GetCreature2Id + TargetGroup xref |
 | +0x6420| bool   | Not-connected flag: set to `(entity+0x7928 == 0)` | Network_SendOpcodePayloadOrPackedHelper |
-| +0x7928| ptr    | Network connection handle (session object); +0x98 = channel/session ID | Network_SendOpcodePayloadOrPackedHelper (1403f4740), Network_SendOpcodePayloadHelper (1403f4900), Entity_ExecuteSpellEffectHighRange (1403ec6a0) |
-| +0x7b4c| uint32 | Timestamp/tick written before high-range spell effect dispatch | Entity_ExecuteSpellEffectHighRange (1403ec6a0) |
+| +0x7928| ptr    | Network connection handle (session object); +0x98 = channel/session ID | Network_SendOpcodePayloadOrPackedHelper (1403f4740), Network_SendOpcodePayloadHelper (1403f4900), Entity_DispatchHighRangeMessage (1403ec6a0) |
+| +0x7b4c| uint32 | Timestamp/tick written before high-range entity-message dispatch | Entity_DispatchHighRangeMessage (1403ec6a0) |
 
 **Server implication:** No server code changes needed. All 13 checkType semantics are
 now fully decoded. The existing `TargetBitmask` simplified projection remains the
@@ -10800,10 +10755,10 @@ where the last exported name was too narrow:
 - `1405e9400` -> `SpellWrapper_ResolveLiveInstance`
 - `1407a0fd0` -> `SpellService_LookupSpellWrapperById`
 
-The high-range spell-effect case targets at `1403ec9ff`, `1403eef04`,
+The high-range entity-message case targets at `1403ec9ff`, `1403eef04`,
 `1403eeb67`, `1403f102f`, `1403f103d`, and the default target `1403f12d2`
 were also removed from `function_labels.csv` because they are jump-table
-targets inside `Entity_ExecuteSpellEffectHighRange`, not standalone function
+targets inside `Entity_DispatchHighRangeMessage`, not standalone function
 entries. Their addresses remain documented in the RavelSignal dispatch
 architecture section above.
 
@@ -10958,7 +10913,7 @@ PublicEventsLib registration follow-up mapped from this pass:
 
 Spell broadcast runtime listener follow-up mapped from this pass:
 
-- `Entity_ExecuteSpellEffectHighRange` now gives the exact post-decode edges for
+- `Entity_DispatchHighRangeMessage` gives the exact post-decode edges for
   the follow-up cluster: `0x0814 -> 1403ef384 -> 1403bee40`,
   `0x0815 -> 1403ef372 -> SpellThreshold_HandleClear`,
   `0x0816 -> 1403ef34e -> SpellThreshold_HandleStartWrapper`,
@@ -18616,7 +18571,7 @@ Prerequisite / opcode pass (2026-06-01, pass 48 - type 172 health scale, vtable 
   - **`0x046F`** ? **`GuildBank_ApplyInventoryAdd` (`14057d190`)** at DATA **`0x140e1a760`** (dword **`0x0057d190`**).
   - **`0x047A`** ? **`GuildBank_ApplyTabInventoryRows` (`14057cdc0`)** at DATA **`0x140e1a718`** (dword **`0x0057cdc0`**).
   - Parallel registration pointers also at **`0x140be87a8` / `0x140be8808`** (tab) and **`0x140be8774` / `0x140be87a8`** (add). Opcode registration unchanged: **`Network_RegisterServerOpcode_0351` (`14006c290`)** lines **`0x47a` / `0x46f`** ? readers **`140092470` / `140092580`** (see pass 47).
-- **Mapped (partial field-apply gap cluster, pass 48 Ghidra inspect):** addresses **`0x1403eed00`-`0x1403ef100`** sit in Ghidra gap **`0x1403ec783`..`0x1403f378f`** (between **`Entity_ExecuteSpellEffectHighRange` (`1403ec6a0`)** and **`FUN_1403f3790`**). They are **not** entries in the spell **`0x1403f1344`** jumptable (PE scan: **`0x1403ee268`** = effect **0x07F6**, **`0x1403ee403`** = **0x0818**; **`0x1403eef8a` / `0x1403eed00`** absent). Case stubs share epilogue **`0x1403f1320`** (`RET` at **`0x1403f1341`**):
+- **Mapped (partial field-apply gap cluster, pass 48 Ghidra inspect):** addresses **`0x1403eed00`-`0x1403ef100`** sit in Ghidra gap **`0x1403ec783`..`0x1403f378f`** (between **`Entity_DispatchHighRangeMessage` (`1403ec6a0`)** and **`FUN_1403f3790`**). They are **not** entries in the **`0x1403f1344`** entity-message jump table (PE scan: **`0x1403ee268`** = message **0x07F6**, **`0x1403ee403`** = **0x0818**; **`0x1403eef8a` / `0x1403eed00`** absent). Case stubs share epilogue **`0x1403f1320`** (`RET` at **`0x1403f1341`**):
   - **`0x1403eef8a`:** `CALL Inventory_UpdateItemMicrochipsFromWire` (`1403b8540`); `JMP 0x1403f1320`.
   - **`0x1403eed00`:** `MOV EAX,[0x140c65b80]`; `CALL 0x1405fb830`; `JMP 0x1403f1320`.
   - Evidence fragments: `selected_decompiled_cache/.../1403eef8a.fragment.c`, `1403eed00.fragment.c` (inspect-only; whole-gap `CreateFunction` fails on overlapping flow).
@@ -26057,6 +26012,45 @@ Challenge HUD activation ordering follow-up (2026-07-07):
   `--artifacts-path .nexusforever-runtime\dotnet-artifacts\...` to avoid live
   server DLL locks.
 
+Challenge HUD max-score progress delivery follow-up (2026-07-14):
+
+- **Live server evidence**: WorldServer log
+  `NexusForever.WorldServer_20260714_40908.log` recorded Rootbrute kills for
+  `Creature2` ids `13549` and `12212`, challenge update/completion/reward
+  delivery, and an unchanged `ServerChallengeUpdate` on every world tick. The
+  persisted challenge `105` row reached `CurrentCount=4` and
+  `CompletionCount=12`, proving target matching and server-side progress were
+  working while the HUD remained at zero. A rebuilt live pass then reproduced
+  `0%` with `CurrentCount=4`, rejecting activation ordering as the complete
+  explanation.
+- **Client evidence**: `ChallengeDisplay.lua` reads `GetCurrentCount()` and
+  `GetTotalCount()`. `Lua_Challenges_GetTotalCount` (`140685330`) returns `100`
+  in max-score mode. `Lua_Challenges_GetCurrentCount` (`140685210`) then ignores
+  runtime `currentCount` at `+0x14` for a non-time-tiered challenge and calls
+  `14048f9f0`. Focused Ghidra inspection maps `14048f9f0` to a normalized tier
+  percentage whose numerator comes from runtime `objectiveCompletion` at
+  `+0x1c` multiplied by `0.01`; `ServerChallengeUpdate` consumer `14048ded0`
+  copies that value directly from packet row offset `+0x1c`. For Rootbrute
+  Slayer's single tier, the visible value is therefore exactly the packet's
+  `ObjectiveCompletion` percentage. NexusForever had hard-coded it to zero.
+- **Implementation**: single-tier combat challenges that satisfy the native
+  max-score conditions now emit `ObjectiveCompletion = CurrentCount * 100 /
+  GoalCount`; Rootbrute Slayer therefore sends `20` on its first `1/5` kill.
+  Auto-activation also folds the triggering kill into the snapshot preceding
+  `ServerChallengeResult.Activate`. `ChallengeManager.Update` no longer floods
+  unchanged snapshots, but still persists and sends the cooldown-expiry
+  transition.
+- **Verification**: all challenge tests passed `42/42`, including Rootbrute
+  assertions for the pre-Activate `CurrentCount=1` and
+  `ObjectiveCompletion=20` row, unchanged active-timer ticks, and
+  cooldown-expiry delivery:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~NexusForever.Game.Tests.Challenges" --artifacts-path artifacts\test-rootbrute-challenge-progress-rerun -p:UseSharedCompilation=false -m:1 --nologo`.
+- **Remaining boundary**: multi-tier max-score challenges need a separate
+  evidence pass because the client normalizes `ObjectiveCompletion` between
+  adjacent cumulative tier thresholds, while the current server tier state
+  resets `CurrentCount` on promotion. This fix intentionally covers the mapped
+  one-tier Rootbrute case without inventing multi-tier semantics.
+
 Player level-up splash delivery follow-up (2026-07-07):
 
 - **Client/addon evidence**: `UI\LevelUpUnlocks\LevelUpUnlocks.lua` shows the
@@ -26100,3 +26094,79 @@ Pulse Blast phase-banded telegraph damage follow-up (2026-07-07):
   -v minimal --nologo` passed `5349/5349`. Focused
   `SpellTargetValidationTests` passed `60/60`, including the new overlapping
   phase-telegraph regression.
+
+VectorSlide and hazard-family implementation pass (2026-07-14):
+
+- **Hazard wire proof**: the `1400a8190` world-opcode registration block binds
+  server opcode `0x010A` to `ServerHazardList_ReadPayload` (`1400ab260`) and
+  opcode `0x010B` to `ServerHazardModifiers_ReadPayload` (`1400ab6a0`). The
+  former reads counted `0x34`-byte active rows through
+  `HazardActiveRow_ReadPayload` (`1400aaff0`); the latter reads two separately
+  counted `0x0C`-byte arrays whose rows are exactly float multiplier, float
+  offset, and suspended bool (`1400ab410`). `ServerHazardAction_ReadPayload`
+  (`14008ed20`) reads the existing opcode `0x0109` contract as uint14 hazard id
+  plus uint3 action.
+- **Hazard client owner proof**: `HazardManager_ApplyList` (`1404a63a0`) copies
+  every active-row field into manager state keyed by Hazard.tbl id and fires
+  `HazardsUpdated`. `HazardManager_ApplyAction` (`1404a6560`) implements enable,
+  remove, update, and clear-all; enable only succeeds after the active row is
+  present, proving the server ordering of list before enable action.
+  `HazardManager_ApplyModifiers` (`1404a67a0`) copies both modifier arrays and
+  fires the same update event. `HazardManager_GetModifiedMaxValue`
+  (`1404a60e0`) proves the exact aggregate formula
+  `idMultiplier * typeMultiplier * activeMax + idOffset + typeOffset`.
+  `HazardManager_QueryThresholdState`
+  (`1404a6190`) evaluates Hazard.tbl percentage thresholds and inverts the
+  effective meter for non-unit-based starts-full rows.
+- **Hazard effect proof**: all 20 `HazardEnable` rows use `DataBits00` as a
+  valid Hazard.tbl id and zero payload elsewhere. `HazardSuspend` uses the same
+  id in `DataBits00`; its only selector values are `0` and `2`. Selector `2`
+  fixtures all point to `HazardType.Temperature` rows and map to the native
+  hazard-type modifier array, while selector `0` fixtures are exact-id
+  protections and map to the hazard-id array. `HazardModify` direct rows have
+  target mode `DataBits01=1`, zero `DataBits02`, signed float delta in
+  `DataBits03`, and Hazard.tbl id in `DataBits04`. Tooltips independently match
+  the values (`Super Soaker` `-5` per tick, `Water Bomb` `-30`, dehydration
+  `+1`, warming `+3`/`+35`, Technopathy `+10`/`-10`). Operations `0`, `1`, and
+  `2` therefore share the proven direct-delta behavior.
+- **Hazard implementation**: `Player` now owns active hazard/enabler state and
+  independent exact-id/type suspension contributions. It sends the native
+  list-before-enable sequence, clamps direct deltas to the Hazard.tbl maximum,
+  advances the server-side meter by `MeterChangeRate` per elapsed second,
+  freezes/resumes that clock under aggregate suspension,
+  emits default multiplier `1` / offset `0` modifier arrays, mirrors aggregate
+  suspension into active rows, and reverses duration/persistence-bound enable
+  and suspension effects through the normal spell lifetime owner.
+- **Hazard boundary retained**: the three `Clean Air` rows are the only
+  `HazardModify` operation `4`, target mode `2` fixtures and carry `0.07` in
+  both `DataBits02` and `DataBits03`. Whether these are a proportional type
+  multiplier, offset, or staged meter operation remains unproven, so this mode
+  is diagnosed and intentionally not mutated.
+- **VectorSlide table proof**: all 30 rows use mode `0` or `1`, a finite signed
+  float magnitude in `DataBits01`, and an optional `DataBits02` flag. Mode `0`
+  fixtures cluster around position/telegraph anchors: positive Black Hole,
+  Tractor Beam, and Essence Well rows pull toward the anchor, while negative
+  Greasy Belch, Howling Winds, and Terror rows push away. Mode `1` fixtures are
+  directional: positive Freezing Blast/Soulfrost rows follow caster facing and
+  the negative Shredder Wind row reverses it. This proves the common signed
+  velocity algorithm without assigning a meaning to the optional flag.
+- **VectorSlide implementation**: mode `0` resolves spell position then caster
+  as the horizontal anchor; mode `1` resolves caster facing using the existing
+  movement yaw convention. The signed magnitude is applied through the normal
+  velocity command/state owner. Seven duration-bound slides clear velocity
+  through the encoded lifetime-removal path; the other 23 zero-duration rows
+  queue a zero-delay lifetime event so the command broadcasts once and clears
+  on the next spell update instead of remaining latched. `DataBits02=1` is
+  retained in decoded semantics and diagnostics but has no invented behavior.
+- **Verification**: `HazardAndVectorSlideSpellTests` covers active-row initial
+  state, clamped meter delta/threshold behavior, exact-id versus type suspension
+  arrays, the blocked Clean Air mode, both proven suspension selectors, both
+  VectorSlide direction modes, and lossless float decoding. Focused result:
+  `10/10` passing, including elapsed-rate freeze/resume behavior. The complete
+  game test suite passes `5,391/5,391`; the full solution builds with zero
+  errors and only the existing `SQLitePCLRaw.lib.e_sqlite3` `NU1903` advisory.
+- **2026-07-24 review correction**: the table-correlated
+  `GrantLevelScaledPrestige` percent/cap/mode shape remains decoded, but the
+  runtime no longer reuses the XP-level span or mutates persistent prestige.
+  Direct proof of the prestige curve, rounding, and elder/max-level conversion
+  is required before this family can move beyond diagnostic-only handling.

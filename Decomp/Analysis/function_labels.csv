@@ -148,6 +148,24 @@ WildStar64.exe,1403c08d0,Pet_ApplySpawnedPayload,Applies the ServerPetSpawned-sh
 WildStar64.exe,1403c09b0,Pet_ApplyDespawnedPayload,Applies the ServerPetDespawned-shaped uint32 payload by removing the cached pet unit id and dispatching PetDespawned when the pet was present.
 WildStar64.exe,1403c0a80,Pet_ApplyStanceChangedPayload,Applies the ServerPetStanceChanged-shaped uint32 plus 5-bit payload by updating cached pet stance at record+0x08 and dispatching PetStanceChanged; producer timing remains unmapped.
 WildStar64.exe,1400a6c10,ServerMapTrackedUnitUpdate_ReadPayload,Parses server opcode 0x0849 as tracked unit id, three 32-bit position components, and a 15-bit TrackingSlot id.
+WildStar64.exe,14008ed20,ServerHazardAction_ReadPayload,Reads server opcode 0x0109 as a 14-bit Hazard.tbl id followed by a 3-bit HazardAction value.
+WildStar64.exe,1400aad70,HazardActiveRow_WritePayload,Serialises one 0x34-byte active hazard row: id type meter/max threshold/proc/unit/pulse and five boolean state fields.
+WildStar64.exe,1400aaff0,HazardActiveRow_ReadPayload,Reads one 0x34-byte active hazard row: 14-bit id 3-bit type two floats uint32 threshold 18-bit proc spell two uint32 fields and five booleans.
+WildStar64.exe,1400ab180,ServerHazardList_WritePayload,Serialises server opcode 0x010A as a uint32 count followed by 0x34-byte HazardActiveRow entries.
+WildStar64.exe,1400ab260,ServerHazardList_ReadPayload,Reads server opcode 0x010A as a uint32 count allocates count times 0x34 bytes and reads HazardActiveRow entries.
+WildStar64.exe,1400ab310,HazardModifier_WritePayload,Serialises one 0x0C-byte hazard modifier row as multiplier float offset float and suspended boolean.
+WildStar64.exe,1400ab410,HazardModifier_ReadPayload,Reads one 0x0C-byte hazard modifier row as multiplier float offset float and suspended boolean.
+WildStar64.exe,1400ab4d0,ServerHazardModifiers_WritePayload,Serialises server opcode 0x010B as separately counted hazard-id and hazard-type arrays of 0x0C-byte HazardModifier rows.
+WildStar64.exe,1400ab6a0,ServerHazardModifiers_ReadPayload,Reads server opcode 0x010B as separately counted hazard-id and hazard-type arrays of 0x0C-byte HazardModifier rows.
+WildStar64.exe,14049ade0,HazardManager_FindActiveById,Looks up an active hazard state by Hazard.tbl id in the client hazard manager map.
+WildStar64.exe,1404a5ed0,HazardManager_Shutdown,Clears active hazard state and releases hazard-manager storage during shutdown.
+WildStar64.exe,1404a5f90,HazardManager_ClearAll,Removes all active hazards dispatches removal and minimap events and clears the active hazard map.
+WildStar64.exe,1404a6070,HazardManager_GetMeterValue,Returns the active hazard meter value at row offset 0x08 or minus one when the hazard id is not active.
+WildStar64.exe,1404a60e0,HazardManager_GetModifiedMaxValue,Returns idMultiplier times typeMultiplier times active-row max plus idOffset plus typeOffset using the two ServerHazardModifiers arrays.
+WildStar64.exe,1404a6190,HazardManager_QueryThresholdState,Evaluates an active hazard meter against its Hazard.tbl thresholds including depletion inversion for non-unit-based starts-full hazards.
+WildStar64.exe,1404a63a0,HazardManager_ApplyList,Applies ServerHazardList by inserting or finding active hazards keyed by id copying every 0x34-byte row field and dispatching HazardsUpdated.
+WildStar64.exe,1404a6560,HazardManager_ApplyAction,Applies ServerHazardAction enable remove update and clear-all operations; enable requires the active row to have arrived first.
+WildStar64.exe,1404a67a0,HazardManager_ApplyModifiers,Copies ServerHazardModifiers hazard-id and hazard-type arrays into manager state then dispatches HazardsUpdated.
 WildStar64.exe,1400a73c0,NetworkBitWriter_Write4BitValue,Writes a 4-bit integer value into the packet bitstream.
 WildStar64.exe,1400a74e0,NetworkBitWriter_Write5BitValue,Writes a 5-bit integer value into the packet bitstream.
 WildStar64.exe,1400a7540,NetworkBitWriter_WriteBits64,Writes up to 64 bits into the packet bitstream.
@@ -1053,13 +1071,13 @@ WildStar64.exe,1405e6830,Crafting_HandleServerCraftingCurrentCraft,Stores decode
 WildStar64.exe,140599010,Lua_Crafting_GetSchematicInfo,Builds the Lua schematic info table for a TradeskillSchematic2 row including output material known flags and coordinate crafting details.
 WildStar64.exe,14059e9a0,Lua_Crafting_AddCoordinateDiscoveryInfo,Adds coordinate-crafting discovery fields such as radius vector angle min/max distance and undiscovered flags to schematic Lua info.
 WildStar64.exe,1405a3000,Lua_RegisterCraftingBindings,Registers Game.Crafting Lua bindings including CodeEnumCraftingDiscoveryHotCold values and CodeEnumTradeskillResult values Success through RuneSlotLimit.
-WildStar64.exe,1403ec6a0,Entity_ExecuteSpellEffectHighRange,Dispatches high-range spell effects (effectTypes 0x61-0x972) via jump table at 0x1403f1344; guards on entity+0x7928 (network connection) non-null and channel-ID match before dispatch; writes timestamp to entity+0x7b4c.
-WildStar64.exe,1403ee3af,Opcode0819_DispatchWrapperNodeRemove,Dispatcher case from Entity_ExecuteSpellEffectHighRange for opcode 0x0819; resolves payload[1] as a spell-wrapper id, matches payload[0] against the wrapper-node entity id, and calls SpellWrapperNode_PruneChildrenAndRefresh.
-WildStar64.exe,1403ee403,Opcode0818_DispatchWrapperTierEntry,Dispatcher case from Entity_ExecuteSpellEffectHighRange for opcode 0x0818; resolves payload[0] as a spell-wrapper id and forwards the nested tier-entry payload into SpellWrapper_ApplyEntityVariantTierEntryAndBroadcast.
-WildStar64.exe,1403ef34e,Opcode0816_DispatchThresholdStart,Dispatcher case from Entity_ExecuteSpellEffectHighRange for opcode 0x0816; forwards the parsed three-Spell4Id-plus-casting-id payload into SpellThreshold_HandleStartWrapper.
-WildStar64.exe,1403ef360,Opcode0817_DispatchThresholdUpdate,Dispatcher case from Entity_ExecuteSpellEffectHighRange for opcode 0x0817; forwards the parsed Spell4Id-plus-byte payload into SpellThreshold_HandleUpdate.
-WildStar64.exe,1403ef372,Opcode0815_DispatchThresholdSpell4,Dispatcher case from Entity_ExecuteSpellEffectHighRange for opcode 0x0815; forwards the parsed single-Spell4Id payload into SpellThreshold_HandleClear.
-WildStar64.exe,1403ef384,Opcode0814_DispatchThresholdClear,Dispatcher case from Entity_ExecuteSpellEffectHighRange for opcode 0x0814; forwards the parsed Spell4Id-plus-flag threshold payload into SpellThreshold_HandleClear.
+WildStar64.exe,1403ec6a0,Entity_DispatchHighRangeMessage,Dispatches decoded entity-message ids 0x61-0x972 via the jump table at 0x1403f1344; guards on entity+0x7928 network-session state and channel-id match before dispatch; this is not a SpellEffectType dispatcher.
+WildStar64.exe,1403ee3af,Opcode0819_DispatchWrapperNodeRemove,Entity_DispatchHighRangeMessage case 0x0819; resolves payload[1] as a spell-wrapper id, matches payload[0] against the wrapper-node entity id, and calls SpellWrapperNode_PruneChildrenAndRefresh.
+WildStar64.exe,1403ee403,Opcode0818_DispatchWrapperTierEntry,Entity_DispatchHighRangeMessage case 0x0818; resolves payload[0] as a spell-wrapper id and forwards the nested tier-entry payload into SpellWrapper_ApplyEntityVariantTierEntryAndBroadcast.
+WildStar64.exe,1403ef34e,Opcode0816_DispatchThresholdStart,Entity_DispatchHighRangeMessage case 0x0816; forwards the parsed three-Spell4Id-plus-casting-id payload into SpellThreshold_HandleStartWrapper.
+WildStar64.exe,1403ef360,Opcode0817_DispatchThresholdUpdate,Entity_DispatchHighRangeMessage case 0x0817; forwards the parsed Spell4Id-plus-byte payload into SpellThreshold_HandleUpdate.
+WildStar64.exe,1403ef372,Opcode0815_DispatchThresholdSpell4,Entity_DispatchHighRangeMessage case 0x0815; forwards the parsed single-Spell4Id payload into SpellThreshold_HandleClear.
+WildStar64.exe,1403ef384,Opcode0814_DispatchThresholdClear,Entity_DispatchHighRangeMessage case 0x0814; forwards the parsed Spell4Id-plus-flag threshold payload into SpellThreshold_HandleClear.
 WildStar64.exe,1403c17d0,ItemMove_ValidateAndMaybeConfirmBindOnEquip,Validates an item move request and dispatches ItemConfirmSoulboundOnEquip before sending ClientItemMove when the destination equip path would bind the source item.
 WildStar64.exe,1403f38b0,RealmFirstAchievementAnnounce_Dispatch,Builds the RealmFirstAchievementAnnounce client event from achievement id guild flag source name and achievement-name payload.
 WildStar64.exe,140229720,ClientDB_RegisterPublicEventUnitPropertyModifier,Registers the PublicEventUnitPropertyModifier client DB table using the PublicEventUnitPropertyModifier and DB\\PublicEventUnitPropertyModifier.tbl descriptors.

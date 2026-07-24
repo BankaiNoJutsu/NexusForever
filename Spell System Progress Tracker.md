@@ -1,6 +1,6 @@
 # Spell System Progress Tracker
 
-Date: 2026-05-16
+Date: 2026-07-14
 
 This is the working implementation tracker for the global `Spell4` / `Spell4Effects` restoration effort. The detailed evidence lives in:
 
@@ -39,7 +39,10 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 | `ModifyInterruptArmor` | Conservative | `DataBits00` applies interrupt armor through the bounded interrupt-armor vital path so gains clamp to the target's current `InterruptArmorThreshold`, and duration rows remove it later; `DataBits01` is preserved as a likely consume/remove-on-interrupt mode pending sniff validation. |
 | `ThreatModification` / `ThreatTransfer` | Conservative / Diagnostics | Threat modification handles add, reduce, clear, set, and fixate-like modes through `ThreatManager`; transfer rows decode and trace only pending party/raid semantics. |
 | `UnitPropertyModifier` | Partial | Tracks modifiers by concrete effect instance, refreshes repeated rows from the same spell/effect without letting stale expiry remove the replacement, removes timed modifiers, and rechecks player-scoped spell/effect persistence prerequisites; stack groups, non-player persistence, and exact buff packet parity remain. |
+| `UnitPropertyConversion` | Conservative | All five production/test rows decode `DataBits00` as source `Property`, `DataBits01` as target `Property`, and `DataBits02` as a float multiplier. The runtime adds the live source contribution to the target property, propagates source changes through acyclic chains, removes duration-backed conversions, and rejects feedback cycles. The reciprocal test/DNT fixture remains deliberately cycle-blocked. |
 | `PersonalDmgHealMod` | Conservative | Maps common personal damage/heal modifier codes to existing outgoing damage, incoming damage, and healing multiplier properties; the shared property lifecycle now uses effect-instance cleanup plus player-scoped persistence rechecks, while uncommon codes, non-player persistence, and auxiliary fields remain diagnostic-only. |
+| `VendorPriceModifier` | Conservative | Implements the two production Settler discount bases using the packet-defined vendor-sell and vendor-buy multiplier channels, stack-group cap `1`, live vendor-window refresh, and transaction-side rounding. The test-only `0.001/0` row remains rejected; exact retail rounding still needs a capture. |
+| `NPCForceAIMovement` | Narrow | Implements the sole row, Engineer `Pet Command - Go To Location`, by routing its position target through the same combat-bot movement algorithm used by the primary pet-bar Go To command. Other generic NPC movement semantics are not inferred from this one row. |
 | `CCStateSet` | Partial | Set/remove packets, logs, active mask, timed removal, and conservative cast/movement coupling exist; DR, stun breakout, interrupt armor, tether, and additional-data behavior remain. |
 | `CCStateBreak` | Partial | Removes tracked CC states, preserves original remove casting ids, and wires player knockdown break through the same tracked-removal path; small-payload semantics and broader breakout parity remain. |
 | `SpellDispel` | Conservative | Removes locally tracked dispellable spell state by `SpellClass`, emits dispel logs, and shares buff/CC cleanup with force-remove; stacking, priority, and externally-owned aura parity remain. |
@@ -62,7 +65,8 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 | `DisguiseOutfit` | Conservative | Applies decoded `Creature2OutfitInfo` ids plus primary and secondary item-display visuals, tracks duration-backed restoration, and participates in force-remove/dispel cleanup; `DataBits03/04/05` and full slot variants remain. |
 | `MimicDisguise` | Conservative | Copies caster display, outfit, and item visuals onto the target, removes target-only visuals, tracks duration-backed restoration, and participates in force-remove/dispel cleanup; owner/source modes and display-name pairing remain. |
 | `QuestAdvanceObjective` / `AchievementAdvance` | Conservative | Advances active quest objectives by decoded objective id/progress and grants decoded achievement ids through `AchievementManager`. |
-| `AddSpell` / `GrantXP` / `PathXpModify` / `GrantLevelScaledXP` / `GiveAugmentPowerToPlayer` / `Kill` / `GiveItemToPlayer` / `ReputationModify` / `GiveSchematic` / `RewardPropertyModifier` | Conservative | Teaches resolved player spells, grants flat XP, grants path XP/path levels through `PathManager`, grants level-scaled XP as a percent of the current level span, grants runtime AMP bonus power through `ServerAmpPowerUpdate`, routes kill effects through normal health/death handling, creates decoded inventory items, applies reputation deltas, sends schematic-unlock packets while updating obtain-schematic objectives, and applies duration-backed account reward-property modifiers. Prestige, ability point, inlaid augment unlock, AMP bonus persistence, and schematic persistence surfaces remain incomplete. |
+| `AddSpell` / `GrantXP` / `PathXpModify` / `GrantLevelScaledXP` / `GrantLevelScaledPrestige` / `GiveAugmentPowerToPlayer` / `GiveAbilityPointsToPlayer` / `Kill` / `GiveItemToPlayer` / `ReputationModify` / `GiveSchematic` / `RewardPropertyModifier` | Conservative | Teaches resolved player spells, grants flat XP, grants path XP/path levels through `PathManager`, grants level-scaled XP from the current level span, decodes level-scaled prestige but keeps it diagnostic-only, grants runtime AMP bonus power through `ServerAmpPowerUpdate`, grants and persists the single observed bonus ability tier point through the native `ServerAbilityPoints` available/total budget, routes kill effects through normal health/death handling, creates decoded inventory items, applies reputation deltas, sends schematic-unlock packets while updating obtain-schematic objectives, and applies duration-backed account reward-property modifiers. The prestige curve, rounding, and elder/max-level conversion remain evidence-blocked; inlaid augment unlocks, AMP bonus persistence, schematic persistence, and live ability-unlock packet ordering remain incomplete. |
+| `TradeSkillProfession` / `PathMissionIncrement` | Conservative | The three clean hobby-learning rows decode `DataBits00` as `TradeskillType` and reuse persistent `Player.LearnTradeskill` without dropping a profession. The two clean path-increment rows decode mission id/amount and reuse the table-backed mission-progress algorithm only for already-active Soldier SWAT missions, saturating at `PathSoldierSWAT.Count`. Other path mission types, unknown profession ids, and non-zero tail payloads remain diagnostic-only. |
 | `DelayDeath` | Conservative | Tracks prevent-death states, consumes one on fatal damage, leaves the unit at 1 HP, emits `CombatLogDelayDeath`, and casts decoded trigger spells immediately or after `DataBits02`; exact mode semantics and forced-death expiry remain. |
 | `Proc` | Conservative | Decodes trigger event, trigger `Spell4`, float-bitcast chance, target data, cooldown/sentinel, and remaining raw fields; tracks proc state by effect id, supports duration cleanup and force-remove/dispel cleanup, emits `proc` and `proc-probe` diagnostics, and dispatches conservative holder-side trigger casts for trigger events `1/6/10/12/16/17/18/19/20` through `ProcDispatchEvidenceBoundary`. Witness `Spell4=4046` is pinned in `ProcFixtureWitnessTests`. Unsupported trigger events and target-data tails remain diagnostic-only. |
 | `RavelSignal` | Conservative | `RavelSignalReceiverEvidenceBoundary` dispatches mode `1` only to `IWorldEntityScript.OnSignal(signalId)` via `SendSignal` (witness `Spell4=76797`); other modes stay diagnostics-only. |
@@ -92,7 +96,7 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 | 14 | `SpellDispel` validation | Buff/debuff cleanup is now structurally wired but depends on aura tracking and class semantics. | Validate Purify/Sterilize/Purge-style rows and confirm `DataBits00/01/05` count/priority behavior. |
 | 15 | Cooldown and charge validation | Player-facing ability reset, cooldown modify, and charge mechanics now have conservative handlers. | Validate `CooldownReset`, `ModifySpellCooldown`, `ActivateSpellCooldown`, and `ModifyAbilityCharges` against known charged/cooldown spells. |
 | 16 | Immunity validation | Effect-type and concrete-spell immunity are now central and can block later effects. | Validate `SpellEffectImmunity` with CC/damage immunity fixtures and `SpellImmunity` mode `0` rows such as `46559`, `46927`, `48020`, and `31074`; keep modes `1` and `2` evidence-only. |
-| 17 | Scale/faction/visual/reward utility validation | Several small families are now wired but need packet/sniff checks. | Validate `Scale`, `FactionSet`, `ItemVisualSwap`, `DisguiseOutfit`, `MimicDisguise`, `QuestAdvanceObjective`, `AchievementAdvance`, `ReputationModify`, `GiveItemToPlayer`, `GiveSchematic`, `RewardPropertyModifier`, `AddSpell`, `GrantXP`, `PathXpModify`, `GrantLevelScaledXP`, `GiveAugmentPowerToPlayer`, and `Kill` fixtures. |
+| 17 | Scale/faction/visual/reward utility validation | Several small families are now wired but need packet/sniff checks. | Validate `Scale`, `FactionSet`, `ItemVisualSwap`, `DisguiseOutfit`, `MimicDisguise`, `QuestAdvanceObjective`, `AchievementAdvance`, `ReputationModify`, `GiveItemToPlayer`, `GiveSchematic`, `RewardPropertyModifier`, `AddSpell`, `GrantXP`, `PathXpModify`, `GrantLevelScaledXP`, `GrantLevelScaledPrestige`, `GiveAugmentPowerToPlayer`, `GiveAbilityPointsToPlayer`, `TradeSkillProfession`, `PathMissionIncrement`, and `Kill` fixtures. |
 | 18 | Stack groups and broader persistence parity | Needed for remaining buff/debuff correctness after the effect-instance lifecycle pass. | Map `Spell4StackGroup` arbitration and widen persistence beyond direct-player prerequisite evaluation. |
 | 19 | Advanced CC and movement | Combat feel and encounter mechanics. | Validate with sniffable CC/facing/forced-move fixtures. |
 | 20 | Summon ownership/AI/turrets/services | Needed for encounter adds, traps, settlers, turrets, vendors, and vehicles. | Add ownership tracking once an AI/controller model is identified, validate `SummonTrap` trigger behavior, and validate `SummonVehicle` auto-board/deployable rows. |
@@ -113,7 +117,6 @@ A focused 2026-05-19 conservative-boundary pass reconfirmed the nearby blockers 
 | Family / Area | Evidence | Boundary |
 | --- | --- | --- |
 | `UnlockActionBar` | Four class unlock rows encode action-set indices `0..3`. | Current action-set model exposes four sets by default and has no locked/unlocked state to mutate. |
-| `GiveAbilityPointsToPlayer` | One row grants amount `1`. | Ability/tier points are currently fixed by `ActionSet.MaxTierPoints`; no bonus-point storage or packet model is present. |
 | `UnlockInlaidAugment` | 281 clean rows encode AMP/inlaid augment ids. | AMP unlock persistence/storage is missing; applying `AddAmp` would equip an AMP, not unlock it. |
 | `RestedXpDecorBonus` / `ModifyRestedXP` | Payloads are float-bitcast rest-XP multipliers/fill markers. | `XpManager` only stores rest XP and computes login accrual; decor bonus lifetime and fill semantics need modeling before mutation. |
 | `RewardBuffModifier` | Three daily reward buff rows with duration and 1.5x-style floats. | No reward-buff runtime surface is present beyond account reward properties. |
@@ -121,7 +124,22 @@ A focused 2026-05-19 conservative-boundary pass reconfirmed the nearby blockers 
 | `SummonPet` / `PetCastSpell` | Payloads reference creature and spell ids for combat/class pets. | Vanity pets exist, but combat pet ownership, stance, AI, and lifetime state are not restored. |
 | `ChangePhase` / `ChangePlane` | Bitmask-like payloads and duration rows exist. | Phase/plane visibility is player/world-state sensitive and lacks a general spell-owned state manager. |
 | `ModifyCreatureFlags` | Add/remove-looking rows use values far beyond the current create-flag enum and include names like selection/nameplate/cinematic states. | Needs client/sniff validation before mutating `CreateFlags`; several values would be misnamed if treated as existing enum bits. |
-| `Hazard*`, `FacilityModification`, `Script` plus `RavelSignal` receiver behavior | High row counts or clear content-scripting intent. | Require script/hazard/facility managers or receiver graph decoding before safe runtime behavior. |
+| `FacilityModification`, `Script` plus `RavelSignal` receiver behavior | High row counts or clear content-scripting intent. | Require script/facility managers or receiver graph decoding before safe runtime behavior. |
+| `TemporarilyUnflagPvp` / `DisallowPvP` | One temporary-unflag row exists, but no build-16042 `DisallowPvP` rows and no proven effective attackability/restore owner use the current persisted flag. | Forced-bit and restoration semantics must be recovered before changing PvP state. |
+| `SharedHealthPool` | Shared-health rows are mostly Medic Barrier payload-zero fixtures. | Requires a shared-pool damage owner and proven membership/lifetime semantics. |
+| `HousingPlantSeed` | Twenty clean signal-named rows map seed ids `1..20`, but the runtime has no plant plot/inventory state owner and the names alone do not prove generic `SendSignal` equivalence. | Restore or map the housing plant receiver/state model first. |
+
+`HazardEnable`, direct-delta `HazardModify`, `HazardSuspend`, and `VectorSlide`
+are implemented as of 2026-07-14. Native readers and apply functions prove the
+hazard action/list/modifier packet shapes, list-before-enable ordering, and the
+exact-id/type modifier channels. Build-16042 rows and tooltips prove signed
+meter deltas for HazardModify operations `0..2`, suspend selector `0` as exact
+id and selector `2` as type, and VectorSlide mode `0` as signed anchor motion
+versus mode `1` as signed caster-facing motion. Seven VectorSlide rows use
+their encoded duration; the other 23 zero-duration rows now queue cleanup for
+the next spell update so their one-shot velocity command cannot remain latched.
+`Clean Air` operation `4` and VectorSlide `DataBits02=1` retain explicit
+diagnostic boundaries.
 
 ## Verification Loop
 
@@ -134,9 +152,8 @@ A focused 2026-05-19 conservative-boundary pass reconfirmed the nearby blockers 
 
 ## Last Verified Build
 
-`dotnet build Source\NexusForever.Game\NexusForever.Game.csproj` and `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj` passed on 2026-05-16.
+`dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --no-build -v minimal --nologo` passed all `5,391` tests on 2026-07-14. `dotnet build Source\NexusForever.sln --no-restore -v minimal --nologo` also passed with zero errors and only the existing `SQLitePCLRaw.lib.e_sqlite3` `NU1903` advisory.
 
 Known warnings / environment notes:
 
-- Existing `Spline.formation` CS0649 warning in `NexusForever.Game`.
-- Full solution builds are currently noisy/failing when running server processes lock output DLLs, including observed `GroupServer` and `ChatServer` copy targets.
+- Existing `SQLitePCLRaw.lib.e_sqlite3` `NU1903` vulnerability advisory in the test project.

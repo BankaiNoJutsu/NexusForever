@@ -6,20 +6,20 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `Houston64.exe` | 25129 | 31.39% | 100% | 0 | 1631 | 0.2% |
 | `StsConnLib64.MT.dll` | 4522 | 8.31% | 100% | 0 | 864 | 19.11% |
-| `WildStar64.exe` | 25050 | 8.1% | 100.4% | 0 | 3740 | 0.8% |
+| `WildStar64.exe` | 25069 | 8.23% | 100% | 0 | 3756 | 9.57% |
 
 ## Full Function Backlog
 
 | Scope | Functions | Named | Selected | Unselected | Selected % |
 | --- | --- | --- | --- | --- | --- |
-| Default targets | 54701 | 10295 | 6235 | 48466 | 11.4% |
+| Default targets | 54720 | 10328 | 6251 | 48469 | 11.42% |
 
 ## Opcode Coverage
 
 | Direction | Total | Implemented | Partial | Missing |
 | --- | --- | --- | --- | --- |
-| Client | 351 | 351 | 0 | 0 |
-| Server | 702 | 701 | 1 | 0 |
+| Client | 353 | 353 | 0 | 0 |
+| Server | 703 | 702 | 1 | 0 |
 | Core | 3 | 3 | 0 | 0 |
 
 ## Queue: Client Opcodes Missing Models
