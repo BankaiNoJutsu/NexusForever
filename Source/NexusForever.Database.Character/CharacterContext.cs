@@ -110,6 +110,11 @@ namespace NexusForever.Database.Character
                     .HasColumnType("tinyint(3) unsigned")
                     .HasDefaultValue(0);
 
+                entity.Property(e => e.BonusAbilityTierPoints)
+                    .HasColumnName("bonusAbilityTierPoints")
+                    .HasColumnType("tinyint(3) unsigned")
+                    .HasDefaultValue(0);
+
                 entity.Property(e => e.CastingOptions)
                     .HasColumnName("castingOptions")
                     .HasColumnType("tinyint(3) unsigned")

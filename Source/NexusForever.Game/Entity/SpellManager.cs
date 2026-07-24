@@ -41,8 +41,9 @@ namespace NexusForever.Game.Entity
         [Flags]
         public enum SpellManagerSaveMask
         {
-            None            = 0x0000,
-            ActiveActionSet = 0x0001
+            None                   = 0x0000,
+            ActiveActionSet        = 0x0001,
+            BonusAbilityTierPoints = 0x0002
         }
 
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
@@ -75,6 +76,7 @@ namespace NexusForever.Game.Entity
         private readonly HashSet<uint> activePetActionOwnerSpellGroupIds = new();
         private readonly Dictionary<uint, HashSet<uint>> activePetActionOwnerSpellGroupIdsBySpell4Id = new();
         private ushort bonusAmpPower;
+        private byte bonusAbilityTierPoints;
 
         private readonly IActionSet[] actionSets = new ActionSet[ActionSet.MaxActionSets];
 
@@ -116,9 +118,11 @@ namespace NexusForever.Game.Entity
 
             GrantSpells();
 
+            bonusAbilityTierPoints = (byte)Math.Min(model.BonusAbilityTierPoints, ActionSet.MaxBonusTierPoints);
+
             for (byte i = 0; i < ActionSet.MaxActionSets; i++)
             {
-                actionSets[i] = new ActionSet(i, player, gameTableManager);
+                actionSets[i] = new ActionSet(i, player, gameTableManager, bonusAbilityTierPoints);
 
                 foreach (CharacterActionSetShortcutModel shortcutModel in model.ActionSetShortcut
                     .Where(c => c.SpecIndex == i))
@@ -236,6 +240,12 @@ namespace NexusForever.Game.Entity
                 {
                     character.ActiveSpec = ActiveActionSet;
                     entity.Property(p => p.ActiveSpec).IsModified = true;
+                }
+
+                if ((saveMask & SpellManagerSaveMask.BonusAbilityTierPoints) != 0)
+                {
+                    character.BonusAbilityTierPoints = bonusAbilityTierPoints;
+                    entity.Property(p => p.BonusAbilityTierPoints).IsModified = true;
                 }
 
                 saveMask = SpellManagerSaveMask.None;
@@ -746,6 +756,26 @@ namespace NexusForever.Game.Entity
             SendServerAmpPowerUpdate();
         }
 
+        public void AddAbilityTierPoints(byte amount)
+        {
+            if (amount == 0u)
+                return;
+
+            byte previousBonusTierPoints = bonusAbilityTierPoints;
+            bonusAbilityTierPoints = (byte)Math.Min(bonusAbilityTierPoints + amount, ActionSet.MaxBonusTierPoints);
+
+            byte addedPoints = (byte)(bonusAbilityTierPoints - previousBonusTierPoints);
+            if (addedPoints == 0u)
+                return;
+
+            foreach (IActionSet actionSet in actionSets)
+                actionSet.AddTierPoints(addedPoints);
+
+            saveMask |= SpellManagerSaveMask.BonusAbilityTierPoints;
+            player.RequestSave();
+            SendServerAbilityPoints();
+        }
+
         /// <summary>
         /// Return <see cref="IActionSet"/> at supplied index.
         /// </summary>
@@ -846,7 +876,7 @@ namespace NexusForever.Game.Entity
             player.Session.EnqueueMessageEncrypted(new ServerAbilityPoints
             {
                 AbilityPoints      = actionSets[ActiveActionSet].TierPoints,
-                TotalAbilityPoints = ActionSet.MaxTierPoints
+                TotalAbilityPoints = (uint)(ActionSet.MaxTierPoints + bonusAbilityTierPoints)
             });
         }
 

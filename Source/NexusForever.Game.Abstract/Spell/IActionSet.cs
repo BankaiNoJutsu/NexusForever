@@ -75,6 +75,11 @@ namespace NexusForever.Game.Abstract.Spell
         void AddAmpPower(ushort power);
 
         /// <summary>
+        /// Add bonus ability tier points to <see cref="IActionSet"/>.
+        /// </summary>
+        void AddTierPoints(byte points);
+
+        /// <summary>
         /// Add AMP to <see cref="IActionSet"/> from an existing database model.
         /// </summary>
         void AddAmp(CharacterActionSetAmpModel model);

@@ -26,11 +26,12 @@ namespace NexusForever.Game.Spell
 
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
-        public const byte MaxTierPoints  = 42;
-        public const byte MaxActionSets  = 4;
-        public const byte MaxActionCount = 48;
-        public const byte MaxAmpPoints   = 45 + 10; // 10 are bonus unlocked
-        public const byte MaxTier        = 9;
+        public const byte MaxTierPoints      = 42;
+        public const byte MaxBonusTierPoints = 1;
+        public const byte MaxActionSets      = 4;
+        public const byte MaxActionCount     = 48;
+        public const byte MaxAmpPoints       = 45 + 10; // 10 are bonus unlocked
+        public const byte MaxTier            = 9;
 
         public ulong Owner { get; }
         public byte Index { get; }
@@ -57,13 +58,13 @@ namespace NexusForever.Game.Spell
         /// <summary>
         /// Create a new <see cref="IActionSet"/> with supplied index.
         /// </summary>
-        public ActionSet(byte index, IPlayer player, IGameTableManager gameTableManager = null)
+        public ActionSet(byte index, IPlayer player, IGameTableManager gameTableManager = null, byte bonusTierPoints = 0)
         {
             this.player = player;
             this.gameTableManager = gameTableManager;
             Owner      = player.CharacterId;
             Index      = index;
-            TierPoints = MaxTierPoints;
+            TierPoints = (byte)(MaxTierPoints + Math.Min(bonusTierPoints, MaxBonusTierPoints));
             AmpPoints  = MaxAmpPoints - 10;
         }
 
@@ -289,6 +290,17 @@ namespace NexusForever.Game.Spell
                 return;
 
             AmpPoints = (byte)Math.Min(AmpPoints + power, MaxAmpPoints);
+        }
+
+        /// <summary>
+        /// Add bonus ability tier points to <see cref="IActionSet"/>.
+        /// </summary>
+        public void AddTierPoints(byte points)
+        {
+            if (points == 0u)
+                return;
+
+            TierPoints = (byte)Math.Min(TierPoints + points, MaxTierPoints + MaxBonusTierPoints);
         }
 
         /// <summary>

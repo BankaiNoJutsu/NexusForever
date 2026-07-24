@@ -1169,6 +1169,12 @@ namespace NexusForever.Database.Sqlite.Migrations.Character
                         .HasDefaultValue((byte)0)
                         .HasColumnName("activeSpec");
 
+                    b.Property<byte>("BonusAbilityTierPoints")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(3)")
+                        .HasDefaultValue((byte)0)
+                        .HasColumnName("bonusAbilityTierPoints");
+
                     b.Property<byte>("CastingOptions")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("tinyint(3)")

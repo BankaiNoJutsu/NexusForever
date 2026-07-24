@@ -2,43 +2,41 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusForever.Database.Character;
 
 #nullable disable
 
-namespace NexusForever.Database.Character.Migrations
+namespace NexusForever.Database.Sqlite.Migrations.Character
 {
     [DbContext(typeof(CharacterContext))]
-    partial class CharacterContextModelSnapshot : ModelSnapshot
+    [Migration("20260714083425_CharacterBonusAbilityTierPoints")]
+    partial class CharacterBonusAbilityTierPoints
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.16")
-                .HasAnnotation("Relational:MaxIdentifierLength", 64);
-
-            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.16");
 
             modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterAchievementModel", b =>
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<ushort>("AchievementId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("achievementId");
 
                     b.Property<uint>("CreditedChecklistMask")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("data1");
 
@@ -48,7 +46,7 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<uint>("ProgressState")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("data0");
 
@@ -62,18 +60,18 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("SpecIndex")
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("specIndex");
 
                     b.Property<ushort>("AmpId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("ampId");
 
@@ -87,35 +85,35 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("SpecIndex")
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("specIndex");
 
                     b.Property<ushort>("Location")
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("location");
 
                     b.Property<uint>("ObjectId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("objectId");
 
                     b.Property<byte>("ShortcutType")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("shortcutType");
 
                     b.Property<byte>("Tier")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("tier");
 
@@ -129,19 +127,19 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("Slot")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("slot");
 
                     b.Property<ushort>("DisplayId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("displayId");
 
@@ -154,11 +152,11 @@ namespace NexusForever.Database.Character.Migrations
             modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterBoneModel", b =>
                 {
                     b.Property<ulong>("Id")
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasColumnName("id");
 
                     b.Property<byte>("BoneIndex")
-                        .HasColumnType("tinyint(4) unsigned")
+                        .HasColumnType("tinyint(4)")
                         .HasColumnName("boneIndex");
 
                     b.Property<float>("Bone")
@@ -177,13 +175,13 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<ushort>("ChallengeId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("challengeId");
 
@@ -207,7 +205,7 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<uint>("CompletionCount")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("completionCount");
 
@@ -219,19 +217,19 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<uint>("CurrentCount")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("currentCount");
 
                     b.Property<uint>("CurrentTier")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("currentTier");
 
                     b.Property<uint>("LastRewardTier")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("lastRewardTier");
 
@@ -257,29 +255,29 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("Index")
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("index");
 
                     b.Property<byte>("Slot")
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("slot");
 
                     b.Property<uint>("DyeData")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("dyeData");
 
                     b.Property<uint>("Item2Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("item2Id");
 
@@ -293,12 +291,12 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("Index")
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("index");
 
@@ -306,13 +304,11 @@ namespace NexusForever.Database.Character.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime")
                         .HasColumnName("timestamp")
-                        .HasDefaultValueSql("current_timestamp()");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlComputedColumn(b.Property<DateTime>("Timestamp"));
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<uint>("VisibilityMask")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("visibilityMask");
 
@@ -326,19 +322,19 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<byte>("Race")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(4) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("race");
 
                     b.Property<ushort>("Faction")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("faction");
 
                     b.Property<byte>("CreationStart")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(4) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("creationStart");
 
@@ -368,7 +364,7 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<uint>("WorldId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("worldId");
 
@@ -738,19 +734,19 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("CurrencyId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(4) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("currencyId");
 
                     b.Property<ulong>("Amount")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("amount");
 
@@ -764,19 +760,19 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<uint>("Label")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0u)
                         .HasColumnName("label");
 
                     b.Property<uint>("Value")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("value");
 
@@ -790,23 +786,23 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("Type")
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("type");
 
                     b.Property<ushort>("Datacube")
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("datacube");
 
                     b.Property<uint>("Progress")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("progress");
 
@@ -820,19 +816,19 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("EntitlementId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("entitlementId");
 
                     b.Property<uint>("Amount")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("amount");
 
@@ -846,25 +842,25 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<uint>("ArchiveArticleId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0u)
                         .HasColumnName("archiveArticleId");
 
                     b.Property<uint>("UnlockedFlags")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("unlockedFlags");
 
                     b.Property<uint>("ViewedFlags")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("viewedFlags");
 
@@ -878,84 +874,84 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<ushort>("InputActionId")
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("inputActionId");
 
                     b.Property<uint>("Code00")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("code00");
 
                     b.Property<uint>("Code01")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("code01");
 
                     b.Property<uint>("Code02")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("code02");
 
                     b.Property<uint>("DeviceEnum00")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("deviceEnum00");
 
                     b.Property<uint>("DeviceEnum01")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("deviceEnum01");
 
                     b.Property<uint>("DeviceEnum02")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("deviceEnum02");
 
                     b.Property<uint>("EventTypeEnum00")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("eventTypeEnum00");
 
                     b.Property<uint>("EventTypeEnum01")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("eventTypeEnum01");
 
                     b.Property<uint>("EventTypeEnum02")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("eventTypeEnum02");
 
                     b.Property<uint>("MetaKeys00")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("metaKeys00");
 
                     b.Property<uint>("MetaKeys01")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("metaKeys01");
 
                     b.Property<uint>("MetaKeys02")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("metaKeys02");
 
@@ -969,18 +965,18 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<uint>("Index")
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("index");
 
                     b.Property<ulong>("ItemGuid")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("itemGuid");
 
@@ -998,13 +994,13 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("ContentType")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(8) unsigned")
+                        .HasColumnType("tinyint(8)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("contentType");
 
@@ -1012,47 +1008,47 @@ namespace NexusForever.Database.Character.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("createTime")
-                        .HasDefaultValueSql("current_timestamp()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<uint>("CreatureId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("creatureId");
 
                     b.Property<ulong>("CurrencyAmount")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("currencyAmount");
 
                     b.Property<byte>("CurrencyType")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("currencyType");
 
                     b.Property<byte>("DeliveryTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(8) unsigned")
+                        .HasColumnType("tinyint(8)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("deliveryTime");
 
                     b.Property<byte>("Flags")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(8) unsigned")
+                        .HasColumnType("tinyint(8)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("flags");
 
                     b.Property<byte>("HasPaidOrCollectedCurrency")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(8) unsigned")
+                        .HasColumnType("tinyint(8)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("hasPaidOrCollectedCurrency");
 
                     b.Property<byte>("IsCashOnDelivery")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(8) unsigned")
+                        .HasColumnType("tinyint(8)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("isCashOnDelivery");
 
@@ -1065,19 +1061,19 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<ulong>("RecipientId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("recipientId");
 
                     b.Property<ulong>("SenderId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("senderId");
 
                     b.Property<byte>("SenderType")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("senderType");
 
@@ -1090,13 +1086,13 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<uint>("TextEntryMessage")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("textEntryMessage");
 
                     b.Property<uint>("TextEntrySubject")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("textEntrySubject");
 
@@ -1112,7 +1108,7 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
@@ -1128,13 +1124,13 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<byte>("MatchType")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("matchType");
 
                     b.Property<uint>("Spell4Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("spell4Id");
 
@@ -1148,13 +1144,13 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<uint>("AccountId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("accountId");
 
@@ -1166,37 +1162,37 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<uint>("ActivePath")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("activePath");
 
                     b.Property<byte>("ActiveSpec")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("activeSpec");
 
                     b.Property<byte>("BonusAbilityTierPoints")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("bonusAbilityTierPoints");
 
                     b.Property<byte>("CastingOptions")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("castingOptions");
 
                     b.Property<byte>("Class")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("class");
 
                     b.Property<ushort>("CombatLogDisableFlags")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("combatLogDisableFlags");
 
@@ -1204,7 +1200,7 @@ namespace NexusForever.Database.Character.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("createTime")
-                        .HasDefaultValueSql("current_timestamp()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateTime?>("DeleteTime")
                         .HasColumnType("datetime")
@@ -1218,23 +1214,23 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<ushort>("FactionId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("factionId");
 
                     b.Property<uint>("Flags")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0u)
                         .HasColumnName("flags");
 
                     b.Property<ulong?>("GuildAffiliation")
-                        .HasColumnType("bigint unsigned")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("guildAffiliation");
 
                     b.Property<byte>("InnateIndex")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("innateIndex");
 
@@ -1245,7 +1241,7 @@ namespace NexusForever.Database.Character.Migrations
                         .HasColumnName("inputKeySet");
 
                     b.Property<bool>("IsOnline")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("isOnline");
 
                     b.Property<DateTime?>("LastOnline")
@@ -1254,7 +1250,7 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<byte>("Level")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("level");
 
@@ -1290,7 +1286,7 @@ namespace NexusForever.Database.Character.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("pathActivatedTimestamp")
-                        .HasDefaultValueSql("current_timestamp()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateTime?>("PvpFlagDisableUntilUtc")
                         .HasColumnType("datetime")
@@ -1298,13 +1294,13 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<byte>("Race")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("race");
 
                     b.Property<uint>("RestBonusXp")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int unsigned")
+                        .HasColumnType("int")
                         .HasDefaultValue(0u)
                         .HasColumnName("restBonusXp");
 
@@ -1328,7 +1324,7 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<byte>("Sex")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("sex");
 
@@ -1340,37 +1336,37 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<uint>("TimePlayedLevel")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("timePlayedLevel");
 
                     b.Property<uint>("TimePlayedTotal")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("timePlayedTotal");
 
                     b.Property<ushort>("Title")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("title");
 
                     b.Property<uint>("TotalXp")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int unsigned")
+                        .HasColumnType("int")
                         .HasDefaultValue(0u)
                         .HasColumnName("totalXp");
 
                     b.Property<ushort>("WorldId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("worldId");
 
                     b.Property<ushort>("WorldZoneId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("worldZoneId");
 
@@ -1386,49 +1382,49 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<ushort>("PathMissionId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("pathMissionId");
 
                     b.Property<byte>("Completed")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(1) unsigned")
+                        .HasColumnType("tinyint(1)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("completed");
 
                     b.Property<ushort>("PathEpisodeId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("pathEpisodeId");
 
                     b.Property<uint>("ProgressCount")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("progressCount");
 
                     b.Property<uint>("ProgressData")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("progressData");
 
                     b.Property<byte>("State")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("state");
 
                     b.Property<uint>("Xp")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("xp");
 
@@ -1442,31 +1438,31 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("Path")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("path");
 
                     b.Property<byte>("LevelRewarded")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(4) unsigned")
+                        .HasColumnType("tinyint(4)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("levelRewarded");
 
                     b.Property<uint>("TotalXp")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("totalXp");
 
                     b.Property<byte>("Unlocked")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(1) unsigned")
+                        .HasColumnType("tinyint(1)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("unlocked");
 
@@ -1480,25 +1476,25 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("Type")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("type");
 
                     b.Property<uint>("ObjectId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0u)
                         .HasColumnName("objectId");
 
                     b.Property<ulong>("FlairIdMask")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("flairIdMask");
 
@@ -1519,13 +1515,13 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<uint>("PetFlairId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0u)
                         .HasColumnName("petFlairId");
 
@@ -1539,19 +1535,19 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<ushort>("QuestId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("questId");
 
                     b.Property<byte>("Flags")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("flags");
 
@@ -1561,12 +1557,12 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<byte>("State")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("state");
 
                     b.Property<uint?>("Timer")
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasColumnName("timer");
 
                     b.HasKey("Id", "QuestId")
@@ -1579,30 +1575,30 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<ushort>("QuestId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("questId");
 
                     b.Property<byte>("Index")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("index");
 
                     b.Property<uint>("Progress")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("progress");
 
                     b.Property<uint?>("Timer")
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasColumnName("timer");
 
                     b.HasKey("Id", "QuestId", "Index")
@@ -1615,13 +1611,13 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<uint>("FactionId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0u)
                         .HasColumnName("factionId");
 
@@ -1641,13 +1637,13 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<uint>("TradeskillSchematic2Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0u)
                         .HasColumnName("tradeskillSchematic2Id");
 
@@ -1679,19 +1675,19 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<uint>("Spell4BaseId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0u)
                         .HasColumnName("spell4BaseId");
 
                     b.Property<byte>("Tier")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("tier");
 
@@ -1705,12 +1701,12 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("Stat")
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("stat");
 
@@ -1730,25 +1726,25 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<ushort>("Title")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("title");
 
                     b.Property<byte>("Revoked")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(4) unsigned")
+                        .HasColumnType("tinyint(4)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("revoked");
 
                     b.Property<uint>("TimeRemaining")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("timeRemaining");
 
@@ -1762,19 +1758,19 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<ushort>("MaterialId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("materialId");
 
                     b.Property<ushort>("Amount")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("amount");
 
@@ -1788,97 +1784,97 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<uint>("TradeskillId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0u)
                         .HasColumnName("tradeskillId");
 
                     b.Property<uint>("IsActive")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("isActive");
 
                     b.Property<uint>("PropertyProficiencyFlags")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("propertyProficiencyFlags");
 
                     b.Property<uint>("TalentPoints")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("talentPoints");
 
                     b.Property<uint>("TalentTier00")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("talentTier00");
 
                     b.Property<uint>("TalentTier01")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("talentTier01");
 
                     b.Property<uint>("TalentTier02")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("talentTier02");
 
                     b.Property<uint>("TalentTier03")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("talentTier03");
 
                     b.Property<uint>("TalentTier04")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("talentTier04");
 
                     b.Property<uint>("TalentTier05")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("talentTier05");
 
                     b.Property<uint>("TalentTier06")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("talentTier06");
 
                     b.Property<uint>("TalentTier07")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("talentTier07");
 
                     b.Property<uint>("TalentTier08")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("talentTier08");
 
                     b.Property<uint>("TalentTier09")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("talentTier09");
 
                     b.Property<uint>("TradeskillXp")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("tradeskillXp");
 
@@ -1892,19 +1888,19 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<ushort>("ZoneMap")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("zoneMap");
 
                     b.Property<ushort>("HexGroup")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("hexGroup");
 
@@ -1918,19 +1914,19 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<ulong>("CharacterId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("characterId");
 
                     b.Property<byte>("Flags")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("flags");
 
@@ -1944,7 +1940,7 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
@@ -1962,7 +1958,7 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<byte>("Type")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("type");
 
@@ -1976,19 +1972,19 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<ushort>("AchievementId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("achievementId");
 
                     b.Property<uint>("CreditedChecklistMask")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("data1");
 
@@ -1998,7 +1994,7 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<uint>("ProgressState")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("data0");
 
@@ -2012,7 +2008,7 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
@@ -2024,13 +2020,13 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<ushort>("BackgroundIconPartId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("backgroundIconPartId");
 
                     b.Property<ushort>("ForegroundIconPartId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("foregroundIconPartId");
 
@@ -2042,7 +2038,7 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<ushort>("ScanLinesPartId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("scanLinesPartId");
 
@@ -2056,13 +2052,13 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<ulong>("CharacterId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("characterId");
 
@@ -2080,7 +2076,7 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<byte>("Rank")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("rank");
 
@@ -2094,7 +2090,7 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
@@ -2102,7 +2098,7 @@ namespace NexusForever.Database.Character.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("createTime")
-                        .HasDefaultValueSql("current_timestamp()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateTime?>("DeleteTime")
                         .HasColumnType("datetime")
@@ -2110,12 +2106,12 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<uint>("Flags")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("flags");
 
                     b.Property<ulong?>("LeaderId")
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasColumnName("leaderId");
 
                     b.Property<string>("Name")
@@ -2125,7 +2121,7 @@ namespace NexusForever.Database.Character.Migrations
                         .HasColumnName("name");
 
                     b.Property<ulong?>("OriginalLeaderId")
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasColumnName("originalLeaderId");
 
                     b.Property<string>("OriginalName")
@@ -2134,7 +2130,7 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<byte>("Type")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("type");
 
@@ -2148,25 +2144,25 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("Index")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("index");
 
                     b.Property<ulong>("BankWithdrawalPermission")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("bankWithdrawPermission");
 
                     b.Property<ulong>("MoneyWithdrawalLimit")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("moneyWithdrawalLimit");
 
@@ -2178,13 +2174,13 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<uint>("Permission")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("permission");
 
                     b.Property<ulong>("RepairLimit")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("repairLimit");
 
@@ -2198,19 +2194,19 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<uint>("BagIndex")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("bagIndex");
 
                     b.Property<uint>("Charges")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("charges");
 
@@ -2222,19 +2218,19 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<uint>("ExpirationTimeLeft")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("expirationTimeLeft");
 
                     b.Property<uint>("ItemId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("itemId");
 
                     b.Property<ushort>("Location")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("location");
 
@@ -2245,7 +2241,7 @@ namespace NexusForever.Database.Character.Migrations
                         .HasColumnName("microchipIds");
 
                     b.Property<ulong?>("OwnerId")
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasColumnName("ownerId");
 
                     b.Property<string>("RuneSlots")
@@ -2262,7 +2258,7 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<uint>("StackCount")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("stackCount");
 
@@ -2277,36 +2273,36 @@ namespace NexusForever.Database.Character.Migrations
             modelBuilder.Entity("NexusForever.Database.Character.Model.LeaderboardPveScoreModel", b =>
                 {
                     b.Property<ulong>("Id")
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasColumnName("id");
 
                     b.Property<ulong>("CharacterId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("characterId");
 
                     b.Property<uint>("CompletionTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("completionTime");
 
                     b.Property<ulong>("GuildId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("guildId");
 
                     b.Property<uint>("MatchingGameMapId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("matchingGameMapId");
 
                     b.Property<byte>("PlayerClass")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("playerClass");
 
@@ -2316,17 +2312,15 @@ namespace NexusForever.Database.Character.Migrations
                         .HasDefaultValue("")
                         .HasColumnName("playerName");
 
-                    MySqlPropertyBuilderExtensions.HasCharSet(b.Property<string>("PlayerName"), "utf8mb4");
-
                     b.Property<uint>("PrimeLevel")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("primeLevel");
 
                     b.Property<ushort>("RealmId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("realmId");
 
@@ -2334,11 +2328,11 @@ namespace NexusForever.Database.Character.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("recordedUtc")
-                        .HasDefaultValueSql("current_timestamp()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<uint>("RewardedTier")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("rewardedTier");
 
@@ -2346,11 +2340,9 @@ namespace NexusForever.Database.Character.Migrations
                         .HasColumnType("varchar(512)")
                         .HasColumnName("teamMembersJson");
 
-                    MySqlPropertyBuilderExtensions.HasCharSet(b.Property<string>("TeamMembersJson"), "utf8mb4");
-
                     b.Property<byte>("Type")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("type");
 
@@ -2362,24 +2354,24 @@ namespace NexusForever.Database.Character.Migrations
             modelBuilder.Entity("NexusForever.Database.Character.Model.LeaderboardPvpScoreModel", b =>
                 {
                     b.Property<ulong>("Id")
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasColumnName("id");
 
                     b.Property<ulong>("CharacterId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("characterId");
 
                     b.Property<ulong>("GuildId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("guildId");
 
                     b.Property<byte>("PlayerClass")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("playerClass");
 
@@ -2389,17 +2381,15 @@ namespace NexusForever.Database.Character.Migrations
                         .HasDefaultValue("")
                         .HasColumnName("playerName");
 
-                    MySqlPropertyBuilderExtensions.HasCharSet(b.Property<string>("PlayerName"), "utf8mb4");
-
                     b.Property<uint>("Rating")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("rating");
 
                     b.Property<ushort>("RealmId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("realmId");
 
@@ -2407,17 +2397,15 @@ namespace NexusForever.Database.Character.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("recordedUtc")
-                        .HasDefaultValueSql("current_timestamp()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("TeamMembersJson")
                         .HasColumnType("varchar(512)")
                         .HasColumnName("teamMembersJson");
 
-                    MySqlPropertyBuilderExtensions.HasCharSet(b.Property<string>("TeamMembersJson"), "utf8mb4");
-
                     b.Property<byte>("Type")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("type");
 
@@ -2430,49 +2418,49 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<ulong>("BuyoutPrice")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("buyoutPrice");
 
                     b.Property<ulong>("CircuitData")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("circuitData");
 
                     b.Property<ulong>("CurrentBid")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("currentBid");
 
                     b.Property<ulong>("ExpirationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("expirationTime");
 
                     b.Property<uint>("GlyphData")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("glyphData");
 
                     b.Property<uint>("Item2Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("item2Id");
 
                     b.Property<ulong>("ItemId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("itemId");
 
@@ -2484,43 +2472,43 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<ulong>("MinimumBid")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("minimumBid");
 
                     b.Property<ulong>("OwnerCharacterId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("ownerCharacterId");
 
                     b.Property<uint>("Quantity")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("quantity");
 
                     b.Property<ulong>("ThresholdData")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("thresholdData");
 
                     b.Property<ulong>("TopBidderCharacterId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("topBidderCharacterId");
 
                     b.Property<uint>("Unknown2")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("unknown2");
 
                     b.Property<uint>("WorldRequirementItem2Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("worldRequirementItem2Id");
 
@@ -2536,13 +2524,13 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<ulong>("ExpirationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("expirationTime");
 
@@ -2560,37 +2548,37 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<uint>("Item2Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("item2Id");
 
                     b.Property<ulong>("ListTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("listTime");
 
                     b.Property<ulong>("OwnerCharacterId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("ownerCharacterId");
 
                     b.Property<ulong>("Price")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("price");
 
                     b.Property<ulong>("PricePerUnit")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("pricePerUnit");
 
                     b.Property<uint>("Quantity")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("quantity");
 
@@ -2603,23 +2591,23 @@ namespace NexusForever.Database.Character.Migrations
             modelBuilder.Entity("NexusForever.Database.Character.Model.PropertyBaseModel", b =>
                 {
                     b.Property<uint>("Type")
-                        .HasColumnType("int unsigned")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("type")
                         .HasDefaultValueSql("'0'");
 
                     b.Property<uint>("Subtype")
-                        .HasColumnType("int unsigned")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("subtype")
                         .HasDefaultValueSql("'0'");
 
                     b.Property<uint>("Property")
-                        .HasColumnType("int unsigned")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("property")
                         .HasDefaultValueSql("'0'");
 
                     b.Property<ushort>("ModType")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint unsigned")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("modType")
                         .HasDefaultValueSql("'0'");
 
@@ -2632,7 +2620,7 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<float>("Value")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("float")
+                        .HasColumnType("REAL")
                         .HasColumnName("value")
                         .HasDefaultValueSql("'0'");
 
@@ -2963,25 +2951,25 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<uint>("AccountId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("accountId");
 
                     b.Property<uint>("BagIndex")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("bagIndex");
 
                     b.Property<uint>("Charges")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("charges");
 
@@ -2993,19 +2981,19 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<uint>("ExpirationTimeLeft")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("expirationTimeLeft");
 
                     b.Property<uint>("ItemId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("itemId");
 
                     b.Property<ushort>("RealmId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("realmId");
 
@@ -3017,7 +3005,7 @@ namespace NexusForever.Database.Character.Migrations
 
                     b.Property<uint>("StackCount")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("stackCount");
 
@@ -3030,66 +3018,66 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<ulong>("DecorId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("decorId");
 
                     b.Property<uint>("ActivePropUnitId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("activePropUnitId");
 
                     b.Property<ushort>("ColourShiftId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("colourShiftId");
 
                     b.Property<uint>("DecorData")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("decorData");
 
                     b.Property<uint>("DecorInfoId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("decorInfoId");
 
                     b.Property<ulong>("DecorParentId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("decorParentId");
 
                     b.Property<uint>("DecorType")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("decorType");
 
                     b.Property<uint>("HookBagIndex")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("hookBagIndex");
 
                     b.Property<uint>("HookIndex")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("hookIndex");
 
                     b.Property<uint>("PlotIndex")
-                        .HasColumnType("int(10) unsigned")
+                        .HasColumnType("int(10)")
                         .HasDefaultValue(2147483647u)
                         .HasColumnName("plotIndex");
 
@@ -3151,47 +3139,47 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<ushort>("DoorDecorInfoId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("doorDecorInfoId");
 
                     b.Property<ushort>("EntrywayDecorInfoId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("entrywayDecorInfoId");
 
                     b.Property<ushort>("Flags")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("flags");
 
                     b.Property<byte>("GardenSharing")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("gardenSharing");
 
                     b.Property<ushort>("GroundWallpaperId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("groundWallpaperId");
 
                     b.Property<ulong?>("GuildOwnerId")
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasColumnName("guildOwnerId");
 
                     b.Property<ushort>("MusicId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("musicId");
 
@@ -3203,42 +3191,42 @@ namespace NexusForever.Database.Character.Migrations
                         .HasColumnName("name");
 
                     b.Property<ulong?>("OwnerId")
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("bigint(20)")
                         .HasColumnName("ownerId");
 
                     b.Property<byte>("PrivacyLevel")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("privacyLevel");
 
                     b.Property<byte>("PropertyInfoId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("propertyInfoId");
 
                     b.Property<byte>("ResourceSharing")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("resourceSharing");
 
                     b.Property<ushort>("RoofDecorInfoId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("roofDecorInfoId");
 
                     b.Property<ushort>("SkyWallpaperId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("skyWallpaperId");
 
                     b.Property<ushort>("WallpaperId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("wallpaperId");
 
@@ -3257,19 +3245,19 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("ResidenceId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("residenceId");
 
                     b.Property<ulong>("NeighborCharacterId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("neighborCharacterId");
 
                     b.Property<byte>("PermissionLevel")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("permissionLevel");
 
@@ -3283,36 +3271,36 @@ namespace NexusForever.Database.Character.Migrations
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("Index")
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("index");
 
                     b.Property<byte>("BuildState")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("buildState");
 
                     b.Property<ushort>("PlotInfoId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("plotInfoId");
 
                     b.Property<byte>("PlugFacing")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnType("tinyint(3)")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("plugFacing");
 
                     b.Property<ushort>("PlugItemId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnType("smallint(5)")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("plugItemId");
 

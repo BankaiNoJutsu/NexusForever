@@ -118,6 +118,11 @@ namespace NexusForever.Game.Abstract.Entity
         void AddAmpPower(ushort amount);
 
         /// <summary>
+        /// Add bonus ability tier points to all action sets.
+        /// </summary>
+        void AddAbilityTierPoints(byte amount);
+
+        /// <summary>
         /// Return <see cref="IActionSet"/> at supplied index.
         /// </summary>
         IActionSet GetActionSet(byte actionSetIndex);
