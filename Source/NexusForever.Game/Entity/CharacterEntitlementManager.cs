@@ -5,6 +5,7 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entitlement;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Reward;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 

@@ -1,4 +1,5 @@
 ﻿using NexusForever.Database.Character;
+using NexusForever.Game.Static.Costume;
 using NexusForever.Game.Static.Entity;
 
 namespace NexusForever.Game.Abstract.Entity
@@ -8,7 +9,7 @@ namespace NexusForever.Game.Abstract.Entity
         CostumeItemSlot Slot { get; }
         ItemSlot ItemSlot { get; }
         IItemInfo ItemInfo { get; }
-        uint? ItemId { get; set; }
+        uint? Item2Id { get; set; }
         ushort? DisplayId { get; }
         uint DyeData { get; set; }
 

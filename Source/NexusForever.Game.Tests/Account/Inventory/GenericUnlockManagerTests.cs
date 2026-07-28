@@ -14,7 +14,7 @@ using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.GenericUnlock;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using Microting.EntityFrameworkCore.MySql.Infrastructure;
 
 namespace NexusForever.Game.Tests.Account.Inventory;
 

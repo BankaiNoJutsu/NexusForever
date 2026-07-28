@@ -5,10 +5,10 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Costume;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Reward;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
-using NexusForever.Network.World.Message.Model;
-using NexusForever.Network.World.Message.Static;
+using NexusForever.Network.World.Message.Model.Costume;
 using NLog;
 
 namespace NexusForever.Game.Entity
@@ -144,10 +144,10 @@ namespace NexusForever.Game.Entity
 
             foreach (ClientCostumeSave.CostumeItem costumeItem in costumeSave.Items)
             {
-                if (costumeItem.ItemId == 0)
+                if (costumeItem.Item2Id == 0)
                     continue;
 
-                IItemInfo itemEntry = itemManager?.GetItemInfo(costumeItem.ItemId);
+                IItemInfo itemEntry = itemManager?.GetItemInfo(costumeItem.Item2Id);
                 if (itemEntry == null)
                 {
                     SendCostumeSaveResult(CostumeSaveResult.InvalidItem);
@@ -160,16 +160,16 @@ namespace NexusForever.Game.Entity
                     return;
                 }
 
-                if (!player.Account.CostumeManager.HasItemUnlock(costumeItem.ItemId))
+                if (!player.Account.CostumeManager.HasItemUnlock(costumeItem.Item2Id))
                 {
                     SendCostumeSaveResult(CostumeSaveResult.ItemNotUnlocked);
                     return;
                 }
 
-                ItemDisplayEntry itemDisplayEntry = gameTableManager.ItemDisplay?.GetEntry(itemEntry.GetDisplayId());
-                for (int i = 0; i < costumeItem.Dyes.Length; i++)
+                ItemDisplayEntry itemDisplayEntry = gameTableManager?.ItemDisplay?.GetEntry(itemEntry.GetDisplayId());
+                for (int i = 0; i < costumeItem.DyeColorRampIds.Length; i++)
                 {
-                    if (costumeItem.Dyes[i] == 0u)
+                    if (costumeItem.DyeColorRampIds[i] == 0u)
                         continue;
 
                     if (itemDisplayEntry == null)
@@ -185,13 +185,13 @@ namespace NexusForever.Game.Entity
                         return;
                     }
 
-                    if (gameTableManager.DyeColorRamp?.GetEntry(costumeItem.Dyes[i]) == null)
+                    if (gameTableManager?.DyeColorRamp?.GetEntry(costumeItem.DyeColorRampIds[i]) == null)
                     {
                         SendCostumeSaveResult(CostumeSaveResult.InvalidDye);
                         return;
                     }
 
-                    if (!player.Account.GenericUnlockManager.IsDyeUnlocked(costumeItem.Dyes[i]))
+                    if (!player.Account.GenericUnlockManager.IsDyeUnlocked(costumeItem.DyeColorRampIds[i]))
                     {
                         SendCostumeSaveResult(CostumeSaveResult.DyeNotUnlocked);
                         return;
@@ -266,9 +266,9 @@ namespace NexusForever.Game.Entity
         {
             player.Session.EnqueueMessageEncrypted(new ServerCostumeSave
             {
-                Index  = index,
-                Result = result,
-                Type   = type
+                Index          = index,
+                Result         = result,
+                Type           = type
             });
         }
     }

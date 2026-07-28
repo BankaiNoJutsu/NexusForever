@@ -19,6 +19,7 @@ using NexusForever.Game.Tests.Storefront;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.RBAC;
+using NexusForever.Game.Static.Reward;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;

@@ -7,8 +7,8 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Costume;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
-using NexusForever.Network.World.Message.Model;
-using NetworkCostume = NexusForever.Network.World.Message.Model.Shared.Costume;
+using NexusForever.Network.World.Message.Model.Costume;
+using NetworkCostume = NexusForever.Network.World.Message.Model.Costume.Costume;
 
 namespace NexusForever.Game.Entity
 {
@@ -98,7 +98,7 @@ namespace NexusForever.Game.Entity
                     {
                         Id    = Owner,
                         Index = Index,
-                        VisibilityMask = VisibilityMask
+                        VisibilityMask  = VisibilityMask
                     };
 
                     context.Add(model);
@@ -180,8 +180,8 @@ namespace NexusForever.Game.Entity
 
             for (int i = 0; i < costumeSave.Items.Count; i++)
             {
-                items[i].ItemId  = costumeSave.Items[i].ItemId;
-                items[i].DyeData = CostumeItem.GenerateDyeMask(costumeSave.Items[i].Dyes, gameTableManager);
+                items[i].Item2Id  = costumeSave.Items[i].Item2Id;
+                items[i].DyeData  = CostumeItem.GenerateDyeData(costumeSave.Items[i].DyeColorRampIds, gameTableManager);
             }
         }
 
@@ -189,14 +189,13 @@ namespace NexusForever.Game.Entity
         {
             var networkCostume = new NetworkCostume
             {
-                Index          = Index,
-                Type           = CostumeType.Personal,
+                Index = Index,
                 VisibilityMask = VisibilityMask
             };
 
             foreach (ICostumeItem costumeItem in items)
             {
-                networkCostume.Item2Ids[(byte)costumeItem.Slot] = costumeItem.ItemId ?? 0;
+                networkCostume.Item2Ids[(byte)costumeItem.Slot] = costumeItem.Item2Id ?? 0;
                 networkCostume.DyeData[(byte)costumeItem.Slot] = costumeItem.DyeData;
             }
 

@@ -17,6 +17,7 @@ using NexusForever.Game.Abstract.Account.Unlock;
 using NexusForever.Game.Abstract.RBAC;
 using NexusForever.Game.Account.Reward;
 using NexusForever.Game.Static;
+using NexusForever.Game.Static.Reward;
 using NexusForever.GameTable;
 using NexusForever.Network.Session;
 using NexusForever.GameTable.Model;

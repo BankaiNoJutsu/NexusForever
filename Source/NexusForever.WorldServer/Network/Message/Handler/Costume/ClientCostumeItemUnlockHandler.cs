@@ -1,8 +1,8 @@
 ﻿using NexusForever.Game.Abstract.Entity;
 using NexusForever.Network.Message;
 using Microsoft.Extensions.Logging;
-using NexusForever.Network.World.Message.Model;
-using NexusForever.Network.World.Message.Static;
+using NexusForever.Game.Static.Costume;
+using NexusForever.Network.World.Message.Model.Costume;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Costume
 {

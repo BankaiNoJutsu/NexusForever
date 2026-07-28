@@ -22,6 +22,7 @@ using NexusForever.Game.Static;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.GenericUnlock;
+using NexusForever.Game.Static.Reward;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
 using NexusForever.Network.Message;
@@ -30,6 +31,7 @@ using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.GenericUnlock;
 using NexusForever.Network.World.Message.Model.Pregame;
+using NexusForever.Network.World.Message.Model.Reward;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Network;
@@ -457,7 +459,7 @@ public class CharacterListManagerTests
     {
         public RewardPropertyEntry Entry => null;
 
-        public IEnumerable<ServerRewardPropertySet.RewardProperty> Build()
+        public IEnumerable<ServerPremiumRewards.RewardProperty> Build()
         {
             return [];
         }

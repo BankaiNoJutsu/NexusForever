@@ -27,7 +27,7 @@ using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.PlayerPath;
 using NexusForever.Network.World.Message.Static;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using Microting.EntityFrameworkCore.MySql.Infrastructure;
 using Path = NexusForever.Game.Static.PlayerPath.Path;
 
 namespace NexusForever.Game.Tests.Entity;

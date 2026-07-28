@@ -8,7 +8,7 @@ using NexusForever.Game.Spell;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using Microting.EntityFrameworkCore.MySql.Infrastructure;
 
 namespace NexusForever.Game.Tests.Spell;
 

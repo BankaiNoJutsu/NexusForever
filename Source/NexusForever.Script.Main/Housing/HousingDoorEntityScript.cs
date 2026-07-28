@@ -1,6 +1,5 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
-using NexusForever.Network.World.Message.Model;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
 
@@ -17,7 +16,7 @@ namespace NexusForever.Script.Main.Housing
         public void OnLoad(ICreatureEntity owner)
         {
             this.owner = owner;
-            owner.StandState = DoorClosed;
+            owner.SetStandState(DoorClosed);
         }
 
         public void OnActivateSuccess(IPlayer activator)
@@ -29,13 +28,7 @@ namespace NexusForever.Script.Main.Housing
                 ? DoorClosed
                 : DoorOpen;
 
-            owner.StandState = nextState;
-
-            activator.EnqueueToVisible(new ServerEmote
-            {
-                Guid       = owner.Guid,
-                StandState = nextState
-            }, true);
+            owner.SetStandState(nextState);
         }
     }
 }

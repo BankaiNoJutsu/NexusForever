@@ -400,7 +400,7 @@ namespace NexusForever.Game.Entity
         public ISupplySatchelManager SupplySatchelManager { get; private set; }
         public IXpManager XpManager { get; private set; }
         public IReputationManager ReputationManager { get; private set; }
-        public IGuildManager GuildManager { get; private set; }
+        public IGuildManager GuildManager { get; }
         public IResidenceManager ResidenceManager { get; private set; }
         public ICinematicManager CinematicManager { get; private set; }
         public ICharacterEntitlementManager EntitlementManager { get; private set; }
@@ -561,7 +561,8 @@ namespace NexusForever.Game.Entity
             IItemManager itemManager = null,
             IDatabaseManager databaseManager = null,
             ISharedConfiguration sharedConfiguration = null,
-            IContractManager contractManager = null)
+            IContractManager contractManager = null,
+            IGuildManager guildManager = null)
             : base(movementManager, sharedConfiguration)
         {
             this.messagePublisher = messagePublisher;
@@ -612,6 +613,7 @@ namespace NexusForever.Game.Entity
 
             // managers
             CurrencyManager = currencyManager;
+            GuildManager    = guildManager;
         }
 
         #endregion
@@ -719,7 +721,7 @@ namespace NexusForever.Game.Entity
             SupplySatchelManager    = new SupplySatchelManager(this, model, gameTableManager);
             XpManager               = new XpManager(this, model, gameTableManager, sharedConfiguration);
             ReputationManager       = new ReputationManager(this, model, factionManager);
-            GuildManager            = new GuildManager(this, model, textFilterManager, globalGuildManager, realmContext, playerManager, sharedConfiguration, gameTableManager);
+            GuildManager?.Initialise(this, model);
             ResidenceManager        = new ResidenceManager(this, globalResidenceManager, characterManager);
             CinematicManager        = new CinematicManager(this);
 

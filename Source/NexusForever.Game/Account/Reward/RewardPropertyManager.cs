@@ -3,9 +3,10 @@ using NexusForever.Game.Abstract.Account.Reward;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Reward;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
-using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Reward;
 
 namespace NexusForever.Game.Account.Reward
 {
@@ -70,12 +71,11 @@ namespace NexusForever.Game.Account.Reward
 
                 return true;
             }
-
             value = (RewardPropertyModifierValueType)entry.RewardModifierValueTypeEnum switch
             {
-                RewardPropertyModifierValueType.AdditiveScalar       => modifierEntry.ModifierValueFloat,
-                RewardPropertyModifierValueType.Discrete             => modifierEntry.ModifierValueInt,
-                RewardPropertyModifierValueType.MultiplicativeScalar => modifierEntry.ModifierValueFloat,
+                RewardModifierValueType.AdditiveScalar       => modifierEntry.ModifierValueFloat,
+                RewardModifierValueType.Discrete             => modifierEntry.ModifierValueInt,
+                RewardModifierValueType.MultiplicativeScalar => modifierEntry.ModifierValueFloat,
                 _ => 0f
             };
             return true;
@@ -83,7 +83,7 @@ namespace NexusForever.Game.Account.Reward
 
         public void SendInitialPackets()
         {
-            account.Session.EnqueueMessageEncrypted(new ServerRewardPropertySet
+            account.Session.EnqueueMessageEncrypted(new ServerPremiumRewards
             {
                 Properties = rewardProperties.Values
                     .SelectMany(e => e.Build())
@@ -125,7 +125,7 @@ namespace NexusForever.Game.Account.Reward
             IRewardProperty rewardProperty = GetRewardProperty(entry);
             rewardProperty.UpdateValue(data, value);
 
-            account.Session.EnqueueMessageEncrypted(new ServerRewardPropertySet
+            account.Session.EnqueueMessageEncrypted(new ServerPremiumRewards
             {
                 Properties = rewardProperty.Build().ToList()
             });

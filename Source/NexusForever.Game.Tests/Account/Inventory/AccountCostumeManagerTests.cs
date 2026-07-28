@@ -4,6 +4,7 @@ using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Entitlement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Account.Costume;
+using NexusForever.Game.Static.Costume;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Configuration.Model;

@@ -14,9 +14,12 @@ using NexusForever.Game.Static.Guild;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Text.Filter;
 using NexusForever.GameTable.Text.Static;
+using NexusForever.Network.Internal;
+using NexusForever.Network.Internal.Message.Player;
 using NexusForever.Network.World.Message.Model.Guild;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Shared.Configuration;
+using NexusForever.Shared;
 using NLog;
 using NetworkGuildMember = NexusForever.Network.World.Message.Model.Guild.GuildMember;
 
@@ -103,7 +106,7 @@ namespace NexusForever.Game.Guild
 
         private SaveMask saveMask;
 
-        private readonly IPlayer owner;
+        private IPlayer owner;
         private readonly ITextFilterManager textFilterManager;
         private readonly IGlobalGuildManager globalGuildManager;
         private readonly IRealmContext realmContext;
@@ -114,12 +117,12 @@ namespace NexusForever.Game.Guild
         private readonly Dictionary<ulong, IGuildBase> guilds = new();
         private IGuildInvite pendingInvite;
 
-        /// <summary>
-        /// Create a new <see cref="IGuildManager"/> from existing <see cref="CharacterModel"/> database model.
-        /// </summary>
+        #region Dependency Injection
+
+        private readonly IInternalMessagePublisher messagePublisher;
+
         public GuildManager(
-            IPlayer player,
-            CharacterModel model,
+            IInternalMessagePublisher messagePublisher,
             ITextFilterManager textFilterManager = null,
             IGlobalGuildManager globalGuildManager = null,
             IRealmContext realmContext = null,
@@ -127,13 +130,26 @@ namespace NexusForever.Game.Guild
             ISharedConfiguration sharedConfiguration = null,
             IGameTableManager gameTableManager = null)
         {
+            this.messagePublisher     = messagePublisher;
+            this.textFilterManager    = textFilterManager;
+            this.globalGuildManager   = globalGuildManager;
+            this.realmContext         = realmContext;
+            this.playerManager        = playerManager;
+            this.sharedConfiguration  = sharedConfiguration;
+            this.gameTableManager     = gameTableManager;
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Create a new <see cref="IGuildManager"/> from existing <see cref="CharacterModel"/> database model.
+        /// </summary>
+        public void Initialise(IPlayer player, CharacterModel model)
+        {
             owner = player;
-            this.textFilterManager = textFilterManager;
-            this.globalGuildManager = globalGuildManager;
-            this.realmContext = realmContext;
-            this.playerManager = playerManager;
-            this.sharedConfiguration = sharedConfiguration;
-            this.gameTableManager = gameTableManager;
+            guilds.Clear();
+            Guild = null;
+            GuildAffiliation = null;
 
             foreach (IGuildBase guild in GetGlobalGuildManager().GetCharacterGuilds(owner.CharacterId))
             {
@@ -548,6 +564,12 @@ namespace NexusForever.Game.Guild
             }, true);
 
             GuildAffiliation = guild;
+
+            messagePublisher.PublishAsync(new PlayerGuildAssociationUpdatedMessage
+            {
+                Identity  = owner.Identity.ToInternalIdentity(),
+                GuildName = guild.Name
+            }).FireAndForgetAsync();
         }
 
         /// <summary>
@@ -572,6 +594,12 @@ namespace NexusForever.Game.Guild
             }, true);
 
             GuildAffiliation = null;
+
+            messagePublisher.PublishAsync(new PlayerGuildAssociationUpdatedMessage
+            {
+                Identity  = owner.Identity.ToInternalIdentity(),
+                GuildName = null
+            }).FireAndForgetAsync();
         }
 
         /// <summary>

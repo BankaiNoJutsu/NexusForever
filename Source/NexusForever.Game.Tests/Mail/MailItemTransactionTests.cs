@@ -8,7 +8,7 @@ using NexusForever.Game.Mail;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Mail;
 using NexusForever.Game.Tests.TestSupport;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using Microting.EntityFrameworkCore.MySql.Infrastructure;
 
 namespace NexusForever.Game.Tests.Mail;
 

@@ -3,10 +3,11 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Static.Costume;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
-using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Costume;
 
 namespace NexusForever.Game.Entity
 {
@@ -27,19 +28,19 @@ namespace NexusForever.Game.Entity
         public const byte MaxCostumeItemDyes = 3;
 
         /// <summary>
-        /// Return dye ramp mask generated from supplied dyes.
+        /// Returns packed dye RampIndexes generated from supplied dyeColorRampIds.
         /// </summary>
-        public static uint GenerateDyeMask(uint[] dyes, IGameTableManager gameTableManager)
+        public static uint GenerateDyeData(uint[] dyeColorRampIds, IGameTableManager gameTableManager)
         {
             uint[] ramps = new uint[MaxCostumeItemDyes];
-            for (var i = 0; i < dyes.Length; i++)
+            for (var i = 0; i < dyeColorRampIds.Length; i++)
             {
-                if (dyes[i] == 0)
+                if (dyeColorRampIds[i] == 0)
                     continue;
 
-                DyeColorRampEntry entry = gameTableManager.DyeColorRamp?.GetEntry(dyes[i]);
+                DyeColorRampEntry entry = gameTableManager?.DyeColorRamp?.GetEntry(dyeColorRampIds[i]);
                 if (entry == null)
-                    throw new ArgumentException($"Unknown dye color ramp {dyes[i]}.", nameof(dyes));
+                    throw new ArgumentException($"Unknown dye color ramp {dyeColorRampIds[i]}.", nameof(dyeColorRampIds));
 
                 ramps[i] = entry.RampIndex;
             }
@@ -53,7 +54,7 @@ namespace NexusForever.Game.Entity
         public ItemSlot ItemSlot { get; }
         public IItemInfo ItemInfo { get; private set; }
 
-        public uint? ItemId
+        public uint? Item2Id
         {
             get => ItemInfo?.Id;
             set
@@ -103,7 +104,7 @@ namespace NexusForever.Game.Entity
             this.gameTableManager = gameTableManager;
             Slot         = (CostumeItemSlot)model.Slot;
             ItemSlot     = GetSlot(Slot);
-            ItemId       = model.Item2Id > 0 ? model.Item2Id : null;
+            Item2Id      = model.Item2Id > 0 ? model.Item2Id : null;
             dyeData      = model.DyeData;
 
             saveMask     = CostumeItemSaveMask.None;
@@ -124,8 +125,8 @@ namespace NexusForever.Game.Entity
             this.gameTableManager = gameTableManager;
             Slot         = slot;
             ItemSlot     = GetSlot(Slot);
-            ItemId       = item.ItemId > 0 ? item.ItemId : null;
-            dyeData      = GenerateDyeMask(item.Dyes, gameTableManager);
+            Item2Id      = item.Item2Id > 0 ? item.Item2Id : null;
+            dyeData      = GenerateDyeData(item.DyeColorRampIds, gameTableManager);
 
             saveMask     = CostumeItemSaveMask.Create;
         }
@@ -158,7 +159,7 @@ namespace NexusForever.Game.Entity
                     Id      = costume.Owner,
                     Index   = costume.Index,
                     Slot    = (byte)Slot,
-                    Item2Id = ItemId ?? 0,
+                    Item2Id = Item2Id ?? 0,
                     DyeData = dyeData
                 });
             }
@@ -175,7 +176,7 @@ namespace NexusForever.Game.Entity
                 EntityEntry<CharacterCostumeItemModel> entity = context.Attach(model);
                 if ((saveMask & CostumeItemSaveMask.ItemId) != 0)
                 {
-                    model.Item2Id = ItemId ?? 0;
+                    model.Item2Id = Item2Id ?? 0;
                     entity.Property(p => p.Item2Id).IsModified = true;
                 }
                 if ((saveMask & CostumeItemSaveMask.DyeData) != 0)

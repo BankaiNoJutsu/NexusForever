@@ -16,7 +16,7 @@ using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Pvp;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Pvp;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using Microting.EntityFrameworkCore.MySql.Infrastructure;
 
 namespace NexusForever.Game.Tests.Pvp;
 

@@ -17,12 +17,13 @@ using NexusForever.Game.Spell;
 using NexusForever.Game.Spell.Effect;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Reward;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
-using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Reward;
 
 namespace NexusForever.Game.Tests.Account.Reward;
 
@@ -42,7 +43,7 @@ public class RewardPropertyManagerTests
 
         manager.SendInitialPackets();
 
-        ServerRewardPropertySet packet = Assert.Single(GetEncryptedMessages<ServerRewardPropertySet>(sessionProxy));
+        ServerPremiumRewards packet = Assert.Single(GetEncryptedMessages<ServerPremiumRewards>(sessionProxy));
         Assert.Empty(packet.Properties);
     }
 

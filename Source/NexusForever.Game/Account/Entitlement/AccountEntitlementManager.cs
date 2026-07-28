@@ -6,6 +6,7 @@ using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Entitlement;
 using NexusForever.Game.Entitlement;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Reward;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 

@@ -345,7 +345,7 @@ namespace NexusForever.Network.Message
         ServerQuestContractGoodQualityChanged = 0x0252,
         ClientCostumeSave               = 0x0255,
         ClientCostumeSet                = 0x0256,
-        ServerCostumeSave               = 0x0257,
+        ServerCostumeSaveResult         = 0x0257,
         ServerCostumeItemUnlockMultiple = 0x0258,
         ServerCostumeItemUnlock         = 0x0259,
         ServerCostumeItemList           = 0x025A,
@@ -399,6 +399,7 @@ namespace NexusForever.Network.Message
         ServerDisabledGameplaySystems   = 0x0366,
         ServerForceKick                 = 0x036A,
         ClientEmote                     = 0x037E,
+        ServerEmote                     = 0x037F,
         ServerCostumeItemAux            = 0x037F, // native 1400874a0 reads 14-bit field, three uint32 fields, and two trailing flags; costume/emote semantics unresolved
         ClientCostumeItemForget         = 0x038B,
         ClientPackedWorld               = 0x038C,
@@ -866,6 +867,18 @@ namespace NexusForever.Network.Message
         ClientGenericMapNodeRequest     = 0x07CF, // GenericMapNodeChoose sends missing node id before local GenericFloater
         ServerRewardRotationContentContextArray = 0x07D3, // count + count * 0x28-byte content-context rows
         ServerAuctionsByFilterAux       = 0x07D5, // 14-bit value + three uint32 fields + flag; reader 14008fe80
+        ServerRewardRotationLockedRemove = 0x07C7,
+        ServerRewardRotationLockedList  = 0x07C8,
+        ServerRewardRotationLockedUpdate = 0x07C9,
+        ServerRewardRotations           = 0x07CA,
+        ServerRewardRotationLockedAdd   = 0x07CB,
+        ClientRewardRotationsRequestUpdate = 0x07CC,
+        ServerRewardTrackAdd            = 0x07CD,
+        ClientRewardTrackClaimRewardPoint = 0x07CE,
+        ClientRewardTrackChooseTrack    = 0x07CF,
+        ServerRewardTrackRemove         = 0x07D0,
+        ServerRewardTracksReload        = 0x07D3,
+        ServerRewardTrackUpdate         = 0x07D5,
         ClientAuctionsByFilterRequest   = 0x07DC,
         ClientCharacterSelect           = 0x07DD,
         ClientCharacterList             = 0x07E0,
@@ -995,7 +1008,7 @@ namespace NexusForever.Network.Message
         ServerCombatReward              = 0x0919,
         ServerCooldownList              = 0x091B,
         Client0x0928                    = 0x0928, // ClientWorldOpcodeRegister_MovementSpline @ 1400a8190 registers 8-byte slot with shared ClientUInt32UInt5_WritePayload @ 1400898b0 and shared ServerUInt32UInt5_ReadPayload @ 14008ce80 (also ServerPetStanceChanged 0x068F); PE send for 0x928 only in registration harness @ 1400a8524 — gameplay sender blocked; do not alias to ClientPetSetStance without second witness
-        ServerRewardPropertySet         = 0x092C, // native 140097800 reads counted RewardProperty rows; each row can include counted sub-reward-property modifiers
+        ServerPremiumRewards            = 0x092C,
         ServerPlayerHealthUpdate        = 0x092F,
         ServerEntityBoneUpdate          = 0x0931,
         ServerItemVisualUpdate          = 0x0933,
@@ -1007,9 +1020,9 @@ namespace NexusForever.Network.Message
         ServerEntityStatUInt32UInt14UInt18WideString = 0x0939, // reader 140097ee0
         ServerEntityPropertiesUpdate    = 0x093A,
         ServerUnitUpdateObjectiveIndex  = 0x093B,
-        ServerEmote                     = 0x093C,
         ServerEntityStatUInt32UInt5Pair = 0x093D, // uint32 + 5-bit + two uint32; reader 140097690
         ServerEntityStatTwoUInt32UInt64 = 0x093E, // two uint32 + uint64; reader 140097f70
+        ServerEntityStandState          = 0x093C,
         ClientItemUse                   = 0x0943,
         ClientCastGuildBossToken        = 0x094F,
         ServerWarPartyBossTokens        = 0x0951,

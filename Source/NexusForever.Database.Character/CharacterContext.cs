@@ -508,7 +508,7 @@ namespace NexusForever.Database.Character
                 entity.Property(e => e.DyeData)
                     .HasColumnName("dyeData")
                     .HasColumnType("int(10) unsigned")
-                    .HasDefaultValue(0u);
+                    .HasDefaultValue(0);
 
                 entity.Property(e => e.Item2Id)
                     .HasColumnName("item2Id")
@@ -1718,6 +1718,11 @@ namespace NexusForever.Database.Character
                 entity.Property(e => e.Value)
                     .HasColumnName("value")
                     .HasColumnType("float")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.Data)
+                    .HasColumnName("data")
+                    .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0);
 
                 entity.HasOne(d => d.Character)

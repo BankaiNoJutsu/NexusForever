@@ -55,7 +55,13 @@ namespace NexusForever.Game.Abstract.Entity
         uint InterruptArmor { get; set; }
         bool Sheathed { get; set; }
 
-        StandState StandState { get; set; }
+        /// <summary>
+        /// The current stand state for the <see cref="IWorldEntity"/>.
+        /// </summary>
+        /// <remarks>
+        /// To set the stand state, see <see cref="SetStandState(StandState, uint)"/> or <see cref="Emote(uint)"/>.
+        /// </remarks>
+        StandState StandState { get; }
         bool IsBusy { get; }
 
         /// <summary>
@@ -310,5 +316,21 @@ namespace NexusForever.Game.Abstract.Entity
         /// Remove <see cref="IWorldEntity"/> as a passenger on this <see cref="IWorldEntity"/>.
         /// </summary>
         void RemovePlatformPassenger(IWorldEntity passenger);
+
+        /// <summary>
+        /// Set the emote id for this <see cref="IWorldEntity"/>.
+        /// </summary>
+        /// <remarks>
+        /// If no emote id is provided, the stand state will be set to <see cref="StandState.Stand"/>.
+        /// </remarks>
+        /// <param name="emoteId">The emote id to set.</param>
+        void Emote(uint emoteId);
+
+        /// <summary>
+        /// Set the stand state for this <see cref="IWorldEntity"/>.
+        /// </summary>
+        /// <param name="standState">The stand state id to set.</param>
+        /// <param name="emoteId">The emote id to use if <paramref name="standState"/> is <see cref="StandState.Emote"/>.</param>
+        void SetStandState(StandState standState, uint emoteId = 0u);
     }
 }

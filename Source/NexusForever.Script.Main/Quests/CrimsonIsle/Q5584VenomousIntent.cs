@@ -20,7 +20,7 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
         public void OnActivateSuccess(IPlayer activator)
         {
             // WIP/GUESSED: Questing-and-more has no quest-state guard here; exact retail activation gating is not live-smoked.
-            owner.StandState = StandState.State2;
+            owner.SetStandState(StandState.State2);
             owner.ModifyHealth(owner.MaxHealth, DamageType.Physical, null);
         }
     }

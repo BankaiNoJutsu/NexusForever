@@ -2,7 +2,7 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
-    [Message(GameMessageOpcode.ClientRewardUpdateRequest)]
+    [Message(GameMessageOpcode.ClientRewardRotationsRequestUpdate)]
     public class ClientRewardUpdateRequest : IReadable
     {
         public uint RewardRotationIndex { get; private set; }

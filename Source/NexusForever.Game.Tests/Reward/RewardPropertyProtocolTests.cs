@@ -1,48 +1,48 @@
-using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Reward;
 using NexusForever.Network;
 using NexusForever.Network.Message;
-using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Reward;
 
 namespace NexusForever.Game.Tests.Reward;
 
 public class RewardPropertyProtocolTests
 {
     [Fact]
-    public void ServerRewardPropertySet_WritesModifierSpecificValueEncodings()
+    public void ServerPremiumRewards_WritesModifierSpecificValueEncodings()
     {
-        var packet = new ServerRewardPropertySet
+        var packet = new ServerPremiumRewards
         {
             Properties =
             {
-                new ServerRewardPropertySet.RewardProperty
+                new ServerPremiumRewards.RewardProperty
                 {
-                    Id = RewardPropertyType.XP,
+                    RewardPropertyId = RewardPropertyType.XP,
                     Data = 0x10203040u,
-                    Type = RewardPropertyModifierValueType.AdditiveScalar,
+                    ModifierType = RewardPropertyModifierValueType.AdditiveScalar,
                     Value = 1.5f,
-                    SubRewardProperties =
+                    OwnerMultipliers =
                     {
-                        new ServerRewardPropertySet.RewardProperty.SubRewardProperty
+                        new ServerPremiumRewards.RewardProperty.RewardOwnerMultiplier
                         {
-                            Id = 0xA,
-                            Data = 0x01020304u,
-                            Type = RewardPropertyModifierValueType.MultiplicativeScalar,
+                            OwnerType = RewardModifierOwner.RewardRotation,
+                            OwnerId = 0x01020304u,
+                            ModifierType = RewardPropertyModifierValueType.MultiplicativeScalar,
                             Value = 2.5f
                         }
                     }
                 },
-                new ServerRewardPropertySet.RewardProperty
+                new ServerPremiumRewards.RewardProperty
                 {
-                    Id = RewardPropertyType.CommodityOrders,
+                    RewardPropertyId = RewardPropertyType.CommodityOrders,
                     Data = 0x50607080u,
-                    Type = RewardPropertyModifierValueType.Discrete,
+                    ModifierType = RewardPropertyModifierValueType.Discrete,
                     Value = 12f
                 },
-                new ServerRewardPropertySet.RewardProperty
+                new ServerPremiumRewards.RewardProperty
                 {
-                    Id = RewardPropertyType.PurchaseDiscount,
+                    RewardPropertyId = RewardPropertyType.PurchaseDiscount,
                     Data = 0x90A0B0C0u,
-                    Type = RewardPropertyModifierValueType.MultiplicativeScalar,
+                    ModifierType = RewardPropertyModifierValueType.MultiplicativeScalar,
                     Value = 2.25f
                 }
             }
@@ -58,7 +58,7 @@ public class RewardPropertyProtocolTests
         Assert.Equal(RewardPropertyModifierValueType.AdditiveScalar, reader.ReadEnum<RewardPropertyModifierValueType>(2u));
         Assert.Equal(1.5f, reader.ReadSingle());
         Assert.Equal(1u, reader.ReadUInt(8u));
-        Assert.Equal(0xAu, reader.ReadUInt(4u));
+        Assert.Equal(RewardModifierOwner.RewardRotation, reader.ReadEnum<RewardModifierOwner>(4u));
         Assert.Equal(0x01020304u, reader.ReadUInt());
         Assert.Equal(RewardPropertyModifierValueType.MultiplicativeScalar, reader.ReadEnum<RewardPropertyModifierValueType>(2u));
         Assert.Equal(2.5f, reader.ReadSingle());

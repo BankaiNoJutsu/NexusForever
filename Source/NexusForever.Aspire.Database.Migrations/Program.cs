@@ -13,6 +13,7 @@ using NexusForever.Database.Chat;
 using NexusForever.Database.Configuration.Model;
 using NexusForever.Database.Friendship;
 using NexusForever.Database.Group;
+using NexusForever.Database.Query;
 using NexusForever.Database.World;
 using NLog.Extensions.Logging;
 
@@ -58,6 +59,7 @@ namespace NexusForever.Aspire.Database.Migrations
                     sc.AddConfiguredDbContext<GroupContext>(hb.Configuration, "Group", "groupdb");
                     sc.AddConfiguredDbContext<ChatContext>(hb.Configuration, "Chat", "chatdb");
                     sc.AddConfiguredDbContext<FriendshipContext>(hb.Configuration, "Friendship", "friendshipdb");
+                    sc.AddConfiguredDbContext<QueryContext>(hb.Configuration, "Query", "querydb");
                 });
 
             IHost host = builder.Build();

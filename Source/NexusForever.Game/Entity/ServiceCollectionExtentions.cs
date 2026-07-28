@@ -5,6 +5,8 @@ using NexusForever.Game.Abstract.Entity.Trigger;
 using NexusForever.Game.Entity.Creature;
 using NexusForever.Game.Entity.Movement;
 using NexusForever.Game.Entity.Trigger;
+using NexusForever.Game.Abstract.Guild;
+using NexusForever.Game.Guild;
 using NexusForever.Shared;
 
 namespace NexusForever.Game.Entity
@@ -70,6 +72,7 @@ namespace NexusForever.Game.Entity
             sc.AddTransientFactory<ICreatureInfoStat, CreatureInfoStat>();
 
             sc.AddTransient<ICurrencyManager, CurrencyManager>();
+            sc.AddTransient<IGuildManager, GuildManager>();
         }
     }
 }
