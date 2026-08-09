@@ -6,20 +6,20 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `Houston64.exe` | 25129 | 31.39% | 100% | 0 | 1631 | 0.2% |
 | `StsConnLib64.MT.dll` | 4522 | 8.31% | 100% | 0 | 864 | 19.11% |
-| `WildStar64.exe` | 25069 | 8.23% | 100% | 0 | 3756 | 9.57% |
+| `WildStar64.exe` | 25069 | 8.25% | 100% | 0 | 3760 | 1.99% |
 
 ## Full Function Backlog
 
 | Scope | Functions | Named | Selected | Unselected | Selected % |
 | --- | --- | --- | --- | --- | --- |
-| Default targets | 54720 | 10328 | 6251 | 48469 | 11.42% |
+| Default targets | 54720 | 10332 | 6255 | 48465 | 11.43% |
 
 ## Opcode Coverage
 
 | Direction | Total | Implemented | Partial | Missing |
 | --- | --- | --- | --- | --- |
-| Client | 353 | 353 | 0 | 0 |
-| Server | 703 | 702 | 1 | 0 |
+| Client | 356 | 355 | 1 | 0 |
+| Server | 713 | 712 | 1 | 0 |
 | Core | 3 | 3 | 0 | 0 |
 
 ## Queue: Client Opcodes Missing Models
@@ -28,7 +28,9 @@ None.
 
 ## Queue: Client Opcodes Missing Handlers
 
-None.
+| Opcode | Hex | Model | Comment |
+| --- | --- | --- | --- |
+| `ClientRewardTrackClaimRewardPoint` | 0x07CE | `ClientRewardTrackClaimRewardPoint` |  |
 
 ## Queue: Server Opcodes Missing Models
 

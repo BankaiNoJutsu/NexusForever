@@ -19,6 +19,58 @@ status: `FULL_DECOMPILE_PASS_STATUS.md`.
 The selected C exports are biased toward protocol/data anchors, so they are a
 starting point rather than a complete native source reconstruction.
 
+## Achievement-state prerequisite value semantics
+
+Build `16042` Tea Time prerequisite `37093` is an `AchievementState` check for
+achievement `5881` with comparison `Equal` and value `0`. The native
+`PrerequisiteManager_EvaluateTypeSlot` dispatcher at `1404a2100`, case `7`,
+forwards the comparison, configured value, and achievement object ID to the
+manager vtable handler (`+0x428`). The configured value is therefore part of
+the check; treating `Equal` as an unconditional "achievement is completed"
+test inverts this interaction.
+
+NexusForever now compares the character's completed state as `0` or `1`
+against the row value for `Equal` and `NotEqual`, and fails closed on values
+outside that state domain. Focused positive and negative tests cover both
+state values plus an unsupported-value rejection. This is enough to restore
+the Tea Cup's pre-completion availability boundary, but it does not prove live
+client interaction presentation, persistence/relogin behavior, or notification
+semantics for zero-point achievement `5881`.
+
+## Public-event `ScriptWithoutMax` counter semantics
+
+Build `16042` identifies public-event objective type `0x19` / decimal `25` as
+`ScriptWithoutMax`. The client presentation functions establish a narrow,
+repeatable boundary:
+
+- `Lua_PublicEventObjective_GetRequiredCount` at `14068ef30` returns `0` when
+  the objective type is `0x19`.
+- `Lua_PublicEventObjective_ShouldShowRequiredCount` at `1406908b0` returns
+  false for types `0x18`, `0x19`, and `0x1f`.
+- `Lua_PublicEventObjective_GetCount` at `14068e110` does not special-case
+  `0x19`; it reaches the raw current-count getter at vtable slot `+0x98`
+  instead of converting the value to a timer or percentage.
+- `PublicEventObjectiveUpdate_ApplyParsedPayload` at `1405f3520` applies the
+  server objective payload through the live object's `+0x1b0` method before
+  dispatching `PublicEventObjectiveUpdate`. The client therefore consumes the
+  server-authored objective status; it does not infer success from the hidden
+  required count.
+
+The build-`16042` table contains 136 type-`25` rows. Most are ongoing counters
+with count `0`, including `Captured Nodes`, `Your Progress`, and
+`Current Scoring`, which is consistent with a raw counter whose terminal state
+is owned by the surrounding event controller. NexusForever now preserves count
+updates for this type without auto-succeeding at `PublicEventObjective.Count`.
+A focused regression uses Ultimate Protogames objective `2901`, `Kill one more
+jabbit` / `Another Jabbit`: its table count is `1`, but repeated positive and
+negative updates remain active while the raw count accumulates or clamps at
+zero.
+
+This does not map the controller that eventually terminates objective `2901`
+or the Pest Control room. Activation, qualifying Jabbit kills, score deltas,
+room completion, cleanup, and client smoke remain blocked pending live or
+additional controller-decompile evidence.
+
 ## High-Value Anchors
 
 ### STS auth and transaction flow
@@ -26170,3 +26222,157 @@ VectorSlide and hazard-family implementation pass (2026-07-14):
   runtime no longer reuses the XP-level span or mutates persistent prestige.
   Direct proof of the prestige curve, rounding, and elder/max-level conversion
   is required before this family can move beyond diagnostic-only handling.
+
+F-025 live entity-update lifecycle correction (2026-07-28):
+
+- **Target question**: Why did the WildStar 16042 client reject regular entity
+  stat updates during character selection and two movement-command envelopes
+  during the Rider's Reef hoverboard transition, while accepting the same
+  packet families elsewhere in the session?
+- **Live witness**: `.nexusforever-runtime/logs/NexusForever.WorldServer.stdout.log`
+  lines `3098`-`3103` show `ClientCharacterSelect` immediately followed by
+  `ServerEntityStatUpdateInteger` (`0x0938`) and two
+  `ServerEntityStatUpdateFloat` (`0x0935`) self-deliveries. Client log
+  `I:\WildStar\Logs\WildStar64_16042_DAN_260728_215146.txt` records matching
+  invalid/foreign ids `2360` at `21:54:16` and `2357` twice at
+  `21:54:17`-`21:54:18`. After `ClientEnteredWorld` and
+  `ServerPlayerEnteredWorld`, server-log lines `5597`-`5615` contain ten
+  `0x0938` updates without a matching client rejection. `Player.IsLoading`
+  remains true until `Player.OnEnteredWorld`, so the defect is lifecycle
+  ordering rather than a packet-shape mismatch.
+- **Native stat shape**: `Network_RegisterServerOpcode_0351` registers
+  `0x0935` to `ServerEntityStatUInt32UInt5Float_ReadPayload` (`1400975b0`);
+  the cached fragment reads `uint32`, `5` bits, then `float32`, matching the
+  current C# model. Existing `0x0938` reader
+  `ServerEntityStatUInt32UInt5UInt32_ReadPayload` (`140097620`) likewise
+  matches the runtime packet. The direct pre-world self-delivery was introduced
+  by local commit `c0d12c91bd0b`, so `WorldEntity.EnqueueToVisible` now routes
+  an owning-player self packet only after `IsLoading` is false. Observer
+  delivery and entered-world self delivery are unchanged.
+- **Live movement witness**: server-log lines `7763`, `7802`, and `7812` show
+  three `ServerEntityCommand` (`0x0638`) sends around spell `85562`, movement
+  control, vehicle state, client entity selection, and the scale transition.
+  The client accepted the server-controlled transition at `7763` and logged
+  exactly two invalid/foreign id `1592` failures at `21:54:24`, matching the
+  special client-controlled scale start/finalise self-deliveries at `7802` and
+  `7812`. Commit `f4031f7de39f4` had added that special self route; the upstream
+  `origin/game_rework` behavior broadcasts client-controlled commands to
+  observers without reflecting them to the owning client.
+- **Native movement shape and boundary**: the `0x0638` registration binds
+  `ServerEntityCommand_GetBitSize` (`1400b00a0`),
+  `ServerEntityCommand_WritePayload` (`1400b0140`), and
+  `ServerEntityCommand_ReadPayload` (`1400b03a0`). Their fixed
+  GUID/time/control/count fields and repeated 5-bit command-id payload layout
+  match `ServerEntityCommand`. No opcode-specific client apply owner was proved,
+  so this pass does not invent command semantics. It only removes the
+  contradicted client-controlled scale self-delivery; scale still applies
+  server-side and broadcasts to observers, while server-controlled commands
+  still include self.
+- **Verification and retained blocker**: isolated-output focused coverage for
+  `WorldEntityVitalPacketTests|MovementManagerTests` passed `20/20`, including
+  loading versus entered-world stat delivery and client- versus
+  server-controlled movement delivery. The live pass stopped before travel to
+  Q3741 after exposing these F-025 lifecycle defects, so Q3741 remains
+  `client_smoke` blocked. Its crate UI, Durek dialog, fixed-reward inventory
+  persistence, achievement UI, end-to-end flow, exact respawn timing, and
+  mapped coordinate `2634068` density remain unverified.
+- **Post-repair live check**: the restarted WorldServer PID `34272` loaded
+  default-output `NexusForever.Game.dll` SHA-256
+  `D17DCE2C466F5E1C40BAE4D10394B60F1622E24C2C3B6F0507D89129544D766F`,
+  identical to the isolated validated build. In
+  `.nexusforever-runtime/logs/NexusForever.WorldServer.mysql.stdout.log`,
+  character-select lines `3173`-`3176` and `11339`-`11342` retain the internal
+  stat-update notifications but send no `0x0935`/`0x0938` packets before
+  `ServerPlayerEnteredWorld`. Two later tutorial vehicle transitions at
+  lines `48541`/`48548` and `56050`/`56057` send only the valid movement
+  envelopes and receive `ClientMovementControlAck`. Client log
+  `WildStar64_16042_DAN_260728_220848.txt` records world `426`, world `51`, and
+  both transitions without any invalid/foreign or malformed packet entry. This
+  closes the observed F-025 lifecycle regression, but not the unexecuted Q3741
+  interaction and completion cases.
+
+F-003 server-output coverage count reconciliation (2026-07-28):
+
+- **Target question**: Does the older `702`/`703` server-opcode status indicate
+  an unmodeled output packet, or only stale reporting?
+- **Current-checkout evidence**: `Get-DecompCoverageSnapshot.ps1` regenerated
+  `coverage/LATEST_COVERAGE_SUMMARY.md`,
+  `coverage/opcode_coverage_inventory.csv`, and
+  `logs/LATEST_COVERAGE_SUMMARY.json` from the current enum and packet models.
+  The result is `713` server opcodes total, `713` modeled, `712` named models,
+  one placeholder model, and zero enum-only/missing server models. The complete
+  opcode inventory is `1,072`: `356` client, `713` server, and `3` core.
+- **Disposition**: the old count was a reporting mix-up and is now rejected as
+  current state. `702` was the earlier named-model count while `703` included
+  `Server0x0015`; the current checkout has ten additional server enum/model
+  entries, so its correct split is `713 = 712 named + 1 placeholder`. No runtime
+  emitter or packet model was missing, and no production behavior changed.
+- **Retained evidence boundary**: `Server0x0015` remains the only server
+  placeholder. Its shared `ServerUInt5UInt32_ReadPayload` (`140081f00`) shape
+  still does not prove an opcode-specific apply owner, producer, semantic field
+  names, or timing. It remains neutral and non-emitted.
+- **Regression guard**:
+  `test_current_server_opcode_total_distinguishes_named_and_placeholder_models`
+  runs the coverage generator against the current source and pins `713`
+  modeled, `712` named, one placeholder, zero missing, and
+  `Server0x0015` as the sole server placeholder.
+
+F-001 refreshed STS export and live password-path verification (2026-07-28):
+
+- **Target question**: What exact STS route order does the current WildStar
+  16042 password login use, and does a fresh full `StsConnLib64.MT.dll` cache
+  now prove enough optional token/RSA server behavior to implement the four
+  missing auth routes safely?
+- **Fresh export**:
+  `Test-DecompileManifest.ps1 -Targets StsConnLib64.MT.dll -FailOnMismatch`
+  passes with `864/864` selected fragments reused, zero fragments decompiled,
+  `4,522` canonical cached functions, and zero uncached functions. This
+  supersedes the 2026-06-17 `label-fingerprint-mismatch` blocker.
+- **Observed supported route order**: live STS log
+  `Source/NexusForever.StsServer/bin/Debug/net10.0/logs/NexusForever.StsServer_20260728_19736.log`
+  records `/Auth/LoginStart` at `20:37:48`, then `/Auth/KeyData`,
+  `/Auth/LoginFinish`, `/GameAccount/ListMyAccounts`,
+  `/Auth/RequestGameToken`, and `/Auth/PageVerifiedIps` by `20:37:52`.
+  Every request is immediately followed by `200 OK`. `/Sts/Connect` occurred
+  earlier at `20:32:33`, with periodic `/Sts/Ping` before and after login.
+  The log contains no `/Auth/LoginTokenStart`, `/Auth/TokenKeyData`,
+  `/Auth/RequestToken`, or `/Auth/AssociateMyExternalAccount` request.
+- **Refreshed optional-route map**:
+  `StsConn_SendLoginTokenStart` (`180003d70`) sends transaction `0x61` with
+  binary `ClientRand`; `StsConn_SendTokenKeyData` (`18000a730`) reads binary
+  `ServerRand`, `ServerPublicKey`, and `ServerSignature`, then sends
+  transaction `0x3b` with binary `PremasterSecret`, binary `AuthnToken`,
+  optional `AuthProviderCode`, and `AppId`.
+  `StsConn_SendRequestToken` (`180004c40`) writes `UserId` and `AppId`;
+  `StsConn_SendAssociateMyExternalAccount` (`1800067d0`) writes `UserId`,
+  `AuthProviderCode`, `AuthnToken`, and `AppId`; and
+  `StsConn_OnAuthnTokenResponse` (`180008230`) reads `AuthnToken`.
+- **Six-input validation boundary**: the
+  `TraceFunctionCallers.java 180012de0 16` call window at `18000a8ef`-
+  `18000a917` proves `StsConn_ValidateTokenServerKeyMaterial`
+  (`180012de0`) receives `ServerRand`, `ServerPublicKey`, and
+  `ServerSignature` as three length/buffer pairs. The function passes the
+  first pair unchanged to `StsCrypt_CreateRsaClient` (`180037cb0`), applies
+  the resulting `CKeyRsa` object's first virtual operation to
+  `ServerSignature`, hashes `ServerPublicKey` through the MD5-initialization
+  constants at `18003a670`, and compares exactly 16 bytes. Durable labels now
+  name `StsCrypt_InitialiseRsaClientFromKeyMaterial` (`180037c30`) and
+  `StsCrypt_ComputeMd5` (`18003a670`).
+- **Source boundary**: current managed models/handlers still intentionally
+  implement the password/SRP, login-finish, game-token, verified-IP,
+  game-account, user-info, and presence compatibility paths only. No server
+  model or handler exists for the four optional routes above.
+- **Verification**: isolated-output
+  `StsSessionStateTests|StsResponseSerializationTests` passed `9/9`, including
+  the positive matching-state case, negative mismatched-state case,
+  compatibility `SessionState.None` case, invalid-proof reset, logout/reset,
+  and empty verified-IP response shape.
+- **Disposition**: the supported password path is **Verified for current local
+  compatibility**. The optional token/RSA branch remains **Mapped only /
+  Blocked**. Exact CKeyRsa key encoding, RSA operation/padding direction,
+  server private-key construction, premaster processing, `TokenKeyData` reply
+  grammar, optional startup trigger/order, and the post-token
+  encryption/session transition still require native method/format mapping
+  plus an accepted optional-route STS capture. Do not synthesize handlers from
+  the client request fields alone, and do not treat absence from this one
+  password-path capture as proof that retail never uses the optional branch.

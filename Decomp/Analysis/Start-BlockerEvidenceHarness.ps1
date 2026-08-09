@@ -591,7 +591,7 @@ entity ids, spell ids, packet names, and rejection reasons where applicable.
 "@
 $serverLogTemplate | Set-Content -Path (Join-Path $bundleDirectory 'server-log-notes.md') -Encoding UTF8
 
-$clientTemplate = @"
+$clientTemplate = @'
 # Client Observations
 
 Attach screenshots in `screenshots/` and video in `video/`. Reference file names
@@ -600,7 +600,7 @@ from the table below.
 | Time | Client/account | World/coordinates | UI or world result | Screenshot/video |
 | --- | --- | --- | --- | --- |
 | | | | | |
-"@
+'@
 $clientTemplate | Set-Content -Path (Join-Path $bundleDirectory 'client-observations.md') -Encoding UTF8
 
 $negativeCaseText = @"
@@ -1470,11 +1470,14 @@ $clientLogRoot = Resolve-ClientLogRoot -Path $ClientDirectory
 $tailScript = @"
 `$RepoRoot = '$RepoRoot'
 `$ClientLogRoot = '$clientLogRoot'
-Get-Content -Wait -Tail 200 (Join-Path `$RepoRoot '.nexusforever-runtime\logs\NexusForever_World.stdout.log')
+`$RuntimeWorldLog = Get-ChildItem -Path (Join-Path `$RepoRoot '.nexusforever-runtime\logs') -Filter 'NexusForever.WorldServer*.stdout.log' -File -ErrorAction SilentlyContinue |
+    Sort-Object LastWriteTimeUtc -Descending |
+    Select-Object -First 1
+if (`$RuntimeWorldLog) { Get-Content -Wait -Tail 200 -LiteralPath `$RuntimeWorldLog.FullName }
 # Additional useful tails:
 # Get-Content -Wait -Tail 200 (Join-Path `$RepoRoot 'Source\NexusForever.WorldServer\bin\Debug\net10.0\logs\NexusForever.WorldServer_*.log')
-# Get-Content -Wait -Tail 200 (Join-Path `$RepoRoot '.nexusforever-runtime\logs\NexusForever_Group.stdout.log')
-# Get-Content -Wait -Tail 200 (Join-Path `$RepoRoot '.nexusforever-runtime\logs\NexusForever_Friendship.stdout.log')
+# Get-Content -Wait -Tail 200 (Join-Path `$RepoRoot '.nexusforever-runtime\logs\NexusForever.Server.GroupServer.stdout.log')
+# Get-Content -Wait -Tail 200 (Join-Path `$RepoRoot '.nexusforever-runtime\logs\NexusForever.Server.Friendship.stdout.log')
 # if (![string]::IsNullOrWhiteSpace(`$ClientLogRoot)) { Get-Content -Wait -Tail 200 (Join-Path `$ClientLogRoot 'Logs\*.txt') }
 # if (![string]::IsNullOrWhiteSpace(`$ClientLogRoot)) { Get-Content -Wait -Tail 200 (Join-Path `$ClientLogRoot 'Errors\WildStar64*.log') }
 "@
@@ -1490,24 +1493,35 @@ param(
 `$logsDirectory = Join-Path `$BundleDirectory 'logs'
 New-Item -ItemType Directory -Force -Path `$logsDirectory | Out-Null
 `$ClientLogRoot = '$clientLogRoot'
+`$EvidenceStartedAtUtc = [DateTimeOffset]::Parse('$($manifest.createdAt)').UtcDateTime
+`$EvidenceWindowStartUtc = `$EvidenceStartedAtUtc.AddMinutes(-1)
+`$runtimeLogRoot = Join-Path `$RepoRoot '.nexusforever-runtime\logs'
 
-`$logPatterns = @(
-    '.nexusforever-runtime\logs\NexusForever_World.stdout.log',
-    '.nexusforever-runtime\logs\NexusForever_Group.stdout.log',
-    '.nexusforever-runtime\logs\NexusForever_Friendship.stdout.log',
-    'Source\NexusForever.WorldServer\bin\Debug\net10.0\logs\NexusForever.WorldServer_*.log'
+`$runtimeLogPatterns = @(
+    'NexusForever.WorldServer*.stdout.log',
+    'NexusForever.Server.GroupServer*.stdout.log',
+    'NexusForever.Server.Friendship*.stdout.log'
 )
 
-foreach (`$pattern in `$logPatterns) {
-    Get-ChildItem -Path (Join-Path `$RepoRoot `$pattern) -ErrorAction SilentlyContinue |
+foreach (`$pattern in `$runtimeLogPatterns) {
+    Get-ChildItem -Path `$runtimeLogRoot -Filter `$pattern -File -ErrorAction SilentlyContinue |
+        Where-Object { `$_.CreationTimeUtc -ge `$EvidenceWindowStartUtc -or `$_.LastWriteTimeUtc -ge `$EvidenceWindowStartUtc } |
         ForEach-Object {
             Copy-Item -LiteralPath `$_.FullName -Destination (Join-Path `$logsDirectory `$_.Name) -Force
         }
 }
 
+`$worldServerLog = Get-ChildItem -Path (Join-Path `$RepoRoot 'Source\NexusForever.WorldServer\bin\Debug\net10.0\logs') -Filter 'NexusForever.WorldServer_*.log' -File -ErrorAction SilentlyContinue |
+    Sort-Object LastWriteTimeUtc -Descending |
+    Select-Object -First 1
+if (`$worldServerLog) {
+    Copy-Item -LiteralPath `$worldServerLog.FullName -Destination (Join-Path `$logsDirectory `$worldServerLog.Name) -Force
+}
+
 if (![string]::IsNullOrWhiteSpace(`$ClientLogRoot)) {
-    foreach (`$pattern in @('Logs\*.txt', 'Errors\WildStar64*.log')) {
+    foreach (`$pattern in @('Logs\*.txt', 'Errors\WildStar64*.log', 'Errors\WildStar64*.txt')) {
         Get-ChildItem -Path (Join-Path `$ClientLogRoot `$pattern) -ErrorAction SilentlyContinue |
+            Where-Object { `$_.CreationTimeUtc -ge `$EvidenceWindowStartUtc -or `$_.LastWriteTimeUtc -ge `$EvidenceWindowStartUtc } |
             ForEach-Object {
                 Copy-Item -LiteralPath `$_.FullName -Destination (Join-Path `$logsDirectory `$_.Name) -Force
             }
@@ -1539,10 +1553,10 @@ if ($CreateBundleOnly) {
 
 Write-Host ''
 Write-Host 'Evidence log tails (run in separate terminals):' -ForegroundColor Yellow
-Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $RepoRoot '.nexusforever-runtime\logs\NexusForever_World.stdout.log')"
+Write-Host "  Get-Content -Wait -Tail 200 ((Get-ChildItem -Path '$(Join-Path $RepoRoot '.nexusforever-runtime\logs')' -Filter 'NexusForever.WorldServer*.stdout.log' -File | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1).FullName)"
 Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $RepoRoot 'Source\NexusForever.WorldServer\bin\Debug\net10.0\logs\NexusForever.WorldServer_*.log')"
-Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $RepoRoot '.nexusforever-runtime\logs\NexusForever_Group.stdout.log')"
-Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $RepoRoot '.nexusforever-runtime\logs\NexusForever_Friendship.stdout.log')"
+Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $RepoRoot '.nexusforever-runtime\logs\NexusForever.Server.GroupServer.stdout.log')"
+Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $RepoRoot '.nexusforever-runtime\logs\NexusForever.Server.Friendship.stdout.log')"
 if (![string]::IsNullOrWhiteSpace($clientLogRoot)) {
     Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $clientLogRoot 'Logs\*.txt')"
     Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $clientLogRoot 'Errors\WildStar64*.log')"

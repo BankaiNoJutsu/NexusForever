@@ -207,7 +207,7 @@ public class Q{quest_id}QuestScript : IQuestScript
             self.assertIn("item-started no-objective turn-in path", by_quest[3783]["blocker_summary"])
             self.assertEqual("generic_with_script", by_quest[3741]["bucket"])
             self.assertEqual(
-                "runtime_q3741_supply_crate_spawn_and_credit_script_tested_pending_client_smoke",
+                "runtime_q3741_full_server_lifecycle_rewards_persistence_staging_and_achievement_tested_pending_client_smoke",
                 by_quest[3741]["evidence_status"],
             )
             self.assertIn("Q3741ScatteredSupplies", by_quest[3741]["evidence_sources"])
@@ -986,6 +986,7 @@ public class HallOfTheHundredMapScript
             (event_script, "2676", ""): "runtime_up_destruct_o_derby_tank_room_phase_activation_jabbithole_placements_and_dynamic_max_tested",
             (event_script, "2868", "12671"): "runtime_up_tank_room_phase_activation_and_jabbithole_placements_tested",
             (event_script, "2869", "12671"): "runtime_up_tank_room_phase_activation_and_jabbithole_placements_tested",
+            (event_script, "2870", ""): "runtime_up_redemption_value_distinct_tank_half_health_and_precompletion_death_gate_tested_pending_route_and_client_smoke",
             (event_script, "2872", "12671"): "runtime_up_tank_room_phase_activation_jabbithole_placements_and_dynamic_max_tested",
             (entity_script, "2676", ""): "runtime_up_destruct_o_derby_tank_room_death_credit_tested",
             (entity_script, "2868", "12671"): "runtime_up_tank_trample_jabbithole_placements_and_death_credit_tested",
@@ -998,7 +999,7 @@ public class HallOfTheHundredMapScript
                 producer = audit.SCRIPT_OBJECTIVE_PRODUCER_OVERRIDES[key]
                 self.assertEqual(evidence_status, producer["evidence_status"])
 
-        self.assertIn("tank-room objectives 2676/2868/2869/2872 activation, Jabbithole placement spawns, WIP handoff, all-three dynamic max count-3 initialization, and death credit", audit.SCRIPTED_INSTANCE_BLOCKERS[2980])
+        self.assertIn("tank-room objectives 2676/2868/2869/2872 plus Redemption Value objective 2870 and no-death objective 2871 activation, Jabbithole placement spawns, WIP handoff, all-three dynamic max count-3 initialization, distinct-tank half-health tracking and pre-completion tank-death gating, player-death gating, aggregate-success credit, and tank death credit", audit.SCRIPTED_INSTANCE_BLOCKERS[2980])
         self.assertNotIn("tank-room all-three timed cleanup objective 2872", audit.SCRIPTED_INSTANCE_BLOCKERS[2980])
 
     def test_ultimate_protogames_gilded_fowl_overrides_track_paired_death_credit(self) -> None:
@@ -2331,7 +2332,7 @@ public class HallOfTheHundredMapScript
                 4657,
                 "12528",
                 "594;4657;12528;68949;41759;28416;8024837;1100300086;36776;1322;24",
-                "runtime_up_deputy_phase_activation_datamapping_placement_and_death_credit_tested_pending_room_density_pathing_and_client_smoke",
+                "runtime_up_deputy_phase_activation_datamapping_placement_death_credit_and_exact_objective_boundary_tested_pending_room_density_pathing_and_client_smoke",
                 "KillTargetGroup object 12528, count 1",
                 "Creature2 68949 Deputy",
             ),
@@ -2353,6 +2354,10 @@ public class HallOfTheHundredMapScript
                     self.assertIn("UltimateProtogamesEventScript.cs", dependency["script_path"])
                 self.assertEqual(owner_ids, dependency["script_owner_ids"])
                 self.assertEqual(status, dependency["evidence_status"])
+                if objective_id == 4657:
+                    self.assertIn("flags 1540", dependency["blocker_summary"])
+                    self.assertIn("implemented, test-backed producer", dependency["blocker_summary"])
+                    self.assertIn("full dungeon client smoke", dependency["blocker_summary"])
 
                 producer = audit.SCRIPT_OBJECTIVE_PRODUCER_OVERRIDES[
                     (
@@ -2467,6 +2472,18 @@ public class HallOfTheHundredMapScript
         self.assertIn("script-owned entity 1100300086", deputy_event_producer["blocker_summary"])
         self.assertIn("Deputy density/pathing", deputy_event_producer["blocker_summary"])
 
+        deputy_entity_producer = audit.SCRIPT_OBJECTIVE_PRODUCER_OVERRIDES[
+            (
+                r"Source\NexusForever.Script.Instance\Dungeon\UltimateProtogames\Script\UltimateProtogamesObjectiveEntityScripts.cs",
+                "4657",
+                "12528",
+            )
+        ]
+        self.assertIn("PublicEventObjectiveTests.cs", deputy_entity_producer["evidence_sources"])
+        self.assertIn("flags 1540", deputy_entity_producer["blocker_summary"])
+        self.assertIn("wrong objective type", deputy_entity_producer["blocker_summary"])
+        self.assertIn("multi-objective finalisation", deputy_entity_producer["blocker_summary"])
+
     def test_ultimate_protogames_misplaced_mammoth_overrides_track_placement_activation_and_death_credit(self) -> None:
         dependency = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4692)]
         self.assertIn("UltimateProtogamesEventScript.cs", dependency["script_path"])
@@ -2577,9 +2594,21 @@ public class HallOfTheHundredMapScript
         self.assertIn("6845485", alarm_dependency["script_owner_ids"])
         self.assertIn("1100300084", alarm_dependency["script_owner_ids"])
         self.assertEqual(
-            "runtime_up_sneaky_prison_alarm_panel_phase_activation_jabbithole_placements_and_credit_tested_pending_alarm_timer_client_smoke",
+            "runtime_up_sneaky_prison_alarm_panel_phase_activation_jabbithole_placements_credit_and_exact_objective_boundary_tested_pending_alarm_state_client_smoke",
             alarm_dependency["evidence_status"],
         )
+        self.assertIn("flags 512", alarm_dependency["blocker_summary"])
+        self.assertIn("TargetGroup 12478", alarm_dependency["blocker_summary"])
+        self.assertIn("WorldLocation2 41759", alarm_dependency["blocker_summary"])
+        self.assertIn("Jabbithole creature row 30477", alarm_dependency["blocker_summary"])
+        self.assertIn("source coordinates 6494141, 6494142, and 6845485", alarm_dependency["blocker_summary"])
+        self.assertIn("script-owned entities 1100300082, 1100300083, and 1100300084", alarm_dependency["blocker_summary"])
+        self.assertIn("pre-activation credit is ignored", alarm_dependency["blocker_summary"])
+        self.assertIn("wrong type and wrong object routes are rejected", alarm_dependency["blocker_summary"])
+        self.assertIn("matching panel credit succeeds once", alarm_dependency["blocker_summary"])
+        self.assertIn("not blocked on a missing activate entity", alarm_dependency["blocker_summary"])
+        self.assertIn("five-second disable window", alarm_dependency["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", alarm_dependency["evidence_sources"])
 
         gate_activation = audit.SCRIPT_OBJECTIVE_PRODUCER_OVERRIDES[
             (
@@ -4446,6 +4475,9 @@ public class HallOfTheHundredMapScript
         for objective_id in audit.ULTIMATE_PROTOGAMES_RESIDUAL_BLOCKED_OBJECTIVE_IDS:
             override = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, objective_id)]
             self.assertIn("UltimateProtogamesEventScript.cs", override["script_path"])
+            if objective_id in {2669, 2670, 2671, 2672, 2673, 2674, 2677, 2679, 2700, 2857, 2858, 2860, 2861, 2867, 2870, 2871, 2873, 2878, 2879, 2880, 2882, 2883, 2884, 2885, 2886, 2887, 2888, 2889, 2890, 2891, 2892, 2897, 2898, 2899, 2901, 2921, 2922, 2923, 2924, 2925, 2927, 2928, 2929, 2930, 2947, 2951, 2952, 2953, 2954, 2955, 2956, 2957, 3148, 3149, 3150, 3151, 3152, 3198, 3199, 3200, 3205, 3207, 3208, 3209, 3271, 3272, 3273, 3274, 3275, 3276, 3277, 3278, 3279, 3280, 3281, 4351, 4352, 4353, 4524, 4535, 4541, 4649, 4659, 4660, 4661, 4662, 4737, 4738, 4739, 4740, 4741, 4742, 5182}:
+                continue
+
             self.assertEqual(f"594;{objective_id}", override["script_owner_ids"])
             self.assertEqual(
                 "mapped_ultimate_protogames_residual_objective_blocked_missing_room_specific_mechanics_client_smoke",
@@ -4454,8 +4486,5164 @@ public class HallOfTheHundredMapScript
             self.assertIn("room-specific", override["blocker_summary"])
             self.assertIn("full dungeon client smoke", override["blocker_summary"])
 
+        complete_proto_plunge = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2669)]
+        self.assertEqual("594;2669;2860;2861;2862;2883;2897;4442", complete_proto_plunge["script_owner_ids"])
+        self.assertEqual(
+            "mapped_up_complete_proto_plunge_timed_win_blocked_missing_bounce_score_and_aggregate_completion_producers",
+            complete_proto_plunge["evidence_status"],
+        )
+        self.assertIn("TimedWin row", complete_proto_plunge["blocker_summary"])
+        self.assertIn("failureTimeMs 180000", complete_proto_plunge["blocker_summary"])
+        self.assertIn("WorldLocation2 46473", complete_proto_plunge["blocker_summary"])
+        self.assertIn("cubig/cuboar bounce", complete_proto_plunge["blocker_summary"])
+        self.assertIn("30-consecutive-plunge objective 2860", complete_proto_plunge["blocker_summary"])
+        self.assertIn("water-failure script objective 2897", complete_proto_plunge["blocker_summary"])
+        self.assertIn("activates only 2862 and 4442", complete_proto_plunge["blocker_summary"])
+        self.assertIn("neither the client table nor current script proves", complete_proto_plunge["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", complete_proto_plunge["blocker_summary"])
+        self.assertIn("Source/NexusForever.Game/PublicEvent/PublicEventObjective.cs", complete_proto_plunge["evidence_sources"])
+
+        survive_blitzsquirg = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2670)]
+        self.assertEqual("594;2670;5873;61992;62011;62371", survive_blitzsquirg["script_owner_ids"])
+        self.assertEqual(
+            "mapped_up_survive_blitzsquirg_resource_pool_blocked_missing_wave_survival_and_pool_delta_producers",
+            survive_blitzsquirg["evidence_status"],
+        )
+        self.assertIn("ResourcePool row", survive_blitzsquirg["blocker_summary"])
+        self.assertIn("count 6", survive_blitzsquirg["blocker_summary"])
+        self.assertIn("WorldLocation2 41755", survive_blitzsquirg["blocker_summary"])
+        self.assertIn("world 2980 / area 4337", survive_blitzsquirg["blocker_summary"])
+        self.assertIn("Creature2 62011", survive_blitzsquirg["blocker_summary"])
+        self.assertIn("Creature2 61992", survive_blitzsquirg["blocker_summary"])
+        self.assertIn("Creature2 62371", survive_blitzsquirg["blocker_summary"])
+        self.assertIn("creature_public_event_map.csv has no Squirg relation", survive_blitzsquirg["blocker_summary"])
+        self.assertIn("runtime world database has no entity rows", survive_blitzsquirg["blocker_summary"])
+        self.assertIn("Count 6 with object 0 does not prove", survive_blitzsquirg["blocker_summary"])
+        self.assertIn("Achievement 5873", survive_blitzsquirg["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", survive_blitzsquirg["blocker_summary"])
+        self.assertIn("Tools/DataMapping/output/creature_spawn_map.csv", survive_blitzsquirg["evidence_sources"])
+
+        survive_slimy_feast = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2671)]
+        self.assertEqual(
+            "594;2671;3148;3149;3150;3151;3152;5944;61468;61537;61538;61539;61540",
+            survive_slimy_feast["script_owner_ids"],
+        )
+        self.assertEqual(
+            "mapped_up_survive_slimy_feast_script_blocked_missing_feed_buff_purge_boss_and_room_completion_producers",
+            survive_slimy_feast["evidence_status"],
+        )
+        self.assertIn("zero-count, zero-object Script row", survive_slimy_feast["blocker_summary"])
+        self.assertIn("flags 33554432", survive_slimy_feast["blocker_summary"])
+        self.assertIn("WorldLocation2 45907", survive_slimy_feast["blocker_summary"])
+        self.assertIn("objective 3148 for 30 seconds without food", survive_slimy_feast["blocker_summary"])
+        self.assertIn("objective 3149 for 10 food pieces", survive_slimy_feast["blocker_summary"])
+        self.assertIn("objective 3150 for a bomb-triggered purge", survive_slimy_feast["blocker_summary"])
+        self.assertIn("objective 3151 for defeating Slimy Feast", survive_slimy_feast["blocker_summary"])
+        self.assertIn("objective 3152 for holding all three food buffs", survive_slimy_feast["blocker_summary"])
+        self.assertIn("Creature2 61468", survive_slimy_feast["blocker_summary"])
+        self.assertIn("61537/61538/61539/61540", survive_slimy_feast["blocker_summary"])
+        self.assertIn("multiple movement observations", survive_slimy_feast["blocker_summary"])
+        self.assertIn("action-set 0", survive_slimy_feast["blocker_summary"])
+        self.assertIn("runtime world database has no entity rows", survive_slimy_feast["blocker_summary"])
+        self.assertIn("Achievement 5944", survive_slimy_feast["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", survive_slimy_feast["blocker_summary"])
+        self.assertIn("Tools/DataMapping/output/client_source_targetgroup_map.csv", survive_slimy_feast["evidence_sources"])
+
+        pest_control = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2672)]
+        self.assertEqual("594;2672;2901;5929;62595;4561;65794", pest_control["script_owner_ids"])
+        self.assertEqual(
+            "mapped_up_pest_control_timed_win_blocked_missing_jabbit_wave_kill_score_and_room_route_producers",
+            pest_control["evidence_status"],
+        )
+        self.assertIn("zero-count, zero-object TimedWin row", pest_control["blocker_summary"])
+        self.assertIn("failureTimeMs 180000", pest_control["blocker_summary"])
+        self.assertIn("WorldLocation2 41741", pest_control["blocker_summary"])
+        self.assertIn("Objective 2901", pest_control["blocker_summary"])
+        self.assertIn("Creature2 62595", pest_control["blocker_summary"])
+        self.assertIn("73 current-last-seen coordinate observations", pest_control["blocker_summary"])
+        self.assertIn("belongs to no client TargetGroup", pest_control["blocker_summary"])
+        self.assertIn("alternate reviewed Ruffles room", pest_control["blocker_summary"])
+        self.assertIn("about 40 units", pest_control["blocker_summary"])
+        self.assertIn("treating the coordinate observations as simultaneous spawns", pest_control["blocker_summary"])
+        self.assertIn("zero-count active row complete", pest_control["blocker_summary"])
+        self.assertIn("Achievement 5929", pest_control["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", pest_control["blocker_summary"])
+        self.assertIn("Source/NexusForever.Game/PublicEvent/PublicEventObjective.cs", pest_control["evidence_sources"])
+
+        lost_and_found = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2673)]
+        self.assertEqual(
+            "594;2673;2191;62548;28314;41745;4351;2920;2921;2924;2926;2928;2929;2941;4649;4692;5871;5934;5938;62549;62575;62581",
+            lost_and_found["script_owner_ids"],
+        )
+        self.assertEqual(
+            "runtime_up_lost_found_crate_2673_death_credit_tested_pending_random_room_spawn_pool_timer_enemy_and_client_smoke",
+            lost_and_found["evidence_status"],
+        )
+        self.assertIn("ResourcePool row", lost_and_found["blocker_summary"])
+        self.assertIn("count 80", lost_and_found["blocker_summary"])
+        self.assertIn("WorldLocation2 41745", lost_and_found["blocker_summary"])
+        self.assertIn("Creature2 62548", lost_and_found["blocker_summary"])
+        self.assertIn("public-event creature relation 2191", lost_and_found["blocker_summary"])
+        self.assertIn("scored-name bridge", lost_and_found["blocker_summary"])
+        self.assertIn("one objective-2673 delta", lost_and_found["blocker_summary"])
+        self.assertIn("guarded against repeated death callbacks", lost_and_found["blocker_summary"])
+        self.assertIn("This does not activate the objective or spawn crates", lost_and_found["blocker_summary"])
+        self.assertIn("81 current-last-seen crate coordinate observations", lost_and_found["blocker_summary"])
+        self.assertIn("deterministic WIP Misplaced Mammoth/Mondo route", lost_and_found["blocker_summary"])
+        self.assertIn("Achievements 5871, 5934, and 5938", lost_and_found["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", lost_and_found["blocker_summary"])
+        self.assertIn("Source/NexusForever.Game/PublicEvent/PublicEventObjective.cs", lost_and_found["evidence_sources"])
+
+        lost_and_found_producer = audit.SCRIPT_OBJECTIVE_PRODUCER_OVERRIDES[
+            (
+                r"Source\NexusForever.Script.Instance\Dungeon\UltimateProtogames\Script\UltimateProtogamesObjectiveEntityScripts.cs",
+                "2673",
+                "",
+            )
+        ]
+        self.assertEqual(
+            "script_owner_entity_filter_mapped_to_public_event",
+            lost_and_found_producer["owner_link_status"],
+        )
+        self.assertEqual(
+            "runtime_up_lost_found_crate_2673_death_credit_tested_pending_random_room_spawn_pool_timer_enemy_and_client_smoke",
+            lost_and_found_producer["evidence_status"],
+        )
+        self.assertIn("positive update, repeated-death guard, and exact creature filter", lost_and_found_producer["blocker_summary"])
+        self.assertIn("does not activate objective 2673 or spawn crates", lost_and_found_producer["blocker_summary"])
+
+        master_elements = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2674)]
+        self.assertEqual(
+            "runtime_achievement_5894_grant_boundary_tested_objective_2674_mapped_up_blocked_missing_wave_beacon_attunement_pool_and_boss_transition_producers",
+            master_elements["evidence_status"],
+        )
+        self.assertIn("ResourcePool row", master_elements["blocker_summary"])
+        self.assertIn("count 6", master_elements["blocker_summary"])
+        self.assertIn("WorldLocation2 41714", master_elements["blocker_summary"])
+        self.assertIn("Creature2 63319", master_elements["blocker_summary"])
+        self.assertIn("TargetGroup 12878", master_elements["blocker_summary"])
+        self.assertIn("fire/air/water/earth disguise rows", master_elements["blocker_summary"])
+        self.assertIn("beacon and carrier rows", master_elements["blocker_summary"])
+        self.assertIn("carrying it to elementally attuned beacons changes attunement", master_elements["blocker_summary"])
+        self.assertIn("Spells 72013-72016", master_elements["blocker_summary"])
+        self.assertIn("75868/77989 are Elemental Overload states", master_elements["blocker_summary"])
+        self.assertIn("Achievements 5894-5904", master_elements["blocker_summary"])
+        self.assertIn("Elemental Overload fails Atychiphobia", master_elements["blocker_summary"])
+        self.assertIn("100 current movement observations", master_elements["blocker_summary"])
+        self.assertIn("Runtime area 4343 is empty", master_elements["blocker_summary"])
+        self.assertIn("A direct death update is unsafe", master_elements["blocker_summary"])
+        self.assertIn("terminal delta of 6", master_elements["blocker_summary"])
+        self.assertIn("five explicit controller credits remain active", master_elements["blocker_summary"])
+        self.assertIn("the sixth succeeds", master_elements["blocker_summary"])
+        self.assertIn("grants exact achievement 5894", master_elements["blocker_summary"])
+        self.assertIn("failed-2674 rejection", master_elements["blocker_summary"])
+        self.assertIn("successful sibling-2677 rejection", master_elements["blocker_summary"])
+        self.assertIn("Objective 2674 remains a mapped-only producer", master_elements["blocker_summary"])
+        self.assertIn("achievement-5894 handoff is implemented", master_elements["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", master_elements["blocker_summary"])
+        self.assertIn("Tools/DataMapping/output/spell_client_map.csv", master_elements["evidence_sources"])
+        self.assertIn("20797-Patch_03_17_2015.wiki", master_elements["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", master_elements["evidence_sources"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", master_elements["evidence_sources"])
+
+        cosmic_kick = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2677)]
+        self.assertEqual(
+            "mapped_up_cosmic_kick_timed_win_blocked_missing_activation_knockoff_score_resource_pool_and_timeout_completion_producers",
+            cosmic_kick["evidence_status"],
+        )
+        self.assertIn("zero-count, zero-object TimedWin row", cosmic_kick["blocker_summary"])
+        self.assertIn("failureTimeMs 300000", cosmic_kick["blocker_summary"])
+        self.assertIn("WorldLocation2 41756", cosmic_kick["blocker_summary"])
+        self.assertIn("ResourcePool objective 2700", cosmic_kick["blocker_summary"])
+        self.assertIn("meter increases every time a Marauder is kicked", cosmic_kick["blocker_summary"])
+        self.assertIn("Child rows parented to 2677", cosmic_kick["blocker_summary"])
+        self.assertIn("Spell 71680 is Cosmic Kick", cosmic_kick["blocker_summary"])
+        self.assertIn("miss-all detection and combo decrease", cosmic_kick["blocker_summary"])
+        self.assertIn("TargetGroup 10728", cosmic_kick["blocker_summary"])
+        self.assertIn("TargetGroup 10327", cosmic_kick["blocker_summary"])
+        self.assertIn("382 current-last-seen movement observations", cosmic_kick["blocker_summary"])
+        self.assertIn("Achievements 5883-5893", cosmic_kick["blocker_summary"])
+        self.assertIn("before the event starts must not fail Perfect Precision", cosmic_kick["blocker_summary"])
+        self.assertIn("Runtime area 4334 is empty", cosmic_kick["blocker_summary"])
+        self.assertIn("Ordinary death credit would incorrectly count kills", cosmic_kick["blocker_summary"])
+        self.assertIn("complete it immediately", cosmic_kick["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", cosmic_kick["blocker_summary"])
+        self.assertIn("Tools/DataMapping/output/spell_client_map.csv", cosmic_kick["evidence_sources"])
+        self.assertIn("20874-Patch_05_05_2015.wiki", cosmic_kick["evidence_sources"])
+
+        terraformer_jump = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2679)]
+        self.assertEqual(
+            "594;2679;41743;4330;4332;577302;577305;577352;577353",
+            terraformer_jump["script_owner_ids"],
+        )
+        self.assertEqual(
+            "mapped_up_terraformer_jump_internal_script_row_blocked_missing_retail_activation_jump_route_and_completion_producer",
+            terraformer_jump["evidence_status"],
+        )
+        self.assertIn("zero-count, zero-object Script row", terraformer_jump["blocker_summary"])
+        self.assertIn("WorldLocation2 41743", terraformer_jump["blocker_summary"])
+        self.assertIn("w4330 - 018 - Terraformer Jump - Protogames", terraformer_jump["blocker_summary"])
+        self.assertIn("WorldZone 4332", terraformer_jump["blocker_summary"])
+        self.assertIn("Whitevale Terraformer - Bonus Jump Stage", terraformer_jump["blocker_summary"])
+        self.assertIn("No other public-event-594 objective location lies within 2000 units", terraformer_jump["blocker_summary"])
+        self.assertIn("no captured Ultimate Protogames 018 zone", terraformer_jump["blocker_summary"])
+        self.assertIn("public event 299's 11 zone relations", terraformer_jump["blocker_summary"])
+        self.assertIn("no entity rows in candidate area 4332", terraformer_jump["blocker_summary"])
+        self.assertIn("do not prove that the retained client row was deleted", terraformer_jump["blocker_summary"])
+        self.assertIn("potentially internal or unused retail row", terraformer_jump["blocker_summary"])
+        self.assertIn("live packet/log, archived retail witness, or decompile trace", terraformer_jump["blocker_summary"])
+        self.assertIn("Tools/DataMapping/output/world_zone_client_map.csv", terraformer_jump["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_zones.sql", terraformer_jump["evidence_sources"])
+
+        cosmic_kick_pool = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2700)]
+        self.assertEqual(
+            "mapped_up_cosmic_kick_resource_pool_blocked_missing_knockoff_asteroid_delta_weights_bounds_and_completion_producer",
+            cosmic_kick_pool["evidence_status"],
+        )
+        self.assertIn("ResourcePool row", cosmic_kick_pool["blocker_summary"])
+        self.assertIn("flags 16392 (0x4008)", cosmic_kick_pool["blocker_summary"])
+        self.assertIn("count 100", cosmic_kick_pool["blocker_summary"])
+        self.assertIn("WorldLocation2 41756", cosmic_kick_pool["blocker_summary"])
+        self.assertIn("meter increases every time a Marauder is kicked", cosmic_kick_pool["blocker_summary"])
+        self.assertIn("five-minute TimedWin objective 2677", cosmic_kick_pool["blocker_summary"])
+        self.assertIn("3/10/20/40/80 kick and knockoff requirements", cosmic_kick_pool["blocker_summary"])
+        self.assertIn("Spell 71680", cosmic_kick_pool["blocker_summary"])
+        self.assertIn("TargetGroup 10728", cosmic_kick_pool["blocker_summary"])
+        self.assertIn("TargetGroup 10327", cosmic_kick_pool["blocker_summary"])
+        self.assertIn("does not map the flags' high bits", cosmic_kick_pool["blocker_summary"])
+        self.assertIn("whether multi-target kicks award once or per target", cosmic_kick_pool["blocker_summary"])
+        self.assertIn("Updating 2700 from generic death would count non-kick", cosmic_kick_pool["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", cosmic_kick_pool["blocker_summary"])
+        self.assertIn("Source/NexusForever.Game/PublicEvent/PublicEventTeam.cs", cosmic_kick_pool["evidence_sources"])
+
+        prototentiary_no_deaths = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2857)]
+        self.assertEqual(
+            "runtime_up_prototentiary_no_deaths_activation_player_death_gate_and_aggregate_success_credit_tested_pending_route_and_client_smoke",
+            prototentiary_no_deaths["evidence_status"],
+        )
+        self.assertIn("zero-count Script row", prototentiary_no_deaths["blocker_summary"])
+        self.assertIn("flags 4", prototentiary_no_deaths["blocker_summary"])
+        self.assertIn("object 10569", prototentiary_no_deaths["blocker_summary"])
+        self.assertIn("TargetGroup 10569", prototentiary_no_deaths["blocker_summary"])
+        self.assertIn("achievement 5906", prototentiary_no_deaths["blocker_summary"])
+        self.assertIn("dynamic max 1", prototentiary_no_deaths["blocker_summary"])
+        self.assertIn("records player deaths only while that condition is active", prototentiary_no_deaths["blocker_summary"])
+        self.assertIn("ignores non-player deaths", prototentiary_no_deaths["blocker_summary"])
+        self.assertIn("aggregate Warden-plus-cage objective 2678 succeeds", prototentiary_no_deaths["blocker_summary"])
+        self.assertIn("joined-party versus observer semantics", prototentiary_no_deaths["blocker_summary"])
+        self.assertIn("Tools/DataMapping/output/achievement_client_map.csv", prototentiary_no_deaths["evidence_sources"])
+
+        no_deaths_producer = audit.SCRIPT_OBJECTIVE_PRODUCER_OVERRIDES[
+            (
+                r"Source\NexusForever.Script.Instance\Dungeon\UltimateProtogames\UltimateProtogamesEventScript.cs",
+                "2857",
+                "10569",
+            )
+        ]
+        self.assertEqual("script_owner_matches_public_event", no_deaths_producer["owner_link_status"])
+        self.assertEqual(
+            "runtime_up_prototentiary_no_deaths_activation_player_death_gate_and_aggregate_success_credit_tested_pending_route_and_client_smoke",
+            no_deaths_producer["evidence_status"],
+        )
+        self.assertIn("credits it only when aggregate objective 2678 succeeds", no_deaths_producer["blocker_summary"])
+        self.assertIn("player-death suppression", no_deaths_producer["blocker_summary"])
+
+        tank_room_no_deaths_producer = audit.SCRIPT_OBJECTIVE_PRODUCER_OVERRIDES[
+            (
+                r"Source\NexusForever.Script.Instance\Dungeon\UltimateProtogames\UltimateProtogamesEventScript.cs",
+                "2871",
+                "10569",
+            )
+        ]
+        self.assertEqual("script_owner_matches_public_event", tank_room_no_deaths_producer["owner_link_status"])
+        self.assertEqual(
+            "runtime_up_tank_room_no_deaths_activation_player_death_gate_and_going_green_success_credit_tested_pending_route_and_client_smoke",
+            tank_room_no_deaths_producer["evidence_status"],
+        )
+        self.assertIn("aggregate GoingGreen objective 2872 succeeds", tank_room_no_deaths_producer["blocker_summary"])
+        self.assertIn("player-death suppression", tank_room_no_deaths_producer["blocker_summary"])
+        self.assertIn("failure suppression", tank_room_no_deaths_producer["blocker_summary"])
+
+        prototentiary_ghosts = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2858)]
+        self.assertEqual(
+            "mapped_up_prototentiary_ghosts_activate_target_group_blocked_missing_alarm_trigger_signal_and_aggregate_completion_producer",
+            prototentiary_ghosts["evidence_status"],
+        )
+        self.assertIn("zero-count ActivateTargetGroup row", prototentiary_ghosts["blocker_summary"])
+        self.assertIn("flags 2105348 (0x202004)", prototentiary_ghosts["blocker_summary"])
+        self.assertIn("object 10583", prototentiary_ghosts["blocker_summary"])
+        self.assertIn("Achievement 5912", prototentiary_ghosts["blocker_summary"])
+        self.assertIn("achievement 5913", prototentiary_ghosts["blocker_summary"])
+        self.assertIn("Trigger Alarm spells 72111/77007", prototentiary_ghosts["blocker_summary"])
+        self.assertIn("Disable Alarm spells 72192/78045", prototentiary_ghosts["blocker_summary"])
+        self.assertIn("RavelSignal effect type 81", prototentiary_ghosts["blocker_summary"])
+        self.assertIn("22453/23242/28120", prototentiary_ghosts["blocker_summary"])
+        self.assertIn("generic cage-console UpdateObjective path complete Ghosts", prototentiary_ghosts["blocker_summary"])
+        self.assertIn("Objective 2858 therefore remains mapped-only", prototentiary_ghosts["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", prototentiary_ghosts["blocker_summary"])
+        self.assertIn("Tools/DataMapping/output/spell_effect_client_map.csv", prototentiary_ghosts["evidence_sources"])
+        self.assertIn("Source/NexusForever.Game/Spell/SpellEffectHandler.cs", prototentiary_ghosts["evidence_sources"])
+
+        proto_plunges_30 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2860)]
+        self.assertEqual(
+            "mapped_up_proto_plunges_30_resource_pool_blocked_missing_power_plunge_hit_chain_ground_water_reset_and_team_aggregation_producer",
+            proto_plunges_30["evidence_status"],
+        )
+        self.assertIn("ResourcePool row", proto_plunges_30["blocker_summary"])
+        self.assertIn("flags 4, count 30", proto_plunges_30["blocker_summary"])
+        self.assertIn("WorldLocation2 46473", proto_plunges_30["blocker_summary"])
+        self.assertIn("60-creature pool 2861", proto_plunges_30["blocker_summary"])
+        self.assertIn("water hazard row 2897", proto_plunges_30["blocker_summary"])
+        self.assertIn("Achievement 5917", proto_plunges_30["blocker_summary"])
+        self.assertIn("TargetGroup 10404", proto_plunges_30["blocker_summary"])
+        self.assertIn("Blue/Green Spikehorde 62219/62220", proto_plunges_30["blocker_summary"])
+        self.assertIn("Jump Buff 71495", proto_plunges_30["blocker_summary"])
+        self.assertIn("Power Plunge 71497", proto_plunges_30["blocker_summary"])
+        self.assertIn("Kick Miss Signal 72764", proto_plunges_30["blocker_summary"])
+        self.assertIn("how team members share the chain", proto_plunges_30["blocker_summary"])
+        self.assertIn("credits objectives 2862/4442", proto_plunges_30["blocker_summary"])
+        self.assertIn("Generic death credit would count ordinary kills", proto_plunges_30["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", proto_plunges_30["blocker_summary"])
+        self.assertIn("Tools/DataMapping/output/creature_client_metadata_map.csv", proto_plunges_30["evidence_sources"])
+
+        power_plunge_60 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2861)]
+        self.assertEqual(
+            "mapped_up_power_plunge_60_creature_resource_pool_blocked_missing_eligible_spawn_hit_destruction_score_and_team_aggregation_producer",
+            power_plunge_60["evidence_status"],
+        )
+        self.assertIn("ResourcePool row with flags 4, count 60", power_plunge_60["blocker_summary"])
+        self.assertIn("WorldLocation2 46473", power_plunge_60["blocker_summary"])
+        self.assertIn("30-consecutive-plunge pool 2860", power_plunge_60["blocker_summary"])
+        self.assertIn("Achievement 5918, Cubig Carnage", power_plunge_60["blocker_summary"])
+        self.assertIn("successfully Power Plunging 100 creatures", power_plunge_60["blocker_summary"])
+        self.assertIn("why objective 2861 stops at 60", power_plunge_60["blocker_summary"])
+        self.assertIn("TargetGroup 10404", power_plunge_60["blocker_summary"])
+        self.assertIn("Blue/Green Spikehorde 62219/62220", power_plunge_60["blocker_summary"])
+        self.assertIn("Power Plunge 71497", power_plunge_60["blocker_summary"])
+        self.assertIn("whether a target must be destroyed", power_plunge_60["blocker_summary"])
+        self.assertIn("credits objectives 2862/4442", power_plunge_60["blocker_summary"])
+        self.assertIn("Generic death credit would count ordinary kills", power_plunge_60["blocker_summary"])
+        self.assertIn("Objective 2861 therefore remains mapped-only", power_plunge_60["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", power_plunge_60["blocker_summary"])
+        self.assertIn("Tools/DataMapping/output/achievement_client_map.csv", power_plunge_60["evidence_sources"])
+
+        incinerate = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2867)]
+        self.assertEqual(
+            "mapped_up_incinerate_script_challenge_blocked_missing_mode4_ravel_receiver_tank_hit_and_player_failure_producer",
+            incinerate["evidence_status"],
+        )
+        self.assertIn("zero-count Script row with flags 4", incinerate["blocker_summary"])
+        self.assertIn("WorldLocation2 41754", incinerate["blocker_summary"])
+        self.assertIn("area 4336", incinerate["blocker_summary"])
+        self.assertIn("TargetGroup 10633", incinerate["blocker_summary"])
+        self.assertIn("TargetGroup 12671", incinerate["blocker_summary"])
+        self.assertIn("Busted Red Tank 62542", incinerate["blocker_summary"])
+        self.assertIn("Achievement 5866, Expert Incinerator", incinerate["blocker_summary"])
+        self.assertIn("Incinerate proxy/base/field spells 72616/72618/73086", incinerate["blocker_summary"])
+        self.assertIn("On Fire debuff 72628", incinerate["blocker_summary"])
+        self.assertIn("mode 4 with signal ids 23008/23225", incinerate["blocker_summary"])
+        self.assertIn("mode 4 remains diagnostics-only", incinerate["blocker_summary"])
+        self.assertIn("credits only tank-death objectives", incinerate["blocker_summary"])
+        self.assertIn("Crediting 2867 from tank death would be wrong", incinerate["blocker_summary"])
+        self.assertIn("Objective 2867 therefore remains mapped-only", incinerate["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", incinerate["blocker_summary"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundary.cs", incinerate["evidence_sources"])
+
+        redemption_value = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2870)]
+        self.assertEqual(
+            "runtime_up_redemption_value_distinct_tank_half_health_and_precompletion_death_gate_tested_pending_route_and_client_smoke",
+            redemption_value["evidence_status"],
+        )
+        self.assertIn("count-one Script row with flags 2174980", redemption_value["blocker_summary"])
+        self.assertIn("objective row 8158", redemption_value["blocker_summary"])
+        self.assertIn("Achievement 5868", redemption_value["blocker_summary"])
+        self.assertIn("UnitEntity invokes IUnitScript.OnHealthChange after applying the new health and before OnDeath", redemption_value["blocker_summary"])
+        self.assertIn("deduplicates the three reviewed tank entity ids", redemption_value["blocker_summary"])
+        self.assertIn("accepts only alive health values at or below exactly one half", redemption_value["blocker_summary"])
+        self.assertIn("permanently disarms the attempt if a reviewed tank dies first", redemption_value["blocker_summary"])
+        self.assertIn("heal/above-half/lethal/null negative cases", redemption_value["blocker_summary"])
+        self.assertIn("This is a partial implementation", redemption_value["blocker_summary"])
+        self.assertIn("Source/NexusForever.Game/Entity/UnitEntity.cs", redemption_value["evidence_sources"])
+
+        redemption_value_producer = audit.SCRIPT_OBJECTIVE_PRODUCER_OVERRIDES[
+            (
+                r"Source\NexusForever.Script.Instance\Dungeon\UltimateProtogames\UltimateProtogamesEventScript.cs",
+                "2870",
+                "",
+            )
+        ]
+        self.assertEqual("script_owner_matches_public_event", redemption_value_producer["owner_link_status"])
+        self.assertEqual(redemption_value["evidence_status"], redemption_value_producer["evidence_status"])
+        self.assertIn("third distinct qualification emits exactly one Redemption Value credit", redemption_value_producer["blocker_summary"])
+        self.assertIn("tank-death suppression", redemption_value_producer["blocker_summary"])
+
+        tank_room_no_deaths = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2871)]
+        self.assertEqual(
+            "runtime_up_tank_room_no_deaths_activation_player_death_gate_and_going_green_success_credit_tested_pending_route_and_client_smoke",
+            tank_room_no_deaths["evidence_status"],
+        )
+        self.assertIn("zero-count Script row with flags 4", tank_room_no_deaths["blocker_summary"])
+        self.assertIn("WorldLocation2 41754", tank_room_no_deaths["blocker_summary"])
+        self.assertIn("Achievement 5865", tank_room_no_deaths["blocker_summary"])
+        self.assertIn("dynamic max 1", tank_room_no_deaths["blocker_summary"])
+        self.assertIn("records player deaths only while the condition is active", tank_room_no_deaths["blocker_summary"])
+        self.assertIn("ignores non-player deaths", tank_room_no_deaths["blocker_summary"])
+        self.assertIn("disarms on aggregate GoingGreen failure", tank_room_no_deaths["blocker_summary"])
+        self.assertIn("GoingGreen objective 2872 succeeds", tank_room_no_deaths["blocker_summary"])
+        self.assertIn("failed aggregate suppression", tank_room_no_deaths["blocker_summary"])
+        self.assertIn("This is a partial implementation", tank_room_no_deaths["blocker_summary"])
+        self.assertIn("Source/NexusForever.Game.Tests/Instances/UltimateProtogamesEventScriptTests.cs", tank_room_no_deaths["evidence_sources"])
+
+        environmentalist = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2873)]
+        self.assertEqual(
+            "mapped_up_environmentalist_on_fire_party_limit_blocked_missing_mode4_receiver_player_identity_event_scope_and_completion_producer",
+            environmentalist["evidence_status"],
+        )
+        self.assertIn("zero-count Script row with flags 4", environmentalist["blocker_summary"])
+        self.assertIn("WorldLocation2 46323", environmentalist["blocker_summary"])
+        self.assertIn("objective row 8187", environmentalist["blocker_summary"])
+        self.assertIn("Achievement 5870", environmentalist["blocker_summary"])
+        self.assertIn("Spell4Effects row 187592", environmentalist["blocker_summary"])
+        self.assertIn("mode 1 / signal 26936", environmentalist["blocker_summary"])
+        self.assertIn("mode 4 / signal 23030", environmentalist["blocker_summary"])
+        self.assertIn("no Ultimate Protogames player-scoped receiver exists", environmentalist["blocker_summary"])
+        self.assertIn("Mode 4 remains diagnostics-only", environmentalist["blocker_summary"])
+        self.assertIn("same player may be hit repeatedly", environmentalist["blocker_summary"])
+        self.assertIn("Generic damage, aura, or death credit would be wrong", environmentalist["blocker_summary"])
+        self.assertIn("Objective 2873 remains mapped-only", environmentalist["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", environmentalist["blocker_summary"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundary.cs", environmentalist["evidence_sources"])
+
+        butterfingers = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2878)]
+        self.assertEqual(
+            "mapped_up_butterfingers_30_second_fumble_challenge_blocked_missing_mode4_activation_receiver_spell_signal_choreography_and_completion_producer",
+            butterfingers["evidence_status"],
+        )
+        self.assertIn("zero-count TimedWin row with flags 4", butterfingers["blocker_summary"])
+        self.assertIn("failureTimeMs 30000", butterfingers["blocker_summary"])
+        self.assertIn("WorldLocation2 46229", butterfingers["blocker_summary"])
+        self.assertIn("WorldZone 4502 Intern Disposal Facility 74", butterfingers["blocker_summary"])
+        self.assertIn("objective row 8172", butterfingers["blocker_summary"])
+        self.assertIn("achievement row 2074, Butterfingers", butterfingers["blocker_summary"])
+        self.assertIn("Butterfingers 72698", butterfingers["blocker_summary"])
+        self.assertIn("Hut-Hut Fumble 72699", butterfingers["blocker_summary"])
+        self.assertIn("mode 4 / signal 28041", butterfingers["blocker_summary"])
+        self.assertIn("mode 1 / signal 22273", butterfingers["blocker_summary"])
+        self.assertIn("team-member Fumble row 187880 uses mode 5 / signal 22810", butterfingers["blocker_summary"])
+        self.assertIn("Force Fumble rows 188062/193627", butterfingers["blocker_summary"])
+        self.assertIn("modes 4 and 5 remain diagnostics-only", butterfingers["blocker_summary"])
+        self.assertIn("plausible Hut-Hut completion witness", butterfingers["blocker_summary"])
+        self.assertIn("could start the timer before the retail opportunity", butterfingers["blocker_summary"])
+        self.assertIn("boss death credit would be wrong", butterfingers["blocker_summary"])
+        self.assertIn("Objective 2878 remains mapped-only", butterfingers["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", butterfingers["blocker_summary"])
+        self.assertIn("Source/NexusForever.Game/PublicEvent/PublicEventObjective.cs", butterfingers["evidence_sources"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundary.cs", butterfingers["evidence_sources"])
+
+        teamwork = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2879)]
+        self.assertEqual(
+            "mapped_up_teamwork_score_without_fumble_blocked_missing_mode4_challenge_activation_mode5_touchdown_fumble_and_carrier_state_producer",
+            teamwork["evidence_status"],
+        )
+        self.assertIn("zero-count Script row with flags 4", teamwork["blocker_summary"])
+        self.assertIn("WorldLocation2 46229", teamwork["blocker_summary"])
+        self.assertIn("WorldZone 4502 Intern Disposal Facility 74", teamwork["blocker_summary"])
+        self.assertIn("objective row 8221", teamwork["blocker_summary"])
+        self.assertIn("achievement row 2098, Top-notch Teamwork", teamwork["blocker_summary"])
+        self.assertIn("adjacent Script objective 2880", teamwork["blocker_summary"])
+        self.assertIn("ordinary goals and extra points cannot be merged", teamwork["blocker_summary"])
+        self.assertIn("The Forward Pass 71353", teamwork["blocker_summary"])
+        self.assertIn("mode 4 / signal 28042", teamwork["blocker_summary"])
+        self.assertIn("Protostar Intern carrier spell 71425", teamwork["blocker_summary"])
+        self.assertIn("Drop Intern 71891", teamwork["blocker_summary"])
+        self.assertIn("Player Touchdown 71962 row 184595 with mode 5 / signal 22256", teamwork["blocker_summary"])
+        self.assertIn("Hut-Hut versus team-member Fumble spells 72699/72705", teamwork["blocker_summary"])
+        self.assertIn("key Forward Pass activation and Player Touchdown score paths use unsupported modes 4 and 5", teamwork["blocker_summary"])
+        self.assertIn("normal goal rather than an extra point", teamwork["blocker_summary"])
+        self.assertIn("Crediting 2879 from any touchdown, Hut-Hut death, or ball-drop signal would be wrong", teamwork["blocker_summary"])
+        self.assertIn("Objective 2879 remains mapped-only", teamwork["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", teamwork["blocker_summary"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundary.cs", teamwork["evidence_sources"])
+
+        slick_moves = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2880)]
+        self.assertEqual(
+            "mapped_up_slick_moves_extra_point_without_fumble_blocked_missing_extra_point_state_mode5_score_fumble_and_completion_producer",
+            slick_moves["evidence_status"],
+        )
+        self.assertIn("zero-count Script row with flags 4", slick_moves["blocker_summary"])
+        self.assertIn("WorldLocation2 46229", slick_moves["blocker_summary"])
+        self.assertIn("objective row 8169", slick_moves["blocker_summary"])
+        self.assertIn("achievement row 1919, Slick Moves", slick_moves["blocker_summary"])
+        self.assertIn("Adjacent objective 2879 separately covers scoring a normal goal", slick_moves["blocker_summary"])
+        self.assertIn("Moment of Opportunity 71612", slick_moves["blocker_summary"])
+        self.assertIn("Player Touchdown 71962", slick_moves["blocker_summary"])
+        self.assertIn("Boss Touchdown Score 72061", slick_moves["blocker_summary"])
+        self.assertIn("Extra Point Pull to Location 75724", slick_moves["blocker_summary"])
+        self.assertIn("mode 5 with distinct signals 22256/22257", slick_moves["blocker_summary"])
+        self.assertIn("mode 1 / signal 22273", slick_moves["blocker_summary"])
+        self.assertIn("rows 195626/195871 prove a dedicated movement/control spell", slick_moves["blocker_summary"])
+        self.assertIn("when the extra-point opportunity starts", slick_moves["blocker_summary"])
+        self.assertIn("Crediting 2880 from every Player Touchdown", slick_moves["blocker_summary"])
+        self.assertIn("Objective 2880 remains mapped-only", slick_moves["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", slick_moves["blocker_summary"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundary.cs", slick_moves["evidence_sources"])
+
+        shut_out = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2882)]
+        self.assertEqual(
+            "mapped_up_shut_out_no_boss_score_blocked_missing_mode5_boss_touchdown_receiver_failure_state_and_death_success_producer",
+            shut_out["evidence_status"],
+        )
+        self.assertIn("zero-count Script row with flags 4", shut_out["blocker_summary"])
+        self.assertIn("WorldLocation2 46229", shut_out["blocker_summary"])
+        self.assertIn("objective row 8180", shut_out["blocker_summary"])
+        self.assertIn("achievement row 1941, Shut Out", shut_out["blocker_summary"])
+        self.assertIn("Boss Touchdown Aura 71929", shut_out["blocker_summary"])
+        self.assertIn("Boss Touchdown Score 72061", shut_out["blocker_summary"])
+        self.assertIn("effect row 184449", shut_out["blocker_summary"])
+        self.assertIn("mode 5 / signal 22257", shut_out["blocker_summary"])
+        self.assertIn("distinct mode 5 / signal 22256", shut_out["blocker_summary"])
+        self.assertIn("current Hut-Hut phase activates only objective 2675", shut_out["blocker_summary"])
+        self.assertIn("HutHutEntityScript credits only that defeat objective", shut_out["blocker_summary"])
+        self.assertIn("mode 5 remains diagnostics-only", shut_out["blocker_summary"])
+        self.assertIn("one score permanently fails the challenge", shut_out["blocker_summary"])
+        self.assertIn("grant Shut Out after Hut-Hut had scored", shut_out["blocker_summary"])
+        self.assertIn("Objective 2882 remains mapped-only", shut_out["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", shut_out["blocker_summary"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundary.cs", shut_out["evidence_sources"])
+        self.assertIn("PublicEventObjectiveCreditEntityScriptTests.cs", shut_out["evidence_sources"])
+
+        crystal_catcher = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2883)]
+        self.assertEqual(
+            "mapped_up_crystal_catcher_power_crystal_resource_pool_blocked_missing_crystal_spawn_collection_and_power_plunge_knockup_producer",
+            crystal_catcher["evidence_status"],
+        )
+        self.assertIn("ResourcePool row with flags 4, count 5", crystal_catcher["blocker_summary"])
+        self.assertIn("WorldLocation2 46473", crystal_catcher["blocker_summary"])
+        self.assertIn("objective row 8192", crystal_catcher["blocker_summary"])
+        self.assertIn("achievement row 2092, Crystal Catcher", crystal_catcher["blocker_summary"])
+        self.assertIn("Creature2 63091 is explicitly named [UP] Divekick - Power Crystal", crystal_catcher["blocker_summary"])
+        self.assertIn("localized name row 590353", crystal_catcher["blocker_summary"])
+        self.assertIn("no reviewed Jabbithole public-event creature or coordinate bridge", crystal_catcher["blocker_summary"])
+        self.assertIn("LocalizedText 635181", crystal_catcher["blocker_summary"])
+        self.assertIn("use Power Plunge on it to get knocked up to the Power Crystals", crystal_catcher["blocker_summary"])
+        self.assertIn("TargetGroup 12263 contains Gilded Fowl 63055", crystal_catcher["blocker_summary"])
+        self.assertIn("activates only objectives 2862/4442", crystal_catcher["blocker_summary"])
+        self.assertIn("does not activate 2883, spawn Creature2 63091", crystal_catcher["blocker_summary"])
+        self.assertIn("Guessing crystal offsets above the reviewed fowl", crystal_catcher["blocker_summary"])
+        self.assertIn("Objective 2883 remains mapped-only", crystal_catcher["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", crystal_catcher["blocker_summary"])
+        self.assertIn("en-US.bin.sql", crystal_catcher["evidence_sources"])
+        self.assertIn("creature_spawn_map.csv", crystal_catcher["evidence_sources"])
+
+        total_domination = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2884)]
+        self.assertEqual(
+            "runtime_up_total_domination_300_second_huthut_timedwin_activation_and_death_credit_tested_pending_client_smoke",
+            total_domination["evidence_status"],
+        )
+        self.assertIn("zero-count TimedWin row with flags 4", total_domination["blocker_summary"])
+        self.assertIn("failureTimeMs 300000", total_domination["blocker_summary"])
+        self.assertIn("WorldLocation2 46229", total_domination["blocker_summary"])
+        self.assertIn("objective row 8195", total_domination["blocker_summary"])
+        self.assertIn("achievement row 1960, Total Domination", total_domination["blocker_summary"])
+        self.assertIn("activates objective 2884 with dynamic max one", total_domination["blocker_summary"])
+        self.assertIn("transitions the objective to Failed at the deadline", total_domination["blocker_summary"])
+        self.assertIn("rejects later updates", total_domination["blocker_summary"])
+        self.assertIn("credits both objective 2675 and 2884 once", total_domination["blocker_summary"])
+        self.assertIn("success at 299.999 seconds", total_domination["blocker_summary"])
+        self.assertIn("failure at 300 seconds", total_domination["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", total_domination["evidence_sources"])
+        self.assertIn("PublicEventObjectiveCreditEntityScriptTests.cs", total_domination["evidence_sources"])
+
+        panic_pronto = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2885)]
+        self.assertEqual(
+            "runtime_achievement_5896_grant_boundary_tested_objective_2885_mapped_up_blocked_missing_elemental_hospital_wave_start_completion_and_reset_producers",
+            panic_pronto["evidence_status"],
+        )
+        self.assertIn("zero-count Script row with flags 4", panic_pronto["blocker_summary"])
+        self.assertIn("failureTimeMs 30000", panic_pronto["blocker_summary"])
+        self.assertIn("WorldLocation2 41714", panic_pronto["blocker_summary"])
+        self.assertIn("WorldZone 4343 Elemental Hospital", panic_pronto["blocker_summary"])
+        self.assertIn("objective row 8154", panic_pronto["blocker_summary"])
+        self.assertIn("achievement row 2090, Panic Pronto", panic_pronto["blocker_summary"])
+        self.assertIn("parent objective 2674, Master the Elements", panic_pronto["blocker_summary"])
+        self.assertIn("has no Elemental Hospital phase", panic_pronto["blocker_summary"])
+        self.assertIn("does not activate 2674 or 2885", panic_pronto["blocker_summary"])
+        self.assertIn("succeeds at 29.999 seconds", panic_pronto["blocker_summary"])
+        self.assertIn("fails at 30 seconds", panic_pronto["blocker_summary"])
+        self.assertIn("which selected wave starts Panic Pronto", panic_pronto["blocker_summary"])
+        self.assertIn("failure is permanent or the challenge resets for a later wave", panic_pronto["blocker_summary"])
+        self.assertIn("grants exact achievement 5896", panic_pronto["blocker_summary"])
+        self.assertIn("failed-2885 rejection", panic_pronto["blocker_summary"])
+        self.assertIn("successful sibling-2886 rejection", panic_pronto["blocker_summary"])
+        self.assertIn("Objective 2885 remains a mapped-only producer", panic_pronto["blocker_summary"])
+        self.assertIn("achievement-5896 handoff is implemented", panic_pronto["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", panic_pronto["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", panic_pronto["evidence_sources"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", panic_pronto["evidence_sources"])
+
+        claustrophobic_skip = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2886)]
+        self.assertEqual(
+            "runtime_achievement_5897_grant_boundary_tested_objective_2886_mapped_up_blocked_missing_damage_provenance_failure_and_wave_completion_producers",
+            claustrophobic_skip["evidence_status"],
+        )
+        self.assertIn("zero-count Script row with flags 4", claustrophobic_skip["blocker_summary"])
+        self.assertIn("WorldLocation2 41714", claustrophobic_skip["blocker_summary"])
+        self.assertIn("WorldZone 4343 Elemental Hospital", claustrophobic_skip["blocker_summary"])
+        self.assertIn("objective row 8171", claustrophobic_skip["blocker_summary"])
+        self.assertIn("achievement row 1913, Claustrophobic Skip", claustrophobic_skip["blocker_summary"])
+        self.assertIn("parent objective 2674, Master the Elements", claustrophobic_skip["blocker_summary"])
+        self.assertIn("has no Elemental Hospital phase", claustrophobic_skip["blocker_summary"])
+        self.assertIn("does not activate 2674 or 2886", claustrophobic_skip["blocker_summary"])
+        self.assertIn("SpellEffectTargetFlags.Telegraph", claustrophobic_skip["blocker_summary"])
+        self.assertIn("provenance is not retained by IDamageDescription", claustrophobic_skip["blocker_summary"])
+        self.assertIn("only generic adjusted-plus-shield-absorbed player DamageReceived", claustrophobic_skip["blocker_summary"])
+        self.assertIn("without the originating spell, target flags, telegraph phase, wave, or objective", claustrophobic_skip["blocker_summary"])
+        self.assertIn("whether the challenge is party-wide or per-player", claustrophobic_skip["blocker_summary"])
+        self.assertIn("Failing 2886 on every player damage event", claustrophobic_skip["blocker_summary"])
+        self.assertIn("grants exact achievement 5897", claustrophobic_skip["blocker_summary"])
+        self.assertIn("failed-2886 rejection", claustrophobic_skip["blocker_summary"])
+        self.assertIn("successful sibling-2885 rejection", claustrophobic_skip["blocker_summary"])
+        self.assertIn("Objective 2886 remains a mapped-only producer", claustrophobic_skip["blocker_summary"])
+        self.assertIn("achievement-5897 handoff is implemented", claustrophobic_skip["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", claustrophobic_skip["blocker_summary"])
+        self.assertIn("SpellTargetValidationTests.cs", claustrophobic_skip["evidence_sources"])
+        self.assertIn("IDamageDescription.cs", claustrophobic_skip["evidence_sources"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", claustrophobic_skip["evidence_sources"])
+
+        escaped_patient = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2887)]
+        self.assertEqual(
+            "runtime_achievement_5898_grant_boundary_tested_objective_2887_mapped_up_blocked_missing_spawn_escape_route_death_credit_and_cleanup_producers",
+            escaped_patient["evidence_status"],
+        )
+        self.assertIn("zero-count TimedWin row with flags 4", escaped_patient["blocker_summary"])
+        self.assertIn("failureTimeMs 60000", escaped_patient["blocker_summary"])
+        self.assertIn("WorldLocation2 41714", escaped_patient["blocker_summary"])
+        self.assertIn("objective row 8163", escaped_patient["blocker_summary"])
+        self.assertIn("achievement row 1935, Patient Secured", escaped_patient["blocker_summary"])
+        self.assertIn("Creature2 67452 is explicitly [UP] e2674 - Creature - Protostar Intern", escaped_patient["blocker_summary"])
+        self.assertIn("action set 3896", escaped_patient["blocker_summary"])
+        self.assertIn("action row 9137 is a Bell visual", escaped_patient["blocker_summary"])
+        self.assertIn("91 movement observations", escaped_patient["blocker_summary"])
+        self.assertIn("no public_event_creatures relation for 28347", escaped_patient["blocker_summary"])
+        self.assertIn("does not activate 2674 or 2887", escaped_patient["blocker_summary"])
+        self.assertIn("does not spawn or script 67452", escaped_patient["blocker_summary"])
+        self.assertIn("succeeds at 59.999 seconds", escaped_patient["blocker_summary"])
+        self.assertIn("fails at 60 seconds", escaped_patient["blocker_summary"])
+        self.assertIn("which death producer grants success", escaped_patient["blocker_summary"])
+        self.assertIn("arbitrary observation and crediting 2887 on death", escaped_patient["blocker_summary"])
+        self.assertIn("grants exact achievement 5898", escaped_patient["blocker_summary"])
+        self.assertIn("failed-2887 rejection", escaped_patient["blocker_summary"])
+        self.assertIn("successful sibling-2888 rejection", escaped_patient["blocker_summary"])
+        self.assertIn("Objective 2887 remains a mapped-only producer", escaped_patient["blocker_summary"])
+        self.assertIn("achievement-5898 handoff is implemented", escaped_patient["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", escaped_patient["blocker_summary"])
+        self.assertIn("creature_spawn_map.csv", escaped_patient["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", escaped_patient["evidence_sources"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", escaped_patient["evidence_sources"])
+
+        quick_visit = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2888)]
+        self.assertEqual(
+            "runtime_achievement_5899_grant_boundary_tested_objective_2888_mapped_up_blocked_missing_boss_transition_spawn_death_credit_and_cleanup_producers",
+            quick_visit["evidence_status"],
+        )
+        self.assertIn("zero-count Script row with flags 4", quick_visit["blocker_summary"])
+        self.assertIn("failureTimeMs 180000", quick_visit["blocker_summary"])
+        self.assertIn("WorldLocation2 41714", quick_visit["blocker_summary"])
+        self.assertIn("objective row 8223", quick_visit["blocker_summary"])
+        self.assertIn("achievement row 1956, Institutionalized", quick_visit["blocker_summary"])
+        self.assertIn("Creature2 63319 is Elemental Master", quick_visit["blocker_summary"])
+        self.assertIn("[UP] e2674 - Mixed Wave - Miniboss", quick_visit["blocker_summary"])
+        self.assertIn("action set 3744", quick_visit["blocker_summary"])
+        self.assertIn("public-event relation 2000", quick_visit["blocker_summary"])
+        self.assertIn("Source 28000 has 100 build-7 movement observations", quick_visit["blocker_summary"])
+        self.assertIn("source 30390 has one build-6 observation", quick_visit["blocker_summary"])
+        self.assertIn("does not activate 2674 or 2888", quick_visit["blocker_summary"])
+        self.assertIn("does not spawn or script 63319", quick_visit["blocker_summary"])
+        self.assertIn("succeeds at 179.999 seconds", quick_visit["blocker_summary"])
+        self.assertIn("fails at 180 seconds", quick_visit["blocker_summary"])
+        self.assertIn("whether the timer begins at room start, final-wave start, boss appearance, or vulnerability", quick_visit["blocker_summary"])
+        self.assertIn("arbitrary observation and crediting 2888 on death", quick_visit["blocker_summary"])
+        self.assertIn("Objective 2888 remains a mapped-only producer", quick_visit["blocker_summary"])
+        self.assertIn("grants exact achievement 5899", quick_visit["blocker_summary"])
+        self.assertIn("failed-2888 rejection", quick_visit["blocker_summary"])
+        self.assertIn("successful sibling-2887 rejection", quick_visit["blocker_summary"])
+        self.assertIn("achievement-5899 handoff is implemented", quick_visit["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", quick_visit["blocker_summary"])
+        self.assertIn("creature_public_event_map.csv", quick_visit["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", quick_visit["evidence_sources"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", quick_visit["evidence_sources"])
+
+        deleted_objective = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2889)]
+        self.assertEqual(
+            "rejected_up_objective_2889_explicit_delete_row_no_runtime_producer_required",
+            deleted_objective["evidence_status"],
+        )
+        self.assertEqual(
+            "not_applicable_explicit_delete_row_rejected_from_runtime_restoration_queue",
+            deleted_objective["manual_validation"],
+        )
+        self.assertIn("Rejected as non-gameplay data", deleted_objective["blocker_summary"])
+        self.assertIn("zero-count Script row with flags 4", deleted_objective["blocker_summary"])
+        self.assertIn("localizedTextId 590520", deleted_objective["blocker_summary"])
+        self.assertIn("short-text row 590521", deleted_objective["blocker_summary"])
+        self.assertIn("explicit marker [DELETE]", deleted_objective["blocker_summary"])
+        self.assertIn("objective 8188", deleted_objective["blocker_summary"])
+        self.assertIn("No build 16042 Achievement or AchievementChecklist row references", deleted_objective["blocker_summary"])
+        self.assertIn("correctly has no activation or producer", deleted_objective["blocker_summary"])
+        self.assertIn("revive client content explicitly marked for deletion", deleted_objective["blocker_summary"])
+        self.assertIn("rejected from restoration and from the actionable blocker queue", deleted_objective["blocker_summary"])
+        self.assertNotIn("blocked", deleted_objective["evidence_status"])
+        self.assertNotIn("pending", deleted_objective["evidence_status"])
+        self.assertNotIn("mapped_only", deleted_objective["evidence_status"])
+
+        chronophobia = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2890)]
+        self.assertEqual(
+            "runtime_achievement_5902_grant_boundary_tested_objective_2890_mapped_up_blocked_missing_room_activation_completion_and_cleanup_producers",
+            chronophobia["evidence_status"],
+        )
+        self.assertIn("zero-count TimedWin row with flags 4", chronophobia["blocker_summary"])
+        self.assertIn("failureTimeMs 600000", chronophobia["blocker_summary"])
+        self.assertIn("WorldLocation2 41714", chronophobia["blocker_summary"])
+        self.assertIn("objective row 8152", chronophobia["blocker_summary"])
+        self.assertIn("achievement row 2032, Chronophobia", chronophobia["blocker_summary"])
+        self.assertIn("parent objective 2674, Master the Elements", chronophobia["blocker_summary"])
+        self.assertIn("has no Elemental Hospital phase", chronophobia["blocker_summary"])
+        self.assertIn("does not activate 2674 or 2890", chronophobia["blocker_summary"])
+        self.assertIn("succeeds at 599.999 seconds", chronophobia["blocker_summary"])
+        self.assertIn("fails at 600 seconds", chronophobia["blocker_summary"])
+        self.assertIn("random-room selection, room entry, first-wave activation", chronophobia["blocker_summary"])
+        self.assertIn("Starting 2890 at dungeon start would charge unrelated rooms", chronophobia["blocker_summary"])
+        self.assertIn("Objective 2890 remains a mapped-only producer", chronophobia["blocker_summary"])
+        self.assertIn("grants exact achievement 5902", chronophobia["blocker_summary"])
+        self.assertIn("failed-2890 rejection", chronophobia["blocker_summary"])
+        self.assertIn("successful sibling-2891 rejection", chronophobia["blocker_summary"])
+        self.assertIn("achievement-5902 handoff is implemented", chronophobia["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", chronophobia["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", chronophobia["evidence_sources"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", chronophobia["evidence_sources"])
+
+        atychiphobia = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2891)]
+        self.assertEqual(
+            "runtime_achievement_5901_grant_boundary_tested_objective_2891_mapped_up_blocked_missing_mode4_signal_receiver_failure_and_event_completion_producers",
+            atychiphobia["evidence_status"],
+        )
+        self.assertIn("zero-count Script row with flags 4", atychiphobia["blocker_summary"])
+        self.assertIn("WorldLocation2 41714", atychiphobia["blocker_summary"])
+        self.assertIn("objective row 8167", atychiphobia["blocker_summary"])
+        self.assertIn("achievement row 2007, Atychiphobia", atychiphobia["blocker_summary"])
+        self.assertIn("spells 72013-72016", atychiphobia["blocker_summary"])
+        self.assertIn("Spells 75868 and 77989", atychiphobia["blocker_summary"])
+        self.assertIn("effect rows 209847 and 209848", atychiphobia["blocker_summary"])
+        self.assertIn("receiver mode 4 / signal 23104", atychiphobia["blocker_summary"])
+        self.assertIn("patch 03/17/2015", atychiphobia["blocker_summary"])
+        self.assertIn("fails the Atychiphobia challenge", atychiphobia["blocker_summary"])
+        self.assertIn("keeps mode 4 diagnostics-only", atychiphobia["blocker_summary"])
+        self.assertIn("does not activate 2674 or 2891", atychiphobia["blocker_summary"])
+        self.assertIn("neither a signal-23104 receiver nor terminal event-completion success", atychiphobia["blocker_summary"])
+        self.assertIn("Widening all mode-4 RavelSignal effects", atychiphobia["blocker_summary"])
+        self.assertIn("hard-coding global spell IDs 75868/77989", atychiphobia["blocker_summary"])
+        self.assertIn("Objective 2891 remains a mapped-only producer", atychiphobia["blocker_summary"])
+        self.assertIn("grants exact achievement 5901", atychiphobia["blocker_summary"])
+        self.assertIn("failed-2891 rejection", atychiphobia["blocker_summary"])
+        self.assertIn("successful sibling-2892 rejection", atychiphobia["blocker_summary"])
+        self.assertIn("achievement-5901 handoff is implemented", atychiphobia["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", atychiphobia["blocker_summary"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundaryTests.cs", atychiphobia["evidence_sources"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", atychiphobia["evidence_sources"])
+        self.assertIn("20797-Patch_03_17_2015.wiki", atychiphobia["evidence_sources"])
+
+        toxophobia = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2892)]
+        self.assertEqual(
+            "runtime_achievement_5900_grant_boundary_tested_objective_2892_mapped_up_blocked_missing_hazard_activation_mode4_failure_receiver_and_event_completion_producers",
+            toxophobia["evidence_status"],
+        )
+        self.assertIn("zero-count Script row with flags 4", toxophobia["blocker_summary"])
+        self.assertIn("WorldLocation2 41714", toxophobia["blocker_summary"])
+        self.assertIn("objective row 8146", toxophobia["blocker_summary"])
+        self.assertIn("achievement row 2022, Toxophobia", toxophobia["blocker_summary"])
+        self.assertIn("achievement 5904 / Jabbithole row 2105, Overcoming Toxophobia", toxophobia["blocker_summary"])
+        self.assertIn("20-second toxic-air survival surface", toxophobia["blocker_summary"])
+        self.assertIn("Spell 72234 is [UP] e2674 - Room Hazard - Damage", toxophobia["blocker_summary"])
+        self.assertIn("damage effect row 198393", toxophobia["blocker_summary"])
+        self.assertIn("effect row 188896", toxophobia["blocker_summary"])
+        self.assertIn("receiver mode 4 / signal 23106", toxophobia["blocker_summary"])
+        self.assertIn("Protective Shield spells 72003 and 72310-72313", toxophobia["blocker_summary"])
+        self.assertIn("hazard 214 with target mode 0", toxophobia["blocker_summary"])
+        self.assertIn("exact hazard-214 suspension payload", toxophobia["blocker_summary"])
+        self.assertIn("keeps Toxic Air's mode 4 diagnostics-only", toxophobia["blocker_summary"])
+        self.assertIn("does not activate 2674 or 2892", toxophobia["blocker_summary"])
+        self.assertIn("whether failure is player-local or party-wide", toxophobia["blocker_summary"])
+        self.assertIn("Enabling Toxic Air globally or widening all mode-4 signals", toxophobia["blocker_summary"])
+        self.assertIn("Objective 2892 remains a mapped-only producer", toxophobia["blocker_summary"])
+        self.assertIn("grants exact achievement 5900", toxophobia["blocker_summary"])
+        self.assertIn("failed-2892 rejection", toxophobia["blocker_summary"])
+        self.assertIn("successful sibling-2891 rejection", toxophobia["blocker_summary"])
+        self.assertIn("achievement-5900 handoff is implemented", toxophobia["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", toxophobia["blocker_summary"])
+        self.assertIn("HazardAndVectorSlideSpellTests.cs", toxophobia["evidence_sources"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundaryTests.cs", toxophobia["evidence_sources"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", toxophobia["evidence_sources"])
+
+        water_hazard = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2897)]
+        self.assertEqual(
+            "mapped_up_water_hazard_no_fall_optional_blocked_missing_water_volume_receiver_failure_and_room_completion_producers",
+            water_hazard["evidence_status"],
+        )
+        self.assertIn("zero-count Script row with flags 4", water_hazard["blocker_summary"])
+        self.assertIn("WorldLocation2 46473, radius 180", water_hazard["blocker_summary"])
+        self.assertIn("WorldZone 4347 Power Plunge", water_hazard["blocker_summary"])
+        self.assertIn("objective row 8178", water_hazard["blocker_summary"])
+        self.assertIn("No build-16042 Achievement or AchievementChecklist row", water_hazard["blocker_summary"])
+        self.assertIn("point-radius rows 41758, 46599, 48368, and 48480", water_hazard["blocker_summary"])
+        self.assertIn("no static world-location reference", water_hazard["blocker_summary"])
+        self.assertIn("Power Plunge divekick spells", water_hazard["blocker_summary"])
+        self.assertIn("supported mode-1 signal 22351", water_hazard["blocker_summary"])
+        self.assertIn("unsupported mode-4 signal 22902", water_hazard["blocker_summary"])
+        self.assertIn("unsupported mode-4 signal 28057", water_hazard["blocker_summary"])
+        self.assertIn("forced-movement mode-11 rows 184546-184551", water_hazard["blocker_summary"])
+        self.assertIn("mode-15 row 187713", water_hazard["blocker_summary"])
+        self.assertIn("keeps modes 4 and 15 diagnostics-only", water_hazard["blocker_summary"])
+        self.assertIn("activates only Gilded Fowl objectives 2862 and 4442", water_hazard["blocker_summary"])
+        self.assertIn("whether retail failure is triggered by entering a water volume", water_hazard["blocker_summary"])
+        self.assertIn("Treating the lower-Y point locations as water geometry", water_hazard["blocker_summary"])
+        self.assertIn("routing kick-miss signal 22902 directly to objective failure", water_hazard["blocker_summary"])
+        self.assertIn("Objective 2897 remains mapped-only", water_hazard["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", water_hazard["blocker_summary"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundaryTests.cs", water_hazard["evidence_sources"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", water_hazard["evidence_sources"])
+
+        slaughterhouse = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2898)]
+        self.assertEqual(
+            "mapped_up_slaughterhouse_40_point_critter_resource_pool_blocked_missing_pest_control_route_spawn_kill_delta_and_completion_producers",
+            slaughterhouse["evidence_status"],
+        )
+        self.assertIn("zero-object ResourcePool row with flags 4, count 40", slaughterhouse["blocker_summary"])
+        self.assertIn("short title is Slaughterhouse", slaughterhouse["blocker_summary"])
+        self.assertIn("objective row 8206", slaughterhouse["blocker_summary"])
+        self.assertIn("achievement 5929 / Jabbithole row 1917", slaughterhouse["blocker_summary"])
+        self.assertIn("does not prove that every critter death contributes one point", slaughterhouse["blocker_summary"])
+        self.assertIn("main objective 2672, Pest Control", slaughterhouse["blocker_summary"])
+        self.assertIn("180000-ms failure timer", slaughterhouse["blocker_summary"])
+        self.assertIn("WorldLocation2 41741", slaughterhouse["blocker_summary"])
+        self.assertIn("Runaway Veggie objective 2899", slaughterhouse["blocker_summary"])
+        self.assertIn("Another Jabbit 2901", slaughterhouse["blocker_summary"])
+        self.assertIn("Splorg Spree 2925", slaughterhouse["blocker_summary"])
+        self.assertIn("Rowsdower Round-Up 2927", slaughterhouse["blocker_summary"])
+        self.assertIn("Damage Control 2930", slaughterhouse["blocker_summary"])
+        self.assertIn("Splorg Stepper 4524", slaughterhouse["blocker_summary"])
+        self.assertIn("Hunt Ruffles 4561", slaughterhouse["blocker_summary"])
+        self.assertIn("73, 76, 83, and 96 current-last-seen", slaughterhouse["blocker_summary"])
+        self.assertIn("have no public-event-creature relation", slaughterhouse["blocker_summary"])
+        self.assertIn("none of the four Creature2 rows belongs to a client TargetGroup", slaughterhouse["blocker_summary"])
+        self.assertIn("Only Ruffles source 28408 / Creature2 65794", slaughterhouse["blocker_summary"])
+        self.assertIn("does not select or activate Pest Control 2672 or Slaughterhouse 2898", slaughterhouse["blocker_summary"])
+        self.assertIn("receiver modes 4/5 and signal 23053", slaughterhouse["blocker_summary"])
+        self.assertIn("mode-4 signal 27305", slaughterhouse["blocker_summary"])
+        self.assertIn("keeps modes 4/5 diagnostics-only", slaughterhouse["blocker_summary"])
+        self.assertIn("39 credits remain active, the 40th succeeds", slaughterhouse["blocker_summary"])
+        self.assertIn("whether objective 2901 is the actual repeatable scoring channel", slaughterhouse["blocker_summary"])
+        self.assertIn("Directly crediting one point for every Jabbit", slaughterhouse["blocker_summary"])
+        self.assertIn("Objective 2898 remains mapped-only", slaughterhouse["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", slaughterhouse["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", slaughterhouse["evidence_sources"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundaryTests.cs", slaughterhouse["evidence_sources"])
+
+        runaway_veggie = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2899)]
+        self.assertEqual(
+            "mapped_up_runaway_veggie_45_second_resource_pool_blocked_missing_pest_control_spawn_escape_route_death_credit_and_cleanup_producers",
+            runaway_veggie["evidence_status"],
+        )
+        self.assertIn("zero-object ResourcePool row with flags 4, count 1", runaway_veggie["blocker_summary"])
+        self.assertIn("failureTimeMs 45000", runaway_veggie["blocker_summary"])
+        self.assertIn("objective row 8199", runaway_veggie["blocker_summary"])
+        self.assertIn("achievement 5925 / Jabbithole row 2010", runaway_veggie["blocker_summary"])
+        self.assertIn("Creature2 62674 is explicitly [UP] Critter - Runaway Carrot", runaway_veggie["blocker_summary"])
+        self.assertIn("Jabbithole source creature 28400", runaway_veggie["blocker_summary"])
+        self.assertIn("96 current-last-seen and 2 older", runaway_veggie["blocker_summary"])
+        self.assertIn("do not form an ordered escape path", runaway_veggie["blocker_summary"])
+        self.assertIn("action set 0, no activation spells", runaway_veggie["blocker_summary"])
+        self.assertIn("no client TargetGroup membership", runaway_veggie["blocker_summary"])
+        self.assertIn("no Jabbithole public-event-creature relation", runaway_veggie["blocker_summary"])
+        self.assertIn("main objective 2672, Pest Control", runaway_veggie["blocker_summary"])
+        self.assertIn("activates only the reviewed Hunt Ruffles route", runaway_veggie["blocker_summary"])
+        self.assertIn("receiver modes 4/5 and signal 23053", runaway_veggie["blocker_summary"])
+        self.assertIn("no static row links that spell to Creature2 62674", runaway_veggie["blocker_summary"])
+        self.assertIn("one credit at 44.999 seconds succeeds", runaway_veggie["blocker_summary"])
+        self.assertIn("fails at 45 seconds", runaway_veggie["blocker_summary"])
+        self.assertIn("whether the 45-second timer starts on room activation", runaway_veggie["blocker_summary"])
+        self.assertIn("treating the coordinate timestamps as a path", runaway_veggie["blocker_summary"])
+        self.assertIn("Objective 2899 remains mapped-only", runaway_veggie["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", runaway_veggie["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", runaway_veggie["evidence_sources"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundaryTests.cs", runaway_veggie["evidence_sources"])
+
+        another_jabbit = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2901)]
+        self.assertEqual(
+            "runtime_script_without_max_unbounded_counter_tested_up_another_jabbit_blocked_missing_pest_control_activation_kill_score_and_completion_controller",
+            another_jabbit["evidence_status"],
+        )
+        self.assertIn("short title Another Jabbit", another_jabbit["blocker_summary"])
+        self.assertIn("ScriptWithoutMax type-25 row with count 1", another_jabbit["blocker_summary"])
+        self.assertIn("flags 516", another_jabbit["blocker_summary"])
+        self.assertIn("does not assign behavior to the unmapped bit", another_jabbit["blocker_summary"])
+        self.assertIn("no exact game-id or text match", another_jabbit["blocker_summary"])
+        self.assertIn("136 objectives use type 25", another_jabbit["blocker_summary"])
+        self.assertIn("114 have count 0", another_jabbit["blocker_summary"])
+        self.assertIn("Lua_PublicEventObjective_GetRequiredCount at 14068ef30", another_jabbit["blocker_summary"])
+        self.assertIn("returns 0 for type 0x19", another_jabbit["blocker_summary"])
+        self.assertIn("Lua_PublicEventObjective_ShouldShowRequiredCount at 1406908b0", another_jabbit["blocker_summary"])
+        self.assertIn("Lua_PublicEventObjective_GetCount at 14068e110", another_jabbit["blocker_summary"])
+        self.assertIn("PublicEventObjectiveUpdate_ApplyParsedPayload at 1405f3520", another_jabbit["blocker_summary"])
+        self.assertIn("keeps ScriptWithoutMax active while count updates accumulate", another_jabbit["blocker_summary"])
+        self.assertIn("remains active at counts 1 and 3", another_jabbit["blocker_summary"])
+        self.assertIn("selects only the reviewed Hunt Ruffles route", another_jabbit["blocker_summary"])
+        self.assertIn("does not activate Pest Control 2672", another_jabbit["blocker_summary"])
+        self.assertIn("which controller assigns terminal success", another_jabbit["blocker_summary"])
+        self.assertIn("auto-succeeding objective 2901", another_jabbit["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", another_jabbit["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", another_jabbit["evidence_sources"])
+        self.assertIn("INITIAL_FINDINGS.md", another_jabbit["evidence_sources"])
+        self.assertIn("function_labels.csv", another_jabbit["evidence_sources"])
+
+        spring_cleaning = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2921)]
+        self.assertEqual(
+            "mapped_up_spring_cleaning_360_second_script_optional_blocked_missing_lost_found_crate_enemy_aggregate_and_completion_producers",
+            spring_cleaning["evidence_status"],
+        )
+        self.assertIn("zero-count, zero-object Script row with flags 4", spring_cleaning["blocker_summary"])
+        self.assertIn("failureTimeMs 360000", spring_cleaning["blocker_summary"])
+        self.assertIn("WorldLocation2 41745", spring_cleaning["blocker_summary"])
+        self.assertIn("WorldZone 4351 Lost and Found Department", spring_cleaning["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8225", spring_cleaning["blocker_summary"])
+        self.assertIn("achievement 5940 / Jabbithole row 1975", spring_cleaning["blocker_summary"])
+        self.assertIn("80-count ResourcePool", spring_cleaning["blocker_summary"])
+        self.assertIn("62548 Crate, 62549 Big Crate, 62575 Miniboss", spring_cleaning["blocker_summary"])
+        self.assertIn("TargetGroup 10647 contains only crate rows 62548 and 62549", spring_cleaning["blocker_summary"])
+        self.assertIn("No client TargetGroup or objective row defines the complete crates-and-enemies set", spring_cleaning["blocker_summary"])
+        self.assertIn("81 ordinary-crate, 104 Stray Swarmling, 63 Lost Intern", spring_cleaning["blocker_summary"])
+        self.assertIn("current-last-seen observations across sessions", spring_cleaning["blocker_summary"])
+        self.assertIn("exact one-shot Creature2-62548 death credit", spring_cleaning["blocker_summary"])
+        self.assertIn("does not activate objective 2673 or 2921", spring_cleaning["blocker_summary"])
+        self.assertIn("controller credit at 359.999 seconds succeeds", spring_cleaning["blocker_summary"])
+        self.assertIn("fails at 360 seconds", spring_cleaning["blocker_summary"])
+        self.assertIn("completing 2921 when only objective 2673 succeeds", spring_cleaning["blocker_summary"])
+        self.assertIn("Objective 2921 remains mapped-only", spring_cleaning["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", spring_cleaning["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", spring_cleaning["evidence_sources"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", spring_cleaning["evidence_sources"])
+
+        rapid_fire = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2922)]
+        self.assertEqual(
+            "mapped_up_rapid_fire_3_kick_10_second_script_challenge_blocked_missing_cosmic_kick_knockoff_window_reset_and_3_vs_5_achievement_reconciliation",
+            rapid_fire["evidence_status"],
+        )
+        self.assertIn("Script challenge row with flags 4, count 3", rapid_fire["blocker_summary"])
+        self.assertIn("failureTimeMs 10000", rapid_fire["blocker_summary"])
+        self.assertIn("parent objective 2677", rapid_fire["blocker_summary"])
+        self.assertIn("WorldLocation2 41756", rapid_fire["blocker_summary"])
+        self.assertIn("WorldZone 4334 H.M.S. Phineas", rapid_fire["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8217", rapid_fire["blocker_summary"])
+        self.assertIn("achievement 5885 / Jabbithole row 2005", rapid_fire["blocker_summary"])
+        self.assertIn("requires Cosmic Kicking five Marauders within ten seconds", rapid_fire["blocker_summary"])
+        self.assertIn("thresholds are inconsistent", rapid_fire["blocker_summary"])
+        self.assertIn("Spell 71680 is Cosmic Kick", rapid_fire["blocker_summary"])
+        self.assertIn("TargetGroup 10728 contains Creature2 61822, 62266", rapid_fire["blocker_summary"])
+        self.assertIn("382 current-last-seen room observations", rapid_fire["blocker_summary"])
+        self.assertIn("does not activate the H.M.S. Phineas route or objective 2922", rapid_fire["blocker_summary"])
+        self.assertIn("third at 9.999 seconds succeeds", rapid_fire["blocker_summary"])
+        self.assertIn("third after the 10-second failure is rejected", rapid_fire["blocker_summary"])
+        self.assertIn("whether the retail window begins on room activation or the first", rapid_fire["blocker_summary"])
+        self.assertIn("granting achievement 5885 at three credits", rapid_fire["blocker_summary"])
+        self.assertIn("Objective 2922 remains mapped-only", rapid_fire["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", rapid_fire["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", rapid_fire["evidence_sources"])
+
+        kick_10 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2923)]
+        self.assertEqual(
+            "runtime_achievement_5886_grant_boundary_tested_objective_2923_mapped_up_blocked_missing_cosmic_kick_knockoff_attribution_team_scope_and_producer",
+            kick_10["evidence_status"],
+        )
+        self.assertIn("Script challenge row with flags 4, count 10", kick_10["blocker_summary"])
+        self.assertIn("no failure timer", kick_10["blocker_summary"])
+        self.assertIn("parent objective 2677", kick_10["blocker_summary"])
+        self.assertIn("WorldLocation2 41756", kick_10["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8220", kick_10["blocker_summary"])
+        self.assertIn("achievement 5886 / Jabbithole row 2035", kick_10["blocker_summary"])
+        self.assertIn("kicking ten Marauders off H.M.S. Phineas as a group", kick_10["blocker_summary"])
+        self.assertIn("Spell 71680 is Cosmic Kick", kick_10["blocker_summary"])
+        self.assertIn("TargetGroup 10728 contains Creature2 61822, 62266", kick_10["blocker_summary"])
+        self.assertIn("382 current-last-seen room observations", kick_10["blocker_summary"])
+        self.assertIn("does not activate the H.M.S. Phineas route or objective 2923", kick_10["blocker_summary"])
+        self.assertIn("nine credits remain active, the tenth succeeds", kick_10["blocker_summary"])
+        self.assertIn("grants exact achievement 5886", kick_10["blocker_summary"])
+        self.assertIn("failed-2923", kick_10["blocker_summary"])
+        self.assertIn("successful-sibling-2954", kick_10["blocker_summary"])
+        self.assertIn("per cast, per target hit, per forced movement", kick_10["blocker_summary"])
+        self.assertIn("Crediting ordinary Marauder deaths or every Cosmic Kick cast", kick_10["blocker_summary"])
+        self.assertIn("Objective 2923 remains a mapped-only producer", kick_10["blocker_summary"])
+        self.assertIn("achievement-5886 handoff is implemented", kick_10["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", kick_10["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", kick_10["evidence_sources"])
+
+        dust_storm = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2924)]
+        self.assertEqual(
+            "runtime_up_dust_storm_crate_death_credit_and_20_in_20_timer_tested_pending_route_activation_spawn_window_reset_and_client_smoke",
+            dust_storm["evidence_status"],
+        )
+        self.assertIn("Script challenge row with flags 4, count 20", dust_storm["blocker_summary"])
+        self.assertIn("failureTimeMs 20000", dust_storm["blocker_summary"])
+        self.assertIn("WorldLocation2 41745", dust_storm["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8189", dust_storm["blocker_summary"])
+        self.assertIn("achievement 5936 / Jabbithole row 2094", dust_storm["blocker_summary"])
+        self.assertIn("previously assigned DustStorm to 2942", dust_storm["blocker_summary"])
+        self.assertIn("Journey Into OMNICore public event 605", dust_storm["blocker_summary"])
+        self.assertIn("correct PE-594 row 2924", dust_storm["blocker_summary"])
+        self.assertIn("Creature2 62548 is explicitly [UP] e2673", dust_storm["blocker_summary"])
+        self.assertIn("relation 2191 maps source crate 28314", dust_storm["blocker_summary"])
+        self.assertIn("one-shot death credit to both", dust_storm["blocker_summary"])
+        self.assertIn("deliberately excludes Creature2 62549 Mondo's Crate", dust_storm["blocker_summary"])
+        self.assertIn("positive dual credit, repeated-death rejection", dust_storm["blocker_summary"])
+        self.assertIn("20th at 19.999 seconds succeeds", dust_storm["blocker_summary"])
+        self.assertIn("after the 20-second failure is rejected", dust_storm["blocker_summary"])
+        self.assertIn("does not activate objective 2673 or 2924", dust_storm["blocker_summary"])
+        self.assertIn("81 current-last-seen ordinary-crate observations", dust_storm["blocker_summary"])
+        self.assertIn("runtime-partial producer, not retail completion", dust_storm["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", dust_storm["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", dust_storm["evidence_sources"])
+        self.assertIn("PublicEventObjectiveCreditEntityScriptTests.cs", dust_storm["evidence_sources"])
+
+        splorg_spree = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2925)]
+        self.assertEqual(
+            "runtime_up_splorg_spree_62597_death_credit_and_7_in_20_timer_tested_pending_route_spawn_window_attribution_reset_and_client_smoke",
+            splorg_spree["evidence_status"],
+        )
+        self.assertIn("ResourcePool challenge row with flags 4, count 7", splorg_spree["blocker_summary"])
+        self.assertIn("failureTimeMs 20000", splorg_spree["blocker_summary"])
+        self.assertIn("no WorldLocation2 row", splorg_spree["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8150", splorg_spree["blocker_summary"])
+        self.assertIn("achievement 5928 / Jabbithole row 2093", splorg_spree["blocker_summary"])
+        self.assertIn("achievement 5930 / Jabbithole row 1937", splorg_spree["blocker_summary"])
+        self.assertIn("Explosive Splorg as Creature2 62597", splorg_spree["blocker_summary"])
+        self.assertIn("achievement 5927 / Jabbithole row 2071", splorg_spree["blocker_summary"])
+        self.assertIn("Jabbithole creature 28411", splorg_spree["blocker_summary"])
+        self.assertIn("three name candidates and no public-event-creature relation", splorg_spree["blocker_summary"])
+        self.assertIn("one one-shot death credit", splorg_spree["blocker_summary"])
+        self.assertIn("positive credit, repeated-death rejection", splorg_spree["blocker_summary"])
+        self.assertIn("seventh at 19.999 seconds succeeds", splorg_spree["blocker_summary"])
+        self.assertIn("after the 20-second failure is rejected", splorg_spree["blocker_summary"])
+        self.assertIn("does not select or activate the Pest Control / Splorg Spree route", splorg_spree["blocker_summary"])
+        self.assertIn("76 current-last-seen Explosive Splorg observations", splorg_spree["blocker_summary"])
+        self.assertIn("runtime-partial producer, not retail completion", splorg_spree["blocker_summary"])
+        self.assertIn("player/team versus explosion/environmental death attribution", splorg_spree["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", splorg_spree["evidence_sources"])
+        self.assertIn("PublicEventObjectiveCreditEntityScriptTests.cs", splorg_spree["evidence_sources"])
+
+        rowsdower_round_up = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2927)]
+        self.assertEqual(
+            "runtime_up_rowsdower_round_up_62598_death_credit_and_count6_tested_pending_route_spawn_attribution_reset_and_client_smoke",
+            rowsdower_round_up["evidence_status"],
+        )
+        self.assertIn("ResourcePool challenge row with flags 4, count 6", rowsdower_round_up["blocker_summary"])
+        self.assertIn("failureTimeMs 0", rowsdower_round_up["blocker_summary"])
+        self.assertIn("no WorldLocation2 row", rowsdower_round_up["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8219", rowsdower_round_up["blocker_summary"])
+        self.assertIn("achievement 5926 / Jabbithole row 2038", rowsdower_round_up["blocker_summary"])
+        self.assertIn("six Rowsdowers in the Protostar Petting Zoo", rowsdower_round_up["blocker_summary"])
+        self.assertIn("Creature2 62598 is explicitly described as [UP] Critter - Rowsdower", rowsdower_round_up["blocker_summary"])
+        self.assertIn("Jabbithole creature 28407", rowsdower_round_up["blocker_summary"])
+        self.assertIn("24 client candidates and no public-event-creature relation", rowsdower_round_up["blocker_summary"])
+        self.assertIn("world/area/faction/level agreement", rowsdower_round_up["blocker_summary"])
+        self.assertIn("one one-shot death credit", rowsdower_round_up["blocker_summary"])
+        self.assertIn("positive credit, repeated-death rejection", rowsdower_round_up["blocker_summary"])
+        self.assertIn("five credits remain active, the sixth succeeds", rowsdower_round_up["blocker_summary"])
+        self.assertIn("does not select or activate the Pest Control / Rowsdower Round-Up route", rowsdower_round_up["blocker_summary"])
+        self.assertIn("83 current-last-seen Rowsdower observations", rowsdower_round_up["blocker_summary"])
+        self.assertIn("runtime-partial producer, not retail completion", rowsdower_round_up["blocker_summary"])
+        self.assertIn("player/team versus environmental death attribution", rowsdower_round_up["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", rowsdower_round_up["evidence_sources"])
+        self.assertIn("PublicEventObjectiveCreditEntityScriptTests.cs", rowsdower_round_up["evidence_sources"])
+
+        kings_and_queens = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2928)]
+        self.assertEqual(
+            "mapped_up_kings_queens_hill_script_optional_controller_boundary_blocked_missing_group_fall_knockoff_failure_producer_and_room_completion_signal",
+            kings_and_queens["evidence_status"],
+        )
+        self.assertIn("zero-count, zero-object Script optional with flags 4", kings_and_queens["blocker_summary"])
+        self.assertIn("failureTimeMs 0", kings_and_queens["blocker_summary"])
+        self.assertIn("WorldLocation2 41745", kings_and_queens["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8216", kings_and_queens["blocker_summary"])
+        self.assertIn("achievement 5871 / Jabbithole row 2281", kings_and_queens["blocker_summary"])
+        self.assertIn("without any group member falling off the hill", kings_and_queens["blocker_summary"])
+        self.assertIn("radius-1, maxVerticalDistance-0 room marker", kings_and_queens["blocker_summary"])
+        self.assertIn("not an edge, fall, or hazard volume", kings_and_queens["blocker_summary"])
+        self.assertIn("no TargetGroup, object, timer, spell, trigger", kings_and_queens["blocker_summary"])
+        self.assertIn("remains active for 30 seconds", kings_and_queens["blocker_summary"])
+        self.assertIn("succeeds only after an explicit controller credit", kings_and_queens["blocker_summary"])
+        self.assertIn("does not select or activate this Lost and Found route", kings_and_queens["blocker_summary"])
+        self.assertIn("no script-level non-timer failure transition", kings_and_queens["blocker_summary"])
+        self.assertIn("Treating any player death, an arbitrary Y threshold", kings_and_queens["blocker_summary"])
+        self.assertIn("Objective 2928 remains mapped-only", kings_and_queens["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", kings_and_queens["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", kings_and_queens["evidence_sources"])
+
+        friend_of_crate = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2929)]
+        self.assertEqual(
+            "mapped_up_friend_of_crate_30_second_timedwin_controller_boundary_blocked_missing_enemy_to_crate_damage_attribution_failure_and_room_completion_producers",
+            friend_of_crate["evidence_status"],
+        )
+        self.assertIn("zero-count, zero-object TimedWin challenge with flags 4", friend_of_crate["blocker_summary"])
+        self.assertIn("failureTimeMs 30000", friend_of_crate["blocker_summary"])
+        self.assertIn("WorldLocation2 41745", friend_of_crate["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8162", friend_of_crate["blocker_summary"])
+        self.assertIn("achievement 5938 / Jabbithole row 1938", friend_of_crate["blocker_summary"])
+        self.assertIn("without allowing enemies to destroy any crates", friend_of_crate["blocker_summary"])
+        self.assertIn("no TargetGroup or object row", friend_of_crate["blocker_summary"])
+        self.assertIn("Creature2 62548", friend_of_crate["blocker_summary"])
+        self.assertIn("public-event creature relation 2191", friend_of_crate["blocker_summary"])
+        self.assertIn("death callback exposes no attacker or damage-source discrimination", friend_of_crate["blocker_summary"])
+        self.assertIn("remains active at 29.999 seconds", friend_of_crate["blocker_summary"])
+        self.assertIn("fails at 30 seconds without that signal", friend_of_crate["blocker_summary"])
+        self.assertIn("rejects late credit after failure", friend_of_crate["blocker_summary"])
+        self.assertIn("does not select or activate this Lost and Found route", friend_of_crate["blocker_summary"])
+        self.assertIn("enemy-to-crate damage or destruction attribution", friend_of_crate["blocker_summary"])
+        self.assertIn("Automatically succeeding only because the timer elapsed", friend_of_crate["blocker_summary"])
+        self.assertIn("Objective 2929 remains mapped-only", friend_of_crate["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", friend_of_crate["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", friend_of_crate["evidence_sources"])
+        self.assertIn("UltimateProtogamesObjectiveEntityScripts.cs", friend_of_crate["evidence_sources"])
+
+        damage_control = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2930)]
+        self.assertEqual(
+            "mapped_up_damage_control_count10_resourcepool_controller_boundary_blocked_missing_explosive_splorg_to_protected_critter_kill_attribution_and_room_completion_producers",
+            damage_control["evidence_status"],
+        )
+        self.assertIn("ResourcePool challenge row with flags 4, count 10", damage_control["blocker_summary"])
+        self.assertIn("failureTimeMs 0", damage_control["blocker_summary"])
+        self.assertIn("no WorldLocation2", damage_control["blocker_summary"])
+        self.assertIn("no reward-pane TargetGroup", damage_control["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8170", damage_control["blocker_summary"])
+        self.assertIn("achievement 5927 / Jabbithole row 2071", damage_control["blocker_summary"])
+        self.assertIn("preventing the exploding Splorg from killing any other creatures", damage_control["blocker_summary"])
+        self.assertIn("Achievement 5930 / Jabbithole row 1937", damage_control["blocker_summary"])
+        self.assertIn("Explosive Splorg as Creature2 62597", damage_control["blocker_summary"])
+        self.assertIn("Jabbit 28417, Rowsdower 28407, and Runaway Veggie 28400", damage_control["blocker_summary"])
+        self.assertIn("do not identify the retail protected roster", damage_control["blocker_summary"])
+        self.assertIn("count 10 cannot safely be interpreted", damage_control["blocker_summary"])
+        self.assertIn("no explosion hit, victim-death, attacker, or damage-source attribution", damage_control["blocker_summary"])
+        self.assertIn("nine explicit credits remain active after 600 seconds", damage_control["blocker_summary"])
+        self.assertIn("the tenth succeeds", damage_control["blocker_summary"])
+        self.assertIn("does not select or activate the Pest Control / Damage Control route", damage_control["blocker_summary"])
+        self.assertIn("Treating any non-Splorg death as Splorg-caused", damage_control["blocker_summary"])
+        self.assertIn("Objective 2930 remains mapped-only", damage_control["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", damage_control["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", damage_control["evidence_sources"])
+        self.assertIn("PublicEventObjectiveCreditEntityScriptTests.cs", damage_control["evidence_sources"])
+
+        speedy_slaughterfest = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2947)]
+        self.assertEqual(
+            "mapped_up_speedy_slaughterfest_270_second_script_optional_controller_boundary_blocked_missing_squirgnasium_wave_completion_producer_and_route_activation",
+            speedy_slaughterfest["evidence_status"],
+        )
+        self.assertIn("zero-count, zero-object Script optional with flags 4", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("failureTimeMs 270000", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("no WorldLocation2", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("no reward-pane TargetGroup", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8175", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("achievement 5879 / Jabbithole row 2066", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("finishing The Squirgnasium event within the time limit", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("objective 2670 carries WorldLocation2 41755", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("Bubbles 28315, Squirg Belcher 28276", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("Squirg Bomber 28309/28470", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("Squirg Zombie 28301/30839", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("do not identify which singular Squirg or aggregate wave completion", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("remains active at 269.999 seconds", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("fails at 270 seconds without that signal", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("does not select or activate the Squirgnasium route", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("Crediting any single Squirg death", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("Objective 2947 remains mapped-only", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", speedy_slaughterfest["evidence_sources"])
+
+        clean_sweep = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2951)]
+        self.assertEqual(
+            "mapped_up_clean_sweep_count5_resourcepool_controller_boundary_blocked_missing_wave_roster_completion_and_next_wave_failure_producers",
+            clean_sweep["evidence_status"],
+        )
+        self.assertIn("ResourcePool challenge row with flags 4, count 5", clean_sweep["blocker_summary"])
+        self.assertIn("failureTimeMs 0", clean_sweep["blocker_summary"])
+        self.assertIn("no WorldLocation2", clean_sweep["blocker_summary"])
+        self.assertIn("no reward-pane TargetGroup", clean_sweep["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8218", clean_sweep["blocker_summary"])
+        self.assertIn("achievement 5875 / Jabbithole row 1953", clean_sweep["blocker_summary"])
+        self.assertIn("defeating each Squirgnasium wave before the next wave spawns", clean_sweep["blocker_summary"])
+        self.assertIn("objective 2670 carries WorldLocation2 41755", clean_sweep["blocker_summary"])
+        self.assertIn("no row defines per-wave membership, spawn cadence", clean_sweep["blocker_summary"])
+        self.assertIn("Count 5 is consistent with five qualifying wave-clear credits", clean_sweep["blocker_summary"])
+        self.assertIn("four explicit credits remain active after 600 seconds", clean_sweep["blocker_summary"])
+        self.assertIn("the fifth succeeds", clean_sweep["blocker_summary"])
+        self.assertIn("does not select or activate the Squirgnasium route", clean_sweep["blocker_summary"])
+        self.assertIn("no script-level non-timer failure transition", clean_sweep["blocker_summary"])
+        self.assertIn("Treating every five kills as a wave clear", clean_sweep["blocker_summary"])
+        self.assertIn("Objective 2951 remains mapped-only", clean_sweep["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", clean_sweep["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", clean_sweep["evidence_sources"])
+
+        accelerated_eradication = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2952)]
+        self.assertEqual(
+            "runtime_achievement_5891_grant_boundary_tested_objective_2952_mapped_up_blocked_missing_per_marauder_ship_lifetime_tracking_failure_and_room_completion_producers",
+            accelerated_eradication["evidence_status"],
+        )
+        self.assertIn("zero-count, zero-object Script optional with flags 4", accelerated_eradication["blocker_summary"])
+        self.assertIn("failureTimeMs 0", accelerated_eradication["blocker_summary"])
+        self.assertIn("parent objective 2677", accelerated_eradication["blocker_summary"])
+        self.assertIn("WorldLocation2 41756", accelerated_eradication["blocker_summary"])
+        self.assertIn("WorldZone 4334 H.M.S. Phineas", accelerated_eradication["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8215", accelerated_eradication["blocker_summary"])
+        self.assertIn("achievement 5891 / Jabbithole row 1955", accelerated_eradication["blocker_summary"])
+        self.assertIn("remain on the ship for more than 25 seconds", accelerated_eradication["blocker_summary"])
+        self.assertIn("not in PublicEventObjective.failureTimeMs", accelerated_eradication["blocker_summary"])
+        self.assertIn("separate 300000ms whole-room timer", accelerated_eradication["blocker_summary"])
+        self.assertIn("TargetGroup 10728", accelerated_eradication["blocker_summary"])
+        self.assertIn("no table row binds those members to its per-unit clock", accelerated_eradication["blocker_summary"])
+        self.assertIn("does not prove whether a Marauder's 25 seconds begins", accelerated_eradication["blocker_summary"])
+        self.assertIn("remains active after 25.001 seconds", accelerated_eradication["blocker_summary"])
+        self.assertIn("does not select or activate H.M.S. Phineas", accelerated_eradication["blocker_summary"])
+        self.assertIn("wrong global timer", accelerated_eradication["blocker_summary"])
+        self.assertIn("no script-level non-timer failure transition", accelerated_eradication["blocker_summary"])
+        self.assertIn("grants exact achievement 5891", accelerated_eradication["blocker_summary"])
+        self.assertIn("failed-2952 rejection", accelerated_eradication["blocker_summary"])
+        self.assertIn("successful sibling-2957 rejection", accelerated_eradication["blocker_summary"])
+        self.assertIn("Objective 2952 remains a mapped-only producer", accelerated_eradication["blocker_summary"])
+        self.assertIn("achievement-5891 handoff is implemented", accelerated_eradication["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", accelerated_eradication["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", accelerated_eradication["evidence_sources"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", accelerated_eradication["evidence_sources"])
+
+        sixth_sense = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2953)]
+        self.assertEqual(
+            "mapped_up_sixth_sense_count5_25_second_script_controller_boundary_blocked_missing_telegraph_hit_or_avoid_counter_direction_window_start_failure_and_completion_producers",
+            sixth_sense["evidence_status"],
+        )
+        self.assertIn("Script challenge with flags 4, count 5", sixth_sense["blocker_summary"])
+        self.assertIn("zero object and reward-pane TargetGroup", sixth_sense["blocker_summary"])
+        self.assertIn("failureTimeMs 25000", sixth_sense["blocker_summary"])
+        self.assertIn("parent objective 2677", sixth_sense["blocker_summary"])
+        self.assertIn("WorldLocation2 41756", sixth_sense["blocker_summary"])
+        self.assertIn("WorldZone 4334 H.M.S. Phineas", sixth_sense["blocker_summary"])
+        self.assertIn("PublicEventObjective enum labels objective 2953 SixthSense", sixth_sense["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8210", sixth_sense["blocker_summary"])
+        self.assertIn("separate challenge window", sixth_sense["blocker_summary"])
+        self.assertIn("whether count 5 means telegraph hits tolerated", sixth_sense["blocker_summary"])
+        self.assertIn("five hits may still be allowed and the sixth may fail", sixth_sense["blocker_summary"])
+        self.assertIn("four explicit controller credits remain active at 24.999 seconds", sixth_sense["blocker_summary"])
+        self.assertIn("the fifth succeeds before the deadline", sixth_sense["blocker_summary"])
+        self.assertIn("fails at exactly 25 seconds", sixth_sense["blocker_summary"])
+        self.assertIn("does not identify those credits as hits or avoids", sixth_sense["blocker_summary"])
+        self.assertIn("No dedicated Sixth Sense achievement was found", sixth_sense["blocker_summary"])
+        self.assertIn("AchievementChecklist 7167", sixth_sense["blocker_summary"])
+        self.assertIn("unrelated achievement 2341, Expert World Formulas", sixth_sense["blocker_summary"])
+        self.assertIn("does not select or activate H.M.S. Phineas", sixth_sense["blocker_summary"])
+        self.assertIn("identify the challenge's source spells or TelegraphDamage rows", sixth_sense["blocker_summary"])
+        self.assertIn("party-wide aggregation and duplicate rules", sixth_sense["blocker_summary"])
+        self.assertIn("Objective 2953 remains mapped-only", sixth_sense["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", sixth_sense["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", sixth_sense["evidence_sources"])
+
+        kick_20 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2954)]
+        self.assertEqual(
+            "runtime_achievement_5887_grant_boundary_tested_objective_2954_mapped_up_blocked_missing_cosmic_kick_knockoff_attribution_team_scope_and_producer",
+            kick_20["evidence_status"],
+        )
+        self.assertIn("Script challenge row with flags 4, count 20", kick_20["blocker_summary"])
+        self.assertIn("zero object and reward-pane TargetGroup", kick_20["blocker_summary"])
+        self.assertIn("no failure timer", kick_20["blocker_summary"])
+        self.assertIn("parent objective 2677", kick_20["blocker_summary"])
+        self.assertIn("WorldLocation2 41756", kick_20["blocker_summary"])
+        self.assertIn("WorldZone 4334 H.M.S. Phineas", kick_20["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8214", kick_20["blocker_summary"])
+        self.assertIn("achievement 5887 / Jabbithole row 2067", kick_20["blocker_summary"])
+        self.assertIn("kicking twenty Marauders off H.M.S. Phineas as a group", kick_20["blocker_summary"])
+        self.assertIn("parallel objective 2923 and achievement 5886", kick_20["blocker_summary"])
+        self.assertIn("Spell 71680 is Cosmic Kick", kick_20["blocker_summary"])
+        self.assertIn("TargetGroup 10728 contains Creature2 61822, 62266", kick_20["blocker_summary"])
+        self.assertIn("does not activate the H.M.S. Phineas route or objective 2954", kick_20["blocker_summary"])
+        self.assertIn("nineteen explicit controller credits remain active after 600 seconds", kick_20["blocker_summary"])
+        self.assertIn("the twentieth succeeds", kick_20["blocker_summary"])
+        self.assertIn("grants exact achievement 5887", kick_20["blocker_summary"])
+        self.assertIn("failed-2954", kick_20["blocker_summary"])
+        self.assertIn("successful-sibling-2955", kick_20["blocker_summary"])
+        self.assertIn("per cast, per target hit, per forced movement", kick_20["blocker_summary"])
+        self.assertIn("Crediting ordinary Marauder deaths or every Cosmic Kick cast", kick_20["blocker_summary"])
+        self.assertIn("Objective 2954 remains a mapped-only producer", kick_20["blocker_summary"])
+        self.assertIn("achievement-5887 handoff is implemented", kick_20["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", kick_20["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", kick_20["evidence_sources"])
+
+        kick_40 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2955)]
+        self.assertEqual(
+            "runtime_achievement_5888_grant_boundary_tested_objective_2955_mapped_up_blocked_missing_cosmic_kick_knockoff_attribution_team_scope_and_producer",
+            kick_40["evidence_status"],
+        )
+        self.assertIn("Script challenge row with flags 4, count 40", kick_40["blocker_summary"])
+        self.assertIn("zero object and reward-pane TargetGroup", kick_40["blocker_summary"])
+        self.assertIn("no failure timer", kick_40["blocker_summary"])
+        self.assertIn("parent objective 2677", kick_40["blocker_summary"])
+        self.assertIn("WorldLocation2 41756", kick_40["blocker_summary"])
+        self.assertIn("WorldZone 4334 H.M.S. Phineas", kick_40["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8213", kick_40["blocker_summary"])
+        self.assertIn("achievement 5888 / Jabbithole row 1983", kick_40["blocker_summary"])
+        self.assertIn("kicking forty Marauders off H.M.S. Phineas as a group", kick_40["blocker_summary"])
+        self.assertIn("parallel objectives 2923 and 2954 plus achievements 5886 and 5887", kick_40["blocker_summary"])
+        self.assertIn("Spell 71680 is Cosmic Kick", kick_40["blocker_summary"])
+        self.assertIn("TargetGroup 10728 contains Creature2 61822, 62266", kick_40["blocker_summary"])
+        self.assertIn("does not activate the H.M.S. Phineas route or objective 2955", kick_40["blocker_summary"])
+        self.assertIn("thirty-nine explicit controller credits remain active after 600 seconds", kick_40["blocker_summary"])
+        self.assertIn("the fortieth succeeds", kick_40["blocker_summary"])
+        self.assertIn("grants exact achievement 5888", kick_40["blocker_summary"])
+        self.assertIn("failed-2955", kick_40["blocker_summary"])
+        self.assertIn("successful-sibling-2956", kick_40["blocker_summary"])
+        self.assertIn("per cast, per target hit, per forced movement", kick_40["blocker_summary"])
+        self.assertIn("Crediting ordinary Marauder deaths or every Cosmic Kick cast", kick_40["blocker_summary"])
+        self.assertIn("Objective 2955 remains a mapped-only producer", kick_40["blocker_summary"])
+        self.assertIn("achievement-5888 handoff is implemented", kick_40["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", kick_40["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", kick_40["evidence_sources"])
+
+        kick_80 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2956)]
+        self.assertEqual(
+            "runtime_achievement_5889_grant_boundary_tested_objective_2956_mapped_up_blocked_missing_cosmic_kick_knockoff_attribution_team_scope_and_producer",
+            kick_80["evidence_status"],
+        )
+        self.assertIn("Script challenge row with flags 4, count 80", kick_80["blocker_summary"])
+        self.assertIn("zero object and reward-pane TargetGroup", kick_80["blocker_summary"])
+        self.assertIn("no failure timer", kick_80["blocker_summary"])
+        self.assertIn("parent objective 2677", kick_80["blocker_summary"])
+        self.assertIn("WorldLocation2 41756", kick_80["blocker_summary"])
+        self.assertIn("WorldZone 4334 H.M.S. Phineas", kick_80["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8200", kick_80["blocker_summary"])
+        self.assertIn("achievement 5889 / Jabbithole row 1912", kick_80["blocker_summary"])
+        self.assertIn("kicking eighty Marauders off H.M.S. Phineas as a group", kick_80["blocker_summary"])
+        self.assertIn("parallel objectives 2923, 2954, and 2955 plus achievements 5886-5888", kick_80["blocker_summary"])
+        self.assertIn("Spell 71680 is Cosmic Kick", kick_80["blocker_summary"])
+        self.assertIn("TargetGroup 10728 contains Creature2 61822, 62266", kick_80["blocker_summary"])
+        self.assertIn("does not activate the H.M.S. Phineas route or objective 2956", kick_80["blocker_summary"])
+        self.assertIn("seventy-nine explicit controller credits remain active after 600 seconds", kick_80["blocker_summary"])
+        self.assertIn("the eightieth succeeds", kick_80["blocker_summary"])
+        self.assertIn("grants exact achievement 5889", kick_80["blocker_summary"])
+        self.assertIn("failed-2956", kick_80["blocker_summary"])
+        self.assertIn("lower-tier sibling-2955", kick_80["blocker_summary"])
+        self.assertIn("per cast, per target hit, per forced movement", kick_80["blocker_summary"])
+        self.assertIn("Crediting ordinary Marauder deaths or every Cosmic Kick cast", kick_80["blocker_summary"])
+        self.assertIn("Objective 2956 remains a mapped-only producer", kick_80["blocker_summary"])
+        self.assertIn("achievement-5889 handoff is implemented", kick_80["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", kick_80["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", kick_80["evidence_sources"])
+
+        perfect_precision = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 2957)]
+        self.assertEqual(
+            "runtime_achievement_5890_grant_boundary_tested_objective_2957_mapped_up_blocked_missing_cosmic_kick_miss_failure_and_room_completion_producers",
+            perfect_precision["evidence_status"],
+        )
+        self.assertIn("zero-count, zero-object Script optional with flags 4", perfect_precision["blocker_summary"])
+        self.assertIn("no failure timer or reward-pane TargetGroup", perfect_precision["blocker_summary"])
+        self.assertIn("parent objective 2677", perfect_precision["blocker_summary"])
+        self.assertIn("WorldLocation2 41756", perfect_precision["blocker_summary"])
+        self.assertIn("WorldZone 4334 H.M.S. Phineas", perfect_precision["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8212", perfect_precision["blocker_summary"])
+        self.assertIn("achievement 5890 / Jabbithole row 1934", perfect_precision["blocker_summary"])
+        self.assertIn("without ever missing a Cosmic Kick", perfect_precision["blocker_summary"])
+        self.assertIn("Spell 71680 is Cosmic Kick", perfect_precision["blocker_summary"])
+        self.assertIn("spell 71984, Smash - Miss All Check", perfect_precision["blocker_summary"])
+        self.assertIn("spell 71932, Miss All Decrease Combo", perfect_precision["blocker_summary"])
+        self.assertIn("spell 71992, Miss All Kill Smashed Unit", perfect_precision["blocker_summary"])
+        self.assertIn("do not prove an objective-failure callback", perfect_precision["blocker_summary"])
+        self.assertIn("invalid or non-vulnerable target", perfect_precision["blocker_summary"])
+        self.assertIn("hitting only one of several intended targets", perfect_precision["blocker_summary"])
+        self.assertIn("whether one member's miss fails everyone", perfect_precision["blocker_summary"])
+        self.assertIn("remains active after 600 seconds", perfect_precision["blocker_summary"])
+        self.assertIn("does not activate the H.M.S. Phineas route or objective 2957", perfect_precision["blocker_summary"])
+        self.assertIn("no script-level non-timer failure transition", perfect_precision["blocker_summary"])
+        self.assertIn("grants exact achievement 5890", perfect_precision["blocker_summary"])
+        self.assertIn("failed-2957 rejection", perfect_precision["blocker_summary"])
+        self.assertIn("successful sibling-2956 rejection", perfect_precision["blocker_summary"])
+        self.assertIn("Objective 2957 remains a mapped-only producer", perfect_precision["blocker_summary"])
+        self.assertIn("achievement-5890 handoff is implemented", perfect_precision["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", perfect_precision["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", perfect_precision["evidence_sources"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", perfect_precision["evidence_sources"])
+
+        no_soup_for_yall = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3148)]
+        self.assertEqual(
+            "mapped_up_no_soup_for_yall_30_second_timedwin_controller_boundary_blocked_missing_food_consumption_reset_and_survival_completion_producers",
+            no_soup_for_yall["evidence_status"],
+        )
+        self.assertIn("zero-count, zero-object TimedWin challenge with flags 4", no_soup_for_yall["blocker_summary"])
+        self.assertIn("failureTimeMs 30000", no_soup_for_yall["blocker_summary"])
+        self.assertIn("no reward-pane TargetGroup or parent objective", no_soup_for_yall["blocker_summary"])
+        self.assertIn("WorldLocation2 45907", no_soup_for_yall["blocker_summary"])
+        self.assertIn("WorldZone 4352 Employee Cafeteria", no_soup_for_yall["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8159", no_soup_for_yall["blocker_summary"])
+        self.assertIn("achievement 5946 / Jabbithole row 1939", no_soup_for_yall["blocker_summary"])
+        self.assertIn("TargetGroup 9151 identifies Slimy Feast Creature2 61468", no_soup_for_yall["blocker_summary"])
+        self.assertIn("TargetGroup 10199", no_soup_for_yall["blocker_summary"])
+        self.assertIn("references none of those target groups", no_soup_for_yall["blocker_summary"])
+        self.assertIn("remains active at 29.999 seconds", no_soup_for_yall["blocker_summary"])
+        self.assertIn("fails at exactly 30 seconds", no_soup_for_yall["blocker_summary"])
+        self.assertIn("surviving a full uninterrupted 30 seconds", no_soup_for_yall["blocker_summary"])
+        self.assertIn("whether a bomb counts as food", no_soup_for_yall["blocker_summary"])
+        self.assertIn("does not select or activate the Employee Cafeteria", no_soup_for_yall["blocker_summary"])
+        self.assertIn("no entity rows in area 4352", no_soup_for_yall["blocker_summary"])
+        self.assertIn("Objective 3148 remains mapped-only", no_soup_for_yall["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", no_soup_for_yall["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", no_soup_for_yall["evidence_sources"])
+
+        binge_eating = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3149)]
+        self.assertEqual(
+            "mapped_up_binge_eating_count10_resourcepool_controller_boundary_blocked_10_vs_15_requirement_and_missing_food_consumption_purge_reset_producers",
+            binge_eating["evidence_status"],
+        )
+        self.assertIn("ResourcePool challenge with flags 4, count 10", binge_eating["blocker_summary"])
+        self.assertIn("no failure timer, reward-pane TargetGroup, or parent objective", binge_eating["blocker_summary"])
+        self.assertIn("WorldLocation2 45907", binge_eating["blocker_summary"])
+        self.assertIn("WorldZone 4352 Employee Cafeteria", binge_eating["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8165", binge_eating["blocker_summary"])
+        self.assertIn("achievement 5947 / Jabbithole row 1959", binge_eating["blocker_summary"])
+        self.assertIn("15 pieces of food without purging", binge_eating["blocker_summary"])
+        self.assertIn("only food-count ResourcePool", binge_eating["blocker_summary"])
+        self.assertIn("whether the achievement text is stale", binge_eating["blocker_summary"])
+        self.assertIn("TargetGroup 9151 identifies Slimy Feast Creature2 61468", binge_eating["blocker_summary"])
+        self.assertIn("TargetGroup 10199", binge_eating["blocker_summary"])
+        self.assertIn("nine explicit controller credits remain active after 600 seconds", binge_eating["blocker_summary"])
+        self.assertIn("the tenth succeeds", binge_eating["blocker_summary"])
+        self.assertIn("does not resolve the 10-versus-15 retail requirement", binge_eating["blocker_summary"])
+        self.assertIn("whether a bomb purge resets the count", binge_eating["blocker_summary"])
+        self.assertIn("does not select or activate the Employee Cafeteria", binge_eating["blocker_summary"])
+        self.assertIn("no script-level non-timer failure transition", binge_eating["blocker_summary"])
+        self.assertIn("Objective 3149 remains mapped-only", binge_eating["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", binge_eating["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", binge_eating["evidence_sources"])
+
+        purge = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3150)]
+        self.assertEqual(
+            "mapped_up_purge_15_second_script_challenge_controller_boundary_blocked_missing_bomb_consumption_purge_transition_and_window_producers",
+            purge["evidence_status"],
+        )
+        self.assertIn("zero-count, zero-object Script challenge with flags 4", purge["blocker_summary"])
+        self.assertIn("failureTimeMs 15000", purge["blocker_summary"])
+        self.assertIn("no reward-pane TargetGroup or parent objective", purge["blocker_summary"])
+        self.assertIn("WorldLocation2 45907", purge["blocker_summary"])
+        self.assertIn("WorldZone 4352 Employee Cafeteria", purge["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8209", purge["blocker_summary"])
+        self.assertIn("achievement 5948 / Jabbithole row 1976", purge["blocker_summary"])
+        self.assertIn("spell 71193 as [UP] Slimy Feast - Bomb", purge["blocker_summary"])
+        self.assertIn("71192 as Explosive Buff", purge["blocker_summary"])
+        self.assertIn("71347 as Buff Detected", purge["blocker_summary"])
+        self.assertIn("72469 as Explosion - Stomach Spew", purge["blocker_summary"])
+        self.assertIn("do not bind any transition to objective 3150", purge["blocker_summary"])
+        self.assertIn("Explosive buff marker Creature2 61540", purge["blocker_summary"])
+        self.assertIn("maps ambiguously to generic Explosive Barrel Creature2 37691", purge["blocker_summary"])
+        self.assertIn("remains active at 14.999 seconds", purge["blocker_summary"])
+        self.assertIn("fails at exactly 15 seconds", purge["blocker_summary"])
+        self.assertIn("whether the window begins on objective activation", purge["blocker_summary"])
+        self.assertIn("does not select or activate the Employee Cafeteria", purge["blocker_summary"])
+        self.assertIn("Objective 3150 remains mapped-only", purge["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", purge["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", purge["evidence_sources"])
+
+        fast_feast = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3151)]
+        self.assertEqual(
+            "mapped_up_fast_feast_180_second_script_optional_controller_boundary_blocked_missing_slimy_feast_death_timer_start_and_room_route_producers",
+            fast_feast["evidence_status"],
+        )
+        self.assertIn("zero-count, zero-object Script optional with flags 4", fast_feast["blocker_summary"])
+        self.assertIn("failureTimeMs 180000", fast_feast["blocker_summary"])
+        self.assertIn("no reward-pane TargetGroup or parent objective", fast_feast["blocker_summary"])
+        self.assertIn("WorldLocation2 45907", fast_feast["blocker_summary"])
+        self.assertIn("WorldZone 4352 Employee Cafeteria", fast_feast["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8194", fast_feast["blocker_summary"])
+        self.assertIn("achievement 5949 / Jabbithole row 2013", fast_feast["blocker_summary"])
+        self.assertIn("TargetGroup 9151 data0 identifies Slimy Feast Creature2 61468", fast_feast["blocker_summary"])
+        self.assertIn("objective 3151 has ObjectId 0", fast_feast["blocker_summary"])
+        self.assertIn("65 unique-name Creature2 61468 coordinate observations", fast_feast["blocker_summary"])
+        self.assertIn("movement observations around the room anchor", fast_feast["blocker_summary"])
+        self.assertIn("no public-event 594 relation for Creature2 61468", fast_feast["blocker_summary"])
+        self.assertIn("zero entity rows in world 2980 / area 4352", fast_feast["blocker_summary"])
+        self.assertIn("remains active at 179.999 seconds", fast_feast["blocker_summary"])
+        self.assertIn("fails at exactly 180 seconds", fast_feast["blocker_summary"])
+        self.assertIn("whether the window begins on room selection", fast_feast["blocker_summary"])
+        self.assertIn("simultaneous death at the deadline", fast_feast["blocker_summary"])
+        self.assertIn("defines FastFeast only as enum value 3151", fast_feast["blocker_summary"])
+        self.assertIn("never selects or activates the Employee Cafeteria", fast_feast["blocker_summary"])
+        self.assertIn("Objective 3151 remains mapped-only", fast_feast["blocker_summary"])
+        self.assertIn("live packet/log or controller/death decompile trace", fast_feast["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", fast_feast["evidence_sources"])
+
+        one_of_each = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3152)]
+        self.assertEqual(
+            "mapped_up_one_of_each_three_food_buff_simultaneous_script_optional_controller_boundary_blocked_missing_buff_application_coexistence_detection_and_room_producers",
+            one_of_each["evidence_status"],
+        )
+        self.assertIn("zero-count, zero-object Script optional with flags 4", one_of_each["blocker_summary"])
+        self.assertIn("no failure timer, reward-pane TargetGroup, or parent objective", one_of_each["blocker_summary"])
+        self.assertIn("WorldLocation2 45907", one_of_each["blocker_summary"])
+        self.assertIn("WorldZone 4352 Employee Cafeteria", one_of_each["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8222", one_of_each["blocker_summary"])
+        self.assertIn("achievement 5950 / Jabbithole row 2040", one_of_each["blocker_summary"])
+        self.assertIn("TargetGroup 10199, [UP] Slimy Feast - Buffs", one_of_each["blocker_summary"])
+        self.assertIn("61537 [UP] Slimy Feast - Dracus Buff 1 - Loftite", one_of_each["blocker_summary"])
+        self.assertIn("61538 Buff 2 - Accelerite", one_of_each["blocker_summary"])
+        self.assertIn("61539 Buff 3 - Radioactive", one_of_each["blocker_summary"])
+        self.assertIn("61540 Buff 4 - Explosive", one_of_each["blocker_summary"])
+        self.assertIn("71189 Loftite Buff", one_of_each["blocker_summary"])
+        self.assertIn("71190 Accelerite Buff", one_of_each["blocker_summary"])
+        self.assertIn("71191 Radioactive Buff", one_of_each["blocker_summary"])
+        self.assertIn("71192 Explosive Buff", one_of_each["blocker_summary"])
+        self.assertIn("first three food buffs from the fourth bomb/purge state", one_of_each["blocker_summary"])
+        self.assertIn("objective 3152 has ObjectId 0", one_of_each["blocker_summary"])
+        self.assertIn("Spell 71347 is Buff Detected", one_of_each["blocker_summary"])
+        self.assertIn("remains active after 600 seconds", one_of_each["blocker_summary"])
+        self.assertIn("whether the three food buffs can naturally coexist", one_of_each["blocker_summary"])
+        self.assertIn("does not select or activate the Employee Cafeteria", one_of_each["blocker_summary"])
+        self.assertIn("counting distinct spell casts without concurrent persistence", one_of_each["blocker_summary"])
+        self.assertIn("Objective 3152 remains mapped-only", one_of_each["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", one_of_each["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", one_of_each["evidence_sources"])
+
+        squirg_defuser = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3198)]
+        self.assertEqual(
+            "mapped_up_squirg_defuser_count3_resourcepool_controller_boundary_blocked_missing_belcher_spawn_onslaught_interrupt_reason_and_wave_producers",
+            squirg_defuser["evidence_status"],
+        )
+        self.assertIn("ResourcePool challenge with flags 4, count 3", squirg_defuser["blocker_summary"])
+        self.assertIn("no failure timer, WorldLocation2", squirg_defuser["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8140", squirg_defuser["blocker_summary"])
+        self.assertIn("achievement 5876 / Jabbithole row 2051", squirg_defuser["blocker_summary"])
+        self.assertIn("WorldLocation2 41755", squirg_defuser["blocker_summary"])
+        self.assertIn("WorldZone 4337 The Squirgnasium", squirg_defuser["blocker_summary"])
+        self.assertIn("Squirg Belcher Creature2 62011", squirg_defuser["blocker_summary"])
+        self.assertIn("97 coordinate observations", squirg_defuser["blocker_summary"])
+        self.assertIn("repeated movement observations, not 97 reviewed wave spawns", squirg_defuser["blocker_summary"])
+        self.assertIn("No TargetGroup contains Creature2 62011", squirg_defuser["blocker_summary"])
+        self.assertIn("zero entity rows in world 2980 / area 4337", squirg_defuser["blocker_summary"])
+        self.assertIn("spell 72112 is the build-16042 [UP] Squirg Onslaught", squirg_defuser["blocker_summary"])
+        self.assertIn("3500-ms cast", squirg_defuser["blocker_summary"])
+        self.assertIn("SummonCreature effect for Creature2 62371", squirg_defuser["blocker_summary"])
+        self.assertIn("Creature2 62011 has action-set 0", squirg_defuser["blocker_summary"])
+        self.assertIn("CastResult.SpellInterrupted", squirg_defuser["blocker_summary"])
+        self.assertIn("ISpellScript.OnFinish callback receives only (ISpell, bool cancelled)", squirg_defuser["blocker_summary"])
+        self.assertIn("two explicit controller credits remain active after 600 seconds", squirg_defuser["blocker_summary"])
+        self.assertIn("the third succeeds", squirg_defuser["blocker_summary"])
+        self.assertIn("per interrupted cast, distinct Belcher, or wave", squirg_defuser["blocker_summary"])
+        self.assertIn("defines SquirgDefuser only as enum value 3198", squirg_defuser["blocker_summary"])
+        self.assertIn("Treating every cancelled cast as an interrupt", squirg_defuser["blocker_summary"])
+        self.assertIn("Objective 3198 remains mapped-only", squirg_defuser["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", squirg_defuser["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", squirg_defuser["evidence_sources"])
+        self.assertIn("ISpellScript.cs", squirg_defuser["evidence_sources"])
+
+        twinkle_toes = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3199)]
+        self.assertEqual(
+            "mapped_up_twinkle_toes_zero_count_script_optional_controller_boundary_blocked_missing_squirg_burst_hit_failure_room_completion_and_wave_producers",
+            twinkle_toes["evidence_status"],
+        )
+        self.assertIn("zero-count, zero-object Script optional with flags 4", twinkle_toes["blocker_summary"])
+        self.assertIn("no failure timer, WorldLocation2", twinkle_toes["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8203", twinkle_toes["blocker_summary"])
+        self.assertIn("achievement 5878 / Jabbithole row 2034", twinkle_toes["blocker_summary"])
+        self.assertIn("WorldLocation2 41755", twinkle_toes["blocker_summary"])
+        self.assertIn("WorldZone 4337 The Squirgnasium", twinkle_toes["blocker_summary"])
+        self.assertIn("Squirg Bomber Creature2 62371", twinkle_toes["blocker_summary"])
+        self.assertIn("214 coordinate observations", twinkle_toes["blocker_summary"])
+        self.assertIn("repeated historical observations, not 214 reviewed wave spawns", twinkle_toes["blocker_summary"])
+        self.assertIn("No TargetGroup contains Creature2 62371", twinkle_toes["blocker_summary"])
+        self.assertIn("zero entity rows in world 2980 / area 4337", twinkle_toes["blocker_summary"])
+        self.assertIn("action-set 2209, but that set contains only Creature2Action row 4951", twinkle_toes["blocker_summary"])
+        self.assertIn("does not bind spell 72114", twinkle_toes["blocker_summary"])
+        self.assertIn("only Spell4 row whose description contains Squirg Burst", twinkle_toes["blocker_summary"])
+        self.assertIn("800-ms cast", twinkle_toes["blocker_summary"])
+        self.assertIn("Damage effects 185574 and 185575", twinkle_toes["blocker_summary"])
+        self.assertIn("before effects are applied", twinkle_toes["blocker_summary"])
+        self.assertIn("do not prove an actual hit", twinkle_toes["blocker_summary"])
+        self.assertIn("OnHealthChange callback receives only source, amount, and DamageType", twinkle_toes["blocker_summary"])
+        self.assertIn("IPublicEventObjective has no script-facing failure transition", twinkle_toes["blocker_summary"])
+        self.assertIn("SetStatus is private", twinkle_toes["blocker_summary"])
+        self.assertIn("remains active after 600 seconds", twinkle_toes["blocker_summary"])
+        self.assertIn("defines TwinkleToes only as enum value 3199", twinkle_toes["blocker_summary"])
+        self.assertIn("Treating selected spell targets as hits", twinkle_toes["blocker_summary"])
+        self.assertIn("Objective 3199 remains mapped-only", twinkle_toes["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", twinkle_toes["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", twinkle_toes["evidence_sources"])
+        self.assertIn("IUnitScript.cs", twinkle_toes["evidence_sources"])
+
+        jump_jump = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3200)]
+        self.assertEqual(
+            "mapped_up_jump_jump_count15_resourcepool_challenge_signal_boundary_blocked_missing_bubbles_pulverize_avoid_and_wave_producers",
+            jump_jump["evidence_status"],
+        )
+        self.assertIn("count-15 ResourcePool challenge with flags 4", jump_jump["blocker_summary"])
+        self.assertIn("no failure timer, WorldLocation2", jump_jump["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8197", jump_jump["blocker_summary"])
+        self.assertIn("achievement 5877 / Jabbithole row 2004", jump_jump["blocker_summary"])
+        self.assertIn("WorldLocation2 41755", jump_jump["blocker_summary"])
+        self.assertIn("WorldZone 4337 The Squirgnasium", jump_jump["blocker_summary"])
+        self.assertIn("Bubbles Creature2 62010", jump_jump["blocker_summary"])
+        self.assertIn("60 coordinate observations", jump_jump["blocker_summary"])
+        self.assertIn("repeated historical observations, not 60 reviewed encounter spawns", jump_jump["blocker_summary"])
+        self.assertIn("No TargetGroup contains Creature2 62010", jump_jump["blocker_summary"])
+        self.assertIn("zero entity rows in world 2980 / area 4337", jump_jump["blocker_summary"])
+        self.assertIn("Creature2 62010 has action-set 0", jump_jump["blocker_summary"])
+        self.assertIn("Pulverize spell 72140", jump_jump["blocker_summary"])
+        self.assertIn("15000-ms cast", jump_jump["blocker_summary"])
+        self.assertIn("Part 2 spell 72142", jump_jump["blocker_summary"])
+        self.assertIn("Challenge Signal spell 75104", jump_jump["blocker_summary"])
+        self.assertIn("Challenge Signal - Success spell 75106", jump_jump["blocker_summary"])
+        self.assertIn("RavelSignal mode 4 / signal 25160 / DataBits02 1", jump_jump["blocker_summary"])
+        self.assertIn("does not reference 75106", jump_jump["blocker_summary"])
+        self.assertIn("only mode 1", jump_jump["blocker_summary"])
+        self.assertIn("mode 4/5 effects are diagnostics-only", jump_jump["blocker_summary"])
+        self.assertIn("fourteen explicit controller credits remain active after 600 seconds", jump_jump["blocker_summary"])
+        self.assertIn("the fifteenth succeeds", jump_jump["blocker_summary"])
+        self.assertIn("per clean cast, per avoiding player, or group-wide ground pound", jump_jump["blocker_summary"])
+        self.assertIn("defines JumpJump only as enum value 3200", jump_jump["blocker_summary"])
+        self.assertIn("Treating spell 75106's name as a complete producer graph", jump_jump["blocker_summary"])
+        self.assertIn("Objective 3200 remains mapped-only", jump_jump["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", jump_jump["blocker_summary"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundary.cs", jump_jump["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", jump_jump["evidence_sources"])
+
+        coordination = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3205)]
+        self.assertEqual(
+            "mapped_up_coordination_count5_script_challenge_threshold_boundary_blocked_missing_spark_hit_attribution_course_completion_and_failure_producers",
+            coordination["evidence_status"],
+        )
+        self.assertIn("count-5 Script challenge with flags 4", coordination["blocker_summary"])
+        self.assertIn("no failure timer or reward-pane TargetGroup", coordination["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8149", coordination["blocker_summary"])
+        self.assertIn("achievement 5957 / Jabbithole row 2014", coordination["blocker_summary"])
+        self.assertIn("WorldLocation2 45901", coordination["blocker_summary"])
+        self.assertIn("WorldZone 4331 The Break Room", coordination["blocker_summary"])
+        self.assertIn("parent objective 2680", coordination["blocker_summary"])
+        self.assertIn("TargetGroup 12179", coordination["blocker_summary"])
+        self.assertIn("Bev-O-Rage Creature2 61463", coordination["blocker_summary"])
+        self.assertIn("Spark Creature2 61469", coordination["blocker_summary"])
+        self.assertIn("126 coordinate observations", coordination["blocker_summary"])
+        self.assertIn("not 126 reviewed obstacle-course placements", coordination["blocker_summary"])
+        self.assertIn("No TargetGroup contains Creature2 61469", coordination["blocker_summary"])
+        self.assertIn("zero runtime Creature2 61469 rows", coordination["blocker_summary"])
+        self.assertIn("Straight Spark 71109", coordination["blocker_summary"])
+        self.assertIn("Spark 71110", coordination["blocker_summary"])
+        self.assertIn("Lazer Spark 71111", coordination["blocker_summary"])
+        self.assertIn("Damage effects 182138, 182141, and 182145", coordination["blocker_summary"])
+        self.assertIn("RavelSignal mode 4", coordination["blocker_summary"])
+        self.assertIn("signals 25248 and 27129", coordination["blocker_summary"])
+        self.assertIn("Spark Target Hit Fluff 76847", coordination["blocker_summary"])
+        self.assertIn("mode 4 is diagnostics-only", coordination["blocker_summary"])
+        self.assertIn("four explicit controller credits remain active after 600 seconds", coordination["blocker_summary"])
+        self.assertIn("the fifth succeeds", coordination["blocker_summary"])
+        self.assertIn("less than five means at most four", coordination["blocker_summary"])
+        self.assertIn("activates parent 2680 and spawns Creature2 61463", coordination["blocker_summary"])
+        self.assertIn("does not activate objective 3205", coordination["blocker_summary"])
+        self.assertIn("Treating generic positive credits as Spark hits", coordination["blocker_summary"])
+        self.assertIn("Objective 3205 remains mapped-only", coordination["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", coordination["blocker_summary"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundary.cs", coordination["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", coordination["evidence_sources"])
+
+        make_it_rain = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3207)]
+        self.assertEqual(
+            "mapped_up_make_it_rain_count75_script_coin_signal_boundary_blocked_missing_coin_spawn_pickup_and_payload_routing_producers",
+            make_it_rain["evidence_status"],
+        )
+        self.assertIn("count-75 Script optional objective with flags 4", make_it_rain["blocker_summary"])
+        self.assertIn("no failure timer or reward-pane TargetGroup", make_it_rain["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8173", make_it_rain["blocker_summary"])
+        self.assertIn("achievement 5961 / Jabbithole row 2078", make_it_rain["blocker_summary"])
+        self.assertIn("WorldLocation2 45901", make_it_rain["blocker_summary"])
+        self.assertIn("WorldZone 4331 The Break Room", make_it_rain["blocker_summary"])
+        self.assertIn("TargetGroup 12179", make_it_rain["blocker_summary"])
+        self.assertIn("Bev-O-Rage Creature2 61463", make_it_rain["blocker_summary"])
+        self.assertIn("Creature2 61637, [UP] e2680 - Vending Machine - Coin Invis Unit", make_it_rain["blocker_summary"])
+        self.assertIn("action set 3867 contains only an SFX action", make_it_rain["blocker_summary"])
+        self.assertIn("TargetGroup 12889 / source row 679920", make_it_rain["blocker_summary"])
+        self.assertIn("Vending Machine - Pickups Pull Targets", make_it_rain["blocker_summary"])
+        self.assertIn("Creature2 62719, [UP] e2680 - Vending Machine - Drink Invis Unit", make_it_rain["blocker_summary"])
+        self.assertIn("shared pickup pull-target family, not a spawn or credit producer", make_it_rain["blocker_summary"])
+        self.assertIn("objective 3207 does not reference TargetGroup 12889", make_it_rain["blocker_summary"])
+        self.assertIn("no Spell4Effects row points to it", make_it_rain["blocker_summary"])
+        self.assertIn("zero Creature2 61637 rows", make_it_rain["blocker_summary"])
+        self.assertIn("zero Creature2 62719 rows", make_it_rain["blocker_summary"])
+        self.assertIn("157 reviewed historical Bev-O-Rage coordinate observations", make_it_rain["blocker_summary"])
+        self.assertIn("activation spell 71233 exposes controller signal 25251", make_it_rain["blocker_summary"])
+        self.assertIn("Moment of Opportunity spell 71285 proxies Loose Change 71286", make_it_rain["blocker_summary"])
+        self.assertIn("signal 23242 with DataBits02 5", make_it_rain["blocker_summary"])
+        self.assertIn("signal 22195 with DataBits02 3", make_it_rain["blocker_summary"])
+        self.assertIn("Knock Random Coins 71287", make_it_rain["blocker_summary"])
+        self.assertIn("Coin Pickup Aura 71288 proxies 71290", make_it_rain["blocker_summary"])
+        self.assertIn("signal 23242 with DataBits02 1", make_it_rain["blocker_summary"])
+        self.assertIn("Pocketful of Quarters 71289", make_it_rain["blocker_summary"])
+        self.assertIn("shared by drinks, critter money, alarms", make_it_rain["blocker_summary"])
+        self.assertIn("mode 4 as diagnostics-only", make_it_rain["blocker_summary"])
+        self.assertIn("IWorldEntityScript.OnSignal route carries only signalId and drops DataBits02", make_it_rain["blocker_summary"])
+        self.assertIn("74 explicit controller credits remain active after 600 seconds", make_it_rain["blocker_summary"])
+        self.assertIn("the seventy-fifth succeeds", make_it_rain["blocker_summary"])
+        self.assertIn("does not activate objective 3207", make_it_rain["blocker_summary"])
+        self.assertIn("Objective 3207 remains mapped-only", make_it_rain["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", make_it_rain["blocker_summary"])
+        self.assertIn("exact TargetGroup 12889 pull-target role", make_it_rain["blocker_summary"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundary.cs", make_it_rain["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", make_it_rain["evidence_sources"])
+
+        happy_feet = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3208)]
+        self.assertEqual(
+            "mapped_up_happy_feet_count5_30s_script_challenge_threshold_boundary_blocked_missing_tri_burst_hit_miss_timer_completion_and_failure_producers",
+            happy_feet["evidence_status"],
+        )
+        self.assertIn("count-5 Script challenge with flags 4", happy_feet["blocker_summary"])
+        self.assertIn("a 30000 ms timer", happy_feet["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8183", happy_feet["blocker_summary"])
+        self.assertIn("achievement 5958 / Jabbithole row 2041", happy_feet["blocker_summary"])
+        self.assertIn("Tri Burst Bounce", happy_feet["blocker_summary"])
+        self.assertIn("TargetGroup 12179", happy_feet["blocker_summary"])
+        self.assertIn("Bev-O-Rage Creature2 61463", happy_feet["blocker_summary"])
+        self.assertIn("Jabbithole Bev-O-Rage rows 28283 and 28294", happy_feet["blocker_summary"])
+        self.assertIn("157 historical boss coordinate observations", happy_feet["blocker_summary"])
+        self.assertIn("tier-1 through tier-20 Tri Burst family", happy_feet["blocker_summary"])
+        self.assertIn("Creature2 61463 has action set 0", happy_feet["blocker_summary"])
+        self.assertIn("Tier-1 spell 71182 has a 1500 ms cast", happy_feet["blocker_summary"])
+        self.assertIn("Damage 182400", happy_feet["blocker_summary"])
+        self.assertIn("mode-4 Ravel signal 25249 effect 193711", happy_feet["blocker_summary"])
+        self.assertIn("Tri Burst - Miss Check Proxy", happy_feet["blocker_summary"])
+        self.assertIn("Spell 71291 removes Pocketful of Quarters buff 71289", happy_feet["blocker_summary"])
+        self.assertIn("Signal 25249 appears on all 20 Tri Burst tiers", happy_feet["blocker_summary"])
+        self.assertIn("signal 23242 is shared by drinks, coin pickup", happy_feet["blocker_summary"])
+        self.assertIn("both observed signals are mode 4 and remain diagnostics-only", happy_feet["blocker_summary"])
+        self.assertIn("IUnitScript.OnHealthChange exposes source, amount, and DamageType but not Spell4", happy_feet["blocker_summary"])
+        self.assertIn("four explicit controller credits remain active at 29.999 seconds", happy_feet["blocker_summary"])
+        self.assertIn("the fifth succeeds before the deadline", happy_feet["blocker_summary"])
+        self.assertIn("a fresh objective fails at 30 seconds", happy_feet["blocker_summary"])
+        self.assertIn("fifth-hit transition directionally inverted", happy_feet["blocker_summary"])
+        self.assertIn("does not activate objective 3208", happy_feet["blocker_summary"])
+        self.assertIn("no exact 71182, 25249, Tri Burst, or Happy Feet anchor", happy_feet["blocker_summary"])
+        self.assertIn("Objective 3208 remains mapped-only", happy_feet["blocker_summary"])
+        self.assertIn("focused Ghidra indexed constant/xref or live packet/log trace", happy_feet["blocker_summary"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundary.cs", happy_feet["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", happy_feet["evidence_sources"])
+
+        lightning_round = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3209)]
+        self.assertEqual(
+            "mapped_up_lightning_round_zero_count_70s_script_challenge_controller_boundary_blocked_missing_course_start_finish_signal_and_asset_producers",
+            lightning_round["evidence_status"],
+        )
+        self.assertIn("zero-count Script challenge with flags 4", lightning_round["blocker_summary"])
+        self.assertIn("a 70000 ms failure timer", lightning_round["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8153", lightning_round["blocker_summary"])
+        self.assertIn("achievement 5959 / Jabbithole row 2073", lightning_round["blocker_summary"])
+        self.assertIn("Gauntlet Gallop", lightning_round["blocker_summary"])
+        self.assertIn("WorldLocation2 45901", lightning_round["blocker_summary"])
+        self.assertIn("WorldZone 4331 The Break Room", lightning_round["blocker_summary"])
+        self.assertIn("TargetGroup 12179", lightning_round["blocker_summary"])
+        self.assertIn("Bev-O-Rage Creature2 61463", lightning_round["blocker_summary"])
+        self.assertIn("Spark invisible unit 61469", lightning_round["blocker_summary"])
+        self.assertIn("barrel invisible unit 61567", lightning_round["blocker_summary"])
+        self.assertIn("hazard jump square invisible unit 61764", lightning_round["blocker_summary"])
+        self.assertIn("steam vent 62693", lightning_round["blocker_summary"])
+        self.assertIn("jump pad invisible unit 65619", lightning_round["blocker_summary"])
+        self.assertIn("wall 65751", lightning_round["blocker_summary"])
+        self.assertIn("126 ambiguous-name historical coordinate observations", lightning_round["blocker_summary"])
+        self.assertIn("only two entities", lightning_round["blocker_summary"])
+        self.assertIn("no Creature2 61469/61553/61567/61764/62693/65619/65751 course rows", lightning_round["blocker_summary"])
+        self.assertIn("activate spell 71233", lightning_round["blocker_summary"])
+        self.assertIn("mode-1 Ravel signal 25251", lightning_round["blocker_summary"])
+        self.assertIn("Barrel Roll 71221 emits mode-1 signals 22167", lightning_round["blocker_summary"])
+        self.assertIn("Pull to Barrel Start 71232", lightning_round["blocker_summary"])
+        self.assertIn("Pull to Giant Start 71234", lightning_round["blocker_summary"])
+        self.assertIn("Boost and the points proxy emit mode-4 signals 27106/27114", lightning_round["blocker_summary"])
+        self.assertIn("mode 4 diagnostics-only", lightning_round["blocker_summary"])
+        self.assertIn("active with count zero at 69.999 seconds", lightning_round["blocker_summary"])
+        self.assertIn("one explicit controller credit succeeds before the deadline", lightning_round["blocker_summary"])
+        self.assertIn("fails at 70 seconds", lightning_round["blocker_summary"])
+        self.assertIn("does not activate objective 3209", lightning_round["blocker_summary"])
+        self.assertIn("Activating objective 3209 with the phase would start a 70-second failure timer", lightning_round["blocker_summary"])
+        self.assertIn("unrelated param_1[0xc89] array offsets", lightning_round["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", lightning_round["blocker_summary"])
+        self.assertIn("Objective 3209 remains mapped-only", lightning_round["blocker_summary"])
+        self.assertIn("focused Ghidra indexed xref or live packet/log trace", lightning_round["blocker_summary"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundary.cs", lightning_round["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", lightning_round["evidence_sources"])
+
+        next_event = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3271)]
+        self.assertEqual(
+            "mapped_up_next_event_turnstile_3271_generic_type_object_boundary_tested_blocked_missing_trigger_placement_route_selection_and_teleport_handoff",
+            next_event["evidence_status"],
+        )
+        self.assertIn("count-1 Turnstile objective with flags 128", next_event["blocker_summary"])
+        self.assertIn("object key 7773", next_event["blocker_summary"])
+        self.assertIn("no WorldLocation2, parent, quest direction, timer, or medal value", next_event["blocker_summary"])
+        self.assertIn("ten sibling transition rows 3272 through 3281", next_event["blocker_summary"])
+        self.assertIn("object keys 7774/7775/7779/7780/7542/7540/7781/7782/7783/7784", next_event["blocker_summary"])
+        self.assertIn("Jabbithole retains only objective 3281", next_event["blocker_summary"])
+        self.assertIn("eleven Protostar Event Specialist rows", next_event["blocker_summary"])
+        self.assertIn("Creature2 68272", next_event["blocker_summary"])
+        self.assertIn("action set 3812 contains only a blue hologram birth effect", next_event["blocker_summary"])
+        self.assertIn("runtime world database contains only the dungeon exit portal and Bev-O-Rage", next_event["blocker_summary"])
+        self.assertIn("numerically matching TargetGroup 7773 is unrelated Q5519 Mechari Arms content", next_event["blocker_summary"])
+        self.assertIn("wrong object 7774 and wrong Script type leave the objective active at zero", next_event["blocker_summary"])
+        self.assertIn("exact Turnstile/7773 update succeeds it", next_event["blocker_summary"])
+        self.assertIn("TurnstileTriggerEntity credits a player entry once", next_event["blocker_summary"])
+        self.assertIn("does not activate objective 3271", next_event["blocker_summary"])
+        self.assertIn("randomized room selection and route ownership remain absent", next_event["blocker_summary"])
+        self.assertIn("no exact objective text or id/key anchor", next_event["blocker_summary"])
+        self.assertIn("Objective 3271 remains mapped-only", next_event["blocker_summary"])
+        self.assertIn("live packet/log or server-controller trace", next_event["blocker_summary"])
+        self.assertIn("TurnstileTriggerEntity.cs", next_event["evidence_sources"])
+        self.assertIn("PublicEventFlowTests.cs", next_event["evidence_sources"])
+
+        next_event_2 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3272)]
+        self.assertEqual(
+            "mapped_up_next_event_turnstile_3272_generic_type_object_boundary_tested_blocked_missing_trigger_placement_route_selection_and_teleport_handoff",
+            next_event_2["evidence_status"],
+        )
+        self.assertIn("count-1 Turnstile objective with flags 128", next_event_2["blocker_summary"])
+        self.assertIn("object key 7774", next_event_2["blocker_summary"])
+        self.assertIn("localized text ids 623056/623057", next_event_2["blocker_summary"])
+        self.assertIn("no WorldLocation2, parent, quest direction, timer, or medal value", next_event_2["blocker_summary"])
+        self.assertIn("Jabbithole has no surviving objective 3272 row", next_event_2["blocker_summary"])
+        self.assertIn("TargetGroup 7774 instead contains unrelated Creature2 22593", next_event_2["blocker_summary"])
+        self.assertIn("Crimson Trooper", next_event_2["blocker_summary"])
+        self.assertIn("WorldLocation2 7774 is an unrelated world 426 / WorldZone 852 Ancient Tower row", next_event_2["blocker_summary"])
+        self.assertIn("eleven Protostar Event Specialist rows", next_event_2["blocker_summary"])
+        self.assertIn("Creature2 68272", next_event_2["blocker_summary"])
+        self.assertIn("wrong object 7773 and wrong Script type leave objective 3272 active at zero", next_event_2["blocker_summary"])
+        self.assertIn("exact Turnstile/7774 update succeeds it", next_event_2["blocker_summary"])
+        self.assertIn("does not activate objective 3272", next_event_2["blocker_summary"])
+        self.assertIn("Objective 3272 remains mapped-only", next_event_2["blocker_summary"])
+        self.assertIn("server-controller trace", next_event_2["blocker_summary"])
+        self.assertIn("TurnstileTriggerEntity.cs", next_event_2["evidence_sources"])
+        self.assertIn("PublicEventFlowTests.cs", next_event_2["evidence_sources"])
+
+        next_event_3 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3273)]
+        self.assertEqual(
+            "mapped_up_next_event_turnstile_3273_generic_type_object_boundary_tested_blocked_missing_trigger_placement_route_selection_and_teleport_handoff",
+            next_event_3["evidence_status"],
+        )
+        self.assertIn("count-1 Turnstile objective with flags 128", next_event_3["blocker_summary"])
+        self.assertIn("object key 7775", next_event_3["blocker_summary"])
+        self.assertIn("localized text ids 623058/623059", next_event_3["blocker_summary"])
+        self.assertIn("Jabbithole has no surviving objective 3273 row", next_event_3["blocker_summary"])
+        self.assertIn("TargetGroup 7775 is a type-11 aggregate", next_event_3["blocker_summary"])
+        self.assertIn("7774/6433/6432/6435/6436/6437/8607", next_event_3["blocker_summary"])
+        self.assertIn("WorldLocation2 7775 is an unrelated world 426 / WorldZone 852 Ancient Tower row", next_event_3["blocker_summary"])
+        self.assertIn("no specialist, room, or coordinate is assigned to objective 3273", next_event_3["blocker_summary"])
+        self.assertIn("wrong object 7774 and wrong Script type leave objective 3273 active at zero", next_event_3["blocker_summary"])
+        self.assertIn("exact Turnstile/7775 update succeeds it", next_event_3["blocker_summary"])
+        self.assertIn("does not activate objective 3273", next_event_3["blocker_summary"])
+        self.assertIn("FRS_ERR_AUTHENTICATION", next_event_3["blocker_summary"])
+        self.assertIn("ShouldShowMedalsUI", next_event_3["blocker_summary"])
+        self.assertIn("Objective 3273 remains mapped-only", next_event_3["blocker_summary"])
+        self.assertIn("server-controller trace", next_event_3["blocker_summary"])
+        self.assertIn("TurnstileTriggerEntity.cs", next_event_3["evidence_sources"])
+        self.assertIn("PublicEventFlowTests.cs", next_event_3["evidence_sources"])
+
+        next_event_4 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3274)]
+        self.assertEqual(
+            "mapped_up_next_event_turnstile_3274_generic_type_object_boundary_tested_blocked_missing_trigger_placement_route_selection_and_teleport_handoff",
+            next_event_4["evidence_status"],
+        )
+        self.assertIn("count-1 Turnstile objective with flags 128", next_event_4["blocker_summary"])
+        self.assertIn("object key 7779", next_event_4["blocker_summary"])
+        self.assertIn("localized text ids 623060/623061", next_event_4["blocker_summary"])
+        self.assertIn("Jabbithole has no surviving objective 3274 row", next_event_4["blocker_summary"])
+        self.assertIn("TargetGroup 7779 is an unrelated type-1 group", next_event_4["blocker_summary"])
+        self.assertIn("Creature2 60162", next_event_4["blocker_summary"])
+        self.assertIn("Bramble", next_event_4["blocker_summary"])
+        self.assertIn("WorldLocation2 7779 is an unrelated world 22 / WorldZone 587 Bloodtalon Perch row", next_event_4["blocker_summary"])
+        self.assertIn("no specialist, room, or coordinate is assigned to objective 3274", next_event_4["blocker_summary"])
+        self.assertIn("wrong object 7775 and wrong Script type leave objective 3274 active at zero", next_event_4["blocker_summary"])
+        self.assertIn("exact Turnstile/7779 update succeeds it", next_event_4["blocker_summary"])
+        self.assertIn("does not activate objective 3274", next_event_4["blocker_summary"])
+        self.assertIn("FRS_ERR_PARENT_INSUFFICIENT_PRIV", next_event_4["blocker_summary"])
+        self.assertIn("BuzzerFrequency", next_event_4["blocker_summary"])
+        self.assertIn("GetLiveEvent", next_event_4["blocker_summary"])
+        self.assertIn("Objective 3274 remains mapped-only", next_event_4["blocker_summary"])
+        self.assertIn("server-controller trace", next_event_4["blocker_summary"])
+        self.assertIn("TurnstileTriggerEntity.cs", next_event_4["evidence_sources"])
+        self.assertIn("PublicEventFlowTests.cs", next_event_4["evidence_sources"])
+
+        next_event_5 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3275)]
+        self.assertEqual(
+            "mapped_up_next_event_turnstile_3275_generic_type_object_boundary_tested_blocked_missing_trigger_placement_route_selection_and_teleport_handoff",
+            next_event_5["evidence_status"],
+        )
+        self.assertIn("count-1 Turnstile objective with flags 128", next_event_5["blocker_summary"])
+        self.assertIn("object key 7780", next_event_5["blocker_summary"])
+        self.assertIn("localized text ids 623062/623063", next_event_5["blocker_summary"])
+        self.assertIn("Jabbithole has no surviving objective 3275 row", next_event_5["blocker_summary"])
+        self.assertIn("TargetGroup 7780 is an unrelated Q6571 reward-pane group", next_event_5["blocker_summary"])
+        self.assertIn("27421/27422/27423/27424/27425/27433/27442", next_event_5["blocker_summary"])
+        self.assertIn("WorldLocation2 7780 is an unrelated world 805 Map\\DungeonTestIsland row", next_event_5["blocker_summary"])
+        self.assertIn("no specialist, room, or coordinate is assigned to objective 3275", next_event_5["blocker_summary"])
+        self.assertIn("wrong object 7779 and wrong Script type leave objective 3275 active at zero", next_event_5["blocker_summary"])
+        self.assertIn("exact Turnstile/7780 update succeeds it", next_event_5["blocker_summary"])
+        self.assertIn("does not activate objective 3275", next_event_5["blocker_summary"])
+        self.assertIn("STG_E_WRITEFAULT", next_event_5["blocker_summary"])
+        self.assertIn("CodeEnumFaction", next_event_5["blocker_summary"])
+        self.assertIn("PrepareInfractionReport", next_event_5["blocker_summary"])
+        self.assertIn("Objective 3275 remains mapped-only", next_event_5["blocker_summary"])
+        self.assertIn("server-controller trace", next_event_5["blocker_summary"])
+        self.assertIn("TurnstileTriggerEntity.cs", next_event_5["evidence_sources"])
+        self.assertIn("PublicEventFlowTests.cs", next_event_5["evidence_sources"])
+
+        next_event_6 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3276)]
+        self.assertEqual(
+            "mapped_up_next_event_turnstile_3276_generic_type_object_boundary_tested_blocked_missing_trigger_placement_route_selection_and_teleport_handoff",
+            next_event_6["evidence_status"],
+        )
+        self.assertIn("count-1 Turnstile objective with flags 128", next_event_6["blocker_summary"])
+        self.assertIn("object key 7542", next_event_6["blocker_summary"])
+        self.assertIn("localized text ids 623064/623065", next_event_6["blocker_summary"])
+        self.assertIn("Jabbithole has no surviving objective 3276 row", next_event_6["blocker_summary"])
+        self.assertIn("TargetGroup 7542 is an unrelated type-1 group", next_event_6["blocker_summary"])
+        self.assertIn("Creature2 46431", next_event_6["blocker_summary"])
+        self.assertIn("Bee Swarm Hazard", next_event_6["blocker_summary"])
+        self.assertIn("WorldLocation2 7542 is an unrelated world 822 Map\\KevinHTLCanyon row", next_event_6["blocker_summary"])
+        self.assertIn("wrong object 7780 and wrong Script type leave objective 3276 active at zero", next_event_6["blocker_summary"])
+        self.assertIn("exact Turnstile/7542 update succeeds it", next_event_6["blocker_summary"])
+        self.assertIn("does not activate objective 3276", next_event_6["blocker_summary"])
+        self.assertIn("GlobalRadioGroup", next_event_6["blocker_summary"])
+        self.assertIn("Objective 3276 remains mapped-only", next_event_6["blocker_summary"])
+        self.assertIn("server-controller trace", next_event_6["blocker_summary"])
+        self.assertIn("TurnstileTriggerEntity.cs", next_event_6["evidence_sources"])
+        self.assertIn("PublicEventFlowTests.cs", next_event_6["evidence_sources"])
+
+        next_event_7 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3277)]
+        self.assertEqual(
+            "mapped_up_next_event_turnstile_3277_generic_type_object_boundary_tested_blocked_missing_trigger_placement_route_selection_and_teleport_handoff",
+            next_event_7["evidence_status"],
+        )
+        self.assertIn("object key 7540", next_event_7["blocker_summary"])
+        self.assertIn("localized text ids 623067/623068", next_event_7["blocker_summary"])
+        self.assertIn("Jabbithole has no surviving objective 3277 row", next_event_7["blocker_summary"])
+        self.assertIn("TargetGroup 7540 is an unrelated type-1 group", next_event_7["blocker_summary"])
+        self.assertIn("Creature2 29778", next_event_7["blocker_summary"])
+        self.assertIn("Eldan Plasma Core", next_event_7["blocker_summary"])
+        self.assertIn("WorldLocation2 7540 is an unrelated world 822 Map\\KevinHTLCanyon row", next_event_7["blocker_summary"])
+        self.assertIn("wrong object 7542 and wrong Script type leave objective 3277 active at zero", next_event_7["blocker_summary"])
+        self.assertIn("exact Turnstile/7540 update succeeds it", next_event_7["blocker_summary"])
+        self.assertIn("does not activate objective 3277", next_event_7["blocker_summary"])
+        self.assertIn("NetworkBitWriter_WriteBits64", next_event_7["blocker_summary"])
+        self.assertIn("unitPropertyMultiplier153", next_event_7["blocker_summary"])
+        self.assertIn("PublicEventType_PVP_Warplot", next_event_7["blocker_summary"])
+        self.assertIn("Objective 3277 remains mapped-only", next_event_7["blocker_summary"])
+        self.assertIn("server-controller trace", next_event_7["blocker_summary"])
+        self.assertIn("TurnstileTriggerEntity.cs", next_event_7["evidence_sources"])
+        self.assertIn("PublicEventFlowTests.cs", next_event_7["evidence_sources"])
+
+        next_event_8 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3278)]
+        self.assertEqual(
+            "mapped_up_next_event_turnstile_3278_generic_type_object_boundary_tested_blocked_missing_trigger_placement_route_selection_and_teleport_handoff",
+            next_event_8["evidence_status"],
+        )
+        self.assertIn("object key 7781", next_event_8["blocker_summary"])
+        self.assertIn("localized text ids 623069/623070", next_event_8["blocker_summary"])
+        self.assertIn("Jabbithole has no surviving objective 3278 row", next_event_8["blocker_summary"])
+        self.assertIn("TargetGroup 7781 is an unrelated Q6571 reward-pane group", next_event_8["blocker_summary"])
+        self.assertIn("27456/27461/27465/27469/27507/27669/27856", next_event_8["blocker_summary"])
+        self.assertIn("WorldLocation2 7781 is an unrelated world 22 / WorldZone 1212 Tall Rock Point row", next_event_8["blocker_summary"])
+        self.assertIn("wrong object 7540 and wrong Script type leave objective 3278 active at zero", next_event_8["blocker_summary"])
+        self.assertIn("exact Turnstile/7781 update succeeds it", next_event_8["blocker_summary"])
+        self.assertIn("does not activate objective 3278", next_event_8["blocker_summary"])
+        self.assertIn("HousingRandomCommunityListReceived", next_event_8["blocker_summary"])
+        self.assertIn("PublicEventObjectiveNotificationMode_Achieving", next_event_8["blocker_summary"])
+        self.assertIn("Objective 3278 remains mapped-only", next_event_8["blocker_summary"])
+        self.assertIn("server-controller trace", next_event_8["blocker_summary"])
+        self.assertIn("TurnstileTriggerEntity.cs", next_event_8["evidence_sources"])
+        self.assertIn("PublicEventFlowTests.cs", next_event_8["evidence_sources"])
+
+        next_event_9 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3279)]
+        self.assertEqual(
+            "mapped_up_next_event_turnstile_3279_generic_type_object_boundary_tested_blocked_missing_trigger_placement_route_selection_and_teleport_handoff",
+            next_event_9["evidence_status"],
+        )
+        self.assertIn("object key 7782", next_event_9["blocker_summary"])
+        self.assertIn("localized text ids 623071/623072", next_event_9["blocker_summary"])
+        self.assertIn("Jabbithole has no surviving objective 3279 row", next_event_9["blocker_summary"])
+        self.assertIn("TargetGroup 7782 is an unrelated Q6571 reward-pane group", next_event_9["blocker_summary"])
+        self.assertIn("27857/27859/27860/27861/27867/27949/28170", next_event_9["blocker_summary"])
+        self.assertIn("WorldLocation2 7782 is an unrelated world 22 / WorldZone 1709 Bloodtalon Lowlands row", next_event_9["blocker_summary"])
+        self.assertIn("wrong object 7781 and wrong Script type leave objective 3279 active at zero", next_event_9["blocker_summary"])
+        self.assertIn("exact Turnstile/7782 update succeeds it", next_event_9["blocker_summary"])
+        self.assertIn("does not activate objective 3279", next_event_9["blocker_summary"])
+        self.assertIn("WindowTemplate", next_event_9["blocker_summary"])
+        self.assertIn("PublicEventType_PVP_Battleground_Vortex", next_event_9["blocker_summary"])
+        self.assertIn("Objective 3279 remains mapped-only", next_event_9["blocker_summary"])
+        self.assertIn("server-controller trace", next_event_9["blocker_summary"])
+        self.assertIn("TurnstileTriggerEntity.cs", next_event_9["evidence_sources"])
+        self.assertIn("PublicEventFlowTests.cs", next_event_9["evidence_sources"])
+
+        next_event_10 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3280)]
+        self.assertEqual(
+            "mapped_up_next_event_turnstile_3280_generic_type_object_boundary_tested_blocked_missing_trigger_placement_route_selection_and_teleport_handoff",
+            next_event_10["evidence_status"],
+        )
+        self.assertIn("object key 7783", next_event_10["blocker_summary"])
+        self.assertIn("localized text ids 623073/623074", next_event_10["blocker_summary"])
+        self.assertIn("Jabbithole has no surviving objective 3280 row", next_event_10["blocker_summary"])
+        self.assertIn("TargetGroup 7783 is an unrelated Q6571 reward-pane group", next_event_10["blocker_summary"])
+        self.assertIn("28195/28405/28424/28429/28947/29409/29413", next_event_10["blocker_summary"])
+        self.assertIn("WorldLocation2 7783 is an unrelated world 805 Map\\DungeonTestIsland row", next_event_10["blocker_summary"])
+        self.assertIn("wrong object 7782 and wrong Script type leave objective 3280 active at zero", next_event_10["blocker_summary"])
+        self.assertIn("exact Turnstile/7783 update succeeds it", next_event_10["blocker_summary"])
+        self.assertIn("does not activate objective 3280", next_event_10["blocker_summary"])
+        self.assertIn("MatchingPvpInactivityAlert", next_event_10["blocker_summary"])
+        self.assertIn("KillBorellianCluster", next_event_10["blocker_summary"])
+        self.assertIn("Objective 3280 remains mapped-only", next_event_10["blocker_summary"])
+        self.assertIn("server-controller trace", next_event_10["blocker_summary"])
+        self.assertIn("TurnstileTriggerEntity.cs", next_event_10["evidence_sources"])
+        self.assertIn("PublicEventFlowTests.cs", next_event_10["evidence_sources"])
+
+        next_event_11 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 3281)]
+        self.assertEqual(
+            "mapped_up_next_event_turnstile_3281_generic_type_object_boundary_tested_blocked_missing_trigger_placement_route_selection_and_teleport_handoff",
+            next_event_11["evidence_status"],
+        )
+        self.assertIn("object key 7784", next_event_11["blocker_summary"])
+        self.assertIn("localized text ids 623075/623076", next_event_11["blocker_summary"])
+        self.assertIn("Jabbithole row 8138", next_event_11["blocker_summary"])
+        self.assertIn("parent event row 299 / game id 594", next_event_11["blocker_summary"])
+        self.assertIn("enabled, category 19, last_seen_in 7", next_event_11["blocker_summary"])
+        self.assertIn("stores no Turnstile object key", next_event_11["blocker_summary"])
+        self.assertIn("TargetGroup 7784 is an unrelated type-1 group", next_event_11["blocker_summary"])
+        self.assertIn("Creature2 19288", next_event_11["blocker_summary"])
+        self.assertIn("Starstem Plant", next_event_11["blocker_summary"])
+        self.assertIn("no WorldLocation2 7784 row exists", next_event_11["blocker_summary"])
+        self.assertIn("wrong object 7783 and wrong Script type leave objective 3281 active at zero", next_event_11["blocker_summary"])
+        self.assertIn("exact Turnstile/7784 update succeeds it", next_event_11["blocker_summary"])
+        self.assertIn("does not activate objective 3281", next_event_11["blocker_summary"])
+        self.assertIn("Buzzer", next_event_11["blocker_summary"])
+        self.assertIn("PublicEventRewardType_Script", next_event_11["blocker_summary"])
+        self.assertIn("Objective 3281 remains mapped-only", next_event_11["blocker_summary"])
+        self.assertIn("server-controller trace", next_event_11["blocker_summary"])
+        self.assertIn("TurnstileTriggerEntity.cs", next_event_11["evidence_sources"])
+        self.assertIn("PublicEventFlowTests.cs", next_event_11["evidence_sources"])
+
+        hidden_counter = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4351)]
+        self.assertEqual(
+            "mapped_up_hidden_initial_script_without_max_4351_controller_owned_counter_boundary_tested_blocked_missing_counter_owner_semantics_and_client_presentation",
+            hidden_counter["evidence_status"],
+        )
+        self.assertIn("flags 513", hidden_counter["blocker_summary"])
+        self.assertIn("ScriptWithoutMax", hidden_counter["blocker_summary"])
+        self.assertIn("no localized text, object, WorldLocation2, configured count, timer, parent, quest direction, or medal value", hidden_counter["blocker_summary"])
+        self.assertIn("Jabbithole has no objective with game id 4351", hidden_counter["blocker_summary"])
+        self.assertIn("row id 4351 belongs to event 93 / client objective 338", hidden_counter["blocker_summary"])
+        self.assertIn("GetRequiredCount returns zero for type 0x19", hidden_counter["blocker_summary"])
+        self.assertIn("exact-row regression starts objective 4351 active", hidden_counter["blocker_summary"])
+        self.assertIn("count 5 without succeeding or finalising", hidden_counter["blocker_summary"])
+        self.assertIn("negative delta clamps it back to zero", hidden_counter["blocker_summary"])
+        self.assertIn("4351 only as MisplacedMammothAreaId", hidden_counter["blocker_summary"])
+        self.assertIn("GetBagItem", hidden_counter["blocker_summary"])
+        self.assertIn("Objective 4351 remains mapped-only", hidden_counter["blocker_summary"])
+        self.assertIn("server-controller trace", hidden_counter["blocker_summary"])
+        self.assertIn("PublicEventObjective.cs", hidden_counter["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", hidden_counter["evidence_sources"])
+
+        hidden_counter_2 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4352)]
+        self.assertEqual(
+            "mapped_up_hidden_initial_script_without_max_4352_controller_owned_counter_boundary_tested_blocked_missing_counter_owner_semantics_and_client_presentation",
+            hidden_counter_2["evidence_status"],
+        )
+        self.assertIn("flags 513", hidden_counter_2["blocker_summary"])
+        self.assertIn("no localized text, object, WorldLocation2, configured count, timer, parent, quest direction, or medal value", hidden_counter_2["blocker_summary"])
+        self.assertIn("Jabbithole has no objective with game id 4352", hidden_counter_2["blocker_summary"])
+        self.assertIn("row id 4352 belongs to event 93 / client objective 440", hidden_counter_2["blocker_summary"])
+        self.assertIn("two-row exact regression", hidden_counter_2["blocker_summary"])
+        self.assertIn("count 5 without succeeding or finalising", hidden_counter_2["blocker_summary"])
+        self.assertIn("does not reference objective 4352", hidden_counter_2["blocker_summary"])
+        self.assertIn("GetLastTargetedPlayerName", hidden_counter_2["blocker_summary"])
+        self.assertIn("Objective 4352 remains mapped-only", hidden_counter_2["blocker_summary"])
+        self.assertIn("server-controller trace", hidden_counter_2["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", hidden_counter_2["evidence_sources"])
+
+        hidden_counter_3 = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4353)]
+        self.assertEqual(
+            "mapped_up_hidden_initial_script_without_max_4353_controller_owned_counter_boundary_tested_blocked_missing_counter_owner_semantics_and_client_presentation",
+            hidden_counter_3["evidence_status"],
+        )
+        self.assertIn("flags 513", hidden_counter_3["blocker_summary"])
+        self.assertIn("no localized text, object, WorldLocation2, configured count, timer, parent, quest direction, or medal value", hidden_counter_3["blocker_summary"])
+        self.assertIn("Jabbithole has no objective with game id 4353", hidden_counter_3["blocker_summary"])
+        self.assertIn("row id 4353 belongs to event 93 / client objective 321", hidden_counter_3["blocker_summary"])
+        self.assertIn("three-row exact regression", hidden_counter_3["blocker_summary"])
+        self.assertIn("count 5 without succeeding or finalising", hidden_counter_3["blocker_summary"])
+        self.assertIn("does not reference objective 4353", hidden_counter_3["blocker_summary"])
+        self.assertIn("no objective-specific 4353 anchor", hidden_counter_3["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", hidden_counter_3["blocker_summary"])
+        self.assertIn("Objective 4353 remains mapped-only", hidden_counter_3["blocker_summary"])
+        self.assertIn("server-controller trace", hidden_counter_3["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", hidden_counter_3["evidence_sources"])
+
+        splorg_stepper = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4524)]
+        self.assertEqual(
+            "mapped_up_splorg_stepper_4524_exact_script_boundary_tested_blocked_missing_explosion_hit_attribution_activation_success_checkpoint_and_party_semantics",
+            splorg_stepper["evidence_status"],
+        )
+        self.assertIn("flags 4", splorg_stepper["blocker_summary"])
+        self.assertIn("optional category 1", splorg_stepper["blocker_summary"])
+        self.assertIn("type 5 Script", splorg_stepper["blocker_summary"])
+        self.assertIn("localized text ids 635033/635034", splorg_stepper["blocker_summary"])
+        self.assertIn("Jabbithole row 8204", splorg_stepper["blocker_summary"])
+        self.assertIn("Achievement 5930 / Jabbithole row 1937", splorg_stepper["blocker_summary"])
+        self.assertIn("Creature2 62597", splorg_stepper["blocker_summary"])
+        self.assertIn("76 current-last-seen area-4348 movement observations", splorg_stepper["blocker_summary"])
+        self.assertIn("pre-activation credit is ignored", splorg_stepper["blocker_summary"])
+        self.assertIn("wrong type and wrong object routes are rejected", splorg_stepper["blocker_summary"])
+        self.assertIn("explicit objective-id credit succeeds once", splorg_stepper["blocker_summary"])
+        self.assertIn("credits only Splorg Spree objective 2925 on death", splorg_stepper["blocker_summary"])
+        self.assertIn("FriendshipResult_PlayerNotRival", splorg_stepper["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", splorg_stepper["blocker_summary"])
+        self.assertIn("Objective 4524 remains mapped-only", splorg_stepper["blocker_summary"])
+        self.assertIn("live packet/log or server-controller trace", splorg_stepper["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", splorg_stepper["evidence_sources"])
+
+        event_specialist = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4535)]
+        self.assertEqual(
+            "runtime_up_protostar_event_specialist_68272_talkto_12376_credit_tested_pending_spawn_dialog_order_room_lifecycle_counter_semantics_and_client_smoke",
+            event_specialist["evidence_status"],
+        )
+        self.assertIn("flags 513", event_specialist["blocker_summary"])
+        self.assertIn("type 17 TalkTo", event_specialist["blocker_summary"])
+        self.assertIn("count 4294967295", event_specialist["blocker_summary"])
+        self.assertIn("TargetGroup 12376", event_specialist["blocker_summary"])
+        self.assertIn("Creature2 68272", event_specialist["blocker_summary"])
+        self.assertIn("WorldLocation2 42236", event_specialist["blocker_summary"])
+        self.assertIn("eleven Jabbithole public-event creature relations", event_specialist["blocker_summary"])
+        self.assertIn("wrong type and wrong object routes leave it at zero", event_specialist["blocker_summary"])
+        self.assertIn("two exact TalkTo/12376 updates advance it to count 2", event_specialist["blocker_summary"])
+        self.assertIn("player-scoped TalkTo/12376 update", event_specialist["blocker_summary"])
+        self.assertIn("Creature2-filtered specialist script", event_specialist["blocker_summary"])
+        self.assertIn("does not spawn the specialists", event_specialist["blocker_summary"])
+        self.assertIn("FriendshipResult_PlayerNotFriend", event_specialist["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", event_specialist["blocker_summary"])
+        self.assertIn("runtime-partial producer, not retail completion", event_specialist["blocker_summary"])
+        self.assertIn("live packet/log or controller trace", event_specialist["blocker_summary"])
+        self.assertIn("ProtostarEventSpecialistEntityScript.cs", event_specialist["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", event_specialist["evidence_sources"])
+        self.assertIn("PublicEventObjectiveCreditEntityScriptTests.cs", event_specialist["evidence_sources"])
+
+        extra_point = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4541)]
+        self.assertEqual(
+            "mapped_up_extra_point_4541_45_second_timedwin_boundary_tested_blocked_missing_opportunity_activation_mode5_score_and_retry_semantics",
+            extra_point["evidence_status"],
+        )
+        self.assertIn("zero-count TimedWin row with flags 4", extra_point["blocker_summary"])
+        self.assertIn("optional category 1", extra_point["blocker_summary"])
+        self.assertIn("failureTimeMs 45000", extra_point["blocker_summary"])
+        self.assertIn("localized text ids 635253/635254", extra_point["blocker_summary"])
+        self.assertIn("WorldLocation2 46229", extra_point["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8184", extra_point["blocker_summary"])
+        self.assertIn("count 1 instead of the current client row's count 0", extra_point["blocker_summary"])
+        self.assertIn("achievement 5916 / Jabbithole row 2223, Extra Point Professional", extra_point["blocker_summary"])
+        self.assertIn("objective 2880 and achievement 5969, Slick Moves", extra_point["blocker_summary"])
+        self.assertIn("stays active at 44.999 seconds", extra_point["blocker_summary"])
+        self.assertIn("fails at 45 seconds", extra_point["blocker_summary"])
+        self.assertIn("activates only defeat objective 2675 and five-minute TimedWin objective 2884", extra_point["blocker_summary"])
+        self.assertIn("unsupported receiver mode 5 signals 22256/22257", extra_point["blocker_summary"])
+        self.assertIn("140a45418 / <?%s?>", extra_point["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", extra_point["blocker_summary"])
+        self.assertIn("Objective 4541 remains mapped-only", extra_point["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", extra_point["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", extra_point["evidence_sources"])
+
+        thunderdome = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4649)]
+        self.assertEqual(
+            "mapped_up_welcome_thunderdome_4649_script_without_count_5_second_boundary_tested_blocked_missing_storm_cadence_reset_and_completion_controller",
+            thunderdome["evidence_status"],
+        )
+        self.assertIn("zero-count ScriptWithoutCount row with flags 4", thunderdome["blocker_summary"])
+        self.assertIn("failureTimeMs 5000", thunderdome["blocker_summary"])
+        self.assertIn("localized text ids 641070/641071", thunderdome["blocker_summary"])
+        self.assertIn("WorldLocation2 41745", thunderdome["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8186", thunderdome["blocker_summary"])
+        self.assertIn("achievement 5939 / Jabbithole row 1991, Weathering the Storm", thunderdome["blocker_summary"])
+        self.assertIn("remains active at 4.999 seconds", thunderdome["blocker_summary"])
+        self.assertIn("succeeds the zero-count objective immediately", thunderdome["blocker_summary"])
+        self.assertIn("complete the challenge on the first crate", thunderdome["blocker_summary"])
+        self.assertIn("credits only main ResourcePool 2673 and 20-crate challenge 2924", thunderdome["blocker_summary"])
+        self.assertIn("mode-4 Ravel signal 25325 with DataBits02 1", thunderdome["blocker_summary"])
+        self.assertIn("140a46490 / Datacube", thunderdome["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", thunderdome["blocker_summary"])
+        self.assertIn("Objective 4649 remains mapped-only", thunderdome["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", thunderdome["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", thunderdome["evidence_sources"])
+
+        room_holder = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4659)]
+        self.assertEqual(
+            "mapped_up_dnt_room_number_holder_4659_exact_initial_script_counter_boundary_tested_blocked_missing_room_index_encoding_write_reset_and_consumer_semantics",
+            room_holder["evidence_status"],
+        )
+        self.assertIn("initial flags-517, type-5 Script counter", room_holder["blocker_summary"])
+        self.assertIn("raw count 10", room_holder["blocker_summary"])
+        self.assertIn("raw category 10", room_holder["blocker_summary"])
+        self.assertIn("'[DNT] Holder for the room number'", room_holder["blocker_summary"])
+        self.assertIn("4660/4661/4662", room_holder["blocker_summary"])
+        self.assertIn("DNT Boss 1/2/3 Medal Holder", room_holder["blocker_summary"])
+        self.assertIn("stores count 3", room_holder["blocker_summary"])
+        self.assertIn("raw max 10", room_holder["blocker_summary"])
+        self.assertIn("event row 154 / game id 521 The Terminus Complex", room_holder["blocker_summary"])
+        self.assertIn("cross-event collision", room_holder["blocker_summary"])
+        self.assertIn("140a46590 / Tagging", room_holder["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", room_holder["blocker_summary"])
+        self.assertIn("Objective 4659 remains mapped-only", room_holder["blocker_summary"])
+        self.assertIn("live packet/log or decompile controller trace", room_holder["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", room_holder["evidence_sources"])
+
+        boss_one_medal_holder = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4660)]
+        self.assertEqual(
+            "mapped_up_dnt_boss1_medal_holder_4660_exact_initial_script_counter_boundary_tested_blocked_missing_medal_value_encoding_boss_result_writer_reward_tier_and_client_semantics",
+            boss_one_medal_holder["evidence_status"],
+        )
+        self.assertIn("initial flags-517, type-5 Script counter", boss_one_medal_holder["blocker_summary"])
+        self.assertIn("raw count 4", boss_one_medal_holder["blocker_summary"])
+        self.assertIn("raw category 4", boss_one_medal_holder["blocker_summary"])
+        self.assertIn("'[DNT] Boss 1 Medal Holder'", boss_one_medal_holder["blocker_summary"])
+        self.assertIn("collide across all four internal holders", boss_one_medal_holder["blocker_summary"])
+        self.assertIn("stores count 1", boss_one_medal_holder["blocker_summary"])
+        self.assertIn("raw max 4", boss_one_medal_holder["blocker_summary"])
+        self.assertIn("event row 154 / game id 521", boss_one_medal_holder["blocker_summary"])
+        self.assertIn("ServerPublicEventEnd carries reward tier/type", boss_one_medal_holder["blocker_summary"])
+        self.assertIn("PublicEvent.Finish currently", boss_one_medal_holder["blocker_summary"])
+        self.assertIn("140a46608 / SWorld", boss_one_medal_holder["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", boss_one_medal_holder["blocker_summary"])
+        self.assertIn("Objective 4660 remains mapped-only", boss_one_medal_holder["blocker_summary"])
+        self.assertIn("live packet/log or decompile controller trace", boss_one_medal_holder["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", boss_one_medal_holder["evidence_sources"])
+
+        boss_two_medal_holder = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4661)]
+        self.assertEqual(
+            "mapped_up_dnt_boss2_medal_holder_4661_exact_initial_script_counter_boundary_tested_blocked_missing_medal_value_encoding_boss_result_writer_reward_tier_and_client_semantics",
+            boss_two_medal_holder["evidence_status"],
+        )
+        self.assertIn("initial flags-517, type-5 Script counter", boss_two_medal_holder["blocker_summary"])
+        self.assertIn("raw count 4", boss_two_medal_holder["blocker_summary"])
+        self.assertIn("raw category 4", boss_two_medal_holder["blocker_summary"])
+        self.assertIn("'[DNT] Boss 2 Medal Holder'", boss_two_medal_holder["blocker_summary"])
+        self.assertIn("collide across all four internal holders", boss_two_medal_holder["blocker_summary"])
+        self.assertIn("stores count 2", boss_two_medal_holder["blocker_summary"])
+        self.assertIn("raw max 4", boss_two_medal_holder["blocker_summary"])
+        self.assertIn("event row 154 / game id 521", boss_two_medal_holder["blocker_summary"])
+        self.assertIn("ServerPublicEventEnd carries reward tier/type", boss_two_medal_holder["blocker_summary"])
+        self.assertIn("140a46618 / Mail", boss_two_medal_holder["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", boss_two_medal_holder["blocker_summary"])
+        self.assertIn("Objective 4661 remains mapped-only", boss_two_medal_holder["blocker_summary"])
+        self.assertIn("live packet/log or decompile controller trace", boss_two_medal_holder["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", boss_two_medal_holder["evidence_sources"])
+
+        boss_three_medal_holder = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4662)]
+        self.assertEqual(
+            "mapped_up_dnt_boss3_medal_holder_4662_exact_initial_script_counter_boundary_tested_blocked_missing_medal_value_encoding_boss_result_writer_reward_tier_and_client_semantics",
+            boss_three_medal_holder["evidence_status"],
+        )
+        self.assertIn("initial flags-517, type-5 Script counter", boss_three_medal_holder["blocker_summary"])
+        self.assertIn("raw count 4", boss_three_medal_holder["blocker_summary"])
+        self.assertIn("raw category 4", boss_three_medal_holder["blocker_summary"])
+        self.assertIn("'[DNT] Boss 3 Medal Holder'", boss_three_medal_holder["blocker_summary"])
+        self.assertIn("collide across all four internal holders", boss_three_medal_holder["blocker_summary"])
+        self.assertIn("stores count 3", boss_three_medal_holder["blocker_summary"])
+        self.assertIn("raw max 4", boss_three_medal_holder["blocker_summary"])
+        self.assertIn("event row 154 / game id 521", boss_three_medal_holder["blocker_summary"])
+        self.assertIn("ServerPublicEventEnd carries reward tier/type", boss_three_medal_holder["blocker_summary"])
+        self.assertIn("140a46628 / TrackedAsset", boss_three_medal_holder["blocker_summary"])
+        self.assertIn("FUN_140466260", boss_three_medal_holder["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", boss_three_medal_holder["blocker_summary"])
+        self.assertIn("Objective 4662 remains mapped-only", boss_three_medal_holder["blocker_summary"])
+        self.assertIn("live packet/log or decompile controller trace", boss_three_medal_holder["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", boss_three_medal_holder["evidence_sources"])
+
+        lost_found_exterminate_holder = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4737)]
+        self.assertEqual(
+            "mapped_up_lost_found_exterminate_holder_4737_exact_zero_object_boundary_tested_blocked_missing_controller_owned_target_scope_completion_and_consumer_semantics",
+            lost_found_exterminate_holder["evidence_status"],
+        )
+        self.assertIn("non-initial flags-8708, type-20 Exterminate row", lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("raw count 0, object 0, raw category 1", lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("WorldLocation2 41745 Lost and Found", lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("empty localized text ids 673349/673350", lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("Adjacent objectives 4738/4739/4740", lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("UnitEntity.RewardPublicEventKiller", lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("positive TargetGroup", lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("immediately succeeds the zero-count row", lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("unrelated Jabbithole/client achievement id 4737 matches were rejected", lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("140a47378 / \\%s\\%s.archive", lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("Objective 4737 remains mapped-only", lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("live packet/log or decompile controller trace", lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", lost_found_exterminate_holder["evidence_sources"])
+
+        second_lost_found_exterminate_holder = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4738)]
+        self.assertEqual(
+            "mapped_up_lost_found_exterminate_holder_4738_exact_zero_object_boundary_tested_blocked_missing_controller_owned_target_scope_completion_and_consumer_semantics",
+            second_lost_found_exterminate_holder["evidence_status"],
+        )
+        self.assertIn("second non-initial flags-8708", second_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("type-20 Exterminate row", second_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("raw count 0, object 0, raw category 1", second_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("WorldLocation2 41745 Lost and Found", second_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("empty localized text ids 673351/673352", second_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("Sibling objectives 4737/4739/4740", second_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("UnitEntity.RewardPublicEventKiller", second_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("positive TargetGroup", second_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("immediately succeeds the zero-count row", second_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("no exact Ultimate Protogames objective-4738 match", second_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("140b47388 / nCount", second_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("FUN_140473890", second_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", second_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("Objective 4738 remains mapped-only", second_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("live packet/log or decompile controller trace", second_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", second_lost_found_exterminate_holder["evidence_sources"])
+
+        third_lost_found_exterminate_holder = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4739)]
+        self.assertEqual(
+            "mapped_up_lost_found_exterminate_holder_4739_exact_zero_object_boundary_tested_blocked_missing_controller_owned_target_scope_completion_and_consumer_semantics",
+            third_lost_found_exterminate_holder["evidence_status"],
+        )
+        self.assertIn("third non-initial flags-8708", third_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("type-20 Exterminate row", third_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("raw count 0, object 0, raw category 1", third_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("WorldLocation2 41745 Lost and Found", third_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("empty localized text ids 673353/673354", third_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("Sibling objectives 4737/4738/4740", third_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("UnitEntity.RewardPublicEventKiller", third_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("positive TargetGroup", third_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("immediately succeeds the zero-count row", third_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("no exact Ultimate Protogames objective-4739 match", third_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("140a47398 / File not found: %s", third_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("FUN_1404739b0", third_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", third_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("Objective 4739 remains mapped-only", third_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("live packet/log or decompile controller trace", third_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", third_lost_found_exterminate_holder["evidence_sources"])
+
+        fourth_lost_found_exterminate_holder = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4740)]
+        self.assertEqual(
+            "mapped_up_lost_found_exterminate_holder_4740_exact_zero_object_boundary_tested_blocked_missing_controller_owned_target_scope_completion_and_consumer_semantics",
+            fourth_lost_found_exterminate_holder["evidence_status"],
+        )
+        self.assertIn("fourth non-initial flags-8708", fourth_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("type-20 Exterminate row", fourth_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("raw count 0, object 0, raw category 1", fourth_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("WorldLocation2 41745 Lost and Found", fourth_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("empty localized text ids 673355/673356", fourth_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("Sibling objectives 4737/4738/4739", fourth_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("UnitEntity.RewardPublicEventKiller", fourth_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("positive TargetGroup", fourth_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("immediately succeeds the zero-count row", fourth_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("no exact Ultimate Protogames objective-4740 match", fourth_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("140b47408 / strResidenceName", fourth_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("FUN_140084740", fourth_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", fourth_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("Objective 4740 remains mapped-only", fourth_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("live packet/log or decompile controller trace", fourth_lost_found_exterminate_holder["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", fourth_lost_found_exterminate_holder["evidence_sources"])
+
+        lost_found_participants_holder = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4741)]
+        self.assertEqual(
+            "mapped_up_lost_found_participants_holder_4741_exact_zero_count_boundary_tested_blocked_missing_trigger_placement_radius_enter_leave_completion_and_consumer_semantics",
+            lost_found_participants_holder["evidence_status"],
+        )
+        self.assertIn("initial flags-517, type-6 ParticipantsInTriggerVolume", lost_found_participants_holder["blocker_summary"])
+        self.assertIn("raw count 0, object 8105, main category 0", lost_found_participants_holder["blocker_summary"])
+        self.assertIn("no WorldLocation2", lost_found_participants_holder["blocker_summary"])
+        self.assertIn("Creature2 53414/53415", lost_found_participants_holder["blocker_summary"])
+        self.assertIn("Draken Burial Hazard - Malgrave Adventure", lost_found_participants_holder["blocker_summary"])
+        self.assertIn("VolumeGridTriggerEntity", lost_found_participants_holder["blocker_summary"])
+        self.assertIn("matching entry delta +1 immediately succeeds", lost_found_participants_holder["blocker_summary"])
+        self.assertIn("matching leave delta -1 also immediately succeeds at count 0", lost_found_participants_holder["blocker_summary"])
+        self.assertIn("no exact Ultimate Protogames objective-4741 match", lost_found_participants_holder["blocker_summary"])
+        self.assertIn("140a47410 / %s\\%s\\%s\\%s", lost_found_participants_holder["blocker_summary"])
+        self.assertIn("FUN_140147410", lost_found_participants_holder["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", lost_found_participants_holder["blocker_summary"])
+        self.assertIn("Objective 4741 remains mapped-only", lost_found_participants_holder["blocker_summary"])
+        self.assertIn("live packet/log or decompile controller evidence", lost_found_participants_holder["blocker_summary"])
+        self.assertIn("VolumeGridTriggerEntityTests.cs", lost_found_participants_holder["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", lost_found_participants_holder["evidence_sources"])
+
+        hidden_prototentiary_objective = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4742)]
+        self.assertEqual(
+            "mapped_up_hidden_prototentiary_event_objective_4742_exact_boundary_tested_blocked_current_warden_death_dispatch_mismatch_and_missing_objective_unit_binding_semantics",
+            hidden_prototentiary_objective["evidence_status"],
+        )
+        self.assertIn("initial flags-517, type-8 KillEventObjectiveUnit", hidden_prototentiary_objective["blocker_summary"])
+        self.assertIn("raw count 0, object 10569", hidden_prototentiary_objective["blocker_summary"])
+        self.assertIn("WorldLocation2 49683", hidden_prototentiary_objective["blocker_summary"])
+        self.assertIn("Objective 2855 is a visible sibling", hidden_prototentiary_objective["blocker_summary"])
+        self.assertIn("TargetGroup 10569 contains Gate Console Creature2 62987", hidden_prototentiary_objective["blocker_summary"])
+        self.assertIn("Warden Creature2 62324 belongs to TargetGroup 12474", hidden_prototentiary_objective["blocker_summary"])
+        self.assertIn("dispatch keys are 0 and 12474", hidden_prototentiary_objective["blocker_summary"])
+        self.assertIn("PublicEventTeam requires exact type/object equality", hidden_prototentiary_objective["blocker_summary"])
+        self.assertIn("only a matching type-8/object-10569 update", hidden_prototentiary_objective["blocker_summary"])
+        self.assertIn("shared event-owned-unit death path exists but does not prove or currently produce this exact row", hidden_prototentiary_objective["blocker_summary"])
+        self.assertIn("row 8160 maps visible objective 2855", hidden_prototentiary_objective["blocker_summary"])
+        self.assertIn("140a47428 / %s\\%s", hidden_prototentiary_objective["blocker_summary"])
+        self.assertIn("FUN_1404742e0", hidden_prototentiary_objective["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", hidden_prototentiary_objective["blocker_summary"])
+        self.assertIn("Objective 4742 remains mapped-only", hidden_prototentiary_objective["blocker_summary"])
+        self.assertIn("no guessed direct Warden credit", hidden_prototentiary_objective["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", hidden_prototentiary_objective["evidence_sources"])
+        self.assertIn("UnitEntityDamageResultTests.cs", hidden_prototentiary_objective["evidence_sources"])
+
+        hidden_power_plunge_kill_holder = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4771)]
+        self.assertEqual(
+            "mapped_up_hidden_power_plunge_kill_holder_4771_exact_counter_and_death_dispatch_tested_blocked_missing_spawn_cadence_power_plunge_qualification_and_consumer_semantics",
+            hidden_power_plunge_kill_holder["evidence_status"],
+        )
+        self.assertIn("initial flags-517, type-0 KillTargetGroup", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("raw count 4294967295, object 12871", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("no WorldLocation2", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("Cubig 61775, Cuboar 62218, and Flying Cubig 62242", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("relations 2187/2189/2190", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("9/19/9 historical coordinate observations", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("UnitEntity.RewardPublicEventKiller", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("the three mapped Creature2 ids dispatch object 12871", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("remains active rather than completing", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("Visible objective 2861 is instead a separate type-21 ResourcePool", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("TargetGroup 10404 expands the eligible bounce set", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("Achievement 5918", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("does not spawn the objective-4771 trio", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("no exact objective-4771 row", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("140b47718 / GetMannequinPoseList", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("FUN_140947710", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("Objective 4771 remains mapped-only", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("no guessed creature wave", hidden_power_plunge_kill_holder["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", hidden_power_plunge_kill_holder["evidence_sources"])
+        self.assertIn("UnitEntityDamageResultTests.cs", hidden_power_plunge_kill_holder["evidence_sources"])
+
+        hidden_elemental_hospital_kill_holder = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 4777)]
+        self.assertEqual(
+            "mapped_up_hidden_elemental_hospital_kill_holder_4777_exact_nested_counter_and_death_dispatch_tested_blocked_missing_wave_order_spawn_lifecycle_and_resource_pool_consumer_semantics",
+            hidden_elemental_hospital_kill_holder["evidence_status"],
+        )
+        self.assertIn("initial flags-517, type-0 KillTargetGroup", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("raw count 4294967295, object 12876", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("type-11 OtherTargetGroupCreatures parent", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("nests TargetGroups 12877 and 12878", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("thirteen Creature2 members", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("Elemental Master 63319", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("disguise rows 67340/67341/67342/67343", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("relations 1993-2001", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("Runtime AssetManager recursively expands type-11 groups", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("indexed under parent object 12876", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("representative Fire, Air, and Elemental Master Creature2 ids dispatch", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("rejects child object 12878", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("remains active rather than completing", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("Visible objective 2674 is instead a separate type-21 ResourcePool", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("Jabbithole row 8157", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("Achievement 5894", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("no Elemental Hospital phase", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("ambiguous between Jabbithole source rows 28000 and 30390", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("no exact objective-4777 row", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("140b47770 / RequestCommunityRemoveResidence", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("FUN_140747770", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("Objective 4777 remains mapped-only", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("no guessed wave spawns", hidden_elemental_hospital_kill_holder["blocker_summary"])
+        self.assertIn("AssetManagerTargetGroupTests.cs", hidden_elemental_hospital_kill_holder["evidence_sources"])
+        self.assertIn("UnitEntityDamageResultTests.cs", hidden_elemental_hospital_kill_holder["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", hidden_elemental_hospital_kill_holder["evidence_sources"])
+
+        rookie_bonus_objective = audit.INSTANCE_OBJECTIVE_DEPENDENCY_OVERRIDES[(2980, 5182)]
+        self.assertEqual(
+            "mapped_up_rookie_bonus_objective_5182_exact_script_boundary_tested_blocked_missing_rookie_eligibility_group_lifecycle_completion_and_extra_reward_semantics",
+            rookie_bonus_objective["evidence_status"],
+        )
+        self.assertIn("non-initial flags-4, type-5 Script", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("count 1, object 0, challenge category 3", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("localized text ids 742834/742835", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("six structurally identical dungeon rows 5177-5182", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("shared dungeon rookie mechanic", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("direct-id and matching type-5/object-0 credits are ignored before activation", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("wrong type or object updates are ignored after activation", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("can match every active Script/object-0 row", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("reward-rotation content 16", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("PublicEventRewardModifier has no event-594 row", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("no direct RewardRotationContent-to-reward linkage", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("MatchingGameMap 71", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("map 126 uses type 81", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("no objective-5182 activation", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("no exact objective-5182 row", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("140b51820 / unicode '  Spell_Misc'", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("Objective 5182 remains mapped-only", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("no guessed level or item-level cutoff", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("account-versus-character scope", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("exact extra-reward contents and recipients", rookie_bonus_objective["blocker_summary"])
+        self.assertIn("RewardRotationPerContentRewardCatalog.cs", rookie_bonus_objective["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", rookie_bonus_objective["evidence_sources"])
+
+        prime_matching_map = audit.INSTANCE_MATCHING_MAP_DEPENDENCY_OVERRIDES[(2980, 71)]
+        self.assertEqual(
+            "runtime_matching_map_71_table_load_entrance_level_type_and_scaled_prime_role_selection_tested_pending_random_queue_match_transfer_scaling_and_client_smoke",
+            prime_matching_map["evidence_status"],
+        )
+        self.assertIn("MatchingGameMap 71", prime_matching_map["blocker_summary"])
+        self.assertIn("MatchingGameType 87", prime_matching_map["blocker_summary"])
+        self.assertIn("recommended item level 70", prime_matching_map["blocker_summary"])
+        self.assertIn("achievement category 316", prime_matching_map["blocker_summary"])
+        self.assertIn("match type 14 ScaledPrimeLevelDungeon", prime_matching_map["blocker_summary"])
+        self.assertIn("flags 419, team size 5", prime_matching_map["blocker_summary"])
+        self.assertIn("exact level range 50-50", prime_matching_map["blocker_summary"])
+        self.assertIn("table-loads every map/type pair", prime_matching_map["blocker_summary"])
+        self.assertIn("WorldLocation2 42236", prime_matching_map["blocker_summary"])
+        self.assertIn("classifies ScaledPrimeLevelDungeon as requiring role selection", prime_matching_map["blocker_summary"])
+        self.assertIn("accepts a level-50 player", prime_matching_map["blocker_summary"])
+        self.assertIn("rejecting level 49", prime_matching_map["blocker_summary"])
+        self.assertIn("PrimeLevelDungeon type mismatch", prime_matching_map["blocker_summary"])
+        self.assertIn("missing entrance", prime_matching_map["blocker_summary"])
+        self.assertIn("Role.None", prime_matching_map["blocker_summary"])
+        self.assertIn("exact five-member team", prime_matching_map["blocker_summary"])
+        self.assertIn("Recommended item level 70 is not an enforced validator gate", prime_matching_map["blocker_summary"])
+        self.assertIn("does not prove how match type 14 chooses a Prime level", prime_matching_map["blocker_summary"])
+        self.assertIn("MatchingGameMap 126 is a separate", prime_matching_map["blocker_summary"])
+        self.assertIn("five-client or decompile-backed trace", prime_matching_map["blocker_summary"])
+        self.assertIn("MatchingGameMap71Tests.cs", prime_matching_map["evidence_sources"])
+        self.assertIn("laughingws_map_entrance_seed.sql", prime_matching_map["evidence_sources"])
+
+        fixed_prime_matching_map = audit.INSTANCE_MATCHING_MAP_DEPENDENCY_OVERRIDES[(2980, 126)]
+        self.assertEqual(
+            "runtime_matching_map_126_table_load_entrance_level_type_and_prime_role_selection_tested_pending_queue_match_transfer_prime_level_and_client_smoke",
+            fixed_prime_matching_map["evidence_status"],
+        )
+        self.assertIn("MatchingGameMap 126", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("MatchingGameType 81", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("recommended item level 80", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("achievement category 316", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("match type 10 PrimeLevelDungeon", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("flags 163, team size 5", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("exact level range 50-50", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("all Prime dungeons accessible at level 50", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("table-loads every map/type pair", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("WorldLocation2 42236", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("classifies PrimeLevelDungeon as requiring role selection", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("accepts a level-50 player", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("rejecting level 49", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("ScaledPrimeLevelDungeon type mismatch", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("missing entrance", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("Role.None", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("exact five-member team", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("Recommended item level 80 is not an enforced validator gate", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("does not prove how match type 10 chooses or validates", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("MatchingGameMap 71 remains a distinct", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("five-client or decompile-backed trace", fixed_prime_matching_map["blocker_summary"])
+        self.assertIn("MatchingGameMap126Tests.cs", fixed_prime_matching_map["evidence_sources"])
+        self.assertIn("laughingws_map_entrance_seed.sql", fixed_prime_matching_map["evidence_sources"])
+
+        waste_management_professional = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5864)]
+        self.assertEqual(
+            "runtime_up_achievement_5864_destruct_o_derby_objective_success_team_grant_tested_pending_room_route_completion_persistence_and_client_smoke",
+            waste_management_professional["evidence_status"],
+        )
+        self.assertIn("Achievement 5864", waste_management_professional["blocker_summary"])
+        self.assertIn("'Waste Management Professional'", waste_management_professional["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", waste_management_professional["blocker_summary"])
+        self.assertIn("required-progress-1", waste_management_professional["blocker_summary"])
+        self.assertIn("worth 10 points", waste_management_professional["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", waste_management_professional["blocker_summary"])
+        self.assertIn("no AchievementChecklist rows", waste_management_professional["blocker_summary"])
+        self.assertIn("654400/654401/666946", waste_management_professional["blocker_summary"])
+        self.assertIn("Jabbithole independently maps", waste_management_professional["blocker_summary"])
+        self.assertIn("achievement 5978", waste_management_professional["blocker_summary"])
+        self.assertIn("PublicEventObjective 2676", waste_management_professional["blocker_summary"])
+        self.assertIn("type 13, raw count/object 0, timer 180000", waste_management_professional["blocker_summary"])
+        self.assertIn("dynamic max 3", waste_management_professional["blocker_summary"])
+        self.assertIn("grants achievement 5864 by explicit id", waste_management_professional["blocker_summary"])
+        self.assertIn("Failed 2676", waste_management_professional["blocker_summary"])
+        self.assertIn("sibling objective 2872", waste_management_professional["blocker_summary"])
+        self.assertIn("AchievementType.cs has no named type-12 value", waste_management_professional["blocker_summary"])
+        self.assertIn("PublicEventObjectiveComplete type 143", waste_management_professional["blocker_summary"])
+        self.assertIn("generic type-12 check would be unsafe", waste_management_professional["blocker_summary"])
+        self.assertIn("late-join/disconnect eligibility", waste_management_professional["blocker_summary"])
+        self.assertIn("achievement 5978 propagation", waste_management_professional["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", waste_management_professional["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", waste_management_professional["evidence_sources"])
+
+        immortal_waste_management = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5865)]
+        self.assertEqual(
+            "runtime_up_achievement_5865_tank_room_no_deaths_objective_success_team_grant_tested_pending_route_participation_persistence_and_client_smoke",
+            immortal_waste_management["evidence_status"],
+        )
+        self.assertIn("Achievement 5865", immortal_waste_management["blocker_summary"])
+        self.assertIn("'Immortal: Waste Management Facility'", immortal_waste_management["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", immortal_waste_management["blocker_summary"])
+        self.assertIn("required-progress-1", immortal_waste_management["blocker_summary"])
+        self.assertIn("worth 50 points", immortal_waste_management["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", immortal_waste_management["blocker_summary"])
+        self.assertIn("no AchievementChecklist rows", immortal_waste_management["blocker_summary"])
+        self.assertIn("654402/654403/666947", immortal_waste_management["blocker_summary"])
+        self.assertIn("Jabbithole independently maps", immortal_waste_management["blocker_summary"])
+        self.assertIn("PublicEventObjective 2871", immortal_waste_management["blocker_summary"])
+        self.assertIn("flags 4, type 5 Script", immortal_waste_management["blocker_summary"])
+        self.assertIn("object 10569", immortal_waste_management["blocker_summary"])
+        self.assertIn("WorldLocation2 41754", immortal_waste_management["blocker_summary"])
+        self.assertIn("dynamic max 1", immortal_waste_management["blocker_summary"])
+        self.assertIn("all-three-tanks objective 2872", immortal_waste_management["blocker_summary"])
+        self.assertIn("grants achievement 5865 by explicit id", immortal_waste_management["blocker_summary"])
+        self.assertIn("Failed 2871", immortal_waste_management["blocker_summary"])
+        self.assertIn("sibling objective 2872", immortal_waste_management["blocker_summary"])
+        self.assertIn("generic type-12 check would be unsafe", immortal_waste_management["blocker_summary"])
+        self.assertIn("PublicEventObjectiveComplete type 143", immortal_waste_management["blocker_summary"])
+        self.assertIn("joined-party versus observer", immortal_waste_management["blocker_summary"])
+        self.assertIn("50-point/UI notification", immortal_waste_management["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", immortal_waste_management["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", immortal_waste_management["evidence_sources"])
+
         blocker = audit.SCRIPTED_INSTANCE_BLOCKERS[2980]
         self.assertIn("residual challenge, score, teleporter, hidden-holder, rookie, and room-mechanics rows", blocker)
+        self.assertIn("tank-room objectives 2676/2868/2869/2872 plus Redemption Value objective 2870 and no-death objective 2871 activation", blocker)
+
+    def test_ultimate_protogames_expert_incinerator_achievement_has_exact_mapped_only_blocker(self) -> None:
+        expert_incinerator = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5866)]
+        self.assertEqual(
+            "mapped_up_achievement_5866_expert_incinerator_blocked_missing_incinerate_mode4_tank_hit_zero_player_hit_and_completion_producer",
+            expert_incinerator["evidence_status"],
+        )
+        self.assertIn("Achievement 5866", expert_incinerator["blocker_summary"])
+        self.assertIn("'Expert Incinerator'", expert_incinerator["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", expert_incinerator["blocker_summary"])
+        self.assertIn("required-progress-1", expert_incinerator["blocker_summary"])
+        self.assertIn("worth 25 points", expert_incinerator["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", expert_incinerator["blocker_summary"])
+        self.assertIn("no AchievementChecklist rows", expert_incinerator["blocker_summary"])
+        self.assertIn("655356/655357/666948", expert_incinerator["blocker_summary"])
+        self.assertIn("Jabbithole independently maps", expert_incinerator["blocker_summary"])
+        self.assertIn("PublicEventObjective 2867", expert_incinerator["blocker_summary"])
+        self.assertIn("flags 4, type 5 Script", expert_incinerator["blocker_summary"])
+        self.assertIn("raw count/object 0", expert_incinerator["blocker_summary"])
+        self.assertIn("WorldLocation2 41754", expert_incinerator["blocker_summary"])
+        self.assertIn("objective boundary is broader than achievement 5866", expert_incinerator["blocker_summary"])
+        self.assertIn("Achievement 5870", expert_incinerator["blocker_summary"])
+        self.assertIn("objective 2873", expert_incinerator["blocker_summary"])
+        self.assertIn("TargetGroups 10633 and 12671", expert_incinerator["blocker_summary"])
+        self.assertIn("62542", expert_incinerator["blocker_summary"])
+        self.assertIn("62543", expert_incinerator["blocker_summary"])
+        self.assertIn("62546", expert_incinerator["blocker_summary"])
+        self.assertIn("72616/72618/73086", expert_incinerator["blocker_summary"])
+        self.assertIn("On Fire debuff 72628", expert_incinerator["blocker_summary"])
+        self.assertIn("mode 4 with signal ids 23008/23225", expert_incinerator["blocker_summary"])
+        self.assertIn("mode 4 remains diagnostics-only", expert_incinerator["blocker_summary"])
+        self.assertIn("does not activate or produce objective 2867", expert_incinerator["blocker_summary"])
+        self.assertIn("objective-2867 success notification alone does not grant", expert_incinerator["blocker_summary"])
+        self.assertIn("direct grant on 2867 would be unsafe", expert_incinerator["blocker_summary"])
+        self.assertIn("Achievement 5866 therefore remains mapped-only", expert_incinerator["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", expert_incinerator["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", expert_incinerator["evidence_sources"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundaryTests.cs", expert_incinerator["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", expert_incinerator["evidence_sources"])
+
+    def test_ultimate_protogames_tank_trample_achievement_has_exact_runtime_override(self) -> None:
+        tank_trample = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5867)]
+        self.assertEqual(
+            "runtime_up_achievement_5867_tank_trample_sixty_second_objective_success_team_grant_tested_pending_route_persistence_and_client_smoke",
+            tank_trample["evidence_status"],
+        )
+        self.assertIn("Achievement 5867", tank_trample["blocker_summary"])
+        self.assertIn("'Tank Trample'", tank_trample["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", tank_trample["blocker_summary"])
+        self.assertIn("required-progress-1", tank_trample["blocker_summary"])
+        self.assertIn("worth 25 points", tank_trample["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", tank_trample["blocker_summary"])
+        self.assertIn("no AchievementChecklist rows", tank_trample["blocker_summary"])
+        self.assertIn("655361/655362/666949", tank_trample["blocker_summary"])
+        self.assertIn("Jabbithole independently maps", tank_trample["blocker_summary"])
+        self.assertIn("PublicEventObjective 2868", tank_trample["blocker_summary"])
+        self.assertIn("flags 2106372", tank_trample["blocker_summary"])
+        self.assertIn("type-specific flags 64", tank_trample["blocker_summary"])
+        self.assertIn("type 20 Exterminate", tank_trample["blocker_summary"])
+        self.assertIn("TargetGroup 12671", tank_trample["blocker_summary"])
+        self.assertIn("failureTimeMs 60000", tank_trample["blocker_summary"])
+        self.assertIn("62542", tank_trample["blocker_summary"])
+        self.assertIn("62543", tank_trample["blocker_summary"])
+        self.assertIn("62546", tank_trample["blocker_summary"])
+        self.assertIn("MalfunctioningTankEntityScript", tank_trample["blocker_summary"])
+        self.assertIn("59.999 seconds", tank_trample["blocker_summary"])
+        self.assertIn("60-second deadline", tank_trample["blocker_summary"])
+        self.assertIn("grants achievement 5867 by explicit id", tank_trample["blocker_summary"])
+        self.assertIn("Failed 2868", tank_trample["blocker_summary"])
+        self.assertIn("sibling objective 2869", tank_trample["blocker_summary"])
+        self.assertIn("PublicEventObjectiveComplete type 143", tank_trample["blocker_summary"])
+        self.assertIn("generic type-12 check would be unsafe", tank_trample["blocker_summary"])
+        self.assertIn("late-join/disconnect eligibility", tank_trample["blocker_summary"])
+        self.assertIn("25-point/UI notification", tank_trample["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", tank_trample["evidence_sources"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", tank_trample["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", tank_trample["evidence_sources"])
+
+    def test_ultimate_protogames_redemption_value_achievement_has_exact_runtime_override(self) -> None:
+        redemption_value = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5868)]
+        self.assertEqual(
+            "runtime_up_achievement_5868_redemption_value_distinct_tank_half_health_objective_success_team_grant_tested_pending_route_persistence_and_client_smoke",
+            redemption_value["evidence_status"],
+        )
+        self.assertIn("Achievement 5868", redemption_value["blocker_summary"])
+        self.assertIn("'Redemption Value'", redemption_value["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", redemption_value["blocker_summary"])
+        self.assertIn("required-progress-1", redemption_value["blocker_summary"])
+        self.assertIn("worth 25 points", redemption_value["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", redemption_value["blocker_summary"])
+        self.assertIn("no AchievementChecklist rows", redemption_value["blocker_summary"])
+        self.assertIn("655367/655368/666950", redemption_value["blocker_summary"])
+        self.assertIn("Jabbithole independently maps", redemption_value["blocker_summary"])
+        self.assertIn("PublicEventObjective 2870", redemption_value["blocker_summary"])
+        self.assertIn("flags 2174980", redemption_value["blocker_summary"])
+        self.assertIn("type 5 Script", redemption_value["blocker_summary"])
+        self.assertIn("TargetGroup 12671", redemption_value["blocker_summary"])
+        self.assertIn("62542", redemption_value["blocker_summary"])
+        self.assertIn("62543", redemption_value["blocker_summary"])
+        self.assertIn("62546", redemption_value["blocker_summary"])
+        self.assertIn("1100300060 through 1100300062", redemption_value["blocker_summary"])
+        self.assertIn("at or below exactly one half", redemption_value["blocker_summary"])
+        self.assertIn("permanently disarms the attempt", redemption_value["blocker_summary"])
+        self.assertIn("MalfunctioningTankEntityScript", redemption_value["blocker_summary"])
+        self.assertIn("grants achievement 5868 by explicit id", redemption_value["blocker_summary"])
+        self.assertIn("Failed 2870", redemption_value["blocker_summary"])
+        self.assertIn("sibling GoingGreen", redemption_value["blocker_summary"])
+        self.assertIn("PublicEventObjectiveComplete type 143", redemption_value["blocker_summary"])
+        self.assertIn("generic type-12 check would be unsafe", redemption_value["blocker_summary"])
+        self.assertIn("pre-completion-death suppression", redemption_value["blocker_summary"])
+        self.assertIn("late-join/disconnect", redemption_value["blocker_summary"])
+        self.assertIn("25-point/UI notification", redemption_value["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", redemption_value["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", redemption_value["evidence_sources"])
+
+    def test_ultimate_protogames_can_crusher_achievement_has_exact_runtime_override(self) -> None:
+        can_crusher = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5869)]
+        self.assertEqual(
+            "runtime_up_achievement_5869_can_crusher_one_tank_destruction_objective_success_team_grant_tested_pending_route_persistence_and_client_smoke",
+            can_crusher["evidence_status"],
+        )
+        self.assertIn("Achievement 5869", can_crusher["blocker_summary"])
+        self.assertIn("'Can Crusher'", can_crusher["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", can_crusher["blocker_summary"])
+        self.assertIn("required-progress-1", can_crusher["blocker_summary"])
+        self.assertIn("worth 25 points", can_crusher["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", can_crusher["blocker_summary"])
+        self.assertIn("no AchievementChecklist rows", can_crusher["blocker_summary"])
+        self.assertIn("655369/655370/666951", can_crusher["blocker_summary"])
+        self.assertIn("Jabbithole independently maps", can_crusher["blocker_summary"])
+        self.assertIn("PublicEventObjective 2869", can_crusher["blocker_summary"])
+        self.assertIn("flags 2106372", can_crusher["blocker_summary"])
+        self.assertIn("type-specific flags 64", can_crusher["blocker_summary"])
+        self.assertIn("type 20 Exterminate", can_crusher["blocker_summary"])
+        self.assertIn("TargetGroup 12671", can_crusher["blocker_summary"])
+        self.assertIn("62542", can_crusher["blocker_summary"])
+        self.assertIn("62543", can_crusher["blocker_summary"])
+        self.assertIn("62546", can_crusher["blocker_summary"])
+        self.assertIn("MalfunctioningTankEntityScript", can_crusher["blocker_summary"])
+        self.assertIn("grants achievement 5869 by explicit id", can_crusher["blocker_summary"])
+        self.assertIn("Failed 2869", can_crusher["blocker_summary"])
+        self.assertIn("sibling GoingGreen", can_crusher["blocker_summary"])
+        self.assertIn("PublicEventObjectiveComplete type 143", can_crusher["blocker_summary"])
+        self.assertIn("generic type-12 check would be unsafe", can_crusher["blocker_summary"])
+        self.assertIn("one-shot tank-death credit", can_crusher["blocker_summary"])
+        self.assertIn("late-join/disconnect", can_crusher["blocker_summary"])
+        self.assertIn("25-point/UI notification", can_crusher["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", can_crusher["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", can_crusher["evidence_sources"])
+
+    def test_ultimate_protogames_environmentalist_achievement_has_exact_grant_and_condition_blocker(self) -> None:
+        environmentalist = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5870)]
+        self.assertEqual(
+            "runtime_up_achievement_5870_environmentalist_exact_objective_success_team_grant_tested_blocked_missing_on_fire_player_identity_and_completion_producer",
+            environmentalist["evidence_status"],
+        )
+        self.assertIn("Achievement 5870", environmentalist["blocker_summary"])
+        self.assertIn("'Environmentalist'", environmentalist["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", environmentalist["blocker_summary"])
+        self.assertIn("required-progress-1", environmentalist["blocker_summary"])
+        self.assertIn("worth 25 points", environmentalist["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", environmentalist["blocker_summary"])
+        self.assertIn("no AchievementChecklist rows", environmentalist["blocker_summary"])
+        self.assertIn("655744/655745/666952", environmentalist["blocker_summary"])
+        self.assertIn("Jabbithole independently maps", environmentalist["blocker_summary"])
+        self.assertIn("PublicEventObjective 2873", environmentalist["blocker_summary"])
+        self.assertIn("exact condition match", environmentalist["blocker_summary"])
+        self.assertIn("flags 4, type 5 Script", environmentalist["blocker_summary"])
+        self.assertIn("WorldLocation2 46323", environmentalist["blocker_summary"])
+        self.assertIn("Incinerate spell 72616", environmentalist["blocker_summary"])
+        self.assertIn("On Fire spell 72628", environmentalist["blocker_summary"])
+        self.assertIn("row 198057 with mode 1 / signal 26936", environmentalist["blocker_summary"])
+        self.assertIn("row 199166 with mode 4 / signal 23030", environmentalist["blocker_summary"])
+        self.assertIn("no Ultimate Protogames player-scoped receiver exists", environmentalist["blocker_summary"])
+        self.assertIn("mode 4 remains diagnostics-only", environmentalist["blocker_summary"])
+        self.assertIn("does not activate or produce objective 2873", environmentalist["blocker_summary"])
+        self.assertIn("grants achievement 5870 by explicit id", environmentalist["blocker_summary"])
+        self.assertIn("failed 2873", environmentalist["blocker_summary"])
+        self.assertIn("sibling GoingGreen", environmentalist["blocker_summary"])
+        self.assertIn("currently unreachable", environmentalist["blocker_summary"])
+        self.assertIn("generic type-12 hook remains unsafe", environmentalist["blocker_summary"])
+        self.assertIn("qualifying condition remains mapped-only", environmentalist["blocker_summary"])
+        self.assertIn("live packet/log or decompile trace", environmentalist["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", environmentalist["evidence_sources"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundaryTests.cs", environmentalist["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", environmentalist["evidence_sources"])
+
+    def test_ultimate_protogames_crate_royalty_achievement_has_exact_grant_and_condition_blocker(self) -> None:
+        crate_royalty = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5871)]
+        self.assertEqual(
+            "runtime_up_achievement_5871_crate_royalty_exact_objective_success_team_grant_tested_blocked_missing_group_fall_failure_and_room_completion_producer",
+            crate_royalty["evidence_status"],
+        )
+        self.assertIn("Achievement 5871", crate_royalty["blocker_summary"])
+        self.assertIn("'Crate Royalty'", crate_royalty["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", crate_royalty["blocker_summary"])
+        self.assertIn("required-progress-1", crate_royalty["blocker_summary"])
+        self.assertIn("worth 25 points", crate_royalty["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", crate_royalty["blocker_summary"])
+        self.assertIn("no AchievementChecklist rows whose achievementId is 5871", crate_royalty["blocker_summary"])
+        self.assertIn("checklist row whose own ID is 5871 belongs to achievement 1637", crate_royalty["blocker_summary"])
+        self.assertIn("734680/734681/734682", crate_royalty["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2281", crate_royalty["blocker_summary"])
+        self.assertIn("PublicEventObjective 2928", crate_royalty["blocker_summary"])
+        self.assertIn("exact condition match", crate_royalty["blocker_summary"])
+        self.assertIn("flags 4, type 5 Script", crate_royalty["blocker_summary"])
+        self.assertIn("WorldLocation2 41745", crate_royalty["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8216", crate_royalty["blocker_summary"])
+        self.assertIn("radius-1, maxVerticalDistance-0 room marker", crate_royalty["blocker_summary"])
+        self.assertIn("does not select or activate this Lost and Found route", crate_royalty["blocker_summary"])
+        self.assertIn("succeeds only after explicit controller credit", crate_royalty["blocker_summary"])
+        self.assertIn("grants achievement 5871 by explicit id", crate_royalty["blocker_summary"])
+        self.assertIn("failed 2928", crate_royalty["blocker_summary"])
+        self.assertIn("sibling GoingGreen", crate_royalty["blocker_summary"])
+        self.assertIn("currently unreachable", crate_royalty["blocker_summary"])
+        self.assertIn("generic type-12 hook remains unsafe", crate_royalty["blocker_summary"])
+        self.assertIn("qualifying condition remains mapped-only", crate_royalty["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", crate_royalty["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", crate_royalty["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", crate_royalty["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", crate_royalty["evidence_sources"])
+
+    def test_ultimate_protogames_red_tank_runaway_achievement_is_mapped_only(self) -> None:
+        red_tank_runaway = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5872)]
+        self.assertEqual(
+            "mapped_up_achievement_5872_red_tank_runaway_placeholder_distance_zero_point_unconfirmed_blocked_missing_retail_threshold_and_missile_producer",
+            red_tank_runaway["evidence_status"],
+        )
+        self.assertIn("Achievement 5872", red_tank_runaway["blocker_summary"])
+        self.assertIn("'Red-Tank Runaway'", red_tank_runaway["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", red_tank_runaway["blocker_summary"])
+        self.assertIn("required-progress-1", red_tank_runaway["blocker_summary"])
+        self.assertIn("completion-display percentage 100", red_tank_runaway["blocker_summary"])
+        self.assertIn("achievement-point enum 0", red_tank_runaway["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", red_tank_runaway["blocker_summary"])
+        self.assertIn("no AchievementChecklist rows whose achievementId is 5872", red_tank_runaway["blocker_summary"])
+        self.assertIn("checklist row whose own ID is 5872 belongs to achievement 1637", red_tank_runaway["blocker_summary"])
+        self.assertIn("655746/655747/666953", red_tank_runaway["blocker_summary"])
+        self.assertIn("run 'X meters'", red_tank_runaway["blocker_summary"])
+        self.assertIn("no retail distance threshold", red_tank_runaway["blocker_summary"])
+        self.assertIn("no row for retail id 5872", red_tank_runaway["blocker_summary"])
+        self.assertIn("Creature2 62542", red_tank_runaway["blocker_summary"])
+        self.assertIn("Jabbithole creature row 28516", red_tank_runaway["blocker_summary"])
+        self.assertIn("Explosion 72267 and Discharge 79309", red_tank_runaway["blocker_summary"])
+        self.assertIn("Tracking Missiles base 76252", red_tank_runaway["blocker_summary"])
+        self.assertIn("six proxy rows 76348 through 76353", red_tank_runaway["blocker_summary"])
+        self.assertIn("damage row 76354", red_tank_runaway["blocker_summary"])
+        self.assertIn("do not link achievement 5872", red_tank_runaway["blocker_summary"])
+        self.assertIn("No PublicEventObjective row independently names this condition", red_tank_runaway["blocker_summary"])
+        self.assertIn("does not run the retail combat action set", red_tank_runaway["blocker_summary"])
+        self.assertIn("successful Destruct-O-Derby does not grant achievement 5872", red_tank_runaway["blocker_summary"])
+        self.assertIn("generic type-12 hook or a guessed distance would invent behavior", red_tank_runaway["blocker_summary"])
+        self.assertIn("Achievement 5872 remains mapped-only", red_tank_runaway["blocker_summary"])
+        self.assertIn("live packet/log or controller/action-set decompile trace", red_tank_runaway["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", red_tank_runaway["evidence_sources"])
+        self.assertIn("jabbithole_mysql/creature_spells.sql", red_tank_runaway["evidence_sources"])
+        self.assertIn("Tools/DataMapping/output/spell_effect_client_map.csv", red_tank_runaway["evidence_sources"])
+
+    def test_ultimate_protogames_survive_blitzsquirg_achievement_has_exact_grant_and_condition_blocker(self) -> None:
+        blitzsquirg = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5873)]
+        self.assertEqual(
+            "runtime_up_achievement_5873_survive_blitzsquirg_exact_objective_success_team_grant_tested_blocked_missing_wave_resource_pool_and_completion_producer",
+            blitzsquirg["evidence_status"],
+        )
+        self.assertIn("Achievement 5873", blitzsquirg["blocker_summary"])
+        self.assertIn("'Survive the Blitzsquirg'", blitzsquirg["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", blitzsquirg["blocker_summary"])
+        self.assertIn("required-progress-1", blitzsquirg["blocker_summary"])
+        self.assertIn("worth 10 points", blitzsquirg["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", blitzsquirg["blocker_summary"])
+        self.assertIn("no AchievementChecklist rows whose achievementId is 5873", blitzsquirg["blocker_summary"])
+        self.assertIn("uses 5873 does so as objectId for achievement 5978", blitzsquirg["blocker_summary"])
+        self.assertIn("654406/654407/666954", blitzsquirg["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1911", blitzsquirg["blocker_summary"])
+        self.assertIn("PublicEventObjective 2670", blitzsquirg["blocker_summary"])
+        self.assertIn("exact completion-boundary match", blitzsquirg["blocker_summary"])
+        self.assertIn("type 21 ResourcePool", blitzsquirg["blocker_summary"])
+        self.assertIn("count 6, object 0", blitzsquirg["blocker_summary"])
+        self.assertIn("WorldLocation2 41755", blitzsquirg["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8224", blitzsquirg["blocker_summary"])
+        self.assertIn("Squirg Zombie 61992", blitzsquirg["blocker_summary"])
+        self.assertIn("Belcher 62011", blitzsquirg["blocker_summary"])
+        self.assertIn("Bomber 62371", blitzsquirg["blocker_summary"])
+        self.assertIn("does not activate objective 2670", blitzsquirg["blocker_summary"])
+        self.assertIn("grants achievement 5873 by explicit id", blitzsquirg["blocker_summary"])
+        self.assertIn("failed 2670", blitzsquirg["blocker_summary"])
+        self.assertIn("sibling GoingGreen", blitzsquirg["blocker_summary"])
+        self.assertIn("currently unreachable", blitzsquirg["blocker_summary"])
+        self.assertIn("generic type-12 hook remains unsafe", blitzsquirg["blocker_summary"])
+        self.assertIn("qualifying room condition remains mapped-only", blitzsquirg["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", blitzsquirg["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", blitzsquirg["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", blitzsquirg["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", blitzsquirg["evidence_sources"])
+
+    def test_ultimate_protogames_immortal_squirgnasium_achievement_is_mapped_only(self) -> None:
+        immortal = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5874)]
+        self.assertEqual(
+            "mapped_up_achievement_5874_immortal_squirgnasium_blocked_missing_room_specific_no_deaths_producer_and_completion_pairing",
+            immortal["evidence_status"],
+        )
+        self.assertIn("Achievement 5874", immortal["blocker_summary"])
+        self.assertIn("'Immortal: The Squirgnasium'", immortal["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", immortal["blocker_summary"])
+        self.assertIn("required-progress-1", immortal["blocker_summary"])
+        self.assertIn("worth 50 points", immortal["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", immortal["blocker_summary"])
+        self.assertIn("no AchievementChecklist rows whose achievementId is 5874", immortal["blocker_summary"])
+        self.assertIn("654404/654405/666955", immortal["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1933", immortal["blocker_summary"])
+        self.assertIn("PublicEventObjective 2670", immortal["blocker_summary"])
+        self.assertIn("WorldLocation2 41755 in area 4337", immortal["blocker_summary"])
+        self.assertIn("carries no no-death state", immortal["blocker_summary"])
+        self.assertIn("Objective 2857", immortal["blocker_summary"])
+        self.assertIn("TargetGroup 10569", immortal["blocker_summary"])
+        self.assertIn("achievement 5906 Immortal: The Prototentiary", immortal["blocker_summary"])
+        self.assertIn("Objective 2871", immortal["blocker_summary"])
+        self.assertIn("WorldLocation2 41754 in area 4336", immortal["blocker_summary"])
+        self.assertIn("achievement 5865 Immortal: Waste Management Facility", immortal["blocker_summary"])
+        self.assertIn("No no-death objective is mapped to Squirgnasium", immortal["blocker_summary"])
+        self.assertIn("does not select or activate the Squirgnasium route", immortal["blocker_summary"])
+        self.assertIn("success grants the exact completion achievement 5873", immortal["blocker_summary"])
+        self.assertIn("does not grant achievement 5874", immortal["blocker_summary"])
+        self.assertIn("would overgrant or cross room boundaries", immortal["blocker_summary"])
+        self.assertIn("Achievement 5874 remains mapped-only", immortal["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", immortal["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", immortal["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", immortal["evidence_sources"])
+        self.assertIn("Tools/DataMapping/output/client_source_targetgroup_map.csv", immortal["evidence_sources"])
+
+    def test_ultimate_protogames_clean_sweeper_achievement_has_exact_grant_and_condition_blocker(self) -> None:
+        clean_sweeper = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5875)]
+        self.assertEqual(
+            "runtime_up_achievement_5875_clean_sweeper_exact_objective_success_team_grant_tested_blocked_missing_five_wave_clear_and_next_spawn_overlap_producer",
+            clean_sweeper["evidence_status"],
+        )
+        self.assertIn("Achievement 5875", clean_sweeper["blocker_summary"])
+        self.assertIn("'Clean Sweeper'", clean_sweeper["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", clean_sweeper["blocker_summary"])
+        self.assertIn("required-progress-1", clean_sweeper["blocker_summary"])
+        self.assertIn("worth 25 points", clean_sweeper["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", clean_sweeper["blocker_summary"])
+        self.assertIn("no AchievementChecklist rows whose achievementId is 5875", clean_sweeper["blocker_summary"])
+        self.assertIn("655751/655752/666956", clean_sweeper["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1953", clean_sweeper["blocker_summary"])
+        self.assertIn("PublicEventObjective 2951", clean_sweeper["blocker_summary"])
+        self.assertIn("exact qualifying-condition match", clean_sweeper["blocker_summary"])
+        self.assertIn("type 21 ResourcePool", clean_sweeper["blocker_summary"])
+        self.assertIn("flags 4, count 5, object 0", clean_sweeper["blocker_summary"])
+        self.assertIn("no failure timer, WorldLocation2, or reward-pane TargetGroup", clean_sweeper["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8218", clean_sweeper["blocker_summary"])
+        self.assertIn("four credits remain active after 600 seconds", clean_sweeper["blocker_summary"])
+        self.assertIn("fifth succeeds", clean_sweeper["blocker_summary"])
+        self.assertIn("does not select or activate the Squirgnasium route", clean_sweeper["blocker_summary"])
+        self.assertIn("grants achievement 5875 by explicit id", clean_sweeper["blocker_summary"])
+        self.assertIn("failed 2951", clean_sweeper["blocker_summary"])
+        self.assertIn("successful sibling 2670", clean_sweeper["blocker_summary"])
+        self.assertIn("currently unreachable", clean_sweeper["blocker_summary"])
+        self.assertIn("five-wave qualifying producer remains mapped-only", clean_sweeper["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", clean_sweeper["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", clean_sweeper["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", clean_sweeper["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", clean_sweeper["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", clean_sweeper["evidence_sources"])
+
+    def test_ultimate_protogames_squirg_defuser_achievement_has_exact_grant_and_condition_blocker(self) -> None:
+        squirg_defuser = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5876)]
+        self.assertEqual(
+            "runtime_up_achievement_5876_squirg_defuser_exact_objective_success_team_grant_tested_blocked_missing_belcher_onslaught_interrupt_reason_and_wave_producer",
+            squirg_defuser["evidence_status"],
+        )
+        self.assertIn("Achievement 5876", squirg_defuser["blocker_summary"])
+        self.assertIn("'Squirg Defuser'", squirg_defuser["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", squirg_defuser["blocker_summary"])
+        self.assertIn("required-progress-1", squirg_defuser["blocker_summary"])
+        self.assertIn("worth 25 points", squirg_defuser["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", squirg_defuser["blocker_summary"])
+        self.assertIn("no AchievementChecklist rows whose achievementId is 5876", squirg_defuser["blocker_summary"])
+        self.assertIn("655753/655754/666957", squirg_defuser["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2051", squirg_defuser["blocker_summary"])
+        self.assertIn("PublicEventObjective 3198", squirg_defuser["blocker_summary"])
+        self.assertIn("exact qualifying-condition match", squirg_defuser["blocker_summary"])
+        self.assertIn("type 21 ResourcePool, flags 4, count 3", squirg_defuser["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8140", squirg_defuser["blocker_summary"])
+        self.assertIn("two credits remain active after 600 seconds", squirg_defuser["blocker_summary"])
+        self.assertIn("the third succeeds", squirg_defuser["blocker_summary"])
+        self.assertIn("Creature2 62011 uniquely maps Squirg Belcher", squirg_defuser["blocker_summary"])
+        self.assertIn("Spell 72112 is the current 3500-ms Squirg Onslaught", squirg_defuser["blocker_summary"])
+        self.assertIn("CastResult.SpellInterrupted", squirg_defuser["blocker_summary"])
+        self.assertIn("ISpellScript.OnFinish callback exposes only cancelled=true", squirg_defuser["blocker_summary"])
+        self.assertIn("does not select or activate the Squirgnasium route", squirg_defuser["blocker_summary"])
+        self.assertIn("grants achievement 5876 by explicit id", squirg_defuser["blocker_summary"])
+        self.assertIn("failed 3198", squirg_defuser["blocker_summary"])
+        self.assertIn("successful sibling 2951", squirg_defuser["blocker_summary"])
+        self.assertIn("currently unreachable", squirg_defuser["blocker_summary"])
+        self.assertIn("Belcher/Onslaught interrupt producer remains mapped-only", squirg_defuser["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", squirg_defuser["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", squirg_defuser["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", squirg_defuser["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", squirg_defuser["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", squirg_defuser["evidence_sources"])
+
+    def test_ultimate_protogames_jump_around_achievement_has_exact_grant_and_condition_blocker(self) -> None:
+        jump_around = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5877)]
+        self.assertEqual(
+            "runtime_up_achievement_5877_jump_around_exact_objective_success_team_grant_tested_blocked_missing_bubbles_pulverize_avoid_ravel_payload_and_wave_producer",
+            jump_around["evidence_status"],
+        )
+        self.assertIn("Achievement 5877", jump_around["blocker_summary"])
+        self.assertIn("'Jump Around'", jump_around["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", jump_around["blocker_summary"])
+        self.assertIn("required-progress-1", jump_around["blocker_summary"])
+        self.assertIn("worth 25 points", jump_around["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", jump_around["blocker_summary"])
+        self.assertIn("no AchievementChecklist rows whose achievementId is 5877", jump_around["blocker_summary"])
+        self.assertIn("655755/655756/666958", jump_around["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2004", jump_around["blocker_summary"])
+        self.assertIn("PublicEventObjective 3200", jump_around["blocker_summary"])
+        self.assertIn("exact qualifying-condition match", jump_around["blocker_summary"])
+        self.assertIn("type 21 ResourcePool, flags 4, count 15", jump_around["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8197", jump_around["blocker_summary"])
+        self.assertIn("fourteen credits remain active after 600 seconds", jump_around["blocker_summary"])
+        self.assertIn("the fifteenth succeeds", jump_around["blocker_summary"])
+        self.assertIn("Bubbles to Creature2 62010", jump_around["blocker_summary"])
+        self.assertIn("Pulverize spells 72140/72142", jump_around["blocker_summary"])
+        self.assertIn("Challenge Signal - Success spell 75106", jump_around["blocker_summary"])
+        self.assertIn("Ravel mode 4 / signal 25160 / DataBits02 1", jump_around["blocker_summary"])
+        self.assertIn("dispatches only Ravel mode 1", jump_around["blocker_summary"])
+        self.assertIn("does not select or activate the Squirgnasium route", jump_around["blocker_summary"])
+        self.assertIn("grants achievement 5877 by explicit id", jump_around["blocker_summary"])
+        self.assertIn("failed 3200", jump_around["blocker_summary"])
+        self.assertIn("successful sibling 3198", jump_around["blocker_summary"])
+        self.assertIn("currently unreachable", jump_around["blocker_summary"])
+        self.assertIn("Bubbles/Pulverize avoid producer remains mapped-only", jump_around["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", jump_around["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", jump_around["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", jump_around["evidence_sources"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundary.cs", jump_around["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", jump_around["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", jump_around["evidence_sources"])
+
+    def test_ultimate_protogames_twinkle_toes_achievement_has_exact_grant_and_condition_blocker(self) -> None:
+        twinkle_toes = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5878)]
+        self.assertEqual(
+            "runtime_up_achievement_5878_twinkle_toes_exact_objective_success_team_grant_tested_blocked_missing_squirg_burst_hit_failure_room_completion_and_wave_producer",
+            twinkle_toes["evidence_status"],
+        )
+        self.assertIn("Achievement 5878", twinkle_toes["blocker_summary"])
+        self.assertIn("'Twinkle Toes'", twinkle_toes["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", twinkle_toes["blocker_summary"])
+        self.assertIn("required-progress-1", twinkle_toes["blocker_summary"])
+        self.assertIn("worth 25 points", twinkle_toes["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", twinkle_toes["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5878 is unrelated", twinkle_toes["blocker_summary"])
+        self.assertIn("achievement 4311 and object 2711", twinkle_toes["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5878", twinkle_toes["blocker_summary"])
+        self.assertIn("655757/655758/666959", twinkle_toes["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2034", twinkle_toes["blocker_summary"])
+        self.assertIn("PublicEventObjective 3199", twinkle_toes["blocker_summary"])
+        self.assertIn("exact qualifying-condition match", twinkle_toes["blocker_summary"])
+        self.assertIn("type 5 Script, flags 4, count 0", twinkle_toes["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8203", twinkle_toes["blocker_summary"])
+        self.assertIn("remains active after 600 seconds", twinkle_toes["blocker_summary"])
+        self.assertIn("Squirg Bomber to Creature2 62371", twinkle_toes["blocker_summary"])
+        self.assertIn("action-set 2209 contains only Summon VFX row 4951", twinkle_toes["blocker_summary"])
+        self.assertIn("Spell 72114 is the named 800-ms Squirg Burst", twinkle_toes["blocker_summary"])
+        self.assertIn("IPublicEventObjective exposes no script-facing failure transition", twinkle_toes["blocker_summary"])
+        self.assertIn("does not select or activate the Squirgnasium route", twinkle_toes["blocker_summary"])
+        self.assertIn("grants achievement 5878 by explicit id", twinkle_toes["blocker_summary"])
+        self.assertIn("failed 3199", twinkle_toes["blocker_summary"])
+        self.assertIn("successful sibling 3200", twinkle_toes["blocker_summary"])
+        self.assertIn("currently unreachable", twinkle_toes["blocker_summary"])
+        self.assertIn("Bomber/Burst hit-failure and room-completion producer remains mapped-only", twinkle_toes["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", twinkle_toes["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", twinkle_toes["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", twinkle_toes["evidence_sources"])
+        self.assertIn("ISpellScript.cs", twinkle_toes["evidence_sources"])
+        self.assertIn("IUnitScript.cs", twinkle_toes["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", twinkle_toes["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", twinkle_toes["evidence_sources"])
+
+    def test_ultimate_protogames_speedy_slaughterfest_achievement_has_exact_grant_and_condition_blocker(self) -> None:
+        speedy_slaughterfest = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5879)]
+        self.assertEqual(
+            "runtime_up_achievement_5879_speedy_slaughterfest_exact_objective_success_team_grant_tested_blocked_missing_squirgnasium_wave_completion_timer_start_reset_and_route_producer",
+            speedy_slaughterfest["evidence_status"],
+        )
+        self.assertIn("Achievement 5879", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("'Speedy Slaughterfest'", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("required-progress-1", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("worth 25 points", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5879 is unrelated", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("achievement 4311 and object 2714", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5879", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("655761/655762/666960", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2066", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("PublicEventObjective 2947", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("exact qualifying-condition match", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("type 5 Script, flags 4, count 0", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("failureTimeMs 270000", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8175", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("remains active at 269.999 seconds", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("fails at 270 seconds without that signal", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("does not select or activate the Squirgnasium route", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("grants achievement 5879 by explicit id", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("failed 2947", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("successful sibling 3199", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("currently unreachable", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("Crediting any single Squirg death", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("wave-completion and timer-start/reset producer remains mapped-only", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", speedy_slaughterfest["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", speedy_slaughterfest["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", speedy_slaughterfest["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", speedy_slaughterfest["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", speedy_slaughterfest["evidence_sources"])
+
+    def test_ultimate_protogames_squirg_farmer_achievement_has_exact_mapped_only_blocker(self) -> None:
+        squirg_farmer = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5880)]
+        self.assertEqual(
+            "mapped_up_achievement_5880_squirg_farmer_blocked_missing_bomber_survival_timer_start_eligibility_reset_and_grant_producer",
+            squirg_farmer["evidence_status"],
+        )
+        self.assertIn("Achievement 5880", squirg_farmer["blocker_summary"])
+        self.assertIn("'Squirg Farmer'", squirg_farmer["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", squirg_farmer["blocker_summary"])
+        self.assertIn("required-progress-1", squirg_farmer["blocker_summary"])
+        self.assertIn("worth 0 points", squirg_farmer["blocker_summary"])
+        self.assertIn("completion-percentage display is 100", squirg_farmer["blocker_summary"])
+        self.assertIn("object and alternate object ids are both 0", squirg_farmer["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5880 is unrelated", squirg_farmer["blocker_summary"])
+        self.assertIn("achievement 4312 and object 2712", squirg_farmer["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5880", squirg_farmer["blocker_summary"])
+        self.assertIn("655763/655764/676414", squirg_farmer["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2106", squirg_farmer["blocker_summary"])
+        self.assertIn("no build 16042 public-event objective", squirg_farmer["blocker_summary"])
+        self.assertIn("objective 3199", squirg_farmer["blocker_summary"])
+        self.assertIn("no objective text contains the keep-alive or one-minute rule", squirg_farmer["blocker_summary"])
+        self.assertIn("Creature2 62371", squirg_farmer["blocker_summary"])
+        self.assertIn("action-set 2209 contains only Summon VFX row 4951", squirg_farmer["blocker_summary"])
+        self.assertIn("does not select the Squirgnasium route", squirg_farmer["blocker_summary"])
+        self.assertIn("whether 'over one minute' means the first tick strictly after 60 seconds", squirg_farmer["blocker_summary"])
+        self.assertIn("AchievementType.cs has no named type-12 value", squirg_farmer["blocker_summary"])
+        self.assertIn("generic type-12 check would be unsafe", squirg_farmer["blocker_summary"])
+        self.assertIn("successful Twinkle Toes, Speedy Slaughterfest, and Jump Jump", squirg_farmer["blocker_summary"])
+        self.assertIn("Achievement 5880 remains mapped-only", squirg_farmer["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", squirg_farmer["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", squirg_farmer["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", squirg_farmer["evidence_sources"])
+        self.assertIn("jabbithole_mysql/creatures.sql", squirg_farmer["evidence_sources"])
+
+    def test_ultimate_protogames_tea_time_achievement_has_exact_runtime_path_and_smoke_blocker(self) -> None:
+        tea_time = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5881)]
+        self.assertEqual(
+            "runtime_up_achievement_5881_tea_time_reviewed_pair_activate_spell_prerequisite_and_achievement_advance_grant_tested_blocked_pending_route_client_interaction_persistence_and_notification_smoke",
+            tea_time["evidence_status"],
+        )
+        self.assertIn("Achievement 5881", tea_time["blocker_summary"])
+        self.assertIn("'Tea Time'", tea_time["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", tea_time["blocker_summary"])
+        self.assertIn("required-progress-1", tea_time["blocker_summary"])
+        self.assertIn("worth 0 points", tea_time["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5881 is unrelated", tea_time["blocker_summary"])
+        self.assertIn("achievement 4312 and object 2713", tea_time["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5881", tea_time["blocker_summary"])
+        self.assertIn("655765/655766/676415", tea_time["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2116", tea_time["blocker_summary"])
+        self.assertIn("source coordinate 6289549", tea_time["blocker_summary"])
+        self.assertIn("source creature 29896 Tea Cup", tea_time["blocker_summary"])
+        self.assertIn("coordinate 6289665", tea_time["blocker_summary"])
+        self.assertIn("Creature2 69883", tea_time["blocker_summary"])
+        self.assertIn("Creature2 56874 is a Grimvault flavor NPC", tea_time["blocker_summary"])
+        self.assertIn("activate spell 79328", tea_time["blocker_summary"])
+        self.assertIn("prerequisite 37093", tea_time["blocker_summary"])
+        self.assertIn("AchievementAdvance effect 208728", tea_time["blocker_summary"])
+        self.assertIn("dataBits00 5881 and dataBits01 1", tea_time["blocker_summary"])
+        self.assertIn("AchievementState type 7, Equal, object 5881, value 0", tea_time["blocker_summary"])
+        self.assertIn("dispatcher at 1404a2100 forwards comparison, value, and object", tea_time["blocker_summary"])
+        self.assertIn("unsupported multi-state values fail closed", tea_time["blocker_summary"])
+        self.assertIn("grants achievement 5881 by explicit id", tea_time["blocker_summary"])
+        self.assertIn("1006289549/1006289665", tea_time["blocker_summary"])
+        self.assertIn("two exact Tea Time entities", tea_time["blocker_summary"])
+        self.assertIn("five exact stat rows", tea_time["blocker_summary"])
+        self.assertIn("zero expected/unexpected mismatches", tea_time["blocker_summary"])
+        self.assertIn("does not yet route players through the Squirgnasium", tea_time["blocker_summary"])
+        self.assertIn("UAC-blocked client relaunch", tea_time["blocker_summary"])
+        self.assertIn("test_creature_bridge_overrides.py", tea_time["evidence_sources"])
+        self.assertIn("PrerequisiteCheckAchievementStateTests.cs", tea_time["evidence_sources"])
+        self.assertIn("SpellEffectCombatRegressionTests.cs", tea_time["evidence_sources"])
+
+    def test_ultimate_protogames_squirgception_achievement_has_exact_equipped_head_grant_boundary(self) -> None:
+        squirgception = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5882)]
+        self.assertEqual(
+            "runtime_up_achievement_5882_squirgception_blitzsquirg_success_equipped_head_item_grant_tested_blocked_pending_squirgnasium_route_and_client_smoke",
+            squirgception["evidence_status"],
+        )
+        self.assertIn("Achievement 5882", squirgception["blocker_summary"])
+        self.assertIn("'Squirgception'", squirgception["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", squirgception["blocker_summary"])
+        self.assertIn("worth 0 points", squirgception["blocker_summary"])
+        self.assertIn("655774/655775", squirgception["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5882 is unrelated", squirgception["blocker_summary"])
+        self.assertIn("achievement 4313 and object 33138", squirgception["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5882", squirgception["blocker_summary"])
+        self.assertIn("No Jabbithole achievement row has game_id 5882", squirgception["blocker_summary"])
+        self.assertIn("PublicEventObjective 2670", squirgception["blocker_summary"])
+        self.assertIn("ResourcePool type 21, count 6, object 0", squirgception["blocker_summary"])
+        self.assertIn("Jabbithole public-event objective row 8224", squirgception["blocker_summary"])
+        self.assertIn("base completion achievement 5873", squirgception["blocker_summary"])
+        self.assertIn("Item2 rows 28653, 28654, and 28655", squirgception["blocker_summary"])
+        self.assertIn("ItemDisplay 2388 and ItemSlot 3 ArmorHead", squirgception["blocker_summary"])
+        self.assertIn("EquippedItem.Head index 2", squirgception["blocker_summary"])
+        self.assertIn("Quest item 3702", squirgception["blocker_summary"])
+        self.assertIn("Item2Type 172, ItemSlot 0", squirgception["blocker_summary"])
+        self.assertIn("not equippable in the helm slot", squirgception["blocker_summary"])
+        self.assertIn("InventoryLocation.Equipped head slot", squirgception["blocker_summary"])
+        self.assertIn("exact Item2 28653/28654/28655", squirgception["blocker_summary"])
+        self.assertIn("wrong-head-item rejection", squirgception["blocker_summary"])
+        self.assertIn("inventory-only rejection", squirgception["blocker_summary"])
+        self.assertIn("does not select The Squirgnasium or activate objective 2670", squirgception["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", squirgception["evidence_sources"])
+        self.assertIn("ItemSlot.tbl.sql", squirgception["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", squirgception["evidence_sources"])
+
+    def test_ultimate_protogames_cosmic_kicker_achievement_has_exact_event_success_grant_boundary(self) -> None:
+        cosmic_kicker = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5883)]
+        self.assertEqual(
+            "runtime_up_achievement_5883_cosmic_kicker_exact_hms_phineas_objective_success_team_grant_tested_blocked_pending_route_kick_producer_and_client_smoke",
+            cosmic_kicker["evidence_status"],
+        )
+        self.assertIn("Achievement 5883", cosmic_kicker["blocker_summary"])
+        self.assertIn("'Cosmic Kicker'", cosmic_kicker["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", cosmic_kicker["blocker_summary"])
+        self.assertIn("required-progress-1", cosmic_kicker["blocker_summary"])
+        self.assertIn("worth 10 points", cosmic_kicker["blocker_summary"])
+        self.assertIn("654408/654411/666961", cosmic_kicker["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5883 is unrelated", cosmic_kicker["blocker_summary"])
+        self.assertIn("achievement 4313 and object 33139", cosmic_kicker["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5883", cosmic_kicker["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1954", cosmic_kicker["blocker_summary"])
+        self.assertIn("PublicEventObjective 2677", cosmic_kicker["blocker_summary"])
+        self.assertIn("WorldLocation2 41756", cosmic_kicker["blocker_summary"])
+        self.assertIn("failureTimeMs 300000", cosmic_kicker["blocker_summary"])
+        self.assertIn("Jabbithole public-event objective row 8191", cosmic_kicker["blocker_summary"])
+        self.assertIn("Child objective 2923", cosmic_kicker["blocker_summary"])
+        self.assertIn("Cosmic Kick spell 71680", cosmic_kicker["blocker_summary"])
+        self.assertIn("grants achievement 5883 by explicit id", cosmic_kicker["blocker_summary"])
+        self.assertIn("failed-2677 rejection", cosmic_kicker["blocker_summary"])
+        self.assertIn("successful sibling-2923 rejection", cosmic_kicker["blocker_summary"])
+        self.assertIn("does not select H.M.S. Phineas", cosmic_kicker["blocker_summary"])
+        self.assertIn("five-minute event", cosmic_kicker["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", cosmic_kicker["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", cosmic_kicker["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", cosmic_kicker["evidence_sources"])
+
+    def test_ultimate_protogames_immortal_hms_phineas_has_exact_no_deaths_blocker(self) -> None:
+        immortal_hms = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5884)]
+        self.assertEqual(
+            "mapped_up_achievement_5884_immortal_hms_phineas_blocked_missing_room_scoped_no_deaths_activation_state_and_grant_producer",
+            immortal_hms["evidence_status"],
+        )
+        self.assertIn("Achievement 5884", immortal_hms["blocker_summary"])
+        self.assertIn("'Immortal: H.M.S. Phineas'", immortal_hms["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", immortal_hms["blocker_summary"])
+        self.assertIn("required-progress-1", immortal_hms["blocker_summary"])
+        self.assertIn("worth 50 points", immortal_hms["blocker_summary"])
+        self.assertIn("654409/654410/666962", immortal_hms["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5884 is unrelated", immortal_hms["blocker_summary"])
+        self.assertIn("achievement 4313 and object 33140", immortal_hms["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5884", immortal_hms["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2024", immortal_hms["blocker_summary"])
+        self.assertIn("objective 2677 at WorldLocation2 41756", immortal_hms["blocker_summary"])
+        self.assertIn("does not encode the party no-deaths qualifier", immortal_hms["blocker_summary"])
+        self.assertIn("Objective 2857 has no WorldLocation2", immortal_hms["blocker_summary"])
+        self.assertIn("Prototentiary", immortal_hms["blocker_summary"])
+        self.assertIn("Objective 2871 uses WorldLocation2 41754", immortal_hms["blocker_summary"])
+        self.assertIn("Waste Management Facility tank room", immortal_hms["blocker_summary"])
+        self.assertIn("overgrant successful runs with party deaths", immortal_hms["blocker_summary"])
+        self.assertIn("no H.M.S. Phineas phase", immortal_hms["blocker_summary"])
+        self.assertIn("grants base Cosmic Kicker achievement 5883", immortal_hms["blocker_summary"])
+        self.assertIn("does not grant Immortal: H.M.S. Phineas", immortal_hms["blocker_summary"])
+        self.assertIn("Achievement 5884 remains mapped-only", immortal_hms["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", immortal_hms["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", immortal_hms["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", immortal_hms["evidence_sources"])
+
+    def test_ultimate_protogames_rapid_kicker_has_exact_three_vs_five_contract_blocker(self) -> None:
+        rapid_kicker = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5885)]
+        self.assertEqual(
+            "mapped_up_achievement_5885_rapid_kicker_blocked_by_objective_2922_three_vs_five_kick_contract_conflict_and_missing_producer",
+            rapid_kicker["evidence_status"],
+        )
+        self.assertIn("Achievement 5885, 'Rapid Kicker'", rapid_kicker["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", rapid_kicker["blocker_summary"])
+        self.assertIn("required-progress-1", rapid_kicker["blocker_summary"])
+        self.assertIn("worth 25 points", rapid_kicker["blocker_summary"])
+        self.assertIn("655776/655777/666963", rapid_kicker["blocker_summary"])
+        self.assertIn("Cosmic Kicking five Marauders within ten seconds", rapid_kicker["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5885 is unrelated", rapid_kicker["blocker_summary"])
+        self.assertIn("achievement 4313 bit 3 and object 33141", rapid_kicker["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5885", rapid_kicker["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2005", rapid_kicker["blocker_summary"])
+        self.assertIn("objective 2922 is the named Rapid Fire challenge", rapid_kicker["blocker_summary"])
+        self.assertIn("count 3 and failureTimeMs 10000", rapid_kicker["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8217", rapid_kicker["blocker_summary"])
+        self.assertIn("three-vs-five threshold conflict", rapid_kicker["blocker_summary"])
+        self.assertIn("does not activate the H.M.S. Phineas route", rapid_kicker["blocker_summary"])
+        self.assertIn("third at 9.999 seconds succeeds", rapid_kicker["blocker_summary"])
+        self.assertIn("successful objective 2922 does not silently grant", rapid_kicker["blocker_summary"])
+        self.assertIn("Achievement 5885 remains mapped-only", rapid_kicker["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", rapid_kicker["blocker_summary"])
+        self.assertIn("PublicEventObjectiveTests.cs", rapid_kicker["evidence_sources"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", rapid_kicker["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", rapid_kicker["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", rapid_kicker["evidence_sources"])
+
+    def test_ultimate_protogames_cosmic_kick_10_has_exact_team_grant_boundary(self) -> None:
+        cosmic_kick_10 = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5886)]
+        self.assertEqual(
+            "runtime_achievement_5886_cosmic_kick_10_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            cosmic_kick_10["evidence_status"],
+        )
+        self.assertIn("Achievement 5886, 'Cosmic Kick 10'", cosmic_kick_10["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", cosmic_kick_10["blocker_summary"])
+        self.assertIn("value 10 and a 10-point value", cosmic_kick_10["blocker_summary"])
+        self.assertIn("655794/655795/666964", cosmic_kick_10["blocker_summary"])
+        self.assertIn("kicking ten Marauders off H.M.S. Phineas as a group", cosmic_kick_10["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5886 is unrelated", cosmic_kick_10["blocker_summary"])
+        self.assertIn("achievement 4313 bit 4 and object 33142", cosmic_kick_10["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5886", cosmic_kick_10["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2035", cosmic_kick_10["blocker_summary"])
+        self.assertIn("objective 2923 is the exact public-team Script challenge", cosmic_kick_10["blocker_summary"])
+        self.assertIn("flags 4, count 10, object 0", cosmic_kick_10["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8220", cosmic_kick_10["blocker_summary"])
+        self.assertIn("grants achievement 5886 by explicit id", cosmic_kick_10["blocker_summary"])
+        self.assertIn("failed-2923 rejection", cosmic_kick_10["blocker_summary"])
+        self.assertIn("successful sibling-2954 rejection", cosmic_kick_10["blocker_summary"])
+        self.assertIn("does not activate the H.M.S. Phineas route", cosmic_kick_10["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", cosmic_kick_10["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", cosmic_kick_10["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", cosmic_kick_10["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", cosmic_kick_10["evidence_sources"])
+
+    def test_ultimate_protogames_cosmic_kick_20_has_exact_team_grant_boundary(self) -> None:
+        cosmic_kick_20 = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5887)]
+        self.assertEqual(
+            "runtime_achievement_5887_cosmic_kick_20_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            cosmic_kick_20["evidence_status"],
+        )
+        self.assertIn("Achievement 5887, 'Cosmic Kick 20'", cosmic_kick_20["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", cosmic_kick_20["blocker_summary"])
+        self.assertIn("value 20 and a 25-point value", cosmic_kick_20["blocker_summary"])
+        self.assertIn("next tier after achievement 5886", cosmic_kick_20["blocker_summary"])
+        self.assertIn("655796/655797/666965", cosmic_kick_20["blocker_summary"])
+        self.assertIn("kicking twenty Marauders off H.M.S. Phineas as a group", cosmic_kick_20["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5887 is unrelated", cosmic_kick_20["blocker_summary"])
+        self.assertIn("achievement 4313 bit 5 and object 33143", cosmic_kick_20["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5887", cosmic_kick_20["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2067", cosmic_kick_20["blocker_summary"])
+        self.assertIn("parent/tier root 2035", cosmic_kick_20["blocker_summary"])
+        self.assertIn("objective 2954 is the exact public-team Script challenge", cosmic_kick_20["blocker_summary"])
+        self.assertIn("flags 4, count 20, object 0", cosmic_kick_20["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8214", cosmic_kick_20["blocker_summary"])
+        self.assertIn("grants achievement 5887 by explicit id", cosmic_kick_20["blocker_summary"])
+        self.assertIn("failed-2954 rejection", cosmic_kick_20["blocker_summary"])
+        self.assertIn("successful sibling-2955 rejection", cosmic_kick_20["blocker_summary"])
+        self.assertIn("does not activate the H.M.S. Phineas route", cosmic_kick_20["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", cosmic_kick_20["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", cosmic_kick_20["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", cosmic_kick_20["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", cosmic_kick_20["evidence_sources"])
+
+    def test_ultimate_protogames_cosmic_kick_40_has_exact_team_grant_boundary(self) -> None:
+        cosmic_kick_40 = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5888)]
+        self.assertEqual(
+            "runtime_achievement_5888_cosmic_kick_40_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            cosmic_kick_40["evidence_status"],
+        )
+        self.assertIn("Achievement 5888, 'Cosmic Kick 40'", cosmic_kick_40["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", cosmic_kick_40["blocker_summary"])
+        self.assertIn("value 40 and a 25-point value", cosmic_kick_40["blocker_summary"])
+        self.assertIn("next tier after achievement 5887", cosmic_kick_40["blocker_summary"])
+        self.assertIn("655798/655799/666966", cosmic_kick_40["blocker_summary"])
+        self.assertIn("kicking forty Marauders off H.M.S. Phineas as a group", cosmic_kick_40["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5888 is unrelated", cosmic_kick_40["blocker_summary"])
+        self.assertIn("achievement 4314 bit 0 and object 33190", cosmic_kick_40["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5888", cosmic_kick_40["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1983", cosmic_kick_40["blocker_summary"])
+        self.assertIn("parent 2067 and tier root 2035", cosmic_kick_40["blocker_summary"])
+        self.assertIn("objective 2955 is the exact public-team Script challenge", cosmic_kick_40["blocker_summary"])
+        self.assertIn("flags 4, count 40, object 0", cosmic_kick_40["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8213", cosmic_kick_40["blocker_summary"])
+        self.assertIn("grants achievement 5888 by explicit id", cosmic_kick_40["blocker_summary"])
+        self.assertIn("failed-2955 rejection", cosmic_kick_40["blocker_summary"])
+        self.assertIn("successful sibling-2956 rejection", cosmic_kick_40["blocker_summary"])
+        self.assertIn("does not activate the H.M.S. Phineas route", cosmic_kick_40["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", cosmic_kick_40["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", cosmic_kick_40["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", cosmic_kick_40["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", cosmic_kick_40["evidence_sources"])
+
+    def test_ultimate_protogames_cosmic_kick_80_has_exact_team_grant_boundary(self) -> None:
+        cosmic_kick_80 = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5889)]
+        self.assertEqual(
+            "runtime_achievement_5889_cosmic_kick_80_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            cosmic_kick_80["evidence_status"],
+        )
+        self.assertIn("Achievement 5889, 'Cosmic Kick 80'", cosmic_kick_80["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", cosmic_kick_80["blocker_summary"])
+        self.assertIn("value 80", cosmic_kick_80["blocker_summary"])
+        self.assertIn("100-percent completion display", cosmic_kick_80["blocker_summary"])
+        self.assertIn("50-point value", cosmic_kick_80["blocker_summary"])
+        self.assertIn("final tier after achievement 5888", cosmic_kick_80["blocker_summary"])
+        self.assertIn("655801/655800/666967", cosmic_kick_80["blocker_summary"])
+        self.assertIn("kicking eighty Marauders off H.M.S. Phineas as a group", cosmic_kick_80["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5889 is unrelated", cosmic_kick_80["blocker_summary"])
+        self.assertIn("achievement 4314 bit 1 and object 33191", cosmic_kick_80["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5889", cosmic_kick_80["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1912", cosmic_kick_80["blocker_summary"])
+        self.assertIn("parent 1983 and tier root 2035", cosmic_kick_80["blocker_summary"])
+        self.assertIn("objective 2956 is the exact public-team Script challenge", cosmic_kick_80["blocker_summary"])
+        self.assertIn("flags 4, count 80, object 0", cosmic_kick_80["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8200", cosmic_kick_80["blocker_summary"])
+        self.assertIn("grants achievement 5889 by explicit id", cosmic_kick_80["blocker_summary"])
+        self.assertIn("failed-2956 rejection", cosmic_kick_80["blocker_summary"])
+        self.assertIn("lower-tier sibling-2955 rejection", cosmic_kick_80["blocker_summary"])
+        self.assertIn("does not activate the H.M.S. Phineas route", cosmic_kick_80["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", cosmic_kick_80["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", cosmic_kick_80["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", cosmic_kick_80["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", cosmic_kick_80["evidence_sources"])
+
+    def test_ultimate_protogames_cosmic_precision_has_exact_team_grant_boundary(self) -> None:
+        cosmic_precision = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5890)]
+        self.assertEqual(
+            "runtime_achievement_5890_cosmic_precision_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            cosmic_precision["evidence_status"],
+        )
+        self.assertIn("Achievement 5890, 'Cosmic Precision'", cosmic_precision["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", cosmic_precision["blocker_summary"])
+        self.assertIn("value 1", cosmic_precision["blocker_summary"])
+        self.assertIn("completion-display threshold 0", cosmic_precision["blocker_summary"])
+        self.assertIn("25-point value", cosmic_precision["blocker_summary"])
+        self.assertIn("655802/655803/666968", cosmic_precision["blocker_summary"])
+        self.assertIn("without ever missing with Cosmic Kick spell 71680", cosmic_precision["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5890 is unrelated", cosmic_precision["blocker_summary"])
+        self.assertIn("achievement 4314 bit 2 and object 33192", cosmic_precision["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5890", cosmic_precision["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1934", cosmic_precision["blocker_summary"])
+        self.assertIn("objective 2957 is the exact public-team", cosmic_precision["blocker_summary"])
+        self.assertIn("zero-count, zero-object Script optional", cosmic_precision["blocker_summary"])
+        self.assertIn("flags 4 and no failure timer", cosmic_precision["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8212", cosmic_precision["blocker_summary"])
+        self.assertIn("grants achievement 5890 by explicit id", cosmic_precision["blocker_summary"])
+        self.assertIn("failed-2957 rejection", cosmic_precision["blocker_summary"])
+        self.assertIn("successful sibling-2956 rejection", cosmic_precision["blocker_summary"])
+        self.assertIn("Objective 2957 remains a mapped-only producer", cosmic_precision["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", cosmic_precision["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", cosmic_precision["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", cosmic_precision["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", cosmic_precision["evidence_sources"])
+
+    def test_ultimate_protogames_off_my_ship_has_exact_team_grant_boundary(self) -> None:
+        off_my_ship = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5891)]
+        self.assertEqual(
+            "runtime_achievement_5891_off_my_ship_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            off_my_ship["evidence_status"],
+        )
+        self.assertIn("Achievement 5891, 'Off My Ship'", off_my_ship["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", off_my_ship["blocker_summary"])
+        self.assertIn("value 1", off_my_ship["blocker_summary"])
+        self.assertIn("completion-display threshold 0", off_my_ship["blocker_summary"])
+        self.assertIn("25-point value", off_my_ship["blocker_summary"])
+        self.assertIn("655806/655807/666969", off_my_ship["blocker_summary"])
+        self.assertIn(
+            "without allowing any Marauder to remain on the ship for more than 25 seconds",
+            off_my_ship["blocker_summary"],
+        )
+        self.assertIn("AchievementChecklist row 5891 is unrelated", off_my_ship["blocker_summary"])
+        self.assertIn("achievement 4314 bit 3 and object 33193", off_my_ship["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5891", off_my_ship["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1955", off_my_ship["blocker_summary"])
+        self.assertIn("objective 2952 is the exact public-team", off_my_ship["blocker_summary"])
+        self.assertIn("zero-count, zero-object Script optional", off_my_ship["blocker_summary"])
+        self.assertIn("flags 4 and failureTimeMs 0", off_my_ship["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8215", off_my_ship["blocker_summary"])
+        self.assertIn("grants achievement 5891 by explicit id", off_my_ship["blocker_summary"])
+        self.assertIn("failed-2952 rejection", off_my_ship["blocker_summary"])
+        self.assertIn("successful sibling-2957 rejection", off_my_ship["blocker_summary"])
+        self.assertIn("Objective 2952 remains a mapped-only producer", off_my_ship["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", off_my_ship["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", off_my_ship["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", off_my_ship["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", off_my_ship["evidence_sources"])
+
+    def test_ultimate_protogames_taking_turns_is_concrete_mapped_only_blocker(self) -> None:
+        taking_turns = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5892)]
+        self.assertEqual(
+            "mapped_achievement_5892_taking_turns_blocked_missing_per_member_cosmic_kick_success_attribution_party_snapshot_and_completion_producer",
+            taking_turns["evidence_status"],
+        )
+        self.assertIn("Achievement 5892, 'Taking Turns'", taking_turns["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", taking_turns["blocker_summary"])
+        self.assertIn("value 1", taking_turns["blocker_summary"])
+        self.assertIn("completion-display threshold 0", taking_turns["blocker_summary"])
+        self.assertIn("10-point value", taking_turns["blocker_summary"])
+        self.assertIn("655808/655809/666970", taking_turns["blocker_summary"])
+        self.assertIn("each person in the party", taking_turns["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5892 is unrelated", taking_turns["blocker_summary"])
+        self.assertIn("achievement 4314 bit 4 and object 33194", taking_turns["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5892", taking_turns["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1972", taking_turns["blocker_summary"])
+        self.assertIn("No build-16042 PublicEventObjective row", taking_turns["blocker_summary"])
+        self.assertIn("tracks each person in a party", taking_turns["blocker_summary"])
+        self.assertIn("aggregate room completion/resource objectives 2677/2700", taking_turns["blocker_summary"])
+        self.assertIn("group knockoff totals 2923/2954/2955/2956", taking_turns["blocker_summary"])
+        self.assertIn("successful aggregate room objective 2677", taking_turns["blocker_summary"])
+        self.assertIn("successful ten-knockoff objective 2923", taking_turns["blocker_summary"])
+        self.assertIn("do not grant achievement 5892", taking_turns["blocker_summary"])
+        self.assertIn("party snapshot boundary", taking_turns["blocker_summary"])
+        self.assertIn("Achievement 5892 therefore remains mapped-only", taking_turns["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", taking_turns["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", taking_turns["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", taking_turns["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", taking_turns["evidence_sources"])
+
+    def test_ultimate_protogames_multi_cosmic_kick_is_concrete_mapped_only_blocker(self) -> None:
+        multi_cosmic_kick = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5893)]
+        self.assertEqual(
+            "mapped_achievement_5893_multi_cosmic_kick_blocked_missing_same_cast_multi_target_knockoff_attribution_and_completion_producer",
+            multi_cosmic_kick["evidence_status"],
+        )
+        self.assertIn("Achievement 5893, 'Multi-Cosmic-Kick'", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("value 1", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("completion-display threshold 0", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("10-point value", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("655810/655811/666971", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("kick multiple Marauders off H.M.S. Phineas at once", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5893 is unrelated", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("achievement 4314 bit 5 and object 33195", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5893", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2006", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("No build-16042 PublicEventObjective row", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("requires multiple Marauders from one cast", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("cumulative group knockoff totals 2923/2954/2955/2956", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("successful aggregate room objective 2677", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("successful twenty-knockoff objective 2954", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("do not grant achievement 5893", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("same-cast target membership", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("Achievement 5893 therefore remains mapped-only", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("live packet/log or controller/spell decompile trace", multi_cosmic_kick["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", multi_cosmic_kick["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", multi_cosmic_kick["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", multi_cosmic_kick["evidence_sources"])
+
+    def test_ultimate_protogames_master_of_the_elements_has_exact_team_grant_boundary(self) -> None:
+        master_of_the_elements = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5894)]
+        self.assertEqual(
+            "runtime_achievement_5894_master_of_the_elements_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            master_of_the_elements["evidence_status"],
+        )
+        self.assertIn("Achievement 5894, 'Master of the Elements'", master_of_the_elements["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", master_of_the_elements["blocker_summary"])
+        self.assertIn("value 1", master_of_the_elements["blocker_summary"])
+        self.assertIn("completion-display threshold 0", master_of_the_elements["blocker_summary"])
+        self.assertIn("10-point value", master_of_the_elements["blocker_summary"])
+        self.assertIn("654412/654413/666976", master_of_the_elements["blocker_summary"])
+        self.assertIn("Elemental Hospital completion condition", master_of_the_elements["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5894 is unrelated", master_of_the_elements["blocker_summary"])
+        self.assertIn("achievement 4315 bit 0 and object 33228", master_of_the_elements["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5894", master_of_the_elements["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2031", master_of_the_elements["blocker_summary"])
+        self.assertIn("objective 2674 is the exact public-team main ResourcePool row", master_of_the_elements["blocker_summary"])
+        self.assertIn("flags 0, type-specific flags 0, count 6", master_of_the_elements["blocker_summary"])
+        self.assertIn("short text id 577343 is Master the Elements", master_of_the_elements["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8157", master_of_the_elements["blocker_summary"])
+        self.assertIn("grants achievement 5894 by explicit id", master_of_the_elements["blocker_summary"])
+        self.assertIn("failed-2674 rejection", master_of_the_elements["blocker_summary"])
+        self.assertIn("successful sibling-2677 rejection", master_of_the_elements["blocker_summary"])
+        self.assertIn("five credits remain active, the sixth succeeds", master_of_the_elements["blocker_summary"])
+        self.assertIn("Objective 2674 remains a mapped-only producer", master_of_the_elements["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", master_of_the_elements["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", master_of_the_elements["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", master_of_the_elements["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", master_of_the_elements["evidence_sources"])
+
+    def test_ultimate_protogames_immortal_elemental_hospital_has_exact_no_deaths_blocker(self) -> None:
+        immortal_elemental_hospital = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5895)]
+        self.assertEqual(
+            "mapped_up_achievement_5895_immortal_elemental_hospital_blocked_missing_room_scoped_no_deaths_activation_state_and_grant_producer",
+            immortal_elemental_hospital["evidence_status"],
+        )
+        self.assertIn("Achievement 5895", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("'Immortal: Elemental Hospital'", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("required-progress-1", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("worth 50 points", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("654414/654415/666977", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5895 is unrelated", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("achievement 4315 bit 1 and object 33229", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5895", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("uses 5895 only as objectId for achievement 1513", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2068", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("objective 2674 at WorldLocation2 41714", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("does not encode the party no-deaths qualifier", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("objective 2889", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("strings 590520/590521 are both '[DELETE]'", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("objectives 2857 and 2871", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("Prototentiary and Waste Management Facility", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("overgrant successful runs with party deaths", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("no Elemental Hospital phase", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("grants base Master of the Elements achievement 5894", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("does not grant Immortal: Elemental Hospital", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("Achievement 5895 remains mapped-only", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("live packet/log or controller decompile trace", immortal_elemental_hospital["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", immortal_elemental_hospital["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", immortal_elemental_hospital["evidence_sources"])
+
+    def test_ultimate_protogames_panic_pronto_has_exact_team_grant_boundary(self) -> None:
+        panic_pronto = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5896)]
+        self.assertEqual(
+            "runtime_achievement_5896_panic_pronto_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            panic_pronto["evidence_status"],
+        )
+        self.assertIn("Achievement 5896, 'Panic Pronto'", panic_pronto["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", panic_pronto["blocker_summary"])
+        self.assertIn("25-point value", panic_pronto["blocker_summary"])
+        self.assertIn("655814/655815/666978", panic_pronto["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5896 is unrelated", panic_pronto["blocker_summary"])
+        self.assertIn("achievement 4315 bit 2 and object 33230", panic_pronto["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5896", panic_pronto["blocker_summary"])
+        self.assertIn("uses 5896 only as objectId for achievement 1514", panic_pronto["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2090", panic_pronto["blocker_summary"])
+        self.assertIn("objective 2885 is the exact public-team flags-4 Script challenge", panic_pronto["blocker_summary"])
+        self.assertIn("failureTimeMs 30000", panic_pronto["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8154", panic_pronto["blocker_summary"])
+        self.assertIn("grants achievement 5896 by explicit id", panic_pronto["blocker_summary"])
+        self.assertIn("failed-2885 rejection", panic_pronto["blocker_summary"])
+        self.assertIn("successful sibling-2886 rejection", panic_pronto["blocker_summary"])
+        self.assertIn("29.999 seconds succeeds, 30 seconds fails", panic_pronto["blocker_summary"])
+        self.assertIn("Objective 2885 remains a mapped-only producer", panic_pronto["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", panic_pronto["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", panic_pronto["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", panic_pronto["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", panic_pronto["evidence_sources"])
+
+    def test_ultimate_protogames_claustrophobic_skip_has_exact_team_grant_boundary(self) -> None:
+        claustrophobic_skip = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5897)]
+        self.assertEqual(
+            "runtime_achievement_5897_claustrophobic_skip_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            claustrophobic_skip["evidence_status"],
+        )
+        self.assertIn("Achievement 5897, 'Claustrophobic Skip'", claustrophobic_skip["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", claustrophobic_skip["blocker_summary"])
+        self.assertIn("25-point value", claustrophobic_skip["blocker_summary"])
+        self.assertIn("655821/655822/666979", claustrophobic_skip["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5897 is unrelated", claustrophobic_skip["blocker_summary"])
+        self.assertIn("achievement 4315 bit 3 and object 33231", claustrophobic_skip["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5897", claustrophobic_skip["blocker_summary"])
+        self.assertIn("objectId for achievements 0 and 1513", claustrophobic_skip["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1913", claustrophobic_skip["blocker_summary"])
+        self.assertIn("objective 2886 is the exact public-team flags-4 Script challenge", claustrophobic_skip["blocker_summary"])
+        self.assertIn("no failure timer", claustrophobic_skip["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8171", claustrophobic_skip["blocker_summary"])
+        self.assertIn("grants achievement 5897 by explicit id", claustrophobic_skip["blocker_summary"])
+        self.assertIn("failed-2886 rejection", claustrophobic_skip["blocker_summary"])
+        self.assertIn("successful sibling-2885 rejection", claustrophobic_skip["blocker_summary"])
+        self.assertIn("IDamageDescription does not retain that provenance", claustrophobic_skip["blocker_summary"])
+        self.assertIn("Objective 2886 remains a mapped-only producer", claustrophobic_skip["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", claustrophobic_skip["evidence_sources"])
+        self.assertIn("SpellTargetValidationTests.cs", claustrophobic_skip["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", claustrophobic_skip["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", claustrophobic_skip["evidence_sources"])
+
+    def test_ultimate_protogames_patient_secured_has_exact_team_grant_boundary(self) -> None:
+        patient_secured = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5898)]
+        self.assertEqual(
+            "runtime_achievement_5898_patient_secured_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            patient_secured["evidence_status"],
+        )
+        self.assertIn("Achievement 5898, 'Patient Secured'", patient_secured["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", patient_secured["blocker_summary"])
+        self.assertIn("25-point value", patient_secured["blocker_summary"])
+        self.assertIn("655824/655825/666980", patient_secured["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5898 is unrelated", patient_secured["blocker_summary"])
+        self.assertIn("achievement 4315 bit 4 and object 33232", patient_secured["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5898", patient_secured["blocker_summary"])
+        self.assertIn("uses 5898 only as objectId for achievement 1514", patient_secured["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1935", patient_secured["blocker_summary"])
+        self.assertIn("objective 2887 is the exact public-team flags-4 TimedWin challenge", patient_secured["blocker_summary"])
+        self.assertIn("failureTimeMs 60000", patient_secured["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8163", patient_secured["blocker_summary"])
+        self.assertIn("grants achievement 5898 by explicit id", patient_secured["blocker_summary"])
+        self.assertIn("failed-2887 rejection", patient_secured["blocker_summary"])
+        self.assertIn("successful sibling-2888 rejection", patient_secured["blocker_summary"])
+        self.assertIn("59.999 seconds succeeds, 60 seconds fails", patient_secured["blocker_summary"])
+        self.assertIn("does not spawn or script Creature2 67452", patient_secured["blocker_summary"])
+        self.assertIn("Objective 2887 remains a mapped-only producer", patient_secured["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", patient_secured["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", patient_secured["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", patient_secured["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", patient_secured["evidence_sources"])
+
+    def test_ultimate_protogames_institutionalized_has_exact_team_grant_boundary(self) -> None:
+        institutionalized = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5899)]
+        self.assertEqual(
+            "runtime_achievement_5899_institutionalized_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            institutionalized["evidence_status"],
+        )
+        self.assertIn("Achievement 5899, 'Institutionalized'", institutionalized["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", institutionalized["blocker_summary"])
+        self.assertIn("25-point value", institutionalized["blocker_summary"])
+        self.assertIn("655827/655828/666981", institutionalized["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5899 is unrelated", institutionalized["blocker_summary"])
+        self.assertIn("achievement 4315 bit 5 and object 33233", institutionalized["blocker_summary"])
+        self.assertIn("no checklist row has achievementId or objectId 5899", institutionalized["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1956", institutionalized["blocker_summary"])
+        self.assertIn("objective 2888 is the exact public-team flags-4 Script challenge", institutionalized["blocker_summary"])
+        self.assertIn("failureTimeMs 180000", institutionalized["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8223", institutionalized["blocker_summary"])
+        self.assertIn("grants achievement 5899 by explicit id", institutionalized["blocker_summary"])
+        self.assertIn("failed-2888 rejection", institutionalized["blocker_summary"])
+        self.assertIn("successful sibling-2887 rejection", institutionalized["blocker_summary"])
+        self.assertIn("179.999 seconds succeeds, 180 seconds fails", institutionalized["blocker_summary"])
+        self.assertIn("does not spawn or script Creature2 63319", institutionalized["blocker_summary"])
+        self.assertIn("Objective 2888 remains a mapped-only producer", institutionalized["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", institutionalized["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", institutionalized["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", institutionalized["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", institutionalized["evidence_sources"])
+
+    def test_ultimate_protogames_toxophobia_has_exact_team_grant_boundary(self) -> None:
+        toxophobia = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5900)]
+        self.assertEqual(
+            "runtime_achievement_5900_toxophobia_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            toxophobia["evidence_status"],
+        )
+        self.assertIn("Achievement 5900, 'Toxophobia'", toxophobia["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", toxophobia["blocker_summary"])
+        self.assertIn("25-point value", toxophobia["blocker_summary"])
+        self.assertIn("655845/655846/666982", toxophobia["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5900 is unrelated", toxophobia["blocker_summary"])
+        self.assertIn("achievement 4331 bit 0 and object 4330", toxophobia["blocker_summary"])
+        self.assertIn("no checklist row has achievementId or objectId 5900", toxophobia["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2022", toxophobia["blocker_summary"])
+        self.assertIn("objective 2892 is the exact public-team flags-4 Script challenge", toxophobia["blocker_summary"])
+        self.assertIn("no failure timer", toxophobia["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8146", toxophobia["blocker_summary"])
+        self.assertIn("grants achievement 5900 by explicit id", toxophobia["blocker_summary"])
+        self.assertIn("failed-2892 rejection", toxophobia["blocker_summary"])
+        self.assertIn("successful sibling-2891 rejection", toxophobia["blocker_summary"])
+        self.assertIn("achievement 5904 is a distinct 20-second", toxophobia["blocker_summary"])
+        self.assertIn("keeps mode 4 diagnostics-only", toxophobia["blocker_summary"])
+        self.assertIn("Objective 2892 remains a mapped-only producer", toxophobia["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", toxophobia["evidence_sources"])
+        self.assertIn("HazardAndVectorSlideSpellTests.cs", toxophobia["evidence_sources"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundaryTests.cs", toxophobia["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", toxophobia["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", toxophobia["evidence_sources"])
+
+    def test_ultimate_protogames_atychiphobia_has_exact_team_grant_boundary(self) -> None:
+        atychiphobia = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5901)]
+        self.assertEqual(
+            "runtime_achievement_5901_atychiphobia_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            atychiphobia["evidence_status"],
+        )
+        self.assertIn("Achievement 5901, 'Atychiphobia'", atychiphobia["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", atychiphobia["blocker_summary"])
+        self.assertIn("25-point value", atychiphobia["blocker_summary"])
+        self.assertIn("655870/655871/666983", atychiphobia["blocker_summary"])
+        self.assertIn("No AchievementChecklist row has id, achievementId, or objectId 5901", atychiphobia["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2007", atychiphobia["blocker_summary"])
+        self.assertIn("objective 2891 is the exact public-team flags-4 Script challenge", atychiphobia["blocker_summary"])
+        self.assertIn("no failure timer", atychiphobia["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8167", atychiphobia["blocker_summary"])
+        self.assertIn("grants achievement 5901 by explicit id", atychiphobia["blocker_summary"])
+        self.assertIn("failed-2891 rejection", atychiphobia["blocker_summary"])
+        self.assertIn("successful sibling-2892 rejection", atychiphobia["blocker_summary"])
+        self.assertIn("receiver mode 4 / signal 23104", atychiphobia["blocker_summary"])
+        self.assertIn("keeps mode 4 diagnostics-only", atychiphobia["blocker_summary"])
+        self.assertIn("Objective 2891 remains a mapped-only producer", atychiphobia["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", atychiphobia["evidence_sources"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundaryTests.cs", atychiphobia["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", atychiphobia["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", atychiphobia["evidence_sources"])
+
+    def test_ultimate_protogames_chronophobia_has_exact_team_grant_boundary(self) -> None:
+        chronophobia = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5902)]
+        self.assertEqual(
+            "runtime_achievement_5902_chronophobia_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            chronophobia["evidence_status"],
+        )
+        self.assertIn("Achievement 5902, 'Chronophobia'", chronophobia["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", chronophobia["blocker_summary"])
+        self.assertIn("25-point value", chronophobia["blocker_summary"])
+        self.assertIn("655889/655890/666984", chronophobia["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5902 is unrelated", chronophobia["blocker_summary"])
+        self.assertIn("achievement 4337 bit 0 and object 4334", chronophobia["blocker_summary"])
+        self.assertIn("no checklist row has achievementId or objectId 5902", chronophobia["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2032", chronophobia["blocker_summary"])
+        self.assertIn("objective 2890 is the exact public-team flags-4 TimedWin challenge", chronophobia["blocker_summary"])
+        self.assertIn("failureTimeMs 600000", chronophobia["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8152", chronophobia["blocker_summary"])
+        self.assertIn("grants achievement 5902 by explicit id", chronophobia["blocker_summary"])
+        self.assertIn("failed-2890 rejection", chronophobia["blocker_summary"])
+        self.assertIn("successful sibling-2891 rejection", chronophobia["blocker_summary"])
+        self.assertIn("599.999 seconds succeeds, 600 seconds fails", chronophobia["blocker_summary"])
+        self.assertIn("Objective 2890 remains a mapped-only producer", chronophobia["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", chronophobia["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", chronophobia["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", chronophobia["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", chronophobia["evidence_sources"])
+
+    def test_ultimate_protogames_stage_fright_is_mapped_only_without_party_beacon_history(self) -> None:
+        stage_fright = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5903)]
+        self.assertEqual(
+            "mapped_achievement_5903_stage_fright_blocked_missing_party_beacon_carry_history_and_event_completion_capture",
+            stage_fright["evidence_status"],
+        )
+        self.assertIn("Achievement 5903, 'Stage Fright'", stage_fright["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", stage_fright["blocker_summary"])
+        self.assertIn("10-point value", stage_fright["blocker_summary"])
+        self.assertIn("655893/655894/666985", stage_fright["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5903 is unrelated", stage_fright["blocker_summary"])
+        self.assertIn("achievement 4337 bit 1 and object 4335", stage_fright["blocker_summary"])
+        self.assertIn("no checklist row has achievementId or objectId 5903", stage_fright["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2069", stage_fright["blocker_summary"])
+        self.assertIn("No build public-event objective directly represents", stage_fright["blocker_summary"])
+        self.assertIn("beacon/carrier Creature2 rows", stage_fright["blocker_summary"])
+        self.assertIn("Spells 72003 and 72310-72313", stage_fright["blocker_summary"])
+        self.assertIn("no Elemental Hospital phase, beacon entities, party carry ledger", stage_fright["blocker_summary"])
+        self.assertIn("objective 2674 success does not grant achievement 5903", stage_fright["blocker_summary"])
+        self.assertIn("all-party carry condition", stage_fright["blocker_summary"])
+        self.assertIn("This row remains mapped-only", stage_fright["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", stage_fright["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", stage_fright["evidence_sources"])
+
+    def test_ultimate_protogames_overcoming_toxophobia_is_mapped_only_without_exposure_timer(self) -> None:
+        overcoming_toxophobia = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5904)]
+        self.assertEqual(
+            "mapped_achievement_5904_overcoming_toxophobia_blocked_missing_toxic_air_exposure_timer_and_survival_grant_capture",
+            overcoming_toxophobia["evidence_status"],
+        )
+        self.assertIn("Achievement 5904, 'Overcoming Toxophobia'", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("completion-display threshold 100", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("zero-point value", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("655895/655896", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5904 is unrelated", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("achievement 4337 bit 2 and object 4336", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("no checklist row has achievementId or objectId 5904", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2105", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("surviving toxic air", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("for 20 seconds", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("No build public-event objective directly represents", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("receiver mode 4 / signal 23106", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("no Elemental Hospital phase, toxic-air lifecycle, per-player exposure timer", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("objective 2892 Toxophobia success does not grant", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("invert the condition", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("This row remains mapped-only", overcoming_toxophobia["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", overcoming_toxophobia["evidence_sources"])
+        self.assertIn("HazardAndVectorSlideSpellTests.cs", overcoming_toxophobia["evidence_sources"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundaryTests.cs", overcoming_toxophobia["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", overcoming_toxophobia["evidence_sources"])
+
+    def test_ultimate_protogames_prototentiary_prowl_has_exact_team_grant_and_producer(self) -> None:
+        prototentiary_prowl = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5905)]
+        self.assertEqual(
+            "runtime_achievement_5905_prototentiary_prowl_exact_objective_team_grant_and_producer_tested_pending_route_stealth_and_client_smoke",
+            prototentiary_prowl["evidence_status"],
+        )
+        self.assertIn("Achievement 5905, 'Prototentiary Prowl'", prototentiary_prowl["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", prototentiary_prowl["blocker_summary"])
+        self.assertIn("10-point value", prototentiary_prowl["blocker_summary"])
+        self.assertIn("654416/654417/666986", prototentiary_prowl["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5905 is unrelated", prototentiary_prowl["blocker_summary"])
+        self.assertIn("achievement 4341 bit 0 and object 8961", prototentiary_prowl["blocker_summary"])
+        self.assertIn("rows 4564 for achievement 3556 bit 3", prototentiary_prowl["blocker_summary"])
+        self.assertIn("8423 for achievement 5978 bit 4", prototentiary_prowl["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5905", prototentiary_prowl["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1914", prototentiary_prowl["blocker_summary"])
+        self.assertIn("objective 2678 is the exact public-team Prototentiary aggregate", prototentiary_prowl["blocker_summary"])
+        self.assertIn("flags 2170880", prototentiary_prowl["blocker_summary"])
+        self.assertIn("TargetGroup 10583", prototentiary_prowl["blocker_summary"])
+        self.assertIn("577350/577351", prototentiary_prowl["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8181", prototentiary_prowl["blocker_summary"])
+        self.assertIn("activates objective 2678 with dynamic max two", prototentiary_prowl["blocker_summary"])
+        self.assertIn("grants achievement 5905 by explicit id", prototentiary_prowl["blocker_summary"])
+        self.assertIn("Cage Console entity 1100300081", prototentiary_prowl["blocker_summary"])
+        self.assertIn("Warden entity 1100300092", prototentiary_prowl["blocker_summary"])
+        self.assertIn("failed-2678 rejection", prototentiary_prowl["blocker_summary"])
+        self.assertIn("successful sibling-2857 rejection", prototentiary_prowl["blocker_summary"])
+        self.assertIn("SneakyPrisonEntityScripts.cs", prototentiary_prowl["evidence_sources"])
+        self.assertIn("UltimateProtogamesObjectiveEntityScripts.cs", prototentiary_prowl["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", prototentiary_prowl["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", prototentiary_prowl["evidence_sources"])
+
+    def test_ultimate_protogames_immortal_prototentiary_has_exact_team_grant_and_no_death_producer(self) -> None:
+        immortal_prototentiary = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5906)]
+        self.assertEqual(
+            "runtime_achievement_5906_immortal_prototentiary_exact_objective_team_grant_and_no_death_producer_tested_pending_party_route_and_client_smoke",
+            immortal_prototentiary["evidence_status"],
+        )
+        self.assertIn("Achievement 5906, 'Immortal: The Prototentiary'", immortal_prototentiary["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", immortal_prototentiary["blocker_summary"])
+        self.assertIn("50-point value", immortal_prototentiary["blocker_summary"])
+        self.assertIn("654418/654419/666988", immortal_prototentiary["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5906 is unrelated", immortal_prototentiary["blocker_summary"])
+        self.assertIn("achievement 4341 bit 1 and object 4949", immortal_prototentiary["blocker_summary"])
+        self.assertIn("no checklist row has achievementId or objectId 5906", immortal_prototentiary["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1936", immortal_prototentiary["blocker_summary"])
+        self.assertIn("objective 2857 is the exact public-team flags-4 no-death row", immortal_prototentiary["blocker_summary"])
+        self.assertIn("TargetGroup 10569", immortal_prototentiary["blocker_summary"])
+        self.assertIn("589358/589359", immortal_prototentiary["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8208", immortal_prototentiary["blocker_summary"])
+        self.assertIn("activates objective 2857 with dynamic max one", immortal_prototentiary["blocker_summary"])
+        self.assertIn("credits 2857 only when aggregate objective 2678 succeeds", immortal_prototentiary["blocker_summary"])
+        self.assertIn("grants achievement 5906 by explicit id", immortal_prototentiary["blocker_summary"])
+        self.assertIn("player-death suppression", immortal_prototentiary["blocker_summary"])
+        self.assertIn("non-player-death preservation", immortal_prototentiary["blocker_summary"])
+        self.assertIn("failed-2857 rejection", immortal_prototentiary["blocker_summary"])
+        self.assertIn("successful sibling-2871 rejection", immortal_prototentiary["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", immortal_prototentiary["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", immortal_prototentiary["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", immortal_prototentiary["evidence_sources"])
+
+    def test_ultimate_protogames_shadowstepper_has_exact_named_grant_boundary_only(self) -> None:
+        shadowstepper = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5907)]
+        self.assertEqual(
+            "runtime_achievement_5907_shadowstepper_exact_named_objective_team_grant_boundary_tested_producer_mapped_only",
+            shadowstepper["evidence_status"],
+        )
+        self.assertIn("Achievement 5907, 'Shadowstepper'", shadowstepper["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", shadowstepper["blocker_summary"])
+        self.assertIn("25-point value", shadowstepper["blocker_summary"])
+        self.assertIn("655897/655898/666989", shadowstepper["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5907 is unrelated", shadowstepper["blocker_summary"])
+        self.assertIn("achievement 4341 bit 2 and object 9025", shadowstepper["blocker_summary"])
+        self.assertIn("checklist row 4565 for achievement 3556 bit 4", shadowstepper["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5907", shadowstepper["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1988", shadowstepper["blocker_summary"])
+        self.assertIn("objective 2852 is the unique exact named Shadowstepping row", shadowstepper["blocker_summary"])
+        self.assertIn("flags 2171908", shadowstepper["blocker_summary"])
+        self.assertIn("TargetGroup 10569", shadowstepper["blocker_summary"])
+        self.assertIn("589340/589341", shadowstepper["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8205", shadowstepper["blocker_summary"])
+        self.assertIn("detection by any drones", shadowstepper["blocker_summary"])
+        self.assertIn("achievement text says without detection by the sniper", shadowstepper["blocker_summary"])
+        self.assertIn("actor discrepancy remains unresolved", shadowstepper["blocker_summary"])
+        self.assertIn("grants achievement 5907 by explicit id", shadowstepper["blocker_summary"])
+        self.assertIn("failed-2852 rejection", shadowstepper["blocker_summary"])
+        self.assertIn("successful sibling-2856 rejection", shadowstepper["blocker_summary"])
+        self.assertIn("never activates objective 2852", shadowstepper["blocker_summary"])
+        self.assertIn("objective 2852 remains a mapped-only producer", shadowstepper["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", shadowstepper["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", shadowstepper["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", shadowstepper["evidence_sources"])
+
+    def test_ultimate_protogames_gate_guard_drive_by_has_exact_grant_and_timer_boundary(self) -> None:
+        drive_by = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5908)]
+        self.assertEqual(
+            "runtime_achievement_5908_gate_guard_drive_by_exact_objective_team_grant_and_timer_boundary_tested_producer_mapped_only",
+            drive_by["evidence_status"],
+        )
+        self.assertIn("Achievement 5908, 'Gate-guard Drive-by'", drive_by["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", drive_by["blocker_summary"])
+        self.assertIn("25-point value", drive_by["blocker_summary"])
+        self.assertIn("655917/655918/666990", drive_by["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5908 is unrelated", drive_by["blocker_summary"])
+        self.assertIn("achievement 4341 bit 3 and object 8874", drive_by["blocker_summary"])
+        self.assertIn("no checklist row has achievementId or objectId 5908", drive_by["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1973", drive_by["blocker_summary"])
+        self.assertIn("objective 2853 is the exact named Drive-by row", drive_by["blocker_summary"])
+        self.assertIn("flags 2171908", drive_by["blocker_summary"])
+        self.assertIn("failureTimeMs 120000", drive_by["blocker_summary"])
+        self.assertIn("589343/589344", drive_by["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8148", drive_by["blocker_summary"])
+        self.assertIn("grants achievement 5908 by explicit id", drive_by["blocker_summary"])
+        self.assertIn("failed-2853 rejection", drive_by["blocker_summary"])
+        self.assertIn("successful sibling-2852 rejection", drive_by["blocker_summary"])
+        self.assertIn("119.999 seconds succeeds, 120 seconds fails", drive_by["blocker_summary"])
+        self.assertIn("never activates objective 2853", drive_by["blocker_summary"])
+        self.assertIn("no gate-guardian identity, spawn, death-credit producer", drive_by["blocker_summary"])
+        self.assertIn("objective 2853 remains a mapped-only producer", drive_by["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", drive_by["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", drive_by["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", drive_by["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", drive_by["evidence_sources"])
+
+    def test_ultimate_protogames_keen_senses_has_exact_named_grant_boundary_only(self) -> None:
+        keen_senses = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5909)]
+        self.assertEqual(
+            "runtime_achievement_5909_keen_senses_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            keen_senses["evidence_status"],
+        )
+        self.assertIn("Achievement 5909, 'Keen Senses'", keen_senses["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", keen_senses["blocker_summary"])
+        self.assertIn("25-point value", keen_senses["blocker_summary"])
+        self.assertIn("655919/655920/666991", keen_senses["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5909 is unrelated", keen_senses["blocker_summary"])
+        self.assertIn("achievement 4341 bit 4 and object 8044", keen_senses["blocker_summary"])
+        self.assertIn("no checklist row has achievementId or objectId 5909", keen_senses["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2008", keen_senses["blocker_summary"])
+        self.assertIn("objective 2856 is the exact named Keen Senses row", keen_senses["blocker_summary"])
+        self.assertIn("flags 2171908", keen_senses["blocker_summary"])
+        self.assertIn("TargetGroup 10569", keen_senses["blocker_summary"])
+        self.assertIn("589356/589357", keen_senses["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8151", keen_senses["blocker_summary"])
+        self.assertIn("grants achievement 5909 by explicit id", keen_senses["blocker_summary"])
+        self.assertIn("failed-2856 rejection", keen_senses["blocker_summary"])
+        self.assertIn("successful sibling-2859 rejection", keen_senses["blocker_summary"])
+        self.assertIn("never activates objective 2856", keen_senses["blocker_summary"])
+        self.assertIn("no reviewed trap entity set", keen_senses["blocker_summary"])
+        self.assertIn("objective 2856 remains a mapped-only producer", keen_senses["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", keen_senses["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", keen_senses["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", keen_senses["evidence_sources"])
+
+    def test_ultimate_protogames_low_profile_has_exact_named_grant_boundary_only(self) -> None:
+        low_profile = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5910)]
+        self.assertEqual(
+            "runtime_achievement_5910_low_profile_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            low_profile["evidence_status"],
+        )
+        self.assertIn("Achievement 5910, 'Low Profile'", low_profile["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", low_profile["blocker_summary"])
+        self.assertIn("25-point value", low_profile["blocker_summary"])
+        self.assertIn("655921/655922/666992", low_profile["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5910 is unrelated", low_profile["blocker_summary"])
+        self.assertIn("achievement 4341 bit 5 and object 8047", low_profile["blocker_summary"])
+        self.assertIn("objectId-5910 match is unrelated row 1929", low_profile["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5910", low_profile["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2036", low_profile["blocker_summary"])
+        self.assertIn("objective 2859 is the exact named Low Profile row", low_profile["blocker_summary"])
+        self.assertIn("flags 2171908", low_profile["blocker_summary"])
+        self.assertIn("TargetGroup 10569", low_profile["blocker_summary"])
+        self.assertIn("589373/589374", low_profile["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8207", low_profile["blocker_summary"])
+        self.assertIn("names Creature2 62320", low_profile["blocker_summary"])
+        self.assertIn("TargetGroup 10569 contains Gate Console Creature2 62987", low_profile["blocker_summary"])
+        self.assertIn("world 1940 / WorldZone 2272", low_profile["blocker_summary"])
+        self.assertIn("world 2980 / area 4333", low_profile["blocker_summary"])
+        self.assertIn("maps ambiguously to Creature2 53418", low_profile["blocker_summary"])
+        self.assertIn("grants achievement 5910 by explicit id", low_profile["blocker_summary"])
+        self.assertIn("failed-2859 rejection", low_profile["blocker_summary"])
+        self.assertIn("successful sibling-2856 rejection", low_profile["blocker_summary"])
+        self.assertIn("never activates objective 2859", low_profile["blocker_summary"])
+        self.assertIn("no reviewed Creature2-62320 spawn", low_profile["blocker_summary"])
+        self.assertIn("objective 2859 remains a mapped-only producer", low_profile["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", low_profile["evidence_sources"])
+        self.assertIn("Tools/DataMapping/output/creature_map.csv", low_profile["evidence_sources"])
+        self.assertIn("jabbithole_mysql/coordinates.sql", low_profile["evidence_sources"])
+
+    def test_ultimate_protogames_undetectable_is_mapped_only_with_conflicting_conditions(self) -> None:
+        undetectable = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5911)]
+        self.assertEqual(
+            "mapped_achievement_5911_undetectable_blocked_conflicting_deputy_achievement_warden_objective_and_missing_evasion_completion_capture",
+            undetectable["evidence_status"],
+        )
+        self.assertIn("Achievement 5911, 'Undetectable'", undetectable["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", undetectable["blocker_summary"])
+        self.assertIn("25-point value", undetectable["blocker_summary"])
+        self.assertIn("655923/655924/666993", undetectable["blocker_summary"])
+        self.assertIn("defeating or evading the Deputy", undetectable["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5911 is unrelated", undetectable["blocker_summary"])
+        self.assertIn("achievement 4343 bit 0 and object 3297", undetectable["blocker_summary"])
+        self.assertIn("objectId-5911 match is unrelated row 4567", undetectable["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5911", undetectable["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2070", undetectable["blocker_summary"])
+        self.assertIn("objective 2855 is the only exact-name Undetectable row", undetectable["blocker_summary"])
+        self.assertIn("defeating Warden Creature2 62324 within 90 seconds", undetectable["blocker_summary"])
+        self.assertIn("failureTimeMs 90000", undetectable["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8160", undetectable["blocker_summary"])
+        self.assertIn("TargetGroup 10569 contains Gate Console Creature2 62987", undetectable["blocker_summary"])
+        self.assertIn("Warden 62324 belongs to TargetGroup 12474", undetectable["blocker_summary"])
+        self.assertIn("Hidden sibling objective 4742", undetectable["blocker_summary"])
+        self.assertIn("current Warden death dispatch keys 0 and 12474 do not satisfy object 10569", undetectable["blocker_summary"])
+        self.assertIn("Deputy objective 4657", undetectable["blocker_summary"])
+        self.assertIn("TargetGroup 12528 -> Creature2 68949", undetectable["blocker_summary"])
+        self.assertIn("contains no evasion outcome", undetectable["blocker_summary"])
+        self.assertIn("successful objective 2855, Deputy 4657, and aggregate 2678 as non-granting signals", undetectable["blocker_summary"])
+        self.assertIn("Deputy-versus-Warden conflict", undetectable["blocker_summary"])
+        self.assertIn("no Ghidra MCP instance is available", undetectable["blocker_summary"])
+        self.assertIn("This row remains mapped-only", undetectable["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", undetectable["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", undetectable["evidence_sources"])
+        self.assertIn("UnitEntityDamageResultTests.cs", undetectable["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", undetectable["evidence_sources"])
+
+    def test_ultimate_protogames_ghost_has_exact_named_grant_boundary_only(self) -> None:
+        ghost = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5912)]
+        self.assertEqual(
+            "runtime_achievement_5912_ghost_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            ghost["evidence_status"],
+        )
+        self.assertIn("Achievement 5912, 'Ghost'", ghost["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", ghost["blocker_summary"])
+        self.assertIn("25-point value", ghost["blocker_summary"])
+        self.assertIn("655925/655926/666994", ghost["blocker_summary"])
+        self.assertIn("without triggering any alarms", ghost["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5912 is unrelated", ghost["blocker_summary"])
+        self.assertIn("achievement 4343 bit 1 and object 8875", ghost["blocker_summary"])
+        self.assertIn("no checklist row has achievementId or objectId 5912", ghost["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2091", ghost["blocker_summary"])
+        self.assertIn("objective 2858 is the exact named Ghosts row", ghost["blocker_summary"])
+        self.assertIn("flags 2105348", ghost["blocker_summary"])
+        self.assertIn("type 3 ActivateTargetGroup", ghost["blocker_summary"])
+        self.assertIn("TargetGroup 10583", ghost["blocker_summary"])
+        self.assertIn("589363/589364", ghost["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8201", ghost["blocker_summary"])
+        self.assertIn("grants achievement 5912 by explicit id", ghost["blocker_summary"])
+        self.assertIn("failed-2858 rejection", ghost["blocker_summary"])
+        self.assertIn("successful sibling-2863 rejection", ghost["blocker_summary"])
+        self.assertIn("Cage Console Creature2 63037", ghost["blocker_summary"])
+        self.assertIn("never activates Ghosts 2858", ghost["blocker_summary"])
+        self.assertIn("three Alarm Panel Creature2-68916 entities", ghost["blocker_summary"])
+        self.assertIn("No reviewed path identifies an alarm-trigger event", ghost["blocker_summary"])
+        self.assertIn("Objective 2858 remains a mapped-only producer", ghost["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", ghost["evidence_sources"])
+        self.assertIn("SneakyPrisonEntityScripts.cs", ghost["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", ghost["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", ghost["evidence_sources"])
+
+    def test_ultimate_protogames_hit_snooze_is_mapped_only_without_alarm_trigger_timer(self) -> None:
+        hit_snooze = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5913)]
+        self.assertEqual(
+            "mapped_achievement_5913_hit_snooze_blocked_missing_triggered_alarm_identity_five_second_window_and_completion_grant_capture",
+            hit_snooze["evidence_status"],
+        )
+        self.assertIn("Achievement 5913, 'Hit Snooze'", hit_snooze["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", hit_snooze["blocker_summary"])
+        self.assertIn("25-point value", hit_snooze["blocker_summary"])
+        self.assertIn("655927/653161/666995", hit_snooze["blocker_summary"])
+        self.assertIn("triggered alarm", hit_snooze["blocker_summary"])
+        self.assertIn("within five seconds", hit_snooze["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5913 is unrelated", hit_snooze["blocker_summary"])
+        self.assertIn("achievement 4343 bit 2 and object 7964", hit_snooze["blocker_summary"])
+        self.assertIn("no checklist row has achievementId or objectId 5913", hit_snooze["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1915", hit_snooze["blocker_summary"])
+        self.assertIn("No build or Jabbithole public-event objective directly represents", hit_snooze["blocker_summary"])
+        self.assertIn("objective 4648", hit_snooze["blocker_summary"])
+        self.assertIn("TargetGroup 12478 -> Alarm Panel Creature2 68916", hit_snooze["blocker_summary"])
+        self.assertIn("no failure timer", hit_snooze["blocker_summary"])
+        self.assertIn("only event-594 row with failureTimeMs 5000 is objective 4649", hit_snooze["blocker_summary"])
+        self.assertIn("Welcome to the Thunderdome", hit_snooze["blocker_summary"])
+        self.assertIn("WorldLocation2 41745 in area 4351", hit_snooze["blocker_summary"])
+        self.assertIn("achievement 5939 / row 1991", hit_snooze["blocker_summary"])
+        self.assertIn("three Alarm Panel 68916 entities", hit_snooze["blocker_summary"])
+        self.assertIn("one-shot ActivateTargetGroup-12478 update", hit_snooze["blocker_summary"])
+        self.assertIn("successful Disable-the-Alarm 4648 and Ghosts 2858 do not grant", hit_snooze["blocker_summary"])
+        self.assertIn("untriggered alarm", hit_snooze["blocker_summary"])
+        self.assertIn("This row remains mapped-only", hit_snooze["blocker_summary"])
+        self.assertIn("SneakyPrisonEntityScripts.cs", hit_snooze["evidence_sources"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", hit_snooze["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", hit_snooze["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", hit_snooze["evidence_sources"])
+
+    def test_ultimate_protogames_presto_prototentiary_has_exact_timed_grant_and_producer_boundary(self) -> None:
+        presto = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5914)]
+        self.assertEqual(
+            "runtime_achievement_5914_presto_prototentiary_exact_objective_team_grant_and_fast_hands_producer_tested_pending_route_timer_ui_and_client_smoke",
+            presto["evidence_status"],
+        )
+        self.assertIn("Achievement 5914, 'Presto Prototentiary'", presto["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", presto["blocker_summary"])
+        self.assertIn("with value 0", presto["blocker_summary"])
+        self.assertIn("25-point value", presto["blocker_summary"])
+        self.assertIn("655928/653166/734683", presto["blocker_summary"])
+        self.assertIn("Fast Hands optional objective", presto["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5914 is unrelated", presto["blocker_summary"])
+        self.assertIn("achievement 4343 bit 3 and object 7967", presto["blocker_summary"])
+        self.assertIn("row 4568 for achievement 3557 bit 2", presto["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5914", presto["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2191", presto["blocker_summary"])
+        self.assertIn("required count 0", presto["blocker_summary"])
+        self.assertIn("objective 2863 is the exact named Fast Hands row", presto["blocker_summary"])
+        self.assertIn("flags 2105348", presto["blocker_summary"])
+        self.assertIn("589657/589658", presto["blocker_summary"])
+        self.assertIn("type 3 ActivateTargetGroup", presto["blocker_summary"])
+        self.assertIn("TargetGroup 10583", presto["blocker_summary"])
+        self.assertIn("failureTimeMs 210000", presto["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8196", presto["blocker_summary"])
+        self.assertIn("Cage Console Creature2 63037", presto["blocker_summary"])
+        self.assertIn("dynamic max count 1", presto["blocker_summary"])
+        self.assertIn("entity 1100300081", presto["blocker_summary"])
+        self.assertIn("coordinate 6152147", presto["blocker_summary"])
+        self.assertIn("ActivateTargetGroup-10583 update", presto["blocker_summary"])
+        self.assertIn("209999 milliseconds succeeds", presto["blocker_summary"])
+        self.assertIn("fails at 210000 milliseconds", presto["blocker_summary"])
+        self.assertIn("grants achievement 5914 by explicit id", presto["blocker_summary"])
+        self.assertIn("failed-2863 rejection", presto["blocker_summary"])
+        self.assertIn("successful sibling-2858 rejection", presto["blocker_summary"])
+        self.assertIn("unusual zero achievement value/count", presto["blocker_summary"])
+        self.assertIn("exact random-room routing", presto["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", presto["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", presto["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", presto["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", presto["evidence_sources"])
+
+    def test_ultimate_protogames_protoplunge_professional_has_parent_objective_grant_boundary_only(self) -> None:
+        protoplunge = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5915)]
+        self.assertEqual(
+            "runtime_achievement_5915_protoplunge_professional_objective_2669_team_grant_boundary_tested_producer_mapped_only",
+            protoplunge["evidence_status"],
+        )
+        self.assertIn("Achievement 5915, 'Protoplunge Professional'", protoplunge["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", protoplunge["blocker_summary"])
+        self.assertIn("10-point value", protoplunge["blocker_summary"])
+        self.assertIn("654420/653167/666996", protoplunge["blocker_summary"])
+        self.assertIn("Protoplunge event in the Cuboar Coterie", protoplunge["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5915 is unrelated", protoplunge["blocker_summary"])
+        self.assertIn("achievement 4327 bit 0 and object 6656", protoplunge["blocker_summary"])
+        self.assertIn("rows 4569 for achievement 3557 bit 3 and 8424 for achievement 5978 bit 5", protoplunge["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5915", protoplunge["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1957", protoplunge["blocker_summary"])
+        self.assertIn("required count 1", protoplunge["blocker_summary"])
+        self.assertIn("objective 2669 is the exact parent Proto-Plunge row", protoplunge["blocker_summary"])
+        self.assertIn("text id 577332", protoplunge["blocker_summary"])
+        self.assertIn("short text id 577333", protoplunge["blocker_summary"])
+        self.assertIn("type 13 TimedWin", protoplunge["blocker_summary"])
+        self.assertIn("WorldLocation2 46473 in world 2980 / area 4347", protoplunge["blocker_summary"])
+        self.assertIn("failureTimeMs 180000", protoplunge["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8139", protoplunge["blocker_summary"])
+        self.assertIn("grants achievement 5915 by explicit id", protoplunge["blocker_summary"])
+        self.assertIn("failed-2669 rejection", protoplunge["blocker_summary"])
+        self.assertIn("successful sibling-2862 rejection", protoplunge["blocker_summary"])
+        self.assertIn("only the server-authored parent-objective success boundary", protoplunge["blocker_summary"])
+        self.assertIn("activates only Gilded Fowl objectives 2862/4442", protoplunge["blocker_summary"])
+        self.assertIn("does not activate objective 2669", protoplunge["blocker_summary"])
+        self.assertIn("Objective 2669 therefore remains a mapped-only producer", protoplunge["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", protoplunge["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", protoplunge["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", protoplunge["evidence_sources"])
+
+    def test_ultimate_protogames_extra_point_professional_has_timed_grant_boundary_only(self) -> None:
+        extra_point = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5916)]
+        self.assertEqual(
+            "runtime_achievement_5916_extra_point_professional_objective_4541_team_grant_and_timer_boundary_tested_producer_mapped_only",
+            extra_point["evidence_status"],
+        )
+        self.assertIn("Achievement 5916, 'Extra Point Professional'", extra_point["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", extra_point["blocker_summary"])
+        self.assertIn("with value 0", extra_point["blocker_summary"])
+        self.assertIn("25-point value", extra_point["blocker_summary"])
+        self.assertIn("734689/653175/734688", extra_point["blocker_summary"])
+        self.assertIn("Extra Point optional objective in Intern Disposal Facility 74", extra_point["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5916 is unrelated", extra_point["blocker_summary"])
+        self.assertIn("achievement 4360 bit 0 and object 8869", extra_point["blocker_summary"])
+        self.assertIn("no checklist row has achievementId or objectId 5916", extra_point["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2223", extra_point["blocker_summary"])
+        self.assertIn("required count 0", extra_point["blocker_summary"])
+        self.assertIn("objective 4541 is the exact Extra Point row", extra_point["blocker_summary"])
+        self.assertIn("text ids 635253/635254", extra_point["blocker_summary"])
+        self.assertIn("type 13 TimedWin", extra_point["blocker_summary"])
+        self.assertIn("WorldLocation2 46229", extra_point["blocker_summary"])
+        self.assertIn("WorldZone 4502 Intern Disposal Facility 74", extra_point["blocker_summary"])
+        self.assertIn("failureTimeMs 45000", extra_point["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8184", extra_point["blocker_summary"])
+        self.assertIn("historical count 1 differs from the current client row's count 0", extra_point["blocker_summary"])
+        self.assertIn("active at 44999 milliseconds", extra_point["blocker_summary"])
+        self.assertIn("fails at 45000 milliseconds", extra_point["blocker_summary"])
+        self.assertIn("grants achievement 5916 by explicit id", extra_point["blocker_summary"])
+        self.assertIn("failed-4541 rejection", extra_point["blocker_summary"])
+        self.assertIn("successful sibling-2880 rejection", extra_point["blocker_summary"])
+        self.assertIn("activates only defeat objective 2675 and five-minute TimedWin objective 2884", extra_point["blocker_summary"])
+        self.assertIn("unsupported receiver mode 5 signals 22256/22257", extra_point["blocker_summary"])
+        self.assertIn("Objective 4541 therefore remains a mapped-only producer", extra_point["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", extra_point["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", extra_point["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", extra_point["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", extra_point["evidence_sources"])
+
+    def test_ultimate_protogames_ultimate_proto_plunger_has_exact_pool_grant_boundary_only(self) -> None:
+        proto_plunger = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5917)]
+        self.assertEqual(
+            "runtime_achievement_5917_ultimate_proto_plunger_objective_2860_team_grant_boundary_tested_producer_mapped_only",
+            proto_plunger["evidence_status"],
+        )
+        self.assertIn("Achievement 5917, 'Ultimate Proto-Plunger'", proto_plunger["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", proto_plunger["blocker_summary"])
+        self.assertIn("25-point value", proto_plunger["blocker_summary"])
+        self.assertIn("655929/653176/666997", proto_plunger["blocker_summary"])
+        self.assertIn("30 consecutive Proto-Plunges as a team", proto_plunger["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5917 is unrelated", proto_plunger["blocker_summary"])
+        self.assertIn("achievement 4361 bit 0 and object 8872", proto_plunger["blocker_summary"])
+        self.assertIn("row 4556 for achievement 3555 bit 1", proto_plunger["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5917", proto_plunger["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2009", proto_plunger["blocker_summary"])
+        self.assertIn("required count 1", proto_plunger["blocker_summary"])
+        self.assertIn("objective 2860 is the exact 30 Proto-Plunge challenge row", proto_plunger["blocker_summary"])
+        self.assertIn("text ids 589498/589499", proto_plunger["blocker_summary"])
+        self.assertIn("type 21 ResourcePool", proto_plunger["blocker_summary"])
+        self.assertIn("count 30", proto_plunger["blocker_summary"])
+        self.assertIn("WorldLocation2 46473", proto_plunger["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8144", proto_plunger["blocker_summary"])
+        self.assertIn("grants achievement 5917 by explicit id", proto_plunger["blocker_summary"])
+        self.assertIn("failed-2860 rejection", proto_plunger["blocker_summary"])
+        self.assertIn("successful parent-2669 rejection", proto_plunger["blocker_summary"])
+        self.assertIn("TargetGroup 10404", proto_plunger["blocker_summary"])
+        self.assertIn("Blue/Green Spikehorde 62219/62220", proto_plunger["blocker_summary"])
+        self.assertIn("Power Plunge 71497", proto_plunger["blocker_summary"])
+        self.assertIn("Kick Miss Signal 72764", proto_plunger["blocker_summary"])
+        self.assertIn("credits objectives 2862/4442 on death", proto_plunger["blocker_summary"])
+        self.assertIn("does not activate or credit objective 2860", proto_plunger["blocker_summary"])
+        self.assertIn("Objective 2860 therefore remains a mapped-only producer", proto_plunger["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", proto_plunger["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", proto_plunger["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", proto_plunger["evidence_sources"])
+
+    def test_ultimate_protogames_cubig_carnage_is_mapped_only_for_sixty_vs_hundred_conflict(self) -> None:
+        carnage = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5918)]
+        self.assertEqual(
+            "mapped_achievement_5918_cubig_carnage_blocked_conflicting_sixty_count_named_objective_and_unrelated_hundred_count_gilded_fowl_objective",
+            carnage["evidence_status"],
+        )
+        self.assertIn("Achievement 5918, 'Cubig Carnage'", carnage["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", carnage["blocker_summary"])
+        self.assertIn("25-point value", carnage["blocker_summary"])
+        self.assertIn("655930/653177/666998", carnage["blocker_summary"])
+        self.assertIn("Power Plunging 100 creatures", carnage["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5918 is unrelated", carnage["blocker_summary"])
+        self.assertIn("achievement 4362 bit 0 and object 8870", carnage["blocker_summary"])
+        self.assertIn("row 4557 for achievement 3555 bit 2", carnage["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5918", carnage["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2037", carnage["blocker_summary"])
+        self.assertIn("100-creature condition", carnage["blocker_summary"])
+        self.assertIn("objective 2861 is the exact named Cubig Carnage row", carnage["blocker_summary"])
+        self.assertIn("text id 589618", carnage["blocker_summary"])
+        self.assertIn("text id 589619", carnage["blocker_summary"])
+        self.assertIn("type 21 ResourcePool", carnage["blocker_summary"])
+        self.assertIn("threshold is count 60", carnage["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8168", carnage["blocker_summary"])
+        self.assertIn("only event-594 objective with count 100", carnage["blocker_summary"])
+        self.assertIn("unrelated objective 4442", carnage["blocker_summary"])
+        self.assertIn("TargetGroup 12263 -> Gilded Fowl Creature2 63055", carnage["blocker_summary"])
+        self.assertIn("TargetGroup 10404", carnage["blocker_summary"])
+        self.assertIn("does not activate or credit objective 2861", carnage["blocker_summary"])
+        self.assertIn("successful objective 2861 and successful count-100 Gilded Fowl objective 4442", carnage["blocker_summary"])
+        self.assertIn("award at 60 rather than 100", carnage["blocker_summary"])
+        self.assertIn("This row remains mapped-only", carnage["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", carnage["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", carnage["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", carnage["evidence_sources"])
+
+    def test_ultimate_protogames_fowl_feast_exact_objective_grant_and_producer_are_tested(self) -> None:
+        fowl_feast = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5919)]
+        self.assertEqual(
+            "runtime_achievement_5919_fowl_feast_exact_objective_team_grant_and_gilded_fowl_phase_spawn_death_credit_tested_pending_power_plunge_qualification_and_client_smoke",
+            fowl_feast["evidence_status"],
+        )
+        self.assertIn("Achievement 5919, 'Fowl Feast'", fowl_feast["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", fowl_feast["blocker_summary"])
+        self.assertIn("25-point value", fowl_feast["blocker_summary"])
+        self.assertIn("655932/653178/666999", fowl_feast["blocker_summary"])
+        self.assertIn("Power Plunging onto the Gilded Fowl", fowl_feast["blocker_summary"])
+        self.assertIn("no AchievementChecklist row with id or achievementId 5919", fowl_feast["blocker_summary"])
+        self.assertIn("row 4558 for achievement 3555 bit 3", fowl_feast["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2058", fowl_feast["blocker_summary"])
+        self.assertIn("objective 2862 is the exact named Gilded Fowl row", fowl_feast["blocker_summary"])
+        self.assertIn("text ids 589620/589621", fowl_feast["blocker_summary"])
+        self.assertIn("type 21 ResourcePool", fowl_feast["blocker_summary"])
+        self.assertIn("count 1, object TargetGroup 12263", fowl_feast["blocker_summary"])
+        self.assertIn("Gilded Fowl Creature2 63055", fowl_feast["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8147", fowl_feast["blocker_summary"])
+        self.assertIn("client objective 4442", fowl_feast["blocker_summary"])
+        self.assertIn("auxiliary completion row", fowl_feast["blocker_summary"])
+        self.assertIn("only when exact objective 2862 succeeds", fowl_feast["blocker_summary"])
+        self.assertIn("failed-2862, and successful-4442 rejection", fowl_feast["blocker_summary"])
+        self.assertIn("script-owned Gilded Fowl entity 1100300089", fowl_feast["blocker_summary"])
+        self.assertIn("coordinate 8011506", fowl_feast["blocker_summary"])
+        self.assertIn("does not prove that Power Plunge caused the kill", fowl_feast["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", fowl_feast["evidence_sources"])
+        self.assertIn("PublicEventObjectiveCreditEntityScriptTests.cs", fowl_feast["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", fowl_feast["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", fowl_feast["evidence_sources"])
+
+    def test_ultimate_protogames_crystal_catcher_exact_objective_grant_is_tested_with_mapped_only_producer(self) -> None:
+        crystal_catcher = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5920)]
+        self.assertEqual(
+            "runtime_achievement_5920_crystal_catcher_exact_objective_team_grant_boundary_tested_producer_mapped_only",
+            crystal_catcher["evidence_status"],
+        )
+        self.assertIn("Achievement 5920, 'Crystal Catcher'", crystal_catcher["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", crystal_catcher["blocker_summary"])
+        self.assertIn("25-point value", crystal_catcher["blocker_summary"])
+        self.assertIn("655950/653179/667000", crystal_catcher["blocker_summary"])
+        self.assertIn("collecting five power crystals", crystal_catcher["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5920 is unrelated", crystal_catcher["blocker_summary"])
+        self.assertIn("achievement 4363 bit 0 and object 8873", crystal_catcher["blocker_summary"])
+        self.assertIn("row 4559 for achievement 3555 bit 4", crystal_catcher["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5920", crystal_catcher["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2092", crystal_catcher["blocker_summary"])
+        self.assertIn("objective 2883 is the exact named Crystal Catcher row", crystal_catcher["blocker_summary"])
+        self.assertIn("text ids 590508/590509", crystal_catcher["blocker_summary"])
+        self.assertIn("type 21 ResourcePool", crystal_catcher["blocker_summary"])
+        self.assertIn("count 5, object 0", crystal_catcher["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8192", crystal_catcher["blocker_summary"])
+        self.assertIn("only when exact objective 2883 succeeds", crystal_catcher["blocker_summary"])
+        self.assertIn("failed-2883, and successful-2862 rejection", crystal_catcher["blocker_summary"])
+        self.assertIn("Creature2 63091", crystal_catcher["blocker_summary"])
+        self.assertIn("LocalizedText 635181", crystal_catcher["blocker_summary"])
+        self.assertIn("does not activate objective 2883, spawn Creature2 63091", crystal_catcher["blocker_summary"])
+        self.assertIn("Objective 2883 therefore remains a mapped-only producer", crystal_catcher["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", crystal_catcher["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", crystal_catcher["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", crystal_catcher["evidence_sources"])
+
+    def test_ultimate_protogames_sky_soaring_exact_water_hazard_grant_is_tested_with_mapped_only_producer(self) -> None:
+        sky_soaring = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5921)]
+        self.assertEqual(
+            "runtime_achievement_5921_sky_soaring_exact_water_hazard_objective_team_grant_boundary_tested_producer_mapped_only",
+            sky_soaring["evidence_status"],
+        )
+        self.assertIn("Achievement 5921, 'Sky Soaring'", sky_soaring["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", sky_soaring["blocker_summary"])
+        self.assertIn("25-point value", sky_soaring["blocker_summary"])
+        self.assertIn("655951/653181/667001", sky_soaring["blocker_summary"])
+        self.assertIn("without anyone on the team falling into the water", sky_soaring["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5921 is unrelated", sky_soaring["blocker_summary"])
+        self.assertIn("achievement 4364 bit 0 and object 3788", sky_soaring["blocker_summary"])
+        self.assertIn("row 4570 for achievement 3557 bit 4", sky_soaring["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5921", sky_soaring["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1916", sky_soaring["blocker_summary"])
+        self.assertIn("objective 2897 is the exact named Water Hazard row", sky_soaring["blocker_summary"])
+        self.assertIn("text ids 590840/590841", sky_soaring["blocker_summary"])
+        self.assertIn("type 5 Script", sky_soaring["blocker_summary"])
+        self.assertIn("public-team challenge category 1", sky_soaring["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8178", sky_soaring["blocker_summary"])
+        self.assertIn("only when exact objective 2897 succeeds", sky_soaring["blocker_summary"])
+        self.assertIn("failed-2897, and successful-2883 rejection", sky_soaring["blocker_summary"])
+        self.assertIn("owns no objective-2897 activation, water volume", sky_soaring["blocker_summary"])
+        self.assertIn("player-local versus party-wide failure scope", sky_soaring["blocker_summary"])
+        self.assertIn("Objective 2897 therefore remains a mapped-only producer", sky_soaring["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", sky_soaring["evidence_sources"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundaryTests.cs", sky_soaring["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", sky_soaring["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", sky_soaring["evidence_sources"])
+
+    def test_ultimate_protogames_disoriented_descent_is_mapped_only_without_a_stateful_hit_signal(self) -> None:
+        disoriented_descent = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5922)]
+        self.assertEqual(
+            "mapped_achievement_5922_disoriented_descent_blocked_missing_disoriented_power_plunge_hit_state_signal",
+            disoriented_descent["evidence_status"],
+        )
+        self.assertIn("Achievement 5922, 'Disoriented Descent'", disoriented_descent["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", disoriented_descent["blocker_summary"])
+        self.assertIn("achievement-point enum 0", disoriented_descent["blocker_summary"])
+        self.assertIn("text id 653184", disoriented_descent["blocker_summary"])
+        self.assertIn("Power Plunging onto a creature while disoriented", disoriented_descent["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5922 is unrelated", disoriented_descent["blocker_summary"])
+        self.assertIn("achievement 4364 bit 1 and object 3919", disoriented_descent["blocker_summary"])
+        self.assertIn("row 4571 for achievement 3557 bit 5", disoriented_descent["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5922", disoriented_descent["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2111", disoriented_descent["blocker_summary"])
+        self.assertIn("No build public-event objective for event 594 mentions Disoriented Descent", disoriented_descent["blocker_summary"])
+        self.assertIn("Build spell 71497 is the UP Power Plunge dive", disoriented_descent["blocker_summary"])
+        self.assertIn("spell 72342 is the event-2673 Crate Destruction sickness proxy", disoriented_descent["blocker_summary"])
+        self.assertIn("spell 72561 is the event-2678 Sneaky Prison Terror Capacitor", disoriented_descent["blocker_summary"])
+        self.assertIn("text 590931 is bound to unrelated spell 72854", disoriented_descent["blocker_summary"])
+        self.assertIn("generic spell 79259", disoriented_descent["blocker_summary"])
+        self.assertIn("successful objectives 2669, 2862, 2883, and 2897", disoriented_descent["blocker_summary"])
+        self.assertIn("This row remains mapped-only", disoriented_descent["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", disoriented_descent["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", disoriented_descent["evidence_sources"])
+
+    def test_ultimate_protogames_pest_control_professional_grant_and_timer_are_tested_with_mapped_only_producer(self) -> None:
+        pest_control = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5923)]
+        self.assertEqual(
+            "runtime_achievement_5923_pest_control_professional_exact_objective_team_grant_and_timer_boundary_tested_producer_mapped_only",
+            pest_control["evidence_status"],
+        )
+        self.assertIn("Achievement 5923, 'Pest Control Professional'", pest_control["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", pest_control["blocker_summary"])
+        self.assertIn("10-point value", pest_control["blocker_summary"])
+        self.assertIn("654422/653185/667002", pest_control["blocker_summary"])
+        self.assertIn("Protostar Petting Zoo", pest_control["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5923 is unrelated", pest_control["blocker_summary"])
+        self.assertIn("achievement 4364 bit 2 and object 3927", pest_control["blocker_summary"])
+        self.assertIn("row 8425 for achievement 5978 bit 6", pest_control["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5923", pest_control["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1992", pest_control["blocker_summary"])
+        self.assertIn("objective 2672 is the exact named Pest Control row", pest_control["blocker_summary"])
+        self.assertIn("text ids 577338/577339", pest_control["blocker_summary"])
+        self.assertIn("type 13 TimedWin", pest_control["blocker_summary"])
+        self.assertIn("failureTimeMs 180000", pest_control["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8142", pest_control["blocker_summary"])
+        self.assertIn("only when exact objective 2672 succeeds", pest_control["blocker_summary"])
+        self.assertIn("failed-2672, and successful-2898 rejection", pest_control["blocker_summary"])
+        self.assertIn("179999 ms succeeds", pest_control["blocker_summary"])
+        self.assertIn("180000 ms remains failed", pest_control["blocker_summary"])
+        self.assertIn("no Protostar Petting Zoo phase", pest_control["blocker_summary"])
+        self.assertIn("does not activate objective 2672", pest_control["blocker_summary"])
+        self.assertIn("Objective 2672 therefore remains a mapped-only producer", pest_control["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", pest_control["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", pest_control["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", pest_control["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", pest_control["evidence_sources"])
+
+    def test_ultimate_protogames_immortal_petting_zoo_is_mapped_only_without_room_scoped_death_state(self) -> None:
+        immortal_petting_zoo = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5924)]
+        self.assertEqual(
+            "mapped_achievement_5924_immortal_protostar_petting_zoo_blocked_missing_room_scoped_no_death_signal",
+            immortal_petting_zoo["evidence_status"],
+        )
+        self.assertIn("Achievement 5924, 'Immortal: Protostar Petting Zoo'", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("50-point value", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("654421/653186/667003", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("without anyone in the party dying", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5924 is unrelated", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("achievement 4364 bit 3 and object 3945", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("no objectId-5924 match", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5924", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1974", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("objective 2672 is the exact Pest Control completion row", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("WorldLocation2 41741", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("generic rows 2857 and 2871", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("WorldLocation2 41754 to Waste Management Facility zone 4336", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("grant boundary for achievement 5865", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("TargetGroup 10569", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("grant boundary for achievement 5906", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("Jabbithole rows 8208/8226", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("no Petting Zoo phase, activation, or room-scoped party-death state", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("successful objective 2672 followed by successful 2857 or 2871", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("No grant hook was added", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("This row remains mapped-only", immortal_petting_zoo["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", immortal_petting_zoo["evidence_sources"])
+        self.assertIn("jabbithole_mysql/achievements.sql", immortal_petting_zoo["evidence_sources"])
+        self.assertIn("jabbithole_mysql/public_event_objectives.sql", immortal_petting_zoo["evidence_sources"])
+
+    def test_ultimate_protogames_steamed_veggies_grant_and_timer_are_tested_with_mapped_only_producer(self) -> None:
+        steamed_veggies = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5925)]
+        self.assertEqual(
+            "runtime_achievement_5925_steamed_veggies_exact_objective_team_grant_and_timer_boundary_tested_producer_mapped_only",
+            steamed_veggies["evidence_status"],
+        )
+        self.assertIn("Achievement 5925, 'Steamed Veggies'", steamed_veggies["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", steamed_veggies["blocker_summary"])
+        self.assertIn("25-point value", steamed_veggies["blocker_summary"])
+        self.assertIn("655954/653187/667004", steamed_veggies["blocker_summary"])
+        self.assertIn("Runaway Veggie challenge", steamed_veggies["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5925 is unrelated", steamed_veggies["blocker_summary"])
+        self.assertIn("achievement 4364 bit 4 and object 4118", steamed_veggies["blocker_summary"])
+        self.assertIn("row 4544 for achievement 3552 bit 2", steamed_veggies["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5925", steamed_veggies["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2010", steamed_veggies["blocker_summary"])
+        self.assertIn("objective 2899 is the exact named Runaway Veggie row", steamed_veggies["blocker_summary"])
+        self.assertIn("text ids 590979/590980", steamed_veggies["blocker_summary"])
+        self.assertIn("type 21 ResourcePool", steamed_veggies["blocker_summary"])
+        self.assertIn("failureTimeMs 45000", steamed_veggies["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8199", steamed_veggies["blocker_summary"])
+        self.assertIn("only when exact objective 2899 succeeds", steamed_veggies["blocker_summary"])
+        self.assertIn("failed-2899, and successful-2898 rejection", steamed_veggies["blocker_summary"])
+        self.assertIn("44999 ms succeeds", steamed_veggies["blocker_summary"])
+        self.assertIn("45000 ms remains failed", steamed_veggies["blocker_summary"])
+        self.assertIn("Jabbithole Creature row 28400", steamed_veggies["blocker_summary"])
+        self.assertIn("98 archived coordinate rows", steamed_veggies["blocker_summary"])
+        self.assertIn("Creature2 62674", steamed_veggies["blocker_summary"])
+        self.assertIn("scored_name with four candidates", steamed_veggies["blocker_summary"])
+        self.assertIn("public_event_creatures contains zero links", steamed_veggies["blocker_summary"])
+        self.assertIn("does not activate objective 2899", steamed_veggies["blocker_summary"])
+        self.assertIn("Objective 2899 therefore remains a mapped-only producer", steamed_veggies["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", steamed_veggies["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", steamed_veggies["evidence_sources"])
+        self.assertIn("jabbithole_mysql/creatures.sql", steamed_veggies["evidence_sources"])
+        self.assertIn("jabbithole_mysql/coordinates.sql", steamed_veggies["evidence_sources"])
+
+    def test_ultimate_protogames_rowsdower_round_up_grant_count_and_death_credit_are_tested(self) -> None:
+        rowsdower_round_up = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5926)]
+        self.assertEqual(
+            "runtime_achievement_5926_rowsdower_round_up_exact_objective_team_grant_count_boundary_and_death_credit_tested_pending_activation_spawn_and_client_smoke",
+            rowsdower_round_up["evidence_status"],
+        )
+        self.assertIn("Achievement 5926, 'Rowsdower Round-Up'", rowsdower_round_up["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", rowsdower_round_up["blocker_summary"])
+        self.assertIn("25-point value", rowsdower_round_up["blocker_summary"])
+        self.assertIn("655956/653188/667005", rowsdower_round_up["blocker_summary"])
+        self.assertIn("killing six rowsdowers", rowsdower_round_up["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5926 is unrelated", rowsdower_round_up["blocker_summary"])
+        self.assertIn("achievement 4365 bit 0 and object 3785", rowsdower_round_up["blocker_summary"])
+        self.assertIn("row 4545 for achievement 3552 bit 3", rowsdower_round_up["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5926", rowsdower_round_up["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2038", rowsdower_round_up["blocker_summary"])
+        self.assertIn("objective 2927 is the exact named Rowsdower Round-Up row", rowsdower_round_up["blocker_summary"])
+        self.assertIn("text ids 591765/591766", rowsdower_round_up["blocker_summary"])
+        self.assertIn("type 21 ResourcePool", rowsdower_round_up["blocker_summary"])
+        self.assertIn("count 6, object 0", rowsdower_round_up["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8219", rowsdower_round_up["blocker_summary"])
+        self.assertIn("only when exact objective 2927 succeeds", rowsdower_round_up["blocker_summary"])
+        self.assertIn("failed-2927, and successful-2899 rejection", rowsdower_round_up["blocker_summary"])
+        self.assertIn("five credits as active, the sixth as success", rowsdower_round_up["blocker_summary"])
+        self.assertIn("RowsdowerEntityScript binds Creature2 62598", rowsdower_round_up["blocker_summary"])
+        self.assertIn("one-shot objective-2927 death credit", rowsdower_round_up["blocker_summary"])
+        self.assertIn("Jabbithole Creature row 28407", rowsdower_round_up["blocker_summary"])
+        self.assertIn("83 archived coordinate rows", rowsdower_round_up["blocker_summary"])
+        self.assertIn("scored_name with 24 candidates", rowsdower_round_up["blocker_summary"])
+        self.assertIn("does not activate objective 2927", rowsdower_round_up["blocker_summary"])
+        self.assertIn("activation/spawn remains blocked", rowsdower_round_up["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", rowsdower_round_up["evidence_sources"])
+        self.assertIn("PublicEventObjectiveCreditEntityScriptTests.cs", rowsdower_round_up["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", rowsdower_round_up["evidence_sources"])
+        self.assertIn("jabbithole_mysql/coordinates.sql", rowsdower_round_up["evidence_sources"])
+
+    def test_ultimate_protogames_damage_control_grant_and_count_boundary_are_tested(self) -> None:
+        damage_control = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5927)]
+        self.assertEqual(
+            "runtime_achievement_5927_damage_control_exact_objective_team_grant_and_count_boundary_tested_explosion_producer_mapped_only",
+            damage_control["evidence_status"],
+        )
+        self.assertIn("Achievement 5927, 'Damage Control'", damage_control["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", damage_control["blocker_summary"])
+        self.assertIn("25-point value", damage_control["blocker_summary"])
+        self.assertIn("655957/653189/667006", damage_control["blocker_summary"])
+        self.assertIn("preventing the exploding splorg", damage_control["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5927 is unrelated", damage_control["blocker_summary"])
+        self.assertIn("achievement 4365 bit 1 and object 3923", damage_control["blocker_summary"])
+        self.assertIn("row 4546 for achievement 3552 bit 4", damage_control["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5927", damage_control["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2071", damage_control["blocker_summary"])
+        self.assertIn("objective 2930 is the exact named Damage Control row", damage_control["blocker_summary"])
+        self.assertIn("text ids 591839/591840", damage_control["blocker_summary"])
+        self.assertIn("type 21 ResourcePool", damage_control["blocker_summary"])
+        self.assertIn("count 10, object 0", damage_control["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8170", damage_control["blocker_summary"])
+        self.assertIn("only when exact objective 2930 succeeds", damage_control["blocker_summary"])
+        self.assertIn("failed-2930, and successful-2927 rejection", damage_control["blocker_summary"])
+        self.assertIn("nine explicit credits as active", damage_control["blocker_summary"])
+        self.assertIn("the tenth as success", damage_control["blocker_summary"])
+        self.assertIn("ExplosiveSplorgEntityScript currently credits only", damage_control["blocker_summary"])
+        self.assertIn("observes no explosion hit", damage_control["blocker_summary"])
+        self.assertIn("does not activate objective 2930", damage_control["blocker_summary"])
+        self.assertIn("Objective 2930 therefore remains a mapped-only producer", damage_control["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", damage_control["evidence_sources"])
+        self.assertIn("PublicEventObjectiveCreditEntityScriptTests.cs", damage_control["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", damage_control["evidence_sources"])
+
+    def test_ultimate_protogames_splorg_spree_grant_timer_and_death_credit_are_tested(self) -> None:
+        splorg_spree = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5928)]
+        self.assertEqual(
+            "runtime_achievement_5928_splorg_spree_exact_objective_team_grant_timer_and_death_credit_tested_pending_route_spawn_attribution_and_client_smoke",
+            splorg_spree["evidence_status"],
+        )
+        self.assertIn("Achievement 5928, 'Splorg Spree'", splorg_spree["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", splorg_spree["blocker_summary"])
+        self.assertIn("25-point value", splorg_spree["blocker_summary"])
+        self.assertIn("655974/653190/667007", splorg_spree["blocker_summary"])
+        self.assertIn("killing seven Splorg within twenty seconds", splorg_spree["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5928 is unrelated", splorg_spree["blocker_summary"])
+        self.assertIn("achievement 4365 bit 2 and object 3916", splorg_spree["blocker_summary"])
+        self.assertIn("no checklist row has objectId 5928 or achievementId 5928", splorg_spree["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2093", splorg_spree["blocker_summary"])
+        self.assertIn("objective 2925 is the exact named Splorg Spree row", splorg_spree["blocker_summary"])
+        self.assertIn("text ids 591761/591762", splorg_spree["blocker_summary"])
+        self.assertIn("type 21 ResourcePool", splorg_spree["blocker_summary"])
+        self.assertIn("count 7, object 0", splorg_spree["blocker_summary"])
+        self.assertIn("failureTimeMs 20000", splorg_spree["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8150", splorg_spree["blocker_summary"])
+        self.assertIn("only when exact objective 2925 succeeds", splorg_spree["blocker_summary"])
+        self.assertIn("failed-2925, and successful-2930 rejection", splorg_spree["blocker_summary"])
+        self.assertIn("seventh at 19.999 seconds as success", splorg_spree["blocker_summary"])
+        self.assertIn("after the 20-second failure as rejected", splorg_spree["blocker_summary"])
+        self.assertIn("ExplosiveSplorgEntityScript binds Creature2 62597", splorg_spree["blocker_summary"])
+        self.assertIn("one-shot objective-2925 death credit", splorg_spree["blocker_summary"])
+        self.assertIn("three name candidates", splorg_spree["blocker_summary"])
+        self.assertIn("76 current-last-seen observations", splorg_spree["blocker_summary"])
+        self.assertIn("does not activate objective 2925", splorg_spree["blocker_summary"])
+        self.assertIn("activation/spawning", splorg_spree["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", splorg_spree["evidence_sources"])
+        self.assertIn("PublicEventObjectiveCreditEntityScriptTests.cs", splorg_spree["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", splorg_spree["evidence_sources"])
+        self.assertIn("jabbithole_mysql/coordinates.sql", splorg_spree["evidence_sources"])
+
+    def test_ultimate_protogames_jabbit_justification_grant_and_count_boundary_are_tested(self) -> None:
+        jabbit_justification = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5929)]
+        self.assertEqual(
+            "runtime_achievement_5929_jabbit_justification_exact_slaughterhouse_objective_team_grant_and_count_boundary_tested_scoring_producer_mapped_only",
+            jabbit_justification["evidence_status"],
+        )
+        self.assertIn("Achievement 5929, 'Jabbit Justification'", jabbit_justification["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", jabbit_justification["blocker_summary"])
+        self.assertIn("25-point value", jabbit_justification["blocker_summary"])
+        self.assertIn("655975/653191/667008", jabbit_justification["blocker_summary"])
+        self.assertIn("completing the Slaughterhouse challenge", jabbit_justification["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5929 is unrelated", jabbit_justification["blocker_summary"])
+        self.assertIn("achievement 4365 bit 3 and object 3941", jabbit_justification["blocker_summary"])
+        self.assertIn("rows 5174/5231 for achievements 3907/3908 bits 28/25", jabbit_justification["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5929", jabbit_justification["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1917", jabbit_justification["blocker_summary"])
+        self.assertIn("objective 2898 is the exact named Slaughterhouse row", jabbit_justification["blocker_summary"])
+        self.assertIn("text ids 590976/590977", jabbit_justification["blocker_summary"])
+        self.assertIn("type 21 ResourcePool", jabbit_justification["blocker_summary"])
+        self.assertIn("count 40, object 0", jabbit_justification["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8206", jabbit_justification["blocker_summary"])
+        self.assertIn("shared exact challenge name establishes", jabbit_justification["blocker_summary"])
+        self.assertIn("only when exact objective 2898 succeeds", jabbit_justification["blocker_summary"])
+        self.assertIn("failed-2898, and successful-2925 rejection", jabbit_justification["blocker_summary"])
+        self.assertIn("39 explicit credits as active", jabbit_justification["blocker_summary"])
+        self.assertIn("fortieth as success", jabbit_justification["blocker_summary"])
+        self.assertIn("No scoring producer was invented", jabbit_justification["blocker_summary"])
+        self.assertIn("whether repeatable objective 2901 is the scoring channel", jabbit_justification["blocker_summary"])
+        self.assertIn("does not activate objectives 2672/2898", jabbit_justification["blocker_summary"])
+        self.assertIn("mapped-only scoring producer", jabbit_justification["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", jabbit_justification["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", jabbit_justification["evidence_sources"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundaryTests.cs", jabbit_justification["evidence_sources"])
+
+    def test_ultimate_protogames_splorg_stepper_grant_and_script_boundary_are_tested(self) -> None:
+        splorg_stepper = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5930)]
+        self.assertEqual(
+            "runtime_achievement_5930_splorg_stepper_exact_objective_team_grant_and_script_boundary_tested_producer_mapped_only",
+            splorg_stepper["evidence_status"],
+        )
+        self.assertIn("Achievement 5930, 'Splorg Stepper'", splorg_stepper["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", splorg_stepper["blocker_summary"])
+        self.assertIn("25-point value", splorg_stepper["blocker_summary"])
+        self.assertIn("655976/653192/667009", splorg_stepper["blocker_summary"])
+        self.assertIn("avoiding Creature2 62597's explosion", splorg_stepper["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5930 is unrelated", splorg_stepper["blocker_summary"])
+        self.assertIn("achievement 4365 bit 4 and object 4115", splorg_stepper["blocker_summary"])
+        self.assertIn("no checklist row has objectId 5930 or achievementId 5930", splorg_stepper["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1937", splorg_stepper["blocker_summary"])
+        self.assertIn("objective 4524 is the exact named Splorg Stepper row", splorg_stepper["blocker_summary"])
+        self.assertIn("text ids 635033/635034", splorg_stepper["blocker_summary"])
+        self.assertIn("type 5 Script", splorg_stepper["blocker_summary"])
+        self.assertIn("optional category 1, count 1, object 0", splorg_stepper["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8204", splorg_stepper["blocker_summary"])
+        self.assertIn("only when exact objective 4524 succeeds", splorg_stepper["blocker_summary"])
+        self.assertIn("failed-4524, and successful-2898 rejection", splorg_stepper["blocker_summary"])
+        self.assertIn("pre-activation credit is ignored", splorg_stepper["blocker_summary"])
+        self.assertIn("explicit objective-id credit succeeds once", splorg_stepper["blocker_summary"])
+        self.assertIn("No no-hit producer was invented", splorg_stepper["blocker_summary"])
+        self.assertIn("observes neither explosion spell hits nor objective 4524", splorg_stepper["blocker_summary"])
+        self.assertIn("does not activate objective 4524", splorg_stepper["blocker_summary"])
+        self.assertIn("mapped-only producer", splorg_stepper["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", splorg_stepper["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", splorg_stepper["evidence_sources"])
+        self.assertIn("selected_decompiled.c", splorg_stepper["evidence_sources"])
+
+    def test_ultimate_protogames_fluffy_and_fluzzball_is_blocked_on_lay_eggs_handoff(self) -> None:
+        fluffy_and_fluzzball = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5931)]
+        self.assertEqual(
+            "mapped_achievement_5931_fluffy_and_fluzzball_blocked_missing_ruffles_lay_eggs_cast_signal_receiver_and_achievement_handoff",
+            fluffy_and_fluzzball["evidence_status"],
+        )
+        self.assertIn("Achievement 5931, 'Fluffy and Fluzzball'", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("10-point value", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("655977/653193/667010", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("getting Ruffles to lay eggs", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5931 is unrelated", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("achievement 4378 bit 0 and object 52318", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("row 5319 for achievement 3951 bit 9", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5931", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1958", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("TargetGroup 12390 / Creature2 65794", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("Objective 4561 is a kill row", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("Spell4 rows 77267/77274/77276", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("effect rows 201855/208593", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("signals 27283/28062", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("signal 27278", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("do not link spell 77267 to Ruffles' action set", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("Receiver modes 4/5 remain diagnostics-only", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("successful Hunt Ruffles 4561 and Slaughterhouse 2898 do not grant", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("No grant hook or guessed egg-laying trigger was added", fluffy_and_fluzzball["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", fluffy_and_fluzzball["evidence_sources"])
+        self.assertIn("RavelSignalReceiverEvidenceBoundaryTests.cs", fluffy_and_fluzzball["evidence_sources"])
+        self.assertIn("Spell4Effects.tbl.sql", fluffy_and_fluzzball["evidence_sources"])
+
+    def test_ultimate_protogames_like_mother_like_daughters_is_blocked_on_vehicle_kill_handoff(self) -> None:
+        like_mother_like_daughters = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5932)]
+        self.assertEqual(
+            "mapped_achievement_5932_like_mother_like_daughters_blocked_missing_fluffy_fuzzball_vehicle_spawn_ability_kill_attribution_and_achievement_handoff",
+            like_mother_like_daughters["evidence_status"],
+        )
+        self.assertIn("Achievement 5932, 'Like Mother Like Daughters'", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("completion-display threshold 100", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("no progress text, and a zero-point value", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("655978/653194", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("killed 30 jabbits", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5932 is unrelated", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("achievement 4377 bit 0 and object 52317", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("row 5161 for achievement 3907 bit 15", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5932", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2107", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("Creature2 rows identify the likely daughters", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("68213 '[UP] Critter - Ravenok Mount - Fluffy", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("68240 '[UP] Critter - Ravenok Mount - Fuzzball", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("achievement says Fluffer", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("UnitVehicle 567 has exactly one pilot", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("Jabbithole creature rows 28521/28532", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("spells 77290/77293/77309/77312", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("RavelSignal 23242", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("Prerequisite 36059 contains two type-83 Vehicle clauses", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("prerequisite 37121 contains two type-38 IsCreature clauses", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("successful Hunt Ruffles 4561, Pest Control 2672, and Slaughterhouse 2898 do not grant", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("No grant, spawn, vehicle, or guessed kill-attribution hook was added", like_mother_like_daughters["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", like_mother_like_daughters["evidence_sources"])
+        self.assertIn("UnitVehicle.tbl.sql", like_mother_like_daughters["evidence_sources"])
+        self.assertIn("Prerequisite.tbl.sql", like_mother_like_daughters["evidence_sources"])
+
+    def test_ultimate_protogames_dust_buster_has_exact_grant_and_crate_credit_boundaries(self) -> None:
+        dust_buster = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5933)]
+        self.assertEqual(
+            "runtime_achievement_5933_dust_buster_exact_objective_team_grant_count_and_crate_death_credit_tested_pending_lost_found_route_spawn_and_client_smoke",
+            dust_buster["evidence_status"],
+        )
+        self.assertIn("Achievement 5933, 'Dust Buster'", dust_buster["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", dust_buster["blocker_summary"])
+        self.assertIn("10-point value", dust_buster["blocker_summary"])
+        self.assertIn("654423/653195/667011", dust_buster["blocker_summary"])
+        self.assertIn("clearing the crates from the Lost and Found Department", dust_buster["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5933 is unrelated", dust_buster["blocker_summary"])
+        self.assertIn("achievement 4357 bit 0 and object 52313", dust_buster["blocker_summary"])
+        self.assertIn("rows 1935 for achievement 2116 bit 6 and 8426 for achievement 5978 bit 7", dust_buster["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5933", dust_buster["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2011", dust_buster["blocker_summary"])
+        self.assertIn("Build objective 2673 is the exact condition boundary", dust_buster["blocker_summary"])
+        self.assertIn("type-21 ResourcePool, count 80", dust_buster["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8137", dust_buster["blocker_summary"])
+        self.assertIn("grants achievement 5933 by explicit ID", dust_buster["blocker_summary"])
+        self.assertIn("failed-2673, and successful Dust Storm 2924 rejection", dust_buster["blocker_summary"])
+        self.assertIn("79 credits stay active, the 80th succeeds", dust_buster["blocker_summary"])
+        self.assertIn("Creature2 62548 is explicitly '[UP] e2673", dust_buster["blocker_summary"])
+        self.assertIn("Jabbithole public-event relation 2191", dust_buster["blocker_summary"])
+        self.assertIn("LostAndFoundCrateEntityScript credits objective 2673 once", dust_buster["blocker_summary"])
+        self.assertIn("does not select or activate objective 2673", dust_buster["blocker_summary"])
+        self.assertIn("81 current-last-seen source coordinates", dust_buster["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", dust_buster["evidence_sources"])
+        self.assertIn("PublicEventObjectiveCreditEntityScriptTests.cs", dust_buster["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", dust_buster["evidence_sources"])
+
+    def test_ultimate_protogames_immortal_lost_and_found_records_exact_no_death_blocker(self) -> None:
+        immortal_lost_and_found = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5934)]
+        self.assertEqual(
+            "mapped_achievement_5934_immortal_lost_and_found_blocked_missing_room_scoped_no_death_state_and_achievement_handoff",
+            immortal_lost_and_found["evidence_status"],
+        )
+        self.assertIn(
+            "Achievement 5934, 'Immortal: Lost and Found Department'",
+            immortal_lost_and_found["blocker_summary"],
+        )
+        self.assertIn("type-12, category-316, WorldZone-4330", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("50-point value", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("654424/653196/667012", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5934 is unrelated", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("achievement 4340 bit 0 and object 52315", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("no checklist row uses objectId or achievementId 5934", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2039", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("provides no exact room-scoped no-death objective", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("objective 2673 is a type-21 ResourcePool count-80", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("Spring Cleaning 2921 is a type-5 Script", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("360000 ms timer", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("object 10569 is TargetGroup 10569", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("sole member is Creature2 62987", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("e2678 - Sneaky Prison - Gate Console", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("activates 2857 only for the Prototentiary route", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("grants Immortal Prototentiary 5906", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("objective 2871 is separately anchored to tank-room", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("WorldLocation2 41754", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("grants Immortal Waste Management Facility 5865", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("successful objectives 2673, 2921, 2857, and 2871 do not grant achievement 5934", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("No grant hook or guessed room-scoped death tracker was added", immortal_lost_and_found["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", immortal_lost_and_found["evidence_sources"])
+        self.assertIn("PublicEventObjective.tbl.sql", immortal_lost_and_found["evidence_sources"])
+        self.assertIn("TargetGroup.tbl.sql", immortal_lost_and_found["evidence_sources"])
+
+    def test_ultimate_protogames_whats_in_the_box_has_exact_grant_timer_and_crate_credit_boundaries(self) -> None:
+        whats_in_the_box = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5935)]
+        self.assertEqual(
+            "runtime_achievement_5935_whats_in_the_box_exact_objective_team_grant_sixty_second_boundary_and_crate_death_credit_tested_pending_random_route_rewards_and_client_smoke",
+            whats_in_the_box["evidence_status"],
+        )
+        self.assertIn("Achievement 5935, 'What's In The Box?'", whats_in_the_box["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", whats_in_the_box["blocker_summary"])
+        self.assertIn("25-point value", whats_in_the_box["blocker_summary"])
+        self.assertIn("655979/653198/667013", whats_in_the_box["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5935 is unrelated", whats_in_the_box["blocker_summary"])
+        self.assertIn("achievement 4349 bit 0 and object 52316", whats_in_the_box["blocker_summary"])
+        self.assertIn("rows 5146 for achievement 3907 bit 3 and 5232 for achievement 3908 bit 26", whats_in_the_box["blocker_summary"])
+        self.assertIn("no checklist row has achievementId 5935 or objectIdAlt 5935", whats_in_the_box["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2072", whats_in_the_box["blocker_summary"])
+        self.assertIn("Build objective 2920 is the exact condition boundary", whats_in_the_box["blocker_summary"])
+        self.assertIn("type-5 Script, count/object 0", whats_in_the_box["blocker_summary"])
+        self.assertIn("60000 ms failure timer", whats_in_the_box["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8190", whats_in_the_box["blocker_summary"])
+        self.assertIn("TargetGroup 10666 is type 1 with sole Creature2 member 62549", whats_in_the_box["blocker_summary"])
+        self.assertIn("public-event creature relation 2184", whats_in_the_box["blocker_summary"])
+        self.assertIn("source creature 28277 'Mondo's Crate'", whats_in_the_box["blocker_summary"])
+        self.assertIn("coordinate 6132219", whats_in_the_box["blocker_summary"])
+        self.assertIn("activates objective 2920 with dynamic max 1", whats_in_the_box["blocker_summary"])
+        self.assertIn("grants achievement 5935 by explicit ID", whats_in_the_box["blocker_summary"])
+        self.assertIn("failed-2920, and successful Monstrosity Massacre 2926 rejection", whats_in_the_box["blocker_summary"])
+        self.assertIn("one crate credit at 59999 ms succeeds", whats_in_the_box["blocker_summary"])
+        self.assertIn("credit at 60000 ms is rejected after failure", whats_in_the_box["blocker_summary"])
+        self.assertIn("MondosCrateEntityScript filters Creature2 62549", whats_in_the_box["blocker_summary"])
+        self.assertIn("five current source-coordinate rows", whats_in_the_box["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", whats_in_the_box["evidence_sources"])
+        self.assertIn("PublicEventObjectiveCreditEntityScriptTests.cs", whats_in_the_box["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", whats_in_the_box["evidence_sources"])
+
+    def test_ultimate_protogames_dust_storm_has_exact_grant_timer_and_ordinary_crate_credit_boundaries(self) -> None:
+        dust_storm = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5936)]
+        self.assertEqual(
+            "runtime_achievement_5936_dust_storm_exact_objective_team_grant_20_in_20_timer_and_crate_death_credit_tested_pending_route_activation_spawn_window_reset_and_client_smoke",
+            dust_storm["evidence_status"],
+        )
+        self.assertIn("Achievement 5936, 'Dust Storm'", dust_storm["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", dust_storm["blocker_summary"])
+        self.assertIn("25-point value", dust_storm["blocker_summary"])
+        self.assertIn("655980/653199/667014", dust_storm["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5936 is unrelated", dust_storm["blocker_summary"])
+        self.assertIn("achievement 4339 bit 0 and object 52314", dust_storm["blocker_summary"])
+        self.assertIn("no checklist row uses objectId, objectIdAlt, or achievementId 5936", dust_storm["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2094", dust_storm["blocker_summary"])
+        self.assertIn("Build objective 2924 is the exact condition boundary", dust_storm["blocker_summary"])
+        self.assertIn("type-5 Script, count 20, object 0", dust_storm["blocker_summary"])
+        self.assertIn("20000 ms failure timer", dust_storm["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8189", dust_storm["blocker_summary"])
+        self.assertIn("rather than cross-event Journey Into OMNICore objective 2942", dust_storm["blocker_summary"])
+        self.assertIn("Creature2 62548 is the ordinary", dust_storm["blocker_summary"])
+        self.assertIn("public-event relation 2191", dust_storm["blocker_summary"])
+        self.assertIn("source crate 28314", dust_storm["blocker_summary"])
+        self.assertIn("81 current-last-seen source coordinates", dust_storm["blocker_summary"])
+        self.assertIn("emits one-shot death credit to both main crate objective 2673 and Dust Storm 2924", dust_storm["blocker_summary"])
+        self.assertIn("TargetGroup 10647 contains both crate rows", dust_storm["blocker_summary"])
+        self.assertIn("grants achievement 5936 by explicit ID", dust_storm["blocker_summary"])
+        self.assertIn("failed-2924, and successful main crate objective 2673 rejection", dust_storm["blocker_summary"])
+        self.assertIn("the 20th at 19999 ms succeeds", dust_storm["blocker_summary"])
+        self.assertIn("credit at 20000 ms is rejected after failure", dust_storm["blocker_summary"])
+        self.assertIn("does not select the Lost and Found route", dust_storm["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", dust_storm["evidence_sources"])
+        self.assertIn("PublicEventObjectiveCreditEntityScriptTests.cs", dust_storm["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", dust_storm["evidence_sources"])
+
+    def test_ultimate_protogames_monstrosity_massacre_uses_exact_timed_child_grant_boundary(self) -> None:
+        monstrosity_massacre = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5937)]
+        self.assertEqual(
+            "runtime_achievement_5937_monstrosity_massacre_exact_timed_child_grant_sixty_second_boundary_and_boss_death_credit_tested_pending_random_route_boss_mechanics_rewards_and_client_smoke",
+            monstrosity_massacre["evidence_status"],
+        )
+        self.assertIn("Achievement 5937, 'Monstrosity Massacre'", monstrosity_massacre["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", monstrosity_massacre["blocker_summary"])
+        self.assertIn("25-point value", monstrosity_massacre["blocker_summary"])
+        self.assertIn("655981/653200/667015", monstrosity_massacre["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5937 is unrelated", monstrosity_massacre["blocker_summary"])
+        self.assertIn("achievement 1473 bit 0 and object 14840", monstrosity_massacre["blocker_summary"])
+        self.assertIn("row 4823 for achievement 3765 bit 2", monstrosity_massacre["blocker_summary"])
+        self.assertIn("no checklist row has achievementId or objectIdAlt 5937", monstrosity_massacre["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 1918", monstrosity_massacre["blocker_summary"])
+        self.assertIn("Main objective 2926 is a type-0 Exterminate challenge", monstrosity_massacre["blocker_summary"])
+        self.assertIn("object/TargetGroup 10657", monstrosity_massacre["blocker_summary"])
+        self.assertIn("sole Creature2 member 62575 Mondo's Monstrosity", monstrosity_massacre["blocker_summary"])
+        self.assertIn("Timed child objective 2941 is the exact achievement handoff boundary", monstrosity_massacre["blocker_summary"])
+        self.assertIn("type-8 TimedWin, count 1, object 0", monstrosity_massacre["blocker_summary"])
+        self.assertIn("60000 ms timer", monstrosity_massacre["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8156", monstrosity_massacre["blocker_summary"])
+        self.assertIn("no inspected Jabbithole objective row independently maps 2926", monstrosity_massacre["blocker_summary"])
+        self.assertIn("public-event creature relation 2415", monstrosity_massacre["blocker_summary"])
+        self.assertIn("source creature 28306", monstrosity_massacre["blocker_summary"])
+        self.assertIn("coordinate 7903034", monstrosity_massacre["blocker_summary"])
+        self.assertIn("activates both objectives 2926 and 2941", monstrosity_massacre["blocker_summary"])
+        self.assertIn("emits one-shot death credit to both rows", monstrosity_massacre["blocker_summary"])
+        self.assertIn("grants achievement 5937 by explicit ID", monstrosity_massacre["blocker_summary"])
+        self.assertIn("failed-2941, and successful main objective 2926 rejection", monstrosity_massacre["blocker_summary"])
+        self.assertIn("one credit at 59999 ms succeeds", monstrosity_massacre["blocker_summary"])
+        self.assertIn("credit at 60000 ms is rejected after failure", monstrosity_massacre["blocker_summary"])
+        self.assertIn("98 current-last-seen source observations", monstrosity_massacre["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", monstrosity_massacre["evidence_sources"])
+        self.assertIn("PublicEventObjectiveCreditEntityScriptTests.cs", monstrosity_massacre["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", monstrosity_massacre["evidence_sources"])
+
+    def test_ultimate_protogames_friend_of_crate_uses_exact_objective_grant_boundary(self) -> None:
+        friend_of_crate = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5938)]
+        self.assertEqual(
+            "runtime_achievement_5938_friend_of_crate_exact_objective_team_grant_and_thirty_second_controller_boundary_tested_producer_blocked_missing_enemy_to_crate_attribution_room_completion_and_client_smoke",
+            friend_of_crate["evidence_status"],
+        )
+        self.assertIn("Achievement 5938, 'Friend of Crate'", friend_of_crate["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", friend_of_crate["blocker_summary"])
+        self.assertIn("25-point value", friend_of_crate["blocker_summary"])
+        self.assertIn("655983/653201/667016", friend_of_crate["blocker_summary"])
+        self.assertIn(
+            "No AchievementChecklist row uses achievementId, objectId, or objectIdAlt 5938",
+            friend_of_crate["blocker_summary"],
+        )
+        self.assertIn("Jabbithole achievement row 1938", friend_of_crate["blocker_summary"])
+        self.assertIn("Build objective 2929 is the exact condition boundary", friend_of_crate["blocker_summary"])
+        self.assertIn("type-13 TimedWin, count/object 0", friend_of_crate["blocker_summary"])
+        self.assertIn("30000 ms failure timer", friend_of_crate["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8162", friend_of_crate["blocker_summary"])
+        self.assertIn("grants achievement 5938 by explicit ID", friend_of_crate["blocker_summary"])
+        self.assertIn(
+            "failed-2929, and successful Spring Cleaning objective 2921 rejection",
+            friend_of_crate["blocker_summary"],
+        )
+        self.assertIn("remains active at 29999 ms", friend_of_crate["blocker_summary"])
+        self.assertIn("fails at 30000 ms and rejects late credit", friend_of_crate["blocker_summary"])
+        self.assertIn("does not expose attacker or damage-source attribution", friend_of_crate["blocker_summary"])
+        self.assertIn("does not select or activate this route", friend_of_crate["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", friend_of_crate["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", friend_of_crate["evidence_sources"])
+
+    def test_ultimate_protogames_weathering_the_storm_uses_exact_objective_grant_boundary(self) -> None:
+        weathering_the_storm = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5939)]
+        self.assertEqual(
+            "runtime_achievement_5939_weathering_the_storm_exact_objective_team_grant_and_five_second_controller_boundary_tested_producer_blocked_missing_storm_cadence_reset_completion_and_client_smoke",
+            weathering_the_storm["evidence_status"],
+        )
+        self.assertIn("Achievement 5939, 'Weathering the Storm'", weathering_the_storm["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", weathering_the_storm["blocker_summary"])
+        self.assertIn("25-point value", weathering_the_storm["blocker_summary"])
+        self.assertIn("655984/653202/667018", weathering_the_storm["blocker_summary"])
+        self.assertIn(
+            "No AchievementChecklist row uses achievementId, objectId, or objectIdAlt 5939",
+            weathering_the_storm["blocker_summary"],
+        )
+        self.assertIn("Jabbithole achievement row 1991", weathering_the_storm["blocker_summary"])
+        self.assertIn("objective 4649 is the exact achievement handoff", weathering_the_storm["blocker_summary"])
+        self.assertIn("type-9 ScriptWithoutCount, count/object 0", weathering_the_storm["blocker_summary"])
+        self.assertIn("5000 ms failure timer", weathering_the_storm["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8186", weathering_the_storm["blocker_summary"])
+        self.assertIn("grants achievement 5939 by explicit ID", weathering_the_storm["blocker_summary"])
+        self.assertIn(
+            "failed-4649, and successful Dust Storm objective 2924 rejection",
+            weathering_the_storm["blocker_summary"],
+        )
+        self.assertIn("remains active at 4999 ms", weathering_the_storm["blocker_summary"])
+        self.assertIn("fails at 5000 ms and rejects late credit", weathering_the_storm["blocker_summary"])
+        self.assertIn("incorrectly complete the challenge on the first crate", weathering_the_storm["blocker_summary"])
+        self.assertIn("does not select or activate the route", weathering_the_storm["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", weathering_the_storm["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", weathering_the_storm["evidence_sources"])
+
+    def test_ultimate_protogames_spring_cleaning_uses_exact_objective_grant_boundary(self) -> None:
+        spring_cleaning = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5940)]
+        self.assertEqual(
+            "runtime_achievement_5940_spring_cleaning_exact_objective_team_grant_and_six_minute_boundary_tested_producer_blocked_missing_crate_enemy_aggregate_route_and_client_smoke",
+            spring_cleaning["evidence_status"],
+        )
+        self.assertIn("Achievement 5940, 'Spring Cleaning'", spring_cleaning["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", spring_cleaning["blocker_summary"])
+        self.assertIn("25-point value", spring_cleaning["blocker_summary"])
+        self.assertIn("655985/653203/667019", spring_cleaning["blocker_summary"])
+        self.assertIn(
+            "No AchievementChecklist row uses achievementId, objectId, or objectIdAlt 5940",
+            spring_cleaning["blocker_summary"],
+        )
+        self.assertIn("Jabbithole achievement row 1975", spring_cleaning["blocker_summary"])
+        self.assertIn("objective 2921 is the exact achievement handoff", spring_cleaning["blocker_summary"])
+        self.assertIn("type-5 Script, count/object 0", spring_cleaning["blocker_summary"])
+        self.assertIn("360000 ms failure timer", spring_cleaning["blocker_summary"])
+        self.assertIn("Jabbithole objective row 8225", spring_cleaning["blocker_summary"])
+        self.assertIn("grants achievement 5940 by explicit ID", spring_cleaning["blocker_summary"])
+        self.assertIn(
+            "failed-2921, and successful main crate objective 2673 rejection",
+            spring_cleaning["blocker_summary"],
+        )
+        self.assertIn("at 359999 ms succeeds", spring_cleaning["blocker_summary"])
+        self.assertIn("fails at 360000 ms and rejects late credit", spring_cleaning["blocker_summary"])
+        self.assertIn("does not select or activate this route", spring_cleaning["blocker_summary"])
+        self.assertIn("Completing 2921 when only objective 2673 succeeds", spring_cleaning["blocker_summary"])
+        self.assertIn("UltimateProtogamesEventScriptTests.cs", spring_cleaning["evidence_sources"])
+        self.assertIn("PublicEventObjectiveTests.cs", spring_cleaning["evidence_sources"])
+
+    def test_ultimate_protogames_doc_in_the_house_uses_exact_medicine_cure_boundary(self) -> None:
+        doc_in_the_house = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5941)]
+        self.assertEqual(
+            "runtime_achievement_5941_doc_in_the_house_exact_medicine_sickness_removal_grant_tested_route_spell_producer_and_client_smoke_blocked",
+            doc_in_the_house["evidence_status"],
+        )
+        self.assertIn("Achievement 5941, 'Doc in the House'", doc_in_the_house["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", doc_in_the_house["blocker_summary"])
+        self.assertIn("10-point value", doc_in_the_house["blocker_summary"])
+        self.assertIn("655986/653204/667024", doc_in_the_house["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5509", doc_in_the_house["blocker_summary"])
+        self.assertIn("unrelated Achievement 4139", doc_in_the_house["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2012", doc_in_the_house["blocker_summary"])
+        self.assertIn("No build or Jabbithole PublicEventObjective row represents this cure", doc_in_the_house["blocker_summary"])
+        self.assertIn("spell 72341 is '[UP] e2673 - Crate Destruction - Sickness - Base'", doc_in_the_house["blocker_summary"])
+        self.assertIn("sickness proxies 72342-72346", doc_in_the_house["blocker_summary"])
+        self.assertIn("Medicine spell 77509", doc_in_the_house["blocker_summary"])
+        self.assertIn("text 640942, 'Cures the sick.'", doc_in_the_house["blocker_summary"])
+        self.assertIn("SpellForceRemove effects 202590-202595", doc_in_the_house["blocker_summary"])
+        self.assertIn("exact spell 77510 actually removes", doc_in_the_house["blocker_summary"])
+        self.assertIn("rejection when medicine removes no sickness", doc_in_the_house["blocker_summary"])
+        self.assertIn("RavelSignal mode 4 / signal 28071", doc_in_the_house["blocker_summary"])
+        self.assertIn("keeps mode 4 diagnostics-only", doc_in_the_house["blocker_summary"])
+        self.assertIn("does not select or activate the route", doc_in_the_house["blocker_summary"])
+        self.assertIn("SpellEffectHandler.cs", doc_in_the_house["evidence_sources"])
+        self.assertIn("SpellEffectCombatRegressionTests.cs", doc_in_the_house["evidence_sources"])
+
+    def test_ultimate_protogames_be_the_rowsdower_uses_exact_polymorph_disguise_boundary(self) -> None:
+        be_the_rowsdower = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5942)]
+        self.assertEqual(
+            "runtime_achievement_5942_be_the_rowsdower_exact_polymorph_disguise_grant_tested_route_transform_source_and_client_smoke_blocked",
+            be_the_rowsdower["evidence_status"],
+        )
+        self.assertIn("Achievement 5942, 'Be The Rowsdower'", be_the_rowsdower["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", be_the_rowsdower["blocker_summary"])
+        self.assertIn("zero points", be_the_rowsdower["blocker_summary"])
+        self.assertIn("655987/653205", be_the_rowsdower["blocker_summary"])
+        self.assertIn("AchievementChecklist row 5942 is unrelated", be_the_rowsdower["blocker_summary"])
+        self.assertIn("Achievement 1480 bit 2", be_the_rowsdower["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2108", be_the_rowsdower["blocker_summary"])
+        self.assertIn("No build or Jabbithole PublicEventObjective row represents this transformation", be_the_rowsdower["blocker_summary"])
+        self.assertIn("spell 72361 is '[UP] e2673 - Crate Destruction - Polymorph - Base'", be_the_rowsdower["blocker_summary"])
+        self.assertIn("Disguise effect 186471 targets Creature2 15176", be_the_rowsdower["blocker_summary"])
+        self.assertIn("display group 24206", be_the_rowsdower["blocker_summary"])
+        self.assertIn("entry 21632 to display 21619", be_the_rowsdower["blocker_summary"])
+        self.assertIn("exact spell-72361 / Creature2-15176 display application", be_the_rowsdower["blocker_summary"])
+        self.assertIn("Rowsdower display row is missing", be_the_rowsdower["blocker_summary"])
+        self.assertIn("RavelSignal mode 4 / signal 28069", be_the_rowsdower["blocker_summary"])
+        self.assertIn("keeps mode 4 diagnostics-only", be_the_rowsdower["blocker_summary"])
+        self.assertIn("does not yet track the 15000 ms expiry", be_the_rowsdower["blocker_summary"])
+        self.assertIn("SpellEffectHandler.cs", be_the_rowsdower["evidence_sources"])
+        self.assertIn("SpellEffectCombatRegressionTests.cs", be_the_rowsdower["evidence_sources"])
+
+    def test_ultimate_protogames_rowsdower_ruckus_uses_exact_ram_crate_kill_boundary(self) -> None:
+        rowsdower_ruckus = audit.INSTANCE_ACHIEVEMENT_DEPENDENCY_OVERRIDES[(2980, 5943)]
+        self.assertEqual(
+            "runtime_achievement_5943_rowsdower_ruckus_exact_rowsdower_ram_crate_kill_grant_tested_route_polymorph_lifecycle_and_client_smoke_blocked",
+            rowsdower_ruckus["evidence_status"],
+        )
+        self.assertIn("Achievement 5943, 'Rowsdower Ruckus'", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("type-12, category-316, WorldZone-4330", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("zero points", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("655988/653206", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("AchievementChecklist row 4519", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("unrelated Achievement 3547 bit 0", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("checklist row 5943 itself belongs to unrelated Achievement 1480", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("Jabbithole achievement row 2113", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("No build or Jabbithole PublicEventObjective row represents", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("ActionBarSet effect 186476 selecting shortcut set 1541", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("shortcut type 6 (Spell)", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("spell 72364, '[UP] e2673 - Crate Destruction - Ram - Polymorph - Base'", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("Ram damage effect 186481", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("Creature2 62548 is the exact", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("exact Ram spell 72364 delivers killing damage", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("nonlethal-hit, unrelated-spell, and wrong-creature rejection", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("do not yet prove the 15000 ms polymorph expiry", rowsdower_ruckus["blocker_summary"])
+        self.assertIn("SpellEffectHandler.Vitals.cs", rowsdower_ruckus["evidence_sources"])
+        self.assertIn("SpellEffectCombatRegressionTests.cs", rowsdower_ruckus["evidence_sources"])
 
     def test_sanctuary_residual_rows_are_split_between_runtime_and_concrete_blockers(self) -> None:
         self.assertEqual(23, len(audit.SANCTUARY_RESIDUAL_OBJECTIVE_IDS))
@@ -7313,7 +12501,7 @@ WHERE `world` = 1 AND `creature` = 9002 AND ABS(`x` - (10.0)) < 0.001 AND ABS(`y
         q3741_crates = next(row for row in rows if row["quest_id"] == 3741 and row["objective_id"] == 4813)
         self.assertEqual("mapped_generic_handler", q3741_crates["support_status"])
         self.assertEqual(
-            "runtime_q3741_supply_crate_spawn_and_virtual_collect_credit_tested_pending_client_smoke",
+            "runtime_q3741_supply_crate_activate_cast_spawn_and_virtual_collect_credit_tested_pending_client_smoke",
             q3741_crates["evidence_status"],
         )
         self.assertEqual(363, q3741_crates["objective_data"])
@@ -7325,7 +12513,7 @@ WHERE `world` = 1 AND `creature` = 9002 AND ABS(`x` - (10.0)) < 0.001 AND ABS(`y
         self.assertIn("source_coordinate_ids 1218, 1219, 1220", q3741_crates["blocker_summary"])
         self.assertIn("115540", q3741_crates["blocker_summary"])
         self.assertIn("2634068", q3741_crates["blocker_summary"])
-        self.assertIn("Creature2 11066 carries Q3741", q3741_crates["blocker_summary"])
+        self.assertIn("visible Durek 11066 accepts and completes", q3741_crates["blocker_summary"])
 
         q3797_kill_targets = next(row for row in rows if row["quest_id"] == 3797 and row["objective_id"] == 4918)
         self.assertEqual("mapped_generic_handler", q3797_kill_targets["support_status"])
@@ -7690,16 +12878,17 @@ WHERE `world` = 1 AND `creature` = 9002 AND ABS(`x` - (10.0)) < 0.001 AND ABS(`y
         for reward_id, item_id, amount in ((1712, 81917, 3), (3476, 29614, 1)):
             q3741_reward = next(row for row in rows if row["quest_id"] == 3741 and row["reward_id"] == reward_id)
             self.assertEqual(
-                "runtime_q3741_fixed_item_rewards_grant_all_tested_pending_client_smoke",
+                "runtime_q3741_fixed_item_rewards_presentation_persistence_staging_and_achievement_checklist_tested_pending_client_smoke",
                 q3741_reward["evidence_status"],
             )
             self.assertIn("Quest2Reward.tbl.sql", q3741_reward["evidence_sources"])
             self.assertIn("Item2.tbl.sql", q3741_reward["evidence_sources"])
             self.assertIn("QuestTests.cs", q3741_reward["evidence_sources"])
             self.assertIn(f"Item2 {item_id} amount {amount}", q3741_reward["blocker_summary"])
-            self.assertIn("visible Land's Reach Commander Durek receiver 11066", q3741_reward["blocker_summary"])
-            self.assertIn("grants all fixed reward rows", q3741_reward["blocker_summary"])
-            self.assertIn("achievement checks for quest 3741", q3741_reward["blocker_summary"])
+            self.assertIn("visible Durek 11066 accepts and completes", q3741_reward["blocker_summary"])
+            self.assertIn("both fixed rewards are presented", q3741_reward["blocker_summary"])
+            self.assertIn("AchievementChecklist 4261 bit 2", q3741_reward["blocker_summary"])
+            self.assertIn("post-relogin inventory proof", q3741_reward["blocker_summary"])
         for reward_id, item_id in ((2192, 27868), (2430, 13332), (4767, 27869)):
             q3886_reward = next(row for row in rows if row["quest_id"] == 3886 and row["reward_id"] == reward_id)
             self.assertEqual(
@@ -9280,7 +14469,7 @@ INSERT INTO `entity_loot` (`id`, `lootGroupId`, `comment`) VALUES
         self.assertIn("26 current reviewed Exile Supply Crate 12919 placements", q3741_supply_crate_member["blocker_summary"])
         self.assertIn("source_coordinate_ids 1218, 1219, 1220", q3741_supply_crate_member["blocker_summary"])
         self.assertIn("2634068", q3741_supply_crate_member["blocker_summary"])
-        self.assertIn("client Creature2 11066 for Land's Reach Durek", q3741_supply_crate_member["blocker_summary"])
+        self.assertIn("visible Durek 11066 accepts and completes", q3741_supply_crate_member["blocker_summary"])
         q3797_receiver_location = next(row for row in rows if row["quest_id"] == 3797 and row["dependency_type"] == "quest_receiver_location")
         self.assertEqual(7727, q3797_receiver_location["world_location_id"])
         self.assertEqual(
@@ -10008,14 +15197,14 @@ INSERT INTO `entity_loot` (`id`, `lootGroupId`, `comment`) VALUES
         self.assertIn("default reputation grants", q3777_checklist["blocker_summary"])
         q3741_checklist = next(row for row in rows if row["quest_id"] == 3741 and row["checklist_id"] == 4261)
         self.assertEqual(
-            "runtime_q3741_achievement_checklist_completion_hooks_tested_pending_client_ui_smoke",
+            "runtime_q3741_achievement_checklist_bit_update_tested_pending_client_ui_smoke",
             q3741_checklist["evidence_status"],
         )
         self.assertIn("AchievementChecklist.tbl.sql", q3741_checklist["evidence_sources"])
         self.assertIn("QuestTests.cs", q3741_checklist["evidence_sources"])
-        self.assertIn("QuestCompleteChecklistCount", q3741_checklist["blocker_summary"])
-        self.assertIn("visible Land's Reach Commander Durek receiver 11066", q3741_checklist["blocker_summary"])
-        self.assertIn("both fixed reward item rows", q3741_checklist["blocker_summary"])
+        self.assertIn("mask 4", q3741_checklist["blocker_summary"])
+        self.assertIn("visible Durek 11066 accepts and completes", q3741_checklist["blocker_summary"])
+        self.assertIn("both fixed rewards are presented", q3741_checklist["blocker_summary"])
         q3886_checklist = next(row for row in rows if row["quest_id"] == 3886 and row["checklist_id"] == 4263)
         self.assertEqual(
             "runtime_q3886_achievement_checklist_completion_hooks_tested_pending_client_ui_smoke",
@@ -10193,13 +15382,13 @@ public class ExampleSpellScript
             self.assertEqual("current_quest", q3741_row["quest_link_status"])
             self.assertEqual("quest_script", q3741_row["script_kind"])
             self.assertEqual(
-                "runtime_q3741_supply_crate_spawn_and_credit_script_tested_pending_client_smoke",
+                "runtime_q3741_full_server_lifecycle_rewards_persistence_staging_and_achievement_tested_pending_client_smoke",
                 q3741_row["evidence_status"],
             )
             self.assertIn("26 current reviewed Exile Supply Crate 12919 placements", q3741_row["blocker_summary"])
             self.assertIn("2634068", q3741_row["blocker_summary"])
-            self.assertIn("Land's Reach Commander Durek Creature2 11066", q3741_row["blocker_summary"])
-            self.assertIn("starter/receiver route", q3741_row["blocker_summary"])
+            self.assertIn("Durek 11066 giver/receiver routing", q3741_row["blocker_summary"])
+            self.assertIn("complete client playthrough", q3741_row["blocker_summary"])
             q3797_row = next(row for row in rows if row["owner_id"] == 3797)
             self.assertEqual("current_quest", q3797_row["quest_link_status"])
             self.assertEqual("quest_script", q3797_row["script_kind"])
@@ -11905,15 +17094,15 @@ public class ExampleSpellScript
             self.assertEqual("426", q3741_crate["datamapping_spawn_worlds"])
             self.assertEqual("597", q3741_crate["datamapping_spawn_areas"])
             self.assertEqual(
-                "runtime_q3741_supply_crate_objective_relation_spawn_and_virtual_collect_credit_tested_pending_client_smoke",
+                "runtime_q3741_supply_crate_activate_cast_objective_relation_spawn_and_virtual_collect_credit_tested_pending_client_smoke",
                 q3741_crate["evidence_status"],
             )
             self.assertIn("TargetGroup 4372", q3741_crate["blocker_summary"])
             self.assertIn("26 current reviewed Exile Supply Crate 12919 placements", q3741_crate["blocker_summary"])
             self.assertIn("source_coordinate_ids 1218, 1219, 1220", q3741_crate["blocker_summary"])
             self.assertIn("2634068", q3741_crate["blocker_summary"])
-            self.assertIn("Land's Reach Durek fallback", q3741_crate["blocker_summary"])
-            self.assertIn("Creature2 11066", q3741_crate["blocker_summary"])
+            self.assertIn("visible Durek 11066 accepts and completes", q3741_crate["blocker_summary"])
+            self.assertIn("activate spell 1817", q3741_crate["blocker_summary"])
             q3797_durek_starter = next(row for row in rows if row["quest_id"] == 3797 and row["relation_type"] == "starter")
             self.assertEqual(11066, q3797_durek_starter["creature2_id"])
             self.assertEqual(1, q3797_durek_starter["datamapping_spawn_count"])
@@ -14259,6 +19448,16 @@ public class ExampleEventScript
                         "jabbithole_creature_id,creature2_id,source_name,client_name,match_status,entity_type,creature_type,zone_id,worldid,worldzoneid,review_decision",
                         "1,100,Source Portal,Reviewed Portal,reviewed,14,InstancePortal,2,51,1000,approved",
                         "2,101,Source Portal,Candidate Portal,unique_name,14,InstancePortal,3,52,1001,",
+                        "788,40770,Leave Stormtalon's Lair,Leave Stormtalon's Lair,unique_name,14,InstancePortal,15,382,271,",
+                        "12396,32419,Leave Skullcano,Leave Skullcano,reviewed,14,InstancePortal,16,1263,1220,approved",
+                        "734,46014,Leave Space Station Venture,Leave Space Station Venture,ambiguous_name,14,InstancePortal,63,2149,2483,",
+                        "17435,23596,Return to Nexus,Return to Nexus,ambiguous_name,14,InstancePortal,109,2183,2620,",
+                        "9475,48933,Leave The Gauntlet,Leave The Gauntlet,unique_name,14,InstancePortal,110,2183,2613,",
+                        "6860,41148,Leave the Sanctuary of the Swordmaiden,Leave the Sanctuary of the Swordmaiden,unique_name,14,InstancePortal,53,1271,2260,",
+                        "1961,40771,Leave the Ruins of Kel Voreth,Leave the Ruins of Kel Voreth,unique_name,14,InstancePortal,17,1336,1661,",
+                        "20057,52412,Exit the Sanctuary of the Swordmaiden,Exit the Sanctuary of the Swordmaiden,unique_name,14,InstancePortal,53,1271,1553,",
+                        "28122,69013,Transport from Fragment Zero,Transport from Fragment Zero,unique_name,14,InstancePortal,144,3180,4619,",
+                        "28307,67513,Exit the Ultimate Protogames,Exit the Ultimate Protogames,unique_name,14,InstancePortal,198,2980,4376,",
                     ]
                 )
                 + "\n",
@@ -14268,26 +19467,66 @@ public class ExampleEventScript
                 1000: "Portal A",
                 1001: "Portal B",
                 1002: "Portal C",
+                1003: "Leave the Ruins of Kel Voreth",
+                1004: "Exit the Protogames",
+                1005: "Leave Stormtalon's Lair",
+                1006: "Leave the Sanctuary of the Swordmaiden",
+                1007: "Leave the Sanctuary of the Swordmaiden",
+                1008: "Fragment Zero",
+                1009: "Leave Skullcano",
+                1010: "Exit",
+                1011: "Exit",
+                1012: "Exit",
                 2000: "Reviewed Portal",
                 2001: "Candidate Portal",
                 2002: "Client Only Portal",
                 2003: "Missing Definition Portal",
+                2004: "Leave the Ruins of Kel Voreth",
+                2005: "Exit the Ultimate Protogames",
+                2006: "Leave Stormtalon's Lair",
+                2007: "Exit the Sanctuary of the Swordmaiden",
+                2008: "Leave the Sanctuary of the Swordmaiden",
+                2009: "Transport from Fragment Zero",
+                2010: "Leave Skullcano",
+                2011: "Return to Nexus",
+                2012: "Leave The Gauntlet",
+                2013: "Leave Space Station Venture",
             }
             instance_portals = [
                 {"ID": "10", "localizedTextIdName": "1000", "minLevel": "10", "maxLevel": "50", "expectedCompletionTime": "30", "instancePortalTypeEnum": "1"},
                 {"ID": "11", "localizedTextIdName": "1001", "minLevel": "1", "maxLevel": "1", "expectedCompletionTime": "0", "instancePortalTypeEnum": "2"},
                 {"ID": "12", "localizedTextIdName": "1002", "minLevel": "0", "maxLevel": "0", "expectedCompletionTime": "0", "instancePortalTypeEnum": "3"},
+                {"ID": "42", "localizedTextIdName": "1003", "minLevel": "0", "maxLevel": "0", "expectedCompletionTime": "0", "instancePortalTypeEnum": "3"},
+                {"ID": "152", "localizedTextIdName": "1004", "minLevel": "0", "maxLevel": "0", "expectedCompletionTime": "0", "instancePortalTypeEnum": "3"},
+                {"ID": "41", "localizedTextIdName": "1005", "minLevel": "0", "maxLevel": "0", "expectedCompletionTime": "0", "instancePortalTypeEnum": "3"},
+                {"ID": "51", "localizedTextIdName": "1006", "minLevel": "0", "maxLevel": "0", "expectedCompletionTime": "0", "instancePortalTypeEnum": "2"},
+                {"ID": "53", "localizedTextIdName": "1007", "minLevel": "0", "maxLevel": "0", "expectedCompletionTime": "0", "instancePortalTypeEnum": "3"},
+                {"ID": "185", "localizedTextIdName": "1008", "minLevel": "6", "maxLevel": "50", "expectedCompletionTime": "20", "instancePortalTypeEnum": "3"},
+                {"ID": "27", "localizedTextIdName": "1009", "minLevel": "0", "maxLevel": "0", "expectedCompletionTime": "0", "instancePortalTypeEnum": "3"},
+                {"ID": "16", "localizedTextIdName": "1010", "minLevel": "0", "maxLevel": "0", "expectedCompletionTime": "0", "instancePortalTypeEnum": "3"},
+                {"ID": "71", "localizedTextIdName": "1011", "minLevel": "0", "maxLevel": "0", "expectedCompletionTime": "0", "instancePortalTypeEnum": "3"},
+                {"ID": "62", "localizedTextIdName": "1012", "minLevel": "0", "maxLevel": "0", "expectedCompletionTime": "0", "instancePortalTypeEnum": "3"},
             ]
             creatures = [
                 {"ID": "100", "localizedTextIdName": "2000", "instancePortalId": "10", "minLevel": "10", "maxLevel": "10"},
                 {"ID": "101", "localizedTextIdName": "2001", "instancePortalId": "10", "minLevel": "11", "maxLevel": "11"},
                 {"ID": "102", "localizedTextIdName": "2002", "instancePortalId": "11", "minLevel": "1", "maxLevel": "1"},
                 {"ID": "103", "localizedTextIdName": "2003", "instancePortalId": "99", "minLevel": "1", "maxLevel": "1"},
+                {"ID": "40771", "localizedTextIdName": "2004", "instancePortalId": "42", "minLevel": "1", "maxLevel": "1"},
+                {"ID": "67513", "localizedTextIdName": "2005", "instancePortalId": "152", "minLevel": "1", "maxLevel": "1"},
+                {"ID": "40770", "localizedTextIdName": "2006", "instancePortalId": "41", "minLevel": "1", "maxLevel": "1"},
+                {"ID": "52412", "localizedTextIdName": "2007", "instancePortalId": "51", "minLevel": "1", "maxLevel": "1"},
+                {"ID": "41148", "localizedTextIdName": "2008", "instancePortalId": "53", "minLevel": "1", "maxLevel": "1"},
+                {"ID": "69013", "localizedTextIdName": "2009", "instancePortalId": "185", "minLevel": "1", "maxLevel": "1"},
+                {"ID": "32419", "localizedTextIdName": "2010", "instancePortalId": "27", "minLevel": "1", "maxLevel": "1"},
+                {"ID": "23596", "localizedTextIdName": "2011", "instancePortalId": "16", "minLevel": "1", "maxLevel": "1"},
+                {"ID": "48933", "localizedTextIdName": "2012", "instancePortalId": "71", "minLevel": "1", "maxLevel": "1"},
+                {"ID": "46014", "localizedTextIdName": "2013", "instancePortalId": "62", "minLevel": "1", "maxLevel": "1"},
             ]
 
             rows = audit.build_instance_portal_evidence_rows(strings, instance_portals, creatures, csv_root)
 
-            self.assertEqual(5, len(rows))
+            self.assertEqual(15, len(rows))
             reviewed = next(row for row in rows if row["creature2_id"] == 100)
             self.assertEqual("reviewed_datamapping_creature_bridge", reviewed["datamapping_bridge_status"])
             self.assertEqual("reviewed_instance_portal_creature_pending_entry_smoke", reviewed["evidence_status"])
@@ -14302,6 +19541,136 @@ public class ExampleEventScript
             unlinked_definition = next(row for row in rows if row["evidence_kind"] == "instance_portal_definition")
             self.assertEqual(12, unlinked_definition["instance_portal_id"])
             self.assertEqual("client_instance_portal_definition_without_creature_link_blocked", unlinked_definition["evidence_status"])
+            ruins_portal = next(row for row in rows if row["creature2_id"] == 40771)
+            self.assertEqual("reviewed_datamapping_creature_bridge", ruins_portal["datamapping_bridge_status"])
+            self.assertEqual(
+                "reviewed_runtime_seed_placement_pending_exit_behavior_client_smoke",
+                ruins_portal["runtime_placement_status"],
+            )
+            self.assertEqual(1000009115, ruins_portal["runtime_entity_id"])
+            self.assertEqual(9115, ruins_portal["runtime_source_coordinate_id"])
+            self.assertEqual(
+                "implemented_instance_portal_placement_model_pending_exit_behavior_client_smoke",
+                ruins_portal["evidence_status"],
+            )
+            self.assertIn("portal activation/exit semantics", ruins_portal["blocker_summary"])
+            protogames_portal = next(row for row in rows if row["creature2_id"] == 67513)
+            self.assertEqual("reviewed_datamapping_creature_bridge", protogames_portal["datamapping_bridge_status"])
+            self.assertEqual(
+                "reviewed_runtime_seed_placement_pending_exit_behavior_client_smoke",
+                protogames_portal["runtime_placement_status"],
+            )
+            self.assertEqual(1006132630, protogames_portal["runtime_entity_id"])
+            self.assertEqual(6132630, protogames_portal["runtime_source_coordinate_id"])
+            self.assertEqual(
+                "implemented_instance_portal_placement_model_pending_exit_behavior_client_smoke",
+                protogames_portal["evidence_status"],
+            )
+            self.assertIn("portal activation/exit semantics", protogames_portal["blocker_summary"])
+            stormtalon_portal = next(row for row in rows if row["creature2_id"] == 40770)
+            self.assertEqual("reviewed_datamapping_creature_bridge", stormtalon_portal["datamapping_bridge_status"])
+            self.assertEqual(
+                "reviewed_runtime_seed_placement_pending_exit_behavior_client_smoke",
+                stormtalon_portal["runtime_placement_status"],
+            )
+            self.assertEqual(1000003084, stormtalon_portal["runtime_entity_id"])
+            self.assertEqual(3084, stormtalon_portal["runtime_source_coordinate_id"])
+            self.assertEqual(
+                "implemented_instance_portal_placement_model_pending_exit_behavior_client_smoke",
+                stormtalon_portal["evidence_status"],
+            )
+            self.assertIn("portal activation/exit semantics", stormtalon_portal["blocker_summary"])
+            sanctuary_portal = next(row for row in rows if row["creature2_id"] == 52412)
+            self.assertEqual(
+                "mapped_only_multiple_noncurrent_coordinate_candidates",
+                sanctuary_portal["runtime_placement_status"],
+            )
+            self.assertEqual("", sanctuary_portal["runtime_entity_id"])
+            self.assertEqual("", sanctuary_portal["runtime_source_coordinate_id"])
+            self.assertEqual(
+                "mapped_sanctuary_exit_portal_placement_blocked_multiple_noncurrent_coordinates",
+                sanctuary_portal["evidence_status"],
+            )
+            self.assertIn("source coordinate 1846955", sanctuary_portal["blocker_summary"])
+            self.assertIn("source coordinate 2558908", sanctuary_portal["blocker_summary"])
+            self.assertIn("Neither row is current-last-seen 7", sanctuary_portal["blocker_summary"])
+            sanctuary_current_portal = next(row for row in rows if row["creature2_id"] == 41148)
+            self.assertEqual(
+                "reviewed_runtime_seed_placement_pending_exit_behavior_client_smoke",
+                sanctuary_current_portal["runtime_placement_status"],
+            )
+            self.assertEqual(1005221261, sanctuary_current_portal["runtime_entity_id"])
+            self.assertEqual(5221261, sanctuary_current_portal["runtime_source_coordinate_id"])
+            self.assertEqual(
+                "implemented_instance_portal_placement_model_pending_exit_behavior_client_smoke",
+                sanctuary_current_portal["evidence_status"],
+            )
+            fragment_zero_portal = next(row for row in rows if row["creature2_id"] == 69013)
+            self.assertEqual(
+                "reviewed_runtime_seed_placement_pending_exit_behavior_client_smoke",
+                fragment_zero_portal["runtime_placement_status"],
+            )
+            self.assertEqual(1006129819, fragment_zero_portal["runtime_entity_id"])
+            self.assertEqual(6129819, fragment_zero_portal["runtime_source_coordinate_id"])
+            self.assertEqual(
+                "implemented_instance_portal_placement_model_pending_exit_behavior_client_smoke",
+                fragment_zero_portal["evidence_status"],
+            )
+            skullcano_portal = next(row for row in rows if row["creature2_id"] == 32419)
+            self.assertEqual(
+                "reviewed_runtime_seed_placement_pending_exit_behavior_client_smoke",
+                skullcano_portal["runtime_placement_status"],
+            )
+            self.assertEqual("1000285998;1000415265", skullcano_portal["runtime_entity_id"])
+            self.assertEqual("285998;415265", skullcano_portal["runtime_source_coordinate_id"])
+            self.assertEqual(1263, skullcano_portal["runtime_world_id"])
+            self.assertEqual(1220, skullcano_portal["runtime_area_id"])
+            self.assertEqual(
+                "implemented_instance_portal_placement_model_pending_exit_behavior_client_smoke",
+                skullcano_portal["evidence_status"],
+            )
+            self.assertIn("entities 1000285998;1000415265", skullcano_portal["blocker_summary"])
+            gauntlet_return_portal = next(row for row in rows if row["creature2_id"] == 23596)
+            self.assertEqual(
+                "mapped_only_current_coordinate_ambiguous_between_two_portal16_models",
+                gauntlet_return_portal["runtime_placement_status"],
+            )
+            self.assertEqual("", gauntlet_return_portal["runtime_entity_id"])
+            self.assertEqual(
+                "mapped_gauntlet_return_portal_placement_blocked_two_portal16_models",
+                gauntlet_return_portal["evidence_status"],
+            )
+            self.assertIn("source coordinate 964413", gauntlet_return_portal["blocker_summary"])
+            self.assertIn("Creature2 23596 and Creature2 36660", gauntlet_return_portal["blocker_summary"])
+            self.assertIn("runtime entity 1000964413 is not promoted", gauntlet_return_portal["blocker_summary"])
+            gauntlet_exit_portal = next(row for row in rows if row["creature2_id"] == 48933)
+            self.assertEqual(
+                "reviewed_runtime_seed_placement_pending_exit_behavior_client_smoke",
+                gauntlet_exit_portal["runtime_placement_status"],
+            )
+            self.assertEqual(1000107802, gauntlet_exit_portal["runtime_entity_id"])
+            self.assertEqual(107802, gauntlet_exit_portal["runtime_source_coordinate_id"])
+            self.assertEqual(2183, gauntlet_exit_portal["runtime_world_id"])
+            self.assertEqual(2613, gauntlet_exit_portal["runtime_area_id"])
+            self.assertEqual(
+                "implemented_instance_portal_placement_model_pending_exit_behavior_client_smoke",
+                gauntlet_exit_portal["evidence_status"],
+            )
+            space_madness_portal = next(row for row in rows if row["creature2_id"] == 46014)
+            self.assertEqual(
+                "mapped_only_current_coordinate_ambiguous_between_two_flag_variants",
+                space_madness_portal["runtime_placement_status"],
+            )
+            self.assertEqual("", space_madness_portal["runtime_entity_id"])
+            self.assertEqual(
+                "mapped_space_madness_exit_portal_placement_blocked_two_flag_variants",
+                space_madness_portal["evidence_status"],
+            )
+            self.assertIn("source coordinate 16830", space_madness_portal["blocker_summary"])
+            self.assertIn("Creature2 46014 and Creature2 46015", space_madness_portal["blocker_summary"])
+            self.assertIn("flags 77971 / uiFlags 47", space_madness_portal["blocker_summary"])
+            self.assertIn("flags 16855443 / uiFlags 4271", space_madness_portal["blocker_summary"])
+            self.assertIn("runtime entity 1000016830 is not promoted", space_madness_portal["blocker_summary"])
             self.assertTrue(all(row["completion_status"] == "not_retail_complete" for row in rows))
         finally:
             shutil.rmtree(csv_root, ignore_errors=True)
@@ -14651,6 +20020,23 @@ namespace NexusForever.Script.Instance.Example.Script
                 row = rows_by_key[key]
                 self.assertEqual(expected_status, row["evidence_status"])
                 self.assertTrue(audit.is_script_objective_producer_blocker(row))
+                self.assertIn("count/object/world-location/target-group all zero", row["blocker_summary"])
+                self.assertIn("do not justify a runtime credit, failure, or scoring producer", row["blocker_summary"])
+                self.assertIn("objective activate/update/status packets", row["blocker_summary"])
+                self.assertIn("wrong-objective negative cases", row["blocker_summary"])
+                self.assertIn("wildstar_client_mysql/World.tbl.sql", row["evidence_sources"])
+                self.assertIn("wildstar_client_mysql/MatchingGameMap.tbl.sql", row["evidence_sources"])
+                self.assertIn("wildstar_client_mysql/Creature2.tbl.sql", row["evidence_sources"])
+                self.assertIn("Decomp/Analysis/BLOCKER_EVIDENCE_PLAN.md", row["evidence_sources"])
+
+        instance_blocker = audit.SCRIPTED_INSTANCE_BLOCKERS[3041]
+        self.assertIn("World 3041 is type 9", instance_blocker)
+        self.assertIn("no direct MatchingGameMap row", instance_blocker)
+        self.assertIn("World 2980 is type 11", instance_blocker)
+        self.assertIn("count/object/world-location/target-group all zero", instance_blocker)
+        self.assertIn("Creature2 61420 exposes action-set 0", instance_blocker)
+        self.assertIn("live transition capture from World 2980 to 3041", instance_blocker)
+        self.assertNotIn("retail-complete", instance_blocker)
 
     def test_script_objective_producer_overrides_clear_evil_ether_medbay_generator_rows(self) -> None:
         strings = {

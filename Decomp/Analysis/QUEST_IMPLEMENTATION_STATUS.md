@@ -2047,10 +2047,35 @@ Land's Reach Commander Durek (`11066`) for the Q3741 starter/receiver route at
 WL `7727`; reviewed DataMapping rows that point at `11061` remain ambiguous
 compatibility evidence. The generated tracker records the matching objective,
 indicator, target-group member, script, and creature-relation rows as runtime
-evidence. Q3741 remains pending for client-visible crate activation/UI smoke,
-live density proof for mapped older row `2634068`, exact respawn/despawn
-behavior, Durek dialog/client smoke, reward UI/inventory persistence and
-achievement UI smoke, and end-to-end Q3741 smoke.
+evidence.
+
+Supplemental update: 2026-07-30 Q3741 focused server lifecycle closure and
+live-client blocker recheck. Focused tests now exercise Creature2 `12919`
+through the actual client activation handler with build 16042 activate spell
+`1817`; reject missing, achieved, completed, and duplicate crate credit; accept
+Q3741 at visible Durek `11066`; activate six distinct crates to move objective
+`4813` from accepted to achieved; complete at visible Durek; grant Item2
+`81917` x3 and `29614` x1; emit `ServerItemAdd` for both rewards; stage both
+items as added `ItemModel` rows through `Inventory.Save`; and update the real
+`CharacterAchievementManager` so AchievementChecklist row `4261` sets bit 2
+(mask `4`) on achievement `3490` without falsely completing the episode.
+Focused Q3741 tests pass `11/11`, and the three directly affected test classes
+pass `305/305`.
+
+Q3741 is still not retail-complete. The current runtime database has `23`
+Creature2 `12919` entity rows while the generated DataMapping evidence lists
+`26` current reviewed placements, and the older
+`source_coordinate_id=2634068` / `coordinate_last_seen_in=4` row remains
+unresolved. Live validation is still blocked at the elevated client-launch
+boundary: the repaired client executable was found, but current connector and
+direct-launch attempts exit before login or require a user-approved elevation
+surface that automation cannot approve. The next authorized live pass must
+capture the crate cast bar and VirtualCollect UI, density and exact
+respawn/despawn behavior, Durek accept/completion dialogs, reward panel plus
+post-relogin inventory persistence, achievement toast/journal state, the
+configured missing-objective, wrong-world/objective, and
+repeat-after-completion negatives, objective/zone/creature bridge review, and
+a complete Q3741 playthrough.
 
 Supplemental update: 2026-06-12 F-022 Q3797 Securing the Area server playability evidence.
 Q3797 (`Securing the Area`) now has focused-test-backed server-side availability
@@ -2755,6 +2780,28 @@ Remaining gameplay verification:
 - Tutorial quests `10513..10541` can be active, tracked, and objective-synced, but they are not ordinary browseable quest-log/Codex rows in the stock client.
 - Probe result: after moving `ServerQuestInit` to the post-`ClientEnteredWorld` bootstrap and replaying quest state/objective deltas, an injected comparison quest (`6708`) appeared in the Codex while the Rider's Reef chain still did not.
 - Client data cause: the Rider's Reef rows in `wildstar_client.Quest2` have `groupId = 0`, `questCategoryId = 0`, `questContentFinderTypeEnum = 0`, and no `EpisodeQuest` rows. Treat them as HUD task-style tutorial content unless client tables or client UI logic are patched.
+
+Supplemental update: 2026-07-28 F-022 Q3741 client-smoke prerequisite
+interruption.
+
+Q3741 (`Scattered Supplies`) remains server-implemented but not
+retail-complete. The row-specific pass reached character selection and Rider's
+Reef world entry, where live client/server logs exposed two separate F-025
+packet-lifecycle regressions before travel to Northern Wilds: pre-world
+owning-player `0x0935`/`0x0938` stat reflection and client-controlled scale
+`0x0638` self reflection. Both paths now have narrow source corrections and
+focused lifecycle coverage passing `20/20`. The original interrupted pass used
+the old binaries and did not reach Q3741. A follow-up on the repaired
+default-output DLL completed two character-select/world-entry cycles and two
+tutorial vehicle transitions across worlds `426` and `51` with movement
+acknowledgements and no invalid/foreign or malformed packet entry. That clears
+the F-025 prerequisite defect, but no Q3741 crate/dialog/reward interaction was
+executed. The evidence bundle is
+`artifacts/blocker_evidence/20260728-213227-quest-3741-scattered-supplies`.
+Q3741 retains `client_smoke` as its blocker: crate activation/UI, exact
+respawn/despawn timing, Durek dialog, fixed-reward inventory persistence,
+achievement UI, end-to-end completion, and live density proof for mapped older
+coordinate `2634068` remain unverified.
 
 ## Blocked objective families (remaining)
 

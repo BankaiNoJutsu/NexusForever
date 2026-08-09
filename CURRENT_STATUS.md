@@ -1,6 +1,6192 @@
 # NexusForever Feature Restoration - Current Status
 
-Latest supplemental update: 2026-06-28 CEST Northern Wilds challenge runtime-zone activation bridge.
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5942 Be The Rowsdower exact polymorph closure.
+
+Queue-rank-`13` blocker-rank-`187` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, zero-point achievement to becoming a Rowsdower
+in the Lost and Found Department. AchievementChecklist row `5942` is
+unrelated: it belongs to Achievement `1480`, bit `2`, object `14852`; no
+checklist row has achievement, object, or alternate-object ID `5942`.
+Jabbithole achievement row `2108` independently agrees on the ID, condition,
+count, points, and zone. No build or Jabbithole public-event objective
+represents this player-local transformation.
+
+The exact boundary is spell-backed. E2673 Crate Destruction polymorph spell
+`72361` has Disguise effect `186471`, which targets Creature2 `15176` for
+15 seconds. That creature row is explicitly a Rowsdower with localized name
+`136138`, display group `24206`, and display entry `21632` resolving to
+display `21619`.
+
+`SpellEffectHandler` now grants achievement `5942` to the transformed player
+only after exact spell `72361` successfully resolves Creature2 `15176` and
+applies its display, when the achievement exists and is not already complete.
+Focused tests cover the positive display/grant plus rejection when the
+Rowsdower display row is missing and when an unrelated Rowsdower polymorph
+applies the same Creature2 display.
+
+Spell `72361` also emits RavelSignal mode `4` / signal `28069`; the
+conservative receiver boundary remains diagnostics-only for mode `4` and was
+not widened. This implements the exact transformation-to-grant handoff, not
+the Lost and Found polymorph encounter. The current controller does not
+select or activate this route, identify the crate or source that casts
+`72361`, or own transformation targeting. The generic Disguise handler also
+does not track the 15-second expiry or restore the prior display. Those
+producers and lifecycle semantics, duplicate/reapplication and
+reset/retry/wipe/replay/reconnect behavior, signal routing, rewards,
+persistence/relogin, notification UI, and client smoke remain explicit
+blockers.
+
+The broader row slice passes `369/369` C# tests, and all `218` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,482` rows /
+`1,787` blocker rows and exposes achievement `5943` as the next unprocessed
+evidence-ranked blocker (`188`). Script-event evidence remains `1,857` rows
+and script-runtime-action evidence remains `211` rows. The known unrelated
+full-suite runtime-seed entity-`1099000004` failure remains outside this
+slice.
+
+This is an **implemented exact Rowsdower-disguise achievement grant**, not an
+implemented or retail-complete Lost and Found polymorph encounter.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5941 Doc in the House exact medicine-cure closure.
+
+Queue-rank-`13` blocker-rank-`186` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 10-point achievement to curing the player's
+sickness in the Lost and Found Department. AchievementChecklist row `5509`
+uses object ID `5941` only for unrelated Achievement `4139`, Quest Finder:
+Deradune, bit `8`; no checklist row has achievement ID or alternate-object ID
+`5941`. Jabbithole achievement row `2012` independently agrees on the ID,
+condition, count, points, and zone. No build or Jabbithole public-event
+objective represents this player-local cure.
+
+The build instead provides an exact spell chain. Sickness base spell `72341`
+uses ProxyRandomExclusive effect `186387` to select one of sickness proxies
+`72342`-`72346`; their effects `186388`-`186392` apply Disorient, Blind,
+Subdue, Knockdown, or Stun. Medicine spell `77509` belongs to the same
+`[UP] e2673 - Crate Destruction` family, lasts 30 seconds, and exposes text
+`640942`, “Cures the sick.” Proxy effect `202589` casts `77510`, whose six
+SpellForceRemove effects `202590`-`202595` target exact spells
+`72341`-`72346` with remove type `2`.
+
+`SpellEffectHandler` now grants achievement `5941` to the cured player only
+when exact spell `77510` actually removes at least one tracked
+`72341`-`72346` state, the achievement exists, and it is not already
+complete. Focused tests cover the positive tracked removal plus rejection
+when medicine removes no sickness and when an unrelated force-remove spell
+reports the same removed state.
+
+Medicine also emits RavelSignal mode `4` / signal `28071`; the conservative
+receiver boundary remains diagnostics-only for mode `4` and was not widened.
+This implements the exact player-local cure-to-grant handoff, not the Lost
+and Found encounter producer. The current controller does not select or
+activate this route, spawn the medicine source, apply sickness `72341`, cast
+`77509` on the intended player, own medicine targeting/despawn, or prove the
+signal-`28071` receiver. Those producers, duplicate/reapplication and
+reset/retry/wipe/replay/reconnect behavior, rewards, persistence/relogin,
+notification UI, and client smoke remain explicit blockers.
+
+The broader row slice passes `366/366` C# tests, and all `217` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,482` rows /
+`1,787` blocker rows and exposes achievement `5942` as the next unprocessed
+evidence-ranked blocker (`187`). Script-event evidence remains `1,857` rows
+and script-runtime-action evidence remains `211` rows. The known unrelated
+full-suite runtime-seed entity-`1099000004` failure remains outside this
+slice.
+
+This is an **implemented exact tracked-sickness-removal achievement grant**,
+not an implemented or retail-complete Lost and Found sickness/medicine
+encounter.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5940 Spring Cleaning exact grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`185` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to clearing the Lost and
+Found Department of crates and enemies within its time limit. No
+AchievementChecklist row uses achievement, object, or alternate-object ID
+`5940`. Jabbithole achievement row `1975` independently agrees on the ID,
+condition, count, points, and zone.
+
+Build objective `2921` is the exact achievement handoff: event `594`, flags
+`4`, public team `1`, text IDs `591590/591591`, type-`5` Script,
+count/object `0`, WorldLocation2 `41745`, optional category `1`, and a
+`360000` ms failure timer. Jabbithole objective row `8225` under Ultimate
+Protogames row `299` independently preserves game objective `2921` and the
+same condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5940` by explicit ID
+to eligible online objective-team members only when `2921` succeeds.
+Focused tests cover the eligible member plus completed, offline, failed
+`2921`, and successful main-crate objective `2673` rejection. The generic
+controller boundary is pinned: `2921` remains active at `359999` ms and
+accepts explicit success, while a fresh row fails at `360000` ms and rejects
+late credit.
+
+This implements only the exact achievement handoff. Objective `2921` has no
+count, object, or TargetGroup that identifies the required simultaneous crate
+and enemy roster. The current controller does not select or activate this
+route, spawn ordinary crates, swarmlings, or interns, track the aggregate
+remaining set, or emit terminal success. Completing `2921` from main-crate
+objective `2673` alone would omit the enemies and invent the retail
+completion contract. Those producers, failure/reset ordering, cleanup/replay,
+rewards, medals, persistence, UI, and client smoke remain explicit blockers.
+
+The broader row slice passes `363/363` C# tests, and all `216` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,482` rows /
+`1,787` blocker rows and exposes achievement `5941` as the next unprocessed
+evidence-ranked blocker (`186`). Script-event evidence is now `1,857` rows
+and script-runtime-action evidence remains `211` rows. The known unrelated
+full-suite runtime-seed entity-`1099000004` failure remains outside this
+slice.
+
+This is an **implemented exact objective-success achievement grant with a
+tested six-minute generic controller boundary**, not an implemented or
+retail-complete crate-and-enemy aggregate challenge.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5939 Weathering the Storm exact grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`184` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to completing the
+Thunderdome optional objective by destroying a crate every five seconds
+during the Lost and Found Department storm. No AchievementChecklist row uses
+achievement, object, or alternate-object ID `5939`. Jabbithole achievement
+row `1991` independently agrees on the ID, condition, count, points, and zone.
+
+Build objective `4649` is the exact achievement handoff: event `594`, flags
+`4`, public team `1`, text IDs `641070/641071`, type-`9`
+ScriptWithoutCount, count/object `0`, WorldLocation2 `41745`, optional
+category `1`, and a `5000` ms failure timer. Jabbithole objective row `8186`
+under Ultimate Protogames row `299` independently preserves game objective
+`4649` and the same condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5939` by explicit ID
+to eligible online objective-team members only when `4649` succeeds.
+Focused tests cover the eligible member plus completed, offline,
+failed-`4649`, and successful Dust Storm objective `2924` rejection. The
+generic controller boundary is pinned: pre-activation credit is ignored,
+`4649` remains active at `4999` ms and accepts one explicit success credit,
+while a fresh row fails at `5000` ms and rejects late credit.
+
+This implements only the exact achievement handoff. Directly adding `4649`
+to `LostAndFoundCrateEntityScript` would incorrectly complete the challenge
+on the first crate instead of maintaining or resetting the cadence through
+storm completion. The controller does not select or activate the route, spawn
+the crate set, start the storm, determine qualifying crates, reset or extend
+successive windows, persist failure, or emit terminal success. Static storm
+assets and a mode-`4` Ravel signal do not establish those semantics. Those
+producers, cleanup/replay, rewards, medals, persistence, UI, and client smoke
+remain explicit blockers.
+
+The broader row slice passes `360/360` C# tests, and all `215` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,481` rows /
+`1,787` blocker rows and exposes achievement `5940` as the next unprocessed
+evidence-ranked blocker (`185`). Script-event evidence is now `1,856` rows
+and script-runtime-action evidence remains `211` rows. The known unrelated
+full-suite runtime-seed entity-`1099000004` failure remains outside this
+slice.
+
+This is an **implemented exact objective-success achievement grant with a
+tested five-second generic controller boundary**, not an implemented or
+retail-complete storm-cadence challenge.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5938 Friend of Crate exact grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`183` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to completing Friend of
+Crate without allowing enemies to destroy any crates during the Lost and
+Found Department time limit. No AchievementChecklist row uses achievement,
+object, or alternate-object ID `5938`. Jabbithole achievement row `1938`
+independently agrees on the ID, condition, count, points, and zone.
+
+Build objective `2929` is the exact condition boundary: event `594`, flags
+`4`, public team `1`, text IDs `591779/591780` (“Don't allow any enemy
+creatures to destroy crates during the time limit”), type-`13` TimedWin,
+count/object `0`, WorldLocation2 `41745`, challenge category `3`, and a
+`30000` ms failure timer. Jabbithole objective row `8162` under Ultimate
+Protogames row `299` independently preserves game objective `2929` and the
+same condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5938` by explicit ID
+to eligible online objective-team members only when `2929` succeeds.
+Focused tests cover the eligible member plus completed, offline,
+failed-`2929`, and successful Spring Cleaning objective `2921` rejection.
+The table-backed controller boundary is pinned: `2929` remains active at
+`29999` ms and accepts explicit success, while it fails at `30000` ms and
+rejects late credit.
+
+This implements only the exact achievement handoff. The radius-`1` room
+marker and zero object/TargetGroup do not identify the protected crate or
+attacking enemy roster. Creature2 `62548` is the ordinary Lost and Found
+crate, but `LostAndFoundCrateEntityScript` receives no attacker or
+damage-source attribution, so treating every crate death as enemy-caused
+failure would invent behavior. The controller also does not select or
+activate this route, spawn the crate/enemy rosters, emit qualifying immediate
+failure, or couple room completion to success. Those producers, timer/failure
+ordering, cleanup/replay, rewards, medals, persistence, UI, and client smoke
+remain explicit blockers.
+
+The broader row slice passes `357/357` C# tests, and all `214` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,480` rows /
+`1,787` blocker rows and exposes achievement `5939` as the next unprocessed
+evidence-ranked blocker (`184`). Script-event evidence is now `1,855` rows
+and script-runtime-action evidence remains `211` rows. The known unrelated
+full-suite runtime-seed entity-`1099000004` failure remains outside this
+slice.
+
+This is an **implemented exact objective-success achievement grant with a
+tested 30-second controller boundary**, not an implemented or retail-complete
+enemy-to-crate challenge.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5937 Monstrosity Massacre exact timed-child closure.
+
+Queue-rank-`13` blocker-rank-`182` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to defeating Mondo's
+Monstrosity within the Lost and Found Department challenge time limit. Client
+AchievementChecklist row `5937` is unrelated (`1473`, bit `0`, object
+`14840`), and object-ID match row `4823` is also unrelated (`3765`, bit `2`);
+no checklist row has achievement ID or alternate object ID `5937`.
+Jabbithole achievement row `1918` independently agrees on the condition,
+count, points, and zone.
+
+The build splits the encounter across paired objectives. Main objective
+`2926` is type-`0` Exterminate with flags `1028`, type-specific flags `64`,
+count `1`, TargetGroup `10657`, WorldLocation2 `41745`, and a `60000` ms
+failure timer. TargetGroup `10657` contains only Creature2 `62575`, Mondo's
+Monstrosity. Timed child objective `2941` is the exact achievement handoff:
+flags `4`, public team `1`, text IDs `592532/592533`, type-`8` TimedWin,
+count `1`, object `0`, the same location and timer, and challenge category
+`3`. Jabbithole objective row `8156` independently maps only game objective
+`2941`; no inspected Jabbithole objective independently maps sibling `2926`.
+
+Jabbithole event relation `2415` maps source creature `28306` under event
+`299/594`, and the approved DataMapping bridge preserves Creature2 `62575`.
+Reviewed coordinate `7903034` places it in runtime world `2980`, area `4351`,
+at `-16501/-910/-10991`. The deterministic WIP Misplaced Mammoth phase
+activates both objectives, spawns that reviewed model, and
+`MondosMonstrosityEntityScript` filters the exact creature before emitting
+one-shot death credit to both rows.
+
+`UltimateProtogamesEventScript` now grants achievement `5937` by explicit ID
+to eligible online objective-team members only when timed child `2941`
+succeeds. Focused tests cover the eligible member plus completed, offline,
+failed-`2941`, and successful sibling-`2926` rejection. The exact boundary is
+pinned: credit at `59999` ms succeeds, while credit at `60000` ms is rejected
+after failure. Existing producer tests cover dual credit, repeat suppression,
+and the creature filter.
+
+Retail completion remains blocked on random room selection/presentation,
+exact selection among 98 current-last-seen observations, boss attackability
+and mechanics, death/tap/team attribution, spawn/despawn/reset/retry/wipe/
+replay/reconnect cleanup, duplicate suppression, room-completion linkage,
+rewards, medals, persistence/relogin, notification UI, and full dungeon
+client smoke.
+
+The broader row slice passes `354/354` C# tests, and all `213` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,479` rows /
+`1,787` blocker rows and exposes achievement `5938` as the next unprocessed
+evidence-ranked blocker (`183`). Script-event evidence is now `1,854` rows
+and script-runtime-action evidence remains `211` rows. The known unrelated
+full-suite runtime-seed entity-`1099000004` failure remains outside this
+slice.
+
+This is an **implemented exact timed-child objective-success grant with a
+tested 60-second boundary and exact boss death-credit producer**, not a
+randomized or retail-complete Lost and Found challenge.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5936 Dust Storm exact grant and partial-producer closure.
+
+Queue-rank-`13` blocker-rank-`181` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to destroying 20 crates
+within the Lost and Found Department challenge time limit. Client
+AchievementChecklist row `5936` is unrelated (`4339`, bit `0`, object
+`52314`), and no checklist row uses object, alternate-object, or achievement
+ID `5936`. Jabbithole achievement row `2094` independently agrees on the
+condition, count, points, and zone.
+
+Build objective `2924` is the exact condition boundary: event `594`, flags
+`4`, public team `1`, text IDs `591745/591746` (“Destroy 20 crates within the
+time limit”), type-`5` Script, count `20`, object `0`, WorldLocation2 `41745`,
+challenge category `3`, and a `20000` ms failure timer. Jabbithole objective
+row `8189` corroborates the mapping, and the corrected objective catalog
+keeps `2924` separate from Journey Into OMNICore objective `2942`.
+
+Creature2 `62548` is the ordinary Crate Destruction crate, and Jabbithole
+event relation `2191` maps source crate `28314` under event `299/594`.
+`LostAndFoundCrateEntityScript` filters that exact creature and emits
+one-shot death credit to both main objective `2673` and Dust Storm `2924`.
+It deliberately excludes Creature2 `62549` Mondo's Crate: TargetGroup
+`10647` contains both crate rows, but objective `2924` has object `0`, so
+static data does not prove that the separate Mondo challenge crate qualifies.
+
+`UltimateProtogamesEventScript` now grants achievement `5936` by explicit ID
+to eligible online objective-team members only on successful `2924`.
+Focused tests cover the eligible member plus completed, offline,
+failed-`2924`, and successful main-crate objective `2673` rejection. The
+exact boundary is pinned: 19 credits remain active, the 20th at `19999` ms
+succeeds, and a 20th at `20000` ms is rejected after failure. Existing
+producer tests cover dual credit, repeated death, and the creature filter.
+
+The controller still does not select the Lost and Found route, activate
+`2673`/`2924`, spawn ordinary crates, or own timer start, reset, cleanup, and
+replay state. The 81 current-last-seen crate observations do not prove a
+simultaneous retail wave. Those route, spawn-cadence, Mondo qualification,
+attribution, cleanup, reward, persistence, UI, and client-smoke questions
+remain explicit blockers.
+
+The broader row slice passes `350/350` C# tests, and all `212` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,478` rows /
+`1,787` blocker rows and exposes achievement `5937` as the next unprocessed
+evidence-ranked blocker (`182`). Script-event evidence is now `1,853` rows
+and script-runtime-action evidence remains `211` rows. The known unrelated
+full-suite runtime-seed entity-`1099000004` failure remains outside this
+slice.
+
+This is an **implemented exact objective-success grant with a tested
+20-in-20 boundary and ordinary-crate death-credit producer**, not an
+activated or retail-complete Lost and Found challenge.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5935 What's In The Box? exact timed-crate closure.
+
+Queue-rank-`13` blocker-rank-`180` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to completing Mondo's Box
+in the Lost and Found Department by destroying his crate before the time
+limit. Client AchievementChecklist row `5935` is unrelated (`4349`, bit `0`,
+object `52316`); object-ID matches `5146` (`3907`, bit `3`) and `5232`
+(`3908`, bit `26`) are also unrelated, and no checklist row has achievement
+ID or alternate object ID `5935`. Jabbithole achievement row `2072`
+independently agrees on the condition, count, points, and zone.
+
+Build objective `2920` is the exact condition boundary: event `594`, flags
+`4`, public team `1`, text IDs `591580/591581` (“Break Mondo's Crate within
+the time limit”), type-`5` Script, count/object `0`, WorldLocation2 `41745`,
+challenge category `3`, and a `60000` ms failure timer. Jabbithole objective
+row `8190` independently preserves game ID `2920` and the same condition.
+TargetGroup `10666` has sole Creature2 member `62549`; Jabbithole event
+relation `2184` maps source creature `28277` Mondo's Crate, and reviewed
+coordinate `6132219` places it at the runtime world-`2980` / area-`4351`
+position `-16500/-910/-10998`.
+
+`UltimateProtogamesEventScript` already activates `2920` with dynamic max
+`1`, spawns that reviewed crate, and now grants achievement `5935` by
+explicit ID to eligible online objective-team members only on successful
+`2920`. Focused grant tests cover the eligible member plus completed,
+offline, failed-`2920`, and successful Monstrosity Massacre `2926`
+rejection. The exact timer boundary is pinned: one crate credit at `59999`
+ms succeeds, while credit at `60000` ms is rejected after failure.
+`MondosCrateEntityScript` filters Creature2 `62549` and credits `2920` once
+on death, with positive, repeated-death, and wrong-creature coverage.
+
+Retail completion remains blocked on random room selection/presentation,
+exact selection among the five current source-coordinate rows, crate
+attackability and lifecycle, reset/replay/reconnect behavior, boss-room
+mechanics, rewards, medals, persistence, notification UI, and dungeon client
+smoke.
+
+The broader row slice passes `347/347` C# tests, and all `211` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,477` rows /
+`1,787` blocker rows and exposes achievement `5936` as the next unprocessed
+evidence-ranked blocker (`181`). Script-event evidence is now `1,852` rows
+and script-runtime-action evidence remains `211` rows. The known unrelated
+full-suite runtime-seed entity-`1099000004` failure remains outside this
+slice.
+
+This is an **implemented exact objective-success grant, 60-second boundary,
+and mapped crate death-credit producer with a partial room route**, not a
+retail-complete Lost and Found encounter.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5934 Immortal: Lost and Found Department mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`179` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 50-point achievement to completing the Lost and
+Found Department event without anyone in the party dying. Client
+AchievementChecklist row `5934` is unrelated (`4340`, bit `0`, object
+`52315`), and no checklist row uses object or achievement ID `5934`.
+Jabbithole achievement row `2039` independently agrees on the condition,
+count, points, and zone.
+
+The reviewed Lost and Found table cluster has no exact room-scoped no-death
+objective. Main crate objective `2673` is a type-`21` ResourcePool count-`80`
+row at WorldLocation2 `41745`, while Spring Cleaning `2921` is a type-`5`
+Script row at the same location with a `360000` ms timer; neither encodes
+party deaths. Generic no-death objective `2857` cannot be reused: its object
+`10569` is TargetGroup `10569`, whose sole member is Sneaky Prison Gate
+Console Creature2 `62987`. The controller activates `2857` only for the
+Prototentiary route, tracks that room's deaths, and grants achievement `5906`.
+No-death objective `2871` is separately anchored to tank-room WorldLocation2
+`41754`, where the controller tracks deaths and grants achievement `5865`.
+
+Granting `5934` from `2673`, `2921`, `2857`, or `2871` would invent missing
+death semantics or cross-credit another room. Focused negative regressions
+therefore pin that successful completion of all four objectives does not
+grant `5934`. No grant hook or guessed Lost and Found death tracker was
+added. Retail implementation remains blocked pending packet/log or
+controller/client-decompile evidence for the room route checkpoints, party
+scope, death/disconnect/revive rules, exact success handoff, reset/replay
+semantics, and client smoke.
+
+The broader row slice passes `343/343` C# tests, and all `210` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,476` rows /
+`1,787` blocker rows and exposes achievement `5935` as the next unprocessed
+evidence-ranked blocker (`180`). Script-event evidence remains `1,851` rows.
+The known unrelated full-suite runtime-seed entity-`1099000004` failure
+remains outside this slice.
+
+This is a **mapped-only no-death achievement with a precise missing-signal
+blocker**, not an implemented grant and not a retail-complete Lost and Found
+route.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5933 Dust Buster exact objective-grant and crate-credit closure.
+
+Queue-rank-`13` blocker-rank-`178` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 10-point achievement to clearing the crates from
+the Lost and Found Department. Client AchievementChecklist row `5933` is
+unrelated (`4357`, bit `0`, object `52313`); its object-ID matches are rows
+`1935` (`2116`, bit `6`) and `8426` (`5978`, bit `7`), and no checklist row
+has achievement ID `5933`. Jabbithole achievement row `2011` independently
+agrees on the condition, count, points, and zone.
+
+Build objective `2673` is the exact achievement boundary: public event `594`,
+public team `1`, text IDs `577340/577341` (“Destroy the Crates in the Lost and
+Found Department” / “Clear the Lost and Found”), type-`21` ResourcePool,
+count `80`, object `0`, WorldLocation2 `41745`, and no failure timer.
+Jabbithole objective row `8137` independently preserves the same condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5933` by explicit ID
+to eligible online objective-team members only when objective `2673`
+succeeds. Focused tests cover the positive eligible member plus completed,
+offline, failed-`2673`, and successful Dust Storm `2924` rejection. The exact
+ResourcePool boundary is also pinned: 79 credits stay active, the 80th
+succeeds, and post-success credit is ignored.
+
+The existing producer is exact but partial. Creature2 `62548` is explicitly
+`[UP] e2673 - Crate Destruction - Crate`; Jabbithole public-event relation
+`2191` maps source creature `28314` under event `594`; and
+`LostAndFoundCrateEntityScript` credits `2673` once on the exact creature’s
+death. Existing tests cover positive credit, the repeated-death guard, and
+the creature filter. The current controller still does not select or activate
+the Lost and Found route, spawn its ordinary crates/enemies, or own their
+cleanup, and 81 current-last-seen source coordinates do not prove one
+simultaneous retail spawn set.
+
+The broader row slice passes `339/339` C# tests, and all `209` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,476` rows /
+`1,787` blocker rows and exposes achievement `5934` as the next unprocessed
+evidence-ranked blocker (`179`). Script-event evidence is now `1,851` rows.
+The known unrelated full-suite runtime-seed entity-`1099000004` failure
+remains outside this slice.
+
+This is an **implemented exact objective-success grant, count boundary, and
+crate death-credit producer with a mapped-only room route**, not
+retail-complete Lost and Found gameplay. Retail completion requires room
+selection and objective activation, exact crate/enemy roster and lifecycle,
+ResourcePool initialization, child challenge/timer ordering, party and replay
+semantics, persistence/UI proof, rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5932 Like Mother Like Daughters mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`177` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, zero-point achievement to killing 30 jabbits in
+the Protostar Petting Zoo with “Fluffer and Fuzzball.” The row has completion
+display threshold `100`, no progress text, and no object IDs. Client
+AchievementChecklist row `5932` is unrelated (`4377`, bit `0`, object
+`52317`); its only object-ID match is row `5161` for achievement `3907`, bit
+`15`, and no checklist row has achievement ID `5932`. Jabbithole achievement
+row `2107` independently preserves the completion text, count-one achievement
+boundary, zero points, and zone, but supplies no separate condition row.
+
+Build Creature2 rows identify the likely daughters as `68213` (`[UP] Critter -
+Ravenok Mount - Fluffy - BEAX`) and `68240` (`[UP] Critter - Ravenok Mount -
+Fuzzball - BEAX`). The source-name mismatch is unresolved: the achievement
+says “Fluffer,” while Creature2 and localized text `634573` say “Fluffy.”
+Both creatures use CreationType `3`, faction `219`, level `50`, and
+UnitVehicle `567`; that vehicle has one pilot and no passenger or gunner.
+Jabbithole rows `28521/28532` independently classify Fluffy/Fuzzball as
+vehicles in world `2980` / area `4348` and preserve repeated room coordinates.
+
+Spell4 rows `77290/77293/77309/77312` are the exact Tasty Jabbits, Pounce,
+Chomp, and Rush Ravenok family, but no inspected static row assigns those
+spells to Creature2 `68213/68240` or maps a vehicle/pilot-attributed Jabbit
+death to achievement `5932`. Prerequisite `36059` contains two type-`83`
+Vehicle clauses naming the daughters, and prerequisite `37121` contains two
+type-`38` IsCreature clauses with their IDs, but neither is referenced by the
+inspected prerequisite-bearing table columns. They remain diagnostic rather
+than a safe runtime handoff.
+
+No grant, spawn, vehicle, or guessed kill-attribution hook was added. Focused
+negative tests prove that successful Hunt Ruffles `4561`, Pest Control `2672`,
+and Slaughterhouse `2898` do not grant `5932`. The broader row slice passes
+`335/335` C# tests, and all `208` audit and `34` validator tests pass.
+Regeneration validates `31` CSVs / `167,475` rows / `1,787` blocker rows and
+exposes achievement `5933` as the next unprocessed evidence-ranked blocker
+(`178`). Script-event evidence remains `1,850` rows. The known unrelated
+full-suite runtime-seed entity-`1099000004` failure remains outside this
+slice.
+
+This is a **mapped-only achievement with an exact vehicle-attribution evidence
+target**, not an implemented or retail-complete Petting Zoo mechanic. Closure
+requires a live packet/log or controller/client decompile trace proving
+Fluffy/Fuzzball spawn and boarding, ability assignment, eligible Jabbit
+targets, attacker-to-pilot/team attribution, combined-versus-per-ravenok
+30-count semantics, achievement handoff, duplicate/reset/replay/reconnect
+behavior, persistence/UI proof, rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5931 Fluffy and Fluzzball mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`176` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 10-point achievement to getting Ruffles to lay
+eggs in the Protostar Petting Zoo. Client AchievementChecklist row `5931` is
+unrelated (`4378`, bit `0`, object `52318`); its only object-ID match is row
+`5319` for achievement `3951`, bit `9`, and no checklist row has achievement
+ID `5931`. Jabbithole achievement row `1958` independently agrees on the
+condition, count, points, and zone.
+
+The reviewed Ruffles runtime activates kill objective `4561`, spawns
+TargetGroup `12390` / Creature2 `65794`, and credits that objective on death.
+That row does not encode egg laying. Build Spell4 rows `77267/77274/77276`
+are the `[UP] Critter - Ravenok - Lay Eggs` base and two egg spells. Their
+effects cast the egg children and emit RavelSignal values `27283/28062/27278`
+through receiver modes `4/5`.
+
+This is strong candidate mechanic evidence because Creature2 `65794` is
+`[UP] Critter - Rampant Ravenok - Ruffles`, but inspected static rows do not
+link spell `77267` to Ruffles' action set, identify its cast trigger, map the
+signal receiver, or prove which signal grants `5931`. Modes `4/5` remain
+diagnostics-only under the conservative receiver boundary. Focused negative
+tests prove that successful Hunt Ruffles `4561` and Slaughterhouse `2898` do
+not grant this achievement.
+
+No grant hook or guessed egg-laying trigger was added. The broader row slice
+passes `332/332` C# tests, and all `207` audit and `34` validator tests pass.
+Regeneration validates `31` CSVs / `167,475` rows / `1,787` blocker rows and
+exposes achievement `5932` as the next unprocessed evidence-ranked blocker
+(`177`). Script-event evidence remains `1,850` rows. The known unrelated
+full-suite runtime-seed entity-`1099000004` failure remains outside this
+slice.
+
+This is a **mapped-only achievement with an exact spell/signal evidence
+target**, not an implementation or retail-complete Ruffles mechanic. Closure
+requires a live packet/log or controller/client decompile trace of the
+egg-laying trigger and cast, direct Creature2/action-set ownership, signal
+receiver identities and ordering, achievement handoff, duplicate/reset/
+replay/reconnect behavior, persistence/UI proof, rewards, and full dungeon
+client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5930 Splorg Stepper grant/script-boundary closure.
+
+Queue-rank-`13` blocker-rank-`175` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to completing the Splorg
+Stepper optional objective by avoiding Creature2 `62597`'s explosion. Client
+AchievementChecklist row `5930` is unrelated (`4365`, bit `4`, object
+`4115`), and no checklist row uses object or achievement ID `5930`.
+Jabbithole achievement row `1937` independently agrees on the condition,
+count, points, and zone.
+
+Build objective `4524` is the exact named Splorg Stepper row for event `594`:
+text IDs `635033/635034`, type-`5` Script, flags `4`, public team `1`,
+optional category `1`, count `1`, object `0`, no WorldLocation2, and no timer.
+Jabbithole objective row `8204` independently preserves the same ID and
+no-hit condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5930` by explicit ID
+to eligible online objective-team members only when objective `4524`
+succeeds. Focused tests cover the positive grant plus completed, offline,
+failed-`4524`, and successful-`2898` rejection. Existing objective tests pin
+the generic controller boundary: pre-activation and wrong-route credit are
+ignored, exact objective-ID credit succeeds once, and post-success credit is
+ignored.
+
+No no-hit producer was invented. `ExplosiveSplorgEntityScript` credits only
+Splorg Spree `2925` on the Splorg's death and observes neither explosion hits
+nor `4524`. Static rows do not establish the explosion spell/effect, attacker
+attribution, per-player versus team failure, late-join rules, or the success
+checkpoint. The current route also has no Petting Zoo phase or objective-
+`4524` activation.
+
+The broader row slice passes `330/330` C# tests, and all `206` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,475` rows /
+`1,787` blocker rows and exposes achievement `5931` as the next unprocessed
+evidence-ranked blocker (`176`). Script-event evidence is now `1,850` rows.
+The known unrelated full-suite runtime-seed entity-`1099000004` failure
+remains outside this slice.
+
+This is an **implemented exact optional-objective success grant and generic
+script boundary with a mapped-only no-hit producer**, not retail-complete
+Petting Zoo gameplay. Retail implementation requires room/objective
+activation, explosion spell/effect attribution, party failure scope, success
+timing, reconnect/death/reset/replay semantics, persistence/relogin, points/
+notification UI, rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5929 Jabbit Justification grant/count-boundary closure.
+
+Queue-rank-`13` blocker-rank-`174` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to completing the
+Slaughterhouse challenge by defeating as many jabbits as possible. Client
+AchievementChecklist row `5929` is unrelated (`4365`, bit `3`, object
+`3941`); object-ID matches `5174/5231` belong to achievements `3907/3908`,
+and no checklist row has achievement ID `5929`. Jabbithole achievement row
+`1917` independently agrees on the condition, count, points, and zone.
+
+Build objective `2898` is the exact named Slaughterhouse row for event `594`:
+text IDs `590976/590977`, type-`21` ResourcePool, flags `4`, public-team
+challenge category `3`, count `40`, object `0`, no WorldLocation2, and no
+timer. Jabbithole objective row `8206` independently preserves the same ID and
+condition. The shared exact challenge name proves the achievement handoff
+without proving which creature classes feed the score.
+
+`UltimateProtogamesEventScript` now grants achievement `5929` by explicit ID
+to eligible online objective-team members only when objective `2898`
+succeeds. Focused tests cover the positive grant plus completed, offline,
+failed-`2898`, and successful-`2925` rejection. Existing objective tests pin
+39 credits as active, the fortieth as success, and post-success credit as
+ignored.
+
+No scoring producer was invented. Static rows co-locate Jabbit, Explosive
+Splorg, Rowsdower, Runaway Veggie, and Ruffles, but do not prove which deaths
+credit `2898`, whether weights differ, or whether repeatable objective `2901`
+is the scoring channel. The route has no Petting Zoo phase, objectives
+`2672/2898` activation, ordinary-critter spawn, death-score, or room-
+completion producer; RavelSignal modes `4/5` remain diagnostic because the
+receiver for signal `23053` is unmapped.
+
+The broader row slice passes `327/327` C# tests, and all `205` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,474` rows /
+`1,787` blocker rows and exposes achievement `5930` as the next unprocessed
+evidence-ranked blocker (`175`). Script-event evidence is now `1,849` rows.
+The known unrelated full-suite runtime-seed entity-`1099000004` failure
+remains outside this slice.
+
+This is an **implemented exact Slaughterhouse success grant and generic
+40-credit boundary with a mapped-only scoring producer**, not retail-complete
+Petting Zoo gameplay. Retail implementation requires route/objective
+activation, exact spawn waves and respawn lifecycle, qualifying kill
+attribution and score deltas, signal receiver ownership, main-event linkage,
+reset/replay cleanup, persistence/relogin, points/notification UI, rewards,
+and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5928 Splorg Spree grant/timer/death-credit closure.
+
+Queue-rank-`13` blocker-rank-`173` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to killing seven Splorg
+within 20 seconds in the Protostar Petting Zoo. Client AchievementChecklist
+row `5928` is unrelated (`4365`, bit `2`, object `3916`), and no checklist row
+uses object or achievement ID `5928`. Jabbithole achievement row `2093`
+independently agrees on the condition, count, points, and zone.
+
+Build objective `2925` is the exact named Splorg Spree row for event `594`:
+text IDs `591761/591762`, type-`21` ResourcePool, flags `4`, public-team
+challenge category `3`, count `7`, object `0`, no WorldLocation2, and a
+`20000`-millisecond failure timer. Jabbithole objective row `8150`
+independently preserves the same ID and seven-kill condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5928` by explicit ID
+to eligible online objective-team members only when objective `2925`
+succeeds. Focused tests cover the positive grant plus completed, offline,
+failed-`2925`, and successful-`2930` rejection. Existing objective tests pin
+six credits as active, the seventh at `19999` ms as success, and late credit
+after the `20000` ms failure as rejected.
+
+`ExplosiveSplorgEntityScript` already binds Creature2 `62597` and supplies
+one-shot objective-`2925` death credit with positive, duplicate-death, and
+creature-filter coverage. DataMapping's source Creature `28411` bridge still
+has three name candidates and no public-event-creature relation; 76 archived
+current-last-seen observations do not establish a simultaneous retail wave.
+The route has no Petting Zoo phase, objective activation, reviewed spawn set,
+timer-start ownership, or proven player/team versus explosion/environmental
+death attribution.
+
+The broader row slice passes `324/324` C# tests, and all `204` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,473` rows /
+`1,787` blocker rows and exposes achievement `5929` as the next unprocessed
+evidence-ranked blocker (`174`). Script-event evidence is now `1,848` rows.
+The known unrelated full-suite runtime-seed entity-`1099000004` failure
+remains outside this slice.
+
+This is an **implemented exact objective-success grant, seven-in-20 timer/
+count boundary, and Splorg death-credit producer with mapped-only activation
+and spawning**, not retail-complete Petting Zoo gameplay. Retail
+implementation requires bridge review, route/objective activation, exact
+spawn count/cadence, timer-start and kill-attribution semantics, reset/retry/
+replay cleanup, persistence/relogin, points/notification UI, rewards, and full
+dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5927 Damage Control grant/count-boundary closure.
+
+Queue-rank-`13` blocker-rank-`172` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to preventing an exploding
+Splorg from killing any other creature during the Protostar Petting Zoo
+Damage Control challenge. Client AchievementChecklist row `5927` is unrelated
+(`4365`, bit `1`, object `3923`); its only object-ID match is unrelated row
+`4546` for achievement `3552`, bit `4`. Jabbithole achievement row `2071`
+independently agrees on the condition, count, points, and zone.
+
+Build objective `2930` is the exact named Damage Control row for event `594`:
+text IDs `591839/591840`, type-`21` ResourcePool, flags `4`, public-team
+challenge category `3`, count `10`, object `0`, no WorldLocation2, and no
+timer. Jabbithole objective row `8170` independently preserves the same ID and
+protected-critter condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5927` by explicit ID
+to eligible online objective-team members only when objective `2930`
+succeeds. Focused tests cover the positive grant plus completed, offline,
+failed-`2930`, and successful-`2927` rejection. Existing objective tests pin
+nine explicit credits as active after 600 seconds, the tenth as success, and
+post-success credit as ignored.
+
+No explosion producer was invented. Achievement `5930` identifies the
+Explosive Splorg as Creature2 `62597`, but `ExplosiveSplorgEntityScript`
+credits only Splorg Spree objective `2925` on the Splorg's own death. It
+observes no explosion hit, victim death, lethal source, or protected-critter
+state for objective `2930`. The route also has no Petting Zoo phase,
+objective activation, or reviewed Splorg/protected-roster spawn set, and the
+table's count `10` does not prove survivor, attack, kill, or end-of-room
+semantics.
+
+The broader row slice passes `321/321` C# tests, and all `203` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,472` rows /
+`1,787` blocker rows and exposes achievement `5928` as the next unprocessed
+evidence-ranked blocker (`173`). Script-event evidence is now `1,847` rows.
+The known unrelated full-suite runtime-seed entity-`1099000004` failure
+remains outside this slice.
+
+This is an **implemented exact objective-success grant and generic ten-credit
+boundary with a mapped-only explosion/protected-creature producer**, not
+retail-complete Petting Zoo gameplay. Retail implementation requires route
+and objective activation, exact protected roster and spawn cadence, explosion
+hit/lethal-source ordering, ResourcePool update semantics, failure/reset/
+retry/replay cleanup, persistence/relogin, points/notification UI, rewards,
+and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5926 Rowsdower Round-Up grant/count/death-credit closure.
+
+Queue-rank-`13` blocker-rank-`171` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to killing six Rowsdowers
+during the Protostar Petting Zoo challenge. Client AchievementChecklist row
+`5926` is unrelated (`4365`, bit `0`, object `3785`); its only object-ID match
+is unrelated row `4545` for achievement `3552`, bit `3`. Jabbithole
+achievement row `2038` independently agrees on the condition, count, points,
+and zone.
+
+Build objective `2927` is the exact named Rowsdower Round-Up row for event
+`594`: text IDs `591765/591766`, type-`21` ResourcePool, flags `4`,
+public-team challenge category `3`, count `6`, object `0`, no WorldLocation2,
+and no timer. Jabbithole objective row `8219` independently preserves the
+same ID and six-kill condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5926` by explicit ID
+to eligible online objective-team members only when objective `2927`
+succeeds. Focused tests cover the positive grant plus completed, offline,
+failed-`2927`, and successful-`2899` rejection. Existing objective tests pin
+five credits as active, the sixth as success, and post-success credit as
+ignored. Existing `RowsdowerEntityScript` coverage pins Creature2 `62598`
+death credit, duplicate-death suppression, and the creature filter.
+
+No activation or spawn owner was invented. Jabbithole Creature `28407` is the
+exact level-50 Rowsdower in world `2980` / zone `4348` with 83 archived
+coordinates. DataMapping selects Creature2 `62598` with matching name,
+faction, level, and health, but the bridge is an unreviewed `scored_name`
+choice among 24 candidates, and `public_event_creatures` has no event-`299`
+relation. The current route has no Petting Zoo phase, objective-`2927`
+activation, reviewed spawn set, or room cleanup.
+
+The broader row slice passes `318/318` C# tests, the full objective-credit
+entity-script class passes `593/593`, and all `202` audit and `34` validator
+tests pass. Regeneration validates `31` CSVs / `167,471` rows / `1,787`
+blocker rows and exposes achievement `5927` as the next unprocessed
+evidence-ranked blocker (`172`). Script-event evidence is now `1,846` rows.
+The known unrelated full-suite runtime-seed entity-`1099000004` failure
+remains outside this slice.
+
+This is an **implemented exact objective-success grant, six-credit boundary,
+and Rowsdower death-credit producer with mapped-only activation/spawning**,
+not retail-complete Petting Zoo gameplay. Retail implementation requires
+bridge review, route and objective activation, spawn count/placements/density
+and respawn, eligible kill/tap attribution, reset/retry/replay cleanup,
+persistence/relogin, points/notification UI, rewards, and full dungeon client
+smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5925 Steamed Veggies grant/timer-boundary closure.
+
+Queue-rank-`13` blocker-rank-`170` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to killing the Runaway
+Veggie before it escapes. Client AchievementChecklist row `5925` is unrelated
+(`4364`, bit `4`, object `4118`); its only object-ID match is unrelated row
+`4544` for achievement `3552`, bit `2`. Jabbithole achievement row `2010`
+independently agrees on the condition, required count, points, and zone.
+
+Build objective `2899` is the exact named Runaway Veggie row for event `594`:
+text IDs `590979/590980`, type-`21` ResourcePool, flags `4`, public-team
+challenge category `3`, count `1`, object `0`, no WorldLocation2, and a
+`45000`-millisecond failure timer. Jabbithole objective row `8199`
+independently preserves the same ID and condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5925` by explicit ID
+to eligible online objective-team members only when objective `2899`
+succeeds. Focused tests cover the positive grant plus completed, offline,
+failed-`2899`, and successful-`2898` rejection. Existing objective tests prove
+one credit at `44999` ms succeeds and credit at `45000` ms remains failed.
+
+No producer was invented. Jabbithole Creature `28400` is the exact level-50
+Runaway Veggie in world `2980` / zone `4348` with 98 archived coordinate rows.
+DataMapping currently selects Creature2 `62674`, but it is an unreviewed
+`scored_name` bridge with four candidates, and `public_event_creatures` has no
+link for the source creature. The current route also has no Petting Zoo phase,
+objective activation, spawn, escape path/terminal trigger, death credit, or
+cleanup.
+
+The broader row slice passes `315/315` C# tests; all `201` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,470` rows /
+`1,787` blocker rows and exposes achievement `5926` as the next unprocessed
+evidence-ranked blocker (`171`). The explicit grant case raises script-event
+evidence to `1,845` rows. The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented exact objective-success grant and timer boundary with
+a mapped-only Runaway Veggie producer**, not retail-complete Petting Zoo
+gameplay. Retail implementation requires creature-bridge review, route and
+objective activation, spawn/placement and movement path, kill/tap attribution,
+escape/deadline ordering, despawn/reset/replay cleanup, persistence/relogin,
+points/notification UI, rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5924 Immortal: Protostar Petting Zoo mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`169` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 50-point achievement to completing Pest Control
+without anyone in the party dying. Client AchievementChecklist row `5924` is
+unrelated (`4364`, bit `3`, object `3945`), with no object-ID or achievement-ID
+match for `5924`. Jabbithole achievement row `1974` independently agrees on
+the deathless condition, required count, points, and zone.
+
+Objective `2672` is the exact Pest Control completion row at WorldLocation2
+`41741` in Protostar Petting Zoo zone `4348`, but it records no party-death
+state. The only event-`594` no-death objectives are already evidence-owned:
+`2871` is anchored by WorldLocation2 `41754` to Waste Management Facility zone
+`4336` and grants achievement `5865`; `2857` uses Prototentiary Gate Console
+TargetGroup `10569` and grants achievement `5906`. Jabbithole rows `8208/8226`
+preserve the generic text but add no Petting Zoo ownership.
+
+No grant hook was added. Focused regressions prove that even successful Pest
+Control followed by successful `2857` or `2871` does not grant achievement
+`5924`; reusing either row would cross-credit another room, while `2672` alone
+would omit the deathless requirement. The current route also has no Petting
+Zoo phase or scoped player-death state.
+
+The broader row slice passes `312/312` C# tests; all `200` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,469` rows /
+`1,787` blocker rows and exposes achievement `5925` as the next unprocessed
+evidence-ranked blocker (`170`). This mapped-only closure leaves script-event
+evidence at `1,844` rows. The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is a **mapped-only room-scoped no-death blocker**, not retail-complete
+Immortal: Protostar Petting Zoo behavior. Retail implementation requires the
+Petting Zoo no-death owner or hidden objective, attempt boundaries, party
+membership snapshot, death/disconnect ordering, Pest Control success coupling,
+reset/replay cleanup, persistence/relogin, points/notification UI, rewards,
+and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5923 Pest Control Professional grant/timer-boundary closure.
+
+Queue-rank-`13` blocker-rank-`168` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 10-point achievement to completing the Pest
+Control event in the Protostar Petting Zoo. Client AchievementChecklist row
+`5923` is unrelated (`4364`, bit `2`, object `3927`); its only object-ID match
+is unrelated row `8425` for achievement `5978`, bit `6`. Jabbithole
+achievement row `1992` independently agrees on the condition, required count,
+points, and zone.
+
+Build objective `2672` is the exact named Pest Control row for event `594`:
+text IDs `577338/577339`, type-`13` TimedWin, flags `0`, public-team main
+category `0`, count `0`, object `0`, WorldLocation2 `41741`, and a
+`180000`-millisecond failure timer. Jabbithole objective row `8142`
+independently preserves the objective ID and jabbit-kill condition under its
+archived public-event row `299`.
+
+`UltimateProtogamesEventScript` now grants achievement `5923` by explicit ID
+to eligible online objective-team members only when objective `2672`
+succeeds. Focused tests cover the positive grant plus completed, offline,
+failed-`2672`, and successful-`2898` rejection. Exact timer tests prove
+controller success at `179999` ms and rejection at the `180000` ms deadline.
+No Petting Zoo producer was invented: the current route has no matching phase,
+does not activate `2672`, and owns no reviewed jabbit spawn set, kill/score
+aggregation, success signal, or room-completion handoff.
+
+The broader row slice passes `310/310` C# tests; all `199` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,469` rows /
+`1,787` blocker rows and exposes achievement `5924` as the next unprocessed
+evidence-ranked blocker (`169`). The explicit grant case adds one script-event
+evidence row, for `1,844` total. The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented exact objective-success grant and generic timer
+boundary with a mapped-only Pest Control producer**, not retail-complete
+Petting Zoo gameplay. Retail implementation requires route selection,
+objective activation, jabbit identities/placements/waves, kill and tap
+attribution, score aggregation/UI, deadline ordering, reset/replay cleanup,
+persistence/relogin, points/notification UI, rewards, and full dungeon client
+smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5922 Disoriented Descent mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`167` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, zero-point achievement to Power Plunging onto a
+creature while disoriented. It has no progress text and uses completion-display
+threshold `100`. Client AchievementChecklist row `5922` is unrelated (`4364`,
+bit `1`, object `3919`); its only object-ID match is unrelated row `4571` for
+achievement `3557`, bit `5`. Jabbithole achievement row `2111` independently
+agrees on the completed condition and zero-point value but supplies no
+checklist or producer.
+
+No event-`594` objective names Disoriented Descent or disorientation. The
+nearby Power Plunge objectives cover aggregate completion (`2669`), creature
+count (`2861`), Gilded Fowl (`2862/4442`), crystals (`2883`), and Water Hazard
+(`2897`). Power Plunge spell `71497` has no static disoriented-state binding;
+the UP spells explicitly naming Disorient belong to unrelated Crate
+Destruction (`72342`) and Sneaky Prison (`72561`) mechanics.
+
+No grant hook was added. Focused regressions pin successful objectives `2669`,
+`2862`, `2883`, and `2897` as non-granting signals for achievement `5922`.
+Granting from any of them or from a generic disorient spell would omit the
+required state-at-contact condition.
+
+The broader row slice passes `306/306` C# tests; all `198` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,468` rows /
+`1,787` blocker rows and exposes achievement `5923` as the next unprocessed
+evidence-ranked blocker (`168`). The mapped-only closure adds no script-event
+evidence row. The known unrelated full-suite runtime-seed entity-`1099000004`
+failure remains outside this slice.
+
+This is a **mapped-only stateful-hit blocker**, not retail-complete
+Disoriented Descent behavior. Retail implementation requires the authoritative
+disoriented state or CC bit, application/removal owner, Power Plunge
+contact/hit signal, qualified target set, state sampling order, per-player
+grant/deduplication, reset/replay and persistence behavior, notification UI,
+rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5921 Sky Soaring grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`166` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to completing the Water
+Hazard optional objective without anyone on the team falling into the water.
+Client AchievementChecklist row `5921` is unrelated (`4364`, bit `0`, object
+`3788`); its only object-ID match is unrelated row `4570` for achievement
+`3557`, bit `4`. Jabbithole achievement row `1916` independently agrees on the
+condition, required count, points, and zone.
+
+Build objective `2897` is the exact named Water Hazard row for event `594`:
+text IDs `590840/590841`, type-`5` Script, flags `4`, public-team challenge
+category `1`, count `0`, object `0`, no timer, and WorldLocation2 `46473` in
+world `2980` / area `4347`. Jabbithole objective row `8178` independently
+preserves the same ID and no-water condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5921` by explicit ID
+to eligible online objective-team members only when objective `2897`
+succeeds. Focused tests cover the positive grant plus completed, offline,
+failed-`2897`, and successful-`2883` rejection. No water producer was
+invented: the current phase does not activate `2897` and owns no water volume,
+fall-failure receiver, or terminal room success handoff. Static spell signals
+do not establish the authoritative trigger or player-versus-team failure
+scope.
+
+The broader row slice passes `302/302` C# tests; all `197` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,468` rows /
+`1,787` blocker rows and exposes achievement `5922` as the next unprocessed
+evidence-ranked blocker (`167`). The explicit grant case adds one script-event
+evidence row. The known unrelated full-suite runtime-seed entity-`1099000004`
+failure remains outside this slice.
+
+This is an **implemented exact objective-success grant boundary with a
+mapped-only Water Hazard producer**, not retail-complete no-fall gameplay.
+Retail implementation requires objective activation, trigger identity and
+geometry, entry/fall/signal/death ordering, failure update and team scope,
+room-completion success, reset/replay cleanup, persistence/relogin,
+points/notification UI, rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5920 Crystal Catcher grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`165` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to collecting five Power
+Crystals in the Cuboar Coterie. Client AchievementChecklist row `5920` is
+unrelated (`4363`, bit `0`, object `8873`); its only object-ID match is
+unrelated row `4559` for achievement `3555`, bit `4`. Jabbithole achievement
+row `2092` independently agrees on the condition, required count, points, and
+zone.
+
+Build objective `2883` is the exact named Crystal Catcher row for event `594`:
+text IDs `590508/590509`, type-`21` ResourcePool, flags `4`, public-team
+challenge category `3`, count `5`, object `0`, no timer, and WorldLocation2
+`46473` in world `2980` / area `4347`. Jabbithole objective row `8192`
+independently preserves the same ID and five-crystal condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5920` by explicit ID
+to eligible online objective-team members only when objective `2883`
+succeeds. Focused tests cover the positive grant plus completed, offline,
+failed-`2883`, and successful-`2862` rejection. No crystal producer was
+invented: Creature2 `63091` is named as the Power Crystal, but no reviewed
+placement bridge exists, and the current phase neither activates `2883` nor
+owns crystal spawning, Gilded Fowl knock-up, collection, or despawn.
+
+The broader row slice passes `299/299` C# tests; all `196` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,467` rows /
+`1,787` blocker rows and exposes achievement `5921` as the next unprocessed
+evidence-ranked blocker (`166`). The explicit grant case adds one script-event
+evidence row. The known unrelated full-suite runtime-seed entity-`1099000004`
+failure remains outside this slice.
+
+This is an **implemented exact objective-success grant boundary with a
+mapped-only Crystal Catcher producer**, not retail-complete Power Crystal
+gameplay. Retail implementation requires challenge activation, crystal count
+and placement, Power Plunge contact and fowl knock-up, collection receiver and
+delta ownership, duplicate/despawn behavior, reset/replay cleanup,
+persistence/relogin, points/notification UI, rewards, and full dungeon client
+smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5919 Fowl Feast exact-objective grant and producer closure.
+
+Queue-rank-`13` blocker-rank-`164` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to completing the Gilded
+Fowl challenge by Power Plunging onto the Gilded Fowl to destroy it. No client
+AchievementChecklist row has ID or achievement ID `5919`; the only object-ID
+match is unrelated row `4558` for achievement `3555`, bit `3`. Jabbithole
+achievement row `2058` independently agrees on the condition, required count,
+points, and zone.
+
+Build objective `2862` is the exact named Gilded Fowl row for event `594`:
+text IDs `589620/589621`, type-`21` ResourcePool, flags `4`, public-team
+challenge category `3`, count `1`, object TargetGroup `12263` containing
+Gilded Fowl Creature2 `63055`, no timer, and WorldLocation2 `46473` in world
+`2980` / area `4347`. Jabbithole objective row `8147` independently preserves
+the same ID and condition. Later client objective `4442` repeats the text and
+target group but is a type-`14`, count-`100` auxiliary row without a matching
+Jabbithole objective; it is not used as the grant boundary.
+
+`UltimateProtogamesEventScript` now grants achievement `5919` by explicit ID
+to eligible online objective-team members only when objective `2862`
+succeeds. Focused tests cover the positive grant plus completed, offline,
+failed-`2862`, and successful-`4442` rejection. The WIP phase already
+activates `2862/4442`, spawns script-owned Gilded Fowl entity `1100300089`
+from reviewed coordinate `8011506`, and credits objective `2862` once on
+Creature2 `63055` death. The death callback does not yet prove Power Plunge
+caused the kill.
+
+The broader row slice passes `296/296` C# tests; all `195` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,466` rows /
+`1,787` blocker rows and exposes achievement `5920` as the next unprocessed
+evidence-ranked blocker (`165`). The explicit grant case adds one script-event
+evidence row. The known unrelated full-suite runtime-seed entity-`1099000004`
+failure remains outside this slice.
+
+This is an **implemented exact objective-success grant boundary with a
+reviewed WIP Gilded Fowl producer**, not retail-complete Power Plunge
+qualification. Retail completion requires Power Plunge hit/kill attribution,
+ordinary-kill rejection, objective `2862/4442` completion ordering, random
+room timing, reset/replay cleanup, team/late-join semantics,
+persistence/relogin, points/notification UI, rewards, and full dungeon client
+smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5918 Cubig Carnage mapped-only conflict closure.
+
+Queue-rank-`13` blocker-rank-`163` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to successfully Power
+Plunging 100 creatures in the Cuboar Coterie. Client AchievementChecklist row
+`5918` is unrelated (`4362`, bit `0`, object `8870`); its only object-ID match
+is unrelated row `4557` for achievement `3555`, bit `2`. Jabbithole achievement
+row `2037` independently agrees on the 100-creature condition, required count,
+points, and zone.
+
+Build objective `2861` is the exact named Cubig Carnage row for event `594`:
+text IDs `589618/589619`, type-`21` ResourcePool, flags `4`, public-team
+challenge category `3`, object `0`, no timer, and WorldLocation2 `46473` in
+world `2980` / area `4347`. Its client threshold is `60`, not the
+achievement's independently repeated `100`. The only event-`594` objective
+with count `100` is unrelated objective `4442`, Gilded Fowl, a type-`14`
+KillClusterTargetGroup row for TargetGroup `12263` and Creature2 `63055`.
+
+No grant hook was added. Focused regressions pin successful objective `2861`
+and successful objective `4442` as non-granting signals for achievement
+`5918`: using `2861` would grant at 60, while using `4442` would replace the
+Power Plunge creature condition with a named-fowl objective. TargetGroup
+`10404` identifies the broader bounce-target set, but reviewed spell and
+runtime owners do not expose a separate authoritative 100-creature progress
+channel.
+
+The broader row slice passes `293/293` C# tests; all `194` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,465` rows /
+`1,787` blocker rows and exposes achievement `5919` as the next unprocessed
+evidence-ranked blocker (`164`). The mapped-only closure adds no script-event
+evidence row. The known unrelated full-suite runtime-seed entity-`1099000004`
+failure remains outside this slice.
+
+This is a **mapped-only conflicting-count closure**, not retail-complete Cubig
+Carnage behavior. Retail implementation requires a live packet/log or
+controller decompile trace identifying the authoritative 100-creature
+progress signal, its relationship to objectives `2861/4442`, qualifying
+Power Plunge hit attribution, per-hit delta and team aggregation,
+completion/grant ordering, reset/replay cleanup, persistence/relogin,
+points/notification UI, rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5917 Ultimate Proto-Plunger grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`162` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to making 30 consecutive
+Proto-Plunges as a team. Client AchievementChecklist row `5917` is unrelated
+(`4361`, bit `0`, object `8872`); its only object-ID match is unrelated row
+`4556` for achievement `3555`, bit `1`. Jabbithole achievement row `2009`
+independently agrees on the condition, required count, points, and zone.
+
+Build objective `2860` is the exact challenge row for event `594`: text IDs
+`589498/589499`, type-`21` ResourcePool, flags `4`, public-team challenge
+category `3`, count `30`, object `0`, no timer, and WorldLocation2 `46473`
+in world `2980` / area `4347`. Jabbithole objective row `8144` independently
+maps the same consecutive team-plunge condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5917` by explicit ID
+to eligible online objective-team members only when exact objective `2860`
+succeeds. Focused tests cover the positive grant plus completed, offline,
+failed-`2860`, and successful-parent-`2669` rejection. The WIP Power Plunge
+phase still spawns only Gilded Fowl and credits `2862/4442`; it does not
+activate or credit `2860`. Bounce-hit qualification, multi-target deltas,
+team aggregation, and ground/water/miss chain resets remain unproved.
+
+The broader row slice passes `291/291` C# tests; all `193` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,465` rows /
+`1,787` blocker rows and exposes achievement `5918` as the next unprocessed
+evidence-ranked blocker (`163`). The explicit grant case adds one script-
+event evidence row. The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented objective-success grant boundary with a mapped-only
+Power Plunge chain producer**, not retail-complete Cuboar Coterie behavior.
+Retail implementation requires phase activation, plunge hit/delta ownership,
+multi-target/team behavior, reset events, replay cleanup,
+persistence/relogin, points/notification UI, rewards, and full dungeon
+client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5916 Extra Point Professional grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`161` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`0`, 25-point achievement to completing the Extra
+Point optional objective in Intern Disposal Facility 74 within its time
+limit. Client AchievementChecklist row `5916` is unrelated (`4360`, bit `0`,
+object `8869`), with no achievement-ID or object-ID `5916` checklist row.
+Jabbithole achievement row `2223` independently agrees on the condition,
+zero required count, points, and zone.
+
+Build objective `4541` is the exact Extra Point row for event `594`: text IDs
+`635253/635254`, type-`13` TimedWin, flags `4`, public-team optional
+category `1`, raw count/object `0`, WorldLocation2 `46229` in world `2980` /
+WorldZone `4502`, and `failureTimeMs 45000`. Jabbithole row `8184` confirms
+the ID/text/type but reports historical count `1` instead of current count
+`0`. Existing exact-row tests prove explicit controller credit succeeds at
+`44999` ms, the objective fails at `45000` ms, and late credit is rejected.
+
+`UltimateProtogamesEventScript` now grants achievement `5916` by explicit ID
+to eligible online objective-team members only when exact objective `4541`
+succeeds. Focused tests cover the positive grant plus completed, offline,
+failed-`4541`, and successful-sibling-`2880` rejection. The Hut-Hut phase
+still activates only `2675/2884`; it does not activate or credit `4541`.
+Player/boss touchdown score spells use unsupported receiver-mode-`5`
+signals, so opportunity activation, qualifying score, retry, and reset
+semantics remain unproved.
+
+The broader row slice passes `288/288` C# tests; all `192` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,464` rows /
+`1,787` blocker rows and exposes achievement `5917` as the next unprocessed
+evidence-ranked blocker (`162`). The explicit grant case adds one script-
+event evidence row. The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented objective-success grant boundary with a tested timer
+and mapped-only scoring producer**, not retail-complete Hut-Hut behavior.
+Retail implementation requires opportunity activation, mode-`5` scoring,
+timer presentation, timeout/retry and reset rules, team ownership,
+persistence/relogin, points/notification UI, scoreboard/rewards, and full
+dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5915 Protoplunge Professional grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`160` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 10-point achievement to completing the
+Protoplunge event in Cuboar Coterie. Client AchievementChecklist row `5915`
+is unrelated (`4327`, bit `0`, object `6656`); object ID `5915` appears only
+on unrelated rows `4569` (`3557`, bit `3`) and `8424` (`5978`, bit `5`).
+Jabbithole achievement row `1957` independently agrees on the condition,
+required count, points, and zone.
+
+Build objective `2669` is the exact parent Proto-Plunge row for event `594`.
+Its full text ID `577332` says to use Power Plunge to bounce on cubigs and
+cuboars, while short text ID `577333` says `Complete the Proto-Plunge`. It
+is a type-`13` TimedWin, public-team category-`1`, raw count/object-`0` row
+at WorldLocation2 `46473` in world `2980` / area `4347`, with
+`failureTimeMs 180000`. Jabbithole objective row `8139` independently maps
+the same condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5915` by explicit ID
+to eligible online objective-team members only when exact objective `2669`
+succeeds. Focused tests cover the positive grant plus completed, offline,
+failed-`2669`, and successful-sibling-`2862` rejection. The WIP Power Plunge
+phase still activates only Gilded Fowl objectives `2862/4442`; it does not
+activate `2669` or infer event completion from fowl death. Bounce/score,
+child-pool composition, exact timer success, and room-reset ownership remain
+unproved.
+
+The broader row slice passes `285/285` C# tests; all `191` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,463` rows /
+`1,787` blocker rows and exposes achievement `5916` as the next unprocessed
+evidence-ranked blocker (`161`). The explicit grant case adds one script-
+event evidence row. The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented parent-objective grant boundary with a mapped-only
+Power Plunge producer**, not retail-complete Cuboar Coterie behavior. Retail
+implementation requires objective-`2669` activation evidence, qualified
+bounce/score updates, timer and child-objective composition, random routing,
+reset/replay cleanup, persistence/relogin, points/notification UI, rewards,
+and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5914 Presto Prototentiary timed grant-and-producer closure.
+
+Queue-rank-`13` blocker-rank-`159` maps the type-`12`, category-`316`,
+WorldZone-`4330`, 25-point achievement to completing the Fast Hands optional
+objective within its time limit. The client row's value is `0`, and
+Jabbithole achievement row `2191` likewise has required count `0`, so neither
+field was treated as a generic progression threshold. AchievementChecklist
+row `5914` is unrelated (`4343`, bit `3`, object `7967`); its only
+object-ID match is unrelated row `4568` for achievement `3557`, bit `2`.
+
+Build objective `2863` is the exact named Fast Hands row for event `594`:
+public-team flags `2105348`, text IDs `589657/589658`, type `3`
+ActivateTargetGroup, raw count `0`, object TargetGroup `10583`,
+`failureTimeMs 210000`, and optional category `1`. Jabbithole objective row
+`8196` independently maps the same timed condition. TargetGroup `10583`
+contains Cage Console `63037`.
+
+`UltimateProtogamesEventScript` already activates `2863` with dynamic max
+count `1`, spawns Cage Console entity `1100300081` from reviewed
+Jabbithole/DataMapping coordinate `6152147`, and receives its one-shot
+TargetGroup-`10583` activation credit. It now grants achievement `5914` by
+explicit ID to eligible online objective-team members when exact objective
+`2863` succeeds. Focused tests prove the positive grant, completed/offline
+rejection, failed-`2863` and successful-sibling-`2858` rejection, plus the
+exact timer boundary: credit at `209999` ms succeeds, while failure at
+`210000` ms rejects late credit.
+
+The broader row slice passes `282/282` C# tests; all `190` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,462` rows /
+`1,787` blocker rows and exposes achievement `5915` as the next unprocessed
+evidence-ranked blocker (`160`). The explicit grant case adds one script-
+event evidence row. The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented exact named-objective grant boundary with a tested
+timed cage-console producer**, not retail-complete Prototentiary behavior.
+Retail completion still requires exact random-room routing, timer start and
+client presentation, console/free-intern choreography, network-boundary
+ordering, reset/replay cleanup, persistence/relogin, points/notification UI,
+rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5913 Hit Snooze mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`158` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to turning off a triggered
+Prototentiary alarm within five seconds. Client AchievementChecklist row
+`5913` is unrelated: it belongs to achievement `4343`, bit `2`, and object
+`7964`; no checklist row has achievement ID or object ID `5913`. Jabbithole
+achievement row `1915` independently agrees on the triggered-alarm condition,
+required count, points, and zone.
+
+No build or Jabbithole public-event objective directly represents that
+condition. The nearest Prototentiary row is objective `4648`, Disable the
+Alarm: public-team flags `512`, type `3` ActivateTargetGroup, raw count `0`,
+object TargetGroup `12478` -> Alarm Panel Creature2 `68916`, WorldLocation2
+`41759` in world `2980` / area `4333`, no failure timer, and optional
+category `1`. It records panel activation but has no trigger identity,
+timestamp, or five-second window.
+
+The only event-`594` row with `failureTimeMs 5000` is unrelated objective
+`4649`: its text IDs `641070/641071` name Welcome to the Thunderdome and
+destroying a crate every five seconds during the Lost and Found storm at
+WorldLocation2 `41745` in area `4351`. Jabbithole row `8186` and achievement
+`5939` / row `1991` independently map that crate-cadence condition.
+
+The controller activates `4648` and spawns three Alarm Panel `68916`
+entities, but their script emits only a one-shot TargetGroup-`12478` update.
+It owns no alarm-trigger event, timestamp, panel correlation, timeout, or
+achievement evaluation. Focused tests prove successful `4648` and Ghosts
+`2858` do not grant `5913` without that history.
+
+The broader row slice passes `278/278` C# tests; all `189` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,461` rows /
+`1,787` blocker rows and exposes achievement `5914` as the next unprocessed
+evidence-ranked blocker (`159`). No runtime producer was added, so the
+generated row total is unchanged. The known unrelated full-suite
+runtime-seed entity-`1099000004` failure remains outside this slice.
+
+This is a **mapped-only evidence closure**, not an implemented achievement
+grant or retail-complete behavior. Retail implementation requires a live or
+decompiled alarm trigger/timestamp source, panel-disable attribution and
+ordering, the exact five-second boundary, duplicate/simultaneous alarm
+handling, team scope, timeout/reset/replay behavior, persistence/relogin,
+points/notification UI, rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5912 Ghost grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`157` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 25-point achievement to
+completing the Ghosts optional objective without triggering any alarms.
+Client AchievementChecklist row `5912` is unrelated: it belongs to
+achievement `4343`, bit `1`, and object `8875`; no checklist row has
+achievement ID or object ID `5912`. Jabbithole achievement row `2091`
+independently agrees on the condition, required count, points, and zone.
+
+Build objective `2858` is the exact named Ghosts row for event `594`:
+public-team flags `2105348`, type `3` ActivateTargetGroup, raw count `0`,
+object TargetGroup `10583`, no WorldLocation2 or failure timer, optional
+category `1`, and full/short text IDs `589363/589364`. Jabbithole objective
+row `8201` independently maps the same no-alarm condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5912` by explicit ID
+to eligible current online objective-team members when exact objective
+`2858` succeeds. Focused tests prove the positive grant plus completed,
+offline, failed-`2858`, and successful-sibling-`2863` rejection. The
+objective object does not itself encode no-alarm history: TargetGroup `10583`
+contains Cage Console `63037` and is also used by Fast Hands `2863` and Cage
+Console `2864`. The controller activates aggregate `2678`, `2863`, `2864`,
+and Disable the Alarm `4648`, but never activates `2858`. Its Cage Console
+and three Alarm Panel `68916` scripts emit only one-shot TargetGroup updates;
+no reviewed path records an alarm trigger, drone/detection source, durable
+clean-run state, objective failure, or aggregate-success pairing.
+
+The broader row slice passes `276/276` C# tests; all `188` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,461` rows /
+`1,787` blocker rows and exposes achievement `5913` as the next unprocessed
+evidence-ranked blocker (`158`). The explicit grant case adds one script-
+event evidence row. The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented exact named-objective grant boundary with a
+mapped-only producer**, not implemented alarm/detection mechanics or
+retail-complete behavior. Retail implementation requires route/objective
+activation, exact alarm-trigger versus panel-disable semantics,
+drone/detection sources, team clean-run state, failure/completion ordering,
+reset/replay cleanup, persistence/relogin, points/notification UI, rewards,
+and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5911 Undetectable mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`156` maps the type-`12`, category-`316`,
+WorldZone-`4330`, value-`1`, 25-point achievement to completing the
+Undetectable optional objective by defeating or evading the Deputy. Client
+AchievementChecklist row `5911` is unrelated: it belongs to achievement
+`4343`, bit `0`, and object `3297`. The only object-`5911` checklist match is
+unrelated row `4567` for achievement `3557`, bit `1`; no checklist row has
+achievement ID `5911`. Jabbithole achievement row `2070` independently
+agrees on the Deputy condition, required count, points, and zone.
+
+The only exact-name objective, `2855`, conflicts with the achievement. Its
+full/short text IDs `589347/589348` require defeating Warden Creature2
+`62324` within 90 seconds, and Jabbithole row `8160` repeats that condition.
+It is a public-team flags-`2171908`, type-`8` row with raw count `0`, object
+TargetGroup `10569`, WorldLocation2 `49683`, `failureTimeMs 90000`, and
+optional category `1`. The object also conflicts with the text: TargetGroup
+`10569` contains Gate Console `62987`, while Warden `62324` belongs to
+TargetGroup `12474`. Hidden sibling objective `4742` repeats the
+type-`8`/object-`10569`/WorldLocation2-`49683` shape, and its existing exact
+boundary tests prove Warden death dispatch keys `0` and `12474` do not
+satisfy object `10569`.
+
+The separately mapped Deputy objective `4657` is a type-`0`, count-`1`
+TargetGroup-`12528` death objective for Creature2 `68949`; it contains no
+evasion outcome. The controller activates and spawns Deputy `68949` and
+aggregate-objective-`2678` Warden `62324`, but does not activate `2855`,
+distinguish Deputy defeat from evasion, or prove which signal grants `5911`.
+A focused regression pins successful `2855`, Deputy `4657`, and aggregate
+`2678` as non-granting signals.
+
+The broader row slice passes `273/273` C# tests; all `187` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,460` rows /
+`1,787` blocker rows and exposes achievement `5912` as the next unprocessed
+evidence-ranked blocker (`157`). No runtime producer was added, so the
+generated row total is unchanged. The known unrelated full-suite
+runtime-seed entity-`1099000004` failure remains outside this slice.
+
+This is a **mapped-only evidence closure**, not an implemented achievement
+grant or retail-complete behavior. Retail implementation requires live or
+decompiled proof resolving Deputy defeat/evasion versus timed Warden defeat,
+objective `2855` and hidden-`4742` binding, activation/timer start,
+completion/grant ordering, team scope, reset/replay, persistence/relogin,
+points/notification UI, rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5910 Low Profile grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`155` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 25-point achievement to
+completing the Low Profile challenge while avoiding sniperbot attention.
+Client AchievementChecklist row `5910` is unrelated: it belongs to
+achievement `4341`, bit `5`, and object `8047`. The only object-`5910`
+checklist match is unrelated row `1929` for achievement `2116`, bit `1`;
+no checklist row has achievement ID `5910`. Jabbithole achievement row
+`2036` independently agrees on the condition, required count, points, and
+zone.
+
+Build objective `2859` is the exact named Low Profile row for event `594`:
+public-team flags `2171908`, type `16`, object TargetGroup `10569`, no
+WorldLocation2 or failure timer, challenge category `3`, and full/short text
+IDs `589373/589374`. Its condition text names Creature2 `62320`; Jabbithole
+objective row `8207` independently maps the same Sniper-attention condition.
+The static links do not prove the producer: TargetGroup `10569` contains Gate
+Console `62987`, not the named Sniper. DataMapping maps Creature2 `62320` to
+Jabbithole creature `21216`, whose four coordinates belong to world `1940` /
+WorldZone `2272`; the three Sniper coordinates in world `2980` / area `4333`
+belong to Jabbithole creature `28412`, which maps ambiguously to Creature2
+`53418`.
+
+`UltimateProtogamesEventScript` now grants achievement `5910` by explicit ID
+to eligible current online objective-team members when exact objective
+`2859` succeeds. Focused tests prove the positive grant plus completed,
+offline, failed-`2859`, and successful-sibling-`2856` rejection. The
+controller does not activate `2859` and owns no reviewed Creature2-`62320`
+spawn, detection/acquisition signal, failure state, section-completion
+handoff, or reset path.
+
+The broader row slice passes `270/270` C# tests; all `186` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,460` rows /
+`1,787` blocker rows and exposes achievement `5911` as the next unprocessed
+evidence-ranked blocker (`156`). The explicit grant case adds one script-
+event evidence row. The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented exact named-objective grant boundary with a
+mapped-only producer**, not implemented detection mechanics or
+retail-complete behavior. Retail implementation requires section activation,
+exact Sniper spawn/placement selection, resolution of the TargetGroup
+mismatch, attention/acquisition/loss and line-of-sight semantics,
+player-versus-team failure behavior, reset/replay cleanup,
+persistence/relogin, points/notification UI, rewards, and full dungeon
+client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5909 Keen Senses grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`154` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 25-point achievement to
+completing the Keen Senses challenge by avoiding traps. Client
+AchievementChecklist row `5909` is unrelated: it belongs to achievement
+`4341`, bit `4`, and object `8044`; no checklist row has achievement ID or
+object ID `5909`. Jabbithole achievement row `2008` independently agrees on
+the condition, required count, points, and zone.
+
+Build objective `2856` is the exact named Keen Senses row for event `594`:
+public-team flags `2171908`, type `16`, object TargetGroup `10569`, no
+WorldLocation2 or failure timer, challenge category `3`, and full/short text
+IDs `589356/589357`. Jabbithole objective row `8151` independently maps the
+same trap-avoidance condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5909` by explicit ID
+to eligible current online objective-team members when exact objective
+`2856` succeeds. Focused tests prove the positive grant plus completed,
+offline, failed-`2856`, and successful-sibling-`2859` rejection. The
+controller does not activate `2856` and owns no reviewed trap entity set,
+placement, hit/failure state, section-completion handoff, or reset path.
+
+The broader row slice passes `267/267` C# tests; all `185` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,459` rows /
+`1,787` blocker rows and exposes achievement `5910` as the next unprocessed
+evidence-ranked blocker (`155`). The explicit grant case adds one script-
+event evidence row. The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented exact named-objective grant boundary with a
+mapped-only producer**, not implemented trap mechanics or retail-complete
+behavior. Retail implementation requires section activation, exact trap
+creature/spell/hazard/volume and placement evidence, hit-versus-avoid
+semantics, player-versus-team failure behavior, reset/replay cleanup,
+persistence/relogin, points/notification UI, rewards, and full dungeon
+client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5908 Gate-guard Drive-by grant/timer closure.
+
+Queue-rank-`13` blocker-rank-`153` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 25-point achievement to
+completing the Drive-by challenge by defeating the gate guard within the time
+limit. Client AchievementChecklist row `5908` is unrelated: it belongs to
+achievement `4341`, bit `3`, and object `8874`; no checklist row has
+achievement ID or object ID `5908`. Jabbithole achievement row `1973`
+independently agrees on the condition, required count, points, and zone.
+
+Build objective `2853` is the exact named Drive-by row for event `594`:
+public-team flags `2171908`, type `16`, object `0`, no WorldLocation2,
+`failureTimeMs 120000`, challenge category `3`, and full/short text IDs
+`589343/589344`. Jabbithole objective row `8148` independently maps the same
+gate-guardian and time-limit condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5908` by explicit ID
+to eligible current online objective-team members when exact objective
+`2853` succeeds. Focused tests prove the positive grant plus completed,
+offline, failed-`2853`, and successful-sibling-`2852` rejection. A shared
+objective regression proves 119.999 seconds succeeds, 120 seconds fails, and
+late credit is rejected once an external controller activates the row with
+dynamic max `1`. The current controller does not activate `2853` and owns no
+gate-guardian identity/spawn/death producer or exact timer start.
+
+The broader row slice passes `264/264` C# tests; all `184` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,458` rows /
+`1,787` blocker rows and exposes achievement `5909` as the next unprocessed
+evidence-ranked blocker (`154`). The explicit grant case adds one script-
+event evidence row. The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented grant and generic timer boundary with a mapped-only
+producer**, not a retail-complete Drive-by challenge. Retail implementation
+requires section activation, exact gate-guardian creature/TargetGroup and
+placement evidence, death credit, timer start/presentation, timeout/reset/
+replay behavior, team/late-join semantics, persistence/relogin, points/
+notification UI, rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5907 Shadowstepper grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`152` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 25-point achievement to
+completing the named Shadowstepping challenge without sniper detection.
+Client AchievementChecklist row `5907` is unrelated: it belongs to
+achievement `4341`, bit `2`, and object `9025`; object ID `5907` appears only
+in unrelated row `4565`, and no checklist row has achievement ID `5907`.
+Jabbithole achievement row `1988` independently agrees on the achievement
+condition, required count, points, and zone.
+
+Build objective `2852` is the unique exact named Shadowstepping row for event
+`594`: public-team flags `2171908`, type `16`, object TargetGroup `10569`,
+no WorldLocation2 or failure timer, challenge category `3`, and full/short
+text IDs `589340/589341`. Jabbithole objective row `8205` independently maps
+the same objective and name. Its detailed text says detection by drones,
+while the achievement says detection by the sniper; that actor discrepancy
+remains unresolved.
+
+`UltimateProtogamesEventScript` now grants achievement `5907` by explicit ID
+to eligible current online objective-team members when exact objective
+`2852` succeeds. Focused tests prove the positive grant plus completed,
+offline, failed-`2852`, and successful-sibling-`2856` rejection. The
+controller does not activate `2852` and owns no Shadowstepping section or
+detection/failure state, so its producer remains mapped-only.
+
+The broader row slice passes `260/260` C# tests; all `183` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,457` rows /
+`1,787` blocker rows and exposes achievement `5908` as the next unprocessed
+evidence-ranked blocker (`153`). The explicit grant case adds one script-
+event evidence row. The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented exact named-objective grant boundary with a
+mapped-only producer**, not implemented detection mechanics or retail-
+complete behavior. Retail implementation requires section activation,
+drone-versus-sniper reconciliation, detector creature/spell/signal and
+line-of-sight evidence, target acquisition/loss, player-versus-team failure
+semantics, reset/replay cleanup, persistence/relogin, points/notification UI,
+rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5906 Immortal: The Prototentiary server-boundary closure.
+
+Queue-rank-`13` blocker-rank-`151` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 50-point achievement to
+sneaking through the Prototentiary without anyone in the party dying. Client
+AchievementChecklist row `5906` is unrelated: it belongs to achievement
+`4341`, bit `1`, and object `4949`; no checklist row has achievement ID or
+object ID `5906`. Jabbithole achievement row `1936` independently agrees on
+the condition, required count, points, and zone.
+
+Build objective `2857` is the exact public-team flags-`4` no-death row:
+type `5`, object TargetGroup `10569`, no WorldLocation2 or failure timer,
+challenge category `1`, and full/short text IDs `589358/589359`. Its text
+requires completing the current event without anyone in the group dying;
+Jabbithole objective row `8208` independently maps the same condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5906` by explicit ID
+to eligible current online objective-team members when exact objective
+`2857` succeeds. The existing producer activates `2857` with dynamic max `1`,
+invalidates it on player death, preserves it across non-player deaths, and
+credits it only when aggregate objective `2678` succeeds without a player
+death. Focused tests prove the positive grant plus completed, offline,
+failed-`2857`, successful-sibling-`2871`, player-death, and non-player-death
+boundaries.
+
+The broader row slice passes `257/257` C# tests; all `182` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,456` rows /
+`1,787` blocker rows and exposes achievement `5907` as the next unprocessed
+evidence-ranked blocker (`152`). The new explicit objective case adds one
+script-event evidence row. The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented and tested server no-death objective/achievement
+boundary**, not retail-complete party semantics. Retail completion still
+requires exact random-room routing, joined-party versus observer membership,
+late join/disconnect/replacement handling, death/release/wipe edge cases,
+reset/replay cleanup, persistence/relogin, points/notification UI, rewards,
+and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5905 Prototentiary Prowl server-boundary closure.
+
+Queue-rank-`13` blocker-rank-`150` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 10-point achievement to
+sneaking through the Prototentiary. Client AchievementChecklist row `5905`
+is unrelated: it belongs to achievement `4341`, bit `0`, and object `8961`.
+Object ID `5905` appears only in unrelated rows `4564` and `8423`; no
+checklist row has achievement ID `5905`. Jabbithole achievement row `1914`
+independently agrees on the condition, required count, points, and zone.
+
+Build objective `2678` is the exact public-team Prototentiary aggregate:
+flags `2170880`, ActivateTargetGroup type `3`, object TargetGroup `10583`,
+no failure timer, and full/short text IDs `577350/577351`. Its short text is
+“Sneak through the Prototentiary”; Jabbithole objective row `8181`
+independently maps the Warden-plus-intern-release condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5905` by explicit ID
+to eligible current online objective-team members when exact objective
+`2678` succeeds. The existing runtime producer activates the aggregate with
+dynamic max `2`, spawns Cage Console `1100300081` and Warden `1100300092`,
+credits TargetGroup `10583` once on console activation, and credits objective
+`2678` once on Warden death. Focused tests prove both producer legs, the
+positive grant, and completed, offline, failed-`2678`, and successful-sibling-
+`2857` rejection.
+
+The broader row slice passes `254/254` C# tests; all `181` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,455` rows /
+`1,787` blocker rows and exposes achievement `5906` as the next unprocessed
+evidence-ranked blocker (`151`). The core row count stays flat because this
+closure upgrades the existing achievement dependency row rather than adding
+a new event-flow row. The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented and tested server objective/achievement boundary**,
+not a retail-complete room claim. Retail completion still requires exact
+random-room selection, Gate Console and door choreography, sniper/detection
+and alarm behavior, intern cage/release visuals, objective-`2858` no-alarm
+semantics, Deputy patrol/evade handling, reset/replay and late-join semantics,
+persistence/relogin, points/notification UI, rewards, and full dungeon
+client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5904 Overcoming Toxophobia mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`149` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, zero-point achievement to
+surviving toxic air in the Elemental Hospital for 20 seconds. Client
+AchievementChecklist row `5904` is unrelated: it belongs to achievement
+`4337`, bit `2`, and object `4336`; no checklist row has achievement ID or
+object ID `5904`. Jabbithole achievement row `2105` independently supplies
+the completed condition, required count, points, and zone.
+
+No build public-event objective represents the timed per-player exposure.
+Spell `72234`, its damage effect `198393`, and RavelSignal effect `188896`
+identify toxic air and receiver mode `4` / signal `23106`; protective beacon
+spells suspend hazard `214`. Those rows do not establish exposure start/
+removal, continuous versus cumulative timing, shield/suspension pause or
+reset, or the exact 20-second grant owner. A focused regression proves
+objective `2892` success does not grant achievement `5904`, because that
+objective requires never breathing toxic air.
+
+The broader row slice passes `251/251` C# tests; all `180` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,455` rows /
+`1,787` blocker rows and exposes achievement `5905` as the next unprocessed
+evidence-ranked blocker (`150`). The core row count stays flat because this
+mapped-only closure adds no production event-flow case. The known unrelated
+full-suite runtime-seed entity-`1099000004` failure remains outside this slice.
+
+This is a **mapped-only achievement closure with a tested negative boundary**,
+not implemented or retail-complete behavior. Retail implementation requires
+live or decompile evidence for toxic-air application/removal, exact
+20-second timing, shield/hazard-suspension behavior, damage/death semantics,
+interruption/reset/retry and wipe/replay cleanup, grant timing,
+persistence/relogin, notification UI, rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5903 Stage Fright mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`148` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 10-point achievement to having
+every party member carry the beacon during the Elemental Hospital event.
+Client AchievementChecklist row `5903` is unrelated: it belongs to
+achievement `4337`, bit `1`, and object `4335`; no checklist row has
+achievement ID or object ID `5903`. Jabbithole achievement row `2069`
+independently agrees on the condition, required count, points, and zone.
+
+No build public-event objective directly represents the required per-member
+historical state. Beacon/carrier Creature2 rows `62274`, `62305`,
+`62308`-`62311`, `62453`, and `62560`-`62563`, plus spells `72003` and
+`72310`-`72313`, prove a carrier aura and attunement surface but not the
+pickup/drop/transfer owner, party roster snapshot, or durable carry ledger.
+A focused regression proves parent objective `2674` success does not grant
+achievement `5903` without that evidence.
+
+The broader row slice passes `250/250` C# tests; all `179` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,455` rows /
+`1,787` blocker rows and exposes achievement `5904` as the next unprocessed
+evidence-ranked blocker (`149`). The core row count stays flat because this
+mapped-only closure adds no production event-flow case. The known unrelated
+full-suite runtime-seed entity-`1099000004` failure remains outside this slice.
+
+This is a **mapped-only achievement closure with a tested negative boundary**,
+not implemented or retail-complete behavior. Retail implementation requires
+live or decompile evidence for party snapshot semantics, beacon pickup/drop/
+transfer and aura ownership, per-member carry history, disconnect/reconnect/
+replacement handling, exact terminal evaluation, reset/retry and wipe/replay
+cleanup, persistence/relogin, points/notification UI, rewards, and full
+dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5902 Chronophobia grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`147` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 25-point achievement to completing
+the Elemental Hospital event in under ten minutes. Client
+AchievementChecklist row `5902` is unrelated: it belongs to achievement
+`4337`, bit `0`, and object `4334`; no checklist row has achievement ID or
+object ID `5902`. Jabbithole achievement row `2032` independently agrees on
+the condition, required count, points, and zone.
+
+Build objective `2890` is the exact public-team flags-`4` TimedWin challenge
+at WorldLocation2 `41714`: count `0`, object `0`, `failureTimeMs 600000`, and
+challenge category `1`. Jabbithole objective row `8152` independently maps
+the same condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5902` by explicit ID
+to eligible current online objective-team members when objective `2890`
+succeeds. Focused tests prove the positive team grant plus completed, offline,
+failed-`2890`, and successful-sibling-`2891` rejection. Shared objective
+coverage proves success at 599.999 seconds, failure at 600 seconds, and
+rejection of late credit.
+
+The broader row slice passes `249/249` C# tests; all `178` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,455` rows /
+`1,787` blocker rows and exposes achievement `5903` as the next unprocessed
+evidence-ranked blocker (`148`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed exact achievement-grant boundary with a
+mapped-only Chronophobia producer**, not retail-complete challenge behavior.
+The controller does not select or activate the Elemental Hospital room,
+establish the exact timer start, produce its six-wave and boss lifecycle,
+report terminal event success/timeout, or clean up/reset the encounter. Retail
+completion still needs those semantics, team/late-join behavior, wipe/replay
+cleanup, persistence/relogin, points/notification UI, rewards, and full
+dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5901 Atychiphobia grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`146` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 25-point achievement to completing
+the Atychiphobia optional objective without buffing a creature with Elemental
+Overload. No client AchievementChecklist row has ID, achievement ID, or object
+ID `5901`. Jabbithole achievement row `2007` independently agrees on the
+condition, required count, points, and zone.
+
+Build objective `2891` is the exact public-team flags-`4` Script challenge at
+WorldLocation2 `41714`: count `0`, object `0`, no failure timer, and challenge
+category `1`. Jabbithole objective row `8167` independently maps the same
+condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5901` by explicit ID
+to eligible current online objective-team members when objective `2891`
+succeeds. Focused tests prove the positive team grant plus completed, offline,
+failed-`2891`, and successful-sibling-`2892` rejection. The focused
+grant/signal bundle passes `8/8` C# tests.
+
+The broader row slice passes `246/246` C# tests; all `177` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,454` rows /
+`1,787` blocker rows and exposes achievement `5902` as the next unprocessed
+evidence-ranked blocker (`147`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed exact achievement-grant boundary with a
+mapped-only Atychiphobia producer**, not retail-complete challenge behavior.
+Spells `75868`/`77989` and receiver mode `4` / signal `23104` identify
+Elemental Overload application, but mode `4` remains diagnostics-only. The
+controller does not activate the Elemental Hospital objective, own the
+attunement-to-overload lifecycle, identify the exact receiver/target and
+one-shot failure semantics, produce terminal event success, or clean up/reset
+the encounter. Retail completion still needs those semantics, party scope,
+team/late-join behavior, wipe/replay cleanup, persistence/relogin,
+points/notification UI, rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5900 Toxophobia grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`145` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 25-point achievement to completing
+the Toxophobia optional objective without breathing toxic air. Client
+AchievementChecklist row `5900` is unrelated: it belongs to achievement
+`4331`, bit `0`, and object `4330`; no checklist row has achievement ID or
+object ID `5900`. Jabbithole achievement row `2022` independently agrees on
+the condition, required count, points, and zone.
+
+Build objective `2892` is the exact public-team flags-`4` Script challenge at
+WorldLocation2 `41714`: count `0`, object `0`, no failure timer, and challenge
+category `1`. Jabbithole objective row `8146` independently maps the same
+condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5900` by explicit ID
+to eligible current online objective-team members when objective `2892`
+succeeds. Focused tests prove the positive team grant plus completed, offline,
+failed-`2892`, and successful-sibling-`2891` rejection. The focused
+grant/hazard/signal bundle passes `21/21` C# tests.
+
+The broader row slice passes `243/243` C# tests; all `176` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,453` rows /
+`1,787` blocker rows and exposes achievement `5901` as the next unprocessed
+evidence-ranked blocker (`146`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed exact achievement-grant boundary with a
+mapped-only Toxophobia producer**, not retail-complete challenge behavior.
+Spell `72234` and receiver mode `4` / signal `23106` identify toxic-air damage,
+while protective spells suspend hazard `214`, but mode `4` remains
+diagnostics-only. The controller does not activate the Elemental Hospital
+objective/hazard, manage beacon protection, produce the exact failure or
+party-scope semantics, own terminal event success, or clean up/reset the
+encounter. Retail completion still needs those semantics, coexistence with
+the distinct achievement-`5904` 20-second survival condition, team/late-join
+behavior, wipe/replay cleanup, persistence/relogin, points/notification UI,
+rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5899 Institutionalized grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`144` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 25-point achievement to completing
+Quick Visit by defeating the Elemental Master in under three minutes. Client
+AchievementChecklist row `5899` is unrelated: it belongs to achievement
+`4315`, bit `5`, and object `33233`; no checklist row has achievement ID or
+object ID `5899`. Jabbithole achievement row `1956` independently agrees on
+the condition, required count, points, and zone.
+
+Build objective `2888` is the exact public-team flags-`4` Script challenge at
+WorldLocation2 `41714`: count `0`, object `0`, `failureTimeMs 180000`, and
+challenge category `3`. Its text requires defeating the Elemental Master in
+under three minutes; Jabbithole objective row `8223` independently maps the
+same condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5899` by explicit ID
+to eligible current online objective-team members when objective `2888`
+succeeds. Focused tests prove the positive team grant plus completed, offline,
+failed-`2888`, and successful-sibling-`2887` rejection. Shared objective
+coverage proves success at 179.999 seconds, failure at 180 seconds, and
+rejection of late credit.
+
+The broader row slice passes `240/240` C# tests; all `175` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,452` rows /
+`1,787` blocker rows and exposes achievement `5900` as the next unprocessed
+evidence-ranked blocker (`145`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed exact achievement-grant boundary with a
+mapped-only Quick Visit producer**, not retail-complete challenge behavior.
+The controller does not activate the Elemental Hospital room/objectives,
+produce the six waves, spawn or transition Elemental Master `63319`, establish
+the exact timer start, apply attunement/vulnerability states, credit the
+terminal death, fail on timeout, or clean up/reset the encounter. Retail
+completion still needs those semantics, team/late-join behavior, wipe/replay
+cleanup, persistence/relogin, points/notification UI, rewards, and full
+dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5898 Patient Secured grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`143` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 25-point achievement to defeating
+the Protostar Intern during the Escaped Patient challenge. Client
+AchievementChecklist row `5898` is unrelated: it belongs to achievement
+`4315`, bit `4`, and object `33232`; no checklist row has achievement ID
+`5898`. Jabbithole achievement row `1935` independently agrees on the
+condition, required count, points, and zone.
+
+Build objective `2887` is the exact public-team flags-`4` TimedWin challenge
+at WorldLocation2 `41714`: count `0`, object `0`, `failureTimeMs 60000`, and
+challenge category `3`. Its text requires stopping the Protostar Intern from
+escaping; Jabbithole objective row `8163` independently maps the same
+condition.
+
+`UltimateProtogamesEventScript` now grants achievement `5898` by explicit ID
+to eligible current online objective-team members when objective `2887`
+succeeds. Focused tests prove the positive team grant plus completed, offline,
+failed-`2887`, and successful-sibling-`2888` rejection. Shared objective
+coverage proves success at 59.999 seconds, failure at 60 seconds, and rejection
+of late credit.
+
+The broader row slice passes `237/237` C# tests; all `174` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,451` rows /
+`1,787` blocker rows and exposes achievement `5899` as the next unprocessed
+evidence-ranked blocker (`144`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed exact achievement-grant boundary with a
+mapped-only Escaped Patient producer**, not retail-complete challenge
+behavior. The controller does not activate the room/objective or own
+Protostar Intern `67452` spawn, escape route, movement state, death success,
+escape/timeout failure, or cleanup. Retail completion still needs those
+semantics, exact timer start and ordering, team/late-join behavior,
+wipe/replay cleanup, persistence/relogin, points/notification UI, rewards, and
+full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5897 Claustrophobic Skip grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`142` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 25-point achievement to avoiding
+telegraph damage for a full Elemental Hospital wave. Client
+AchievementChecklist row `5897` is unrelated: it belongs to achievement
+`4315`, bit `3`, and object `33231`; no checklist row has achievement ID
+`5897`. Jabbithole achievement row `1913` independently agrees on the
+condition, required count, points, and zone.
+
+Build objective `2886` is the exact public-team flags-`4` Script challenge at
+WorldLocation2 `41714`: count `0`, object `0`, no failure timer, and challenge
+category `3`. Jabbithole objective row `8171` independently says `Complete the
+next wave without taking any telegraph damage`.
+
+`UltimateProtogamesEventScript` now grants achievement `5897` by explicit ID
+to eligible current online objective-team members when objective `2886`
+succeeds. Focused tests prove the positive team grant plus completed, offline,
+failed-`2886`, and successful-sibling-`2885` rejection.
+
+The broader row slice passes `234/234` C# tests; all `173` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,450` rows /
+`1,787` blocker rows and exposes achievement `5898` as the next unprocessed
+evidence-ranked blocker (`143`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed exact achievement-grant boundary with a
+mapped-only Claustrophobic Skip producer**, not retail-complete challenge
+behavior. The spell runtime recognizes telegraph targets, but damage
+descriptions do not retain that provenance and the controller has no
+Elemental Hospital activation, wave boundary, qualifying-damage failure, or
+completion/reset producer. Retail completion still needs those semantics,
+including party scope, shield/immunity/zero/periodic damage, terminal wave
+success, retry and wipe/replay cleanup, team/late-join behavior,
+persistence/relogin, points/notification UI, rewards, and full dungeon client
+smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5896 Panic Pronto grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`141` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 25-point achievement to defeating
+an Elemental Hospital wave in under 30 seconds. Client
+AchievementChecklist row `5896` is unrelated: it belongs to achievement
+`4315`, bit `2`, and object `33230`; no checklist row has achievement ID
+`5896`. Jabbithole achievement row `2090` independently agrees on the
+condition, required count, points, and zone.
+
+Build objective `2885` is the exact public-team flags-`4` Script challenge at
+WorldLocation2 `41714`: count `0`, object `0`, `failureTimeMs 30000`, and
+challenge category `3`. Jabbithole objective row `8154` independently says
+`Complete the next wave in under 30s`.
+
+`UltimateProtogamesEventScript` now grants achievement `5896` by explicit ID
+to eligible current online objective-team members when objective `2885`
+succeeds. Focused tests prove the positive team grant plus completed, offline,
+failed-`2885`, and successful-sibling-`2886` rejection. Shared objective
+coverage proves success at 29.999 seconds, failure at 30 seconds, and rejection
+of late credit after failure.
+
+The broader row slice passes `231/231` C# tests; all `172` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,449` rows /
+`1,787` blocker rows and exposes achievement `5897` as the next unprocessed
+evidence-ranked blocker (`142`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed exact achievement-grant boundary with a
+mapped-only Panic Pronto producer**, not retail-complete challenge behavior.
+The current controller has no Elemental Hospital phase and does not select the
+qualifying wave, activate objective `2885`, define the timer start relative to
+spawning, identify terminal wave completion, or reset/retry the challenge.
+Retail completion still needs those producers, exact success/failure ordering,
+team and late-join/disconnect semantics, wipe/replay cleanup,
+persistence/relogin, points/notification UI, rewards, and full dungeon client
+smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5895 Immortal: Elemental Hospital mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`140` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 50-point achievement to
+completing Elemental Hospital without anyone in the party dying. Client
+AchievementChecklist row `5895` is unrelated: it belongs to achievement
+`4315`, bit `1`, and object `33229`; no checklist row has achievement ID
+`5895`. Jabbithole achievement row `2068` independently agrees on the
+deathless condition, required count, points, and zone.
+
+Main objective `2674` at WorldLocation2 `41714` proves only the six-credit
+Elemental Hospital completion boundary; it does not encode the party no-death
+condition. Co-located objective `2889` has `[DELETE]` full and short text, so
+using it as a hidden deathless holder would invent semantics. Existing generic
+no-death objectives `2857` and `2871` are owned by the Prototentiary and Waste
+Management Facility, respectively.
+
+A focused negative regression proves successful objective `2674` grants base
+Master of the Elements achievement `5894` but does not grant achievement
+`5895` without no-death evidence. The broader row slice passes `228/228` C#
+tests; all `171` audit and `34` validator tests pass. Regeneration validates
+`31` CSVs / `167,448` rows / `1,787` blocker rows and exposes achievement
+`5896` as the next unprocessed evidence-ranked blocker (`141`). The known
+unrelated full-suite runtime-seed entity-`1099000004` failure remains outside
+this slice.
+
+This is a **mapped-only, negative-test-backed closure**, not an implementation.
+The current controller has no Elemental Hospital phase, room-attempt
+activation, joined-party death state, completion pairing, reset, or 5895 grant
+producer. Retail implementation requires live packet/log or controller
+decompile proof for route/no-death activation, party versus observer scope,
+death timing, late joins/disconnects, completion/grant ordering, wipe/retry
+cleanup, persistence/relogin, points/notification UI, rewards, and full
+dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5894 Master of the Elements grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`139` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 10-point achievement to mastering
+the Elements in the Elemental Hospital. Client AchievementChecklist row `5894`
+is unrelated: it belongs to achievement `4315`, bit `0`, and object `33228`;
+no checklist row has achievement ID `5894`. Jabbithole achievement row `2031`
+independently agrees on the completion condition, required count, points, and
+zone.
+
+Build objective `2674` is the exact public-team main ResourcePool boundary at
+WorldLocation2 `41714`: flags `0`, count `6`, object `0`, no failure timer,
+full text `Defeat the Elemental Master`, and short text `Master the Elements`.
+Jabbithole objective row `8157` independently names the same boss defeat.
+
+`UltimateProtogamesEventScript` now grants achievement `5894` by explicit ID
+to eligible current online objective-team members when objective `2674`
+succeeds. Focused tests prove the positive team grant plus completed, offline,
+failed-`2674`, and successful-sibling-`2677` rejection. Shared objective tests
+also prove five credits remain active, the sixth succeeds, WorldLocation2
+`41714` is advertised, and post-success credit is rejected.
+
+The broader row slice passes `227/227` C# tests; all `170` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,448` rows /
+`1,787` blocker rows and exposes achievement `5895` as the next unprocessed
+evidence-ranked blocker (`140`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed exact achievement-grant boundary with a
+mapped-only Elemental Hospital producer**, not retail-complete room behavior.
+The current controller does not activate the room, own wave/beacon/attunement/
+toxic-air state, spawn or transition the Elemental Master, determine the six
+ResourcePool deltas, or clean up replay state. Retail completion still needs
+exact wave ordering and lifecycle, beacon carry/drop and attunement,
+toxic-air protection and failure, vulnerability/Elemental Overload behavior,
+pool-delta and boss-form semantics, child-objective ordering, wipe/replay
+cleanup, persistence/relogin, points/notification UI, rewards, and full
+dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5893 Multi-Cosmic-Kick mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`138` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`1`, 10-point achievement to one Cosmic
+Kick spell `71680` kicking multiple Marauders off H.M.S. Phineas at once.
+Client AchievementChecklist row `5893` is unrelated: it belongs to achievement
+`4314`, bit `5`, and object `33195`; no checklist row has achievement ID
+`5893`. Jabbithole achievement row `2006` independently agrees on the at-once
+multi-Marauder condition, required count, points, and zone.
+
+No build-16042 PublicEventObjective or Jabbithole objective tracks multiple
+Marauders from one cast. The H.M.S. rows expose aggregate room/resource
+completion `2677`/`2700`, timed three-kick objective `2922`, cumulative group
+knockoff totals `2923`/`2954`/`2955`/`2956`, and unrelated optionals. None
+proves same-cast target membership, minimum simultaneous targets, or the
+qualifying hit/forced-movement/off-ship boundary.
+
+Focused negative tests prove successful aggregate room objective `2677` and
+successful twenty-knockoff objective `2954` do not grant achievement `5893`.
+Granting on either would collapse a single multi-target cast into cumulative
+progress.
+
+The broader row slice passes `223/223` C# tests; all `169` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,447` rows /
+`1,787` blocker rows and exposes achievement `5894` as the next unprocessed
+evidence-ranked blocker (`139`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is a **mapped-only, negative-test-backed closure**, not an implementation.
+The current controller does not activate H.M.S. Phineas, group Cosmic Kick
+target results by cast, attribute off-ship outcomes to one cast, suppress
+duplicate target effects, or emit exact completion. Retail implementation
+requires live packet/log or controller/spell decompile proof for cast identity,
+target membership, minimum qualifying count, outcome ordering, partial failure,
+replay cleanup, persistence/relogin, points/notification UI, rewards, and full
+dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5888 Cosmic Kick 40 grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`133` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`40`, 25-point tier achievement to
+kicking forty Marauders off H.M.S. Phineas as a group. It follows tier
+achievement `5887`. Client AchievementChecklist row `5888` is unrelated: it
+belongs to achievement `4314`, bit `0`, and object `33190`; no checklist row
+has achievement ID `5888`. Jabbithole achievement row `1983` independently
+agrees on parent `2067`, tier root `2035`, the forty-knockoff description,
+required count, points, and zone.
+
+Build objective `2955` is the exact public-team Script boundary under parent
+objective `2677` at WorldLocation2 `41756`: flags `4`, count `40`, object `0`,
+and no failure timer. Jabbithole objective row `8213` independently describes
+using Cosmic Kick to knock forty Marauders off the ship. The ten- and
+twenty-knockoff tiers corroborate the same group contract.
+
+`UltimateProtogamesEventScript` now grants achievement `5888` by explicit ID
+to eligible current online objective-team members when objective `2955`
+succeeds. Focused tests prove the positive team grant plus completed, offline,
+failed-`2955`, and successful-sibling-`2956` rejection. Shared objective tests
+also prove thirty-nine credits remain active, the fortieth succeeds, and
+post-success credit is rejected.
+
+The broader row slice passes `210/210` C# tests; all `164` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,444` rows /
+`1,787` blocker rows and exposes achievement `5889` as the next unprocessed
+evidence-ranked blocker (`134`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed exact achievement-grant boundary with a
+mapped-only Cosmic Kick producer**, not retail-complete Cosmic Kick 40
+behavior. The current controller does not activate the H.M.S. route or
+objective `2955` and owns no Marauder spawns, Cosmic Kick acquisition/removal,
+vulnerability, hit/miss/forced-movement/off-ship attribution, group
+aggregation, or cleanup. Retail completion still needs those producers, exact
+per-cast/per-target and multi-target counting, duplicate suppression, team and
+late-join/disconnect semantics, wipe/replay cleanup, persistence/relogin,
+points/notification UI, rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5887 Cosmic Kick 20 grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`132` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`20`, 25-point tier achievement to
+kicking twenty Marauders off H.M.S. Phineas as a group. It follows tier
+achievement `5886`. Client AchievementChecklist row `5887` is unrelated: it
+belongs to achievement `4313`, bit `5`, and object `33143`; no checklist row
+has achievement ID `5887`. Jabbithole achievement row `2067` independently
+agrees on the tier root, twenty-knockoff description, required count, points,
+and zone.
+
+Build objective `2954` is the exact public-team Script boundary under parent
+objective `2677` at WorldLocation2 `41756`: flags `4`, count `20`, object `0`,
+and no failure timer. Jabbithole objective row `8214` independently describes
+using Cosmic Kick to knock twenty Marauders off the ship. Parallel objective
+`2923` and achievement `5886` corroborate the same group contract at ten.
+
+`UltimateProtogamesEventScript` now grants achievement `5887` by explicit ID
+to eligible current online objective-team members when objective `2954`
+succeeds. Focused tests prove the positive team grant plus completed, offline,
+failed-`2954`, and successful-sibling-`2955` rejection. Shared objective tests
+also prove nineteen credits remain active, the twentieth succeeds, and
+post-success credit is rejected.
+
+The broader row slice passes `207/207` C# tests; all `163` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,443` rows /
+`1,787` blocker rows and exposes achievement `5888` as the next unprocessed
+evidence-ranked blocker (`133`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed exact achievement-grant boundary with a
+mapped-only Cosmic Kick producer**, not retail-complete Cosmic Kick 20
+behavior. The current controller does not activate the H.M.S. route or
+objective `2954` and owns no Marauder spawns, Cosmic Kick acquisition/removal,
+vulnerability, hit/miss/forced-movement/off-ship attribution, group
+aggregation, or cleanup. Retail completion still needs those producers, exact
+per-cast/per-target and multi-target counting, duplicate suppression, team and
+late-join/disconnect semantics, wipe/replay cleanup, persistence/relogin,
+points/notification UI, rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5886 Cosmic Kick 10 grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`131` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, value-`10`, 10-point achievement to
+kicking ten Marauders off H.M.S. Phineas as a group. Client
+AchievementChecklist row `5886` is unrelated: it belongs to achievement
+`4313`, bit `4`, and object `33142`; no checklist row has achievement ID
+`5886`. Jabbithole achievement row `2035` independently agrees on the exact
+ten-knockoff description, required count, points, and zone.
+
+Build objective `2923` is the exact public-team Script boundary under parent
+objective `2677` at WorldLocation2 `41756`: flags `4`, count `10`, object `0`,
+and no failure timer. Jabbithole objective row `8220` independently describes
+using Cosmic Kick on ten Marauders to knock them off the ship.
+
+`UltimateProtogamesEventScript` now grants achievement `5886` by explicit ID
+to eligible current online objective-team members when objective `2923`
+succeeds. Focused tests prove the positive team grant plus completed, offline,
+failed-`2923`, and successful-sibling-`2954` rejection. Shared objective tests
+also prove nine credits remain active, the tenth succeeds, and post-success
+credit is rejected.
+
+The broader row slice passes `204/204` C# tests; all `162` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,442` rows /
+`1,787` blocker rows and exposes achievement `5887` as the next unprocessed
+evidence-ranked blocker (`132`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed exact achievement-grant boundary with a
+mapped-only Cosmic Kick producer**, not retail-complete Cosmic Kick 10
+behavior. The current controller does not activate the H.M.S. route or
+objective `2923` and owns no Marauder spawns, Cosmic Kick acquisition/removal,
+vulnerability, hit/miss/forced-movement/off-ship attribution, group
+aggregation, or cleanup. Retail completion still needs those producers, exact
+per-cast/per-target and multi-target counting, duplicate suppression, team and
+late-join/disconnect semantics, wipe/replay cleanup, persistence/relogin,
+points/notification UI, rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5885 Rapid Kicker mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`130` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, required-progress-`1`, 25-point achievement
+to completing Rapid Fire on H.M.S. Phineas by Cosmic Kicking five Marauders
+within ten seconds. Client AchievementChecklist row `5885` is unrelated: it
+belongs to achievement `4313`, bit `3`, and object `33141`; no checklist row
+has achievement ID `5885`. Jabbithole achievement row `2005` independently
+agrees on the five-kick description, required count, points, and zone.
+
+Build objective `2922` is the named Rapid Fire Script challenge under parent
+objective `2677` at WorldLocation2 `41756`, but its exact row has count `3`
+and `failureTimeMs=10000`. Jabbithole objective row `8217` also says to kick
+three Marauders within ten seconds. No separate five-kick objective exists in
+public event `594`, so the achievement and objective expose a real
+three-versus-five contract conflict.
+
+Focused shared-objective coverage proves only the build row's current timer
+boundary: two credits stay active, a third at 9.999 seconds succeeds, and a
+third after ten-second failure is rejected. Focused controller coverage
+proves successful objective `2922` does not silently grant achievement
+`5885`. The current controller also lacks the H.M.S. route/objective
+activation, Cosmic Kick knockoff attribution, first-kick timer trigger,
+rolling-window reset, and cleanup.
+
+The broader row slice passes `201/201` C# tests; all `161` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,441` rows /
+`1,787` blocker rows and exposes achievement `5886` as the next unprocessed
+evidence-ranked blocker (`131`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is a **mapped-only exact contract-conflict blocker with a test-backed
+no-overgrant boundary**, not an implementation or retail-complete
+achievement. Retail implementation requires live packet/log or
+controller/spell-decompile evidence reconciling the three-versus-five
+relationship and proving route activation, qualifying knockoff attribution,
+timer/reset and multi-target behavior, team scope, failure/retry and replay
+cleanup, grant ordering, persistence/relogin, points/notification UI, rewards,
+and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5884 Immortal: H.M.S. Phineas mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`129` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, required-progress-`1`, 50-point achievement
+to completing the H.M.S. Phineas event without anyone in the party dying.
+Client AchievementChecklist row `5884` is unrelated: it belongs to
+achievement `4313` and object `33140`; no checklist row has achievement ID
+`5884`. Jabbithole achievement row `2024` independently agrees on the
+achievement ID, title, description, required count, points, and zone.
+
+Main H.M.S. Phineas objective `2677` at WorldLocation2 `41756` proves only
+whole-event completion within `failureTimeMs=300000`; it does not encode the
+party no-deaths qualifier. Generic no-deaths objective `2857` has no
+WorldLocation2 and is explicitly owned by the Prototentiary route, while
+objective `2871` belongs to the Waste Management Facility tank room at
+WorldLocation2 `41754`. Neither is evidence for H.M.S. Phineas.
+
+The current phase catalog and controller have no H.M.S.-scoped route,
+active-attempt state, joined-party death tracking, reset, or achievement
+`5884` producer. Focused negative coverage proves successful objective
+`2677` grants Cosmic Kicker `5883` but does not overgrant Immortal:
+H.M.S. Phineas without no-deaths evidence.
+
+The broader row slice passes `200/200` C# tests; all `160` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,441` rows /
+`1,787` blocker rows and exposes achievement `5885` as the next unprocessed
+evidence-ranked blocker (`130`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is a **mapped-only exact blocker with a test-backed no-overgrant
+boundary**, not an implementation or retail-complete achievement. Retail
+implementation requires live packet/log or controller-decompile evidence for
+H.M.S. route and no-deaths activation, exact joined-party versus observer
+scope, death timing, late joins and disconnects, completion/grant ordering,
+wipe/retry/replay cleanup, persistence/relogin, points/notification UI,
+rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5883 Cosmic Kicker grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`128` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, required-progress-`1`, 10-point achievement
+to completing the Cosmic Kick event on the H.M.S. Phineas. Client
+AchievementChecklist row `5883` is unrelated: it belongs to achievement
+`4313` and object `33139`; no checklist row has achievement ID `5883`.
+Jabbithole achievement row `1954` independently agrees on the achievement ID,
+title, description, required count, points, and zone.
+
+Public-event objective `2677`, `Kick Marauders into Deep-Space before the
+time runs out!`, is the exact main-event boundary under event `594`: flags
+`0`, WorldLocation2 `41756`, public team `1`, type `13`, count/object `0`,
+and `failureTimeMs=300000`. Jabbithole objective row `8191` independently
+maps the same objective ID and text. Child objective `2923` instead tracks
+using Cosmic Kick spell `71680` on ten marauders and is not whole-event
+completion.
+
+`UltimateProtogamesEventScript` now grants achievement `5883` by explicit ID
+to eligible current online objective-team members when objective `2677`
+succeeds. Focused tests prove the positive team grant plus completed, offline,
+failed-`2677`, and successful-sibling-`2923` rejection.
+
+The broader row slice passes `199/199` C# tests; all `159` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,441` rows /
+`1,787` blocker rows and exposes achievement `5884` as the next unprocessed
+evidence-ranked blocker (`129`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed exact achievement-grant boundary with a
+mapped-only H.M.S. Phineas producer**, not retail-complete Cosmic Kick
+behavior. The current route does not select H.M.S. Phineas, activate
+objective `2677`, spawn the encounter, evaluate Cosmic Kick hits/knockback/
+off-ship scoring, or finish/fail its five-minute timer. Retail completion
+still needs those producers, team and late-join/disconnect semantics,
+reset/wipe/replay cleanup, persistence/relogin, points/notification UI,
+rewards, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5882 Squirgception grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`127` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, zero-point achievement to completing the
+Blitzsquirg event with a squirg helmet equipped in the helm slot. Its object
+and alternate-object IDs are `0`, and it has no progress-text row. Client
+AchievementChecklist row `5882` is unrelated: it belongs to achievement
+`4313` and object `33138`; no checklist row has achievement ID `5882`.
+Jabbithole has no achievement row with game ID `5882`.
+
+Public-event objective `2670`, `Survive the Blitzsquirg!`, is the exact
+completion boundary under event `594`: type-`21` ResourcePool, count `6`,
+object `0`, public team `1`, and WorldLocation2 `41755`. Jabbithole objective
+row `8224` independently maps the same objective ID and text. Client Item2
+rows `28653`, `28654`, and `28655` are the light, medium, and heavy Odd
+Squirg Hat variants. All three use ItemDisplay `2388` and ItemSlot `3`
+`ArmorHead`, whose equipped-slot flag maps to `EquippedItem.Head`. Quest item
+`3702` shares the display but is a non-equippable Quest Activated item, so
+possession or use does not qualify.
+
+`UltimateProtogamesEventScript` now checks each current online objective-team
+member's authoritative equipped head slot when objective `2670` succeeds and
+grants achievement `5882` only for exact Item2 `28653`/`28654`/`28655`.
+Focused tests cover all three armor variants, the paired base-achievement
+`5873` grant, wrong-head-item and inventory-only rejection, completed
+deduplication, and failed/wrong-objective rejection.
+
+The broader row slice passes `196/196` C# tests; all `158` audit and `34`
+validator tests pass. Regeneration validates `31` CSVs / `167,440` rows /
+`1,787` blocker rows and exposes achievement `5883` as the next unprocessed
+evidence-ranked blocker (`128`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed exact achievement-grant boundary with a
+mapped-only Squirgnasium producer**, not retail-complete Squirgception
+behavior. The current route does not select The Squirgnasium or activate
+objective `2670`. Retail completion still needs route/objective activation,
+wave completion, live equip and costume-override behavior, late-join and
+disconnect eligibility, persistence/relogin, duplicate and wipe/replay
+behavior, zero-point notification UI, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5881 Tea Time interaction/grant closure.
+
+Queue-rank-`13` blocker-rank-`126` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, required-progress-`1`, zero-point
+achievement to having tea with Creature2 `69876`, Wiggle Wellingsworth.
+Client and Jabbithole achievement row `2116` agree on achievement `5881`,
+its text, required count, zero-point value, and zone. Client
+AchievementChecklist row `5881` is unrelated: it belongs to achievement
+`4312` and object `2713`; no checklist row has achievement ID `5881`.
+
+Reviewed Jabbithole source coordinates `6289549` and `6289665` place Wiggle
+and the adjacent Tea Cup in world `2980`, area `4337`. The Tea Cup bridge now
+selects the exact `[UP] Tea Cup - Achievement NPC` Creature2 row `69883`
+instead of generic Grimvault flavor object `56874`. Creature `69883` owns
+activate spell `79328` and prerequisite `37093`; the spell's effect `208728`
+advances achievement `5881`, while the prerequisite requires
+AchievementState `5881` to equal `0`. Native dispatcher
+`PrerequisiteManager_EvaluateTypeSlot` (`1404a2100`) forwards the configured
+comparison, value, and object, so the managed check now compares completed
+state `0`/`1` against the row value and fails closed on unsupported states
+instead of treating `Equal` as unconditional completion.
+
+The checked-in runtime seed promotes the exact pair and five reviewed stat
+rows. The prepared local runtime database reports two exact entities, five
+exact stats, and zero expected or unexpected mismatches. The broader row
+slice passes `190/190` C# tests; all `157` audit, `34` validator, and `27`
+DataMapping tests pass. Regeneration validates `31` CSVs / `167,440` rows /
+`1,787` blocker rows and exposes achievement `5882` as the next unprocessed
+evidence-ranked blocker (`127`). The known unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed placement, interaction-gate, and exact
+achievement-grant producer**, not retail-complete Tea Time behavior. The
+current controller does not route players through the Squirgnasium, and the
+dismissed UAC prompt prevented a live client relaunch. Retail completion still
+needs live activation and tea presentation, zero-point notification behavior,
+persistence/relogin, duplicate-click rejection, wipe/replay cleanup, route
+integration, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5880 Squirg Farmer mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`125` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, required-progress-`1`, zero-point
+achievement to keeping a Squirg Bomber alive for over one minute. Client and
+Jabbithole achievement row `2106` agree on achievement `5880`, its text,
+required count, zero-point value, and zone. Client AchievementChecklist row
+`5880` is unrelated: it belongs to achievement `4312` and object `2712`; no
+checklist row has achievement ID `5880`.
+
+Unlike the preceding Squirgnasium achievements, no build-16042 public-event
+objective under event `594` names or encodes this survival condition.
+Objective `3199` is the only event objective whose text names Squirg Bombers,
+and it tracks avoiding Squirg Burst rather than a keep-alive timer. Client
+tables provide no other explicit achievement-`5880` relation. Successful
+Twinkle Toes, Speedy Slaughterfest, and Jump Jump callbacks are now pinned by
+negative tests to not grant Squirg Farmer.
+
+Exact negative guards pass `3/3`; the broader Ultimate Protogames
+event/objective slice passes `167/167`; all `156` audit and `34` validator
+tests pass. Regeneration validates `31` CSVs / `167,440` rows / `1,787`
+blocker rows and exposes achievement `5881` as the next evidence-ranked
+blocker (`126`). The unrelated full-suite runtime-seed entity-`1099000004`
+failure remains outside this slice.
+
+This is a **mapped-only achievement blocker with tested anti-overgrant
+guards**, not an implementation. The current route does not spawn or retain
+Squirg Bomber identity, start a per-Bomber survival clock, observe death/
+despawn/evade, select eligible players or teams, grant achievement `5880`, or
+reset the attempt. Retail implementation still needs route and wave
+activation, exact Bomber spawn identity, survival-timer start/threshold/tick
+ordering, death/despawn/evade cancellation, player/team eligibility and
+duplicate rules, wipe/retry and replay cleanup, grant timing,
+persistence/relogin, zero-point notification UI behavior, and full dungeon
+client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5879 Speedy Slaughterfest grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`124` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, required-progress-`1`, 25-point achievement
+to completing Speedy Slaughterfest by finishing The Squirgnasium within the
+time limit. Client and Jabbithole achievement row `2066` agree on achievement
+`5879`, its text, points, and zone. Client AchievementChecklist row `5879` is
+unrelated: it belongs to achievement `4311` and object `2714`; no checklist
+row has achievement ID `5879`.
+
+Public-event objective `2947` is an exact qualifying-condition match: a
+type-`5` Script row with flags `4`, count `0`, object `0`,
+`failureTimeMs=270000`, and no WorldLocation2, reward-pane TargetGroup, or
+parent. Jabbithole objective `8175` independently names the same eliminate-
+the-Squirg-within-the-time-limit condition. Because that objective itself
+proves the achievement boundary and owns the table-backed deadline,
+`UltimateProtogamesEventScript` now grants achievement `5879` by explicit ID
+to eligible current online objective-team members when `2947` succeeds.
+Failed `2947` and successful sibling `3199` do not grant it, while completed
+and offline members are skipped.
+
+Exact grant guards pass `3/3`; the broader Ultimate Protogames event/objective
+slice passes `164/164`; all `155` audit and `34` validator tests pass.
+Regeneration validates `31` CSVs / `167,440` rows / `1,787` blocker rows and
+exposes achievement `5880` as the next evidence-ranked blocker (`125`). The
+unrelated full-suite runtime-seed entity-`1099000004` failure remains outside
+this slice.
+
+This is an **implemented, test-backed achievement-grant boundary with a
+mapped-only qualifying-condition producer**, not retail-complete
+Squirgnasium behavior. The current route does not activate objective `2947`,
+spawn the retail wave roster, track final-wave or room completion, establish
+whether the 270-second clock begins on route selection, objective activation,
+first spawn, or first combat, or own failure/reset/replay cleanup. Retail
+completion still needs route and objective activation, exact wave spawn/
+count/cadence and final-wave completion, timer-start and success/failure
+ordering, duplicate and pre-start rejection, main-room completion linkage,
+late-join/death/disconnect behavior, wipe/retry and replay cleanup,
+persistence/relogin, reward effects, 25-point and notification UI behavior,
+and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5878 Twinkle Toes grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`123` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, required-progress-`1`, 25-point achievement
+to completing Twinkle Toes by evading the Squirg Bombers' Burst ability.
+Client and Jabbithole achievement row `2034` agree on achievement `5878`, its
+text, points, and zone. Client AchievementChecklist row `5878` is unrelated:
+it belongs to achievement `4311` and object `2711`; no checklist row has
+achievement ID `5878`.
+
+Public-event objective `3199` is an exact qualifying-condition match: a
+type-`5` Script row with flags `4`, count `0`, object `0`, and no failure
+timer, WorldLocation2, reward-pane TargetGroup, or parent. Jabbithole
+objective `8203` independently names the same avoid-getting-hit-by-Squirg-
+Burst condition. Because that objective itself proves the achievement
+boundary, `UltimateProtogamesEventScript` now grants achievement `5878` by
+explicit ID to eligible current online objective-team members when `3199`
+succeeds. Failed `3199` and successful sibling `3200` do not grant it, while
+completed and offline members are skipped.
+
+Exact grant guards pass `3/3`; the broader Ultimate Protogames event/objective
+slice passes `161/161`; all `154` audit and `34` validator tests pass.
+Regeneration validates `31` CSVs / `167,439` rows / `1,787` blocker rows and
+exposes achievement `5879` as the next evidence-ranked blocker (`124`). The
+unrelated full-suite runtime-seed entity-`1099000004` failure remains outside
+this slice.
+
+This is an **implemented, test-backed achievement-grant boundary with a
+mapped-only qualifying-condition producer**, not retail-complete
+Squirgnasium behavior. The current route does not activate objective `3199`,
+spawn Squirg Bomber waves, bind or observe spell `72114`, distinguish an
+actual Burst hit from target selection or unrelated health change, fail the
+zero-timer optional, complete it from a reviewed room-end signal, or own
+reset cleanup. Retail completion still needs route and objective activation,
+exact Bomber waves and Creature2/action-set/spell binding, Burst cast/
+telegraph/effect/result ordering, the actual hit-versus-avoid signal, party/
+duplicate rules, failure state and client presentation, room-completion
+success, late-join/death/disconnect behavior, wipe/retry and replay cleanup,
+persistence/relogin, 25-point and notification UI behavior, and full dungeon
+client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5877 Jump Around grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`122` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, required-progress-`1`, 25-point achievement
+to completing Jump Jump by avoiding Bubbles' Pulverize ability. Client and
+Jabbithole achievement row `2004` agree on achievement `5877`, its text,
+points, and zone; it has no client AchievementChecklist rows by achievement
+ID.
+
+Public-event objective `3200` is an exact qualifying-condition match: a
+type-`21` ResourcePool row with flags `4`, count `15`, object `0`, and no
+failure timer, WorldLocation2, reward-pane TargetGroup, or parent. Jabbithole
+objective `8197` independently names the same jump-to-avoid-each-Pulverize-
+ground-pound condition. Because that objective itself proves the achievement
+boundary, `UltimateProtogamesEventScript` now grants achievement `5877` by
+explicit ID to eligible current online objective-team members when `3200`
+succeeds. Failed `3200` and successful sibling `3198` do not grant it, while
+completed and offline members are skipped.
+
+Exact grant guards pass `3/3`; the broader Ultimate Protogames event/objective
+slice passes `158/158`; all `153` audit and `34` validator tests pass.
+Regeneration validates `31` CSVs / `167,438` rows / `1,787` blocker rows and
+exposes achievement `5878` as the next evidence-ranked blocker (`123`). The
+unrelated full-suite runtime-seed entity-`1099000004` failure remains outside
+this slice.
+
+This is an **implemented, test-backed achievement-grant boundary with a
+mapped-only qualifying-condition producer**, not retail-complete
+Squirgnasium behavior. The current route does not activate objective `3200`,
+spawn Bubbles, bind or observe Pulverize, receive the Ravel success payload,
+credit the counter, or own failure/reset cleanup. Retail completion still
+needs room and objective activation, exact Bubbles spawning and spell
+binding, Pulverize cast/impact and jump/airborne/contact ordering, the
+`75104`/`75106` mode-`4`/mode-`5` receiver graph and payload semantics,
+party/duplicate rules, hit failure versus withheld credit, fifteen-count
+completion, wipe/retry and replay cleanup, persistence/relogin, 25-point and
+notification UI behavior, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5876 Squirg Defuser grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`121` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, required-progress-`1`, 25-point achievement
+to completing the Squirg Defuser challenge by interrupting Squirg Belchers
+before they finish casting Squirg Onslaught. Client and Jabbithole achievement
+row `2051` agree on achievement `5876`, its text, points, and zone; it has no
+client AchievementChecklist rows by achievement ID.
+
+Public-event objective `3198` is an exact qualifying-condition match: a
+type-`21` ResourcePool row with flags `4`, count `3`, object `0`, and no
+failure timer, WorldLocation2, reward-pane TargetGroup, or parent. Jabbithole
+objective `8140` independently names the same Belcher-Onslaught interrupt
+condition. Because that objective itself proves the achievement boundary,
+`UltimateProtogamesEventScript` now grants achievement `5876` by explicit ID
+to eligible current online objective-team members when `3198` succeeds.
+Failed `3198` and successful sibling `2951` do not grant it, while completed
+and offline members are skipped.
+
+Exact grant guards pass `3/3`; the broader Ultimate Protogames event/objective
+slice passes `155/155`; all `152` audit and `34` validator tests pass.
+Regeneration validates `31` CSVs / `167,437` rows / `1,787` blocker rows and
+exposes achievement `5877` as the next evidence-ranked blocker (`122`). The
+unrelated full-suite runtime-seed entity-`1099000004` failure remains outside
+this slice.
+
+This is an **implemented, test-backed achievement-grant boundary with a
+mapped-only qualifying-condition producer**, not retail-complete
+Squirgnasium behavior. The current route does not activate objective `3198`,
+spawn Belcher waves, bind or observe Squirg Onslaught, receive an
+interrupt-reason signal, credit the counter, or own failure/reset cleanup.
+Retail completion still needs room and objective activation, exact waves and
+Belcher spawns, Creature2/action-set/spell binding, cast start/finish and
+interrupt-success ordering, a script-facing reason signal, count/team/
+duplicate semantics, completion versus failure/reset, wipe/replay cleanup,
+persistence/relogin, 25-point and notification UI behavior, and full dungeon
+client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5875 Clean Sweeper grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`120` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, required-progress-`1`, 25-point achievement
+to completing the Clean Sweep challenge by defeating each Squirgnasium wave
+before the next wave spawns. Client and Jabbithole achievement row `1953`
+agree on achievement `5875`, its text, points, and zone; it has no client
+AchievementChecklist rows by achievement ID.
+
+Public-event objective `2951` is an exact qualifying-condition match: a
+type-`21` ResourcePool row with flags `4`, count `5`, object `0`, and no
+failure timer, WorldLocation2, or reward-pane TargetGroup. Jabbithole
+objective `8218` independently names the same five-wave-before-next-wave
+condition. Because that objective itself proves the achievement boundary,
+`UltimateProtogamesEventScript` now grants achievement `5875` by explicit ID
+to eligible current online objective-team members when `2951` succeeds.
+Failed `2951` and successful sibling `2670` do not grant it, while completed
+and offline members are skipped.
+
+Exact grant guards pass `3/3`; the broader Ultimate Protogames event/objective
+slice passes `152/152`; all `151` audit and `34` validator tests pass.
+Regeneration validates `31` CSVs / `167,436` rows / `1,787` blocker rows and
+exposes achievement `5876` as the next evidence-ranked blocker (`121`). The
+unrelated full-suite runtime-seed entity-`1099000004` failure remains outside
+this slice.
+
+This is an **implemented, test-backed achievement-grant boundary with a
+mapped-only qualifying-condition producer**, not retail-complete
+Squirgnasium behavior. The current route does not activate objective `2951`,
+spawn or track five exact wave rosters, observe all-members-dead before the
+next-wave arrival, fail an overlapping wave, or own reset/replay cleanup.
+Retail completion still needs route and objective activation, exact wave
+rosters and cadence, clear-before-arrival credit and failure ordering,
+duplicate/pre-start rejection, reset/retry and wipe/replay cleanup, main-room
+completion linkage, persistence/relogin, 25-point and notification UI
+behavior, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5874 Immortal: The Squirgnasium mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`119` records the exact type-`12`,
+category-`316`, WorldZone-`4330`, required-progress-`1`, 50-point achievement
+for completing the Squirgnasium without a party member dying. Client and
+Jabbithole rows agree on achievement `5874`, its text, points, and zone; it
+has no client AchievementChecklist rows by achievement ID.
+
+Public-event objective `2670` proves the Blitzsquirg completion boundary, but
+does not carry party-death state. The two nearby exact no-death objectives are
+for different rooms: objective `2857` is the Prototentiary
+TargetGroup-`10569` condition that grants achievement `5906`, while objective
+`2871` is the Waste Management Facility WorldLocation2-`41754`,
+WorldArea-`4336` condition that grants achievement `5865`. Neither supplies
+evidence for Squirgnasium WorldLocation2-`41755`, WorldArea-`4337`.
+
+A focused regression proves successful objective `2670` grants exact
+achievement `5873` but does not overgrant `5874` (`1/1`); the broader Ultimate
+Protogames slice passes `129/129`; all `150` audit and `34` validator tests
+pass. Regeneration validates `31` CSVs / `167,435` rows / `1,787` blocker
+rows and exposes achievement `5875` as the next evidence-ranked blocker
+(`120`). The unrelated full-suite runtime-seed entity-`1099000004` failure
+remains outside this slice.
+
+Achievement `5874` remains **mapped only**. Reusing either other room's
+no-death producer or granting it on bare objective `2670` would invent
+behavior. Retail implementation needs Squirgnasium route activation, a
+party-membership snapshot and late-join/leave semantics, player-death failure
+with observer exclusion, clean pairing with the exact room-completion
+boundary, wipe/reset/replay cleanup, grant and persistence/relogin behavior,
+50-point and notification UI behavior, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5873 Survive the Blitzsquirg grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`118` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, required-progress-`1`, 10-point achievement
+to completing the Blitzsquirg event in the Squirgnasium. Client and
+Jabbithole rows agree on achievement `5873`, its text, points, and zone.
+
+Public-event objective `2670` is an exact completion-boundary match. Because
+that objective independently names the same event completion,
+`UltimateProtogamesEventScript` now grants achievement `5873` by explicit ID
+to eligible current online objective-team members when `2670` succeeds.
+Failed `2670` and successful sibling objective `2872` do not grant it, while
+completed and offline members are skipped. Exact grant guards pass `3/3`;
+the broader Ultimate Protogames slice passes `128/128`; all `149` audit and
+`34` validator tests pass. Regeneration validates `31` CSVs / `167,435` rows
+/ `1,787` blocker rows and exposes achievement `5874` as the next
+evidence-ranked blocker (`119`). The unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed achievement-grant boundary with a
+mapped-only qualifying-condition producer**, not retail-complete Squirgnasium
+behavior. The current route does not activate objective `2670`, spawn the
+reviewed Squirgs, or define what its count-six ResourcePool represents.
+Retail completion still needs activation, exact waves and spawn/despawn
+order, pool delta direction and bounds, survival/failure behavior,
+completion/reset and replay cleanup, participation eligibility,
+persistence/relogin, 10-point and notification UI behavior, and full dungeon
+client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5872 Red-Tank Runaway mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`117` records the type-`12`, category-`316`,
+WorldZone-`4330`, required-progress-`1` achievement for drawing the Red Tank
+missile away before impact. The build-16042 client row has no object IDs,
+uses achievement-point enum `0`, and leaves the required distance as the
+literal placeholder `X meters`. It has no AchievementChecklist rows by
+achievement ID and no Jabbithole achievement counterpart.
+
+The client spell cluster contains Tracking Missiles base `76252`, proxies
+`76348` through `76353`, and damage row `76354`, but those rows do not link
+achievement `5872`, identify the Red Tank as owner, define the missing
+distance, or expose target-lock and impact measurement semantics. Jabbithole
+maps Busted Red Tank `28516` only to Explosion `72267` and Discharge `79309`.
+A focused regression proves successful Destruct-O-Derby does not overgrant
+`5872` (`1/1`); the broader Ultimate Protogames slice passes `125/125`; all
+`148` audit and `34` validator tests pass. Regeneration validates `31` CSVs /
+`167,434` rows / `1,787` blocker rows and exposes achievement `5873` as the
+next evidence-ranked blocker (`118`). The unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+Achievement `5872` remains **mapped only**. A generic type-`12` hook or a
+guessed distance would invent behavior. Retail implementation needs live
+packet/log or action-set decompile proof of Red Tank attack selection,
+missile target acquisition, the exact distance threshold and measurement
+points, impact attribution, completion/reset and grant timing,
+persistence/relogin, points/notification UI behavior, and full dungeon client
+smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5871 Crate Royalty grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`116` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, required-progress-`1`, 25-point achievement
+to completing Kings and Queens of the Hill without a group member falling
+off. Client and Jabbithole rows agree on achievement `5871`, its text, points,
+and zone. The similarly numbered AchievementChecklist row is unrelated: its
+row ID is `5871`, but its achievement ID is `1637`; Crate Royalty itself has
+no checklist rows.
+
+Public-event objective `2928` is an exact condition match. Because that
+objective independently names the same no-group-fall completion rule,
+`UltimateProtogamesEventScript` now grants achievement `5871` by explicit ID
+to eligible current online objective-team members when `2928` succeeds.
+Failed `2928` and successful sibling objective `2872` do not grant it, while
+completed and offline members are skipped. Exact grant guards pass `3/3`;
+the broader Ultimate Protogames slice passes `124/124`; all `147` audit and
+`34` validator tests pass. Regeneration validates `31` CSVs / `167,434` rows
+/ `1,787` blocker rows and exposes achievement `5872` as the next
+evidence-ranked blocker (`117`). The unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed achievement-grant boundary with a
+mapped-only qualifying-condition producer**, not retail-complete Lost and
+Found behavior. The current route does not activate objective `2928`, and
+WorldLocation2 `41745` is only a room marker—not evidence for a fall or hazard
+volume. Retail completion still needs route activation, group-membership
+snapshotting, a qualifying knockback/fall/teleport signal, failure ordering,
+room-completion success, reset/replay cleanup, participation eligibility,
+persistence/relogin, 25-point and notification UI behavior, and full dungeon
+client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5870 Environmentalist grant-boundary closure.
+
+Queue-rank-`13` blocker-rank-`115` maps the exact type-`12`,
+category-`316`, WorldZone-`4330`, required-progress-`1`, 25-point achievement
+to allowing only one party member to be caught on fire by the Incinerator.
+Client and Jabbithole rows agree on achievement `5870`, its text, points, and
+zone.
+
+Public-event objective `2873` is an exact condition match. Because that
+objective independently names the same one-party-member rule,
+`UltimateProtogamesEventScript` now grants achievement `5870` by explicit ID
+to eligible current online objective-team members when `2873` succeeds.
+Failed `2873` and successful sibling objective `2872` do not grant it, while
+completed and offline members are skipped. Exact grant guards pass `3/3`;
+the broader Ultimate Protogames slice passes `121/121`; all `146` audit and
+`34` validator tests pass. Regeneration validates `31` CSVs / `167,433` rows
+/ `1,787` blocker rows and exposes achievement `5871` as the next
+evidence-ranked blocker (`116`). The unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed achievement-grant boundary with a
+mapped-only qualifying-condition producer**, not retail-complete room
+behavior. The current route does not activate or produce objective `2873`;
+On Fire mode-`1`/mode-`4` receiver roles and distinct affected-party-member
+state remain unmapped. Retail completion still needs activation, repeated-hit
+and join/leave semantics, second-distinct-player failure,
+completion/reset/cleanup, participation eligibility, persistence/relogin,
+25-point and notification UI behavior, and full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5869 Can Crusher grant closure.
+
+Queue-rank-`13` blocker-rank-`114` maps the exact type-`12`, category-`316`,
+WorldZone-`4330`, required-progress-`1`, 25-point achievement to completely
+destroying one Waste Management Facility tank. Client and Jabbithole rows
+agree on achievement `5869`, its text, points, and zone.
+
+Public-event objective `2869` supplies the exact type-`20` `Exterminate`,
+count-`1`, TargetGroup-`12671` boundary. The reviewed tank-room controller
+activates it, spawns the three mapped tanks, and their entity script credits
+it once on death. `UltimateProtogamesEventScript` now grants achievement
+`5869` by explicit ID to eligible current online objective-team members when
+`2869` succeeds. Exact grant/failure/sibling guards pass `3/3`, layered on the
+existing phase-activation, reviewed-spawn, and one-shot tank-death coverage.
+The broader Ultimate Protogames slice passes `118/118`; all `145` audit and
+`34` validator tests pass. Regeneration validates `31` CSVs / `167,432` rows
+/ `1,787` blocker rows and exposes achievement `5870` as the next
+evidence-ranked blocker (`115`). The unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed achievement-grant slice**, not
+retail-complete room behavior. Retail completion still needs exact random-room
+selection, tank combat/interrupt-armor and visual/despawn state,
+participation/late-join/disconnect eligibility, wipe/replay reset,
+persistence/relogin, 25-point and notification UI behavior, and full dungeon
+client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5868 Redemption Value grant closure.
+
+Queue-rank-`13` blocker-rank-`113` maps the exact type-`12`, category-`316`,
+WorldZone-`4330`, required-progress-`1`, 25-point achievement to getting every
+Waste Management Facility tank to 50 percent health before destroying any of
+them. Client and Jabbithole rows agree on achievement `5868`, its text, points,
+and zone.
+
+Public-event objective `2870` supplies the exact count-one `Script` boundary.
+The reviewed controller activates it, tracks three distinct tank entity IDs,
+accepts only living tanks at or below half health, and permanently disarms the
+attempt on a premature tank death, aggregate failure, or phase exit.
+`UltimateProtogamesEventScript` now grants achievement `5868` by explicit ID
+to eligible current online objective-team members when `2870` succeeds. Exact
+grant/failure/sibling guards pass `3/3`, layered on the existing positive and
+negative distinct-tank, health-threshold, duplicate, healing, lethal-callback,
+and premature-death coverage. The broader Ultimate Protogames slice passes
+`115/115`; all `144` audit and `34` validator tests pass. Regeneration
+validates `31` CSVs / `167,431` rows / `1,787` blocker rows and exposes
+achievement `5869` as the next evidence-ranked blocker (`114`). The unrelated
+full-suite runtime-seed entity-`1099000004` failure remains outside this slice.
+
+This is an **implemented, test-backed achievement-grant slice**, not
+retail-complete room behavior. Retail completion still needs exact random-room
+selection, health/challenge presentation, tank combat and visual/despawn
+state, participation/late-join/disconnect eligibility, wipe/replay reset,
+persistence/relogin, 25-point and notification UI behavior, and full dungeon
+client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5867 Tank Trample grant closure.
+
+Queue-rank-`13` blocker-rank-`112` maps the exact type-`12`, category-`316`,
+WorldZone-`4330`, required-progress-`1`, 25-point achievement to destroying a
+tank within the Waste Management Facility challenge time. Client and
+Jabbithole rows agree on achievement `5867`, its text, points, and zone.
+
+Public-event objective `2868` supplies the exact boundary: type-`20`
+`Exterminate`, count `1`, TargetGroup `12671`, and a 60-second failure time.
+The reviewed tank-room controller activates it, spawns the three mapped tanks,
+and their entity script credits it on death. `UltimateProtogamesEventScript`
+now grants achievement `5867` by explicit ID to eligible current online
+objective-team members when `2868` succeeds. Exact target/timer/grant guards
+pass `4/4`, including success at 59.999 seconds, failure at 60 seconds, wrong
+TargetGroup rejection, dedupe/offline handling, failed-`2868` rejection, and
+sibling-`2869` rejection. The combined Ultimate Protogames/public-event
+objective slice passes `176/176`; all `143` audit and `34` validator tests
+pass. Regeneration validates `31` CSVs / `167,430` rows / `1,787` blocker
+rows and exposes achievement `5868` as the next evidence-ranked blocker
+(`113`). The unrelated full-suite runtime-seed entity-`1099000004` failure
+remains outside this slice.
+
+This is an **implemented, test-backed achievement-grant slice**, not
+retail-complete room behavior. Retail completion still needs exact random-room
+selection and challenge activation timing, timer presentation, tank
+combat/interrupt-armor and visual/despawn state,
+participation/late-join/disconnect eligibility, wipe/replay reset,
+persistence/relogin, 25-point and notification UI behavior, and full dungeon
+client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5866 Expert Incinerator mapped-only closure.
+
+Queue-rank-`13` blocker-rank-`111` records the exact type-`12`,
+category-`316`, WorldZone-`4330`, required-progress-`1`, 25-point achievement
+for hitting all three Waste Management Facility tanks with Incinerate without
+catching any players on fire. Client and Jabbithole rows agree on achievement
+`5866`, its text, points, and zone.
+
+Public-event objective `2867` is related but not an exact grant boundary: it
+allows Incinerate to hit one player, while achievement `5866` requires zero.
+Achievement `5870` and objective `2873` independently describe the
+one-party-member threshold. The Incinerate/On Fire spell cluster exposes
+mode-`4` signals whose receiver graph and payload semantics remain unmapped,
+and the current tank scripts retain neither Incinerate hit provenance nor
+distinct affected-player identities. An exact regression proves objective
+`2867` success alone does not grant achievement `5866` (`1/1`); the broader
+Ultimate Protogames slice passes `109/109`; all `142` audit and `34` validator
+tests pass. Regeneration validates `31` CSVs / `167,429` rows / `1,787`
+blocker rows and exposes achievement `5867` as the next evidence-ranked
+blocker (`112`). The unrelated full-suite runtime-seed entity-`1099000004`
+failure remains outside this slice.
+
+Achievement `5866` remains **mapped only**. Granting it from objective `2867`
+would overgrant the zero-player-hit achievement to the allowed one-player-hit
+case. Retail implementation needs live packet/log or decompile proof of
+challenge activation, mode-`4` receiver routing, distinct tank-hit dedupe,
+zero-player versus one-player state, completion/cleanup, exact grant
+eligibility and timing, persistence/relogin, points/notification UI, and full
+dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5865 Immortal: Waste Management Facility grant closure.
+
+Queue-rank-`13` blocker-rank-`110` maps the exact type-`12`, category-`316`,
+WorldZone-`4330`, required-progress-`1`, 50-point achievement to completing
+the Waste Management Facility event without anyone in the party dying.
+Client and Jabbithole rows agree on achievement `5865` and its
+title/description, while public-event objective `2871` supplies the matching
+No Deaths room-success boundary.
+
+`UltimateProtogamesEventScript` now grants achievement `5865` by explicit ID
+to current online objective-team members when objective `2871` succeeds,
+skipping offline and already-completed members. Failed `2871` and successful
+sibling objective `2872` do not grant it. Exact tests pass `3/3`; the broader
+Ultimate Protogames slice passes `108/108`; all `141` audit and `34` validator
+tests pass. Regeneration validates `31` CSVs / `167,429` rows / `1,787`
+blocker rows and exposes achievement `5866` as the next evidence-ranked
+blocker (`111`). The unrelated full-suite runtime-seed entity-`1099000004`
+failure remains outside this slice.
+
+This is an **implemented, test-backed achievement-grant slice**, not
+retail-complete room behavior. A generic type-`12` hook remains intentionally
+absent because these achievement rows have zero object IDs and would
+overmatch. Retail completion still needs random-room routing, exact joined
+party versus observer and late-join/disconnect death scope, wipe/replay reset,
+persistence/relogin, 50-point and notification UI behavior, and full dungeon
+client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+achievement-5864 Waste Management Professional grant closure.
+
+Queue-rank-`13` blocker-rank-`109` maps the exact type-`12`, category-`316`,
+WorldZone-`4330`, required-progress-`1`, 10-point achievement to completing
+Destruct-O-Derby. Client and Jabbithole rows agree on achievement `5864` and
+its title/description, while public-event objective `2676` supplies the exact
+matching room-success boundary.
+
+`UltimateProtogamesEventScript` now grants achievement `5864` by explicit ID
+to current online objective-team members when objective `2676` succeeds,
+skipping offline and already-completed members. Failed `2676` and successful
+sibling objective `2872` do not grant it. Exact tests pass `3/3`; the broader
+Ultimate Protogames slice passes `105/105`; all `141` audit and `34` validator
+tests pass. Regeneration validates `31` CSVs / `167,428` rows / `1,787`
+blocker rows and exposes achievement `5865` as the next evidence-ranked
+blocker (`110`). The unrelated full-suite runtime-seed entity-`1099000004`
+failure remains outside this slice.
+
+This is an **implemented, test-backed achievement-grant slice**, not
+retail-complete room behavior. A generic type-`12` hook remains intentionally
+absent because these achievement rows have zero object IDs and would
+overmatch. Retail completion still needs random-room routing, full
+Destruct-O-Derby timer/failure and room-completion smoke, exact
+participation/late-join/disconnect eligibility, persistence/relogin,
+meta-achievement `5978`, points/notification UI, and full dungeon client
+smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+MatchingGameMap-126 Prime queue validation closure.
+
+Queue-rank-`13` blocker-rank-`108` maps "Prime: Ultimate Protogames" to world
+`2980` through type `81` / `PrimeLevelDungeon`, with team size `5`, level range
+`50`-`50`, recommended item level `80`, and achievement category `316`. It
+shares the reviewed team-`0` entrance at WorldLocation2 `42236`, but remains
+distinct from map `71`'s random scaled-Prime type.
+
+`MatchingDataManager` now applies the existing dungeon role-selection boundary
+to `PrimeLevelDungeon`. Exact row-`126` tests prove level `50` plus a selected
+role and entrance is accepted, while level `49`, wrong match type, missing
+entrance, and `Role.None` are rejected. The exact set passes `6/6`; broader
+matching/packet tests pass `80/80`; all `141` audit and `34` validator tests
+pass. Regeneration validates `31` CSVs / `167,427` rows / `1,787` blocker rows
+and exposes achievement `5864` as the next evidence-ranked blocker (`109`).
+The unrelated full-suite runtime-seed entity-`1099000004` failure remains
+outside this slice.
+
+This is an **implemented, test-backed queue-boundary slice**, not
+retail-complete matchmaking. Recommended item level `80` is not a proven
+enforcement gate, and current transfer code does not prove how match type `10`
+chooses or validates the requested Prime level or applies it to the instance.
+Retail completion still needs five-client Prime-level queue, proposal and
+role-check ordering, selection/transfer, Prime settings,
+disconnect/replacement/requeue/deserter, completion, rewards, leaderboard and
+achievement effects, and client UI smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+MatchingGameMap-71 scaled-Prime queue validation closure.
+
+Queue-rank-`13` blocker-rank-`107` maps "Prime: Ultimate Protogames" to world
+`2980` through type `87` / `ScaledPrimeLevelDungeon`, with team size `5`,
+level range `50`-`50`, recommended item level `70`, and achievement category
+`316`. Setup already promotes the reviewed team-`0` entrance at
+WorldLocation2 `42236`.
+
+`MatchingDataManager` now applies the existing dungeon role-selection boundary
+to `ScaledPrimeLevelDungeon`. Exact row-`71` tests prove level-`50` plus a
+selected role and entrance is accepted, while level `49`, wrong match type,
+missing entrance, and `Role.None` are rejected. The exact set passes `6/6`;
+broader matching/packet tests pass `74/74`; all `141` audit and `34` validator
+tests pass. Regeneration validates `31` CSVs / `167,427` rows / `1,787`
+blocker rows and exposes MatchingGameMap `126` as the next evidence-ranked
+blocker (`108`). The unrelated full-suite runtime-seed entity-`1099000004`
+failure remains outside this slice.
+
+This is an **implemented, test-backed queue-boundary slice**, not retail-complete
+matchmaking. Recommended item level `70` is not a proven enforcement gate, and
+current transfer code does not prove how match type `14` chooses Prime level or
+enables scaling. Retail completion still needs five-client explicit/random
+queue, proposal and role-check ordering, selection/transfer, scaling,
+disconnect/replacement/requeue/deserter, completion, rewards, leaderboard and
+achievement effects, and client UI smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-5182 mapped-only dungeon rookie-bonus closure.
+
+Queue-rank-`13` blocker-rank-`106` records a non-initial flags-`4`, type-`5`
+`Script`, count-`1`, object-`0`, challenge-category row without a location or
+timer: "Guide the rookie through the dungeon for extra rewards!" It is one of
+six structurally identical dungeon rows `5177`-`5182`, so the evidence points
+to a shared dungeon eligibility/reward mechanic rather than a room producer.
+
+The exact regression proves pre-activation credit is ignored, wrong
+type/object credit is rejected after activation, and exact
+`Script`/object-`0` credit completes the one-count row. It passes `1/1`; the
+full public-event set passes `191/191`; all `141` audit and `34` validator
+tests pass. Regeneration validates `31` CSVs / `167,427` rows / `1,787`
+blocker rows and exposes MatchingGameMap `71` as the next evidence-ranked
+blocker (`107`). The unrelated full-suite runtime-seed entity-`1099000004`
+failure remains outside this slice.
+
+Objective `5182` remains **mapped only**. Public event `594` references generic
+reward-rotation content `16`, but there is no event-`594` reward modifier or
+direct content-to-reward linkage, while matching maps `71`/`126` do not define
+"rookie" eligibility. Retail implementation needs live or decompile proof of
+the account/character eligibility rule, evaluation and party lifecycle,
+activation and qualifying completion signals, exact extra rewards and
+recipients, reset/replay, achievements, and client visibility.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4777 mapped-only hidden Elemental Hospital kill-holder closure.
+
+Queue-rank-`13` blocker-rank-`105` records an initial flags-`517`, type-`0`
+`KillTargetGroup`, raw-count-`4294967295`, object-`12876`, main-category row
+without location, timer, or text. Type-`11` TargetGroup `12876` nests groups
+`12877`/`12878`, covering thirteen Elemental Hospital wave, miniboss, and
+disguise Creature2 rows.
+
+Exact regressions prove runtime nested-group expansion, representative
+Fire/Air/Elemental Master death dispatch to parent object `12876`, and the
+holder's parent-only, non-completing counter boundary. The exact slice passes
+`5/5`, the broader TargetGroup/public-event/Ultimate Protogames set passes
+`795/795`, and all `141` audit tests pass. Regeneration validates `31` CSVs /
+`167,427` rows / `1,787` blocker rows. The unrelated full-suite runtime-seed
+entity-`1099000004` failure remains outside this slice.
+
+Objective `4777` remains **mapped only**. Visible objective `2674` is a
+separate six-count ResourcePool, while the current controller has no Elemental
+Hospital phase, wave sequence, attunement/miniboss transition, or holder
+consumer. Retail implementation needs live or decompile proof of wave
+composition/order/cadence, kill-counter-to-pool delta, spawn/cleanup lifecycle,
+reset/replay, rewards or achievements, and client visibility.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4771 mapped-only hidden Power Plunge kill-holder closure.
+
+Queue-rank-`13` blocker-rank-`104` records an initial flags-`517`, type-`0`
+`KillTargetGroup`, raw-count-`4294967295`, object-`12871`, main-category row
+without location, timer, or text. TargetGroup `12871` contains Power Plunge
+Cubig `61775`, Cuboar `62218`, and Flying Cubig `62242`.
+
+Row-specific regressions prove those three deaths dispatch object `12871` and
+the exact holder accepts only type-`0`/object-`12871`, accumulates and clamps
+its count, and does not complete after ordinary credits. The exact slice
+passes `4/4`, the broader public-event/Ultimate Protogames set passes
+`773/773`, and all `141` audit tests pass. Regeneration validates `31` CSVs /
+`167,427` rows / `1,787` blocker rows. The full game-test run separately
+exposes an unrelated dirty-tree data failure: runtime seed entity
+`1099000004` is missing.
+
+Objective `4771` remains **mapped only**. The current WIP phase neither spawns
+the three creatures nor proves Power Plunge lethal-source qualification or a
+holder-to-visible-objective-`2861` consumer. Retail implementation needs live
+or decompile proof of spawn cadence, qualified hit-versus-death behavior,
+score transfer/delta, team aggregation, reset/replay cleanup, rewards or
+achievement coupling, and client visibility.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4742 mapped-only hidden Prototentiary event-unit closure.
+
+Queue-rank-`13` blocker-rank-`103` corrects implementation truth for an
+initial flags-`517`, type-`8` `KillEventObjectiveUnit`, count-`0`,
+object-`10569`, optional-category-`1` row at WorldLocation2 `49683`. Visible
+sibling `2855` ties the same type, object, and location to defeating the
+Warden.
+
+The exact-row regression proves the current runtime mismatch: an event-owned
+Warden death dispatches object `0` and actual Warden TargetGroup `12474`, both
+rejected by objective `4742` object `10569`; only an exact type-`8`,
+object-`10569` update succeeds. Focused tests pass `735/735`; all `141` audit
+tests pass. Regeneration validates `31` generated CSVs / `167,427` rows /
+`1,787` blocker detail rows.
+
+Objective `4742` remains **mapped only**. Retail implementation needs live or
+decompile proof of the event-objective-unit binding, the `4742`/`2855`
+relationship, Warden-versus-console ownership, activation and completion
+consumers, reset/replay, rewards or achievements, and client visibility.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4741 mapped-only Lost-and-Found participant-holder closure.
+
+Queue-rank-`13` blocker-rank-`102` records an initial flags-`517`, type-`6`
+`ParticipantsInTriggerVolume`, count-`0`, object-`8105`, main-category row
+without text, location, or timer. Client TargetGroup `8105` contains Malgrave
+Adventure Awakened Warriors `53414`/`53415`, not a reviewed Ultimate
+Protogames trigger placement.
+
+The exact-row regression proves the unsafe generic boundary: wrong type/object
+updates are ignored, but matching entry `+1` succeeds at count `1`, while a
+separate matching leave `-1` also succeeds at count `0` because the raw
+threshold is zero. Focused tests pass `734/734`; all `141` audit tests pass.
+Regeneration validates `31` generated CSVs / `167,427` rows / `1,787` blocker
+detail rows.
+
+Objective `4741` remains **mapped only**. No controller creates an object-`8105`
+grid trigger, and there is no exact Jabbithole mapping. Retail implementation
+needs live or decompile proof of placement/radius, activation, qualifying
+players, entry/leave versus one-shot semantics, completion consumers,
+cleanup/reset/replay, reward coupling, and client visibility.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4740 mapped-only fourth Lost-and-Found Exterminate-holder closure.
+
+Queue-rank-`13` blocker-rank-`101` completes exact review of objectives
+`4737`-`4740`. Objective `4740` repeats the non-initial flags-`8708`,
+type-`20` `Exterminate`, count/object-`0`, optional-category-`1`,
+WorldLocation2-`41745` shape; text IDs `673355`/`673356` are empty.
+
+Its exact-row regression rejects pre-activation, wrong-type, and positive
+TargetGroup updates, then proves a matching object-`0` dispatch immediately
+succeeds the activated zero-count row. Focused tests pass `733/733`; all `141`
+audit tests pass. Regeneration validates `31` generated CSVs / `167,427` rows
+/ `1,787` blocker detail rows.
+
+Objective `4740` remains **mapped only**. None of the four holders has an exact
+Jabbithole match or runtime controller writer, and ordinary creature deaths
+cannot match object `0`. Retail implementation needs live or decompile proof
+of per-holder activation, role/target scope, direct completion and consumers,
+reset/replay, reward coupling, and client presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4739 mapped-only third Lost-and-Found Exterminate-holder closure.
+
+Queue-rank-`13` blocker-rank-`100` confirms objective `4739` is another
+non-initial flags-`8708`, type-`20` `Exterminate`, count/object-`0`, optional
+category-`1`, WorldLocation2-`41745` row. Its text IDs `673353`/`673354` are
+empty, matching the opaque shape of siblings `4737`, `4738`, and `4740`.
+
+The exact-row regression rejects pre-activation, wrong-type, and positive
+TargetGroup updates; after activation, only a matching object-`0` dispatch
+immediately succeeds the zero-count row. Focused tests pass `732/732`; all
+`141` audit tests pass. Regeneration validates `31` generated CSVs / `167,427`
+rows / `1,787` blocker detail rows.
+
+Objective `4739` remains **mapped only**. It has no exact Jabbithole match or
+runtime controller writer, and ordinary death credit cannot match object `0`.
+Retail implementation needs live or decompile proof of holder activation,
+per-row role and target scope, direct completion/consumer behavior,
+reset/replay, reward coupling, and client presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4738 mapped-only second Lost-and-Found Exterminate-holder closure.
+
+Queue-rank-`13` blocker-rank-`99` confirms objective `4738` has the same
+non-initial flags-`8708`, type-`20` `Exterminate`, count/object-`0`, optional
+category-`1`, WorldLocation2-`41745` shape as objectives `4737`, `4739`, and
+`4740`; text IDs `673351`/`673352` are empty.
+
+The exact-row regression rejects pre-activation, wrong-type, and positive
+TargetGroup updates, then proves that only a matching object-`0` dispatch
+immediately succeeds the activated zero-count row. Focused tests pass
+`731/731`; all `141` audit tests pass. Regeneration validates `31` generated
+CSVs / `167,427` rows / `1,787` blocker detail rows.
+
+Objective `4738` remains **mapped only**. There is no exact Jabbithole mapping
+or runtime controller writer, and ordinary deaths dispatch positive
+TargetGroup IDs that cannot match object `0`. Retail implementation needs live
+or decompile proof of the four holders' activation/roles, qualifying targets
+or direct writer, consumers, reset/replay, reward coupling, and presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4737 mapped-only Lost-and-Found Exterminate-holder closure.
+
+Queue-rank-`13` blocker-rank-`98` records a non-initial flags-`8708`,
+type-`20` `Exterminate` row with count/object `0`, optional category `1`,
+WorldLocation2 `41745` Lost and Found, and empty localized text. Objectives
+`4738`-`4740` have the same shape, so table data does not identify each
+holder's target or phase.
+
+The exact-row regression proves the safe boundary: pre-activation, wrong-type,
+and positive-target-group updates are ignored; after explicit activation, a
+matching object-`0` update immediately succeeds the zero-count row and remains
+stable. Focused tests pass `730/730`; all `141` audit tests pass. Regeneration
+validates `31` generated CSVs / `167,427` rows / `1,787` blocker detail rows.
+
+Objective `4737` remains **mapped only**. Ordinary creature deaths dispatch
+`Exterminate` with their positive TargetGroup IDs and cannot match object `0`;
+the current controller does not activate or update this row. Retail
+implementation needs live or decompile proof of activation, the separate
+`4737`-`4740` holder roles, qualifying targets or direct writer, completion
+consumers, reset/replay, reward coupling, and client presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4662 mapped-only Boss-3 medal-holder closure.
+
+Queue-rank-`13` blocker-rank-`97` records the initial flags-`517`, type-`5`
+`Script`, count-`4`, raw-category-`4` `[DNT] Boss 3 Medal Holder`, completing
+the independent review of the four colliding room/medal holders.
+
+The exact-row regression rejects wrong type/object updates, stores count `3`
+through matching dispatch, reaches raw max `4` through direct objective-ID
+credit, and keeps post-success state stable. This remains a generic counter
+boundary, not proof of the Boss-3 result or medal encoding. Focused tests pass
+`729/729`; all `141` audit tests pass. Regeneration validates `31` generated
+CSVs / `167,427` rows / `1,787` blocker detail rows.
+
+Objective `4662` remains **mapped only**. Jabbithole's numeric match is a
+Terminus Complex cross-event collision, selected exports contain only address
+collisions, no runtime Boss-3 result writer consumes the holder, and reward
+fields remain unpopulated at event end. Retail implementation needs live or
+decompile proof of tier encoding, result and reward coupling, holder
+consumers, and reset/replay/client behavior.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4661 mapped-only Boss-2 medal-holder closure.
+
+Queue-rank-`13` blocker-rank-`96` records the initial flags-`517`, type-`5`
+`Script`, count-`4`, raw-category-`4` `[DNT] Boss 2 Medal Holder`. It shares
+the same object-`0` dispatch key with the room-number and Boss-1/Boss-3
+holders, so it requires an objective-specific writer.
+
+The exact-row regression rejects wrong type/object updates, stores count `2`
+through matching dispatch, reaches raw max `4` through direct objective-ID
+credit, and keeps post-success state stable. This proves the generic boundary,
+not the medal value domain or result-to-tier mapping. Focused tests pass
+`728/728`; all `141` audit tests pass. Regeneration validates `31` generated
+CSVs / `167,427` rows / `1,787` blocker detail rows.
+
+Objective `4661` remains **mapped only**. Jabbithole's numeric match again
+belongs to Terminus Complex, no runtime Boss-2 result writer consumes this
+holder, and the event-end reward fields remain unpopulated. Retail
+implementation needs live or decompile proof of the Boss-2 result value, tier
+and threshold coupling, holder consumers, and reset/replay/client behavior.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4660 mapped-only Boss-1 medal-holder closure.
+
+Queue-rank-`13` blocker-rank-`95` records an initial flags-`517`, type-`5`
+`Script` counter with raw count `4`, object `0`, raw category `4`, and text
+`[DNT] Boss 1 Medal Holder`. It shares `Script`/object-`0` dispatch with the
+room-number holder and the Boss-2/Boss-3 holders, so a broad update would
+collide across all four internal rows.
+
+The exact-row regression proves only the generic counter boundary: wrong
+type/object updates are ignored, matching dispatch stores count `1`, direct
+objective-ID delta reaches raw max `4`, and post-success updates are stable.
+It does not establish a medal value encoding or whether `4` is a tier value
+versus a completion sentinel. Focused tests pass `727/727`; all `141` audit
+tests pass. Regeneration validates `31` generated CSVs / `167,427` rows /
+`1,787` blocker detail rows.
+
+Objective `4660` remains **mapped only**. Its Jabbithole numeric-ID match is a
+Terminus Complex cross-event collision, and the current public-event finalizer
+does not populate the end packet's reward-tier, threshold, or objective-status
+fields. Retail implementation still needs live or decompile proof of the
+Boss-1 result writer, tier domain, reward coupling, holder consumers, and
+reset/replay/client semantics.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4659 mapped-only DNT room-holder closure.
+
+Queue-rank-`13` blocker-rank-`94` records an initial flags-`517`, type-`5`
+`Script` counter with raw count `10`, object `0`, raw category `10`, and text
+`[DNT] Holder for the room number`. Adjacent objectives `4660`-`4662` share
+the same initial `Script`/object-`0` dispatch key for the three DNT boss-medal
+holders, so a broad producer would collide across four internal rows.
+
+The exact-row regression proves only the generic boundary: wrong type/object
+updates are ignored, matching dispatch stores count `3`, direct objective-ID
+delta reaches raw max `10`, and post-success updates are stable. It does not
+prove the room-index encoding or that `10` is a completion sentinel. Focused
+tests pass `726/726`; all `141` audit tests pass. Regeneration validates `31`
+generated CSVs / `167,427` rows / `1,787` blocker detail rows.
+
+Objective `4659` remains **mapped only**. Jabbithole's numeric objective-`4659`
+row belongs to Terminus Complex event `154` / game `521`, not Ultimate
+Protogames event `299` / game `594`. Retail implementation still needs live or
+decompile proof of the holder writer, room-value domain/encoding, consumers,
+route-transition timing, medal-holder interaction, and reset/replay/reconnect
+semantics.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4657 Deputy implementation-truth closure.
+
+Queue-rank-`13` blocker-rank-`93` is now recorded as an implemented producer.
+Build 16042 maps objective `4657` to optional `KillTargetGroup` object
+`12528`, count `1`, flags `1540`, and WorldLocation2 `41759`; TargetGroup
+`12528` contains Deputy Creature2 `68949`. DataMapping/Jabbithole bridge the
+reviewed Deputy placement through creature row `28416` and coordinate
+`8024837`.
+
+The existing Prototentiary phase activates `4657`, spawns script-owned Deputy
+entity `1100300086`, and its Creature2-filtered death script credits the
+objective once. The new exact-row regression proves pre-activation, wrong
+objective type, and wrong target-group credit are ignored; matching credit
+succeeds once and duplicate post-success credit is stable. Focused tests pass
+`725/725`; all `141` audit tests pass. Regeneration validates `31` generated
+CSVs / `167,427` rows / `1,787` blocker detail rows.
+
+This remains **implemented but not retail-complete** pending exact random-room
+routing and multi-objective finalisation, Deputy density and patrol/pathing,
+encounter behavior and replay cleanup, rewards/achievements, and full dungeon
+client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4649 mapped-only Thunderdome cadence closure.
+
+Queue-rank-`13` blocker-rank-`92` records objective `4649`, “Destroy a crate
+every 5 seconds during the storm”: a zero-count, flags-`4`, optional
+type-`9` `ScriptWithoutCount` row with a `5000` ms failure timer and
+WorldLocation2 `41745` in Lost and Found. Jabbithole row `8186` confirms the
+objective identity, text, type, enabled state, and last-seen `7`; achievement
+`5939` / Jabbithole row `1991`, Weathering the Storm, independently confirms
+the five-second crate cadence.
+
+The exact-row regression proves the generic controller boundary and why direct
+crate-death credit is unsafe: the row remains active at `4.999` seconds, one
+explicit credit immediately succeeds the zero-count objective, while a fresh
+row fails at `5` seconds and rejects late credit. Focused tests pass `724/724`;
+all `141` audit tests pass. Regeneration validates `31` generated CSVs /
+`167,427` rows / `1,787` blocker detail rows.
+
+Objective `4649` remains **mapped only**. The current controller does not
+select the Lost and Found route, activate the storm objectives, or spawn the
+reviewed ordinary crates. Retail implementation still needs live or decompile
+evidence for route and storm activation, the qualifying crate set, first and
+subsequent cadence windows, timer reset/extension and failure persistence,
+storm-end success, group ownership, reset/replay cleanup, rewards and
+achievements, and client presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4648 Alarm Panel implementation-truth closure.
+
+Queue-rank-`13` blocker-rank-`91` is no longer described as missing a
+producer. Build 16042 maps objective `4648` to optional
+`ActivateTargetGroup` object `12478`, whose member is Alarm Panel Creature2
+`68916`; Jabbithole/DataMapping preserve three reviewed placements in the
+Prototentiary.
+
+The existing phase controller activates `4648` with dynamic max one and spawns
+all three panels. Their filtered script emits one matching target-group credit.
+The new exact-row regression proves pre-activation credit, wrong type, and
+wrong object are ignored; the reviewed panel route succeeds once and duplicate
+post-success credit is stable. Focused tests pass `723/723`; all `141` audit
+tests pass. Regeneration validates `31` generated CSVs / `167,427` rows /
+`1,787` blocker detail rows.
+
+This is an **implemented, test-backed runtime producer**, with retail
+completion still pending the alarm-trigger state machine, five-second disable
+window, detection coupling, panel visual/despawn behavior, aggregate
+Prototentiary failure/success and replay semantics, rewards/achievements, and
+full dungeon client smoke.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4541 mapped-only Extra Point timer-boundary closure.
+
+Queue-rank-`13` blocker-rank-`90` records objective `4541`, “Score an extra
+point within the time limit!”: a zero-count, flags-`4`, optional type-`13`
+`TimedWin` row with a `45000` ms failure timer and WorldLocation2 `46229` in
+Intern Disposal Facility 74. Jabbithole row `8184` confirms the objective,
+text, type, enabled state, and last-seen `7` but reports count `1` rather than
+the client row's count `0`; achievement `5916` / Jabbithole row `2223`, Extra
+Point Professional, independently confirms the timed extra-point condition.
+
+The exact-row regression proves only the generic controller boundary:
+explicit activation remains active at `44.999` seconds, explicit credit then
+succeeds once, a fresh row fails at `45` seconds, and late credit cannot
+restore it. Focused tests pass `667/667`; all `141` audit tests pass.
+Regeneration validates `31` generated CSVs / `167,427` rows /
+`1,787` blocker detail rows.
+
+Objective `4541` remains **mapped only**. The current Hut-Hut phase activates
+only defeat objective `2675` and five-minute objective `2884`. Static spell
+rows identify extra-point, touchdown, and fumble assets, but the score paths
+use unsupported mode-`5` receivers and do not prove when the 45-second
+opportunity starts. Retail implementation still needs live or decompile
+evidence for opportunity activation, player-score routing, timeout/retry/reset,
+party ownership, achievements, scoreboard effects, and client presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
+objective-4535 runtime-partial Protostar Event Specialist talk producer.
+
+Queue-rank-`13` blocker-rank-`89` records objective `4535`: a textless,
+initial main row with flags `513`, public team `1`, type `17` `TalkTo`, raw
+count `4294967295`, TargetGroup `12376`, and WorldLocation2 `42236`.
+TargetGroup `12376` directly contains Creature2 `68272`, the Ultimate
+Protogames Protostar Event Specialist, and DataMapping preserves eleven
+last-seen-`7` Jabbithole event relations for that creature across the event's
+room areas.
+
+The Creature2-filtered runtime script now emits a player-scoped
+`TalkTo`/`12376` update after successful specialist activation. Exact
+regressions prove the reviewed creature filter and dispatch, reject an
+unrelated creature, reject wrong type/object objective updates, and show that
+repeated exact updates increment the unsigned-max counter without succeeding
+or finalising the event. Focused tests pass `666/666`; all `141` audit tests
+pass. Regeneration validates `31` generated CSVs / `167,427` rows /
+`1,787` blocker detail rows.
+
+This is a **runtime-partial producer**, not retail completion. The runtime does
+not yet spawn/select the room specialists, order their explanatory dialog, or
+consume/complete/reset objective `4535`. A live packet/log or controller trace
+is still required for placement and activation availability, dialog order,
+per-player/team and repeat/dedupe rules, unsigned-max counter meaning,
+phase/reconnect/reset lifecycle, rewards, and client presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-4524 mapped-only Splorg Stepper closure.
+
+Queue-rank-`13` blocker-rank-`88` records objective `4524`, “Avoid getting
+hit by Explosive Splorg's explosion!”: a count-`1`, flags-`4`, optional
+type-`5` `Script` row. Jabbithole row `8204` confirms the objective identity,
+text, count/type, enabled state, and last-seen `7`; achievement `5930` /
+Jabbithole row `1937` confirms the Splorg Stepper wording around Creature2
+`62597`.
+
+The exact-row test proves only the generic boundary: pre-activation credit and
+wrong type/object routes are ignored, explicit objective-ID credit succeeds
+once, and post-success credit is rejected. Focused tests pass `72/72`; all
+`141` audit tests pass, and regeneration validates `31` CSVs / `167,425` rows /
+`1,786` blocker details.
+
+Objective `4524` remains **mapped only**. The current controller has no Petting
+Zoo/Pest Control phase or activation for this row, and the Explosive Splorg
+death script credits only objective `2925`. Retail implementation still needs
+a live packet/log or controller trace for the explosion spell and hit
+attribution, activation and success checkpoint, team/player and late-join
+rules, reset/replay, achievement coupling, and client presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-4353 mapped-only hidden-counter closure.
+
+Queue-rank-`13` blocker-rank-`87` records objective `4353`, the third
+flags-`513`, initially active, textless `ScriptWithoutMax` main counter. It has
+no object, location, configured count, timer, parent, direction, or medal value.
+Jabbithole has no objective game ID `4353`; row ID `4353` instead belongs to
+unrelated event `93` / objective `321`.
+
+The three-row exact theory proves objectives `4351`/`4352`/`4353` accumulate
+to count `5` without succeeding/finalising and clamp negative deltas to zero
+while remaining active. Focused tests pass `71/71`; all `141` audit tests pass,
+and regeneration validates `31` CSVs / `167,425` rows / `1,786` blocker
+details. Objective `4353` remains **mapped only**: current Ultimate Protogames
+code does not reference it, selected exports contain no objective-specific
+`4353` anchor, and a live controller trace is required for counter ownership,
+lifecycle, rewards, and presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-4352 mapped-only hidden-counter closure.
+
+Queue-rank-`13` blocker-rank-`86` records objective `4352`, the second
+flags-`513`, initially active, textless `ScriptWithoutMax` main counter. It has
+no object, location, configured count, timer, parent, direction, or medal value.
+Jabbithole has no objective game ID `4352`; row ID `4352` instead belongs to
+unrelated event `93` / objective `440`.
+
+The two-row exact theory proves objectives `4351`/`4352` accumulate to count
+`5` without succeeding/finalising and clamp negative deltas to zero while
+remaining active. Focused tests pass `70/70`; all `141` audit tests pass, and
+regeneration validates `31` CSVs / `167,425` rows / `1,786` blocker details.
+Objective `4352` remains **mapped only**: current Ultimate Protogames code does
+not reference it, selected hits `%s\%s.txt` and
+`GetLastTargetedPlayerName` are unrelated addresses, and a live controller
+trace is required for counter ownership, lifecycle, rewards, and presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-4351 mapped-only hidden-counter closure.
+
+Queue-rank-`13` blocker-rank-`85` records objective `4351`: flags `513`,
+initial public-team main objective, type `25` `ScriptWithoutMax`, with no text,
+object, location, configured count, timer, parent, direction, or medal value.
+Jabbithole has no objective game ID `4351`; its numeric row ID `4351` belongs
+to unrelated event `93` / objective `338`.
+
+The client-backed generic contract says type `0x19` has required count zero
+while retaining a raw running count. The exact-row test starts `4351` active,
+advances to count `5` without succeeding/finalising, then clamps a negative
+delta back to zero while remaining active. Expanded focused tests pass `69/69`;
+all `141` audit tests pass, and regeneration validates `31` CSVs / `167,425`
+rows / `1,786` blocker details.
+
+Objective `4351` remains **mapped only**. Current code uses `4351` only as the
+unrelated Misplaced Mammoth area ID; selected exports only hit address
+`140b43510` / `GetBagItem`, and no Ghidra MCP instance was available. Retail
+implementation needs a controller/live trace for counter ownership, update
+values, lifecycle, completion/failure, rewards, and client presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3281 mapped-only next-event turnstile closure.
+
+Queue-rank-`13` blocker-rank-`84` closes the eleventh transition row:
+objective `3281`, count-`1` flags-`128` `Turnstile` key `7784`, text IDs
+`623075`/`623076`. Jabbithole row `8138` strongly confirms identification:
+it preserves objective game ID `3281`, matching text, enabled/category `19`,
+and last-seen `7` under Ultimate Protogames row `299` / game ID `594`.
+However, that schema stores no Turnstile key, trigger, coordinate, source room,
+destination, or handoff order.
+
+Numeric evidence does not fill the gap: TargetGroup `7784` is unrelated Q4980
+Starstem Plant Creature2 `19288`, and no WorldLocation2 `7784` row exists. The
+eleven-row theory proves wrong key `7783` and wrong `Script` type leave `3281`
+at zero, exact `Turnstile`/`7784` succeeds it, and duplicate credit is rejected.
+Focused tests pass `24/24`; all `141` audit tests pass, and regeneration
+validates `31` CSVs / `167,425` rows / `1,786` blocker details.
+
+Objective `3281` remains **mapped only**; no production routing or teleport
+behavior was added. `Buzzer` and `PublicEventRewardType_Script` are unrelated
+address hits, no Ghidra MCP instance was available, and a live packet/log or
+server-controller trace is still required for activation, placement, route,
+party transport, cleanup/replay, rewards, and client presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3280 mapped-only next-event turnstile closure.
+
+Queue-rank-`13` blocker-rank-`83` records objective `3280`, count-`1`
+flags-`128` `Turnstile` key `7783`, text IDs `623073`/`623074`. Jabbithole has
+no surviving row. TargetGroup `7783` is an unrelated Q6571 group containing
+creatures `28195`/`28405`/`28424`/`28429`/`28947`/`29409`/`29413`, and
+WorldLocation2 `7783` is world `805` `Map\DungeonTestIsland`.
+
+The ten-row theory proves wrong key `7782` and wrong `Script` type leave `3280`
+at zero, exact `Turnstile`/`7783` succeeds it, and duplicate credit is rejected.
+Focused tests pass `23/23`; all `141` audit tests pass, and regeneration
+validates `31` CSVs / `167,425` rows / `1,786` blocker details. Objective
+`3280` remains **mapped only**: `MatchingPvpInactivityAlert` and
+`KillBorellianCluster` are unrelated address hits, no Ghidra MCP instance was
+available, and retail routing still requires a live controller trace.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3279 mapped-only next-event turnstile closure.
+
+Queue-rank-`13` blocker-rank-`82` records objective `3279`, a count-`1`
+flags-`128` `Turnstile` objective with key `7782` and text IDs
+`623071`/`623072`. Jabbithole has no surviving row. TargetGroup `7782` is an
+unrelated Q6571 group containing creatures
+`27857`/`27859`/`27860`/`27861`/`27867`/`27949`/`28170`, while WorldLocation2
+`7782` is world `22` / WorldZone `1709` Bloodtalon Lowlands.
+
+The nine-row theory proves wrong key `7781` and wrong `Script` type leave
+`3279` at zero, exact `Turnstile`/`7782` succeeds it, and duplicate credit is
+rejected. Focused tests pass `22/22`; all `141` audit tests pass, and
+regeneration validates `31` CSVs / `167,425` rows / `1,786` blocker details.
+Objective `3279` remains **mapped only**: `WindowTemplate` and
+`PublicEventType_PVP_Battleground_Vortex` are unrelated address hits, no Ghidra
+MCP instance was available, and retail routing still requires a live
+packet/log or server-controller trace.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3278 mapped-only next-event turnstile closure.
+
+Queue-rank-`13` blocker-rank-`81` records objective `3278`, a count-`1`
+flags-`128` `Turnstile` objective with key `7781` and text IDs
+`623069`/`623070`. Jabbithole has no surviving row, and no controller assigns
+its key to a room. TargetGroup `7781` is an unrelated Q6571 group containing
+Blackheart/other creatures `27456`/`27461`/`27465`/`27469`/`27507`/`27669`/
+`27856`; WorldLocation2 `7781` is world `22` / WorldZone `1212` Tall Rock
+Point.
+
+The eight-row theory proves wrong key `7540` and wrong `Script` type leave
+`3278` at zero, exact `Turnstile`/`7781` succeeds it, and duplicate credit is
+rejected. Focused tests pass `21/21`; all `141` audit tests pass, and
+regeneration validates `31` CSVs / `167,425` rows / `1,786` blocker details.
+Objective `3278` remains **mapped only**; selected export hits such as
+`HousingRandomCommunityListReceived` and
+`PublicEventObjectiveNotificationMode_Achieving` are unrelated addresses, and
+no Ghidra MCP instance was available. Retail routing still requires a live
+packet/log or server-controller trace.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3277 mapped-only next-event turnstile closure.
+
+Queue-rank-`13` blocker-rank-`80` records objective `3277`, a count-`1`
+flags-`128` `Turnstile` objective with key `7540` and localized text IDs
+`623067`/`623068`. Jabbithole has no surviving row and current code only names
+the objective; no table or controller assigns its key to a room or route.
+TargetGroup `7540` is unrelated Q6541 Eldan Plasma Core Creature2 `29778`,
+while WorldLocation2 `7540` is in world `822` `Map\KevinHTLCanyon`.
+
+The seven-row theory proves the exact generic boundary: wrong key `7542` and
+wrong `Script` type leave `3277` active at zero, exact `Turnstile`/`7540`
+succeeds it, and a duplicate is rejected. The focused run passes `20/20`; all
+`141` audit tests pass, and regeneration validates `31` CSVs / `167,425` rows /
+`1,786` blocker details.
+
+Objective `3277` remains **mapped only**; no production routing or teleport
+behavior was added. Selected export hits are unrelated address symbols
+(`NetworkBitWriter_WriteBits64`, `unitPropertyMultiplier153`, and
+`PublicEventType_PVP_Warplot`), and no Ghidra MCP instance was available.
+Retail implementation still needs a live packet/log or server-controller trace
+for activation, placement, route selection, party transport, cleanup/replay,
+rewards, and client presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3276 mapped-only next-event turnstile closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`79` now records objective
+`3276`, a count-`1` flags-`128` `Turnstile` objective with object key `7542`
+and localized text IDs `623064`/`623065`. It has no location, parent, quest
+direction, timer, or medal metadata; Jabbithole has no surviving `3276` row,
+and neither the tables nor current script assign its key to a room or route.
+
+The numeric matches are unrelated: TargetGroup `7542` contains Everstar Grove
+Bee Swarm Hazard Creature2 `46431`, while WorldLocation2 `7542` is in world
+`822` `Map\KevinHTLCanyon`. The Protostar Event Specialist rows likewise do
+not assign a specialist or coordinate to `3276`/`7542`. A six-row theory now
+proves the exact generic boundary: wrong key `7780` and wrong `Script` type
+leave `3276` active at zero, exact `Turnstile`/`7542` succeeds it, and a
+duplicate is rejected. The focused run passes `19/19`; all `141` audit tests
+pass, and regeneration validates `31` CSVs / `167,425` rows / `1,786`
+blocker details.
+
+Objective `3276` remains **mapped only**; no production routing or teleport
+behavior was added. The selected decompile/string search found only unrelated
+address `140a32768` / `GlobalRadioGroup`, and no Ghidra MCP instance was
+available. A live packet/log or server-controller trace must still prove
+activation, trigger placement, source/destination mapping, party teleport
+ordering, cleanup/replay, rewards, and client presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3275 mapped-only next-event turnstile closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`78` now records the fifth
+room-transition key. Build `16042` maps PE `594` objective `3275`,
+`Teleport to the next event room`, as a count-`1` `Turnstile` main objective
+with flags `128`, public team `1`, object key `7780`, and localized text IDs
+`623062`/`623063`; it has no WorldLocation2, parent, quest direction, timer, or
+medal value. Jabbithole has no surviving `3275` row, and the transition family
+still does not map a key to a source room, destination, physical trigger, or
+teleporter.
+
+Numeric collisions are explicitly rejected. TargetGroup `7780` is an
+unrelated Q6571 reward-pane group containing Creature2
+`27421`/`27422`/`27423`/`27424`/`27425`/`27433`/`27442`, while WorldLocation2
+`7780` is an unrelated world `805` `Map\DungeonTestIsland` row. The eleven
+Jabbithole Protostar Event Specialists remain presentation-only evidence:
+DataMapping maps them to Holo Explanatory NPC Creature2 `68272`, whose action
+set `3812` has only a blue-hologram birth effect and no activation spell,
+gossip, or InstancePortal. No specialist, room, or coordinate is assigned to
+`3275`/`7780`.
+
+The exact generic boundary is test-backed. A five-row theory proves objectives
+`3271` through `3275` independently; for `3275`, wrong key `7779` and wrong
+`Script` type leave the active objective at zero, exact
+`Turnstile`/`7780` credit succeeds it, and post-success credit is rejected.
+Together with the generic entry/duplicate/leave/non-player trigger checks, the
+focused run passes `18/18`; all `141` audit tests pass. Selective regeneration
+validates `31` CSVs / `167,425` rows / `1,786` blocker details, all
+`not_retail_complete`.
+
+Objective `3275` remains **mapped only**; no production route or teleport
+behavior was added. The current event script does not activate `3275`, place a
+`Turnstile`/`7780` trigger, select a source/destination room, transport the
+party, or advance and clean up a completed room. Curated selected
+decompile/string searches found only unrelated string-address matches such as
+`140967780` / `STG_E_WRITEFAULT`, `1409f7780` / `CodeEnumFaction`, and
+`140b32758` / `PrepareInfractionReport`; no Ghidra MCP instance was available.
+The next unlocker remains a live packet/log or server-controller trace proving
+key ownership, activation and placement, destination selection, party teleport
+ordering, cleanup/replay, rewards, and client presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3274 mapped-only next-event turnstile closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`77` now records the fourth
+room-transition key. Build `16042` maps PE `594` objective `3274`,
+`Teleport to the next event room`, as a count-`1` `Turnstile` main objective
+with flags `128`, public team `1`, object key `7779`, and localized text IDs
+`623060`/`623061`; it has no WorldLocation2, parent, quest direction, timer, or
+medal value. Jabbithole has no surviving `3274` row, and the transition family
+still does not map a key to a source room, destination, physical trigger, or
+teleporter.
+
+Numeric collisions are explicitly rejected. TargetGroup `7779` is an
+unrelated type-`1` group containing Creature2 `60162`,
+`[DS] e395 - Life (with Logic) - Bramble`, while WorldLocation2 `7779` is an
+unrelated world `22` / WorldZone `587` Bloodtalon Perch row. The eleven
+Jabbithole Protostar Event Specialists remain presentation-only evidence:
+DataMapping maps them to Holo Explanatory NPC Creature2 `68272`, whose action
+set `3812` has only a blue-hologram birth effect and no activation spell,
+gossip, or InstancePortal. No specialist, room, or coordinate is assigned to
+`3274`/`7779`.
+
+The exact generic boundary is test-backed. A four-row theory proves objectives
+`3271` through `3274` independently; for `3274`, wrong key `7775` and wrong
+`Script` type leave the active objective at zero, exact
+`Turnstile`/`7779` credit succeeds it, and post-success credit is rejected.
+Together with the generic entry/duplicate/leave/non-player trigger checks, the
+focused run passes `17/17`; all `141` audit tests pass. Selective regeneration
+validates `31` CSVs / `167,425` rows / `1,786` blocker details, all
+`not_retail_complete`.
+
+Objective `3274` remains **mapped only**; no production route or teleport
+behavior was added. The current event script does not activate `3274`, place a
+`Turnstile`/`7779` trigger, select a source/destination room, transport the
+party, or advance and clean up a completed room. Curated selected
+decompile/string searches found only unrelated string-address matches
+`140977790` / `FRS_ERR_PARENT_INSUFFICIENT_PRIV`, `140a32748` /
+`BuzzerFrequency`, and `140b32748` / `GetLiveEvent`; no Ghidra MCP instance was
+available. The next unlocker remains a live packet/log or server-controller
+trace proving key ownership, activation and placement, destination selection,
+party teleport ordering, cleanup/replay, rewards, and client presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3273 mapped-only next-event turnstile closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`76` now records the third
+room-transition key. Build `16042` maps PE `594` objective `3273`,
+`Teleport to the next event room`, as a count-`1` `Turnstile` main objective
+with flags `128`, public team `1`, object key `7775`, and localized text IDs
+`623058`/`623059`; it has no WorldLocation2, parent, quest direction, timer, or
+medal value. Jabbithole has no surviving `3273` row, and the transition family
+still does not map a key to a source room, destination, physical trigger, or
+teleporter.
+
+Numeric collisions are explicitly rejected. TargetGroup `7775` is an
+unrelated type-`11` aggregate of groups
+`7774`/`6433`/`6432`/`6435`/`6436`/`6437`/`8607`, while WorldLocation2 `7775`
+is an unrelated world `426` / WorldZone `852` Ancient Tower row. The eleven
+Jabbithole Protostar Event Specialists remain presentation-only evidence:
+DataMapping maps them to Holo Explanatory NPC Creature2 `68272`, whose action
+set `3812` has only a blue-hologram birth effect and no activation spell,
+gossip, or InstancePortal. No specialist, room, or coordinate is assigned to
+`3273`/`7775`.
+
+The exact generic boundary is test-backed. A three-row theory proves objectives
+`3271` through `3273` independently; for `3273`, wrong key `7774` and wrong
+`Script` type leave the active objective at zero, exact
+`Turnstile`/`7775` credit succeeds it, and post-success credit is rejected.
+Together with the generic entry/duplicate/leave/non-player trigger checks, the
+focused run passes `16/16`; all `141` audit tests pass. Selective regeneration
+validates `31` CSVs / `167,425` rows / `1,786` blocker details, all
+`not_retail_complete`.
+
+Objective `3273` remains **mapped only**; no production route or teleport
+behavior was added. The current event script does not activate `3273`, place a
+`Turnstile`/`7775` trigger, select a source/destination room, transport the
+party, or advance and clean up a completed room. Curated selected
+decompile/string searches found only unrelated string-address matches
+`140977758` / `FRS_ERR_AUTHENTICATION` and `140b32730` /
+`ShouldShowMedalsUI`; no Ghidra MCP instance was available. The next unlocker
+remains a live packet/log or server-controller trace proving key ownership,
+activation and placement, destination selection, party teleport ordering,
+cleanup/replay, rewards, and client presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3272 mapped-only next-event turnstile closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`75` now records the second
+room-transition key. Build `16042` maps PE `594` objective `3272`,
+`Teleport to the next event room`, as a count-`1` `Turnstile` main objective
+with flags `128`, public team `1`, object key `7774`, and localized text IDs
+`623056`/`623057`; it has no WorldLocation2, parent, quest direction, timer, or
+medal value. Jabbithole has no surviving `3272` row, and the client transition
+family still does not map any key to a source room, destination, physical
+trigger, or teleporter.
+
+Numeric collisions are explicitly rejected. TargetGroup `7774` contains
+unrelated Creature2 `22593`, Crimson Trooper - Draken - Mob vs Mob, while
+WorldLocation2 `7774` is an unrelated world `426` / WorldZone `852` Ancient
+Tower row. The eleven Jabbithole Protostar Event Specialists remain
+presentation-only evidence: DataMapping maps them to Holo Explanatory NPC
+Creature2 `68272`, whose action set `3812` contains only a blue-hologram birth
+effect and no activation spell, gossip, or InstancePortal. No row assigns a
+specialist, room, or coordinate to `3272`/`7774`.
+
+The exact generic boundary is test-backed. A two-row theory proves objectives
+`3271` and `3272` independently; for `3272`, wrong key `7773` and wrong
+`Script` type leave the active objective at zero, exact
+`Turnstile`/`7774` credit succeeds it, and post-success credit is rejected.
+Together with the generic entry/duplicate/leave/non-player trigger checks, the
+focused run passes `15/15`; all `141` audit tests pass. Selective regeneration
+validates `31` CSVs / `167,425` rows / `1,786` blocker details, all
+`not_retail_complete`.
+
+Objective `3272` remains **mapped only**; no production route or teleport
+behavior was added. The current event script does not activate `3272`, place a
+`Turnstile`/`7774` trigger, select a source/destination room, transport the
+party, or advance and clean up a completed room. Curated selected
+decompile/string exports have no exact `3272`/`7774`/`623056`/`623057` anchor;
+the decimal-looking string hit is only address `140b32728` / `GetStat`, and no
+Ghidra MCP instance was available. The next unlocker remains a live packet/log
+or server-controller trace proving key ownership, activation and placement,
+destination selection, party teleport ordering, cleanup/replay, rewards, and
+client presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3271 mapped-only next-event turnstile closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`74` now records the first
+room-transition boundary. Build `16042` maps PE `594` objective `3271`,
+`Teleport to the next event room`, as a count-`1` `Turnstile` main objective
+with flags `128`, public team `1`, and object key `7773`; it has no
+WorldLocation2, parent, quest direction, timer, or medal value. Ten sibling
+rows `3272` through `3281` use the same contract with distinct keys
+`7774`/`7775`/`7779`/`7780`/`7542`/`7540`/`7781`/`7782`/`7783`/`7784`, but
+the table does not map those keys to source rooms, destinations, physical
+triggers, or teleporters. Jabbithole retains only sibling objective `3281`,
+not a historical controller relationship for `3271`.
+
+Jabbithole does preserve one Protostar Event Specialist in each of eleven
+Ultimate Protogames rooms. DataMapping correlates all eleven rows to Holo
+Explanatory NPC Creature2 `68272` and preserves their room coordinates, but
+that creature has no activation spell, gossip, or InstancePortal; action set
+`3812` contains only a blue-hologram birth effect. Those rows corroborate a
+per-room presentation surface, not which specialist, room, or trigger owns key
+`7773`. Numerically matching TargetGroup `7773` is unrelated Q5519 Mechari
+Arms content, and matching WorldLocation2 `7773` is a radius-`80` row in world
+`426` / WorldZone `609` Coldburrow Cavern, so neither can be reused as a
+transition mapping.
+
+The generic runtime boundary is sound and focused tests now pin the exact row:
+after activation with dynamic maximum `1`, wrong object `7774` and wrong
+`Script` type leave objective `3271` active at zero; exact
+`Turnstile`/`7773` credit succeeds it, and post-success credit is rejected.
+`TurnstileTriggerEntity` separately credits one player entry, ignores
+duplicates and leave deltas, and rejects zero keys/non-players. The combined
+focused run passes `14/14`; all `141` audit tests pass. Selective regeneration
+validates `31` CSVs / `167,425` rows / `1,786` blocker details, all
+`not_retail_complete`.
+
+Objective `3271` remains **mapped only**; no production route or teleport
+behavior was added. The static runtime world database has no event specialists
+or reviewed transition-trigger placement, and the current WIP event script
+moves initiation deterministically to the tank room without activating `3271`,
+choosing the next room, transporting the party, or advancing/cleaning up a
+completed room. The curated selected decompile/string exports have no exact
+`3271`/`7773`/`623053`/`623054` anchor; a bounded full-cache scan yielded no
+anchor before timing out and therefore does not establish absence, while no
+Ghidra MCP instance was available.
+
+The next unlocker is a live packet/log or server-controller trace that maps key
+`7773` to its source room, activation moment, trigger or portal, selected
+destination, movement/teleport ordering, whole-party and late-join behavior,
+room cleanup and subsequent transition selection, failure/reset/replay,
+rewards, and client presentation.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3209 mapped-only Lightning Round closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`73` now records the exact
+Break-Room timed-course boundary. Build `16042` maps PE `594` objective `3209`,
+`Complete the obstacle course within the time limit!`, as a zero-count
+`Script` challenge with flags `4`, a `70000`-ms failure timer, parent objective
+`2680`, and WorldLocation2 `45901` in WorldZone `4331` The Break Room.
+Jabbithole objective `8153` preserves the same relationship, and client
+achievement `5959` / Jabbithole achievement `2073`, Gauntlet Gallop,
+independently requires completing Lightning Round within the time limit.
+
+TargetGroup `12179`, reviewed runtime entity `1100300055`, and the phase-`5`
+scaffold bind the room to Bev-O-Rage Creature2 `61463`. Client data identifies
+the course family as Spark, Center, Barrel, and Carbonated invisible units,
+Coin, Hazard Jump Square, Steam Vent, Drink, Jump Pad, and Wall. DataMapping
+contains only ambiguous historical coordinate observations for two Spark rows;
+it has no approved bridge for the remaining course units. The runtime database
+contains only Bev-O-Rage and the initiation button in world `2980`, so it
+cannot currently construct the course from reviewed runtime-owned data.
+
+Boss activation spell `71233` emits mode-`1` signal `25251`; Barrel Roll
+`71221` emits `22167` and `22179`; Pull to Barrel Start `71232` and Pull to
+Giant Start `71234` apply forced movement; Dance Floor Signal `71235` emits
+mode-`4` signal `22162`; Boost `75018` emits `27114` and `27106`; and Activate
+PBAE Points Proxy `76964` also emits `27106`. These spell and signal families
+correlate with course mechanics, but no static evidence identifies the course
+start receiver, checkpoint/order owner, finish gate, objective-completion
+producer, or reset path. The runtime can dispatch mode `1` to
+`IWorldEntityScript.OnSignal`, but Bev-O-Rage has no `OnSignal` implementation;
+mode `4` remains diagnostics-only.
+
+A focused regression records the current generic objective boundary: objective
+`3209` remains active at `69.999` seconds, controller credit succeeds before
+the deadline, post-success credit is rejected, and a fresh objective fails at
+`70` seconds before late credit applies. This does not prove retail course
+completion semantics: the current phase does not activate `3209`, and
+`IPublicEventObjective` exposes no explicit script-facing success/failure
+transition. All `44` `PublicEventObjectiveTests` and all `141` audit tests pass.
+Selective regeneration validates `31` CSVs / `167,425` rows / `1,786` blocker
+details, all `not_retail_complete`.
+
+Objective `3209` remains **mapped only**; no production behavior was added. A
+focused search of the current curated decompile/string cache found no usable
+objective, localized-text, timer, or signal anchor, and no Ghidra MCP instance
+was available. The next unlocker is an indexed xref or live capture proving
+objective activation relative to the start gate, signal delivery and receiver
+ownership, course asset placement, checkpoint and anti-skip behavior, finish
+credit before the 70-second failure, group/reset/replay semantics, achievement
+credit, and client UI behavior.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3208 mapped-only Happy Feet closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`72` now records the exact
+Break-Room Tri Burst threshold. Build `16042` maps PE `594` objective `3208`,
+`As a group, get hit by Tri Burst less than five times within the time limit`,
+as a count-`5` `Script` challenge with flags `4`, a `30000`-ms timer, parent
+objective `2680`, and WorldLocation2 `45901`. Jabbithole objective `8183`
+resolves spell `71182` as Tri Burst; client achievement `5958` / Jabbithole
+`2041`, Tri Burst Bounce, independently requires completing Happy Feet with the
+same group-wide fewer-than-five condition.
+
+TargetGroup `12179`, reviewed runtime entity `1100300055`, and the phase-`5`
+scaffold bind the room to Bev-O-Rage Creature2 `61463`. DataMapping's approved
+bridges map Jabbithole rows `28283`/`28294` to that boss and record `157`
+historical coordinate observations. Current row `28294` directly assigns all
+20 tiers of the Tri Burst family (`71182` through the non-contiguous tier IDs
+ending at `71220`) to Bev-O-Rage, but Creature2 `61463` has action set `0` and
+the current scripts contain no cast schedule or Tri Burst observer.
+
+Tier-1 `71182` is a `1500`-ms cast with Damage `182400`, proxy-to-`71291`,
+mode-`4` Ravel signal `25249`, and proxy-to-`76833`, named Tri Burst - Miss
+Check Proxy. Spell `71291` removes Pocketful of Quarters `71289`, correlating a
+Tri Burst hit with the Break-Room coin mechanic. The miss-check proxy emits
+mode-`4` signal `23242`; `25249` is exclusive to the 20 Tri Burst tiers, but
+`23242` is shared by drinks, coin pickup, Moment of Opportunity, critter money,
+alarms, and other mechanics. The tables do not prove delivery conditions,
+receiver ownership, whether `76833` means a complete miss, or which signal
+increments, fails, or succeeds the objective.
+
+Both signals remain diagnostics-only because the conservative runtime supports
+only Ravel mode `1`. `ISpellScript.OnExecute` runs before effects prove a hit or
+miss, `IUnitScript.OnHealthChange` carries no Spell4/cast/effect identity, and
+`IPublicEventObjective` exposes no script-facing failure transition. A focused
+regression records the current generic mismatch: four controller credits remain
+active at `29.999` seconds, the fifth succeeds, and a fresh objective fails at
+`30` seconds before late credit applies. The retail wording instead allows at
+most four qualifying hits, while static evidence does not prove whether timer
+expiry itself succeeds survivors or a separate controller event does. All `43`
+`PublicEventObjectiveTests` and all `141` audit tests pass. Selective
+regeneration validates `31` CSVs / `167,425` rows / `1,786` blocker details,
+all `not_retail_complete`.
+
+Objective `3208` remains **mapped only**. The current phase does not activate
+it, cast or observe Tri Burst, attribute hits, fail the fifth hit, or complete
+survivors. The current curated WildStar decompile/string exports have no exact
+`71182`, `25249`, Tri Burst, or Happy Feet anchor, and no Ghidra MCP instance
+was available. The next unlocker is a focused indexed xref or live capture for
+cast scheduling, hit/miss and signal ordering, fifth-hit failure, 30-second
+completion, group aggregation, reset/replay, rewards, achievement UI, and
+client behavior. Client relaunch still awaits approval of the one existing
+Windows permission dialog.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3207 mapped-only Make It Rain closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`71` now records the exact
+Break-Room coin objective boundary. Build `16042` maps PE `594` objective
+`3207`, `Collect Coins from Bev-O-Rage by stopping his anti-theft attempts`, as
+a count-`75` `Script` optional with flags `4`, parent objective `2680`, and
+WorldLocation2 `45901` in WorldZone `4331` The Break Room. Jabbithole objective
+`8173` resolves the localized creature macros, while client achievement `5961`
+/ Jabbithole `2078`, Make It Rain, independently requires collecting exactly
+`75` Coins from Bev-O-Rage.
+
+Parent objective `2680` uses TargetGroup `12179` for Bev-O-Rage Creature2
+`61463`; reviewed runtime entity `1100300055` and the current phase-`5` scaffold
+spawn that boss. The objective names invisible coin unit Creature2 `61637`,
+whose action set `3867` contains only SFX. TargetGroup `12889` / source row
+`679920`, Pickups Pull Targets, groups coin `61637` with invisible drink unit
+`62719`. That proves a shared pickup pull-target family, not spawn or credit
+ownership: objective `3207` does not reference the group, no spell effect points
+to it, no PE creature relation maps either member, DataMapping has no spawn or
+world-entity candidate for either, and the runtime database contains neither
+unit.
+
+The spell graph narrows but does not close the producer. Boss activation spell
+`71233` signals `25251`; Moment of Opportunity `71285` proxies Loose Change
+`71286`, exposing signal/payload pairs `23242`/`5` and `22195`/`3`; Knock
+Random Coins `71287` has forced-move and despawn effects but no
+SummonCreature-`61637` effect. Coin Pickup Aura `71288` proxies `71290`, which
+emits `22184`, generic mode-`4` `23242`/`1`, and despawns; Pocketful of Quarters
+`71289` applies four 60-second modifiers. Signal `23242` is also used by drinks,
+critter money, alarms, and other room mechanics, so a global objective mapping
+would cross-credit unrelated content. The runtime dispatches only mode `1`,
+treats mode `4` as diagnostic, drops `DataBits02` at
+`IWorldEntityScript.OnSignal(uint)`, and calls `ISpellScript.OnExecute` before
+effects prove interruption, spawn, contact, or pickup.
+
+A focused regression therefore records only the generic engine boundary:
+`74` explicit controller credits remain active after `600` seconds, the
+seventy-fifth succeeds, location `45901` is advertised, and post-success credit
+is rejected. All `42` `PublicEventObjectiveTests` and all `141` audit tests
+pass. Selective regeneration and validation cover `31` generated CSVs with
+`167,425` rows and `1,786` blocker detail rows, all `not_retail_complete`.
+
+Objective `3207` remains **mapped only**. The current phase does not activate
+it, create/scatter coins, observe the anti-theft chain, preserve payload-bearing
+signals, attribute actual pickups, or clean up uncollected units. Retail
+implementation requires live packet/log or controller/spell decompile evidence
+for TargetGroup `12889`'s exact role, objective and room activation, coin count
+and placement, signal payload semantics, collision/pickup/despawn ordering,
+party aggregation and duplicates, cleanup/replay, achievement/reward effects,
+and client UI. Client relaunch still awaits approval of the one existing
+Windows permission dialog.
+
+Latest supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3205 mapped-only Coordination closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`70` now records the exact
+Break-Room Spark-hit threshold. Build `16042` and Jabbithole objective `8149`
+map PE `594` objective `3205`, `As a group, get hit by less than five Sparks`,
+as a count-`5` `Script` challenge parented to objective `2680` at WorldLocation2
+`45901` in The Break Room. Client achievement `5957` / Jabbithole `2014`,
+Gauntlet Glancer, independently requires finishing the obstacle course with
+fewer than five hits.
+
+The localized objective directly identifies invisible Spark Creature2 `61469`.
+DataMapping maps Jabbithole Spark rows `28312`/`28317` to it, but their `126`
+historical coordinates are not reviewed simultaneous placements or a proven
+movement schedule. No TargetGroup or PE-`594` relation references the Spark,
+and the current runtime area contains only reviewed Bev-O-Rage Creature2
+`61463`, not `61469`. The candidate e2680 spell cluster includes Straight
+Spark `71109`, Spark `71110`, and Lazer Spark `71111`, each with Damage plus
+mode-`4` Ravel signals `25248`/`27129`, alongside Target Hit Fluff `76847`,
+despawn, and immunity rows. Creature2 `61469` has no nonzero action set, no row
+binds that cluster to objective `3205`, and mode `4` is diagnostics-only in the
+current runtime.
+
+A focused regression records the generic engine boundary only: four explicit
+credits remain active after `600` seconds, the fifth succeeds, location `45901`
+is advertised, and post-success credit is rejected. That behavior is not
+retail proof—“less than five” means at most four qualifying hits, so if count
+`5` is the disallowed-hit threshold, the fifth hit must fail and course
+completion must succeed an unfailed zero-through-four-hit objective. All `41`
+`PublicEventObjectiveTests` and all `141` audit tests pass. Selective
+regeneration and validation cover `31` generated CSVs with `167,425` rows and
+`1,786` blocker detail rows, all `not_retail_complete`.
+
+Objective `3205` remains **mapped only**. The existing phase activates parent
+`2680`, spawns Bev-O-Rage, and owns other reviewed child slices, but does not
+activate Coordination, spawn/move Sparks, attribute actual Spark hits, fail the
+fifth hit, or succeed the course. Retail implementation requires a live
+packet/log or controller/spell decompile trace of Spark placement/movement,
+collision and immunity ordering, exact group/duplicate aggregation, fifth-hit
+failure, course completion, reset/replay, rewards, achievement UI, and client
+verification. Client relaunch still awaits approval of the one existing
+Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3200 mapped-only Jump Jump closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`69` now records the exact
+Pulverize-avoid counter boundary. Build `16042` and Jabbithole objective `8197`
+map PE `594` objective `3200`, `Jump to avoid each ground pound from Bubbles'
+Pulverize ability`, as a count-`15` `ResourcePool` challenge without a timer,
+ObjectId, WorldLocation2, TargetGroup, or parent. Client achievement `5877` /
+Jabbithole `2004`, Jump Around, independently requires completing Jump Jump by
+avoiding the same ability in The Squirgnasium.
+
+DataMapping's scored-name bridge maps Bubbles Creature2 `62010` to current
+Jabbithole creature `28315` and older zone-zero row `30587`, but their `60`
+historical coordinates are observations rather than reviewed encounter spawns.
+No TargetGroup or PE-`594` relation references the creature, its action-set is
+`0`, and the runtime world database has no area-`4337` or Creature2-`62010`
+entities.
+
+The candidate spell cluster is specific but incomplete. Pulverize `72140` has a
+`15000`-ms cast, Damage, Proxy-to-`75104`, and Ravel signals mode `4`/signal
+`25160` plus mode `5`/signal `26851`; Part 2 `72142` has a `600`-ms cast,
+Damage, and the same `75104` proxy. Separate spell `75106`, `Challenge Signal -
+Success`, carries mode `4`/signal `25160` with `DataBits02=1`, but the direct
+Pulverize chain references only `75104`, not `75106`. The runtime conservatively
+dispatches only Ravel mode `1`; modes `4`/`5` are diagnostics-only, and
+`IWorldEntityScript.OnSignal(uint)` cannot preserve the payload bit that
+distinguishes normal from success. A focused regression therefore proves only
+the generic counter: fourteen explicit controller credits remain active after
+`600` seconds, the fifteenth succeeds, the zero location emits no marker, and
+post-success credit is rejected. All `40` `PublicEventObjectiveTests` and all
+`141` audit tests pass. Selective regeneration and validation cover `31`
+generated CSVs with `167,425` rows and `1,786` blocker detail rows, all
+`not_retail_complete`.
+
+Objective `3200` remains **mapped only**. Static evidence does not identify the
+`75106` success producer, actual jump/airborne/contact test, per-player versus
+group-wide credit, hit failure versus withheld credit, duplicate handling, or
+the relationship between fifteen qualifying pounds and room completion. The
+current event owns no Squirgnasium route, objectives, Bubbles spawn/cast, Ravel
+receiver, credit/failure producer, or cleanup. Retail implementation requires a
+live packet/log or controller/spell decompile trace of that full graph,
+mode/payload semantics, party scope, wipe/replay, rewards, achievement UI, and
+client verification. Client relaunch still awaits approval of the one existing
+Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3199 mapped-only Twinkle Toes closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`68` now records the exact
+Squirg-Burst no-hit boundary. Build `16042` and Jabbithole objective `8203` map
+PE `594` objective `3199`, `Avoid getting hit by Squirg Bombers' Squirg Burst!`,
+as a zero-count, zero-object `Script` optional with no timer, WorldLocation2,
+TargetGroup, or parent. Client achievement `5878` / Jabbithole `2034`, Twinkle
+Toes, independently requires evading the same Burst ability in The
+Squirgnasium.
+
+Creature2 `62371` uniquely maps Squirg Bomber through Jabbithole creatures
+`28309` and `28470`, but their `214` historical coordinates are observations
+rather than reviewed wave spawns; no TargetGroup or PE-`594` relation references
+the creature, and the runtime world database has no area-`4337` or
+Creature2-`62371` entities. Its action-set `2209` contains only action row `4951`,
+Summon VFX with action/data `0`, so it does not bind the cast. Spell `72114` is
+the only Spell4 row whose description contains Squirg Burst: an `800`-ms cast
+with two mapped Damage effects, `185574` and `185575`.
+
+The runtime still lacks a safe hit/failure signal for this optional:
+`ISpellScript.OnExecute` runs before effects and its selected targets do not
+prove contact, while `IUnitScript.OnHealthChange` exposes no spell/cast/effect
+identity. `IPublicEventObjective` has no failure method and the private
+`SetStatus(Failed)` path is timer-only; objective `3199` has no timer. A focused
+regression therefore proves only that the generic zero-count row remains active
+after `600` seconds, advertises no location, succeeds on explicit controller
+credit, and rejects post-success credit. All `39` `PublicEventObjectiveTests`
+and all `141` audit tests pass. Selective regeneration and validation cover
+`31` generated CSVs with `167,425` rows and `1,786` blocker detail rows, all
+`not_retail_complete`.
+
+Objective `3199` remains **mapped only**. Static evidence does not establish
+actual-hit versus telegraph/selection/damage semantics, immunity/absorption/
+dodge handling, individual versus team scope, duplicate and late-join behavior,
+the failure transition, or the room-completion success callback. The current
+event owns no Squirgnasium route, objectives, waves, Bomber spawn/cast, hit
+observer, optional failure/completion, or cleanup. Retail implementation
+requires a live packet/log or controller/spell decompile trace for those
+transitions and exact Creature2/action-set/spell binding, plus wipe/replay,
+rewards, achievement UI, and client verification. Client relaunch still awaits
+approval of the one existing Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3198 mapped-only Squirg Defuser closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`67` now records the exact
+Squirg-Onslaught interrupt boundary. Build `16042` and Jabbithole objective
+`8140` map PE `594` objective `3198`, `Interrupt Squirg Belchers before they can
+finish casting Squirg Onslaught`, as a count-`3` `ResourcePool` challenge with
+no timer, ObjectId, WorldLocation2, TargetGroup, or parent. Client achievement
+`5876` / Jabbithole `2051`, Squirg Defuser, independently requires the same
+interrupt condition in The Squirgnasium.
+
+Creature2 `62011` uniquely maps Squirg Belcher, but its `97` DataMapping
+coordinates are movement observations rather than reviewed wave spawns; no
+TargetGroup or PE-`594` relation references it, and the runtime world database
+has no area-`4337` or Creature2-`62011` entities. Spell `72112` is the current
+`3500`-ms Squirg Onslaught and summons Creature2 `62371`, but Creature2 `62011`
+has action-set `0`, so the static rows do not directly bind that cast to the
+Belcher. Runtime crowd control cancels a cast with
+`CastResult.SpellInterrupted`, yet `ISpellScript.OnFinish` exposes only
+`cancelled=true`; scripts cannot distinguish an interrupt from another
+cancellation reason. A focused regression proves only that two explicit
+controller credits remain active after `600` seconds, the third succeeds, the
+zero location emits no marker, and post-success credit is rejected. All `38`
+`PublicEventObjectiveTests` and all `141` audit tests pass. Selective
+regeneration and validation cover `31` generated CSVs with `167,425` rows and
+`1,786` blocker detail rows, all `not_retail_complete`.
+
+Objective `3198` remains **mapped only**. Static evidence does not establish
+credit per cast versus distinct Belcher/wave, duplicate/team scope, or whether
+a completed Onslaught fails/resets instead of merely withholding credit. The
+current event owns no Squirgnasium route, objectives, waves, Belcher spawn/cast,
+interrupt-reason callback, counter producer, or cleanup. Retail implementation
+requires a live packet/log or controller/spell decompile trace for those
+transitions and the exact Creature2/action-set/spell binding, plus a
+script-facing reason signal, completion/failure/reset, wipe/replay, rewards,
+achievement UI, and client verification. Client relaunch still awaits approval
+of one existing Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3152 mapped-only One of Each closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`66` now records the exact
+simultaneous-food-buff boundary. Build `16042` and Jabbithole objective `8222`
+map PE `594` objective `3152`, `Force Slimy Feast to have all 3 food buffs at
+once`, as a zero-count, zero-object `Script` optional without a failure timer at
+WorldLocation2 `45907` in the Employee Cafeteria. Client achievement `5950` /
+Jabbithole `2040`, Frenzy Feast, independently requires completing the One of
+Each optional with the same three concurrent buffs.
+
+TargetGroup `10199`, `[UP] Slimy Feast - Buffs`, contains Creature2 `61537`
+Loftite, `61538` Accelerite, `61539` Radioactive, and `61540` Explosive.
+Spells `71189`-`71192` independently name those four states in the same order,
+strongly separating the first three food buffs from the fourth bomb/purge
+state. The objective has ObjectId `0`, however, and references neither that
+group nor those spells. Spell `71347` is `Buff Detected`, but its static effect
+row does not prove the simultaneous-state test or success callback. A focused
+regression proves only that objective `3152` remains active after `600`
+seconds, accepts explicit controller success, advertises location `45907`, and
+rejects post-success credit. All `37` `PublicEventObjectiveTests` and all `141`
+audit tests pass. Selective regeneration and validation cover `31` generated
+CSVs with `167,425` rows and `1,786` blocker detail rows, all
+`not_retail_complete`.
+
+Objective `3152` remains **mapped only**. Static evidence does not establish
+food entity identity, pickup/throw/impact/consumption ordering, buff
+apply/refresh/remove timing, whether duplicates stack, how long the three
+states coexist, when simultaneous state is evaluated, or whether Explosive
+purges before or after that check. The current event owns no Employee Cafeteria
+route, boss/food spawns, buff application or observation, objective activation,
+success producer, or cleanup. Retail implementation requires a live packet/log
+or controller/spell decompile trace for those transitions, `71189`-`71191`
+coexistence, `71347`/marker relationships, bomb/purge ordering, reset/replay,
+rewards, achievement UI, and client verification. Client relaunch still awaits
+approval of one existing Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3151 mapped-only Fast Feast closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`65` now records the exact
+three-minute boss-defeat boundary. Build `16042` and Jabbithole objective `8194`
+map PE `594` objective `3151`, `Defeat Slimy Feast within 3 minutes`, as a
+zero-count, zero-object `Script` optional with `failureTimeMs 180000` at
+WorldLocation2 `45907` in the Employee Cafeteria. Client achievement `5949` /
+Jabbithole `2013`, Fast Feast, independently requires the same optional
+completion and three-minute defeat.
+
+TargetGroup `9151` data0 identifies Slimy Feast Creature2 `61468`, but the
+objective has ObjectId `0` and does not reference that group. DataMapping has
+`65` colocated unique-name coordinate observations for Creature2 `61468`;
+these are movement observations, not 65 reviewed encounter spawns. There is no
+PE-`594` creature relation, and the current runtime world database has zero
+area-`4352` entities and zero world-`2980` Creature2-`61468` entities. A focused
+regression proves only the generic deadline: objective `3151` remains active
+at `179.999` seconds, accepts explicit controller success before the deadline,
+fails at exactly `180` seconds, and rejects late credit. All `36`
+`PublicEventObjectiveTests` and all `141` audit tests pass. Selective
+regeneration and validation cover `31` generated CSVs with `167,425` rows and
+`1,786` blocker detail rows, all `not_retail_complete`.
+
+Objective `3151` remains **mapped only**. Static evidence does not establish
+whether the timer begins on room selection, objective activation, boss spawn,
+aggro, first damage, or a food-phase prompt, nor whether Creature2 death,
+encounter completion, or a controller transition is the qualifying signal.
+The current event defines only the enum value; it owns no Employee Cafeteria
+route, boss spawn/tracking, objective activation, death producer, timer
+completion/cancellation, wipe/reset, or cleanup. Retail implementation requires
+a live packet/log or controller/death decompile trace for those transitions,
+the exact `180`-second ordering, room completion, reset/replay, rewards,
+achievement UI, and client verification. Client relaunch still awaits approval
+of one existing Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3150 mapped-only Purge closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`64` now records the exact
+bomb/purge deadline boundary. Build `16042` and Jabbithole objective `8209` map
+PE `594` objective `3150`, `Make Slimy Feast purge by feeding him a Bomb in the
+next 15s`, as a zero-count `Script` challenge with `failureTimeMs 15000` at
+WorldLocation2 `45907` in the Employee Cafeteria. Client achievement `5948` /
+Jabbithole `1976`, Purge, independently requires feeding Slimy Feast a bomb
+within the time limit.
+
+The client spell cluster names `71193` `[UP] Slimy Feast - Bomb`, `71192`
+`Explosive Buff`, `71347` `Buff Detected`, `72469` `Explosion - Stomach Spew`,
+and `72727` `Add Food Fac`, but their effects do not bind any transition to
+objective `3150`. A focused regression proves only the generic deadline:
+objective `3150` remains active at `14.999` seconds, accepts explicit
+controller success before the deadline, fails at exactly `15` seconds, and
+rejects late credit. All `35` `PublicEventObjectiveTests` and all `141` audit
+tests pass. Selective regeneration and validation cover `31` generated CSVs
+with `167,425` rows and `1,786` blocker detail rows, all
+`not_retail_complete`.
+
+Objective `3150` remains **mapped only**. Static evidence does not prove
+whether bomb pickup, throw, impact, consumption, Explosive Buff application,
+buff detection, or Stomach Spew is the completion signal, nor when the
+15-second window begins. The only bomb-named local creature observation maps
+ambiguously to generic Explosive Barrel Creature2 `37691`; it is not safe to
+promote. The current event owns no Employee Cafeteria route, boss/bomb spawn,
+bomb/buff/purge observation, objective completion, or cleanup. Retail
+implementation requires a live packet/log or controller/spell decompile trace
+of that chain and timer ordering, plus reset/replay, rewards, achievement UI,
+and client verification. Client relaunch still awaits approval of one existing
+Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3149 mapped-only Binge Eating closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`63` now records a concrete source
+conflict. Build `16042` and Jabbithole objective `8165` map PE `594` objective
+`3149`, `Feed Slimy Feast 10 pieces of food without purging (no bomb)`, as a
+count-`10` `ResourcePool` challenge at WorldLocation2 `45907` in the Employee
+Cafeteria. Client achievement `5947` / Jabbithole `1959`, Binge Eating,
+instead requires `15` food pieces without purging. No alternate 15-food
+objective exists in the complete Slimy Feast row cluster `2671`, `3148`-`3152`.
+
+A focused regression proves only the current table/runtime boundary: nine
+explicit controller credits remain active after `600` seconds, the tenth
+succeeds, location `45907` is advertised, and post-success credit is rejected.
+It does not resolve whether the achievement text is stale, credits are
+weighted, or a hidden 15-step controller counter exists. All `34`
+`PublicEventObjectiveTests` and all `141` audit tests pass. Selective
+regeneration and validation cover `31` generated CSVs with `167,425` rows and
+`1,786` blocker detail rows, all `not_retail_complete`.
+
+Objective `3149` remains **mapped only**. Static evidence does not identify the
+food objects, credit point (pickup/throw/impact/consumption/buff), weighting, or
+whether a bomb purge resets the count, fails the challenge, or starts another
+attempt. The current event owns no Employee Cafeteria route, spawns,
+consumption/buff credit, purge handling, non-timer failure, or cleanup. Retail
+implementation requires a live packet/log or controller/spell decompile trace
+resolving 10 versus 15 and those transitions, plus completion, reset/replay,
+rewards, achievement UI, and client verification. Client relaunch still awaits
+approval of one existing Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-3148 mapped-only No Soup For Ya'll closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`62` now records the exact
+30-second survival/reset ambiguity. Build `16042` and Jabbithole objective
+`8159` map PE `594` objective `3148`, `Deprive Slimy Feast of any food for
+30s`, as a zero-count `TimedWin` challenge with `failureTimeMs 30000` at
+WorldLocation2 `45907` in the Employee Cafeteria. Client achievement `5946` /
+Jabbithole `1939`, No Soup For Ya'll, independently requires 30 seconds without
+feeding Slimy Feast. TargetGroup `9151` identifies boss Creature2 `61468`, and
+TargetGroup `10199` identifies four food-buff marker rows.
+
+A focused regression proves only the generic timer boundary: objective `3148`
+remains active at `29.999` seconds, accepts explicit controller success before
+the deadline, fails at exactly `30` seconds, and rejects late credit. The
+retail wording instead requires surviving the full uninterrupted duration.
+All `33` `PublicEventObjectiveTests` and all `141` audit tests pass. Selective
+regeneration and validation cover `31` generated CSVs with `167,425` rows and
+`1,786` blocker detail rows, all `not_retail_complete`.
+
+Objective `3148` remains **mapped only**. Static data does not identify the
+food objects or whether pickup, throw, impact, consumption, or resulting buff
+resets the timer; it also does not establish whether bombs count as food or
+when the deprivation window begins. The current event owns no Employee
+Cafeteria route, boss/food spawns, consumption/buff observation, reset,
+completion, or cleanup, and the runtime world database has no area-`4352`
+entities. Retail implementation requires a live packet/log or controller/spell
+decompile trace for those transitions, exact 30-second success ordering,
+failure/cancellation, room completion, reset/replay, rewards, achievement UI,
+and client verification. Client relaunch still awaits approval of one existing
+Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2957 mapped-only Perfect Precision closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`61` now has a precise Cosmic Kick
+miss/failure boundary. Build `16042` and Jabbithole objective `8212` map PE
+`594` objective `2957`, `Never miss with a Cosmic Kick`, as a zero-count,
+zero-object `Script` optional without a failure timer, parented to room
+objective `2677` at WorldLocation2 `41756`. Client achievement `5890` /
+Jabbithole `1934`, Cosmic Precision, independently requires completing Perfect
+Precision without ever missing a Cosmic Kick.
+
+Spell `71680` is Cosmic Kick. The related spell cluster directly names `71984`
+as `Miss All Check`, `71932` as `Miss All Decrease Combo`, and `71992` as
+`Miss All Kill Smashed Unit`, but their effect rows do not prove the objective
+failure callback or ordering. A focused regression proves only that objective
+`2957` remains active after `600` seconds, advertises location `41756`,
+succeeds after explicit controller credit, and rejects post-success credit.
+All `32` `PublicEventObjectiveTests` and all `141` audit tests pass. Selective
+regeneration and validation cover `31` generated CSVs with `167,425` rows and
+`1,786` blocker detail rows, all `not_retail_complete`.
+
+Objective `2957` remains **mapped only**. Static evidence does not establish
+whether empty-space casts, invalid/non-vulnerable or immune targets, lost
+targets, or partial multi-target hits count as misses; it also does not prove
+party aggregation or pre-start gating. The current event owns no H.M.S. route,
+Cosmic Kick grant, hit/miss observation, non-timer failure transition, or
+room-completion success. Retail implementation requires a live packet/log or
+controller/spell decompile trace for the `71984`/`71932`/`71992` ordering,
+valid-target and group semantics, failure/status emission, completion,
+reset/replay, rewards, achievement UI, and client verification. Client
+relaunch still awaits approval of one existing Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2956 mapped-only Cosmic Kick 80 closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`60` now has a precise
+eighty-knockoff counter boundary. Build `16042` and Jabbithole objective `8200`
+map PE `594` objective `2956`, `Use Cosmic Kick to knock off 80 marauders`, as
+a count-`80` `Script` challenge without a failure timer, parented to Cosmic
+Kick room objective `2677` at WorldLocation2 `41756`. Client achievement
+`5889` / Jabbithole `1912`, Cosmic Kick 80, independently requires kicking
+eighty Marauders off H.M.S. Phineas as a group. The ten-, twenty-, and
+forty-knockoff rows corroborate the same tiered group-counter intent.
+
+A focused regression proves only the generic table/runtime counter:
+seventy-nine explicit controller credits remain active after `600` seconds,
+the eightieth succeeds, and post-success credit is rejected. All `31`
+`PublicEventObjectiveTests` and all `141` audit tests pass. Selective
+regeneration and validation cover `31` generated CSVs with `167,425` rows and
+`1,786` blocker detail rows, all `not_retail_complete`.
+
+Objective `2956` remains **mapped only**. The table, achievement, Cosmic Kick
+spell `71680`, and Marauder target group agree on the intended total but not
+the runtime producer. Credit might occur per cast, target hit, forced movement,
+ship-boundary crossing, or death; multi-target counting, duplicate suppression,
+pre-start gating, and achievement handoff remain unproved. The current event
+owns no H.M.S. route, Marauder spawns, Cosmic Kick mechanics, knockoff
+attribution, or cleanup. Retail implementation requires a live packet/log or
+controller/spell decompile trace for those transitions plus reset/replay,
+rewards, achievement UI, and client verification. Client relaunch still awaits
+approval of one existing Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2955 mapped-only Cosmic Kick 40 closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`59` now has a precise
+forty-knockoff counter boundary. Build `16042` and Jabbithole objective `8213`
+map PE `594` objective `2955`, `Use Cosmic Kick to knock off 40 marauders`, as
+a count-`40` `Script` challenge without a failure timer, parented to Cosmic
+Kick room objective `2677` at WorldLocation2 `41756`. Client achievement
+`5888` / Jabbithole `1983`, Cosmic Kick 40, independently requires kicking
+forty Marauders off H.M.S. Phineas as a group. The ten- and twenty-knockoff
+rows corroborate the same tiered group-counter intent.
+
+A focused regression proves only the generic table/runtime counter:
+thirty-nine explicit controller credits remain active after `600` seconds, the
+fortieth succeeds, and post-success credit is rejected. All `30`
+`PublicEventObjectiveTests` and all `141` audit tests pass. Selective
+regeneration and validation cover `31` generated CSVs with `167,425` rows and
+`1,786` blocker detail rows, all `not_retail_complete`.
+
+Objective `2955` remains **mapped only**. The table, achievement, Cosmic Kick
+spell `71680`, and Marauder target group agree on the intended total but not
+the runtime producer. Credit might occur per cast, target hit, forced movement,
+ship-boundary crossing, or death; multi-target counting, duplicate suppression,
+pre-start gating, and achievement handoff remain unproved. The current event
+owns no H.M.S. route, Marauder spawns, Cosmic Kick mechanics, knockoff
+attribution, or cleanup. Retail implementation requires a live packet/log or
+controller/spell decompile trace for those transitions plus reset/replay,
+rewards, achievement UI, and client verification. Client relaunch still awaits
+approval of one existing Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2954 mapped-only Cosmic Kick 20 closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`58` now has a precise
+twenty-knockoff counter boundary. Build `16042` and Jabbithole objective `8214`
+map PE `594` objective `2954`, `Use Cosmic Kick to knock off 20 marauders`, as
+a count-`20` `Script` challenge without a failure timer, parented to Cosmic
+Kick room objective `2677` at WorldLocation2 `41756`. Client achievement
+`5887` / Jabbithole `2067`, Cosmic Kick 20, independently requires kicking
+twenty Marauders off H.M.S. Phineas as a group. Spell `71680` is Cosmic Kick
+and states that it launches vulnerable targets into deep space.
+
+A focused regression proves only the generic table/runtime counter: nineteen
+explicit controller credits remain active after `600` seconds, the twentieth
+succeeds, and post-success credit is rejected. All `29`
+`PublicEventObjectiveTests` and all `141` audit tests pass. Selective
+regeneration and validation cover `31` generated CSVs with `167,425` rows and
+`1,786` blocker detail rows, all `not_retail_complete`.
+
+Objective `2954` remains **mapped only**. Static spell, target-group, objective,
+and achievement rows agree on the intended group total but do not prove whether
+credit occurs per cast, per target hit, per forced movement, on crossing the
+ship boundary, or on death. They also do not prove multi-target counting,
+duplicate suppression, pre-start gating, or the achievement handoff. The
+current event owns no H.M.S. route, Marauder spawns, Cosmic Kick
+grant/vulnerability mechanics, knockoff attribution, or cleanup. Retail
+implementation requires a live packet/log or controller/spell decompile trace
+for those transitions plus reset/replay, rewards, achievement UI, and client
+verification. Client relaunch still awaits approval of one existing Windows
+permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2953 mapped-only Sixth Sense closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`57` now records the exact
+counter-direction and timer ambiguity. Build `16042` and Jabbithole objective
+`8210` map PE `594` objective `2953`, `As a group, don't get hit by more than
+5 telegraphs during the time limit`, as a count-`5` `Script` challenge with
+`failureTimeMs 25000`, parent objective `2677`, and WorldLocation2 `41756` in
+H.M.S. Phineas. Parent `2677` separately owns the room's `300000ms` TimedWin.
+
+A focused regression records only the generic table/runtime boundary: four
+explicit controller credits remain active at `24.999` seconds, the fifth
+succeeds, post-success credit is rejected, and an identical objective fails at
+exactly `25` seconds before late credit can change its zero count. This does
+not identify those credits as telegraph hits or avoids. All `28`
+`PublicEventObjectiveTests` and all `141` audit tests pass. Selective
+regeneration and validation cover `31` generated CSVs with `167,425` rows and
+`1,786` blocker detail rows, all `not_retail_complete`.
+
+Objective `2953` remains **mapped only**. The negative wording permits a
+materially different retail boundary—five hits may be allowed and the sixth
+may fail—while the generic runtime succeeds on five positive credits and fails
+on timer expiry. Static rows do not identify the source spell/TelegraphDamage
+set, hit-versus-avoid direction, group aggregation, duplicate rules, or window
+start/end ordering. No dedicated Sixth Sense achievement exists in the
+H.M.S. achievement set; AchievementChecklist `7167`'s numeric object `2953`
+belongs to unrelated achievement `2341`, Expert World Formulas, and is
+explicitly rejected as evidence. Retail implementation requires a live
+packet/log or controller decompile trace for route activation, source
+telegraphs, fifth-versus-sixth boundary, party aggregation, failure/completion,
+reset/cleanup, reward effects, and client UI. Client relaunch still awaits
+approval of one existing Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2952 mapped-only Accelerated Eradication closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`56` now has a precise per-
+Marauder lifetime boundary. Build `16042` and Jabbithole objective `8215` map
+PE `594` objective `2952`, `Don't allow any Marauder to live longer than 25s`,
+as a zero-count, zero-object `Script` optional parented to Cosmic Kick room
+objective `2677` at WorldLocation2 `41756`. Crucially, its
+`failureTimeMs` is `0`; the `25` seconds appears only in the condition text.
+Client achievement `5891` / Jabbithole `1955`, Off My Ship, independently
+requires that no Marauder remain on H.M.S. Phineas longer than 25 seconds.
+
+A focused regression proves that objective `2952` remains active after
+`25.001` seconds, advertises location `41756`, succeeds only after explicit
+controller credit, and rejects post-success credit. This guards against
+incorrectly turning the per-Marauder rule into a global objective timer. All
+`27` `PublicEventObjectiveTests` and all `141` audit tests pass. Selective
+regeneration and validation cover `31` generated CSVs with `167,425` rows and
+`1,786` blocker detail rows, all `not_retail_complete`.
+
+Objective `2952` remains **mapped only**. Related room evidence identifies four
+Marauder classes, but no row proves when each entity's clock starts or ends,
+what “on the ship” means, or whether death, Cosmic Kick hit, leaving the deck,
+forced movement, or smashed-unit death stops it. The current event owns no
+route, spawns, per-entity clocks, off-ship detection, failure, or room-complete
+success. Retail implementation needs a live packet/log or controller decompile
+trace for those transitions, reset/cleanup, rewards, achievements, and client
+verification. Client relaunch still awaits approval of one existing Windows
+permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2951 mapped-only Clean Sweep closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`55` now has a precise five-wave
+counter and overlap-failure boundary. Build `16042` and Jabbithole objective
+`8218` map PE `594` objective `2951`, `Defeat each Squirg wave before the next
+wave arrives`, as a count-`5` `ResourcePool` challenge without a timer, object,
+WorldLocation2, or TargetGroup. Client achievement `5875` / Jabbithole `1953`,
+Clean Sweeper, independently requires clearing every Squirgnasium wave before
+the next wave spawns.
+
+A focused regression proves only the table/runtime counter boundary: four
+explicit controller credits remain active even after `600` seconds, the fifth
+succeeds, and post-success credit is rejected. All `26`
+`PublicEventObjectiveTests` and all `141` audit tests pass. Selective
+regeneration and validation cover `31` generated CSVs with `167,425` rows and
+`1,786` blocker detail rows, all `not_retail_complete`.
+
+Objective `2951` remains **mapped only**. Count `5` is consistent with five
+qualifying wave clears, but no table or script defines each wave roster, spawn
+cadence, all-members-dead signal, or the next-wave arrival that fails an
+overlapping clear. The runtime also has no script-level non-timer failure
+transition. Treating every five kills as a wave clear or crediting whenever the
+room is momentarily empty would invent behavior. Retail implementation needs a
+live packet/log or controller decompile trace for route activation, five exact
+waves, clear/arrival ordering, overlap failure, reset/cleanup, rewards,
+achievements, and client verification. Client relaunch still awaits approval of
+one existing Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2947 mapped-only Speedy Slaughterfest closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`54` now has a precise
+Squirgnasium timer/controller boundary. Build `16042` and Jabbithole objective
+`8175` map PE `594` objective `2947`, `Eliminate the Squirg within the time
+limit`, as a zero-count, zero-object `Script` optional with a `270`-second
+failure timer and no WorldLocation2 or TargetGroup. Client achievement `5879` /
+Jabbithole `2066`, Speedy Slaughterfest, independently requires finishing the
+entire Squirgnasium event within the time limit.
+
+A focused regression proves only the table/runtime deadline: objective `2947`
+remains active at `269.999` seconds, accepts explicit controller success before
+the deadline, fails at `270` seconds without that signal, and rejects late
+credit. All `25` `PublicEventObjectiveTests` and all `141` audit tests pass.
+Selective regeneration and validation cover `31` generated CSVs with `167,425`
+rows and `1,786` blocker detail rows, all `not_retail_complete`.
+
+Objective `2947` remains **mapped only**. Main Squirgnasium objective `2670`
+and WorldLocation2 `41755` bind the room, while Jabbithole/client rows identify
+Bubbles, Belcher, Bomber, Zombie, and Herder candidates. They do not identify
+which singular Squirg or aggregate wave completion qualifies the optional
+objective, nor the retail wave count/cadence or timer start. Crediting one
+Squirg death would conflict with the achievement's whole-event wording. Retail
+implementation needs a live packet/log or controller decompile trace for route
+activation, waves, final-room completion, timer ordering, reset/cleanup,
+rewards, achievements, and client verification. Client relaunch still awaits
+approval of one existing Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2930 mapped-only Damage Control closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`53` now has a precise protected-
+pool and kill-attribution boundary. Build `16042` and Jabbithole objective
+`8170` map PE `594` objective `2930`, `Prevent the Splorg from killing any
+other critter!`, as a count-`10` `ResourcePool` challenge without a timer,
+object, WorldLocation2, or reward-pane TargetGroup. Client achievement `5927` /
+Jabbithole `2071`, Damage Control, independently requires preventing the
+exploding Splorg from killing any other creatures in the Protostar Petting Zoo.
+Achievement `5930` / Jabbithole `1937` directly identifies Creature2 `62597`
+as the Explosive Splorg.
+
+A focused regression proves only the table/runtime controller boundary: nine
+explicit credits remain active even after `600` seconds, the tenth succeeds,
+and post-success credit is rejected. All `24` `PublicEventObjectiveTests` and
+all `141` audit tests pass. Selective regeneration and validation cover `31`
+generated CSVs with `167,425` rows and `1,786` blocker detail rows, all
+`not_retail_complete`.
+
+Objective `2930` remains **mapped only**. Jabbithole places Jabbit, Rowsdower,
+Runaway Veggie, and Explosive Splorg observations in the same world/area, but
+those scored-name bridges and historical coordinates do not identify a retail
+ten-creature protected pool. The current Splorg script sees only the Splorg's
+own death and cannot attribute its explosion to another creature's death.
+Treating every non-Splorg death as Splorg-caused or awarding ten credits at room
+completion would invent behavior. Retail implementation needs a live packet/log
+or controller decompile trace for the roster, explosion lethal-source ordering,
+pool increment/decrement semantics, route activation, reset/cleanup, rewards,
+achievements, and client verification. Client relaunch still awaits approval of
+one existing Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2929 mapped-only Friend of Crate closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`52` now has a precise timed
+controller and damage-attribution boundary. Build `16042` and Jabbithole
+objective `8162` map PE `594` objective `2929`, `Don't allow any enemy
+creatures to destroy crates during the time limit`, as a zero-count,
+zero-object `TimedWin` challenge with a `30`-second failure timer at
+WorldLocation2 `41745` in the Lost and Found Department. Client achievement
+`5938` / Jabbithole `1938`, Friend of Crate, independently requires completing
+the event without enemies destroying any crates during the time limit.
+
+A focused regression proves only the table/runtime controller deadline:
+objective `2929` remains active at `29.999` seconds and accepts explicit
+controller success, fails at `30` seconds without that signal, and rejects
+late credit. All `23` `PublicEventObjectiveTests` and all `141` audit tests
+pass. Selective regeneration and validation cover `31` generated CSVs with
+`167,425` rows and `1,786` blocker detail rows, all `not_retail_complete`.
+
+Objective `2929` remains **mapped only**. Creature2 `62548` and relation `2191`
+identify the ordinary room crate, but the current one-shot death callback has
+no attacker or damage-source semantics. No TargetGroup or object row defines
+the protected crate or enemy roster, and the event does not own this route,
+spawns, enemy-to-crate attribution, immediate failure, or room-completion
+success. Treating every crate death as enemy-caused or auto-succeeding only
+because the timer elapsed would invent behavior. Retail implementation needs a
+live packet/log or controller decompile trace plus reset, cleanup, reward,
+achievement, and client verification. Client relaunch still awaits approval of
+one existing Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2928 mapped-only Kings and Queens of the Hill closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`51` now has a precise
+fall-condition boundary. Build `16042` and Jabbithole objective `8216` map PE
+`594` objective `2928` as a zero-count, zero-object `Script` optional at
+WorldLocation2 `41745` in the Lost and Found Department. Client achievement
+`5871` / Jabbithole `2281`, Crate Royalty, independently requires completing
+Kings and Queens of the Hill without any group member falling off the hill.
+
+A focused regression proves that the objective stays active without a
+controller signal despite its zero configured count, advertises location
+`41745`, and succeeds only after explicit controller credit. All `22`
+`PublicEventObjectiveTests` and all `141` audit tests pass. Selective
+regeneration and validation still cover `31` generated CSVs with `167,425`
+rows and `1,786` blocker detail rows, all `not_retail_complete`.
+
+Objective `2928` remains **mapped only**. WorldLocation2 `41745` is a radius-1
+room marker, not an edge or hazard volume. No TargetGroup, spell, trigger, or
+table row identifies the knockoff producer, group snapshot, failure ordering,
+or room-completion signal. Treating every death or an arbitrary coordinate
+threshold as a fall would invent behavior. Retail implementation requires a
+live packet/log or controller decompile trace plus reset, reward, achievement,
+and client verification. Client relaunch still awaits approval of one existing
+Windows permission dialog.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2927 partial Rowsdower Round-Up closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`50` now has a narrow Rowsdower
+death producer. Build `16042` and Jabbithole objective `8219` map PE `594`
+objective `2927`, `Kill Rowsdowers`, as a count-`6` `ResourcePool` challenge
+without a failure timer. Client achievement `5926` / Jabbithole `2038`,
+Rowsdower Round-Up, independently requires six Rowsdower kills in the
+Protostar Petting Zoo. Creature2 `62598` is explicitly described as `[UP]
+Critter - Rowsdower` and agrees with Jabbithole creature `28407` on world,
+area, faction, and level.
+
+`RowsdowerEntityScript` now sends one-shot death credit to objective `2927`
+only for Creature2 `62598`. Focused tests cover positive credit,
+repeated-death suppression, the wrong-creature negative case, five-credit
+incompletion, sixth-credit success, and post-success rejection. The isolated
+.NET run passes all `612` selected objective and entity-credit tests, and all
+`141` audit tests pass.
+
+This is a **partial implementation**, not retail-exact completion. The common
+Rowsdower name has `24` client candidates and no public-event-creature
+relation; the exact Ultimate Protogames description and world/area identity
+bound the current producer, but route activation, the retail spawn wave,
+kill attribution, resets, cleanup, rewards, and client behavior remain
+unproven. The `83` DataMapping observations are session history rather than a
+simultaneous spawn set. Selective regeneration and validation cover `31`
+generated CSVs with `167,425` rows and `1,786` blocker detail rows, all
+conservatively `not_retail_complete`. Client relaunch still awaits approval of
+one existing Windows permission dialog, so no fresh client observation is
+claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2925 partial Splorg Spree closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`49` now has a narrow
+Explosive-Splorg death producer. Build `16042` and Jabbithole objective `8150`
+map PE `594` objective `2925`, `Kill Splorg`, as a count-`7` `ResourcePool`
+challenge with a `20`-second failure timer. Client achievement `5928` /
+Jabbithole `2093`, Splorg Spree, independently requires seven Splorg kills
+within twenty seconds. Client achievement `5930` directly identifies the
+room's Explosive Splorg as Creature2 `62597`; achievement `5927` corroborates
+the same creature's Damage Control mechanic.
+
+`ExplosiveSplorgEntityScript` now sends one-shot death credit to objective
+`2925` only for Creature2 `62597`. Focused tests cover positive credit,
+repeated-death suppression, the wrong-creature negative case, six-credit
+incompletion, success at `19.999` seconds, and rejection after the
+`20`-second failure. The isolated .NET run passes all `607` selected objective
+and entity-credit tests, and all `141` audit tests pass.
+
+This is a **partial implementation**, not retail-exact completion. The current
+event does not select or activate the Pest Control / Splorg Spree route, spawn
+the Splorg wave, prove whether the timer starts on activation or first kill,
+or distinguish player/team kills from explosion/environment deaths. The `76`
+DataMapping observations are history across sessions, not a simultaneous spawn
+set. Selective regeneration and validation cover `31` generated CSVs with
+`167,422` rows and `1,785` blocker detail rows, all conservatively
+`not_retail_complete`. Client relaunch still awaits approval of one existing
+Windows permission dialog, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2924 partial Dust Storm closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`48` now has a corrected objective
+catalog entry and a narrow crate-death producer. Build `16042`, Jabbithole
+objective `8189`, client achievement `5936`, and Jabbithole achievement `2094`
+all map PE `594` objective `2924`, Dust Storm, as destroying `20` crates within
+`20` seconds in the Lost and Found room. The runtime enum incorrectly assigned
+Dust Storm to objective `2942`; client and Jabbithole data instead place
+objective `2942`, `Decrypt the Virtual Data Cache Access Code`, in Journey Into
+OMNICore PE `605`.
+
+Creature2 `62548`, `[UP] e2673 - Crate Destruction - Crate`, is linked to
+Ultimate Protogames by Jabbithole public-event creature relation `2191`.
+`LostAndFoundCrateEntityScript` now credits objective `2924` as well as main
+crate objective `2673` on the exact creature's one-shot death callback.
+Creature2 `62549`, the Mondo big crate with its own objective `2920`, remains
+excluded. A focused timer regression proves that credit `20` succeeds at
+`19.999` seconds, while an incomplete counter fails at `20` seconds and rejects
+late credit.
+
+This is a **partial implementation**, not retail-exact completion. The current
+event still lacks Lost and Found route activation, ordinary-crate spawning,
+timer start/reset ownership, replay cleanup, achievement/reward effects, and
+client smoke. Historical DataMapping observations do not establish the
+simultaneous retail spawn set. The isolated .NET run passes all `603` selected
+objective, entity-credit, and catalog tests, and all `141` audit tests pass.
+Selective regeneration and the validator pass cover `31` generated CSVs with
+`167,419` rows,
+every row still conservatively `not_retail_complete`.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2923 mapped-only Cosmic Kick 10 closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`47` now has a precise team
+knockoff counter boundary. Build `16042` and Jabbithole objective `8220` map PE
+`594` objective `2923`, `Use Cosmic Kick on 10 marauders to knock them off the
+ship`, as a count-`10` `Script` challenge parented to `2677` at
+WorldLocation2 `41756` in H.M.S. Phineas. Achievement `5886` / Jabbithole
+`2035`, Cosmic Kick 10, independently corroborates ten Marauder knockoffs as a
+group.
+
+Spell `71680`, the related combo/forced-movement/miss/death spell cluster, and
+TargetGroup `10728` map the available Cosmic Kick and four Marauder classes.
+They do not prove whether credit occurs per cast, target hit, forced movement,
+distance threshold, leaving the ship, or death. The current event script does
+not activate this room or own its spawns, vulnerability, action-bar state,
+knockoff attribution, team aggregation, or cleanup.
+
+A focused objective regression proves only the table count boundary: nine
+credits remain active, the tenth succeeds, and post-success credit is
+rejected. All `18` `PublicEventObjectiveTests` and all `141` audit tests pass.
+Selective regeneration and the `31`-file / `167416`-row validator pass with
+every row still `not_retail_complete`.
+
+Objective `2923` therefore remains **mapped only**. Retail work still needs
+route activation, qualifying vulnerability and off-ship ordering, exact
+per-target knockoff credit, multi-target/team aggregation, duplicate and
+pre-start rejection, reset/replay cleanup, achievement/reward effects, and
+client UI. Ordinary deaths or casts cannot safely be treated as knockoffs.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2922 mapped-only Rapid Fire closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`46` now records an important
+threshold conflict instead of treating the challenge as generic. Build `16042`
+and Jabbithole objective `8217` map PE `594` objective `2922`, `Kick 3
+marauders within 10s of each other`, as a count-`3` `Script` challenge with a
+10-second failure timer, parent objective `2677`, and WorldLocation2 `41756`
+in H.M.S. Phineas. Client achievement `5885` / Jabbithole `2005`, Rapid
+Kicker, instead says five Cosmic Kicks within ten seconds. No separate
+five-kick objective exists in the event table.
+
+Spell `71680` and its related client cluster map Cosmic Kick, combo tracking,
+knockoff movement, miss detection, and smashed-unit death surfaces.
+TargetGroup `10728` contains the four light/medium/heavy/crowd-control
+Marauders, but 382 DataMapping room observations do not prove a spawn wave or
+qualifying kick sequence. The current event script owns none of this room's
+activation, spawns, action-bar state, knockoff attribution, first-kick timer,
+rolling reset, or cleanup.
+
+A focused shared-objective regression proves only the build row's current
+count/time edge: two credits remain active, the third at `9.999` seconds
+succeeds, and a third after the 10-second failure is rejected. All `17`
+`PublicEventObjectiveTests` and all `141` audit tests pass. Selective
+regeneration and the `31`-file / `167416`-row validator pass with every row
+still `not_retail_complete`.
+
+Objective `2922` therefore remains **mapped only**. Retail work still needs
+route activation, qualifying Cosmic Kick knockoff attribution, first-credit
+and rolling-window reset ordering, multi-target behavior, failure/retry and
+replay cleanup, and explicit reconciliation of the objective's three-count
+threshold with the achievement's five-kick text. Ordinary Marauder deaths and
+achievement credit at three are both rejected as invented behavior.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2921 mapped-only Spring Cleaning closure.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`45` now has a precise aggregate
+timer boundary. Build `16042` maps PE `594` objective `2921`, `Clear the Lost
+and Found Department of crates and enemies within the time limit`, as an
+optional zero-count `Script` row with a six-minute failure timer and
+WorldLocation2 `41745` in world `2980` / area `4351`. Jabbithole objective
+`8225` and achievement `5940` / Jabbithole `1975`, Spring Cleaning,
+independently corroborate the condition.
+
+The same cluster has main objective `2673`, an 80-count crate `ResourcePool`.
+Creature2 `62548`, `62549`, `62575`, `62576`, `62581`, and `63312` are named
+as e2673 Crate Destruction content, but neither TargetGroup `10647` nor the
+other objective rows define the complete crates-and-enemies set for `2921`.
+DataMapping's area-4351 crate, Swarmling, intern, mammoth, monstrosity, and
+Mondo-crate observations were captured across sessions and are not a
+simultaneous retail spawn set or ordered wave.
+
+The runtime has exact one-shot Creature2-`62548` credit for objective `2673`
+and a deterministic WIP Mondo/mammoth variant, but it does not activate
+`2673`/`2921`, spawn the ordinary room roster, count remaining entities, or
+own aggregate completion/cleanup. A focused regression proves only the static
+timer boundary: controller credit at `359.999` seconds succeeds; at `360`
+seconds the objective fails and rejects late credit. All `16`
+`PublicEventObjectiveTests` and all `141` audit tests pass. Selective
+regeneration and the `31`-file / `167416`-row validator pass with every row
+still `not_retail_complete`.
+
+Objective `2921` therefore remains **mapped only**. Retail work still needs
+route selection and activation, exact crate/enemy spawns and respawns,
+qualifying destruction/death attribution, aggregate remaining-count or signal
+semantics, timer start and terminal ordering, reset/replay cleanup, room
+completion, rewards/achievement UI, and client smoke. Completing Spring
+Cleaning from objective `2673` alone would invent the missing enemy contract.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2901 runtime `ScriptWithoutMax` semantics.
+
+Queue-rank-`13` `instance-2980` blocker-rank-`44` now has a decompile-backed
+shared counter boundary. Build `16042` maps PE `594` objective `2901`, `Kill one
+more jabbit` / `Another Jabbit`, as an optional zero-object
+`ScriptWithoutMax` type-`25` row with table count `1`, no timer/location, and
+flags `516`. The unmapped `0x200` flag bit remains evidence-only. Local
+Jabbithole has no exact game-id or text match for this objective.
+
+The client establishes why the table count is not an auto-completion threshold.
+`Lua_PublicEventObjective_GetRequiredCount` at `14068ef30` returns zero for type
+`0x19`; `Lua_PublicEventObjective_ShouldShowRequiredCount` at `1406908b0` hides
+its required count; `Lua_PublicEventObjective_GetCount` at `14068e110` exposes
+the raw running count; and `PublicEventObjectiveUpdate_ApplyParsedPayload` at
+`1405f3520` applies server-authored status. The table's other 135 type-`25`
+rows, mostly count-zero score/activity displays, corroborate the unbounded
+counter interpretation.
+
+`PublicEventObjective` now keeps `ScriptWithoutMax` active while updates
+accumulate instead of succeeding at `Entry.Count`. A focused objective-`2901`
+regression proves counts `1` and `3` remain active and negative updates clamp
+to zero; all `15` `PublicEventObjectiveTests` and all `141` audit tests pass,
+and the decompile mapping validator passes all `5,011` rows. Selective tracker
+regeneration and the `31`-file / `167416`-row content validator also pass with
+every inventory row still `not_retail_complete`.
+
+This is **runtime semantic coverage, not retail completion**. The WIP event
+still selects only Hunt Ruffles in area `4348`; it does not activate Pest
+Control `2672`, Slaughterhouse `2898`, or Another Jabbit `2901`. Qualifying
+Jabbit spawns/kills, exact score deltas, relation to the Slaughterhouse pool,
+terminal status ownership, reset/replay cleanup, room completion, and client
+smoke remain blocked pending a live capture or controller decompile trace.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2899 mapped-only Runaway Veggie closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`43` now has a precise escape-timer
+boundary. Build `16042` maps PE `594` objective `2899`, `Kill the Runaway Veggie
+before it escapes!`, as a one-credit `ResourcePool` challenge with a 45-second
+failure timer. Jabbithole objective `8199` and achievement `5925` / Jabbithole
+`2010`, Steamed Veggies, independently corroborate the condition.
+
+Creature2 `62674` is the `[UP]` Runaway Veggie and maps from Jabbithole source
+`28400`. Its 96 current and 2 older area-4348 coordinate observations were
+captured across many sessions; they are not an ordered escape route or spawn
+set. The creature has no action set, activation spell, TargetGroup membership,
+or public-event relation. Focused runtime coverage proves only that credit at
+`44.999` seconds succeeds and the objective fails at `45` seconds before
+rejecting late credit.
+
+Objective `2899` therefore remains **mapped only**. Retail work still needs Pest
+Control route/activation, exact veggie spawn and movement start, ordered
+waypoints or path owner, escape endpoint/trigger, death attribution, timer
+start ordering, player/team scope, cleanup, room completion, achievement UI,
+and client smoke. Historical observation timestamps must not be treated as a
+retail route.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2898 mapped-only Slaughterhouse closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`42` now has a precise Pest Control
+score boundary. Build `16042` maps PE `594` objective `2898`, `Kill as many
+critters as you can!`, as a zero-object `ResourcePool` challenge with count
+`40`, no timer/location, and short title `Slaughterhouse`. Jabbithole objective
+`8206` corroborates the row. Achievement `5929` / Jabbithole `1917`, Jabbit
+Justification, calls it the Slaughterhouse challenge but specifically describes
+defeating jabbits, so the per-creature score mapping is not established.
+
+The room's main objective `2672` is a 180-second `TimedWin` at WorldLocation2
+`41741` in area `4348`; adjacent rows separately track the Runaway Veggie,
+Splorgs, Rowsdowers, Damage Control, and Ruffles. Jabbithole/DataMapping provides
+movement histories for Creature2 `62595` / `62597` / `62598` / `62674`, but no
+ordinary-critter public-event relation, TargetGroup, spawn wave, or score
+weight. Critter initialization signal `23053` uses unsupported modes `4/5`.
+Focused runtime coverage proves only the table-backed pool boundary: `39`
+credits remain active, credit `40` succeeds, and later credit is rejected.
+
+Objective `2898` therefore remains **mapped only**. Retail work still needs
+Pest Control route selection and activation, exact spawns/respawns, qualifying
+kill attribution and weights, objective-`2901` sequencing, signal receiver,
+main-event completion linkage, cleanup, rewards/achievement UI, and client
+smoke. The current deterministic Ruffles route is in the same room and must not
+be conflated with Pest Control without random-route evidence.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2897 mapped-only Water Hazard closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`41` now has a precise water-failure
+boundary. Build `16042` maps PE `594` objective `2897`, `Don't fall into the
+water!`, as a zero-count `Script` optional at radius-180 WorldLocation2 `46473`
+in Power Plunge. Jabbithole objective row `8178` corroborates the condition,
+while no client achievement/checklist row links directly to `2897`.
+
+The room's remaining location rows are radius-1 points with no static table
+reference proving a water trigger. Divekick spells expose bounce, forced-move,
+drop-off, failsafe, and kick-miss surfaces: mode-1 signal `22351` is supported,
+while signals `22902` / `28057` use unsupported mode `4`; mapped forced movement
+uses modes `11` and `15`. The WIP Power Plunge phase activates only Gilded Fowl
+objectives `2862` / `4442`.
+
+Objective `2897` therefore remains **mapped only**. Retail work still needs
+objective activation, exact water-volume or equivalent trigger geometry,
+fall/entry/signal/death ordering, local versus party failure scope, one-shot
+deduplication, room-completion success, resets/cleanup, and client smoke. An
+arbitrary Y threshold or treating kick-miss signal `22902` as the failure
+producer would invent behavior not established by the evidence.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2892 mapped-only Toxophobia closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`40` now has a precise toxic-air
+failure boundary. Build `16042` maps PE `594` objective `2892`, `Complete the
+event without breathing in any toxic air`, as a zero-count `Script` optional
+at WorldLocation2 `41714`. Jabbithole objective row `8146`, client achievement
+`5900`, and Jabbithole achievement row `2022` corroborate the condition;
+adjacent achievement `5904` / Jabbithole row `2105` separately tracks surviving
+toxic air for 20 seconds.
+
+Toxic Air spell `72234` carries damage effect `198393` plus RavelSignal effect
+`188896`, receiver mode `4` / signal `23106`. Beacon-carrier Protective Shield
+spells `72003` and `72310`-`72313` explicitly grant toxic-air protection and
+carry HazardSuspend payloads for hazard `214`, target mode `0`. The exact
+hazard-suspension path is implemented and test-backed, but mode `4` remains
+diagnostics-only and the room never activates the hazard, beacon, or objective.
+
+Objective `2892` therefore remains **mapped only**. Retail work still needs
+hazard/objective activation, beacon carry/drop protection lifecycle, exact
+signal-23106 receiver and party/local failure semantics, event-completion
+success, resets/cleanup, adjacent survival-achievement behavior, and client
+smoke. Globally enabling the hazard or mode-4 signals would broaden unrelated
+content without evidence.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2891 mapped-only Atychiphobia closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`39` now has a precise
+Elemental-Overload failure boundary. Build `16042` maps PE `594` objective
+`2891`, `Complete the event without buffing a creature with Elemental
+Overload`, as a zero-count `Script` optional at WorldLocation2 `41714`.
+Jabbithole objective row `8167`, client achievement `5901`, and Jabbithole
+achievement row `2007` corroborate the condition.
+
+Spells `72013`-`72016` are the four elemental attunement creature buffs.
+Elemental Overload spells `75868` / `77989` each carry RavelSignal effects
+`209847` / `209848` with receiver mode `4`, signal `23104`. Archived retail
+patch 03/17/2015 explicitly says applying Elemental Overload fails
+Atychiphobia. Runtime currently dispatches only evidence-backed mode `1`;
+mode `4` remains diagnostics-only, and focused boundary tests preserve that
+constraint.
+
+Objective `2891` therefore remains **mapped only**. The room/objective is not
+activated, mode-4 receiver identity and one-shot failure update are unknown,
+and terminal success/reset/cleanup are absent. Broadly enabling mode `4` would
+affect unrelated spells; globally hard-coding the two spell IDs would invent
+missing event scope. Live/decompile receiver evidence plus full room and client
+smoke remain required.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2890 mapped-only Chronophobia closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`38` now has a precise room-timer
+boundary. Build `16042` maps PE `594` objective `2890`, `Complete the event in
+under 10 minutes`, as a zero-count `TimedWin` row with flags `4`, object `0`,
+category `1`, `failureTimeMs=600000`, and WorldLocation2 `41714` in world
+`2980` / WorldZone `4343`, Elemental Hospital. Jabbithole objective row `8152`
+repeats the requirement. Client achievement `5902` and Jabbithole achievement
+row `2032`, `Chronophobia`, independently require the same ten-minute
+completion.
+
+The shared objective timer can enforce 600 seconds once correctly activated;
+focused coverage succeeds at `599.999` seconds, fails at `600` seconds, and
+rejects late credit. Objective `2890` nevertheless remains **mapped only**:
+parent objective `2674` and the room lifecycle are absent, so the exact timer
+start, six-wave/boss completion handoff, timeout, reset/retry and wipe/replay
+cleanup, achievement UI/persistence, and full client smoke remain unproven.
+Starting the timer at dungeon start would charge unrelated rooms; starting it
+at an arbitrary wave would invent the retail lifecycle.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2889 explicit-delete rejection.
+Queue-rank-`13` `instance-2980` blocker-rank-`38` is not missing gameplay.
+Build `16042` retains PE `594` objective `2889` as a zero-count `Script` row
+at WorldLocation2 `41714`, but both long and short localized rows `590520` /
+`590521` contain only `[DELETE]`. Jabbithole independently preserves the same
+retired row as objective `8188` with text `[DELETE]`.
+
+No build-16042 achievement/checklist row references objective `2889`, and the
+row has no gameplay subject, count, target, timer, success/failure condition,
+or reward. Adding a producer would revive content explicitly marked for
+deletion. Objective `2889` is therefore **rejected** from retail restoration;
+the numeric enum remains only for table identity, and the row is excluded from
+the actionable blocker queue. No runtime or client smoke is required unless
+newer retail evidence proves it was reintroduced.
+
+All `141` audit tests pass. Affected-surface regeneration and completeness
+validation now cover `31` generated files with `167,416` rows and `1,783` blocker detail rows,
+all still conservatively `not_retail_complete`.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2888 mapped-only Quick Visit closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`37` now has a precise boss-timer
+boundary. Build `16042` maps PE `594` objective `2888`, `Defeat the Elemental
+Master in under 3 minutes`, as a zero-count `Script` row with flags `4`,
+object `0`, category `3`, `failureTimeMs=180000`, and WorldLocation2 `41714`
+in world `2980` / WorldZone `4343`, Elemental Hospital. Jabbithole objective
+row `8223` repeats the requirement. Client achievement `5899` and Jabbithole
+achievement row `1956`, `Institutionalized`, independently require the same
+three-minute defeat.
+
+Creature2 `63319` is Elemental Master, the `[UP] e2674 - Mixed Wave -
+Miniboss`. Jabbithole public-event relation `2000` links source creature
+`28000` to Ultimate Protogames, but DataMapping also maps older source `30390`
+to the same client creature. The former has 100 build-7 movement observations
+and the latter one build-6 observation; they do not establish the selected
+spawn, wave-to-boss transition, form identity, or vulnerability boundary.
+Runtime has no Elemental Hospital phase and does not spawn or script this boss.
+
+The shared objective timer can enforce 180 seconds once correctly activated;
+focused coverage succeeds at `179.999` seconds, fails at `180` seconds, and
+rejects late credit. Objective `2888` nevertheless remains **mapped only**:
+implementation needs the exact activation boundary, wave-to-boss transition,
+spawn/form and elemental-attunement behavior, death-success and timeout-failure
+producers, despawn/reset and wipe/replay cleanup, achievement UI/persistence,
+and full client smoke.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2887 mapped-only Escaped Patient closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`36` now has a precise intern
+escape-race boundary. Build `16042` maps PE `594` objective `2887`, `Stop the
+Protostar Intern from escaping and deliver a punishment!`, as a zero-count
+`TimedWin` row with flags `4`, object `0`, category `3`,
+`failureTimeMs=60000`, and WorldLocation2 `41714` in world `2980` /
+WorldZone `4343`, Elemental Hospital. Jabbithole objective row `8163` repeats
+the requirement. Client achievement `5898` and Jabbithole achievement row
+`1935`, `Patient Secured`, identify success as defeating the intern.
+
+Creature2 `67452` is `[UP] e2674 - Creature - Protostar Intern`, but action set
+`3896` exposes only Bell visual row `9137`, not an escape route. DataMapping
+scores Jabbithole creature `28347` to `67452` and retains 91 movement
+observations in the correct world/area, but there is no Jabbithole
+public-event relation and the observations do not identify the selected spawn,
+ordered path, or escape endpoint. Runtime has no Elemental Hospital phase and
+does not spawn or script this creature.
+
+The shared objective timer can enforce 60 seconds once correctly activated;
+focused coverage succeeds at `59.999` seconds, fails at `60` seconds, and
+rejects late credit. Objective `2887` nevertheless remains **mapped only**:
+implementation still needs exact activation/spawn, ordered escape movement,
+death-success and endpoint/timeout-failure producers, despawn/reset and
+wipe/replay cleanup, achievement UI/persistence, and full client smoke.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2886 mapped-only Claustrophobic Skip closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`35` now has a precise
+telegraph-damage boundary. Build `16042` maps PE `594` objective `2886`,
+`Complete the next wave without taking any telegraph damage`, as a zero-count
+`Script` row with flags `4`, object `0`, category `3`, no timer, and
+WorldLocation2 `41714` in world `2980` / WorldZone `4343`, Elemental Hospital.
+Local Jabbithole objective row `8171` repeats the requirement. Client
+achievement `5897` and Jabbithole achievement row `1913`, `Claustrophobic
+Skip`, require avoiding telegraph damage for a full wave.
+
+The spell runtime can select and geometrically revalidate telegraph targets,
+but `IDamageDescription` does not retain spell/target/telegraph provenance.
+`UnitEntity` later records only generic adjusted-plus-shield-absorbed
+`DamageReceived`; it cannot identify whether damage came from a telegraph or
+which Elemental Hospital wave owns it. Focused spell tests cover correct
+phase-band selection and moved-outside rejection.
+
+Objective `2886` therefore remains **mapped only**. Parent objective `2674`
+and the room are still absent, and retail implementation needs exact challenge
+activation/party scope, telegraph-hit failure conditions, per-wave completion,
+reset/retry and wipe/replay cleanup, achievement UI/persistence, and full
+client smoke. Failing the challenge on all incoming damage or granting it from
+an arbitrary elemental death would both be incorrect.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2885 mapped-only Panic Pronto closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`34` now has a precise wave-timer
+boundary. Build `16042` maps PE `594` objective `2885`, `Complete the next wave
+in under 30s`, as a zero-count `Script` row with flags `4`, object `0`,
+category `3`, `failureTimeMs=30000`, and WorldLocation2 `41714` in world
+`2980` / WorldZone `4343`, Elemental Hospital. Local Jabbithole objective row
+`8154` repeats the requirement. Client achievement `5896` and Jabbithole
+achievement row `2090`, `Panic Pronto`, independently require defeating an
+Elemental Hospital wave within 30 seconds.
+
+The shared `PublicEventObjective` timer can enforce that boundary after a
+zero-count objective is activated with dynamic max one: focused coverage
+succeeds at `29.999` seconds, fails at `30` seconds, and rejects late credit.
+That is an engine capability, not a room implementation. Parent objective
+`2674`, `Master the Elements`, remains mapped-only; the runtime has no
+Elemental Hospital phase and no wave start, wave completion, or challenge
+reset producer.
+
+Objective `2885` therefore remains **mapped only**. Retail implementation still
+requires route selection, exact challenge/timer activation, per-wave spawn and
+completion boundaries, success/failure updates, reset/retry and wipe/replay
+cleanup, achievement UI/persistence, and full client smoke. Client relaunch
+still awaits approval of one existing Windows permission dialog, so no fresh
+client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2884 partial Total Domination closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`33` now has a focused runtime
+owner. Build `16042` maps PE `594` objective `2884`, `Defeat Hut-Hut in under
+5 minutes!`, as a zero-count `TimedWin` row with flags `4`, object `0`,
+category `1`, `failureTimeMs=300000`, and WorldLocation2 `46229` in world
+`2980` / WorldZone `4502`, Intern Disposal Facility 74. Local Jabbithole
+objective row `8195` repeats the five-minute condition. Client achievement
+`5971` and Jabbithole achievement row `1960`, `Total Domination`,
+independently require completing that optional objective.
+
+`UltimateProtogamesEventScript` now activates objective `2884` with dynamic
+max one at the reviewed Hut-Hut phase start alongside defeat objective `2675`.
+The shared `PublicEventObjective` runtime starts the row's 300-second failure
+timer only while active, transitions it to failed at the deadline, and rejects
+later updates. `HutHutEntityScript` now credits both `2675` and `2884` once on
+Creature2 `61417` death. A kill before the deadline succeeds the objective;
+a late kill cannot restore it.
+
+Focused tests cover phase activation/dynamic max, dual one-shot death credit,
+success at `299.999` seconds, failure at `300` seconds, and late-credit
+rejection; all `3` focused tests and all `583` shared death-credit tests pass.
+All `176` audit/validator checks, affected-surface regeneration, and
+completeness validation pass; the current `31` generated files contain
+`167,417` rows and `1,784` blocker detail rows, all `not_retail_complete`.
+Exact random-room routing and phase-start presentation, wipe/replay timer
+reset, achievement UI/persistence, and full client smoke remain unverified.
+Client relaunch still awaits approval of one existing Windows permission
+dialog, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2883 mapped-only Crystal Catcher closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`32` now has a precise
+crystal-spawn and collection boundary. Build `16042` maps PE `594` objective
+`2883`, `Collect 5 Power Crystals`, as a count-five `ResourcePool` row with
+flags `4`, object `0`, category `3`, no timer, and WorldLocation2 `46473` in
+world `2980` / area `4347`. Local Jabbithole objective row `8192` repeats the
+same requirement. Client achievement `5920` and Jabbithole achievement row
+`2092`, `Crystal Catcher`, independently require collecting five power
+crystals in the Cuboar Coterie.
+
+Creature2 `63091` is explicitly `[UP] Divekick - Power Crystal`, localized as
+`Power Crystal` by row `590353`. LocalizedText `635181` says that when the
+Gilded Fowl appears, players use Power Plunge on it to get knocked up to the
+crystals. TargetGroup `12263` contains Gilded Fowl `63055`. The reviewed
+runtime phase currently activates only objectives `2862`/`4442`, spawns the
+fowl at its supported placement, and credits only those two rows on death.
+Creature `63091` has no reviewed Jabbithole public-event/coordinate bridge, and
+the runtime has no crystal spawn or collection owner.
+
+Objective `2883` therefore remains **mapped only**. Static rows do not prove
+crystal count/positions, static versus dynamic spawning, collection receiver,
+pool delta/aggregation, duplicate suppression, the fowl knock-up trajectory,
+or despawn/reset. Guessing crystal offsets above the fowl or crediting fowl
+death would be wrong. The next evidence is a live packet/log or decompile trace
+of activation, Creature2 `63091` spawns, Power Plunge/fowl knock-up, crystal
+collection and pool updates, despawn/duplicate behavior, reset/cleanup, and
+achievement/UI effects. All `3` focused Power Plunge/fowl boundary tests, all
+`176` audit/validator checks, affected-surface regeneration, and completeness
+validation pass; the current `31` generated files contain `167,411` rows, all
+`not_retail_complete`. Client relaunch still awaits approval of one existing
+Windows permission dialog, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2882 mapped-only Shut Out closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`31` now has a precise boss-score
+failure boundary. Build `16042` maps PE `594` objective `2882`, `Defeat
+Hut-Hut without letting him score any points`, as a zero-count `Script` row
+with flags `4`, object `0`, category `1`, no timer, and WorldLocation2 `46229`
+in world `2980` / WorldZone `4502`, Intern Disposal Facility 74. Local
+Jabbithole objective row `8180` repeats the same condition. Client achievement
+`5970` and Jabbithole achievement row `1941`, `Shut Out`, independently
+require defeating Hut-Hut without allowing any points.
+
+Boss Touchdown Aura `71929` applies Boss Touchdown Score `72061` through
+effect row `184449`; score row `185403` emits receiver mode `5` / signal
+`22257`. Player Touchdown row `184595` uses the distinct mode-`5` signal
+`22256`. The current Hut-Hut phase activates only defeat objective `2675`,
+and `HutHutEntityScript` credits only that objective on boss death. The
+conservative RavelSignal boundary dispatches only proven mode `1`; mode `5`
+remains diagnostics-only.
+
+Objective `2882` therefore remains **mapped only**. Static rows do not prove
+activation, the mode-`5` boss-score receiver and target, whether one score
+permanently fails the challenge, multiple-score/extra-point semantics, the
+failure update, death-success handoff, or wipe/replay reset. Activating `2882`
+and crediting every Hut-Hut death without a verified score-failure path would
+grant Shut Out after Hut-Hut had scored. The next evidence is a live packet/log
+or decompile trace of activation, receiver routing and identity, score/failure
+persistence, Hut-Hut death success, reset/cleanup, and achievement/UI effects.
+All `588` focused receiver/death-credit tests, all `176` audit/validator
+checks, affected-surface regeneration, and completeness validation pass; the
+current `31` generated files contain `167,411` rows, all
+`not_retail_complete`. Client relaunch still awaits approval of one existing
+Windows permission dialog, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2880 mapped-only Slick Moves closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`30` now has a precise
+extra-point evidence boundary. Build `16042` maps PE `594` objective `2880`,
+`Score an extra point without fumbling once!`, as a zero-count `Script` row
+with flags `4`, object `0`, category `3`, no timer, and WorldLocation2 `46229`
+in world `2980` / WorldZone `4502`, Intern Disposal Facility 74. Local
+Jabbithole objective row `8169` repeats the same condition. Client achievement
+`5969` and Jabbithole achievement row `1919`, `Slick Moves`, independently
+require scoring an extra point without fumbling. Adjacent objective `2879`
+separately covers an ordinary goal.
+
+The relevant spell cluster exposes Moment of Opportunity `71612`, Drop Intern
+`71891`, Boss Touchdown Aura `71929`, Player Touchdown `71962`, Boss Touchdown
+Score `72061`, Hut-Hut and team-member Fumble `72699`/`72705`, and Extra
+Point Pull to Location `75724`. Player and boss score rows `184595`/`185403`
+use receiver mode `5` with distinct signals `22256`/`22257`. The fumble paths
+use proven target mode `1` / signal `22273` and unsupported mode `5` / signal
+`22810`. Rows `195626`/`195871` prove a dedicated extra-point movement/control
+spell but contain no objective id or score signal.
+
+Objective `2880` therefore remains **mapped only**. Static rows do not prove
+when the extra-point opportunity starts, which location/goal state qualifies
+it, carrier ownership, the normal-touchdown-to-extra-point transition, the
+mode-`5` player-score receiver, fumble failure, update delta, or retry/cleanup.
+Crediting every Player Touchdown, the pull spell, a ball drop, or Hut-Hut death
+would be wrong. The next evidence is a live packet/log or decompile trace of
+activation, extra-point state/location, carrier and fumble transitions,
+mode-`5` touchdown routing, success/failure updates, reset/cleanup, and
+achievement/UI effects. All `5` focused signal-boundary tests, all `176`
+audit/validator checks, affected-surface regeneration, and completeness
+validation pass; the current `31` generated files contain `167,411` rows and
+`1,782` blocker detail rows, all `not_retail_complete`. Client relaunch still
+awaits approval of one existing Windows permission dialog, so no fresh client
+observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2879 mapped-only Teamwork closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`29` now has a precise
+carrier/score evidence boundary. Build `16042` maps PE `594` objective `2879`,
+`Score without fumbling the Protostar Intern`, as a zero-count `Script` row
+with flags `4`, object `0`, category `3`, no timer, and WorldLocation2 `46229`
+in world `2980` / WorldZone `4502`, Intern Disposal Facility 74. Local
+Jabbithole objective row `8221` repeats the same condition. Client achievement
+`5968` and Jabbithole achievement row `2098`, `Top-notch Teamwork`,
+independently require scoring a goal without fumbling the intern. Adjacent
+objective `2880` separately covers an extra point, so the two score types
+cannot be merged.
+
+The Forward Pass spell `71353` emits receiver mode `4` / signal `28042`.
+Protostar Intern carrier spell `71425` uses mode `1`/`4`/`5` signals; Drop
+Intern `71891` uses proven target mode `1` / signal `22273` plus mode `5` and
+mode `4` signals. Player Touchdown `71962` emits mode `5` / signal `22256`.
+Hut-Hut and team-member Fumble spells `72699`/`72705` remain distinct, with
+mode `1` / signal `22273` versus mode `5` / signal `22810`.
+
+Objective `2879` therefore remains **mapped only**. The runtime dispatches only
+mode `1`; the key Forward Pass activation and Player Touchdown score paths use
+unsupported modes `4` and `5`. Static rows do not prove carrier identity and
+pass handoff, whether the mode-`1` drop is failure or cleanup, failure
+persistence, normal-goal versus extra-point classification, update delta, or
+replay cleanup. Crediting any touchdown, boss death, or ball-drop signal would
+be wrong. The next evidence is a live packet/log or decompile trace of
+activation, carrier ownership, pass/drop/fumble transitions, mode-`5`
+touchdown routing, score classification, success/failure updates, cleanup,
+and achievement/UI effects. All `5` focused signal-boundary tests, all `176`
+audit/validator checks, affected-surface regeneration, and completeness
+validation pass; the current `31` generated files contain `167,411` rows and
+`1,782` blocker detail rows, all `not_retail_complete`. Client relaunch still
+awaits approval of one existing Windows permission dialog, so no fresh client
+observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2878 mapped-only Butterfingers closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`28` now has a precise timed
+fumble evidence boundary. Build `16042` maps PE `594` objective `2878`,
+`Force a Fumble on Hut-Hut within the next 30 seconds`, as a zero-count
+`TimedWin` row with flags `4`, object `0`, category `3`,
+`failureTimeMs=30000`, and WorldLocation2 `46229` at
+`(-12430.7, -788.212, -6863.18)` in world `2980` / WorldZone `4502`,
+Intern Disposal Facility 74. Local Jabbithole objective row `8172` repeats
+the same condition. Client achievement `5967` and Jabbithole achievement row
+`2074`, `Butterfingers`, independently require forcing a fumble on Hut-Hut.
+
+The build `16042` spell cluster distinguishes Butterfingers `72698`, Hut-Hut
+Fumble `72699`, team-member Fumble `72705`, Force Fumble `72772`, and Moment
+of Opportunity `75107`. Butterfingers row `208570` emits receiver mode `4` /
+signal `28041`. Hut-Hut Fumble row `187854` emits the proven entity-target
+mode `1` / signal `22273`, while team-member Fumble row `187880` uses mode
+`5` / signal `22810` and Force Fumble rows `188062`/`193627` use modes
+`5`/`4` with signals `25589`/`25217`.
+
+Objective `2878` therefore remains **mapped only**. The runtime can dispatch
+mode `1` to the spell-resolved target entity's script, but modes `4` and `5`
+remain diagnostics-only. Static rows identify a plausible Hut-Hut completion
+witness but do not prove when the challenge activates, the receiver for
+signal `28041`, the Force Fumble chain into boss-versus-player Fumble,
+success delta, failure/retry, or cleanup semantics. Activating it at the start
+of the whole Hut-Hut phase could start the timer before the retail
+opportunity, and boss death credit would be wrong. The next evidence is a
+live packet/log or decompile trace of challenge activation and receiver
+routing, Force Fumble choreography, the mode-`1` boss target and objective
+update, 30-second failure, retry/reset/cleanup, and achievement/UI effects.
+All `12` focused signal/timer tests, all `176` audit/validator checks,
+affected-surface regeneration, and completeness validation pass; the current
+`31` generated files contain `167,411` rows and `1,782` blocker detail rows,
+all `not_retail_complete`. Client relaunch still awaits approval of one
+existing Windows permission dialog, so no fresh client observation is
+claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2873 mapped-only Environmentalist closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`27` now has a precise
+player-debuff evidence boundary. Build `16042` maps PE `594` objective `2873`,
+`Allow the Incinerator's On Fire debuff to hit only one party member for the
+entire event`, as a zero-count `Script` row with flags `4`, object `0`,
+category `1`, no timer, and WorldLocation2 `46323` at
+`(-29046.7, -940.841, 1532.78)` in world `2980` / area `4336`. Local
+Jabbithole objective row `8187` repeats the same condition, and achievement
+`5870`, `Environmentalist`, independently requires allowing only one party
+member to be caught on fire by the Incinerator.
+
+Incinerate spell `72616` applies On Fire spell `72628` through Spell4Effects
+row `187592`. On Fire emits mode-`1` signal `26936` through row `198057` and
+mode-`4` signal `23030` through row `199166`, both targeting the affected
+unit. The conservative runtime boundary dispatches proven mode `1` only to
+that target entity's `IWorldEntityScript.OnSignal` handlers, but Ultimate
+Protogames has no player-scoped receiver. Mode `4` remains diagnostics-only
+because its receiver graph and payload semantics are unmapped.
+
+Objective `2873` therefore remains **mapped only**. Static evidence does not
+prove which signal represents first application, repeat, removal, or failure;
+how distinct party identities persist across the event; whether repeated hits
+on one player are allowed; join/leave and observer behavior; or the
+completion/reset handoff. Generic damage, aura, or death credit would be
+wrong. The next evidence is a live packet/log or decompile trace covering
+activation, both signal receiver roles and target identity, per-player
+dedupe, second-distinct-player failure, same-player repeats, party membership
+changes, cleanup, completion, and achievement/UI effects. All `5` focused
+RavelSignal boundary tests, all `176` audit/validator checks, affected-surface
+regeneration, and completeness validation pass; the current `31` generated
+files contain `167,411` rows and `1,782` blocker detail rows, all
+`not_retail_complete`. Client relaunch still awaits approval of one existing
+Windows permission dialog, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2870 partial Redemption Value closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`25` now has a focused runtime
+owner for the Waste Management Facility health challenge. Build `16042` maps
+PE `594` objective `2870`, `Get all of the tanks to 50% health without
+destroying any of them`, as a count-one `Script` row with flags `2174980`,
+object `0`, category `3`, and no timer or world location. Local Jabbithole
+objective row `8158` repeats the same requirement, and achievement `5868`,
+`Redemption Value`, independently requires getting every tank to 50% before
+destroying any.
+
+`UnitEntity` invokes `IUnitScript.OnHealthChange` after applying the new
+health and before its death callback. `UltimateProtogamesEventScript` now
+activates `2870`, deduplicates script-owned tank entities `1100300060` through
+`1100300062`, accepts only alive values at or below exactly half of max health,
+and emits the row's single credit after all three qualify. A reviewed tank
+death before the third threshold, failed aggregate `GoingGreen`, or phase exit
+permanently disarms the attempt. `MalfunctioningTankEntityScript` rejects
+healing, above-half, lethal, and null-type callbacks before forwarding the
+threshold signal, so a killing blow cannot count as reaching 50%.
+
+This is a **partial implementation**, not retail-exact completion. Exact
+random-room routing, health-bar/challenge presentation, wipe/replay cleanup,
+achievement UI/grant behavior, and full dungeon client smoke remain blocked.
+The isolated .NET run passes all `53` focused Ultimate Protogames tests,
+including three-distinct-tank success, duplicate suppression, tank-death
+suppression, exact-threshold forwarding, and negative callback cases. All
+`176` audit/validator tests, affected-surface regeneration, and completeness
+validation pass; the current `31` generated files contain `167,411` rows and
+`1,782` blocker detail rows, all `not_retail_complete`. Client relaunch still
+awaits approval of one existing Windows permission dialog, so no fresh client
+observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2871 partial Waste Management no-death closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`26` now has a focused lifecycle
+owner for the tank-room deathless condition. Build `16042` maps PE `594`
+objective `2871`, `No Deaths - Complete the event without anyone in your group
+dying`, as a zero-count `Script` row with flags `4`, object `10569`, category
+`1`, no timer, and WorldLocation2 `41754` in world `2980` / area `4336`.
+Achievement `5865`, `Immortal: Waste Management Facility`, independently
+requires completing that room without anyone in the party dying.
+
+`UltimateProtogamesEventScript` now activates `2871` with dynamic max `1` in
+the reviewed tank-room phase, records player deaths only while the condition
+is active, ignores non-player deaths, disarms on failed aggregate
+`GoingGreen`, and credits `2871` only when the current all-three-tanks
+objective `2872` succeeds without a recorded player death. Entering the room
+never grants the objective.
+
+This is a **partial implementation**, not retail-exact completion. Exact random
+room routing, joined-party versus observer semantics, wipe/replay reset,
+150/180-second timer failure choreography, achievement UI/grant behavior, and
+full dungeon client smoke remain blocked. The isolated .NET build passes all
+`48` focused Ultimate Protogames tests, including activation, positive
+completion, player-death suppression, non-player death behavior, and failed
+aggregate suppression. All `176` audit tests, affected-surface regeneration,
+and the completeness validator pass; the current `31` generated files contain
+`167,405` rows and `1,780` blocker detail rows, all
+`not_retail_complete`. Client relaunch still awaits approval of one existing
+Windows permission dialog, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2867 mapped-only Incinerate challenge closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`24` now has a precise
+spell-signal boundary for the Waste Management Facility challenge. Build
+`16042` maps PE `594` objective `2867`, `Hit all 3 tanks with Incinerate
+without letting Incinerate hit more than one player`, as a zero-count `Script`
+row with flags `4`, object `0`, category `3`, no timer, and WorldLocation2
+`41754` in world `2980` / area `4336`.
+
+TargetGroup `10633`, `[UP] e2867 - Junk Units`, and placement TargetGroup
+`12671` both contain Busted Red Tank `62542`, Wrecked Blue Tank `62543`, and
+Malfunctioning Yellow Tank `62546`. Achievement `5866`, `Expert Incinerator`,
+independently confirms the every-tank/no-player-on-fire semantics. Incinerate
+spells `72616`/`72618`/`73086` and On Fire debuff `72628` emit RavelSignal
+mode-`4` signal ids `23008`/`23225` and mode-`1`/`4` signal ids
+`26936`/`23030`, respectively.
+
+The runtime's conservative RavelSignal boundary dispatches only the proven
+mode-`1` receiver; mode `4` remains diagnostics-only. The current tank script
+credits only death objectives and cannot identify Incinerate hits, distinct
+tank coverage, player On Fire hits, failure persistence, or successful room
+handoff. Crediting `2867` from tank death would be wrong, so it remains
+**mapped only**. The next evidence is a live packet/log or decompile trace of
+activation, mode-`4` receiver routing, per-tank hit dedupe, player-hit failure,
+completion/reset/cleanup, and achievement/UI effects. All `176` audit tests
+and selective regeneration pass. Client relaunch still awaits approval of one
+existing Windows permission dialog, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2861 mapped-only Power Plunge score closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`21` now has a distinct evidence
+boundary for the room's creature-score pool. Build `16042` maps PE `594`
+objective `2861`, `Destroy as many creatures as you can with Power Plunge!`,
+as a `ResourcePool` row with flags `4`, count `60`, object `0`, category `3`,
+no timer, and WorldLocation2 `46473` in world `2980` / area `4347`.
+Achievement `5918`, `Cubig Carnage`, independently requires successfully Power
+Plunging `100` creatures. That confirms a qualified-creature score surface but
+does not explain the objective's `60` threshold or its relationship to the
+achievement.
+
+TargetGroup `10404`, `[UP] Divekick - Bounce Targets`, contains Cubig `61775`,
+Cuboar `62218`, Blue and Green Spikehorde `62219`/`62220`, Flying Cubig
+`62242`, and Gilded Fowl `63055`. The spell cluster exposes Jump Buff `71495`,
+Power Plunge `71497`, Divekick Removal `71499`, bounce signals
+`71532`/`71951`/`72009`, and Kick Miss Signal `72764`. Static data does not
+prove which contacts count, whether the target must be destroyed, whether a
+multi-target plunge increments once or per target, or how party members share
+the pool.
+
+The current WIP room spawns only the reviewed Gilded Fowl, and its death script
+credits objectives `2862`/`4442` without Power Plunge hit or destruction
+attribution for `2861`. Generic death credit would count ordinary kills.
+Objective `2861` is therefore **mapped only**. The next evidence is a live
+packet/log or decompile trace of phase activation, eligible spawn set and
+cadence, Power Plunge grant/removal, hit-versus-destruction attribution,
+per-target and multi-target delta, party aggregation, pool completion and
+cleanup, and achievement/UI effects. All `176` audit tests, selective
+regeneration, and the completeness validator pass; the current `31` generated
+files contain `167,397` rows and `1,778` blocker detail rows, all
+`not_retail_complete`. Client relaunch still awaits approval of one existing
+Windows permission dialog, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2860 mapped-only consecutive-plunge closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`20` now has a separate evidence
+boundary for the team plunge chain. Build `16042` maps PE `594` objective
+`2860`, `As a team, make 30 consecutive plunges without falling on ground or
+in water`, as a `ResourcePool` row with flags `4`, count `30`, object `0`,
+category `3`, no timer, and WorldLocation2 `46473` in world `2980` / area
+`4347`. Achievement `5917`, `Ultimate Proto-Plunger`, independently confirms
+the 30-consecutive-Proto-Plunge team challenge.
+
+TargetGroup `10404`, `[UP] Divekick - Bounce Targets`, contains Cubig `61775`,
+Cuboar `62218`, Blue and Green Spikehorde `62219`/`62220`, Flying Cubig
+`62242`, and Gilded Fowl `63055`. The spell cluster exposes Jump Buff `71495`,
+Power Plunge `71497`, Divekick Removal `71499`, bounce signals
+`71532`/`71951`/`72009`, and Kick Miss Signal `72764`. Static data does not
+prove which contact increments the pool, whether a multi-target plunge counts
+once or per target, how party members share the chain, or which ground, water,
+and miss events reset it.
+
+The current WIP room spawns only the reviewed Gilded Fowl, and its death script
+credits objectives `2862`/`4442` without qualifying a Power Plunge hit.
+Generic death credit would count ordinary kills and cannot implement a
+consecutive team chain or hazard reset. Objective `2860` is therefore
+**mapped only**. The next evidence is a live packet/log or decompile trace of
+phase activation, Power Plunge grant/removal, target-hit attribution, per-hit
+delta, multi-target and team aggregation, ground/water/miss reset,
+completion/cleanup, and achievement/UI effects. All `176` audit tests and
+selective regeneration pass; the current blocker detail output contains
+`1,778` rows. Client relaunch still awaits approval of one existing Windows
+permission dialog, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2858 mapped-only alarm-state closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`18` now separates the
+Prototentiary alarm condition from the cage-console credit path. Build `16042`
+maps PE `594` objective `2858`, `Ghosts - Complete the event without triggering
+any alarms`, as a zero-count `ActivateTargetGroup` row with flags `2105348`
+(`0x202004`), object `10583`, category `1`, and no timer or location.
+TargetGroup `10583` contains Cage Console Creature2 `63037` and is shared by
+aggregate objective `2678` and Fast Hands objective `2863`.
+
+Achievement `5912`, `Ghost`, independently requires completing the event
+without triggering an alarm; achievement `5913`, `Hit Snooze`, distinguishes
+disabling a triggered alarm within five seconds. Trigger Alarm spells
+`72111`/`77007` and Disable Alarm spells `72192`/`78045` use RavelSignal effect
+type `81`, with separate trigger signal ids `22453`/`23242`/`28120` and disable
+signal id `22463`. Static data does not prove the signal receiver, first-failure
+transition, five-second recovery semantics, or aggregate success handoff.
+
+Activating `2858` now would be wrong: the existing generic cage-console update
+for object `10583` could complete Ghosts on the first cage interaction without
+proving that no alarm fired. Objective `2858` is therefore **mapped only**.
+The next evidence is a live packet/log or decompile trace of activation,
+detection and alarm-signal dispatch, disable timing, failure persistence,
+aggregate success credit, replay reset, and achievement/UI effects. All `141`
+audit tests, selective regeneration, and the completeness validator pass; the
+current `31` generated files contain `167,397` rows and `1,778` blocker detail
+rows, all `not_retail_complete`. Client relaunch still awaits approval of one
+existing Windows permission dialog, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2857 partial no-death producer closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`17` now has a focused
+Prototentiary lifecycle owner. Build `16042` maps PE `594` objective `2857`,
+`Complete the current event without anyone in your group dying`, as a
+zero-count `Script` row with flags `4`, object `10569`, category `1`, and no
+timer or location. TargetGroup `10569` contains Prototentiary Gate Console
+Creature2 `62987` and is also the object for entry objective `2847`;
+achievement `5906`, `Immortal: The Prototentiary`, explicitly requires
+sneaking through that room without a party death.
+
+`UltimateProtogamesEventScript` now activates `2857` with dynamic max `1` in
+the reviewed Prototentiary phase, records player deaths only while the
+condition is active, ignores non-player deaths, and credits `2857` only when
+aggregate Warden-plus-cage objective `2678` succeeds without a recorded player
+death. Entering the phase never grants the objective, and a failed aggregate
+disarms the condition. The isolated .NET build passes all `44` focused
+Ultimate Protogames tests, covering activation, positive completion,
+player-death suppression, and non-player death behavior.
+
+This is a **partial implementation**, not retail-exact completion. Exact
+random-room routing, joined-party versus observer semantics, wipe/replay reset
+behavior, stealth/no-alarm choreography, achievement UI/grant smoke, and full
+dungeon client smoke remain blocked. All `141` audit tests, affected-surface
+regeneration, and the completeness validator pass; the current `31` generated
+files contain `167,397` rows and `1,778` blocker detail rows, all
+`not_retail_complete`. Client relaunch still awaits approval of one existing
+Windows permission dialog, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2700 mapped-only score-pool closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`11` now has an independent
+evidence boundary for PE `594` objective `2700`, `This meter increases every
+time you kick a Marauder or destroy an asteroid`. Build `16042` maps it as a
+`ResourcePool` row with flags `16392` (`0x4008`), count `100`, object `0`, no
+failure timer, and WorldLocation2 `41756` in world `2980` / area `4334`.
+
+The row is colocated with five-minute `TimedWin` objective `2677`. Its child
+objectives distinguish `3`, `10`, `20`, `40`, and `80` kicks or knockoffs;
+Spell `71680` launches vulnerable targets into deep space; TargetGroup `10728`
+contains the four Marauder rows; and TargetGroup `10327` identifies asteroid
+Creature2 `62081`. This proves a Cosmic Kick/asteroid score surface but not the
+score delta per target, multi-target aggregation, miss behavior, pool bounds,
+or whether reaching `100` directly completes `2677`. The current flag enum
+also does not map the row's `0x4008` high bits.
+
+Generic death credit would count non-kick Marauder deaths and cannot
+distinguish asteroid destruction or multi-target scoring. Runtime area `4334`
+is empty, and the current script owns none of the room activation, spawns,
+Cosmic Kick state, score attribution, pool updates, timer result, or cleanup.
+Objective `2700` is therefore **mapped only**. The next evidence is a live
+packet/log or decompile trace of `2677`/`2700` activation order, kick and
+asteroid deltas, hit/miss/multi-target attribution, pool bounds and completion
+linkage, timer outcome, cleanup, and reward/achievement effects. All `141`
+audit tests, selective regeneration, and the completeness validator pass; the
+current `31` generated files contain `167,388` rows and `1,776` blocker detail
+rows, all `not_retail_complete`. Client relaunch still awaits approval of one
+existing Windows permission dialog, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2679 mapped-only internal-row closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`10` now distinguishes a retained
+internal client row from an evidence-backed playable room. Build `16042` maps
+PE `594` objective `2679` as a zero-count, zero-object, zero-timer `Script` row
+with no parent, category, or medal value and WorldLocation2 `41743` at
+`(-16785.2, -980.569, -2807.54)`. Its long and short text are both the internal
+label `w4330 - 018 - Terraformer Jump - Protogames`; WorldZone `4332` is the
+child of Ultimate Protogames WorldZone `4330` named `018 - Whitevale
+Terraformer - Bonus Jump Stage - Ultimate Protogames`.
+
+The row is isolated: no other PE-`594` objective anchor lies within `2000`
+units, and `2679` has no target group, object, count, timer, parent, or mapped
+`e2679` creature, spell, or achievement surface. Jabbithole preserves the
+internal objective label but captured no Ultimate Protogames `018` zone, and
+PE `299`'s `11` zone relations contain no Terraformer or Bonus Jump room.
+Runtime candidate area `4332` is empty, and the current Ultimate Protogames
+script neither selects that room nor activates, scores, completes, or cleans
+up `2679`.
+
+Those absences do not prove that the client row was deleted or never selected
+in retail. Objective `2679` is therefore **mapped only**, not rejected or
+auto-completed. The next evidence is a live packet/log, archived retail
+witness, or decompile trace proving retail presence and selection,
+activation/status ordering, jump buff/route and landing/failure triggers,
+completion/cleanup, and reward/achievement effects. All `141` audit tests,
+selective regeneration, and the completeness validator pass; the current `31`
+generated files contain `167,388` rows and `1,776` blocker detail rows, all
+`not_retail_complete`. Client relaunch still awaits approval of one existing
+Windows permission dialog, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2677 mapped-only closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`8` now has an exact evidence
+boundary for PE `594` objective `2677`, `Kick Marauders into Deep-Space before
+the time runs out!`. Build `16042` maps it as a zero-count, zero-object
+`TimedWin` row with a `300000` ms failure timer and WorldLocation2 `41756` in
+world `2980` / area `4334`. Co-located ResourcePool objective `2700` has count
+`100` and explicitly increases for Marauder kicks or destroyed asteroids.
+
+Spell `71680`, Cosmic Kick, launches vulnerable targets into deep space. Its
+client spell cluster separately models combo state, miss detection, forced
+movement, knockout aura/speed, and smashed-unit death. TargetGroup `10728`
+contains the four light/medium/heavy/crowd-control Marauder rows, while
+TargetGroup `10327` identifies the asteroid. Child objectives `2922`, `2923`,
+and `2952`-`2957` distinguish rapid kicks, total knockoffs, maximum Marauder
+lifetimes, telegraph hits, and never missing. Achievements `5883`-`5893`
+repeat those exact surfaces, and archived retail notes prove that using Cosmic
+Kick before the event starts must not fail Perfect Precision.
+
+No generic producer is safe: ordinary deaths are not necessarily Cosmic Kick
+knockoffs, while directly updating zero-count `2677` would complete it without
+proving its relationship to the 100-point meter or five-minute timer.
+DataMapping has `382` current movement observations for the four Marauder
+sources, but no PE-`594` creature relation or reviewed wave/density. Runtime
+area `4334` is empty, and the current script owns none of the room activation,
+spawns, Cosmic Kick grant/removal, hit/miss/knockoff attribution, meter
+updates, timer result, or replay cleanup.
+
+Objective `2677` is therefore **mapped only**. The next evidence is a live
+packet/log or decompile trace of random-room and pre-start gating,
+`2677`/`2700` activation order, exact waves, vulnerability/action-bar state,
+kick attribution, meter weights/bounds, timer success/failure, child updates,
+cleanup, and reward/achievement effects. All `141` audit tests and selective
+regeneration pass; the current `31` generated files contain `167,388` rows and
+`1,776` blocker detail rows, all `not_retail_complete`. Client relaunch still
+awaits approval of one existing Windows permission dialog, so no fresh client
+observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2674 mapped-only closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`7` now has an exact evidence
+boundary for PE `594` objective `2674`, `Defeat the Elemental Master`. Build
+`16042` maps it as a `ResourcePool` type-`21` row with count `6`, object `0`,
+no failure timer, and WorldLocation2 `41714` in world `2980` / area `4343`.
+Creature2 `63319` is explicitly the `e2674` mixed-wave miniboss, and
+TargetGroup `12878` contains it, four elemental disguises, and two air-wave
+rows.
+
+The wider client cluster proves that this is a multi-stage Elemental Hospital
+encounter: eight elemental wave creatures; beacon, attunement, and carrier
+units; toxic-air protection; fire/water/air/earth creature buffs; vulnerability
+and Elemental Overload states; an escaped intern; eight colocated child
+objectives; and achievements `5894`-`5904`. Archived retail patch notes confirm
+that Elemental Overload fails Atychiphobia and that Elemental Hospital
+achievement/challenge/optional credit and the Elemental Master Burning tooltip
+were live concerns.
+
+No safe producer follows from those facts. The singular boss text does not
+prove whether count `6` advances by waves or form transitions, receives a
+terminal delta of `6`, decrements, or uses another state channel. Jabbithole
+relation `2000` identifies the intended Elemental Master but leaves source
+rows `28000`/`30390` ambiguous; its `100` current movement observations plus
+one older coordinate are not a reviewed spawn set. Runtime area `4343` is
+empty, and the current script owns none of the room activation, waves,
+beacons, hazards, pool changes, boss forms, or cleanup.
+
+Objective `2674` is therefore **mapped only**. The next evidence is a live
+packet/log or decompile trace of random-room activation, exact wave order,
+beacon carry/drop and attunement, toxic-air and overload behavior, ResourcePool
+delta direction/bounds, boss transitions/defeat, child ordering,
+wipe/replay cleanup, and reward/achievement effects. All `141` audit tests and
+selective regeneration pass; the current `31` generated files contain
+`167,388` rows and `1,776` blocker detail rows, all
+`not_retail_complete`. Client relaunch still awaits approval of one existing
+Windows permission dialog, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2673 partial producer closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`6` now separates the proven
+death-credit producer from the still-unproven Lost and Found room. Build
+`16042` maps PE `594` objective `2673`, `Destroy the Crates in the Lost and
+Found Department`, as a `ResourcePool` type-`21` row with count `80`, object
+`0`, no failure timer, and WorldLocation2 `41745` in world `2980` / area
+`4351`.
+
+Creature2 `62548` is explicitly described as the objective-`2673`
+crate-destruction crate, and Jabbithole public-event creature relation `2191`
+maps source creature `28314` to it under PE `594`. A new
+`LostAndFoundCrateEntityScript` therefore credits objective `2673` once per
+Creature2-`62548` death. A real isolated-output build and `583` focused tests
+prove the positive update, repeated-death guard, and exact creature filter.
+
+This is intentionally only a **partial implementation**. The current script
+does not activate `2673` or spawn crates. The `81` current-last-seen crate
+coordinate observations are history/movement evidence, not one simultaneous
+or retail-exact spawn set, and runtime area `4351` has no static entities. The
+same room currently hosts the deterministic WIP Misplaced Mammoth/Mondo route;
+the random-room choice and the related crate, enemy, timer, edge, boss, and
+replay challenges remain unproven.
+
+The next evidence is a live packet/log or decompile trace of route selection,
+activation, reviewed crate/enemy spawn and despawn lifecycle, exact
+ResourcePool max/delta/completion behavior, timer/child ordering,
+failure/replay cleanup, and medal/reward/achievement effects. All `141` audit
+tests, selective regeneration, and the `31`-file / `167389`-row validator pass
+with every row still `not_retail_complete`. Client relaunch still awaits
+approval of one existing Windows permission dialog, so no fresh client
+observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2672 mapped-only closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`5` now has an exact evidence
+boundary for PE `594` objective `2672`, `Kill as many jabbits as you can!`.
+Build `16042` maps it as a zero-count, zero-object `TimedWin` row with a
+`180000` ms failure timer and WorldLocation2 `41741` in world `2980` / area
+`4348`. Count-one `ScriptWithoutMax` objective `2901`, `Kill one more jabbit`,
+has no object/location and does not prove its sequencing.
+
+DataMapping identifies Jabbit Creature2 `62595` through a scored-name bridge
+and records `73` current coordinate observations near the anchor. The row has
+action-set `0`, belongs to no client TargetGroup, has no PE-`594` relation, and
+is absent from the runtime world database. This is also the alternate Ruffles
+room: the Jabbit anchor is about `40` units from the reviewed script-owned
+Ruffles placement for objective `4561`. Activating both routes or treating
+movement/wave observations as simultaneous spawns would invent random-room
+and replay behavior. Ordinary kill deltas are also unsafe because the shared
+runtime would complete a zero-count active objective without proving the
+retail kill-score channel.
+
+Objective `2672` is therefore **mapped only**. The next evidence is a live
+packet/log or decompile trace of Jabbit-versus-Ruffles room selection,
+activation and three-minute timing, exact waves, kill-score/stat deltas,
+objective-`2901` ordering, success/failure/replay cleanup, and
+medal/reward/achievement effects. The focused regression and all `141` audit
+tests pass; selective regeneration and the `31`-file / `167387`-row validator
+pass with every row still `not_retail_complete`. Client relaunch still awaits
+approval of one existing Windows permission dialog, so no fresh client
+observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2671 mapped-only closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`4` now has an exact evidence
+boundary for PE `594` objective `2671`, `Survive the Slimy Feast`. Build
+`16042` maps it as a zero-count, zero-object `Script` row with flags
+`33554432` and WorldLocation2 `45907` in world `2980` / area `4352`. The
+co-located challenge cluster covers no-food survival (`3148`, `30` seconds),
+ten food pieces without purging (`3149`), bomb-triggered purge (`3150`, `15`
+seconds), defeat (`3151`, `180` seconds), and all-three-food-buff state
+(`3152`).
+
+Client TargetGroup `9151` identifies Slimy Feast Creature2 `61468`, and
+TargetGroup `10199` identifies buff markers `61537/61538/61539/61540` for
+Loftite, Accelerite, Radioactive, and Explosive. None of the six objectives
+references those groups through `ObjectId`. DataMapping has numerous
+unique-name Creature2 `61468` observations in the room, including current
+rows, but they are movement observations rather than one reviewed event spawn.
+The boss and markers expose action-set `0`; no Slimy Feast public-event
+relation maps to PE `594`; runtime area `4352` is empty; and the current script
+owns none of the spawn, feed, buff, purge, damage, defeat, or completion paths.
+
+Objective `2671` is therefore **mapped only**. The next evidence is a live
+packet/log or decompile trace of room selection and activation, exact boss
+spawn, food/bomb interactions, buff state, purge/damage semantics, the
+`30/15/180`-second ordering, defeat/completion, failure/replay cleanup, and
+medal/reward/achievement effects. The focused regression and all `141` audit
+tests pass; selective regeneration and the `31`-file / `167387`-row validator
+pass with every row still `not_retail_complete`. Client relaunch still awaits
+approval of one existing Windows permission dialog, so no fresh client
+observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2670 mapped-only closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`3` now has an exact evidence
+boundary for PE `594` objective `2670`, `Survive the Blitzsquirg!`. Build
+`16042` maps it as a `ResourcePool` type-`21` row with flags and type-specific
+flags `0`, count `6`, object `0`, no failure timer, and WorldLocation2 `41755`
+at `(-28750, -22.3132, -2925.22)` in world `2980` / area `4337`.
+
+Jabbithole/DataMapping co-locates Squirg Belcher Creature2 `62011`, Squirg
+Zombie `61992`, and Squirg Bomber `62371` in that room. The Belcher and Bomber
+bridges are unique-name matches, while the Zombie bridge remains ambiguous.
+This does not prove event ownership: no Squirg public-event relation maps to
+PE `594`, the runtime world database has no entities in area `4337`, and the
+current Ultimate Protogames script neither activates `2670` nor spawns or
+credits those Creature2 rows. Count `6` / object `0` does not distinguish
+waves, surviving units, shared health, player lives, or another score, and
+Achievement `5873` with the same title supplies no runtime mechanic.
+
+Objective `2670` is therefore **mapped only**. The next evidence is a live
+packet/log or decompile trace of activation, exact Creature2 spawn/despawn and
+wave order, resource-pool delta direction and bounds, player-death or timeout
+failure, completion/replay cleanup, and medal/reward/achievement effects. The
+focused regression and all `141` audit tests pass; selective regeneration and
+the `31`-file / `167387`-row validator pass with every row still
+`not_retail_complete`. Client relaunch still awaits approval of one existing
+Windows permission dialog, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames objective-2669 mapped-only closure.
+Queue-rank-`13` `instance-2980` blocker-rank-`2` now has an exact evidence
+boundary for PE `594` objective `2669`, `Use the Power Plunge to bounce on
+cubigs and cuboars`. Build `16042` maps it as `TimedWin` type `13`, flags and
+type-specific flags `0`, count/object `0`, WorldLocation2 `46473`, and
+`failureTimeMs=180000`. The same room cluster contains the 30-consecutive
+plunge row `2860`, 60-creature row `2861`, Gilded Fowl row `2862`,
+five-crystal row `2883`, water-failure row `2897`, and full-count Gilded Fowl
+row `4442`.
+
+The current WIP Power Plunge phase activates only `2862` and `4442`, spawns
+reviewed Creature2 `63055`, and credits only those rows on death. It has no
+cubig/cuboar bounce, consecutive-plunge, creature-score, crystal,
+water-failure, or aggregate-`2669` producer. The shared runtime can fail an
+active objective when its `180000` ms timer expires, but the tables and current
+script do not prove when `2669` activates, what satisfies it, or how child
+failure and replay reset compose. No activation or synthetic completion was
+added.
+
+Objective `2669` is therefore **mapped only**, with next evidence narrowed to
+a live packet/log or decompile trace of activation/update/status ordering,
+bounce and cubig/cuboar hit scoring, the three-minute timer, relationships to
+`2860/2861/2862/2883/2897/4442`, success/failure/reset behavior, and
+medal/reward effects. The focused regression and all `141` audit tests pass;
+selective regeneration and the `31`-file / `167387`-row validator pass with
+every row still `not_retail_complete`. Client relaunch still awaits approval of
+one existing Windows permission dialog, so no fresh client observation is
+claimed.
+
+Supplemental update: 2026-07-29 CEST Space Madness exit-portal mapped-only closure.
+The queue-rank-`21` split-required `instance-2149` parent now has an exact
+mapped-only boundary for rank-`34` `InstancePortal` `62`. Current-last-seen-`7`
+Jabbithole creature `734` / source coordinate `16830` proves the
+`Leave Space Station Venture` placement at world `2149`, area `2483`,
+position `(-10, 6, 352)`. The exact-name client bridge is still tied:
+Creature2 `46014` and `46015` both link to portal `62`, use difficulty `1`,
+display `23861`, and the same six-button shiphand control-panel asset, but
+they differ in behavior-facing flags (`77971` / UI flags `47` versus
+`16855443` / UI flags `4271`). Those are the only differing Creature2 fields
+besides row/localized-text IDs, and the Jabbithole source has no flag/UI
+discriminator.
+
+No lower-ID tie-break was promoted. Runtime entity `1000016830` and both
+Creature2 variants remain absent at the coordinate; the verifier reports
+`unexpected_space_madness_ambiguous_exit_portal_rows=0`. The next evidence
+action is a client interaction capture or equivalent flag-semantics proof
+that selects the exact variant. Portal activation, destination/return
+behavior, prerequisites, and client smoke also remain blocked.
+`instance-2149` remains split-required with `163` blockers and
+`retail_claim_allowed=false`. Verification passed `141` audit tests, `23`
+focused DataMapping tests, `48` already-built Space Madness tests, selective
+evidence regeneration, and the `31`-file / `167387`-row validator with every
+row still `not_retail_complete`. Client relaunch remains pending one Windows
+permission approval, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Gauntlet portal evidence split.
+The queue-rank-`19` split-required `instance-2183` parent now records its two
+portal children independently. Rank-`42` `InstancePortal` `16` remains
+**mapped only**: current-last-seen-`7` Jabbithole creature `17435` / source
+coordinate `964413` proves a `Return to Nexus` placement at world `2183`,
+area `2620`, position `(532, 3, -491)`, and its PE `144` relation maps to
+build-16042 PE `446` (`Expedition: The Gauntlet`). However, exact-name
+Creature2 candidates `23596` and `36660` both link to portal `16` with
+difficulty `0` while using different control-panel (display `24632`, model
+`4241`) and ladder (display `22991`, model `4066`) assets. The source has no
+model/display discriminator, so entity `1000964413` remains absent pending
+client placement or equivalent asset evidence.
+
+Rank-`43` `InstancePortal` `71` / Creature2 `48933` has a unique-name,
+current-last-seen-`7` source: Jabbithole creature `9475` / coordinate
+`107802` in the Safe Zone at world `2183`, area `2613`, position
+`(-1003, 3, 800)`. Runtime entity `1000107802` now owns that exact type-`14`,
+display-`23861`, faction-`219` placement and its explicit stat-`21` zero row.
+The full seed imported successfully; verifier entity/stat metrics are both
+`1 / 0 / 0`, and the ambiguous portal-`16` placement count is `0`.
+
+This closes portal-`71` placement and portal-`16`'s evidence boundary only.
+Activation, destination/return behavior, prerequisites, and client smoke
+remain blocked. `instance-2183` remains split-required with `124` blockers
+and `retail_claim_allowed=false`. Verification passed `141` audit tests,
+`22` focused DataMapping tests, `36` already-built Gauntlet tests, selective
+evidence regeneration, and the `31`-file / `167387`-row validator with every
+row still `not_retail_complete`. Client relaunch remains pending one Windows
+permission approval, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Skullcano reviewed multi-placement exit portal.
+The queue-rank-`18` split-required `instance-1263` parent now has
+runtime-owned placement and model availability for rank-`44`
+`InstancePortal` `27` / `Creature2` `32419`. The exact-name
+`candidate_count=2` bridge is resolved by build-16042 client semantics:
+Creature2 `32419` links to InstancePortal `27`, while the competing
+Creature2 `40772` links to InstancePortal `43` and differs in difficulty and
+display metadata. Jabbithole creature `12396` is a difficulty-`0`
+InstancePortal in world `1263` / area `1220` with two distinct
+current-last-seen-`7` placements: source `285998` at
+`(674, -1002, -88)` and source `415265` at `(-699, -692, -413)`.
+Both are retained as runtime entities `1000285998` and `1000415265`, with
+entity type `14`, display info `22402`, faction `219`, and explicit stat-`21`
+zero rows.
+
+The reviewed exporter and checked-in seed own both exact rows and exclude
+their IDs from generic entity/stat dumping. A raw byte-stream import of the
+full `85` MB seed succeeded; the full verifier reports entity metrics
+`2 / 0 / 0` and stat metrics `2 / 0 / 0`, while every earlier reviewed portal
+remains exact. This closes placement only. Portal activation, exit
+destination and return behavior, prerequisite handling, and client smoke
+remain blocked. `instance-1263` remains split-required with `110` blockers
+and `retail_claim_allowed=false`. Verification passed `141` audit tests,
+`20` focused DataMapping tests, `631` already-built focused
+Skullcano/public-event tests, selective evidence regeneration, and the
+`31`-file / `167387`-row validator with every row still
+`not_retail_complete`. Client relaunch remains pending one Windows permission
+approval, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Fragment Zero reviewed transport-portal placement.
+The queue-rank-`17` split-required `instance-3180` parent now has
+runtime-owned placement and model availability for rank-`47`
+`InstancePortal` `185` / `Creature2` `69013`. Build-16042 and the unique
+current-last-seen-`7` Jabbithole/DataMapping creature `28122` / source
+coordinate `6129819` prove `Transport from Fragment Zero` at world `3180`,
+area `4619`, position `(9861, -760, -5810)`, entity type `14`, display info
+`22991`, faction `219`, and explicit zero interrupt armour. Runtime entity
+`1006129819` and its stat-`21` zero row are owned by the reviewed exporter and
+checked-in seed.
+
+Live authoring cardinality was staged `1`, direct/current `1`, adjacent
+selectors `0`, and pre-existing runtime rows `0`. The exact-selector import
+created one portal and one stat row with no extra Creature2 `69013` rows;
+verifier entity/stat metrics are both `1 / 0 / 0`. This closes placement
+only. Portal activation, transport destination and return behavior, level
+`6`-`50` gating, the expected `20`-minute/queue semantics, and client smoke
+remain blocked. `instance-3180` remains split-required with `131` blockers
+and `retail_claim_allowed=false`. Verification passed `141` audit tests,
+`16` DataMapping tests, `115` already-built focused Fragment Zero/entity
+tests, deterministic exporter checks, selective regeneration, and the
+`31`-file / `167387`-row validator with every row still
+`not_retail_complete`. Client relaunch remains pending one Windows permission
+approval, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Sanctuary exit-portal evidence split.
+The queue-rank-`16` split-required `instance-1271` parent now records its two
+exit definitions independently. Rank-`66` `InstancePortal` `51` /
+`Creature2` `52412` is **mapped only**: its unique creature bridge expands to
+near-duplicate source coordinates `1846955` at `(4259, -826, -4264)`,
+last-seen `5`, and `2558908` at `(4259, -824, -4264)`, last-seen `4`, both
+in world `1271` / area `1553`. Neither is current-last-seen `7`, so no runtime
+row was inferred.
+
+Rank-`67` `InstancePortal` `53` / `Creature2` `41148` has a separable
+current-last-seen-`7` Jabbithole/DataMapping source `5221261` at
+world `1271`, area `2260`, position `(4244, -774, -3252)`, entity type `14`,
+display info `26914`, faction `219`, and explicit zero interrupt armour.
+Runtime entity `1005221261` and its stat-`21` zero row are now owned by the
+reviewed exporter and checked-in seed; older-last-seen-`4` source `54254`
+remains absent. Live verifier entity/stat metrics are both `1 / 0 / 0`, with
+the older row count `0`.
+
+This closes only portal-`53` placement and the portal-`51` evidence boundary.
+No portal activation, destination/return behavior, prerequisite handling, or
+client smoke is proved. `instance-1271` remains split-required with `152`
+blockers and `retail_claim_allowed=false`. Verification passed `141` audit
+tests, `14` DataMapping tests, `675` already-built focused
+Sanctuary/entity-contract tests, deterministic exporter checks, selective
+regeneration, and the `31`-file / `167387`-row validator with every row still
+`not_retail_complete`. Client relaunch remains pending one Windows permission
+approval, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Stormtalon's Lair reviewed exit-portal placement.
+The queue-rank-`14` split-required `instance-382` parent now has
+runtime-owned placement and model availability for its rank-`35` exit-portal
+child without widening the distinct two-source entrance row. Build-16042
+`InstancePortal` `41` and `Creature2` `40770`, plus DataMapping Jabbithole
+creature `788` / source coordinate `3084`, prove the unique
+`Leave Stormtalon's Lair` row at world `382`, area `271`, position
+`(10, -9, 237)`, entity type `14`, display info `26914`, faction `219`, and
+explicit zero interrupt armour. The reviewed exporter and checked-in seed own
+runtime entity `1000003084` and its stat-`21` zero row.
+
+Live authoring data returned one staged and one direct exact row, no
+pre-existing runtime portal, and neighbouring coordinate `3085` belongs to a
+different creature in another world. The exact-selector import created one
+portal and one reviewed stat row with no extra Creature2 `40770` row; verifier
+entity/stat metrics are both `1 / 0 / 0`. This closes exit placement only.
+Rank-`34` entrance `InstancePortal` `13` / `Creature2` `23700` still has two
+reviewed DataMapping sources spanning worlds `51` and `382` and remains
+unseeded pending route ownership and entry smoke. Portal activation,
+destination/return behavior, prerequisite/level handling, and client smoke
+also remain blocked. `instance-382` therefore remains split-required with
+`101` blockers and `retail_claim_allowed=false`. Verification passed `141`
+audit tests, `12` DataMapping tests, `88` already-built focused
+Stormtalon/entity-contract tests, deterministic exporter checks, selective
+regeneration, and the `31`-file / `167387`-row validator with every row still
+`not_retail_complete`. Client relaunch remains pending one Windows permission
+approval, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames reviewed exit-portal placement.
+The queue-rank-`13` split-required `instance-2980` parent now has
+runtime-owned placement and model availability for its rank-`234` exit-portal
+child without claiming exit behavior. Build-16042 `InstancePortal` `152` and
+`Creature2` `67513`, plus DataMapping Jabbithole creature `28307` / source
+coordinate `6132630`, prove the unique `Exit the Ultimate Protogames` row at
+world `2980`, area `4376`, position `(-12512, -788, -6877)`, entity type
+`14`, display info `29666`, faction `219`, and explicit zero interrupt armour.
+The reviewed exporter owns runtime entity `1006132630` and its stat-`21`
+zero row while excluding reviewed portal IDs from generic entity/stat dumps;
+the checked-in runtime seed and verifier pin that exact shape.
+
+Live authoring data returned one staged candidate, one direct source row, and
+zero for negative selector `6132631`, with no pre-existing runtime portal.
+The exact-selector import created one portal and one reviewed stat row, no
+extra Creature2 `67513` rows, and verifier entity/stat metrics `1 / 0 / 0`
+and `1 / 0 / 0`. This closes placement only. No server-owned portal
+activation, exit, destination, or return handler is proved; difficulty,
+prerequisite, queue handoff, and client smoke remain blocked.
+`instance-2980` therefore remains split-required with `291` blockers and
+`retail_claim_allowed=false`. Verification passed `141` audit tests, `10`
+DataMapping tests, `665` already-built focused Protogames/entity-contract
+tests, a deterministic exporter single-row check, selective regeneration,
+and the `31`-file / `167387`-row validator with every row still
+`not_retail_complete`. Client relaunch remains pending one Windows permission
+approval, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ruins of Kel Voreth reviewed exit-portal placement.
+The queue-emitted rank-`39` portal child for split-required `instance-1336`
+now has runtime-owned placement and model availability without claiming exit
+behavior. Build-16042 `InstancePortal` `42` and `Creature2` `40771`, plus
+DataMapping Jabbithole creature `1961` / source coordinate `9115`, prove the
+unique `Leave the Ruins of Kel Voreth` row at world `1336`, area `1661`,
+position `(-15, -737, 1007)`, entity type `14`, display info `26914`, and
+faction `219`. The safe importer now supports an optional exact source
+coordinate selector across both staged and direct paths; the exporter owns
+runtime entity `1000009115` as a reviewed standalone row; and the checked-in
+runtime seed and verifier pin its full shape. Live authoring data returned one
+selected candidate and zero for negative selector `9116`; the additive runtime
+promotion inserted exactly one row, left four neighbouring candidates absent,
+and produced verifier metrics `1 / 0 / 0`.
+
+This closes placement only. No server-owned portal activation, exit, or
+destination handler is proved; difficulty, prerequisite, return behavior, and
+client smoke remain blocked. `instance-1336` therefore remains split-required
+with `111` blockers and `retail_claim_allowed=false`. Verification passed six
+focused DataMapping tests, the focused portal audit regression, an exporter
+single-row check, selective tracker/queue regeneration, and the
+`31`-file / `167387`-row validator with every row still
+`not_retail_complete`. Client relaunch remains pending one Windows permission
+approval, so no fresh client observation is claimed.
+
+Supplemental update: 2026-07-29 CEST Ultimate Protogames Downsizer evidence boundary.
+The rank-`22` `instance-3041` slice is now recorded as **mapped only** beyond
+its existing tested runtime scaffold. Build-16042 rows prove that internal
+encounter World `3041` (`Map\UltimateProtogamesRaid`, type `9`) has no direct
+`MatchingGameMap` row, while queue-facing World `2980` (type `11`) owns
+matching rows `71` and `126`; the exact `2980 -> 3041` handoff is therefore
+not inferred. PE `642` objective `3197` activation, Creature2 `61420`
+one-shot death credit, and the objective-success-only finish boundary remain
+test-backed. Challenge rows `3266`-`3269` are `KillEventObjectiveUnit` rows
+whose count, object, world-location, and target-group fields are all zero, so
+their labels do not justify invented credit, failure, or scoring producers.
+Creature2 `61420` also exposes action-set `0`; Jabbithole has no PE `642` row,
+and current consolidated decompile exports have no Downsizer/challenge anchor.
+
+The generated queue therefore intentionally remains at `14` blocker details
+(`instance_dependency=10`, `script_objective_producer=4`),
+`retail_claim_allowed=false`, with `client_smoke` as the blocking evidence
+source. The exact next evidence is a live World `2980 -> 3041` transition,
+Creature2 `61420` entity-create coordinates and spell casts, PE `642`
+objective activate/update/status packets for success/failure plus repeat and
+wrong-objective negatives, and reward/achievement/medal/score plus finish
+ordering. The pending client relaunch still requires one Windows approval for
+`NexusForever.ClientConnector.exe`; the unelevated direct fallback exited
+before producing a fresh client log, so no client observation is claimed.
+
+Verification: the queue-provided instance filter passed `36/36`; the exact
+shared objective-credit positive/repeat-negative/Creature2-filter method
+selection passed `277/277`; all WikiArchiveAudit tests passed `176/176`.
+Selective regeneration preserved `23` queue rows and `1,777` blocker detail
+rows. The validator reports `31` generated CSVs / `167,387` rows, all
+`not_retail_complete`.
+
+Supplemental update: 2026-07-28 CEST Space Madness normal Crazed Handler bridge review.
+PE390 relation `2253` now has a reviewed DataMapping bridge from level-32
+Jabbithole Crazed Handler `3631` to Creature2 `46671`. The decision is backed
+by exact level/faction/race/action-set/display/outfit evidence, `107`
+world-`2149` / area-`2421` source coordinates, the reviewed level-50 companion
+mapping, and objective `2115` TargetGroup `12684` nesting normal group `12672`
+with exact member `46671`; the same-name race-4 and level-50 variants remain
+excluded. This is mapping evidence only: runtime normal-wave spawn ownership,
+six-count credit/timing, rewards, medals, achievements, replay cleanup, and
+client smoke remain blocked. `instance-2149` therefore remains
+`split_required_high_blocker_volume` with `163` blocker details and
+`retail_claim_allowed=false`.
+
+The same verification pass repaired two stale script-progression evidence keys
+after current-source line movement: Q3486 map arrival `415 -> 240` and Q3673
+hidden completion `48 -> 69`. Focused creature-override tests pass `2/2`, the
+content-retail audit/validator unit suite passes `175/175`, and regenerated
+coverage validates `31` CSVs / `167,387` rows / `1,777` blocker detail rows,
+all still `not_retail_complete`.
 
 Supplemental update: 2026-06-28 CEST Northern Wilds challenge runtime-zone activation bridge.
 Northern Wilds challenge activation now mirrors the reviewed path runtime bridge:
@@ -33,7 +6219,7 @@ any retail-complete claim.
 Verification: focused Python audit coverage passed `2/2`, focused Northern
 Wilds quest/path xUnit coverage passed `91/91`, and the content-retail audit
 regenerated all CSV outputs. The validator reports `31` generated CSVs /
-`167,388` rows, all `not_retail_complete`, with `1,779` blocker detail rows in
+`167,389` rows, all `not_retail_complete`, with `1,779` blocker detail rows in
 the next-slice blocker CSV.
 
 Supplemental update: 2026-06-22 CEST Northern Wilds Soldier holdout lifecycle.
@@ -13367,6 +19553,26 @@ premaster derivation, reply fields, post-token encryption/session transition,
 or startup route ordering. NexusForever still intentionally has no
 `/Auth/LoginTokenStart`, `/Auth/TokenKeyData`, `/Auth/RequestToken`, or
 `/Auth/AssociateMyExternalAccount` route handlers.
+A 2026-07-28 refresh closes the stale-export and supported-route-ordering
+questions without widening the optional branch. The validated
+`StsConnLib64.MT.dll` manifest has `864/864` selected fragments reused,
+`4,522` canonical fragments, and zero uncached functions. Live STS log
+`Source/NexusForever.StsServer/bin/Debug/net10.0/logs/NexusForever.StsServer_20260728_19736.log`
+records the accepted password path at `20:37:48`-`20:37:52` as
+`/Auth/LoginStart` -> `/Auth/KeyData` -> `/Auth/LoginFinish` ->
+`/GameAccount/ListMyAccounts` -> `/Auth/RequestGameToken` ->
+`/Auth/PageVerifiedIps`, with `200 OK` after every request. It contains no
+`/Auth/LoginTokenStart`, `/Auth/TokenKeyData`, `/Auth/RequestToken`, or
+`/Auth/AssociateMyExternalAccount` request. Native caller tracing further maps
+`StsConn_ValidateTokenServerKeyMaterial` (`180012de0`) to construct
+`CKeyRsa` from `ServerRand`, apply the RSA object to `ServerSignature`, compute
+a 16-byte MD5 digest of `ServerPublicKey`, and compare the results. Exact
+CKeyRsa key encoding, operation/padding direction, server private-key
+construction, `TokenKeyData` reply grammar, premaster processing, and the
+post-token encryption/session transition remain unproven. The supported
+password path is therefore **Verified for current local compatibility**, while
+the optional token/RSA branch remains **Mapped only / Blocked** and is not a
+retail-exact claim.
 
 ### F-002 - Client Diagnostic Opcodes - DIAGNOSTIC
 16 client diagnostic surfaces with diagnostic handlers exist: 12 numeric
@@ -13450,8 +19656,12 @@ check passed with `200/200` reused fragments. Worksheet:
 `artifacts/blocker_evidence/20260617-233631-20260617-F002-client-diagnostic-opcodes-recheck`.
 
 ### F-003 - Server Unresolved Output Opcodes - STRUCTURALLY CLOSED
-All 702 server opcodes have models. One `Server0xNNNN` enum/model placeholder
-remains: `Server0x0015`, whose native reader `ServerUInt5UInt32_ReadPayload`
+The 2026-07-28 current-checkout coverage refresh counts `713` server opcodes:
+all `713` have models, `712` are named models, and one `Server0xNNNN`
+enum/model placeholder remains. This reconciles the older `702`/`703` prose:
+it mixed named-model count with total-model count, and the current enum has
+grown by ten server opcodes since that snapshot. The remaining placeholder is
+`Server0x0015`, whose native reader `ServerUInt5UInt32_ReadPayload`
 (`140081f00`) maps one 5-bit field plus one `uint32` but not semantic owner or
 producer behavior; the same reader is reused by matching opcode `0x0628` and
 inside `ServerFortuneRewards`, so `Server0x0015` remains neutral rather than
@@ -15412,6 +21622,24 @@ Inventory` with `ClientItemMove(0x0182)`/`ServerItemMove(0x0569)` and Realm Bank
 encoded as wire location `0x0A`; remaining red-cross cases are client-side item
 eligibility filtering.
 Threat list via `ThreatManager.BroadcastThreatList()`.
+
+The 2026-07-28 live client pass corrected two narrow self-delivery lifecycle
+regressions. Regular `0x0935`/`0x0938` stat packets are no longer reflected to
+the owning player while `Player.IsLoading`; observer delivery and post-entry
+self delivery remain active. Client-controlled scale changes still apply on
+the server and broadcast to observers, but no longer reflect `0x0638`
+`ServerEntityCommand` packets to their owning client; server-controlled
+movement commands still include self. The changes are backed by one pre-world
+`0x0938` plus two `0x0935` client rejections, ten accepted in-world `0x0938`
+sends, two client-controlled `0x0638` rejections, matching native codec shapes,
+and focused lifecycle coverage passing `20/20`. This does not close the
+separate opaque entity-stat auxiliary packets or Q3741's client-smoke blocker.
+The repaired default-output DLL was then loaded by WorldServer PID `34272`.
+Two character-select/world-entry cycles and two tutorial vehicle transitions
+completed across worlds `426` and `51` without any invalid/foreign or malformed
+packet entry in the fresh client log; the server also received movement-control
+acknowledgements. The observed F-025 lifecycle defect is therefore live-smoked,
+while the actual Q3741 crate/dialog/reward/achievement flow remains unexecuted.
 
 **Emitted:** entity-create auxiliary opcodes `0x025F`..`0x0264` via
 `EntityCreateAuxiliaryPacketBuilder.BuildPreCreatePackets()` from

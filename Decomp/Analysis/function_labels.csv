@@ -25,7 +25,9 @@ StsConnLib64.MT.dll,180004c40,StsConn_SendRequestToken,Builds /Auth/RequestToken
 StsConnLib64.MT.dll,18000a350,StsConn_OnKeyDataResponse,Parses SRP /Auth/KeyData reply KeyData and sends client KeyData or completes exchange.
 StsConnLib64.MT.dll,18000a730,StsConn_SendTokenKeyData,Builds /Auth/TokenKeyData request fields after server key material is parsed.
 StsConnLib64.MT.dll,180012de0,StsConn_ValidateTokenServerKeyMaterial,Validates ServerRand/ServerPublicKey/ServerSignature before TokenKeyData.
-StsConnLib64.MT.dll,180037cb0,StsCrypt_CreateRsaClient,Allocates CptRsa client used to derive PremasterSecret for TokenKeyData.
+StsConnLib64.MT.dll,180037cb0,StsCrypt_CreateRsaClient,Allocates CKeyRsa from caller-supplied key material for optional token-key crypto.
+StsConnLib64.MT.dll,180037c30,StsCrypt_InitialiseRsaClientFromKeyMaterial,Initialises both CKeyRsa key states from one length and byte-buffer pair.
+StsConnLib64.MT.dll,18003a670,StsCrypt_ComputeMd5,Computes a 16-byte MD5 digest for the supplied buffer.
 StsConnLib64.MT.dll,18000b540,StsConn_OnConsumeGameTokenResponse,Parses ConsumeGameToken reply account fields.
 StsConnLib64.MT.dll,18000d130,StsConn_ParseAliases,Parses repeated Alias elements under an Aliases node.
 StsConnLib64.MT.dll,18000d560,StsConn_OnLoginFinishResponse,Parses LoginFinish reply AuthType and account fields.
@@ -78,6 +80,7 @@ WildStar64.exe,140095c20,ServerEntityCreateAuxRow_ReadPayload,Parses server opco
 WildStar64.exe,140095ce0,ServerEntityCreateAuxRowList_ReadPayload,Parses server opcode 0x0260 as a counted list of 0x025F entity-create aux rows; allocates count*0x2C bytes and calls ServerEntityCreateAuxRow_ReadPayload per row; direct xrefs are registration/data only and no post-read apply owner yet.
 WildStar64.exe,1400a8a30,ServerUInt32Triple_ReadPayload,Reads three consecutive uint32 fields from the network bitstream; shared by entity-create aux row readers at +tuple offsets.
 WildStar64.exe,1405cef50,QueuedStateReplay_EnqueueUnitCreatedRecord,QueuedStateReplay_DispatchRecord case 0x12: allocates a replay node and chains FUN_1405caf20 before UnitCreated-linked apply helpers; not yet tied to opcodes 0x025F-0x0264.
+WildStar64.exe,1400975b0,ServerEntityStatUInt32UInt5Float_ReadPayload,Registered for server opcode 0x0935; reads uint32 entity guid then a 5-bit stat id and float32 value. Live 2026-07-28 evidence proves the packet is rejected during character-select loading but accepted after world entry.
 WildStar64.exe,140097620,ServerEntityStatUInt32UInt5UInt32_ReadPayload,Parses server opcode 0x08F4 as uint32, 5-bit value, and uint32; semantics unresolved.
 WildStar64.exe,140097690,ServerEntityStatUInt32UInt5Pair_ReadPayload,Parses server opcode 0x093D as uint32, 5-bit value, uint32, and uint32; semantics unresolved.
 WildStar64.exe,140097ee0,ServerEntityStatUInt32UInt14UInt18WideString_ReadPayload,Parses server opcode 0x0939 as uint32, 14-bit value, 18-bit value, and wide string; semantics unresolved.
@@ -1913,6 +1916,9 @@ WildStar64.exe,140947230,FUN_140947230,Consumer dispatch candidate — may route
 WildStar64.exe,14094b550,FUN_14094b550,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,14094bd40,FUN_14094bd40,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,14094d290,FUN_14094d290,Consumer dispatch candidate — may route server→client packets.
+WildStar64.exe,1400b00a0,ServerEntityCommand_GetBitSize,Registered as the bit-size callback for server opcode 0x0638; accounts for the fixed guid/time/control/count fields plus repeated 5-bit command ids and command-specific payload sizes.
+WildStar64.exe,1400b0140,ServerEntityCommand_WritePayload,Registered as the writer for server opcode 0x0638; writes uint32 guid and time then time-reset/server-control bits a 5-bit command count and repeated movement command payloads.
+WildStar64.exe,1400b03a0,ServerEntityCommand_ReadPayload,Registered as the reader for server opcode 0x0638; reads uint32 guid and time then time-reset/server-control bits a 5-bit command count and repeated 0x48-byte command models through the command reader.
 WildStar64.exe,1400b1060,FUN_1400b1060,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,1400b0d30,FUN_1400b0d30,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,1400b2a60,FUN_1400b2a60,Consumer dispatch candidate — may route server→client packets.

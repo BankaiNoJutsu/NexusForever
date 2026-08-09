@@ -1,6 +1,6 @@
 # Content Retail Completeness Tracker
 
-Generated: 2026-06-27
+Generated: 2026-07-30
 
 This is the row-level tracker for the build 16042 quests, dungeons, raids, and related scripted instance content used by the NexusForever retail-completeness goal.
 It records evidence and status; it does not claim retail completion unless a row has implementation, automated verification, and manual/client validation where automation cannot prove gameplay.
@@ -64,7 +64,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `mapped_table_driven_pending_world_spawns_loot_smoke` | 3840 |
 | `mapped_table_driven_with_script_hook_pending_world_smoke` | 10 |
 | `runtime_q3671_no_objective_deadeye_turnin_reward_lifecycle_tested_pending_client_smoke` | 1 |
-| `runtime_q3741_supply_crate_spawn_and_credit_script_tested_pending_client_smoke` | 1 |
+| `runtime_q3741_full_server_lifecycle_rewards_persistence_staging_and_achievement_tested_pending_client_smoke` | 1 |
 | `runtime_q3777_denner_loftite_crystal_spawn_and_credit_script_tested_pending_client_smoke` | 1 |
 | `runtime_q3781_starter_captives_receiver_spawn_credit_and_duplicate_guard_tested_pending_client_smoke` | 1 |
 | `runtime_q3783_item_started_no_objective_durek_turnin_reward_tested_pending_client_smoke` | 1 |
@@ -96,7 +96,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_q3673_hidden_completion_objective_duplicate_guard_script_tested_pending_client_smoke` | 1 |
 | `runtime_q3673_signal_flare_csi_credit_tested_pending_client_smoke` | 3 |
 | `runtime_q3673_signal_flare_target_group_checklist_credit_tested_pending_client_smoke` | 1 |
-| `runtime_q3741_supply_crate_spawn_and_virtual_collect_credit_tested_pending_client_smoke` | 1 |
+| `runtime_q3741_supply_crate_activate_cast_spawn_and_virtual_collect_credit_tested_pending_client_smoke` | 1 |
 | `runtime_q3777_loftite_cliffs_enter_zone_credit_tested_pending_client_smoke` | 1 |
 | `runtime_q3777_loftite_crystal_spawn_and_collect_item_credit_tested_pending_client_smoke` | 1 |
 | `runtime_q3777_loftite_crystal_spawn_and_first_fragment_credit_tested_pending_client_smoke` | 1 |
@@ -218,9 +218,9 @@ It records evidence and status; it does not claim retail completion unless a row
 | `client_quest_direction_pending_path_arrow_smoke` | 1122 |
 | `client_quest_receiver_location_pending_dialog_smoke` | 3234 |
 | `client_quest_world_zone_pending_map_and_activation_smoke` | 4953 |
-| `client_target_group_member_pending_spawn_and_credit_smoke` | 12629 |
+| `client_target_group_member_pending_spawn_and_credit_smoke` | 12631 |
 | `client_target_group_pending_objective_entity_smoke` | 4467 |
-| `runtime_entity_spawn_present_pending_credit_client_smoke` | 13 |
+| `runtime_entity_spawn_present_pending_credit_client_smoke` | 11 |
 | `runtime_q3479_deadeye_receiver_location_spawn_and_receiver_cache_tested_external_video_dialog_observed_pending_local_dialog_ui_smoke` | 1 |
 | `runtime_q3479_q3480_shared_yeti_spawn_location_and_kill_credit_tested_external_video_combat_progress_observed_pending_local_client_smoke` | 4 |
 | `runtime_q3479_q3480_shared_yeti_target_group_member_spawn_and_kill_credit_tested_pending_client_smoke` | 3 |
@@ -323,7 +323,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_q3480_achievement_checklist_completion_hooks_tested_pending_client_ui_smoke` | 1 |
 | `runtime_q3668_achievement_checklist_completion_hooks_tested_pending_client_ui_smoke` | 1 |
 | `runtime_q3673_achievement_checklist_completion_hooks_tested_pending_client_ui_smoke` | 1 |
-| `runtime_q3741_achievement_checklist_completion_hooks_tested_pending_client_ui_smoke` | 1 |
+| `runtime_q3741_achievement_checklist_bit_update_tested_pending_client_ui_smoke` | 1 |
 | `runtime_q3777_achievement_checklist_completion_hooks_tested_pending_client_ui_smoke` | 1 |
 | `runtime_q3886_achievement_checklist_completion_hooks_tested_pending_client_ui_smoke` | 1 |
 | `runtime_q3963_achievement_checklist_completion_hooks_tested_pending_client_ui_smoke` | 1 |
@@ -358,7 +358,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_q3667_master_control_panel_spawn_and_credit_script_tested_pending_client_smoke` | 1 |
 | `runtime_q3668_receiver_objective_spawn_and_generic_credit_paths_tested_pending_client_smoke` | 1 |
 | `runtime_q3673_signal_flare_hidden_completion_duplicate_guard_and_followup_script_tested_pending_client_smoke` | 1 |
-| `runtime_q3741_supply_crate_spawn_and_credit_script_tested_pending_client_smoke` | 1 |
+| `runtime_q3741_full_server_lifecycle_rewards_persistence_staging_and_achievement_tested_pending_client_smoke` | 1 |
 | `runtime_q3777_denner_loftite_crystal_spawn_and_credit_script_tested_pending_client_smoke` | 1 |
 | `runtime_q3781_starter_captives_receiver_spawn_credit_and_duplicate_guard_tested_pending_client_smoke` | 1 |
 | `runtime_q3783_item_started_no_objective_durek_turnin_reward_tested_pending_client_smoke` | 1 |
@@ -416,9 +416,9 @@ It records evidence and status; it does not claim retail completion unless a row
 | `datamapping_q3963_stale_unknown_starter_relation_replaced_by_followup_handoff_context` | 1 |
 | `datamapping_quest_relation_not_current_client_quest_row_blocked` | 117 |
 | `datamapping_starter_creature_relation_pending_review_and_smoke` | 1064 |
-| `reviewed_finisher_creature_relation_pending_spawn_dialog_credit_smoke` | 361 |
+| `reviewed_finisher_creature_relation_pending_spawn_dialog_credit_smoke` | 362 |
 | `reviewed_objective_creature_relation_pending_spawn_dialog_credit_smoke` | 355 |
-| `reviewed_starter_creature_relation_pending_spawn_dialog_credit_smoke` | 422 |
+| `reviewed_starter_creature_relation_pending_spawn_dialog_credit_smoke` | 423 |
 | `runtime_q3479_bosun_starter_relation_spawn_tested_external_video_accept_observed_pending_local_dialog_smoke` | 1 |
 | `runtime_q3479_deadeye_finisher_relation_spawn_and_receiver_cache_tested_external_video_dialog_observed_pending_local_dialog_smoke` | 1 |
 | `runtime_q3479_fierce_yeti_relation_spawn_present_mapped_only_objective_credit_blocked` | 1 |
@@ -442,7 +442,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_q3668_skeech_objective_relation_spawn_and_kill_credit_tested_pending_client_smoke` | 7 |
 | `runtime_q3741_lands_reach_durek_finisher_relation_spawn_and_receiver_cache_tested_pending_dialog_smoke` | 1 |
 | `runtime_q3741_lands_reach_durek_starter_relation_spawn_and_giver_cache_tested_pending_dialog_smoke` | 1 |
-| `runtime_q3741_supply_crate_objective_relation_spawn_and_virtual_collect_credit_tested_pending_client_smoke` | 1 |
+| `runtime_q3741_supply_crate_activate_cast_objective_relation_spawn_and_virtual_collect_credit_tested_pending_client_smoke` | 1 |
 | `runtime_q3777_denner_finisher_relation_spawn_tested_pending_dialog_smoke` | 1 |
 | `runtime_q3777_denner_starter_relation_spawn_tested_pending_dialog_smoke` | 1 |
 | `runtime_q3777_loftite_crystal_objective_relation_target_group_member_spawn_and_credit_tested_pending_client_smoke` | 1 |
@@ -501,9 +501,9 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_spawn_present_datamapping_finisher_creature_relation_pending_bridge_review_credit_smoke` | 1 |
 | `runtime_spawn_present_datamapping_objective_creature_relation_pending_bridge_review_credit_smoke` | 11 |
 | `runtime_spawn_present_datamapping_starter_creature_relation_pending_bridge_review_credit_smoke` | 2 |
-| `runtime_spawn_present_reviewed_finisher_creature_relation_pending_dialog_credit_smoke` | 13 |
+| `runtime_spawn_present_reviewed_finisher_creature_relation_pending_dialog_credit_smoke` | 12 |
 | `runtime_spawn_present_reviewed_objective_creature_relation_pending_dialog_credit_smoke` | 1 |
-| `runtime_spawn_present_reviewed_starter_creature_relation_pending_dialog_credit_smoke` | 9 |
+| `runtime_spawn_present_reviewed_starter_creature_relation_pending_dialog_credit_smoke` | 8 |
 
 ## Quest Jabbithole Objective Evidence Summary
 
@@ -672,12 +672,12 @@ It records evidence and status; it does not claim retail completion unless a row
 
 | Match status | Rows |
 | --- | ---: |
-| `ambiguous_name` | 620 |
+| `ambiguous_name` | 619 |
 | `child_event_mapped` | 37 |
 | `event_mismatch` | 36 |
 | `matched` | 2248 |
 | `missing_client_zone` | 1 |
-| `reviewed` | 111 |
+| `reviewed` | 112 |
 | `scored_name` | 903 |
 | `text_only_or_missing_child_event` | 40 |
 | `unique_name` | 912 |
@@ -688,18 +688,19 @@ It records evidence and status; it does not claim retail completion unless a row
 | Evidence status | Rows |
 | --- | ---: |
 | `blocked_public_event_creature_ambiguous_multi_member_targetgroup_requires_relation_smoke` | 39 |
-| `blocked_public_event_creature_ambiguous_requires_bridge_review` | 444 |
+| `blocked_public_event_creature_ambiguous_requires_bridge_review` | 442 |
 | `blocked_public_event_creature_unmatched_missing_client_creature_bridge` | 89 |
 | `datamapping_public_event_not_current_client_event_row_blocked` | 9 |
 | `datamapping_public_event_objective_event_mismatch_blocked` | 36 |
 | `datamapping_public_event_objective_unmatched_blocked` | 3 |
 | `datamapping_public_event_parent_not_current_blocked` | 415 |
 | `datamapping_public_event_zone_missing_client_zone_blocked` | 1 |
-| `mapped_public_event_creature_blocked_missing_reviewed_bridge_spawn_credit_smoke` | 1347 |
+| `mapped_public_event_creature_blocked_missing_reviewed_bridge_spawn_credit_smoke` | 1346 |
 | `mapped_public_event_mission_text_blocked_missing_child_event_transition_evidence` | 40 |
 | `mapped_public_event_objective_blocked_missing_runtime_producer_evidence` | 1304 |
 | `mapped_public_event_zone_blocked_missing_runtime_visibility_bridge_evidence` | 445 |
-| `reviewed_public_event_creature_blocked_spawn_credit_smoke` | 63 |
+| `mapped_up_elemental_master_public_event_relation_blocked_ambiguous_source_variant_wave_spawn_pool_and_client_smoke` | 1 |
+| `reviewed_public_event_creature_blocked_spawn_credit_smoke` | 64 |
 | `runtime_fragment_zero_life_overseer_public_event_creature_death_credit_tested_pending_encounter_and_client_smoke` | 2 |
 | `runtime_fragment_zero_prototype_matron_public_event_creature_death_credit_tested_pending_spawn_route_and_client_smoke` | 8 |
 | `runtime_fragment_zero_skeech_horde_public_event_creature_death_credit_tested_pending_spawn_route_and_client_smoke` | 2 |
@@ -779,6 +780,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_up_cage_console_public_event_creature_spawned_and_activation_credit_tested_pending_prototentiary_client_smoke` | 1 |
 | `runtime_up_gate_console_public_event_creature_spawned_and_activation_credit_tested_pending_alias_client_smoke` | 1 |
 | `runtime_up_gilded_fowl_public_event_creature_spawned_and_death_credit_tested_pending_power_plunge_client_smoke` | 1 |
+| `runtime_up_lost_found_crate_public_event_creature_death_credit_tested_pending_route_spawn_pool_and_client_smoke` | 1 |
 | `runtime_up_misplaced_mammoth_public_event_creature_spawned_and_death_credit_tested_pending_route_boss_client_smoke` | 1 |
 | `runtime_up_mondos_crate_public_event_creature_spawned_and_death_credit_tested_pending_route_timer_client_smoke` | 1 |
 | `runtime_up_mondos_monstrosity_public_event_creature_spawned_and_death_credit_tested_pending_route_boss_client_smoke` | 1 |
@@ -956,16 +958,20 @@ It records evidence and status; it does not claim retail completion unless a row
 
 | DataMapping bridge status | Rows |
 | --- | ---: |
-| `candidate_datamapping_creature_bridge` | 64 |
+| `candidate_datamapping_creature_bridge` | 57 |
 | `missing_datamapping_creature_bridge` | 180 |
 | `no_client_creature_link` | 18 |
-| `reviewed_datamapping_creature_bridge` | 20 |
+| `reviewed_datamapping_creature_bridge` | 27 |
 
 | Evidence status | Rows |
 | --- | ---: |
 | `client_instance_portal_creature_link_pending_world_placement_review` | 180 |
 | `client_instance_portal_definition_without_creature_link_blocked` | 18 |
-| `datamapping_instance_portal_creature_pending_review_and_entry_smoke` | 64 |
+| `datamapping_instance_portal_creature_pending_review_and_entry_smoke` | 54 |
+| `implemented_instance_portal_placement_model_pending_exit_behavior_client_smoke` | 7 |
+| `mapped_gauntlet_return_portal_placement_blocked_two_portal16_models` | 1 |
+| `mapped_sanctuary_exit_portal_placement_blocked_multiple_noncurrent_coordinates` | 1 |
+| `mapped_space_madness_exit_portal_placement_blocked_two_flag_variants` | 1 |
 | `reviewed_instance_portal_creature_pending_entry_smoke` | 20 |
 
 ## Script Presentation Evidence Summary
@@ -1006,28 +1012,28 @@ It records evidence and status; it does not claim retail completion unless a row
 
 ## Script Public Event Flow Evidence Summary
 
-- Total script public-event flow evidence rows: 1785
+- Total script public-event flow evidence rows: 1857
 
 | Evidence kind | Rows |
 | --- | ---: |
-| `script_public_event_objective_reference` | 1101 |
-| `script_public_event_phase_reference` | 684 |
+| `script_public_event_objective_reference` | 1171 |
+| `script_public_event_phase_reference` | 686 |
 
 | Script scope | Rows |
 | --- | ---: |
-| `script_instance` | 1785 |
+| `script_instance` | 1857 |
 
 | Reference link status | Rows |
 | --- | ---: |
-| `client_row_matched` | 1101 |
-| `script_enum_value_resolved` | 684 |
+| `client_row_matched` | 1171 |
+| `script_enum_value_resolved` | 686 |
 
 | Owner link status | Rows |
 | --- | ---: |
 | `script_owner_is_related_public_event` | 5 |
-| `script_owner_matches_objective_public_event` | 887 |
-| `script_owner_matches_public_event` | 676 |
-| `script_owner_not_public_event` | 217 |
+| `script_owner_matches_objective_public_event` | 952 |
+| `script_owner_matches_public_event` | 678 |
+| `script_owner_not_public_event` | 222 |
 
 | Evidence status | Rows |
 | --- | ---: |
@@ -1038,34 +1044,34 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_up_downsizer_objective_credit_entity_flow_tested` | 1 |
 | `runtime_up_downsizer_overcharge_activation_flow_tested` | 1 |
 | `runtime_up_downsizer_voltaic_conversion_activation_flow_tested` | 1 |
-| `script_public_event_objective_client_row_matched_pending_owner_flow_review` | 213 |
-| `script_public_event_objective_parent_event_matched_pending_activation_credit_smoke` | 881 |
-| `script_public_event_phase_script_state_owner_matched_pending_phase_order_smoke` | 676 |
+| `script_public_event_objective_client_row_matched_pending_owner_flow_review` | 218 |
+| `script_public_event_objective_parent_event_matched_pending_activation_credit_smoke` | 946 |
+| `script_public_event_phase_script_state_owner_matched_pending_phase_order_smoke` | 678 |
 | `script_public_event_phase_script_state_pending_owner_mapping_and_smoke` | 8 |
 
 ## Script Objective Producer Evidence Summary
 
-- Total script objective producer evidence rows: 863
+- Total script objective producer evidence rows: 876
 
 | Evidence kind | Rows |
 | --- | ---: |
-| `script_activate_objective_call` | 467 |
+| `script_activate_objective_call` | 471 |
 | `script_activate_objective_helper_call` | 38 |
-| `script_objective_credit_base` | 164 |
+| `script_objective_credit_base` | 169 |
 | `script_typed_objective_credit_base` | 33 |
-| `script_update_objective_call` | 156 |
+| `script_update_objective_call` | 160 |
 | `script_update_objective_helper_call` | 2 |
 | `script_update_objective_inherited_trigger` | 3 |
 
 | Script scope | Rows |
 | --- | ---: |
-| `script_instance` | 862 |
+| `script_instance` | 875 |
 | `script_main` | 1 |
 
 | Producer targeting | Rows |
 | --- | ---: |
-| `direct_objective` | 756 |
-| `typed_objective` | 97 |
+| `direct_objective` | 768 |
+| `typed_objective` | 98 |
 | `unresolved` | 10 |
 
 | Script scope | Client objective type | Rows |
@@ -1080,13 +1086,13 @@ It records evidence and status; it does not claim retail completion unless a row
 | `script_instance` | `KillEventUnit` | 7 |
 | `script_instance` | `KillTargetGroup` | 179 |
 | `script_instance` | `ParticipantsInTriggerVolume` | 90 |
-| `script_instance` | `ResourcePool` | 18 |
-| `script_instance` | `Script` | 166 |
+| `script_instance` | `ResourcePool` | 21 |
+| `script_instance` | `Script` | 173 |
 | `script_instance` | `ScriptWithoutCount` | 23 |
 | `script_instance` | `ScriptWithoutMax` | 14 |
-| `script_instance` | `TalkTo` | 36 |
+| `script_instance` | `TalkTo` | 37 |
 | `script_instance` | `TalkToChecklist` | 3 |
-| `script_instance` | `TimedWin` | 16 |
+| `script_instance` | `TimedWin` | 18 |
 | `script_instance` | `Turnstile` | 17 |
 | `script_instance` | `VirtualCollect` | 7 |
 | `script_instance` | `unresolved` | 10 |
@@ -1094,18 +1100,18 @@ It records evidence and status; it does not claim retail completion unless a row
 
 | Reference link status | Rows |
 | --- | ---: |
-| `direct_objective_row_matched` | 743 |
+| `direct_objective_row_matched` | 755 |
 | `no_client_objective_match` | 10 |
-| `typed_objective_row_matched` | 97 |
+| `typed_objective_row_matched` | 98 |
 | `unresolved_symbol` | 13 |
 
 | Owner link status | Rows |
 | --- | ---: |
-| `script_owner_entity_filter_mapped_to_public_event` | 213 |
+| `script_owner_entity_filter_mapped_to_public_event` | 214 |
 | `script_owner_entity_or_trigger` | 13 |
 | `script_owner_is_different_public_event` | 2 |
-| `script_owner_matches_public_event` | 539 |
-| `script_owner_unknown` | 96 |
+| `script_owner_matches_public_event` | 546 |
+| `script_owner_unknown` | 101 |
 
 | Evidence status | Rows |
 | --- | ---: |
@@ -1466,7 +1472,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_stormtalon_thundercall_zealot_rush_objective_activation_tested_pending_wave_cadence_rewards_and_client_smoke` | 1 |
 | `runtime_stormtalon_timed_thundercall_pell_bonus_activation_tested_pending_route_timer_rewards_and_client_smoke` | 1 |
 | `runtime_up_can_crusher_jabbithole_placements_and_death_credit_tested` | 1 |
-| `runtime_up_deputy_phase_activation_datamapping_placement_and_death_credit_tested_pending_room_density_pathing_and_client_smoke` | 1 |
+| `runtime_up_deputy_phase_activation_datamapping_placement_death_credit_and_exact_objective_boundary_tested_pending_room_density_pathing_and_client_smoke` | 1 |
 | `runtime_up_deputy_phase_activation_datamapping_placement_tested_pending_room_density_pathing_and_client_smoke` | 1 |
 | `runtime_up_destruct_o_derby_tank_room_death_credit_tested` | 1 |
 | `runtime_up_destruct_o_derby_tank_room_phase_activation_jabbithole_placements_and_dynamic_max_tested` | 1 |
@@ -1478,6 +1484,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_up_going_green_all_three_junk_jabbithole_placements_dynamic_max_and_death_credit_tested` | 1 |
 | `runtime_up_huthut_direct_script_death_credit_tested` | 1 |
 | `runtime_up_huthut_phase_activation_and_datamapping_placement_tested` | 1 |
+| `runtime_up_lost_found_crate_2673_death_credit_tested_pending_random_room_spawn_pool_timer_enemy_and_client_smoke` | 1 |
 | `runtime_up_misplaced_mammoth_jabbithole_placement_and_death_credit_tested` | 1 |
 | `runtime_up_misplaced_mammoth_phase_activation_and_jabbithole_placement_tested` | 1 |
 | `runtime_up_mondos_crate_phase_activation_jabbithole_placement_dynamic_max_and_death_credit_tested` | 1 |
@@ -1486,6 +1493,8 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_up_mondos_monstrosity_phase_activation_jabbithole_placement_tested` | 1 |
 | `runtime_up_mondos_quick_reflexes_phase_activation_jabbithole_placement_and_death_credit_tested` | 1 |
 | `runtime_up_mondos_quick_reflexes_phase_activation_jabbithole_placement_tested` | 1 |
+| `runtime_up_prototentiary_no_deaths_activation_player_death_gate_and_aggregate_success_credit_tested_pending_route_and_client_smoke` | 2 |
+| `runtime_up_redemption_value_distinct_tank_half_health_and_precompletion_death_gate_tested_pending_route_and_client_smoke` | 2 |
 | `runtime_up_ruffles_phase_activation_jabbithole_placement_and_death_credit_tested` | 1 |
 | `runtime_up_ruffles_phase_activation_jabbithole_placement_tested` | 1 |
 | `runtime_up_sneaky_prison_aggregate_warden_and_free_intern_phase_activation_placements_and_credit_tested_pending_stealth_no_alarm_client_smoke` | 1 |
@@ -1499,6 +1508,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_up_sneaky_prison_warden_placement_and_aggregate_death_credit_tested_pending_stealth_no_alarm_client_smoke` | 1 |
 | `runtime_up_start_button_one_shot_credit_tested` | 1 |
 | `runtime_up_start_button_phase_activation_and_datamapping_spawn_tested` | 1 |
+| `runtime_up_tank_room_no_deaths_activation_player_death_gate_and_going_green_success_credit_tested_pending_route_and_client_smoke` | 2 |
 | `runtime_up_tank_room_phase_activation_and_jabbithole_placements_tested` | 2 |
 | `runtime_up_tank_room_phase_activation_jabbithole_placements_and_dynamic_max_tested` | 1 |
 | `runtime_up_tank_trample_jabbithole_placements_and_death_credit_tested` | 1 |
@@ -1595,8 +1605,8 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_war_wilds_moodie_totem_health_resourcepool_full_count_credit_tested_pending_progressive_health_smoke` | 1 |
 | `script_objective_credit_base_unresolved_objective_blocked` | 3 |
 | `script_objective_producer_checklist_matched_pending_owner_flow_review` | 5 |
-| `script_objective_producer_matched_pending_credit_timing_smoke` | 85 |
-| `script_objective_producer_matched_pending_owner_flow_review` | 18 |
+| `script_objective_producer_matched_pending_credit_timing_smoke` | 86 |
+| `script_objective_producer_matched_pending_owner_flow_review` | 23 |
 | `script_objective_producer_no_client_objective_match_blocked` | 6 |
 | `script_objective_producer_unresolved_symbol_blocked` | 7 |
 | `script_without_count_direct_objective_activation_matched_pending_timing_smoke` | 11 |
@@ -1655,7 +1665,9 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_q3486_crystal_guardian_virtual_collect_hook_tested` | 1 |
 | `runtime_q3486_loftite_crystal_arrival_credit_hook_tested` | 1 |
 | `runtime_q3486_loftite_crystal_virtual_collect_hook_tested` | 1 |
+| `runtime_q3486_map_zone_arrival_story_panel_credit_tested` | 1 |
 | `runtime_q3486_q3797_followup_mention_hook_tested` | 1 |
+| `runtime_q3673_signal_flare_hidden_completion_hook_tested` | 1 |
 | `runtime_q5573_power_regulator_hidden_completion_hook_tested` | 1 |
 | `runtime_q5575_power_regulator_hidden_completion_hook_tested` | 1 |
 | `runtime_q5597_chua_explosives_virtual_collect_hook_tested_external_video_observed` | 1 |
@@ -1664,29 +1676,29 @@ It records evidence and status; it does not claim retail completion unless a row
 | `script_quest_add_dynamic_quest_info_pending_trace` | 4 |
 | `script_quest_mention_target_matched_pending_visibility_smoke` | 1 |
 | `script_quest_objective_update_dynamic_runtime_context_pending_trace` | 2 |
-| `script_quest_objective_update_matched_pending_owner_review` | 8 |
-| `script_quest_objective_update_matched_pending_trigger_smoke` | 3 |
+| `script_quest_objective_update_matched_pending_owner_review` | 7 |
+| `script_quest_objective_update_matched_pending_trigger_smoke` | 2 |
 | `script_quest_typed_objective_update_dynamic_runtime_context_pending_trace` | 2 |
 | `script_quest_typed_objective_update_matched_pending_trigger_smoke` | 5 |
 
 ## Script Runtime Action Evidence Summary
 
-- Total script runtime action evidence rows: 210
+- Total script runtime action evidence rows: 211
 
 | Action category | Rows |
 | --- | ---: |
 | `script_entity_add_to_map` | 29 |
 | `script_entity_create` | 80 |
-| `script_entity_remove_from_map` | 33 |
+| `script_entity_remove_from_map` | 35 |
 | `script_local_teleport` | 7 |
 | `script_public_event_finish` | 39 |
-| `script_spell_cast` | 14 |
+| `script_spell_cast` | 13 |
 | `script_teleport` | 8 |
 
 | Script scope | Rows |
 | --- | ---: |
 | `script_instance` | 175 |
-| `script_main` | 35 |
+| `script_main` | 36 |
 
 | Reference link status | Rows |
 | --- | ---: |
@@ -1694,18 +1706,18 @@ It records evidence and status; it does not claim retail completion unless a row
 | `helper_numeric_constant_resolved` | 1 |
 | `numeric_constant_resolved` | 8 |
 | `numeric_literal_resolved` | 4 |
-| `source_expression_empty` | 33 |
-| `source_expression_tracked` | 84 |
+| `source_expression_empty` | 35 |
+| `source_expression_tracked` | 83 |
 
 | Client reference status | Rows |
 | --- | ---: |
 | `dynamic_local_position_pending_source_trace` | 4 |
-| `dynamic_spell_reference_pending_source_trace` | 2 |
+| `dynamic_spell_reference_pending_source_trace` | 1 |
 | `dynamic_world_reference_pending_source_trace` | 7 |
 | `literal_local_position_tracked` | 3 |
 | `public_event_team_expression_tracked` | 39 |
 | `runtime_entity_add_expression_tracked` | 29 |
-| `runtime_entity_remove_receiver_tracked` | 33 |
+| `runtime_entity_remove_receiver_tracked` | 35 |
 | `runtime_entity_type_tracked` | 80 |
 | `spell4_row_matched` | 12 |
 | `world_row_matched` | 1 |
@@ -1713,7 +1725,6 @@ It records evidence and status; it does not claim retail completion unless a row
 | Source trace status | Rows |
 | --- | ---: |
 | `combat_ai_aggro_spell_profile_source_tracked` | 1 |
-| `combat_ai_auto_attack_spell4_runtime_table_guarded` | 1 |
 | `direct_transport_world_rows_matched` | 1 |
 | `dynamic_world_reference_pending_source_trace` | 1 |
 | `literal_local_position_source_tracked` | 3 |
@@ -1721,7 +1732,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `matching_map_entrance_runtime_lookup_tracked` | 4 |
 | `public_event_finish_team_source_tracked` | 39 |
 | `runtime_entity_add_source_tracked` | 29 |
-| `runtime_entity_remove_source_tracked` | 33 |
+| `runtime_entity_remove_source_tracked` | 35 |
 | `runtime_entity_type_source_tracked` | 80 |
 | `starter_departure_routing_world_rows_matched` | 2 |
 | `starter_tutorial_helper_spell_constant_traced` | 1 |
@@ -1828,10 +1839,10 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_up_tank_room_create_action_tested` | 1 |
 | `script_entity_add_to_map_pending_spawn_lifecycle_smoke` | 15 |
 | `script_entity_create_pending_spawn_initialise_lifecycle_smoke` | 24 |
-| `script_entity_remove_from_map_pending_cleanup_smoke` | 22 |
+| `script_entity_remove_from_map_pending_cleanup_smoke` | 24 |
 | `script_local_teleport_pending_destination_access_smoke` | 6 |
 | `script_public_event_finish_pending_reward_completion_smoke` | 26 |
-| `script_spell_cast_pending_spell_effect_targeting_smoke` | 14 |
+| `script_spell_cast_pending_spell_effect_targeting_smoke` | 13 |
 | `script_teleport_pending_destination_access_smoke` | 8 |
 
 ## Instance Script Handler Evidence Summary
@@ -1955,15 +1966,15 @@ It records evidence and status; it does not claim retail completion unless a row
 | `instance` | 11 |
 | `quest` | 12 |
 
-- Total queue blocker detail rows: 1779
+- Total queue blocker detail rows: 1787
 
 | Blocker category | Rows |
 | --- | ---: |
-| `instance_dependency` | 684 |
+| `instance_dependency` | 683 |
 | `instance_entity` | 105 |
 | `instance_portal_evidence` | 11 |
 | `instance_reward` | 48 |
-| `public_event_evidence` | 339 |
+| `public_event_evidence` | 337 |
 | `quest_achievement` | 15 |
 | `quest_creature` | 7 |
 | `quest_episode_evidence` | 12 |
@@ -1975,9 +1986,9 @@ It records evidence and status; it does not claim retail completion unless a row
 | `quest_script` | 12 |
 | `quest_world_dependency` | 87 |
 | `quest_zone_evidence` | 3 |
-| `script_objective_producer` | 319 |
+| `script_objective_producer` | 332 |
 | `script_presentation` | 3 |
-| `script_quest_progression` | 5 |
+| `script_quest_progression` | 3 |
 
 ## Parallel Subagent Lane Snapshot
 
@@ -2081,15 +2092,15 @@ These grouped gaps cover every non-blocker generated inventory. They are priorit
 | Area | Rows | Tracker paths | Current evidence/status signal | Next validation action |
 | --- | ---: | --- | --- | --- |
 | Quest identity and objective coverage | 16860 | `Decomp\Analysis\coverage\content_retail_completeness_quests.csv`, `Decomp\Analysis\coverage\content_retail_completeness_quest_objectives.csv`, `Decomp\Analysis\coverage\content_retail_completeness_quest_objective_evidence.csv` | `mapped_objective_handler_pending_world_trigger_smoke` (6237); `datamapping_jabbithole_objective_matched_pending_text_order_smoke` (4458); `mapped_table_driven_pending_world_spawns_loot_smoke` (3840); `mapped_only_no_objective_lifecycle_pending_row_specific_dialog_reward_achievement_smoke` (1289); omitted statuses: 1036 rows across 53 statuses | Validate Quest2/objective identity, objective text/data matching, and row-specific objective smoke before status upgrades. |
-| Quest world, zone, and creature placement proof | 63735 | `Decomp\Analysis\coverage\content_retail_completeness_quest_world_dependencies.csv`, `Decomp\Analysis\coverage\content_retail_completeness_quest_zone_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_quest_creatures.csv` | `client_target_group_member_pending_spawn_and_credit_smoke` (12629); `client_objective_indicator_location_pending_world_trigger_smoke` (6884); `datamapping_objective_creature_relation_pending_review_and_smoke` (6562); `datamapping_quest_zone_matched_pending_runtime_visibility_smoke` (6142); omitted statuses: 31518 rows across 238 statuses | Resolve world/zone/creature bridges, promoted runtime placement, dialog/receiver and objective interaction smoke. |
+| Quest world, zone, and creature placement proof | 63735 | `Decomp\Analysis\coverage\content_retail_completeness_quest_world_dependencies.csv`, `Decomp\Analysis\coverage\content_retail_completeness_quest_zone_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_quest_creatures.csv` | `client_target_group_member_pending_spawn_and_credit_smoke` (12631); `client_objective_indicator_location_pending_world_trigger_smoke` (6884); `datamapping_objective_creature_relation_pending_review_and_smoke` (6562); `datamapping_quest_zone_matched_pending_runtime_visibility_smoke` (6142); omitted statuses: 31516 rows across 238 statuses | Resolve world/zone/creature bridges, promoted runtime placement, dialog/receiver and objective interaction smoke. |
 | Quest prerequisites and episode chain semantics | 16462 | `Decomp\Analysis\coverage\content_retail_completeness_quest_prerequisites.csv`, `Decomp\Analysis\coverage\content_retail_completeness_quest_episode_evidence.csv` | prerequisites: `mapped_quest_accept_validation_pending_row_smoke` (9258); `mapped_prerequisite_manager_pending_row_smoke` (2739); `mapped_quest_chain_validation_pending_chain_smoke` (1827); `mapped_quest_exclusion_validation_pending_chain_smoke` (903); omitted statuses: 238 rows across 4 statuses; episodes: `datamapping_episode_quest_matched_pending_order_progression_smoke` (1174); `datamapping_episode_quest_missing_episode_bridge_blocked` (313); `datamapping_episode_not_current_client_quest_row_blocked` (9); `runtime_q5597_episode_order_q5596_q5597_q5604_handoff_tested_external_video_observed_pending_local_episode_smoke` (1) | Prove prerequisite/episode chain visibility, faction routing, and accept/complete sequencing. |
 | Quest rewards, loot, and achievement hooks | 27091 | `Decomp\Analysis\coverage\content_retail_completeness_quest_rewards.csv`, `Decomp\Analysis\coverage\content_retail_completeness_quest_reward_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_quest_loot.csv`, `Decomp\Analysis\coverage\content_retail_completeness_quest_achievements.csv` | `mapped_runtime_reward_path_pending_row_smoke` (5297); `runtime_virtual_collect_entity_loot_binding_pending_source_drop_client_smoke` (5296); `datamapping_jabbithole_item_reward_matched_pending_choice_smoke` (3228); `mapped_inline_reward_pending_row_smoke` (3030); omitted statuses: 10240 rows across 36 statuses | Prove grants, loot cadence, reward UI/inventory persistence, achievement UI/progression. |
-| Public events, challenges, path missions, and contracts | 36185 | `Decomp\Analysis\coverage\content_retail_completeness_public_event_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_public_event_auxiliary_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_challenge_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_path_mission_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_contract_evidence.csv` | `runtime_challenge_reward_track_item_grant_tested_pending_ui_selection_smoke` (12804); `datamapping_challenge_creature_runtime_hook_tested_pending_review_and_spawn_smoke` (4659); `datamapping_challenge_direct_reward_item_pending_reward_track_bridge` (3732); `mapped_only_contract_creature_pending_bridge_review_spawn_client_smoke` (2426); omitted statuses: 12564 rows across 142 statuses | Keep inventory-only until safe queue keys exist; validate event/objective/challenge/path/contract runtime hooks per slice. |
-| Instance mechanics, portals, and encounter scripting | 2082 | `Decomp\Analysis\coverage\content_retail_completeness_instances.csv`, `Decomp\Analysis\coverage\content_retail_completeness_instance_dependencies.csv`, `Decomp\Analysis\coverage\content_retail_completeness_instance_entities.csv`, `Decomp\Analysis\coverage\content_retail_completeness_instance_portal_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_instance_script_handler_evidence.csv` | `client_achievement_row_pending_progression_hook_smoke` (260); `client_instance_portal_creature_link_pending_world_placement_review` (180); `mapped_omnicore1_downstream_objective_blocked_missing_route_specific_producer_client_smoke` (115); `mapped_ultimate_protogames_residual_objective_blocked_missing_room_specific_mechanics_client_smoke` (92); omitted statuses: 1435 rows across 392 statuses | Validate portals, public-event dependencies, entity/script handlers, phase/boss mechanics, and manual instance smoke. |
+| Public events, challenges, path missions, and contracts | 36185 | `Decomp\Analysis\coverage\content_retail_completeness_public_event_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_public_event_auxiliary_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_challenge_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_path_mission_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_contract_evidence.csv` | `runtime_challenge_reward_track_item_grant_tested_pending_ui_selection_smoke` (12804); `datamapping_challenge_creature_runtime_hook_tested_pending_review_and_spawn_smoke` (4659); `datamapping_challenge_direct_reward_item_pending_reward_track_bridge` (3732); `mapped_only_contract_creature_pending_bridge_review_spawn_client_smoke` (2426); omitted statuses: 12564 rows across 144 statuses | Keep inventory-only until safe queue keys exist; validate event/objective/challenge/path/contract runtime hooks per slice. |
+| Instance mechanics, portals, and encounter scripting | 2082 | `Decomp\Analysis\coverage\content_retail_completeness_instances.csv`, `Decomp\Analysis\coverage\content_retail_completeness_instance_dependencies.csv`, `Decomp\Analysis\coverage\content_retail_completeness_instance_entities.csv`, `Decomp\Analysis\coverage\content_retail_completeness_instance_portal_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_instance_script_handler_evidence.csv` | `client_achievement_row_pending_progression_hook_smoke` (180); `client_instance_portal_creature_link_pending_world_placement_review` (180); `mapped_omnicore1_downstream_objective_blocked_missing_route_specific_producer_client_smoke` (115); `reviewed_laughingws_entity_stat_pending_combat_smoke` (80); omitted statuses: 1527 rows across 572 statuses | Validate portals, public-event dependencies, entity/script handlers, phase/boss mechanics, and manual instance smoke. |
 | Instance rewards and rotations | 80 | `Decomp\Analysis\coverage\content_retail_completeness_instance_rewards.csv` | `client_matching_random_reward_pending_queue_reward_smoke` (45); `client_world_reward_rotation_content_pending_schedule_claim_smoke` (15); `client_public_event_reward_rotation_content_pending_event_reward_smoke` (15); `client_match_type_reward_rotation_content_pending_queue_reward_smoke` (5) | Validate reward rotation/difficulty/item/currency presentation and grant persistence. |
-| Script producers, presentation, progression, and runtime actions | 3091 | `Decomp\Analysis\coverage\content_retail_completeness_quest_scripts.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_presentation_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_event_flow_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_objective_producer_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_quest_progression_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_runtime_action_evidence.csv` | `script_public_event_objective_parent_event_matched_pending_activation_credit_smoke` (881); `script_public_event_phase_script_state_owner_matched_pending_phase_order_smoke` (676); `script_public_event_objective_client_row_matched_pending_owner_flow_review` (213); `script_objective_producer_matched_pending_credit_timing_smoke` (85); omitted statuses: 1236 rows across 651 statuses; runtime refs: `runtime_entity_type_tracked` (80); `public_event_team_expression_tracked` (39); `runtime_entity_remove_receiver_tracked` (33); `runtime_entity_add_expression_tracked` (29); omitted statuses: 29 rows across 6 statuses | Prove script owner flow, producer semantics, presentation/cinematic payloads, quest progression and runtime actions. |
+| Script producers, presentation, progression, and runtime actions | 3177 | `Decomp\Analysis\coverage\content_retail_completeness_quest_scripts.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_presentation_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_event_flow_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_objective_producer_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_quest_progression_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_runtime_action_evidence.csv` | `script_public_event_objective_parent_event_matched_pending_activation_credit_smoke` (946); `script_public_event_phase_script_state_owner_matched_pending_phase_order_smoke` (678); `script_public_event_objective_client_row_matched_pending_owner_flow_review` (218); `script_objective_producer_matched_pending_credit_timing_smoke` (86); omitted statuses: 1249 rows across 657 statuses; runtime refs: `runtime_entity_type_tracked` (80); `public_event_team_expression_tracked` (39); `runtime_entity_remove_receiver_tracked` (35); `runtime_entity_add_expression_tracked` (29); omitted statuses: 28 rows across 6 statuses | Prove script owner flow, producer semantics, presentation/cinematic payloads, quest progression and runtime actions. |
 | Next restoration slice queue | 23 | `Decomp\Analysis\coverage\content_retail_completeness_next_slice_queue.csv` | `quest_validation_ready` (12); `split_required_high_blocker_volume` (9); `split_required_producer_gap` (1); `instance_validation_ready` (1) | Use queue/blocker CSVs to drive focused implementation and smoke bundles; queue membership is not a retail-complete claim. |
-| Validation coverage | 165609 | `Tools/WikiArchiveAudit/validate_content_retail_completeness_outputs.py` | 165609 non-blocker inventory rows remain `not_retail_complete`; validator rejects unsafe completion claims. | Run generator, validator, Python tests, and narrow C#/runtime validation after each content slice. |
+| Validation coverage | 165695 | `Tools/WikiArchiveAudit/validate_content_retail_completeness_outputs.py` | 165695 non-blocker inventory rows remain `not_retail_complete`; validator rejects unsafe completion claims. | Run generator, validator, Python tests, and narrow C#/runtime validation after each content slice. |
 
 ## Next Restoration Slice Queue
 
@@ -2119,14 +2130,14 @@ All current queue rows are listed below; the generated queue CSV is the authorit
 | 3 | `quest` | `5597` Dregs and Thieves | 173 | 21 | `quest_validation_ready` | focused runtime tests already cited; 12 child runtime/test evidence rows; script owner `Source\NexusForever.Script.Main\Quests\CrimsonIsle\Q5597.cs`; objectives `8256`; rewards `3000;5236`; achievements `4134` |
 | 4 | `quest` | `3479` From the Wreckage | 168 | 26 | `quest_validation_ready` | focused runtime tests already cited; 16 child runtime/test evidence rows; script owner `Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3479FromTheWreckage.cs`; objectives `4467;4564`; rewards `2476;2479;8569`; achievements `1432;1433;1434` |
 | 5 | `quest` | `3480` Reporting for Duty | 168 | 22 | `quest_validation_ready` | focused runtime tests already cited; 14 child runtime/test evidence rows; script owner `Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3480.cs`; objectives `4470;4565`; rewards `1676;1677;1678`; achievements `5327` |
-| 6 | `quest` | `3486` Empowered Tower | 168 | 29 | `quest_validation_ready` | focused runtime tests already cited; 7 child runtime/test evidence rows; script owner `Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3486EmpoweredTower.cs`; objectives `4987;4485`; rewards `1706;1707;2147`; achievements `3469;5327` |
+| 6 | `quest` | `3486` Empowered Tower | 168 | 28 | `quest_validation_ready` | focused runtime tests already cited; 7 child runtime/test evidence rows; script owner `Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3486EmpoweredTower.cs`; objectives `4987;4485`; rewards `1706;1707;2147`; achievements `3469;5327` |
 | 7 | `quest` | `3668` Indigenous Intelligence | 168 | 25 | `quest_validation_ready` | focused runtime tests already cited; 20 child runtime/test evidence rows; script owner `Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3668.cs`; objectives `4744;4745;4791`; rewards `2190;2191;4768`; achievements `3490` |
-| 8 | `quest` | `3673` Contact with Thayd | 168 | 24 | `quest_validation_ready` | focused runtime tests already cited; 15 child runtime/test evidence rows; script owner `Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3673ContactWithThayd.cs`; objectives `4748;4888;4889;4890;13391`; rewards `2187;2188;2189;2481;3001;3846`; achievements `3490` |
+| 8 | `quest` | `3673` Contact with Thayd | 168 | 23 | `quest_validation_ready` | focused runtime tests already cited; 15 child runtime/test evidence rows; script owner `Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3673ContactWithThayd.cs`; objectives `4748;4888;4889;4890;13391`; rewards `2187;2188;2189;2481;3001;3846`; achievements `3490` |
 | 9 | `quest` | `3886` Fiery Distraction | 168 | 14 | `quest_validation_ready` | focused runtime tests already cited; 10 child runtime/test evidence rows; script owner `Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3886FieryDistraction.cs`; objectives `5053;5052`; rewards `2192;2430;4767`; achievements `3490` |
 | 10 | `quest` | `3963` More Important Than Revenge | 168 | 15 | `quest_validation_ready` | focused runtime tests already cited; 10 child runtime/test evidence rows; 1 creature-evidence blocker row(s); script owner `Source\NexusForever.Script.Main\Quests\NorthernWilds\Q3963MoreImportantThanRevenge.cs`; objectives `5201`; rewards `3706;3707;4771`; achievements `3491` |
 | 11 | `quest` | `5573` Powering Down | 163 | 22 | `quest_validation_ready` | focused runtime tests already cited; 7 child runtime/test evidence rows; script owner `Source\NexusForever.Script.Main\Quests\CrimsonIsle\Q5573PoweringDown.cs`; objectives `8524;8229;12870`; rewards `2989;2991;2992`; achievements `4132` |
 | 12 | `quest` | `5575` Seizing Power | 163 | 18 | `quest_validation_ready` | focused runtime tests already cited; 7 child runtime/test evidence rows; script owner `Source\NexusForever.Script.Main\Quests\CrimsonIsle\Q5575.cs`; objectives `8523;8371;12871`; rewards `2993;2994;2995`; achievements `4133` |
-| 13 | `instance` | `2980` Ultimate Protogames | 125 | 291 | `split_required_producer_gap` | public events `594`; 123 objective rows; 45 scripted objective producers; 0 tracked script handlers; achievements `5864;5865;5866;5867;5868;5869;...+117` |
+| 13 | `instance` | `2980` Ultimate Protogames | 125 | 301 | `split_required_producer_gap` | public events `594`; 123 objective rows; 58 scripted objective producers; 0 tracked script handlers; achievements `5864;5865;5866;5867;5868;5869;...+117` |
 | 14 | `instance` | `382` Stormtalon's Lair | 114 | 101 | `split_required_high_blocker_volume` | public events `145`; 27 objective rows; 31 scripted objective producers; 0 tracked script handlers; achievements `2414;3462` |
 | 15 | `instance` | `3009` Vault of the Archon | 100 | 205 | `split_required_high_blocker_volume` | public events `666;668;669;677;678;693;...+3`; 85 objective rows; 133 scripted objective producers; 0 tracked script handlers; achievements `4360;4361;4362;4363;4366;4586;...+27` |
 | 16 | `instance` | `1271` Sanctuary of the Swordmaiden | 97 | 152 | `split_required_high_blocker_volume` | public events `166;202`; 52 objective rows; 63 scripted objective producers; 0 tracked script handlers; achievements `2639;3464;5306;5307;5308;5309;...+2` |
@@ -2140,11 +2151,11 @@ All current queue rows are listed below; the generated queue CSV is the authorit
 
 | Blocker category | Rows |
 | --- | ---: |
-| `instance_dependency` | 684 |
+| `instance_dependency` | 683 |
 | `instance_entity` | 105 |
 | `instance_portal_evidence` | 11 |
 | `instance_reward` | 48 |
-| `public_event_evidence` | 339 |
+| `public_event_evidence` | 337 |
 | `quest_achievement` | 15 |
 | `quest_creature` | 7 |
 | `quest_episode_evidence` | 12 |
@@ -2156,9 +2167,9 @@ All current queue rows are listed below; the generated queue CSV is the authorit
 | `quest_script` | 12 |
 | `quest_world_dependency` | 87 |
 | `quest_zone_evidence` | 3 |
-| `script_objective_producer` | 319 |
+| `script_objective_producer` | 332 |
 | `script_presentation` | 3 |
-| `script_quest_progression` | 5 |
+| `script_quest_progression` | 3 |
 
 ## Current Milestone State
 

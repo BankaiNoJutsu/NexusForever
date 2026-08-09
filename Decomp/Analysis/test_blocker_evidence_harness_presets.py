@@ -41,8 +41,15 @@ class BlockerEvidenceHarnessPresetTests(unittest.TestCase):
 
             tail_script = (bundles[0] / "Tail-BlockerEvidenceLogs.ps1").read_text(encoding="utf-8-sig")
             collect_script = (bundles[0] / "Collect-BlockerEvidenceBundle.ps1").read_text(encoding="utf-8-sig")
+            client_observations = (bundles[0] / "client-observations.md").read_text(encoding="utf-8-sig")
             self.assertIn(str(client_root), tail_script)
             self.assertIn(str(client_root), collect_script)
+            self.assertIn("NexusForever.WorldServer*.stdout.log", tail_script)
+            self.assertIn("NexusForever.WorldServer*.stdout.log", collect_script)
+            self.assertIn("$EvidenceStartedAtUtc", collect_script)
+            self.assertIn("Errors\\WildStar64*.txt", collect_script)
+            self.assertIn("video/", client_observations)
+            self.assertNotIn("\x0b", client_observations)
         finally:
             shutil.rmtree(output_root, ignore_errors=True)
             shutil.rmtree(client_root, ignore_errors=True)
@@ -234,7 +241,10 @@ def _create_bundle(repo_root: Path, script: Path, preset: str) -> Path:
 def _find_repo_root() -> Path:
     directory = Path(__file__).resolve()
     for parent in [directory, *directory.parents]:
-        if (parent / "Source" / "NexusForever.sln").exists():
+        if (
+            (parent / "Source" / "NexusForever.slnx").exists()
+            or (parent / "Source" / "NexusForever.sln").exists()
+        ):
             return parent
 
     raise RuntimeError("Unable to locate NexusForever repository root.")
