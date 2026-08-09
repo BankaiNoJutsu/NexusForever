@@ -29,8 +29,12 @@ namespace NexusForever.Server.Character.Game.Who
             };
 
             int offset = 0;
-            foreach (int groupOffset in request.ParameterGroupCounts)
+            foreach (uint rawGroupOffset in request.ParameterGroupCounts)
             {
+                int groupOffset = (int)Math.Min(rawGroupOffset, (uint)request.Parameters.Count);
+                if (groupOffset <= offset)
+                    continue;
+
                 IEnumerable<IWhoParameter> parmeters = request.Parameters
                     .Skip(offset)
                     .Take(groupOffset - offset);
@@ -40,8 +44,11 @@ namespace NexusForever.Server.Character.Game.Who
                 query.Groups.Add(BuildQueryGroup(parmeters));
             }
 
-            IEnumerable<IWhoParameter> finalParameters = request.Parameters.Skip(offset);
-            query.Groups.Add(BuildQueryGroup(finalParameters));
+            if (offset < request.Parameters.Count)
+            {
+                IEnumerable<IWhoParameter> finalParameters = request.Parameters.Skip(offset);
+                query.Groups.Add(BuildQueryGroup(finalParameters));
+            }
 
             return query;
         }

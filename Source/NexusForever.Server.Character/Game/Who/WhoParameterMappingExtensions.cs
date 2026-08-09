@@ -70,43 +70,16 @@ namespace NexusForever.Server.Character.Game.Who
             };
         }
 
-        public static IQueryParameter ToQueryParameter(this WhoParameterCombo combo)
+        public static QueryParameterCombo ToQueryParameter(this WhoParameterCombo combo)
         {
-            if (combo.RaceId != null)
+            return new QueryParameterCombo
             {
-                return new QueryParameterRace
-                {
-                    Race = combo.RaceId.Value
-                };
-            }
-
-            if (combo.PathId != null)
-            {
-                return new QueryParameterPath
-                {
-                    Path = combo.PathId.Value
-                };
-            }
-
-            if (combo.ClassId != null)
-            {
-                return new QueryParameterClass
-                {
-                    Class = combo.ClassId.Value
-                };
-            }
-
-            if (combo.WorldZoneId != null)
-            {
-                return new QueryParameterWorldZone
-                {
-                    WorldZoneId = combo.WorldZoneId.Value
-                };
-            }
-
-            return new QueryParameterPlayer
-            {
-                Name = combo.SearchString
+                SearchString = combo.SearchString,
+                Race         = combo.RaceId,
+                Path         = combo.PathId,
+                Class        = combo.ClassId,
+                WorldZoneId  = combo.WorldZoneId,
+                WorldZoneId2 = combo.WorldZoneId2
             };
         }
     }

@@ -1,16 +1,14 @@
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using NexusForever.Game.Abstract;
-using NexusForever.Game.Abstract.Entity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using NexusForever.Database.Query;
+using NexusForever.Database.Query.Model;
+using NexusForever.Database.Query.Repository;
+using NexusForever.Database.Query.Repository.Query;
 using NexusForever.Game.Static.Entity;
-using NexusForever.Game.Static.Reputation;
-using NexusForever.Game.Static.Who;
-using NexusForever.Game.Tests.TestSupport;
-using NexusForever.GameTable.Model;
-using NexusForever.Network.World.Message.Model.Who;
-using NexusForever.Network.World.Message.Model.Who.Parameter;
-using NexusForever.WorldServer.Network;
-using NexusForever.WorldServer.Network.Message.Handler.Chat;
+using NexusForever.Network.Internal.Message.Who;
+using NexusForever.Network.Internal.Message.Who.Parameter;
+using NexusForever.Server.Character.Configuration;
+using NexusForever.Server.Character.Game.Who;
 using PlayerClass = NexusForever.Game.Static.Entity.Class;
 using PlayerPath = NexusForever.Game.Static.PlayerPath.Path;
 
@@ -19,262 +17,203 @@ namespace NexusForever.Game.Tests.Chat;
 public class ClientWhoRequestHandlerTests
 {
     [Fact]
-    public void HandleMessage_WithNoParametersReturnsOtherPlayersInCurrentZone()
+    public async Task QueryAsync_RestrictsResultsToRequestedRealm()
     {
-        IPlayer requester = CreatePlayer(1ul, "Requester", 10u, 12u, Race.Human, PlayerClass.Warrior, PlayerPath.Soldier);
-        IPlayer nearby   = CreatePlayer(2ul, "Nearby", 10u, 20u, Race.Aurin, PlayerClass.Esper, PlayerPath.Explorer);
-        IPlayer elsewhere = CreatePlayer(3ul, "Elsewhere", 20u, 20u, Race.Granok, PlayerClass.Engineer, PlayerPath.Settler);
-        IWorldSession session = CreateSession(requester, out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        var options = new DbContextOptionsBuilder<QueryContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+        await using var context = new QueryContext(options);
+        await context.Database.OpenConnectionAsync();
+        await context.Database.EnsureCreatedAsync();
+        context.Character.AddRange(
+            new CharacterModel { CharacterId = 1u, RealmId = 1, Name = "Local" },
+            new CharacterModel { CharacterId = 2u, RealmId = 2, Name = "Remote" });
+        await context.SaveChangesAsync();
 
-        var handler = new ClientWhoRequestHandler(
-            CreatePlayerManager(requester, elsewhere, nearby),
-            CreateRealmContext("Test Realm"));
+        var repository = new QueryRepository(context, new QueryExpressionBuilder());
+        List<CharacterModel> matches = await repository.QueryAsync(new Query { RealmId = 1, MaxResults = 10u });
 
-        handler.HandleMessage(session, new ClientWhoRequest());
-
-        ServerWhoResponse response = GetWhoResponse(sessionProxy);
-        ServerWhoResponse.WhoPlayer player = Assert.Single(response.Players);
-        Assert.Equal(WhoResult.OK, response.Result);
-        Assert.Equal("Nearby", player.Name);
-        Assert.Equal("Test Realm", player.Realm);
-        Assert.Equal(20u, player.Level);
-        Assert.Equal(Race.Aurin, player.Race);
-        Assert.Equal(PlayerClass.Esper, player.Class);
-        Assert.Equal(PlayerPath.Explorer, player.Path);
-        Assert.Equal(10u, player.Zone);
+        CharacterModel match = Assert.Single(matches);
+        Assert.Equal("Local", match.Name);
     }
 
     [Fact]
-    public void HandleMessage_WithPlayerNameParameterSearchesAcrossZones()
+    public void Build_WithNoParametersDoesNotAddAnEmptyGroup()
     {
-        IPlayer requester = CreatePlayer(1ul, "Requester", 10u, 12u, Race.Human, PlayerClass.Warrior, PlayerPath.Soldier);
-        IPlayer alpha    = CreatePlayer(2ul, "Alpha", 20u, 20u, Race.Aurin, PlayerClass.Esper, PlayerPath.Explorer);
-        IPlayer alphonse = CreatePlayer(3ul, "Alphonse", 30u, 20u, Race.Mechari, PlayerClass.Medic, PlayerPath.Scientist);
-        IPlayer beta     = CreatePlayer(4ul, "Beta", 20u, 20u, Race.Granok, PlayerClass.Engineer, PlayerPath.Settler);
-        IWorldSession session = CreateSession(requester, out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        Query query = CreateQuery(new WhoRequestMessage());
 
-        var handler = new ClientWhoRequestHandler(
-            CreatePlayerManager(requester, beta, alphonse, alpha),
-            CreateRealmContext("Test Realm"));
-
-        handler.HandleMessage(session, CreateRequest(CreatePlayerNameParameter("alp")));
-
-        ServerWhoResponse response = GetWhoResponse(sessionProxy);
-        Assert.Equal(["Alpha", "Alphonse"], response.Players.Select(player => player.Name));
+        Assert.Empty(query.Groups);
+        Assert.True(new QueryExpressionBuilder().Build(query).Compile()(CreateCharacter("Player")));
     }
 
     [Fact]
-    public void HandleMessage_WithLevelParameterTreatsTopLevelAsExclusive()
+    public void Build_WithPlayerParameterSearchesNamesAndGuildsAcrossZones()
     {
-        IPlayer requester = CreatePlayer(1ul, "Requester", 10u, 9u, Race.Human, PlayerClass.Warrior, PlayerPath.Soldier);
-        IPlayer inside    = CreatePlayer(2ul, "Inside", 20u, 19u, Race.Aurin, PlayerClass.Esper, PlayerPath.Explorer);
-        IPlayer atTop     = CreatePlayer(3ul, "AtTop", 20u, 20u, Race.Mechari, PlayerClass.Medic, PlayerPath.Scientist);
-        IWorldSession session = CreateSession(requester, out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        WhoRequestMessage request = CreateRequest(new WhoParameterPlayer { PlayerName = "Alpha" });
 
-        var handler = new ClientWhoRequestHandler(
-            CreatePlayerManager(requester, atTop, inside),
-            CreateRealmContext("Test Realm"));
+        IReadOnlyList<CharacterModel> matches = Filter(
+            request,
+            CreateCharacter("Alpha", zoneId: 20),
+            CreateCharacter("Other", guildName: "Alpha Squad", zoneId: 30),
+            CreateCharacter("Beta", guildName: "Other Guild", zoneId: 20));
 
-        handler.HandleMessage(session, CreateRequest(CreateLevelParameter(10u, 20u)));
-
-        ServerWhoResponse response = GetWhoResponse(sessionProxy);
-        ServerWhoResponse.WhoPlayer player = Assert.Single(response.Players);
-        Assert.Equal("Inside", player.Name);
+        Assert.Equal(["Alpha", "Other"], matches.Select(character => character.Name));
     }
 
     [Fact]
-    public void HandleMessage_WithParameterGroupCountsUsesCumulativeOffsets()
+    public void Build_WithLevelParameterTreatsTopLevelAsExclusive()
     {
-        IPlayer requester = CreatePlayer(1ul, "Requester", 10u, 12u, Race.Human, PlayerClass.Warrior, PlayerPath.Soldier);
-        IPlayer aurinEsper = CreatePlayer(2ul, "AurinEsper", 20u, 20u, Race.Aurin, PlayerClass.Esper, PlayerPath.Explorer);
-        IPlayer granokSettler = CreatePlayer(3ul, "GranokSettler", 30u, 20u, Race.Granok, PlayerClass.Engineer, PlayerPath.Settler);
-        IPlayer remoteName = CreatePlayer(4ul, "RemoteName", 40u, 20u, Race.Mechari, PlayerClass.Medic, PlayerPath.Scientist);
-        IPlayer aurinMedic = CreatePlayer(5ul, "AurinMedic", 20u, 20u, Race.Aurin, PlayerClass.Medic, PlayerPath.Explorer);
-        IWorldSession session = CreateSession(requester, out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        WhoRequestMessage request = CreateRequest(new WhoParameterLevel
+        {
+            BottomLevel = 10,
+            TopLevel = 20
+        });
 
-        var handler = new ClientWhoRequestHandler(
-            CreatePlayerManager(requester, remoteName, aurinMedic, granokSettler, aurinEsper),
-            CreateRealmContext("Test Realm"));
-        ClientWhoRequest request = CreateRequest(
-            CreateRaceParameter(Race.Aurin),
-            CreateClassParameter(PlayerClass.Esper),
-            CreateRaceParameter(Race.Granok),
-            CreatePathParameter(PlayerPath.Settler),
-            CreatePlayerNameParameter("remote"));
+        IReadOnlyList<CharacterModel> matches = Filter(
+            request,
+            CreateCharacter("Below", level: 9),
+            CreateCharacter("Inside", level: 19),
+            CreateCharacter("AtTop", level: 20));
+
+        CharacterModel match = Assert.Single(matches);
+        Assert.Equal("Inside", match.Name);
+    }
+
+    [Fact]
+    public void Build_WithParameterGroupCountsUsesCumulativeOffsets()
+    {
+        WhoRequestMessage request = CreateRequest(
+            new WhoParameterRace { RaceId = Race.Aurin },
+            new WhoParameterClass { ClassId = PlayerClass.Esper },
+            new WhoParameterRace { RaceId = Race.Granok },
+            new WhoParameterPath { PathId = PlayerPath.Settler },
+            new WhoParameterPlayer { PlayerName = "Remote" });
         request.ParameterGroupCounts.Clear();
         request.ParameterGroupCounts.AddRange([2, 4]);
 
-        handler.HandleMessage(session, request);
+        IReadOnlyList<CharacterModel> matches = Filter(
+            request,
+            CreateCharacter("AurinEsper", race: Race.Aurin, playerClass: PlayerClass.Esper),
+            CreateCharacter("AurinMedic", race: Race.Aurin, playerClass: PlayerClass.Medic),
+            CreateCharacter("GranokSettler", race: Race.Granok, path: PlayerPath.Settler),
+            CreateCharacter("RemoteName", race: Race.Mechari, path: PlayerPath.Scientist));
 
-        ServerWhoResponse response = GetWhoResponse(sessionProxy);
-        Assert.Equal(["AurinEsper", "GranokSettler", "RemoteName"], response.Players.Select(player => player.Name));
+        Assert.Equal(["AurinEsper", "GranokSettler", "RemoteName"], matches.Select(character => character.Name));
     }
 
     [Fact]
-    public void HandleMessage_WithComboPathCanMatchSoldier()
+    public void Build_WithCompletedGroupDoesNotAppendAnEmptyGroup()
     {
-        IPlayer requester = CreatePlayer(1ul, "Requester", 10u, 12u, Race.Human, PlayerClass.Warrior, PlayerPath.Explorer);
-        IPlayer soldier   = CreatePlayer(2ul, "SoldierPath", 20u, 20u, Race.Aurin, PlayerClass.Esper, PlayerPath.Soldier);
-        IPlayer settler   = CreatePlayer(3ul, "SettlerPath", 20u, 20u, Race.Granok, PlayerClass.Engineer, PlayerPath.Settler);
-        IWorldSession session = CreateSession(requester, out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        WhoRequestMessage request = CreateRequest(new WhoParameterRace { RaceId = Race.Aurin });
 
-        var handler = new ClientWhoRequestHandler(
-            CreatePlayerManager(requester, settler, soldier),
-            CreateRealmContext("Test Realm"));
+        Query query = CreateQuery(request);
 
-        handler.HandleMessage(session, CreateRequest(CreateComboParameter("soldier", Race.None, PlayerPath.Soldier, PlayerClass.None, 0u)));
-
-        ServerWhoResponse response = GetWhoResponse(sessionProxy);
-        ServerWhoResponse.WhoPlayer player = Assert.Single(response.Players);
-        Assert.Equal("SoldierPath", player.Name);
+        Assert.Single(query.Groups);
+        Assert.NotNull(new QueryExpressionBuilder().Build(query));
     }
 
     [Fact]
-    public void HandleMessage_WithComboRequiresAllProvidedFields()
+    public void Build_WithComboPathCanMatchSoldier()
     {
-        IPlayer requester = CreatePlayer(1ul, "Requester", 10u, 12u, Race.Human, PlayerClass.Warrior, PlayerPath.Explorer);
-        IPlayer match     = CreatePlayer(2ul, "MatchingEsper", 40u, 20u, Race.Aurin, PlayerClass.Esper, PlayerPath.Soldier);
-        IPlayer wrongRace  = CreatePlayer(3ul, "MatchingRace", 40u, 20u, Race.Human, PlayerClass.Esper, PlayerPath.Soldier);
-        IPlayer wrongPath  = CreatePlayer(4ul, "MatchingPath", 40u, 20u, Race.Aurin, PlayerClass.Esper, PlayerPath.Explorer);
-        IPlayer wrongClass = CreatePlayer(5ul, "MatchingClass", 40u, 20u, Race.Aurin, PlayerClass.Engineer, PlayerPath.Soldier);
-        IPlayer wrongZone  = CreatePlayer(6ul, "MatchingZone", 50u, 20u, Race.Aurin, PlayerClass.Esper, PlayerPath.Soldier);
-        IPlayer wrongName  = CreatePlayer(7ul, "OtherName", 40u, 20u, Race.Aurin, PlayerClass.Esper, PlayerPath.Soldier);
-        IWorldSession session = CreateSession(requester, out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        WhoRequestMessage request = CreateRequest(new WhoParameterCombo
+        {
+            SearchString = "Soldier",
+            PathId = PlayerPath.Soldier
+        });
 
-        var handler = new ClientWhoRequestHandler(
-            CreatePlayerManager(requester, wrongName, wrongZone, wrongClass, wrongPath, wrongRace, match),
-            CreateRealmContext("Test Realm"));
+        IReadOnlyList<CharacterModel> matches = Filter(
+            request,
+            CreateCharacter("SoldierPath", path: PlayerPath.Soldier),
+            CreateCharacter("SettlerPath", path: PlayerPath.Settler));
 
-        handler.HandleMessage(session, CreateRequest(CreateComboParameter("matching", Race.Aurin, PlayerPath.Soldier, PlayerClass.Esper, 40u)));
-
-        ServerWhoResponse response = GetWhoResponse(sessionProxy);
-        ServerWhoResponse.WhoPlayer player = Assert.Single(response.Players);
-        Assert.Equal("MatchingEsper", player.Name);
+        CharacterModel match = Assert.Single(matches);
+        Assert.Equal("SoldierPath", match.Name);
     }
 
-    private static IWorldSession CreateSession(IPlayer player, out RecordingDispatchProxy<IWorldSession> sessionProxy)
+    [Fact]
+    public void Build_WithComboRequiresAllProvidedFields()
     {
-        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
-        sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
-        return session;
+        WhoRequestMessage request = CreateRequest(new WhoParameterCombo
+        {
+            SearchString = "Matching",
+            RaceId = Race.Aurin,
+            PathId = PlayerPath.Soldier,
+            ClassId = PlayerClass.Esper,
+            WorldZoneId = 40
+        });
+
+        IReadOnlyList<CharacterModel> matches = Filter(
+            request,
+            CreateCharacter("MatchingEsper", race: Race.Aurin, path: PlayerPath.Soldier, playerClass: PlayerClass.Esper, zoneId: 40),
+            CreateCharacter("MatchingRace", race: Race.Human, path: PlayerPath.Soldier, playerClass: PlayerClass.Esper, zoneId: 40),
+            CreateCharacter("MatchingPath", race: Race.Aurin, path: PlayerPath.Explorer, playerClass: PlayerClass.Esper, zoneId: 40),
+            CreateCharacter("MatchingClass", race: Race.Aurin, path: PlayerPath.Soldier, playerClass: PlayerClass.Engineer, zoneId: 40),
+            CreateCharacter("MatchingZone", race: Race.Aurin, path: PlayerPath.Soldier, playerClass: PlayerClass.Esper, zoneId: 50),
+            CreateCharacter("OtherName", race: Race.Aurin, path: PlayerPath.Soldier, playerClass: PlayerClass.Esper, zoneId: 40));
+
+        CharacterModel match = Assert.Single(matches);
+        Assert.Equal("MatchingEsper", match.Name);
     }
 
-    private static IPlayerManager CreatePlayerManager(params IPlayer[] players)
+    [Fact]
+    public void Build_WithComboWorldZonesMatchesEitherProvidedZone()
     {
-        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(out RecordingDispatchProxy<IPlayerManager> proxy);
-        proxy.SetMethodHandler("GetEnumerator", _ => players.AsEnumerable().GetEnumerator());
-        return playerManager;
+        WhoRequestMessage request = CreateRequest(new WhoParameterCombo
+        {
+            WorldZoneId = 40,
+            WorldZoneId2 = 50
+        });
+
+        IReadOnlyList<CharacterModel> matches = Filter(
+            request,
+            CreateCharacter("FirstZone", zoneId: 40),
+            CreateCharacter("SecondZone", zoneId: 50),
+            CreateCharacter("OtherZone", zoneId: 60));
+
+        Assert.Equal(["FirstZone", "SecondZone"], matches.Select(character => character.Name));
     }
 
-    private static IRealmContext CreateRealmContext(string realmName)
+    private static IReadOnlyList<CharacterModel> Filter(
+        WhoRequestMessage request,
+        params CharacterModel[] characters)
     {
-        IRealmContext realmContext = RecordingDispatchProxy<IRealmContext>.Create(out RecordingDispatchProxy<IRealmContext> proxy);
-        proxy.SetProperty(nameof(IRealmContext.RealmName), realmName);
-        return realmContext;
+        Query query = CreateQuery(request);
+        Func<CharacterModel, bool> expression = new QueryExpressionBuilder().Build(query).Compile();
+        return characters.Where(expression).ToList();
     }
 
-    private static IPlayer CreatePlayer(
-        ulong characterId,
-        string name,
-        uint zoneId,
-        uint level,
-        Race race,
-        PlayerClass playerClass,
-        PlayerPath path)
+    private static Query CreateQuery(WhoRequestMessage request)
     {
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> proxy);
-        proxy.SetProperty(nameof(IPlayer.CharacterId), characterId);
-        proxy.SetProperty(nameof(IPlayer.Name), name);
-        proxy.SetProperty(nameof(IWorldEntity.Zone), new WorldZoneEntry { Id = zoneId });
-        proxy.SetProperty(nameof(IWorldEntity.Level), level);
-        proxy.SetProperty(nameof(IPlayer.Race), race);
-        proxy.SetProperty(nameof(IPlayer.Class), playerClass);
-        proxy.SetProperty(nameof(IPlayer.Path), path);
-        proxy.SetProperty(nameof(IWorldEntity.Faction1), Faction.Exile);
-        proxy.SetProperty(nameof(IPlayer.Sex), Sex.Female);
-        proxy.SetProperty(nameof(IPlayer.ClientGroupAssociation), 0x8000000000000000ul | characterId);
-        return player;
+        var builder = new QueryBuilder(Options.Create(new WhoOptions { MaxResults = 100 }));
+        return builder.Build(request);
     }
 
-    private static ClientWhoRequest CreateRequest(params WhoParameter[] parameters)
+    private static WhoRequestMessage CreateRequest(params IWhoParameter[] parameters)
     {
-        var request = new ClientWhoRequest();
+        var request = new WhoRequestMessage();
         request.Parameters.AddRange(parameters);
-        request.ParameterGroupCounts.Add(parameters.Length);
+        request.ParameterGroupCounts.Add((uint)parameters.Length);
         return request;
     }
 
-    private static WhoParameter CreateLevelParameter(uint bottomLevel, uint topLevel)
+    private static CharacterModel CreateCharacter(
+        string name,
+        string guildName = null,
+        Race race = Race.Human,
+        PlayerPath path = PlayerPath.Explorer,
+        PlayerClass playerClass = PlayerClass.Warrior,
+        ushort zoneId = 10,
+        uint level = 20)
     {
-        var data = (WhoParameterLevel)RuntimeHelpers.GetUninitializedObject(typeof(WhoParameterLevel));
-        SetProperty(data, nameof(WhoParameterLevel.BottomLevel), bottomLevel);
-        SetProperty(data, nameof(WhoParameterLevel.TopLevel), topLevel);
-        return CreateParameter(WhoParameterType.Level, data);
-    }
-
-    private static WhoParameter CreateRaceParameter(Race race)
-    {
-        var data = (WhoParameterRace)RuntimeHelpers.GetUninitializedObject(typeof(WhoParameterRace));
-        SetProperty(data, nameof(WhoParameterRace.RaceId), race);
-        return CreateParameter(WhoParameterType.Race, data);
-    }
-
-    private static WhoParameter CreateClassParameter(PlayerClass playerClass)
-    {
-        var data = (WhoParameterClass)RuntimeHelpers.GetUninitializedObject(typeof(WhoParameterClass));
-        SetProperty(data, nameof(WhoParameterClass.ClassId), playerClass);
-        return CreateParameter(WhoParameterType.Class, data);
-    }
-
-    private static WhoParameter CreatePathParameter(PlayerPath path)
-    {
-        var data = (WhoParameterPath)RuntimeHelpers.GetUninitializedObject(typeof(WhoParameterPath));
-        SetProperty(data, nameof(WhoParameterPath.PathId), path);
-        return CreateParameter(WhoParameterType.Path, data);
-    }
-
-    private static WhoParameter CreatePlayerNameParameter(string name)
-    {
-        var data = (WhoParameterPlayer)RuntimeHelpers.GetUninitializedObject(typeof(WhoParameterPlayer));
-        SetProperty(data, nameof(WhoParameterPlayer.PlayerName), name);
-        return CreateParameter(WhoParameterType.Player, data);
-    }
-
-    private static WhoParameter CreateComboParameter(
-        string searchText,
-        Race race,
-        PlayerPath path,
-        PlayerClass playerClass,
-        uint worldZoneId)
-    {
-        var data = (WhoParameterCombo)RuntimeHelpers.GetUninitializedObject(typeof(WhoParameterCombo));
-        SetProperty(data, nameof(WhoParameterCombo.SearchString), searchText);
-        SetProperty(data, nameof(WhoParameterCombo.RaceId), race);
-        SetProperty(data, nameof(WhoParameterCombo.PathId), path);
-        SetProperty(data, nameof(WhoParameterCombo.ClassId), playerClass);
-        SetProperty(data, nameof(WhoParameterCombo.WorldZoneId), worldZoneId);
-        return CreateParameter(WhoParameterType.Combo, data);
-    }
-
-    private static WhoParameter CreateParameter(WhoParameterType type, IWhoParameterData data)
-    {
-        var parameter = (WhoParameter)RuntimeHelpers.GetUninitializedObject(typeof(WhoParameter));
-        SetProperty(parameter, nameof(WhoParameter.Type), type);
-        SetProperty(parameter, nameof(WhoParameter.Data), data);
-        return parameter;
-    }
-
-    private static void SetProperty(object target, string propertyName, object value)
-    {
-        target.GetType()
-            .GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-            ?.SetValue(target, value);
-    }
-
-    private static ServerWhoResponse GetWhoResponse(RecordingDispatchProxy<IWorldSession> sessionProxy)
-    {
-        RecordingDispatchProxy<IWorldSession>.Invocation invocation =
-            Assert.Single(sessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)));
-        return Assert.IsType<ServerWhoResponse>(invocation.Arguments[0]);
+        return new CharacterModel
+        {
+            Name = name,
+            GuildName = guildName,
+            Race = race,
+            Path = path,
+            Class = playerClass,
+            WorldZoneId = zoneId,
+            Level = level
+        };
     }
 }

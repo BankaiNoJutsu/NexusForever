@@ -1,5 +1,6 @@
 ﻿using System.Threading.RateLimiting;
 using NexusForever.Database.Query.Repository.Query;
+using NexusForever.Database.Query.Repository.Query.Parameter;
 using NexusForever.Game.Static.Who;
 using NexusForever.Network.Internal;
 using NexusForever.Network.Internal.Message.Who;
@@ -41,7 +42,11 @@ namespace NexusForever.Server.Character.Network.Internal.Handler.Who
             if (character == null)
                 return;
 
-            (WhoResult result, List<Game.Character.Character> characters) = await HandleWhoRequest(message, character.CurrentRealmId);
+            (WhoResult result, List<Game.Character.Character> characters) = await HandleWhoRequest(
+                message,
+                character.CurrentRealmId,
+                character.Identity.Id,
+                character.WorldZoneId);
             await _messagePublisher.PublishAsync(new WhoResponseMessage
             {
                 Identity   = message.Identity,
@@ -52,7 +57,11 @@ namespace NexusForever.Server.Character.Network.Internal.Handler.Who
             return;
         }
 
-        private async Task<(WhoResult, List<Game.Character.Character>)> HandleWhoRequest(WhoRequestMessage message, ushort realmId)
+        private async Task<(WhoResult, List<Game.Character.Character>)> HandleWhoRequest(
+            WhoRequestMessage message,
+            ushort realmId,
+            ulong characterId,
+            ushort worldZoneId)
         {
             RateLimitLease lease = await _rateLimiter.AcquireAsync(message.Identity.ToQueryIdentity());
             try
@@ -62,6 +71,20 @@ namespace NexusForever.Server.Character.Network.Internal.Handler.Who
 
                 Query query = _queryBuilder.Build(message);
                 query.RealmId = realmId;
+                if (message.Parameters.Count == 0)
+                {
+                    query.ExcludedCharacterId = characterId;
+                    query.Groups.Add(new QueryGroup
+                    {
+                        Parameters =
+                        [
+                            new QueryParameterWorldZone
+                            {
+                                WorldZoneId = worldZoneId
+                            }
+                        ]
+                    });
+                }
 
                 var characters = await _queryExecutor.QueryAsync(query);
 

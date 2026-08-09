@@ -4,6 +4,7 @@
     {
         public uint MaxResults { get; set; }
         public ushort RealmId { get; set; }
+        public ulong? ExcludedCharacterId { get; set; }
         public List<QueryGroup> Groups { get; set; } = [];
     }
 }

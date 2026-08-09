@@ -28,9 +28,16 @@ namespace NexusForever.Database.Query.Repository
 
             IQueryable<CharacterModel> databaseQuery = _context.Character.AsQueryable()
                 .Where(c => c.LastOnline == null)
-                .Where(expression)
-                .OrderBy(c => c.CharacterId)
-                .Take((int)query.MaxResults);
+                .Where(c => c.RealmId == query.RealmId)
+                .Where(expression);
+
+            if (query.ExcludedCharacterId.HasValue)
+                databaseQuery = databaseQuery.Where(c => c.CharacterId != query.ExcludedCharacterId.Value);
+
+            databaseQuery = _context.Database.IsSqlite()
+                ? databaseQuery.OrderBy(c => (long)c.CharacterId)
+                : databaseQuery.OrderBy(c => c.CharacterId);
+            databaseQuery = databaseQuery.Take((int)query.MaxResults);
 
             return await databaseQuery.ToListAsync();
         }

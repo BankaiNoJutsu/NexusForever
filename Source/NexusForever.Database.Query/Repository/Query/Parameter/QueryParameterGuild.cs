@@ -9,7 +9,10 @@ namespace NexusForever.Database.Query.Repository.Query.Parameter
 
         public Expression<Func<CharacterModel, bool>> Express()
         {
-            return c => c.GuildName.Contains(GuildName);
+            if (string.IsNullOrWhiteSpace(GuildName))
+                return _ => true;
+
+            return c => c.GuildName != null && c.GuildName.Contains(GuildName);
         }
     }
 }
