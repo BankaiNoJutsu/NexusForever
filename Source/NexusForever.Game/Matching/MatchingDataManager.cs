@@ -175,7 +175,9 @@ namespace NexusForever.Game.Matching
         {
             return matchType
                 is Static.Matching.MatchType.Dungeon
-                or Static.Matching.MatchType.Adventure;
+                or Static.Matching.MatchType.Adventure
+                or Static.Matching.MatchType.PrimeLevelDungeon
+                or Static.Matching.MatchType.ScaledPrimeLevelDungeon;
         }
 
         /// <summary>
