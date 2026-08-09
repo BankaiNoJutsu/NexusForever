@@ -31,7 +31,7 @@ pre-existing services.
 Use `-DependencyMode PortableDocker` to force the scripts to use the portable
 Docker-backed dependencies even if local services are already running.
 
-SQLite skips MySQL/MariaDB dependency resolution and stores the six runtime
+SQLite skips MySQL/MariaDB dependency resolution and stores the seven runtime
 databases under `.nexusforever-runtime\sqlite` by default. RabbitMQ is still
 required for the standalone server processes. DataMapping authoring imports
 (`jabbithole` and `wildstar_client`) remain MySQL/MariaDB-only.
@@ -345,6 +345,7 @@ Emulator databases:
 - `nexus_forever_group`
 - `nexus_forever_chat`
 - `nexus_forever_friendship`
+- `nexus_forever_query`
 
 Reference dump databases, only when `-EnableDataMappingAuthoring` is passed:
 

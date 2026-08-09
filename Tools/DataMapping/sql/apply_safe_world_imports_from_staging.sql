@@ -23,6 +23,7 @@ SET @nf_safe_import_creature_loot_counts_from_aggregates := IFNULL(@nf_safe_impo
 SET @nf_safe_import_entity_spawns := IFNULL(@nf_safe_import_entity_spawns, 0);
 SET @nf_safe_import_entity_spawn_world := IFNULL(@nf_safe_import_entity_spawn_world, 0);
 SET @nf_safe_import_entity_spawn_area := IFNULL(@nf_safe_import_entity_spawn_area, 0);
+SET @nf_safe_import_entity_spawn_source_coordinate_id := IFNULL(@nf_safe_import_entity_spawn_source_coordinate_id, 0);
 SET @nf_safe_import_entity_spawn_include_ambiguous_exact_name := IFNULL(@nf_safe_import_entity_spawn_include_ambiguous_exact_name, 0);
 SET @nf_safe_import_entity_spawn_match_radius := IFNULL(@nf_safe_import_entity_spawn_match_radius, 10.0);
 SET @nf_safe_import_jabbithole_creature_coordinates := IFNULL(@nf_safe_import_jabbithole_creature_coordinates, 0);
@@ -174,6 +175,7 @@ WHERE @nf_safe_import_entity_spawns = 1
   AND c.World = @nf_safe_import_entity_spawn_world
   AND (@nf_safe_import_allow_unsafe_northern_wilds_spawns = 1 OR c.World <> 426)
   AND (@nf_safe_import_entity_spawn_area = 0 OR c.Area = @nf_safe_import_entity_spawn_area)
+  AND (@nf_safe_import_entity_spawn_source_coordinate_id = 0 OR c.source_coordinate_id = @nf_safe_import_entity_spawn_source_coordinate_id)
   AND IFNULL(c.source_coordinate_id, 0) > 0
   AND (@nf_entity_id_base + c.source_coordinate_id) BETWEEN @nf_entity_id_base AND @nf_entity_id_max
   AND IFNULL(c.Creature, 0) > 0
@@ -293,6 +295,7 @@ SET @nfJabbitholeCoordinateImportSql := IF(
         AND (IFNULL(c.worldid, 0) = 0 OR c.worldid = @nf_safe_import_entity_spawn_world)
         AND (@nf_safe_import_allow_unsafe_northern_wilds_spawns = 1 OR @nf_safe_import_entity_spawn_world <> 426)
         AND IFNULL(co.id, 0) > 0
+        AND (@nf_safe_import_entity_spawn_source_coordinate_id = 0 OR co.id = @nf_safe_import_entity_spawn_source_coordinate_id)
         AND (@nf_entity_id_base + co.id) BETWEEN @nf_entity_id_base AND @nf_entity_id_max
         AND IFNULL(m.creature2_id, 0) > 0
         AND NOT EXISTS (

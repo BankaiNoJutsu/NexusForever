@@ -363,7 +363,7 @@ function Wait-NexusSetupRabbitMqReady {
             $ContainerName,
             'rabbitmq-diagnostics',
             '-q',
-            'ping'
+            'check_running'
         ) -IgnoreExitCode
 
         if ($probe.ExitCode -eq 0) {

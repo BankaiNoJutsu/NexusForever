@@ -27,6 +27,18 @@ LAUGHINGWS_ENTITY_ID_RANGES = [
     (2_000_000_000, 2_099_999_999),
     (2_100_000_000, 2_147_483_647),
 ]
+REVIEWED_WORLD_ENTITY_IDS = [
+    1_000_003_084,
+    1_000_009_115,
+    1_000_107_802,
+    1_000_285_998,
+    1_000_415_265,
+    1_005_221_261,
+    1_006_129_819,
+    1_006_132_630,
+    1_006_289_549,
+    1_006_289_665,
+]
 CUSTOM_TABLES = [
     "creature_loot",
     "loot_group",
@@ -379,9 +391,10 @@ def dump_table(args: argparse.Namespace, table: str, where: str) -> str:
 def write_data(handle, args: argparse.Namespace) -> None:
     primary_entity_filter = primary_entity_range_sql("id")
     non_laughingws_filter = exclude_laughingws_ranges_sql("id")
+    reviewed_entity_ids = comma_ids([str(entity_id) for entity_id in REVIEWED_WORLD_ENTITY_IDS])
     table_filters = [
-        ("entity", primary_entity_filter),
-        ("entity_stats", primary_entity_filter),
+        ("entity", f"{primary_entity_filter} AND id NOT IN ({reviewed_entity_ids})"),
+        ("entity_stats", f"{primary_entity_filter} AND id NOT IN ({reviewed_entity_ids})"),
         ("entity_vendor", non_laughingws_filter),
         ("entity_vendor_category", non_laughingws_filter),
         ("entity_vendor_item", non_laughingws_filter),
@@ -397,6 +410,116 @@ def write_data(handle, args: argparse.Namespace) -> None:
     for table, where in table_filters:
         handle.write(f"\n-- Data for `{table}`.\n")
         handle.write(dump_table(args, table, where))
+        if table == "entity":
+            write_reviewed_world_entity_rows(handle)
+
+
+def write_reviewed_world_entity_rows(handle) -> None:
+    handle.write(
+        """
+-- Reviewed Ruins of Kel Voreth exit-portal placement.
+-- InstancePortal 42 / Jabbithole creature 1961 / source coordinate 9115
+-- maps uniquely to Creature2 40771. Placement/model availability only;
+-- exit interaction and destination behavior remain blocked pending client smoke.
+INSERT INTO `entity` (`id`, `type`, `creature`, `world`, `area`, `x`, `y`, `z`, `rx`, `ry`, `rz`, `displayInfo`, `outfitInfo`, `faction1`, `faction2`, `questChecklistIdx`, `activePropId`, `worldSocketId`, `mode`) VALUES
+  (1000009115,14,40771,1336,1661,-15,-737,1007,0,0,0,26914,0,219,219,0,0,0,0);
+
+-- Reviewed Ultimate Protogames exit-portal placement.
+-- InstancePortal 152 / Jabbithole creature 28307 / source coordinate 6132630
+-- maps uniquely to Creature2 67513. Placement/model availability only;
+-- exit interaction and destination behavior remain blocked pending client smoke.
+INSERT INTO `entity` (`id`, `type`, `creature`, `world`, `area`, `x`, `y`, `z`, `rx`, `ry`, `rz`, `displayInfo`, `outfitInfo`, `faction1`, `faction2`, `questChecklistIdx`, `activePropId`, `worldSocketId`, `mode`) VALUES
+  (1006132630,14,67513,2980,4376,-12512,-788,-6877,0,0,0,29666,0,219,219,0,0,0,0);
+
+-- Jabbithole/DataMapping records explicit zero interrupt armour for this row.
+INSERT INTO `entity_stats` (`id`, `stat`, `value`) VALUES
+  (1006132630,21,0);
+
+-- Reviewed Ultimate Protogames Tea Time achievement placement.
+-- Jabbithole creature 29894 / source coordinate 6289549 maps uniquely to
+-- Creature2 69876 Wiggle Wellingsworth. Adjacent Jabbithole creature 29896 /
+-- source coordinate 6289665 is reviewed to Creature2 69883 because that exact
+-- build-16042 [UP] Tea Cup row owns activate spell 79328, prerequisite 37093,
+-- and AchievementAdvance effect 208728 for achievement 5881; same-name
+-- Creature2 56874 is a Grimvault flavor NPC without an activate spell.
+-- Placement and table-backed activation are evidence-backed; persistence,
+-- relog notification, and full client smoke remain blocked.
+INSERT INTO `entity` (`id`, `type`, `creature`, `world`, `area`, `x`, `y`, `z`, `rx`, `ry`, `rz`, `displayInfo`, `outfitInfo`, `faction1`, `faction2`, `questChecklistIdx`, `activePropId`, `worldSocketId`, `mode`) VALUES
+  (1006289549,0,69876,2980,4337,-28714,-25,-2788,0,0,0,21631,0,219,219,0,0,0,0),
+  (1006289665,10,69883,2980,4337,-28715,-25,-2788,0,0,0,28132,0,219,219,0,0,0,0);
+
+-- Jabbithole/DataMapping records exact Wiggle health/level and explicit zero
+-- shield/interrupt armour; the Tea Cup records zero interrupt armour.
+INSERT INTO `entity_stats` (`id`, `stat`, `value`) VALUES
+  (1006289549,0,101),
+  (1006289549,10,1),
+  (1006289549,20,0),
+  (1006289549,21,0),
+  (1006289665,21,0);
+
+-- Reviewed Stormtalon's Lair exit-portal placement.
+-- InstancePortal 41 / Jabbithole creature 788 / source coordinate 3084
+-- maps uniquely to Creature2 40770. Placement/model availability only;
+-- exit interaction and destination behavior remain blocked pending client smoke.
+INSERT INTO `entity` (`id`, `type`, `creature`, `world`, `area`, `x`, `y`, `z`, `rx`, `ry`, `rz`, `displayInfo`, `outfitInfo`, `faction1`, `faction2`, `questChecklistIdx`, `activePropId`, `worldSocketId`, `mode`) VALUES
+  (1000003084,14,40770,382,271,10,-9,237,0,0,0,26914,0,219,219,0,0,0,0);
+
+-- Jabbithole/DataMapping records explicit zero interrupt armour for this row.
+INSERT INTO `entity_stats` (`id`, `stat`, `value`) VALUES
+  (1000003084,21,0);
+
+-- Reviewed Sanctuary of the Swordmaiden current exit-portal placement.
+-- InstancePortal 53 / Jabbithole creature 6860 / source coordinate 5221261
+-- maps uniquely to Creature2 41148 and is current-last-seen 7. Placement/model
+-- availability only; source coordinate 54254 is older-last-seen 4 and is not
+-- promoted. Exit interaction and destination behavior remain blocked.
+INSERT INTO `entity` (`id`, `type`, `creature`, `world`, `area`, `x`, `y`, `z`, `rx`, `ry`, `rz`, `displayInfo`, `outfitInfo`, `faction1`, `faction2`, `questChecklistIdx`, `activePropId`, `worldSocketId`, `mode`) VALUES
+  (1005221261,14,41148,1271,2260,4244,-774,-3252,0,0,0,26914,0,219,219,0,0,0,0);
+
+-- Jabbithole/DataMapping records explicit zero interrupt armour for this row.
+INSERT INTO `entity_stats` (`id`, `stat`, `value`) VALUES
+  (1005221261,21,0);
+
+-- Reviewed Fragment Zero transport-portal placement.
+-- InstancePortal 185 / Jabbithole creature 28122 / source coordinate 6129819
+-- maps uniquely to Creature2 69013 and is current-last-seen 7.
+-- Placement/model availability only; transport destination and return behavior
+-- remain blocked pending client smoke.
+INSERT INTO `entity` (`id`, `type`, `creature`, `world`, `area`, `x`, `y`, `z`, `rx`, `ry`, `rz`, `displayInfo`, `outfitInfo`, `faction1`, `faction2`, `questChecklistIdx`, `activePropId`, `worldSocketId`, `mode`) VALUES
+  (1006129819,14,69013,3180,4619,9861,-760,-5810,0,0,0,22991,0,219,219,0,0,0,0);
+
+-- Jabbithole/DataMapping records explicit zero interrupt armour for this row.
+INSERT INTO `entity_stats` (`id`, `stat`, `value`) VALUES
+  (1006129819,21,0);
+
+-- Reviewed Skullcano exit-portal placements.
+-- InstancePortal 27 / Jabbithole creature 12396 maps to Creature2 32419
+-- because the competing exact-name Creature2 40772 links to InstancePortal 43.
+-- Both source coordinates 285998 and 415265 are distinct current-last-seen 7
+-- placements in world 1263 / area 1220. Placement/model availability only;
+-- exit interaction and destination behavior remain blocked pending client smoke.
+INSERT INTO `entity` (`id`, `type`, `creature`, `world`, `area`, `x`, `y`, `z`, `rx`, `ry`, `rz`, `displayInfo`, `outfitInfo`, `faction1`, `faction2`, `questChecklistIdx`, `activePropId`, `worldSocketId`, `mode`) VALUES
+  (1000285998,14,32419,1263,1220,674,-1002,-88,0,0,0,22402,0,219,219,0,0,0,0),
+  (1000415265,14,32419,1263,1220,-699,-692,-413,0,0,0,22402,0,219,219,0,0,0,0);
+
+-- Jabbithole/DataMapping records explicit zero interrupt armour for both rows.
+INSERT INTO `entity_stats` (`id`, `stat`, `value`) VALUES
+  (1000285998,21,0),
+  (1000415265,21,0);
+
+-- Reviewed Gauntlet exit-portal placement.
+-- InstancePortal 71 / Jabbithole creature 9475 / source coordinate 107802
+-- maps uniquely to Creature2 48933 and is current-last-seen 7 in the Safe Zone.
+-- The separate InstancePortal 16 Return to Nexus source remains unpromoted
+-- because two different client models share that portal link.
+INSERT INTO `entity` (`id`, `type`, `creature`, `world`, `area`, `x`, `y`, `z`, `rx`, `ry`, `rz`, `displayInfo`, `outfitInfo`, `faction1`, `faction2`, `questChecklistIdx`, `activePropId`, `worldSocketId`, `mode`) VALUES
+  (1000107802,14,48933,2183,2613,-1003,3,800,0,0,0,23861,0,219,219,0,0,0,0);
+
+-- Jabbithole/DataMapping records explicit zero interrupt armour for this row.
+INSERT INTO `entity_stats` (`id`, `stat`, `value`) VALUES
+  (1000107802,21,0);
+""".lstrip()
+    )
 
 
 def write_footer(handle) -> None:

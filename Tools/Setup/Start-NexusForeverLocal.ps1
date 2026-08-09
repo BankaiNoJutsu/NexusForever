@@ -147,6 +147,7 @@ $GameDatabases = [ordered]@{
     Group      = 'nexus_forever_group'
     Chat       = 'nexus_forever_chat'
     Friendship = 'nexus_forever_friendship'
+    Query      = 'nexus_forever_query'
 }
 
 $LocalAccountRoleIds = [ordered]@{
@@ -943,6 +944,7 @@ function Get-DatabaseEnvironmentOverrides {
         'ConnectionStrings__groupdb'      = Get-DatabaseConnectionString -Database $GameDatabases.Group
         'ConnectionStrings__chatdb'       = Get-DatabaseConnectionString -Database $GameDatabases.Chat
         'ConnectionStrings__friendshipdb' = Get-DatabaseConnectionString -Database $GameDatabases.Friendship
+        'ConnectionStrings__querydb'      = Get-DatabaseConnectionString -Database $GameDatabases.Query
     }
 
     foreach ($entry in $GameDatabases.GetEnumerator()) {

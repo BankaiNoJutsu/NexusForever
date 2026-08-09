@@ -222,6 +222,14 @@ After an authoring import is verified, refresh the checked-in runtime seed:
 python Tools\DataMapping\export_runtime_world_seed.py
 ```
 
+The checked-in seed explicitly promotes the reviewed Ultimate Protogames Tea
+Time pair from Jabbithole source coordinates `6289549` and `6289665`: Wiggle
+Wellingsworth (`Creature2` `69876`) and the adjacent Tea Cup (`Creature2`
+`69883`). The Tea Cup override rejects the generic Grimvault match
+(`Creature2` `56874`) and is backed by activate spell `79328`, prerequisite
+`37093`, and achievement-advance effect `208728`. The clean runtime verifier
+pins exactly these two entities and their five reviewed stat rows.
+
 The exporter intentionally excludes deterministic LaughingWS overlay entity ID
 ranges. Keep those rows in the separate `laughingws_*_seed.sql` files so a
 primary DataMapping seed refresh cannot absorb or delete overlay-owned data
@@ -328,6 +336,26 @@ SOURCE Tools/DataMapping/sql/apply_safe_world_imports_from_staging.sql;
 
 Set `@nf_safe_import_entity_spawn_area` to narrow a large world import to one
 world area; leave it unset or `0` to import the selected world.
+
+Set `@nf_safe_import_entity_spawn_source_coordinate_id` to promote exactly one
+reviewed source coordinate from the selected world/area; leave it unset or `0`
+to retain the existing world/area behavior. The selector applies to both the
+staged `nf_map_world_entity_candidate` path and the opt-in direct Jabbithole
+coordinate fallback. For example, the reviewed Ruins of Kel Voreth exit-portal
+placement can be isolated without importing the other area `1661` candidates:
+
+```sql
+SET @nf_safe_import_entity_spawns = 1;
+SET @nf_safe_import_entity_spawn_world = 1336;
+SET @nf_safe_import_entity_spawn_area = 1661;
+SET @nf_safe_import_entity_spawn_source_coordinate_id = 9115;
+SOURCE Tools/DataMapping/sql/apply_safe_world_imports_from_staging.sql;
+```
+
+`verify_safe_world_imports.sql` reports the exact reviewed portal row, an
+expected-count mismatch metric, and any unexpected additional Creature2
+`40771` rows. These checks prove placement data only; they do not prove the
+portal's exit interaction or destination behavior.
 
 Imported entity IDs default to `1000000000 + source_coordinate_id`, and the
 import skips a candidate when the same creature already has a runtime entity

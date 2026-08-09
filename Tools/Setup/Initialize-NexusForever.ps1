@@ -178,6 +178,7 @@ $GameDatabases = [ordered]@{
     Group      = 'nexus_forever_group'
     Chat       = 'nexus_forever_chat'
     Friendship = 'nexus_forever_friendship'
+    Query      = 'nexus_forever_query'
 }
 
 $LocalAccountRoleIds = [ordered]@{
@@ -1460,6 +1461,7 @@ function Update-ConfigJson {
             Group      = New-DatabaseConnectionConfig -Database $GameDatabases.Group
             Chat       = New-DatabaseConnectionConfig -Database $GameDatabases.Chat
             Friendship = New-DatabaseConnectionConfig -Database $GameDatabases.Friendship
+            Query      = New-DatabaseConnectionConfig -Database $GameDatabases.Query
         }
         $json.DatabaseMigration = [pscustomobject]@{
             Skip = $false
@@ -1516,6 +1518,7 @@ function Get-DatabaseEnvironmentOverrides {
         'ConnectionStrings__groupdb'      = Get-DatabaseConnectionString -Database $GameDatabases.Group
         'ConnectionStrings__chatdb'       = Get-DatabaseConnectionString -Database $GameDatabases.Chat
         'ConnectionStrings__friendshipdb' = Get-DatabaseConnectionString -Database $GameDatabases.Friendship
+        'ConnectionStrings__querydb'      = Get-DatabaseConnectionString -Database $GameDatabases.Query
     }
 
     foreach ($entry in $GameDatabases.GetEnumerator()) {
@@ -2303,6 +2306,7 @@ if (!$SkipMigrations) {
         Invoke-EfMigration -ProjectDirectory (Join-Path $RepoRoot 'Source\NexusForever.Server.ChatServer') -Context 'ChatContext'
         Invoke-EfMigration -ProjectDirectory (Join-Path $RepoRoot 'Source\NexusForever.Server.GroupServer') -Context 'GroupContext'
         Invoke-EfMigration -ProjectDirectory (Join-Path $RepoRoot 'Source\NexusForever.Server.Friendship') -Context 'FriendshipContext'
+        Invoke-EfMigration -ProjectDirectory (Join-Path $RepoRoot 'Source\NexusForever.Server.Character') -Context 'QueryContext'
     }
 }
 

@@ -99,7 +99,7 @@ public class LaughingWsStoreCatalogSeedTests
         DirectoryInfo directory = new(AppContext.BaseDirectory);
         while (directory != null)
         {
-            if (File.Exists(Path.Combine(directory.FullName, "Source", "NexusForever.sln")))
+            if (File.Exists(Path.Combine(directory.FullName, "Source", "NexusForever.slnx")))
                 return directory.FullName;
 
             directory = directory.Parent;

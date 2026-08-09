@@ -39,7 +39,7 @@ public class RuntimeDataBoundaryTests
     [Fact]
     public void RuntimeSourceDoesNotQueryDevelopmentReferenceTables()
     {
-        string sourceRoot = Path.GetDirectoryName(GetRepoPath("Source", "NexusForever.sln"));
+        string sourceRoot = Path.GetDirectoryName(GetRepoPath("Source", "NexusForever.slnx"));
         var scannedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             ".cs",
@@ -82,15 +82,26 @@ public class RuntimeDataBoundaryTests
     }
 
     [Fact]
-    public void RuntimeWorldSeedContainsPromotedQuestMapPlacements()
+    public void RuntimeWorldSeedContainsReviewedQuestMapPlacements()
     {
         string seedSql = File.ReadAllText(GetRepoPath("Tools", "DataMapping", "sql", "runtime_world_seed.sql"));
 
-        foreach (int entityId in Enumerable.Range(1099000001, 53))
-            Assert.Contains($"({entityId},", seedSql, StringComparison.Ordinal);
+        uint[] expectedEntityIds = [
+            1099000001, 1099000002, 1099000003,
+            1099000005, 1099000006, 1099000007, 1099000008, 1099000009, 1099000010,
+            1099000011, 1099000012, 1099000013, 1099000014,
+            1099000048, 1099000049, 1099000050, 1099000051, 1099000052, 1099000053
+        ];
+        uint[] actualEntityIds = Regex.Matches(seedSql, @"\((10990000\d{2}),")
+            .Select(match => uint.Parse(match.Groups[1].Value))
+            .Distinct()
+            .Order()
+            .ToArray();
+
+        Assert.Equal(expectedEntityIds, actualEntityIds);
 
         Assert.Contains("(1099000001,0,17189,51", seedSql, StringComparison.Ordinal);
-        Assert.Contains("(1099000004,0,12535,426", seedSql, StringComparison.Ordinal);
+        Assert.Contains("(1099000005,0,24215,870", seedSql, StringComparison.Ordinal);
         Assert.Contains("(1099000048,8,24286,870", seedSql, StringComparison.Ordinal);
         Assert.Contains("(1099000053,0,31895,870", seedSql, StringComparison.Ordinal);
     }
@@ -137,6 +148,28 @@ public class RuntimeDataBoundaryTests
 
         Assert.Contains("[switch] $EnableDataMappingAuthoring", setupScript, StringComparison.Ordinal);
         Assert.Contains("if ($EnableDataMappingAuthoring -and !$SkipLargeDumpImports)", setupScript, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LocalSetupConfiguresQueryDatabaseForBothProviders()
+    {
+        string initializeScript = File.ReadAllText(GetRepoPath("Tools", "Setup", "Initialize-NexusForever.ps1"));
+        string startScript = File.ReadAllText(GetRepoPath("Tools", "Setup", "Start-NexusForeverLocal.ps1"));
+        string dependencyBootstrap = File.ReadAllText(GetRepoPath("Tools", "Setup", "DependencyBootstrap.ps1"));
+        string migrationsConfig = File.ReadAllText(GetRepoPath(
+            "Source",
+            "NexusForever.Aspire.Database.Migrations",
+            "AspireMigrations.example.json"));
+        string appHost = File.ReadAllText(GetRepoPath("Source", "NexusForever.Aspire.AppHost", "Program.cs"));
+
+        Assert.Contains("Query      = 'nexus_forever_query'", initializeScript, StringComparison.Ordinal);
+        Assert.Contains("'ConnectionStrings__querydb'", initializeScript, StringComparison.Ordinal);
+        Assert.Contains("-Context 'QueryContext'", initializeScript, StringComparison.Ordinal);
+        Assert.Contains("Query      = 'nexus_forever_query'", startScript, StringComparison.Ordinal);
+        Assert.Contains("'ConnectionStrings__querydb'", startScript, StringComparison.Ordinal);
+        Assert.Contains("'check_running'", dependencyBootstrap, StringComparison.Ordinal);
+        Assert.Contains("\"Query\"", migrationsConfig, StringComparison.Ordinal);
+        Assert.Contains("WithNexusForeverDatabase(\"Query\", DatabaseProvider.Sqlite, querydb)", appHost, StringComparison.Ordinal);
     }
 
     private static string GetRepoPath(params string[] segments)

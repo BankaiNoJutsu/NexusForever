@@ -423,6 +423,15 @@ standalone seed with:
 python Tools\DataMapping\export_runtime_world_seed.py
 ```
 
+The checked-in seed includes the reviewed Ultimate Protogames Tea Time
+interaction pair from Jabbithole source coordinates `6289549` and `6289665`:
+Wiggle Wellingsworth (`Creature2` `69876`) and the adjacent Tea Cup
+(`Creature2` `69883`). The Tea Cup bridge is an explicit override because the
+generic name match (`Creature2` `56874`) is a different Grimvault flavor
+object; the approved row is backed by activate spell `79328`, prerequisite
+`37093`, and achievement-advance effect `208728`. The clean runtime verifier
+expects exactly these two entities and their five reviewed stat rows.
+
 Runtime table schema is owned by EF migrations. Do not load `schema.sql` into
 `nexus_forever_world`; it is only the authoring staging schema consumed by
 `load_mapping_staging_tables.py`.

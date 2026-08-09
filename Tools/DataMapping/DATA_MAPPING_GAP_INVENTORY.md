@@ -1,7 +1,7 @@
 # DataMapping Gap Inventory
 
 Generated from local repo, `jabbithole`, `wildstar_client`, and
-`nexus_forever_world` evidence on 2026-06-18.
+`nexus_forever_world` evidence through 2026-07-28.
 
 This is the working inventory for missing or incomplete DataMapping-backed
 content and mechanics. It intentionally separates these states:
@@ -64,7 +64,7 @@ Promoted runtime rows observed by `verify_safe_world_imports.sql`:
 
 | Id | Gap | Current evidence | Impact | Next action |
 | --- | --- | --- | --- | --- |
-| DM-FND-001 | Creature bridge uncertainty remains the largest downstream blocker. | `creature_map.csv`: 13,839 `unique_name`, 2,780 `scored_name`, 1,026 `reviewed`, 6,057 `ambiguous_name`, 977 `unmatched`. | Affects spawns, vendors, loot, creature spells, quests, public events, path missions, contracts, and challenges. | Continue review queue by downstream impact; promote only audited overrides to `creature_bridge_overrides.csv` or row-guarded relation overrides when the source creature is context-dependent. |
+| DM-FND-001 | Creature bridge uncertainty remains the largest downstream blocker. | `creature_map.csv`: 13,829 `unique_name`, 2,769 `scored_name`, 1,048 `reviewed`, 6,056 `ambiguous_name`, 977 `unmatched`. | Affects spawns, vendors, loot, creature spells, quests, public events, path missions, contracts, and challenges. | Continue review queue by downstream impact; promote only audited overrides to `creature_bridge_overrides.csv` or row-guarded relation overrides when the source creature is context-dependent. |
 | DM-FND-002 | World spawn candidates are mostly mapped-only. | 732,694 spawn candidates; only 1,312 mapped entity spawns promoted locally. Rotation is absent in Jabbithole and defaults to zero. | Open-world quest NPCs, PE objectives, path missions, vendors, and target groups can be data-known but not spawned/verified. | Work world/area slices, not global imports; prove duplicate radius, area, spawn density, and quest credit before promotion. |
 | DM-FND-003 | Northern Wilds raw coordinate import is unsafe by default. | Verifier reports 0 unsafe DataMapping spawns and 738 legacy/manual rows; docs record overdense raw coordinate imports. | Starter-zone bulk spawn import can regress local gameplay. | Keep bulk import blocked; promote only row-reviewed quest/objective placements. |
 | DM-FND-004 | Quest objective bridge false-unmatched slot-0 gap is closed; residual objective evidence needs review/smoke. | `quest_objective_map.csv`: `4,488` `matched`, `70` `unmatched`. Content-retail objective evidence splits the matched rows into `4,465` `matched` plus `23` `reviewed_match`, with the same `70` residual unmatched rows. | Former order-0 false blockers now map to current `QuestObjective` rows; residual rows are non-current/unmatched or matched evidence still needing text/order/runtime trigger/client smoke. | Review the remaining `70` unmatched/non-current rows and smoke matched next-slice objective blockers before claiming row-specific objective parity. |
@@ -73,6 +73,25 @@ Promoted runtime rows observed by `verify_safe_world_imports.sql`:
 | DM-FND-007 | Generic `client_source_*` exports are complete but semantic-light. | 272 generic client-source maps preserve every unmapped client table. | Polymorphic `objectId*`, flags, formulas, visuals, sound, tutorials, random text, and UI rows cannot be imported safely from raw labels. | Promote table families into curated maps only after owner semantics and conflict policy are known. |
 
 ### 2026-06-17 DM-FND next-slice review note
+
+- 2026-07-28 DM-FND-001 / public-event bridge review: promoted the
+  Space Madness normal Crazed Handler source creature `3631` into tracked
+  `Tools/DataMapping/creature_bridge_overrides.csv` as Creature2 `46671`.
+  This closes only PE390 relation `2253`'s ambiguous-name bridge: the source
+  and client rows match level `32`, faction `218`, race `1`, action set `885`,
+  display group `31553`, default display `26022`, outfit group `10210`, and
+  outfit `9436`; `107` source coordinates place it in world `2149` / area
+  `2421`; source spells `3020`, `3305`, `2730`, and `2497` match the reviewed
+  Prime companion row; and objective `2115` reward-pane TargetGroup `12684`
+  nests `12682` / `12672`, whose normal Crazed Handler member is exactly
+  Creature2 `46671`. Same-name normal candidate `46672` is race `4`, uses
+  display group `31556`, and is absent from `12672`; reviewed Prime source
+  creature `28088` remains mapped separately to level-50 Creature2 `69143`.
+  Runtime normal-wave spawn ownership, six-count credit/timing, rewards,
+  medals, achievements, replay cleanup, and client smoke remain blocked; no
+  Space Madness behavior was inferred from this bridge review. Regenerated
+  PE390 public-event creature evidence now reports `67` reviewed, `44`
+  scored-name, and `11` ambiguous-name rows.
 
 - 2026-06-18 DM-FND-001 / public-event bridge review: promoted Space Madness
   public-event creature relation `2018` into tracked

@@ -25,13 +25,15 @@ UNION ALL SELECT 'entity_vendor_item', COUNT(*) FROM entity_vendor_item
 UNION ALL SELECT 'map_entrance_laughingws_overlay_rows', COUNT(*) FROM map_entrance WHERE (`mapId`, `team`, `worldLocationId`) IN ((382, 0, 1275), (797, 0, 7188), (797, 1, 7189), (1149, 0, 13390), (1181, 0, 13662), (1233, 0, 37409), (1263, 0, 17726), (1271, 0, 16348), (1323, 0, 32423), (1336, 0, 18557), (1393, 0, 38048), (2166, 0, 38485), (2166, 1, 38486), (2980, 0, 42236), (3009, 0, 50843), (3044, 0, 46354), (3045, 0, 45947), (3094, 0, 47085), (3173, 0, 48284), (3176, 0, 49019), (3449, 0, 51426), (3449, 1, 51427), (3522, 0, 53153))
 UNION ALL SELECT 'expected_map_entrance_laughingws_overlay_rows_23_mismatch', IF(COUNT(*) = 23, 0, 1) FROM map_entrance WHERE (`mapId`, `team`, `worldLocationId`) IN ((382, 0, 1275), (797, 0, 7188), (797, 1, 7189), (1149, 0, 13390), (1181, 0, 13662), (1233, 0, 37409), (1263, 0, 17726), (1271, 0, 16348), (1323, 0, 32423), (1336, 0, 18557), (1393, 0, 38048), (2166, 0, 38485), (2166, 1, 38486), (2980, 0, 42236), (3009, 0, 50843), (3044, 0, 46354), (3045, 0, 45947), (3094, 0, 47085), (3173, 0, 48284), (3176, 0, 49019), (3449, 0, 51426), (3449, 1, 51427), (3522, 0, 53153))
 UNION ALL SELECT 'entity_spawns_mapped', COUNT(*) FROM entity WHERE id BETWEEN @nf_entity_id_base AND @nf_entity_id_max
--- runtime_world_seed.sql intentionally removes 1099000024..1099000027; NorthernWildsMapScript owns those Icefang beacon spawns.
+-- runtime_world_seed.sql intentionally excludes 1099000004 and 1099000015..1099000047.
+-- Those Northern Wilds direct-import candidates are unsafe for the runtime seed;
+-- approved Northern Wilds rows remain in the separate reviewed WIP overlay.
 UNION ALL SELECT 'entity_runtime_quest_map_promoted_placements', COUNT(*) FROM entity WHERE id BETWEEN 1099000001 AND 1099000053
-UNION ALL SELECT 'expected_entity_runtime_quest_map_promoted_placements_49_mismatch', IF(COUNT(*) = 49, 0, 1) FROM entity WHERE id BETWEEN 1099000001 AND 1099000053
+UNION ALL SELECT 'expected_entity_runtime_quest_map_promoted_placements_19_mismatch', IF(COUNT(*) = 19, 0, 1) FROM entity WHERE id BETWEEN 1099000001 AND 1099000053
 UNION ALL SELECT 'entity_runtime_quest_map_promoted_galeras_placements', COUNT(*) FROM entity WHERE id BETWEEN 1099000001 AND 1099000053 AND world = 51
 UNION ALL SELECT 'expected_entity_runtime_quest_map_promoted_galeras_placements_7_mismatch', IF(COUNT(*) = 7, 0, 1) FROM entity WHERE id BETWEEN 1099000001 AND 1099000053 AND world = 51
 UNION ALL SELECT 'entity_runtime_quest_map_promoted_northern_wilds_placements', COUNT(*) FROM entity WHERE id BETWEEN 1099000001 AND 1099000053 AND world = 426
-UNION ALL SELECT 'expected_entity_runtime_quest_map_promoted_northern_wilds_placements_30_mismatch', IF(COUNT(*) = 30, 0, 1) FROM entity WHERE id BETWEEN 1099000001 AND 1099000053 AND world = 426
+UNION ALL SELECT 'expected_entity_runtime_quest_map_promoted_northern_wilds_placements_0_mismatch', IF(COUNT(*) = 0, 0, 1) FROM entity WHERE id BETWEEN 1099000001 AND 1099000053 AND world = 426
 UNION ALL SELECT 'entity_runtime_quest_map_promoted_crimson_isle_placements', COUNT(*) FROM entity WHERE id BETWEEN 1099000001 AND 1099000053 AND world = 870
 UNION ALL SELECT 'expected_entity_runtime_quest_map_promoted_crimson_isle_placements_12_mismatch', IF(COUNT(*) = 12, 0, 1) FROM entity WHERE id BETWEEN 1099000001 AND 1099000053 AND world = 870
 UNION ALL SELECT 'entity_spawn_stats_mapped', COUNT(*) FROM entity_stats es JOIN entity e ON e.id = es.id WHERE e.id BETWEEN @nf_entity_id_base AND @nf_entity_id_max
@@ -322,6 +324,745 @@ UNION ALL SELECT 'reference_schema_wildstar_client_present', COUNT(*) FROM infor
 UNION ALL SELECT 'expected_reference_schema_wildstar_client_absent_mismatch', IF(COUNT(*) = 0, 0, 1) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = 'wildstar_client'
 UNION ALL SELECT 'authoring_schema_nexus_forever_mapping_present', COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = 'nexus_forever_mapping'
 UNION ALL SELECT 'expected_authoring_schema_nexus_forever_mapping_absent_mismatch', IF(COUNT(*) = 0, 0, 1) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = 'nexus_forever_mapping';
+
+SELECT 'ruins_kel_voreth_reviewed_exit_portal_rows' AS metric, COUNT(*) AS value
+FROM entity
+WHERE id = 1000009115
+  AND type = 14
+  AND creature = 40771
+  AND world = 1336
+  AND area = 1661
+  AND ABS(x - (-15)) < 0.001
+  AND ABS(y - (-737)) < 0.001
+  AND ABS(z - 1007) < 0.001
+  AND rx = 0
+  AND ry = 0
+  AND rz = 0
+  AND displayInfo = 26914
+  AND outfitInfo = 0
+  AND faction1 = 219
+  AND faction2 = 219
+  AND questChecklistIdx = 0
+  AND activePropId = 0
+  AND worldSocketId = 0
+  AND mode = 0
+UNION ALL
+SELECT 'expected_ruins_kel_voreth_reviewed_exit_portal_rows_1_mismatch', IF(COUNT(*) = 1, 0, 1)
+FROM entity
+WHERE id = 1000009115
+  AND type = 14
+  AND creature = 40771
+  AND world = 1336
+  AND area = 1661
+  AND ABS(x - (-15)) < 0.001
+  AND ABS(y - (-737)) < 0.001
+  AND ABS(z - 1007) < 0.001
+  AND rx = 0
+  AND ry = 0
+  AND rz = 0
+  AND displayInfo = 26914
+  AND outfitInfo = 0
+  AND faction1 = 219
+  AND faction2 = 219
+  AND questChecklistIdx = 0
+  AND activePropId = 0
+  AND worldSocketId = 0
+  AND mode = 0
+UNION ALL
+SELECT 'unexpected_ruins_kel_voreth_exit_portal_rows', COUNT(*)
+FROM entity
+WHERE world = 1336
+  AND creature = 40771
+  AND NOT (
+    id = 1000009115
+    AND type = 14
+    AND area = 1661
+    AND ABS(x - (-15)) < 0.001
+    AND ABS(y - (-737)) < 0.001
+    AND ABS(z - 1007) < 0.001
+    AND displayInfo = 26914
+    AND outfitInfo = 0
+    AND faction1 = 219
+    AND faction2 = 219
+  );
+
+SELECT 'ultimate_protogames_reviewed_exit_portal_rows' AS metric, COUNT(*) AS value
+FROM entity
+WHERE id = 1006132630
+  AND type = 14
+  AND creature = 67513
+  AND world = 2980
+  AND area = 4376
+  AND ABS(x - (-12512)) < 0.001
+  AND ABS(y - (-788)) < 0.001
+  AND ABS(z - (-6877)) < 0.001
+  AND rx = 0
+  AND ry = 0
+  AND rz = 0
+  AND displayInfo = 29666
+  AND outfitInfo = 0
+  AND faction1 = 219
+  AND faction2 = 219
+  AND questChecklistIdx = 0
+  AND activePropId = 0
+  AND worldSocketId = 0
+  AND mode = 0
+UNION ALL
+SELECT 'expected_ultimate_protogames_reviewed_exit_portal_rows_1_mismatch', IF(COUNT(*) = 1, 0, 1)
+FROM entity
+WHERE id = 1006132630
+  AND type = 14
+  AND creature = 67513
+  AND world = 2980
+  AND area = 4376
+  AND ABS(x - (-12512)) < 0.001
+  AND ABS(y - (-788)) < 0.001
+  AND ABS(z - (-6877)) < 0.001
+  AND rx = 0
+  AND ry = 0
+  AND rz = 0
+  AND displayInfo = 29666
+  AND outfitInfo = 0
+  AND faction1 = 219
+  AND faction2 = 219
+  AND questChecklistIdx = 0
+  AND activePropId = 0
+  AND worldSocketId = 0
+  AND mode = 0
+UNION ALL
+SELECT 'unexpected_ultimate_protogames_exit_portal_rows', COUNT(*)
+FROM entity
+WHERE world = 2980
+  AND creature = 67513
+  AND NOT (
+    id = 1006132630
+    AND type = 14
+    AND area = 4376
+    AND ABS(x - (-12512)) < 0.001
+    AND ABS(y - (-788)) < 0.001
+    AND ABS(z - (-6877)) < 0.001
+    AND displayInfo = 29666
+    AND outfitInfo = 0
+    AND faction1 = 219
+    AND faction2 = 219
+  )
+UNION ALL
+SELECT 'ultimate_protogames_reviewed_exit_portal_stat_rows', COUNT(*)
+FROM entity_stats
+WHERE id = 1006132630
+  AND stat = 21
+  AND value = 0
+UNION ALL
+SELECT 'expected_ultimate_protogames_reviewed_exit_portal_stat_rows_1_mismatch', IF(COUNT(*) = 1, 0, 1)
+FROM entity_stats
+WHERE id = 1006132630
+  AND stat = 21
+  AND value = 0
+UNION ALL
+SELECT 'unexpected_ultimate_protogames_exit_portal_stat_rows', COUNT(*)
+FROM entity_stats
+WHERE id = 1006132630
+  AND NOT (stat = 21 AND value = 0);
+
+SELECT 'ultimate_protogames_tea_time_rows' AS metric, COUNT(*) AS value
+FROM entity
+WHERE world = 2980
+  AND area = 4337
+  AND rx = 0
+  AND ry = 0
+  AND rz = 0
+  AND outfitInfo = 0
+  AND faction1 = 219
+  AND faction2 = 219
+  AND questChecklistIdx = 0
+  AND activePropId = 0
+  AND worldSocketId = 0
+  AND mode = 0
+  AND (
+    (
+      id = 1006289549
+      AND type = 0
+      AND creature = 69876
+      AND ABS(x - (-28714)) < 0.001
+      AND ABS(y - (-25)) < 0.001
+      AND ABS(z - (-2788)) < 0.001
+      AND displayInfo = 21631
+    )
+    OR (
+      id = 1006289665
+      AND type = 10
+      AND creature = 69883
+      AND ABS(x - (-28715)) < 0.001
+      AND ABS(y - (-25)) < 0.001
+      AND ABS(z - (-2788)) < 0.001
+      AND displayInfo = 28132
+    )
+  )
+UNION ALL
+SELECT 'expected_ultimate_protogames_tea_time_rows_2_mismatch', IF(COUNT(*) = 2, 0, 1)
+FROM entity
+WHERE world = 2980
+  AND area = 4337
+  AND rx = 0
+  AND ry = 0
+  AND rz = 0
+  AND outfitInfo = 0
+  AND faction1 = 219
+  AND faction2 = 219
+  AND questChecklistIdx = 0
+  AND activePropId = 0
+  AND worldSocketId = 0
+  AND mode = 0
+  AND (
+    (
+      id = 1006289549
+      AND type = 0
+      AND creature = 69876
+      AND ABS(x - (-28714)) < 0.001
+      AND ABS(y - (-25)) < 0.001
+      AND ABS(z - (-2788)) < 0.001
+      AND displayInfo = 21631
+    )
+    OR (
+      id = 1006289665
+      AND type = 10
+      AND creature = 69883
+      AND ABS(x - (-28715)) < 0.001
+      AND ABS(y - (-25)) < 0.001
+      AND ABS(z - (-2788)) < 0.001
+      AND displayInfo = 28132
+    )
+  )
+UNION ALL
+SELECT 'unexpected_ultimate_protogames_tea_time_rows', COUNT(*)
+FROM entity
+WHERE world = 2980
+  AND creature IN (69876, 69883)
+  AND NOT (
+    (
+      id = 1006289549
+      AND type = 0
+      AND creature = 69876
+      AND area = 4337
+      AND ABS(x - (-28714)) < 0.001
+      AND ABS(y - (-25)) < 0.001
+      AND ABS(z - (-2788)) < 0.001
+      AND displayInfo = 21631
+      AND outfitInfo = 0
+      AND faction1 = 219
+      AND faction2 = 219
+    )
+    OR (
+      id = 1006289665
+      AND type = 10
+      AND creature = 69883
+      AND area = 4337
+      AND ABS(x - (-28715)) < 0.001
+      AND ABS(y - (-25)) < 0.001
+      AND ABS(z - (-2788)) < 0.001
+      AND displayInfo = 28132
+      AND outfitInfo = 0
+      AND faction1 = 219
+      AND faction2 = 219
+    )
+  )
+UNION ALL
+SELECT 'ultimate_protogames_tea_time_stat_rows', COUNT(*)
+FROM entity_stats
+WHERE (
+    id = 1006289549
+    AND (
+      (stat = 0 AND value = 101)
+      OR (stat = 10 AND value = 1)
+      OR (stat = 20 AND value = 0)
+      OR (stat = 21 AND value = 0)
+    )
+  )
+  OR (id = 1006289665 AND stat = 21 AND value = 0)
+UNION ALL
+SELECT 'expected_ultimate_protogames_tea_time_stat_rows_5_mismatch', IF(COUNT(*) = 5, 0, 1)
+FROM entity_stats
+WHERE (
+    id = 1006289549
+    AND (
+      (stat = 0 AND value = 101)
+      OR (stat = 10 AND value = 1)
+      OR (stat = 20 AND value = 0)
+      OR (stat = 21 AND value = 0)
+    )
+  )
+  OR (id = 1006289665 AND stat = 21 AND value = 0)
+UNION ALL
+SELECT 'unexpected_ultimate_protogames_tea_time_stat_rows', COUNT(*)
+FROM entity_stats
+WHERE id IN (1006289549, 1006289665)
+  AND NOT (
+    (
+      id = 1006289549
+      AND (
+        (stat = 0 AND value = 101)
+        OR (stat = 10 AND value = 1)
+        OR (stat = 20 AND value = 0)
+        OR (stat = 21 AND value = 0)
+      )
+    )
+    OR (id = 1006289665 AND stat = 21 AND value = 0)
+  );
+
+SELECT 'stormtalon_reviewed_exit_portal_rows' AS metric, COUNT(*) AS value
+FROM entity
+WHERE id = 1000003084
+  AND type = 14
+  AND creature = 40770
+  AND world = 382
+  AND area = 271
+  AND ABS(x - 10) < 0.001
+  AND ABS(y - (-9)) < 0.001
+  AND ABS(z - 237) < 0.001
+  AND rx = 0
+  AND ry = 0
+  AND rz = 0
+  AND displayInfo = 26914
+  AND outfitInfo = 0
+  AND faction1 = 219
+  AND faction2 = 219
+  AND questChecklistIdx = 0
+  AND activePropId = 0
+  AND worldSocketId = 0
+  AND mode = 0
+UNION ALL
+SELECT 'expected_stormtalon_reviewed_exit_portal_rows_1_mismatch', IF(COUNT(*) = 1, 0, 1)
+FROM entity
+WHERE id = 1000003084
+  AND type = 14
+  AND creature = 40770
+  AND world = 382
+  AND area = 271
+  AND ABS(x - 10) < 0.001
+  AND ABS(y - (-9)) < 0.001
+  AND ABS(z - 237) < 0.001
+  AND rx = 0
+  AND ry = 0
+  AND rz = 0
+  AND displayInfo = 26914
+  AND outfitInfo = 0
+  AND faction1 = 219
+  AND faction2 = 219
+  AND questChecklistIdx = 0
+  AND activePropId = 0
+  AND worldSocketId = 0
+  AND mode = 0
+UNION ALL
+SELECT 'unexpected_stormtalon_exit_portal_rows', COUNT(*)
+FROM entity
+WHERE world = 382
+  AND creature = 40770
+  AND NOT (
+    id = 1000003084
+    AND type = 14
+    AND area = 271
+    AND ABS(x - 10) < 0.001
+    AND ABS(y - (-9)) < 0.001
+    AND ABS(z - 237) < 0.001
+    AND displayInfo = 26914
+    AND outfitInfo = 0
+    AND faction1 = 219
+    AND faction2 = 219
+  )
+UNION ALL
+SELECT 'stormtalon_reviewed_exit_portal_stat_rows', COUNT(*)
+FROM entity_stats
+WHERE id = 1000003084
+  AND stat = 21
+  AND value = 0
+UNION ALL
+SELECT 'expected_stormtalon_reviewed_exit_portal_stat_rows_1_mismatch', IF(COUNT(*) = 1, 0, 1)
+FROM entity_stats
+WHERE id = 1000003084
+  AND stat = 21
+  AND value = 0
+UNION ALL
+SELECT 'unexpected_stormtalon_exit_portal_stat_rows', COUNT(*)
+FROM entity_stats
+WHERE id = 1000003084
+  AND NOT (stat = 21 AND value = 0);
+
+SELECT 'sanctuary_reviewed_exit_portal_rows' AS metric, COUNT(*) AS value
+FROM entity
+WHERE id = 1005221261
+  AND type = 14
+  AND creature = 41148
+  AND world = 1271
+  AND area = 2260
+  AND ABS(x - 4244) < 0.001
+  AND ABS(y - (-774)) < 0.001
+  AND ABS(z - (-3252)) < 0.001
+  AND rx = 0
+  AND ry = 0
+  AND rz = 0
+  AND displayInfo = 26914
+  AND outfitInfo = 0
+  AND faction1 = 219
+  AND faction2 = 219
+  AND questChecklistIdx = 0
+  AND activePropId = 0
+  AND worldSocketId = 0
+  AND mode = 0
+UNION ALL
+SELECT 'expected_sanctuary_reviewed_exit_portal_rows_1_mismatch', IF(COUNT(*) = 1, 0, 1)
+FROM entity
+WHERE id = 1005221261
+  AND type = 14
+  AND creature = 41148
+  AND world = 1271
+  AND area = 2260
+  AND ABS(x - 4244) < 0.001
+  AND ABS(y - (-774)) < 0.001
+  AND ABS(z - (-3252)) < 0.001
+  AND rx = 0
+  AND ry = 0
+  AND rz = 0
+  AND displayInfo = 26914
+  AND outfitInfo = 0
+  AND faction1 = 219
+  AND faction2 = 219
+  AND questChecklistIdx = 0
+  AND activePropId = 0
+  AND worldSocketId = 0
+  AND mode = 0
+UNION ALL
+SELECT 'unexpected_sanctuary_exit_portal_rows', COUNT(*)
+FROM entity
+WHERE world = 1271
+  AND creature = 41148
+  AND NOT (
+    id = 1005221261
+    AND type = 14
+    AND area = 2260
+    AND ABS(x - 4244) < 0.001
+    AND ABS(y - (-774)) < 0.001
+    AND ABS(z - (-3252)) < 0.001
+    AND displayInfo = 26914
+    AND outfitInfo = 0
+    AND faction1 = 219
+    AND faction2 = 219
+  )
+UNION ALL
+SELECT 'sanctuary_reviewed_exit_portal_stat_rows', COUNT(*)
+FROM entity_stats
+WHERE id = 1005221261
+  AND stat = 21
+  AND value = 0
+UNION ALL
+SELECT 'expected_sanctuary_reviewed_exit_portal_stat_rows_1_mismatch', IF(COUNT(*) = 1, 0, 1)
+FROM entity_stats
+WHERE id = 1005221261
+  AND stat = 21
+  AND value = 0
+UNION ALL
+SELECT 'unexpected_sanctuary_exit_portal_stat_rows', COUNT(*)
+FROM entity_stats
+WHERE id = 1005221261
+  AND NOT (stat = 21 AND value = 0)
+UNION ALL
+SELECT 'unexpected_sanctuary_older_exit_portal_rows', COUNT(*)
+FROM entity
+WHERE id = 1000054254;
+
+SELECT 'fragment_zero_reviewed_transport_portal_rows' AS metric, COUNT(*) AS value
+FROM entity
+WHERE id = 1006129819
+  AND type = 14
+  AND creature = 69013
+  AND world = 3180
+  AND area = 4619
+  AND ABS(x - 9861) < 0.001
+  AND ABS(y - (-760)) < 0.001
+  AND ABS(z - (-5810)) < 0.001
+  AND rx = 0
+  AND ry = 0
+  AND rz = 0
+  AND displayInfo = 22991
+  AND outfitInfo = 0
+  AND faction1 = 219
+  AND faction2 = 219
+  AND questChecklistIdx = 0
+  AND activePropId = 0
+  AND worldSocketId = 0
+  AND mode = 0
+UNION ALL
+SELECT 'expected_fragment_zero_reviewed_transport_portal_rows_1_mismatch', IF(COUNT(*) = 1, 0, 1)
+FROM entity
+WHERE id = 1006129819
+  AND type = 14
+  AND creature = 69013
+  AND world = 3180
+  AND area = 4619
+  AND ABS(x - 9861) < 0.001
+  AND ABS(y - (-760)) < 0.001
+  AND ABS(z - (-5810)) < 0.001
+  AND rx = 0
+  AND ry = 0
+  AND rz = 0
+  AND displayInfo = 22991
+  AND outfitInfo = 0
+  AND faction1 = 219
+  AND faction2 = 219
+  AND questChecklistIdx = 0
+  AND activePropId = 0
+  AND worldSocketId = 0
+  AND mode = 0
+UNION ALL
+SELECT 'unexpected_fragment_zero_transport_portal_rows', COUNT(*)
+FROM entity
+WHERE world = 3180
+  AND creature = 69013
+  AND NOT (
+    id = 1006129819
+    AND type = 14
+    AND area = 4619
+    AND ABS(x - 9861) < 0.001
+    AND ABS(y - (-760)) < 0.001
+    AND ABS(z - (-5810)) < 0.001
+    AND displayInfo = 22991
+    AND outfitInfo = 0
+    AND faction1 = 219
+    AND faction2 = 219
+  )
+UNION ALL
+SELECT 'fragment_zero_reviewed_transport_portal_stat_rows', COUNT(*)
+FROM entity_stats
+WHERE id = 1006129819
+  AND stat = 21
+  AND value = 0
+UNION ALL
+SELECT 'expected_fragment_zero_reviewed_transport_portal_stat_rows_1_mismatch', IF(COUNT(*) = 1, 0, 1)
+FROM entity_stats
+WHERE id = 1006129819
+  AND stat = 21
+  AND value = 0
+UNION ALL
+SELECT 'unexpected_fragment_zero_transport_portal_stat_rows', COUNT(*)
+FROM entity_stats
+WHERE id = 1006129819
+  AND NOT (stat = 21 AND value = 0);
+
+SELECT 'skullcano_reviewed_exit_portal_rows' AS metric, COUNT(*) AS value
+FROM entity
+WHERE type = 14
+  AND creature = 32419
+  AND world = 1263
+  AND area = 1220
+  AND rx = 0
+  AND ry = 0
+  AND rz = 0
+  AND displayInfo = 22402
+  AND outfitInfo = 0
+  AND faction1 = 219
+  AND faction2 = 219
+  AND questChecklistIdx = 0
+  AND activePropId = 0
+  AND worldSocketId = 0
+  AND mode = 0
+  AND (
+    (
+      id = 1000285998
+      AND ABS(x - 674) < 0.001
+      AND ABS(y - (-1002)) < 0.001
+      AND ABS(z - (-88)) < 0.001
+    )
+    OR (
+      id = 1000415265
+      AND ABS(x - (-699)) < 0.001
+      AND ABS(y - (-692)) < 0.001
+      AND ABS(z - (-413)) < 0.001
+    )
+  )
+UNION ALL
+SELECT 'expected_skullcano_reviewed_exit_portal_rows_2_mismatch', IF(COUNT(*) = 2, 0, 1)
+FROM entity
+WHERE type = 14
+  AND creature = 32419
+  AND world = 1263
+  AND area = 1220
+  AND rx = 0
+  AND ry = 0
+  AND rz = 0
+  AND displayInfo = 22402
+  AND outfitInfo = 0
+  AND faction1 = 219
+  AND faction2 = 219
+  AND questChecklistIdx = 0
+  AND activePropId = 0
+  AND worldSocketId = 0
+  AND mode = 0
+  AND (
+    (
+      id = 1000285998
+      AND ABS(x - 674) < 0.001
+      AND ABS(y - (-1002)) < 0.001
+      AND ABS(z - (-88)) < 0.001
+    )
+    OR (
+      id = 1000415265
+      AND ABS(x - (-699)) < 0.001
+      AND ABS(y - (-692)) < 0.001
+      AND ABS(z - (-413)) < 0.001
+    )
+  )
+UNION ALL
+SELECT 'unexpected_skullcano_exit_portal_rows', COUNT(*)
+FROM entity
+WHERE world = 1263
+  AND creature = 32419
+  AND NOT (
+    type = 14
+    AND area = 1220
+    AND rx = 0
+    AND ry = 0
+    AND rz = 0
+    AND displayInfo = 22402
+    AND outfitInfo = 0
+    AND faction1 = 219
+    AND faction2 = 219
+    AND questChecklistIdx = 0
+    AND activePropId = 0
+    AND worldSocketId = 0
+    AND mode = 0
+    AND (
+      (
+        id = 1000285998
+        AND ABS(x - 674) < 0.001
+        AND ABS(y - (-1002)) < 0.001
+        AND ABS(z - (-88)) < 0.001
+      )
+      OR (
+        id = 1000415265
+        AND ABS(x - (-699)) < 0.001
+        AND ABS(y - (-692)) < 0.001
+        AND ABS(z - (-413)) < 0.001
+      )
+    )
+  )
+UNION ALL
+SELECT 'skullcano_reviewed_exit_portal_stat_rows', COUNT(*)
+FROM entity_stats
+WHERE id IN (1000285998, 1000415265)
+  AND stat = 21
+  AND value = 0
+UNION ALL
+SELECT 'expected_skullcano_reviewed_exit_portal_stat_rows_2_mismatch', IF(COUNT(*) = 2, 0, 1)
+FROM entity_stats
+WHERE id IN (1000285998, 1000415265)
+  AND stat = 21
+  AND value = 0
+UNION ALL
+SELECT 'unexpected_skullcano_exit_portal_stat_rows', COUNT(*)
+FROM entity_stats
+WHERE id IN (1000285998, 1000415265)
+  AND NOT (stat = 21 AND value = 0);
+
+SELECT 'gauntlet_reviewed_exit_portal_rows' AS metric, COUNT(*) AS value
+FROM entity
+WHERE id = 1000107802
+  AND type = 14
+  AND creature = 48933
+  AND world = 2183
+  AND area = 2613
+  AND ABS(x - (-1003)) < 0.001
+  AND ABS(y - 3) < 0.001
+  AND ABS(z - 800) < 0.001
+  AND rx = 0
+  AND ry = 0
+  AND rz = 0
+  AND displayInfo = 23861
+  AND outfitInfo = 0
+  AND faction1 = 219
+  AND faction2 = 219
+  AND questChecklistIdx = 0
+  AND activePropId = 0
+  AND worldSocketId = 0
+  AND mode = 0
+UNION ALL
+SELECT 'expected_gauntlet_reviewed_exit_portal_rows_1_mismatch', IF(COUNT(*) = 1, 0, 1)
+FROM entity
+WHERE id = 1000107802
+  AND type = 14
+  AND creature = 48933
+  AND world = 2183
+  AND area = 2613
+  AND ABS(x - (-1003)) < 0.001
+  AND ABS(y - 3) < 0.001
+  AND ABS(z - 800) < 0.001
+  AND rx = 0
+  AND ry = 0
+  AND rz = 0
+  AND displayInfo = 23861
+  AND outfitInfo = 0
+  AND faction1 = 219
+  AND faction2 = 219
+  AND questChecklistIdx = 0
+  AND activePropId = 0
+  AND worldSocketId = 0
+  AND mode = 0
+UNION ALL
+SELECT 'unexpected_gauntlet_exit_portal_rows', COUNT(*)
+FROM entity
+WHERE world = 2183
+  AND creature = 48933
+  AND NOT (
+    id = 1000107802
+    AND type = 14
+    AND area = 2613
+    AND ABS(x - (-1003)) < 0.001
+    AND ABS(y - 3) < 0.001
+    AND ABS(z - 800) < 0.001
+    AND displayInfo = 23861
+    AND outfitInfo = 0
+    AND faction1 = 219
+    AND faction2 = 219
+  )
+UNION ALL
+SELECT 'gauntlet_reviewed_exit_portal_stat_rows', COUNT(*)
+FROM entity_stats
+WHERE id = 1000107802
+  AND stat = 21
+  AND value = 0
+UNION ALL
+SELECT 'expected_gauntlet_reviewed_exit_portal_stat_rows_1_mismatch', IF(COUNT(*) = 1, 0, 1)
+FROM entity_stats
+WHERE id = 1000107802
+  AND stat = 21
+  AND value = 0
+UNION ALL
+SELECT 'unexpected_gauntlet_exit_portal_stat_rows', COUNT(*)
+FROM entity_stats
+WHERE id = 1000107802
+  AND NOT (stat = 21 AND value = 0)
+UNION ALL
+SELECT 'unexpected_gauntlet_ambiguous_return_portal_rows', COUNT(*)
+FROM entity
+WHERE id = 1000964413
+   OR (
+     world = 2183
+     AND area = 2620
+     AND creature IN (23596, 36660)
+     AND ABS(x - 532) < 0.001
+     AND ABS(y - 3) < 0.001
+     AND ABS(z - (-491)) < 0.001
+   );
+
+SELECT 'unexpected_space_madness_ambiguous_exit_portal_rows' AS metric, COUNT(*) AS value
+FROM entity
+WHERE id = 1000016830
+   OR (
+     world = 2149
+     AND area = 2483
+     AND creature IN (46014, 46015)
+     AND ABS(x - (-10)) < 0.001
+     AND ABS(y - 6) < 0.001
+     AND ABS(z - 352) < 0.001
+   );
 
 SELECT 'riders_reef_beacon_rows' AS metric, COUNT(*) AS value
 FROM entity
