@@ -4,9 +4,10 @@ using NexusForever.Game.Static.GenericUnlock;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Costume;
 using NexusForever.Network.World.Message.Model.GenericUnlock;
 using NexusForever.Network.World.Message.Static;
-using NetworkCostume = NexusForever.Network.World.Message.Model.Shared.Costume;
+using NetworkCostume = NexusForever.Network.World.Message.Model.Costume.Costume;
 
 namespace NexusForever.Game.Tests.Account.Inventory;
 
@@ -95,7 +96,7 @@ public class AccountUnlockPacketShapeTests
         {
             var packet = new ClientCostumeItemForget();
             packet.Read(reader);
-            Assert.Equal(0x23456u, packet.ItemId);
+            Assert.Equal(0x23456u, packet.Item2Id);
         }
     }
 
@@ -104,13 +105,13 @@ public class AccountUnlockPacketShapeTests
     {
         byte[] singleData = WritePacket(new ServerCostumeItemUnlock
         {
-            ItemId = 0x34567u,
+            Item2Id = 0x34567u,
             Result = CostumeUnlockResult.UnlockSuccess
         });
         byte[] multipleData = WritePacket(new ServerCostumeItemUnlockMultiple
         {
             Result = CostumeUnlockResult.AlreadyKnown,
-            ItemsIds = [101u, 202u]
+            Item2Ids = [101u, 202u]
         });
 
         using (var reader = new GamePacketReader(new MemoryStream(singleData)))
@@ -154,11 +155,11 @@ public class AccountUnlockPacketShapeTests
 
             Assert.Equal(2, packet.Index);
             Assert.Equal(CostumeType.Personal, packet.Type);
-            Assert.Equal(0x0102030405060708ul, packet.ResidenceId);
+            Assert.Equal(0x0102030405060708ul, packet.MannequinDecorId);
             Assert.Equal(0x7Fu, packet.VisibilityMask);
-            Assert.True(packet.Token);
-            Assert.Equal(0x1000u, packet.Items[0].ItemId);
-            Assert.Equal(0x2000u, packet.Items[0].Dyes[0]);
+            Assert.True(packet.UserServiceToken);
+            Assert.Equal(0x1000u, packet.Items[0].Item2Id);
+            Assert.Equal(0x2000u, packet.Items[0].DyeColorRampIds[0]);
         }
 
         byte[] costumeData = WritePacket(new NetworkCostume

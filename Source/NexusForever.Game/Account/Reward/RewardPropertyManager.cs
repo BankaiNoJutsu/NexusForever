@@ -71,7 +71,7 @@ namespace NexusForever.Game.Account.Reward
 
                 return true;
             }
-            value = (RewardPropertyModifierValueType)entry.RewardModifierValueTypeEnum switch
+            value = (RewardModifierValueType)entry.RewardModifierValueTypeEnum switch
             {
                 RewardModifierValueType.AdditiveScalar       => modifierEntry.ModifierValueFloat,
                 RewardModifierValueType.Discrete             => modifierEntry.ModifierValueInt,

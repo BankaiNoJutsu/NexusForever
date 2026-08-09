@@ -99,7 +99,8 @@ public class OptionPersistenceTests
             CreateProxy<IMatchingManager>(),
             CreateProxy<IMatchManager>(),
             CreateProxy<IGameTableManager>(),
-            currencyManager);
+            currencyManager,
+            guildManager: CreateProxy<IGuildManager>());
 
         SetPrivateProperty(player, nameof(Player.Identity), new Identity
         {
@@ -122,7 +123,6 @@ public class OptionPersistenceTests
         SetPrivateProperty(player, nameof(Player.SupplySatchelManager), CreateProxy<ISupplySatchelManager>());
         SetPrivateProperty(player, nameof(Player.XpManager), CreateProxy<IXpManager>());
         SetPrivateProperty(player, nameof(Player.ReputationManager), CreateProxy<IReputationManager>());
-        SetPrivateProperty(player, nameof(Player.GuildManager), CreateProxy<IGuildManager>());
         SetPrivateProperty(player, nameof(Player.EntitlementManager), CreateProxy<ICharacterEntitlementManager>());
         SetPrivateProperty(player, nameof(Player.AppearanceManager), CreateProxy<IAppearanceManager>());
 

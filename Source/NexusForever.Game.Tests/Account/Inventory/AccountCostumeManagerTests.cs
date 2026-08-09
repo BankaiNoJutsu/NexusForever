@@ -10,6 +10,7 @@ using NexusForever.GameTable;
 using NexusForever.GameTable.Configuration.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Costume;
 using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.Game.Tests.Account.Inventory;
@@ -29,7 +30,7 @@ public class AccountCostumeManagerTests
         RecordingDispatchProxy<IGameSession>.Invocation call = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
         ServerCostumeItemUnlock result = Assert.IsType<ServerCostumeItemUnlock>(call.Arguments[0]);
         Assert.Equal(CostumeUnlockResult.InvalidItem, result.Result);
-        Assert.Equal(0u, result.ItemId);
+        Assert.Equal(0u, result.Item2Id);
         Assert.False(manager.HasItemUnlock(ItemId));
         Assert.Empty(itemProxy.GetInvocations(nameof(IItem.MakeSoulbound)));
     }
@@ -48,7 +49,7 @@ public class AccountCostumeManagerTests
         RecordingDispatchProxy<IGameSession>.Invocation call = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
         ServerCostumeItemUnlock result = Assert.IsType<ServerCostumeItemUnlock>(call.Arguments[0]);
         Assert.Equal(CostumeUnlockResult.UnlockSuccess, result.Result);
-        Assert.Equal(ItemId, result.ItemId);
+        Assert.Equal(ItemId, result.Item2Id);
         Assert.True(manager.HasItemUnlock(ItemId));
         Assert.Single(itemProxy.GetInvocations(nameof(IItem.MakeSoulbound)));
     }
@@ -67,7 +68,7 @@ public class AccountCostumeManagerTests
         RecordingDispatchProxy<IGameSession>.Invocation call = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
         ServerCostumeItemUnlock result = Assert.IsType<ServerCostumeItemUnlock>(call.Arguments[0]);
         Assert.Equal(CostumeUnlockResult.InvalidItem, result.Result);
-        Assert.Equal(0u, result.ItemId);
+        Assert.Equal(0u, result.Item2Id);
         Assert.True(manager.HasItemUnlock(ItemId));
     }
 

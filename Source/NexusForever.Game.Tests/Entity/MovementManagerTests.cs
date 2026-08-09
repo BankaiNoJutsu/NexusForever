@@ -118,7 +118,7 @@ public class MovementManagerTests
     }
 
     [Fact]
-    public void BroadcastNetworkEntityCommands_WithClientControlledScaleCommand_IncludesSelf()
+    public void BroadcastNetworkEntityCommands_WithClientControlledScaleCommand_ExcludesSelf()
     {
         MovementManagerHarness harness = MovementManagerHarness.Create(ownerGuid: 101u);
         harness.Manager.ServerControl = false;
@@ -129,11 +129,11 @@ public class MovementManagerTests
         harness.Manager.Update(0.016d);
 
         RecordingDispatchProxy<IUnitEntity>.Invocation enqueue = Assert.Single(harness.OwnerProxy.GetInvocations(nameof(IWorldEntity.EnqueueToVisible)));
-        Assert.True(Assert.IsType<bool>(enqueue.Arguments[1]));
+        Assert.False(Assert.IsType<bool>(enqueue.Arguments[1]));
     }
 
     [Fact]
-    public void BroadcastNetworkEntityCommands_WithClientControlledScaleFinalise_IncludesSelf()
+    public void BroadcastNetworkEntityCommands_WithClientControlledScaleFinalise_ExcludesSelf()
     {
         MovementManagerHarness harness = MovementManagerHarness.Create(ownerGuid: 101u);
         harness.Manager.ServerControl = false;
@@ -146,7 +146,7 @@ public class MovementManagerTests
         harness.Manager.Update(0.016d);
 
         RecordingDispatchProxy<IUnitEntity>.Invocation enqueue = Assert.Single(harness.OwnerProxy.GetInvocations(nameof(IWorldEntity.EnqueueToVisible)));
-        Assert.True(Assert.IsType<bool>(enqueue.Arguments[1]));
+        Assert.False(Assert.IsType<bool>(enqueue.Arguments[1]));
     }
 
     [Fact]

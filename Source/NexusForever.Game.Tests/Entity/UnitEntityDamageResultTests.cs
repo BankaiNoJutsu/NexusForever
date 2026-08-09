@@ -361,6 +361,66 @@ public class UnitEntityDamageResultTests
     }
 
     [Theory]
+    [InlineData(61775u)]
+    [InlineData(62218u)]
+    [InlineData(62242u)]
+    public void RewardKiller_UltimateProtogamesCubigHolderTargetGroup_UpdatesExactKillCounter(uint creatureId)
+    {
+        TestUnitEntity unit = new();
+        unit.InitialiseRewardRuntimeForTest(
+            creatureId,
+            CreateMapWithPublicEventManager(out RecordingDispatchProxy<IPublicEventManager> publicEventManagerProxy),
+            CreateAssetManagerForTargetGroup(creatureId, 12871u, out RecordingDispatchProxy<IAssetManager> assetManagerProxy),
+            CreateGameTableManager());
+        IPlayer player = CreateRewardPlayer();
+
+        unit.RewardKillerForTest(player);
+
+        RecordingDispatchProxy<IAssetManager>.Invocation lookup = Assert.Single(
+            assetManagerProxy.GetInvocations(nameof(IAssetManager.GetTargetGroupsForCreatureId)));
+        Assert.Equal(creatureId, lookup.Arguments[0]);
+
+        IReadOnlyList<RecordingDispatchProxy<IPublicEventManager>.Invocation> updates =
+            publicEventManagerProxy.GetInvocations(nameof(IPublicEventManager.UpdateObjective));
+        Assert.Contains(updates, update =>
+            update.Arguments.Length == 4 &&
+            ReferenceEquals(player, update.Arguments[0]) &&
+            (PublicEventObjectiveType)update.Arguments[1] == PublicEventObjectiveType.KillTargetGroup &&
+            (uint)update.Arguments[2] == 12871u &&
+            (int)update.Arguments[3] == 1);
+    }
+
+    [Theory]
+    [InlineData(62451u)]
+    [InlineData(62472u)]
+    [InlineData(63319u)]
+    public void RewardKiller_UltimateProtogamesElementalHolderNestedTargetGroup_UpdatesExactKillCounter(uint creatureId)
+    {
+        TestUnitEntity unit = new();
+        unit.InitialiseRewardRuntimeForTest(
+            creatureId,
+            CreateMapWithPublicEventManager(out RecordingDispatchProxy<IPublicEventManager> publicEventManagerProxy),
+            CreateAssetManagerForTargetGroup(creatureId, 12876u, out RecordingDispatchProxy<IAssetManager> assetManagerProxy),
+            CreateGameTableManager());
+        IPlayer player = CreateRewardPlayer();
+
+        unit.RewardKillerForTest(player);
+
+        RecordingDispatchProxy<IAssetManager>.Invocation lookup = Assert.Single(
+            assetManagerProxy.GetInvocations(nameof(IAssetManager.GetTargetGroupsForCreatureId)));
+        Assert.Equal(creatureId, lookup.Arguments[0]);
+
+        IReadOnlyList<RecordingDispatchProxy<IPublicEventManager>.Invocation> updates =
+            publicEventManagerProxy.GetInvocations(nameof(IPublicEventManager.UpdateObjective));
+        Assert.Contains(updates, update =>
+            update.Arguments.Length == 4 &&
+            ReferenceEquals(player, update.Arguments[0]) &&
+            (PublicEventObjectiveType)update.Arguments[1] == PublicEventObjectiveType.KillTargetGroup &&
+            (uint)update.Arguments[2] == 12876u &&
+            (int)update.Arguments[3] == 1);
+    }
+
+    [Theory]
     [InlineData(17160u)]
     [InlineData(33405u)]
     public void RewardKiller_StormtalonThundercallPellTargetGroup_UpdatesPublicEventKillTargetGroup(uint creatureId)

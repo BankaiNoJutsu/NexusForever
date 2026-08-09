@@ -369,6 +369,9 @@ namespace NexusForever.Game.Entity
                 SetBaseProperty(propertyModel.Property, propertyModel.Value);
 
             ResetVitalsToMaximum();
+
+            if (model.EntityEmote != null)
+                Emote(model.EntityEmote.EmoteId);
         }
 
         private ICreatureInfo GetCreatureInfo(uint creatureId)
@@ -421,6 +424,9 @@ namespace NexusForever.Game.Entity
                 SetBaseProperty(propertyModel.Property, propertyModel.Value);
 
             ResetVitalsToMaximum();
+
+            if (model.EntityEmote != null)
+                Emote(model.EntityEmote.EmoteId);
         }
 
         public void SetQuestChecklistIndex(byte index)
@@ -448,9 +454,6 @@ namespace NexusForever.Game.Entity
         {
             Health = MaxHealth;
             Shield = MaxShieldCapacity;
-
-            if (model.EntityEmote != null)
-                Emote(model.EntityEmote.EmoteId);
         }
 
         private void EnqueueEntityHealthUpdate()
@@ -1165,7 +1168,7 @@ namespace NexusForever.Game.Entity
         public void EnqueueToVisible(IWritable message, bool includeSelf = false)
         {
             bool sentToOwningPlayer = false;
-            if (includeSelf && this is IPlayer selfPlayer)
+            if (includeSelf && this is IPlayer selfPlayer && !selfPlayer.IsLoading)
             {
                 EnqueueToVisiblePlayer(selfPlayer, message);
                 sentToOwningPlayer = true;

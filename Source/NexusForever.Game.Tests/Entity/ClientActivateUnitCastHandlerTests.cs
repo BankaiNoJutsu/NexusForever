@@ -134,6 +134,28 @@ public class ClientActivateUnitCastHandlerTests
     }
 
     [Fact]
+    public void HandleMessageInternal_WithQ3741ExileSupplyCrate_CastsRetailActivationSpellAndCompletesActivation()
+    {
+        ClientActivateUnitCastHandler handler = CreateHandler();
+        IWorldSession session = CreateSession(
+            creatureId: 12919u,
+            castResult: CastResult.Ok,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IWorldEntity> entityProxy,
+            out _,
+            activateSpellId: 1817u,
+            worldId: 426u);
+
+        InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
+
+        RecordingDispatchProxy<IPlayer>.Invocation cast =
+            Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
+        Assert.Equal(1817u, cast.Arguments[0]);
+        Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
+        Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
+    }
+
+    [Fact]
     public void HandleMessageInternal_WithActivateSpellPrerequisite_EvaluatesPrerequisiteAgainstActivatedUnit()
     {
         IPrerequisiteManager prerequisiteManager = RecordingDispatchProxy<IPrerequisiteManager>.Create(out RecordingDispatchProxy<IPrerequisiteManager> prerequisiteProxy);

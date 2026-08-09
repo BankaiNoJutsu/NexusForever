@@ -20,13 +20,13 @@ public class ClientEmoteHandlerTests
         IWorldSession session = CreateSession(out RecordingDispatchProxy<IPlayer> playerProxy);
         var handler = new ClientEmoteHandler(CreateGameTableManager());
 
-        Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(session, CreateEmote(10u)));
+        Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(session, CreateEmote(10)));
 
         Assert.Empty(playerProxy.GetInvocations(nameof(IWorldEntity.EnqueueToVisible)));
     }
 
     [Fact]
-    public void HandleMessage_WithKnownEmoteBroadcastsStandState()
+    public void HandleMessage_WithKnownEmoteUpdatesStandStateAndBroadcastsAnimation()
     {
         IWorldSession session = CreateSession(out RecordingDispatchProxy<IPlayer> playerProxy);
         var handler = new ClientEmoteHandler(CreateGameTableManager([new EmotesEntry
@@ -35,14 +35,15 @@ public class ClientEmoteHandlerTests
             StandState = StandState.Sit
         }]));
 
-        handler.HandleMessage(session, CreateEmote(10u));
+        handler.HandleMessage(session, CreateEmote(10));
 
         RecordingDispatchProxy<IPlayer>.Invocation invocation =
             Assert.Single(playerProxy.GetInvocations(nameof(IWorldEntity.EnqueueToVisible)));
         ServerEmote response = Assert.IsType<ServerEmote>(invocation.Arguments[0]);
-        Assert.Equal(1234u, response.Guid);
-        Assert.Equal(StandState.Sit, response.StandState);
-        Assert.Equal(10u, response.EmoteId);
+        Assert.Equal(1234u, response.SourceUnitId);
+        Assert.Equal((ushort)10, response.EmotesId);
+        Assert.Contains(playerProxy.GetInvocations(nameof(IWorldEntity.Emote)),
+            call => Convert.ToUInt16(call.Arguments[0]) == 10);
     }
 
     private static IWorldSession CreateSession(out RecordingDispatchProxy<IPlayer> playerProxy)
@@ -65,7 +66,7 @@ public class ClientEmoteHandlerTests
         return gameTableManager;
     }
 
-    private static ClientEmote CreateEmote(uint emoteId)
+    private static ClientEmote CreateEmote(ushort emoteId)
     {
         var emote = (ClientEmote)RuntimeHelpers.GetUninitializedObject(typeof(ClientEmote));
         typeof(ClientEmote)

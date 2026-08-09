@@ -56,7 +56,7 @@ public class RewardPropertyManagerTests
             ],
             rewardPropertyEntries:
             [
-                CreateRewardProperty(RewardPropertyType.XP, RewardPropertyModifierValueType.Discrete)
+                CreateRewardProperty(RewardPropertyType.XP, RewardModifierValueType.Discrete)
             ]);
         IAccount account = CreateAccount(out _, entitlementAmount: 7u);
         var manager = new RewardPropertyManager(account, assetManager, gameTableManager);
@@ -73,7 +73,7 @@ public class RewardPropertyManagerTests
             ],
             rewardPropertyEntries:
             [
-                CreateRewardProperty(RewardPropertyType.XP, RewardPropertyModifierValueType.Discrete)
+                CreateRewardProperty(RewardPropertyType.XP, RewardModifierValueType.Discrete)
             ],
             entitlementEntries:
             [
@@ -190,7 +190,7 @@ public class RewardPropertyManagerTests
 
     private static RewardPropertyEntry CreateRewardProperty(
         RewardPropertyType rewardPropertyType,
-        RewardPropertyModifierValueType valueType)
+        RewardModifierValueType valueType)
     {
         return new RewardPropertyEntry
         {

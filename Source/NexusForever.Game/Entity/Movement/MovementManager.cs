@@ -72,7 +72,6 @@ namespace NexusForever.Game.Entity.Movement
         }
 
         private bool serverControl = true;
-        private bool includeSelfOnNextBroadcast;
 
         #region Dependency Injection
 
@@ -162,8 +161,7 @@ namespace NexusForever.Game.Entity.Movement
             MarkDirtyCommandGroupForBroadcast(velocityCommandGroup);
             MarkDirtyCommandGroupForBroadcast(moveCommandGroup);
             MarkDirtyCommandGroupForBroadcast(rotationCommandGroup);
-            if (MarkDirtyCommandGroupForBroadcast(scaleCommandGroup))
-                IncludeSelfForClientControlledScale();
+            MarkDirtyCommandGroupForBroadcast(scaleCommandGroup);
             MarkDirtyCommandGroupForBroadcast(stateCommandGroup);
             MarkDirtyCommandGroupForBroadcast(modeCommandGroup);
         }
@@ -257,10 +255,9 @@ namespace NexusForever.Game.Entity.Movement
             if (!IsDirty)
                 return;
 
-            Owner.EnqueueToVisible(BuildNetworkEntityCommands(), ServerControl || includeSelfOnNextBroadcast);
+            Owner.EnqueueToVisible(BuildNetworkEntityCommands(), ServerControl);
 
             IsDirty                    = false;
-            includeSelfOnNextBroadcast = false;
             timeCommandGroup.TimeReset = false;
         }
 
@@ -660,7 +657,6 @@ namespace NexusForever.Game.Entity.Movement
         public void SetScale(float scale)
         {
             scaleCommandGroup.SetScale(scale);
-            IncludeSelfForClientControlledScale();
         }
 
         /// <summary>
@@ -669,13 +665,6 @@ namespace NexusForever.Game.Entity.Movement
         public void SetScaleKeys(List<uint> times, List<float> scales)
         {
             scaleCommandGroup.SetScaleKeys(times, scales);
-            IncludeSelfForClientControlledScale();
-        }
-
-        private void IncludeSelfForClientControlledScale()
-        {
-            if (!ServerControl)
-                includeSelfOnNextBroadcast = true;
         }
 
         /// <summary>

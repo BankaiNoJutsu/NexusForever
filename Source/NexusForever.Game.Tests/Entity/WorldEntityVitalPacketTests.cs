@@ -20,11 +20,12 @@ namespace NexusForever.Game.Tests.Entity;
 public class WorldEntityVitalPacketTests
 {
     [Fact]
-    public void StatChange_ForOwningPlayerWithoutSelfVisible_SendsStatToOwnSession()
+    public void StatChange_ForEnteredWorldOwningPlayerWithoutSelfVisible_SendsStatToOwnSession()
     {
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
         var player = new TestPlayerEntity();
         player.SetGuidForTest(1001u);
+        player.IsLoading = false;
         SetAutoProperty(player, nameof(Player.Identity), new Identity
         {
             Id      = 1ul,
@@ -42,6 +43,28 @@ public class WorldEntityVitalPacketTests
         Assert.Equal(Stat.Level, update.Stat.Stat);
         Assert.Equal(StatType.Integer, update.Stat.Type);
         Assert.Equal(2f, update.Stat.Value);
+    }
+
+    [Fact]
+    public void StatChange_ForLoadingOwningPlayerWithoutSelfVisible_DoesNotSendStatToOwnSession()
+    {
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        var player = new TestPlayerEntity();
+        player.SetGuidForTest(1001u);
+        player.IsLoading = true;
+        SetAutoProperty(player, nameof(Player.Identity), new Identity
+        {
+            Id      = 1ul,
+            RealmId = 1
+        });
+        SetAutoProperty(player, nameof(Player.Session), session);
+
+        player.SetIntegerStatForTest(Stat.Level, 2u);
+
+        Assert.DoesNotContain(sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0]),
+            message => message is ServerEntityStatUpdateInteger);
     }
 
     [Fact]

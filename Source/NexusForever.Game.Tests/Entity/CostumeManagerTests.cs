@@ -18,6 +18,7 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Costume;
 using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.Game.Tests.Entity;
@@ -84,7 +85,7 @@ public class CostumeManagerTests
 
         ICostume costume = manager.GetCostume(0);
         Assert.NotNull(costume);
-        Assert.Equal(CostumeItemId, costume.GetItem(CostumeItemSlot.Chest).ItemId);
+        Assert.Equal(CostumeItemId, costume.GetItem(CostumeItemSlot.Chest).Item2Id);
         Assert.Equal(CostumeSaveResult.Saved, sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
             .Select(i => i.Arguments[0])
             .OfType<ServerCostumeSave>()
@@ -113,7 +114,7 @@ public class CostumeManagerTests
 
         ICostume costume = manager.GetCostume(0);
         Assert.NotNull(costume);
-        Assert.Equal(CostumeItemId, costume.GetItem(CostumeItemSlot.Chest).ItemId);
+        Assert.Equal(CostumeItemId, costume.GetItem(CostumeItemSlot.Chest).Item2Id);
         Assert.Equal(CostumeSaveResult.Saved, sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
             .Select(i => i.Arguments[0])
             .OfType<ServerCostumeSave>()
@@ -131,7 +132,7 @@ public class CostumeManagerTests
             CreateGameTable<ItemDisplayEntry>(),
             includeEmptyTable ? CreateGameTable<DyeColorRampEntry>() : null);
 
-        Assert.Throws<ArgumentException>(() => CostumeItem.GenerateDyeMask(
+        Assert.Throws<ArgumentException>(() => CostumeItem.GenerateDyeData(
             [DyeColorRampId, 0u, 0u],
             gameTableManager));
     }
@@ -199,7 +200,7 @@ public class CostumeManagerTests
             writer.Write(0);
             writer.Write(CostumeType.Personal, 2u);
             writer.Write(0ul);
-            for (int i = 0; i < NexusForever.Network.World.Message.Model.Shared.Costume.MaxCostumeItems; i++)
+            for (int i = 0; i < NexusForever.Network.World.Message.Model.Costume.Costume.MaxCostumeItems; i++)
             {
                 writer.Write(i == 0 ? itemId : 0u, 18u);
                 writer.Write(i == 0 ? dyeColorRampId : 0u);

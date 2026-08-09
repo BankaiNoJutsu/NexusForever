@@ -280,9 +280,9 @@ public class ClientRewardUpdateRequestClaimTests
         {
         }
 
-        public IRewardProperty GetRewardProperty(NexusForever.Game.Static.Entity.RewardPropertyType type) => null;
+        public IRewardProperty GetRewardProperty(RewardPropertyType type) => null;
 
-        public void UpdateRewardProperty(NexusForever.Game.Static.Entity.RewardPropertyType type, float value, uint data = 0)
+        public void UpdateRewardProperty(RewardPropertyType type, float value, uint data = 0)
         {
         }
 

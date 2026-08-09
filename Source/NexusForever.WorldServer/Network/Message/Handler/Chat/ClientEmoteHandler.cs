@@ -1,5 +1,8 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Achievement;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
+using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 
@@ -7,8 +10,22 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Chat
 {
     public class ClientEmoteHandler : IMessageHandler<IWorldSession, ClientEmote>
     {
+        private readonly IGameTableManager gameTableManager;
+
+        public ClientEmoteHandler(IGameTableManager gameTableManager)
+        {
+            this.gameTableManager = gameTableManager;
+        }
+
         public void HandleMessage(IWorldSession session, ClientEmote emote)
         {
+            if (emote.EmoteId != 0)
+            {
+                EmotesEntry entry = gameTableManager.Emotes?.GetEntry(emote.EmoteId);
+                if (entry == null)
+                    throw new InvalidPacketValueException("HandleEmote: Invalid EmoteId");
+            }
+
             if (emote.EmoteId == 0 && session.Player.IsSitting)
                 session.Player.Unsit();
 
