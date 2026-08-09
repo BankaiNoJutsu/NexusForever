@@ -31,6 +31,7 @@ using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Script;
+using NexusForever.Script.Main.Quests.NorthernWilds;
 using NexusForever.Script.Template.Collection;
 
 namespace NexusForever.Game.Tests.Quest;
@@ -2861,8 +2862,11 @@ public class QuestTests
             });
         IPlayer player = CreateQuestLifecyclePlayer(
             out RecordingDispatchProxy<IInventory> inventoryProxy,
-            out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy,
+            out _,
+            out _,
+            CreateQ3741EpisodeAchievementManager,
             visibleCreatureIds: ImmutableHashSet.Create(receiverId));
+        ICharacterAchievementManager achievementManager = player.AchievementManager;
         GlobalQuestManager globalQuestManager = CreateGlobalQuestManager(
             new Dictionary<ushort, IQuestInfo>
             {
@@ -2892,17 +2896,102 @@ public class QuestTests
             (uint)invocation.Arguments[1] == 29614u &&
             (uint)invocation.Arguments[2] == 1u);
 
-        IReadOnlyList<RecordingDispatchProxy<ICharacterAchievementManager>.Invocation> achievementChecks =
-            achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements));
-        Assert.Contains(achievementChecks, invocation =>
-            (AchievementType)invocation.Arguments[1] == AchievementType.QuestComplete &&
-            (uint)invocation.Arguments[2] == questId);
-        Assert.Contains(achievementChecks, invocation =>
-            (AchievementType)invocation.Arguments[1] == AchievementType.QuestCompleteChecklist &&
-            (uint)invocation.Arguments[2] == questId);
-        Assert.Contains(achievementChecks, invocation =>
-            (AchievementType)invocation.Arguments[1] == AchievementType.QuestCompleteChecklistCount &&
-            (uint)invocation.Arguments[2] == questId);
+        IAchievement achievement = GetAchievement(achievementManager, 3490);
+        Assert.Equal(4u, achievement.CompletedChecklistMask);
+        Assert.False(achievement.IsComplete());
+    }
+
+    [Fact]
+    public void QuestLifecycle_Q3741ScatteredSupplies_AcceptsAtDurekCollectsSixCratesAndCompletesAtDurek()
+    {
+        const ushort questId = 3741;
+        const uint durekCreatureId = 11066u;
+
+        IQuestInfo questInfo = CreateQ3741ScatteredSuppliesQuestInfo();
+        IPlayer player = CreateQuestLifecyclePlayer(
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out _,
+            out _,
+            CreateQ3741EpisodeAchievementManager,
+            visibleCreatureIds: ImmutableHashSet.Create(durekCreatureId));
+        var playerProxy = (RecordingDispatchProxy<IPlayer>)(object)player;
+        playerProxy.SetProperty(nameof(IPlayer.Faction1), Faction.Exile);
+        GlobalQuestManager globalQuestManager = CreateGlobalQuestManager(
+            new Dictionary<ushort, IQuestInfo>
+            {
+                [questId] = questInfo
+            },
+            questReceivers: new Dictionary<ushort, ImmutableList<uint>>
+            {
+                [questId] = ImmutableList.Create(durekCreatureId)
+            },
+            questGivers: new Dictionary<ushort, ImmutableList<uint>>
+            {
+                [questId] = ImmutableList.Create(durekCreatureId)
+            });
+        var manager = CreateQuestManager(player, globalQuestManager);
+        playerProxy.SetProperty(nameof(IPlayer.QuestManager), manager);
+
+        manager.QuestAdd(questId, item: null);
+
+        Assert.Equal(QuestState.Accepted, manager.GetQuestState(questId));
+        for (int i = 0; i < 6; i++)
+        {
+            ICreatureEntity crate = RecordingDispatchProxy<ICreatureEntity>.Create(
+                out RecordingDispatchProxy<ICreatureEntity> crateProxy);
+            crateProxy.SetProperty(nameof(IWorldEntity.CreatureId), 12919u);
+            var script = new Q3741ExileSupplyCrateEntityScript();
+            script.OnLoad(crate);
+            script.OnActivateSuccess(player);
+
+            Assert.Single(crateProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+        }
+
+        Assert.Equal(QuestState.Achieved, manager.GetQuestState(questId));
+
+        manager.QuestComplete(questId, reward: 0, communicator: false);
+
+        Assert.Equal(QuestState.Completed, manager.GetQuestState(questId));
+        IReadOnlyList<RecordingDispatchProxy<IInventory>.Invocation> itemGrants =
+            inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate));
+        Assert.Contains(itemGrants, invocation =>
+            (InventoryLocation)invocation.Arguments[0] == InventoryLocation.Inventory &&
+            (uint)invocation.Arguments[1] == 81917u &&
+            (uint)invocation.Arguments[2] == 3u);
+        Assert.Contains(itemGrants, invocation =>
+            (InventoryLocation)invocation.Arguments[0] == InventoryLocation.Inventory &&
+            (uint)invocation.Arguments[1] == 29614u &&
+            (uint)invocation.Arguments[2] == 1u);
+
+        IAchievement achievement = GetAchievement(player.AchievementManager, 3490);
+        Assert.Equal(4u, achievement.CompletedChecklistMask);
+        Assert.False(achievement.IsComplete());
+    }
+
+    [Fact]
+    public void QuestAdd_Q3741RejectsMissingDurek()
+    {
+        const ushort questId = 3741;
+
+        IQuestInfo questInfo = CreateQ3741ScatteredSuppliesQuestInfo();
+        IPlayer player = CreateQuestAcceptPlayer(
+            visibleCreatureIds: ImmutableHashSet<uint>.Empty,
+            faction: Faction.Exile,
+            level: 4u);
+        var manager = CreateQuestManager(
+            player,
+            CreateGlobalQuestManager(
+                new Dictionary<ushort, IQuestInfo>
+                {
+                    [questId] = questInfo
+                },
+                questGivers: new Dictionary<ushort, ImmutableList<uint>>
+                {
+                    [questId] = ImmutableList.Create(11066u)
+                }));
+
+        Assert.Throws<QuestException>(() => manager.QuestAdd(questId, item: null));
+        Assert.Null(manager.GetQuestState(questId));
     }
 
     [Fact]
@@ -3778,6 +3867,49 @@ public class QuestTests
         return questInfo;
     }
 
+    private static IQuestInfo CreateQ3741ScatteredSuppliesQuestInfo()
+    {
+        const ushort questId = 3741;
+
+        IQuestInfo questInfo = CreateQuestInfo(
+            questId,
+            new Quest2RewardEntry
+            {
+                Id                 = 1712u,
+                Quest2Id           = questId,
+                Quest2RewardTypeId = (uint)QuestRewardType.Item,
+                ObjectId           = 81917u,
+                ObjectAmount       = 3u,
+                Flags              = 0u
+            },
+            new Quest2RewardEntry
+            {
+                Id                 = 3476u,
+                Quest2Id           = questId,
+                Quest2RewardTypeId = (uint)QuestRewardType.Item,
+                ObjectId           = 29614u,
+                ObjectAmount       = 1u,
+                Flags              = 0u
+            });
+        var questInfoProxy = (RecordingDispatchProxy<IQuestInfo>)(object)questInfo;
+        questInfoProxy.SetProperty(
+            nameof(IQuestInfo.Objectives),
+            ImmutableList.Create<IQuestObjectiveInfo>(
+                new QuestObjectiveInfo(new QuestObjectiveEntry
+                {
+                    Id            = 4813u,
+                    Type          = (uint)QuestObjectiveType.VirtualCollect,
+                    Flags         = 4u,
+                    Data          = 363u,
+                    Count         = 6u,
+                    TargetGroupIdRewardPane = 4372u
+                })));
+        questInfoProxy.SetProperty(
+            nameof(IQuestInfo.PrerequisiteQuests),
+            ImmutableList<Quest2Entry>.Empty);
+        return questInfo;
+    }
+
     private static IQuestInfo CreateGuidanceQuestInfo(uint questDirectionId)
     {
         IQuestInfo questInfo = RecordingDispatchProxy<IQuestInfo>.Create(out var questInfoProxy);
@@ -4442,6 +4574,28 @@ public class QuestTests
                 new AchievementChecklistEntry { Id = 6907u, AchievementId = 5327u, Bit = 0u, ObjectId = 3486u },
                 new AchievementChecklistEntry { Id = 6908u, AchievementId = 5327u, Bit = 1u, ObjectId = 3667u },
                 new AchievementChecklistEntry { Id = 6910u, AchievementId = 5327u, Bit = 2u, ObjectId = 3480u }));
+
+        return new CharacterAchievementManager(player, new CharacterModel
+        {
+            Id = player.CharacterId
+        }, globalAchievementManager: globalAchievementManager);
+    }
+
+    private static ICharacterAchievementManager CreateQ3741EpisodeAchievementManager(IPlayer player)
+    {
+        var globalAchievementManager = new TestGlobalAchievementManager(
+            new TestAchievementInfo(
+                new AchievementEntry
+                {
+                    Id                = 3490u,
+                    AchievementTypeId = (uint)AchievementType.QuestCompleteChecklist,
+                    RequiredProgress  = 3u
+                },
+                new AchievementChecklistEntry { Id = 4259u, AchievementId = 3490u, Bit = 0u, ObjectId = 3671u },
+                new AchievementChecklistEntry { Id = 4260u, AchievementId = 3490u, Bit = 1u, ObjectId = 3668u },
+                new AchievementChecklistEntry { Id = 4261u, AchievementId = 3490u, Bit = 2u, ObjectId = 3741u },
+                new AchievementChecklistEntry { Id = 4262u, AchievementId = 3490u, Bit = 3u, ObjectId = 3673u },
+                new AchievementChecklistEntry { Id = 4263u, AchievementId = 3490u, Bit = 4u, ObjectId = 3886u }));
 
         return new CharacterAchievementManager(player, new CharacterModel
         {

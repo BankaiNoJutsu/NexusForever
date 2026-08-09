@@ -48,6 +48,56 @@ public class PublicEventFlowTests
         Assert.Single(mapProxy.GetInvocations(nameof(IBaseMap.OnPublicEventFinish)));
     }
 
+    [Theory]
+    [InlineData(3271u, 7773u, 7774u)]
+    [InlineData(3272u, 7774u, 7773u)]
+    [InlineData(3273u, 7775u, 7774u)]
+    [InlineData(3274u, 7779u, 7775u)]
+    [InlineData(3275u, 7780u, 7779u)]
+    [InlineData(3276u, 7542u, 7780u)]
+    [InlineData(3277u, 7540u, 7542u)]
+    [InlineData(3278u, 7781u, 7540u)]
+    [InlineData(3279u, 7782u, 7781u)]
+    [InlineData(3280u, 7783u, 7782u)]
+    [InlineData(3281u, 7784u, 7783u)]
+    public void UltimateProtogamesNextEvent_CurrentTurnstileBoundaryRequiresExactTypeAndObject(
+        uint objectiveId,
+        uint objectId,
+        uint wrongObjectId)
+    {
+        var entry = new PublicEventObjectiveEntry
+        {
+            Id                              = objectiveId,
+            Count                           = 1,
+            ObjectId                        = objectId,
+            PublicEventTeamId               = PublicEventTeam.PublicTeam,
+            PublicEventObjectiveFlags       = PublicEventObjectiveFlag.UsesDynamicMaxCount,
+            PublicEventObjectiveCategoryEnum = PublicEventObjectiveCategory.Main,
+            PublicEventObjectiveTypeEnum    = PublicEventObjectiveType.Turnstile
+        };
+
+        (NexusForever.Game.PublicEvent.PublicEventTeam team, NexusForever.Game.PublicEvent.PublicEventObjective objective)
+            = PublicEventTestSupport.CreateTeamWithObjective(entry);
+        team.ActivateObjective(entry.Id, 1u);
+
+        team.UpdateObjective(PublicEventObjectiveType.Turnstile, wrongObjectId, 1);
+        team.UpdateObjective(PublicEventObjectiveType.Script, objectId, 1);
+
+        Assert.Equal(PublicEventStatus.Active, objective.Status);
+        Assert.Equal(0u, objective.Count);
+        Assert.False(team.IsFinialised);
+
+        team.UpdateObjective(PublicEventObjectiveType.Turnstile, objectId, 1);
+
+        Assert.Equal(PublicEventStatus.Succeeded, objective.Status);
+        Assert.Equal(1u, objective.Count);
+        Assert.True(team.IsFinialised);
+
+        team.UpdateObjective(PublicEventObjectiveType.Turnstile, objectId, 1);
+
+        Assert.Equal(1u, objective.Count);
+    }
+
     [Fact]
     public void ResetObjective_ClearsTeamCompletionState()
     {

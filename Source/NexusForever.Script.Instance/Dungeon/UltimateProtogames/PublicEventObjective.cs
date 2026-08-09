@@ -56,7 +56,7 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames
         SpringCleaning               = 2921,
         RapidFire                    = 2922,
         Kick10Marauders              = 2923,
-        DustStorm                    = 2942,
+        DustStorm                    = 2924,
         SplorgSpree                  = 2925,
         MonstrosityMassacre          = 2926,
         RowsdowerRoundUp             = 2927,

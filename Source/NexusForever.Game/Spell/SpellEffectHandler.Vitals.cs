@@ -27,6 +27,7 @@ namespace NexusForever.Game.Spell
                 return;
 
             target.TakeDamage(spell.Caster, info.Damage);
+            TryGrantUltimateProtogamesRowsdowerRuckus(spell, target, info.Damage);
             AddDamageCombatLog(spell, target, info);
         }
 

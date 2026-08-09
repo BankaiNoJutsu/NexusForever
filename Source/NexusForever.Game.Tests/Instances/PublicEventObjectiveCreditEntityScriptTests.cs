@@ -3,6 +3,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.Script.Instance;
@@ -97,8 +98,17 @@ public class PublicEventObjectiveCreditEntityScriptTests
         yield return ScriptCase((f, g) => new GoldInfusedLavaNodeEntityScript(f, g), SkullcanoObjective.MineGoldInfusedLavaCores);
         yield return ScriptCase((f, g) => new MondosMonstrosityEntityScript(f, g), UltimateProtogamesObjective.MonstrosityMassacre, UltimateProtogamesObjective.QuickReflexes);
         yield return ScriptCase((f, g) => new MondosCrateEntityScript(f, g), UltimateProtogamesObjective.MondosCrate);
+        yield return ScriptCase(
+            (f, g) => new LostAndFoundCrateEntityScript(f, g),
+            UltimateProtogamesObjective.ClearTheLostAndFound,
+            UltimateProtogamesObjective.DustStorm);
+        yield return ScriptCase((f, g) => new ExplosiveSplorgEntityScript(f, g), UltimateProtogamesObjective.SplorgSpree);
+        yield return ScriptCase((f, g) => new RowsdowerEntityScript(f, g), UltimateProtogamesObjective.RowsdowerRoundUp);
         yield return ScriptCase((f, g) => new RufflesEntityScript(f, g), UltimateProtogamesObjective.HuntRuffles);
-        yield return ScriptCase((f, g) => new HutHutEntityScript(f, g), UltimateProtogamesObjective.DefeatHutHut);
+        yield return ScriptCase(
+            (f, g) => new HutHutEntityScript(f, g),
+            UltimateProtogamesObjective.DefeatHutHut,
+            UltimateProtogamesObjective.TotalDomination);
         yield return ScriptCase((f, g) => new DeputyEntityScript(f, g), UltimateProtogamesObjective.Deputy);
         yield return ScriptCase((f, g) => new MisplacedMammothEntityScript(f, g), UltimateProtogamesObjective.QuickReflexes2);
         yield return ScriptCase((f, g) => new BladeWindTheInvokerVeteranEntityScript(f, g), StormtalonObjective.DefeatBladeWindTheInvoker);
@@ -350,6 +360,9 @@ public class PublicEventObjectiveCreditEntityScriptTests
     [Theory]
     [InlineData(typeof(MondosMonstrosityEntityScript), 62575u)]
     [InlineData(typeof(MondosCrateEntityScript), 62549u)]
+    [InlineData(typeof(LostAndFoundCrateEntityScript), 62548u)]
+    [InlineData(typeof(ExplosiveSplorgEntityScript), 62597u)]
+    [InlineData(typeof(RowsdowerEntityScript), 62598u)]
     [InlineData(typeof(RufflesEntityScript), 65794u)]
     [InlineData(typeof(HutHutEntityScript), 61417u)]
     [InlineData(typeof(GildedFowlEntityScript), 63055u)]
@@ -360,6 +373,48 @@ public class PublicEventObjectiveCreditEntityScriptTests
         uint creatureId)
     {
         AssertCreatureFilterMatches(scriptType, [creatureId], 61463u);
+    }
+
+    [Fact]
+    public void ProtostarEventSpecialist_OnActivateSuccess_UpdatesMappedTalkCounterForPlayer()
+    {
+        IPublicEventManager publicEventManager = RecordingDispatchProxy<IPublicEventManager>.Create(out RecordingDispatchProxy<IPublicEventManager> managerProxy);
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out RecordingDispatchProxy<IBaseMap> mapProxy);
+        mapProxy.SetProperty(nameof(IBaseMap.PublicEventManager), publicEventManager);
+
+        IWorldEntity specialist = RecordingDispatchProxy<IWorldEntity>.Create(out RecordingDispatchProxy<IWorldEntity> specialistProxy);
+        specialistProxy.SetProperty(nameof(IGridEntity.Map), map);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+
+        var script = new ProtostarEventSpecialistEntityScript();
+        script.OnLoad(specialist);
+        script.OnActivateSuccess(player);
+
+        RecordingDispatchProxy<IPublicEventManager>.Invocation update = Assert.Single(
+            managerProxy.GetInvocations(nameof(IPublicEventManager.UpdateObjective)));
+        Assert.Equal(4, update.Arguments.Length);
+        Assert.Same(player, update.Arguments[0]);
+        Assert.Equal(PublicEventObjectiveType.TalkTo, update.Arguments[1]);
+        Assert.Equal(12376u, update.Arguments[2]);
+        Assert.Equal(1, update.Arguments[3]);
+    }
+
+    [Fact]
+    public void ProtostarEventSpecialist_UsesReviewedCreatureFilter()
+    {
+        ScriptFilterParameters parameters = new(RecordingDispatchProxy<IServiceProvider>.Create(out _));
+        parameters.Initialise(typeof(ProtostarEventSpecialistEntityScript));
+
+        var match = new ScriptFilterMatch();
+        IScriptFilterSearch specialistSearch = new ScriptFilterSearch()
+            .FilterByScriptType<IOwnedScript<IWorldEntity>>()
+            .FilterByCreatureId(68272u);
+        IScriptFilterSearch unrelatedSearch = new ScriptFilterSearch()
+            .FilterByScriptType<IOwnedScript<IWorldEntity>>()
+            .FilterByCreatureId(62597u);
+
+        Assert.True(match.Match(specialistSearch, parameters));
+        Assert.False(match.Match(unrelatedSearch, parameters));
     }
 
     [Theory]

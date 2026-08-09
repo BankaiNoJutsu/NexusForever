@@ -293,6 +293,469 @@ public class SpellEffectCombatRegressionTests
     }
 
     [Fact]
+    public void HandleEffectAchievementAdvance_WithTeaTimeEffect_GrantsExactAchievement()
+    {
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
+        ICharacterAchievementManager achievementManager =
+            RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+                out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy);
+        IGlobalAchievementManager globalAchievementManager =
+            RecordingDispatchProxy<IGlobalAchievementManager>.Create(
+                out RecordingDispatchProxy<IGlobalAchievementManager> globalAchievementProxy);
+        IAchievementInfo achievementInfo =
+            RecordingDispatchProxy<IAchievementInfo>.Create(out _);
+
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
+        achievementProxy.SetMethodReturn(
+            nameof(ICharacterAchievementManager.HasCompletedAchievement),
+            false);
+        globalAchievementProxy.SetMethodReturn(
+            nameof(IGlobalAchievementManager.GetAchievement),
+            achievementInfo);
+
+        using IDisposable resolverScope = UseDependencyResolver(
+            globalAchievementManager: globalAchievementManager);
+        ISpell spell = CreateSpell(79328u, player);
+        ISpellTargetEffectInfo info = CreateEffectInfo(
+            208728u,
+            79328u,
+            SpellEffectType.AchievementAdvance,
+            5881u,
+            1u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectAchievementAdvance(
+            spell,
+            player,
+            info);
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant =
+            Assert.Single(
+                achievementProxy.GetInvocations(
+                    nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5881, (ushort)grant.Arguments[0]);
+    }
+
+    [Fact]
+    public void HandleEffectAchievementAdvance_WithCompletedTeaTime_DoesNotGrantAgain()
+    {
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
+        ICharacterAchievementManager achievementManager =
+            RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+                out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy);
+        IGlobalAchievementManager globalAchievementManager =
+            RecordingDispatchProxy<IGlobalAchievementManager>.Create(
+                out RecordingDispatchProxy<IGlobalAchievementManager> globalAchievementProxy);
+        IAchievementInfo achievementInfo =
+            RecordingDispatchProxy<IAchievementInfo>.Create(out _);
+
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
+        achievementProxy.SetMethodReturn(
+            nameof(ICharacterAchievementManager.HasCompletedAchievement),
+            true);
+        globalAchievementProxy.SetMethodReturn(
+            nameof(IGlobalAchievementManager.GetAchievement),
+            achievementInfo);
+
+        using IDisposable resolverScope = UseDependencyResolver(
+            globalAchievementManager: globalAchievementManager);
+        ISpell spell = CreateSpell(79328u, player);
+        ISpellTargetEffectInfo info = CreateEffectInfo(
+            208728u,
+            79328u,
+            SpellEffectType.AchievementAdvance,
+            5881u,
+            1u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectAchievementAdvance(
+            spell,
+            player,
+            info);
+
+        Assert.Empty(
+            achievementProxy.GetInvocations(
+                nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Fact]
+    public void HandleEffectSpellForceRemove_WithUltimateProtogamesMedicineCure_GrantsDocInTheHouse()
+    {
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
+        ICharacterAchievementManager achievementManager =
+            RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+                out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy);
+        IGlobalAchievementManager globalAchievementManager =
+            RecordingDispatchProxy<IGlobalAchievementManager>.Create(
+                out RecordingDispatchProxy<IGlobalAchievementManager> globalAchievementProxy);
+        IAchievementInfo achievementInfo =
+            RecordingDispatchProxy<IAchievementInfo>.Create(out _);
+
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
+        playerProxy.SetMethodHandler(nameof(IUnitEntity.RemoveTrackedSpellStates), args =>
+        {
+            var predicate = (Func<uint, bool>)args[0];
+            Assert.True(predicate(72341u));
+            Assert.False(predicate(72342u));
+            return new[]
+            {
+                new SpellStateRemoval(SpellStateRemovalKind.PropertyModifier, 72341u, 901u, 186387u)
+            };
+        });
+        achievementProxy.SetMethodReturn(
+            nameof(ICharacterAchievementManager.HasCompletedAchievement),
+            false);
+        globalAchievementProxy.SetMethodReturn(
+            nameof(IGlobalAchievementManager.GetAchievement),
+            achievementInfo);
+
+        using IDisposable resolverScope = UseDependencyResolver(
+            CreateGameTableManager(),
+            globalAchievementManager: globalAchievementManager);
+        ISpell spell = CreateSpell(77510u, player);
+        ISpellTargetEffectInfo info = CreateEffectInfo(
+            202590u,
+            77510u,
+            SpellEffectType.SpellForceRemove,
+            2u,
+            72341u,
+            1u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectSpellForceRemove(
+            spell,
+            player,
+            info);
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant =
+            Assert.Single(
+                achievementProxy.GetInvocations(
+                    nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5941, (ushort)grant.Arguments[0]);
+    }
+
+    [Fact]
+    public void HandleEffectSpellForceRemove_WithUltimateProtogamesMedicineButNoSicknessRemoved_DoesNotGrant()
+    {
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
+        ICharacterAchievementManager achievementManager =
+            RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+                out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy);
+        IGlobalAchievementManager globalAchievementManager =
+            RecordingDispatchProxy<IGlobalAchievementManager>.Create(
+                out RecordingDispatchProxy<IGlobalAchievementManager> globalAchievementProxy);
+        IAchievementInfo achievementInfo =
+            RecordingDispatchProxy<IAchievementInfo>.Create(out _);
+
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
+        playerProxy.SetMethodHandler(
+            nameof(IUnitEntity.RemoveTrackedSpellStates),
+            _ => Array.Empty<SpellStateRemoval>());
+        achievementProxy.SetMethodReturn(
+            nameof(ICharacterAchievementManager.HasCompletedAchievement),
+            false);
+        globalAchievementProxy.SetMethodReturn(
+            nameof(IGlobalAchievementManager.GetAchievement),
+            achievementInfo);
+
+        using IDisposable resolverScope = UseDependencyResolver(
+            CreateGameTableManager(),
+            globalAchievementManager: globalAchievementManager);
+        ISpell spell = CreateSpell(77510u, player);
+        ISpellTargetEffectInfo info = CreateEffectInfo(
+            202590u,
+            77510u,
+            SpellEffectType.SpellForceRemove,
+            2u,
+            72341u,
+            1u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectSpellForceRemove(
+            spell,
+            player,
+            info);
+
+        Assert.Empty(
+            achievementProxy.GetInvocations(
+                nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Fact]
+    public void HandleEffectSpellForceRemove_WithUnrelatedCureSpell_DoesNotGrantDocInTheHouse()
+    {
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
+        ICharacterAchievementManager achievementManager =
+            RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+                out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy);
+        IGlobalAchievementManager globalAchievementManager =
+            RecordingDispatchProxy<IGlobalAchievementManager>.Create(
+                out RecordingDispatchProxy<IGlobalAchievementManager> globalAchievementProxy);
+        IAchievementInfo achievementInfo =
+            RecordingDispatchProxy<IAchievementInfo>.Create(out _);
+
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
+        playerProxy.SetMethodHandler(
+            nameof(IUnitEntity.RemoveTrackedSpellStates),
+            _ => new[]
+            {
+                new SpellStateRemoval(SpellStateRemovalKind.PropertyModifier, 72341u, 902u, 186387u)
+            });
+        achievementProxy.SetMethodReturn(
+            nameof(ICharacterAchievementManager.HasCompletedAchievement),
+            false);
+        globalAchievementProxy.SetMethodReturn(
+            nameof(IGlobalAchievementManager.GetAchievement),
+            achievementInfo);
+
+        using IDisposable resolverScope = UseDependencyResolver(
+            CreateGameTableManager(),
+            globalAchievementManager: globalAchievementManager);
+        ISpell spell = CreateSpell(77511u, player);
+        ISpellTargetEffectInfo info = CreateEffectInfo(
+            202590u,
+            77511u,
+            SpellEffectType.SpellForceRemove,
+            2u,
+            72341u,
+            1u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectSpellForceRemove(
+            spell,
+            player,
+            info);
+
+        Assert.Empty(
+            achievementProxy.GetInvocations(
+                nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Fact]
+    public void HandleEffectDisguise_WithUltimateProtogamesRowsdowerPolymorph_GrantsBeTheRowsdower()
+    {
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
+        ICharacterAchievementManager achievementManager =
+            RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+                out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy);
+        IGlobalAchievementManager globalAchievementManager =
+            RecordingDispatchProxy<IGlobalAchievementManager>.Create(
+                out RecordingDispatchProxy<IGlobalAchievementManager> globalAchievementProxy);
+        IAchievementInfo achievementInfo =
+            RecordingDispatchProxy<IAchievementInfo>.Create(out _);
+
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
+        achievementProxy.SetMethodReturn(
+            nameof(ICharacterAchievementManager.HasCompletedAchievement),
+            false);
+        globalAchievementProxy.SetMethodReturn(
+            nameof(IGlobalAchievementManager.GetAchievement),
+            achievementInfo);
+
+        using IDisposable resolverScope = UseDependencyResolver(
+            CreateDisguiseGameTableManager(
+                new Creature2Entry
+                {
+                    Id                      = 15176u,
+                    Creature2DisplayGroupId = 24206u
+                },
+                new Creature2DisplayGroupEntryEntry
+                {
+                    Id                      = 21632u,
+                    Creature2DisplayGroupId = 24206u,
+                    Creature2DisplayInfoId  = 21619u
+                }),
+            globalAchievementManager: globalAchievementManager);
+        ISpell spell = CreateSpell(72361u, player);
+        ISpellTargetEffectInfo info = CreateEffectInfo(
+            186471u,
+            72361u,
+            SpellEffectType.Disguise,
+            0u,
+            0u,
+            15176u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectDisguise(
+            spell,
+            player,
+            info);
+
+        Assert.Equal(21619u, player.DisplayInfo);
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant =
+            Assert.Single(
+                achievementProxy.GetInvocations(
+                    nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5942, (ushort)grant.Arguments[0]);
+    }
+
+    [Fact]
+    public void HandleEffectDisguise_WithMissingRowsdowerDisplay_DoesNotGrantBeTheRowsdower()
+    {
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
+        ICharacterAchievementManager achievementManager =
+            RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+                out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy);
+        IGlobalAchievementManager globalAchievementManager =
+            RecordingDispatchProxy<IGlobalAchievementManager>.Create(
+                out RecordingDispatchProxy<IGlobalAchievementManager> globalAchievementProxy);
+        IAchievementInfo achievementInfo =
+            RecordingDispatchProxy<IAchievementInfo>.Create(out _);
+
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
+        achievementProxy.SetMethodReturn(
+            nameof(ICharacterAchievementManager.HasCompletedAchievement),
+            false);
+        globalAchievementProxy.SetMethodReturn(
+            nameof(IGlobalAchievementManager.GetAchievement),
+            achievementInfo);
+
+        using IDisposable resolverScope = UseDependencyResolver(
+            CreateDisguiseGameTableManager(
+                new Creature2Entry
+                {
+                    Id                      = 15176u,
+                    Creature2DisplayGroupId = 24206u
+                }),
+            globalAchievementManager: globalAchievementManager);
+        ISpell spell = CreateSpell(72361u, player);
+        ISpellTargetEffectInfo info = CreateEffectInfo(
+            186471u,
+            72361u,
+            SpellEffectType.Disguise,
+            0u,
+            0u,
+            15176u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectDisguise(
+            spell,
+            player,
+            info);
+
+        Assert.Empty(
+            achievementProxy.GetInvocations(
+                nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Fact]
+    public void HandleEffectDisguise_WithUnrelatedRowsdowerPolymorph_DoesNotGrantBeTheRowsdower()
+    {
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
+        ICharacterAchievementManager achievementManager =
+            RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+                out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy);
+        IGlobalAchievementManager globalAchievementManager =
+            RecordingDispatchProxy<IGlobalAchievementManager>.Create(
+                out RecordingDispatchProxy<IGlobalAchievementManager> globalAchievementProxy);
+        IAchievementInfo achievementInfo =
+            RecordingDispatchProxy<IAchievementInfo>.Create(out _);
+
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
+        achievementProxy.SetMethodReturn(
+            nameof(ICharacterAchievementManager.HasCompletedAchievement),
+            false);
+        globalAchievementProxy.SetMethodReturn(
+            nameof(IGlobalAchievementManager.GetAchievement),
+            achievementInfo);
+
+        using IDisposable resolverScope = UseDependencyResolver(
+            CreateDisguiseGameTableManager(
+                new Creature2Entry
+                {
+                    Id                      = 15176u,
+                    Creature2DisplayGroupId = 24206u
+                },
+                new Creature2DisplayGroupEntryEntry
+                {
+                    Id                      = 21632u,
+                    Creature2DisplayGroupId = 24206u,
+                    Creature2DisplayInfoId  = 21619u
+                }),
+            globalAchievementManager: globalAchievementManager);
+        ISpell spell = CreateSpell(47578u, player);
+        ISpellTargetEffectInfo info = CreateEffectInfo(
+            186471u,
+            47578u,
+            SpellEffectType.Disguise,
+            0u,
+            0u,
+            15176u);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectDisguise(
+            spell,
+            player,
+            info);
+
+        Assert.Equal(21619u, player.DisplayInfo);
+        Assert.Empty(
+            achievementProxy.GetInvocations(
+                nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(72364u, 62548u, true, true)]
+    [InlineData(72364u, 62548u, false, false)]
+    [InlineData(72365u, 62548u, true, false)]
+    [InlineData(72364u, 62549u, true, false)]
+    public void HandleEffectDamage_WithRowsdowerRam_GrantsRowsdowerRuckusOnlyForKillingLostAndFoundCrate(
+        uint spell4Id,
+        uint targetCreature2Id,
+        bool killedTarget,
+        bool expectedGrant)
+    {
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetMethodHandler(nameof(IUnitEntity.CanAttack), _ => true);
+
+        ICharacterAchievementManager achievementManager =
+            RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+                out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy);
+        IGlobalAchievementManager globalAchievementManager =
+            RecordingDispatchProxy<IGlobalAchievementManager>.Create(
+                out RecordingDispatchProxy<IGlobalAchievementManager> globalAchievementProxy);
+        IAchievementInfo achievementInfo = RecordingDispatchProxy<IAchievementInfo>.Create(out _);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
+        achievementProxy.SetMethodHandler(
+            nameof(ICharacterAchievementManager.HasCompletedAchievement),
+            _ => false);
+        globalAchievementProxy.SetMethodHandler(
+            nameof(IGlobalAchievementManager.GetAchievement),
+            _ => achievementInfo);
+
+        IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(
+            out RecordingDispatchProxy<IUnitEntity> targetProxy);
+        targetProxy.SetProperty(nameof(IUnitEntity.Guid), 43u);
+        targetProxy.SetProperty(nameof(IUnitEntity.CreatureId), targetCreature2Id);
+
+        IDamageDescription damage = RecordingDispatchProxy<IDamageDescription>.Create(
+            out RecordingDispatchProxy<IDamageDescription> damageProxy);
+        damageProxy.SetProperty(nameof(IDamageDescription.KilledTarget), killedTarget);
+
+        ISpellTargetEffectInfo info = RecordingDispatchProxy<ISpellTargetEffectInfo>.Create(
+            out RecordingDispatchProxy<ISpellTargetEffectInfo> infoProxy);
+        infoProxy.SetProperty(nameof(ISpellTargetEffectInfo.Entry), new Spell4EffectsEntry
+        {
+            Id         = 186481u,
+            SpellId    = spell4Id,
+            TargetFlags = 4u,
+            EffectType  = SpellEffectType.Damage,
+            DamageType  = DamageType.Physical
+        });
+        infoProxy.SetProperty(nameof(ISpellTargetEffectInfo.Damage), damage);
+
+        IDamageCalculator damageCalculator = RecordingDispatchProxy<IDamageCalculator>.Create(out _);
+        using IDisposable resolverScope = UseDependencyResolver(
+            globalAchievementManager: globalAchievementManager,
+            damageCalculator: damageCalculator);
+
+        ISpell spell = CreateSpell(spell4Id, player);
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectDamage(spell, target, info);
+
+        IEnumerable<RecordingDispatchProxy<ICharacterAchievementManager>.Invocation> grants =
+            achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement));
+        if (expectedGrant)
+        {
+            RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(grants);
+            Assert.Equal((ushort)5943, grant.Arguments[0]);
+        }
+        else
+            Assert.Empty(grants);
+    }
+
+    [Fact]
     public void HandleEffectSpellImmunity_WithConcreteSpellMode_AddsImmunity()
     {
         IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out RecordingDispatchProxy<IUnitEntity> targetProxy);
@@ -1432,14 +1895,18 @@ public class SpellEffectCombatRegressionTests
         IGameTableManager gameTableManager = null,
         IGlobalSpellManager globalSpellManager = null,
         IGlobalLootManager globalLootManager = null,
-        IEntityFactory entityFactory = null)
+        IEntityFactory entityFactory = null,
+        IGlobalAchievementManager globalAchievementManager = null,
+        IDamageCalculator damageCalculator = null)
     {
         ISpellEffectDependencyResolver previousResolver =
             global::NexusForever.Game.Spell.SpellHandler.InitialiseDependencyResolver(new TestSpellEffectDependencyResolver(
                 gameTableManager,
                 globalSpellManager,
                 globalLootManager,
-                entityFactory));
+                entityFactory,
+                globalAchievementManager,
+                damageCalculator));
         return new DependencyResolverScope(previousResolver);
     }
 
@@ -1455,11 +1922,13 @@ public class SpellEffectCombatRegressionTests
         IGameTableManager gameTableManager,
         IGlobalSpellManager globalSpellManager,
         IGlobalLootManager globalLootManager,
-        IEntityFactory entityFactory) : ISpellEffectDependencyResolver
+        IEntityFactory entityFactory,
+        IGlobalAchievementManager globalAchievementManager,
+        IDamageCalculator damageCalculator) : ISpellEffectDependencyResolver
     {
         public IDamageCalculator CreateDamageCalculator()
         {
-            return null;
+            return damageCalculator;
         }
 
         public IEntityFactory GetEntityFactory()
@@ -1479,7 +1948,7 @@ public class SpellEffectCombatRegressionTests
 
         public IGlobalAchievementManager GetGlobalAchievementManager()
         {
-            return null;
+            return globalAchievementManager;
         }
 
         public IGlobalResidenceManager GetGlobalResidenceManager()
@@ -1552,6 +2021,16 @@ public class SpellEffectCombatRegressionTests
     {
         IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> proxy);
         proxy.SetProperty(nameof(IGameTableManager.Creature2), CreateGameTable(creatureEntries));
+        return gameTableManager;
+    }
+
+    private static IGameTableManager CreateDisguiseGameTableManager(
+        Creature2Entry creatureEntry,
+        params Creature2DisplayGroupEntryEntry[] displayGroupEntries)
+    {
+        IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> proxy);
+        proxy.SetProperty(nameof(IGameTableManager.Creature2), CreateGameTable(creatureEntry));
+        proxy.SetProperty(nameof(IGameTableManager.Creature2DisplayGroupEntry), CreateGameTable(displayGroupEntries));
         return gameTableManager;
     }
 

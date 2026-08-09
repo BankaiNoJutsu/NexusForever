@@ -1,5 +1,6 @@
 using System.Numerics;
 using NexusForever.Database.World.Model;
+using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
@@ -7,6 +8,7 @@ using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PublicEvent;
+using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -20,6 +22,12 @@ namespace NexusForever.Game.Tests.Instances;
 
 public class UltimateProtogamesEventScriptTests
 {
+    [Fact]
+    public void PublicEventObjectiveCatalog_DustStormUsesUltimateProtogamesRow2924()
+    {
+        Assert.Equal(2924u, (uint)PublicEventObjective.DustStorm);
+    }
+
     private static readonly ExpectedTankRoomSpawn[] ExpectedTankRoomSpawns =
     [
         new(1100300060u, 62546u, new Vector3(-29077f, -938f, 1552f), 36577u),
@@ -268,8 +276,11 @@ public class UltimateProtogamesEventScriptTests
         AssertObjectiveActivatedWithMax(eventProxy, PublicEventObjective.DestructODerby, 3u);
         AssertObjectiveActivated(eventProxy, PublicEventObjective.TankTrample);
         AssertObjectiveActivated(eventProxy, PublicEventObjective.CanCrusher);
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.RedemptionValue);
         AssertObjectiveActivated(eventProxy, PublicEventObjective.GoingGreen);
         AssertObjectiveActivatedWithMax(eventProxy, PublicEventObjective.GoingGreen, 3u);
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.NoDeaths2);
+        AssertObjectiveActivatedWithMax(eventProxy, PublicEventObjective.NoDeaths2, 1u);
         Assert.Equal(ExpectedTankRoomSpawns.Length, tanks.Count);
         for (int i = 0; i < ExpectedTankRoomSpawns.Length; i++)
             AssertTankRoomModel(tanks[i], ExpectedTankRoomSpawns[i]);
@@ -291,6 +302,152 @@ public class UltimateProtogamesEventScriptTests
 
         Assert.Equal(ExpectedTankRoomSpawns.Length, tanks.Count);
         Assert.Equal(ExpectedTankRoomSpawns.Length, mapProxy.GetInvocations(nameof(IMap.EnqueueAdd)).Count);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_TankRoomSuccess_CreditsNoDeaths()
+    {
+        var script = new UltimateProtogamesEventScript();
+        IPublicEvent publicEvent = CreatePublicEventWithTankRoom(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out _,
+            out _);
+        script.OnLoad(publicEvent);
+        script.OnPublicEventPhase((uint)PublicEventPhase.TankRoom);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.GoingGreen,
+            PublicEventStatus.Succeeded));
+
+        RecordingDispatchProxy<IPublicEvent>.Invocation update = Assert.Single(
+            eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)));
+        Assert.Equal(PublicEventObjective.NoDeaths2, update.Arguments[0]);
+        Assert.Equal(1, update.Arguments[1]);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_TankRoomSuccessAfterPlayerDeath_DoesNotCreditNoDeaths()
+    {
+        var script = new UltimateProtogamesEventScript();
+        IPublicEvent publicEvent = CreatePublicEventWithTankRoom(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out _,
+            out _);
+        script.OnLoad(publicEvent);
+        script.OnPublicEventPhase((uint)PublicEventPhase.TankRoom);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+
+        script.OnDeath(player);
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.GoingGreen,
+            PublicEventStatus.Succeeded));
+
+        Assert.Empty(eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)));
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_TankRoomSuccessAfterNonPlayerDeath_CreditsNoDeaths()
+    {
+        var script = new UltimateProtogamesEventScript();
+        IPublicEvent publicEvent = CreatePublicEventWithTankRoom(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out _,
+            out _);
+        script.OnLoad(publicEvent);
+        script.OnPublicEventPhase((uint)PublicEventPhase.TankRoom);
+        IUnitEntity nonPlayer = RecordingDispatchProxy<IUnitEntity>.Create(out _);
+
+        script.OnDeath(nonPlayer);
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.GoingGreen,
+            PublicEventStatus.Succeeded));
+
+        RecordingDispatchProxy<IPublicEvent>.Invocation update = Assert.Single(
+            eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)));
+        Assert.Equal(PublicEventObjective.NoDeaths2, update.Arguments[0]);
+        Assert.Equal(1, update.Arguments[1]);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_TankRoomFailure_DoesNotCreditNoDeaths()
+    {
+        var script = new UltimateProtogamesEventScript();
+        IPublicEvent publicEvent = CreatePublicEventWithTankRoom(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out _,
+            out _);
+        script.OnLoad(publicEvent);
+        script.OnPublicEventPhase((uint)PublicEventPhase.TankRoom);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.GoingGreen,
+            PublicEventStatus.Failed));
+
+        Assert.Empty(eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)));
+    }
+
+    [Fact]
+    public void OnTankReachedHalfHealth_AllThreeReviewedTanks_CreditsRedemptionValueOnce()
+    {
+        var script = new UltimateProtogamesEventScript();
+        IPublicEvent publicEvent = CreatePublicEventWithTankRoom(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out _,
+            out _);
+        script.OnLoad(publicEvent);
+        script.OnPublicEventPhase((uint)PublicEventPhase.TankRoom);
+
+        foreach (ExpectedTankRoomSpawn spawn in ExpectedTankRoomSpawns)
+            script.OnTankReachedHalfHealth(CreateTankUnit(spawn.EntityId, 50u, 100u));
+
+        // Repeated threshold notifications must not duplicate the count-one
+        // Script objective credit.
+        script.OnTankReachedHalfHealth(CreateTankUnit(ExpectedTankRoomSpawns[0].EntityId, 40u, 100u));
+
+        RecordingDispatchProxy<IPublicEvent>.Invocation update = Assert.Single(
+            GetObjectiveUpdates(eventProxy, PublicEventObjective.RedemptionValue));
+        Assert.Equal(1, update.Arguments[1]);
+    }
+
+    [Fact]
+    public void OnTankReachedHalfHealth_DuplicateTankDoesNotReplaceDistinctTank()
+    {
+        var script = new UltimateProtogamesEventScript();
+        IPublicEvent publicEvent = CreatePublicEventWithTankRoom(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out _,
+            out _);
+        script.OnLoad(publicEvent);
+        script.OnPublicEventPhase((uint)PublicEventPhase.TankRoom);
+
+        for (int i = 0; i < ExpectedTankRoomSpawns.Length; i++)
+            script.OnTankReachedHalfHealth(CreateTankUnit(ExpectedTankRoomSpawns[0].EntityId, 50u, 100u));
+
+        Assert.Empty(GetObjectiveUpdates(eventProxy, PublicEventObjective.RedemptionValue));
+
+        script.OnTankReachedHalfHealth(CreateTankUnit(ExpectedTankRoomSpawns[1].EntityId, 50u, 100u));
+        script.OnTankReachedHalfHealth(CreateTankUnit(ExpectedTankRoomSpawns[2].EntityId, 50u, 100u));
+
+        Assert.Single(GetObjectiveUpdates(eventProxy, PublicEventObjective.RedemptionValue));
+    }
+
+    [Fact]
+    public void OnTankReachedHalfHealth_TankDestroyedBeforeAllQualify_DoesNotCreditRedemptionValue()
+    {
+        var script = new UltimateProtogamesEventScript();
+        IPublicEvent publicEvent = CreatePublicEventWithTankRoom(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out _,
+            out _);
+        script.OnLoad(publicEvent);
+        script.OnPublicEventPhase((uint)PublicEventPhase.TankRoom);
+
+        script.OnTankReachedHalfHealth(CreateTankUnit(ExpectedTankRoomSpawns[0].EntityId, 50u, 100u));
+        script.OnTankReachedHalfHealth(CreateTankUnit(ExpectedTankRoomSpawns[1].EntityId, 50u, 100u));
+        script.OnDeath(CreateTankUnit(ExpectedTankRoomSpawns[0].EntityId, 0u, 100u));
+        script.OnTankReachedHalfHealth(CreateTankUnit(ExpectedTankRoomSpawns[2].EntityId, 50u, 100u));
+
+        Assert.Empty(GetObjectiveUpdates(eventProxy, PublicEventObjective.RedemptionValue));
     }
 
     [Fact]
@@ -359,11 +516,13 @@ public class UltimateProtogamesEventScriptTests
         AssertObjectiveActivated(eventProxy, PublicEventObjective.Deputy);
         AssertObjectiveActivated(eventProxy, PublicEventObjective.FastHands);
         AssertObjectiveActivated(eventProxy, PublicEventObjective.DisableTheAlarm);
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.NoDeaths);
         AssertObjectiveActivatedWithMax(eventProxy, PublicEventObjective.SneakThroughThePrototentiary, 2u);
         AssertObjectiveActivatedWithMax(eventProxy, PublicEventObjective.HackThecreature62987, 1u);
         AssertObjectiveActivatedWithMax(eventProxy, PublicEventObjective.HackThecreature63037, 1u);
         AssertObjectiveActivatedWithMax(eventProxy, PublicEventObjective.FastHands, 1u);
         AssertObjectiveActivatedWithMax(eventProxy, PublicEventObjective.DisableTheAlarm, 1u);
+        AssertObjectiveActivatedWithMax(eventProxy, PublicEventObjective.NoDeaths, 1u);
         Assert.Equal(ExpectedPrototentiaryConsoleSpawns.Length, consoles.Count);
         for (int i = 0; i < ExpectedPrototentiaryConsoleSpawns.Length; i++)
             AssertPrototentiaryConsoleModel(consoles[i], ExpectedPrototentiaryConsoleSpawns[i]);
@@ -475,6 +634,8 @@ public class UltimateProtogamesEventScriptTests
         script.OnPublicEventPhase((uint)PublicEventPhase.HutHut);
 
         AssertObjectiveActivated(eventProxy, PublicEventObjective.DefeatHutHut);
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.TotalDomination);
+        AssertObjectiveActivatedWithMax(eventProxy, PublicEventObjective.TotalDomination, 1u);
         AssertHutHutModel(hutHut, ExpectedHutHut);
         AssertGridEntityAddedToMap(mapProxy, hutHut.Instance, ExpectedHutHut.Position);
     }
@@ -618,6 +779,63 @@ public class UltimateProtogamesEventScriptTests
     }
 
     [Fact]
+    public void MalfunctioningTank_OnDeath_ForwardsTankDeathToPublicEventScript()
+    {
+        var script = new MalfunctioningTankEntityScript();
+        ICreatureEntity entity = CreateTankCreatureWithPublicEvent(
+            ExpectedTankRoomSpawns[0].EntityId,
+            50u,
+            100u,
+            out _,
+            out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(entity);
+
+        script.OnDeath();
+
+        Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.InvokeScriptCollection)));
+    }
+
+    [Fact]
+    public void MalfunctioningTank_OnHealthChange_AtHalfHealthDamage_ForwardsThresholdSignal()
+    {
+        var script = new MalfunctioningTankEntityScript();
+        ICreatureEntity entity = CreateTankCreatureWithPublicEvent(
+            ExpectedTankRoomSpawns[0].EntityId,
+            50u,
+            100u,
+            out _,
+            out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(entity);
+
+        script.OnHealthChange(null, 1u, DamageType.Physical);
+
+        Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.InvokeScriptCollection)));
+    }
+
+    [Fact]
+    public void MalfunctioningTank_OnHealthChange_HealAboveHalfAndLethalDamage_DoNotForwardThresholdSignal()
+    {
+        var script = new MalfunctioningTankEntityScript();
+        ICreatureEntity entity = CreateTankCreatureWithPublicEvent(
+            ExpectedTankRoomSpawns[0].EntityId,
+            50u,
+            100u,
+            out RecordingDispatchProxy<ICreatureEntity> entityProxy,
+            out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(entity);
+
+        script.OnHealthChange(null, 1u, DamageType.Heal);
+        entityProxy.SetProperty(nameof(IWorldEntity.Health), 51u);
+        script.OnHealthChange(null, 1u, DamageType.Physical);
+        entityProxy.SetProperty(nameof(IWorldEntity.Health), 0u);
+        script.OnHealthChange(null, 100u, DamageType.Physical);
+        entityProxy.SetProperty(nameof(IWorldEntity.Health), 50u);
+        script.OnHealthChange(null, 1u, null);
+
+        Assert.Empty(eventProxy.GetInvocations(nameof(IPublicEvent.InvokeScriptCollection)));
+    }
+
+    [Fact]
     public void GildedFowl_OnDeath_UpdatesMappedPowerPlungeObjectivesOnce()
     {
         var script = new GildedFowlEntityScript();
@@ -645,6 +863,36 @@ public class UltimateProtogamesEventScriptTests
     }
 
     [Fact]
+    public void HutHut_OnDeath_UpdatesDefeatAndTotalDominationObjectivesOnce()
+    {
+        var script = new HutHutEntityScript(
+            RecordingDispatchProxy<IFactory<ISpellParameters>>.Create(out _),
+            RecordingDispatchProxy<IGameTableManager>.Create(out _));
+        RecordingDispatchProxy<IPublicEventManager> publicEventManagerProxy =
+            CreateCreatureWithPublicEventManager(out ICreatureEntity entity);
+
+        script.OnLoad(entity);
+        script.OnDeath();
+        script.OnDeath();
+
+        List<RecordingDispatchProxy<IPublicEventManager>.Invocation> updates = publicEventManagerProxy
+            .GetInvocations(nameof(IPublicEventManager.UpdateObjective))
+            .Where(i => i.Arguments.Length == 2)
+            .ToList();
+        Assert.Collection(updates,
+            update =>
+            {
+                Assert.Equal((uint)PublicEventObjective.DefeatHutHut, update.Arguments[0]);
+                Assert.Equal(1, update.Arguments[1]);
+            },
+            update =>
+            {
+                Assert.Equal((uint)PublicEventObjective.TotalDomination, update.Arguments[0]);
+                Assert.Equal(1, update.Arguments[1]);
+            });
+    }
+
+    [Fact]
     public void Warden_OnDeath_UpdatesPrototentiaryAggregateObjectiveOnce()
     {
         var script = new WardenEntityScript(
@@ -659,6 +907,76 @@ public class UltimateProtogamesEventScriptTests
         RecordingDispatchProxy<IPublicEventManager>.Invocation update = Assert.Single(
             publicEventManagerProxy.GetInvocations(nameof(IPublicEventManager.UpdateObjective)));
         Assert.Equal((uint)PublicEventObjective.SneakThroughThePrototentiary, update.Arguments[0]);
+        Assert.Equal(1, update.Arguments[1]);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_PrototentiaryAggregateSuccess_CreditsNoDeaths()
+    {
+        var script = new UltimateProtogamesEventScript();
+        IPublicEvent publicEvent = CreatePublicEventWithPrototentiaryContent(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out _,
+            out _,
+            out _,
+            out _);
+        script.OnLoad(publicEvent);
+        script.OnPublicEventPhase((uint)PublicEventPhase.Prototentiary);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.SneakThroughThePrototentiary,
+            PublicEventStatus.Succeeded));
+
+        RecordingDispatchProxy<IPublicEvent>.Invocation update = Assert.Single(
+            eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)));
+        Assert.Equal(PublicEventObjective.NoDeaths, update.Arguments[0]);
+        Assert.Equal(1, update.Arguments[1]);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_PrototentiaryAggregateSuccessAfterPlayerDeath_DoesNotCreditNoDeaths()
+    {
+        var script = new UltimateProtogamesEventScript();
+        IPublicEvent publicEvent = CreatePublicEventWithPrototentiaryContent(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out _,
+            out _,
+            out _,
+            out _);
+        script.OnLoad(publicEvent);
+        script.OnPublicEventPhase((uint)PublicEventPhase.Prototentiary);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+
+        script.OnDeath(player);
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.SneakThroughThePrototentiary,
+            PublicEventStatus.Succeeded));
+
+        Assert.Empty(eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)));
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_PrototentiaryAggregateSuccessAfterNonPlayerDeath_CreditsNoDeaths()
+    {
+        var script = new UltimateProtogamesEventScript();
+        IPublicEvent publicEvent = CreatePublicEventWithPrototentiaryContent(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out _,
+            out _,
+            out _,
+            out _);
+        script.OnLoad(publicEvent);
+        script.OnPublicEventPhase((uint)PublicEventPhase.Prototentiary);
+        IUnitEntity nonPlayer = RecordingDispatchProxy<IUnitEntity>.Create(out _);
+
+        script.OnDeath(nonPlayer);
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.SneakThroughThePrototentiary,
+            PublicEventStatus.Succeeded));
+
+        RecordingDispatchProxy<IPublicEvent>.Invocation update = Assert.Single(
+            eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)));
+        Assert.Equal(PublicEventObjective.NoDeaths, update.Arguments[0]);
         Assert.Equal(1, update.Arguments[1]);
     }
 
@@ -747,6 +1065,4460 @@ public class UltimateProtogamesEventScriptTests
 
         Assert.Contains(eventProxy.GetInvocations(nameof(IPublicEvent.SetPhase)),
             i => (PublicEventPhase)i.Arguments[0] == PublicEventPhase.MisplacedMammoth);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_DestructODerbySuccess_GrantsWasteManagementProfessionalToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.DestructODerby,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5864, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.DestructODerby, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.GoingGreen, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantWasteManagementProfessional(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.Empty(achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_NoDeathsSuccess_GrantsImmortalWasteManagementFacilityToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.NoDeaths2,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5865, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.NoDeaths2, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.GoingGreen, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantImmortalWasteManagementFacility(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.Empty(achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_IncinerateSuccess_DoesNotGrantExpertIncineratorWithoutZeroPlayerHitEvidence()
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.Incinerate,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        Assert.Empty(achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_TankTrampleSuccess_GrantsTankTrampleAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.TankTrample,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5867, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.TankTrample, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.GoingGreen, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantTankTrampleAchievement(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.Empty(achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_RedemptionValueSuccess_GrantsRedemptionValueAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.RedemptionValue,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5868, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.RedemptionValue, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.GoingGreen, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantRedemptionValueAchievement(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.Empty(achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_CanCrusherSuccess_GrantsCanCrusherAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.CanCrusher,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5869, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.CanCrusher, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.GoingGreen, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantCanCrusherAchievement(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.Empty(achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_EnvironmentalistSuccess_GrantsEnvironmentalistAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.Environmentalist,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5870, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.Environmentalist, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.GoingGreen, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantEnvironmentalistAchievement(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.Empty(achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_KingsAndQueensSuccess_GrantsCrateRoyaltyAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.KingsAndQueensOfTheHill,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5871, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.KingsAndQueensOfTheHill, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.GoingGreen, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantCrateRoyaltyAchievement(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.Empty(achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_DestructODerbySuccess_DoesNotGrantRedTankRunawayWithoutMissileDistanceEvidence()
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.DestructODerby,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5872);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_SurviveTheBlitzsquirgSuccess_GrantsAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.SurviveTheBlitzsquirg,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5873, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.SurviveTheBlitzsquirg, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.GoingGreen, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantSurviveTheBlitzsquirgAchievement(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.Empty(achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(28653u)]
+    [InlineData(28654u)]
+    [InlineData(28655u)]
+    public void OnPublicEventObjectiveStatus_SurviveTheBlitzsquirgSuccessWithEquippedSquirgHelmet_GrantsSquirgception(
+        uint squirgHelmetItemId)
+    {
+        IItem squirgHelmet = RecordingDispatchProxy<IItem>.Create(
+            out RecordingDispatchProxy<IItem> squirgHelmetProxy);
+        squirgHelmetProxy.SetProperty(nameof(IItem.Id), squirgHelmetItemId);
+
+        IInventory inventory = RecordingDispatchProxy<IInventory>.Create(
+            out RecordingDispatchProxy<IInventory> inventoryProxy);
+        inventoryProxy.SetMethodHandler(nameof(IInventory.GetItem), args =>
+            args.Length == 2
+            && (InventoryLocation)args[0] == InventoryLocation.Equipped
+            && (uint)args[1] == (uint)EquippedItem.Head
+                ? squirgHelmet
+                : null);
+
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.SurviveTheBlitzsquirg,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        IReadOnlyList<RecordingDispatchProxy<ICharacterAchievementManager>.Invocation> grants =
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement));
+        Assert.Contains(grants, invocation => (ushort)invocation.Arguments[0] == 5873);
+        Assert.Contains(grants, invocation => (ushort)invocation.Arguments[0] == 5882);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_SurviveTheBlitzsquirgSuccessWithWrongHeadItem_DoesNotGrantSquirgception()
+    {
+        IItem wrongHeadItem = RecordingDispatchProxy<IItem>.Create(
+            out RecordingDispatchProxy<IItem> wrongHeadItemProxy);
+        wrongHeadItemProxy.SetProperty(nameof(IItem.Id), 28652u);
+
+        IInventory inventory = RecordingDispatchProxy<IInventory>.Create(
+            out RecordingDispatchProxy<IInventory> inventoryProxy);
+        inventoryProxy.SetMethodReturn(nameof(IInventory.GetItem), wrongHeadItem);
+
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.SurviveTheBlitzsquirg,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        IReadOnlyList<RecordingDispatchProxy<ICharacterAchievementManager>.Invocation> grants =
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement));
+        Assert.Contains(grants, invocation => (ushort)invocation.Arguments[0] == 5873);
+        Assert.DoesNotContain(grants, invocation => (ushort)invocation.Arguments[0] == 5882);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_SurviveTheBlitzsquirgSuccessWithSquirgHelmetOnlyInInventory_DoesNotGrantSquirgception()
+    {
+        IItem squirgHelmet = RecordingDispatchProxy<IItem>.Create(
+            out RecordingDispatchProxy<IItem> squirgHelmetProxy);
+        squirgHelmetProxy.SetProperty(nameof(IItem.Id), 28653u);
+
+        IInventory inventory = RecordingDispatchProxy<IInventory>.Create(
+            out RecordingDispatchProxy<IInventory> inventoryProxy);
+        inventoryProxy.SetMethodHandler(nameof(IInventory.GetItem), args =>
+            args.Length == 2 && (InventoryLocation)args[0] == InventoryLocation.Inventory
+                ? squirgHelmet
+                : null);
+
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.SurviveTheBlitzsquirg,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        IReadOnlyList<RecordingDispatchProxy<ICharacterAchievementManager>.Invocation> grants =
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement));
+        Assert.Contains(grants, invocation => (ushort)invocation.Arguments[0] == 5873);
+        Assert.DoesNotContain(grants, invocation => (ushort)invocation.Arguments[0] == 5882);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_SurviveTheBlitzsquirgSuccessWithCompletedSquirgception_DoesNotGrantDuplicate()
+    {
+        IItem squirgHelmet = RecordingDispatchProxy<IItem>.Create(
+            out RecordingDispatchProxy<IItem> squirgHelmetProxy);
+        squirgHelmetProxy.SetProperty(nameof(IItem.Id), 28653u);
+
+        IInventory inventory = RecordingDispatchProxy<IInventory>.Create(
+            out RecordingDispatchProxy<IInventory> inventoryProxy);
+        inventoryProxy.SetMethodReturn(nameof(IInventory.GetItem), squirgHelmet);
+
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodHandler(
+            nameof(ICharacterAchievementManager.HasCompletedAchievement),
+            args => (ushort)args[0] == 5882);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.SurviveTheBlitzsquirg,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        IReadOnlyList<RecordingDispatchProxy<ICharacterAchievementManager>.Invocation> grants =
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement));
+        Assert.Contains(grants, invocation => (ushort)invocation.Arguments[0] == 5873);
+        Assert.DoesNotContain(grants, invocation => (ushort)invocation.Arguments[0] == 5882);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_KickMaraudersIntoDeepSpaceSuccess_GrantsCosmicKickerToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.KickMaraudersIntoDeepSpace,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5883, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.KickMaraudersIntoDeepSpace, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.Kick10Marauders, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantCosmicKicker(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5883);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_Kick10MaraudersSuccess_GrantsCosmicKick10ToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.Kick10Marauders,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5886, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.Kick10Marauders, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.Kick20Marauders, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantCosmicKick10(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5886);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_Kick20MaraudersSuccess_GrantsCosmicKick20ToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.Kick20Marauders,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5887, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.Kick20Marauders, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.Kick40Marauders, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantCosmicKick20(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5887);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_Kick40MaraudersSuccess_GrantsCosmicKick40ToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.Kick40Marauders,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5888, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.Kick40Marauders, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.Kick80Marauders, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantCosmicKick40(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5888);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_Kick80MaraudersSuccess_GrantsCosmicKick80ToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.Kick80Marauders,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5889, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.Kick80Marauders, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.Kick40Marauders, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantCosmicKick80(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5889);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_PerfectPrecisionSuccess_GrantsCosmicPrecisionToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.PerfectPrecision,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5890, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.PerfectPrecision, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.Kick80Marauders, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantCosmicPrecision(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5890);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_AcceleratedEradicationSuccess_GrantsOffMyShipToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.AcceleratedEradication,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5891, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.AcceleratedEradication, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.PerfectPrecision, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantOffMyShip(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5891);
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.KickMaraudersIntoDeepSpace)]
+    [InlineData(PublicEventObjective.Kick10Marauders)]
+    public void OnPublicEventObjectiveStatus_AggregateCosmicKickSuccess_DoesNotGrantTakingTurnsWithoutPerMemberEvidence(
+        PublicEventObjective objective)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            objective,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5892);
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.KickMaraudersIntoDeepSpace)]
+    [InlineData(PublicEventObjective.Kick20Marauders)]
+    public void OnPublicEventObjectiveStatus_AggregateCosmicKickSuccess_DoesNotGrantMultiCosmicKickWithoutSameCastEvidence(
+        PublicEventObjective objective)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            objective,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5893);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_MasterTheElementsSuccess_GrantsMasterOfTheElementsToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.MasterTheElements,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5894, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.MasterTheElements, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.KickMaraudersIntoDeepSpace, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantMasterOfTheElements(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5894);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_MasterTheElementsSuccess_DoesNotGrantImmortalElementalHospitalWithoutNoDeathsEvidence()
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.MasterTheElements,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        IReadOnlyList<RecordingDispatchProxy<ICharacterAchievementManager>.Invocation> grants =
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement));
+        Assert.Contains(grants, invocation => (ushort)invocation.Arguments[0] == 5894);
+        Assert.DoesNotContain(grants, invocation => (ushort)invocation.Arguments[0] == 5895);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_PanicProntoSuccess_GrantsPanicProntoToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.PanicPronto,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5896, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.PanicPronto, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.ClaustrophobicSkip, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantPanicPronto(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5896);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_ClaustrophobicSkipSuccess_GrantsClaustrophobicSkipToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.ClaustrophobicSkip,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5897, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.ClaustrophobicSkip, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.PanicPronto, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantClaustrophobicSkip(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5897);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_EscapedPatientSuccess_GrantsPatientSecuredToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.EscapedPatient,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5898, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.EscapedPatient, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.QuickVisit, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantPatientSecured(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5898);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_QuickVisitSuccess_GrantsInstitutionalizedToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.QuickVisit,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5899, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.QuickVisit, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.EscapedPatient, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantInstitutionalized(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5899);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_ToxophobiaSuccess_GrantsToxophobiaToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.Toxophobia,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5900, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.Toxophobia, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.Atychiphobia, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantToxophobia(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5900);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_AtychiphobiaSuccess_GrantsAtychiphobiaToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.Atychiphobia,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5901, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.Atychiphobia, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.Toxophobia, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantAtychiphobia(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5901);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_ChronophobiaSuccess_GrantsChronophobiaToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.Chronophobia,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5902, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.Chronophobia, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.Atychiphobia, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantChronophobia(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5902);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_MasterTheElementsSuccess_DoesNotGrantStageFrightWithoutPartyBeaconCarryHistory()
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.MasterTheElements,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5903);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_ToxophobiaSuccess_DoesNotGrantOvercomingToxophobiaWithoutTimedExposure()
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.Toxophobia,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5904);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_SneakThroughThePrototentiarySuccess_GrantsPrototentiaryProwlToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.SneakThroughThePrototentiary,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5905, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.SneakThroughThePrototentiary, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.NoDeaths, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantPrototentiaryProwl(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5905);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_NoDeathsSuccess_GrantsImmortalPrototentiaryToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.NoDeaths,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5906, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.NoDeaths, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.NoDeaths2, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantImmortalPrototentiary(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5906);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_ShadowsteppingSuccess_GrantsShadowstepperToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.Shadowstepping,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5907, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.Shadowstepping, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.KeenSenses, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantShadowstepper(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5907);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_DriveBySuccess_GrantsGateGuardDriveByToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.DriveBy,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5908, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.DriveBy, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.Shadowstepping, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantGateGuardDriveBy(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5908);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_KeenSensesSuccess_GrantsKeenSensesToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.KeenSenses,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5909, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.KeenSenses, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.LowProfile, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantKeenSenses(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5909);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_LowProfileSuccess_GrantsLowProfileToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.LowProfile,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5910, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.LowProfile, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.KeenSenses, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantLowProfile(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5910);
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.Undetectable)]
+    [InlineData(PublicEventObjective.Deputy)]
+    [InlineData(PublicEventObjective.SneakThroughThePrototentiary)]
+    public void OnPublicEventObjectiveStatus_ConflictingUndetectableSignals_DoNotGrantAchievement(
+        PublicEventObjective objective)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            objective,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5911);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_GhostsSuccess_GrantsGhostToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.Ghosts,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5912, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.Ghosts, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.FastHands, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantGhost(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5912);
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.DisableTheAlarm)]
+    [InlineData(PublicEventObjective.Ghosts)]
+    public void OnPublicEventObjectiveStatus_AlarmRelatedSuccess_DoesNotGrantHitSnoozeWithoutTriggerTimerHistory(
+        PublicEventObjective objective)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            objective,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5913);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FastHandsSuccess_GrantsPrestoPrototentiaryToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.FastHands,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5914, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.FastHands, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.Ghosts, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantPrestoPrototentiary(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5914);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_CompleteProtoPlungeSuccess_GrantsProtoplungeProfessionalToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.CompleteTheProtoPlunge,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5915, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.CompleteTheProtoPlunge, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.GildedFowl, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantProtoplungeProfessional(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5915);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_ExtraPointSuccess_GrantsExtraPointProfessionalToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.ExtraPoint,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5916, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.ExtraPoint, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.SlickMoves, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantExtraPointProfessional(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5916);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_ProtoPlunges30Success_GrantsUltimateProtoPlungerToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.ProtoPlunges30,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5917, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.ProtoPlunges30, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.CompleteTheProtoPlunge, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantUltimateProtoPlunger(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        IReadOnlyList<RecordingDispatchProxy<ICharacterAchievementManager>.Invocation> grants =
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement));
+        Assert.DoesNotContain(grants, invocation => (ushort)invocation.Arguments[0] == 5917);
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.CubigCarnage)]
+    [InlineData(PublicEventObjective.GildedFowl2)]
+    public void OnPublicEventObjectiveStatus_PowerPlungeCountMismatch_DoesNotGrantCubigCarnage(
+        PublicEventObjective objective)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            objective,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5918);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_GildedFowlSuccess_GrantsFowlFeastToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.GildedFowl,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5919, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.GildedFowl, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.GildedFowl2, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantFowlFeast(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5919);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_CrystalCatcherSuccess_GrantsAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.CrystalCatcher,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5920, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.CrystalCatcher, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.GildedFowl, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantCrystalCatcher(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5920);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_WaterHazardSuccess_GrantsSkySoaringToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.WaterHazard,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5921, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.WaterHazard, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.CrystalCatcher, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantSkySoaring(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5921);
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.CompleteTheProtoPlunge)]
+    [InlineData(PublicEventObjective.GildedFowl)]
+    [InlineData(PublicEventObjective.CrystalCatcher)]
+    [InlineData(PublicEventObjective.WaterHazard)]
+    public void OnPublicEventObjectiveStatus_PowerPlungeObjectiveSuccess_DoesNotGrantDisorientedDescent(
+        PublicEventObjective objective)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            objective,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5922);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_PestControlSuccess_GrantsProfessionalAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.PestControl,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5923, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.PestControl, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.Slaughterhouse, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantPestControlProfessional(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5923);
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.NoDeaths)]
+    [InlineData(PublicEventObjective.NoDeaths2)]
+    public void OnPublicEventObjectiveStatus_PestControlAndUnscopedNoDeathsSuccess_DoNotGrantImmortalProtostarPettingZoo(
+        PublicEventObjective noDeathsObjective)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.PestControl,
+            PublicEventStatus.Succeeded,
+            1001ul));
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            noDeathsObjective,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5924);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_RunawayVeggieSuccess_GrantsSteamedVeggiesToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.RunawayVeggie,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5925, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.RunawayVeggie, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.Slaughterhouse, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantSteamedVeggies(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5925);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_RowsdowerRoundUpSuccess_GrantsAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.RowsdowerRoundUp,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5926, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.RowsdowerRoundUp, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.RunawayVeggie, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantRowsdowerRoundUp(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5926);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_DamageControlSuccess_GrantsAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.DamageControl,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5927, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.DamageControl, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.RowsdowerRoundUp, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantDamageControl(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5927);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_SplorgSpreeSuccess_GrantsAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.SplorgSpree,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5928, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.SplorgSpree, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.DamageControl, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantSplorgSpree(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5928);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_SlaughterhouseSuccess_GrantsJabbitJustificationToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.Slaughterhouse,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5929, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.Slaughterhouse, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.SplorgSpree, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantJabbitJustification(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5929);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_SplorgStepperSuccess_GrantsAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.SplorgStepper,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5930, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.SplorgStepper, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.Slaughterhouse, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantSplorgStepper(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5930);
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.HuntRuffles)]
+    [InlineData(PublicEventObjective.Slaughterhouse)]
+    public void OnPublicEventObjectiveStatus_NearbySuccess_DoesNotGrantFluffyAndFluzzballWithoutLayEggsEvidence(
+        PublicEventObjective objective)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, PublicEventStatus.Succeeded, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5931);
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.HuntRuffles)]
+    [InlineData(PublicEventObjective.PestControl)]
+    [InlineData(PublicEventObjective.Slaughterhouse)]
+    public void OnPublicEventObjectiveStatus_NearbySuccess_DoesNotGrantLikeMotherLikeDaughtersWithoutVehicleKillAttribution(
+        PublicEventObjective objective)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, PublicEventStatus.Succeeded, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5932);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_ClearTheLostAndFoundSuccess_GrantsDustBusterToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.ClearTheLostAndFound,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5933, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.ClearTheLostAndFound, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.DustStorm, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantDustBuster(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5933);
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.ClearTheLostAndFound)]
+    [InlineData(PublicEventObjective.SpringCleaning)]
+    [InlineData(PublicEventObjective.NoDeaths)]
+    [InlineData(PublicEventObjective.NoDeaths2)]
+    public void OnPublicEventObjectiveStatus_LostAndFoundOrOtherRoomSuccess_DoesNotGrantImmortalLostAndFoundWithoutRoomScopedNoDeathsEvidence(
+        PublicEventObjective objective)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, PublicEventStatus.Succeeded, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5934);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_MondosCrateSuccess_GrantsWhatsInTheBoxToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.MondosCrate,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5935, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.MondosCrate, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.MonstrosityMassacre, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantWhatsInTheBox(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5935);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_DustStormSuccess_GrantsDustStormAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.DustStorm,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5936, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.DustStorm, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.ClearTheLostAndFound, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantDustStormAchievement(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5936);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_QuickReflexesSuccess_GrantsMonstrosityMassacreToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.QuickReflexes,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5937, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.QuickReflexes, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.MonstrosityMassacre, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantMonstrosityMassacreAchievement(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5937);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FriendOfCrateSuccess_GrantsFriendOfCrateToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.FriendOfCrate,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5938, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.FriendOfCrate, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.SpringCleaning, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantFriendOfCrateAchievement(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5938);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_WelcomeToTheThunderdomeSuccess_GrantsWeatheringTheStormToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.WelcomeToTheThunderdome,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5939, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.WelcomeToTheThunderdome, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.DustStorm, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantWeatheringTheStormAchievement(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5939);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_SpringCleaningSuccess_GrantsSpringCleaningToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.SpringCleaning,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5940, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.SpringCleaning, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.ClearTheLostAndFound, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantSpringCleaningAchievement(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5940);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_KickMaraudersIntoDeepSpaceSuccess_DoesNotGrantImmortalHmsPhineasWithoutNoDeathsEvidence()
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.KickMaraudersIntoDeepSpace,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        IReadOnlyList<RecordingDispatchProxy<ICharacterAchievementManager>.Invocation> grants =
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement));
+        Assert.Contains(grants, invocation => (ushort)invocation.Arguments[0] == 5883);
+        Assert.DoesNotContain(grants, invocation => (ushort)invocation.Arguments[0] == 5884);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_RapidFireSuccess_DoesNotGrantRapidKickerFromThreeKickObjective()
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        script.OnLoad(CreatePublicEvent(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.RapidFire,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5885);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_SurviveTheBlitzsquirgSuccess_DoesNotGrantImmortalSquirgnasiumWithoutNoDeathsEvidence()
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.SurviveTheBlitzsquirg,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        IReadOnlyList<RecordingDispatchProxy<ICharacterAchievementManager>.Invocation> grants =
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement));
+        Assert.Contains(grants, invocation => (ushort)invocation.Arguments[0] == 5873);
+        Assert.DoesNotContain(grants, invocation => (ushort)invocation.Arguments[0] == 5874);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_CleanSweepSuccess_GrantsCleanSweeperAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.CleanSweep,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5875, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.CleanSweep, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.SurviveTheBlitzsquirg, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantCleanSweeperAchievement(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5875);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_SquirgDefuserSuccess_GrantsSquirgDefuserAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.SquirgDefuser,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5876, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.SquirgDefuser, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.CleanSweep, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantSquirgDefuserAchievement(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5876);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_JumpJumpSuccess_GrantsJumpAroundAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.JumpJump,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5877, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.JumpJump, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.SquirgDefuser, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantJumpAroundAchievement(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5877);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_TwinkleToesSuccess_GrantsTwinkleToesAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.TwinkleToes,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5878, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.TwinkleToes, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.JumpJump, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantTwinkleToesAchievement(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5878);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_SpeedySlaughterfestSuccess_GrantsSpeedySlaughterfestAchievementToEligibleOnlineMembers()
+    {
+        ICharacterAchievementManager eligibleAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> eligibleAchievementsProxy);
+        eligibleAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer eligiblePlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> eligiblePlayerProxy);
+        eligiblePlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), eligibleAchievements);
+
+        ICharacterAchievementManager completedAchievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> completedAchievementsProxy);
+        completedAchievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), true);
+        IPlayer completedPlayer = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> completedPlayerProxy);
+        completedPlayerProxy.SetProperty(nameof(IPlayer.AchievementManager), completedAchievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] switch
+        {
+            1001ul => eligiblePlayer,
+            1002ul => completedPlayer,
+            _      => null
+        });
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            PublicEventObjective.SpeedySlaughterfest,
+            PublicEventStatus.Succeeded,
+            1001ul,
+            1002ul,
+            1003ul));
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            eligibleAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)5879, grant.Arguments[0]);
+        Assert.Empty(completedAchievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.SpeedySlaughterfest, PublicEventStatus.Failed)]
+    [InlineData(PublicEventObjective.TwinkleToes, PublicEventStatus.Succeeded)]
+    public void OnPublicEventObjectiveStatus_NonQualifyingBoundary_DoesNotGrantSpeedySlaughterfestAchievement(
+        PublicEventObjective objective,
+        PublicEventStatus status)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(objective, status, 1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5879);
+    }
+
+    [Theory]
+    [InlineData(PublicEventObjective.TwinkleToes)]
+    [InlineData(PublicEventObjective.SpeedySlaughterfest)]
+    [InlineData(PublicEventObjective.JumpJump)]
+    public void OnPublicEventObjectiveStatus_SquirgObjectiveSuccess_DoesNotGrantSquirgFarmerWithoutSurvivalProducer(
+        PublicEventObjective objective)
+    {
+        ICharacterAchievementManager achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementsProxy);
+        achievementsProxy.SetMethodReturn(nameof(ICharacterAchievementManager.HasCompletedAchievement), false);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(
+            out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
+        playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+
+        var script = new UltimateProtogamesEventScript(playerManager);
+        IPublicEvent publicEvent = CreatePublicEvent(out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(
+            objective,
+            PublicEventStatus.Succeeded,
+            1001ul));
+
+        Assert.DoesNotContain(
+            achievementsProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)),
+            invocation => (ushort)invocation.Arguments[0] == 5880);
     }
 
     [Fact]
@@ -1042,7 +5814,53 @@ public class UltimateProtogamesEventScriptTests
         return publicEventManagerProxy;
     }
 
-    private static IPublicEventObjective CreateObjective(PublicEventObjective objective, PublicEventStatus status)
+    private static ICreatureEntity CreateTankCreatureWithPublicEvent(
+        uint entityId,
+        uint health,
+        uint maxHealth,
+        out RecordingDispatchProxy<ICreatureEntity> entityProxy,
+        out RecordingDispatchProxy<IPublicEvent> eventProxy)
+    {
+        IPublicEvent publicEvent = RecordingDispatchProxy<IPublicEvent>.Create(out eventProxy);
+        IPublicEventManager publicEventManager = RecordingDispatchProxy<IPublicEventManager>.Create(
+            out RecordingDispatchProxy<IPublicEventManager> publicEventManagerProxy);
+        publicEventManagerProxy.SetMethodReturn(nameof(IPublicEventManager.GetEvent), publicEvent);
+
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out RecordingDispatchProxy<IBaseMap> mapProxy);
+        mapProxy.SetProperty(nameof(IBaseMap.PublicEventManager), publicEventManager);
+
+        ICreatureEntity entity = RecordingDispatchProxy<ICreatureEntity>.Create(out entityProxy);
+        entityProxy.SetProperty(nameof(IGridEntity.Map), map);
+        entityProxy.SetProperty(nameof(IWorldEntity.EntityId), entityId);
+        entityProxy.SetProperty(nameof(IWorldEntity.PublicEventId), 594u);
+        entityProxy.SetProperty(nameof(IWorldEntity.Health), health);
+        entityProxy.SetProperty(nameof(IWorldEntity.MaxHealth), maxHealth);
+        return entity;
+    }
+
+    private static IUnitEntity CreateTankUnit(uint entityId, uint health, uint maxHealth)
+    {
+        IUnitEntity entity = RecordingDispatchProxy<IUnitEntity>.Create(
+            out RecordingDispatchProxy<IUnitEntity> entityProxy);
+        entityProxy.SetProperty(nameof(IWorldEntity.EntityId), entityId);
+        entityProxy.SetProperty(nameof(IWorldEntity.Health), health);
+        entityProxy.SetProperty(nameof(IWorldEntity.MaxHealth), maxHealth);
+        return entity;
+    }
+
+    private static IReadOnlyList<RecordingDispatchProxy<IPublicEvent>.Invocation> GetObjectiveUpdates(
+        RecordingDispatchProxy<IPublicEvent> eventProxy,
+        PublicEventObjective objective)
+    {
+        return eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective))
+            .Where(i => i.Arguments.Length == 2 && Equals(i.Arguments[0], objective))
+            .ToList();
+    }
+
+    private static IPublicEventObjective CreateObjective(
+        PublicEventObjective objective,
+        PublicEventStatus status,
+        params ulong[] characterIds)
     {
         IPublicEventObjective eventObjective = RecordingDispatchProxy<IPublicEventObjective>.Create(out RecordingDispatchProxy<IPublicEventObjective> objectiveProxy);
         objectiveProxy.SetProperty(nameof(IPublicEventObjective.Entry), new PublicEventObjectiveEntry
@@ -1050,6 +5868,21 @@ public class UltimateProtogamesEventScriptTests
             Id = (uint)objective
         });
         objectiveProxy.SetProperty(nameof(IPublicEventObjective.Status), status);
+        if (characterIds.Length != 0)
+        {
+            IPublicEventTeam team = RecordingDispatchProxy<IPublicEventTeam>.Create(out RecordingDispatchProxy<IPublicEventTeam> teamProxy);
+            IPublicEventTeamMember[] members = characterIds
+                .Select(characterId =>
+                {
+                    IPublicEventTeamMember member = RecordingDispatchProxy<IPublicEventTeamMember>.Create(
+                        out RecordingDispatchProxy<IPublicEventTeamMember> memberProxy);
+                    memberProxy.SetProperty(nameof(IPublicEventTeamMember.CharacterId), characterId);
+                    return member;
+                })
+                .ToArray();
+            teamProxy.SetMethodReturn(nameof(IPublicEventTeam.GetMembers), members);
+            objectiveProxy.SetProperty(nameof(IPublicEventObjective.Team), team);
+        }
         return eventObjective;
     }
 

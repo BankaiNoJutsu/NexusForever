@@ -1,5 +1,6 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
@@ -38,6 +39,58 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames.Script
             IFactory<ISpellParameters> spellParametersFactory,
             IGameTableManager gameTableManager)
             : base(spellParametersFactory, gameTableManager, (uint)PublicEventObjective.MondosCrate)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Mapped from build 16042 PublicEventObjective 2673. Creature2 62548 is
+    /// explicitly described as the event's crate-destruction crate and is
+    /// related to public event 594 by Jabbithole public-event creature row 2191.
+    /// </summary>
+    [ScriptFilterCreatureId(62548u)]
+    public class LostAndFoundCrateEntityScript : PublicEventObjectiveCreditEntityScript
+    {
+        public LostAndFoundCrateEntityScript(
+            IFactory<ISpellParameters> spellParametersFactory,
+            IGameTableManager gameTableManager)
+            : base(
+                spellParametersFactory,
+                gameTableManager,
+                (uint)PublicEventObjective.ClearTheLostAndFound,
+                (uint)PublicEventObjective.DustStorm)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Mapped from build 16042 PublicEventObjective 2925 and achievement 5928,
+    /// which require seven Splorg kills in twenty seconds. Achievements 5927
+    /// and 5930 identify the room's Splorg as Creature2 62597.
+    /// </summary>
+    [ScriptFilterCreatureId(62597u)]
+    public class ExplosiveSplorgEntityScript : PublicEventObjectiveCreditEntityScript
+    {
+        public ExplosiveSplorgEntityScript(
+            IFactory<ISpellParameters> spellParametersFactory,
+            IGameTableManager gameTableManager)
+            : base(spellParametersFactory, gameTableManager, (uint)PublicEventObjective.SplorgSpree)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Mapped from build 16042 PublicEventObjective 2927 and achievement 5926,
+    /// which require six Rowsdower kills. Creature2 62598 is explicitly the
+    /// Ultimate Protogames Rowsdower critter.
+    /// </summary>
+    [ScriptFilterCreatureId(62598u)]
+    public class RowsdowerEntityScript : PublicEventObjectiveCreditEntityScript
+    {
+        public RowsdowerEntityScript(
+            IFactory<ISpellParameters> spellParametersFactory,
+            IGameTableManager gameTableManager)
+            : base(spellParametersFactory, gameTableManager, (uint)PublicEventObjective.RowsdowerRoundUp)
         {
         }
     }
@@ -84,8 +137,8 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames.Script
     }
 
     /// <summary>
-    /// Mapped from build 16042 PublicEventObjective 2675, whose client
-    /// Creature2 row is Hut-Hut 61417.
+    /// Mapped from build 16042 PublicEventObjective 2675 and five-minute
+    /// TimedWin objective 2884, whose client Creature2 row is Hut-Hut 61417.
     /// </summary>
     [ScriptFilterCreatureId(61417u)]
     public class HutHutEntityScript : PublicEventObjectiveCreditEntityScript
@@ -93,7 +146,11 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames.Script
         public HutHutEntityScript(
             IFactory<ISpellParameters> spellParametersFactory,
             IGameTableManager gameTableManager)
-            : base(spellParametersFactory, gameTableManager, (uint)PublicEventObjective.DefeatHutHut)
+            : base(
+                spellParametersFactory,
+                gameTableManager,
+                (uint)PublicEventObjective.DefeatHutHut,
+                (uint)PublicEventObjective.TotalDomination)
         {
         }
     }
@@ -145,11 +202,12 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames.Script
     }
 
     /// <summary>
-    /// Mapped from build 16042 PublicEventObjective 2676/2868/2869/2872 /
+    /// Mapped from build 16042 PublicEventObjective 2676/2868/2869/2870/2872 /
     /// TargetGroup 12671, whose Creature2 members are Busted Red Tank 62542,
     /// Wrecked Blue Tank 62543, and Malfunctioning Yellow Tank 62546.
-    /// Objectives 2676 and 2872 are timed dynamic-max all-three cleanup rows;
-    /// exact random route and timer semantics remain blocked.
+    /// Objectives 2676 and 2872 are timed dynamic-max all-three cleanup rows.
+    /// Objective 2870 requires all three tanks to reach 50% health before any
+    /// tank is destroyed; exact random route and timer semantics remain blocked.
     /// </summary>
     [ScriptFilterCreatureId(62542u, 62543u, 62546u)]
     public class MalfunctioningTankEntityScript : IUnitScript, IOwnedScript<ICreatureEntity>
@@ -162,12 +220,30 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames.Script
             entity = owner;
         }
 
+        public void OnHealthChange(IUnitEntity source, uint amount, DamageType? type)
+        {
+            if (type is null or DamageType.Heal
+                || entity.Health == 0u
+                || entity.MaxHealth == 0u
+                || (ulong)entity.Health * 2u > entity.MaxHealth)
+                return;
+
+            entity.Map?.PublicEventManager?
+                .GetEvent(entity.PublicEventId)?
+                .InvokeScriptCollection<UltimateProtogamesEventScript>(
+                    script => script.OnTankReachedHalfHealth(entity));
+        }
+
         public void OnDeath()
         {
             if (credited)
                 return;
 
             credited = true;
+            entity.Map?.PublicEventManager?
+                .GetEvent(entity.PublicEventId)?
+                .InvokeScriptCollection<UltimateProtogamesEventScript>(
+                    script => script.OnDeath(entity));
             entity.Map.PublicEventManager.UpdateObjective(PublicEventObjective.DestructODerby, 1);
             entity.Map.PublicEventManager.UpdateObjective(PublicEventObjective.TankTrample, 1);
             entity.Map.PublicEventManager.UpdateObjective(PublicEventObjective.CanCrusher, 1);

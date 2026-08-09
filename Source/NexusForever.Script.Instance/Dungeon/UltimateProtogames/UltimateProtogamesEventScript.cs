@@ -43,6 +43,72 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames
         private const float TankRoomTankHealth = 1563977f;
         private const float TankRoomTankLevel = 50f;
         private const float TankRoomTankShield = 0f;
+        private const ushort WasteManagementProfessionalAchievementId = 5864;
+        private const ushort ImmortalWasteManagementFacilityAchievementId = 5865;
+        private const ushort TankTrampleAchievementId = 5867;
+        private const ushort RedemptionValueAchievementId = 5868;
+        private const ushort CanCrusherAchievementId = 5869;
+        private const ushort EnvironmentalistAchievementId = 5870;
+        private const ushort CrateRoyaltyAchievementId = 5871;
+        private const ushort SurviveTheBlitzsquirgAchievementId = 5873;
+        private const ushort SquirgceptionAchievementId = 5882;
+        private const ushort CosmicKickerAchievementId = 5883;
+        private const ushort CosmicKickTenAchievementId = 5886;
+        private const ushort CosmicKickTwentyAchievementId = 5887;
+        private const ushort CosmicKickFortyAchievementId = 5888;
+        private const ushort CosmicKickEightyAchievementId = 5889;
+        private const ushort CosmicPrecisionAchievementId = 5890;
+        private const ushort OffMyShipAchievementId = 5891;
+        private const ushort MasterOfTheElementsAchievementId = 5894;
+        private const ushort PanicProntoAchievementId = 5896;
+        private const ushort ClaustrophobicSkipAchievementId = 5897;
+        private const ushort PatientSecuredAchievementId = 5898;
+        private const ushort InstitutionalizedAchievementId = 5899;
+        private const ushort ToxophobiaAchievementId = 5900;
+        private const ushort AtychiphobiaAchievementId = 5901;
+        private const ushort ChronophobiaAchievementId = 5902;
+        private const ushort PrototentiaryProwlAchievementId = 5905;
+        private const ushort ImmortalPrototentiaryAchievementId = 5906;
+        private const ushort ShadowstepperAchievementId = 5907;
+        private const ushort GateGuardDriveByAchievementId = 5908;
+        private const ushort KeenSensesAchievementId = 5909;
+        private const ushort LowProfileAchievementId = 5910;
+        private const ushort GhostAchievementId = 5912;
+        private const ushort PrestoPrototentiaryAchievementId = 5914;
+        private const ushort ProtoplungeProfessionalAchievementId = 5915;
+        private const ushort ExtraPointProfessionalAchievementId = 5916;
+        private const ushort UltimateProtoPlungerAchievementId = 5917;
+        private const ushort FowlFeastAchievementId = 5919;
+        private const ushort CrystalCatcherAchievementId = 5920;
+        private const ushort SkySoaringAchievementId = 5921;
+        private const ushort PestControlProfessionalAchievementId = 5923;
+        private const ushort SteamedVeggiesAchievementId = 5925;
+        private const ushort RowsdowerRoundUpAchievementId = 5926;
+        private const ushort DamageControlAchievementId = 5927;
+        private const ushort SplorgSpreeAchievementId = 5928;
+        private const ushort JabbitJustificationAchievementId = 5929;
+        private const ushort SplorgStepperAchievementId = 5930;
+        private const ushort DustBusterAchievementId = 5933;
+        private const ushort WhatIsInTheBoxAchievementId = 5935;
+        private const ushort DustStormAchievementId = 5936;
+        private const ushort MonstrosityMassacreAchievementId = 5937;
+        private const ushort FriendOfCrateAchievementId = 5938;
+        private const ushort WeatheringTheStormAchievementId = 5939;
+        private const ushort SpringCleaningAchievementId = 5940;
+        private const ushort CleanSweeperAchievementId = 5875;
+        private const ushort SquirgDefuserAchievementId = 5876;
+        private const ushort JumpAroundAchievementId = 5877;
+        private const ushort TwinkleToesAchievementId = 5878;
+        private const ushort SpeedySlaughterfestAchievementId = 5879;
+        private static readonly HashSet<uint> SquirgHelmetItemIds =
+        [
+            // Build 16042 Item2 light/medium/heavy Odd Squirg Hat rows. All
+            // three are ArmorHead items with ItemDisplay 2388. Quest item
+            // 3702 shares that display but is not equippable.
+            28653u,
+            28654u,
+            28655u
+        ];
 
         private const uint MisplacedMammothEntityId = 1100300080u;
         private const uint MisplacedMammothCreatureId = 63312u;
@@ -190,6 +256,23 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames
         private bool gildedFowlSpawned;
         private bool hutHutSpawned;
         private bool prototentiarySpawned;
+        private readonly HashSet<uint> tankRoomHalfHealthEntityIds = [];
+        private bool tankRoomRedemptionValueActive;
+        private bool tankRoomNoDeathsActive;
+        private bool tankRoomPlayerDied;
+        private bool prototentiaryNoDeathsActive;
+        private bool prototentiaryPlayerDied;
+
+        #region Dependency Injection
+
+        private readonly IPlayerManager playerManager;
+
+        public UltimateProtogamesEventScript(IPlayerManager playerManager = null)
+        {
+            this.playerManager = playerManager;
+        }
+
+        #endregion
 
         /// <summary>
         /// Invoked when <see cref="IScript"/> is loaded.
@@ -207,6 +290,12 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames
             gildedFowlSpawned = false;
             hutHutSpawned = false;
             prototentiarySpawned = false;
+            tankRoomHalfHealthEntityIds.Clear();
+            tankRoomRedemptionValueActive = false;
+            tankRoomNoDeathsActive = false;
+            tankRoomPlayerDied = false;
+            prototentiaryNoDeathsActive = false;
+            prototentiaryPlayerDied = false;
             publicEvent.SetPhase(PublicEventPhase.Welcome);
         }
 
@@ -215,6 +304,16 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames
         /// </summary>
         public void OnPublicEventPhase(uint phase)
         {
+            if ((PublicEventPhase)phase != PublicEventPhase.TankRoom)
+            {
+                tankRoomRedemptionValueActive = false;
+                tankRoomHalfHealthEntityIds.Clear();
+                tankRoomNoDeathsActive = false;
+            }
+
+            if ((PublicEventPhase)phase != PublicEventPhase.Prototentiary)
+                prototentiaryNoDeathsActive = false;
+
             switch ((PublicEventPhase)phase)
             {
                 case PublicEventPhase.Welcome:
@@ -261,11 +360,193 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames
         /// </summary>
         public void OnPublicEventObjectiveStatus(IPublicEventObjective objective)
         {
+            if ((PublicEventObjective)objective.Entry.Id == PublicEventObjective.GoingGreen
+                && objective.Status == PublicEventStatus.Failed)
+            {
+                tankRoomRedemptionValueActive = false;
+                tankRoomHalfHealthEntityIds.Clear();
+                tankRoomNoDeathsActive = false;
+                return;
+            }
+
+            if ((PublicEventObjective)objective.Entry.Id == PublicEventObjective.SneakThroughThePrototentiary
+                && objective.Status == PublicEventStatus.Failed)
+            {
+                prototentiaryNoDeathsActive = false;
+                return;
+            }
+
             if (objective.Status != PublicEventStatus.Succeeded)
                 return;
 
             switch ((PublicEventObjective)objective.Entry.Id)
             {
+                case PublicEventObjective.CompleteTheProtoPlunge:
+                    GrantAchievementToObjectiveTeam(objective, ProtoplungeProfessionalAchievementId);
+                    break;
+                case PublicEventObjective.ExtraPoint:
+                    GrantAchievementToObjectiveTeam(objective, ExtraPointProfessionalAchievementId);
+                    break;
+                case PublicEventObjective.ProtoPlunges30:
+                    GrantAchievementToObjectiveTeam(objective, UltimateProtoPlungerAchievementId);
+                    break;
+                case PublicEventObjective.GildedFowl:
+                    GrantAchievementToObjectiveTeam(objective, FowlFeastAchievementId);
+                    break;
+                case PublicEventObjective.CrystalCatcher:
+                    GrantAchievementToObjectiveTeam(objective, CrystalCatcherAchievementId);
+                    break;
+                case PublicEventObjective.WaterHazard:
+                    GrantAchievementToObjectiveTeam(objective, SkySoaringAchievementId);
+                    break;
+                case PublicEventObjective.PestControl:
+                    GrantAchievementToObjectiveTeam(objective, PestControlProfessionalAchievementId);
+                    break;
+                case PublicEventObjective.RunawayVeggie:
+                    GrantAchievementToObjectiveTeam(objective, SteamedVeggiesAchievementId);
+                    break;
+                case PublicEventObjective.RowsdowerRoundUp:
+                    GrantAchievementToObjectiveTeam(objective, RowsdowerRoundUpAchievementId);
+                    break;
+                case PublicEventObjective.DamageControl:
+                    GrantAchievementToObjectiveTeam(objective, DamageControlAchievementId);
+                    break;
+                case PublicEventObjective.SplorgSpree:
+                    GrantAchievementToObjectiveTeam(objective, SplorgSpreeAchievementId);
+                    break;
+                case PublicEventObjective.Slaughterhouse:
+                    GrantAchievementToObjectiveTeam(objective, JabbitJustificationAchievementId);
+                    break;
+                case PublicEventObjective.SplorgStepper:
+                    GrantAchievementToObjectiveTeam(objective, SplorgStepperAchievementId);
+                    break;
+                case PublicEventObjective.ClearTheLostAndFound:
+                    GrantAchievementToObjectiveTeam(objective, DustBusterAchievementId);
+                    break;
+                case PublicEventObjective.MondosCrate:
+                    GrantAchievementToObjectiveTeam(objective, WhatIsInTheBoxAchievementId);
+                    break;
+                case PublicEventObjective.DustStorm:
+                    GrantAchievementToObjectiveTeam(objective, DustStormAchievementId);
+                    break;
+                case PublicEventObjective.QuickReflexes:
+                    GrantAchievementToObjectiveTeam(objective, MonstrosityMassacreAchievementId);
+                    break;
+                case PublicEventObjective.FriendOfCrate:
+                    GrantAchievementToObjectiveTeam(objective, FriendOfCrateAchievementId);
+                    break;
+                case PublicEventObjective.WelcomeToTheThunderdome:
+                    GrantAchievementToObjectiveTeam(objective, WeatheringTheStormAchievementId);
+                    break;
+                case PublicEventObjective.SpringCleaning:
+                    GrantAchievementToObjectiveTeam(objective, SpringCleaningAchievementId);
+                    break;
+                case PublicEventObjective.DestructODerby:
+                    GrantAchievementToObjectiveTeam(objective, WasteManagementProfessionalAchievementId);
+                    break;
+                case PublicEventObjective.NoDeaths2:
+                    GrantAchievementToObjectiveTeam(objective, ImmortalWasteManagementFacilityAchievementId);
+                    break;
+                case PublicEventObjective.NoDeaths:
+                    GrantAchievementToObjectiveTeam(objective, ImmortalPrototentiaryAchievementId);
+                    break;
+                case PublicEventObjective.Shadowstepping:
+                    GrantAchievementToObjectiveTeam(objective, ShadowstepperAchievementId);
+                    break;
+                case PublicEventObjective.DriveBy:
+                    GrantAchievementToObjectiveTeam(objective, GateGuardDriveByAchievementId);
+                    break;
+                case PublicEventObjective.KeenSenses:
+                    GrantAchievementToObjectiveTeam(objective, KeenSensesAchievementId);
+                    break;
+                case PublicEventObjective.LowProfile:
+                    GrantAchievementToObjectiveTeam(objective, LowProfileAchievementId);
+                    break;
+                case PublicEventObjective.Ghosts:
+                    GrantAchievementToObjectiveTeam(objective, GhostAchievementId);
+                    break;
+                case PublicEventObjective.FastHands:
+                    GrantAchievementToObjectiveTeam(objective, PrestoPrototentiaryAchievementId);
+                    break;
+                case PublicEventObjective.TankTrample:
+                    GrantAchievementToObjectiveTeam(objective, TankTrampleAchievementId);
+                    break;
+                case PublicEventObjective.RedemptionValue:
+                    GrantAchievementToObjectiveTeam(objective, RedemptionValueAchievementId);
+                    break;
+                case PublicEventObjective.CanCrusher:
+                    GrantAchievementToObjectiveTeam(objective, CanCrusherAchievementId);
+                    break;
+                case PublicEventObjective.Environmentalist:
+                    GrantAchievementToObjectiveTeam(objective, EnvironmentalistAchievementId);
+                    break;
+                case PublicEventObjective.KingsAndQueensOfTheHill:
+                    GrantAchievementToObjectiveTeam(objective, CrateRoyaltyAchievementId);
+                    break;
+                case PublicEventObjective.SurviveTheBlitzsquirg:
+                    GrantAchievementToObjectiveTeam(objective, SurviveTheBlitzsquirgAchievementId);
+                    GrantAchievementToObjectiveTeam(objective, SquirgceptionAchievementId, HasEquippedSquirgHelmet);
+                    break;
+                case PublicEventObjective.KickMaraudersIntoDeepSpace:
+                    GrantAchievementToObjectiveTeam(objective, CosmicKickerAchievementId);
+                    break;
+                case PublicEventObjective.Kick10Marauders:
+                    GrantAchievementToObjectiveTeam(objective, CosmicKickTenAchievementId);
+                    break;
+                case PublicEventObjective.Kick20Marauders:
+                    GrantAchievementToObjectiveTeam(objective, CosmicKickTwentyAchievementId);
+                    break;
+                case PublicEventObjective.Kick40Marauders:
+                    GrantAchievementToObjectiveTeam(objective, CosmicKickFortyAchievementId);
+                    break;
+                case PublicEventObjective.Kick80Marauders:
+                    GrantAchievementToObjectiveTeam(objective, CosmicKickEightyAchievementId);
+                    break;
+                case PublicEventObjective.PerfectPrecision:
+                    GrantAchievementToObjectiveTeam(objective, CosmicPrecisionAchievementId);
+                    break;
+                case PublicEventObjective.AcceleratedEradication:
+                    GrantAchievementToObjectiveTeam(objective, OffMyShipAchievementId);
+                    break;
+                case PublicEventObjective.MasterTheElements:
+                    GrantAchievementToObjectiveTeam(objective, MasterOfTheElementsAchievementId);
+                    break;
+                case PublicEventObjective.PanicPronto:
+                    GrantAchievementToObjectiveTeam(objective, PanicProntoAchievementId);
+                    break;
+                case PublicEventObjective.ClaustrophobicSkip:
+                    GrantAchievementToObjectiveTeam(objective, ClaustrophobicSkipAchievementId);
+                    break;
+                case PublicEventObjective.EscapedPatient:
+                    GrantAchievementToObjectiveTeam(objective, PatientSecuredAchievementId);
+                    break;
+                case PublicEventObjective.QuickVisit:
+                    GrantAchievementToObjectiveTeam(objective, InstitutionalizedAchievementId);
+                    break;
+                case PublicEventObjective.Toxophobia:
+                    GrantAchievementToObjectiveTeam(objective, ToxophobiaAchievementId);
+                    break;
+                case PublicEventObjective.Atychiphobia:
+                    GrantAchievementToObjectiveTeam(objective, AtychiphobiaAchievementId);
+                    break;
+                case PublicEventObjective.Chronophobia:
+                    GrantAchievementToObjectiveTeam(objective, ChronophobiaAchievementId);
+                    break;
+                case PublicEventObjective.CleanSweep:
+                    GrantAchievementToObjectiveTeam(objective, CleanSweeperAchievementId);
+                    break;
+                case PublicEventObjective.SquirgDefuser:
+                    GrantAchievementToObjectiveTeam(objective, SquirgDefuserAchievementId);
+                    break;
+                case PublicEventObjective.JumpJump:
+                    GrantAchievementToObjectiveTeam(objective, JumpAroundAchievementId);
+                    break;
+                case PublicEventObjective.TwinkleToes:
+                    GrantAchievementToObjectiveTeam(objective, TwinkleToesAchievementId);
+                    break;
+                case PublicEventObjective.SpeedySlaughterfest:
+                    GrantAchievementToObjectiveTeam(objective, SpeedySlaughterfestAchievementId);
+                    break;
                 case PublicEventObjective.InitiateUltimateProtogames:
                     // Random room selection remains blocked, but the reviewed
                     // tank-room slice is now playable as the deterministic
@@ -273,6 +554,16 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames
                     publicEvent.SetPhase(PublicEventPhase.TankRoom);
                     break;
                 case PublicEventObjective.GoingGreen:
+                    // Build 16042 objective 2871 and achievement 5865 both
+                    // describe completing the Waste Management Facility event
+                    // without a party death. Pair the condition with the
+                    // current reviewed all-three-tanks completion signal;
+                    // exact random route and achievement presentation remain
+                    // blocked.
+                    if (tankRoomNoDeathsActive && !tankRoomPlayerDied)
+                        publicEvent.UpdateObjective(PublicEventObjective.NoDeaths2, 1);
+
+                    tankRoomNoDeathsActive = false;
                     // Full random-event sequencing is still blocked. Chain the
                     // next reviewed producer slice into the WIP route so the
                     // mapped Misplaced Mammoth objective can be exercised.
@@ -283,6 +574,18 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames
                     // Prototentiary console slice without claiming retail room
                     // selection or aggregate alarm/timer semantics.
                     publicEvent.SetPhase(PublicEventPhase.Prototentiary);
+                    break;
+                case PublicEventObjective.SneakThroughThePrototentiary:
+                    GrantAchievementToObjectiveTeam(objective, PrototentiaryProwlAchievementId);
+                    // Build 16042 objective 2857 uses the Prototentiary Gate
+                    // Console TargetGroup 10569 and achievement 5906 explicitly
+                    // describes completing this room without a party death.
+                    // Keep the credit paired to aggregate objective 2678; exact
+                    // stealth/no-alarm and achievement UI smoke remain blocked.
+                    if (prototentiaryNoDeathsActive && !prototentiaryPlayerDied)
+                        publicEvent.UpdateObjective(PublicEventObjective.NoDeaths, 1);
+
+                    prototentiaryNoDeathsActive = false;
                     break;
                 case PublicEventObjective.Deputy:
                     // Append the reviewed Ruffles hunt as another deterministic
@@ -303,6 +606,79 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames
                     publicEvent.SetPhase(PublicEventPhase.HutHut);
                     break;
             }
+        }
+
+        private void GrantAchievementToObjectiveTeam(
+            IPublicEventObjective objective,
+            ushort achievementId,
+            Func<IPlayer, bool> eligibility = null)
+        {
+            foreach (IPublicEventTeamMember member in objective.Team?.GetMembers() ?? [])
+            {
+                IPlayer player = playerManager?.GetPlayer(member.CharacterId);
+                if (player == null
+                    || (eligibility != null && !eligibility(player))
+                    || player.AchievementManager.HasCompletedAchievement(achievementId))
+                    continue;
+
+                player.AchievementManager.GrantAchievement(achievementId);
+            }
+        }
+
+        private static bool HasEquippedSquirgHelmet(IPlayer player)
+        {
+            IItem headItem = player.Inventory?.GetItem(
+                InventoryLocation.Equipped,
+                (uint)EquippedItem.Head);
+            return headItem != null && SquirgHelmetItemIds.Contains(headItem.Id);
+        }
+
+        /// <summary>
+        /// Invoked when a unit dies while the public event is active.
+        /// </summary>
+        public void OnDeath(IUnitEntity entity)
+        {
+            if (tankRoomRedemptionValueActive && IsTankRoomEntity(entity))
+            {
+                // Objective 2870 requires all three tanks to reach 50% before
+                // any tank is destroyed. A tank death permanently disarms the
+                // condition for this room attempt.
+                tankRoomRedemptionValueActive = false;
+                tankRoomHalfHealthEntityIds.Clear();
+            }
+
+            if (tankRoomNoDeathsActive && entity is IPlayer)
+                tankRoomPlayerDied = true;
+
+            if (prototentiaryNoDeathsActive && entity is IPlayer)
+                prototentiaryPlayerDied = true;
+        }
+
+        /// <summary>
+        /// Record a reviewed Waste Management Facility tank reaching 50%
+        /// health while the Redemption Value condition is active.
+        /// </summary>
+        public void OnTankReachedHalfHealth(IUnitEntity entity)
+        {
+            if (!tankRoomRedemptionValueActive
+                || !IsTankRoomEntity(entity)
+                || entity.Health == 0u
+                || entity.MaxHealth == 0u
+                || (ulong)entity.Health * 2u > entity.MaxHealth)
+                return;
+
+            if (!tankRoomHalfHealthEntityIds.Add(entity.EntityId))
+                return;
+
+            if (tankRoomHalfHealthEntityIds.Count != TankRoomSpawns.Length)
+                return;
+
+            // Build 16042 objective 2870 is a count-one Script row. Track the
+            // three distinct tank thresholds here, then emit its single credit
+            // only after every reviewed tank qualifies without an intervening
+            // tank death.
+            tankRoomRedemptionValueActive = false;
+            publicEvent.UpdateObjective(PublicEventObjective.RedemptionValue, 1);
         }
 
         private void SpawnStartButton()
@@ -398,11 +774,23 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames
 
         private void OnPhaseTankRoom()
         {
+            tankRoomHalfHealthEntityIds.Clear();
+            tankRoomRedemptionValueActive = true;
+            tankRoomPlayerDied = false;
+            tankRoomNoDeathsActive = true;
             publicEvent.ActivateObjective(PublicEventObjective.DestructODerby, TankRoomAllJunkCount);
             publicEvent.ActivateObjective(PublicEventObjective.TankTrample);
             publicEvent.ActivateObjective(PublicEventObjective.CanCrusher);
+            publicEvent.ActivateObjective(PublicEventObjective.RedemptionValue);
             publicEvent.ActivateObjective(PublicEventObjective.GoingGreen, TankRoomAllJunkCount);
+            publicEvent.ActivateObjective(PublicEventObjective.NoDeaths2, 1u);
             SpawnTankRoom();
+        }
+
+        private static bool IsTankRoomEntity(IUnitEntity entity)
+        {
+            return entity != null
+                && TankRoomSpawns.Any(spawn => spawn.EntityId == entity.EntityId);
         }
 
         private void SpawnTankRoom()
@@ -821,6 +1209,11 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames
         private void OnPhaseHutHut()
         {
             publicEvent.ActivateObjective(PublicEventObjective.DefeatHutHut);
+            // Build 16042 objective 2884 is the five-minute TimedWin
+            // condition for this same boss phase. Dynamic max one lets the
+            // reviewed Hut-Hut death producer complete it before the
+            // game-table failure timer elapses.
+            publicEvent.ActivateObjective(PublicEventObjective.TotalDomination, 1u);
             SpawnHutHut();
         }
 
@@ -903,6 +1296,13 @@ namespace NexusForever.Script.Instance.Dungeon.UltimateProtogames
             // only this timed bonus here; Ghosts/no-alarm semantics remain blocked.
             publicEvent.ActivateObjective(PublicEventObjective.FastHands, PrototentiaryConsoleObjectiveCount);
             publicEvent.ActivateObjective(PublicEventObjective.DisableTheAlarm, PrototentiaryConsoleObjectiveCount);
+            // Objective 2857 is the Prototentiary no-death condition: its
+            // object 10569 is the reviewed Gate Console target group and
+            // achievement 5906 names the same room. Completion is deferred to
+            // aggregate objective 2678 so entering the room never grants it.
+            prototentiaryPlayerDied = false;
+            prototentiaryNoDeathsActive = true;
+            publicEvent.ActivateObjective(PublicEventObjective.NoDeaths, 1u);
             SpawnPrototentiaryContent();
         }
 

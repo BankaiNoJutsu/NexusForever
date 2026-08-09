@@ -188,6 +188,13 @@ namespace NexusForever.Game.PublicEvent
 
         private bool IsComplete()
         {
+            // WildStar64.exe Lua_PublicEventObjective_GetRequiredCount (14068ef30)
+            // returns 0 for type 0x19, while GetCount (14068e110) continues to
+            // expose the raw running count. ScriptWithoutMax is therefore a
+            // controller-owned counter and must not auto-complete at Entry.Count.
+            if (Entry.PublicEventObjectiveTypeEnum == PublicEventObjectiveType.ScriptWithoutMax)
+                return false;
+
             if (IsChecklist())
                 return Count >= GetMaxCount();
 

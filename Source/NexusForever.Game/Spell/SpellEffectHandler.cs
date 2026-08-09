@@ -84,6 +84,14 @@ namespace NexusForever.Game.Spell
         private const uint EngineerCombatBotGoToCommandBaseSpell4Id = 25888u;
         private const uint SmallVendorPriceDiscountBaseSpell4Id = 15098u;
         private const uint LargeVendorPriceDiscountBaseSpell4Id = 15099u;
+        private const uint UltimateProtogamesMedicineDebuffRemovalSpell4Id = 77510u;
+        private const ushort UltimateProtogamesDocInTheHouseAchievementId = 5941;
+        private const uint UltimateProtogamesRowsdowerPolymorphSpell4Id = 72361u;
+        private const uint UltimateProtogamesRowsdowerCreature2Id = 15176u;
+        private const ushort UltimateProtogamesBeTheRowsdowerAchievementId = 5942;
+        private const uint UltimateProtogamesRowsdowerRamSpell4Id = 72364u;
+        private const uint UltimateProtogamesLostAndFoundCrateCreature2Id = 62548u;
+        private const ushort UltimateProtogamesRowsdowerRuckusAchievementId = 5943;
         private const float EngineerCombatBotDefaultCommandMovementSpeed = 10f;
         private const ushort EngineerCombatBotPrimaryPetBarShortcutSetId = 299;
         private const uint EngineerCombatBotCommandSurfacePetUnitId = 0u;
@@ -2610,6 +2618,7 @@ namespace NexusForever.Game.Spell
                 return;
 
             target.DisplayInfo = displayGroupEntry.Creature2DisplayInfoId;
+            TryGrantUltimateProtogamesBeTheRowsdower(spell, target, creature2);
         }
 
         [SpellEffectHandler(SpellEffectType.SummonMount)]
@@ -3443,6 +3452,7 @@ namespace NexusForever.Game.Spell
             }
 
             SendTrackedStateRemovalMessages(spell, target, info, removals, false);
+            TryGrantUltimateProtogamesDocInTheHouse(spell, target, removals);
         }
 
         public static void HandleEffectSpellForceRemoveWorld(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info)
@@ -4622,6 +4632,52 @@ namespace NexusForever.Game.Spell
                     predicate = spell4Id => spell4Id == forceRemove.Spell4Id;
                     return true;
             }
+        }
+
+        private static void TryGrantUltimateProtogamesDocInTheHouse(
+            ISpell spell,
+            IUnitEntity target,
+            IReadOnlyCollection<SpellStateRemoval> removals)
+        {
+            if (spell.Parameters.SpellInfo.Entry.Id != UltimateProtogamesMedicineDebuffRemovalSpell4Id
+                || target is not IPlayer player
+                || !removals.Any(removal => removal.Spell4Id is 72341u or 72342u or 72343u or 72344u or 72345u or 72346u)
+                || GetGlobalAchievementManager()?.GetAchievement(UltimateProtogamesDocInTheHouseAchievementId) == null
+                || player.AchievementManager.HasCompletedAchievement(UltimateProtogamesDocInTheHouseAchievementId))
+                return;
+
+            player.AchievementManager.GrantAchievement(UltimateProtogamesDocInTheHouseAchievementId);
+        }
+
+        private static void TryGrantUltimateProtogamesBeTheRowsdower(
+            ISpell spell,
+            IUnitEntity target,
+            Creature2Entry creature2)
+        {
+            if (spell.Parameters.SpellInfo.Entry.Id != UltimateProtogamesRowsdowerPolymorphSpell4Id
+                || creature2.Id != UltimateProtogamesRowsdowerCreature2Id
+                || target is not IPlayer player
+                || GetGlobalAchievementManager()?.GetAchievement(UltimateProtogamesBeTheRowsdowerAchievementId) == null
+                || player.AchievementManager.HasCompletedAchievement(UltimateProtogamesBeTheRowsdowerAchievementId))
+                return;
+
+            player.AchievementManager.GrantAchievement(UltimateProtogamesBeTheRowsdowerAchievementId);
+        }
+
+        private static void TryGrantUltimateProtogamesRowsdowerRuckus(
+            ISpell spell,
+            IUnitEntity target,
+            IDamageDescription damage)
+        {
+            if (spell.Parameters.SpellInfo.Entry.Id != UltimateProtogamesRowsdowerRamSpell4Id
+                || target.CreatureId != UltimateProtogamesLostAndFoundCrateCreature2Id
+                || !damage.KilledTarget
+                || spell.Caster is not IPlayer player
+                || GetGlobalAchievementManager()?.GetAchievement(UltimateProtogamesRowsdowerRuckusAchievementId) == null
+                || player.AchievementManager.HasCompletedAchievement(UltimateProtogamesRowsdowerRuckusAchievementId))
+                return;
+
+            player.AchievementManager.GrantAchievement(UltimateProtogamesRowsdowerRuckusAchievementId);
         }
 
         private static bool Spell4GroupListContainsSpellGroup(uint spell4GroupListId, uint spellGroupId)

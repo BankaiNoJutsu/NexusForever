@@ -161,6 +161,22 @@ public class EarlyZoneEntityObjectiveCreditTests
         Assert.Empty(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
     }
 
+    [Theory]
+    [InlineData(QuestState.Achieved)]
+    [InlineData(QuestState.Completed)]
+    public void Q3741SupplyCrate_OnActivateSuccess_WhenQuestNoLongerAccepted_DoesNotCreditObjective(QuestState state)
+    {
+        ICreatureEntity owner = CreateCreature(12919u, checklistIndex: 0, health: 100u, out RecordingDispatchProxy<ICreatureEntity> ownerProxy);
+        IPlayer player = CreatePlayerWithQuestState(3741, state, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+        var script = new Q3741ExileSupplyCrateEntityScript();
+
+        script.OnLoad(owner);
+        script.OnActivateSuccess(player);
+
+        Assert.Empty(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+        Assert.Empty(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+    }
+
     [Fact]
     public void Q3741SupplyCrate_OnActivateSuccess_AfterCollected_DoesNotCreditAgain()
     {

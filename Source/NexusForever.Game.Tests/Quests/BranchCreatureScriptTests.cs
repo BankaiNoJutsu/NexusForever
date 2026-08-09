@@ -22,7 +22,7 @@ public class BranchCreatureScriptTests
 
         script.OnLoad(owner);
 
-        RecordingDispatchProxy<ICreatureEntity>.Invocation state = Assert.Single(ownerProxy.GetInvocations("set_" + nameof(IWorldEntity.StandState)));
+        RecordingDispatchProxy<ICreatureEntity>.Invocation state = Assert.Single(ownerProxy.GetInvocations(nameof(IWorldEntity.SetStandState)));
         Assert.Equal(StandState.State0, state.Arguments[0]);
     }
 
@@ -37,15 +37,10 @@ public class BranchCreatureScriptTests
         script.OnLoad(owner);
         script.OnActivateSuccess(player);
 
-        List<RecordingDispatchProxy<ICreatureEntity>.Invocation> states = ownerProxy.GetInvocations("set_" + nameof(IWorldEntity.StandState)).ToList();
+        List<RecordingDispatchProxy<ICreatureEntity>.Invocation> states = ownerProxy.GetInvocations(nameof(IWorldEntity.SetStandState)).ToList();
         Assert.Equal(2, states.Count);
         Assert.Equal(StandState.State1, states[1].Arguments[0]);
-
-        RecordingDispatchProxy<IPlayer>.Invocation emote = Assert.Single(playerProxy.GetInvocations(nameof(IWorldEntity.EnqueueToVisible)));
-        ServerEmote message = Assert.IsType<ServerEmote>(emote.Arguments[0]);
-        Assert.Equal(900u, message.Guid);
-        Assert.Equal(StandState.State1, message.StandState);
-        Assert.True((bool)emote.Arguments[1]);
+        Assert.Empty(playerProxy.GetInvocations(nameof(IWorldEntity.EnqueueToVisible)));
     }
 
     [Fact]

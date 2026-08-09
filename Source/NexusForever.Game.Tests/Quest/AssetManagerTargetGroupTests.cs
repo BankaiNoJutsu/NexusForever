@@ -51,6 +51,48 @@ public class AssetManagerTargetGroupTests
     }
 
     [Fact]
+    public void CacheCreatureTargetGroups_WithUltimateProtogamesElementalHolderIndexesNestedWaveGroups()
+    {
+        TargetGroupEntry firstWaveGroup = CreateTargetGroup(
+            id: 12877u,
+            type: TargetGroupType.CreatureIdGroup,
+            62451u,
+            62452u,
+            62468u,
+            62469u,
+            62470u,
+            62471u);
+        TargetGroupEntry secondWaveGroup = CreateTargetGroup(
+            id: 12878u,
+            type: TargetGroupType.CreatureIdGroup,
+            62472u,
+            62473u,
+            63319u,
+            67340u,
+            67342u,
+            67341u,
+            67343u);
+        TargetGroupEntry holderGroup = CreateTargetGroup(
+            id: 12876u,
+            type: TargetGroupType.OtherTargetGroupCreatures,
+            12877u,
+            12878u);
+
+        GameTableManager gameTableManager = CreateGameTableManager(
+            targetGroupTable: CreateGameTable(holderGroup, firstWaveGroup, secondWaveGroup));
+
+        AssetManager assetManager = CreateAssetManager(gameTableManager);
+
+        InvokeCache(assetManager, "CacheCreatureTargetGroups");
+
+        Assert.Equal([12876u, 12877u], assetManager.GetTargetGroupsForCreatureId(62451u));
+        Assert.Equal([12876u, 12877u], assetManager.GetTargetGroupsForCreatureId(62471u));
+        Assert.Equal([12876u, 12878u], assetManager.GetTargetGroupsForCreatureId(62472u));
+        Assert.Equal([12876u, 12878u], assetManager.GetTargetGroupsForCreatureId(63319u));
+        Assert.Equal([12876u, 12878u], assetManager.GetTargetGroupsForCreatureId(67343u));
+    }
+
+    [Fact]
     public void CacheCreatureTargetGroups_WithKelVorethCompositeGroupIndexesParentObjectiveGroup()
     {
         TargetGroupEntry mechanoSlavers = CreateTargetGroup(

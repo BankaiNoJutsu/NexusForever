@@ -378,7 +378,8 @@ public class CrimsonIsleBranchInteractionTests
         script.OnLoad(owner);
         script.OnActivateSuccess(activator);
 
-        RecordingDispatchProxy<ICreatureEntity>.Invocation standState = Assert.Single(ownerProxy.GetInvocations("set_StandState"));
+        RecordingDispatchProxy<ICreatureEntity>.Invocation standState = Assert.Single(
+            ownerProxy.GetInvocations(nameof(IWorldEntity.SetStandState)));
         Assert.Equal(StandState.State2, standState.Arguments[0]);
 
         RecordingDispatchProxy<ICreatureEntity>.Invocation damage = Assert.Single(ownerProxy.GetInvocations(nameof(ICreatureEntity.ModifyHealth)));
