@@ -6,6 +6,7 @@ using NexusForever.Database.Chat;
 using NexusForever.Database.Configuration.Model;
 using NexusForever.Database.Friendship;
 using NexusForever.Database.Group;
+using NexusForever.Database.Query;
 using NexusForever.Database.World;
 
 namespace NexusForever.Game.Tests.Database;
@@ -25,6 +26,7 @@ public sealed class SqliteMigrationSmokeTests : IDisposable
         await using GroupContext groupContext = CreateContext<GroupContext>("group", options => new GroupContext(options));
         await using ChatContext chatContext = CreateContext<ChatContext>("chat", options => new ChatContext(options));
         await using FriendshipContext friendshipContext = CreateContext<FriendshipContext>("friendship", options => new FriendshipContext(options));
+        await using QueryContext queryContext = CreateContext<QueryContext>("query", options => new QueryContext(options));
 
         await AssertMigrates(authContext);
         await AssertMigrates(characterContext);
@@ -32,6 +34,7 @@ public sealed class SqliteMigrationSmokeTests : IDisposable
         await AssertMigrates(groupContext);
         await AssertMigrates(chatContext);
         await AssertMigrates(friendshipContext);
+        await AssertMigrates(queryContext);
     }
 
     public void Dispose()

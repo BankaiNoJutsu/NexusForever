@@ -86,10 +86,7 @@ namespace NexusForever.Database.Character
         public ulong GetNextCharacterId()
         {
             using var context = new CharacterContext(config);
-            return context.Character
-                .Select(r => r.Id)
-                .DefaultIfEmpty()
-                .Max();
+            return GetMaxId(context.Character.Select(r => r.Id));
         }
 
         public async Task<CharacterModel> GetCharacterById(ulong characterId)
@@ -107,10 +104,7 @@ namespace NexusForever.Database.Character
         public ulong GetNextItemId()
         {
             using var context = new CharacterContext(config);
-            return context.Item
-                .Select(r => r.Id)
-                .DefaultIfEmpty()
-                .Max();
+            return GetMaxId(context.Item.Select(r => r.Id));
         }
 
         public List<RealmBankItemModel> GetRealmBankItems(uint accountId, ushort realmId)
@@ -125,19 +119,13 @@ namespace NexusForever.Database.Character
         public ulong GetNextResidenceId()
         {
             using var context = new CharacterContext(config);
-            return context.Residence
-                .Select(r => r.Id)
-                .DefaultIfEmpty()
-                .Max();
+            return GetMaxId(context.Residence.Select(r => r.Id));
         }
 
         public ulong GetNextDecorId()
         {
             using var context = new CharacterContext(config);
-            return context.ResidenceDecor
-                .Select(r => r.DecorId)
-                .DefaultIfEmpty()
-                .Max();
+            return GetMaxId(context.ResidenceDecor.Select(r => r.DecorId));
         }
 
         public async Task<List<CharacterModel>> GetCharacters(uint accountId)
@@ -207,53 +195,50 @@ namespace NexusForever.Database.Character
         public ulong GetNextMailId()
         {
             using var context = new CharacterContext(config);
-            return context.CharacterMail
-                .Select(r => r.Id)
-                .DefaultIfEmpty()
-                .Max();
+            return GetMaxId(context.CharacterMail.Select(r => r.Id));
         }
 
         public ulong GetNextGuildId()
         {
             using var context = new CharacterContext(config);
-            return context.Guild
-                .Select(r => r.Id)
-                .DefaultIfEmpty()
-                .Max();
+            return GetMaxId(context.Guild.Select(r => r.Id));
         }
 
         public ulong GetNextMarketplaceAuctionId()
         {
             using var context = new CharacterContext(config);
-            return context.MarketplaceAuction
-                .Select(a => a.Id)
-                .DefaultIfEmpty()
-                .Max();
+            return GetMaxId(context.MarketplaceAuction.Select(a => a.Id));
         }
 
         public ulong GetNextMarketplaceCommodityOrderId()
         {
             using var context = new CharacterContext(config);
-            return context.MarketplaceCommodityOrder
-                .Select(o => o.Id)
-                .DefaultIfEmpty()
-                .Max();
+            return GetMaxId(context.MarketplaceCommodityOrder.Select(o => o.Id));
         }
 
         public ulong GetNextLeaderboardPveScoreId()
         {
             using var context = new CharacterContext(config);
-            return context.LeaderboardPveScore
-                .Select(s => s.Id)
-                .DefaultIfEmpty()
-                .Max();
+            return GetMaxId(context.LeaderboardPveScore.Select(s => s.Id));
         }
 
         public ulong GetNextLeaderboardPvpScoreId()
         {
             using var context = new CharacterContext(config);
-            return context.LeaderboardPvpScore
-                .Select(s => s.Id)
+            return GetMaxId(context.LeaderboardPvpScore.Select(s => s.Id));
+        }
+
+        private ulong GetMaxId(IQueryable<ulong> ids)
+        {
+            if (config.Provider == DatabaseProvider.Sqlite)
+            {
+                long maxId = ids
+                    .Select(id => (long?)id)
+                    .Max() ?? 0L;
+                return checked((ulong)maxId);
+            }
+
+            return ids
                 .DefaultIfEmpty()
                 .Max();
         }

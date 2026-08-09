@@ -10,49 +10,92 @@ namespace NexusForever.Database.Character.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.RenameColumn(
-                name: "itemId",
-                table: "character_costume_item",
-                newName: "item2Id");
-
-            migrationBuilder.RenameColumn(
-                name: "mask",
-                table: "character_costume",
-                newName: "visibilityMask");
-
-            migrationBuilder.AlterColumn<uint>(
-                name: "dyeData",
-                table: "character_costume_item",
-                type: "int(10) unsigned",
-                nullable: false,
-                defaultValue: 0u,
-                oldClrType: typeof(int),
-                oldType: "int(10)",
-                oldDefaultValue: 0);
+            RenameColumnWhenTargetMissing(migrationBuilder, "character_costume_item", "itemId", "item2Id");
+            RenameColumnWhenTargetMissing(migrationBuilder, "character_costume", "mask", "visibilityMask");
+            ConvertDyeDataToUnsigned(migrationBuilder);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.RenameColumn(
-                name: "item2Id",
-                table: "character_costume_item",
-                newName: "itemId");
+            RenameColumnWhenTargetMissing(migrationBuilder, "character_costume_item", "item2Id", "itemId");
+            RenameColumnWhenTargetMissing(migrationBuilder, "character_costume", "visibilityMask", "mask");
+            ConvertDyeDataToSigned(migrationBuilder);
+        }
 
-            migrationBuilder.RenameColumn(
-                name: "visibilityMask",
-                table: "character_costume",
-                newName: "mask");
+        private static void RenameColumnWhenTargetMissing(MigrationBuilder migrationBuilder, string table, string sourceColumn, string targetColumn)
+        {
+            migrationBuilder.Sql($"""
+                SET @nexus_forever_costume_message_sql = (
+                    SELECT IF(
+                        EXISTS (
+                            SELECT 1
+                            FROM information_schema.COLUMNS
+                            WHERE TABLE_SCHEMA = DATABASE()
+                              AND TABLE_NAME = '{table}'
+                              AND COLUMN_NAME = '{sourceColumn}'
+                        )
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM information_schema.COLUMNS
+                            WHERE TABLE_SCHEMA = DATABASE()
+                              AND TABLE_NAME = '{table}'
+                              AND COLUMN_NAME = '{targetColumn}'
+                        ),
+                        'ALTER TABLE `{table}` RENAME COLUMN `{sourceColumn}` TO `{targetColumn}`',
+                        'SELECT 1'
+                    )
+                );
+                PREPARE nexus_forever_costume_message_statement FROM @nexus_forever_costume_message_sql;
+                EXECUTE nexus_forever_costume_message_statement;
+                DEALLOCATE PREPARE nexus_forever_costume_message_statement;
+                """);
+        }
 
-            migrationBuilder.AlterColumn<int>(
-                name: "dyeData",
-                table: "character_costume_item",
-                type: "int(10)",
-                nullable: false,
-                defaultValue: 0,
-                oldClrType: typeof(uint),
-                oldType: "int(10) unsigned",
-                oldDefaultValue: 0u);
+        private static void ConvertDyeDataToUnsigned(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.Sql("""
+                SET @nexus_forever_costume_message_sql = (
+                    SELECT IF(
+                        EXISTS (
+                            SELECT 1
+                            FROM information_schema.COLUMNS
+                            WHERE TABLE_SCHEMA = DATABASE()
+                              AND TABLE_NAME = 'character_costume_item'
+                              AND COLUMN_NAME = 'dyeData'
+                              AND (DATA_TYPE <> 'int' OR COLUMN_TYPE NOT LIKE '%unsigned%')
+                        ),
+                        'ALTER TABLE `character_costume_item` MODIFY COLUMN `dyeData` int unsigned NOT NULL DEFAULT 0',
+                        'SELECT 1'
+                    )
+                );
+                PREPARE nexus_forever_costume_message_statement FROM @nexus_forever_costume_message_sql;
+                EXECUTE nexus_forever_costume_message_statement;
+                DEALLOCATE PREPARE nexus_forever_costume_message_statement;
+                """);
+        }
+
+        private static void ConvertDyeDataToSigned(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.Sql("""
+                SET @nexus_forever_costume_message_sql = (
+                    SELECT IF(
+                        EXISTS (
+                            SELECT 1
+                            FROM information_schema.COLUMNS
+                            WHERE TABLE_SCHEMA = DATABASE()
+                              AND TABLE_NAME = 'character_costume_item'
+                              AND COLUMN_NAME = 'dyeData'
+                              AND (DATA_TYPE <> 'int' OR COLUMN_TYPE LIKE '%unsigned%')
+                        ),
+                        'ALTER TABLE `character_costume_item` MODIFY COLUMN `dyeData` int NOT NULL DEFAULT 0',
+                        'SELECT 1'
+                    )
+                );
+                PREPARE nexus_forever_costume_message_statement FROM @nexus_forever_costume_message_sql;
+                EXECUTE nexus_forever_costume_message_statement;
+                DEALLOCATE PREPARE nexus_forever_costume_message_statement;
+                """);
         }
     }
 }

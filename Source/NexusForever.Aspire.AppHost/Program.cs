@@ -12,6 +12,7 @@ internal class Program
     private const string GroupDatabase = "nexus_forever_group";
     private const string ChatDatabase = "nexus_forever_chat";
     private const string FriendshipDatabase = "nexus_forever_friendship";
+    private const string QueryDatabase = "nexus_forever_query";
 
     private static async Task Main(string[] args)
     {
@@ -156,6 +157,7 @@ internal class Program
         string groupdb      = GetSqliteConnectionString(sqliteDirectory, GroupDatabase);
         string chatdb       = GetSqliteConnectionString(sqliteDirectory, ChatDatabase);
         string friendshipdb = GetSqliteConnectionString(sqliteDirectory, FriendshipDatabase);
+        string querydb      = GetSqliteConnectionString(sqliteDirectory, QueryDatabase);
 
         IResourceBuilder<ProjectResource> dbMigration = builder.AddProject<Projects.NexusForever_Aspire_Database_Migrations>("database-migrations")
             .WithNexusForeverDatabase("Auth", DatabaseProvider.Sqlite, authdb)
@@ -163,7 +165,8 @@ internal class Program
             .WithNexusForeverDatabase("World", DatabaseProvider.Sqlite, worlddb)
             .WithNexusForeverDatabase("Group", DatabaseProvider.Sqlite, groupdb)
             .WithNexusForeverDatabase("Chat", DatabaseProvider.Sqlite, chatdb)
-            .WithNexusForeverDatabase("Friendship", DatabaseProvider.Sqlite, friendshipdb);
+            .WithNexusForeverDatabase("Friendship", DatabaseProvider.Sqlite, friendshipdb)
+            .WithNexusForeverDatabase("Query", DatabaseProvider.Sqlite, querydb);
 
         builder.AddProject<Projects.NexusForever_AuthServer>("auth-server")
             .WithNexusForeverTcp(IPAddress.Any, 23115)
@@ -227,6 +230,7 @@ internal class Program
             .WaitFor(characterApi);
 
         builder.AddProject<Projects.NexusForever_Server_Character>("character-server")
+            .WithNexusForeverDatabase("Query", DatabaseProvider.Sqlite, querydb)
             .WithNexusForeverMessageBroker("CharacterServer", BrokerProvider.RabbitMQ, rmq.Resource)
             .WithNexusForeverApi("Character", characterApi.Resource)
             .WaitFor(rmq)

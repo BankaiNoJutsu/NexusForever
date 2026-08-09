@@ -26,6 +26,10 @@
         "Friendship": {
             "ConnectionString": "server=127.0.0.1;port=3306;user=nexusforever;password=nexusforever;database=nexus_forever_friendship",
             "Provider": "MySql"
+        },
+        "Query": {
+            "ConnectionString": "server=127.0.0.1;port=3306;user=nexusforever;password=nexusforever;database=nexus_forever_query",
+            "Provider": "MySql"
         }
     },
     "AccountCreation": {

@@ -5,6 +5,7 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Chat;
 using NexusForever.Database.Friendship;
 using NexusForever.Database.Group;
+using NexusForever.Database.Query;
 using NexusForever.Database.World;
 
 namespace NexusForever.Database.Sqlite.Migrations.Design
@@ -69,6 +70,14 @@ namespace NexusForever.Database.Sqlite.Migrations.Design
         public FriendshipContext CreateDbContext(string[] args)
         {
             return new FriendshipContext(SqliteDesignTime.CreateOptions<FriendshipContext>("friendship"));
+        }
+    }
+
+    public sealed class QueryContextFactory : IDesignTimeDbContextFactory<QueryContext>
+    {
+        public QueryContext CreateDbContext(string[] args)
+        {
+            return new QueryContext(SqliteDesignTime.CreateOptions<QueryContext>("query"));
         }
     }
 }
