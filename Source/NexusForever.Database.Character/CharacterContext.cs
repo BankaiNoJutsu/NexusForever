@@ -8,6 +8,7 @@ namespace NexusForever.Database.Character
     {
         public DbSet<CharacterModel> Character { get; set; }
         public DbSet<CharacterBindModel> CharacterBind { get; set; }
+        public DbSet<CharacterTaxiNodeModel> CharacterTaxiNode { get; set; }
         public DbSet<CharacterAchievementModel> CharacterAchievement { get; set; }
         public DbSet<CharacterActionSetAmpModel> CharacterActionSetAmp { get; set; }
         public DbSet<CharacterActionSetShortcutModel> CharacterActionSetShortcut { get; set; }
@@ -79,6 +80,16 @@ namespace NexusForever.Database.Character
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<CharacterTaxiNodeModel>(entity =>
+            {
+                entity.ToTable("character_taxi_node");
+                entity.HasKey(e => new { e.Id, e.TaxiNodeId }).HasName("PRIMARY");
+                entity.Property(e => e.Id).HasColumnName("id").HasColumnType("bigint(20) unsigned").ValueGeneratedNever();
+                entity.Property(e => e.TaxiNodeId).HasColumnName("taxiNodeId").HasColumnType("smallint(5) unsigned");
+                entity.HasOne(e => e.Character).WithMany(c => c.TaxiNode)
+                    .HasForeignKey(e => e.Id).HasConstraintName("FK__character_taxi_node_id__character_id");
+            });
+
             modelBuilder.Entity<CharacterBindModel>(entity =>
             {
                 entity.ToTable("character_bind");

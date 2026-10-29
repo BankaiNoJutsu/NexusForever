@@ -109,6 +109,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
         {
             switch (entityInteraction.Event)
             {
+                case 45: // InvokeShuttlePrompt
+                case 46:
+                case 47:
+                case 48: // InvokeTaxiWindow
+                    if (entity == null)
+                        throw new InvalidPacketValueException();
+                    session.Player.DiscoverTaxiNode(entity.CreatureEntry?.TaxiNodeId ?? 0u);
+                    return true;
                 case 37: // Quest NPC
                 {
                     if (entity == null)
@@ -143,10 +151,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 case 41: // "ResourceConversionOpen"
                 case 42: // "ToggleAbilitiesWindow"
                 case 43: // "InvokeTradeskillTrainerWindow"
-                case 45: // "InvokeShuttlePrompt"
-                case 46:
-                case 47:
-                case 48: // "InvokeTaxiWindow"
                 case 65: // "MannequinWindowOpen"
                 case 66: // "ShowBank"
                 case 69: // "ShowDye"

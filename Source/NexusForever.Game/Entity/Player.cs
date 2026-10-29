@@ -646,6 +646,7 @@ namespace NexusForever.Game.Entity
             combatLogDisableFlags    = (CombatLogOptions)model.CombatLogDisableFlags;
             InitialisePvPFlagDisable(model.PvpFlagDisableUntilUtc);
             LoadBindPoint(model.Bind);
+            LoadTaxiNodes(model.TaxiNode);
 
             CreateTime        = model.CreateTime;
             TimePlayedTotal   = model.TimePlayedTotal;
@@ -778,6 +779,7 @@ namespace NexusForever.Game.Entity
             ResurrectionManager.Update(lastTick);
             UpdatePendingGhostSpawn(lastTick);
             UpdatePvPFlagDisable(lastTick);
+            UpdateTaxiDiscovery(lastTick);
 
             relocationTimer.Update(lastTick);
             if (relocationTimer.HasElapsed)
@@ -960,6 +962,7 @@ namespace NexusForever.Game.Entity
         public void Save(CharacterContext context)
         {
             SaveBindPoint(context);
+            SaveTaxiNodes(context);
             var model = new CharacterModel
             {
                 Id = CharacterId
@@ -1340,6 +1343,7 @@ namespace NexusForever.Game.Entity
 
             CostumeManager.SendInitialPackets();
             Account.CostumeManager.SendInitialPackets();
+            SendTaxiNodes();
 
             var playerCreate = new ServerPlayerCreate
             {
@@ -2351,7 +2355,22 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public bool CanMount()
         {
+            if (pendingMount != null)
+            {
+                if (PlatformGuid == null && System.Diagnostics.Stopwatch.GetElapsedTime(pendingMountTimestamp) < TimeSpan.FromSeconds(10))
+                    return false;
+                pendingMount = null;
+            }
             return PlatformGuid == null && pendingTeleport == null;
+        }
+
+        private IMountEntity pendingMount;
+        private long pendingMountTimestamp;
+
+        public void SetPendingMount(IMountEntity mount)
+        {
+            pendingMount = mount;
+            pendingMountTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
         }
 
         /// <summary>
@@ -2362,14 +2381,17 @@ namespace NexusForever.Game.Entity
             if (PlatformGuid == null)
                 return;
 
+            pendingMount = null;
+
             IWorldEntity platform = GetVisible<IWorldEntity>(PlatformGuid.Value);
-            if (platform is IVehicleEntity vehicle)
+            if (platform is IVehicleEntity vehicle && vehicle.GetPassenger(Guid) != null)
             {
                 vehicle.PassengerRemove(this);
                 return;
             }
 
             SetPlatform(null);
+            SetControl(this);
         }
 
         public void RecordStarterTutorialDepartureTerminal(uint creatureId)

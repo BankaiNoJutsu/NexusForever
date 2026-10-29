@@ -24,6 +24,30 @@ public class ClientEntityInteractionHandlerTests
         Assert.Empty(questProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
     }
 
+    [Theory]
+    [InlineData(45, false, 1f, true)]
+    [InlineData(46, false, 1f, true)]
+    [InlineData(47, false, 1f, true)]
+    [InlineData(48, false, 1f, true)]
+    [InlineData(48, true, 1f, false)]
+    [InlineData(48, false, 100f, false)]
+    public void TaxiInteractionDiscoversNodeOnlyAfterExistingGuards(byte eventId, bool busy, float distance, bool expected)
+    {
+        var session = CreateSession(out _, out var pp);
+        var entity = RecordingDispatchProxy<IWorldEntity>.Create(out var ep);
+        ep.SetProperty(nameof(IWorldEntity.CreatureEntry), new NexusForever.GameTable.Model.Creature2Entry { TaxiNodeId = 10 });
+        ep.SetProperty(nameof(IWorldEntity.IsBusy), busy);
+        ep.SetProperty(nameof(IWorldEntity.Position), new System.Numerics.Vector3(distance, 0, 0));
+        pp.SetMethodReturn(nameof(IPlayer.GetVisible), entity);
+        var handler = new ClientEntityInteractionHandler(NullLogger<ClientEntityInteractionHandler>.Instance, null, new RealmBankManager());
+
+        handler.HandleMessage(session, CreateEntityInteract(123, eventId));
+
+        var calls = pp.GetInvocations(nameof(IPlayer.DiscoverTaxiNode));
+        Assert.Equal(expected ? 1 : 0, calls.Count);
+        if (expected) Assert.Equal(10u, calls[0].Arguments[0]);
+    }
+
     private static IWorldSession CreateSession(
         out RecordingDispatchProxy<IQuestManager> questProxy,
         out RecordingDispatchProxy<IPlayer> playerProxy)

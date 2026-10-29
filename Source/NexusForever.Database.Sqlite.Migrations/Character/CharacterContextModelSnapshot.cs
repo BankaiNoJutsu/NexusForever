@@ -1757,6 +1757,22 @@ namespace NexusForever.Database.Sqlite.Migrations.Character
                     b.ToTable("character_stats", (string)null);
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterTaxiNodeModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .HasColumnType("bigint(20)")
+                        .HasColumnName("id");
+
+                    b.Property<ushort>("TaxiNodeId")
+                        .HasColumnType("smallint(5)")
+                        .HasColumnName("taxiNodeId");
+
+                    b.HasKey("Id", "TaxiNodeId")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("character_taxi_node", (string)null);
+                });
+
             modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterTitleModel", b =>
                 {
                     b.Property<ulong>("Id")
@@ -3690,6 +3706,18 @@ namespace NexusForever.Database.Sqlite.Migrations.Character
                     b.Navigation("Character");
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterTaxiNodeModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Character.Model.CharacterModel", "Character")
+                        .WithMany("TaxiNode")
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK__character_taxi_node_id__character_id");
+
+                    b.Navigation("Character");
+                });
+
             modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterTitleModel", b =>
                 {
                     b.HasOne("NexusForever.Database.Character.Model.CharacterModel", "Character")
@@ -3941,6 +3969,8 @@ namespace NexusForever.Database.Sqlite.Migrations.Character
                     b.Navigation("Spell");
 
                     b.Navigation("Stat");
+
+                    b.Navigation("TaxiNode");
 
                     b.Navigation("Tradeskill");
 

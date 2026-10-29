@@ -168,6 +168,8 @@ namespace NexusForever.Game.Abstract.Entity
         void SetBindPoint(ushort bindPointId, ushort worldId, Vector3 position);
         bool TryGetBindPoint(out ushort worldId, out Vector3 position);
         IMapPosition GetOpenWorldReturnPosition();
+        void DiscoverTaxiNode(uint taxiNodeId);
+        bool IsNearTaxiNode(uint taxiNodeId, float range);
 
         /// <summary>
         /// Teleport <see cref="IPlayer"/> to supplied location.
@@ -233,6 +235,7 @@ namespace NexusForever.Game.Abstract.Entity
         /// Returns whether this <see cref="IPlayer"/> is allowed to summon or be added to a vehicle.
         /// </summary>
         bool CanMount();
+        void SetPendingMount(IMountEntity mount);
 
         /// <summary>
         /// Dismounts this <see cref="IPlayer"/> from a vehicle that it's attached to

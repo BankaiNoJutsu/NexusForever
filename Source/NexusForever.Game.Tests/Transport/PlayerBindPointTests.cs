@@ -31,21 +31,22 @@ public class PlayerBindPointTests
         using var db = new CharacterContext(new DbContextOptionsBuilder<CharacterContext>()
             .UseSqlite(connection, o => o.MigrationsAssembly(NexusForever.Database.Extensions.SqliteMigrationsAssembly)).Options);
         string[] migrations = db.Database.GetMigrations().ToArray();
-        Assert.EndsWith("_CharacterBind", migrations[^1]);
+        int bindIndex = Array.FindIndex(migrations, m => m.EndsWith("_CharacterBind", StringComparison.Ordinal));
+        Assert.True(bindIndex > 0);
         var migrator = db.GetService<IMigrator>();
-        migrator.Migrate(migrations[^2]);
+        migrator.Migrate(migrations[bindIndex - 1]);
         db.Add(new CharacterModel { Id = 42, Name = "Existing" });
         db.Add(new CharacterEntitlementModel { Id = 42, EntitlementId = 1, Amount = 1 });
         db.SaveChanges();
         db.ChangeTracker.Clear();
 
-        db.Database.Migrate();
+        migrator.Migrate(migrations[bindIndex]);
         Assert.Empty(db.CharacterBind);
         db.Add(new CharacterBindModel { Id = 42, BindPointId = 7, WorldId = 51, X = 1, Y = 2, Z = 3 });
         db.SaveChanges();
         Assert.Equal("Existing", db.Character.Single().Name);
         Assert.Equal(1u, db.CharacterEntitlement.Single().Amount);
-        migrator.Migrate(migrations[^2]);
+        migrator.Migrate(migrations[bindIndex - 1]);
         Assert.Equal("Existing", db.Character.Single().Name);
         Assert.Equal(1u, db.CharacterEntitlement.Single().Amount);
     }

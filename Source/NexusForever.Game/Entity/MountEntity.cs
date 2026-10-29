@@ -80,6 +80,8 @@ namespace NexusForever.Game.Entity
             if (seatType != VehicleSeatType.Pilot)
                 return;
 
+            player.SetPendingMount(null);
+
             if (PilotDisplayInfo != null)
                 player.AddVisual(ItemSlot.Mount, (ushort)PilotDisplayInfo.Id);
 

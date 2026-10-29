@@ -278,10 +278,44 @@ public class SpellCollectionEffectTests
         }
     }
 
-    private static IDisposable UseGameTableManager(IGameTableManager gameTableManager)
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SummonMountReservesOnlyAcceptedSummonsAndRetainsExplicitAuraCooldownBypass(bool canEnter)
+    {
+        var player = RecordingDispatchProxy<IPlayer>.Create(out var pp);
+        var map = RecordingDispatchProxy<NexusForever.Game.Abstract.Map.IBaseMap>.Create(out var mp);
+        pp.SetProperty(nameof(IPlayer.Guid), 42u);
+        pp.SetProperty(nameof(IPlayer.Map), map);
+        pp.SetMethodReturn(nameof(IPlayer.CanMount), true);
+        mp.SetMethodReturn(nameof(NexusForever.Game.Abstract.Map.IBaseMap.CanEnter), canEnter);
+        var mount = RecordingDispatchProxy<IMountEntity>.Create(out _);
+        var factory = RecordingDispatchProxy<IEntityFactory>.Create(out var fp);
+        fp.SetMethodReturn(nameof(IEntityFactory.CreateEntity), mount);
+        var tables = CreateGameTableManagerWithoutStaticTables();
+        SetAutoProperty(tables, nameof(GameTableManager.Creature2), CreateGameTable(new Creature2Entry { Id = 11 }));
+        using var scope = UseGameTableManager(tables, factory);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectSummonMount(CreateSpell(player), player,
+            CreateCollectionInfo(SpellEffectType.SummonMount, 11));
+
+        Assert.Equal(canEnter ? 1 : 0, pp.GetInvocations(nameof(IPlayer.SetPendingMount)).Count);
+        Assert.Equal(canEnter ? 1 : 0, mp.GetInvocations(nameof(NexusForever.Game.Abstract.Map.IBaseMap.EnqueueAdd)).Count);
+        var casts = pp.GetInvocations(nameof(IPlayer.CastSpell));
+        Assert.Equal(canEnter ? 2 : 0, casts.Count);
+        foreach (var cast in casts)
+        {
+            var parameters = Assert.IsAssignableFrom<ISpellParameters>(cast.Arguments[1]);
+            Assert.True(parameters.IgnoreGlobalCooldown);
+            Assert.False(parameters.UserInitiatedSpellCast);
+            Assert.Equal(42u, parameters.PrimaryTargetId);
+        }
+    }
+
+    private static IDisposable UseGameTableManager(IGameTableManager gameTableManager, IEntityFactory factory = null)
     {
         ISpellEffectDependencyResolver previousResolver =
-            global::NexusForever.Game.Spell.SpellHandler.InitialiseDependencyResolver(new TestSpellEffectDependencyResolver(gameTableManager));
+            global::NexusForever.Game.Spell.SpellHandler.InitialiseDependencyResolver(new TestSpellEffectDependencyResolver(gameTableManager, factory));
         return new DependencyResolverScope(previousResolver);
     }
 
@@ -293,7 +327,7 @@ public class SpellCollectionEffectTests
         }
     }
 
-    private sealed class TestSpellEffectDependencyResolver(IGameTableManager gameTableManager) : ISpellEffectDependencyResolver
+    private sealed class TestSpellEffectDependencyResolver(IGameTableManager gameTableManager, IEntityFactory factory = null) : ISpellEffectDependencyResolver
     {
         public IDamageCalculator CreateDamageCalculator()
         {
@@ -302,7 +336,7 @@ public class SpellCollectionEffectTests
 
         public IEntityFactory GetEntityFactory()
         {
-            return null;
+            return factory;
         }
 
         public IForcedMovementGenerator GetForcedMovementGenerator()

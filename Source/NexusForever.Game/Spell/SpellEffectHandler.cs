@@ -2670,11 +2670,15 @@ namespace NexusForever.Game.Spell
 
             if (player.Map.CanEnter(mount, position))
             {
+                player.SetPendingMount(mount);
                 player.Map.EnqueueAdd(mount, position);
                 SpellEffectDiagnostics.TracePlayerCollection(spell, target, "summon-mount", player.Guid, info.Entry.DataBits00, spell.Parameters.SpellInfo.Entry.Id, true, null);
             }
             else
+            {
                 SpellEffectDiagnostics.TracePlayerCollection(spell, target, "summon-mount", player.Guid, info.Entry.DataBits00, spell.Parameters.SpellInfo.Entry.Id, false, "map-cannot-enter");
+                return;
+            }
 
             player.CastSpell(52539, new SpellParameters
             {

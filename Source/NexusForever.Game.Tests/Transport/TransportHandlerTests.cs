@@ -327,7 +327,7 @@ public class TransportHandlerTests
         currencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), false);
 
         TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
-        handler.HandleMessage(session, BuildFlightPathPurchase(1u));
+        handler.HandleMessage(session, BuildFlightPathPurchase(1u, 2u));
 
         Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
         RecordingDispatchProxy<IPlayer>.Invocation error =
@@ -358,6 +358,69 @@ public class TransportHandlerTests
         Assert.Equal(40f, teleport.Arguments[1]);
         Assert.Equal(50f, teleport.Arguments[2]);
         Assert.Equal(60f, teleport.Arguments[3]);
+        Assert.Equal(30u, Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.DiscoverTaxiNode))).Arguments[0]);
+    }
+
+    [Theory]
+    [InlineData("remote-source")]
+    [InlineData("missing-source")]
+    [InlineData("missing-intermediate")]
+    [InlineData("foreign-source")]
+    [InlineData("foreign-intermediate")]
+    [InlineData("unknown-node-faction")]
+    [InlineData("missing-world")]
+    [InlineData("oversized-world")]
+    [InlineData("nonfinite-position")]
+    [InlineData("pending-teleport")]
+    public void FlightPathPurchase_RejectsInvalidOriginLegsOrDestinationBeforeCharging(string scenario)
+    {
+        var handler = CreateFlightPathHandler(out var tables, out var player, out var currency, out var pp);
+        var source = new TaxiNodeEntry { Id = 10 };
+        var intermediate = new TaxiNodeEntry { Id = 20 };
+        var destination = new TaxiNodeEntry { Id = 30, WorldLocation2Id = 3003 };
+        switch (scenario)
+        {
+            case "remote-source": pp.SetMethodReturn(nameof(IPlayer.IsNearTaxiNode), false); break;
+            case "missing-source": source.Id = 11; break;
+            case "missing-intermediate": intermediate.Id = 21; break;
+            case "foreign-source": source.TaxiNodeFactionEnum = 2; break;
+            case "foreign-intermediate": intermediate.TaxiNodeFactionEnum = 2; break;
+            case "unknown-node-faction": intermediate.TaxiNodeFactionEnum = 99; break;
+            case "missing-world": tables.SetProperty(nameof(IGameTableManager.World), null); break;
+            case "oversized-world":
+            case "nonfinite-position":
+                tables.SetProperty(nameof(IGameTableManager.WorldLocation2), CreateGameTable(new WorldLocation2Entry
+                {
+                    Id = 3003, WorldId = scenario == "oversized-world" ? 65536u : 7u,
+                    Position0 = scenario == "nonfinite-position" ? float.NaN : 0f
+                })); break;
+            case "pending-teleport": pp.SetMethodReturn(nameof(IPlayer.CanTeleport), false); break;
+        }
+        tables.SetProperty(nameof(IGameTableManager.TaxiNode), CreateGameTable(source, intermediate, destination));
+        handler.HandleMessage(CreateSession(player, out _), BuildFlightPathPurchase(1, 2));
+        Assert.Empty(currency.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        Assert.Empty(pp.GetInvocations(nameof(IPlayer.TeleportTo)));
+        Assert.Empty(pp.GetInvocations(nameof(IPlayer.DiscoverTaxiNode)));
+    }
+
+    [Fact]
+    public void FlightPathPurchase_RejectsOversizedRouteListWithoutCharge()
+    {
+        var handler = CreateFlightPathHandler(out _, out var player, out var currency, out var pp);
+        handler.HandleMessage(CreateSession(player, out _), BuildFlightPathPurchase(Enumerable.Repeat(1u, 31).ToArray()));
+        Assert.Empty(currency.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        Assert.Empty(pp.GetInvocations(nameof(IPlayer.TeleportTo)));
+    }
+
+    [Fact]
+    public void FlightPathPurchase_SumsFaresWithoutUIntOverflow()
+    {
+        var handler = CreateFlightPathHandler(out var tables, out var player, out var currency, out _);
+        tables.SetProperty(nameof(IGameTableManager.TaxiRoute), CreateGameTable(
+            new TaxiRouteEntry { Id = 1, TaxiNodeIdSource = 10, TaxiNodeIdDestination = 20, Price = uint.MaxValue },
+            new TaxiRouteEntry { Id = 2, TaxiNodeIdSource = 20, TaxiNodeIdDestination = 30, Price = uint.MaxValue }));
+        handler.HandleMessage(CreateSession(player, out _), BuildFlightPathPurchase(1, 2));
+        Assert.Equal(2ul * uint.MaxValue, Assert.Single(currency.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount))).Arguments[1]);
     }
 
     [Fact]
@@ -474,7 +537,10 @@ public class TransportHandlerTests
             new TaxiRouteEntry { Id = 1u, TaxiNodeIdSource = 10u, TaxiNodeIdDestination = 20u, Price = 5u },
             new TaxiRouteEntry { Id = 2u, TaxiNodeIdSource = 20u, TaxiNodeIdDestination = 30u, Price = 7u }));
         tableProxy.SetProperty(nameof(IGameTableManager.TaxiNode), CreateGameTable(
+            new TaxiNodeEntry { Id = 10u },
+            new TaxiNodeEntry { Id = 20u },
             new TaxiNodeEntry { Id = 30u, WorldLocation2Id = 3003u }));
+        tableProxy.SetProperty(nameof(IGameTableManager.World), CreateGameTable(new WorldEntry { Id = 7 }));
         tableProxy.SetProperty(nameof(IGameTableManager.WorldLocation2), CreateGameTable(
             new WorldLocation2Entry
             {
@@ -490,6 +556,7 @@ public class TransportHandlerTests
 
         player = RecordingDispatchProxy<IPlayer>.Create(out playerProxy);
         playerProxy.SetMethodReturn(nameof(IPlayer.CanTeleport), true);
+        playerProxy.SetMethodReturn(nameof(IPlayer.IsNearTaxiNode), true);
         playerProxy.SetProperty(nameof(IPlayer.CurrencyManager), currencyManager);
 
         return new ClientFlightPathPurchaseHandler(NullLogger<ClientFlightPathPurchaseHandler>.Instance, gameTableManager);

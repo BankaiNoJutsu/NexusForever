@@ -1,4 +1,8 @@
 using System.Collections.Generic;
+using System.Numerics;
+using System.Linq;
+using NexusForever.Game;
+using NexusForever.Game.Entity;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
@@ -31,7 +35,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             log.LogTrace("Received flight-path purchase request from player {PlayerGuid}: Routes=[{RouteIds}].",
                 session.Player?.Guid, string.Join(", ", flightPathPurchase.RouteIds));
 
-            if (flightPathPurchase.RouteIds.Count == 0)
+            if (flightPathPurchase.RouteIds.Count == 0 || flightPathPurchase.RouteIds.Count > 30)
             {
                 RejectFlightPathPurchase(session, "empty route list");
                 return;
@@ -50,21 +54,22 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
                 return;
             }
 
-            ulong totalPrice = 0ul;
-            foreach (TaxiRouteEntry route in routes)
-                totalPrice += route.Price;
-
-            if (!session.Player.CurrencyManager.CanAfford(CurrencyType.Credits, totalPrice))
-            {
-                log.LogTrace("Flight-path purchase rejected for player {PlayerGuid}: insufficient credits for route chain [{RouteIds}] with price {Price}.",
-                    session.Player?.Guid, string.Join(", ", flightPathPurchase.RouteIds), totalPrice);
-                session.Player.SendGenericError(GenericError.VendorNotEnoughCash);
-                return;
-            }
-
             if (gameTableManager.TaxiNode == null)
             {
                 RejectFlightPathPurchase(session, "taxi node table is unavailable");
+                return;
+            }
+
+            foreach (uint nodeId in routes.SelectMany(r => new[] { r.TaxiNodeIdSource, r.TaxiNodeIdDestination }).Distinct())
+                if (!TaxiNodeAccess.IsAllowed(gameTableManager.TaxiNode.GetEntry(nodeId), session.Player.Faction1))
+                {
+                    RejectFlightPathPurchase(session, "route contains a missing or inaccessible taxi node");
+                    return;
+                }
+
+            if (!session.Player.IsNearTaxiNode(routes[0].TaxiNodeIdSource, 15f))
+            {
+                RejectFlightPathPurchase(session, "no source kiosk within range");
                 return;
             }
 
@@ -88,9 +93,25 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
                 return;
             }
 
+            if (destinationLocation.WorldId is 0u or > ushort.MaxValue
+                || gameTableManager.World?.GetEntry(destinationLocation.WorldId) == null
+                || !float.IsFinite(destinationLocation.Position0) || !float.IsFinite(destinationLocation.Position1)
+                || !float.IsFinite(destinationLocation.Position2))
+            {
+                RejectFlightPathPurchase(session, "destination world or position is invalid");
+                return;
+            }
+
             if (!session.Player.CanTeleport())
             {
                 session.Player.SendGenericError(GenericError.InstanceTransferPending);
+                return;
+            }
+
+            ulong totalPrice = routes.Aggregate(0ul, (price, route) => price + route.Price);
+            if (!session.Player.CurrencyManager.CanAfford(CurrencyType.Credits, totalPrice))
+            {
+                session.Player.SendGenericError(GenericError.VendorNotEnoughCash);
                 return;
             }
 
@@ -101,6 +122,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
                 routes[^1].TaxiNodeIdDestination,
                 totalPrice);
             session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, totalPrice);
+            session.Player.DiscoverTaxiNode(destinationNode.Id);
+            session.Player.Rotation = new Quaternion(destinationLocation.Facing0, destinationLocation.Facing1,
+                destinationLocation.Facing2, destinationLocation.Facing3).ToEuler();
             session.Player.TeleportTo((ushort)destinationLocation.WorldId, destinationLocation.Position0, destinationLocation.Position1, destinationLocation.Position2);
         }
 
