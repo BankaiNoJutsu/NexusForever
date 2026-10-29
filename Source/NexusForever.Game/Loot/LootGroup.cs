@@ -3,9 +3,12 @@ using NexusForever.Database.World;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Loot;
+using NexusForever.Game.Static.Quest;
 
 namespace NexusForever.Game.Loot
 {
+    public readonly record struct GeneratedLootDrop(LootItem Item, uint Count, IReadOnlyList<IPlayer> EligiblePlayers);
+
     public class LootGroup
     {
         public ulong Id { get; }
@@ -42,31 +45,28 @@ namespace NexusForever.Game.Loot
 
         public IEnumerable<(LootItem Item, uint Count)> GenerateLootDrops(IPlayer player)
         {
-            if (!WillDrop(player))
+            return GenerateLootDropsForPlayers([player]).Select(d => (d.Item, d.Count));
+        }
+
+        public IEnumerable<GeneratedLootDrop> GenerateLootDropsForPlayers(IReadOnlyList<IPlayer> players)
+        {
+            List<IPlayer> eligible = players.Where(MeetsCondition).ToList();
+            if (eligible.Count == 0 || !(Probability > 0f) || Random.Shared.NextDouble() * 100d >= Probability)
                 return [];
 
-            List<(LootItem Item, uint Count)> itemsDropped = GenerateLootItems(player);
+            List<GeneratedLootDrop> itemsDropped = GenerateLootItems(eligible);
             if (minDrop == 0u && maxDrop == 0u)
                 return itemsDropped;
 
-            uint desiredDrop = minDrop == maxDrop ? minDrop : (uint)Random.Shared.Next((int)minDrop, (int)maxDrop + 1);
+            uint desiredDrop = minDrop == maxDrop ? minDrop : (uint)Random.Shared.NextInt64(minDrop, (long)maxDrop + 1);
 
             for (int attempts = 0; itemsDropped.Count < minDrop && attempts < 10; attempts++)
-                itemsDropped.AddRange(GenerateLootItems(player));
+                itemsDropped.AddRange(GenerateLootItems(eligible));
 
             while (itemsDropped.Count > desiredDrop)
                 itemsDropped.RemoveAt(Random.Shared.Next(0, itemsDropped.Count));
 
             return itemsDropped;
-        }
-
-        private bool WillDrop(IPlayer player)
-        {
-            if (!MeetsCondition(player))
-                return false;
-
-            double chance = Random.Shared.NextDouble() * 100d;
-            return chance < Probability;
         }
 
         private bool MeetsCondition(IPlayer player)
@@ -81,21 +81,29 @@ namespace NexusForever.Game.Loot
                 LootConditionType.IsMoreThanLevel      => player != null && player.Level > condition,
                 LootConditionType.QuestObjectiveActive => player?.QuestManager != null && player.QuestManager.IsActiveObjectiveId(condition),
                 LootConditionType.IsFaction            => player != null && (uint)player.Faction1 == condition,
-                _                                      => true
+                LootConditionType.QuestIsComplete      => IsQuestState(player, completed: true),
+                LootConditionType.QuestNotComplete     => IsQuestState(player, completed: false),
+                _                                      => false
             };
         }
 
-        private List<(LootItem Item, uint Count)> GenerateLootItems(IPlayer player)
+        private bool IsQuestState(IPlayer player, bool completed)
         {
-            List<(LootItem Item, uint Count)> itemsDropped = [];
+            return player?.QuestManager != null && condition is > 0 and <= ushort.MaxValue
+                && (player.QuestManager.GetQuestState((ushort)condition) == QuestState.Completed) == completed;
+        }
+
+        private List<GeneratedLootDrop> GenerateLootItems(IReadOnlyList<IPlayer> players)
+        {
+            List<GeneratedLootDrop> itemsDropped = [];
 
             foreach (LootGroup lootGroup in childLootGroups)
-                itemsDropped.AddRange(lootGroup.GenerateLootDrops(player));
+                itemsDropped.AddRange(lootGroup.GenerateLootDropsForPlayers(players));
 
             foreach (LootItem lootItem in lootItems)
             {
                 if (lootItem.TryGetDrop(out uint count))
-                    itemsDropped.Add((lootItem, count));
+                    itemsDropped.Add(new GeneratedLootDrop(lootItem, count, players));
             }
 
             return itemsDropped;

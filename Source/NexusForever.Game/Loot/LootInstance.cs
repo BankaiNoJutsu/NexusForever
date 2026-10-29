@@ -4,6 +4,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Abstract.Loot;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.GameTable;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Loot;
@@ -19,6 +20,8 @@ namespace NexusForever.Game.Loot
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
         public uint OwnerUnitId { get; }
+        public IBaseMap OwnerMap { get; }
+        public bool IsOnMap(IBaseMap map) => OwnerMap == null || ReferenceEquals(OwnerMap, map);
         public uint ParentUnitId { get; }
         public LootEntityType LootEntityType { get; }
         public LooterType LooterType { get; }
@@ -36,14 +39,15 @@ namespace NexusForever.Game.Loot
         private readonly IItemManager itemManager;
         private readonly IGameTableManager gameTableManager;
 
-        public LootInstance(uint ownerUnitId, Dictionary<ulong, uint> looterIds, LooterType looterType, LootEntityType lootEntityType, IPlayerManager playerManager = null, IItemManager itemManager = null, IGameTableManager gameTableManager = null)
-            : this(ownerUnitId, ownerUnitId, looterIds, looterType, lootEntityType, playerManager, itemManager, gameTableManager)
+        public LootInstance(uint ownerUnitId, Dictionary<ulong, uint> looterIds, LooterType looterType, LootEntityType lootEntityType, IPlayerManager playerManager = null, IItemManager itemManager = null, IGameTableManager gameTableManager = null, IBaseMap ownerMap = null)
+            : this(ownerUnitId, ownerUnitId, looterIds, looterType, lootEntityType, playerManager, itemManager, gameTableManager, ownerMap)
         {
         }
 
-        public LootInstance(uint ownerUnitId, uint parentUnitId, Dictionary<ulong, uint> looterIds, LooterType looterType, LootEntityType lootEntityType, IPlayerManager playerManager = null, IItemManager itemManager = null, IGameTableManager gameTableManager = null)
+        public LootInstance(uint ownerUnitId, uint parentUnitId, Dictionary<ulong, uint> looterIds, LooterType looterType, LootEntityType lootEntityType, IPlayerManager playerManager = null, IItemManager itemManager = null, IGameTableManager gameTableManager = null, IBaseMap ownerMap = null)
         {
             OwnerUnitId    = ownerUnitId;
+            OwnerMap       = ownerMap;
             ParentUnitId   = parentUnitId;
             LooterType     = looterType;
             LootEntityType = lootEntityType;
@@ -68,9 +72,10 @@ namespace NexusForever.Game.Loot
             }
         }
 
-        public LootInstanceItem AddLootItem(uint staticId, LootItemType type, uint count)
+        public LootInstanceItem AddLootItem(uint staticId, LootItemType type, uint count, IEnumerable<Identity> eligible = null)
         {
-            LootInstanceItem existingItem = lootItems.Values.SingleOrDefault(i => i.StaticId == staticId && i.Type == type && !i.Delivered);
+            HashSet<Identity> looters = eligible?.ToHashSet();
+            LootInstanceItem existingItem = lootItems.Values.SingleOrDefault(i => i.StaticId == staticId && i.Type == type && !i.Delivered && i.HasGenerationLooters(looters));
             if (existingItem != null)
             {
                 if (!existingItem.TryAddToAmount(count))
@@ -80,6 +85,7 @@ namespace NexusForever.Game.Loot
             }
 
             LootInstanceItem item = new(staticId, type, count, itemManager, gameTableManager);
+            item.SetGenerationLooters(looters);
             item.SetOwnerUnit(OwnerUnitId);
             lootItems.Add(item.Id, item);
 
@@ -101,10 +107,14 @@ namespace NexusForever.Game.Loot
 
         public void SendLootNotify(IPlayer player, bool includeGrantedItems = false, bool suppressIfUnchanged = false)
         {
+            if (!IsOnMap(player.Map))
+                return;
             List<NetworkLootItem> networkLootItems = [];
             List<LootPacketDiagnostics.NotifyItemState> diagnosticItems = [];
             foreach (LootInstanceItem item in lootItems.Values)
             {
+                if (!item.IsGenerationEligible(player.Identity))
+                    continue;
                 if (item.Delivered)
                 {
                     if (!includeGrantedItems)
@@ -257,6 +267,8 @@ namespace NexusForever.Game.Loot
 
         public bool GiveLoot(IPlayer player, uint lootInstanceItemId)
         {
+            if (!IsOnMap(player.Map))
+                return false;
             if (!HasLooter(player.CharacterId))
                 throw new InvalidOperationException($"Character {player.CharacterId} is not permitted to loot owner {OwnerUnitId}.");
 
@@ -284,6 +296,8 @@ namespace NexusForever.Game.Loot
 
         public bool RollLoot(IPlayer player, uint lootInstanceItemId, LootRollAction action)
         {
+            if (!IsOnMap(player.Map))
+                return false;
             if (!HasLooter(player.CharacterId))
                 throw new InvalidOperationException($"Character {player.CharacterId} is not permitted to roll on owner {OwnerUnitId}.");
 
@@ -304,6 +318,8 @@ namespace NexusForever.Game.Loot
 
         public bool AssignMasterLoot(IPlayer master, uint lootInstanceItemId, Identity assignee)
         {
+            if (!IsOnMap(master.Map))
+                return false;
             if (!HasLooter(master.CharacterId))
                 throw new InvalidOperationException($"Character {master.CharacterId} is not permitted to assign loot on owner {OwnerUnitId}.");
 
@@ -416,12 +432,14 @@ namespace NexusForever.Game.Loot
 
         private IPlayer TryGetPlayer(ulong characterId)
         {
-            return playerManager?.GetPlayer(characterId);
+            IPlayer player = playerManager?.GetPlayer(characterId);
+            return player != null && IsOnMap(player.Map) ? player : null;
         }
 
         private IPlayer TryGetPlayer(Identity identity)
         {
-            return playerManager?.GetPlayer(identity);
+            IPlayer player = playerManager?.GetPlayer(identity);
+            return player != null && IsOnMap(player.Map) ? player : null;
         }
 
         private void BroadcastLootItemUpdate(LootInstanceItem item)
@@ -455,7 +473,8 @@ namespace NexusForever.Game.Loot
                     continue;
 
                 IPlayer player = TryGetPlayer(characterId);
-                player?.Session.EnqueueMessageEncrypted(notification);
+                if (player != null && item.IsGenerationEligible(player.Identity))
+                    player.Session.EnqueueMessageEncrypted(notification);
             }
         }
 

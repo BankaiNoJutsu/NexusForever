@@ -2626,12 +2626,17 @@ namespace NexusForever.Game.Entity
 
         private void GenerateRewards()
         {
+            List<IPlayer> contributors = [];
             foreach (IHostileEntity hostile in ThreatManager)
             {
                 IUnitEntity entity = GetVisible<IUnitEntity>(hostile.HatedUnitId);
                 if (entity is IPlayer player)
+                {
                     RewardKiller(player);
+                    contributors.Add(player);
+                }
             }
+            GetGlobalLootManager()?.DistributeLoot(contributors, this);
         }
 
         protected virtual void RewardKiller(IPlayer player)
@@ -2669,7 +2674,6 @@ namespace NexusForever.Game.Entity
                 player.XpManager.GrantXpForCreatureKill(Level, groupValue, GetPropertyValue(Property.XpMultiplier));
             }
 
-            GetGlobalLootManager()?.DropLoot(player, this);
         }
 
         private static void UpdateCreatureKillChain(IPlayer player, uint killedUnitId)

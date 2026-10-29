@@ -11,7 +11,7 @@ namespace NexusForever.Game.Entity
     {
         private void RemoveLootForOwner()
         {
-            GetGlobalLootManager()?.RemoveLootForOwner(Guid);
+            GetGlobalLootManager()?.RemoveLootForOwner(Guid, ownerMap: Map);
         }
 
         private IGlobalLootManager GetGlobalLootManager()

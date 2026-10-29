@@ -9,6 +9,7 @@ using NexusForever.Game.Retail;
 using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.Loot;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
@@ -233,15 +234,41 @@ namespace NexusForever.Game.Loot
 
         public bool DropLoot(IPlayer looter, IWorldEntity lootedEntity)
         {
+            return DropLootCore(looter, lootedEntity, generate: true);
+        }
+
+        public void DistributeLoot(IEnumerable<IPlayer> contributors, IWorldEntity lootedEntity)
+        {
+            HashSet<ulong> groups = [];
+            HashSet<Identity> players = [];
+            foreach (IPlayer player in contributors)
+            {
+                if (player == null || !players.Add(player.Identity) || player.Map != lootedEntity?.Map)
+                    continue;
+
+                bool grouped = player.GroupAssociation != 0ul
+                    && groupStateManager.TryGetGroup(player.GroupAssociation, out GroupLootState group)
+                    && group.HasMember(player.Identity);
+                bool generate = !grouped || groups.Add(player.GroupAssociation);
+                DropLootCore(player, lootedEntity, generate);
+            }
+        }
+
+        private bool DropLootCore(IPlayer looter, IWorldEntity lootedEntity, bool generate)
+        {
             if (looter == null || lootedEntity == null)
             {
                 log.Trace($"Creature loot drop skipped: looter or looted entity is null. looterCharacter={looter?.CharacterId.ToString() ?? "none"}, ownerUnit={lootedEntity?.Guid.ToString() ?? "none"}.");
                 return false;
             }
 
-            if (lootedEntity is IPetEntity)
+            if (looter.Map != lootedEntity.Map)
+                return false;
+
+            // Player deaths use the PvP reward path and must not generate creature loot.
+            if (lootedEntity is IPetEntity or IPlayer)
             {
-                log.Trace($"Creature loot drop skipped for owner {lootedEntity.Guid}: owner is a pet.");
+                log.Trace($"Creature loot drop skipped for owner {lootedEntity.Guid}: owner is a pet or player.");
                 return false;
             }
 
@@ -267,7 +294,14 @@ namespace NexusForever.Game.Loot
 
             log.Trace(
                 $"Generating creature loot: looterCharacter={looter.CharacterId}, looterGuid={looter.Guid}, ownerUnit={lootedEntity.Guid}, creatureId={lootedEntity.CreatureId}, creature2Id={entry.Id}, looterType={recipients.LooterType}, eligiblePlayers=[{string.Join(",", recipients.EligiblePlayers.Select(p => $"{p.CharacterId}:{p.Guid}"))}], ownerPosition=({lootedEntity.Position.X:R},{lootedEntity.Position.Y:R},{lootedEntity.Position.Z:R}), looterPosition=({looter.Position.X:R},{looter.Position.Y:R},{looter.Position.Z:R}).");
-            LootInstance lootInstance = GenerateLootInstance(entry.Id, lootedEntity.Guid, looter, recipients.LooterIds, recipients.LooterType, LootEntityType.Creature);
+            // The personal kill bonus remains per contributor, while a group's
+            // shared loot table is generated only once for the death.
+            TryGrantRandomOmnibitKillReward(looter, lootedEntity.Guid);
+            if (!generate)
+                return false;
+
+            LootInstance lootInstance = GenerateLootInstance(entry.Id, lootedEntity.Guid, looter, recipients.LooterIds, recipients.LooterType, LootEntityType.Creature,
+                eligiblePlayers: recipients.EligiblePlayers, ownerMap: lootedEntity.Map);
             ConfigureLootDistribution(lootInstance, recipients);
             if (lootInstance.HasExpired)
             {
@@ -551,10 +585,10 @@ namespace NexusForever.Game.Loot
             };
         }
 
-        private LootInstance GenerateLootInstance(uint entityId, uint ownerUnitId, IPlayer player, Dictionary<ulong, uint> looterIds, LooterType looterType, LootEntityType lootEntityType, uint parentUnitId = 0u)
+        private LootInstance GenerateLootInstance(uint entityId, uint ownerUnitId, IPlayer player, Dictionary<ulong, uint> looterIds, LooterType looterType, LootEntityType lootEntityType, uint parentUnitId = 0u, IReadOnlyList<IPlayer> eligiblePlayers = null, IBaseMap ownerMap = null)
         {
             uint resolvedParentUnitId = parentUnitId != 0u ? parentUnitId : ownerUnitId;
-            LootInstance lootInstance = new(ownerUnitId, resolvedParentUnitId, looterIds, looterType, lootEntityType, playerManager, itemManager, gameTableManager);
+            LootInstance lootInstance = new(ownerUnitId, resolvedParentUnitId, looterIds, looterType, lootEntityType, playerManager, itemManager, gameTableManager, ownerMap);
             log.Trace($"Generating loot instance: entityId={entityId}, ownerUnit={ownerUnitId}, parentUnit={resolvedParentUnitId}, playerCharacter={player?.CharacterId.ToString() ?? "none"}, looterType={looterType}, lootEntityType={lootEntityType}, looterIds=[{string.Join(",", looterIds.Select(kvp => $"{kvp.Key}:{kvp.Value}"))}].");
 
             switch (lootEntityType)
@@ -565,8 +599,8 @@ namespace NexusForever.Game.Loot
                         log.Trace($"Creature loot tables found for entityId={entityId}: groupCount={creatureLootGroups.Count}.");
                         foreach (LootGroup lootGroup in creatureLootGroups)
                         {
-                            foreach ((LootItem item, uint count) in lootGroup.GenerateLootDrops(player))
-                                TryAddLootItem(lootInstance, item, count, $"creature-table:{entityId}:group:{lootGroup.Id}", itemManager, gameTableManager);
+                            foreach (GeneratedLootDrop drop in lootGroup.GenerateLootDropsForPlayers(eligiblePlayers ?? [player]))
+                                TryAddLootItem(lootInstance, drop.Item, drop.Count, $"creature-table:{entityId}:group:{lootGroup.Id}", itemManager, gameTableManager, drop.EligiblePlayers);
                         }
                     }
                     else
@@ -580,7 +614,7 @@ namespace NexusForever.Game.Loot
                         foreach (LootItem item in importedItems)
                         {
                             if (item.TryGetDrop(out uint count))
-                                TryAddLootItem(lootInstance, item, count, $"creature-direct:{entityId}", itemManager, gameTableManager);
+                                TryAddLootItem(lootInstance, item, count, $"creature-direct:{entityId}", itemManager, gameTableManager, eligiblePlayers);
                             else
                                 log.Trace($"Imported direct creature loot did not roll: entityId={entityId}, type={item.Type}, staticId={item.StaticId}.");
                         }
@@ -590,7 +624,6 @@ namespace NexusForever.Game.Loot
                         log.Trace($"No imported direct creature loot rows found for entityId={entityId}.");
                     }
 
-                    TryGrantRandomOmnibitKillReward(player, ownerUnitId);
                     break;
                 case LootEntityType.Item:
                     if (itemLoot.TryGetValue(entityId, out List<LootGroup> itemLootGroups))
@@ -621,18 +654,27 @@ namespace NexusForever.Game.Loot
             if (recipients.Group == null || recipients.EligiblePlayers.Count <= 1)
                 return;
 
-            List<Identity> eligibleIdentities = recipients.EligiblePlayers
-                .Select(p => p.Identity)
-                .ToList();
-            List<Identity> masterLootCandidates = recipients.MasterLootCandidates
-                .Select(p => p.Identity)
-                .Distinct()
-                .ToList();
-            if (masterLootCandidates.Count == 0)
-                masterLootCandidates = eligibleIdentities;
-
             foreach (LootInstanceItem item in lootInstance.Where(i => !i.Delivered))
             {
+                List<IPlayer> eligiblePlayers = recipients.EligiblePlayers.Where(p => item.IsGenerationEligible(p.Identity)).ToList();
+                List<Identity> eligibleIdentities = eligiblePlayers.Select(p => p.Identity).ToList();
+                List<Identity> masterLootCandidates = recipients.MasterLootCandidates.Select(p => p.Identity)
+                    .Where(item.IsGenerationEligible).Distinct().ToList();
+                if (masterLootCandidates.Count == 0)
+                    masterLootCandidates = eligibleIdentities;
+
+                if (eligiblePlayers.Count == 1)
+                {
+                    item.ConfigureAssigned(eligiblePlayers[0].Identity, eligiblePlayers[0].Guid);
+                    continue;
+                }
+
+                // Currency/virtual/account rewards are not equipment rolls.
+                if (item.Type != LootItemType.StaticItem)
+                {
+                    item.ConfigureFreeForAll(eligibleIdentities);
+                    continue;
+                }
                 if (item.ItemQualityId <= RetailCertainRules.TrashItemMaxQualityId && eligibleIdentities.Count > 1)
                 {
                     item.ConfigureRoll(eligibleIdentities);
@@ -643,7 +685,8 @@ namespace NexusForever.Game.Loot
                 {
                     case LootRule.RoundRobin:
                     {
-                        GroupLootMember winner = groupStateManager.NextRoundRobinWinner(recipients.Group, recipients.EligibleMembers);
+                        GroupLootMember winner = groupStateManager.NextRoundRobinWinner(recipients.Group,
+                            recipients.EligibleMembers.Where(m => item.IsGenerationEligible(m.Identity)).ToList());
                         if (recipients.LooterIds.TryGetValue(winner.Identity.Id, out uint winnerGuid))
                             item.ConfigureAssigned(winner.Identity, winnerGuid);
                         else
@@ -657,7 +700,7 @@ namespace NexusForever.Game.Loot
                     {
                         List<Identity> masters = eligibleIdentities.Contains(recipients.Group.Leader)
                             ? [recipients.Group.Leader]
-                            : [recipients.EligiblePlayers[0].Identity];
+                            : [eligiblePlayers[0].Identity];
                         item.ConfigureMaster(masters, eligibleIdentities, masterLootCandidates);
                         break;
                     }
@@ -688,7 +731,7 @@ namespace NexusForever.Game.Loot
             GiveImmediateLoot(player, LootItemType.AccountCurrency, (uint)AccountCurrencyType.Omnibit, amount, ownerUnitId);
         }
 
-        private static void TryAddLootItem(LootInstance lootInstance, LootItem item, uint count, string source, IItemManager itemManager, IGameTableManager gameTableManager)
+        private static void TryAddLootItem(LootInstance lootInstance, LootItem item, uint count, string source, IItemManager itemManager, IGameTableManager gameTableManager, IReadOnlyList<IPlayer> eligiblePlayers = null)
         {
             if (count == 0u)
             {
@@ -702,7 +745,7 @@ namespace NexusForever.Game.Loot
                 return;
             }
 
-            LootInstanceItem instanceItem = lootInstance.AddLootItem(item.StaticId, item.Type, count);
+            LootInstanceItem instanceItem = lootInstance.AddLootItem(item.StaticId, item.Type, count, eligiblePlayers?.Select(p => p.Identity));
             log.Trace($"Loot item added: source={source}, ownerUnit={lootInstance.OwnerUnitId}, lootUnitId={instanceItem.Id}, type={item.Type}, staticId={item.StaticId}, count={count}, mergedAmount={instanceItem.Amount}.");
         }
 
@@ -888,7 +931,7 @@ namespace NexusForever.Game.Loot
         private void SendLootNotify(IPlayer looter, uint ownerUnitId, bool suppressIfUnchanged, bool sendRemoveWhenEmpty)
         {
             List<LootInstance> matchingInstances = GetLootInstancesForOwner(ownerUnitId)
-                .Where(i => i.HasLooter(looter.CharacterId) && !i.HasExpired)
+                .Where(i => i.HasLooter(looter.CharacterId) && i.IsOnMap(looter.Map) && !i.HasExpired)
                 .ToList();
             log.Trace($"Loot notify lookup for player {looter.CharacterId}, ownerUnit={ownerUnitId}: matchingInstances={matchingInstances.Count}.");
             if (matchingInstances.Count == 0)
@@ -926,7 +969,7 @@ namespace NexusForever.Game.Loot
             if (looter == null)
                 return false;
 
-            LootInstance lootInstance = GetLootInstancesForOwner(ownerUnitId).FirstOrDefault(i => i.HasLooter(looter.CharacterId) && !i.HasExpired);
+            LootInstance lootInstance = GetLootInstancesForOwner(ownerUnitId).FirstOrDefault(i => i.HasLooter(looter.CharacterId) && i.IsOnMap(looter.Map) && !i.HasExpired);
             if (lootInstance == null)
                 return false;
 
@@ -980,6 +1023,8 @@ namespace NexusForever.Game.Loot
             log.Trace($"Loot vacuum started for player {looter.CharacterId}.");
             foreach (LootInstance lootInstance in GetLootInstancesForLooter(looter.CharacterId).Where(i => !i.HasExpired).ToList())
             {
+                if (!lootInstance.IsOnMap(looter.Map))
+                    continue;
                 IWorldEntity owner = GetLootOwner(looter, lootInstance.OwnerUnitId);
                 float distance = owner?.Position.GetDistance(looter.Position) ?? float.PositiveInfinity;
                 if (owner == null || distance > LOOT_RANGE)
@@ -1089,7 +1134,7 @@ namespace NexusForever.Game.Loot
 
         private static bool CanAccessLootInstance(LootInstance lootInstance, IPlayer player, uint ownerUnitId, uint resolvedLootUnitId, string action)
         {
-            if (lootInstance.HasLooter(player.CharacterId))
+            if (lootInstance.HasLooter(player.CharacterId) && lootInstance.IsOnMap(player.Map))
                 return true;
 
             log.Debug($"Player {player.CharacterId} cannot {action} {resolvedLootUnitId} from owner {ownerUnitId}: not a tracked looter.");

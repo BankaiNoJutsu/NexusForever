@@ -35,12 +35,12 @@ namespace NexusForever.Game.Loot
             count = 0u;
 
             double chance = Random.Shared.NextDouble() * 100d;
-            if (chance >= probability)
+            if (!(probability > 0f) || chance >= probability)
                 return false;
 
             uint minimum = Math.Max(1u, minCount);
             uint maximum = Math.Max(minimum, maxCount);
-            count = minimum == maximum ? minimum : (uint)Random.Shared.Next((int)minimum, (int)maximum + 1);
+            count = minimum == maximum ? minimum : (uint)Random.Shared.NextInt64(minimum, (long)maximum + 1);
             return true;
         }
     }

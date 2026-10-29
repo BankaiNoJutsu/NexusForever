@@ -29,7 +29,7 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Player
         public Task Handle(PlayerGroupAssociationUpdatedMessage message)
         {
             if (message.Group != null)
-                groupStateManager.UpdateGroup(message.Group.ToGroupLootState());
+                groupStateManager.UpdateGroupAssociation(message.Group.ToGroupLootState(), message.Identity.ToGameIdentity());
             else
                 groupStateManager.RemoveCharacter(message.Identity.ToGameIdentity());
 

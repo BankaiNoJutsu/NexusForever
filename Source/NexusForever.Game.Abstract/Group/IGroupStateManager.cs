@@ -6,6 +6,7 @@ namespace NexusForever.Game.Abstract.Group
     public interface IGroupStateManager : IUpdate
     {
         void UpdateGroup(GroupLootState group);
+        void UpdateGroupAssociation(GroupLootState group, Identity identity);
         void RemoveGroup(ulong groupId);
         void RemoveMember(ulong groupId, Identity identity);
         void RemoveCharacter(Identity identity);

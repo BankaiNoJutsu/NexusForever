@@ -15,11 +15,44 @@ using NexusForever.Server.GroupServer.Group;
 using NexusForever.Server.GroupServer.Job;
 using NexusForever.Server.GroupServer.Network.Internal;
 using Quartz;
+using System.Text.Json;
+using NexusForever.Network.Internal.Message.Player;
 
 namespace NexusForever.Game.Tests.GroupJobs;
 
 public class CharacterDirtyScheduledJobTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RemovingEitherGroupPublishesTheRemainingPrimary(bool removePrimary)
+    {
+        await using var fixture = await Fixture.Create(stats: false, grouped: true);
+        await using (var seed = fixture.CreateContext())
+        {
+            var character = await seed.Character.SingleAsync(c => c.CharacterId == 1);
+            var group = new GroupModel { GroupId = 200 };
+            var member = new GroupMemberModel { Group = group, Character = character, GroupId = 200, CharacterId = 1, RealmId = 1 };
+            group.Members.Add(member);
+            character.Groups.Add(new CharacterGroupModel { GroupId = 200, Character = character, Member = member, CharacterId = 1, RealmId = 1, Index = 1 });
+            seed.Group.Add(group);
+            await seed.SaveChangesAsync();
+        }
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var characterManager = scope.ServiceProvider.GetRequiredService<CharacterManager>();
+        var groupManager = scope.ServiceProvider.GetRequiredService<GroupManager>();
+        var characterWrapper = await characterManager.GetCharacterAsync(new NexusForever.Server.GroupServer.Identity { Id = 1, RealmId = 1 });
+        var removed = await groupManager.GetGroupAsync(removePrimary ? 100ul : 200ul);
+
+        await characterWrapper.RemoveGroupAsync(removed, NexusForever.Game.Static.Group.RemoveReason.Left);
+
+        ulong remaining = removePrimary ? 200ul : 100ul;
+        Assert.Equal(remaining, characterWrapper.PrimaryGroup.GroupId);
+        var row = Assert.Single(scope.ServiceProvider.GetRequiredService<GroupContext>().InternalMessage.Local,
+            m => m.Type == typeof(PlayerGroupAssociationUpdatedMessage).AssemblyQualifiedName);
+        Assert.Equal(remaining, JsonSerializer.Deserialize<PlayerGroupAssociationUpdatedMessage>(row.Payload).Group.Id);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -93,6 +126,7 @@ public class CharacterDirtyScheduledJobTests
         private readonly DatabaseConnectionString database;
         private readonly SqliteConnection keepAlive;
         private ServiceProvider services;
+        public IServiceProvider Services => services;
         public CancellationTokenSource Cancellation { get; } = new(TimeSpan.FromSeconds(15));
         public IterationObserver Observer { get; }
         public RecordingBroker Broker { get; } = new();

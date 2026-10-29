@@ -42,7 +42,7 @@ namespace NexusForever.Game.Abstract.Group
                 InstanceDifficulty = InstanceDifficulty,
                 Flags            = Flags,
                 Leader           = Leader,
-                Members          = Members.Where(m => m.Identity != identity).ToList()
+                Members          = Members.Where(m => m.Identity != identity).ToList().AsReadOnly()
             };
         }
     }

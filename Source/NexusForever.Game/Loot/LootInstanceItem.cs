@@ -52,6 +52,19 @@ namespace NexusForever.Game.Loot
         public LootItemType Type { get; }
         public uint Amount { get; private set; }
         public uint ItemQualityId => GetItemQualityId();
+        private HashSet<GameIdentity> generationLooters;
+
+        internal void SetGenerationLooters(HashSet<GameIdentity> looters)
+        {
+            generationLooters = looters;
+            if (looters != null)
+                ConfigureFreeForAll(looters);
+        }
+
+        public bool IsGenerationEligible(GameIdentity identity) => generationLooters == null || generationLooters.Contains(identity);
+
+        internal bool HasGenerationLooters(HashSet<GameIdentity> looters) =>
+            generationLooters == null ? looters == null : looters != null && generationLooters.SetEquals(looters);
         public uint ItemQualityVisualEffectIdLoot => GetItemQualityVisualEffectIdLoot();
 
         public uint WinnerGuid { get; private set; }
@@ -173,7 +186,8 @@ namespace NexusForever.Game.Loot
         private void SetEligibleIdentities(IEnumerable<GameIdentity> eligible)
         {
             foreach (GameIdentity identity in eligible)
-                eligibleIdentities[identity.Id] = identity;
+                if (IsGenerationEligible(identity))
+                    eligibleIdentities[identity.Id] = identity;
         }
 
         private void SetMasterLootCandidates(IEnumerable<GameIdentity> candidates)
@@ -193,7 +207,7 @@ namespace NexusForever.Game.Loot
             if (WinnerCharacterId != 0ul)
                 return WinnerCharacterId == characterId;
 
-            return eligibleIdentities.Count == 0 || eligibleIdentities.ContainsKey(characterId);
+            return (eligibleIdentities.Count == 0 && generationLooters == null) || eligibleIdentities.ContainsKey(characterId);
         }
 
         public bool RequiresBindOnPickupConfirmation()
@@ -253,7 +267,8 @@ namespace NexusForever.Game.Loot
 
         public bool IsEligible(GameIdentity identity)
         {
-            return eligibleIdentities.Count == 0 || eligibleIdentities.TryGetValue(identity.Id, out GameIdentity eligible) && eligible == identity;
+            return IsGenerationEligible(identity)
+                && (eligibleIdentities.Count == 0 || eligibleIdentities.TryGetValue(identity.Id, out GameIdentity eligible) && eligible == identity);
         }
 
         public IReadOnlyCollection<ulong> GetAudienceCharacterIds()

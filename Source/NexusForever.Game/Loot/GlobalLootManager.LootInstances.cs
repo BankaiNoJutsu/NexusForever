@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using NexusForever.Game.Abstract.Map;
 
 namespace NexusForever.Game.Loot
 {
@@ -12,13 +13,17 @@ namespace NexusForever.Game.Loot
                 RemoveExpiredLootInstance(lootInstance, sendRemove: true);
         }
 
-        public void RemoveLootForOwner(uint ownerUnitId, bool sendRemove = true)
+        public void RemoveLootForOwner(uint ownerUnitId, bool sendRemove = true) => RemoveLootForOwner(ownerUnitId, null, sendRemove);
+
+        public void RemoveLootForOwner(uint ownerUnitId, IBaseMap ownerMap, bool sendRemove = true)
         {
             if (!lootInstancesByOwnerUnit.TryGetValue(ownerUnitId, out List<LootInstance> ownerInstances))
                 return;
 
             foreach (LootInstance lootInstance in ownerInstances.ToList())
             {
+                if (ownerMap != null && !ReferenceEquals(lootInstance.OwnerMap, ownerMap))
+                    continue;
                 if (sendRemove)
                     lootInstance.SendLootRemoveToAllLooters();
 

@@ -16,6 +16,76 @@ namespace NexusForever.Game.Tests.Group;
 public class GroupStateManagerTests
 {
     [Fact]
+    public void SecondarySnapshotsAndRemovalDoNotReplacePrimaryAssociation()
+    {
+        var manager = new GroupStateManager();
+        GroupLootState primary = BuildGroup(HarvestLootRule.FirstTagger);
+        var secondary = new GroupLootState
+        {
+            GroupId = 66, Leader = primary.Leader, Members = primary.Members,
+            NormalRule = LootRule.FreeForAll
+        };
+        manager.UpdateGroup(primary);
+        manager.UpdateGroup(secondary);
+        Assert.True(manager.TryGetGroupForCharacter(primary.Leader, out var inferred));
+        Assert.Equal(primary.GroupId, inferred.GroupId);
+
+        manager.UpdateGroupAssociation(primary, primary.Leader);
+        manager.UpdateGroup(secondary);
+        manager.RemoveMember(secondary.GroupId, primary.Leader);
+        manager.RemoveGroup(secondary.GroupId);
+
+        Assert.True(manager.TryGetGroupForCharacter(primary.Leader, out var selected));
+        Assert.Equal(primary.GroupId, selected.GroupId);
+    }
+
+    [Fact]
+    public void AssociationRemovalIsNotUndoneByMembershipRefresh()
+    {
+        var manager = new GroupStateManager();
+        GroupLootState group = BuildGroup(HarvestLootRule.RoundRobin);
+        manager.UpdateGroupAssociation(group, group.Leader);
+        manager.RemoveCharacter(group.Leader);
+        manager.UpdateGroup(group);
+
+        Assert.False(manager.TryGetGroupForCharacter(group.Leader, out _));
+        Assert.True(manager.TryGetGroup(group.GroupId, out var membership));
+        Assert.True(membership.HasMember(group.Leader));
+    }
+
+    [Fact]
+    public void CachedSnapshotCannotBeMutatedByReaders()
+    {
+        var manager = new GroupStateManager();
+        GroupLootState group = BuildGroup(HarvestLootRule.FirstTagger);
+        manager.UpdateGroup(group);
+        manager.TryGetGroup(group.GroupId, out var snapshot);
+
+        Assert.Throws<NotSupportedException>(() => ((IList<GroupLootMember>)snapshot.Members).Clear());
+        Assert.Equal(2, snapshot.Members.Count);
+
+        manager.RemoveMember(group.GroupId, group.Leader);
+        Assert.True(manager.TryGetGroup(group.GroupId, out var afterRemoval));
+        Assert.Throws<NotSupportedException>(() => ((IList<GroupLootMember>)afterRemoval.Members).Clear());
+        Assert.Single(afterRemoval.Members);
+        Assert.Equal(2, snapshot.Members.Count);
+    }
+
+    [Fact]
+    public void ConcurrentSnapshotsKeepPrimaryAssociationAndStableReaders()
+    {
+        var manager = new GroupStateManager();
+        GroupLootState group = BuildGroup(HarvestLootRule.RoundRobin);
+        manager.UpdateGroupAssociation(group, group.Leader);
+        Parallel.For(0, 500, _ =>
+        {
+            manager.UpdateGroup(group);
+            Assert.True(manager.TryGetGroupForCharacter(group.Leader, out var snapshot));
+            Assert.Equal(2, snapshot.Members.Count);
+        });
+    }
+
+    [Fact]
     public void UpdateGroup_PreservesHarvestLootState()
     {
         var manager = new GroupStateManager();

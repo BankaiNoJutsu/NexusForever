@@ -1,4 +1,5 @@
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
@@ -15,7 +16,13 @@ namespace NexusForever.Game.Abstract.Loot
         void Initialise();
 
         bool DropLoot(IPlayer looter, IWorldEntity lootedEntity);
+        void DistributeLoot(IEnumerable<IPlayer> contributors, IWorldEntity lootedEntity)
+        {
+            foreach (IPlayer player in contributors)
+                DropLoot(player, lootedEntity);
+        }
         void RemoveLootForOwner(uint ownerUnitId, bool sendRemove = true);
+        void RemoveLootForOwner(uint ownerUnitId, IBaseMap ownerMap, bool sendRemove = true) => RemoveLootForOwner(ownerUnitId, sendRemove);
         bool HasLoot(IItem lootedItem);
         bool DropLoot(IPlayer looter, IItem lootedItem);
         bool TryUseLootBag(IPlayer looter, IItem lootedItem, out string reason);
