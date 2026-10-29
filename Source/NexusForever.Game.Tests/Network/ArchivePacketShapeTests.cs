@@ -11,21 +11,21 @@ public class ArchivePacketShapeTests
     [Fact]
     public void GalacticArchiveClientPackets_ReadArchiveArticleId()
     {
-        byte[] unlockData = WritePacket(writer => writer.Write(0x01020304u));
-        byte[] viewedData = WritePacket(writer => writer.Write(0x05060708u));
+        byte[] unlockData = [0x34, 0x12]; // Article 0x1234 in fourteen bits, then padding.
+        byte[] viewedData = [0xFF, 0x3F]; // Maximum fourteen-bit article id.
 
         using (var reader = new GamePacketReader(new MemoryStream(unlockData)))
         {
             var packet = new ClientGalacticArchiveUnlock();
             packet.Read(reader);
-            Assert.Equal(0x01020304u, packet.ArchiveArticleId);
+            Assert.Equal(0x1234u, packet.ArchiveArticleId);
         }
 
         using (var reader = new GamePacketReader(new MemoryStream(viewedData)))
         {
             var packet = new ClientGalacticArchiveViewed();
             packet.Read(reader);
-            Assert.Equal(0x05060708u, packet.ArchiveArticleId);
+            Assert.Equal(0x3FFFu, packet.ArchiveArticleId);
         }
     }
 
@@ -34,14 +34,15 @@ public class ArchivePacketShapeTests
     {
         byte[] updateData = WritePacket(new ServerGalacticArchiveUpdate
         {
-            ArchiveArticleId = 0x11111111u,
+            ArchiveArticleId = 0x1111u,
             UnlockedFlags    = 0x22222222u,
             ViewedFlags      = 0x33333333u
         });
 
+        Assert.Equal(10, updateData.Length); // 14 + 32 + 32 bits, padded to bytes.
         using (var reader = new GamePacketReader(new MemoryStream(updateData)))
         {
-            Assert.Equal(0x11111111u, reader.ReadUInt());
+            Assert.Equal(0x1111u, reader.ReadUInt(14u));
             Assert.Equal(0x22222222u, reader.ReadUInt());
             Assert.Equal(0x33333333u, reader.ReadUInt());
         }

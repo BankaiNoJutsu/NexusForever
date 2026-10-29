@@ -50,7 +50,8 @@ public class ActionSetPacketShapeTests
             writer.Write(UILocation.PathAbility, 6u);
             writer.Write(ShortcutType.GameCommand, 4u);
             writer.Write(0x01020304u);
-            writer.Write((byte)2, 4u);
+            writer.Write((byte)2, 3u);
+            writer.Write((byte)0x5A);
         });
 
         using var reader = new GamePacketReader(new MemoryStream(packetData));
@@ -61,6 +62,7 @@ public class ActionSetPacketShapeTests
         Assert.Equal(ShortcutType.GameCommand, packet.ShortcutType);
         Assert.Equal(0x01020304u, packet.ObjectId);
         Assert.Equal((byte)2, packet.SpecIndex);
+        Assert.Equal((byte)0x5A, reader.ReadByte());
     }
 
     [Fact]

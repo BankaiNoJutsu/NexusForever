@@ -43,19 +43,8 @@ namespace NexusForever.Network
 
         public bool ReadBit()
         {
-            currentBitPosition++;
-            if (currentBitPosition > 7)
-            {
-                currentBitPosition = 0;
-
-                int value = stream.ReadByte();
-                if (value == -1)
-                    throw new EndOfStreamException();
-
-                currentBitValue = (byte)value;
-            }
-
-            return ((currentBitValue >> currentBitPosition) & 1) != 0;
+            int bitIndex = MoveToNextBit();
+            return ((currentBitValue >> bitIndex) & 1) != 0;
         }
 
         private ulong ReadBits(uint bits)
@@ -81,17 +70,17 @@ namespace NexusForever.Network
 
         private int MoveToNextBit()
         {
-            currentBitPosition++;
-            if (currentBitPosition <= 7)
-                return currentBitPosition;
-
-            currentBitPosition = 0;
+            if (currentBitPosition < 7)
+                return ++currentBitPosition;
 
             int value = stream.ReadByte();
             if (value == -1)
                 throw new EndOfStreamException();
 
+            // Commit the refill only after a successful read. Failed retries must
+            // not expose bits from the previous byte to scalar or bulk readers.
             currentBitValue = (byte)value;
+            currentBitPosition = 0;
             return currentBitPosition;
         }
 

@@ -11,7 +11,7 @@ namespace NexusForever.Network.World.Message.Model.GalacticArchive
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(ArchiveArticleId);
+            writer.Write(ArchiveArticleId, 14u);
             writer.Write(UnlockedFlags);
             writer.Write(ViewedFlags);
         }

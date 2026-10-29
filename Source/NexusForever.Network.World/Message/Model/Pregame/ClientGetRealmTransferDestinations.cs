@@ -7,9 +7,11 @@ namespace NexusForever.Network.World.Message.Model.Pregame
     [Message(GameMessageOpcode.ClientGetRealmTransferDestinations)]
     public class ClientGetRealmTransferDestinations : IReadable
     {
+        public bool Unknown0 { get; private set; } // One wire bit; no runtime semantics assigned.
+
         public void Read(GamePacketReader reader)
         {
-            // Zero byte messages
+            Unknown0 = reader.ReadBit();
         }
     }
 }

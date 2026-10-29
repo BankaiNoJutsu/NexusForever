@@ -362,6 +362,7 @@ public class ProtocolRuntimeHardeningTests
         using (var writer = new GamePacketWriter(stream))
         {
             writer.Write(42u);
+            writer.Write((byte)0, 7u);
             writer.Write(type, 32u);
             writer.FlushBits();
         }

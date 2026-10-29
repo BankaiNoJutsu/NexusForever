@@ -52,16 +52,16 @@ namespace NexusForever.Shared.Game.Events
             {
                 if (!pending.Event.CanExecute())
                 {
-                    switch (pending.Type)
+                    if (pending.Type == ConditionalEventType.Standard)
                     {
-                        case ConditionalEventType.Standard:
-                            newEvents.Add(events.Dequeue());
-                            continue;
-                        case ConditionalEventType.Blocking:
-                            return;
-                        default:
-                            throw new InvalidOperationException($"Unsupported conditional event type {pending.Type}.");
+                        newEvents.Add(events.Dequeue());
+                        continue;
                     }
+
+                    if (pending.Type == ConditionalEventType.Blocking)
+                        break;
+
+                    throw new InvalidOperationException($"Unsupported conditional event type {pending.Type}.");
                 }
 
                 events.Dequeue();

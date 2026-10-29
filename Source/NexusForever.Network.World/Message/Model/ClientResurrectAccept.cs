@@ -8,11 +8,13 @@ namespace NexusForever.Network.World.Message.Model
     public class ClientResurrectAccept : IReadable
     {
         public uint UnitId { get; private set; }
+        public byte Unknown1 { get; private set; } // Seven wire bits; diagnostic-only until their meaning is verified.
         public ResurrectionType RezType { get; private set; }
 
         public void Read(GamePacketReader reader)
         {
-            UnitId  = reader.ReadUInt();
+            UnitId   = reader.ReadUInt();
+            Unknown1 = reader.ReadByte(7u);
             RezType = reader.ReadEnum<ResurrectionType>(32u);
 
             if (RezType is not ResurrectionType.WakeHere
