@@ -834,6 +834,7 @@ namespace NexusForever.Game.Entity
             player.AchievementManager.CheckAchievements(player, AchievementType.QuestCompleteChecklist, questId);
             player.AchievementManager.CheckAchievements(player, AchievementType.QuestCompleteChecklistCount, questId);
             UpdateContractAchievements(quest.Info);
+            player.GalacticArchiveManager?.RefreshRuleUnlocks(sendUpdates: true);
         }
 
         public void SendQuestState(ushort questId)

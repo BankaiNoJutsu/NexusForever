@@ -106,6 +106,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 return;
             }
 
+            uint bindPointId = entity.CreatureEntry?.BindPointId ?? 0u;
+            if (clientRequestSource == nameof(ClientActivateUnitCastTarget) && bindPointId != 0u)
+            {
+                uint worldId = session.Player.Map?.Entry?.Id ?? 0u;
+                if (bindPointId > ushort.MaxValue || worldId is 0u or > ushort.MaxValue)
+                    throw new InvalidPacketValueException();
+                session.Player.SetBindPoint((ushort)bindPointId, (ushort)worldId, session.Player.Position);
+                return;
+            }
+
             if (!TryResolveActivateSpell(entity, session.Player, out uint spell4Id))
             {
                 if (IsTutorialSpecialActivationEntity(entity))

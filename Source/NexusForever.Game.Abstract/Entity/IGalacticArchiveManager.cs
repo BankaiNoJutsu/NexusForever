@@ -7,7 +7,7 @@ namespace NexusForever.Game.Abstract.Entity
         bool UnlockArticle(uint archiveArticleId, bool grantRewards = true, bool unlockAllEntries = true);
         bool UnlockLinkedArticle(uint archiveArticleId);
         bool MarkArticleViewed(uint archiveArticleId);
-        void RefreshRuleUnlocks();
+        void RefreshRuleUnlocks(bool sendUpdates = false);
         void SendInitialPackets();
     }
 }

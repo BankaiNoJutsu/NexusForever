@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Instance;
 
@@ -16,6 +17,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Instance
         public void HandleMessage(IWorldSession session, ClientLeavePendingRemovalInstance _)
         {
             log.LogDebug("ClientLeavePendingRemovalInstance: player={Player}", session.Player?.Guid);
+            if (session.Player?.Map is IMapInstance instance)
+                instance.LeavePendingRemoval(session.Player);
         }
     }
 }

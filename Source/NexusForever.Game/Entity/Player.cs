@@ -645,6 +645,7 @@ namespace NexusForever.Game.Entity
             disableOtherPlayersCombatLogs = model.DisableOtherPlayersCombatLogs;
             combatLogDisableFlags    = (CombatLogOptions)model.CombatLogDisableFlags;
             InitialisePvPFlagDisable(model.PvpFlagDisableUntilUtc);
+            LoadBindPoint(model.Bind);
 
             CreateTime        = model.CreateTime;
             TimePlayedTotal   = model.TimePlayedTotal;
@@ -958,6 +959,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void Save(CharacterContext context)
         {
+            SaveBindPoint(context);
             var model = new CharacterModel
             {
                 Id = CharacterId
@@ -1354,6 +1356,7 @@ namespace NexusForever.Game.Entity
                         .ToList()
                 },
                 ActiveCostumeIndex    = CostumeManager.CostumeIndex ?? -1,
+                BindPointId           = bindPointId,
                 InputKeySet           = (uint)InputKeySet,
                 CharacterEntitlements = EntitlementManager
                     .Select(e => new ServerPlayerCreate.CharacterEntitlement
@@ -1660,6 +1663,7 @@ namespace NexusForever.Game.Entity
             if (mapManager == null)
                 throw new InvalidOperationException("Player requires an IMapManager to teleport.");
 
+            CaptureOpenWorldReturnPosition();
             mapManager.AddToMap(this, mapPosition);
             log.Trace($"Teleporting {Name}({CharacterId}) to map: {mapPosition.Info.Entry.Id}, instance: {mapPosition.Info.MapLock?.InstanceId ?? null}.");
         }

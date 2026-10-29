@@ -120,7 +120,7 @@ namespace NexusForever.Game.Entity
             return true;
         }
 
-        public void RefreshRuleUnlocks()
+        public void RefreshRuleUnlocks(bool sendUpdates = false)
         {
             GameTable<ArchiveArticleEntry> archiveArticleTable = gameTableManager.ArchiveArticle;
             if (archiveArticleTable == null)
@@ -140,6 +140,8 @@ namespace NexusForever.Game.Entity
 
                 article.MarkDirty();
                 GrantUnlockRewards(articleEntry, previousFlags, article.UnlockedFlags);
+                if (sendUpdates)
+                    SendUpdate(article);
             }
         }
 
@@ -231,8 +233,9 @@ namespace NexusForever.Game.Entity
                     $"Cannot grant archive entry rewards for archiveArticleId={articleEntry.Id}.");
             }
 
-            if ((previousFlags & ArticleUnlockedFlag) == 0u
-                && (currentFlags & ArticleUnlockedFlag) != 0u
+            uint allEntryFlags = GetAllEntryFlags(articleEntry);
+            if ((previousFlags & (ArticleUnlockedFlag | allEntryFlags)) != (ArticleUnlockedFlag | allEntryFlags)
+                && (currentFlags & (ArticleUnlockedFlag | allEntryFlags)) == (ArticleUnlockedFlag | allEntryFlags)
                 && articleEntry.CharacterTitleIdReward != 0u
                 && articleEntry.CharacterTitleIdReward <= ushort.MaxValue)
                 player.TitleManager.AddTitle((ushort)articleEntry.CharacterTitleIdReward);

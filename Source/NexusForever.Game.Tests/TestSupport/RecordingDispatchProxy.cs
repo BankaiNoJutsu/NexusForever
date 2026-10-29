@@ -53,6 +53,16 @@ internal class RecordingDispatchProxy<T> : DispatchProxy where T : class
 
     protected override object Invoke(MethodInfo targetMethod, object[] args)
     {
+        // DispatchProxy unboxes value-type out arguments after Invoke returns.
+        // Give unconfigured out parameters the same defaults as other stub values.
+        ParameterInfo[] parameters = targetMethod.GetParameters();
+        for (int i = 0; args != null && i < parameters.Length; i++)
+            if (parameters[i].IsOut && args[i] == null)
+            {
+                Type type = parameters[i].ParameterType.GetElementType()!;
+                if (type.IsValueType)
+                    args[i] = Activator.CreateInstance(type);
+            }
         object[] invocationArgs = args?.ToArray() ?? [];
         Invocations.Add(new Invocation(targetMethod.Name, invocationArgs));
 

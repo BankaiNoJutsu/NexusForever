@@ -24,6 +24,22 @@ public class SpellManagerGrantSpellsTests
     private const uint UnlockedSlotPrerequisiteId = 43u;
 
     [Fact]
+    public void RecallFormulaGrantsSpellOnceWithoutAddingLasShortcut()
+    {
+        IPlayer player = CreatePlayer(1, true, out var playerProxy, out _);
+        var tables = CreateGameTableManager([], []);
+        var tableProxy = (RecordingDispatchProxy<IGameTableManager>)(object)tables;
+        tableProxy.SetProperty(nameof(IGameTableManager.GameFormula), CreateGameTable(new GameFormulaEntry { Id = 777, Dataint0 = Spell4Id }));
+        var manager = new global::NexusForever.Game.Entity.SpellManager(player, new CharacterModel(),
+            CreatePrerequisiteManager(_ => true), CreateGlobalSpellManager(CreateSpellBaseInfo(Spell4BaseId, Spell4Id)), tables);
+
+        var learned = Assert.IsAssignableFrom<ICharacterSpell>(manager.GetSpell(Spell4BaseId));
+        manager.GrantSpells();
+        Assert.Same(learned, manager.GetSpell(Spell4BaseId));
+        Assert.Null(manager.GetActionSet(0).GetShortcut(ShortcutType.SpellbookItem, Spell4BaseId));
+    }
+
+    [Fact]
     public void GrantSpells_WithNewLevelSpellAddsShortcutToFirstEmptyUnlockedLasSlot()
     {
         IPlayer player = CreatePlayer(

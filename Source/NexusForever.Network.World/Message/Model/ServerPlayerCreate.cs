@@ -76,6 +76,7 @@ namespace NexusForever.Network.World.Message.Model
         public List<Pet> Pets { get; } = new();
         public uint InputKeySet { get; set; }
         public ushort UnknownBC { get; set; }
+        public ushort BindPointId { get => UnknownBC; set => UnknownBC = value; }
         public int ActiveCostumeIndex { get; set; }
         public uint UnknownC4 { get; set; }
         public uint UnknownC8 { get; set; }

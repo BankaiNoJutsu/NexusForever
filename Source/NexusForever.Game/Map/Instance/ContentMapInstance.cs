@@ -74,10 +74,10 @@ namespace NexusForever.Game.Map.Instance
                     return mapPosition;
             }
 
-            if (playerReturnLocations.Remove(player.Identity, out IMapPosition returnLocation))
+            if (playerReturnLocations.TryGetValue(player.Identity, out IMapPosition returnLocation))
                 return returnLocation;
 
-            return null;
+            return player.GetOpenWorldReturnPosition();
         }
 
         protected override void AddEntity(IGridEntity entity, Vector3 vector)
@@ -105,7 +105,10 @@ namespace NexusForever.Game.Map.Instance
             base.RemoveEntity(entity);
 
             if (entity is IPlayer player)
+            {
+                playerReturnLocations.Remove(player.Identity);
                 Match?.MatchExit(player, false);
+            }
         }
 
         /// <summary>

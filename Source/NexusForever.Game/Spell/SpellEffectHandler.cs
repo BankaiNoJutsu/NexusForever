@@ -2773,8 +2773,16 @@ namespace NexusForever.Game.Spell
         public static void HandleEffectTeleport(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
             SpellEffectTeleportSemantics teleport = SpellEffectInterpreter.Interpret(info).Teleport;
-            if (teleport == null || teleport.WorldLocation2Id == 0u)
+            if (teleport == null)
                 return;
+
+            if (teleport.WorldLocation2Id == 0u)
+            {
+                if (target is IPlayer boundPlayer && boundPlayer.CanTeleport()
+                    && boundPlayer.TryGetBindPoint(out ushort bindWorldId, out System.Numerics.Vector3 bindPosition))
+                    boundPlayer.TeleportTo(bindWorldId, bindPosition.X, bindPosition.Y, bindPosition.Z);
+                return;
+            }
 
             WorldLocation2Entry locationEntry = GetGameTableManager().WorldLocation2.GetEntry(teleport.WorldLocation2Id);
             if (locationEntry == null)

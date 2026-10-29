@@ -165,6 +165,9 @@ namespace NexusForever.Game.Abstract.Entity
         /// Returns if <see cref="IPlayer"/> can teleport.
         /// </summary>
         bool CanTeleport();
+        void SetBindPoint(ushort bindPointId, ushort worldId, Vector3 position);
+        bool TryGetBindPoint(out ushort worldId, out Vector3 position);
+        IMapPosition GetOpenWorldReturnPosition();
 
         /// <summary>
         /// Teleport <see cref="IPlayer"/> to supplied location.

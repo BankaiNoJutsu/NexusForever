@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using System.Text;
+using System.Collections.Concurrent;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.PublicEvent;
@@ -61,6 +62,7 @@ namespace NexusForever.Game.Map.Instance
 
         private readonly HashSet<uint> playerEntities = new();
         private readonly Dictionary<uint, IMapInstanceRemoval> instanceRemovals = new();
+        private readonly ConcurrentQueue<Action> removalRequests = new();
         private readonly IGameTableManager gameTableManager;
 
         #region Dependency Injection
@@ -100,8 +102,15 @@ namespace NexusForever.Game.Map.Instance
         {
             base.Update(lastTick);
 
+            ProcessRemovalRequests();
             ProcessInstanceRemovals(lastTick);
             ProcessUnload(lastTick);
+        }
+
+        private void ProcessRemovalRequests()
+        {
+            while (removalRequests.TryDequeue(out Action request))
+                request();
         }
 
         private void ProcessInstanceRemovals(double lastTick)
@@ -118,7 +127,14 @@ namespace NexusForever.Game.Map.Instance
 
                 // remove player from instance and teleport to new location
                 IPlayer player = GetEntity<IPlayer>(removal.Guid);
-                player?.TeleportTo(removal.Position);
+                if (player != null)
+                {
+                    IMapPosition position = removal.Position ?? GetPlayerReturnLocation(player);
+                    if (position != null)
+                        player.TeleportTo(position);
+                    else
+                        log.Warn($"Player {player.Guid} has no return location out of instance {Entry?.Id}; removal skipped.");
+                }
 
                 remove.Add(removal.Guid);
             }
@@ -176,7 +192,10 @@ namespace NexusForever.Game.Map.Instance
                 if (player != null)
                 {
                     IMapPosition position = unloadPosition ?? GetPlayerReturnLocation(player);
-                    player.TeleportTo(position, TeleportReason.Unload);
+                    if (position != null)
+                        player.TeleportTo(position, TeleportReason.Unload);
+                    else
+                        log.Warn($"Player {player.Guid} has no return location out of instance {Entry?.Id}; unload teleport skipped.");
                 }
             }
 
@@ -305,6 +324,28 @@ namespace NexusForever.Game.Map.Instance
             player.Session.EnqueueMessageEncrypted(new ServerPendingWorldRemoval
             {
                 Reason = reason
+            });
+        }
+
+        /// <summary>
+        /// Queue immediate completion of an existing pending removal on the map thread.
+        /// </summary>
+        public void LeavePendingRemoval(IPlayer player)
+        {
+            uint guid = player.Guid;
+            removalRequests.Enqueue(() =>
+            {
+                if (GetEntity<IPlayer>(guid) == player && instanceRemovals.TryGetValue(guid, out var removal))
+                    removal.Timer = 0d;
+            });
+        }
+
+        public void RequestPendingRemoval(IPlayer player, WorldRemovalReason reason)
+        {
+            removalRequests.Enqueue(() =>
+            {
+                if (GetEntity<IPlayer>(player.Guid) == player)
+                    EnqueuePendingRemoval(player, reason);
             });
         }
 

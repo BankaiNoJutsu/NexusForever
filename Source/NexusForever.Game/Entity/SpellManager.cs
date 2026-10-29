@@ -174,6 +174,16 @@ namespace NexusForever.Game.Entity
                 if (GetSpell(spell4Entry.Spell4BaseIdBaseSpell) == null)
                     AddSpell(spell4Entry.Spell4BaseIdBaseSpell);
             }
+            GrantRecallTransmat();
+        }
+
+        private void GrantRecallTransmat()
+        {
+            IGameTableManager tables = GetGameTableManager();
+            uint spellId = tables.GameFormula?.GetEntry(777)?.Dataint0 ?? 0u;
+            Spell4Entry entry = tables.Spell4?.GetEntry(spellId);
+            if (entry != null && entry.Spell4BaseIdBaseSpell != 0u && GetSpell(entry.Spell4BaseIdBaseSpell) == null)
+                AddSpell(entry.Spell4BaseIdBaseSpell);
         }
 
         private bool TryAddSpellToFirstEmptyLasSlot(uint spell4BaseId)

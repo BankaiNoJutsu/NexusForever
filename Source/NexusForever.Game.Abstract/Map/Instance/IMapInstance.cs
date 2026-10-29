@@ -48,6 +48,8 @@ namespace NexusForever.Game.Abstract.Map.Instance
         /// After a short duration the <see cref="IPlayer"/> will be teleported their return location.
         /// </summary>
         void EnqueuePendingRemoval(IPlayer player, WorldRemovalReason reason);
+        void LeavePendingRemoval(IPlayer player);
+        void RequestPendingRemoval(IPlayer player, WorldRemovalReason reason);
 
         /// <summary>
         /// Cancel any pending removal for <see cref="IPlayer"/>.

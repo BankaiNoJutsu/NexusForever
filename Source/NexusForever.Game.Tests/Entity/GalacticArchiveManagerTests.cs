@@ -151,6 +151,47 @@ public class GalacticArchiveManagerTests
         }
     }
 
+    [Fact]
+    public void RuleProgressSendsImmediateUpdatesAndGrantsArticleTitleOnlyOnCompletion()
+    {
+        var tables = CreateGameTableManager(
+            [new ArchiveArticleEntry { Id = ParentArticleId, ArchiveEntryId00 = 500, ArchiveEntryId01 = 501, CharacterTitleIdReward = 99 }],
+            entryEntries: [new ArchiveEntryEntry { Id = 500 }, new ArchiveEntryEntry { Id = 501 }],
+            ruleEntries:
+            [
+                new ArchiveEntryUnlockRuleEntry { Id = 1, ArchiveEntryId = 500, ArchiveEntryUnlockRuleEnum = 0, Object00 = 100 },
+                new ArchiveEntryUnlockRuleEntry { Id = 2, ArchiveEntryId = 501, ArchiveEntryUnlockRuleEnum = 2, Object00 = 200 }
+            ]);
+        var player = CreatePlayer(out var session);
+        var playerProxy = (RecordingDispatchProxy<IPlayer>)(object)player;
+        bool achievementComplete = false, questHandedIn = false;
+        var achievements = RecordingDispatchProxy<NexusForever.Game.Abstract.Achievement.ICharacterAchievementManager>.Create(out var achievementProxy);
+        achievementProxy.SetMethodHandler("HasCompletedAchievement", _ => achievementComplete);
+        var quests = RecordingDispatchProxy<IQuestManager>.Create(out var questProxy);
+        questProxy.SetMethodHandler(nameof(IQuestManager.GetQuestState), _ => questHandedIn
+            ? NexusForever.Game.Static.Quest.QuestState.Completed : NexusForever.Game.Static.Quest.QuestState.Achieved);
+        var titles = RecordingDispatchProxy<ITitleManager>.Create(out var titleProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+        playerProxy.SetProperty(nameof(IPlayer.QuestManager), quests);
+        playerProxy.SetProperty(nameof(IPlayer.PathManager), RecordingDispatchProxy<IPathManager>.Create(out _));
+        playerProxy.SetProperty(nameof(IPlayer.TitleManager), titles);
+        var manager = new GalacticArchiveManager(player, new CharacterModel { Id = CharacterId }, tables);
+
+        manager.RefreshRuleUnlocks(sendUpdates: true);
+        Assert.Empty(GetMessages<ServerGalacticArchiveUpdate>(session));
+        achievementComplete = true;
+        manager.RefreshRuleUnlocks(sendUpdates: true);
+        Assert.Equal(ArticleUnlockedFlag | 1u, Assert.Single(GetMessages<ServerGalacticArchiveUpdate>(session)).UnlockedFlags);
+        Assert.Empty(titleProxy.Invocations);
+        questHandedIn = true;
+        manager.RefreshRuleUnlocks(sendUpdates: true);
+        Assert.Equal(ArticleUnlockedFlag | 3u, GetMessages<ServerGalacticArchiveUpdate>(session)[1].UnlockedFlags);
+        Assert.Equal((ushort)99, Assert.Single(titleProxy.GetInvocations(nameof(ITitleManager.AddTitle))).Arguments[0]);
+        manager.RefreshRuleUnlocks(sendUpdates: true);
+        Assert.Equal(2, GetMessages<ServerGalacticArchiveUpdate>(session).Count);
+        Assert.Single(titleProxy.Invocations);
+    }
+
     private static CharacterModel CreateModelWithUnlockedArticle(uint archiveArticleId)
     {
         var model = new CharacterModel { Id = CharacterId };

@@ -167,6 +167,7 @@ namespace NexusForever.Database.Character
                     .Include(c => c.Tradeskill)
                     .Include(c => c.TradeskillMaterials)
                     .Include(c => c.Reputation)
+                    .Include(c => c.Bind)
                     .Include(c => c.Schematic)
                     .ToListAsync();
             });

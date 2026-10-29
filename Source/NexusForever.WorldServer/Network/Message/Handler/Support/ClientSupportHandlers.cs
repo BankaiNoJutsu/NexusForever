@@ -203,6 +203,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
             }
 
             uint worldLocation2Id = session.Player.Zone?.WorldLocation2IdExit ?? 0u;
+            if (session.Player.TryGetBindPoint(out ushort bindWorldId, out System.Numerics.Vector3 bindPosition))
+            {
+                if (TryBeginStuckAction(session, UnstickType.RecallTransmat, contextToken, spell4Id))
+                    session.Player.TeleportTo(bindWorldId, bindPosition.X, bindPosition.Y, bindPosition.Z);
+                return;
+            }
             WorldLocation2Entry location = worldLocation2Id == 0u
                 ? null
                 : gameTableManager.WorldLocation2?.GetEntry(worldLocation2Id);

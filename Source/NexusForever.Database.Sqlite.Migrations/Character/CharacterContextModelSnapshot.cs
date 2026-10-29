@@ -146,6 +146,38 @@ namespace NexusForever.Database.Sqlite.Migrations.Character
                     b.ToTable("character_appearance", (string)null);
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterBindModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .HasColumnType("bigint(20)")
+                        .HasColumnName("id");
+
+                    b.Property<ushort>("BindPointId")
+                        .HasColumnType("smallint(5)")
+                        .HasColumnName("bindPointId");
+
+                    b.Property<ushort>("WorldId")
+                        .HasColumnType("smallint(5)")
+                        .HasColumnName("worldId");
+
+                    b.Property<float>("X")
+                        .HasColumnType("REAL")
+                        .HasColumnName("x");
+
+                    b.Property<float>("Y")
+                        .HasColumnType("REAL")
+                        .HasColumnName("y");
+
+                    b.Property<float>("Z")
+                        .HasColumnType("REAL")
+                        .HasColumnName("z");
+
+                    b.HasKey("Id")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("character_bind", (string)null);
+                });
+
             modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterBoneModel", b =>
                 {
                     b.Property<ulong>("Id")
@@ -3361,6 +3393,18 @@ namespace NexusForever.Database.Sqlite.Migrations.Character
                     b.Navigation("Character");
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterBindModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Character.Model.CharacterModel", "Character")
+                        .WithOne("Bind")
+                        .HasForeignKey("NexusForever.Database.Character.Model.CharacterBindModel", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK__character_bind_id__character_id");
+
+                    b.Navigation("Character");
+                });
+
             modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterBoneModel", b =>
                 {
                     b.HasOne("NexusForever.Database.Character.Model.CharacterModel", "Character")
@@ -3849,6 +3893,8 @@ namespace NexusForever.Database.Sqlite.Migrations.Character
                     b.Navigation("ActionSetShortcut");
 
                     b.Navigation("Appearance");
+
+                    b.Navigation("Bind");
 
                     b.Navigation("Bone");
 

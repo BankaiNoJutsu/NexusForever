@@ -249,6 +249,35 @@ public class SpellCollectionEffectTests
         Assert.Equal((ushort)21, revokeTitle.Arguments[0]);
     }
 
+    [Theory]
+    [InlineData(true, true, true)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    public void ZeroLocationTeleportRecallsOnlyBoundPlayersWithoutPendingTeleport(bool canTeleport, bool bound, bool expected)
+    {
+        var player = RecordingDispatchProxy<IPlayer>.Create(out var pp);
+        pp.SetMethodReturn(nameof(IPlayer.CanTeleport), canTeleport);
+        pp.SetMethodHandler(nameof(IPlayer.TryGetBindPoint), args =>
+        {
+            args[0] = (ushort)51;
+            args[1] = new System.Numerics.Vector3(4, 5, 6);
+            return bound;
+        });
+        var info = CreateCollectionInfo(SpellEffectType.Teleport, 0);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectTeleport(CreateSpell(player), player, info);
+
+        var calls = pp.GetInvocations(nameof(IPlayer.TeleportTo));
+        Assert.Equal(expected ? 1 : 0, calls.Count);
+        if (expected)
+        {
+            Assert.Equal((ushort)51, calls[0].Arguments[0]);
+            Assert.Equal(4f, calls[0].Arguments[1]);
+            Assert.Equal(5f, calls[0].Arguments[2]);
+            Assert.Equal(6f, calls[0].Arguments[3]);
+        }
+    }
+
     private static IDisposable UseGameTableManager(IGameTableManager gameTableManager)
     {
         ISpellEffectDependencyResolver previousResolver =

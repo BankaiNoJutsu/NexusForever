@@ -25,6 +25,53 @@ namespace NexusForever.Game.Tests.Map;
 public class MapInstancePendingRemovalTests
 {
     [Fact]
+    public void LeaveRunsOnMapQueueAndPreservesDestinationAfterCancelledRemoval()
+    {
+        var (configuration, tables) = CreateMapDependencies();
+        var map = new TestMapInstance(configuration, tables);
+        var player = CreatePlayer(53u, out _);
+        var pp = (RecordingDispatchProxy<IPlayer>)(object)player;
+        map.Track(player);
+        map.EnqueuePendingRemoval(player, WorldRemovalReason.GroupMembership);
+        map.CancelPendingRemoval(player);
+        map.EnqueuePendingRemoval(player, WorldRemovalReason.GroupMembership);
+        map.LeavePendingRemoval(player);
+        Assert.Equal(30d, Assert.Single(map.GetPendingRemovals()).Timer);
+
+        map.AdvanceRemovalQueue();
+
+        Assert.Empty(map.GetPendingRemovals());
+        Assert.NotNull(Assert.Single(pp.GetInvocations(nameof(IPlayer.TeleportTo))).Arguments[0]);
+    }
+
+    [Fact]
+    public void QueuedRemovalDoesNotAffectAReplacementPlayerWithSameGuid()
+    {
+        var (configuration, tables) = CreateMapDependencies();
+        var map = new TestMapInstance(configuration, tables);
+        var stale = CreatePlayer(54u, out _);
+        var replacement = CreatePlayer(54u, out var session);
+        map.RequestPendingRemoval(stale, WorldRemovalReason.GroupMembership);
+        map.Track(replacement);
+        map.AdvanceRemovalQueue();
+        Assert.Empty(map.GetPendingRemovals());
+        Assert.Empty(session.Invocations);
+    }
+
+    [Fact]
+    public void ExpiredRemovalWithoutReturnLocationNeverTeleportsToNull()
+    {
+        var (configuration, tables) = CreateMapDependencies();
+        var map = new TestMapInstance(configuration, tables) { MissingReturn = true };
+        var player = CreatePlayer(55u, out _);
+        var pp = (RecordingDispatchProxy<IPlayer>)(object)player;
+        map.Track(player);
+        map.RequestPendingRemoval(player, WorldRemovalReason.GroupMembership);
+        map.AdvanceRemovalQueue(31);
+        Assert.Empty(pp.GetInvocations(nameof(IPlayer.TeleportTo)));
+    }
+
+    [Fact]
     public void EnqueuePendingRemoval_WithMissingGameFormulaTable_UsesClientDefaultTimer()
     {
         (ISharedConfiguration sharedConfiguration, GameTableManager gameTableManager) = CreateMapDependencies();
@@ -143,6 +190,13 @@ public class MapInstancePendingRemovalTests
 
     private sealed class TestMapInstance : MapInstance
     {
+        public bool MissingReturn { get; init; }
+        public void Track(IPlayer player) => entities[player.Guid] = player;
+        public void AdvanceRemovalQueue(double tick = 0)
+        {
+            typeof(MapInstance).GetMethod("ProcessRemovalRequests", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(this, null);
+            typeof(MapInstance).GetMethod("ProcessInstanceRemovals", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(this, [tick]);
+        }
         public TestMapInstance(ISharedConfiguration sharedConfiguration, IGameTableManager gameTableManager)
             : base(
                 RecordingDispatchProxy<IEntityFactory>.Create(out _),
@@ -165,6 +219,8 @@ public class MapInstancePendingRemovalTests
 
         protected override IMapPosition GetPlayerReturnLocation(IPlayer player)
         {
+            if (MissingReturn)
+                return null;
             return new MapPosition
             {
                 Position = new Vector3(1f, 2f, 3f)

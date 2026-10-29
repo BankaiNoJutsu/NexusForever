@@ -115,6 +115,8 @@ namespace NexusForever.Game.Achievement
             if (achievement.Info.Entry.CharacterTitleId != 0u)
                 owner.TitleManager.AddTitle((ushort)achievement.Info.Entry.CharacterTitleId);
 
+            owner.GalacticArchiveManager?.RefreshRuleUnlocks(sendUpdates: true);
+
             if (GetGlobalAchievementManager().TryClaimRealmFirstAchievement(achievement.Info, false))
                 BroadcastRealmFirstAchievement(achievement, false, owner.Name);
         }

@@ -31,6 +31,30 @@ public class SupportStuckHandlerTests
     }
 
     [Fact]
+    public void RecallTransmat_PrefersSavedBindAndRetainsCooldown()
+    {
+        var handler = CreateHandler();
+        IWorldSession session = CreateSession(out var sessionProxy, out var playerProxy);
+        playerProxy.SetMethodReturn(nameof(IPlayer.CanTeleport), true);
+        playerProxy.SetMethodHandler(nameof(IPlayer.TryGetBindPoint), args =>
+        {
+            args[0] = (ushort)51;
+            args[1] = new Vector3(4, 5, 6);
+            return true;
+        });
+
+        handler.HandleMessage(session, CreateStuck(UnstickType.RecallTransmat, 9016u));
+        var teleport = Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
+        Assert.Equal((ushort)51, teleport.Arguments[0]);
+        Assert.Equal(4f, teleport.Arguments[1]);
+        Assert.Equal(5f, teleport.Arguments[2]);
+        Assert.Equal(6f, teleport.Arguments[3]);
+        handler.HandleMessage(session, CreateStuck(UnstickType.RecallTransmat, 9017u));
+        Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
+        AssertStuckCastResult(sessionProxy, 9017u, SupportStuckSpell4Ids.RecallTransmat, CastResult.SpellCooldown);
+    }
+
+    [Fact]
     public void FreeSuicide_WhenPlayerAliveDealsCurrentHealthDamage()
     {
         var handler = CreateHandler();

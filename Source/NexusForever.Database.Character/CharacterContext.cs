@@ -7,6 +7,7 @@ namespace NexusForever.Database.Character
     public class CharacterContext : DbContext
     {
         public DbSet<CharacterModel> Character { get; set; }
+        public DbSet<CharacterBindModel> CharacterBind { get; set; }
         public DbSet<CharacterAchievementModel> CharacterAchievement { get; set; }
         public DbSet<CharacterActionSetAmpModel> CharacterActionSetAmp { get; set; }
         public DbSet<CharacterActionSetShortcutModel> CharacterActionSetShortcut { get; set; }
@@ -78,6 +79,21 @@ namespace NexusForever.Database.Character
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<CharacterBindModel>(entity =>
+            {
+                entity.ToTable("character_bind");
+                entity.HasKey(e => e.Id).HasName("PRIMARY");
+                entity.Property(e => e.Id).HasColumnName("id").HasColumnType("bigint(20) unsigned").ValueGeneratedNever();
+                entity.Property(e => e.BindPointId).HasColumnName("bindPointId").HasColumnType("smallint(5) unsigned");
+                entity.Property(e => e.WorldId).HasColumnName("worldId").HasColumnType("smallint(5) unsigned");
+                entity.Property(e => e.X).HasColumnName("x");
+                entity.Property(e => e.Y).HasColumnName("y");
+                entity.Property(e => e.Z).HasColumnName("z");
+                entity.HasOne(e => e.Character).WithOne(c => c.Bind)
+                    .HasForeignKey<CharacterBindModel>(e => e.Id)
+                    .HasConstraintName("FK__character_bind_id__character_id");
+            });
+
             modelBuilder.Entity<CharacterModel>(entity =>
             {
                 entity.ToTable("character");

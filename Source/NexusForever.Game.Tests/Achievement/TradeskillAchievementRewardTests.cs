@@ -67,12 +67,15 @@ public class TradeskillAchievementRewardTests
         globalAchievementManager.Initialise();
 
         IPlayer player = CreatePlayer(out RecordingDispatchProxy<IPlayer> playerProxy, out RecordingDispatchProxy<IGameSession> sessionProxy);
+        var archive = RecordingDispatchProxy<IGalacticArchiveManager>.Create(out var archiveProxy);
+        playerProxy.SetProperty(nameof(IPlayer.GalacticArchiveManager), archive);
         var manager = new CharacterAchievementManager(player, new CharacterModel
         {
             Id = 30ul
         }, globalAchievementManager: globalAchievementManager, gameTableManager: gameTableManager);
 
         manager.CheckAchievements(player, AchievementType.CraftItem, 14838u, count: 3u);
+        Assert.True((bool)Assert.Single(archiveProxy.GetInvocations(nameof(IGalacticArchiveManager.RefreshRuleUnlocks))).Arguments[0]);
 
         RecordingDispatchProxy<IPlayer>.Invocation schematicCall = Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.LearnSchematic)));
         Assert.Equal(2954u, schematicCall.Arguments[0]);
@@ -228,6 +231,38 @@ public class TradeskillAchievementRewardTests
         RecordingDispatchProxy<IPlayer>.Invocation talentCall = Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.EnsureTradeskillTalentPointTotal)));
         Assert.Equal(TradeskillType.Technologist, talentCall.Arguments[0]);
         Assert.Equal(2u, talentCall.Arguments[1]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ArchiveRefreshAlwaysUsesAchievementOwner(bool grantDirectly)
+    {
+        var tables = CreateGameTableManager(out var global, t =>
+        {
+            SetTable(t, nameof(GameTableManager.Achievement), CreateGameTable(new AchievementEntry
+            {
+                Id = 1, AchievementTypeId = (uint)AchievementType.CraftItem,
+                ObjectId = 9, RequiredProgress = 1
+            }));
+            SetTable(t, nameof(GameTableManager.AchievementChecklist), CreateGameTable<AchievementChecklistEntry>());
+            SetTable(t, nameof(GameTableManager.AchievementCategory), CreateGameTable<AchievementCategoryEntry>());
+        });
+        global.Initialise();
+        var owner = CreatePlayer(out var ownerProxy, out _);
+        var target = CreatePlayer(out var targetProxy, out _);
+        ownerProxy.SetProperty(nameof(IPlayer.GalacticArchiveManager), RecordingDispatchProxy<IGalacticArchiveManager>.Create(out var ownerArchive));
+        targetProxy.SetProperty(nameof(IPlayer.GalacticArchiveManager), RecordingDispatchProxy<IGalacticArchiveManager>.Create(out var targetArchive));
+        var manager = new CharacterAchievementManager(owner, new CharacterModel { Id = 30 },
+            globalAchievementManager: global, gameTableManager: tables);
+
+        if (grantDirectly)
+            manager.GrantAchievement(1);
+        else
+            manager.CheckAchievements(target, AchievementType.CraftItem, 9);
+
+        Assert.True((bool)Assert.Single(ownerArchive.GetInvocations(nameof(IGalacticArchiveManager.RefreshRuleUnlocks))).Arguments[0]);
+        Assert.Empty(targetArchive.Invocations);
     }
 
     private static IPlayer CreatePlayer(
