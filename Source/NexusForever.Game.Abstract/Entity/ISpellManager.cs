@@ -78,6 +78,7 @@ namespace NexusForever.Game.Abstract.Entity
         /// Add a new <see cref="ICharacterSpell"/> created from supplied spell base id and tier.
         /// </summary>
         void AddSpell(uint spell4BaseId, byte tier = 1);
+        bool TryApplyLearnedPassive(uint spell4Id);
 
         /// <summary>
         /// Update existing <see cref="ICharacterSpell"/> with supplied tier. The base tier will be updated if no action set index is supplied.

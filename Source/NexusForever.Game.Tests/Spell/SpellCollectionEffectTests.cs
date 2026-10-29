@@ -312,10 +312,89 @@ public class SpellCollectionEffectTests
         }
     }
 
-    private static IDisposable UseGameTableManager(IGameTableManager gameTableManager, IEntityFactory factory = null)
+    [Theory]
+    [InlineData(0u, false, (byte)1)]
+    [InlineData(2u, false, (byte)2)]
+    [InlineData(255u, false, (byte)255)]
+    [InlineData(2u, true, (byte)2)]
+    public void AddSpellPreservesLearnedTierAndRequestsPassiveApplicationWithoutDuplicateGrant(uint tier, bool known, byte expectedTier)
+    {
+        var tables = CreateGameTableManager(new Spell4Entry { Id = 700, Spell4BaseIdBaseSpell = 70, TierIndex = tier });
+        using var scope = UseGameTableManager(tables);
+        var player = CreateCollectionPlayer(out var spells, out _);
+        if (known) spells.SetMethodReturn(nameof(ISpellManager.GetSpell), RecordingDispatchProxy<ICharacterSpell>.Create(out _));
+
+        Game.Spell.SpellHandler.HandleEffectAddSpell(CreateSpell(player), player, CreateCollectionInfo(SpellEffectType.AddSpell, 700));
+
+        var grants = spells.GetInvocations(nameof(ISpellManager.AddSpell));
+        Assert.Equal(known ? 0 : 1, grants.Count);
+        if (!known)
+        {
+            Assert.Equal(70u, grants[0].Arguments[0]);
+            Assert.Equal(expectedTier, grants[0].Arguments[1]);
+        }
+        Assert.Equal(700u, Assert.Single(spells.GetInvocations(nameof(ISpellManager.TryApplyLearnedPassive))).Arguments[0]);
+    }
+
+    [Theory]
+    [InlineData(0u, 1u)]
+    [InlineData(70u, 256u)]
+    public void AddSpellRejectsInvalidBaseOrUnrepresentableTier(uint baseId, uint tier)
+    {
+        using var scope = UseGameTableManager(CreateGameTableManager(new Spell4Entry { Id = 700, Spell4BaseIdBaseSpell = baseId, TierIndex = tier }));
+        var player = CreateCollectionPlayer(out var spells, out _);
+        Game.Spell.SpellHandler.HandleEffectAddSpell(CreateSpell(player), player, CreateCollectionInfo(SpellEffectType.AddSpell, 700));
+        Assert.Empty(spells.GetInvocations(nameof(ISpellManager.AddSpell)));
+        Assert.Empty(spells.GetInvocations(nameof(ISpellManager.TryApplyLearnedPassive)));
+    }
+
+    [Theory]
+    [InlineData("owned")]
+    [InlineData("pending")]
+    [InlineData("missing-entrance")]
+    public void HousingRecallRetainsParentInstanceEntranceAndPendingTransferGuards(string scenario)
+    {
+        var residences = RecordingDispatchProxy<IGlobalResidenceManager>.Create(out var rp);
+        var residence = RecordingDispatchProxy<IResidence>.Create(out var residenceProxy);
+        var parent = RecordingDispatchProxy<IResidence>.Create(out _);
+        residenceProxy.SetProperty(nameof(IResidence.Parent), parent);
+        rp.SetMethodReturn(nameof(IGlobalResidenceManager.GetResidenceByOwner), residence);
+        var entrance = RecordingDispatchProxy<IResidenceEntrance>.Create(out var ep);
+        var world = new WorldEntry { Id = 51 };
+        ep.SetProperty(nameof(IResidenceEntrance.Entry), world);
+        ep.SetProperty(nameof(IResidenceEntrance.Position), new System.Numerics.Vector3(4, 5, 6));
+        ep.SetProperty(nameof(IResidenceEntrance.Rotation), System.Numerics.Quaternion.Identity);
+        if (scenario == "missing-entrance")
+            rp.SetMethodHandler(nameof(IGlobalResidenceManager.GetResidenceEntrance), _ => throw new Game.Housing.HousingException("missing"));
+        else
+            rp.SetMethodReturn(nameof(IGlobalResidenceManager.GetResidenceEntrance), entrance);
+        var locks = RecordingDispatchProxy<IMapLockManager>.Create(out var lp);
+        var mapLock = RecordingDispatchProxy<Game.Map.Lock.IResidenceMapLock>.Create(out _);
+        lp.SetMethodReturn(nameof(IMapLockManager.GetResidenceLock), mapLock);
+        using var scope = UseGameTableManager(CreateGameTableManagerWithoutStaticTables(), residences: residences, locks: locks);
+        var player = CreateCollectionPlayer(out _, out _);
+        var pp = (RecordingDispatchProxy<IPlayer>)(object)player;
+        pp.SetMethodReturn(nameof(IPlayer.CanTeleport), scenario != "pending");
+
+        Game.Spell.SpellHandler.HandleEffectHousingTeleport(CreateSpell(player), player, CreateCollectionInfo(SpellEffectType.HousingTeleport, 0));
+
+        var calls = pp.GetInvocations(nameof(IPlayer.TeleportTo));
+        Assert.Equal(scenario == "owned" ? 1 : 0, calls.Count);
+        if (scenario == "owned")
+        {
+            Assert.Same(world, calls[0].Arguments[0]);
+            Assert.Equal(new System.Numerics.Vector3(4, 5, 6), calls[0].Arguments[1]);
+            Assert.Same(mapLock, calls[0].Arguments[2]);
+            Assert.Same(parent, Assert.Single(lp.GetInvocations(nameof(IMapLockManager.GetResidenceLock))).Arguments[0]);
+        }
+        Assert.Empty(rp.GetInvocations(nameof(IGlobalResidenceManager.CreateResidence)));
+    }
+
+    private static IDisposable UseGameTableManager(IGameTableManager gameTableManager, IEntityFactory factory = null,
+        IGlobalResidenceManager residences = null, IMapLockManager locks = null)
     {
         ISpellEffectDependencyResolver previousResolver =
-            global::NexusForever.Game.Spell.SpellHandler.InitialiseDependencyResolver(new TestSpellEffectDependencyResolver(gameTableManager, factory));
+            global::NexusForever.Game.Spell.SpellHandler.InitialiseDependencyResolver(new TestSpellEffectDependencyResolver(gameTableManager, factory, residences, locks));
         return new DependencyResolverScope(previousResolver);
     }
 
@@ -327,7 +406,8 @@ public class SpellCollectionEffectTests
         }
     }
 
-    private sealed class TestSpellEffectDependencyResolver(IGameTableManager gameTableManager, IEntityFactory factory = null) : ISpellEffectDependencyResolver
+    private sealed class TestSpellEffectDependencyResolver(IGameTableManager gameTableManager, IEntityFactory factory = null,
+        IGlobalResidenceManager residences = null, IMapLockManager locks = null) : ISpellEffectDependencyResolver
     {
         public IDamageCalculator CreateDamageCalculator()
         {
@@ -356,7 +436,7 @@ public class SpellCollectionEffectTests
 
         public IGlobalResidenceManager GetGlobalResidenceManager()
         {
-            return null;
+            return residences;
         }
 
         public IGlobalLootManager GetGlobalLootManager()
@@ -366,7 +446,7 @@ public class SpellCollectionEffectTests
 
         public IMapLockManager GetMapLockManager()
         {
-            return null;
+            return locks;
         }
 
         public IGlobalSpellManager GetGlobalSpellManager()

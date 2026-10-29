@@ -18,7 +18,7 @@ using NLog;
 
 namespace NexusForever.Game.Entity
 {
-    public class SpellManager : ISpellManager
+    public partial class SpellManager : ISpellManager
     {
         private const ushort MaxBonusAmpPower = 10;
         private const byte GlobalCooldownType = 0;
@@ -222,6 +222,7 @@ namespace NexusForever.Game.Entity
 
         public void Update(double lastTick)
         {
+            UpdateLearnedPassives(lastTick);
             // update cooldowns
             foreach ((CooldownKey key, ActiveCooldown cooldown) in activeCooldowns.ToArray())
             {
@@ -826,6 +827,7 @@ namespace NexusForever.Game.Entity
             SendServerActionSets();
             SendServerAmpLists();
             SendServerAmpPowerUpdate();
+            ReapplyLearnedPassives();
 
             player.Session.EnqueueMessageEncrypted(new ServerCooldownList
             {
@@ -929,8 +931,20 @@ namespace NexusForever.Game.Entity
                 ? (byte)Math.Max(1, (int)spell.Tier)
                 : (byte)0;
 
+            uint previousSpell4Id = spell.SpellInfo?.Entry?.Id ?? spell4Id;
+
             if (spell.Tier != tier)
                 spell.Tier = tier;
+
+            if (LearnedPassiveSpellRules.IsLearnedPassive(previousSpell4Id, GetGameTableManager())
+                || LearnedPassiveSpellRules.IsLearnedPassive(spell4Id, GetGameTableManager()))
+            {
+                pendingLearnedPassives.Remove(previousSpell4Id);
+                if (active)
+                    TryApplyLearnedPassive(spell.SpellInfo?.Entry?.Id ?? spell4Id);
+                else
+                    player.RemoveSpellProperties(previousSpell4Id);
+            }
 
             if (!player.IsLoading)
             {

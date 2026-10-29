@@ -724,7 +724,7 @@ namespace NexusForever.Game.Entity
             XpManager               = new XpManager(this, model, gameTableManager, sharedConfiguration);
             ReputationManager       = new ReputationManager(this, model, factionManager);
             GuildManager?.Initialise(this, model);
-            ResidenceManager        = new ResidenceManager(this, globalResidenceManager, characterManager);
+            ResidenceManager        = new ResidenceManager(this, globalResidenceManager, characterManager, globalSpellManager);
             CinematicManager        = new CinematicManager(this);
 
             LogoutManager           = new LogoutManager(this);

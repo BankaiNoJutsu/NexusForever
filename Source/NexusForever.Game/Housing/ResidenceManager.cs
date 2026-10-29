@@ -2,6 +2,7 @@
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Housing;
+using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Static.Housing;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
@@ -20,17 +21,21 @@ namespace NexusForever.Game.Housing
         private readonly IPlayer owner;
         private readonly IGlobalResidenceManager globalResidenceManager;
         private readonly ICharacterManager characterManager;
+        private readonly IGlobalSpellManager globalSpellManager;
         private ResidenceNeighborInviteInfo pendingNeighborInvite;
 
         /// <summary>
         /// Create a new <see cref="IResidenceManager"/>.
         /// </summary>
-        public ResidenceManager(IPlayer player, IGlobalResidenceManager globalResidenceManager = null, ICharacterManager characterManager = null)
+        public ResidenceManager(IPlayer player, IGlobalResidenceManager globalResidenceManager = null, ICharacterManager characterManager = null,
+            IGlobalSpellManager globalSpellManager = null)
         {
             owner                       = player;
             this.globalResidenceManager = globalResidenceManager;
             this.characterManager       = characterManager;
+            this.globalSpellManager     = globalSpellManager;
             Residence                   = globalResidenceManager?.GetResidenceByOwner(owner.CharacterId);
+            GrantHouseRecall();
         }
 
         /// <summary>
@@ -71,7 +76,18 @@ namespace NexusForever.Game.Housing
                 throw new HousingException("Player does not meet retail housing unlock requirements.");
 
             Residence ??= GetGlobalResidenceManager().CreateResidence(owner);
+            GrantHouseRecall();
             return Residence;
+        }
+
+        private void GrantHouseRecall()
+        {
+            const uint recallHouseBaseId = 22919u;
+            if (Residence == null || Residence.OwnerId != owner.CharacterId || owner.SpellManager == null
+                || globalSpellManager?.GetSpellBaseInfo(recallHouseBaseId)?.GetSpellInfo(1) == null)
+                return;
+            if (owner.SpellManager.GetSpell(recallHouseBaseId) == null)
+                owner.SpellManager.AddSpell(recallHouseBaseId);
         }
 
         public ResidenceNeighborInviteInfo GetPendingNeighborInvite()

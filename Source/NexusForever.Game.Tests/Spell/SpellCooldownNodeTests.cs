@@ -141,6 +141,7 @@ public class SpellCooldownNodeTests
         var manager = (global::NexusForever.Game.Entity.SpellManager)RuntimeHelpers.GetUninitializedObject(
             typeof(global::NexusForever.Game.Entity.SpellManager));
         InitialisePrivateField(manager, "activeCooldowns");
+        InitialisePrivateField(manager, "pendingLearnedPassives");
         SetPrivateField(manager, "spells", new Dictionary<uint, ICharacterSpell>());
         SetPrivateField(manager, "player", player);
         SetPrivateField(manager, "gameTableManager", gameTableManager);

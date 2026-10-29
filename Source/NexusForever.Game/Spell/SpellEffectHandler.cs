@@ -3585,7 +3585,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            Spell4Entry spell4Entry = GetGameTableManager().Spell4.GetEntry(addSpell.Spell4Id);
+            Spell4Entry spell4Entry = GetGameTableManager().Spell4?.GetEntry(addSpell.Spell4Id);
             if (spell4Entry == null)
             {
                 SpellEffectDiagnostics.TraceAddSpell(spell, target, addSpell, 0u, "none", "unknown-spell4");
@@ -3593,13 +3593,21 @@ namespace NexusForever.Game.Spell
             }
 
             uint spell4BaseId = spell4Entry.Spell4BaseIdBaseSpell;
+            uint tier = Math.Max(1u, spell4Entry.TierIndex);
+            if (spell4BaseId == 0u || tier > byte.MaxValue)
+            {
+                SpellEffectDiagnostics.TraceAddSpell(spell, target, addSpell, spell4BaseId, "none", "invalid-base-or-tier");
+                return;
+            }
             if (player.SpellManager.GetSpell(spell4BaseId) != null)
             {
+                player.SpellManager.TryApplyLearnedPassive(addSpell.Spell4Id);
                 SpellEffectDiagnostics.TraceAddSpell(spell, target, addSpell, spell4BaseId, "none", "already-known");
                 return;
             }
 
-            player.SpellManager.AddSpell(spell4BaseId);
+            player.SpellManager.AddSpell(spell4BaseId, (byte)tier);
+            player.SpellManager.TryApplyLearnedPassive(addSpell.Spell4Id);
             SpellEffectDiagnostics.TraceAddSpell(spell, target, addSpell, spell4BaseId, "add", null);
         }
 
