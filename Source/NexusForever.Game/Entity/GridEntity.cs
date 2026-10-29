@@ -110,6 +110,12 @@ namespace NexusForever.Game.Entity
             Map.EnqueueRelocate(this, position);
         }
 
+        public void Relocate(Vector3 position, bool coalesce)
+        {
+            Debug.Assert(Map != null);
+            Map.EnqueueRelocate(this, position, coalesce);
+        }
+
         /// <summary>
         /// Invoked when <see cref="IGridEntity"/> is enqueued to be added to <see cref="IBaseMap"/>.
         /// </summary>

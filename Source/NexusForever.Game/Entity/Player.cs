@@ -1668,6 +1668,8 @@ namespace NexusForever.Game.Entity
                 throw new InvalidOperationException("Player requires an IMapManager to teleport.");
 
             CaptureOpenWorldReturnPosition();
+            if (PlatformGuid != null)
+                SetPlatform(null);
             mapManager.AddToMap(this, mapPosition);
             log.Trace($"Teleporting {Name}({CharacterId}) to map: {mapPosition.Info.Entry.Id}, instance: {mapPosition.Info.MapLock?.InstanceId ?? null}.");
         }
@@ -1690,6 +1692,8 @@ namespace NexusForever.Game.Entity
                 Session.EnqueueMessageEncrypted(new ServerLoadingScreen());
 
             SetControl(null);
+            if (PlatformGuid != null)
+                SetPlatform(null);
             MovementManager.SetPosition(position, false);
             MovementManager.BroadcastNetworkEntityCommands();
             Relocate(position);

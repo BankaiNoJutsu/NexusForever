@@ -43,6 +43,7 @@ namespace NexusForever.Game.Abstract.Entity
         /// Enqueue <see cref="IGridEntity"/> for relocation on the <see cref="IBaseMap"/>.
         /// </summary>
         void Relocate(Vector3 position);
+        void Relocate(Vector3 position, bool coalesce) => Relocate(position);
 
         /// <summary>
         /// Invoked when <see cref="IGridEntity"/> is enqueued to be added to <see cref="IBaseMap"/>.

@@ -45,6 +45,8 @@ namespace NexusForever.Game.Map
         private readonly HashSet<(uint GridX, uint GridZ)> activeGrids = new();
 
         protected readonly ConcurrentQueue<IGridAction> pendingActions = new();
+        private readonly object relocationLock = new();
+        private readonly Dictionary<IGridEntity, GridActionRelocate> pendingRelocations = new(ReferenceEqualityComparer.Instance);
 
         private readonly QueuedCounter entityCounter = new();
         protected readonly Dictionary<uint /*guid*/, IGridEntity> entities = new();
@@ -181,8 +183,20 @@ namespace NexusForever.Game.Map
                         break;
                     }
                     case GridActionRelocate actionRelocate:
-                        RelocateEntity(actionRelocate.Entity, actionRelocate.Vector);
+                    {
+                        Vector3 vector;
+                        lock (relocationLock)
+                        {
+                            if (pendingRelocations.TryGetValue(actionRelocate.Entity, out GridActionRelocate pending)
+                                && ReferenceEquals(pending, actionRelocate))
+                                pendingRelocations.Remove(actionRelocate.Entity);
+                            vector = actionRelocate.Vector;
+                        }
+                        // A queued move must never relocate an entity on another map.
+                        if (ReferenceEquals(actionRelocate.Entity.Map, this))
+                            RelocateEntity(actionRelocate.Entity, vector);
                         break;
+                    }
                     case GridActionRemove actionRemove:
                         RemoveEntity(actionRemove.Entity);
                         break;
@@ -287,22 +301,37 @@ namespace NexusForever.Game.Map
         public void EnqueueRemove(IGridEntity entity)
         {
             entity.OnEnqueueRemoveFromMap();
-            pendingActions.Enqueue(new GridActionRemove
+            lock (relocationLock)
             {
-                Entity = entity
-            });
+                pendingRelocations.Remove(entity);
+                pendingActions.Enqueue(new GridActionRemove { Entity = entity });
+            }
         }
 
         /// <summary>
         /// Enqueue <see cref="IGridEntity"/> to be relocated in <see cref="IBaseMap"/> to <see cref="Vector3"/>.
         /// </summary>
         public void EnqueueRelocate(IGridEntity entity, Vector3 position)
+            => EnqueueRelocate(entity, position, coalesce: false);
+
+        public void EnqueueRelocate(IGridEntity entity, Vector3 position, bool coalesce)
         {
-            pendingActions.Enqueue(new GridActionRelocate
+            lock (relocationLock)
             {
-                Entity = entity,
-                Vector = position
-            });
+                if (coalesce && pendingRelocations.TryGetValue(entity, out GridActionRelocate pending))
+                {
+                    pending.UpdateVector(position);
+                    return;
+                }
+
+                // Explicit moves seal earlier movement. A later movement update
+                // must be queued after that boundary, never folded across it.
+                pendingRelocations.Remove(entity);
+                var action = new GridActionRelocate { Entity = entity, Vector = position };
+                if (coalesce)
+                    pendingRelocations.Add(entity, action);
+                pendingActions.Enqueue(action);
+            }
         }
 
         /// <summary>

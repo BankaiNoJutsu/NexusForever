@@ -28,6 +28,10 @@ namespace NexusForever.Game.Abstract.Map
         /// Enqueue <see cref="IGridEntity"/> to be relocated in <see cref="IBaseMap"/> to <see cref="Vector3"/>.
         /// </summary>
         void EnqueueRelocate(IGridEntity entity, Vector3 position);
+        /// <summary>
+        /// Coalesce queued movement updates while retaining explicit relocation boundaries.
+        /// </summary>
+        void EnqueueRelocate(IGridEntity entity, Vector3 position, bool coalesce) => EnqueueRelocate(entity, position);
 
         /// <summary>
         /// Return all <see cref="IGridEntity"/>'s from <see cref="Vector3"/> in range that satisfy <see cref="ISearchCheck{T}"/>.
