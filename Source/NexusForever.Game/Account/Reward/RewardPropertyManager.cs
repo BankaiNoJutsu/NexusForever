@@ -61,9 +61,6 @@ namespace NexusForever.Game.Account.Reward
                     return false;
 
                 EntitlementFlags entitlementFlags = (EntitlementFlags)entitlementEntry.Flags;
-                if (entitlementFlags.HasFlag(EntitlementFlags.Disabled))
-                    return true;
-
                 if (entitlementFlags.HasFlag(EntitlementFlags.Character))
                     value = player?.EntitlementManager?.GetEntitlement((EntitlementType)modifierEntry.EntitlementIdModifierCount)?.Amount ?? 0u;
                 else

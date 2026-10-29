@@ -5,6 +5,6 @@
     {
         None      = 0,
         Character = 1,
-        Disabled  = 2
+        Hidden    = 2
     }
 }

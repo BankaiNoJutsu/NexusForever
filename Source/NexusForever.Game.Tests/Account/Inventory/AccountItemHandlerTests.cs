@@ -118,15 +118,19 @@ public class AccountItemHandlerTests
         Assert.Contains("Account item 901 does not exist", exception.Message);
     }
 
-    [Fact]
-    public void TakeItem_WithoutPlayer_AccountEntitlementGrant_AppliesAndDeletesItem()
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(2u)]
+    public void TakeItem_WithoutPlayer_AccountEntitlementGrant_AppliesAndDeletesItem(uint flags)
     {
+        EntitlementEntry entitlementEntry = CreateCharacterSlotEntitlementEntry();
+        entitlementEntry.Flags = flags;
         GameTableManager gameTableManager = BuildGameTableProvider(
             [
                 CreateCharacterSlotAccountItemEntry()
             ],
             [
-                CreateCharacterSlotEntitlementEntry()
+                entitlementEntry
             ]);
 
         AccountInventoryManager manager = CreateAccountInventoryManager(
@@ -151,15 +155,19 @@ public class AccountItemHandlerTests
         Assert.Single(GetEncryptedMessages<ServerAccountItemDelete>(sessionProxy));
     }
 
-    [Fact]
-    public void TakeItem_WithPlayer_AccountEntitlementGrant_AppliesWithoutPlayerPrerequisite()
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(2u)]
+    public void TakeItem_WithPlayer_AccountEntitlementGrant_AppliesWithoutPlayerPrerequisite(uint flags)
     {
+        EntitlementEntry entitlementEntry = CreateCharacterSlotEntitlementEntry();
+        entitlementEntry.Flags = flags;
         GameTableManager gameTableManager = BuildGameTableProvider(
             [
                 CreateCharacterSlotAccountItemEntry()
             ],
             [
-                CreateCharacterSlotEntitlementEntry()
+                entitlementEntry
             ]);
 
         AccountInventoryManager manager = CreateAccountInventoryManager(
@@ -185,15 +193,19 @@ public class AccountItemHandlerTests
         Assert.Single(GetEncryptedMessages<ServerAccountItemDelete>(sessionProxy));
     }
 
-    [Fact]
-    public void TakeItem_WithPlayer_TargetedAccountEntitlementGrant_AppliesToAccount()
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(2u)]
+    public void TakeItem_WithPlayer_TargetedAccountEntitlementGrant_AppliesToAccount(uint flags)
     {
+        EntitlementEntry entitlementEntry = CreateCharacterSlotEntitlementEntry();
+        entitlementEntry.Flags = flags;
         GameTableManager gameTableManager = BuildGameTableProvider(
             [
                 CreateCharacterSlotAccountItemEntry()
             ],
             [
-                CreateCharacterSlotEntitlementEntry()
+                entitlementEntry
             ]);
 
         AccountInventoryManager manager = CreateAccountInventoryManager(

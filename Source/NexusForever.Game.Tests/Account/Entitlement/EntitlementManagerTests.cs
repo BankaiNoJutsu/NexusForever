@@ -1,8 +1,11 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using NexusForever.Database;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Character.Model;
+using NexusForever.Database.Character;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Account.Entitlement;
@@ -17,6 +20,103 @@ namespace NexusForever.Game.Tests.Account.Entitlement;
 
 public class EntitlementManagerTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HiddenEntitlementCanBeGrantedWithoutChangingDefaultsOrLimits(bool characterScoped)
+    {
+        var entry = new EntitlementEntry
+        {
+            Id = (uint)EntitlementType.Signature, MaxCount = 2,
+            Flags = 0x2u | (characterScoped ? 0x1u : 0u)
+        };
+        var tables = CreateGameTableManager(CreateGameTable(entry));
+        if (characterScoped)
+        {
+            var manager = new CharacterEntitlementManager(CreatePlayer(out _), new CharacterModel(), null, tables);
+            Assert.Empty(manager); // Do not adopt upstream's seven automatic character defaults.
+            manager.UpdateEntitlement(EntitlementType.Signature, 1);
+            Assert.Equal(1u, manager.GetEntitlement(EntitlementType.Signature).Amount);
+            Assert.Throws<InvalidOperationException>(() => manager.UpdateEntitlement(EntitlementType.Signature, 2));
+            Assert.Throws<ArgumentException>(() => manager.UpdateEntitlement(EntitlementType.Signature, -2));
+            Assert.Equal(1u, manager.GetEntitlement(EntitlementType.Signature).Amount);
+        }
+        else
+        {
+            var manager = new AccountEntitlementManager(CreateAccount(out _), new AccountModel(), null, tables);
+            Assert.Empty(manager);
+            manager.UpdateEntitlement(EntitlementType.Signature, 1);
+            Assert.Equal(1u, manager.GetEntitlement(EntitlementType.Signature).Amount);
+            Assert.Throws<InvalidOperationException>(() => manager.UpdateEntitlement(EntitlementType.Signature, 2));
+            Assert.Throws<ArgumentException>(() => manager.UpdateEntitlement(EntitlementType.Signature, -2));
+            Assert.Equal(1u, manager.GetEntitlement(EntitlementType.Signature).Amount);
+        }
+    }
+
+    [Fact]
+    public void NewCharacterEntitlementIsInsertedAndExistingEntitlementIsUpdated()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+        using var context = new CharacterContext(new DbContextOptionsBuilder<CharacterContext>().UseSqlite(connection).Options);
+        context.Database.EnsureCreated();
+        context.Character.Add(new CharacterModel { Id = 42, Name = "EntitlementTest", OriginalName = "EntitlementTest" });
+        context.SaveChanges();
+        context.ChangeTracker.Clear();
+        var entry = new EntitlementEntry { Id = (uint)EntitlementType.Signature, Flags = 1, MaxCount = 2 };
+        var entitlement = new CharacterEntitlement(CreatePlayer(out _), entry, 1);
+
+        entitlement.Save(context);
+        Assert.Equal(EntityState.Added, Assert.Single(context.ChangeTracker.Entries<CharacterEntitlementModel>()).State);
+        context.SaveChanges();
+        context.ChangeTracker.Clear();
+
+        var persisted = context.CharacterEntitlement.AsNoTracking().Single();
+        Assert.Equal(1u, persisted.Amount);
+        var loaded = new CharacterEntitlement(CreatePlayer(out _), persisted, entry);
+        loaded.Save(context);
+        Assert.Empty(context.ChangeTracker.Entries<CharacterEntitlementModel>());
+        loaded.Amount = 2;
+        loaded.Save(context);
+        Assert.Equal(EntityState.Modified, Assert.Single(context.ChangeTracker.Entries<CharacterEntitlementModel>()).State);
+        context.SaveChanges();
+        Assert.Equal(2u, context.CharacterEntitlement.AsNoTracking().Single().Amount);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HiddenFlagDoesNotBypassAccountCharacterScopeChecks(bool characterScoped)
+    {
+        var entry = new EntitlementEntry
+        {
+            Id = (uint)EntitlementType.Signature, MaxCount = 2,
+            Flags = 0x2u | (characterScoped ? 0u : 0x1u)
+        };
+        var tables = CreateGameTableManager(CreateGameTable(entry));
+        if (characterScoped)
+        {
+            var manager = new CharacterEntitlementManager(CreatePlayer(out _), new CharacterModel(), null, tables);
+            Assert.Throws<InvalidOperationException>(() => manager.UpdateEntitlement(EntitlementType.Signature, 1));
+            Assert.Empty(manager);
+        }
+        else
+        {
+            var manager = new AccountEntitlementManager(CreateAccount(out _), new AccountModel(), null, tables);
+            Assert.Throws<InvalidOperationException>(() => manager.UpdateEntitlement(EntitlementType.Signature, 1));
+            Assert.Empty(manager);
+        }
+    }
+
+    [Fact]
+    public void InvalidInitialAmountReportsEntryWithoutDereferencingUninitialisedState()
+    {
+        var entry = new EntitlementEntry { Id = (uint)EntitlementType.Signature, MaxCount = 2 };
+        DatabaseDataException error = Assert.Throws<DatabaseDataException>(() => new CharacterEntitlement(CreatePlayer(out _), entry, 3));
+        Assert.Contains($"entitlement {entry.Id}", error.Message);
+        Assert.Contains("expected max is 2", error.Message);
+    }
+
     [Fact]
     public void AccountConstructor_WithPersistedEntitlementAndMissingEntitlementTableThrowsDatabaseDataException()
     {

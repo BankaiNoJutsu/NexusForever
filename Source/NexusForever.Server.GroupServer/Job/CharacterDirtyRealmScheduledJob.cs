@@ -2,9 +2,9 @@
 using NexusForever.Database.Group;
 using NexusForever.Database.Group.Model;
 using NexusForever.Database.Group.Repository;
-using NexusForever.Network.Internal;
 using NexusForever.Network.Internal.Message.Group;
 using NexusForever.Server.GroupServer.Group;
+using NexusForever.Server.GroupServer.Network.Internal;
 using Quartz;
 
 namespace NexusForever.Server.GroupServer.Job
@@ -14,21 +14,12 @@ namespace NexusForever.Server.GroupServer.Job
     {
         #region Dependency Injection
 
-        private readonly IServiceProvider _serviceProvider;
-        private readonly IInternalMessagePublisher _messagePublisher;
-        private readonly CharacterRepository _repository;
-        private readonly GroupContext _context;
+        private readonly IServiceScopeFactory _scopeFactory;
 
         public CharacterDirtyRealmScheduledJob(
-            IServiceProvider serviceProvider,
-            IInternalMessagePublisher messagePublisher,
-            CharacterRepository repository,
-            GroupContext context)
+            IServiceScopeFactory scopeFactory)
         {
-            _serviceProvider  = serviceProvider;
-            _messagePublisher = messagePublisher;
-            _repository       = repository;
-            _context          = context;
+            _scopeFactory = scopeFactory;
         }
 
         #endregion
@@ -37,11 +28,18 @@ namespace NexusForever.Server.GroupServer.Job
         {
             while (!context.CancellationToken.IsCancellationRequested)
             {
-                CharacterModel model = await _repository.GetNextCharacterWithDirtyRealm();
+                // Fresh tracking per character lets a later iteration see external
+                // dirty writes. The outbox and flag share this scope's commit.
+                await using AsyncServiceScope scope = _scopeFactory.CreateAsyncScope();
+                var repository = scope.ServiceProvider.GetRequiredService<CharacterRepository>();
+                var groupContext = scope.ServiceProvider.GetRequiredService<GroupContext>();
+                var messagePublisher = scope.ServiceProvider.GetRequiredService<OutboxMessagePublisher>();
+
+                CharacterModel model = await repository.GetNextCharacterWithDirtyRealm();
                 if (model == null)
                     break;
 
-                var character = _serviceProvider.GetRequiredService<Character.Character>();
+                var character = scope.ServiceProvider.GetRequiredService<Character.Character>();
                 character.Initialise(model);
 
                 foreach (Character.CharacterGroup characterGroup in character.GetGroups())
@@ -54,7 +52,7 @@ namespace NexusForever.Server.GroupServer.Job
                     if (member == null)
                         continue;
 
-                    await _messagePublisher.PublishAsync(new GroupMemberRealmUpdatedMessage
+                    await messagePublisher.PublishAsync(new GroupMemberRealmUpdatedMessage
                     {
                         Group  = await group.ToInternalGroup(),
                         Member = await member.ToInternalGroupMember(),
@@ -63,7 +61,7 @@ namespace NexusForever.Server.GroupServer.Job
 
                 character.RealmDirty = false;
 
-                await _context.SaveChangesAsync();
+                await groupContext.SaveChangesAsync();
             }
         }
     }

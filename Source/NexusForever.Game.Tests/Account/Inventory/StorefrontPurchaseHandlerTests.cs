@@ -119,8 +119,10 @@ public class StorefrontPurchaseHandlerTests
         Assert.True((bool)addItem.Arguments[3]);
     }
 
-    [Fact]
-    public void CharacterPurchase_WithoutPlayer_DirectAccountEntitlementUnlock_AppliesAndRefreshesCharacterList()
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(2u)]
+    public void CharacterPurchase_WithoutPlayer_DirectAccountEntitlementUnlock_AppliesAndRefreshesCharacterList(uint flags)
     {
         IWorldSession session = CreateSession(
             out RecordingDispatchProxy<IWorldSession> sessionProxy,
@@ -135,10 +137,12 @@ public class StorefrontPurchaseHandlerTests
             price: 115f,
             accountItemEntry: CreateCharacterSlotAccountItemEntry());
         ICharacterListManager characterListManager = RecordingDispatchProxy<ICharacterListManager>.Create(out RecordingDispatchProxy<ICharacterListManager> characterListProxy);
+        EntitlementEntry entitlementEntry = CreateCharacterSlotEntitlementEntry();
+        entitlementEntry.Flags = flags;
         var handler = new ClientStorefrontPurchaseCharacterHandler(
             NullLogger<ClientStorefrontPurchaseCharacterHandler>.Instance,
             CreateStorefrontPurchaseService(storefrontManager),
-            CreateGameTableManager(CreateCharacterSlotEntitlementEntry()),
+            CreateGameTableManager(entitlementEntry),
             characterListManager);
 
         ClientStorefrontPurchaseCharacter purchase = ReadCharacterPurchase(
@@ -328,8 +332,10 @@ public class StorefrontPurchaseHandlerTests
         Assert.Equal(StorePurchaseVelocityLimiter.MaxPurchasesPerWindow, itemRollbacks.Count);
     }
 
-    [Fact]
-    public void AccountPurchase_WithoutPlayer_DirectAccountEntitlementUnlock_AppliesAndRefreshesCharacterList()
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(2u)]
+    public void AccountPurchase_WithoutPlayer_DirectAccountEntitlementUnlock_AppliesAndRefreshesCharacterList(uint flags)
     {
         IWorldSession session = CreateSession(
             out RecordingDispatchProxy<IWorldSession> sessionProxy,
@@ -343,12 +349,14 @@ public class StorefrontPurchaseHandlerTests
             priceCurrency: AccountCurrencyType.Omnibit,
             price: 115f,
             accountItemEntry: CreateCharacterSlotAccountItemEntry());
+        EntitlementEntry entitlementEntry = CreateCharacterSlotEntitlementEntry();
+        entitlementEntry.Flags = flags;
         var handler = new ClientStorefrontPurchaseAccountHandler(
             NullLogger<ClientStorefrontPurchaseAccountHandler>.Instance,
             CreateStorefrontPurchaseService(storefrontManager),
             RecordingDispatchProxy<ICharacterManager>.Create(out _),
             RecordingDispatchProxy<IPlayerManager>.Create(out _),
-            CreateGameTableManager(CreateCharacterSlotEntitlementEntry()),
+            CreateGameTableManager(entitlementEntry),
             new InMemoryAccountPendingItemRepository(),
             RecordingDispatchProxy<ICharacterListManager>.Create(out RecordingDispatchProxy<ICharacterListManager> characterListProxy));
 

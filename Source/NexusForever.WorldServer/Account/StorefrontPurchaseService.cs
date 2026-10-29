@@ -525,7 +525,7 @@ namespace NexusForever.WorldServer.Account
             }
 
             var entitlementFlags = (EntitlementFlags)entitlementEntry.Flags;
-            if (entitlementFlags.HasFlag(EntitlementFlags.Disabled) || entitlementFlags.HasFlag(EntitlementFlags.Character))
+            if (entitlementFlags.HasFlag(EntitlementFlags.Character))
             {
                 error  = StoreError.MissingEntitlement;
                 reason = $"account item {itemData.ItemId} entitlement {entry.EntitlementId} is not account scoped";

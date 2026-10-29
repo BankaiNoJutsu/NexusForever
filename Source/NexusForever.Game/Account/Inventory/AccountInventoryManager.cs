@@ -993,12 +993,6 @@ namespace NexusForever.Game.Account.Inventory
             }
 
             var entitlementFlags = (EntitlementFlags)entitlementEntry.Flags;
-            if (entitlementFlags.HasFlag(EntitlementFlags.Disabled))
-            {
-                error = GenericError.MissingEntitlement;
-                return false;
-            }
-
             if (entry.EntitlementCount == 0u || entry.EntitlementCount > int.MaxValue)
             {
                 error = GenericError.ItemBadStaticData;
@@ -1039,7 +1033,7 @@ namespace NexusForever.Game.Account.Inventory
             }
 
             var entitlementFlags = (EntitlementFlags)entitlementEntry.Flags;
-            if (entitlementFlags.HasFlag(EntitlementFlags.Disabled) || entitlementFlags.HasFlag(EntitlementFlags.Character))
+            if (entitlementFlags.HasFlag(EntitlementFlags.Character))
             {
                 error = GenericError.MissingEntitlement;
                 return false;

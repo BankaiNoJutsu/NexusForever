@@ -64,8 +64,10 @@ public class RewardPropertyManagerTests
         Assert.Null(manager.GetRewardProperty(RewardPropertyType.XP));
     }
 
-    [Fact]
-    public void Constructor_WithTableBackedEntitlementModifier_UsesEntitlementValue()
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(2u)]
+    public void Constructor_WithTableBackedEntitlementModifier_UsesEntitlementValue(uint flags)
     {
         (GameTableManager gameTableManager, AssetManager assetManager) = BuildServices(
             [
@@ -81,7 +83,7 @@ public class RewardPropertyManagerTests
                 {
                     Id       = (uint)EntitlementType.Signature,
                     MaxCount = 50u,
-                    Flags    = (uint)EntitlementFlags.None
+                    Flags    = flags
                 }
             ]);
         IAccount account = CreateAccount(out _, entitlementAmount: 7u);
@@ -104,6 +106,29 @@ public class RewardPropertyManagerTests
 
         Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
         Assert.Null(manager.GetRewardProperty(RewardPropertyType.XP));
+    }
+
+    [Theory]
+    [InlineData(1u)]
+    [InlineData(3u)]
+    public void CharacterEntitlementModifierUsesCharacterAmountIncludingHiddenRows(uint flags)
+    {
+        (GameTableManager tables, AssetManager assets) = BuildServices(
+            [CreateModifier(RewardPropertyType.XP, entitlementId: EntitlementType.Signature)],
+            [CreateRewardProperty(RewardPropertyType.XP, RewardModifierValueType.Discrete)],
+            [new EntitlementEntry { Id = (uint)EntitlementType.Signature, MaxCount = 50, Flags = flags }]);
+        IAccount account = CreateAccount(out _, entitlementAmount: 7u);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        ICharacterEntitlementManager entitlements = RecordingDispatchProxy<ICharacterEntitlementManager>.Create(out var managerProxy);
+        ICharacterEntitlement entitlement = RecordingDispatchProxy<ICharacterEntitlement>.Create(out var entitlementProxy);
+        entitlementProxy.SetProperty(nameof(IEntitlement.Amount), 11u);
+        managerProxy.SetMethodReturn(nameof(ICharacterEntitlementManager.GetEntitlement), entitlement);
+        playerProxy.SetProperty(nameof(IPlayer.EntitlementManager), entitlements);
+        var manager = new RewardPropertyManager(account, assets, tables);
+
+        manager.Initialise(player);
+
+        Assert.Equal(11f, manager.GetRewardProperty(RewardPropertyType.XP).GetValue(0));
     }
 
     [Fact]
