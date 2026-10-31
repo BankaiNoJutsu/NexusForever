@@ -1,0 +1,107 @@
+{
+  "Format": 2,
+  "Date": "2026-10-31",
+  "ImplementationCommit": "71cde855988446c304341f906556542d6868c412",
+  "Categories": {
+    "assessment": 2065,
+    "reverse-engineering": 69,
+    "agent-skills": 20
+  },
+  "Members": 2154,
+  "SourceBytes": 59326827,
+  "PublishedBytes": 59325171,
+  "UniqueObjects": 2143,
+  "RedactedMembers": 17,
+  "Exclusions": {
+    "unselected-live-log": 675,
+    "binary/media/cache-or-unselected-extension": 2068,
+    "private-runtime/build/binary-directory (entire subtree)": 790,
+    "private-runtime/configuration/log": 94,
+    "non-UTF8-or-binary": 1,
+    "potential-runtime-database-SQL": 51
+  },
+  "Roots": [
+    {
+      "Prefix": "assessment-report",
+      "Category": "assessment",
+      "HistoricalPath": "I:\\GIT\\NexusForever-assessment-report"
+    },
+    {
+      "Prefix": "decomp-exports",
+      "Category": "reverse-engineering",
+      "HistoricalPath": "I:\\GIT\\NexusForever-assessment\\Decomp\\Analysis\\exports"
+    },
+    {
+      "Prefix": "decomp-logs",
+      "Category": "reverse-engineering",
+      "HistoricalPath": "I:\\GIT\\NexusForever-assessment\\Decomp\\Analysis\\logs"
+    },
+    {
+      "Prefix": "data-mapping/output",
+      "Category": "data-mapping",
+      "HistoricalPath": "I:\\GIT\\NexusForever-assessment\\Tools\\DataMapping\\output"
+    },
+    {
+      "Prefix": "data-mapping/review",
+      "Category": "data-mapping",
+      "HistoricalPath": "I:\\GIT\\NexusForever-assessment\\Tools\\DataMapping\\review"
+    },
+    {
+      "Prefix": "reference-sql/jabbithole_mysql",
+      "Category": "reference-sql",
+      "HistoricalPath": "I:\\GIT\\NexusForever-assessment\\jabbithole_mysql"
+    },
+    {
+      "Prefix": "reference-sql/wildstar_client_mysql",
+      "Category": "reference-sql",
+      "HistoricalPath": "I:\\GIT\\NexusForever-assessment\\wildstar_client_mysql"
+    },
+    {
+      "Prefix": "agent-skills/continue-nexus-decompile",
+      "Category": "agent-skills",
+      "HistoricalPath": "C:\\Users\\Bankai\\.codex\\skills\\continue-nexus-decompile"
+    },
+    {
+      "Prefix": "agent-skills/nexus-change-review",
+      "Category": "agent-skills",
+      "HistoricalPath": "C:\\Users\\Bankai\\.codex\\skills\\nexus-change-review"
+    },
+    {
+      "Prefix": "agent-skills/nexus-data-mapping",
+      "Category": "agent-skills",
+      "HistoricalPath": "C:\\Users\\Bankai\\.codex\\skills\\nexus-data-mapping"
+    },
+    {
+      "Prefix": "agent-skills/nexus-load-test",
+      "Category": "agent-skills",
+      "HistoricalPath": "C:\\Users\\Bankai\\.codex\\skills\\nexus-load-test"
+    },
+    {
+      "Prefix": "agent-skills/nexus-local-runtime",
+      "Category": "agent-skills",
+      "HistoricalPath": "C:\\Users\\Bankai\\.codex\\skills\\nexus-local-runtime"
+    },
+    {
+      "Prefix": "agent-skills/nexus-row-closure",
+      "Category": "agent-skills",
+      "HistoricalPath": "C:\\Users\\Bankai\\.codex\\skills\\nexus-row-closure"
+    },
+    {
+      "Prefix": "agent-skills/reverse-engineer-anything",
+      "Category": "agent-skills",
+      "HistoricalPath": "C:\\Users\\Bankai\\.agents\\skills\\reverse-engineer-anything"
+    }
+  ],
+  "IndexSHA256": "f3395dcea59753fc6a0eea44a6f6658655eeee1dc1bdd5e1d0d37b0aa7a25d01",
+  "ExclusionsSHA256": "3cbc42d0e3e8ab85f39cf457369a27b7a51355960289d431c388b4383213aace",
+  "Qualification": "Historical evidence and sanitized derivatives; not a deployment or fresh provider/native qualification.",
+  "Selection": "lean",
+  "ObjectIndexSHA256": "09e3cd97fd3761000a3ae57423ac0250c9811ebf6bf3c43e52e386cca2c7c4ec",
+  "Packs": [
+    {
+      "File": "objects-000.pack",
+      "Bytes": 6522980,
+      "SHA256": "160aba1c9af0579c9f904aed3f68946f720577bbed8b81596cb5caa75b1a253a"
+    }
+  ]
+}

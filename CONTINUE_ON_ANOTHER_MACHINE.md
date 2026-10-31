@@ -10,6 +10,9 @@ deployment was performed. Read this file before starting services or migrations.
 git clone --branch legacy-di-storefront-hardening --single-branch https://github.com/BankaiNoJutsu/NexusForever.git I:\GIT\NexusForever-assessment
 cd I:\GIT\NexusForever-assessment
 python Tools\Handoff\Verify-Continuation.py
+python -m unittest discover -s Tools/Handoff -p test_evidence_store.py -v
+python Tools\Handoff\Restore-Evidence.py --verify-only
+python Tools\Handoff\Restore-Evidence.py
 dotnet restore Source\NexusForever.slnx
 dotnet build Source\NexusForever.slnx --no-restore -v minimal --nologo
 dotnet test Source\NexusForever.slnx --no-build --no-restore -v minimal --nologo
@@ -48,16 +51,22 @@ item/stacking metadata remains synthetic. These results do not claim retail pari
   [setup](Tools/Setup/README.md), [data imports](Tools/DataMapping/sql/README.md)
   and [load harness](Tools/NexusForever.LoadTest/README.md).
 
-The assessment snapshot is copied from the external report, retaining historical
-links. The checked-in checkpoint proof is a selected public subset. External
-frozen binaries, full provider snapshots, historical harnesses and private runtime
-material are not part of this Git-only handoff.
+The readable assessment snapshot retains historical links. The additional
+[portable evidence store](Evidence/Continuation/README.md) contains the safe text
+from the external assessment report, the latest provider/harness proofs, focused
+native traces/exports and custom Nexus/REA skill text. The owner selected a lean
+handoff; bulk history, general caches and raw datasets are omitted. Restore the
+lean store to `.continuation-evidence/` with the commands
+above. Use `Restore-Evidence.py --legacy-path "<old absolute path>"` to find an old
+link. The indexed original/published hashes and redaction records distinguish
+byte-identical originals from sanitized derivatives. Do not run historical
+absolute-path verifiers unchanged.
 
 ## Git-only continuation and external-evidence limits
 
 Only this repository and the resume prompt are needed to continue source work.
-No transfer archive is required or promised. The user cancelled bulk packaging
-and requested a repository-and-prompt handoff.
+No separate transfer archive is required. The lean evidence archive is stored
+directly in this branch and can be restored using Python's standard library.
 
 Do not assume that source-machine `I:\GIT`, `I:\Wildstar`, MySQL schemas, cached
 exports, tool installations, broker state or PID files exist on the destination.
@@ -65,12 +74,42 @@ Use the checkout's actual path. Ordinary build/tests use synthetic fixtures and
 can run without recreating the old live stack. This was verified from a fresh
 remote clone: full build zero warnings/errors and all10,277 tests passed.
 
-For later native, content regeneration, MySQL or live-runtime qualification,
-recreate the necessary isolated dependencies using the repository setup guides
-and operator-provided client/reference data. External historical absolute links
-may be unavailable. Keep affected evidence rows unverified until the actual
-inputs are available; source tests do not substitute for missing native evidence.
-The old report/SQL/client material was never pushed into the public repository.
+For native, content regeneration, MySQL or live-runtime qualification, the new
+machine still needs the following. None is supplied as a private transfer bundle:
+
+- An operator-provided WildStar build **16042** installation, including its client
+  archives. No client executables, DLLs, archive files, prepared `.tbl/.nfmap`
+  binaries or language `.bin` assets are in Git. Regenerate prepared assets from
+  that installation using the repository tooling.
+- .NET SDK **10.0.300**, Python **3.13** or compatible, and fresh isolated
+  MySQL8/RabbitMQ dependencies for provider/live checks. Create fresh local
+  credentials and machine-specific service/MCP configuration. Private account/
+  character database copies, service logs/configuration and broker state remain
+  only on the old machine and are deliberately excluded. Published synthetic
+  harnesses/proofs support rebuilding isolated test cases; they do not restore
+  private live accounts or exact historical database state.
+- For native RE: compatible Node/REA and Ghidra/JDK/debugger tool installations.
+  The custom skill instructions are archived in the `agent-skills` category;
+  inspect and install them in the new agent's skill directory as needed. No agent
+  authentication, private config or installed tool binary is copied.
+- The three operator-owned tutorial videos if another video review is required.
+  Their recorded hashes/provenance remain in the evidence; media is excluded.
+  The June19 Q5597 UI bundle is unavailable on either machine, as already confirmed.
+
+Raw reference SQL, generated mapping CSVs, the general export cache and older
+proof history are optional datasets outside Git. Their exact locations, recovery
+routes and conditional requirements are listed in
+[OPTIONAL_DATASETS.md](Evidence/Continuation/OPTIONAL_DATASETS.md). DataMapping
+authoring may need those reference sources; the lean checkout alone does not
+recover every missing table. Normal source work/build/tests need none of them.
+Focused text exports are archived. Ghidra project database/cache fragments are
+excluded because they can contain client binary bytes; rebuild projects from the
+operator-provided client rather than relying on a recovered project fragment.
+Exact historical compiled-server/frozen-binary replay requires rebuilding the
+appropriate revision or separately recovering its dependencies; no binaries are
+in the public evidence store. Raw service/client logs and private state are not
+needed for source continuation. A new live/native qualification must record fresh
+evidence and keep any unavailable historical-only observations explicit.
 
 The prior live stack ran separately qualified8378 binaries, not current code.
 Do not import old process identities or assume copied-runtime migration parity.
@@ -104,16 +143,18 @@ Qualify current code on fresh isolated schemas and preserve entitlement policy.
 
 ## Reverse engineering tools
 
-Recreate the Nexus/`reverse-engineer-anything` skills and required analysis tools
-on the destination when native work requires them. Do not copy old Codex
-authentication or assume its configuration exists on the new machine. REA was pinned to **rea-agents@6.8.0**.
+Restore and inspect the archived Nexus/`reverse-engineer-anything` skill text,
+and install required analysis tools on the destination when native work requires
+them. Do not copy old Codex authentication or assume its configuration exists on
+the new machine. REA was pinned to **rea-agents@6.8.0**.
 The prior supported Node runtime is **24.22.2**; Node25 was incompatible.
 
 Use normal source tools for ordinary repository work. For shipped-artifact work,
 follow the bundled REA skill and the repository evidence ladder. Cached exact-build
-exports existed only on the source machine; local Ghidra project databases were
-absent. Rebuild exports only when required, using the repo scripts and an
-operator-provided client. Ghidra native
+focused exports are available in the `reverse-engineering` evidence category;
+the general cache is optional and excluded. Local
+Ghidra project databases are not supplied. Rebuild exports only when required,
+using the repo scripts and an operator-provided client. Ghidra native
 provider configuration/live debugger attachment was not established by the latest
 source-only passes. Static exports do not prove a live attach.
 
@@ -137,7 +178,12 @@ Continue the unfinished NexusForever assessment/implementation goal in this clon
 on legacy-di-storefront-hardening. Read CONTINUE_ON_ANOTHER_MACHINE.md,
 Decomp/Analysis/assessment-snapshot/ASSESSMENT.md, PR-TRIAGE.md and the linked
 remaining-work ledger. Verify the published source with Tools/Handoff/
-Verify-Continuation.py, then create/resume the goal explicitly in this chat.
+Verify-Continuation.py and verify/restore the archived evidence with Tools/Handoff/
+Restore-Evidence.py. Resolve historical paths with its --legacy-path option.
+Read the prerequisite/exclusion list in the handoff; do not assume private runtime
+state, client binaries, videos or installed tools came with Git. Restore and inspect
+the agent-skills category when those workflows are needed. Then create/resume the
+goal explicitly in this chat.
 Preserve all fork functionality, entitlement defaults15:1/17:1/no44 and original
 data. Begin with periodic bank dirty/expiry persistence, then complete all
 remaining assessment requirements and continue evidence-backed implementation

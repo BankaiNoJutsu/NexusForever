@@ -375,3 +375,6 @@ all_wildstar_client_mysql.sql
 
 # Exclude Patch Notes output
 Tools/PatchNotes/*
+
+# Restored public continuation evidence (compressed source is tracked).
+.continuation-evidence/

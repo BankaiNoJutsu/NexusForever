@@ -3,3 +3,5 @@
 Decomp/Analysis/assessment-snapshot/checkpoint10277/** -text whitespace=cr-at-eol
 Decomp/Analysis/assessment-snapshot/checkpoint10277/**/*.trx binary
 Decomp/Analysis/assessment-snapshot/checkpoint10277/*.log binary
+Evidence/Continuation/**/*.gz binary
+Evidence/Continuation/**/*.pack binary

@@ -1,0 +1,84 @@
+{
+  "Scope": "Owner-selected lean handoff, 2026-10-31",
+  "OmittedMembers": 98519,
+  "OmittedCategories": {
+    "assessment": 48036,
+    "reverse-engineering": 50326,
+    "data-mapping": 61,
+    "reference-sql": 96
+  },
+  "OptionalSources": [
+    {
+      "Prefix": "assessment-report",
+      "Category": "assessment",
+      "HistoricalPath": "I:\\GIT\\NexusForever-assessment-report"
+    },
+    {
+      "Prefix": "decomp-exports",
+      "Category": "reverse-engineering",
+      "HistoricalPath": "I:\\GIT\\NexusForever-assessment\\Decomp\\Analysis\\exports"
+    },
+    {
+      "Prefix": "decomp-logs",
+      "Category": "reverse-engineering",
+      "HistoricalPath": "I:\\GIT\\NexusForever-assessment\\Decomp\\Analysis\\logs"
+    },
+    {
+      "Prefix": "data-mapping/output",
+      "Category": "data-mapping",
+      "HistoricalPath": "I:\\GIT\\NexusForever-assessment\\Tools\\DataMapping\\output"
+    },
+    {
+      "Prefix": "data-mapping/review",
+      "Category": "data-mapping",
+      "HistoricalPath": "I:\\GIT\\NexusForever-assessment\\Tools\\DataMapping\\review"
+    },
+    {
+      "Prefix": "reference-sql/jabbithole_mysql",
+      "Category": "reference-sql",
+      "HistoricalPath": "I:\\GIT\\NexusForever-assessment\\jabbithole_mysql"
+    },
+    {
+      "Prefix": "reference-sql/wildstar_client_mysql",
+      "Category": "reference-sql",
+      "HistoricalPath": "I:\\GIT\\NexusForever-assessment\\wildstar_client_mysql"
+    },
+    {
+      "Prefix": "agent-skills/continue-nexus-decompile",
+      "Category": "agent-skills",
+      "HistoricalPath": "C:\\Users\\Bankai\\.codex\\skills\\continue-nexus-decompile"
+    },
+    {
+      "Prefix": "agent-skills/nexus-change-review",
+      "Category": "agent-skills",
+      "HistoricalPath": "C:\\Users\\Bankai\\.codex\\skills\\nexus-change-review"
+    },
+    {
+      "Prefix": "agent-skills/nexus-data-mapping",
+      "Category": "agent-skills",
+      "HistoricalPath": "C:\\Users\\Bankai\\.codex\\skills\\nexus-data-mapping"
+    },
+    {
+      "Prefix": "agent-skills/nexus-load-test",
+      "Category": "agent-skills",
+      "HistoricalPath": "C:\\Users\\Bankai\\.codex\\skills\\nexus-load-test"
+    },
+    {
+      "Prefix": "agent-skills/nexus-local-runtime",
+      "Category": "agent-skills",
+      "HistoricalPath": "C:\\Users\\Bankai\\.codex\\skills\\nexus-local-runtime"
+    },
+    {
+      "Prefix": "agent-skills/nexus-row-closure",
+      "Category": "agent-skills",
+      "HistoricalPath": "C:\\Users\\Bankai\\.codex\\skills\\nexus-row-closure"
+    },
+    {
+      "Prefix": "agent-skills/reverse-engineer-anything",
+      "Category": "agent-skills",
+      "HistoricalPath": "C:\\Users\\Bankai\\.agents\\skills\\reverse-engineer-anything"
+    }
+  ],
+  "OriginalInputsPreserved": true,
+  "Notes": "Bulk history, general export caches, static reference SQL and generated mapping CSVs are optional and are not published in this lean store. See OPTIONAL_DATASETS.md."
+}
