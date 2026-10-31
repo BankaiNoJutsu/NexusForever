@@ -16,9 +16,8 @@ dotnet test Source\NexusForever.slnx --no-build --no-restore -v minimal --nologo
 ```
 
 The runtime implementation commit is `71cde855988446c304341f906556542d6868c412`.
-The final pushed handoff commit and offline Git bundle are recorded in the transfer
-folder's `TRANSFER.md` and `release.json`, avoiding a self-referencing commit hash.
-Use the final commit from that record when exact reproducibility is needed.
+Use the latest published commit on this branch; the chat handoff records its exact
+SHA. Git is sufficient to resume source implementation and run the build/tests.
 
 The verifier compares 5,888 source/tool files through Git's newline filters, then
 checks the copied historical test evidence. This accommodates the repository's
@@ -50,39 +49,32 @@ item/stacking metadata remains synthetic. These results do not claim retail pari
   and [load harness](Tools/NexusForever.LoadTest/README.md).
 
 The assessment snapshot is copied from the external report, retaining historical
-links. Restore the private transfer package to recover their full targets. The
-checked-in checkpoint proof is a selected public subset; frozen binaries,
-provider snapshots, historical harnesses and private runtime material are in the
-encrypted transfer package, not Git.
+links. The checked-in checkpoint proof is a selected public subset. External
+frozen binaries, full provider snapshots, historical harnesses and private runtime
+material are not part of this Git-only handoff.
 
-## Restore the private material
+## Git-only continuation and external-evidence limits
 
-The separately supplied `NexusForever-handoff-20261031` transfer folder contains
-encrypted archives, their SHA256 manifest, an offline Git bundle, SQL snapshots,
-client assets, decompile caches, source-data dumps, agent skills and tool runtimes.
-`TRANSFER.md` describes the exact contents, extraction, key location and limits.
-Keep the decryption key separate and do not commit the decrypted payload.
+Only this repository and the resume prompt are needed to continue source work.
+No transfer archive is required or promised. The user cancelled bulk packaging
+and requested a repository-and-prompt handoff.
 
-Preserving the original `I:\GIT`, `I:\Wildstar` and referenced `I:\Videos` paths
-minimizes changes to historical harnesses. On a machine without drive I:, a new,
-empty workspace can be exposed with `subst I: D:\NexusWorkspace` after verifying
-that I: is unused. This is an operator action, not part of the verifier.
+Do not assume that source-machine `I:\GIT`, `I:\Wildstar`, MySQL schemas, cached
+exports, tool installations, broker state or PID files exist on the destination.
+Use the checkout's actual path. Ordinary build/tests use synthetic fixtures and
+can run without recreating the old live stack. This was verified from a fresh
+remote clone: full build zero warnings/errors and all10,277 tests passed.
 
-Database dumps contain private accounts and characters. Restore them only into a
-fresh isolated MySQL instance after inspecting the schema list. Dumps include
-CREATE/USE/DROP TABLE statements. They do not copy MySQL users/grants; recreate
-an appropriate local user and configure credentials privately. Historical proof
-scratch databases are represented by retained snapshots/harnesses, not all SQL
-schemas. Never import these dumps over unrelated databases.
+For later native, content regeneration, MySQL or live-runtime qualification,
+recreate the necessary isolated dependencies using the repository setup guides
+and operator-provided client/reference data. External historical absolute links
+may be unavailable. Keep affected evidence rows unverified until the actual
+inputs are available; source tests do not substitute for missing native evidence.
+The old report/SQL/client material was never pushed into the public repository.
 
-The old live stack used separately qualified **8378** binaries with nine services
-and six drained queues. It did **not** run current code/schema. Its copied configs,
-assets and binaries are historical reference material. PIDs and start times are
-machine-specific. Do not adopt old owner files, attach to assumed PIDs, launch
-colliding services, or migrate its restored database just to make a health check
-green. Current code includes later bank/Contract/account migrations; populated
-upgrade proofs are retained, but copied-runtime deployment/native qualification
-remains work. Original runtime/reference data and legacy Characters must stay intact.
+The prior live stack ran separately qualified8378 binaries, not current code.
+Do not import old process identities or assume copied-runtime migration parity.
+Qualify current code on fresh isolated schemas and preserve entitlement policy.
 
 ## Constraints and next work
 
@@ -112,21 +104,21 @@ remains work. Original runtime/reference data and legacy Characters must stay in
 
 ## Reverse engineering tools
 
-The private payload includes the Nexus skills, `reverse-engineer-anything`, a
-compatible Node24 runtime and the available portable decompile toolchain. Restore
-skills under the new user's agent skill directories; do not copy the old Codex
-configuration or authentication files. REA was pinned to **rea-agents@6.8.0**.
+Recreate the Nexus/`reverse-engineer-anything` skills and required analysis tools
+on the destination when native work requires them. Do not copy old Codex
+authentication or assume its configuration exists on the new machine. REA was pinned to **rea-agents@6.8.0**.
 The prior supported Node runtime is **24.22.2**; Node25 was incompatible.
 
 Use normal source tools for ordinary repository work. For shipped-artifact work,
 follow the bundled REA skill and the repository evidence ladder. Cached exact-build
-exports are available; local Ghidra project databases were absent. Rebuild only
-when required, using the repo scripts and the supplied client. Ghidra native
+exports existed only on the source machine; local Ghidra project databases were
+absent. Rebuild exports only when required, using the repo scripts and an
+operator-provided client. Ghidra native
 provider configuration/live debugger attachment was not established by the latest
 source-only passes. Static exports do not prove a live attach.
 
 On the destination machine, review the REA setup plan before editing its MCP
-configuration. Typical commands with the compatible runtime first in PATH:
+configuration. Typical commands after installing a compatible runtime and putting it first in PATH:
 
 ```powershell
 npx -y rea-agents@6.8.0 doctor --client codex --json

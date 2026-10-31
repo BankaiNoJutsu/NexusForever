@@ -4,9 +4,10 @@ Copied from the external assessment report on 31 October 2026 for cross-machine
 continuation. Read the repository-root `CONTINUE_ON_ANOTHER_MACHINE.md` first.
 
 `ASSESSMENT.md` and `PR-TRIAGE.md` retain their original historical sections and
-absolute links. The complete linked directory, frozen binaries, provider case
-snapshots and private runtime material are in the separately encrypted transfer
-package. Public checkpoint10277 is a selected proof subset, not the entire archive.
+absolute links. The complete external linked directory, frozen binaries, provider case snapshots
+and private runtime material are not included in this Git-only handoff. Public
+checkpoint10277 is a selected proof subset. Missing external material must remain
+an explicit limit when later live/native/provider checks require it.
 
 The historical verification file records the pre-commit state and machine-bound
 observations. Its `No commit/push` and old HEAD/PID values describe that historical
