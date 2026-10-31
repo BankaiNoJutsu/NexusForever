@@ -1,0 +1,18 @@
+[
+  {
+    "Path": "Source/NexusForever.Game.Tests/Entity/RealmBankItemIdentityTests.Single.cs",
+    "SHA256": "4A7290699E88F90262BBD658073C7DB2B4FDCFA0B50833423932BC886C4C888B"
+  },
+  {
+    "Path": "Source/NexusForever.Game/Entity/Inventory.RealmBankPersistence.cs",
+    "SHA256": "F0E129EBF1901CC4E782F1386B2473F2121D3FFBC042F1158E563077E7CC7506"
+  },
+  {
+    "Path": "Source/NexusForever.Game/Entity/Inventory.cs",
+    "SHA256": "6401B6F76011AC776A9315C7C52221D11D7B83D8BE483D47211C3D952FC70DF6"
+  },
+  {
+    "Path": "Source/NexusForever.Game/RealmBank/RealmBankManager.cs",
+    "SHA256": "92EB6C20CD6035743FD42C3A340A74306F0CDB806C81D1D4BDC210A8D6945279"
+  }
+]

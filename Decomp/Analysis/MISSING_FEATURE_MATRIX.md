@@ -1,5 +1,449 @@
 # Missing Feature and Opcode Decode Matrix
 
+Latest continuation: [Realm bank persistence and loading](REALM_BANK_CODECS_AND_LOADING.md)
+qualifies checkpoint10277: **10,277 full tests**,18 new/207 focused,1,796 MySQL
+cases (530 configured-strategy cases), four Auth race probes, four model gates and
+31 compatibility probes; zero full-build warnings/errors. Six executed10259
+negatives reproduce missing single-write save guards, discarded deletion intent,
+changed-owner deletion and post-enrollment location restoration. Inventory bank
+writes now share outcome tracking; deletion retains its real Item owner and exact
+SQL witnesses. Overlapping outcomes retain earlier failures, while expiry waits
+for active bank units without losing elapsed time.103 provider bank cases pass.
+Both DB binaries remain identical to the10207 upgrade bindings; all726 Contract
+quotes pass. Periodic bank dirty/expiry persistence, general asynchronous recovery,
+post-commit publication, public07CE claims, retail reset edges and the broader Goal
+remain. The8378 runtime, nine identities, six drained queues, original data/config/
+schema and defaults15:1/17:1/no44 stay preserved. No staging/commit/push, native
+launch or Computer Use. Q5597 remains unavailable; no repeat request or reset
+policy question is pending. The full Goal stays active.
+
+Earlier checkpoint10190: [Contract account delivery and session synchronization](CONTRACT_ACCOUNT_SESSION_SYNC.md)
+qualifies checkpoint10190: **10,190 full tests**,25 new/353 focused,1,693 MySQL
+cases (including427 configured-strategy repeats), four Auth race probes, four
+model gates and31 compatibility probes; zero full-build warnings/errors. Production
+Player initialization supplies the Auth factory, and the existing reward queue
+serializes entry/relog and post-claim account delivery, wallet publication and a
+fresh account-owned Character reload. Eligible30-second unseen-intent polling
+recovers late pending or acknowledged work without repeat packets. Original-account/
+realm, source transfer/deletion, local/later wallet intent, failure/recovery and
+dead-owner boundaries are covered. Character DB DLL stays unchanged; Auth's factory
+API changes its DLL, so a fresh populated30-table/145-row Auth upgrade verifies
+unchanged schema/data/defaults. All726 actual quotes pass. Public07CE claims,
+retail reset edges, further lifecycle/load qualification, actual delivery/copied-
+upgrade/socket/deployment/native gates, track35 and the broader Goal remain.
+The8378 runtime, nine identities, six drained queues, original data/config/schema
+and defaults15:1/17:1/no44 stay preserved. No staging/commit/push, native launch or
+Computer Use. Q5597 remains unavailable; no repeat request or reset preference
+question is pending. The full Goal stays active.
+
+Earlier checkpoint10165: [Authoritative account wallet refresh](ACCOUNT_WALLET_AUTHORITATIVE_REFRESH.md)
+qualifies checkpoint10165: **10,165 full tests**,39 new/328 focused,1,643 MySQL
+cases (including402 configured-strategy repeats), four Auth race probes, four
+model gates and31 compatibility probes; zero full-build warnings/errors. The
+initial unchanged STS outer-timeout failure is preserved with12 passing isolated
+socket checks and a complete passing rerun. A private serializable wallet
+observation merges unapplied local intent, validates required credit receipts and
+publishes once on the original account/session actor. Contract claims also honor
+native disconnect/logout flags. Both DB DLLs/upgrade bindings stay unchanged;
+all726 actual quotes pass. Public07CE routing, connected account drain/relog and
+wallet refresh/source-revision adoption, retail reset edges, actual delivery/
+copied-upgrade/socket/deployment/native checks, track35 and the broader Goal
+remain. Live-era evidence supports final-reward collection as the reset working
+direction; no user policy preference is pending. The8378 runtime, nine identities,
+six drained queues, original data/config/schema and defaults15:1/17:1/no44 remain
+preserved. No staging/commit/push, native client or Computer Use. Q5597 remains
+unavailable and is not requested again. The full Goal stays active.
+
+Earlier checkpoint10126: [Contract claims through the existing session actor queue](CONTRACT_CLAIM_ACTOR_QUEUE.md)
+qualifies checkpoint10126: **10,126 full tests**,31 new/178 focused,1,565 MySQL
+cases (including363 configured-strategy repeats), four Auth race probes, four
+model gates and31 compatibility probes; zero full-build warnings/errors. Internal
+claim admission now holds Quest/queue/inventory/currency ownership through complete
+publication, preserves later ordinary intent and releases terminal dead-owner
+bookkeeping without packets. All three choices on both tracks are covered. The
+WorldServer07CE route remains disabled while account draining/relog, authoritative
+wallet merging and retail reset are connected. Both DB binaries/upgrade bindings
+are unchanged; all726 actual quote choices pass. Actual delivery/copied-upgrade/
+socket/deployment/native checks, track35 and the entire broader Goal remain.
+Fresh archive anchors prove configured Contracts/English files match the client;
+compressed-entry hashes explain the apparent SHA-1 difference. Retail reset edges
+remain under investigation; no user policy preference is pending. The8378 runtime,
+nine identities, six drained queues, original data/config/schema and defaults
+15:1/17:1/no44 stay preserved. No staging/commit/push or native/Computer Use work.
+Q5597 remains unavailable and is not requested again. The full Goal stays active.
+
+Earlier checkpoint10095: [Contract credit ownership and actor publication](CONTRACT_CREDIT_ACTOR_RESERVATION.md)
+qualifies checkpoint10095: **10,095 full tests**,27 new/103 focused,1,503 MySQL
+cases (including332 configured-strategy repeats), four Auth race probes, four
+model gates and31 compatibility probes; zero full-build warnings/errors. A clean
+live credit reservation adopts only an exact privately proved executor result,
+publishes once, and retains later semantic currency intent through capped and
+reentrant publication. Both DB DLLs and prior upgrade bindings remain unchanged;
+all726 actual quote choices pass. Registered public07CE queue integration,
+complete failure/uncertainty/relog/dead-owner settlement, account draining/online
+wallet merging, actual delivery/copied-upgrade/socket/deployment/native checks
+and the entire broader Goal remain. The user now directs retail reset semantics;
+final-reward collection is the evidence-backed working inference, with unclaimed/
+excess edges still under investigation. No policy preference remains pending.
+The8378 runtime, nine identities, six drained queues, original data/config/schema
+and defaults15:1/17:1/no44 remain preserved. No deployment/commit/push; Computer Use
+stays stopped. Q5597 remains unavailable and is not requested again. Goal active.
+
+Earlier checkpoint10068: [Character currency persistence and frozen normal saves](CHARACTER_CURRENCY_DURABLE_SAVE.md)
+qualifies checkpoint10068: **10,068 full tests**,26 new/304 focused,1,449 MySQL
+cases (including305 configured-strategy repeats), four Auth race probes, two
+old/current currency defect probes, four model gates and31 compatibility probes;
+zero full-build warnings/errors. Currency dirty intent survives rollback/unknown
+acknowledgement; stale SQL baselines fail closed. Frozen Player saves retain later
+currency intent and use the existing atomic Character unit. Both database DLLs
+are unchanged, binding prior60/61/62-table Character and30-table Auth upgrades;
+all726 actual quote choices still pass. Public07CE claims, claim-specific currency
+reservation/adoption and actor publication, account draining/online wallet merging,
+reset/carry, actual item delivery/copied-upgrade/socket/deployment/native checks
+and the entire broader Goal remain. The8378 backend, nine identities, six drained
+queues, original data/config/schema and defaults15:1/17:1/no44 stay preserved.
+Source/migrations remain undeployed. Computer Use stays stopped; Q5597 remains
+unavailable and is not requested again. The full Goal remains active.
+
+Earlier checkpoint10042: [Contract claim transactions and durable account handoff](CONTRACT_CLAIM_TRANSACTION_AND_ACCOUNT_HANDOFF.md)
+qualifies checkpoint10042: **10,042 full tests**,47 new/1,579 focused,1,402 MySQL
+cases (including284 configured-strategy repeats), four independent Auth race probes,
+four model gates and31 compatibility probes; zero build warnings/errors. Atomic
+claims retain quote/account/cycle ownership, item/credit SQL witnesses and claimed
+presentation. Durable original-account intents and global Auth operation receipts
+recover either database's acknowledgement without regrant, including source
+transfer/deletion. Populated60/61/62-table upgrades retain68/69/70 logical rows;
+all726 actual-table choices still quote correctly. Public07CE claims, normal-save/
+actor currency ownership and publication, account draining, reset/carry, real-item
+delivery, copied-upgrade/socket/deployment/native qualification and the entire
+broader Goal remain. The8378 backend, nine identities, six drained queues, original
+data/config/schema and defaults15:1/17:1/no44 stay preserved. Source/migrations are
+not staged. Computer Use stays stopped; Q5597 remains unavailable and is not
+requested again. The full Goal remains active.
+
+Earlier checkpoint9995: [Account wallet operations and durable save settlement](ACCOUNT_CURRENCY_OPERATION_PERSISTENCE.md)
+qualifies checkpoint9995: **9,995 full tests**,44 new/101 focused,1,327 MySQL cases,
+four MySQL race/retry probes, four provider model gates and31 compatibility probes,
+with zero build warnings/errors. Wallet operations retain dirty intent across
+rollback/unknown commits and preserve concurrent credits. Frozen9951/current probes
+reproduce and repair both failures. Current MySQL locking reads and durable SQL
+witnesses protect the wallet/receipt unit; existing Loyalty ownership remains.
+The additive Auth journal upgrade preserves30 old tables/145 logical rows; the
+Character DLL and its9951 upgrade proofs remain unchanged. This is the persistence
+prerequisite for pending Contract/Auth handoff, not an enabled claim producer.
+Full aggregate/claimed-state/currency/outbox/reset/actor publication and delivery/
+socket/deployment/native gates, plus the entire broader Goal, remain. The8378
+backend,9 identities,6 drained queues, originals/config/schema and defaults
+15:1/17:1/no44 stay preserved; source/migrations remain unstaged. Computer Use stays
+stopped, and the unavailable Q5597 bundle is not requested again.
+
+Earlier checkpoint9951: [Contract receipt and inventory enrollment](CONTRACT_REWARD_INVENTORY_ENROLLMENT.md)
+qualifies checkpoint9951: **9,951 full tests**,49 new/192 focused,1,253 MySQL runs,
+two model gates and31 compatibility probes, with zero build warnings/errors.
+Typed Contract receipts and item enrollment preserve Challenge ownership; exact
+pre-commit receipt/slot/Item SQL witnesses reject suppressed writes. Lost-ack
+recovery retains account/quote/source/time/IDs and quarantines conflicts. Additive
+MySQL/SQLite migrations preserve both legacy and already-selected populations.
+All726 actual-table awards still quote correctly. Public claims, full aggregate
+repository/executor, claimed-state adoption, Character currency/Auth outbox/reset,
+real delivery/socket/deployment/native checks and the full broader Goal remain.
+Current source/migrations stay unstaged: the8378 backend,9 identities,6 drained
+queues, originals/config/schema and defaults15:1/17:1/no44 remain preserved.
+Computer Use stays stopped; Q5597 remains unavailable and is not requested again.
+
+Earlier checkpoint9902: [Contract award planning and selected-cycle quotes](CONTRACT_REWARD_AWARD_QUOTES.md)
+qualifies checkpoint9902: **9,902 full tests**,780 new/focused cases and an
+actual-table audit of all726 choices (486 Item2,240 account currency, six final
+credit awards). The full build has zero warnings/errors. Immutable quotes retain
+selected-cycle provenance and complete separate Character/Auth payout effects;
+unknown/mixed effects, overflow and changed quotes fail closed. Quotes do not
+claim or grant rewards. All prior5833 Source/tool files are unchanged; three
+files were added. No schema/default/runtime changes: the8378 backend,9 identities,
+originals/config/schema/defaults15:1/17:1/no44 and6 drained queues are preserved.
+The1172 MySQL/two model/31 compatibility gates below remain the separate9122
+checkpoint, not new runs. Connected claims/reset/carry/Auth handoff, real delivery,
+socket/deployment/native checks and the full broader assessment Goal remain active.
+Computer Use stays stopped; the unavailable Q5597 bundle is not requested again.
+
+Earlier checkpoint9122: [Contract track choice through the registered actor queue](CONTRACT_REWARD_TRACK_CHOICES.md)
+qualifies checkpoint9122: **9,122 full tests**,32 new/674 focused,1,172 MySQL runs
+(1,124 prior +24 choices +24 retry), two model gates and31 compatibility probes,
+with zero build warnings/errors. Registered07CF routes Contract0/1 through the
+real Quest owner and existing queue. Published/baseline/busy/foreign guards precede
+capture; active flags and optional legacy-cycle selections commit together. Choose
+provenance records an operation, never fabricated acceptance/history. Other active
+types and dirty Quest/Challenge intent survive; lost-ack recovery cannot reroll.
+No schema/default changes or runtime staging: the8378 backend,9 identities,
+originals/config/schema/defaults15:1/17:1/no44 and6 drained queues remain preserved.
+Claims/reset/Auth handoff/full-table/socket/deployment/native gates and the pending
+reset-policy preference remain. Computer Use stays stopped; the full Goal is active.
+
+Earlier checkpoint8679: [Atomic Contract/ordinary Character save enrollment](CONTRACT_NORMAL_SAVE_TRANSACTION.md)
+qualifies checkpoint8679: **8,679 full tests**,116 new/116 focused,853 MySQL cases
+(680 prior +116 new +57 configured-retry cases), two model gates and31 compatibility
+probes, with zero build warnings/errors. The complete enrolled Character graph,
+receipt/points and exact Quest SQL witnesses share one serializable unit. Real
+frozen Quest and ordinary Currency saves, partial stubs, later intent, suppressed
+writes, rollback and lost acknowledgement are covered. No model/migration changes
+or entitlement-default changes are introduced. The live Player completion journal/
+FIFO and Auth handoff, then selection/claim/reset/publication/socket qualification,
+remain required; no live earning is enabled. The qualified8378 runtime, all9 service
+identities, originals/config/schema/defaults15:1/17:1/no44 and6 drained queues remain
+preserved. Computer Use stays stopped and the full assessment Goal remains active.
+
+Earlier checkpoint8563: [Contract modifier ownership](CONTRACT_REWARD_MODIFIERS.md)
+implements source-aware lifetimes for all12 actual Contract effects, whole-scalar
+projection and immutable evaluated receipt inputs for all51 supported sources.
+Checkpoint8563 passes **8,563 full tests**,89 new/225 focused,680 MySQL cases,
+two model gates and31 compatibility probes with zero build warnings/errors. Actual
+table projection verifies12 complete effects/48 exact integral evaluations; shipped
+Contract UI, six spell tooltips and125 premium/131,010 effect rows are audited.
+Signature and earned entitlement44 remain Challenge-only. Unknown contributions
+and fractional arithmetic remain unsupported; no new live earning is enabled.
+Ordinary reward/actor composite completion ownership, selection/claim/reset/Auth
+handoff and Zone progression remain required. The current build is not staged;
+the8378 runtime's9 service identities, originals/config/schema/defaults15:1/17:1/no44
+and6 drained queues remain preserved. Computer Use stays stopped; the full Goal
+remains active with all broader assessment and retail gates retained.
+
+Earlier checkpoint8474: [Contract receipt and point transaction](CONTRACT_COMPLETION_TRANSACTION.md)
+implements the persistence core for one acceptance-keyed receipt, evaluated point
+increment and exact terminal Quest graphs in one Character unit. Checkpoint8474
+passes **8,474 full tests**,96 new/148 focused,629 exact-source MySQL cases,
+two provider model gates and31 compatibility probes with zero build warnings/errors.
+All51 supported source descriptions and prior Challenge/Quest cases pass after the
+shared scalar participant extraction. A populated schema upgrade/replay preserves
+59 tables/22,956 old rows and the accepted identity; two new tables remain empty.
+The live QuestComplete producer, ordinary reward composite ownership, verified
+Contract modifiers, selections/claims/reset and Auth handoff remain required.
+This completion build is not staged: all9 existing8378 service identities, original
+data, private configs, schema and defaults15:1/17:1/no44 are preserved, with6 drained
+queues. Computer Use stays stopped; all broader work remains in the active full Goal.
+
+Earlier checkpoint8378: [Contract acceptance identity and persistence](CONTRACT_ACCEPTANCE_PERSISTENCE.md)
+adds a stable generation at actual supported acceptance, preserving normal/shared
+Quest saves, retries, terminal reacceptance and historicalNULL rows. Checkpoint8378
+passes **8,378 full tests**,45 new cases since8333,536 MySQL persistence cases,
+two model gates and31 compatibility probes; final harness changes retain identical
+backend/helper inputs. Both additive provider migrations are qualified. The owned
+MySQL upgrade preserves59 tables/22,953 old rows and175NULL historical identities.
+Real Contract9880 accept/cleanup/relog and independent resume pass four socket
+sessions with one stable identity and unchanged fixture rewards. Frozen World1880/
+API.Character33508 now run with9 healthy services,7 unchanged identities and6 drained
+queues. Originals/configs and defaults15:1/17:1/no44 remain preserved. Durable
+completion receipts/point credit/selections/claims/reset/account handoff and Zone
+progression remain required. Computer Use stays stopped; the full Goal remains active.
+
+Earlier checkpoint8333 (including its historical runtime state): [Contract point sources and reward catalogs](CONTRACT_REWARD_TRACK_IMPLEMENTATION.md)
+maps exact native formula1193/type ownership and implements immutable source
+descriptions plus complete prerequisite-aware static catalogs. Full **8,333 tests**,
+350 new,603 focused and31 compatibility cases pass with zero build warnings/errors.
+Ten actual tables verify51 source quotes/four blocked rows,242 rewards/726 choices,
+AccountItem compensation and final currency amounts. This does not enable Contract
+credit/claim/reset or Zone progression. Their durable Quest/account transaction
+work remains explicit. The existing7983 socket runtime remains separate; native UI,
+the full Goal and all not_retail_complete gates remain open. Computer Use stays stopped.
+
+Earlier continuation: [Character Challenge socket earning and claims](CHARACTER_CHALLENGE_SOCKET.md)
+verifies actual Challenge103/track16:15 credited combat kills,3 completions,
+300 earned points,3 receipts/items across relog and cycle1/zero remaining points.
+Explicit offline fixture placement is separate from walking/native UI proof.
+Quest preparation now runs its full read transaction under the configured MySQL
+retry strategy. Full **7,983 tests**, zero build warnings/errors,78 final focused,
+515 provider cases,2 model gates and31 compatibility checks pass; unchanged
+provider/backend hashes bind the final driver correction.16 corrected lifecycle
+cycles and16 initial/10 live reloads,9 services/7 unchanged identities and6 drained
+queues pass with originals/configs/schema/defaults preserved. Native UI and
+unknown scoring/producer/share/achievement/RNG semantics remain open. Computer
+Use stays stopped; F-033 stays partial and all content stays not_retail_complete.
+
+Earlier continuation: [live Character Challenge producers](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md) wires mapped count-based activation, medals,
+completion and non-completing termination for all16 supported Character catalogs,
+with frozen attempt modes/modifiers and immediate captured Quest effects. Legacy
+direct prizes, NULL history, immediate restarts and later actor intent are preserved.
+Full **7,959 tests**, zero build warnings/errors,293 focused,512 exact-source provider
+cases,2 model gates and31 unchanged compatibility checks pass. Registered choose/
+claim/reset consumes actual actor-earned state. Frozen World/Character API passes
+215 login/world/cleanup cycles/reloads;9 services,7 unchanged identities,
+6 naturally drained queues, originals/configurations and15:1/17:1/no44 are preserved.
+Socket earning/claim/relog/reset, native UI, unvalidated source semantics and all
+other assessment work remain open. Computer Use stays stopped; F-033 stays partial
+and all content stays not_retail_complete.
+
+Earlier continuation: [world readiness](CHARACTER_REWARD_WORLD_READINESS.md) passes **7,903 tests**, zero build warnings/errors,
+38 focused cases, 456 exact-source provider cases, 2 model gates and 31 unchanged
+compatibility probes. Real Character selection loads durable rewards before map
+admission and waits for queue ownership to end; captured actor/session/account
+bindings prevent stale entry. Bootstrap retains one composed reload. Frozen
+World/Character API passes 212 complete cycles/reloads with 9 services,
+7 unchanged identities and 6 naturally drained queues. Originals, private
+configurations and defaults 15:1/17:1/no44 are preserved. Actual earning producers,
+earning/claim protocol proof, native UI and the full assessment remain open.
+Computer Use stays stopped; F-033 stays partial and all content not_retail_complete.
+
+Earlier 30 October continuation: [normal-save snapshots](REWARD_NORMAL_SAVE_SNAPSHOTS.md) passes **7,870 tests**,
+zero build warnings/errors,312 focused cases,423 exact-source provider cases,
+2 provider model gates and31 unchanged compatibility probes. Ready direct/deferred
+Player saves freeze Quest/Challenge targets before Auth; immediate events retain
+their own state/revisions and FIFO reward adoption follows the older flush.
+Objective ordinal0 is explicit, loaded rows sort by ordinal, and existing schema
+defaults/store types are preserved. Frozen World/Character API passes236
+complete cycles/reloads with9 services/7 unchanged identities,6 drained queues,
+originals/configurations and15:1/17:1 defaults/no44 preserved. Startup readiness,
+live earning producers and real earning/claim/native UI gates remain open.
+Computer Use stays stopped; F-033 stays partial and all content not_retail_complete.
+
+Earlier 30 October continuation: [shared Quest/Challenge queue](QUEST_CHALLENGE_REWARD_QUEUE.md) passes **7,831 tests**,
+zero build warnings/errors,158 focused cases,384 exact-source provider replays
+and31 unchanged compatibility probes. Quest captures now join the Challenge
+queue's one command, recovery and preflighted adoption; both owners survive
+SQL/cancellation and preserve later intent. Frozen World passes221 complete
+protocol cycles/reloads with9 services/8 unchanged identities,6 drained queues,
+originals/configurations and15:1/17:1 defaults/no44 preserved. Live earning
+producers and real earning/claim/native UI gates remain open. Computer Use stays
+stopped; F-033 stays partial and31 CSVs/167,484 rows remain not_retail_complete.
+
+Earlier 30 October continuation: [Quest reward actor ownership](QUEST_REWARD_ACTOR_OWNERSHIP.md) passes **7,774 tests**,
+zero build warnings/errors,152 focused cases,327 exact-source provider cases
+and31 unchanged compatibility probes. Real Quest completion census, character
+save ownership, FIFO baselines and exact result adoption preserve later dirty
+intent, scripts and replacement/restored owners. Frozen World passes224
+complete protocol cycles/reloads; all9 services,8 unchanged identities,6 drained
+queues, originals/configurations and15:1/17:1 defaults/no44 are preserved.
+Challenge queue/producer integration and live earning remain open; these login
+checks do not exercise the new internal mutation API. Computer Use stays stopped,
+F-033 stays partial and all31 CSVs/167,484 rows remain not_retail_complete.
+
+Earlier 30 October continuation: [Durable presence generations](FRIENDSHIP_PRESENCE_GENERATIONS.md) passes **7,728 tests**,
+zero build warnings/errors,80 focused and361 exact-source replay cases across
+generation/producer/upgrade and retained Character reward/Quest regressions.
+31 unchanged compatibility probes pass. Durable Auth epochs, captured admission
+ordinals and persistent Friendship phase fencing order received events without
+wall-clock ordering. Additive native/SQLite upgrades preserve old data/defaults
+without backfill. Frozen World/Friendship passes203 complete versioned cycles,
+with final markers matching durable epochs, offline presence and drained queues.
+Quest actor integration/live earning and the full assessment remain open;
+Computer Use stays stopped and all content remains not_retail_complete.
+
+Earlier 30 October continuation: [Friendship presence transactions](FRIENDSHIP_PRESENCE_TRANSACTIONS.md) passes **7,666 tests**,
+zero build warnings/errors,42 focused cases,31 unchanged compatibility probes
+and18 exact-source MySQL cases. Both handlers now retain database ownership and
+refresh stale tracking; state/outbox commit together and provider retries reset
+rolled-back caches. A different-character/realm logout preserves the current
+identity. Frozen Friendship passes221 complete runtime cycles and final presence
+settles without repair/relog. Session-generation ordering remains open; Quest
+actor integration/live earning and the full assessment scope remain active.
+Defaults/originals are preserved; Computer Use stays stopped.
+
+Earlier 30 October continuation: [Exact Quest/reward transaction participants](CHARACTER_CHALLENGE_QUEST_TRANSACTION.md) passes **7,648 tests**,
+zero build warnings/errors,400 focused cases,31 unchanged compatibility probes
+and281 exact-source provider cases. Immutable complete Quest graphs now join
+terminal reward SQL units with full baseline/commit/recovery guards. Live actor
+participant ownership/adoption and earning remain open. Frozen World/Auth passes
+242 complete login/reload cycles. Initial mixed load had one cleanup-time
+reconnect rejection (134/135); the separately named repeat passes105/105.
+All9 previously stopped owned services were
+restored and audited with defaults/originals preserved. No real network claim or
+native UI proof follows; Computer Use stays stopped and F-033 remains partial.
+One stale Friendship presence was observed after cleanup and settled by an
+ordinary controlled relog; its ordering fix remains open with saved evidence.
+
+Earlier 30 October continuation: [Quest actual-commit durability](QUEST_PERSISTENCE_DURABILITY.md)
+passes **7,599 tests**, zero build warnings/errors,31 unchanged compatibility
+probes and232 exact-source provider cases, including36 new Quest durability cases.
+Quest/objective intent now survives rollback, savepoints, acknowledgement loss
+and later mutations; pending deletions retire after commit on the actor, with
+safe cascade restoration and provider-matched reset conversion.
+Frozen World/Auth passes176 complete runtime cycles with defaults/originals
+preserved. Challenge completion must still join the exact Quest participant
+snapshots to its reward unit before live earning is enabled. Real network claims
+and native UI remain open; Computer Use stays stopped.
+
+Earlier 30 October continuation: [Character track routing/bindings](CHARACTER_CHALLENGE_REWARD_ROUTING.md)
+passes **7,563 tests**, zero build warnings/errors,31 unchanged compatibility
+probes and196 exact-source provider cases. Registered packets dispatch by static
+type2/3 ownership. Character choose/claim uses the exact last published snapshot,
+frozen eligibility and transactional bound inventory across all16 catalogs.
+Repeated cycles, stale requests and acknowledgement recovery are verified.
+Frozen World/Auth passes209 complete runtime cycles with defaults/originals
+preserved. Live earning remains open: Challenge completion must also preserve
+quest-objective durability across reward commits, saves and termination.
+Real network claim/native UI gates remain open; Computer Use stays stopped.
+
+Earlier 30 October continuation: [Character reward actor queue/reloads](CHARACTER_CHALLENGE_REWARD_QUEUE.md)
+passes **7,517 tests**, zero build warnings/errors, 31 unchanged compatibility
+probes and 153 exact-source provider cases (including 34 new queue cases).
+The real Player configures an ordered character reward queue; SQL and provider
+discovery run off the actor, session events own committed adoption/publication,
+and final disposal retains terminal cleanup without stale notifications.
+Initial reloads compose persisted character cycles with account rows; all16
+catalog selections retain ordinal identity. Frozen World/Auth passes 209
+complete runtime cycles with original rows, configurations and defaults preserved.
+Live earning producers, type-3 choose/claim routing and native UI remain open.
+Computer Use remains stopped; F-033 stays partial.
+
+Earlier 30 October continuation: [Challenge reward ownership/adoption](CHARACTER_CHALLENGE_REWARD_OWNERSHIP.md)
+passes **7,483 tests**, zero build warnings/errors, 31 unchanged compatibility
+probes and 119 exact-source provider cases (59 repository, 39 executor,
+21 ownership; includes a pure constructor guard and a SQLite Auth save guard).
+Challenge reward leases now coordinate Player saves/cleanup, resolve uncertain
+baselines and adopt committed state while preserving later runtime intent.
+The frozen World/Auth build passes 182 complete runtime cycles; all six broker
+queues drained naturally, configurations/defaults and original rows are preserved.
+The live actor queue, earning producers, composed presentation and claim routing
+remain unwired. Computer Use remains stopped; F-033 stays partial.
+
+Earlier30 October continuation: [Character reward execution/recovery](CHARACTER_CHALLENGE_REWARD_EXECUTION.md)
+passes7,462 tests with zero build warnings/errors,31 unchanged compatibility
+probes and98 exact source MySQL cases (59 repository,39 executor; one pure
+constructor guard). Immutable commands, fresh whole-unit provider execution,
+retained-claim resolution, database pinning and single-use resumption proofs are
+implemented. Actor queue/save ownership, baseline adoption, live earning and
+routing remain open. Runtime stays frozen7,364; F-033 remains partial.
+
+Earlier30 October continuation: [Character reward repository units](CHARACTER_CHALLENGE_REWARD_REPOSITORY.md)
+pass7,423 tests with zero build warnings/errors,31 unchanged compatibility probes
+and59 exact source MySQL cases. Activation/medal/completion/selection/reload/claim
+units cover all16 complete catalogs, with root-row serialization, durable receipts,
+retained cycles and inventory-backed delivery. The actor queue/provider execution
+strategy, Challenge baseline adoption, live earning and packet routing remain
+unwired. Runtime stays frozen7,364; no new native UI claim. F-033 stays partial.
+
+Earlier30 October continuation: [inventory reward delivery](CHARACTER_REWARD_INVENTORY_DELIVERY.md)
+passes7,364 tests with zero build warnings/errors,31 unchanged compatibility
+probes and38 final MySQL inventory-owner cases. Whole-delivery reservation,
+receipt/item enrollment, recovery, publication, expiration deferral and Player
+save/economy preflight are implemented. Runtime-discovered Auth realm refresh
+now preserves health for unchanged endpoints. Production Challenge repository,
+eligibility/earning/claim routing and native UI remain open. F-033 stays partial.
+
+Current isolated runtime: World48568/Auth48880 use frozen7,364 and pass200/200
+audited cycles, including a70-second mixed run across the Auth definition refresh.
+Seven other services retain their identities; six queues drain naturally. Defaults,
+original data and private configurations are preserved. Computer Use remains stopped.
+
+30 October inventory preparation continuation: Bag/Item guards and rejected save
+units pass7,254 tests,31 compatibility probes and11 isolated MySQL validation
+cases. Its aggregate enrollment/publication gaps are superseded above; F-033 stays partial.
+See [inventory reservation foundation](CHARACTER_REWARD_INVENTORY_RESERVATIONS.md).
+
+Latest assessment follow-through update: 2026-10-30. Regenerated content
+coverage contains `31` CSVs / `167,484` rows, all `not_retail_complete`.
+The two additional source-evidence rows reflect the implemented Hycrest
+intro/vote slice. All three tutorial videos are restored. The missing June 19
+Q5597 planning worksheet is superseded by the dated
+[current recovery review](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md).
+Its 16 passing focused tests support the existing runtime assertions; native
+quest/achievement UI and persistence checks remain pending. Historical
+supplemental counts below describe their original snapshots.
+
+The 2026-10-29 Challenge foundation passes the full7,182-test gate,9 populated
+MySQL schema/receipt checks and26 live World7182 lifecycle cycles. All16 complete
+catalogs, durable Challenge state, modifier snapshots, composed reloads and an
+additive five-table schema are implemented. Character earning/repository/claim
+delivery remains open; existing direct prizes/defaults are preserved. See
+[CHARACTER_CHALLENGE_REWARD_TRACKS.md](CHARACTER_CHALLENGE_REWARD_TRACKS.md).
+
 Latest supplemental update: 2026-07-29 CEST Ultimate Protogames
 achievement-5942 Be The Rowsdower exact polymorph closure.
 
@@ -17908,7 +18352,7 @@ ladder before mutating server state.
 | F-031 | Fortune minigame | Client and server packet families are modeled and packet-shape tested; handlers maintain account-scoped sessions with an `account_fortune_session` persistence code path, coin cost, card deal/flip via `FortuneRewardPool`, account item grants on payout with current-character target identity, emulator rarity-tier `ServerFortuneRewards.RewardItemProbabilities`, and mapped `ServerFortuneReset.ResetCode` value `3` for the click-empty reset path. `FORTUNE_WEIGHT_AUDIT.md` verifies the local catalog/table audit and rejects the old `Questing-and-more` gacha handler as superseded/non-evidence for retail weights. `Start-BlockerEvidenceHarness.ps1 -FortuneRewardsSmoke` now creates a targeted LWS-066 worksheet for packet/catalog probabilities, active rotation context, card/payout/reload proof, and negative cases. Focused `FortuneRewardPoolTests` exercise the real pool with synthetic account-item/item rows so mapped item2 probabilities stay display-only, missing `AccountItem` tables return an empty catalog/card pool, missing `Item2` tables use the existing Normal-rarity fallback, and dealt cards are limited to item-backed account rewards; focused session tests pin `ServerFortuneCardUpdate.HasUpdate`, targeted account-item payout flags, and missing-inventory flip reset before card-state mutation. Reward-rotation index `0` storefront refresh now keeps catalog-first ordering and sends Fortune status/cards through `IFortuneSessionManager` for clients that reach Fortune through the store/reward-rotation bootstrap instead of a Fortune notify packet. F-007 `RewardRotation*` table/packet labels are explicitly rejected as Madame Fay active-rotation evidence because they map the separate reward-rotation/storefront schedule surface, not `ServerFortuneRewards` production. `ClientFortuneStart` auto-claims only a matching `CanClaim` Fortune Coin account-item bundle before re-checking and debiting the one-coin cost; mismatched character-target bundles remain unclaimed and reset the client. A follow-up live crash on dealt cards `3215`, `166`, and `26` mapped `0x14078A28B` inside the Fortune card display helper; `wildstar_client.accountitem` showed `166` and `26` are entitlement-only `item2Id=0` rows, so non-item rewards are excluded from dealt `ServerFortuneCards` until a card-safe retail payload is mapped. Local setup now imports `Tools/Setup/sql/runtime_auth_seed.sql` to clear stale transient Fortune sessions during seed/import flows. | Exact per-item retail Madame Fay weights and active rotation catalog remain unavailable; storefront/game synchronisation precision may still differ; branch hardcoded gacha item arrays and F-007 reward-rotation schedules are not accepted as retail Fortune rotation or probability evidence. | `ClientFortuneNotifyGame`, `ClientFortuneNotifyStorefront`, `ClientFortuneStart`, `ClientFortuneFlipCard`, `ServerFortuneCards`, `ServerFortuneCardUpdate.HasUpdate`, `ServerFortuneRewards`, `ServerFortuneReset.ResetCode`; fortune UI readers; `Fortune_ApplyCards`, `Fortune_ApplyReset`, `Fortune_ApplyRewards`, `FortunesLib_GetFortunesLootList`; F-007 `RewardRotation*` labels rejected for Fortune; branch commits `819197dc0f` and `27486d5e8d`; `FORTUNE_WEIGHT_AUDIT.md` | `WorldServer/Network/Message/Handler/Fortune`, `FortuneRewardPool`, fortune models/tests, `Decomp/Analysis/Start-BlockerEvidenceHarness.ps1`, `Tools/Setup/sql/runtime_auth_seed.sql` | Capture retail `ServerFortuneRewards` or storefront-server catalog weights before claiming item-level payout parity; keep money/probability arrays and active rotation unchanged until that evidence exists. |
 | F-031 note (2026-06-09) | Fortune retail weights / active rotation cached-export recheck | Ghidra MCP discovery found no running instance, so this pass used tracked labels plus cached `WildStar64.exe` fragments. `ServerFortuneRewards_ReadPayload` (`140081f60`) remains transport-only evidence for item2 ids, money rows, and parallel item/money probability arrays; `Fortune_ApplyRewards` (`1407292a0`) copies those server-provided arrays into UI state; `FortunesLib_GetFortunesLootList` (`140766370`) exposes cached item2 rewards and displays `fProbability = serverFloat * 100`; `FortuneNode_ApplyServerFortunePackets` (`1404d60f0`) dispatches the `0x03CF`-`0x03D2` server packet family; `ServerFortuneCards_ReadPayload` (`1400a0b10`) remains card-state reader evidence. Source still emits `ServerFortuneRewards` from emulator rarity-tier `FortuneRewardPool`; no retail active-rotation source, per-item weight table, or storefront-server catalog proof surfaced. | Exact per-item Madame Fay weights, active rotation catalog, and money/probability array producer semantics remain missing. | `ServerFortuneRewards_ReadPayload`, `Fortune_ApplyRewards`, `FortunesLib_GetFortunesLootList`, `FortuneNode_ApplyServerFortunePackets`, `ServerFortuneCards_ReadPayload`, `FortuneRewardPool`. | Fortune handlers/models/tests, `FORTUNE_WEIGHT_AUDIT.md` | Keep exact item probabilities, active rotation, and money reward arrays blocked until a retail `ServerFortuneRewards` capture, storefront-server catalog dump, or native/server producer artifact proves item ids and probabilities. |
 | F-032 | Leaderboards | PvE and PvP request handlers use `LeaderboardProvider` backed by `DatabaseLeaderboardStore` (MySQL, per-scope/category cache limiting, ranking, personal placement) and `LeaderboardScoreIngestion`; non-empty PVE/PVP response row and team-member wire layouts are pinned by focused packet tests. Request handling scopes PvE by type/map/prime level and PvP by Arena3v3 team or battleground class category; cache limiting now keeps 100 rows per PvE type/map/prime scope and per PvP category instead of taking a global table slice, and duplicate persisted scores for the same character dedupe to the best score before row caps and visible response ranking. | Season and medal-filter semantics are blocked by missing mapped selectors: `ClientLeaderboardPveRequest` only exposes type/map/prime, `ClientLeaderboardPvpRequest` only exposes type, and current store/provider scope only by those fields; `RewardedTier` is response-row data, not a proven bronze/silver/gold request filter. Exact retail row caps/refresh cadence and broader live score ingestion coverage remain incomplete. | `ClientLeaderboardPveRequest`, `ClientLeaderboardPvpRequest`, `ServerLeaderboardPve`, `ServerLeaderboardPvp`; leaderboard UI readers and category selectors. | `WorldServer/Network/Message/Handler/Leaderboard`, `WorldServer/Leaderboard`, leaderboard models | Decode or capture a season/medal selector before adding filters; decode exact retail row caps/refresh cadence and live score-ingestion hooks before claiming full retail leaderboard parity. |
-| F-033 | Challenges and shared challenges | `ChallengeManager` lifecycle with `character_challenge` persistence; shared-challenge preference toggles; `ClientChallengeChoice` paths for activate/abandon/accept/decline shared; share timeout (30s); challenge choice/result/update/share/share-timeout wire payloads covered. **Retail concurrent cap:** at most **two** activated challenges at once is enforced through `RetailCertainRules.MaxConcurrentActiveChallenges` (wiki + `RETAIL_FEATURE_EVIDENCE.md`) and covered by a third-activation regression. Combat kill progress is wired through `ChallengeCombatHooks` from creature reward handling, including direct and nested target-group membership; mapped Ability and ChecklistActivate progress are wired through `ChallengeActivationHooks` from successful interaction updates; script/runtime producers can credit active challenges through the public `IChallengeManager.TryAdvanceProgress` / `ChallengeProgressHooks` path; completion emits `QuestObjectiveType.CompleteChallenge`, can grant the first supported item choice from `RewardTrack` / `RewardTrackRewards` for the achieved tier, and large progress deltas clamp at the tier goal without `uint` wrap. The 2026-06-16 slice pins Challenge `409` / TargetGroup `3341`, Challenge `182` / TargetGroup `28780`, Challenge `309` / TargetGroup `6675`, and RewardTrack `24` / RewardTrackRewards `475`; focused challenge verification passed `52/52`. | Medal win-chance, reward selection/transport, timed scoring, producer-specific collect/item/general retail semantics, challenge-specific achievement trigger evidence, and share-init ownership remain blocked by missing mapped runtime/protocol surfaces: `ChallengeEntry.RewardTrackId` and `RewardTrack*` tables exist and now support a conservative item-grant slice, but no challenge reward selection, odds, or reward UI packet surface is mapped; `AchievementType` has no mapped challenge-complete trigger in current source; `ServerChallengeUpdate` carries tier/count/timer fields, `ServerChallengeResult.Data` carries the mapped tier/localized-string value, and `ShareWithTarget()` has no mapped client share-init request. `Client0x00C8`, full result/reward parity, and broader live objective/reward sequencing remain incomplete. | `ClientChallengeChoice`, `ServerChallengeUpdate`, `ServerChallengeResult`, `ServerChallengeShared`, `ServerChallengeShareTimeout`, `Client0x00C8`, challenge UI readers, `RewardTrack*`, `TargetGroup`, `challenge_*` DataMapping outputs, `QuestObjectiveType.CompleteChallenge`. | `Game/Challenges/ChallengeManager`, `Game/Challenges/ChallengeActivationHooks`, `Game/Challenges/ChallengeProgressHooks`, challenge models, option handlers, `GameTable/Challenge*`, quest/objective surfaces | Decode share-init ownership, `Client0x00C8`, reward-track selection/medal win-chance payloads, timed scoring, producer-specific collect/item/general semantics, challenge-specific achievement trigger ownership, and live objective/reward sequence before claiming full retail challenge parity. |
+| F-033 | Challenges and shared challenges | Challenge lifecycle, mapped combat/activation/public progress hooks, two-concurrent cap, sharing choices/timeouts and defensive table loading remain implemented. Checkpoint7959 adds durable count-based producers across all16 validated catalogs with immutable modes/modifiers, exact Quest participants, FIFO/normal-save ownership and legacy direct-prize/NULL/restart compatibility. Checkpoint7983 verifies real socket Challenge103/track16 earning:15 credited kills,3 completions/300 points,3 receipts/items across relog and cycle1/zero remaining points, using explicit offline fixture placement. Quest preparation uses the configured MySQL retry strategy; choose waits for its published reload before claim. Full7983 tests,24 new cases,515 provider cases,2 model gates and31 compatibility probes pass with unchanged backend/provider hashes after the final driver correction. See `CHARACTER_CHALLENGE_SOCKET.md`. | Native reward UI and walking remain unverified by this socket fixture. Unknown time-tiered flag0x8 scoring, producer-specific collect/item/general semantics, challenge-specific achievement triggers and client share-init ownership remain open. Exact retail RNG/reset and medal win-chance remain unproven; uniform/all-claims/carry is the accepted upstream policy. The socket07CF choice is idempotent on an already-active track. Historical NULL and unsupported/empty catalogs stay legacy. `Client0x00C8` remains neutral MatchType diagnostics without an evidenced sender/consumer; no Challenge behavior is inferred from it. Full retail result/reward parity remains partial. | `ClientChallengeChoice`, Challenge update/result/share/timeout payloads, `ServerRewardTracksReload`07D3, choose07CF/claim07CE, `RewardTrack*`, `TargetGroup`, `QuestObjectiveType.CompleteChallenge`, mapped runtime producers, actual source/world rows and correlated socket/SQL/log evidence. | `Game/Challenges/ChallengeManager*`, `Game/Challenges/Reward/*`, combat/activation/progress hooks, `Player.NormalRewardSave`, `QuestManager.Rewards`, reward presentation/handlers, Character persistence, LoadTest Challenge scenario and focused regressions. | Resume native UI only when authorized. Map timed scoring, missing producer/achievement/share-init semantics and exact retail odds/reset before claiming retail completeness. Keep all other assessment/content gates active. |
 | F-034 | Datacubes, journals, Galactic Archive / Codex | Datacube and archive persistence, login init, client unlock/view flows, rule refreshes, packet models, creature `ArchiveArticleIdInteractUnlock` activation hooks, SimpleEntity datacube/journal activation boundaries, and datacube/archive request/update packet shapes are covered. `ArchiveLink.tbl` now loads through default game-table initialization, and `ClientGalacticArchiveUnlock` delegates to `UnlockLinkedArticle`, which unlocks a child article only when an `ArchiveLink` parent article is already unlocked. `GalacticArchiveManager` also tolerates partial archive table loads: missing `ArchiveArticle` rejects/skips archive state, missing `ArchiveEntryUnlockRule` disables rule auto-unlocks, and missing `ArchiveEntry` skips entry rewards without dropping unlock flags. Persisted duplicate datacube rows for the same id/type now merge progress instead of throwing during character load, and missing `Datacube` / `DatacubeVolume` tables reject new datacube/journal additions before mutation or packet emission. | Broader content hookups, full journal/datacube progression semantics, path-mission rule parity, and wider Codex UX coverage remain blocked until pickup-chain/live-client or native rule evidence proves the missing semantics. | `ServerDatacubeUpdateList`, `ServerDatacubeUpdate`, `ServerDatacubeVolumeUpdate`, `ClientGalacticArchiveUnlock`, `ClientGalacticArchiveViewed`, `ServerGalacticArchiveRefresh`, `ArchiveLink`, archive link/unlock rules, creature `ArchiveArticleIdInteractUnlock`. | `Game/Entity/DatacubeManager`, `Game/Entity/GalacticArchiveManager`, `Game/Entity/SimpleEntity`, galactic archive handlers/models | Verify one datacube or journal pickup chain end-to-end, decode remaining progression/link UX semantics, and reconcile path-mission archive rules before claiming full Codex parity. |
 | F-035 | Achievements and realm-firsts | Character, guild, and global achievement managers, persistence, init/update packets, checklist/value progress, prerequisites, title grants, guild forwarding, persisted realm-first dedupe, realm-first packet coverage, diagnostic `ClientSteamAchievements` parse/handler tests, and broad server-owned trigger callsites exist. Checklist bit indexes outside the 32-bit progress mask now fail closed instead of aliasing to bit 0. Achievement metadata startup now treats missing primary `Achievement` tables like empty caches and missing character DB registration like no persisted realm-first preload, while preserving table-backed player/guild indexing. Covered trigger families include kills/kill groups, quests/contracts, zone entry/map completion, activation/discovery/secret stash, crafting/tradeskills, costume/costume-set unlocks, reputation, level/path level, path mission/type, currency/account currency/primal essence, items/titles, duels, critical deathblows, guild/circle/group/friend joins, housing plug/decor actions, public-event objectives, and targeted emotes. `ClientSteamAchievements` is pinned as diagnostic-only: current grammar is Steam game id, byte length, and ASCII payload, and the handler logs without achievement mutation. | Data-only or unowned achievement type families remain blocked until their event source is server-owned; Steam achievement payload grammar beyond the raw ASCII payload and achievement-id correlation are unmapped; exact realm-first UI/timing semantics and achievement UI edge cases are incomplete. | `ServerAchievementInit`, `ServerAchievementUpdate`, `ServerRealmFirstAchievement`, `ClientSteamAchievements`, `AchievementType` callsites, realm-first and guild-achievement flows. | `Game/Achievement`, achievement models, `ClientSteamAchievementsHandler`, achievement updaters/tests | Map Steam payload grammar and achievement-id correlation before ingesting client Steam achievement data; audit any remaining `AchievementType` only after a server-owned event source is proven. |
 | F-036 | Zone maps and zone completion | Hex discovery, persistence, login sync, `ServerZoneMap` output, `AchievementType.MapComplete`, faction-aware `ZoneCompletion` title rewards, quest/challenge/datacube/tale/journal threshold gating via `ZoneCompletionProgressTracker`, and `ServerZoneMap`/`ServerMapUpdateHexGroup` wire shapes exist; `ZoneCompletion.tbl` is now loaded by the default game-table initialisation path. Zone-map/completion code now tolerates partial map/progress table loads by skipping missing persisted `MapZone` rows, keeping maps with missing hex tables incomplete/0% explored, resolving missing quest/datacube/volume/world-zone progress tables as no progress, recomputing `EpisodeQuest` and `MapZone`/`WorldZone` progress inputs per lookup so stale empty partial-load results cannot survive provider refresh, and cycle-guarding `WorldZone` parent traversal. Generic-map node request/choice handlers now tolerate missing `GenericMapNode` and `WorldLocation2` tables through the existing unknown-node/missing-destination paths. | Non-title rewards and path-specific completion rewards are blocked by the current mapped table/runtime surface: `ZoneCompletionEntry` exposes only `CharacterTitleIdReward`, and `ZoneMapManager.TryGrantZoneCompletionRewards()` only awards titles through `ZoneCompletionRewardResolver.TryGetTitleReward()`. Full zone-completion UX/timing semantics, live validation of category totals, and generic-map content-context producer semantics remain incomplete. | `ServerZoneMap`, `MapZone*`, `MapZoneHexGroup*`, `ZoneCompletion`, `GenericMapNode`, `AchievementType.MapComplete`, zone-map UI and completion readers. | `Game/Map/ZoneMapManager`, `Game/Map/ZoneMap`, `Game/Map/ZoneCompletionRewardResolver`, `Game/Map/ZoneCompletionProgressTracker`, zone-map models, generic-map handlers, achievement/title surfaces | Decode non-title reward sources, path-specific semantics, live client UX/timing, and generic-map content-context producer semantics before awarding broader zone-completion rewards or widening generic-map state. |
@@ -17948,9 +18392,9 @@ ladder before mutating server state.
 - Mapped small client requests: `ClientConvertResource` now treats missing `ResourceConversion`, `Item`, and `CurrencyType` tables like missing rows before inventory/currency/reputation mutation, and `ClientSpline2Request` treats a missing `Spline2` table like an unknown spline. Focused mapped-request verification passed 5/5 on 2026-06-08; exact retail conversion semantics remain evidence-gated.
 - F-032: `DatabaseLeaderboardStore` now returns empty PVE/PVP views without populating cache fields when `CharacterDatabase` is unavailable, allowing later requests to retry DB hydration after setup/startup recovery. Focused leaderboard verification is 13/13; the later source/protocol recheck found no mapped request selector for season or medal filters, so season/medal filtering remains blocked alongside row-cap, refresh-cadence, and live-ingestion precision.
 - F-033: `ChallengeManager` now handles missing `Challenge` and `ChallengeTier` game tables defensively during partial setup loads: unknown/missing challenge data returns `GenericFail`, and missing tier data produces zero goals instead of throwing while building challenge updates. A later source/protocol recheck found no mapped challenge reward UI/selection packet surface or mapped client share-init request; the 2026-06-16 slice added conservative first-supported `RewardTrack` item grants plus public challenge-id progress credit, while medal chance, reward selection/presentation, share-init ownership, `Client0x00C8`, challenge-specific achievement triggers, and full result/reward parity remain blocked. Focused challenge verification is 52/52.
-- Non-row tooling: the branch command-framework and GM command commits (`036cc894b7` through `f46326f668`) are superseded by the current `WorldServer.Command` system and richer command categories. The branch `RewardTrackCommandCategory` is left unported with the rejected reward-track packet surface, and other branch GM helpers are operator tooling rather than retail behavior unless a future task targets command parity specifically.
+- Non-row tooling: the branch command-framework and GM command commits (`036cc894b7` through `f46326f668`) are superseded by the current `WorldServer.Command` system and richer command categories. The branch `RewardTrackCommandCategory` remains unported pending the current-schema track lifecycle and safe delivery boundary; the earlier packet rejection was superseded by fresh native dispatch evidence on 2026-10-29. Other branch GM helpers are operator tooling rather than retail behavior unless a future task targets command parity specifically.
 - F-006: The branch account/storefront/account inventory commits (`aa9c293a92`, `bcc40872b3`, `5a58a6884b`, `9d3333af48`, `31f87ae871`, `e0133d9492`) were audited against current F-006 and left without code changes: current account inventory, cooldowns, `ServerAccountOperationResult`, `ServerAccountTier`, catalog, purchase, gift/pending-group, purchase-history, generic-unlock, CREDD, coupon, daily-login, and VC package paths supersede the branch. The branch `ServerAccountTransactionUpdate = 0x097D` label is rejected because current client-reader evidence maps `0x097D` to `ServerAccountPendingItemGroupDelete`; the branch `ServerAccountSubscription = 0x03DD` payload has no current 16042 consumer mapping and remains unemitted.
-- F-007: The branch `RewardTrackManager`/`ServerRewardTracksLoaded` surface was audited and left unported because it names opcodes `0x07CD`/`0x07D3` as reward-track traffic, while current client-reader evidence maps those opcodes to reward-rotation content-context packets with packet tests and persisted `account_reward_rotation_grant` state.
+- F-007 correction (2026-10-29): fresh exact-build Lua method tables, native registrar writers, high-range dispatch slots and named-event consumers prove `0x07CD`/`0x07D3`/`0x07D5` are reward-track add/reload/update and `0x07CF` is RewardTrackLib.ChooseRewardTrack. The earlier rotation-content/generic-map/auction interpretation was incorrect. Routing now uses the canonical track models; rotation refresh does not emit these cross-owner packets. Separate rotation consumers prove remove/update/upsert on `0x07C7`/`0x07C9`/`0x07CB`; persisted `account_reward_rotation_grant` records and service APIs remain intact. The routing/generic-map gate passes 397 tests; current-schema track progression, scope/default activation and durable claim delivery remain separate work, with no completion claim. See `REWARD_TRACK_ROTATION_ROUTING_FIXES.md`.
 - F-007: `RewardRotationRuntimeEvidenceTests` now guard that generated reward-rotation evidence artifacts carry the exact blocker for missing `0x07CD` apply helper proof and blocked `Flag`/throttle-slot assignment, keeping content-context fields mapped-only until capture or dynamic dispatch evidence exists.
 - F-007: 2026-06-09 cached-export/source recheck found no running Ghidra MCP instance and no new producer/apply evidence. Cached `14008fcb0`, `140635840`, `140636ba0`, and `140636c40` continue to prove the content-context wire shape, seven request-throttle slots, index-only `0x07CC` refresh request, and loaded-schedule lookup only. `0x07CD` field naming, `Flag`, and dynamic throttle-slot assignment remain blocked until a retail capture or runtime apply-dispatch breakpoint.
 - F-007: 2026-06-06 local Content Finder Bonus Rewards triage found empty `0x07CA` schedule rows because the live default refresh path selected rewards with player level `1` and world difficulty flags `0`, while imported reward-rotation catalog rows require level `50` and normal/veteran flags. A follow-up new-binary smoke showed non-empty schedule rows for indexes `1..6` but an empty tab, matching both the native `Game.MatchMakingEntry.GetRotationRewards` normal/veteran filter and a corrected `0x07CA` apply read: `RewardRotation_ApplyServerScheduleUpdate` uses the 14-bit field as content id and the trailing 32-bit field as the reward-table lookup id. `ClientRewardUpdateRequestHandler` now supplies the session player level plus a known normal/veteran difficulty mask, `RewardRotationScheduleBuilder` expands that mask into separate normal/veteran candidate rows, and `ServerRewardRotationScheduleArray` writes the native apply order. A 2026-06-08 source-local guard now skips premium reward-property modifiers whose `RewardProperty` or entitlement static data is unavailable, no-ops type-based reward-property updates without `RewardProperty` static data, and resolves spell reward-property modifier effects through the existing `unknown-reward-property` diagnostic boundary when the table is missing; focused reward-property verification passed 5/5 and the broader reward/spell bucket passed 375/375. Exact per-content retail reward selection, dynamic difficulty assignment, and `0x07CD` apply semantics remain blocked.

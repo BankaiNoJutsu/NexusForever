@@ -1,0 +1,260 @@
+{
+  "fork-build": {
+    "warnings": "114",
+    "errors": "0",
+    "advisory_packages": [
+      [
+        "MessagePack",
+        "2.5.302",
+        "moderate",
+        "https://github.com/advisories/GHSA-qhrr-8q5h-9q3h"
+      ],
+      [
+        "MySqlConnector",
+        "2.6.0",
+        "moderate",
+        "https://github.com/advisories/GHSA-473q-m89c-ghf8"
+      ],
+      [
+        "SQLitePCLRaw.lib.e_sqlite3",
+        "2.1.11",
+        "high",
+        "https://github.com/advisories/GHSA-2m69-gcr7-jv3q"
+      ]
+    ]
+  },
+  "upstream-build": {
+    "warnings": "60",
+    "errors": "0",
+    "advisory_packages": [
+      [
+        "MessagePack",
+        "2.5.302",
+        "moderate",
+        "https://github.com/advisories/GHSA-qhrr-8q5h-9q3h"
+      ],
+      [
+        "MySqlConnector",
+        "2.6.0",
+        "moderate",
+        "https://github.com/advisories/GHSA-473q-m89c-ghf8"
+      ],
+      [
+        "SharpCompress",
+        "0.22.0",
+        "moderate",
+        "https://github.com/advisories/GHSA-6c8g-7p36-r338"
+      ],
+      [
+        "SharpCompress",
+        "0.22.0",
+        "moderate",
+        "https://github.com/advisories/GHSA-jp7f-grcv-6mjf"
+      ]
+    ]
+  },
+  "coverage_validation": {
+    "errors": {
+      "missing_evidence_source": 748954
+    },
+    "unique_missing_sources": 158,
+    "most_referenced_missing": [
+      [
+        "wildstar_client_mysql/Quest2.tbl.sql",
+        122160
+      ],
+      [
+        "wildstar_client_mysql/QuestObjective.tbl.sql",
+        64079
+      ],
+      [
+        "wildstar_client_mysql/WorldZone.tbl.sql",
+        51254
+      ],
+      [
+        "wildstar_client_mysql/TargetGroup.tbl.sql",
+        43232
+      ],
+      [
+        "wildstar_client_mysql/WorldLocation2.tbl.sql",
+        42314
+      ],
+      [
+        "wildstar_client_mysql/QuestDirection.tbl.sql",
+        39402
+      ],
+      [
+        "wildstar_client_mysql/QuestDirectionEntry.tbl.sql",
+        39396
+      ],
+      [
+        "wildstar_client_mysql/Creature2.tbl.sql",
+        29881
+      ]
+    ]
+  },
+  "coverage_rows": {
+    "retail_claim_allowed": {
+      "false": 23
+    },
+    "completion_status": {
+      "not_retail_complete": 167482
+    }
+  },
+  "conflict_paths": [
+    "Source/NexusForever.Database.World/Migrations/WorldContextModelSnapshot.cs",
+    "Source/NexusForever.Database.World/Model/EntityLootModel.cs",
+    "Source/NexusForever.Database.World/Model/ItemLootModel.cs",
+    "Source/NexusForever.Database.World/Model/LootGroupModel.cs",
+    "Source/NexusForever.Database.World/Model/LootItemModel.cs",
+    "Source/NexusForever.Database.World/WorldContext.cs",
+    "Source/NexusForever.Database.World/WorldDatabase.cs",
+    "Source/NexusForever.Game.Abstract/Housing/IResidence.cs",
+    "Source/NexusForever.Game.Static/Housing/DecorType.cs",
+    "Source/NexusForever.Game.Static/Loot/LootConditionType.cs",
+    "Source/NexusForever.Game.Static/Loot/LootEntityType.cs",
+    "Source/NexusForever.Game.Static/Loot/LooterType.cs",
+    "Source/NexusForever.Game.Static/Quest/TargetGroupType.cs",
+    "Source/NexusForever.Game/Account/Currency/AccountCurrencyManager.cs",
+    "Source/NexusForever.Game/AssetManager.cs",
+    "Source/NexusForever.Game/Entity/ItemInfo.cs",
+    "Source/NexusForever.Game/Entity/Player.cs",
+    "Source/NexusForever.Game/Entity/SpellManager.cs",
+    "Source/NexusForever.Game/Entity/UnitEntity.cs",
+    "Source/NexusForever.Game/Entity/VehicleEntity.cs",
+    "Source/NexusForever.Game/Housing/Decor.cs",
+    "Source/NexusForever.Game/Housing/GlobalResidenceManager.cs",
+    "Source/NexusForever.Game/Housing/Plot.cs",
+    "Source/NexusForever.Game/Housing/Residence.cs",
+    "Source/NexusForever.Game/Housing/ResidenceManager.cs",
+    "Source/NexusForever.Game/Housing/ServiceCollectionExtensions.cs",
+    "Source/NexusForever.Game/Loot/LootInstance.cs",
+    "Source/NexusForever.Game/Loot/LootInstanceItem.cs",
+    "Source/NexusForever.Game/Map/BaseMap.cs",
+    "Source/NexusForever.Game/Map/Instance/ContentMapInstance.cs",
+    "Source/NexusForever.Game/Map/Instance/ContentPvpMapInstance.cs",
+    "Source/NexusForever.Game/Map/Instance/MapInstance.cs",
+    "Source/NexusForever.Game/Map/Instance/ResidenceMapInstance.cs",
+    "Source/NexusForever.Game/ServiceCollectionExtensions.cs",
+    "Source/NexusForever.Game/Spell/CharacterSpell.cs",
+    "Source/NexusForever.Game/Spell/Spell.cs",
+    "Source/NexusForever.Network.World/Message/Model/Bi0635.cs",
+    "Source/NexusForever.Network.World/Message/Model/ClientActivateUnitCast.cs",
+    "Source/NexusForever.Network.World/Message/Model/ClientEntityInteract.cs",
+    "Source/NexusForever.Network.World/Message/Model/ClientHousingPlugUpdate.cs",
+    "Source/NexusForever.Network.World/Message/Model/ClientMatchingRoleCheckResponse.cs",
+    "Source/NexusForever.Network.World/Message/Model/ClientSpellStopCast.cs",
+    "Source/NexusForever.Network.World/Message/Model/ClientStorefrontPurchaseCharacter.cs",
+    "Source/NexusForever.Network.World/Message/Model/Crafting/ClientCraftingCraftItem.cs",
+    "Source/NexusForever.Network.World/Message/Model/Housing/ClientHousingDecorUpdate.cs",
+    "Source/NexusForever.Network.World/Message/Model/Loot/LootItem.cs",
+    "Source/NexusForever.Network.World/Message/Model/Pet/ClientPetSetStance.cs",
+    "Source/NexusForever.Network.World/Message/Model/Server07F9.cs",
+    "Source/NexusForever.Network.World/Message/Model/Server07FD.cs",
+    "Source/NexusForever.Network.World/Message/Model/Server0816.cs",
+    "Source/NexusForever.Network.World/Message/Model/ServerAccountCurrencyGrant.cs",
+    "Source/NexusForever.Network.World/Message/Model/ServerEntityCreate.cs",
+    "Source/NexusForever.Network.World/Message/Model/ServerHousingNeighbors.cs",
+    "Source/NexusForever.Network.World/Message/Model/ServerSpellCastCancel.cs",
+    "Source/NexusForever.Network.World/Message/Model/ServerSpellCastPositionSync.cs",
+    "Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetList.cs",
+    "Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetStatus.cs",
+    "Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetUnit.cs",
+    "Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetUnit2.cs",
+    "Source/NexusForever.Network.World/Message/Model/ServerSpellThresholdClear.cs",
+    "Source/NexusForever.Network.World/Message/Model/ServerSpellThresholdStart.cs",
+    "Source/NexusForever.Network.World/Message/Model/Shared/AccountInventoryItem.cs",
+    "Source/NexusForever.Network.World/Message/Model/Shared/TargetInfo.cs",
+    "Source/NexusForever.Network.World/Message/Model/Spell/ClientActivateUnit.cs",
+    "Source/NexusForever.Network.World/Message/Model/Spell/ClientCastGuildBossToken.cs",
+    "Source/NexusForever.Network.World/Message/Model/Spell/ClientCastSpell.cs",
+    "Source/NexusForever.Network.World/Message/Model/Spell/ClientCastSpellContinuous.cs",
+    "Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellCastResult.cs",
+    "Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellConfirmCast.cs",
+    "Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellExecute.cs",
+    "Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellInterrupted1.cs",
+    "Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellThresholdStart.cs",
+    "Source/NexusForever.Network.World/Message/Model/State2.cs",
+    "Source/NexusForever.Network.World/Message/Model/Utility/ServerInspectPlayerResponse.cs",
+    "Source/NexusForever.Network.World/Message/Static/HousingResult.cs",
+    "Source/NexusForever.Network/Message/GameMessageOpcode.cs",
+    "Source/NexusForever.WorldServer/Command/Context/WebSocketCommandContext.cs",
+    "Source/NexusForever.WorldServer/Command/Handler/CurrencyCommandCategory.cs",
+    "Source/NexusForever.WorldServer/Command/Handler/HouseCommandCategory.cs",
+    "Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupDisbandedHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupLootRulesUpdatedHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberAddedHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberFlagsUpdatedHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberPromotedHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Internal/Handler/Player/PlayerGroupAssociationUpdatedHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientActivateUnitCastHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientActivateUnitHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientEntityInteractionHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildRegisterHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityDonateHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityRemovalHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityRenameHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingEditModeHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingPlugUpdateHander.cs",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingRequestCommunityPlacementHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingVisitHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Item/ClientHousingAddItemToCrateHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientCastSpellHandler.cs",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientSpellStopCastHandler.cs",
+    "Source/NexusForever.WorldServer/Web/Middleware/WebSocketController.cs"
+  ],
+  "fork-tests": {
+    "total": "5766",
+    "executed": "5766",
+    "passed": "5766",
+    "failed": "0",
+    "error": "0",
+    "timeout": "0",
+    "aborted": "0",
+    "inconclusive": "0",
+    "passedButRunAborted": "0",
+    "notRunnable": "0",
+    "notExecuted": "0",
+    "disconnected": "0",
+    "warning": "0",
+    "completed": "0",
+    "inProgress": "0",
+    "pending": "0"
+  },
+  "upstream-regressions": {
+    "total": "31",
+    "executed": "31",
+    "passed": "16",
+    "failed": "15",
+    "error": "0",
+    "timeout": "0",
+    "aborted": "0",
+    "inconclusive": "0",
+    "passedButRunAborted": "0",
+    "notRunnable": "0",
+    "notExecuted": "0",
+    "disconnected": "0",
+    "warning": "0",
+    "completed": "0",
+    "inProgress": "0",
+    "pending": "0"
+  },
+  "baseline-regressions": {
+    "total": "27",
+    "executed": "27",
+    "passed": "14",
+    "failed": "13",
+    "error": "0",
+    "timeout": "0",
+    "aborted": "0",
+    "inconclusive": "0",
+    "passedButRunAborted": "0",
+    "notRunnable": "0",
+    "notExecuted": "0",
+    "disconnected": "0",
+    "warning": "0",
+    "completed": "0",
+    "inProgress": "0",
+    "pending": "0"
+  }
+}

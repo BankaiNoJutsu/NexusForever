@@ -28,8 +28,8 @@ update it when repeated session friction appears.
 
 ## Repo Map
 
-- `Source/NexusForever.sln` is the primary .NET solution. `Source/NexusForever.slnx`
-  is also present.
+- `Source/NexusForever.slnx` is the .NET solution. The legacy `.sln` file is
+  absent; its `.DotSettings` file does not provide a buildable solution.
 - `Source/Directory.Packages.props` centrally pins NuGet package versions.
 - `Source/NexusForever.*` contains the emulator services, shared libraries,
   network models, game logic, database contexts, EF migrations, Aspire app host,
@@ -72,13 +72,13 @@ Run these from the repository root unless noted.
 Restore:
 
 ```powershell
-dotnet restore Source\NexusForever.sln
+dotnet restore Source\NexusForever.slnx
 ```
 
 Build the full solution:
 
 ```powershell
-dotnet build Source\NexusForever.sln -v minimal --nologo
+dotnet build Source\NexusForever.slnx -v minimal --nologo
 ```
 
 For a narrow C# edit loop, build the owning project instead of the whole

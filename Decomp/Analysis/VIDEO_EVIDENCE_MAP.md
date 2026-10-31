@@ -10,6 +10,23 @@ evidence, and focused tests.
 Generated CSVs remain the authority for queue order, row state, and
 `retail_claim_allowed`.
 
+## Local restoration verified 2026-10-29
+
+The user restored the three quest videos to their exact referenced `I:\Videos`
+paths. ffprobe confirms H.264 1920x1080 video and AAC audio; durations match the
+existing ledger below exactly. These are checksums of the restored files;
+unavailable historical checksums are not inferred.
+
+| Video | Duration | Restored SHA256 |
+| --- | --- | --- |
+| Crimson Isle quests Part 1 | 592.434 s | `0BA52FC7C0D56F86D3C4686C34C9E242D74DE3757E0173A9D35C871AD2BD3C8E` |
+| Crimson Isle quests Part 2 | 756.274 s | `2D648F48DEC85975263F6CD39D3272DE16258C6987894B7BEF85041671145514` |
+| Northern Wilds quests | 852.800 s | `77BE1500BC3B468BB257333BBF75945746A0469371E4959484E885812A2B4C25` |
+
+The strict content validator now has one missing source (23 references): the
+historical June 19 Q5597 achievement-checklist UI smoke bundle. Restoring media
+does not replace that local smoke or change any retail-completion status.
+
 ## Local Inventory Groups
 
 Current local video inventory under `I:\Videos` includes these useful coverage

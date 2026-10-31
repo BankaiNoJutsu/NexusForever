@@ -17,6 +17,9 @@ criteria for future agent sessions.
 For the 36 feature-area completion snapshot and consolidated emit/producer gaps,
 see [CURRENT_STATUS.md](CURRENT_STATUS.md).
 
+To continue the assessment and implementation work on another machine, read
+[CONTINUE_ON_ANOTHER_MACHINE.md](CONTINUE_ON_ANOTHER_MACHINE.md).
+
 ### Requirements
  * Visual Studio 2026 (.NET 10 and C# 14 support required)
  * MySQL Server (or equivalent, eg: MariaDB), or SQLite for runtime-only local setup
@@ -28,8 +31,8 @@ see [CURRENT_STATUS.md](CURRENT_STATUS.md).
 From the repository root:
 
 ```powershell
-dotnet restore Source\NexusForever.sln
-dotnet build Source\NexusForever.sln -v minimal --nologo
+dotnet restore Source\NexusForever.slnx
+dotnet build Source\NexusForever.slnx -v minimal --nologo
 dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo
 ```
 

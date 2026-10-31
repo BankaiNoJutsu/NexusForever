@@ -1,0 +1,44 @@
+# Character Challenge reward execution and outcome recovery
+
+Later checkpoint7959: [live producers](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md) connects mapped count-based earning and legacy compatibility. The earlier scope below is historical; real socket earning/claim and native UI remain open.
+
+Latest 30 October continuation: [Quest actual-commit durability](QUEST_PERSISTENCE_DURABILITY.md) now supplies committed scalar baselines/revisions, retained deletion and cascade restoration. Full7,599 tests,31 compatibility probes,232 exact-source provider cases and176 runtime cycles pass. Joining completion/Quest participants to the reward unit and live earning remain open. Earlier checkpoint evidence below keeps its original scope.
+
+Latest 30 October continuation: [Typed request routing and published bindings](CHARACTER_CHALLENGE_REWARD_ROUTING.md) now wires type3 choose/claim through the queue, exact published snapshots and bound transactional inventory. Full7,563 tests,31 compatibility probes,196 exact-source provider cases and209 runtime cycles pass. Live earning and completion/quest durability remain open. Earlier checkpoint evidence below retains its original scope.
+
+Latest 30 October continuation: [Actor queue and composed reloads](CHARACTER_CHALLENGE_REWARD_QUEUE.md) now connects the real Player's initial durable load, session-event adoption, bounded recovery and final-disposal cleanup. Full 7,517 tests, 31 compatibility probes, 153 exact-source provider cases and 209 runtime cycles pass. Live earning and type-3 choose/claim routing remain open. The earlier checkpoint evidence below keeps its original scope.
+
+Latest 30 October continuation: [Challenge reward ownership/adoption](CHARACTER_CHALLENGE_REWARD_OWNERSHIP.md) now implements save/cleanup leases, uncertain-baseline resolution and authenticated committed adoption. Full 7,483 tests, 31 compatibility probes, 119 exact-source provider cases and 182 runtime cycles pass. The live actor queue, producers, composed presentation and routing remain open. The earlier checkpoint evidence below retains its original scope.
+
+At the 7,462 checkpoint on 30 October2026, typed immutable commands and a fresh-context executor now drive the repository's complete activation, medal, completion, selection, claim and load units. **Actor queue/save ownership, committed baseline adoption, live Challenge producers and packet routing remain unwired.** Existing direct rewards and entitlement defaults remain unchanged.
+
+## Execution boundary
+
+`CharacterChallengeRewardCommand` freezes identities, time, whole modifier snapshots, before/after Challenge state, expected track revisions and satisfied prerequisite IDs before dispatch. The worker never evaluates an actor/prerequisite callback. `CharacterDatabase.CreateContext` supplies an exclusively caller-owned configured context and fails clearly before initialization. The executor checks that contexts are untracked and outside a transaction, pins the configured database identity across contexts and calls, and rejects drift before running SQL.
+
+`CharacterChallengeRewardExecutor.ExecuteAsync` moves SQL off the calling actor stack, including providers whose async APIs complete synchronously. The provider execution strategy owns the entire fresh-context serializable transaction. Each unit locks the character owner, stages one repository operation, flushes, captures copied persisted Challenge/track/attempt state, commits and terminates its resources before returning. A confirmed transaction commit/disposal is not erased by a later context cleanup diagnostic. Cancellation after a possible commit is not evidence of rollback.
+
+After failure, the executor resolves retained inventory outcomes and probes durable witnesses in fresh units. A committed attempt/medal/claim is returned without repeating the mutation or reallocating IDs; verified absence permits a provider-strategy retry of the whole unit. Frozen command data is reused. Recovery is read-only and rejects any attempted new mutation. A selection without an immutable receipt must match its exact captured track snapshot; another writer's later selection/progress produces conflict rather than a blind overwrite. Source Challenge state must also match the captured committed candidate where required. Changed/consumed Item rows quarantine claim recovery and are never resurrected.
+
+An unavailable probe returns Uncertain and leaves inventory ownership held. Bare execution cannot infer terminal ownership from an Uncertain reservation. `ResumeAsync` requires the exact retained command, reservation and executor-issued result proving that the original unit ended, and binds the old database identity even when another executor performs recovery. Each proof can be consumed once; a further uncertain result supplies the next proof. Cloned/stale/mismatched proofs cannot replay a committed callback.
+
+The result distinguishes Committed, Failed, Conflict and Uncertain, with copied state, whether the original unit changed data, whether recovery ran, and whether original ownership ended. Known committed results survive cancellation or cleanup diagnostics. Conflict requires authoritative reload. The caller serializes retained-reservation work, keeps its save/mutation lease until the result is handled, and publishes inventory only on the actor after committed adoption. This executor neither performs that adoption nor sends ordinary inventory/Challenge packets. Existing inventory invalidation/quarantine can still suppress notifications or request disconnect under its own established lifecycle rules.
+
+## Verification
+
+Evidence root: `I:/GIT/NexusForever-assessment-report/remaining-goal/character-reward-execution/final-review`.
+
+- Full `Source/NexusForever.slnx` build: **0 warnings,0 errors**.
+- Full suite: **7,462/7,462**, zero skipped;39 new executor cases since7,423. `full.trx` SHA256: `0F292F66F8ECCA876A8FFCB8F571E65E34FEF5E2CB9710D0E531220FE7EE4A45`.
+- Focused combined gate: **98/98** (59 repository and39 executor cases). These include all16 actual catalogs with synthetic Challenge sources, before/after-commit acknowledgement faults, a configured injected transient retry strategy, cancellation, cleanup errors, pinned database scope, proof binding, foreign winners and changed/consumed items. The injected retry test is not a new real-InnoDB-deadlock reproduction.
+- **98 exact source cases** pass under the MySQL proof, with no exclusions, in fresh retained `nexus_assessment_character_reward_execution_30a2`. One is a provider-independent constructor guard with an explicitly empty graph; counts do not mean98 concurrent load scenarios. Two repository cases use independent concurrent contexts.
+- The MySQL fixture uses current-model EnsureCreated, not migration or live gameplay. All per-case attempts, medals, Challenge states, tracks, slots, claims and Items are snapshotted/hashed before cleanup of only synthetic owner42 in the dedicated schema. Private configuration is unchanged. `MySqlProof-final/result.json` records exact sources, loaded/frozen hashes, snapshots and scope.
+- **31 unchanged compatibility probes** pass against the final frozen references. `VERIFICATION.json` binds169 DLLs,5,728 Source files and5 exact test/helper sources. Seven changed Source paths since7,423 cover context creation, copied state, commands/executor and tests; entitlement sources are unchanged.
+
+The first provider harness run under `MySqlProof`/fresh30a1 stopped in cleanup after68 test cases passed: its one-character assumption was wrong for the constructor-only guard. That failed result/schema is retained. The corrected harness allows an empty graph only for that named guard and still requires an empty complete graph after each scoped cleanup. The earlier7,459 full-suite result also retains its original pre-proof-binding scope under `character-reward-execution/final`.
+
+At that checkpoint, WorldPID48568 and AuthPID48880 remained the frozen7,364 deployment; their200-cycle runtime proof is not a replay of this new executor. No new native UI observation, runtime reward row, migration or entitlement grant follows. Computer Use remains stopped. Strict coverage remains31 CSVs/167,484 rows, all not_retail_complete.
+
+## Remaining connected implementation
+
+Wire one actor-bound queue to this executor using the implemented ownership/adoption APIs. Retain queue tickets across SQL units, capture immutable event intent and per-medal modifiers, schedule recovery, and publish only on the actor after committed adoption. Connect activation-time mode selection, completion and claim/choose routing across all16 supported catalogs; retain historical null markers and unsupported producers/catalogs on the legacy path and prevent direct-plus-track double awards. Compose account/character snapshots on every full reload. Native earning/claim/relog/reset scenarios remain open. F-033 stays partial.

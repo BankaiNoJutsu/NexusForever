@@ -1,0 +1,272 @@
+[
+  {
+    "Path": "Source/NexusForever.Game.Tests/Account/Currency/AccountCurrencyDurabilityTests.Refresh.cs",
+    "File": "AccountCurrencyDurabilityTests.Refresh.cs",
+    "SHA256": "5C350D7658AF7D86FAA3C27D85F03A14C175EA5628E9FF9AE5A10BB4A7C5C693"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Account/Currency/AccountCurrencyDurabilityTests.cs",
+    "File": "AccountCurrencyDurabilityTests.cs",
+    "SHA256": "6E8A0B9410379BA94DCB2BA1A40EAA1CDC60708A3B91BD9960AB0726B17931EE"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Database/AccountCurrencyOperationSchemaTests.cs",
+    "File": "AccountCurrencyOperationSchemaTests.cs",
+    "SHA256": "670E46A7708AD65A88259885679D2355B81C9625D2ABC4DC9A19D575F3B972F4"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Database/AccountWorldSessionAdmissionTests.cs",
+    "File": "AccountWorldSessionAdmissionTests.cs",
+    "SHA256": "D0DEB2461F76890A6E6BD5F3EE6786E8B6A18B65CDBC493194D28723125B92A9"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Challenges/ChallengeLiveProducerTests.cs",
+    "File": "ChallengeLiveProducerTests.cs",
+    "SHA256": "D9D467E76FA46D7D984C5912B5DB002232BAB7B20077DBABFB324ACA0BEBBB19"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Challenges/ChallengeRewardPersistenceOwnershipTests.cs",
+    "File": "ChallengeRewardPersistenceOwnershipTests.cs",
+    "SHA256": "945CEC7791CA964754B1B8CAA2349C23F3FBECF0D796CEBC5A500FA9402A78C0"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Challenges/ChallengeRewardWorldReadinessTests.cs",
+    "File": "ChallengeRewardWorldReadinessTests.cs",
+    "SHA256": "35BA92352FC8A059B73D4AAF1EC6A2C3DBEFD15472662297CEC8927E51A121E9"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Database/CharacterAtomicSaveTests.cs",
+    "File": "CharacterAtomicSaveTests.cs",
+    "SHA256": "745B9DB41EAB950B1FF7792AC143704CC868B6538634FB93E4F26C9206E25459"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Challenges/CharacterChallengeQuestTransactionTests.cs",
+    "File": "CharacterChallengeQuestTransactionTests.cs",
+    "SHA256": "08E116239DB1C9359FDDEFB50A413C74C80FF29B654A09CBC7E72123CCD728F8"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Challenges/CharacterChallengeRewardExecutorTests.cs",
+    "File": "CharacterChallengeRewardExecutorTests.cs",
+    "SHA256": "354210F59A5861EBFCB09B42FCDC7C13DF469F6F11FEA9897B6E6E028D8CB71D"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Challenges/CharacterChallengeRewardQueueTests.cs",
+    "File": "CharacterChallengeRewardQueueTests.cs",
+    "SHA256": "33FBF3C5B55785576B2178F4FA8F27CF22CA0AE66099A07D9EB17E4F93201887"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Challenges/CharacterChallengeRewardRepositoryTests.cs",
+    "File": "CharacterChallengeRewardRepositoryTests.cs",
+    "SHA256": "3B135668B0A34FC2A555A6D95619A7C0F8D3A8E7699FB602B3D629917637561D"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Challenges/CharacterChallengeRewardRoutingTests.cs",
+    "File": "CharacterChallengeRewardRoutingTests.cs",
+    "SHA256": "6FC8722258038CE2F4AFF9A36FFCC5439ADB6FF7A4D7B661E325B156C1DAB1CB"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Database/CharacterChallengeRewardSchemaTests.cs",
+    "File": "CharacterChallengeRewardSchemaTests.cs",
+    "SHA256": "09C1D23CD010324FA1E4A0C757BC6C61AA45AFA122DD89302EB05A458D4315DF"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Database/CharacterTransactionParticipantTests.cs",
+    "File": "CharacterTransactionParticipantTests.cs",
+    "SHA256": "683668780CD488710EB955D477137A5DAF40A5C8AAC6D1BE0F90DF7ACD313FD1"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Quest/ContractAcceptancePersistenceTests.cs",
+    "File": "ContractAcceptancePersistenceTests.cs",
+    "SHA256": "2164B72BEF5B0F4066655E723173A904567B4C03D56C879D486ECA81C11BFDD0"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Database/ContractAcceptanceSchemaTests.cs",
+    "File": "ContractAcceptanceSchemaTests.cs",
+    "SHA256": "41817C5981F73B737227630861BEAAF8835E7D6029F34FB9B1610FD483083814"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Quest/ContractBuild16042Fixture.cs",
+    "File": "ContractBuild16042Fixture.cs",
+    "SHA256": "D2B2CBF9BEF457D9B49F73CEA7F1ED66C84ADC2ECA28733FBB4B0C4A65D5D667"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Database/ContractClaimDeliverySchemaTests.cs",
+    "File": "ContractClaimDeliverySchemaTests.cs",
+    "SHA256": "E09CA40A5E8440EEF1C90E9C899F1B97B88A7126CC2FE26F4240F7869D6C4316"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Quest/ContractClaimTransactionTests.AccountSync.cs",
+    "File": "ContractClaimTransactionTests.AccountSync.cs",
+    "SHA256": "4F537D8E9DC74B848993CE05BE43B35A56BAFE5BF9643CF4B4785CBB4670E040"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Quest/ContractClaimTransactionTests.LiveCurrency.cs",
+    "File": "ContractClaimTransactionTests.LiveCurrency.cs",
+    "SHA256": "07ED906DEE24B120289B37F15B84EC4E1FF476E6C54CFA627EB0EAD174EB9AED"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Quest/ContractClaimTransactionTests.cs",
+    "File": "ContractClaimTransactionTests.cs",
+    "SHA256": "3D6E14524B73848AB4C3F5294B2FFB258E00A357827DF490081B9F420FE800F7"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Quest/ContractCompletionExecutorTests.cs",
+    "File": "ContractCompletionExecutorTests.cs",
+    "SHA256": "05B17CCB867D6F26BD7F8BF685C76EC8295F2623DBACD2E4AC8F10059DC4C5B8"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Quest/ContractCompletionRepositoryTests.cs",
+    "File": "ContractCompletionRepositoryTests.cs",
+    "SHA256": "2720AFC927B8C83A082DF50B4EC4D05C6168E7BFFEF721DD7E08A2BC4F6C7670"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Database/ContractCompletionSchemaTests.cs",
+    "File": "ContractCompletionSchemaTests.cs",
+    "SHA256": "3F48AE71AE2882AD19AF5CB82541E84F603FA0B83822E37E10CE47B4E632C4A6"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Quest/ContractLiveCompletionTests.Choices.cs",
+    "File": "ContractLiveCompletionTests.Choices.cs",
+    "SHA256": "B339294FFED8FDEADBCEFCD369A489DDD33499D99F3BB7F2EE79D57A4D64F443"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Quest/ContractLiveCompletionTests.ClaimQueue.cs",
+    "File": "ContractLiveCompletionTests.ClaimQueue.cs",
+    "SHA256": "F77905585198BE01470A48384DEF33BD5647BBA4AAC390AF99E16110A1CC60AD"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Quest/ContractLiveCompletionTests.Currencies.cs",
+    "File": "ContractLiveCompletionTests.Currencies.cs",
+    "SHA256": "CA1A159C014A93BEC96BD4E20522469894316770D334FB7974B7DEA62C3416E2"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Quest/ContractLiveCompletionTests.Lifetime.cs",
+    "File": "ContractLiveCompletionTests.Lifetime.cs",
+    "SHA256": "C9F5F8EE711ACAF107CAED8D8AD2B859071557802ABAC21757D0D12FACAA33F4"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Quest/ContractLiveCompletionTests.cs",
+    "File": "ContractLiveCompletionTests.cs",
+    "SHA256": "8599CB4291A3BCD349EF961A43D9E4C6A90B7C2DA57A89B654617D42DD620B0A"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Quest/ContractNormalSaveUnitTests.cs",
+    "File": "ContractNormalSaveUnitTests.cs",
+    "SHA256": "76A06E670F0296084B743879E0B0B93F6DCA9836F94AD5EFC120BEDF098A9D56"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Database/ContractRewardClaimSchemaTests.cs",
+    "File": "ContractRewardClaimSchemaTests.cs",
+    "SHA256": "5FEAB9AF2398F837873A0560C12DD24E0F577247705F74C2BF1E3F1A9AFC97A6"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Account/Reward/ContractRewardPropertyTests.cs",
+    "File": "ContractRewardPropertyTests.cs",
+    "SHA256": "68372AE89BEE150E0CFD7302B667DD738EC49E94FC140B54CD8F20F397460EBA"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Entity/CurrencyPersistenceDurabilityTests.cs",
+    "File": "CurrencyPersistenceDurabilityTests.cs",
+    "SHA256": "A5BC58239CE058ACEBB5E630A4774D81A08EBD437F486970B5D93D4E292FA2C4"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Database/FriendshipPresenceGenerationTests.cs",
+    "File": "FriendshipPresenceGenerationTests.cs",
+    "SHA256": "12B6657C413B10417F70D84F24179CFB8DDB0D59FFD139BBF17ED3AC2C5C7C38"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Database/FriendshipPresenceTransactionTests.cs",
+    "File": "FriendshipPresenceTransactionTests.cs",
+    "SHA256": "26043107736C6F9CD78E09269BD069F332CE0FC51E41D299A2745CEC656EDBCF"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Entity/InventoryRewardDeliveryTests.Contracts.cs",
+    "File": "InventoryRewardDeliveryTests.Contracts.cs",
+    "SHA256": "03A76B15C9C5FDB46306BD71D922E075874E99269A2B1CDC0A36318CD25771B8"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Entity/InventoryRewardDeliveryTests.cs",
+    "File": "InventoryRewardDeliveryTests.cs",
+    "SHA256": "7A61DB1F6A67BBFAA62E04A8E25AE35D0DD3D018DD8372037616E4BF865EA3F1"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Account/Reward/LoyaltyCatalogBuild16042Fixture.cs",
+    "File": "LoyaltyCatalogBuild16042Fixture.cs",
+    "SHA256": "0F7D5A7793E356BBC5E3249A68460A3B376DD2706743B5BD3E066EDEBF36EE1E"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/TestSupport/MissingGameDataDiagnosticsCollection.cs",
+    "File": "MissingGameDataDiagnosticsCollection.cs",
+    "SHA256": "71064B7BE65029DB7FE01D0E0FEB6C4428B1AE4801F509812E9BA40B7D8CA7C9"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Transport/PlayerBindPointTests.cs",
+    "File": "PlayerBindPointTests.cs",
+    "SHA256": "7E8DFBA97F322D1D5AFD19B92E26E2721EEA58B2D7D55C70AB51DF7335873D02"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Network/PresenceGenerationProducerTests.cs",
+    "File": "PresenceGenerationProducerTests.cs",
+    "SHA256": "D3B407BFDAFFF0A07DAB4F989CE121BA0B07498D8692CF083C066863AF496FB1"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Database/PresenceGenerationSchemaTests.cs",
+    "File": "PresenceGenerationSchemaTests.cs",
+    "SHA256": "3B8821387711E1089478ECCCC8F96F8D74D46F4E0806BC91F9A31FC5EE0AFA9A"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Challenges/QuestChallengeRewardQueueTests.cs",
+    "File": "QuestChallengeRewardQueueTests.cs",
+    "SHA256": "1165F89AE4621E7809751C18598DA0A8FAD6D90F0D4C586B2B6A8478F645F64F"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Quest/QuestPersistenceDurabilityTests.cs",
+    "File": "QuestPersistenceDurabilityTests.cs",
+    "SHA256": "BC2E44CA6CE2EB39128185DF964573D3BAE81C6A59DC7C4B364F50D9887D6663"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Quest/QuestRewardCaptureTests.cs",
+    "File": "QuestRewardCaptureTests.cs",
+    "SHA256": "A4E103D5001B848870DECBBC7B2C110FABECC4D786912A0533048CE5E589863A"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Entity/RealmBankItemIdentityTests.Codecs.cs",
+    "File": "RealmBankItemIdentityTests.Codecs.cs",
+    "SHA256": "ED17DDA441B9112B7D429DE64FB4789288B632004E7250C31B0D15D7E9A20463"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Entity/RealmBankItemIdentityTests.Consumed.cs",
+    "File": "RealmBankItemIdentityTests.Consumed.cs",
+    "SHA256": "8874D331DE36B09ED319753ACD430828472F9FE73AA361C7CAE58B61F2CCC420"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Entity/RealmBankItemIdentityTests.Single.cs",
+    "File": "RealmBankItemIdentityTests.Single.cs",
+    "SHA256": "4A7290699E88F90262BBD658073C7DB2B4FDCFA0B50833423932BC886C4C888B"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Entity/RealmBankItemIdentityTests.Splits.cs",
+    "File": "RealmBankItemIdentityTests.Splits.cs",
+    "SHA256": "7758D55098752F18B71C2ADD8EA0139EF0A2D72D6320B6661F6B2558816E9422"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Entity/RealmBankItemIdentityTests.Swaps.cs",
+    "File": "RealmBankItemIdentityTests.Swaps.cs",
+    "SHA256": "24E684393F6644190B8EDF78B7F76D4CE711B3E240B196E5F944D9DE9304ABDE"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Entity/RealmBankItemIdentityTests.cs",
+    "File": "RealmBankItemIdentityTests.cs",
+    "SHA256": "269233CF5E187B4325C0769F4145D8AD59039334614EA2E884FDFF36C49B568C"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/TestSupport/RecordingDispatchProxy.cs",
+    "File": "RecordingDispatchProxy.cs",
+    "SHA256": "F020E8679A2F2F388FA51F227E99F38AFAC9CCF5E0C176424E05FB8437E59D2C"
+  },
+  {
+    "Path": "Source/NexusForever.Game.Tests/Challenges/RewardNormalSaveSnapshotTests.cs",
+    "File": "RewardNormalSaveSnapshotTests.cs",
+    "SHA256": "064EA2988D672321D3037AD78A6435229321E12EF5EA882EAE1B5CFDDF89E7EE"
+  }
+]

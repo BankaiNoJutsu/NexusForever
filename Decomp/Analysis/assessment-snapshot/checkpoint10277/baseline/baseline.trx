@@ -1,0 +1,298 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="e011c147-aaf3-4b9b-b6d3-083b20208944" name="Bankai@DAN 2026-10-31 11:48:47" runUser="DAN\Bankai" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-31T11:48:47.2146471+01:00" queuing="2026-10-31T11:48:47.2146476+01:00" start="2026-10-31T11:48:41.3821010+01:00" finish="2026-10-31T11:48:49.5957577+01:00" />
+  <TestSettings name="default" id="cea91598-9da1-435c-8d5d-3de3f5174c5b">
+    <Deployment runDeploymentRoot="Bankai_DAN_2026-10-31_11_48_47" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="fbcbe183-2d66-4c1f-aae4-c00606a4d8c7" testId="ab055879-1666-90e8-f3eb-9428275b263f" testName="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.SingleBankMovePacketFailureCannotRestoreThePreEnrollmentLocation(bankSource: False)" computerName="DAN" duration="00:00:03.5592680" startTime="2026-10-31T11:48:43.6224266+01:00" endTime="2026-10-31T11:48:47.1753422+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="fbcbe183-2d66-4c1f-aae4-c00606a4d8c7">
+      <Output>
+        <ErrorInfo>
+          <Message>Assert.Equal() Failure: Values differ&#xD;
+Expected: RealmBank&#xD;
+Actual:   Inventory</Message>
+          <StackTrace>   at NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.SingleBankMovePacketFailureCannotRestoreThePreEnrollmentLocation(Boolean bankSource) in I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\Entity\RealmBankItemIdentityTests.Single.cs:line 66&#xD;
+--- End of stack trace from previous location ---</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="4e4d4157-f80c-402f-b6e2-ebfd72323c18" testId="29b74201-9655-f6ab-6348-fcff65ac442e" testName="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.BankDeletionRefusesAChangedAccountOwner" computerName="DAN" duration="00:00:00.4045868" startTime="2026-10-31T11:48:48.2162445+01:00" endTime="2026-10-31T11:48:48.6202319+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4e4d4157-f80c-402f-b6e2-ebfd72323c18">
+      <Output>
+        <ErrorInfo>
+          <Message>Assert.True() Failure&#xD;
+Expected: True&#xD;
+Actual:   False</Message>
+          <StackTrace>   at NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.BankDeletionRefusesAChangedAccountOwner() in I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\Entity\RealmBankItemIdentityTests.Single.cs:line 49&#xD;
+--- End of stack trace from previous location ---</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="a4478b88-875c-4ad3-94ea-9a9cba94d5c2" testId="cdae60b4-c3ec-75a8-082a-2fdcfd35af65" testName="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.FailedBankDeletionRetainsItsOwnedTombstoneUntilACompleteRetry" computerName="DAN" duration="00:00:00.4269316" startTime="2026-10-31T11:48:47.7895089+01:00" endTime="2026-10-31T11:48:48.2150820+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a4478b88-875c-4ad3-94ea-9a9cba94d5c2">
+      <Output>
+        <ErrorInfo>
+          <Message>Assert.True() Failure&#xD;
+Expected: True&#xD;
+Actual:   False</Message>
+          <StackTrace>   at NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.FailedBankDeletionRetainsItsOwnedTombstoneUntilACompleteRetry() in I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\Entity\RealmBankItemIdentityTests.Single.cs:line 38&#xD;
+--- End of stack trace from previous location ---</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="eaae71cf-02f6-4a4e-ae50-b01e8ce51c8f" testId="b596958e-f17d-4086-265d-ce1f879162b6" testName="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.FailedSingleBankMoveRejectsTheWholeLaterNormalSave(bankSource: False)" computerName="DAN" duration="00:00:00.4186140" startTime="2026-10-31T11:48:49.0665293+01:00" endTime="2026-10-31T11:48:49.4850208+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="eaae71cf-02f6-4a4e-ae50-b01e8ce51c8f">
+      <Output>
+        <ErrorInfo>
+          <Message>Assert.Throws() Failure: No exception was thrown&#xD;
+Expected: typeof(System.InvalidOperationException)</Message>
+          <StackTrace>   at NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.FailedSingleBankMoveRejectsTheWholeLaterNormalSave(Boolean bankSource) in I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\Entity\RealmBankItemIdentityTests.Single.cs:line 24&#xD;
+--- End of stack trace from previous location ---</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="c18e4889-9e1b-4fba-9163-82546e6798b3" testId="929f68f5-1452-6fe1-3f20-a91ef27cb593" testName="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.SingleBankMovePacketFailureCannotRestoreThePreEnrollmentLocation(bankSource: True)" computerName="DAN" duration="00:00:00.6110107" startTime="2026-10-31T11:48:47.1993281+01:00" endTime="2026-10-31T11:48:47.7869155+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c18e4889-9e1b-4fba-9163-82546e6798b3">
+      <Output>
+        <ErrorInfo>
+          <Message>Assert.Equal() Failure: Values differ&#xD;
+Expected: Inventory&#xD;
+Actual:   RealmBank</Message>
+          <StackTrace>   at NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.SingleBankMovePacketFailureCannotRestoreThePreEnrollmentLocation(Boolean bankSource) in I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\Entity\RealmBankItemIdentityTests.Single.cs:line 66&#xD;
+--- End of stack trace from previous location ---</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="11c951fd-894d-4f88-8135-676823265768" testId="70fa1911-8d30-16a9-e669-06daad508290" testName="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.FailedSingleBankMoveRejectsTheWholeLaterNormalSave(bankSource: True)" computerName="DAN" duration="00:00:00.4443974" startTime="2026-10-31T11:48:48.6212947+01:00" endTime="2026-10-31T11:48:49.0658610+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="11c951fd-894d-4f88-8135-676823265768">
+      <Output>
+        <ErrorInfo>
+          <Message>Assert.Throws() Failure: No exception was thrown&#xD;
+Expected: typeof(System.InvalidOperationException)</Message>
+          <StackTrace>   at NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.FailedSingleBankMoveRejectsTheWholeLaterNormalSave(Boolean bankSource) in I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\Entity\RealmBankItemIdentityTests.Single.cs:line 25&#xD;
+--- End of stack trace from previous location ---</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.BankDeletionRefusesAChangedAccountOwner" storage="i:\git\nexusforever-assessment\source\nexusforever.game.tests\bin\debug\net10.0\nexusforever.game.tests.dll" id="29b74201-9655-f6ab-6348-fcff65ac442e">
+      <Execution id="4e4d4157-f80c-402f-b6e2-ebfd72323c18" />
+      <TestMethod codeBase="I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\bin\Debug\net10.0\NexusForever.Game.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests" name="BankDeletionRefusesAChangedAccountOwner" />
+    </UnitTest>
+    <UnitTest name="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.FailedSingleBankMoveRejectsTheWholeLaterNormalSave(bankSource: True)" storage="i:\git\nexusforever-assessment\source\nexusforever.game.tests\bin\debug\net10.0\nexusforever.game.tests.dll" id="70fa1911-8d30-16a9-e669-06daad508290">
+      <Execution id="11c951fd-894d-4f88-8135-676823265768" />
+      <TestMethod codeBase="I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\bin\Debug\net10.0\NexusForever.Game.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests" name="FailedSingleBankMoveRejectsTheWholeLaterNormalSave" />
+    </UnitTest>
+    <UnitTest name="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.FailedSingleBankMoveRejectsTheWholeLaterNormalSave(bankSource: False)" storage="i:\git\nexusforever-assessment\source\nexusforever.game.tests\bin\debug\net10.0\nexusforever.game.tests.dll" id="b596958e-f17d-4086-265d-ce1f879162b6">
+      <Execution id="eaae71cf-02f6-4a4e-ae50-b01e8ce51c8f" />
+      <TestMethod codeBase="I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\bin\Debug\net10.0\NexusForever.Game.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests" name="FailedSingleBankMoveRejectsTheWholeLaterNormalSave" />
+    </UnitTest>
+    <UnitTest name="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.FailedBankDeletionRetainsItsOwnedTombstoneUntilACompleteRetry" storage="i:\git\nexusforever-assessment\source\nexusforever.game.tests\bin\debug\net10.0\nexusforever.game.tests.dll" id="cdae60b4-c3ec-75a8-082a-2fdcfd35af65">
+      <Execution id="a4478b88-875c-4ad3-94ea-9a9cba94d5c2" />
+      <TestMethod codeBase="I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\bin\Debug\net10.0\NexusForever.Game.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests" name="FailedBankDeletionRetainsItsOwnedTombstoneUntilACompleteRetry" />
+    </UnitTest>
+    <UnitTest name="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.SingleBankMovePacketFailureCannotRestoreThePreEnrollmentLocation(bankSource: True)" storage="i:\git\nexusforever-assessment\source\nexusforever.game.tests\bin\debug\net10.0\nexusforever.game.tests.dll" id="929f68f5-1452-6fe1-3f20-a91ef27cb593">
+      <Execution id="c18e4889-9e1b-4fba-9163-82546e6798b3" />
+      <TestMethod codeBase="I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\bin\Debug\net10.0\NexusForever.Game.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests" name="SingleBankMovePacketFailureCannotRestoreThePreEnrollmentLocation" />
+    </UnitTest>
+    <UnitTest name="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.SingleBankMovePacketFailureCannotRestoreThePreEnrollmentLocation(bankSource: False)" storage="i:\git\nexusforever-assessment\source\nexusforever.game.tests\bin\debug\net10.0\nexusforever.game.tests.dll" id="ab055879-1666-90e8-f3eb-9428275b263f">
+      <Execution id="fbcbe183-2d66-4c1f-aae4-c00606a4d8c7" />
+      <TestMethod codeBase="I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\bin\Debug\net10.0\NexusForever.Game.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests" name="SingleBankMovePacketFailureCannotRestoreThePreEnrollmentLocation" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="ab055879-1666-90e8-f3eb-9428275b263f" executionId="fbcbe183-2d66-4c1f-aae4-c00606a4d8c7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="29b74201-9655-f6ab-6348-fcff65ac442e" executionId="4e4d4157-f80c-402f-b6e2-ebfd72323c18" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="cdae60b4-c3ec-75a8-082a-2fdcfd35af65" executionId="a4478b88-875c-4ad3-94ea-9a9cba94d5c2" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b596958e-f17d-4086-265d-ce1f879162b6" executionId="eaae71cf-02f6-4a4e-ae50-b01e8ce51c8f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="929f68f5-1452-6fe1-3f20-a91ef27cb593" executionId="c18e4889-9e1b-4fba-9163-82546e6798b3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="70fa1911-8d30-16a9-e669-06daad508290" executionId="11c951fd-894d-4f88-8135-676823265768" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="6" executed="6" passed="0" failed="6" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.5+1b188a7b0a (64-bit .NET 10.0.8)&#xD;
+[xUnit.net 00:00:00.25]   Discovering: NexusForever.Game.Tests&#xD;
+[xUnit.net 00:00:01.66]   Discovered:  NexusForever.Game.Tests&#xD;
+[xUnit.net 00:00:01.72]   Starting:    NexusForever.Game.Tests&#xD;
+[TRACE][Bag] Initialised new bag Inventory with 16 slots. &#xD;
+[TRACE][Bag] Initialised new bag RealmBank with 16 slots. &#xD;
+[TRACE][Bag] Added item 0x0000000000000191 to bag Inventory at index 0. &#xD;
+[TRACE][Bag] Removed item 0x0000000000000191 from bag Inventory at index 0. &#xD;
+[TRACE][Bag] Added item 0x0000000000000191 to bag RealmBank at index 6. &#xD;
+[FATAL][Inventory] System.InvalidOperationException: Single move notification failed after SQL enrollment. System.InvalidOperationException: Single move notification failed after SQL enrollment.&#xD;
+   at NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.&lt;&gt;c.&lt;SingleBankMovePacketFailureCannotRestoreThePreEnrollmentLocation&gt;b__52_0(Object[] args) in I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\Entity\RealmBankItemIdentityTests.Single.cs:line 62&#xD;
+   at NexusForever.Game.Tests.TestSupport.RecordingDispatchProxy`1.Invoke(MethodInfo targetMethod, Object[] args) in I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\TestSupport\RecordingDispatchProxy.cs:line 86&#xD;
+   at generatedProxy_11.EnqueueMessageEncrypted(IWritable)&#xD;
+   at NexusForever.Game.Entity.Inventory.ItemMove(IItem item, InventoryLocation location, UInt32 bagIndex) in I:\GIT\NexusForever-assessment\Source\NexusForever.Game\Entity\Inventory.cs:line 800&#xD;
+[xUnit.net 00:00:05.32]       Assert.Equal() Failure: Values differ&#xD;
+[xUnit.net 00:00:05.32]       Expected: RealmBank&#xD;
+[xUnit.net 00:00:05.32]       Actual:   Inventory&#xD;
+[xUnit.net 00:00:05.32]       Stack Trace:&#xD;
+[xUnit.net 00:00:05.32]         I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\Entity\RealmBankItemIdentityTests.Single.cs(66,0): at NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.SingleBankMovePacketFailureCannotRestoreThePreEnrollmentLocation(Boolean bankSource)&#xD;
+[xUnit.net 00:00:05.32]         --- End of stack trace from previous location ---&#xD;
+[TRACE][Bag] Initialised new bag Inventory with 16 slots. &#xD;
+[TRACE][Bag] Initialised new bag RealmBank with 16 slots. &#xD;
+[TRACE][Bag] Added item 0x0000000000000191 to bag RealmBank at index 3. &#xD;
+[TRACE][Bag] Removed item 0x0000000000000191 from bag RealmBank at index 3. &#xD;
+[TRACE][Bag] Added item 0x0000000000000191 to bag Inventory at index 6. &#xD;
+[FATAL][Inventory] System.InvalidOperationException: Single move notification failed after SQL enrollment. System.InvalidOperationException: Single move notification failed after SQL enrollment.&#xD;
+   at NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.&lt;&gt;c.&lt;SingleBankMovePacketFailureCannotRestoreThePreEnrollmentLocation&gt;b__52_0(Object[] args) in I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\Entity\RealmBankItemIdentityTests.Single.cs:line 62&#xD;
+   at NexusForever.Game.Tests.TestSupport.RecordingDispatchProxy`1.Invoke(MethodInfo targetMethod, Object[] args) in I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\TestSupport\RecordingDispatchProxy.cs:line 86&#xD;
+   at generatedProxy_11.EnqueueMessageEncrypted(IWritable)&#xD;
+   at NexusForever.Game.Entity.Inventory.ItemMove(IItem item, InventoryLocation location, UInt32 bagIndex) in I:\GIT\NexusForever-assessment\Source\NexusForever.Game\Entity\Inventory.cs:line 800&#xD;
+[xUnit.net 00:00:05.93]       Assert.Equal() Failure: Values differ&#xD;
+[xUnit.net 00:00:05.93]       Expected: Inventory&#xD;
+[xUnit.net 00:00:05.93]       Actual:   RealmBank&#xD;
+[xUnit.net 00:00:05.93]       Stack Trace:&#xD;
+[xUnit.net 00:00:05.93]         I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\Entity\RealmBankItemIdentityTests.Single.cs(66,0): at NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.SingleBankMovePacketFailureCannotRestoreThePreEnrollmentLocation(Boolean bankSource)&#xD;
+[xUnit.net 00:00:05.93]         --- End of stack trace from previous location ---&#xD;
+[TRACE][Bag] Initialised new bag Inventory with 16 slots. &#xD;
+[TRACE][Bag] Initialised new bag RealmBank with 16 slots. &#xD;
+[TRACE][Bag] Added item 0x0000000000000191 to bag RealmBank at index 3. &#xD;
+[TRACE][Bag] Removed item 0x0000000000000191 from bag RealmBank at index 3. &#xD;
+[ERROR][RealmBankManager] Failed to delete realm bank item 401. Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.&#xD;
+ ---&gt; Microsoft.Data.Sqlite.SqliteException (0x80004005): SQLite Error 19: 'split failure'.&#xD;
+   at Microsoft.Data.Sqlite.SqliteException.ThrowExceptionForRC(Int32 rc, sqlite3 db)&#xD;
+   at Microsoft.Data.Sqlite.SqliteDataReader.NextResult()&#xD;
+   at Microsoft.Data.Sqlite.SqliteCommand.ExecuteReader(CommandBehavior behavior)&#xD;
+   at Microsoft.Data.Sqlite.SqliteCommand.ExecuteReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)&#xD;
+   at Microsoft.Data.Sqlite.SqliteCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)&#xD;
+   --- End of inner exception stack trace ---&#xD;
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)&#xD;
+   at NexusForever.Database.Character.CharacterContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken) in I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Character\CharacterContext.SaveCompletion.cs:line 117&#xD;
+   at NexusForever.Database.Character.CharacterDatabase.&lt;&gt;c__DisplayClass4_0.&lt;&lt;Save&gt;b__0&gt;d.MoveNext() in I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Character\CharacterDatabase.cs:line 36&#xD;
+--- End of stack trace from previous location ---&#xD;
+   at NexusForever.Database.Character.CharacterDatabase.&lt;&gt;c__DisplayClass4_0.&lt;&lt;Save&gt;b__0&gt;d.MoveNext() in I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Character\CharacterDatabase.cs:line 36&#xD;
+--- End of stack trace from previous location ---&#xD;
+   at NexusForever.Shared.Diagnostics.NexusForeverDiagnostics.MeasureDatabaseAsync(String database, String operation, Func`1 func) in I:\GIT\NexusForever-assessment\Source\NexusForever.Shared\Diagnostics\NexusForeverDiagnostics.cs:line 223&#xD;
+   at NexusForever.Database.Character.CharacterDatabase.Save(Action`1 action) in I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Character\CharacterDatabase.cs:line 32&#xD;
+   at NexusForever.Shared.TaskExtensions.FireAndForgetAsync(Task task, Action`1 onException) in I:\GIT\NexusForever-assessment\Source\NexusForever.Shared\TaskExtensions.cs:line 15&#xD;
+[xUnit.net 00:00:06.36]       Assert.True() Failure&#xD;
+[xUnit.net 00:00:06.36]       Expected: True&#xD;
+[xUnit.net 00:00:06.36]       Actual:   False&#xD;
+[xUnit.net 00:00:06.36]       Stack Trace:&#xD;
+[xUnit.net 00:00:06.36]         I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\Entity\RealmBankItemIdentityTests.Single.cs(38,0): at NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.FailedBankDeletionRetainsItsOwnedTombstoneUntilACompleteRetry()&#xD;
+[xUnit.net 00:00:06.36]         --- End of stack trace from previous location ---&#xD;
+[TRACE][Bag] Initialised new bag Inventory with 16 slots. &#xD;
+[TRACE][Bag] Initialised new bag RealmBank with 16 slots. &#xD;
+[TRACE][Bag] Added item 0x0000000000000191 to bag RealmBank at index 3. &#xD;
+[TRACE][Bag] Removed item 0x0000000000000191 from bag RealmBank at index 3. &#xD;
+[xUnit.net 00:00:06.76]       Assert.True() Failure&#xD;
+[xUnit.net 00:00:06.76]       Expected: True&#xD;
+[xUnit.net 00:00:06.76]       Actual:   False&#xD;
+[xUnit.net 00:00:06.76]       Stack Trace:&#xD;
+[xUnit.net 00:00:06.76]         I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\Entity\RealmBankItemIdentityTests.Single.cs(49,0): at NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.BankDeletionRefusesAChangedAccountOwner()&#xD;
+[xUnit.net 00:00:06.76]         --- End of stack trace from previous location ---&#xD;
+[TRACE][Bag] Initialised new bag Inventory with 16 slots. &#xD;
+[TRACE][Bag] Initialised new bag RealmBank with 16 slots. &#xD;
+[TRACE][Bag] Added item 0x0000000000000191 to bag RealmBank at index 3. &#xD;
+[TRACE][Bag] Removed item 0x0000000000000191 from bag RealmBank at index 3. &#xD;
+[TRACE][Bag] Added item 0x0000000000000191 to bag Inventory at index 6. &#xD;
+[ERROR][RealmBankManager] Failed to save character item 401 after realm bank move. Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.&#xD;
+ ---&gt; Microsoft.Data.Sqlite.SqliteException (0x80004005): SQLite Error 19: 'split failure'.&#xD;
+   at Microsoft.Data.Sqlite.SqliteException.ThrowExceptionForRC(Int32 rc, sqlite3 db)&#xD;
+   at Microsoft.Data.Sqlite.SqliteDataReader.NextResult()&#xD;
+   at Microsoft.Data.Sqlite.SqliteCommand.ExecuteReader(CommandBehavior behavior)&#xD;
+   at Microsoft.Data.Sqlite.SqliteCommand.ExecuteReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)&#xD;
+   at Microsoft.Data.Sqlite.SqliteCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)&#xD;
+   --- End of inner exception stack trace ---&#xD;
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)&#xD;
+   at NexusForever.Database.Character.CharacterContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken) in I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Character\CharacterContext.SaveCompletion.cs:line 117&#xD;
+   at NexusForever.Database.Character.CharacterDatabase.&lt;&gt;c__DisplayClass4_0.&lt;&lt;Save&gt;b__0&gt;d.MoveNext() in I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Character\CharacterDatabase.cs:line 36&#xD;
+--- End of stack trace from previous location ---&#xD;
+   at NexusForever.Database.Character.CharacterDatabase.&lt;&gt;c__DisplayClass4_0.&lt;&lt;Save&gt;b__0&gt;d.MoveNext() in I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Character\CharacterDatabase.cs:line 36&#xD;
+--- End of stack trace from previous location ---&#xD;
+   at NexusForever.Shared.Diagnostics.NexusForeverDiagnostics.MeasureDatabaseAsync(String database, String operation, Func`1 func) in I:\GIT\NexusForever-assessment\Source\NexusForever.Shared\Diagnostics\NexusForeverDiagnostics.cs:line 223&#xD;
+   at NexusForever.Database.Character.CharacterDatabase.Save(Action`1 action) in I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Character\CharacterDatabase.cs:line 32&#xD;
+   at NexusForever.Shared.TaskExtensions.FireAndForgetAsync(Task task, Action`1 onException) in I:\GIT\NexusForever-assessment\Source\NexusForever.Shared\TaskExtensions.cs:line 15&#xD;
+[xUnit.net 00:00:07.21]       Assert.Throws() Failure: No exception was thrown&#xD;
+[xUnit.net 00:00:07.21]       Expected: typeof(System.InvalidOperationException)&#xD;
+[xUnit.net 00:00:07.21]       Stack Trace:&#xD;
+[xUnit.net 00:00:07.21]         I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\Entity\RealmBankItemIdentityTests.Single.cs(25,0): at NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.FailedSingleBankMoveRejectsTheWholeLaterNormalSave(Boolean bankSource)&#xD;
+[xUnit.net 00:00:07.21]         --- End of stack trace from previous location ---&#xD;
+[TRACE][Bag] Initialised new bag Inventory with 16 slots. &#xD;
+[TRACE][Bag] Initialised new bag RealmBank with 16 slots. &#xD;
+[TRACE][Bag] Added item 0x0000000000000191 to bag Inventory at index 0. &#xD;
+[TRACE][Bag] Removed item 0x0000000000000191 from bag Inventory at index 0. &#xD;
+[TRACE][Bag] Added item 0x0000000000000191 to bag RealmBank at index 6. &#xD;
+[ERROR][RealmBankManager] Failed to save realm bank item 401. Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.&#xD;
+ ---&gt; Microsoft.Data.Sqlite.SqliteException (0x80004005): SQLite Error 19: 'split failure'.&#xD;
+   at Microsoft.Data.Sqlite.SqliteException.ThrowExceptionForRC(Int32 rc, sqlite3 db)&#xD;
+   at Microsoft.Data.Sqlite.SqliteDataReader.NextResult()&#xD;
+   at Microsoft.Data.Sqlite.SqliteCommand.ExecuteReader(CommandBehavior behavior)&#xD;
+   at Microsoft.Data.Sqlite.SqliteCommand.ExecuteReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)&#xD;
+   at Microsoft.Data.Sqlite.SqliteCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)&#xD;
+   --- End of inner exception stack trace ---&#xD;
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)&#xD;
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)&#xD;
+   at NexusForever.Database.Character.CharacterContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken) in I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Character\CharacterContext.SaveCompletion.cs:line 117&#xD;
+   at NexusForever.Database.Character.CharacterDatabase.&lt;&gt;c__DisplayClass4_0.&lt;&lt;Save&gt;b__0&gt;d.MoveNext() in I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Character\CharacterDatabase.cs:line 36&#xD;
+--- End of stack trace from previous location ---&#xD;
+   at NexusForever.Database.Character.CharacterDatabase.&lt;&gt;c__DisplayClass4_0.&lt;&lt;Save&gt;b__0&gt;d.MoveNext() in I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Character\CharacterDatabase.cs:line 36&#xD;
+--- End of stack trace from previous location ---&#xD;
+   at NexusForever.Shared.Diagnostics.NexusForeverDiagnostics.MeasureDatabaseAsync(String database, String operation, Func`1 func) in I:\GIT\NexusForever-assessment\Source\NexusForever.Shared\Diagnostics\NexusForeverDiagnostics.cs:line 223&#xD;
+   at NexusForever.Database.Character.CharacterDatabase.Save(Action`1 action) in I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Character\CharacterDatabase.cs:line 32&#xD;
+   at NexusForever.Shared.TaskExtensions.FireAndForgetAsync(Task task, Action`1 onException) in I:\GIT\NexusForever-assessment\Source\NexusForever.Shared\TaskExtensions.cs:line 15&#xD;
+[xUnit.net 00:00:07.63]       Assert.Throws() Failure: No exception was thrown&#xD;
+[xUnit.net 00:00:07.63]       Expected: typeof(System.InvalidOperationException)&#xD;
+[xUnit.net 00:00:07.63]       Stack Trace:&#xD;
+[xUnit.net 00:00:07.63]         I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\Entity\RealmBankItemIdentityTests.Single.cs(24,0): at NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.FailedSingleBankMoveRejectsTheWholeLaterNormalSave(Boolean bankSource)&#xD;
+[xUnit.net 00:00:07.63]         --- End of stack trace from previous location ---&#xD;
+[xUnit.net 00:00:07.63]   Finished:    NexusForever.Game.Tests&#xD;
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="DAN" outcome="Error" timestamp="2026-10-31T11:48:47.1785679+01:00">
+        <Text>[xUnit.net 00:00:05.32]     NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.SingleBankMovePacketFailureCannotRestoreThePreEnrollmentLocation(bankSource: False) [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="DAN" outcome="Error" timestamp="2026-10-31T11:48:47.7872939+01:00">
+        <Text>[xUnit.net 00:00:05.93]     NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.SingleBankMovePacketFailureCannotRestoreThePreEnrollmentLocation(bankSource: True) [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="DAN" outcome="Error" timestamp="2026-10-31T11:48:48.2157432+01:00">
+        <Text>[xUnit.net 00:00:06.36]     NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.FailedBankDeletionRetainsItsOwnedTombstoneUntilACompleteRetry [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="DAN" outcome="Error" timestamp="2026-10-31T11:48:48.6206048+01:00">
+        <Text>[xUnit.net 00:00:06.76]     NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.BankDeletionRefusesAChangedAccountOwner [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="DAN" outcome="Error" timestamp="2026-10-31T11:48:49.0662559+01:00">
+        <Text>[xUnit.net 00:00:07.21]     NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.FailedSingleBankMoveRejectsTheWholeLaterNormalSave(bankSource: True) [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="DAN" outcome="Error" timestamp="2026-10-31T11:48:49.4853723+01:00">
+        <Text>[xUnit.net 00:00:07.63]     NexusForever.Game.Tests.Entity.RealmBankItemIdentityTests.FailedSingleBankMoveRejectsTheWholeLaterNormalSave(bankSource: False) [FAIL]</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

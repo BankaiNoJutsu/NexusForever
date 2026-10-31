@@ -1,0 +1,56 @@
+PR,Title,Base,Files,Identical files,Divergent files,Absent paths,Fork-changed overlap
+604,Taxi: discover taxi kiosks and handle taxi flights,game_rework,15,0,9,6,9
+607,"Mount: one mount per summon, summon auras pass the global cooldown, Dismount clears a lost mount",game_rework,4,0,4,0,4
+588,Galactic Archive: unlock articles from achievements and quests,game_rework,28,0,16,12,16
+598,Fix exception when activating a datacube the character already has,game_rework,1,0,1,0,1
+606,Instance: return location for portal entries and the Leave button,game_rework,18,0,13,5,13
+605,Spell: handle AddSpell and Disembark for the riding licenses,game_rework,2,0,2,0,2
+603,Spell: Recall House returns to the residence,game_rework,20,0,12,8,12
+602,Spell: Recall Transmat returns to the bind point,game_rework,19,0,11,8,11
+601,Player: bind at transmat terminals and send the bind point,game_rework,13,0,8,5,8
+600,Prerequisite: add UnhealthyTime (269) and Dueling (204) checks,game_rework,3,0,1,2,1
+597,Fix server dirty character jobs never ending when a character is marked dirty again during a run,game_rework,2,0,2,0,0
+596,implement SpellEffect 73 ModifySpellCooldown,expedition-evil-from-the-ether,11,0,3,8,3
+595,"Implement healing HP and Shields, also implement base values for focus, and fix oversight in ServerSpellConfirmCast/ServerSpellCastResult",expedition-evil-from-the-ether,30,0,16,14,15
+594,Align prerequisite comparison enum with the client values,expedition-evil-from-the-ether,1,0,1,0,0
+590,Entitlements: give every character the base entitlements of a full account,game_rework,6,0,6,0,3
+581,Fall back to the player's last open world position when leaving a content instance,expedition-evil-from-the-ether,10,0,8,2,6
+586,NPE quest scripting example: Navigating Nexus → Claim to Stake,game_rework,44,0,34,10,31
+584,Handle /resetinstances for solo instances,expedition-evil-from-the-ether,3,0,3,0,3
+578,Coalesce movement relocations in the map grid action queue,expedition-evil-from-the-ether,5,0,5,0,3
+568,Generalise prerequisite evaluation and spell contexts,expedition-evil-from-the-ether,31,0,24,7,12
+582,Allow client side interaction spells on entities that aren't units,expedition-evil-from-the-ether,2,0,1,1,1
+585,"The Hycrest Insurrection: intro and first mission vote (adventure, world 1149)",expedition-evil-from-the-ether,35,0,23,12,22
+580,Fix players standing on platform entities,expedition-evil-from-the-ether,2,0,2,0,2
+570,Fix Aspire setup and migrations,game_rework,35,0,25,10,18
+576,GameTable: allow retry after cache initialization fails,game_rework,5,0,3,2,3
+575,GameTable: read supplementary Unicode characters in wide strings,game_rework,5,0,3,2,2
+573,Network: reject reads past the end of a game packet,game_rework,5,0,3,2,3
+572,Network: make listener startup and shutdown reliable,game_rework,5,0,3,2,3
+566,Network: replace APM socket loop and FragmentedBuffer with System.IO.Pipelines,game_rework,4,0,4,0,3
+521,Item / inventory messages,game_rework,90,0,57,33,36
+557,Apply Armor Pierce before mitigation by reducing effective armor,game_rework,2,0,1,1,1
+554,[WIP] [Expedition branch] Implementation of Prerequisites,expedition-evil-from-the-ether,42,0,31,11,21
+514,Unit messages - fixes and additions,game_rework,93,0,43,50,19
+515,Player messages,game_rework,66,0,26,40,15
+542,"Ability messages, part 2",game_rework,15,2,4,9,5
+540,Movement messages,game_rework,25,0,6,19,5
+537,Miscellaneous messages,game_rework,18,0,9,9,4
+482,Update the game message opcodes list,game_rework,9,0,5,4,5
+165,Gameplayer/Features: Transmat Support & Client Interaction - WIP,develop,34,0,4,30,4
+358,Spells/Telegraphs: DamageFlag MVP & Esper Support,develop,5,0,0,5,0
+471,Dependency injection rework of basic amp PR418,game_rework,8,0,6,2,6
+466,Prerequisite/Checks: Checks Update - rework,game_rework,5,0,4,1,3
+463,WIP [Spell/AMP] Make AMPs cast their related spell when learned,game_rework,5,0,5,0,5
+455,"Spell/Effects: Stealth, Cooldown and ForceRemove - WIP",game_rework,18,0,13,5,12
+449,[Entity/Vehicle] Fix vehicle attach for players mounted already when they enter range,game_rework,4,0,2,2,2
+283,Quests/Core: Checklist quests support - WIP,develop,16,0,4,12,4
+275,"Account/Inventory: Inventory management, item binding",develop,36,0,7,29,7
+272,Loot/RewardTracks: Account & Character Tracks support added,develop,48,0,9,39,9
+260,"Spell/Effects: Stealth, Cooldown and ForceRemove - WIP",develop,13,0,0,13,0
+411,[Store/Purchases] Purchasing support with current character,develop,27,0,5,22,5
+401,[Guilds/Core] Empty guild and chat name caches upon disbanding guild - Resolves #394,develop,4,0,0,4,0
+399,[Item/Runes] Support Runes and Rune Slots,develop,25,0,4,21,4
+391,[Guilds/Communities] Handle Residence(s) on Disband or Leave,develop,6,0,0,6,0
+329,Auto move materials to satchel then the bag if full,develop,1,0,0,1,0
+418,Basic AMP implementation,develop,4,0,0,4,0

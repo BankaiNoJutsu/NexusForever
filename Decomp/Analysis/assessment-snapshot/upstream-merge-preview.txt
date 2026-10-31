@@ -1,0 +1,489 @@
+3e8add5885cb9633313447e6bb6243e7be58664f
+100644 b81ea487ae2c18fdbca94fab7b97b62fdab6986b 1	Source/NexusForever.Database.World/Migrations/WorldContextModelSnapshot.cs
+100644 9055e4ee57071a9acad9626af39589baf6156064 2	Source/NexusForever.Database.World/Migrations/WorldContextModelSnapshot.cs
+100644 116beb2390a1fed06ca3fd8926ca518079bf6608 3	Source/NexusForever.Database.World/Migrations/WorldContextModelSnapshot.cs
+100644 18a62dde3703162dd48dbb6887e7a8e65313b9ee 2	Source/NexusForever.Database.World/Model/EntityLootModel.cs
+100644 3ad6e8039980639f5c99449aba938b134078221d 3	Source/NexusForever.Database.World/Model/EntityLootModel.cs
+100644 510f0cbd9521e7abc01d594d85eb41616f30ba8f 2	Source/NexusForever.Database.World/Model/ItemLootModel.cs
+100644 8d4f73fcff23cd42748e1be830b43aabb330f492 3	Source/NexusForever.Database.World/Model/ItemLootModel.cs
+100644 669775d29cc657daca0b225fcb27b01b78fa1ece 2	Source/NexusForever.Database.World/Model/LootGroupModel.cs
+100644 d44deebceb71254626067c8bcfe3a3170a546e42 3	Source/NexusForever.Database.World/Model/LootGroupModel.cs
+100644 6c78e1fd3c04128211c4bb50c559d53c9fb0b0dd 2	Source/NexusForever.Database.World/Model/LootItemModel.cs
+100644 3286c591289383a217f67885df1a5bc5f4656759 3	Source/NexusForever.Database.World/Model/LootItemModel.cs
+100644 c4d1722a543084a6347390e2d7c30d223f619090 1	Source/NexusForever.Database.World/WorldContext.cs
+100644 deedd0562988078218dc0afd57860e42991f55b2 2	Source/NexusForever.Database.World/WorldContext.cs
+100644 6d6fa4e1991274c0fa8514fe7d01bd8d9b923000 3	Source/NexusForever.Database.World/WorldContext.cs
+100644 15cd587fb3b87b8bb41072f85db8c27bf432754e 1	Source/NexusForever.Database.World/WorldDatabase.cs
+100644 949d6abcb2310c6b3dbdbd1a7de6fbb0ddf18b77 2	Source/NexusForever.Database.World/WorldDatabase.cs
+100644 745d104bae217bc7ab34dd13d826c6f593caa7e5 3	Source/NexusForever.Database.World/WorldDatabase.cs
+100644 209168983d364dacb635975bf6aec63a286c95b2 1	Source/NexusForever.Game.Abstract/Housing/IResidence.cs
+100644 a346f3dbdb2cec2ea16933e82bda5ee7c226bb28 2	Source/NexusForever.Game.Abstract/Housing/IResidence.cs
+100644 85cec2678fb188a925b60ef3e3694795be8479c9 3	Source/NexusForever.Game.Abstract/Housing/IResidence.cs
+100644 ea24b237e2743d8cb02c5562738ca13b242f886c 1	Source/NexusForever.Game.Static/Housing/DecorType.cs
+100644 9ceebe669c13ed53a6e0d4fdb17e38fa799e6e97 2	Source/NexusForever.Game.Static/Housing/DecorType.cs
+100644 73144af7dc7544a0aa3931919a804d195cb193fa 3	Source/NexusForever.Game.Static/Housing/DecorType.cs
+100644 46e21085f628e418e0dcb3102429e60a9df5a2f9 2	Source/NexusForever.Game.Static/Loot/LootConditionType.cs
+100644 7b8b9f209e09b45b65943eb860c889f18dd16423 3	Source/NexusForever.Game.Static/Loot/LootConditionType.cs
+100644 fe29954dabb4f17eaa243435a670f9ec43c1f97a 2	Source/NexusForever.Game.Static/Loot/LootEntityType.cs
+100644 0d897baf8297a7b7cd7e79b6c831c8c83733993b 3	Source/NexusForever.Game.Static/Loot/LootEntityType.cs
+100644 a9559d955693bc28e9308f91abb08d4f8d9f5970 2	Source/NexusForever.Game.Static/Loot/LooterType.cs
+100644 724a3bbda91a5bb17382e0cfd49f7b0259418932 3	Source/NexusForever.Game.Static/Loot/LooterType.cs
+100644 48fc44e805668a3c6844d0eb5fe472be7f7abb24 1	Source/NexusForever.Game.Static/Quest/TargetGroupType.cs
+100644 dd498dd9e34fc40dc6d85824c21662ba02a2693a 2	Source/NexusForever.Game.Static/Quest/TargetGroupType.cs
+100644 7bb54bd2a11fd818e6879b86998607dead5bd6be 3	Source/NexusForever.Game.Static/Quest/TargetGroupType.cs
+100644 a6461842bdb5e417c6b46ba7bd86527f0585d647 1	Source/NexusForever.Game/Account/Currency/AccountCurrencyManager.cs
+100644 4efa4ee3d0163b8100d456cb4cb370fe540df1a3 2	Source/NexusForever.Game/Account/Currency/AccountCurrencyManager.cs
+100644 dbcc2e2758ab3d8bc91130d714cb7907d5b0b255 3	Source/NexusForever.Game/Account/Currency/AccountCurrencyManager.cs
+100644 4a85ea5744b5afe560779d87a6e46cb96d93c814 1	Source/NexusForever.Game/AssetManager.cs
+100644 0695f54ea8ac34bf043ccd38d985755dc535941e 2	Source/NexusForever.Game/AssetManager.cs
+100644 2fb646ee8d2c624aff5871768eb21da937e8d636 3	Source/NexusForever.Game/AssetManager.cs
+100644 d46e8426f38b53a28afa55c467877b608864e6dd 1	Source/NexusForever.Game/Entity/ItemInfo.cs
+100644 1441772749354d6c5b00e8ebf0eb0921769052cd 2	Source/NexusForever.Game/Entity/ItemInfo.cs
+100644 590e1827e3779a9f6e047ec3cdc525ab51a2f89b 3	Source/NexusForever.Game/Entity/ItemInfo.cs
+100644 905c3fe5d5c604f92a865c4b29fa7c110bffcd26 1	Source/NexusForever.Game/Entity/Player.cs
+100644 1b022f541d88320da40707eb8c1255e061670dd5 2	Source/NexusForever.Game/Entity/Player.cs
+100644 f541a2badcfa20b9c3b15d6b4b94b75241d48a08 3	Source/NexusForever.Game/Entity/Player.cs
+100644 0620a7f18ee3ca2f54565db9a8f0cde622381a59 1	Source/NexusForever.Game/Entity/SpellManager.cs
+100644 382b58b6ec301e8607fef48a5cfbb564ccff1b54 2	Source/NexusForever.Game/Entity/SpellManager.cs
+100644 d7973a86fde1ff27c91866691615c6def2799294 3	Source/NexusForever.Game/Entity/SpellManager.cs
+100644 6f0223db8bc11fd1bb965505112db6ceb00b778c 1	Source/NexusForever.Game/Entity/UnitEntity.cs
+100644 9e43c2368f2a3dac04d73a74f71189277a2a3122 2	Source/NexusForever.Game/Entity/UnitEntity.cs
+100644 1b58cd06dbd1d7b6213fd7b157f3cc10c2961ed5 3	Source/NexusForever.Game/Entity/UnitEntity.cs
+100644 ca5b54e9818ea6b6862095f928bfec96e0f9a37e 1	Source/NexusForever.Game/Entity/VehicleEntity.cs
+100644 d8f7a6b658e3f8665a81429e7d83909bf4ce166b 2	Source/NexusForever.Game/Entity/VehicleEntity.cs
+100644 ae98e666842d99816e78847333dab3b480d7f321 3	Source/NexusForever.Game/Entity/VehicleEntity.cs
+100644 aa3a104e7b9732c7a9c706315485e157a05844dd 1	Source/NexusForever.Game/Housing/Decor.cs
+100644 49b077c61ca019b93fa120acda8b9f7c6d1b6534 2	Source/NexusForever.Game/Housing/Decor.cs
+100644 4d61d300229ae331f32fa807b7739d30bb00b439 3	Source/NexusForever.Game/Housing/Decor.cs
+100644 489959e5a310559dada6736783287d06243ba33b 1	Source/NexusForever.Game/Housing/GlobalResidenceManager.cs
+100644 f6aa2d51db0cc7d74d935533a941214b6f431282 2	Source/NexusForever.Game/Housing/GlobalResidenceManager.cs
+100644 1d707c5203c33349984ac79b448035359a780ae6 3	Source/NexusForever.Game/Housing/GlobalResidenceManager.cs
+100644 e1ee1a091fc9e8cb6ec83e19c38dccd64664ceee 1	Source/NexusForever.Game/Housing/Plot.cs
+100644 ef0f634a7ff1850309678989e6fe01ebc95dcc61 2	Source/NexusForever.Game/Housing/Plot.cs
+100644 4fa02480b1f490d58031aaf8b54f36cdce7c1813 3	Source/NexusForever.Game/Housing/Plot.cs
+100644 721dfc2d1f2deded8682a252a4782c65ee0134bd 1	Source/NexusForever.Game/Housing/Residence.cs
+100644 e894092c27b5620dd7a568bee827a0cdeb0e993a 2	Source/NexusForever.Game/Housing/Residence.cs
+100644 6ab2069d18f1b2d87f1071cf43b812f3715de343 3	Source/NexusForever.Game/Housing/Residence.cs
+100644 396a99b00fd756ac5390a17ba65a80c88746362f 1	Source/NexusForever.Game/Housing/ResidenceManager.cs
+100644 6a78d1cf3d024af64667f11893e78b2f78445c07 2	Source/NexusForever.Game/Housing/ResidenceManager.cs
+100644 475c0ee5c65327de601015fb81748ef2334df102 3	Source/NexusForever.Game/Housing/ResidenceManager.cs
+100644 8029c4d664b3bb18e1c03b814f7598d82daa7cbf 1	Source/NexusForever.Game/Housing/ServiceCollectionExtensions.cs
+100644 788044bb1dea044d7e000dddc010422ca12d671c 2	Source/NexusForever.Game/Housing/ServiceCollectionExtensions.cs
+100644 126f6385d4bb82d9813fd566eadb42e5a0e21be2 3	Source/NexusForever.Game/Housing/ServiceCollectionExtensions.cs
+100644 f4210ebf40a05af7913bacb063f00c4d9376cf4b 2	Source/NexusForever.Game/Loot/LootInstance.cs
+100644 1b40784c354fc87782885d7b5544c9d21eadf1fd 3	Source/NexusForever.Game/Loot/LootInstance.cs
+100644 752bc26f1e60348f25d583a9c3fa6434ffc55cc8 2	Source/NexusForever.Game/Loot/LootInstanceItem.cs
+100644 6a0cb91d73cf41f669d5687fb280627bb67732b2 3	Source/NexusForever.Game/Loot/LootInstanceItem.cs
+100644 1e712148fe44b7ff12b954d01dccba831102adf9 1	Source/NexusForever.Game/Map/BaseMap.cs
+100644 41d7851095fb3af95a6af3b9311992272970a82f 2	Source/NexusForever.Game/Map/BaseMap.cs
+100644 c558ccab6e2f48744cbe56ac3434bf4a4e6ccd29 3	Source/NexusForever.Game/Map/BaseMap.cs
+100644 523f358c889e0d1ebc63175eb876122cb693a3b8 1	Source/NexusForever.Game/Map/Instance/ContentMapInstance.cs
+100644 44761495045641ae4ba2f96a192c4b0baaad2e2e 2	Source/NexusForever.Game/Map/Instance/ContentMapInstance.cs
+100644 e57167cf19b4f55f2fcf75646de8f220ea11f07e 3	Source/NexusForever.Game/Map/Instance/ContentMapInstance.cs
+100644 bba41153e5bd2b8918343a6980c3ef821d862bd7 1	Source/NexusForever.Game/Map/Instance/ContentPvpMapInstance.cs
+100644 72479b779fcbdcb5f722492dda93317b390f837c 2	Source/NexusForever.Game/Map/Instance/ContentPvpMapInstance.cs
+100644 381abd6744bc50e27506d71a2c8a07ac60130ac0 3	Source/NexusForever.Game/Map/Instance/ContentPvpMapInstance.cs
+100644 505df702c9fab2cce4b09f20940dc86d000e0f8c 1	Source/NexusForever.Game/Map/Instance/MapInstance.cs
+100644 ae4b6a583e19123a2843db736b010d40f1597ad4 2	Source/NexusForever.Game/Map/Instance/MapInstance.cs
+100644 7dd777220e3c375aa6b5c0cf1c4ccefe7f787694 3	Source/NexusForever.Game/Map/Instance/MapInstance.cs
+100644 3b1fca928bbe982b459a3c937cf4c56d340ee930 1	Source/NexusForever.Game/Map/Instance/ResidenceMapInstance.cs
+100644 5816e8ee744573181d02a51cc4d659f34dd680eb 2	Source/NexusForever.Game/Map/Instance/ResidenceMapInstance.cs
+100644 58cc9885e90325c499b54d5a0c4e46bea43e962a 3	Source/NexusForever.Game/Map/Instance/ResidenceMapInstance.cs
+100644 86b578b3085995fc62715016c838fca9f2f61787 1	Source/NexusForever.Game/ServiceCollectionExtensions.cs
+100644 5b94b319168df23dc7d74b822f11b463860485ef 2	Source/NexusForever.Game/ServiceCollectionExtensions.cs
+100644 f1472afc1dcf1f3ce4309b4a45763618442ef1ea 3	Source/NexusForever.Game/ServiceCollectionExtensions.cs
+100644 c3aed0c717f05925d24c1fbbecbd76d38b534261 1	Source/NexusForever.Game/Spell/CharacterSpell.cs
+100644 e3c9bd2113cf5223942d2c31fd2b22075dc66a26 2	Source/NexusForever.Game/Spell/CharacterSpell.cs
+100644 65db71b4adb6b538a0d9073eddd3bf02c156e2b6 3	Source/NexusForever.Game/Spell/CharacterSpell.cs
+100644 b51c9943bbdd72debf4713a26551eddf29d09c67 1	Source/NexusForever.Game/Spell/Spell.cs
+100644 943d493a6c5526ef4e25e3e28b2d7dfe63297f6b 2	Source/NexusForever.Game/Spell/Spell.cs
+100644 ecbc49031b6a28ef8af9e90c3e4cbd09f9fb22ad 3	Source/NexusForever.Game/Spell/Spell.cs
+100644 8f261dd5e6d2bbec0aae872722ca3100b5bbf60e 1	Source/NexusForever.Network.World/Message/Model/Bi0635.cs
+100644 419343790f70d11b68da5ee13971232df2a56d1f 3	Source/NexusForever.Network.World/Message/Model/Bi0635.cs
+100644 b442cb797bf8df297a9de860fd00a97bc1ca7289 1	Source/NexusForever.Network.World/Message/Model/ClientActivateUnitCast.cs
+100644 17b35f5232c65973fd3efff8f6f363de4ff33f8f 2	Source/NexusForever.Network.World/Message/Model/ClientActivateUnitCast.cs
+100644 819c30a42c664403307c56b248d684e28bad3b7c 1	Source/NexusForever.Network.World/Message/Model/ClientEntityInteract.cs
+100644 ec92b009d523d121cf5d595cfcf6421cdd37c0de 2	Source/NexusForever.Network.World/Message/Model/ClientEntityInteract.cs
+100644 3add3d4bde8c633453e0a0dd868256895ca31a53 3	Source/NexusForever.Network.World/Message/Model/ClientEntityInteract.cs
+100644 6835fae26d75ee60f9a5ee5d81001368373a7e10 1	Source/NexusForever.Network.World/Message/Model/ClientHousingPlugUpdate.cs
+100644 73d19e335518cdec19cbe99e5751e32358058db0 2	Source/NexusForever.Network.World/Message/Model/ClientHousingPlugUpdate.cs
+100644 01e14a7003b60a921d18a0278f581b297c5a4eb2 1	Source/NexusForever.Network.World/Message/Model/ClientMatchingRoleCheckResponse.cs
+100644 d770165791d890fd4bed71da8cb9c6a6295ecd46 2	Source/NexusForever.Network.World/Message/Model/ClientMatchingRoleCheckResponse.cs
+100644 02fee4175bd364baeff1525aca86da8d400d84e9 3	Source/NexusForever.Network.World/Message/Model/ClientMatchingRoleCheckResponse.cs
+100644 c50fc41584b748b84ee805c0133501a944f81dee 1	Source/NexusForever.Network.World/Message/Model/ClientSpellStopCast.cs
+100644 94113ff1e1b6fbf6fcc405c6a5898f65f69f8361 2	Source/NexusForever.Network.World/Message/Model/ClientSpellStopCast.cs
+100644 06bcbe170b3209432a58fcefb1542cf23cde5fed 1	Source/NexusForever.Network.World/Message/Model/ClientStorefrontPurchaseCharacter.cs
+100644 95e36f92b34006728c79925664089b1e13562823 2	Source/NexusForever.Network.World/Message/Model/ClientStorefrontPurchaseCharacter.cs
+100644 ff889c9b7b67cac1d14b200b32081d8ab2e273a3 3	Source/NexusForever.Network.World/Message/Model/ClientStorefrontPurchaseCharacter.cs
+100644 0485ce148c1d52e90f74b1c70047478726f699de 1	Source/NexusForever.Network.World/Message/Model/Crafting/ClientCraftingCraftItem.cs
+100644 964d5b13644f4016a570961ceeacd57c860d479e 2	Source/NexusForever.Network.World/Message/Model/Crafting/ClientCraftingCraftItem.cs
+100644 544966c7c6fceef3a19d0156ff79d26deffc8c32 3	Source/NexusForever.Network.World/Message/Model/Crafting/ClientCraftingCraftItem.cs
+100644 15a10745cea8e5d48e3233b581b5c9d5e5a876a5 1	Source/NexusForever.Network.World/Message/Model/Housing/ClientHousingDecorUpdate.cs
+100644 1245740475a80f82aef771d71ef41d56e2357b71 2	Source/NexusForever.Network.World/Message/Model/Housing/ClientHousingDecorUpdate.cs
+100644 b37910e417afa8262c112718eae45422e74ffb34 3	Source/NexusForever.Network.World/Message/Model/Housing/ClientHousingDecorUpdate.cs
+100644 22828156a81d8f97854fc43ec8cd66dc67c75551 1	Source/NexusForever.Network.World/Message/Model/Loot/LootItem.cs
+100644 c800d4fa28db0c8b150c8bfc16d0d51f1bea3f89 2	Source/NexusForever.Network.World/Message/Model/Loot/LootItem.cs
+100644 ef7fe58c571b374980712efd5267663a39d4f67b 3	Source/NexusForever.Network.World/Message/Model/Loot/LootItem.cs
+100644 db23c9c7b26ecbb3adc46cf9be563cf12483d123 1	Source/NexusForever.Network.World/Message/Model/Pet/ClientPetSetStance.cs
+100644 e6af7552baa0a5df2528d87823215bcdfd20ad40 2	Source/NexusForever.Network.World/Message/Model/Pet/ClientPetSetStance.cs
+100644 7e8975b97ea76446d39dd72a375b5c98b237ce4d 3	Source/NexusForever.Network.World/Message/Model/Pet/ClientPetSetStance.cs
+100644 55b701872bf5645250dca7eb01b899197335bd4d 1	Source/NexusForever.Network.World/Message/Model/Server07F9.cs
+100644 56593b50b85a5d53784c61836e59754418788092 1	Source/NexusForever.Network.World/Message/Model/Server07FD.cs
+100644 e7c20188df22945f3546344ceeb77e455023e3d6 1	Source/NexusForever.Network.World/Message/Model/Server0816.cs
+100644 2c16983a54f756dbf71a78d619ec804c98e71a0f 1	Source/NexusForever.Network.World/Message/Model/ServerAccountCurrencyGrant.cs
+100644 6bf2172036d819eb3284b5d7f71095b0eff55141 2	Source/NexusForever.Network.World/Message/Model/ServerAccountCurrencyGrant.cs
+100644 18e30070809e0465eb4f8cf7ad0e50c7c29553b7 1	Source/NexusForever.Network.World/Message/Model/ServerEntityCreate.cs
+100644 cac70c2181b78942da92d1bd0236a61d4fede466 2	Source/NexusForever.Network.World/Message/Model/ServerEntityCreate.cs
+100644 5b8378bd3b9f3d012fa5bd868949d8d04efdad09 3	Source/NexusForever.Network.World/Message/Model/ServerEntityCreate.cs
+100644 e2c030a577f37864d681c92fed93921cb0cd4768 1	Source/NexusForever.Network.World/Message/Model/ServerHousingNeighbors.cs
+100644 d2f140f60a09985c7583dbcc999f05c4831149bc 2	Source/NexusForever.Network.World/Message/Model/ServerHousingNeighbors.cs
+100644 9b1b476918bda529e1ec33d5d5f2c44a0c8ebd49 2	Source/NexusForever.Network.World/Message/Model/ServerSpellCastCancel.cs
+100644 315a33817d69a2406b6e8b80f4355907aec9af10 2	Source/NexusForever.Network.World/Message/Model/ServerSpellCastPositionSync.cs
+100644 4ad6439e16fb891a3391b227ef9284b80ec64df8 1	Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetList.cs
+100644 94e5a47f8ec545cda0310ba6ab8ee40c9ff0caa2 2	Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetList.cs
+100644 45a0fb06857e4ddcc553c8722a81cda8936c6f1b 1	Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetStatus.cs
+100644 b2034fe56fae987961c2aab8661afca9845be2ae 2	Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetStatus.cs
+100644 aa3ac73087e3c08ceed65e2c71e14571ed80bb1e 1	Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetUnit.cs
+100644 ea61b942824d3eee31be9da7f11cb17c68a2f3be 2	Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetUnit.cs
+100644 98062611506cd2e3d1039feea2271f359a8107a5 1	Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetUnit2.cs
+100644 f2f6dfab638a417b2b2bd0e3d77c88642cf6e969 2	Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetUnit2.cs
+100644 b2e4322da956ed57a76b0cd35fe1508295f50a8e 1	Source/NexusForever.Network.World/Message/Model/ServerSpellThresholdClear.cs
+100644 06c93774d63d75f05cf87dad1580d5c5d8d2922f 2	Source/NexusForever.Network.World/Message/Model/ServerSpellThresholdClear.cs
+100644 5785e82c37d625d197cbbc41ec23c02a22b43d1b 2	Source/NexusForever.Network.World/Message/Model/ServerSpellThresholdStart.cs
+100644 cf300742bb4c97f57657b5e0774e2f7ccdea35e0 1	Source/NexusForever.Network.World/Message/Model/Shared/AccountInventoryItem.cs
+100644 a9b4d1ef6e6038ae01378bc0476c30f63f4f6412 2	Source/NexusForever.Network.World/Message/Model/Shared/AccountInventoryItem.cs
+100644 288b6ceda1c8d45e3032437f3a7afc4a98848d8e 1	Source/NexusForever.Network.World/Message/Model/Shared/TargetInfo.cs
+100644 b14a101d65b997f11492ad6cd836464a7cc40f4c 2	Source/NexusForever.Network.World/Message/Model/Shared/TargetInfo.cs
+100644 3b01ac37dfa54964ba57cb5aa13733dde71a61aa 3	Source/NexusForever.Network.World/Message/Model/Shared/TargetInfo.cs
+100644 8c509f381f722ab31aea2ed1d7abafbdc3c7a010 1	Source/NexusForever.Network.World/Message/Model/Spell/ClientActivateUnit.cs
+100644 98953f8f60ed31b88ac47a7e40969798f8cc3dfd 2	Source/NexusForever.Network.World/Message/Model/Spell/ClientActivateUnit.cs
+100644 9e6c43e9f148ce36e699d79bf90b55d907b77a47 3	Source/NexusForever.Network.World/Message/Model/Spell/ClientActivateUnit.cs
+100644 1cfd32832bb38047ee319698f72949e8ce8b580b 1	Source/NexusForever.Network.World/Message/Model/Spell/ClientCastGuildBossToken.cs
+100644 b309cc333d3fa3cef99cd047644a49b4f734a92b 2	Source/NexusForever.Network.World/Message/Model/Spell/ClientCastGuildBossToken.cs
+100644 f3e1a657166e5d4d3cf00869f48c8c9cb079ff0f 3	Source/NexusForever.Network.World/Message/Model/Spell/ClientCastGuildBossToken.cs
+100644 4759c06de7ee5bbd7683ea6f27c76e4bde3a7fa7 1	Source/NexusForever.Network.World/Message/Model/Spell/ClientCastSpell.cs
+100644 46fb59341a4e5d0e37ce95ac836219b1781cb732 2	Source/NexusForever.Network.World/Message/Model/Spell/ClientCastSpell.cs
+100644 4630740967a6802025d71d6b7ec6b9e1befc6b98 3	Source/NexusForever.Network.World/Message/Model/Spell/ClientCastSpell.cs
+100644 49160199bc00972473a4ffbb44ea54829aa81063 1	Source/NexusForever.Network.World/Message/Model/Spell/ClientCastSpellContinuous.cs
+100644 67db4221bd8fae179b5416a21aa6213adb82c938 2	Source/NexusForever.Network.World/Message/Model/Spell/ClientCastSpellContinuous.cs
+100644 d1c9d30f58fb0e3966f4258f4cbd9d612458376b 3	Source/NexusForever.Network.World/Message/Model/Spell/ClientCastSpellContinuous.cs
+100644 04aee8635ac648ff67ef335bdff2910745601fda 1	Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellCastResult.cs
+100644 2e7184933070982e81aa6a71789f3241ad5e0b74 2	Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellCastResult.cs
+100644 48309775dfb9b6e1f7ac6c9ef3b89dcdfbd0bf4a 3	Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellCastResult.cs
+100644 315a33817d69a2406b6e8b80f4355907aec9af10 3	Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellConfirmCast.cs
+100644 e13696dda29cfdcf5487d7f3ac1c5fc217905d04 1	Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellExecute.cs
+100644 824924b0db5402512e4041b365d401451b8450a6 3	Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellExecute.cs
+100644 9b1b476918bda529e1ec33d5d5f2c44a0c8ebd49 3	Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellInterrupted1.cs
+100644 5785e82c37d625d197cbbc41ec23c02a22b43d1b 3	Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellThresholdStart.cs
+100644 c2693093795a33b022230b8bf4d442b7b1a8e197 1	Source/NexusForever.Network.World/Message/Model/State2.cs
+100644 0663986c2ac73377e1c72affdbbd6b5b1711f1af 2	Source/NexusForever.Network.World/Message/Model/State2.cs
+100644 164af39a9426175e11040109ab4fa2d58e0b8850 1	Source/NexusForever.Network.World/Message/Model/Utility/ServerInspectPlayerResponse.cs
+100644 2c36a4a7a9c26aadb5545c388fc47d529ac3f767 2	Source/NexusForever.Network.World/Message/Model/Utility/ServerInspectPlayerResponse.cs
+100644 59688d410c88643e9ea04b128b054fda36465334 3	Source/NexusForever.Network.World/Message/Model/Utility/ServerInspectPlayerResponse.cs
+100644 32c5f6f0d8b5be28779547ec2472ae45569a6848 1	Source/NexusForever.Network.World/Message/Static/HousingResult.cs
+100644 b2fdeab6279391c7e899e7198d9a280167178539 2	Source/NexusForever.Network.World/Message/Static/HousingResult.cs
+100644 4ed626019a7007ae04c0a81bc9f0b4ccfa9fefe4 1	Source/NexusForever.Network/Message/GameMessageOpcode.cs
+100644 f4b9497c661376ac461fd238f38f35e9e7765a1e 2	Source/NexusForever.Network/Message/GameMessageOpcode.cs
+100644 b4aefcc7a5e8d3e300e422821e4bbd467091f65b 3	Source/NexusForever.Network/Message/GameMessageOpcode.cs
+100644 374b54626672ae4b4f1787f0cd821897645a8519 1	Source/NexusForever.WorldServer/Command/Context/WebSocketCommandContext.cs
+100644 4830db5a49f2911a28370ba91767eca10eb37dfa 2	Source/NexusForever.WorldServer/Command/Context/WebSocketCommandContext.cs
+100644 d434347f73c6b78e47005214cad49c2a55e6e080 3	Source/NexusForever.WorldServer/Command/Context/WebSocketCommandContext.cs
+100644 3a4676bb8385a477de7ef73e6c65aacf49a9b0ca 1	Source/NexusForever.WorldServer/Command/Handler/CurrencyCommandCategory.cs
+100644 37234f05fb2972f7c714c5ad9e6d5d4d3611a689 2	Source/NexusForever.WorldServer/Command/Handler/CurrencyCommandCategory.cs
+100644 1bdc2a81d84112f67739a7cd1dbfe2606e0ab707 3	Source/NexusForever.WorldServer/Command/Handler/CurrencyCommandCategory.cs
+100644 55d4f1eae98331685f00de91e1e3d570f9092219 1	Source/NexusForever.WorldServer/Command/Handler/HouseCommandCategory.cs
+100644 a30754fe178454d99e033395a0991e18a493cf83 2	Source/NexusForever.WorldServer/Command/Handler/HouseCommandCategory.cs
+100644 e98587227e85e031c5bd5d3b6099c0ba3c298fc0 3	Source/NexusForever.WorldServer/Command/Handler/HouseCommandCategory.cs
+100644 de89377ca29d6b9ad71c180f0ffe92f3421c21d9 2	Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupDisbandedHandler.cs
+100644 60009d030516a6c169f5f38d2a3b1c33771f46a0 3	Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupDisbandedHandler.cs
+100644 372d4bb3055eec1f77ccc3fe70806f17d1c061d7 1	Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupLootRulesUpdatedHandler.cs
+100644 8df1e38962ef056a5f4dc740811f3d8b6ce0293c 2	Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupLootRulesUpdatedHandler.cs
+100644 5702c4104e9b7763821b143120820f272e83d4e3 3	Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupLootRulesUpdatedHandler.cs
+100644 9c7b1be640af3bce57275cbbe4ad2aef29680be1 1	Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberAddedHandler.cs
+100644 0cc7860d1dd323622b5d6fe1d1ba7bffa44d69ca 2	Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberAddedHandler.cs
+100644 05b8e244d3247998e119c46832f295bf4a06526b 3	Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberAddedHandler.cs
+100644 a45107bf12cbf43c0a43e9ce3b180ce8aeb071fe 1	Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberFlagsUpdatedHandler.cs
+100644 525d74030c75d682f5083536afe31a1b2c19b56e 2	Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberFlagsUpdatedHandler.cs
+100644 dbe90dced19ca5db7a33ba1d98a1d710616f10c3 3	Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberFlagsUpdatedHandler.cs
+100644 bf8017401494bc2581fc5d26afa7d98c00745309 1	Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberPromotedHandler.cs
+100644 f56e357ceefad2b99b387cf4d1091f8f0d1174ba 2	Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberPromotedHandler.cs
+100644 8eabc524b0084c8fa8ee6ca700c046b56dbbec65 3	Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberPromotedHandler.cs
+100644 ca8a5f9037b917ab5dc97becf5f6d3115bbfedd0 1	Source/NexusForever.WorldServer/Network/Internal/Handler/Player/PlayerGroupAssociationUpdatedHandler.cs
+100644 65c22985807273cdf454756d0b6f1e9eaa7bea1a 2	Source/NexusForever.WorldServer/Network/Internal/Handler/Player/PlayerGroupAssociationUpdatedHandler.cs
+100644 ca796a96077010449ff8ec0d3acd99a82e21f2f7 3	Source/NexusForever.WorldServer/Network/Internal/Handler/Player/PlayerGroupAssociationUpdatedHandler.cs
+100644 9fb149079af85a1773a02fb337e154d66fe607a6 1	Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientActivateUnitCastHandler.cs
+100644 18b363e46f088c732870714848e6950998f5049b 2	Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientActivateUnitCastHandler.cs
+100644 24079903747827c560f04eb763abb6fae1297b1b 3	Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientActivateUnitCastHandler.cs
+100644 ee0f789667bab990699b947e28fb46c85ee4b6f9 1	Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientActivateUnitHandler.cs
+100644 b445c40fb39c6cf827804d991e16dcb2ad4db733 2	Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientActivateUnitHandler.cs
+100644 2c3220956b61bdb4e1acf434580435f33fbea4ff 3	Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientActivateUnitHandler.cs
+100644 91cfb21509efa74cca7260e89ceeb15e9c6207e2 1	Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientEntityInteractionHandler.cs
+100644 dd6732eda32a7026feb67dc69b5b75c2e53e6fdf 2	Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientEntityInteractionHandler.cs
+100644 6f4ccf798eaf71cfb5ca4a76a69460f667550826 3	Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientEntityInteractionHandler.cs
+100644 8f83345734b452829b54ddd4878774c7019a8fc5 1	Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildRegisterHandler.cs
+100644 cc03210250c02cd7f7d4ee2482f4de2290ece022 2	Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildRegisterHandler.cs
+100644 385a6f8171907ee328c8f83f031f85d031ef1d51 3	Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildRegisterHandler.cs
+100644 533e7b6c9067a7de9d350407209b898759d5c06a 1	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityDonateHandler.cs
+100644 c76b571e7f886096202c9bebd4eda7f0146406a3 2	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityDonateHandler.cs
+100644 045eeb01c8fe439104bd9967e998d290b87d1335 3	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityDonateHandler.cs
+100644 33478aa86ced4c100cc108b572ff1ab0bfda032f 1	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityRemovalHandler.cs
+100644 facc92506d31d166d45a34c5e2852830ade79414 2	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityRemovalHandler.cs
+100644 28410ad231f3578ff7435c3fc26d62466f0b703e 3	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityRemovalHandler.cs
+100644 d525dfce6be1bb501b6921bc2d35d477dc761e9b 1	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityRenameHandler.cs
+100644 471c7ca6beab47131be205a191c0d83c92497b68 2	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityRenameHandler.cs
+100644 502c1fc0936654d571b4429e01637967659b21e4 3	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityRenameHandler.cs
+100644 52df01b3390b3a1067517dacfb6fe7c2286c88cc 1	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingEditModeHandler.cs
+100644 8aad9664425d4c6fce8a85e0d3256559b7ffb4fb 2	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingEditModeHandler.cs
+100644 9eb74cc1da434bffddb065003da3594fee389c87 3	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingEditModeHandler.cs
+100644 0b3f7317efb889c468aa795a524e63f9f53b9bb6 1	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingPlugUpdateHander.cs
+100644 d97c9f1b491be694a96884d579945ee7c9729e2b 2	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingPlugUpdateHander.cs
+100644 4fa4b3fd4c5d7e7808056f98fc450f74511955e9 3	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingPlugUpdateHander.cs
+100644 1ceb1192f463b3de48185c0562b58c6104080d50 1	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingRequestCommunityPlacementHandler.cs
+100644 33c9094e8eb349235462ebf748643625d0534c05 2	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingRequestCommunityPlacementHandler.cs
+100644 b86e74233413ce4b06b9cec4de12288eec0dcd9f 3	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingRequestCommunityPlacementHandler.cs
+100644 5332b5b10a8380f07cde161077b71c88e55f6b2e 1	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingVisitHandler.cs
+100644 55c03d24b725041f51545210f6a2efbd648294dc 2	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingVisitHandler.cs
+100644 e30b6290d07c645257444298aa5d820d576aa656 3	Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingVisitHandler.cs
+100644 3f851fb73bd5669255d2f9381f1d41852047778b 1	Source/NexusForever.WorldServer/Network/Message/Handler/Item/ClientHousingAddItemToCrateHandler.cs
+100644 ab9eb758726e852a7b3fe86bdc871c1f73f2a7a9 2	Source/NexusForever.WorldServer/Network/Message/Handler/Item/ClientHousingAddItemToCrateHandler.cs
+100644 139779496ddf112c8fd784c024bb1f0dd6f49ddf 3	Source/NexusForever.WorldServer/Network/Message/Handler/Item/ClientHousingAddItemToCrateHandler.cs
+100644 4b6a4c13c9d0bbe25a9828491db1b15b104a9f3c 1	Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientCastSpellHandler.cs
+100644 8bd8dcc4a7343e17c367db7c13a9aab9b2798138 2	Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientCastSpellHandler.cs
+100644 7d94d41a29fd0e098dbfbefa4c0f462c11ac58be 3	Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientCastSpellHandler.cs
+100644 b5e7dd265cd13ed5e4498ede50a2d8c699c2f87d 1	Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientSpellStopCastHandler.cs
+100644 798d35ee6b72d2fd489ed54e3da214a311a4cb8c 2	Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientSpellStopCastHandler.cs
+100644 3108ab09f59ede337c28a761ddefbc9a68b71832 3	Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientSpellStopCastHandler.cs
+100644 65a5c079cdaab79bbb935e695fd9ecea4505ac49 1	Source/NexusForever.WorldServer/Web/Middleware/WebSocketController.cs
+100644 4c0f39067e4cecda053162a6d93ee7caa4ca7f88 2	Source/NexusForever.WorldServer/Web/Middleware/WebSocketController.cs
+100644 df42b50e7aed2281f23bdacb5e7048bbe8b61b43 3	Source/NexusForever.WorldServer/Web/Middleware/WebSocketController.cs
+
+Auto-merging Source/Directory.Packages.props
+Auto-merging Source/NexusForever.Database.Character/CharacterContext.cs
+Auto-merging Source/NexusForever.Database.Character/Migrations/CharacterContextModelSnapshot.cs
+Auto-merging Source/NexusForever.Database.Character/Model/ResidenceModel.cs
+Auto-merging Source/NexusForever.Database.World/Migrations/WorldContextModelSnapshot.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Database.World/Migrations/WorldContextModelSnapshot.cs
+Auto-merging Source/NexusForever.Database.World/Model/EntityLootModel.cs
+CONFLICT (add/add): Merge conflict in Source/NexusForever.Database.World/Model/EntityLootModel.cs
+Auto-merging Source/NexusForever.Database.World/Model/ItemLootModel.cs
+CONFLICT (add/add): Merge conflict in Source/NexusForever.Database.World/Model/ItemLootModel.cs
+Auto-merging Source/NexusForever.Database.World/Model/LootGroupModel.cs
+CONFLICT (add/add): Merge conflict in Source/NexusForever.Database.World/Model/LootGroupModel.cs
+Auto-merging Source/NexusForever.Database.World/Model/LootItemModel.cs
+CONFLICT (add/add): Merge conflict in Source/NexusForever.Database.World/Model/LootItemModel.cs
+Auto-merging Source/NexusForever.Database.World/WorldContext.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Database.World/WorldContext.cs
+Auto-merging Source/NexusForever.Database.World/WorldDatabase.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Database.World/WorldDatabase.cs
+Auto-merging Source/NexusForever.Game.Abstract/Account/Currency/IAccountCurrencyManager.cs
+Auto-merging Source/NexusForever.Game.Abstract/Entity/IItemInfo.cs
+Auto-merging Source/NexusForever.Game.Abstract/Entity/IWorldEntity.cs
+Auto-merging Source/NexusForever.Game.Abstract/Housing/IDecor.cs
+Auto-merging Source/NexusForever.Game.Abstract/Housing/IResidence.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game.Abstract/Housing/IResidence.cs
+Auto-merging Source/NexusForever.Game.Abstract/Housing/IResidenceManager.cs
+Auto-merging Source/NexusForever.Game.Abstract/Map/IBaseMap.cs
+Auto-merging Source/NexusForever.Game.Abstract/Map/Instance/IResidenceMapInstance.cs
+Auto-merging Source/NexusForever.Game.Abstract/Spell/ISpell.cs
+Auto-merging Source/NexusForever.Game.Abstract/Storefront/IOfferItem.cs
+Auto-merging Source/NexusForever.Game.Static/Housing/DecorType.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game.Static/Housing/DecorType.cs
+Auto-merging Source/NexusForever.Game.Static/Loot/LootConditionType.cs
+CONFLICT (add/add): Merge conflict in Source/NexusForever.Game.Static/Loot/LootConditionType.cs
+Auto-merging Source/NexusForever.Game.Static/Loot/LootEntityType.cs
+CONFLICT (add/add): Merge conflict in Source/NexusForever.Game.Static/Loot/LootEntityType.cs
+Auto-merging Source/NexusForever.Game.Static/Loot/LooterType.cs
+CONFLICT (add/add): Merge conflict in Source/NexusForever.Game.Static/Loot/LooterType.cs
+Auto-merging Source/NexusForever.Game.Static/Quest/TargetGroupType.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game.Static/Quest/TargetGroupType.cs
+Auto-merging Source/NexusForever.Game/Account/Currency/AccountCurrency.cs
+Auto-merging Source/NexusForever.Game/Account/Currency/AccountCurrencyManager.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Account/Currency/AccountCurrencyManager.cs
+Auto-merging Source/NexusForever.Game/AssetManager.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/AssetManager.cs
+Auto-merging Source/NexusForever.Game/Entity/CreatureEntity.cs
+Auto-merging Source/NexusForever.Game/Entity/GridEntity.cs
+Auto-merging Source/NexusForever.Game/Entity/ItemInfo.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Entity/ItemInfo.cs
+Auto-merging Source/NexusForever.Game/Entity/NonPlayerEntity.cs
+Auto-merging Source/NexusForever.Game/Entity/Player.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Entity/Player.cs
+Auto-merging Source/NexusForever.Game/Entity/PlayerManager.cs
+Auto-merging Source/NexusForever.Game/Entity/ResurrectionManager.cs
+Auto-merging Source/NexusForever.Game/Entity/SpellManager.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Entity/SpellManager.cs
+Auto-merging Source/NexusForever.Game/Entity/UnitEntity.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Entity/UnitEntity.cs
+Auto-merging Source/NexusForever.Game/Entity/VehicleEntity.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Entity/VehicleEntity.cs
+Auto-merging Source/NexusForever.Game/Entity/WorldEntity.cs
+Auto-merging Source/NexusForever.Game/Guild/CommunityOperations.cs
+Auto-merging Source/NexusForever.Game/Housing/Decor.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Housing/Decor.cs
+Auto-merging Source/NexusForever.Game/Housing/GlobalResidenceManager.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Housing/GlobalResidenceManager.cs
+Auto-merging Source/NexusForever.Game/Housing/Plot.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Housing/Plot.cs
+Auto-merging Source/NexusForever.Game/Housing/Residence.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Housing/Residence.cs
+Auto-merging Source/NexusForever.Game/Housing/ResidenceManager.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Housing/ResidenceManager.cs
+Auto-merging Source/NexusForever.Game/Housing/ServiceCollectionExtensions.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Housing/ServiceCollectionExtensions.cs
+Auto-merging Source/NexusForever.Game/Loot/LootInstance.cs
+CONFLICT (add/add): Merge conflict in Source/NexusForever.Game/Loot/LootInstance.cs
+Auto-merging Source/NexusForever.Game/Loot/LootInstanceItem.cs
+CONFLICT (add/add): Merge conflict in Source/NexusForever.Game/Loot/LootInstanceItem.cs
+Auto-merging Source/NexusForever.Game/Map/BaseMap.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Map/BaseMap.cs
+Auto-merging Source/NexusForever.Game/Map/Instance/ContentMapInstance.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Map/Instance/ContentMapInstance.cs
+Auto-merging Source/NexusForever.Game/Map/Instance/ContentPvpMapInstance.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Map/Instance/ContentPvpMapInstance.cs
+Auto-merging Source/NexusForever.Game/Map/Instance/MapInstance.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Map/Instance/MapInstance.cs
+Auto-merging Source/NexusForever.Game/Map/Instance/ResidenceInstancedMap.cs
+Auto-merging Source/NexusForever.Game/Map/Instance/ResidenceMapInstance.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Map/Instance/ResidenceMapInstance.cs
+Auto-merging Source/NexusForever.Game/Map/Lock/MapLockManager.cs
+Auto-merging Source/NexusForever.Game/Quest/QuestObjective.cs
+Auto-merging Source/NexusForever.Game/ServiceCollectionExtensions.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/ServiceCollectionExtensions.cs
+Auto-merging Source/NexusForever.Game/Spell/CharacterSpell.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Spell/CharacterSpell.cs
+Auto-merging Source/NexusForever.Game/Spell/Spell.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Game/Spell/Spell.cs
+Auto-merging Source/NexusForever.Game/Storefront/OfferItem.cs
+Auto-merging Source/NexusForever.GameTable/GameTableManager.cs
+Auto-merging Source/NexusForever.GameTable/IGameTableManager.cs
+Auto-merging Source/NexusForever.Network.Internal/Message/Group/Shared/Group.cs
+CONFLICT (rename/delete): Source/NexusForever.Network.World/Message/Model/Server0635.cs renamed to Source/NexusForever.Network.World/Message/Model/Bi0635.cs in upstream/game_rework, but deleted in HEAD.
+CONFLICT (modify/delete): Source/NexusForever.Network.World/Message/Model/Bi0635.cs deleted in HEAD and modified in upstream/game_rework.  Version upstream/game_rework of Source/NexusForever.Network.World/Message/Model/Bi0635.cs left in tree.
+CONFLICT (modify/delete): Source/NexusForever.Network.World/Message/Model/ClientActivateUnitCast.cs deleted in upstream/game_rework and modified in HEAD.  Version HEAD of Source/NexusForever.Network.World/Message/Model/ClientActivateUnitCast.cs left in tree.
+Auto-merging Source/NexusForever.Network.World/Message/Model/ClientEntityInteract.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Network.World/Message/Model/ClientEntityInteract.cs
+CONFLICT (modify/delete): Source/NexusForever.Network.World/Message/Model/ClientHousingPlugUpdate.cs deleted in upstream/game_rework and modified in HEAD.  Version HEAD of Source/NexusForever.Network.World/Message/Model/ClientHousingPlugUpdate.cs left in tree.
+Auto-merging Source/NexusForever.Network.World/Message/Model/ClientMatchingQueueRandomParty.cs
+Auto-merging Source/NexusForever.Network.World/Message/Model/ClientMatchingRoleCheckResponse.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Network.World/Message/Model/ClientMatchingRoleCheckResponse.cs
+Auto-merging Source/NexusForever.Network.World/Message/Model/ClientResurrectAccept.cs
+CONFLICT (modify/delete): Source/NexusForever.Network.World/Message/Model/ClientSpellStopCast.cs deleted in upstream/game_rework and modified in HEAD.  Version HEAD of Source/NexusForever.Network.World/Message/Model/ClientSpellStopCast.cs left in tree.
+Auto-merging Source/NexusForever.Network.World/Message/Model/ClientStorefrontPurchaseCharacter.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Network.World/Message/Model/ClientStorefrontPurchaseCharacter.cs
+Auto-merging Source/NexusForever.Network.World/Message/Model/Crafting/ClientCraftingCraftItem.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Network.World/Message/Model/Crafting/ClientCraftingCraftItem.cs
+Auto-merging Source/NexusForever.Network.World/Message/Model/Crafting/ClientCraftingCraftItemAutoCraft.cs
+Auto-merging Source/NexusForever.Network.World/Message/Model/Housing/ClientHousingDecorUpdate.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Network.World/Message/Model/Housing/ClientHousingDecorUpdate.cs
+Auto-merging Source/NexusForever.Network.World/Message/Model/Loot/LootItem.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Network.World/Message/Model/Loot/LootItem.cs
+Auto-merging Source/NexusForever.Network.World/Message/Model/Pet/ClientPetSetStance.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Network.World/Message/Model/Pet/ClientPetSetStance.cs
+Auto-merging Source/NexusForever.Network.World/Message/Model/Server07F9.cs
+CONFLICT (rename/rename): Source/NexusForever.Network.World/Message/Model/Server07F9.cs renamed to Source/NexusForever.Network.World/Message/Model/ServerSpellCastCancel.cs in HEAD and to Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellInterrupted1.cs in upstream/game_rework.
+Auto-merging Source/NexusForever.Network.World/Message/Model/Server07FD.cs
+CONFLICT (rename/rename): Source/NexusForever.Network.World/Message/Model/Server07FD.cs renamed to Source/NexusForever.Network.World/Message/Model/ServerSpellCastPositionSync.cs in HEAD and to Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellConfirmCast.cs in upstream/game_rework.
+Auto-merging Source/NexusForever.Network.World/Message/Model/Server0816.cs
+CONFLICT (rename/rename): Source/NexusForever.Network.World/Message/Model/Server0816.cs renamed to Source/NexusForever.Network.World/Message/Model/ServerSpellThresholdStart.cs in HEAD and to Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellThresholdStart.cs in upstream/game_rework.
+CONFLICT (modify/delete): Source/NexusForever.Network.World/Message/Model/ServerAccountCurrencyGrant.cs deleted in upstream/game_rework and modified in HEAD.  Version HEAD of Source/NexusForever.Network.World/Message/Model/ServerAccountCurrencyGrant.cs left in tree.
+Auto-merging Source/NexusForever.Network.World/Message/Model/ServerEntityCreate.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Network.World/Message/Model/ServerEntityCreate.cs
+CONFLICT (modify/delete): Source/NexusForever.Network.World/Message/Model/ServerHousingNeighbors.cs deleted in upstream/game_rework and modified in HEAD.  Version HEAD of Source/NexusForever.Network.World/Message/Model/ServerHousingNeighbors.cs left in tree.
+CONFLICT (rename/delete): Source/NexusForever.Network.World/Message/Model/Server0811.cs renamed to Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetList.cs in HEAD, but deleted in upstream/game_rework.
+CONFLICT (modify/delete): Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetList.cs deleted in upstream/game_rework and modified in HEAD.  Version HEAD of Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetList.cs left in tree.
+CONFLICT (rename/delete): Source/NexusForever.Network.World/Message/Model/Server07FA.cs renamed to Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetStatus.cs in HEAD, but deleted in upstream/game_rework.
+CONFLICT (modify/delete): Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetStatus.cs deleted in upstream/game_rework and modified in HEAD.  Version HEAD of Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetStatus.cs left in tree.
+CONFLICT (rename/delete): Source/NexusForever.Network.World/Message/Model/Server07F5.cs renamed to Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetUnit.cs in HEAD, but deleted in upstream/game_rework.
+CONFLICT (modify/delete): Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetUnit.cs deleted in upstream/game_rework and modified in HEAD.  Version HEAD of Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetUnit.cs left in tree.
+CONFLICT (rename/delete): Source/NexusForever.Network.World/Message/Model/Server07F7.cs renamed to Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetUnit2.cs in HEAD, but deleted in upstream/game_rework.
+CONFLICT (modify/delete): Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetUnit2.cs deleted in upstream/game_rework and modified in HEAD.  Version HEAD of Source/NexusForever.Network.World/Message/Model/ServerSpellCastTargetUnit2.cs left in tree.
+CONFLICT (rename/delete): Source/NexusForever.Network.World/Message/Model/Server0814.cs renamed to Source/NexusForever.Network.World/Message/Model/ServerSpellThresholdClear.cs in HEAD, but deleted in upstream/game_rework.
+CONFLICT (modify/delete): Source/NexusForever.Network.World/Message/Model/ServerSpellThresholdClear.cs deleted in upstream/game_rework and modified in HEAD.  Version HEAD of Source/NexusForever.Network.World/Message/Model/ServerSpellThresholdClear.cs left in tree.
+CONFLICT (modify/delete): Source/NexusForever.Network.World/Message/Model/Shared/AccountInventoryItem.cs deleted in upstream/game_rework and modified in HEAD.  Version HEAD of Source/NexusForever.Network.World/Message/Model/Shared/AccountInventoryItem.cs left in tree.
+Auto-merging Source/NexusForever.Network.World/Message/Model/Shared/TargetInfo.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Network.World/Message/Model/Shared/TargetInfo.cs
+Auto-merging Source/NexusForever.Network.World/Message/Model/Spell/ClientActivateUnit.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Network.World/Message/Model/Spell/ClientActivateUnit.cs
+Auto-merging Source/NexusForever.Network.World/Message/Model/Spell/ClientCastGuildBossToken.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Network.World/Message/Model/Spell/ClientCastGuildBossToken.cs
+Auto-merging Source/NexusForever.Network.World/Message/Model/Spell/ClientCastSpell.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Network.World/Message/Model/Spell/ClientCastSpell.cs
+Auto-merging Source/NexusForever.Network.World/Message/Model/Spell/ClientCastSpellContinuous.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Network.World/Message/Model/Spell/ClientCastSpellContinuous.cs
+Auto-merging Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellCastResult.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellCastResult.cs
+CONFLICT (rename/delete): Source/NexusForever.Network.World/Message/Model/Server0818.cs renamed to Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellExecute.cs in upstream/game_rework, but deleted in HEAD.
+CONFLICT (modify/delete): Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellExecute.cs deleted in HEAD and modified in upstream/game_rework.  Version upstream/game_rework of Source/NexusForever.Network.World/Message/Model/Spell/ServerSpellExecute.cs left in tree.
+CONFLICT (rename/delete): Source/NexusForever.Network.World/Message/Model/Server0237.cs renamed to Source/NexusForever.Network.World/Message/Model/State2.cs in HEAD, but deleted in upstream/game_rework.
+CONFLICT (modify/delete): Source/NexusForever.Network.World/Message/Model/State2.cs deleted in upstream/game_rework and modified in HEAD.  Version HEAD of Source/NexusForever.Network.World/Message/Model/State2.cs left in tree.
+Auto-merging Source/NexusForever.Network.World/Message/Model/Utility/ServerInspectPlayerResponse.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Network.World/Message/Model/Utility/ServerInspectPlayerResponse.cs
+CONFLICT (modify/delete): Source/NexusForever.Network.World/Message/Static/HousingResult.cs deleted in upstream/game_rework and modified in HEAD.  Version HEAD of Source/NexusForever.Network.World/Message/Static/HousingResult.cs left in tree.
+Auto-merging Source/NexusForever.Network/Message/GameMessageOpcode.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.Network/Message/GameMessageOpcode.cs
+Auto-merging Source/NexusForever.Network/Session/NetworkSession.cs
+Auto-merging Source/NexusForever.Server.GroupServer/Character/Character.cs
+Auto-merging Source/NexusForever.Shared/Game/Events/EventQueue.cs
+Auto-merging Source/NexusForever.WorldServer/Command/Context/WebSocketCommandContext.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Command/Context/WebSocketCommandContext.cs
+Auto-merging Source/NexusForever.WorldServer/Command/Handler/CurrencyCommandCategory.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Command/Handler/CurrencyCommandCategory.cs
+Auto-merging Source/NexusForever.WorldServer/Command/Handler/HouseCommandCategory.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Command/Handler/HouseCommandCategory.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupDisbandedHandler.cs
+CONFLICT (add/add): Merge conflict in Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupDisbandedHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupLootRulesUpdatedHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupLootRulesUpdatedHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberAddedHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberAddedHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberFlagsUpdatedHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberFlagsUpdatedHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberPromotedHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Internal/Handler/Group/GroupMemberPromotedHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Internal/Handler/NetworkInternalHandlerHostedService.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Internal/Handler/Player/PlayerGroupAssociationUpdatedHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Internal/Handler/Player/PlayerGroupAssociationUpdatedHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Internal/Handler/ServiceCollectionExtensions.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Character/CharacterListManager.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Character/ClientCharacterCreateHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientActivateUnitCastHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientActivateUnitCastHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientActivateUnitHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientActivateUnitHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientEntityInteractionHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientEntityInteractionHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Entity/Player/ClientAppearanceChangeHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildRegisterHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildRegisterHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityDonateHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityDonateHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityPrivacyLevelHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityRemovalHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityRemovalHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityRenameHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingCommunityRenameHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingEditModeHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingEditModeHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingPlugUpdateHander.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingPlugUpdateHander.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingRenamePropertyHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingRequestCommunityPlacementHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingRequestCommunityPlacementHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingTakeMeHomeHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingVendorListHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingVisitHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Message/Handler/Housing/ClientHousingVisitHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Item/ClientHousingAddItemToCrateHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Message/Handler/Item/ClientHousingAddItemToCrateHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Path/ClientPathChangeRequestHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Path/ClientPathUnlockHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientCancelEffectHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientCastSpellContinuousHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientCastSpellHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientCastSpellHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientSpellStopCastHandler.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientSpellStopCastHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Network/Message/Handler/Vendor/ClientVendorPurchaseHandler.cs
+Auto-merging Source/NexusForever.WorldServer/Web/Middleware/WebSocketController.cs
+CONFLICT (content): Merge conflict in Source/NexusForever.WorldServer/Web/Middleware/WebSocketController.cs
+Auto-merging Source/NexusForever.WorldServer/WorldServer.cs

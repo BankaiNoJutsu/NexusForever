@@ -1,2 +1,5 @@
 *.cs text eol=crlf
 *.sln text eol=crlf
+Decomp/Analysis/assessment-snapshot/checkpoint10277/** -text whitespace=cr-at-eol
+Decomp/Analysis/assessment-snapshot/checkpoint10277/**/*.trx binary
+Decomp/Analysis/assessment-snapshot/checkpoint10277/*.log binary

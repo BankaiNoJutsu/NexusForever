@@ -1,0 +1,32 @@
+{
+  "createdAt": "2026-10-29T18:19:44.2163914+01:00",
+  "bundleName": "quest-5597-achievement-checklist-5495-recovery-review",
+  "repoRoot": "I:/GIT/NexusForever-assessment",
+  "clientDirectory": "I:/WildStar",
+  "logLevel": "Trace",
+  "plan": "Decomp/Analysis/BLOCKER_EVIDENCE_PLAN.md",
+  "playerIds": [],
+  "worldIds": [
+    870
+  ],
+  "publicEventIds": [],
+  "objectiveIds": [
+    8256
+  ],
+  "negativeCases": [
+    "missing prerequisite or receiver",
+    "repeat completion",
+    "persistence and achievement UI remain unperformed"
+  ],
+  "notes": "Current planning/runtime-review replacement for unavailable June19 CreateBundleOnly worksheet. Quest5597; achievement4134/checklist5495; rewards3000/5236; Q5597-specific native UI not executed; no retail-complete claim; Computer Use remains stopped.",
+  "requiredFiles": [
+    "manifest.json",
+    "commands.md",
+    "server-log-notes.md",
+    "client-observations.md",
+    "negative-cases.md",
+    "screenshots/",
+    "video/",
+    "logs/"
+  ]
+}

@@ -1,6 +1,6 @@
 # Content Retail Completeness Tracker
 
-Generated: 2026-07-30
+Generated: 2026-10-29
 
 This is the row-level tracker for the build 16042 quests, dungeons, raids, and related scripted instance content used by the NexusForever retail-completeness goal.
 It records evidence and status; it does not claim retail completion unless a row has implementation, automated verification, and manual/client validation where automation cannot prove gameplay.
@@ -818,7 +818,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `blocked_public_event_reward_modifier_event_linked_missing_reward_property_timing_evidence` | 6 |
 | `blocked_public_event_state_objective_linked_missing_state_progression_evidence` | 1 |
 | `blocked_public_event_virtual_item_depot_unlinked_missing_objective_or_depot_mapping` | 9 |
-| `blocked_public_event_vote_row_unlinked_missing_script_mapping` | 63 |
+| `blocked_public_event_vote_row_unlinked_missing_script_mapping` | 62 |
 | `runtime_public_event_custom_stat_event_linked_scoreboard_dependency_tested_pending_stat_producer_smoke` | 4 |
 | `runtime_public_event_custom_stat_type_scoped_scoreboard_dependency_tested_pending_stat_producer_smoke` | 20 |
 | `runtime_public_event_depot_virtual_item_choices_tested_pending_depot_interaction_smoke` | 1 |
@@ -826,7 +826,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_public_event_stat_display_type_scoped_standard_combat_stats_tested_pending_event_mapping_flags_and_client_smoke` | 8 |
 | `runtime_public_event_virtual_item_depot_interact_depot_choices_tested_pending_depot_acquisition_smoke` | 1 |
 | `runtime_public_event_virtual_item_depot_objective_linked_virtual_collect_credit_tested_pending_depot_acquisition_smoke` | 1 |
-| `runtime_public_event_vote_script_referenced_vote_flow_tested_pending_choice_semantics_and_client_smoke` | 1 |
+| `runtime_public_event_vote_script_referenced_vote_flow_tested_pending_choice_semantics_and_client_smoke` | 2 |
 
 ## Challenge DataMapping Evidence Summary
 
@@ -1012,26 +1012,26 @@ It records evidence and status; it does not claim retail completion unless a row
 
 ## Script Public Event Flow Evidence Summary
 
-- Total script public-event flow evidence rows: 1857
+- Total script public-event flow evidence rows: 1858
 
 | Evidence kind | Rows |
 | --- | ---: |
-| `script_public_event_objective_reference` | 1171 |
+| `script_public_event_objective_reference` | 1172 |
 | `script_public_event_phase_reference` | 686 |
 
 | Script scope | Rows |
 | --- | ---: |
-| `script_instance` | 1857 |
+| `script_instance` | 1858 |
 
 | Reference link status | Rows |
 | --- | ---: |
-| `client_row_matched` | 1171 |
+| `client_row_matched` | 1172 |
 | `script_enum_value_resolved` | 686 |
 
 | Owner link status | Rows |
 | --- | ---: |
 | `script_owner_is_related_public_event` | 5 |
-| `script_owner_matches_objective_public_event` | 952 |
+| `script_owner_matches_objective_public_event` | 953 |
 | `script_owner_matches_public_event` | 678 |
 | `script_owner_not_public_event` | 222 |
 
@@ -1045,7 +1045,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_up_downsizer_overcharge_activation_flow_tested` | 1 |
 | `runtime_up_downsizer_voltaic_conversion_activation_flow_tested` | 1 |
 | `script_public_event_objective_client_row_matched_pending_owner_flow_review` | 218 |
-| `script_public_event_objective_parent_event_matched_pending_activation_credit_smoke` | 946 |
+| `script_public_event_objective_parent_event_matched_pending_activation_credit_smoke` | 947 |
 | `script_public_event_phase_script_state_owner_matched_pending_phase_order_smoke` | 678 |
 | `script_public_event_phase_script_state_pending_owner_mapping_and_smoke` | 8 |
 
@@ -1070,8 +1070,8 @@ It records evidence and status; it does not claim retail completion unless a row
 
 | Producer targeting | Rows |
 | --- | ---: |
-| `direct_objective` | 768 |
-| `typed_objective` | 98 |
+| `direct_objective` | 767 |
+| `typed_objective` | 99 |
 | `unresolved` | 10 |
 
 | Script scope | Client objective type | Rows |
@@ -1090,9 +1090,9 @@ It records evidence and status; it does not claim retail completion unless a row
 | `script_instance` | `Script` | 173 |
 | `script_instance` | `ScriptWithoutCount` | 23 |
 | `script_instance` | `ScriptWithoutMax` | 14 |
-| `script_instance` | `TalkTo` | 37 |
+| `script_instance` | `TalkTo` | 38 |
 | `script_instance` | `TalkToChecklist` | 3 |
-| `script_instance` | `TimedWin` | 18 |
+| `script_instance` | `TimedWin` | 17 |
 | `script_instance` | `Turnstile` | 17 |
 | `script_instance` | `VirtualCollect` | 7 |
 | `script_instance` | `unresolved` | 10 |
@@ -1100,9 +1100,9 @@ It records evidence and status; it does not claim retail completion unless a row
 
 | Reference link status | Rows |
 | --- | ---: |
-| `direct_objective_row_matched` | 755 |
+| `direct_objective_row_matched` | 754 |
 | `no_client_objective_match` | 10 |
-| `typed_objective_row_matched` | 98 |
+| `typed_objective_row_matched` | 99 |
 | `unresolved_symbol` | 13 |
 
 | Owner link status | Rows |
@@ -1110,8 +1110,8 @@ It records evidence and status; it does not claim retail completion unless a row
 | `script_owner_entity_filter_mapped_to_public_event` | 214 |
 | `script_owner_entity_or_trigger` | 13 |
 | `script_owner_is_different_public_event` | 2 |
-| `script_owner_matches_public_event` | 546 |
-| `script_owner_unknown` | 101 |
+| `script_owner_matches_public_event` | 545 |
+| `script_owner_unknown` | 102 |
 
 | Evidence status | Rows |
 | --- | ---: |
@@ -1277,7 +1277,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `runtime_gauntlet_showtime_death_credit_tested_pending_arena_order_spawn_route_and_client_smoke` | 1 |
 | `runtime_gauntlet_slice_and_dice_death_credit_tested_pending_main_event_route_and_client_smoke` | 2 |
 | `runtime_gauntlet_voodoo_kin_death_credit_tested_pending_arena_order_spawn_route_and_client_smoke` | 1 |
-| `runtime_hycrest_intro_dropship_briefing_script_credit_tested_pending_dialog_timing_smoke` | 2 |
+| `runtime_hycrest_intro_dropship_briefing_script_credit_tested_pending_dialog_timing_smoke` | 1 |
 | `runtime_hycrest_intro_meet_exile_agent_activation_tested_pending_world_placement_smoke` | 1 |
 | `runtime_hycrest_intro_report_dropship_activation_tested` | 1 |
 | `runtime_hycrest_parent_victory_objective_activation_tested_pending_branch_selection_smoke` | 1 |
@@ -1606,7 +1606,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `script_objective_credit_base_unresolved_objective_blocked` | 3 |
 | `script_objective_producer_checklist_matched_pending_owner_flow_review` | 5 |
 | `script_objective_producer_matched_pending_credit_timing_smoke` | 86 |
-| `script_objective_producer_matched_pending_owner_flow_review` | 23 |
+| `script_objective_producer_matched_pending_owner_flow_review` | 24 |
 | `script_objective_producer_no_client_objective_match_blocked` | 6 |
 | `script_objective_producer_unresolved_symbol_blocked` | 7 |
 | `script_without_count_direct_objective_activation_matched_pending_timing_smoke` | 11 |
@@ -1683,7 +1683,7 @@ It records evidence and status; it does not claim retail completion unless a row
 
 ## Script Runtime Action Evidence Summary
 
-- Total script runtime action evidence rows: 211
+- Total script runtime action evidence rows: 212
 
 | Action category | Rows |
 | --- | ---: |
@@ -1691,13 +1691,13 @@ It records evidence and status; it does not claim retail completion unless a row
 | `script_entity_create` | 80 |
 | `script_entity_remove_from_map` | 35 |
 | `script_local_teleport` | 7 |
-| `script_public_event_finish` | 39 |
+| `script_public_event_finish` | 40 |
 | `script_spell_cast` | 13 |
 | `script_teleport` | 8 |
 
 | Script scope | Rows |
 | --- | ---: |
-| `script_instance` | 175 |
+| `script_instance` | 176 |
 | `script_main` | 36 |
 
 | Reference link status | Rows |
@@ -1707,7 +1707,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `numeric_constant_resolved` | 8 |
 | `numeric_literal_resolved` | 4 |
 | `source_expression_empty` | 35 |
-| `source_expression_tracked` | 83 |
+| `source_expression_tracked` | 84 |
 
 | Client reference status | Rows |
 | --- | ---: |
@@ -1715,7 +1715,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `dynamic_spell_reference_pending_source_trace` | 1 |
 | `dynamic_world_reference_pending_source_trace` | 7 |
 | `literal_local_position_tracked` | 3 |
-| `public_event_team_expression_tracked` | 39 |
+| `public_event_team_expression_tracked` | 40 |
 | `runtime_entity_add_expression_tracked` | 29 |
 | `runtime_entity_remove_receiver_tracked` | 35 |
 | `runtime_entity_type_tracked` | 80 |
@@ -1730,7 +1730,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `literal_local_position_source_tracked` | 3 |
 | `literal_or_constant_client_reference_tracked` | 12 |
 | `matching_map_entrance_runtime_lookup_tracked` | 4 |
-| `public_event_finish_team_source_tracked` | 39 |
+| `public_event_finish_team_source_tracked` | 40 |
 | `runtime_entity_add_source_tracked` | 29 |
 | `runtime_entity_remove_source_tracked` | 35 |
 | `runtime_entity_type_source_tracked` | 80 |
@@ -1841,7 +1841,7 @@ It records evidence and status; it does not claim retail completion unless a row
 | `script_entity_create_pending_spawn_initialise_lifecycle_smoke` | 24 |
 | `script_entity_remove_from_map_pending_cleanup_smoke` | 24 |
 | `script_local_teleport_pending_destination_access_smoke` | 6 |
-| `script_public_event_finish_pending_reward_completion_smoke` | 26 |
+| `script_public_event_finish_pending_reward_completion_smoke` | 27 |
 | `script_spell_cast_pending_spell_effect_targeting_smoke` | 13 |
 | `script_teleport_pending_destination_access_smoke` | 8 |
 
@@ -2098,9 +2098,9 @@ These grouped gaps cover every non-blocker generated inventory. They are priorit
 | Public events, challenges, path missions, and contracts | 36185 | `Decomp\Analysis\coverage\content_retail_completeness_public_event_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_public_event_auxiliary_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_challenge_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_path_mission_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_contract_evidence.csv` | `runtime_challenge_reward_track_item_grant_tested_pending_ui_selection_smoke` (12804); `datamapping_challenge_creature_runtime_hook_tested_pending_review_and_spawn_smoke` (4659); `datamapping_challenge_direct_reward_item_pending_reward_track_bridge` (3732); `mapped_only_contract_creature_pending_bridge_review_spawn_client_smoke` (2426); omitted statuses: 12564 rows across 144 statuses | Keep inventory-only until safe queue keys exist; validate event/objective/challenge/path/contract runtime hooks per slice. |
 | Instance mechanics, portals, and encounter scripting | 2082 | `Decomp\Analysis\coverage\content_retail_completeness_instances.csv`, `Decomp\Analysis\coverage\content_retail_completeness_instance_dependencies.csv`, `Decomp\Analysis\coverage\content_retail_completeness_instance_entities.csv`, `Decomp\Analysis\coverage\content_retail_completeness_instance_portal_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_instance_script_handler_evidence.csv` | `client_achievement_row_pending_progression_hook_smoke` (180); `client_instance_portal_creature_link_pending_world_placement_review` (180); `mapped_omnicore1_downstream_objective_blocked_missing_route_specific_producer_client_smoke` (115); `reviewed_laughingws_entity_stat_pending_combat_smoke` (80); omitted statuses: 1527 rows across 572 statuses | Validate portals, public-event dependencies, entity/script handlers, phase/boss mechanics, and manual instance smoke. |
 | Instance rewards and rotations | 80 | `Decomp\Analysis\coverage\content_retail_completeness_instance_rewards.csv` | `client_matching_random_reward_pending_queue_reward_smoke` (45); `client_world_reward_rotation_content_pending_schedule_claim_smoke` (15); `client_public_event_reward_rotation_content_pending_event_reward_smoke` (15); `client_match_type_reward_rotation_content_pending_queue_reward_smoke` (5) | Validate reward rotation/difficulty/item/currency presentation and grant persistence. |
-| Script producers, presentation, progression, and runtime actions | 3177 | `Decomp\Analysis\coverage\content_retail_completeness_quest_scripts.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_presentation_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_event_flow_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_objective_producer_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_quest_progression_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_runtime_action_evidence.csv` | `script_public_event_objective_parent_event_matched_pending_activation_credit_smoke` (946); `script_public_event_phase_script_state_owner_matched_pending_phase_order_smoke` (678); `script_public_event_objective_client_row_matched_pending_owner_flow_review` (218); `script_objective_producer_matched_pending_credit_timing_smoke` (86); omitted statuses: 1249 rows across 657 statuses; runtime refs: `runtime_entity_type_tracked` (80); `public_event_team_expression_tracked` (39); `runtime_entity_remove_receiver_tracked` (35); `runtime_entity_add_expression_tracked` (29); omitted statuses: 28 rows across 6 statuses | Prove script owner flow, producer semantics, presentation/cinematic payloads, quest progression and runtime actions. |
+| Script producers, presentation, progression, and runtime actions | 3179 | `Decomp\Analysis\coverage\content_retail_completeness_quest_scripts.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_presentation_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_event_flow_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_objective_producer_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_quest_progression_evidence.csv`, `Decomp\Analysis\coverage\content_retail_completeness_script_runtime_action_evidence.csv` | `script_public_event_objective_parent_event_matched_pending_activation_credit_smoke` (947); `script_public_event_phase_script_state_owner_matched_pending_phase_order_smoke` (678); `script_public_event_objective_client_row_matched_pending_owner_flow_review` (218); `script_objective_producer_matched_pending_credit_timing_smoke` (86); omitted statuses: 1250 rows across 657 statuses; runtime refs: `runtime_entity_type_tracked` (80); `public_event_team_expression_tracked` (40); `runtime_entity_remove_receiver_tracked` (35); `runtime_entity_add_expression_tracked` (29); omitted statuses: 28 rows across 6 statuses | Prove script owner flow, producer semantics, presentation/cinematic payloads, quest progression and runtime actions. |
 | Next restoration slice queue | 23 | `Decomp\Analysis\coverage\content_retail_completeness_next_slice_queue.csv` | `quest_validation_ready` (12); `split_required_high_blocker_volume` (9); `split_required_producer_gap` (1); `instance_validation_ready` (1) | Use queue/blocker CSVs to drive focused implementation and smoke bundles; queue membership is not a retail-complete claim. |
-| Validation coverage | 165695 | `Tools/WikiArchiveAudit/validate_content_retail_completeness_outputs.py` | 165695 non-blocker inventory rows remain `not_retail_complete`; validator rejects unsafe completion claims. | Run generator, validator, Python tests, and narrow C#/runtime validation after each content slice. |
+| Validation coverage | 165697 | `Tools/WikiArchiveAudit/validate_content_retail_completeness_outputs.py` | 165697 non-blocker inventory rows remain `not_retail_complete`; validator rejects unsafe completion claims. | Run generator, validator, Python tests, and narrow C#/runtime validation after each content slice. |
 
 ## Next Restoration Slice Queue
 
