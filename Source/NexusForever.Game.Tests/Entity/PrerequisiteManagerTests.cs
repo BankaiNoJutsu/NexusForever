@@ -3,7 +3,11 @@ using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Game.Abstract.Prerequisite;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Prerequisite;
+using NexusForever.Game.Prerequisite.Check;
+using NexusForever.Game.Static.Prerequisite;
+using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Shared;
@@ -29,6 +33,40 @@ public class PrerequisiteManagerTests
         PrerequisiteManager manager = CreateManager(gameTableManager);
 
         Assert.False(manager.Meets(player: null, prerequisiteId: 6338u));
+    }
+
+    [Theory]
+    [InlineData(4992u, 4u, 1u, 0, false)]
+    [InlineData(4992u, 4u, 1u, 1, true)]
+    [InlineData(4992u, 4u, 1u, 2, true)]
+    [InlineData(391u, 3u, 8u, 7, false)]
+    [InlineData(391u, 3u, 8u, 8, false)]
+    [InlineData(391u, 3u, 8u, 9, true)]
+    [InlineData(76u, 6u, 5u, 4, true)]
+    [InlineData(76u, 6u, 5u, 5, true)]
+    [InlineData(76u, 6u, 5u, 6, false)]
+    [InlineData(6232u, 5u, 1u, 0, true)]
+    [InlineData(6232u, 5u, 1u, 1, false)]
+    [InlineData(6232u, 5u, 1u, 2, false)]
+    public void LevelRowsFromBuild16042KeepStrictAndInclusiveBoundaries(uint id, uint mode, uint required, byte level, bool expected)
+    {
+        // Correlated with the imported build-16042 Prerequisite table. Preserve raw IDs
+        // so a symbolic enum in a test cannot hide a wrong table-to-runtime mapping.
+        var tables = CreateGameTableManager();
+        SetAutoProperty(tables, nameof(GameTableManager.Prerequisite), CreateGameTable(new PrerequisiteEntry
+        {
+            Id = id, Flags = EvaluationMode.EvaluateAND,
+            PrerequisiteTypeId = [PrerequisiteType.Level, PrerequisiteType.None, PrerequisiteType.None],
+            PrerequisiteComparisonId = [(PrerequisiteComparison)mode, 0, 0],
+            Value = [required, 0, 0], ObjectId = [0, 0, 0]
+        }));
+        using var services = new ServiceCollection()
+            .AddKeyedTransient<IPrerequisiteCheck>(PrerequisiteType.Level, (_, _) => new PrerequisiteCheckLevel(NullLogger<PrerequisiteCheckLevel>.Instance))
+            .BuildServiceProvider();
+        var manager = new PrerequisiteManager(NullLogger<PrerequisiteManager>.Instance, services, tables, new PrerequisiteParametersFactory());
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var proxy);
+        proxy.SetProperty(nameof(IPlayer.Level), (uint)level);
+        Assert.Equal(expected, manager.Meets(player, id));
     }
 
     private static PrerequisiteManager CreateManager(GameTableManager gameTableManager)

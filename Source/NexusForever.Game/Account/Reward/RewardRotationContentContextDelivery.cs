@@ -7,25 +7,9 @@ namespace NexusForever.Game.Account.Reward
     {
         public static IEnumerable<IWritable> CreatePackets(IReadOnlyList<ServerRewardRotationContentContext> contentContexts)
         {
-            if (contentContexts == null || contentContexts.Count == 0)
-                yield break;
-
-            List<ServerRewardRotationContentContext> nonEmpty = contentContexts
-                .Where(context => context != null && context.ContentIds.Count > 0)
-                .ToList();
-            if (nonEmpty.Count == 0)
-                yield break;
-
-            if (nonEmpty.Count == 1)
-            {
-                yield return nonEmpty[0];
-                yield break;
-            }
-
-            yield return new ServerRewardRotationContentContextArray
-            {
-                Entries = nonEmpty
-            };
+            // Diagnostic rows formerly used 0x07CD/0x07D3, whose actual consumer
+            // is the reward-track manager. Rotation schedule/state APIs remain.
+            return Array.Empty<IWritable>();
         }
     }
 }

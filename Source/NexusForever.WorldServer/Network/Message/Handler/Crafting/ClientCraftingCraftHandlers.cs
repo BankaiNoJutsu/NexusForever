@@ -1,3 +1,4 @@
+using NexusForever.Game.Entity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,6 +45,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public void HandleMessage(IWorldSession session, ClientCraftingSimpleCraft craft)
         {
+            if (!InventoryMutationScope.TryAcquire(session.Player?.Inventory, out var mutationLease)) return;
+            using var heldMutation = mutationLease;
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
             CraftingCraftRequestHelper.LogBlockedStationServiceKeyDiagnostic(log, schematic, craft.CraftingStationUnitId);
 
@@ -84,6 +87,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public void HandleMessage(IWorldSession session, ClientCraftingComplexCraft craft)
         {
+            if (!InventoryMutationScope.TryAcquire(session.Player?.Inventory, out var mutationLease)) return;
+            using var heldMutation = mutationLease;
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
             CraftingCraftRequestHelper.LogBlockedStationServiceKeyDiagnostic(log, schematic, craft.CraftingStationUnitId);
             CraftingCraftRequestHelper.ValidateItem(gameTableManager, craft.PowerCoreItem2Id);
@@ -125,6 +130,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public void HandleMessage(IWorldSession session, ClientCraftingCraftItem craft)
         {
+            if (!InventoryMutationScope.TryAcquire(session.Player?.Inventory, out var mutationLease)) return;
+            using var heldMutation = mutationLease;
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
             CraftingCraftRequestHelper.LogBlockedStationServiceKeyDiagnostic(log, schematic, craft.CraftingStationUnitId);
             CraftingCraftRequestHelper.ValidateItem(gameTableManager, craft.CatalystItem2Id);
@@ -166,6 +173,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public void HandleMessage(IWorldSession session, ClientCraftingCraftItemAutoCraft craft)
         {
+            if (!InventoryMutationScope.TryAcquire(session.Player?.Inventory, out var mutationLease)) return;
+            using var heldMutation = mutationLease;
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
             CraftingCraftRequestHelper.LogBlockedStationServiceKeyDiagnostic(log, schematic, craft.CraftingStationUnitId);
 

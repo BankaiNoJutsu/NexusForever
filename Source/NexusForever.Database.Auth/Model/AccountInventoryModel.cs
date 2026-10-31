@@ -9,6 +9,8 @@ namespace NexusForever.Database.Auth.Model
         public uint AccountItemId { get; set; }
         public byte ClaimState { get; set; }
         public bool HasTargetPlayerIdentity { get; set; }
+        public bool ForceSoulbind { get; set; }
+        public string CreationKey { get; set; }
         public ushort TargetRealmId { get; set; }
         public ulong TargetCharacterId { get; set; }
         public DateTime CreateTime { get; set; }

@@ -25,14 +25,18 @@
     <ProjectReference Include="..\NexusForever.Database.Query\NexusForever.Database.Query.csproj" />
     <ProjectReference Include="..\NexusForever.Database.Sqlite.Migrations\NexusForever.Database.Sqlite.Migrations.csproj" />
     <ProjectReference Include="..\NexusForever.Database.World\NexusForever.Database.World.csproj" />
+    <ProjectReference Include="..\NexusForever.Aspire.AppHost\NexusForever.Aspire.AppHost.csproj" />
     <ProjectReference Include="..\NexusForever.Aspire.Database.Migrations\NexusForever.Aspire.Database.Migrations.csproj" />
     <ProjectReference Include="..\NexusForever.Game\NexusForever.Game.csproj" />
+    <ProjectReference Include="..\NexusForever.MapGenerator\NexusForever.MapGenerator.csproj" />
     <ProjectReference Include="..\NexusForever.Network.Sts\NexusForever.Network.Sts.csproj" />
     <ProjectReference Include="..\NexusForever.Script.Instance\NexusForever.Script.Instance.csproj" />
     <ProjectReference Include="..\NexusForever.Server.Character\NexusForever.Server.Character.csproj" />
+    <ProjectReference Include="..\NexusForever.Server.Friendship\NexusForever.Server.Friendship.csproj" />
     <ProjectReference Include="..\NexusForever.Server.GroupServer\NexusForever.Server.GroupServer.csproj" />
     <ProjectReference Include="..\NexusForever.StsServer\NexusForever.StsServer.csproj" />
     <ProjectReference Include="..\NexusForever.WorldServer\NexusForever.WorldServer.csproj" />
+    <ProjectReference Include="..\..\Tools\NexusForever.LoadTest\NexusForever.LoadTest.csproj" />
   </ItemGroup>
 
   <ItemGroup>

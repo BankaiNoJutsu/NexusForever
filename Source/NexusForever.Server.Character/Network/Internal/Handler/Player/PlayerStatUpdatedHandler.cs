@@ -29,13 +29,8 @@ namespace NexusForever.Server.Character.Network.Internal.Handler.Player
             if (message.Stat != Stat.Level)
                 return;
 
-            var character = await _characterManager.GetCharacterRemoteAsync(message.Identity.ToQueryIdentity());
-            if (character == null)
-                return;
-
-            character.Model.Level = (uint)message.Value;
-
-            await _context.SaveChangesAsync();
+            await _characterManager.UpdateCharacterRemoteAsync(message.Identity.ToQueryIdentity(),
+                c => c.Level, (uint)message.Value);
         }
     }
 }

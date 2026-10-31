@@ -22,6 +22,9 @@ namespace NexusForever.Game.Prerequisite.Check
         }
 
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => MeetsUnit(player, comparison, value, objectId, parameters);
+
+        public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
             if (parameters.Target is not IUnitEntity facingEntity || objectId == 0)
                 return false;
@@ -34,7 +37,7 @@ namespace NexusForever.Game.Prerequisite.Check
             {
                 case PrerequisiteComparison.Equal:
                 case PrerequisiteComparison.NotEqual:
-                    return PositionalPrerequisiteHelper.MeetsDirectionalRequirement(player, comparison, facingEntity, entry);
+                    return PositionalPrerequisiteHelper.MeetsDirectionalRequirement(comparison, facingEntity, subject, entry);
                 default:
                     log.LogWarning($"Unhandled PrerequisiteComparison {comparison} for {PrerequisiteType.PositionalRequirement}!");
                     return false;

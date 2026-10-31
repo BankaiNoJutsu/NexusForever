@@ -1,3 +1,5 @@
+using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Script.Template;
@@ -16,6 +18,7 @@ namespace NexusForever.Script.Instance.Adventure.TheHycrestInsurrection
         private IPublicEvent publicEvent;
         private bool briefingPhaseStarted;
         private bool meetAgentPhaseStarted;
+        private bool partySizeDirty;
 
         /// <summary>
         /// Invoked when <see cref="IScript"/> is loaded.
@@ -37,11 +40,13 @@ namespace NexusForever.Script.Instance.Adventure.TheHycrestInsurrection
                     publicEvent.ActivateObjective(PublicEventObjective.ReportToDropShip);
                     break;
                 case PublicEventPhase.ListenToDropShipBriefing:
+                    foreach (var objective in (publicEvent.GetTeams() ?? []).SelectMany(t => t.GetObjectives()))
+                        if (objective.Entry.Id == (uint)PublicEventObjective.ListenToDropShipBriefing)
+                            objective.EnableTimedWinCompletion();
                     publicEvent.ActivateObjective(PublicEventObjective.ListenToDropShipBriefing);
-                    publicEvent.UpdateObjective(PublicEventObjective.ListenToDropShipBriefing, 1);
                     break;
                 case PublicEventPhase.MeetWithExileAgent:
-                    publicEvent.ActivateObjective(PublicEventObjective.MeetWithExileAgent);
+                    publicEvent.ActivateObjective(PublicEventObjective.MeetWithExileAgent, GetPartySize());
                     break;
             }
         }
@@ -66,6 +71,33 @@ namespace NexusForever.Script.Instance.Adventure.TheHycrestInsurrection
                     publicEvent.Finish(PublicEventTeam.PublicTeam);
                     break;
             }
+        }
+
+        public void OnAddToMap(IGridEntity entity)
+        {
+            if (entity is IPlayer) partySizeDirty = true;
+        }
+
+        public void OnRemoveFromMap(IGridEntity entity)
+        {
+            if (entity is IPlayer) partySizeDirty = true;
+        }
+
+        public void Update(double lastTick)
+        {
+            // Reconcile after grid actions and visibility cleanup, so departed
+            // players cannot leave a stale trigger count that finishes the intro.
+            if (!partySizeDirty || !meetAgentPhaseStarted || publicEvent.IsFinalised) return;
+            partySizeDirty = false;
+            foreach (var objective in publicEvent.GetTeams().SelectMany(t => t.GetObjectives()))
+                if (objective.Entry.Id == (uint)PublicEventObjective.MeetWithExileAgent)
+                    objective.SetDynamicMax(GetPartySize());
+        }
+
+        private uint GetPartySize()
+        {
+            return publicEvent.Map is IMapInstance map
+                ? Math.Max(1u, (uint)map.GetPlayers().Select(p => p.CharacterId).Distinct().Count()) : 1;
         }
 
         private void StartBriefingPhase()

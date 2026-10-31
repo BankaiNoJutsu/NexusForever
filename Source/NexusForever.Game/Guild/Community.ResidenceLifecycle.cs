@@ -1,0 +1,298 @@
+using Microsoft.EntityFrameworkCore;
+using NexusForever.Database.Character;
+using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Guild;
+using NexusForever.Game.Abstract.Housing;
+using NexusForever.Game.Abstract.Map.Instance;
+using NexusForever.Game.Static.Housing;
+using NexusForever.Game.Housing;
+using NexusForever.Shared;
+
+namespace NexusForever.Game.Guild
+{
+    public partial class Community
+    {
+        private sealed class ResidenceChange(IResidence residence)
+        {
+            public IResidence Residence { get; } = residence;
+        }
+
+        private sealed class MemberRemoval(ulong characterId)
+        {
+            public ulong CharacterId { get; } = characterId;
+        }
+
+        private sealed class DisbandChange(string name, ulong? leaderId)
+        {
+            public string Name { get; } = name;
+            public ulong? LeaderId { get; } = leaderId;
+            public DateTime DeletedAt { get; } = DateTime.UtcNow;
+        }
+
+        private readonly object residenceLifecycleLock = new();
+        private readonly Dictionary<ulong, ResidenceChange> pendingResidenceChanges = [];
+        private readonly Dictionary<ulong, MemberRemoval> pendingMemberRemovals = [];
+        private DisbandChange pendingDisband;
+        private bool disbanded;
+        private IResidenceEntrance disbandEntrance;
+
+        public override bool PendingDelete
+        {
+            get { lock (residenceLifecycleLock) return disbanded || base.PendingDelete; }
+        }
+
+        public override bool NeedsSave
+        {
+            get
+            {
+                lock (residenceLifecycleLock)
+                    return base.NeedsSave || pendingResidenceChanges.Count != 0
+                        || pendingMemberRemovals.Count != 0 || pendingDisband != null;
+            }
+        }
+
+        protected override void RemoveMember(ulong characterId, bool disband)
+        {
+            lock (residenceLifecycleLock)
+            {
+                if (!members.TryGetValue(characterId, out IGuildMember member))
+                    throw new ArgumentException($"Invalid member {characterId} for community {Id}.");
+                if (member.PendingDelete && !disband)
+                    return;
+
+                bool persisted = !member.PendingCreate;
+                IResidence child = Residence?.GetChild(characterId)?.Residence;
+                if (child != null)
+                    DetachResidence(child, disbandEntrance);
+
+                base.RemoveMember(characterId, disband);
+                if (!disband && persisted)
+                    pendingMemberRemovals[characterId] = new MemberRemoval(characterId);
+            }
+        }
+
+        protected override IGuildMember AddMember(IPlayer player, byte rank = 9)
+        {
+            lock (residenceLifecycleLock)
+            {
+                IGuildMember member = base.AddMember(player, rank);
+                // A previous in-flight delete must not acknowledge this later join.
+                if (pendingMemberRemovals.ContainsKey(player.CharacterId))
+                    pendingMemberRemovals[player.CharacterId] = new MemberRemoval(player.CharacterId);
+                return member;
+            }
+        }
+
+        public override void DisbandGuild()
+        {
+            lock (residenceLifecycleLock)
+            {
+                if (disbanded)
+                    return;
+
+                // Resolve required travel data before changing any memberships.
+                if (Residence != null)
+                    foreach (IResidenceChild child in Residence.GetChildren())
+                        if (GetOwnerToMove(child.Residence) != null)
+                        {
+                            disbandEntrance = GetStandaloneEntrance();
+                            break;
+                        }
+
+                var change = new DisbandChange(Name, LeaderId);
+                try
+                {
+                    base.DisbandGuild();
+                    IResidenceMapInstance map = null;
+                    if (Residence != null)
+                    {
+                        // Also release stale child links that no longer have a member.
+                        foreach (IResidenceChild child in Residence.GetChildren().ToList())
+                            DetachResidence(child.Residence, disbandEntrance);
+
+                        map = Residence.Map;
+                        QueueResidenceChange(Residence);
+                        Residence.GuildOwnerId = null;
+                        globalResidenceManager.RemoveCommunity(this);
+                    }
+                    pendingDisband = change;
+                    disbanded = true;
+                    if (map != null && !map.UnloadStatus.HasValue)
+                        map.Unload();
+                }
+                finally { disbandEntrance = null; }
+            }
+        }
+
+        private IResidenceEntrance GetStandaloneEntrance()
+            => globalResidenceManager.GetResidenceEntrance(PropertyInfoId.Residence)
+                ?? throw new InvalidOperationException("Standalone residence entrance is unavailable.");
+
+        private IPlayer GetOwnerToMove(IResidence residence)
+        {
+            IResidenceMapInstance map = Residence?.Map;
+            IPlayer owner = residence.OwnerId.HasValue
+                ? residencePlayerManager?.GetPlayer(residence.OwnerId.Value) : null;
+            return map != null && ReferenceEquals(owner?.Map, map) && owner.CanTeleport() ? owner : null;
+        }
+
+        private void DetachResidence(IResidence residence, IResidenceEntrance entrance)
+        {
+            if (Residence == null || !ReferenceEquals(residence.Parent, Residence))
+                return;
+
+            IPlayer owner = GetOwnerToMove(residence);
+            if (owner != null)
+                entrance ??= GetStandaloneEntrance();
+
+            QueueResidenceChange(residence);
+            if (Residence.Map != null && ReferenceEquals(residence.Map, Residence.Map))
+                Residence.Map.RemoveChild(residence);
+            else
+                Residence.RemoveChild(residence);
+            residence.PropertyInfoId = PropertyInfoId.Residence;
+
+            if (owner != null)
+            {
+                owner.Rotation = entrance.Rotation.ToEuler();
+                owner.TeleportTo(entrance.Entry, entrance.Position, mapLockManager.GetResidenceLock(residence));
+            }
+        }
+
+        private void QueueResidenceChange(IResidence residence)
+        {
+            var change = new ResidenceChange(residence);
+            if (residence is Residence concrete)
+                concrete.DeferSaveToCommunity(change);
+            pendingResidenceChanges[residence.Id] = change;
+        }
+
+        internal Task SaveWhenReady(CharacterContext context)
+        {
+            lock (residenceLifecycleLock)
+            {
+                Task previous = Task.WhenAll(pendingResidenceChanges.Values
+                    .Select(change => change.Residence).OfType<Residence>().Select(residence => residence.PreviousSaveUnits(context)));
+                if (!previous.IsCompleted)
+                    return previous;
+                Save(context);
+                return null;
+            }
+        }
+
+        internal void CancelUnpersistedDisband()
+        {
+            lock (residenceLifecycleLock)
+            {
+                foreach (ResidenceChange change in pendingResidenceChanges.Values)
+                    if (change.Residence is Residence concrete)
+                        concrete.CompleteCommunitySave(change);
+                pendingResidenceChanges.Clear();
+                pendingMemberRemovals.Clear();
+                pendingDisband = null;
+            }
+        }
+
+        public override void Save(CharacterContext context)
+        {
+            lock (residenceLifecycleLock)
+            {
+                if (pendingResidenceChanges.Values.Select(change => change.Residence).OfType<Residence>()
+                    .Any(residence => !residence.PreviousSaveUnits(context).IsCompleted))
+                    throw new InvalidOperationException("Earlier residence save units must finish before saving the community.");
+                var residences = pendingResidenceChanges.ToArray();
+                var removals = pendingMemberRemovals.ToArray();
+                DisbandChange disband = pendingDisband;
+                base.Save(context);
+
+                foreach (var pending in residences)
+                {
+                    IResidence residence = pending.Value.Residence;
+                    if (residence is Residence concrete)
+                    {
+                        if (!concrete.IsCommunitySaveOwner(pending.Value))
+                            continue;
+                        concrete.SaveForCommunity(context);
+                    }
+                    else
+                        residence.Save(context);
+                    var entity = context.ChangeTracker.Entries<ResidenceModel>().SingleOrDefault(e => e.Entity.Id == residence.Id)
+                        ?? context.Attach(new ResidenceModel { Id = residence.Id });
+                    entity.Property(r => r.GuildOwnerId).CurrentValue = residence.GuildOwnerId;
+                    entity.Property(r => r.PropertyInfoId).CurrentValue = (byte)residence.PropertyInfoId;
+                    if (entity.State != EntityState.Added)
+                    {
+                        entity.Property(r => r.GuildOwnerId).IsModified = true;
+                        entity.Property(r => r.PropertyInfoId).IsModified = true;
+                    }
+                }
+
+                foreach (var pending in removals)
+                {
+                    ulong characterId = pending.Value.CharacterId;
+                    if (members.TryGetValue(characterId, out IGuildMember currentMember) && !currentMember.PendingDelete)
+                    {
+                        // A failed delete may already have removed the old in-memory
+                        // member. Rejoin then creates a new member while rollback kept
+                        // its database row. Reconcile the row in this same retry unit.
+                        bool exists = context.GuildMember.Any(m => m.Id == Id && m.CharacterId == characterId);
+                        var entity = context.ChangeTracker.Entries<GuildMemberModel>()
+                            .SingleOrDefault(e => e.Entity.Id == Id && e.Entity.CharacterId == characterId)
+                            ?? context.Entry(new GuildMemberModel { Id = Id, CharacterId = characterId });
+                        entity.State = exists ? EntityState.Unchanged : EntityState.Added;
+                        entity.Property(m => m.Rank).CurrentValue = currentMember.Rank.Index;
+                        entity.Property(m => m.Note).CurrentValue = currentMember.Note;
+                        entity.Property(m => m.CommunityPlotReservation).CurrentValue = currentMember.CommunityPlotReservation;
+                        if (exists)
+                        {
+                            entity.Property(m => m.Rank).IsModified = true;
+                            entity.Property(m => m.Note).IsModified = true;
+                            entity.Property(m => m.CommunityPlotReservation).IsModified = true;
+                        }
+                        continue;
+                    }
+                    bool tracked = context.ChangeTracker.Entries<GuildMemberModel>()
+                        .Any(e => e.Entity.Id == Id && e.Entity.CharacterId == characterId);
+                    // A previous caller-owned transaction may already have committed.
+                    if (!tracked && context.GuildMember.Any(m => m.Id == Id && m.CharacterId == characterId))
+                        context.Remove(new GuildMemberModel { Id = Id, CharacterId = characterId });
+                }
+
+                if (disband != null && !PendingCreate)
+                {
+                    var entity = context.ChangeTracker.Entries<GuildModel>().SingleOrDefault(e => e.Entity.Id == Id)
+                        ?? context.Attach(new GuildModel { Id = Id });
+                    entity.Property(g => g.DeleteTime).CurrentValue = disband.DeletedAt;
+                    entity.Property(g => g.OriginalName).CurrentValue = disband.Name;
+                    entity.Property(g => g.Name).CurrentValue = null;
+                    entity.Property(g => g.OriginalLeaderId).CurrentValue = disband.LeaderId;
+                    entity.Property(g => g.LeaderId).CurrentValue = null;
+                    foreach (string field in new[] { nameof(GuildModel.DeleteTime), nameof(GuildModel.OriginalName), nameof(GuildModel.Name), nameof(GuildModel.OriginalLeaderId), nameof(GuildModel.LeaderId) })
+                        entity.Property(field).IsModified = true;
+                }
+
+                context.OnSaveCompleted(committed =>
+                {
+                    if (!committed)
+                        return;
+                    lock (residenceLifecycleLock)
+                    {
+                        foreach (var pending in residences)
+                        {
+                            if (pending.Value.Residence is Residence concrete)
+                                concrete.CompleteCommunitySave(pending.Value);
+                            if (pendingResidenceChanges.TryGetValue(pending.Key, out var current) && ReferenceEquals(current, pending.Value))
+                                pendingResidenceChanges.Remove(pending.Key);
+                        }
+                        foreach (var pending in removals)
+                            if (pendingMemberRemovals.TryGetValue(pending.Key, out var current) && ReferenceEquals(current, pending.Value))
+                                pendingMemberRemovals.Remove(pending.Key);
+                        if (ReferenceEquals(pendingDisband, disband))
+                            pendingDisband = null;
+                    }
+                });
+            }
+        }
+    }
+}

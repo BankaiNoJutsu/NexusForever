@@ -568,6 +568,9 @@ namespace NexusForever.Game.Loot
                 return false;
 
             ulong remainingCount = amount;
+            if (player.SupplySatchelManager?.TryGetAutoStoreCapacity(itemInfo, out uint satchelCapacity) == true)
+                remainingCount -= Math.Min(remainingCount, satchelCapacity);
+
             if (itemInfo.IsStackable())
             {
                 foreach (IItem item in inventoryBag.Where(i => i.Info.Id == itemInfo.Id && i.ExpirationTimeLeft == 0u))

@@ -5,12 +5,14 @@ using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
+using NexusForever.Game.Challenges;
 using NexusForever.Game.Map;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
 using NexusForever.Network.Message;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Pregame;
 using NexusForever.Network.World.Message.Static;
@@ -84,18 +86,25 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                 throw new ArgumentOutOfRangeException();
 
             IPlayer player = entityFactory.CreateEntity<IPlayer>();
-            player.Initialise(session, session.Account, character);
+            var account = session.Account;
+            player.Initialise(session, account, character);
 
             session.Player = player;
             session.Player.Rotation = new Vector3(character.RotationX, character.RotationY, character.RotationZ);
-            mapManager.AddToMap(session.Player, new MapPosition
+            void EnterMap()
             {
-                Info = new MapInfo
+                if (!ReferenceEquals(session.Player, player) || !ReferenceEquals(session.Account, account)
+                    || session is NetworkSession { IsDisconnecting: true }
+                    || player.LogoutManager?.State is LogoutState.Logout or LogoutState.Finished)
+                    return;
+                mapManager.AddToMap(player, new MapPosition
                 {
-                    Entry = entry
-                },
-                Position = new Vector3(character.LocationX, character.LocationY, character.LocationZ)
-            });
+                    Info = new MapInfo { Entry = entry },
+                    Position = new Vector3(character.LocationX, character.LocationY, character.LocationZ)
+                });
+            }
+            if (player.ChallengeManager is ChallengeManager challenges) challenges.PrepareForWorld(EnterMap);
+            else EnterMap();
         }
     }
 }

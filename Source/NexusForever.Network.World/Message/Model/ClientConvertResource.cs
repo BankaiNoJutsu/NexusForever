@@ -11,7 +11,9 @@ namespace NexusForever.Network.World.Message.Model
 
         public void Read(GamePacketReader reader)
         {
-            ConversionId = reader.ReadUInt();
+            // Native writer 1400890c0 (registration 14006c290, opcode 0x00D7)
+            // packs the table id into fourteen bits before the existing fields.
+            ConversionId = reader.ReadUInt(14u);
             Selector = reader.ReadUInt();
             ResourceField = reader.ReadULong();
         }

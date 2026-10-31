@@ -80,8 +80,8 @@ public class TransportPacketShapeTests
         byte[] packetData = WritePacket(writer =>
         {
             writer.Write(0x11111111u);
-            writer.Write(3u);
-            writer.Write(0u);
+            writer.Write(3u, 2u);
+            writer.Write(0u, 3u);
         });
 
         using var reader = new GamePacketReader(new MemoryStream(packetData));

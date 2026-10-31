@@ -1,8 +1,9 @@
 using System.Net;
 using Microsoft.Extensions.Configuration;
-using NexusForever.Aspire.AppHost;
 using NexusForever.Database;
 using NexusForever.Network.Internal.Static;
+
+namespace NexusForever.Aspire.AppHost;
 
 internal class Program
 {
@@ -17,7 +18,14 @@ internal class Program
     private static async Task Main(string[] args)
     {
         var builder = DistributedApplication.CreateBuilder(args);
+        Configure(builder);
+        await builder.Build().RunAsync();
+    }
+
+    internal static void Configure(IDistributedApplicationBuilder builder)
+    {
         DatabaseProvider databaseProvider = GetDatabaseProvider(builder.Configuration);
+        AssetPreparationContext? assets = AssetPreparationContext.Create(builder);
 
         //builder.AddDockerComposeEnvironment("nexus-forever");
 
@@ -25,17 +33,14 @@ internal class Program
             .WithManagementPlugin();
 
         if (databaseProvider == DatabaseProvider.MySql)
-            ConfigureMySqlHost(builder, rmq);
+            ConfigureMySqlHost(builder, rmq, assets);
         else if (databaseProvider == DatabaseProvider.Sqlite)
-            ConfigureSqliteHost(builder, rmq);
+            ConfigureSqliteHost(builder, rmq, assets);
         else
             throw new NotSupportedException($"Database provider '{databaseProvider}' is not supported by the Aspire app host.");
-
-        DistributedApplication host = builder.Build();
-        await host.RunAsync();
     }
 
-    private static void ConfigureMySqlHost(IDistributedApplicationBuilder builder, IResourceBuilder<RabbitMQServerResource> rmq)
+    private static void ConfigureMySqlHost(IDistributedApplicationBuilder builder, IResourceBuilder<RabbitMQServerResource> rmq, AssetPreparationContext? assets)
     {
         var mysql = builder.AddMySql("mysql")
             .WithPhpMyAdmin()
@@ -85,6 +90,7 @@ internal class Program
             .WithNexusForeverDatabase("World", DatabaseProvider.MySql, worlddb.Resource)
             .WithNexusForeverMessageBroker("WorldServer_1", BrokerProvider.RabbitMQ, rmq.Resource)
             .WithEnvironment("Realm:RealmId", "1")
+            .WithPreparedAssets(assets, includeMaps: true)
             .WaitFor(authdb)
             .WaitFor(characterdb)
             .WaitFor(worlddb)
@@ -118,6 +124,7 @@ internal class Program
             .WaitFor(characterApi);
 
         builder.AddProject<Projects.NexusForever_Server_ChatServer>("chat-server")
+            .WithPreparedAssets(assets)
             .WithNexusForeverDatabase("Chat", DatabaseProvider.MySql, chatdb.Resource)
             .WithNexusForeverMessageBroker("ChatServer", BrokerProvider.RabbitMQ, rmq.Resource)
             .WithNexusForeverApi("Character", characterApi.Resource)
@@ -127,6 +134,7 @@ internal class Program
             .WaitFor(characterApi);
 
         builder.AddProject<Projects.NexusForever_Server_Friendship>("friendship-server")
+            .WithPreparedAssets(assets)
             .WithNexusForeverDatabase("Friendship", DatabaseProvider.MySql, friendshipdb.Resource)
             .WithNexusForeverMessageBroker("FriendshipServer", BrokerProvider.RabbitMQ, rmq.Resource)
             .WithNexusForeverApi("Account", accountApi.Resource)
@@ -146,7 +154,7 @@ internal class Program
             .WaitFor(characterApi);
     }
 
-    private static void ConfigureSqliteHost(IDistributedApplicationBuilder builder, IResourceBuilder<RabbitMQServerResource> rmq)
+    private static void ConfigureSqliteHost(IDistributedApplicationBuilder builder, IResourceBuilder<RabbitMQServerResource> rmq, AssetPreparationContext? assets)
     {
         string sqliteDirectory = GetSqliteDirectory(builder.Configuration);
         Directory.CreateDirectory(sqliteDirectory);
@@ -186,6 +194,7 @@ internal class Program
             .WithNexusForeverDatabase("World", DatabaseProvider.Sqlite, worlddb)
             .WithNexusForeverMessageBroker("WorldServer_1", BrokerProvider.RabbitMQ, rmq.Resource)
             .WithEnvironment("Realm:RealmId", "1")
+            .WithPreparedAssets(assets, includeMaps: true)
             .WaitFor(rmq)
             .WaitForCompletion(dbMigration);
 
@@ -212,6 +221,7 @@ internal class Program
             .WaitFor(characterApi);
 
         builder.AddProject<Projects.NexusForever_Server_ChatServer>("chat-server")
+            .WithPreparedAssets(assets)
             .WithNexusForeverDatabase("Chat", DatabaseProvider.Sqlite, chatdb)
             .WithNexusForeverMessageBroker("ChatServer", BrokerProvider.RabbitMQ, rmq.Resource)
             .WithNexusForeverApi("Character", characterApi.Resource)
@@ -220,6 +230,7 @@ internal class Program
             .WaitFor(characterApi);
 
         builder.AddProject<Projects.NexusForever_Server_Friendship>("friendship-server")
+            .WithPreparedAssets(assets)
             .WithNexusForeverDatabase("Friendship", DatabaseProvider.Sqlite, friendshipdb)
             .WithNexusForeverMessageBroker("FriendshipServer", BrokerProvider.RabbitMQ, rmq.Resource)
             .WithNexusForeverApi("Account", accountApi.Resource)

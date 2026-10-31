@@ -239,7 +239,8 @@ namespace NexusForever.Game.Map.Instance
                     .Select(GetEntity<IPlayer>)
                     .Count(p => !p.Account.RbacManager.HasPermission(Permission.BypassInstanceLimits))
                     // include players pending add to instance
-                    + pendingActions.Count(a => a is IGridActionAdd or IGridActionPending);
+                    + pendingActions.Count(a => a is IGridActionAdd or IGridActionPending
+                        && PlayerMapAdmissionGuard.IsCurrent(a));
 
                 if (count >= instanceLimit)
                     return GenericError.InstanceFull;
@@ -250,7 +251,10 @@ namespace NexusForever.Game.Map.Instance
 
         protected override void AddEntity(IGridEntity entity, Vector3 vector)
         {
+            ulong? admissionGeneration = PlayerMapAdmissionGuard.Capture(entity);
             base.AddEntity(entity, vector);
+            if (!PlayerMapAdmissionGuard.IsCurrent(entity, admissionGeneration))
+                return;
             if (entity is IPlayer player)
             {
                 playerEntities.Add(player.Guid);

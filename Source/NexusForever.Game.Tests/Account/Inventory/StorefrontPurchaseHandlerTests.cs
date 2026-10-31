@@ -29,6 +29,7 @@ using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity
 
 namespace NexusForever.Game.Tests.Account.Inventory;
 
+[Collection(AccountPendingItemRepositoryCollection.Name)]
 public class StorefrontPurchaseHandlerTests
 {
     private static int nextAccountId = 5000;

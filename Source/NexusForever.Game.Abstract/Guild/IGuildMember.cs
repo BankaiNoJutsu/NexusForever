@@ -7,6 +7,7 @@ namespace NexusForever.Game.Abstract.Guild
 {
     public interface IGuildMember : IDatabaseCharacter, IDatabaseState, INetworkBuildable<GuildMember>
     {
+        bool NeedsSave => PendingCreate || PendingDelete;
         IGuildBase Guild { get; }
         public Identity PlayerIdentity { get; }
         public ulong CharacterId { get => PlayerIdentity.Id; }

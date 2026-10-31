@@ -6,9 +6,9 @@ using NexusForever.Network.World.Message.Model;
 namespace NexusForever.Game.Account.Reward
 {
     /// <summary>
-    /// Builds <see cref="ServerRewardRotationContentContext"/> payloads from the same game-table
-    /// sources the client walks in <c>RewardRotation_BuildContentContextIndex</c> (140635b60).
-    /// UInt0/UInt1/UInt3 are populated with correlated throttle metadata; Flag stays false until mapped.
+    /// Retains diagnostic catalog rows from the game-table sources walked by
+    /// RewardRotation_BuildContentContextIndex (140635b60). These compatibility
+    /// rows are not wire payloads: 0x07CD/0x07D3 belong to reward tracks.
     /// </summary>
     public static class RewardRotationContentContextBuilder
     {

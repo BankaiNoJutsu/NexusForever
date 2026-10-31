@@ -12,5 +12,7 @@ namespace NexusForever.Database.Character.Model
         public float Durability { get; set; }
         public uint ExpirationTimeLeft { get; set; }
         public bool Soulbound { get; set; }
+        public string MicrochipIds { get; set; }
+        public string RuneSlots { get; set; }
     }
 }

@@ -30,7 +30,7 @@ namespace NexusForever.MapGenerator.GameTable
             if (!(archiveManager.MainArchive.IndexFile.FindEntry(filePath) is IArchiveFileEntry file))
                 throw new FileNotFoundException();
 
-            using (Stream archiveStream = archiveManager.MainArchive.OpenFileStream(file))
+            using (Stream archiveStream = ArchiveStreamReader.OpenFileStream(archiveManager.MainArchive, file))
             using (var memoryStream = new MemoryStream())
             {
                 archiveStream.CopyTo(memoryStream);

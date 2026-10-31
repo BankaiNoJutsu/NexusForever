@@ -13,6 +13,7 @@
     <PackageReference Include="Aspire.Hosting.Docker" />
     <PackageReference Include="Aspire.Hosting.MySql" />
     <PackageReference Include="Aspire.Hosting.RabbitMQ" />
+    <PackageReference Include="MessagePack" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,6 +22,7 @@
     <ProjectReference Include="..\NexusForever.Aspire.Database.Migrations\NexusForever.Aspire.Database.Migrations.csproj" />
     <ProjectReference Include="..\NexusForever.AuthServer\NexusForever.AuthServer.csproj" />
     <ProjectReference Include="..\NexusForever.Database\NexusForever.Database.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\NexusForever.MapGenerator\NexusForever.MapGenerator.csproj" />
     <ProjectReference Include="..\NexusForever.Network.Internal\NexusForever.Network.Internal.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\NexusForever.Server.Character\NexusForever.Server.Character.csproj" />
     <ProjectReference Include="..\NexusForever.Server.ChatServer\NexusForever.Server.ChatServer.csproj" />

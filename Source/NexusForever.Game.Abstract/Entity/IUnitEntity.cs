@@ -155,6 +155,11 @@ namespace NexusForever.Game.Abstract.Entity
         bool RemoveSpellProperty(Property property, uint effectId);
 
         /// <summary>
+        /// Snapshot concrete property effect instances for one spell, without changing them.
+        /// </summary>
+        IReadOnlyCollection<(Property Property, uint EffectId)> GetSpellPropertyInstances(uint spell4Id) => [];
+
+        /// <summary>
         /// Remove all <see cref="Property"/> modifiers by a Spell that is currently affecting this <see cref="IUnitEntity"/>
         /// </summary>
         bool RemoveSpellProperties(uint spell4Id);

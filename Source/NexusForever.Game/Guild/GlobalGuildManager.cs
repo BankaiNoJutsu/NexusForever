@@ -33,6 +33,7 @@ namespace NexusForever.Game.Guild
         private ulong nextGuildId;
 
         private readonly object cacheLock = new();
+        private readonly HashSet<ulong> guildSavesInFlight = new();
         private readonly Dictionary</*guildId*/ ulong, IGuildBase> guilds = new();
         private readonly Dictionary<(GuildType Type, string Name), /*guildId*/ ulong> guildNameCache = new(new GuildNameEqualityComparer());
         private readonly Dictionary</*guildId*/ ulong, List</*memberId*/ ulong>> guildMemberCache = new();
@@ -193,46 +194,67 @@ namespace NexusForever.Game.Guild
             if (database == null)
                 return;
 
-            foreach (GuildBase guild in guilds.Values.ToList())
+            GuildBase[] snapshot;
+            lock (cacheLock)
+                snapshot = guilds.Values.Cast<GuildBase>().ToArray();
+            foreach (GuildBase guild in snapshot)
             {
-                if (guild.PendingDelete)
+                lock (cacheLock)
+                    if (guildSavesInFlight.Contains(guild.Id))
+                        continue;
+                bool deleting = guild.PendingDelete;
+                if (!deleting && !guild.NeedsSave)
+                    continue;
+                lock (cacheLock)
                 {
-                    if (guild.PendingCreate)
+                    if (!guildSavesInFlight.Add(guild.Id))
+                        continue;
+                    if (deleting && guild.PendingCreate)
                     {
-                        lock (cacheLock)
-                        {
-                            guilds.Remove(guild.Id);
-                            guildNameCache.Remove((guild.Type, guild.Name));
-                        }
-
+                        if (guild is Community community)
+                            community.CancelUnpersistedDisband();
+                        guilds.Remove(guild.Id);
+                        guildNameCache.Remove((guild.Type, guild.Name));
+                        guildSavesInFlight.Remove(guild.Id);
                         continue;
                     }
-
-                    GuildBase guildToDelete = guild;
-                    database.Save(guildToDelete.Save).ContinueWith(t =>
-                    {
-                        if (t.IsFaulted)
-                        {
-                            log.Error(t.Exception?.GetBaseException(), "Failed to persist guild delete for guild {0}.", guildToDelete.Id);
-                            return;
-                        }
-
-                        lock (cacheLock)
-                        {
-                            guilds.Remove(guildToDelete.Id);
-                            guildNameCache.Remove((guildToDelete.Type, guildToDelete.Name));
-                        }
-                    }, TaskContinuationOptions.ExecuteSynchronously).FireAndForgetAsync();
-
-                    continue;
                 }
+                SaveGuildAsync(database, guild, deleting).FireAndForgetAsync(ex =>
+                    log.Error(ex, "Failed to save guild {0}.", guild.Id));
+            }
+        }
 
-                if (!guild.NeedsSave)
-                    continue;
-
-                GuildBase guildToSave = guild;
-                database.Save(guildToSave.Save).FireAndForgetAsync(ex =>
-                    log.Error(ex, "Failed to save guild {0}.", guildToSave.Id));
+        private async Task SaveGuildAsync(CharacterDatabase database, GuildBase guild, bool deleting)
+        {
+            try
+            {
+                while (true)
+                {
+                    Task previous = null;
+                    await database.Save(context =>
+                    {
+                        if (guild is Community community)
+                            previous = community.SaveWhenReady(context);
+                        else
+                            guild.Save(context);
+                    });
+                    if (previous == null)
+                        break;
+                    await previous;
+                }
+                if (deleting)
+                {
+                    lock (cacheLock)
+                    {
+                        guilds.Remove(guild.Id);
+                        guildNameCache.Remove((guild.Type, guild.Name));
+                    }
+                }
+            }
+            finally
+            {
+                lock (cacheLock)
+                    guildSavesInFlight.Remove(guild.Id);
             }
         }
 

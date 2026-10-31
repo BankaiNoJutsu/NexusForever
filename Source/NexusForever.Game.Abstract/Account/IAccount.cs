@@ -17,6 +17,8 @@ namespace NexusForever.Game.Abstract.Account
     {
         uint Id { get; }
         string Email { get; }
+        ulong WorldSessionEpoch => 0;
+        ulong NextPresenceAdmission() => 0;
 
         IAccountRBACManager RbacManager { get; }
         IGenericUnlockManager GenericUnlockManager { get; }
@@ -26,6 +28,7 @@ namespace NexusForever.Game.Abstract.Account
         IAccountCostumeManager CostumeManager { get; }
         IRewardPropertyManager RewardPropertyManager { get; }
         IAccountRewardRotationGrantManager RewardRotationGrantManager { get; }
+        IAccountLoyaltyManager LoyaltyManager => null;
         IAccountKeybindingManager KeybindingManager { get; }
 
         AccountTier AccountTier { get; }

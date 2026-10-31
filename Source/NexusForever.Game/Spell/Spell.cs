@@ -460,41 +460,37 @@ namespace NexusForever.Game.Spell
 
         private CastResult CheckPrerequisites()
         {
-            if (Caster is not IPlayer player)
-                return CastResult.Ok;
-
+            IUnitEntity target = Parameters.PrimaryTargetId == 0u ? Caster : GetPrimaryTargetEntity();
             var prerequisiteParameters = new PrerequisiteParameters
             {
-                TaxiNode = Parameters.TaxiNode
+                TaxiNode = Parameters.TaxiNode,
+                Target = target
             };
 
-            if (Parameters.SpellInfo.CasterCastPrerequisite != null && !CheckRunnerOverride(player, prerequisiteParameters))
+            if (Parameters.SpellInfo.CasterCastPrerequisite != null && !CheckRunnerOverride(Caster, prerequisiteParameters))
             {
-                if (!GetPrerequisiteManager().Meets(player, Parameters.SpellInfo.CasterCastPrerequisite.Id, prerequisiteParameters))
+                if (!GetPrerequisiteManager().MeetsUnit(Caster, Parameters.SpellInfo.CasterCastPrerequisite.Id, prerequisiteParameters))
                     return CastResult.PrereqCasterCast;
             }
 
-            // not sure if this should be for explicit and/or implicit targets
             if (Parameters.SpellInfo.TargetCastPrerequisites != null)
             {
-            }
-
-            // this probably isn't the correct place, name implies this should be constantly checked
-            if (Parameters.SpellInfo.CasterPersistencePrerequisites != null)
-            {
-            }
-
-            if (Parameters.SpellInfo.TargetPersistencePrerequisites != null)
-            {
+                if (target == null || !GetPrerequisiteManager().MeetsUnit(target,
+                    Parameters.SpellInfo.TargetCastPrerequisites.Id, new PrerequisiteParameters
+                    {
+                        TaxiNode = Parameters.TaxiNode,
+                        Target = Caster
+                    }))
+                    return CastResult.PrereqTargetCast;
             }
 
             return CastResult.Ok;
         }
 
-        private bool CheckRunnerOverride(IPlayer player, PrerequisiteParameters prerequisiteParameters)
+        private bool CheckRunnerOverride(IUnitEntity subject, PrerequisiteParameters prerequisiteParameters)
         {
             foreach (PrerequisiteEntry runnerPrereq in Parameters.SpellInfo.PrerequisiteRunners)
-                if (GetPrerequisiteManager().Meets(player, runnerPrereq.Id, prerequisiteParameters))
+                if (GetPrerequisiteManager().MeetsUnit(subject, runnerPrereq.Id, prerequisiteParameters))
                     return true;
 
             return false;
@@ -534,8 +530,8 @@ namespace NexusForever.Game.Spell
 
         private bool MeetsApplyPrerequisites(SpellEffectInterpretation effect, IWorldEntity target)
         {
-            return MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdCasterApply), Caster, prerequisiteManager)
-                && MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdTargetApply), target, prerequisiteManager);
+            return MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdCasterApply), Caster, prerequisiteManager, target as IUnitEntity)
+                && MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdTargetApply), target, prerequisiteManager, Caster);
         }
 
         private PrerequisiteEntry GetPrerequisite(uint prerequisiteId)
@@ -546,7 +542,8 @@ namespace NexusForever.Game.Spell
         internal static bool MeetsApplyPrerequisite(
             PrerequisiteEntry prerequisite,
             IWorldEntity entity,
-            IPrerequisiteManager prerequisiteManager = null)
+            IPrerequisiteManager prerequisiteManager = null,
+            IUnitEntity target = null)
         {
             if (prerequisite == null)
                 return true;
@@ -554,10 +551,11 @@ namespace NexusForever.Game.Spell
             if (TryEvaluateCreatureDifficultyPrerequisite(prerequisite, entity, out bool result))
                 return result;
 
-            if (entity is not IPlayer player)
+            if (entity is not IUnitEntity subject)
                 return true;
 
-            return GetPrerequisiteManager(prerequisiteManager).Meets(player, prerequisite.Id);
+            return GetPrerequisiteManager(prerequisiteManager).MeetsUnit(subject, prerequisite.Id,
+                new PrerequisiteParameters { Target = target });
         }
 
         private static bool TryEvaluateCreatureDifficultyPrerequisite(PrerequisiteEntry prerequisite, IWorldEntity entity, out bool result)
@@ -630,21 +628,22 @@ namespace NexusForever.Game.Spell
 
         private bool MeetsPersistencePrerequisites(SpellEffectInterpretation effect, IWorldEntity target)
         {
-            return MeetsPersistencePrerequisite(Parameters.SpellInfo.CasterPersistencePrerequisites, Caster)
-                && MeetsPersistencePrerequisite(Parameters.SpellInfo.TargetPersistencePrerequisites, target)
-                && MeetsPersistencePrerequisite(gameTableManager?.Prerequisite?.GetEntry(effect.Entry.PrerequisiteIdCasterPersistence), Caster)
-                && MeetsPersistencePrerequisite(gameTableManager?.Prerequisite?.GetEntry(effect.Entry.PrerequisiteIdTargetPersistence), target);
+            return MeetsPersistencePrerequisite(Parameters.SpellInfo.CasterPersistencePrerequisites, Caster, target as IUnitEntity)
+                && MeetsPersistencePrerequisite(Parameters.SpellInfo.TargetPersistencePrerequisites, target, Caster)
+                && MeetsPersistencePrerequisite(gameTableManager?.Prerequisite?.GetEntry(effect.Entry.PrerequisiteIdCasterPersistence), Caster, target as IUnitEntity)
+                && MeetsPersistencePrerequisite(gameTableManager?.Prerequisite?.GetEntry(effect.Entry.PrerequisiteIdTargetPersistence), target, Caster);
         }
 
-        private bool MeetsPersistencePrerequisite(PrerequisiteEntry prerequisite, IWorldEntity entity)
+        private bool MeetsPersistencePrerequisite(PrerequisiteEntry prerequisite, IWorldEntity entity, IUnitEntity target)
         {
             if (prerequisite == null)
                 return true;
 
-            if (entity is not IPlayer player)
+            if (entity is not IUnitEntity subject)
                 return true;
 
-            return GetPrerequisiteManager().Meets(player, prerequisite.Id);
+            return GetPrerequisiteManager().MeetsUnit(subject, prerequisite.Id,
+                new PrerequisiteParameters { Target = target, TaxiNode = Parameters.TaxiNode });
         }
 
         private IPrerequisiteManager GetPrerequisiteManager()
@@ -2150,6 +2149,8 @@ namespace NexusForever.Game.Spell
         {
             switch (effect.Entry.EffectType)
             {
+                case SpellEffectType.ModifySpellCooldown when target is IUnitEntity unitTarget:
+                    return BuildLifetimeRemovalAction(effect, unitTarget, info);
                 case SpellEffectType.SetBusy:
                     if (effect.SetBusy == null || !effect.SetBusy.Busy)
                         return null;
@@ -2168,6 +2169,14 @@ namespace NexusForever.Game.Spell
         {
             switch (effect.Entry.EffectType)
             {
+                case SpellEffectType.ModifySpellCooldown:
+                    if (effect.ModifySpellCooldown == null || target is not IPlayer cooldownPlayer)
+                        return null;
+                    return () =>
+                    {
+                        if (cooldownPlayer.SpellManager.RemoveSpellCooldownModifier(info.EffectId))
+                            SendRemoveBuff(target.Guid);
+                    };
                 case SpellEffectType.UnitPropertyModifier:
                     if (effect.UnitPropertyModifier == null)
                         return null;
@@ -2506,12 +2515,21 @@ namespace NexusForever.Game.Spell
                         out _))
                         return null;
 
+                    uint rewardModifierSpellId = Parameters.SpellInfo?.Entry?.Id ?? info.Entry.SpellId;
+                    uint rewardModifierEffectId = info.EffectId;
+                    uint rewardModifierSourceEffectId = info.Entry.Id;
                     return () =>
                     {
-                        rewardPlayer.Account.RewardPropertyManager.UpdateRewardProperty(
-                            rewardPropertyEntry,
-                            -rewardPropertyValue,
-                            effect.RewardPropertyModifier.Data);
+                        if (rewardPropertyEntry.Id == 4 && effect.RewardPropertyModifier.Data == 3 && rewardPropertyEntry.RewardModifierValueTypeEnum == 0)
+                            rewardPlayer.Account.RewardPropertyManager.UpdateChallengeSpellModifier(rewardPlayer, rewardModifierEffectId, rewardModifierSpellId, rewardPropertyValue, true);
+                        else if (rewardPropertyEntry.Id == 4 && effect.RewardPropertyModifier.Data < 2 && rewardPropertyEntry.RewardModifierValueTypeEnum == 0)
+                            rewardPlayer.Account.RewardPropertyManager.UpdateContractSpellModifier(rewardPlayer, rewardModifierEffectId,
+                                rewardModifierSpellId, rewardModifierSourceEffectId, effect.RewardPropertyModifier.Data, rewardPropertyValue, true);
+                        else
+                            rewardPlayer.Account.RewardPropertyManager.UpdateRewardProperty(
+                                rewardPropertyEntry,
+                                -rewardPropertyValue,
+                                effect.RewardPropertyModifier.Data);
                         SpellEffectDiagnostics.TraceRewardPropertyModifier(this, target, effect.RewardPropertyModifier, rewardPlayer.Guid, -rewardPropertyValue, false, true, null);
                         SendRemoveBuff(target.Guid);
                     };
@@ -2572,6 +2590,10 @@ namespace NexusForever.Game.Spell
         internal static bool TryGetEffectLifetimeDelay(SpellEffectInterpretation effect, out uint durationTime)
         {
             durationTime = GetEffectLifetimeDuration(effect);
+            if (effect.ModifySpellCooldown != null && (effect.Entry.Flags & 2u) != 0)
+                return false;
+            if (effect.ModifySpellCooldown != null && effect.Timing.DelayTime > 0)
+                return true;
 
             // Zero-duration VectorSlide rows are one-shot velocity commands. Queue
             // their removal for the next spell update so the movement owner can
@@ -2651,7 +2673,45 @@ namespace NexusForever.Game.Spell
                 }
             }
 
+            SendSpellConfirmCast(spellStart);
             Caster.EnqueueToVisible(spellStart, true);
+        }
+
+        private void SendSpellConfirmCast(ServerSpellStart spellStart)
+        {
+            // Native 0x07FD consumes a pending locally-generated token. Triggered
+            // children can retain that token for diagnostics but have no new pending cast.
+            if (!Parameters.HasClientCastRequest
+                || Parameters.ParentSpellInfo != null || Caster is not IPlayer player || player.IsLoading)
+                return;
+
+            player.Session.EnqueueMessageEncrypted(new ServerSpellCastPositionSync
+            {
+                ContextToken = Parameters.ClientContextToken,
+                CastingId = CastingId,
+                PrimaryTargetId = spellStart.PrimaryTargetId,
+                Position = spellStart.FieldPosition,
+                Yaw = spellStart.Yaw,
+                InitialPositionData = spellStart.InitialPositionData.Select(position =>
+                    new NexusForever.Network.World.Message.Model.Shared.InitialPosition
+                    {
+                        UnitId = position.UnitId,
+                        TargetFlags = position.TargetFlags,
+                        Position = position.Position,
+                        Yaw = position.Yaw,
+                        Pitch = position.Pitch
+                    }).ToList(),
+                TelegraphPositionData = spellStart.TelegraphPositionData.Select(position =>
+                    new NexusForever.Network.World.Message.Model.Shared.TelegraphPosition
+                    {
+                        TelegraphId = position.TelegraphId,
+                        AttachedUnitId = position.AttachedUnitId,
+                        TargetFlags = position.TargetFlags,
+                        Position = position.Position,
+                        Yaw = position.Yaw,
+                        Pitch = position.Pitch
+                    }).ToList()
+            });
         }
 
         private void SendSpellFinish()

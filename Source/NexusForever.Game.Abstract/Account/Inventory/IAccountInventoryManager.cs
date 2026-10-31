@@ -8,6 +8,11 @@ namespace NexusForever.Game.Abstract.Account.Inventory
 {
     public interface IAccountInventoryManager : IDatabaseAuth, IEnumerable<IAccountInventoryItem>
     {
+        bool SupportsRewardBinding => false;
+        string AddPendingItemGroupWithBinding(IEnumerable<uint> accountItemIds, IReadOnlyList<bool> forceSoulbind,
+            NetworkIdentity senderIdentity = null, NetworkIdentity targetPlayerIdentity = null, string group = null,
+            bool notify = true, uint senderAccountId = 0u, ulong targetAccountId = 0ul)
+            => throw new NotSupportedException("This inventory cannot retain reward binding metadata.");
         IAccountInventoryItem GetItem(ulong id);
         IAccountInventoryItem AddItem(uint accountItemId, NetworkIdentity targetPlayerIdentity = null, AccountItemClaimState claimState = AccountItemClaimState.CanClaim, bool hasTargetPlayerIdentity = false, bool notify = true);
         string AddPendingItemGroup(IEnumerable<uint> accountItemIds, NetworkIdentity senderIdentity = null, NetworkIdentity targetPlayerIdentity = null, string group = null, bool notify = true, uint senderAccountId = 0u, ulong targetAccountId = 0ul);

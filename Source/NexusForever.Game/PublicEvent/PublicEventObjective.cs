@@ -30,6 +30,7 @@ namespace NexusForever.Game.PublicEvent
 
         private double elapsedTimer;
         private UpdateTimer failureTimer;
+        private bool completeTimedWinOnExpiry;
         private readonly IPlayerManager playerManager;
 
         public PublicEventObjective(IPlayerManager playerManager = null)
@@ -72,7 +73,8 @@ namespace NexusForever.Game.PublicEvent
             if (failureTimer.HasElapsed)
             {
                 failureTimer = null;
-                SetStatus(PublicEventStatus.Failed);
+                SetStatus(completeTimedWinOnExpiry && Entry.PublicEventObjectiveTypeEnum == PublicEventObjectiveType.TimedWin
+                    ? PublicEventStatus.Succeeded : PublicEventStatus.Failed);
             }
         }
 
@@ -170,6 +172,22 @@ namespace NexusForever.Game.PublicEvent
 
             if (IsComplete())
                 SetStatus(PublicEventStatus.Succeeded);
+        }
+
+        public void EnableTimedWinCompletion()
+        {
+            // Some existing TimedWin challenge controllers grant success explicitly.
+            // Their expiry remains failure unless a verified controller opts in.
+            if (Entry.PublicEventObjectiveTypeEnum == PublicEventObjectiveType.TimedWin)
+                completeTimedWinOnExpiry = true;
+        }
+
+        public void SetDynamicMax(uint max)
+        {
+            if (DynamicMax == max || Status != PublicEventStatus.Active) return;
+            DynamicMax = max;
+            BroadcastObjectiveUpdate();
+            if (!IsBusy && IsComplete()) SetStatus(PublicEventStatus.Succeeded);
         }
 
         private void UpdateChecklistObjective(int checklistIndex)

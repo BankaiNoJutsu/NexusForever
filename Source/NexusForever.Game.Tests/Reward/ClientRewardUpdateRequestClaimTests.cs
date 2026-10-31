@@ -89,6 +89,9 @@ public class ClientRewardUpdateRequestClaimTests
         handler.HandleMessage(session, BuildClaimRequest(1u, 15u, RewardRotationScheduleBuilder.RewardTypeItem));
 
         Assert.Contains(session.EncryptedMessages, message => message is ServerRewardRotationEntryStateUpsert);
+        var messageManager = new MessageManager(NullLogger<MessageManager>.Instance);
+        messageManager.RegisterMessage(typeof(ServerRewardRotationEntryStateUpsert));
+        Assert.Equal((GameMessageOpcode)0x07CB, messageManager.GetOpcode(session.EncryptedMessages.OfType<ServerRewardRotationEntryStateUpsert>().Single()));
         ServerRewardRotationEntryStateArray entryState = session.EncryptedMessages
             .OfType<ServerRewardRotationEntryStateArray>()
             .Last();

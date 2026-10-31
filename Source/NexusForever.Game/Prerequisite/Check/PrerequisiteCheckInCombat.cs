@@ -20,5 +20,8 @@ namespace NexusForever.Game.Prerequisite.Check
             uint inCombat = unit.InCombat ? 1u : 0u;
             return PrerequisiteCompare.Compare(comparison, inCombat, value);
         }
+
+        public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => subject != null && PrerequisiteCompare.Compare(comparison, subject.InCombat ? 1u : 0u, value);
     }
 }

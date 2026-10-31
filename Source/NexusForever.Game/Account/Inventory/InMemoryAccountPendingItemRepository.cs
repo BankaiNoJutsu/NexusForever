@@ -31,13 +31,14 @@ namespace NexusForever.Game.Account.Inventory
             lock (rows)
             {
                 ulong nextId = rows.Select(p => p.PendingItemId).DefaultIfEmpty(0ul).Max() + 1ul;
-                foreach (uint accountItemId in insert.AccountItemIds)
+                for (int index = 0; index < insert.AccountItemIds.Count; index++)
                 {
                     rows.Add(new StoredPendingItem
                     {
                         PendingItemId     = nextId++,
                         GroupName         = groupName,
-                        AccountItemId     = accountItemId,
+                        AccountItemId     = insert.AccountItemIds[index],
+                        ForceSoulbind     = insert.ForceSoulbind?[index] ?? false,
                         SenderAccountId   = insert.SenderAccountId,
                         SenderRealmId     = senderIdentity.RealmId,
                         SenderCharacterId = senderIdentity.Id,
@@ -80,6 +81,7 @@ namespace NexusForever.Game.Account.Inventory
             public ulong PendingItemId { get; init; }
             public string GroupName { get; init; }
             public uint AccountItemId { get; init; }
+            public bool ForceSoulbind { get; init; }
             public uint SenderAccountId { get; init; }
             public ushort SenderRealmId { get; init; }
             public ulong SenderCharacterId { get; init; }

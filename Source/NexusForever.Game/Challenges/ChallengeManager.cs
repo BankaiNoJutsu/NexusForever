@@ -1,8 +1,11 @@
 using NexusForever.Database.Character;
+using NexusForever.Database.Auth;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Challenges;
 using NexusForever.Game.Retail;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Prerequisite;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Static.Challenges;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
@@ -14,7 +17,7 @@ using NexusForever.Shared;
 
 namespace NexusForever.Game.Challenges
 {
-    public sealed class ChallengeManager : IChallengeManager
+    public sealed partial class ChallengeManager : IChallengeManager
     {
         private const double ShareTimeoutSeconds = 30d;
         private const double DefaultActiveSeconds = 300d;
@@ -49,7 +52,7 @@ namespace NexusForever.Game.Challenges
         private readonly IGameTableManager gameTableManager;
         private readonly Dictionary<ushort, ChallengeRuntimeState> activeChallenges = new();
         private readonly Dictionary<ushort, PendingChallengeShare> pendingShares = new();
-        private readonly Dictionary<ushort, bool> dirtyChallenges = new();
+        private readonly Dictionary<ushort, long> dirtyChallenges = new();
 
         internal ChallengeManager(IPlayer owner, IGameTableManager gameTableManager)
             : this(owner, null, gameTableManager)
@@ -57,16 +60,28 @@ namespace NexusForever.Game.Challenges
         }
 
         public ChallengeManager(IPlayer owner, CharacterModel model, IGameTableManager gameTableManager)
+            : this(owner, model, gameTableManager, null)
+        {
+        }
+
+        internal ChallengeManager(IPlayer owner, CharacterModel model, IGameTableManager gameTableManager,
+            Func<CharacterContext> rewardContexts, IPrerequisiteManager rewardPrerequisites = null, IItemManager rewardItems = null,
+            Func<AuthContext> contractAuthContexts = null)
         {
             player              = owner;
             characterId         = owner.CharacterId;
             this.gameTableManager = gameTableManager;
+            this.rewardPrerequisites = rewardPrerequisites;
+            this.rewardItems = rewardItems;
+            this.contractAuthContexts = contractAuthContexts;
+            if (rewardContexts != null) InitialiseCharacterRewards(rewardContexts);
 
             if (model?.Challenge == null)
                 return;
 
             foreach (CharacterChallengeModel challengeModel in model.Challenge)
             {
+                persistenceBaselines[challengeModel.ChallengeId] = CopyChallengeModel(challengeModel);
                 if (gameTableManager.Challenge?.GetEntry(challengeModel.ChallengeId) == null)
                     continue;
 
@@ -74,6 +89,7 @@ namespace NexusForever.Game.Challenges
                 activeChallenges[id] = new ChallengeRuntimeState
                 {
                     ChallengeId         = challengeModel.ChallengeId,
+                    ActiveAttemptId     = challengeModel.ActiveAttemptId,
                     Activated           = challengeModel.Activated,
                     OnCooldown          = challengeModel.OnCooldown,
                     LeftArea            = challengeModel.LeftArea,
@@ -88,38 +104,7 @@ namespace NexusForever.Game.Challenges
             }
         }
 
-        public void Save(CharacterContext context)
-        {
-            foreach ((ushort challengeId, ChallengeRuntimeState state) in activeChallenges)
-            {
-                if (!dirtyChallenges.ContainsKey(challengeId))
-                    continue;
-
-                CharacterChallengeModel model = BuildModel(state);
-                CharacterChallengeModel existing = context.CharacterChallenge
-                    .SingleOrDefault(c => c.Id == model.Id && c.ChallengeId == model.ChallengeId);
-
-                if (existing == null)
-                {
-                    context.CharacterChallenge.Add(model);
-                }
-                else
-                {
-                    existing.Activated            = model.Activated;
-                    existing.OnCooldown           = model.OnCooldown;
-                    existing.LeftArea             = model.LeftArea;
-                    existing.CurrentCount         = model.CurrentCount;
-                    existing.CurrentTier          = model.CurrentTier;
-                    existing.LastRewardTier       = model.LastRewardTier;
-                    existing.CompletionCount      = model.CompletionCount;
-                    existing.ActiveTimerSeconds   = model.ActiveTimerSeconds;
-                    existing.CooldownTimerSeconds = model.CooldownTimerSeconds;
-                    existing.AreaFailTimerSeconds = model.AreaFailTimerSeconds;
-                }
-
-                dirtyChallenges.Remove(challengeId);
-            }
-        }
+        public void Save(CharacterContext context) => SaveChallengePersistence(context);
 
         private CharacterChallengeModel BuildModel(ChallengeRuntimeState state)
         {
@@ -127,6 +112,7 @@ namespace NexusForever.Game.Challenges
             {
                 Id                   = characterId,
                 ChallengeId          = (ushort)state.ChallengeId,
+                ActiveAttemptId      = state.ActiveAttemptId,
                 Activated            = state.Activated,
                 OnCooldown           = state.OnCooldown,
                 LeftArea             = state.LeftArea,
@@ -142,16 +128,25 @@ namespace NexusForever.Game.Challenges
 
         private void MarkDirty(ushort challengeId)
         {
-            dirtyChallenges[challengeId] = true;
+            lock (persistenceGate)
+                dirtyChallenges[challengeId] = ++persistenceRevision;
         }
 
         public void SendInitialPackets()
         {
+            bool firstRequest = !characterRewardPacketsRequested;
+            characterRewardPacketsRequested = true;
+            player.RewardTrackPresentation?.ExpectCharacterTracks();
+            if (player.QuestManager is Entity.QuestManager quests) quests.ExpectContractRewardTracks(packets: true);
+            if (firstRequest && committedCharacterRewards != null) PublishCharacterRewards();
+            LoadCharacterRewards();
             SendChallengeUpdate();
         }
 
         public void Update(double lastTick)
         {
+            if (!CharacterRewardsReady) return;
+            UpdateContractAccounts(lastTick);
             bool challengeUpdateRequired = false;
             foreach (ChallengeRuntimeState state in activeChallenges.Values.ToList())
             {
@@ -201,6 +196,7 @@ namespace NexusForever.Game.Challenges
 
         public void HandleChoice(ushort challengeId, ChallengeChoice choice)
         {
+            if (!CharacterRewardsReady) return;
             switch (choice)
             {
                 case ChallengeChoice.Activate:
@@ -223,6 +219,7 @@ namespace NexusForever.Game.Challenges
 
         public void ShareWithTarget(ushort challengeId)
         {
+            if (!CharacterRewardsReady) return;
             if (!activeChallenges.TryGetValue(challengeId, out ChallengeRuntimeState state) || !state.Activated)
             {
                 SendResult(challengeId, ChallengeResult.GenericFail);
@@ -247,6 +244,7 @@ namespace NexusForever.Game.Challenges
 
         public void ReceiveShare(ushort challengeId, uint sharerUnitId)
         {
+            if (!CharacterRewardsReady) return;
             ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(challengeId);
             if (entry == null || !player.SharedChallengeEnabled)
                 return;
@@ -315,6 +313,10 @@ namespace NexusForever.Game.Challenges
             ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(challengeId);
             uint[] tierGoals = entry == null ? [] : GetTierGoalCounts(entry);
             uint goalCount = tierGoals.Length > 0 ? tierGoals[0] : 0u;
+            string previousAttempt = state.ActiveAttemptId;
+            bool durable = entry != null && SupportsDurableProducer(entry);
+            var legacyPredecessor = durable && previousAttempt == null ? Reward.CharacterChallengeState.FromModel(BuildModel(state)) : null;
+            state.ActiveAttemptId = durable ? Guid.NewGuid().ToString("N") : null;
 
             state.Activated     = true;
             state.OnCooldown    = false;
@@ -325,6 +327,7 @@ namespace NexusForever.Game.Challenges
             state.ActiveTimer   = DefaultActiveSeconds;
             state.AreaFailTimer = 0d;
             MarkDirty(challengeId);
+            if (durable && !QueueProducerActivation(state, entry, previousAttempt, legacyPredecessor)) return;
 
             SendChallengeUpdate();
             SendResult(challengeId, ChallengeResult.Activate);
@@ -343,6 +346,7 @@ namespace NexusForever.Game.Challenges
 
             Deactivate(state);
             MarkDirty(challengeId);
+            if (ProducerMode(state) != null && !QueueProducerTransition(state, null, false)) return;
             SendResult(challengeId, ChallengeResult.AbandonRemove);
             SendChallengeUpdate();
         }
@@ -379,6 +383,7 @@ namespace NexusForever.Game.Challenges
             }
 
             MarkDirty((ushort)state.ChallengeId);
+            if (ProducerMode(state) != null && !QueueProducerTransition(state, null, false)) return;
             SendResult((ushort)state.ChallengeId, ChallengeResult.TimerExpired);
             SendChallengeUpdate();
         }
@@ -389,6 +394,7 @@ namespace NexusForever.Game.Challenges
             state.AreaFailTimer = 0d;
             Deactivate(state);
             MarkDirty((ushort)state.ChallengeId);
+            if (ProducerMode(state) != null && !QueueProducerTransition(state, null, false)) return;
             SendResult((ushort)state.ChallengeId, ChallengeResult.LeftArea);
             SendChallengeUpdate();
         }
@@ -520,6 +526,7 @@ namespace NexusForever.Game.Challenges
 
         internal void TryAdvanceCombatKill(uint creatureId)
         {
+            if (!CharacterRewardsReady) return;
             if (TryAdvanceActiveCombatKill(creatureId))
                 return;
 
@@ -661,6 +668,7 @@ namespace NexusForever.Game.Challenges
 
         public bool TryAdvanceProgress(ushort challengeId, uint progress = 1u)
         {
+            if (!CharacterRewardsReady) return false;
             if (!activeChallenges.TryGetValue(challengeId, out ChallengeRuntimeState state) || !state.Activated)
                 return false;
 
@@ -691,22 +699,28 @@ namespace NexusForever.Game.Challenges
             uint[] tierGoals)
         {
             uint achievedTier = state.CurrentTier;
+            var mode = ProducerMode(state);
+            NexusForever.Game.Abstract.Account.Reward.ChallengeRewardModifierSnapshot modifier = default;
+            if (mode?.Mode == Reward.CharacterChallengeRewardMode.CharacterTrack && !CaptureProducerModifier(out modifier))
+            { RejectProducer(); return; }
             state.LastRewardTier = achievedTier;
             SendResult(challengeId, ChallengeResult.TierAchieved, (int)achievedTier);
 
             if (achievedTier + 1u >= tierGoals.Length)
             {
-                CompleteChallenge(state, entry);
+                CompleteChallenge(state, entry, mode != null ? (byte)achievedTier : null, modifier);
                 return;
             }
 
             state.CurrentTier++;
             state.CurrentCount = 0u;
             MarkDirty(challengeId);
+            if (mode != null && !QueueProducerTransition(state, (byte)achievedTier, false, modifier)) return;
             SendChallengeUpdate();
         }
 
-        private void CompleteChallenge(ChallengeRuntimeState state, ChallengeEntry entry)
+        private void CompleteChallenge(ChallengeRuntimeState state, ChallengeEntry entry, byte? medal = null,
+            NexusForever.Game.Abstract.Account.Reward.ChallengeRewardModifierSnapshot modifier = default)
         {
             state.Activated = false;
             state.ActiveTimer = 0d;
@@ -717,8 +731,15 @@ namespace NexusForever.Game.Challenges
             state.CompletionCount++;
             MarkDirty((ushort)state.ChallengeId);
             SendResult((ushort)state.ChallengeId, ChallengeResult.Completed, (int)state.LastRewardTier);
-            GrantRewardTrackItem(entry, state.LastRewardTier);
-            player.QuestManager.ObjectiveUpdate(QuestObjectiveType.CompleteChallenge, 0u, 1u);
+            if (ProducerMode(state) != null)
+            {
+                if (!QueueProducerTransition(state, medal, true, modifier)) return;
+            }
+            else
+            {
+                GrantRewardTrackItem(entry, state.LastRewardTier);
+                player.QuestManager.ObjectiveUpdate(QuestObjectiveType.CompleteChallenge, 0u, 1u);
+            }
             SendChallengeUpdate();
         }
 

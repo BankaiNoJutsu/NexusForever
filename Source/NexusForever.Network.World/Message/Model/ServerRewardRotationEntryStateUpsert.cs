@@ -2,7 +2,7 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
-    // Server opcode 0x07C7 (inferred: lowest of three entry-state delta opcodes → add/upsert).
+    // Server opcode 0x07CB: dispatch 1403f126b calls upsert consumer 1406368d0.
     // Wire format matches RewardRotation_EntryStateRow_ReadPayload at client address 1400a1ee0:
     // 3-bit TypeId, 32-bit ContentId, 32-bit RewardTypeId, 8-bit State, 32-bit Value.
     [Message(GameMessageOpcode.ServerRewardRotationEntryStateUpsert)]

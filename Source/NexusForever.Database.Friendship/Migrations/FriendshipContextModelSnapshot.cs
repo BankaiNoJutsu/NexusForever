@@ -17,7 +17,7 @@ namespace NexusForever.Database.Friendship.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.9")
+                .HasAnnotation("ProductVersion", "10.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
@@ -142,6 +142,32 @@ namespace NexusForever.Database.Friendship.Migrations
                     b.Property<int>("Presence")
                         .HasColumnType("int")
                         .HasColumnName("presence");
+
+                    b.Property<ulong>("PresenceAdmission")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasDefaultValue(0ul)
+                        .HasColumnName("presenceAdmission");
+
+                    b.Property<ulong?>("PresenceCharacterId")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("presenceCharacterId");
+
+                    b.Property<bool>("PresenceClosed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true)
+                        .HasColumnName("presenceClosed");
+
+                    b.Property<ushort?>("PresenceRealmId")
+                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnName("presenceRealmId");
+
+                    b.Property<ulong>("PresenceSessionEpoch")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasDefaultValue(0ul)
+                        .HasColumnName("presenceSessionEpoch");
 
                     b.Property<string>("Status")
                         .HasColumnType("longtext")

@@ -352,6 +352,12 @@ namespace NexusForever.Game.Loot
 
         public bool TryUseLootBag(IPlayer looter, IItem lootedItem, out string reason)
         {
+            if (!InventoryMutationScope.TryAcquire(looter?.Inventory, out var mutationLease))
+            {
+                reason = "inventory-busy";
+                return false;
+            }
+            using var heldMutation = mutationLease;
             reason = string.Empty;
             if (looter == null)
             {

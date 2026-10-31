@@ -1,14 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
+﻿using Microsoft.EntityFrameworkCore;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Quest;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Entity
 {
-    public class Currency : ICurrency
+    public partial class Currency : ICurrency
     {
         /// <summary>
         /// Determines which fields need saving for <see cref="ICurrency"/> when being saved to the database.
@@ -28,19 +29,43 @@ namespace NexusForever.Game.Entity
 
         public ulong Amount
         {
-            get => amount;
+            get { lock (persistence.Gate) return amount; }
             set
             {
-                if (Entry.CapAmount > 0 && value > Entry.CapAmount)
-                    throw new ArgumentOutOfRangeException();
-                saveMask |= CurrencySaveMask.Amount;
-                amount = value;
+                lock (persistence.Gate)
+                {
+                    AssertIdentity();
+                    persistence.AssertRewardOwner();
+                    if (Entry.CapAmount > 0 && value > Entry.CapAmount)
+                        throw new ArgumentOutOfRangeException();
+                    amount = value;
+                    persistence.Dirty((int)CurrencySaveMask.Amount);
+                }
             }
         }
 
         private ulong amount;
 
-        private CurrencySaveMask saveMask;
+        private readonly ulong owner;
+        private readonly byte currencyId;
+        // Reuse the commit-observed row owner and its Character-wide frozen/reward
+        // exclusion. A failed flush or later actor mutation cannot clear this row.
+        private readonly QuestRowPersistence<CharacterCurrencyModel, CurrencyState> persistence;
+        private sealed record CurrencyState(ulong Character, byte Currency, ulong Amount);
+        internal bool NeedsPersistenceSave => persistence.NeedsSave;
+
+        private void AssertIdentity()
+        {
+            if (CharacterId != owner || Entry == null || Entry.Id != currencyId)
+                throw new InvalidOperationException("Currency changed its loaded Character or currency identity.");
+        }
+
+        private QuestRowPersistence<CharacterCurrencyModel, CurrencyState> CreatePersistence(CurrencyState baseline)
+            => new($"currency:{owner}:{currencyId}", $"{owner}:currency", baseline,
+                context => context.CharacterCurrency.AsNoTracking().SingleOrDefault(row => row.Id == owner && row.CurrencyId == currencyId),
+                row => row == null ? null : new(row.Id, row.CurrencyId, row.Amount),
+                value => new() { Id = value.Character, CurrencyId = value.Currency, Amount = value.Amount },
+                () => { AssertIdentity(); return new(CharacterId, currencyId, amount); });
 
         /// <summary>
         /// Create a new <see cref="ICurrency"/> from an existing database model.
@@ -49,9 +74,10 @@ namespace NexusForever.Game.Entity
         {
             CharacterId = model.Id;
             Entry       = gameTableManager.CurrencyType.GetEntry(model.CurrencyId);
-            Amount      = model.Amount;
-
-            saveMask    = CurrencySaveMask.None;
+            if (Entry == null || Entry.CapAmount > 0 && model.Amount > Entry.CapAmount)
+                throw new ArgumentOutOfRangeException(nameof(model));
+            amount = model.Amount; owner = model.Id; currencyId = model.CurrencyId;
+            persistence = CreatePersistence(new(owner, currencyId, amount));
         }
 
         /// <summary>
@@ -62,43 +88,22 @@ namespace NexusForever.Game.Entity
             CharacterId = owner;
             Entry       = entry;
 
-            saveMask    = CurrencySaveMask.Create;
+            ArgumentNullException.ThrowIfNull(entry);
+            if (entry.Id > byte.MaxValue) throw new ArgumentOutOfRangeException(nameof(entry));
+            this.owner = owner; currencyId = (byte)entry.Id;
+            persistence = CreatePersistence(null);
+            persistence.Dirty((int)CurrencySaveMask.Create);
         }
 
         public void Save(CharacterContext context)
         {
-            if (saveMask == CurrencySaveMask.None)
-                return;
+            persistence.Save(context);
+        }
 
-            if ((saveMask & CurrencySaveMask.Create) != 0)
-            {
-                // Currency doesn't exist in database, all information must be saved
-                context.Add(new CharacterCurrencyModel
-                {
-                    Id         = CharacterId,
-                    CurrencyId = (byte)Entry.Id,
-                    Amount     = Amount
-                });
-            }
-            else
-            {
-                // Currency already exists in database, save only data that has been modified
-                var model = new CharacterCurrencyModel
-                {
-                    Id         = CharacterId,
-                    CurrencyId = (byte)Entry.Id,
-                };
-
-                // could probably clean this up with reflection, works for the time being
-                EntityEntry<CharacterCurrencyModel> entity = context.Attach(model);
-                if ((saveMask & CurrencySaveMask.Amount) != 0)
-                {
-                    model.Amount = Amount;
-                    entity.Property(p => p.Amount).IsModified = true;
-                }
-            }
-
-            saveMask = CurrencySaveMask.None;
+        internal Action<CharacterContext> CaptureNormalSave(object token)
+        {
+            var snapshot = persistence.CaptureNormal(token);
+            return context => persistence.Save(context, frozen: snapshot);
         }
     }
 }

@@ -147,8 +147,12 @@ namespace NexusForever.Game.Map
                 {
                     case GridActionAdd actionAdd:
                     {
+                        if (!PlayerMapAdmissionGuard.IsCurrent(actionAdd.Entity, actionAdd.AdmissionGeneration)
+                            || actionAdd.Entity is IPlayer { Map: not null })
+                            break;
                         if (CanAddEntity(actionAdd.Entity, actionAdd.Vector))
-                            AddEntity(actionAdd.Entity, actionAdd.Vector);
+                            PlayerMapAdmissionGuard.Run(actionAdd.Entity, actionAdd.AdmissionGeneration,
+                                () => CompleteMapAdd(actionAdd));
                         else
                         {
                             // retry threshold to prevent any issues with stuck actions
@@ -168,13 +172,16 @@ namespace NexusForever.Game.Map
                     }
                     case GridActionPending actionPending:
                     {
+                        if (!PlayerMapAdmissionGuard.IsCurrent(actionPending.Entity, actionPending.AdmissionGeneration))
+                            break;
                         newActions ??= new List<IGridAction>();
                         if (actionPending.Entity.Map == null)
                         {
                             newActions.Add(new GridActionAdd
                             {
                                 Entity = actionPending.Entity,
-                                Vector = actionPending.Vector
+                                Vector = actionPending.Vector,
+                                AdmissionGeneration = actionPending.AdmissionGeneration
                             });
                         }
                         else
@@ -198,7 +205,11 @@ namespace NexusForever.Game.Map
                         break;
                     }
                     case GridActionRemove actionRemove:
-                        RemoveEntity(actionRemove.Entity);
+                        // A duplicate or stale queued callback must not recycle another entity's GUID.
+                        if (ReferenceEquals(actionRemove.Entity.Map, this)
+                            && entities.TryGetValue(actionRemove.Entity.Guid, out IGridEntity registered)
+                            && ReferenceEquals(registered, actionRemove.Entity))
+                            RemoveEntity(actionRemove.Entity);
                         break;
                 }
             }
@@ -240,6 +251,9 @@ namespace NexusForever.Game.Map
         public void EnqueueAdd(IGridEntity entity, IMapPosition position)
         {
             entity.OnEnqueueAddToMap();
+            ulong? generation = PlayerMapAdmissionGuard.Capture(entity);
+            if (!PlayerMapAdmissionGuard.IsCurrent(entity, generation))
+                return;
 
             if (entity.Map != null)
             {
@@ -249,7 +263,8 @@ namespace NexusForever.Game.Map
                 pendingActions.Enqueue(new GridActionPending
                 {
                     Entity = entity,
-                    Vector = position.Position
+                    Vector = position.Position,
+                    AdmissionGeneration = generation
                 });
             }
             else
@@ -257,7 +272,8 @@ namespace NexusForever.Game.Map
                 pendingActions.Enqueue(new GridActionAdd
                 {
                     Entity = entity,
-                    Vector = position.Position
+                    Vector = position.Position,
+                    AdmissionGeneration = generation
                 });
             }
         }
@@ -542,6 +558,21 @@ namespace NexusForever.Game.Map
             return true;
         }
 
+        private void CompleteMapAdd(GridActionAdd action)
+        {
+            bool successful = false;
+            try
+            {
+                AddEntity(action.Entity, action.Vector);
+                successful = true;
+            }
+            finally
+            {
+                if (action.Entity is IPlayerMapAdmission admission && action.AdmissionGeneration.HasValue)
+                    admission.CompleteMapAdmission(action.AdmissionGeneration.Value, successful);
+            }
+        }
+
         protected virtual void AddEntity(IGridEntity entity, Vector3 vector)
         {
             Debug.Assert(entity.Map == null);
@@ -552,9 +583,14 @@ namespace NexusForever.Game.Map
             uint guid = entityCounter.Dequeue();
             entities.Add(guid, entity);
 
+            ulong? generation = PlayerMapAdmissionGuard.Capture(entity);
             entity.OnAddToMap(this, guid, vector);
+            if (!PlayerMapAdmissionGuard.IsCurrent(entity, generation))
+                return;
 
             PublicEventManager.OnAddToMap(entity);
+            if (!PlayerMapAdmissionGuard.IsCurrent(entity, generation))
+                return;
             scriptCollection?.Invoke<IMapScript>(s => s.OnAddToMap(entity));
 
             log.Trace($"Added entity {entity.Guid} to map {Entry.Id} at {vector.X},{vector.Y},{vector.Z}.");

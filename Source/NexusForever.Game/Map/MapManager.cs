@@ -18,6 +18,7 @@ namespace NexusForever.Game.Map
         {
             public IPlayer Player { get; init; }
             public IMapPosition MapPosition { get; init; }
+            public ulong? AdmissionGeneration { get; init; }
         }
 
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
@@ -71,16 +72,24 @@ namespace NexusForever.Game.Map
 
             while (pendingAdds.TryDequeue(out PendingAdd pending))
             {
+                if (!PlayerMapAdmissionGuard.IsCurrent(pending.Player, pending.AdmissionGeneration))
+                    continue;
+
                 IMap map = CreateMap(pending.MapPosition.Info.Entry);
+                if (!PlayerMapAdmissionGuard.IsCurrent(pending.Player, pending.AdmissionGeneration))
+                    continue;
 
                 GenericError? result = map.CanEnter(pending.Player, pending.MapPosition);
+                if (!PlayerMapAdmissionGuard.IsCurrent(pending.Player, pending.AdmissionGeneration))
+                    continue;
                 if (result.HasValue)
                 {
                     pending.Player.OnTeleportToFailed(result.Value);
                     return;
                 }
 
-                map.EnqueueAdd(pending.Player, pending.MapPosition);
+                PlayerMapAdmissionGuard.Run(pending.Player, pending.AdmissionGeneration,
+                    () => map.EnqueueAdd(pending.Player, pending.MapPosition));
             }
 
             sw.Stop();
@@ -115,10 +124,12 @@ namespace NexusForever.Game.Map
         /// </summary>
         public void AddToMap(IPlayer player, IMapPosition mapPosition)
         {
+            ulong? generation = (player as IPlayerMapAdmission)?.BeginMapAdmission();
             pendingAdds.Enqueue(new PendingAdd
             {
                 Player      = player,
-                MapPosition = mapPosition
+                MapPosition = mapPosition,
+                AdmissionGeneration = generation
             });
         }
 

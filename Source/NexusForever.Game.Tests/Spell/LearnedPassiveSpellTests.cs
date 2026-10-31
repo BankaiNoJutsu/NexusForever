@@ -260,6 +260,8 @@ public class LearnedPassiveSpellTests
             var model = new CharacterModel { Id = 42 };
             if (loadSpell) model.Spell.Add(new CharacterSpellModel { Id = 42, Spell4BaseId = BaseId, Tier = (byte)(scenario == "inactive" ? 0 : 1) });
             Manager = new Game.Entity.SpellManager(player, model, RecordingDispatchProxy<IPrerequisiteManager>.Create(out _), global, Tables);
+            pp.SetProperty(nameof(IPlayer.SpellManager), Manager);
+            Manager.Initialise();
         }
     }
 

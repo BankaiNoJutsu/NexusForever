@@ -69,6 +69,10 @@ namespace NexusForever.Network.World.Message.Model
         public uint VendorUnitId { get; set; }
         public List<VendorGroup> VendorGroups { get; } = new();
         public List<VendorItem> VendorItems { get; } = new();
+        // These names use the vendor's perspective: its sell multiplier is the
+        // player's purchase price (first wire float), and its buy multiplier is
+        // the player's sale payout (second). Native 1403db9a0 applies them to
+        // vendor +0x36dc/+0x36e0, consumed by Item.GetBuyPrice/GetSellPrice.
         public float SellPriceMultiplier { get; set; }
         public float BuyPriceMultiplier { get; set; }
         public bool InitialList { get; set; }

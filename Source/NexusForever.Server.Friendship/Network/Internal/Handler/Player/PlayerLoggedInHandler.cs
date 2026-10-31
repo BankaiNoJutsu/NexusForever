@@ -36,33 +36,39 @@ namespace NexusForever.Server.Friendship.Network.Internal.Handler.Player
 
         public async Task Handle(PlayerLoggedInMessage message)
         {
-            IExecutionStrategy strategy = _context.Database.CreateExecutionStrategy();
-            await strategy.ExecuteAsync(async () =>
+            var generation = FriendshipPresenceGeneration.Capture(message.AccountId, message.Identity,
+                message.SessionEpoch, message.Admission, message.OccurredUtc, closed: false);
+            await FriendshipPresenceTransaction.ExecuteAsync(_context, _characterManager, async () =>
             {
-                await using IDbContextTransaction transaction = await _context.Database.BeginTransactionAsync();
-
                 Account account = await _accountManager.GetAccountRemoteAsync(message.AccountId);
                 if (account == null)
-                    return;
+                    return false;
+
+                await FriendshipPresenceTransaction.LockAndRefreshAccountAsync(_context, account.Model);
+                if (!FriendshipPresenceGeneration.Accept(account.Model, generation)) return true;
 
                 await _context.SaveChangesAsync();
 
-                Character character = await _characterManager.GetCharacterRemoteAsync(message.Identity.ToFriendshipIdentity());
+                Character character = await _characterManager.GetPresenceCharacterRemoteAsync(message.Identity.ToFriendshipIdentity(), account.Id);
                 if (character == null)
-                    return;
+                    return false;
 
                 await _context.SaveChangesAsync();
+                await FriendshipPresenceTransaction.RefreshCharacterAsync(_context, character.Model, account.Id);
+
+                if (generation != null) await generation.CloseSupersededAsync(_context, account, _characterManager);
 
                 await account.SetLastOnline(null);
                 await account.SetActiveCharacterAsync(message.Identity.ToFriendshipIdentity());
 
                 await character.SetLastOnline(null);
+                generation?.Remember(account.Model);
 
                 await SendAccountMessages(account);
                 await SendCharacterMessages(character);
 
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                return true;
             });
         }
 

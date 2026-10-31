@@ -755,6 +755,7 @@ namespace NexusForever.Network.Message
         ServerPathSoldierAddTowerDefense = 0x0681,
         ServerPendingWorldRemovalCancel = 0x0688,
         ServerPendingWorldRemoval       = 0x0689,
+        ClientPetMiniCommand            = 0x068A, // type11 shortcut sender1405c9b90: shortcut set32 + slot32
         ServerPetCustomisationFailed    = 0x068B,
         ClientPathScientistSetScannerName = 0x068C,
         ServerUnlockPetFlair            = 0x068D,
@@ -857,16 +858,12 @@ namespace NexusForever.Network.Message
         ClientResetInstances            = 0x07B4,
         ClientAddonModuleList           = 0x07B6, // four uint32 header fields + uint32 row count + counted rows of { 4-bit nibble, bit, byte, wide string }; native sender FUN_1403f42e0 mirrors Lua_GetAddons module walk (skips Options/FrontEnd/ExternalTool); gameplay semantics unresolved
         ClientAccountItemReturnPendingItemGroup = 0x07C6,
-        ServerRewardRotationEntryStateUpsert = 0x07C7, // inference: lowest delta opcode → add/upsert entry-state row
+        ServerRewardRotationEntryStateRemove = 0x07C7, // dispatch 1403f1289 -> 140636ac0 removes a rotation entry
         ServerRewardRotationEntryStateArray  = 0x07C8,
-        ServerRewardRotationEntryStateUpdate = 0x07C9, // inference: middle delta opcode → update entry-state row
+        ServerRewardRotationEntryStateUpdate = 0x07C9, // dispatch 1403f127a -> 1406369c0 updates a rotation entry
         ServerRewardRotationScheduleArray    = 0x07CA,
-        ServerRewardRotationEntryStateRemove = 0x07CB, // inference: highest delta opcode → remove entry-state row
+        ServerRewardRotationEntryStateUpsert = 0x07CB, // dispatch 1403f126b -> 1406368d0 upserts a rotation entry
         ClientRewardUpdateRequest       = 0x07CC,
-        ServerRewardRotationContentContext = 0x07CD, // 0x28-byte payload; consumer semantics unresolved
-        ClientGenericMapNodeRequest     = 0x07CF, // GenericMapNodeChoose sends missing node id before local GenericFloater
-        ServerRewardRotationContentContextArray = 0x07D3, // count + count * 0x28-byte content-context rows
-        ServerAuctionsByFilterAux       = 0x07D5, // 14-bit value + three uint32 fields + flag; reader 14008fe80
         ServerRewardRotationLockedRemove = 0x07C7,
         ServerRewardRotationLockedList  = 0x07C8,
         ServerRewardRotationLockedUpdate = 0x07C9,

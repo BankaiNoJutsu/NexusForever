@@ -15,6 +15,7 @@ namespace NexusForever.Database.Auth.Model
         public ulong TargetCharacterId { get; set; }
         public byte ClaimState { get; set; }
         public bool HasTargetPlayerIdentity { get; set; }
+        public bool ForceSoulbind { get; set; }
         public DateTime CreateTime { get; set; }
 
         public virtual AccountModel Account { get; set; }

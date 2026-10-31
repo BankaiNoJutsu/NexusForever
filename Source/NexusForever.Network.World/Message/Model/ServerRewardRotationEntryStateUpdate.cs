@@ -2,7 +2,7 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
-    // Server opcode 0x07C9 (inferred: middle of three entry-state delta opcodes → update existing row).
+    // Server opcode 0x07C9: dispatch 1403f127a calls update consumer 1406369c0.
     // Wire format matches RewardRotation_EntryStateRow_ReadPayload at client address 1400a1ee0:
     // 3-bit TypeId, 32-bit ContentId, 32-bit RewardTypeId, 8-bit State, 32-bit Value.
     [Message(GameMessageOpcode.ServerRewardRotationEntryStateUpdate)]

@@ -9,6 +9,7 @@ namespace NexusForever.Network.World.Message.Model.Reward
 
         public void Write(GamePacketWriter writer)
         {
+            RewardTrackWireValidation.Validate(RewardTrack);
             RewardTrack.Write(writer);
         }
     }

@@ -205,6 +205,84 @@ namespace NexusForever.Database.Character.Migrations
                     b.ToTable("character_bone", (string)null);
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterChallengeAttemptModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AttemptId")
+                        .HasMaxLength(32)
+                        .HasColumnType("char(32)")
+                        .HasColumnName("attemptId");
+
+                    b.Property<ushort>("ChallengeId")
+                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnName("challengeId");
+
+                    b.Property<uint>("EarnedMedalMask")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("earnedMedalMask");
+
+                    b.Property<byte>("RewardMode")
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnName("rewardMode");
+
+                    b.Property<bool>("Terminal")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("terminal");
+
+                    b.Property<uint>("TrackId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("trackId");
+
+                    b.HasKey("Id", "AttemptId")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("character_challenge_attempt", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterChallengeMedalReceiptModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AttemptId")
+                        .HasMaxLength(32)
+                        .HasColumnType("char(32)")
+                        .HasColumnName("attemptId");
+
+                    b.Property<byte>("Medal")
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnName("medal");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("createdUtc");
+
+                    b.Property<long>("ModifierRevision")
+                        .HasColumnType("bigint(20)")
+                        .HasColumnName("modifierRevision");
+
+                    b.Property<float>("Multiplier")
+                        .HasColumnType("float")
+                        .HasColumnName("multiplier");
+
+                    b.Property<uint>("Points")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("points");
+
+                    b.Property<uint>("TrackId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("trackId");
+
+                    b.HasKey("Id", "AttemptId", "Medal")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("character_challenge_medal_receipt", (string)null);
+                });
+
             modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterChallengeModel", b =>
                 {
                     b.Property<ulong>("Id")
@@ -224,6 +302,11 @@ namespace NexusForever.Database.Character.Migrations
                         .HasColumnType("tinyint(1)")
                         .HasDefaultValue(false)
                         .HasColumnName("activated");
+
+                    b.Property<string>("ActiveAttemptId")
+                        .HasMaxLength(32)
+                        .HasColumnType("char(32)")
+                        .HasColumnName("activeAttemptId");
 
                     b.Property<double>("ActiveTimerSeconds")
                         .ValueGeneratedOnAdd()
@@ -282,7 +365,383 @@ namespace NexusForever.Database.Character.Migrations
                     b.HasKey("Id", "ChallengeId")
                         .HasName("PRIMARY");
 
+                    b.HasIndex("Id", "ActiveAttemptId")
+                        .HasDatabaseName("IX_character_challenge_activeAttempt");
+
                     b.ToTable("character_challenge", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterChallengeRewardClaimModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("id");
+
+                    b.Property<uint>("TrackId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("trackId");
+
+                    b.Property<ulong>("CycleId")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("cycleId");
+
+                    b.Property<byte>("Ordinal")
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnName("ordinal");
+
+                    b.Property<uint>("Choice")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("choice");
+
+                    b.Property<string>("ClaimId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("char(32)")
+                        .HasColumnName("claimId");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("createdUtc");
+
+                    b.Property<string>("DeliveryJson")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("deliveryJson");
+
+                    b.Property<uint>("DeliveryVersion")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("deliveryVersion");
+
+                    b.Property<uint>("RewardRowId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("rewardRowId");
+
+                    b.HasKey("Id", "TrackId", "CycleId", "Ordinal")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex("ClaimId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_character_challenge_reward_claim_claimId");
+
+                    b.ToTable("character_challenge_reward_claim", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterChallengeRewardSlotModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("id");
+
+                    b.Property<uint>("TrackId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("trackId");
+
+                    b.Property<ulong>("CycleId")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("cycleId");
+
+                    b.Property<byte>("Ordinal")
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnName("ordinal");
+
+                    b.Property<bool>("Claimed")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("claimed");
+
+                    b.Property<uint>("RequiredPoints")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("requiredPoints");
+
+                    b.Property<uint>("RewardRowId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("rewardRowId");
+
+                    b.HasKey("Id", "TrackId", "CycleId", "Ordinal")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("character_challenge_reward_slot", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterChallengeRewardTrackModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("id");
+
+                    b.Property<uint>("TrackId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("trackId");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("active");
+
+                    b.Property<ulong>("CycleId")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("cycleId");
+
+                    b.Property<uint>("Points")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("points");
+
+                    b.Property<ulong>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("revision");
+
+                    b.HasKey("Id", "TrackId")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("character_challenge_reward_track", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterContractAccountOutboxModel", b =>
+                {
+                    b.Property<string>("ClaimId")
+                        .HasMaxLength(32)
+                        .HasColumnType("char(32)")
+                        .HasColumnName("claimId");
+
+                    b.Property<uint>("AccountId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("accountId");
+
+                    b.Property<ulong>("CharacterId")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("characterId");
+
+                    b.Property<ulong>("CycleId")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("cycleId");
+
+                    b.Property<bool>("Delivered")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("delivered");
+
+                    b.Property<byte>("Ordinal")
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnName("ordinal");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("payloadJson");
+
+                    b.Property<ushort>("RealmId")
+                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnName("realmId");
+
+                    b.Property<uint>("TrackId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("trackId");
+
+                    b.HasKey("ClaimId")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex("CharacterId", "ClaimId")
+                        .HasDatabaseName("IX_contract_outbox_character");
+
+                    b.ToTable("character_contract_account_outbox", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterContractCompletionModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AcceptanceId")
+                        .HasMaxLength(32)
+                        .HasColumnType("char(32)")
+                        .HasColumnName("acceptanceId");
+
+                    b.Property<uint>("BasePoints")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("basePoints");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("createdUtc");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("payloadJson");
+
+                    b.Property<uint>("PayloadVersion")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("payloadVersion");
+
+                    b.Property<uint>("Points")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("points");
+
+                    b.Property<ushort>("QuestId")
+                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnName("questId");
+
+                    b.Property<uint>("TrackId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("trackId");
+
+                    b.HasKey("Id", "AcceptanceId")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("character_contract_completion", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterContractRewardClaimModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("id");
+
+                    b.Property<uint>("TrackId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("trackId");
+
+                    b.Property<ulong>("CycleId")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("cycleId");
+
+                    b.Property<byte>("Ordinal")
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnName("ordinal");
+
+                    b.Property<uint>("AccountId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("accountId");
+
+                    b.Property<string>("CharacterCurrencyJson")
+                        .HasColumnType("longtext")
+                        .HasColumnName("characterCurrencyJson");
+
+                    b.Property<uint>("Choice")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("choice");
+
+                    b.Property<string>("ClaimId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("char(32)")
+                        .HasColumnName("claimId");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("createdUtc");
+
+                    b.Property<string>("DeliveryJson")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("deliveryJson");
+
+                    b.Property<uint>("DeliveryVersion")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("deliveryVersion");
+
+                    b.Property<string>("QuoteJson")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("quoteJson");
+
+                    b.Property<uint>("QuoteVersion")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("quoteVersion");
+
+                    b.Property<uint>("RewardRowId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("rewardRowId");
+
+                    b.HasKey("Id", "TrackId", "CycleId", "Ordinal")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex("ClaimId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_contract_reward_claim_id");
+
+                    b.ToTable("character_contract_reward_claim", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterContractRewardSlotModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("id");
+
+                    b.Property<uint>("TrackId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("trackId");
+
+                    b.Property<ulong>("CycleId")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("cycleId");
+
+                    b.Property<byte>("Ordinal")
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnName("ordinal");
+
+                    b.Property<bool>("Claimed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("claimed");
+
+                    b.Property<uint>("RequiredPoints")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("requiredPoints");
+
+                    b.Property<uint>("RewardRowId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("rewardRowId");
+
+                    b.Property<string>("SelectionJson")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("selectionJson");
+
+                    b.HasKey("Id", "TrackId", "CycleId", "Ordinal")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("character_contract_reward_slot", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterContractRewardTrackModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("id");
+
+                    b.Property<uint>("TrackId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("trackId");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("active");
+
+                    b.Property<ulong>("CycleId")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("cycleId");
+
+                    b.Property<uint>("Points")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("points");
+
+                    b.Property<ulong>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("revision");
+
+                    b.Property<bool>("SelectionInitialized")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("selectionInitialized");
+
+                    b.HasKey("Id", "TrackId")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("character_contract_reward_track", (string)null);
                 });
 
             modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterCostumeItemModel", b =>
@@ -1581,6 +2040,12 @@ namespace NexusForever.Database.Character.Migrations
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("questId");
 
+                    b.Property<string>("ContractAcceptanceId")
+                        .IsConcurrencyToken()
+                        .HasMaxLength(32)
+                        .HasColumnType("char(32)")
+                        .HasColumnName("contractAcceptanceId");
+
                     b.Property<byte>("Flags")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("tinyint(3) unsigned")
@@ -1604,6 +2069,10 @@ namespace NexusForever.Database.Character.Migrations
                     b.HasKey("Id", "QuestId")
                         .HasName("PRIMARY");
 
+                    b.HasIndex("Id", "ContractAcceptanceId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_character_quest_contractAcceptance");
+
                     b.ToTable("character_quest", (string)null);
                 });
 
@@ -1622,7 +2091,6 @@ namespace NexusForever.Database.Character.Migrations
                         .HasColumnName("questId");
 
                     b.Property<byte>("Index")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("index");
@@ -3057,11 +3525,23 @@ namespace NexusForever.Database.Character.Migrations
                         .HasDefaultValue(0u)
                         .HasColumnName("itemId");
 
+                    b.Property<string>("MicrochipIds")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(128)")
+                        .HasDefaultValue("")
+                        .HasColumnName("microchipIds");
+
                     b.Property<ushort>("RealmId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("smallint(5) unsigned")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("realmId");
+
+                    b.Property<string>("RuneSlots")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(256)")
+                        .HasDefaultValue("")
+                        .HasColumnName("runeSlots");
 
                     b.Property<bool>("Soulbound")
                         .ValueGeneratedOnAdd()
@@ -3448,6 +3928,30 @@ namespace NexusForever.Database.Character.Migrations
                     b.Navigation("Character");
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterChallengeAttemptModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Character.Model.CharacterModel", "Character")
+                        .WithMany()
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_challenge_attempt_character");
+
+                    b.Navigation("Character");
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterChallengeMedalReceiptModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Character.Model.CharacterChallengeAttemptModel", "Attempt")
+                        .WithMany()
+                        .HasForeignKey("Id", "AttemptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_challenge_medal_receipt_attempt");
+
+                    b.Navigation("Attempt");
+                });
+
             modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterChallengeModel", b =>
                 {
                     b.HasOne("NexusForever.Database.Character.Model.CharacterModel", "Character")
@@ -3456,6 +3960,90 @@ namespace NexusForever.Database.Character.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK__character_challenge_id__character_id");
+
+                    b.Navigation("Character");
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterChallengeRewardClaimModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Character.Model.CharacterChallengeRewardSlotModel", "Slot")
+                        .WithMany()
+                        .HasForeignKey("Id", "TrackId", "CycleId", "Ordinal")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_challenge_reward_claim_slot");
+
+                    b.Navigation("Slot");
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterChallengeRewardSlotModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Character.Model.CharacterChallengeRewardTrackModel", "Track")
+                        .WithMany()
+                        .HasForeignKey("Id", "TrackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_challenge_reward_slot_track");
+
+                    b.Navigation("Track");
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterChallengeRewardTrackModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Character.Model.CharacterModel", "Character")
+                        .WithMany()
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_challenge_reward_track_character");
+
+                    b.Navigation("Character");
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterContractCompletionModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Character.Model.CharacterModel", "Character")
+                        .WithMany()
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_contract_completion_character");
+
+                    b.Navigation("Character");
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterContractRewardClaimModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Character.Model.CharacterModel", "Character")
+                        .WithMany()
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_contract_reward_claim_character");
+
+                    b.Navigation("Character");
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterContractRewardSlotModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Character.Model.CharacterContractRewardTrackModel", "Track")
+                        .WithMany()
+                        .HasForeignKey("Id", "TrackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_contract_reward_slot_track");
+
+                    b.Navigation("Track");
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterContractRewardTrackModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Character.Model.CharacterModel", "Character")
+                        .WithMany()
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_contract_reward_track_character");
 
                     b.Navigation("Character");
                 });

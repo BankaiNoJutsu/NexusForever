@@ -20,16 +20,22 @@ namespace NexusForever.Game.Entitlement
 
         public uint Amount
         {
-            get => amount;
+            get { lock (saveStateLock) return amount; }
             set
             {
-                if (value > Entry.MaxCount)
-                    value = Entry.MaxCount;
-
-                saveMask |= SaveMask.Amount;
-                amount = value;
+                lock (saveStateLock)
+                {
+                    if (value > Entry.MaxCount)
+                        value = Entry.MaxCount;
+                    saveRevision++;
+                    saveMask |= SaveMask.Amount;
+                    amount = value;
+                }
             }
         }
+
+        protected readonly object saveStateLock = new();
+        protected ulong saveRevision;
 
         protected uint amount;
 

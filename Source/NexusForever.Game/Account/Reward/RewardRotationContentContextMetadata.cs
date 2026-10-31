@@ -3,10 +3,9 @@ using NexusForever.Network.World.Message.Model;
 namespace NexusForever.Game.Account.Reward
 {
     /// <summary>
-    /// Correlated 0x07CD metadata from reward-manager init (<c>RewardRotation_ManagerInit</c> @ 140635840)
-    /// and request throttle fields read by <c>Reward_SendRewardUpdateRequest</c> @ 140636ba0.
-    /// Static evidence maps the throttle slot defaults, but not the 0x07CD apply assignment, so
-    /// UInt0/UInt1/UInt3 remain neutral and the trailing Flag stays false until capture or dynamic proof.
+    /// Retained diagnostic metadata for the compatibility content-context API.
+    /// Rotation request throttle fields are separate from reward-track state;
+    /// these values must not be emitted on reward-track opcodes 0x07CD/0x07D3.
     /// </summary>
     internal static class RewardRotationContentContextMetadata
     {
@@ -21,7 +20,7 @@ namespace NexusForever.Game.Account.Reward
             context.UInt0 = (uint)Environment.TickCount;
             context.UInt1 = ThrottleIntervalMilliseconds;
             context.UInt3 = SecondaryThrottleMilliseconds;
-            // Flag consumer blocked: keep false until a named apply helper, capture, or dynamic dispatch proof is recovered.
+            // Diagnostic compatibility value only; not a reward-track active flag.
             context.Flag = false;
         }
     }

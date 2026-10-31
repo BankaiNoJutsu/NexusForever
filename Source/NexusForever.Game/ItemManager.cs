@@ -23,9 +23,21 @@ namespace NexusForever.Game
         /// <summary>
         /// Id to be assigned to the next created item.
         /// </summary>
-        public ulong NextItemId => nextItemId++;
+        public ulong NextItemId
+        {
+            get
+            {
+                lock (itemIdGate)
+                {
+                    if (nextItemId == ulong.MaxValue)
+                        throw new InvalidOperationException("Item identifiers are exhausted.");
+                    return nextItemId++;
+                }
+            }
+        }
 
         private ulong nextItemId;
+        private readonly object itemIdGate = new();
 
         private ImmutableDictionary<uint, IItemInfo> item;
         private ImmutableDictionary<ItemSlot, ImmutableList<EquippedItem>> equippedItemSlots;
@@ -49,7 +61,8 @@ namespace NexusForever.Game
             var sw = Stopwatch.StartNew();
             log.Info("Initialise item info...");
 
-            nextItemId = databaseManager.GetDatabase<CharacterDatabase>().GetNextItemId() + 1ul;
+            lock (itemIdGate)
+                nextItemId = checked(databaseManager.GetDatabase<CharacterDatabase>().GetNextItemId() + 1ul);
 
             InitialiseItemInfo();
             InitialiseEquippedItemSlots();

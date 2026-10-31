@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Static.Entity;
@@ -22,21 +22,30 @@ namespace NexusForever.Game.Prerequisite.Check
         #endregion
 
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => MeetsUnit(player, comparison, value, objectId, parameters);
+
+        public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            if (!player.TryGetVitalValue((Vital)objectId, out float currentValue))
+            if (subject == null)
+                return false;
+
+            if (!subject.TryGetVitalValue((Vital)objectId, out float currentValue))
             {
                 log.LogWarning("Unhandled vital {Vital} for {PrerequisiteType}!", objectId, PrerequisiteType.Vital);
                 return false;
             }
 
+            // Live type73 truncates the float vital to signed int64 before
+            // comparing its low32 bits as unsigned (1404a23ed / 1404a2090).
+            uint current = PrerequisiteCompare.TruncateNativeScalar(currentValue);
             return comparison switch
             {
-                PrerequisiteComparison.Equal              => currentValue == value,
-                PrerequisiteComparison.NotEqual           => currentValue != value,
-                PrerequisiteComparison.GreaterThanOrEqual => currentValue >= value,
-                PrerequisiteComparison.GreaterThan        => currentValue > value,
-                PrerequisiteComparison.LessThanOrEqual    => currentValue <= value,
-                PrerequisiteComparison.LessThan           => currentValue < value,
+                PrerequisiteComparison.Equal              => current == value,
+                PrerequisiteComparison.NotEqual           => current != value,
+                PrerequisiteComparison.GreaterThanOrEqual => current >= value,
+                PrerequisiteComparison.GreaterThan        => current > value,
+                PrerequisiteComparison.LessThanOrEqual    => current <= value,
+                PrerequisiteComparison.LessThan           => current < value,
                 _                                         => LogUnhandledComparison(comparison)
             };
         }

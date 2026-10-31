@@ -12,6 +12,8 @@ namespace NexusForever.Game.Abstract.Account.Inventory
     {
         ulong Id { get; }
         uint AccountItemId { get; }
+        bool ForceSoulbind => false;
+        string ConsumptionKey => null;
         AccountItemClaimState ClaimState { get; set; }
         bool HasTargetPlayerIdentity { get; set; }
         NetworkIdentity TargetPlayerIdentity { get; }

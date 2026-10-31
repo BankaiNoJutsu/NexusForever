@@ -183,6 +183,7 @@ namespace NexusForever.Game.Entity
         public Abstract.Identity Identity { get; private set; }
 
         public ulong CharacterId { get => Identity.Id; }
+        private ulong presenceSessionEpoch, presenceAdmission;
 
         public string Name { get; private set; }
 
@@ -628,6 +629,8 @@ namespace NexusForever.Game.Entity
             Session           = session;
 
             Account           = account;
+            presenceSessionEpoch = account.WorldSessionEpoch;
+            presenceAdmission = account.NextPresenceAdmission();
             Identity          = new Abstract.Identity { Id = model.Id, RealmId = realmContext?.RealmId ?? (ushort)0 };
             Name              = model.Name;
             sex               = (Sex)model.Sex;
@@ -711,13 +714,15 @@ namespace NexusForever.Game.Entity
             PathManager             = new PathManager(this, model, prerequisiteManager, gameTableManager, entityFactory);
             TitleManager            = new TitleManager(this, model, gameTableManager);
             SpellManager            = new SpellManager(this, model, prerequisiteManager, globalSpellManager, gameTableManager);
+            SpellManager.Initialise();
             PetCustomisationManager = new PetCustomisationManager(this, model, gameTableManager, textFilterManager, prerequisiteManager);
             KeybindingManager       = new CharacterKeybindingManager(this, model);
             DatacubeManager         = new DatacubeManager(this, model, gameTableManager);
             GalacticArchiveManager  = new GalacticArchiveManager(this, model, gameTableManager);
             MailManager             = new MailManager(this, model, assetManager, characterManager, realmContext?.RealmId ?? Identity.RealmId, playerManager, itemManager, gameTableManager, sharedConfiguration);
             ZoneMapManager          = new ZoneMapManager(this, model, gameTableManager);
-            ChallengeManager        = new ChallengeManager(this, model, gameTableManager);
+            ChallengeManager        = new ChallengeManager(this, model, gameTableManager, () => GetCharacterDatabase().CreateContext(), prerequisiteManager, itemManager,
+                () => GetAuthDatabase().CreateContext());
             QuestManager            = new QuestManager(this, model, disableManager, assetManager, prerequisiteManager, globalQuestManager, scriptManager, gameTableManager, contractManager);
             AchievementManager      = new CharacterAchievementManager(this, model, groupStateManager, disableManager, globalAchievementManager, prerequisiteManager, playerManager, gameTableManager);
             SupplySatchelManager    = new SupplySatchelManager(this, model, gameTableManager);
@@ -799,7 +804,7 @@ namespace NexusForever.Game.Entity
             }
 
             saveTimer.Update(lastTick);
-            if ((saveTimer.HasElapsed || forceSave) && !saveInProgress)
+            if ((saveTimer.HasElapsed || forceSave) && !saveInProgress && !RewardInventorySaveBlocked)
             {
                 forceSave = false;
 
@@ -814,8 +819,16 @@ namespace NexusForever.Game.Entity
 
         public override void Dispose()
         {
-            base.Dispose();
-            QuestManager.Dispose();
+            (CurrencyManager as CurrencyManager)?.InvalidateContractCredit();
+            InvalidateRewardTrackPresentation();
+            Inventory?.InvalidateRewardDeliveries();
+            ChallengeManager?.InvalidateRewardOperations(true);
+            lock (mapAdmission.SyncRoot)
+            {
+                CancelMapAdmission();
+                base.Dispose();
+                QuestManager.Dispose();
+            }
         }
 
         /// <summary>
@@ -832,6 +845,10 @@ namespace NexusForever.Game.Entity
 
         private void Save(Action callback, Action failureCallback)
         {
+            if (QuestManager is QuestManager { IsContractCompletionMutationInProgress: true })
+            {
+                DeferInventorySave(callback, failureCallback); return;
+            }
             if (saveInProgress)
             {
                 saveRequestedDuringSave = true;
@@ -852,8 +869,30 @@ namespace NexusForever.Game.Entity
         /// </remarks>
         public async Task SaveDirect()
         {
-            await GetAuthDatabase().Save(Save);
-            await GetCharacterDatabase().Save(Save);
+            if (!TryAcquireInventorySave(out var lease))
+                throw new InvalidOperationException("Direct player save is blocked by inventory work before Auth enrollment.");
+            using var held = lease;
+            var snapshot = CaptureNormalRewardSave(); bool saved = false;
+            System.Threading.Interlocked.Increment(ref directSaveOperations);
+            try
+            {
+                await GetAuthDatabase().Save(context => SaveFrozenAuth(context, snapshot));
+                await SaveCharacterUnit(snapshot); saved = true;
+            }
+            finally
+            {
+                try
+                {
+                    bool released = snapshot?.Finish(saved) ?? saved;
+                    if (snapshot?.Quests.HasContractCompletion == true)
+                    {
+                        if (saved && released) Session.CanProcessIncomingPackets = true;
+                        else Session.ForceDisconnect();
+                    }
+                    if (!released && saved) throw new InvalidOperationException("Direct player save did not release its frozen ownership.");
+                }
+                finally { System.Threading.Interlocked.Decrement(ref directSaveOperations); }
+            }
         }
 
         public void RequestSave()
@@ -869,17 +908,44 @@ namespace NexusForever.Game.Entity
 
         private void StartSave(Action callback = null, Action failureCallback = null)
         {
+            if (!TryAcquireInventorySave(out var lease))
+            {
+                if (RewardStateRequiresReload)
+                    HandleSaveFailure("inventory", failureCallback);
+                else DeferInventorySave(callback, failureCallback);
+                return;
+            }
+            inventorySaveLease = lease;
+            callback += deferredSaveCallback;
+            failureCallback += deferredSaveFailureCallback;
+            deferredSaveCallback = deferredSaveFailureCallback = null;
+            NormalRewardSave snapshot;
+            try { snapshot = CaptureNormalRewardSave(); }
+            catch { HandleSaveFailure("snapshot", failureCallback); throw; }
+            saveRequestedDuringSave = false;
             saveInProgress = true;
             saveTimer.Reset(false);
 
             // prevent packets from being processed until asynchronous player save task is complete
             Session.CanProcessIncomingPackets = false;
 
-            Task authSaveTask = GetAuthDatabase().Save(Save);
+            Task authSaveTask;
+            try { authSaveTask = GetAuthDatabase().Save(context => SaveFrozenAuth(context, snapshot)); }
+            catch
+            {
+                HandleSaveFailure("auth", failureCallback);
+                throw;
+            }
             Session.Events.EnqueueEvent(new TaskEvent(authSaveTask,
                 () =>
                 {
-                    Task characterSaveTask = GetCharacterDatabase().Save(Save);
+                    Task characterSaveTask;
+                    try { characterSaveTask = SaveCharacterUnit(snapshot); }
+                    catch
+                    {
+                        HandleSaveFailure("character", failureCallback);
+                        throw;
+                    }
                     Session.Events.EnqueueEvent(new TaskEvent(characterSaveTask,
                         () => CompleteSave(callback, failureCallback),
                         () => HandleSaveFailure("character", failureCallback)));
@@ -901,6 +967,8 @@ namespace NexusForever.Game.Entity
 
         private void CompleteSave(Action callback, Action failureCallback)
         {
+            if (!ReleaseNormalRewardSave(true)) { HandleSaveFailure("snapshot", failureCallback); return; }
+            ReleaseInventorySave();
             Session.CanProcessIncomingPackets = true;
             saveInProgress                    = false;
             saveTimer.Resume();
@@ -925,6 +993,8 @@ namespace NexusForever.Game.Entity
 
         private void HandleSaveFailure(string phase, Action failureCallback)
         {
+            ReleaseNormalRewardSave(false);
+            ReleaseInventorySave();
             log.Error("Failed to save {0} data for character {1}. Disconnecting session.", phase, CharacterId);
             Action chainedFailureCallback = failureCallback;
             chainedFailureCallback += deferredSaveFailureCallback;
@@ -953,14 +1023,24 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void Save(AuthContext context)
         {
+            CheckInventorySaveAllowed();
             Account.Save(context);
         }
 
         /// <summary>
         /// Save database changes for <see cref="Player"/> to <see cref="CharacterContext"/>.
         /// </summary>
-        public void Save(CharacterContext context)
+        public void Save(CharacterContext context) => SaveCharacter(context, null);
+
+        private Task SaveCharacterUnit(NormalRewardSave snapshot)
+            => snapshot?.Quests.HasContractCompletion == true || CurrencyManager is CurrencyManager
+                ? GetCharacterDatabase().SaveAtomic(CharacterId, context => SaveCharacter(context, snapshot))
+                : GetCharacterDatabase().Save(context => SaveCharacter(context, snapshot));
+
+        private void SaveCharacter(CharacterContext context, NormalRewardSave snapshot)
         {
+            try { snapshot?.Validate(); CheckInventorySaveAllowed(frozen: snapshot != null); snapshot?.Quests.BeginContractSave(context); snapshot?.Challenges.BeginContractSave(context); }
+            catch (Exception error) { context.RejectSave(error); throw; }
             SaveBindPoint(context);
             SaveTaxiNodes(context);
             var model = new CharacterModel
@@ -1085,7 +1165,7 @@ namespace NexusForever.Game.Entity
                 stat.SaveCharacter(CharacterId, context);
 
             Inventory.Save(context);
-            CurrencyManager.Save(context);
+            if (snapshot == null) CurrencyManager.Save(context); else snapshot.SaveCurrencies(context);
             PathManager.Save(context);
             TitleManager.Save(context);
             CostumeManager.Save(context);
@@ -1096,10 +1176,12 @@ namespace NexusForever.Game.Entity
             GalacticArchiveManager.Save(context);
             MailManager.Save(context);
             ZoneMapManager.Save(context);
-            QuestManager.Save(context);
+            if (snapshot == null) QuestManager.Save(context); else snapshot.Quests.Save(context);
             AchievementManager.Save(context);
             if (ChallengeManager is ChallengeManager challengeManager)
-                challengeManager.Save(context);
+            {
+                if (snapshot == null) challengeManager.Save(context); else snapshot.Challenges.Save(context);
+            }
             SupplySatchelManager.Save(context);
             SaveTradeskills(context);
             SaveSchematics(context);
@@ -1108,6 +1190,7 @@ namespace NexusForever.Game.Entity
             GuildManager.Save(context);
             EntitlementManager.Save(context);
             AppearanceManager.Save(context);
+            snapshot?.Quests.EndContractSave(context);
         }
 
         private void SaveTradeskills(CharacterContext context)
@@ -1189,6 +1272,17 @@ namespace NexusForever.Game.Entity
 
         public override void OnAddToMap(IBaseMap map, uint guid, Vector3 vector)
         {
+            lock (mapAdmission.SyncRoot)
+            {
+                ulong? generation = mapAdmission.BeginBootstrap();
+                if (!generation.HasValue)
+                    throw new InvalidOperationException("Player map addition requires a current queued admission.");
+                OnAddToMapCore(map, guid, vector, generation.Value);
+            }
+        }
+
+        private void OnAddToMapCore(IBaseMap map, uint guid, Vector3 vector, ulong generation)
+        {
             IsLoading = true;
             deferredLoadingWorldZoneRuntimeSync = false;
 
@@ -1204,6 +1298,8 @@ namespace NexusForever.Game.Entity
             SendCharacterFlagsUpdated();
 
             base.OnAddToMap(map, guid, vector);
+            if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
+                return;
 
             // resummon vanity pet if it existed before teleport
             if (pendingTeleport?.VanityPetId != null)
@@ -1221,12 +1317,18 @@ namespace NexusForever.Game.Entity
             }
 
             SendPacketsAfterAddToMap();
+            if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
+                return;
 
             if (!IsAlive)
                 OnDeath();
 
+            if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
+                return;
             if (PreviousMap == null)
-                OnLogin();
+                OnLogin(generation);
+            if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
+                return;
 
             messagePublisher.PublishAsync(new PlayerWorldUpdatedMessage
             {
@@ -1408,6 +1510,7 @@ namespace NexusForever.Game.Entity
             SendTradeskillInitialPackets();
             AchievementManager.SendInitialPackets(null);
             Account.RewardPropertyManager.SendInitialPackets();
+            Account.LoyaltyManager?.SendInitialPackets(this);
             ResurrectionManager.SendInitialPackets();
 
             Session.EnqueueMessageEncrypted(new ServerStanceChanged
@@ -1438,6 +1541,7 @@ namespace NexusForever.Game.Entity
 
         public override void OnRemoveFromMap()
         {
+            ClearPetMiniBars(sendPackets: true);
             DestroyDependents();
             base.OnRemoveFromMap();
         }
@@ -1487,12 +1591,29 @@ namespace NexusForever.Game.Entity
 
         private void Logout()
         {
-            OnLogout();
-            Cleanup();
+            lock (mapAdmission.SyncRoot)
+            {
+                CancelMapAdmission();
+                OnLogout();
+                Cleanup();
+            }
         }
 
         private void Cleanup()
         {
+            lock (mapAdmission.SyncRoot)
+            {
+                CancelMapAdmission();
+                CleanupCore();
+            }
+        }
+
+        private void CleanupCore()
+        {
+            InvalidateRewardTrackPresentation();
+            Inventory?.InvalidateRewardDeliveries();
+            ChallengeManager?.InvalidateRewardOperations();
+            QuestManager?.InvalidateRewardOperations();
             log.Trace($"Cleanup for character {Name}({CharacterId})...");
 
             // Character-select packets queued during logout must wait until this player is fully detached.
@@ -1506,8 +1627,10 @@ namespace NexusForever.Game.Entity
             Session.Events.EnqueueEvent(new TimeoutPredicateEvent(TimeSpan.FromSeconds(15), CanCleanup,
                 () =>
             {
+                int cleanupCompleted = 0, cleanupFinishing = 0;
                 void CompleteCleanup()
                 {
+                    if (System.Threading.Interlocked.Exchange(ref cleanupCompleted, 1) != 0) return;
                     cleanupManager?.RemovePlayer(this);
                     log.Trace($"Cleanup for character {Name}({CharacterId}) has completed.");
 
@@ -1521,6 +1644,10 @@ namespace NexusForever.Game.Entity
 
                     messagePublisher.PublishAsync(new PlayerLoggedOutMessage
                     {
+                        AccountId = Account.Id,
+                        SessionEpoch = presenceSessionEpoch,
+                        Admission = presenceAdmission,
+                        OccurredUtc = DateTime.UtcNow,
                         Identity = Identity.ToInternalIdentity()
                     }).FireAndForgetAsync();
 
@@ -1529,6 +1656,7 @@ namespace NexusForever.Game.Entity
 
                 void FinishCleanup()
                 {
+                    if (System.Threading.Interlocked.Exchange(ref cleanupFinishing, 1) != 0) return;
                     try
                     {
                         DisposeLoggedOutPlayer();
@@ -1543,7 +1671,12 @@ namespace NexusForever.Game.Entity
 
                 try
                 {
-                    Save(FinishCleanup, FinishCleanup);
+                    if (ChallengeManager?.RequiresAuthoritativeReload == true || ChallengeManager?.HasPendingRewardOperation == true
+                        || QuestManager?.RequiresAuthoritativeReload == true || QuestManager?.HasPendingRewardOperation == true
+                        || Inventory?.SupportsTransactionalSoulboundDelivery == true
+                        && (Inventory.RequiresAuthoritativeReload || Inventory.HasPendingRewardDelivery))
+                        FinishCleanup(); // timeout/quarantine: never save stale Item state or start Auth first
+                    else Save(FinishCleanup, FinishCleanup);
                 }
                 catch
                 {
@@ -1555,23 +1688,37 @@ namespace NexusForever.Game.Entity
 
         private bool CanCleanup()
         {
-            return pendingTeleport == null;
+            lock (mapAdmission.SyncRoot)
+                return pendingTeleport == null && !mapAdmission.BootstrapGeneration.HasValue
+                    && (ChallengeManager?.HasPendingRewardOperation != true || ChallengeManager.RequiresAuthoritativeReload)
+                    && (QuestManager?.HasPendingRewardOperation != true || QuestManager.RequiresAuthoritativeReload)
+                    && (Inventory?.HasPendingRewardDelivery != true || Inventory.RequiresAuthoritativeReload);
         }
 
-        private void OnLogin()
+        private void OnLogin(ulong generation)
         {
             scriptCollection.Invoke<IPlayerScript>(s => s.OnLogin());
+            if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
+                return;
 
             string motd = realmContext?.Motd;
             if (motd?.Length > 0)
                 globalChatManager.SendMessage(Session, motd, "MOTD", ChatChannelType.Realm);
 
             GuildManager.OnLogin();
+            if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
+                return;
 
             shutdownManager?.OnLogin(this);
+            if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
+                return;
 
             matchingManager.OnLogin(this);
+            if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
+                return;
             matchManager.OnLogin(this);
+            if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
+                return;
             SendPendingPvPFlagDisableCooldown();
 
             IsOnline = true;
@@ -1579,6 +1726,9 @@ namespace NexusForever.Game.Entity
 
             messagePublisher.PublishAsync(new PlayerLoggedInMessage
             {
+                SessionEpoch = presenceSessionEpoch,
+                Admission = presenceAdmission,
+                OccurredUtc = DateTime.UtcNow,
                 Identity  = Identity.ToInternalIdentity(),
                 AccountId = Account.Id
             }).FireAndForgetAsync();
@@ -1634,6 +1784,16 @@ namespace NexusForever.Game.Entity
         /// Teleport <see cref="IPlayer"/> to supplied location.
         /// </summary>
         public void TeleportTo(IMapPosition mapPosition, TeleportReason reason = TeleportReason.Relocate)
+        {
+            lock (mapAdmission.SyncRoot)
+            {
+                if (!IsAdmissionAllowed())
+                    return;
+                TeleportToCore(mapPosition, reason);
+            }
+        }
+
+        private void TeleportToCore(IMapPosition mapPosition, TeleportReason reason)
         {
             if (!CanTeleport())
             {
@@ -1709,10 +1869,22 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void OnTeleportToFailed(GenericError error)
         {
+            lock (mapAdmission.SyncRoot)
+            {
+                if (!IsAdmissionAllowed())
+                    return;
+                mapAdmission.AbortQueue();
+                OnTeleportToFailedCore(error);
+            }
+        }
+
+        private void OnTeleportToFailedCore(GenericError error)
+        {
             if (Map != null)
             {
                 SendGenericError(error);
                 pendingTeleport = null;
+                IsLoading = false;
 
                 SetControl(this);
 
@@ -1736,6 +1908,19 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void OnEnteredWorld()
         {
+            lock (mapAdmission.SyncRoot)
+            {
+                if (IsAdmissionAllowed() && IsLoading && mapAdmission.RequestEntry(Map != null && Guid != 0))
+                    CompleteEnteredWorld(mapAdmission.Generation);
+            }
+        }
+
+        private void CompleteEnteredWorld(ulong generation)
+        {
+            if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
+                return;
+            // Consume only this completed transition. Recovery callbacks may queue a new teleport.
+            pendingTeleport = null;
             // right before the loading screen is removed we can now send the actual network entity commands
             // this ensures there is no desync between the client and server caused by loading
             foreach (IGridEntity item in visibleEntities.Values)
@@ -1747,14 +1932,20 @@ namespace NexusForever.Game.Entity
             QuestManager.SendInitialPackets();
             PathManager.SendInitialPackets();
             SyncDeferredLoadingWorldZoneRuntimeState();
+            if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
+                return;
 
             TryRecoverStarterTutorialOnEnteredWorld();
+            if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
+                return;
             SyncStarterTutorialEntityVisibility();
             TryRecoverStarterTutorialHoverboardRide();
+            if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
+                return;
             TryRecoverStarterTutorialQuestProgression(allowCombatTransitionRecovery: true);
 
-            pendingTeleport = null;
-            IsLoading = false;
+            if (IsAdmissionAllowed() && mapAdmission.IsCurrent(generation))
+                IsLoading = false;
         }
 
         private void SyncDeferredLoadingWorldZoneRuntimeState()
@@ -1768,12 +1959,21 @@ namespace NexusForever.Game.Entity
 
         private void SyncWorldZoneRuntimeState()
         {
+            ulong generation = mapAdmission.Generation;
+            if (!IsAdmissionAllowed())
+                return;
             AchievementManager.CheckAchievements(this, AchievementType.EnterWorldZone, Zone.Id);
+            if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
+                return;
             QuestManager.ObjectiveUpdate(QuestObjectiveType.EnterZone, Zone.Id, 1);
+            if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
+                return;
 
             // Current path content activates table-backed zone episodes and checks already-complete
             // Explorer map-zone objectives; relocation handles newly revealed hexes.
             PathManager.TryActivateCurrentZoneEpisode();
+            if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
+                return;
             PathManager.CompleteCurrentExplorerExploreZoneMission();
         }
 

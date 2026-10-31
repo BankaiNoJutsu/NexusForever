@@ -14,8 +14,13 @@ namespace NexusForever.Game.Prerequisite.Check
     public class PrerequisiteCheckMoving : IPrerequisiteCheck
     {
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => MeetsEntity(parameters.Target ?? player, comparison, value, objectId);
+
+        public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => MeetsEntity(subject, comparison, value, objectId);
+
+        private bool MeetsEntity(IWorldEntity entity, PrerequisiteComparison comparison, uint value, uint objectId)
         {
-            IWorldEntity entity = parameters.Target as IWorldEntity ?? player;
             StateFlags state = entity.MovementManager.GetState();
             bool moving = (state & (StateFlags.Move | StateFlags.Velocity)) != 0
                 || entity.MovementManager.GetVelocity().LengthSquared() > 0.01f

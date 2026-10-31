@@ -13,8 +13,13 @@ namespace NexusForever.Game.Prerequisite.Check
     public class PrerequisiteCheckPetOrEsperPetEntity : IPrerequisiteCheck
     {
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => MeetsEntity(parameters.Target ?? player, comparison, value, objectId);
+
+        public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => MeetsEntity(subject, comparison, value, objectId);
+
+        private bool MeetsEntity(IWorldEntity entity, PrerequisiteComparison comparison, uint value, uint objectId)
         {
-            IWorldEntity entity = parameters.Target as IWorldEntity ?? player;
             uint isPetEntity = entity.Type is EntityType.Pet or EntityType.EsperPet ? 1u : 0u;
             return PrerequisiteCompare.Compare(comparison, isPetEntity, value);
         }

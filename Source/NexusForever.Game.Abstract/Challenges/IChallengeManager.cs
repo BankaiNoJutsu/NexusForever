@@ -4,6 +4,12 @@ namespace NexusForever.Game.Abstract.Challenges
 {
     public interface IChallengeManager
     {
+        bool HasPendingRewardOperation => false;
+        bool RequiresAuthoritativeReload => false;
+        void InvalidateRewardOperations(bool final = false) { }
+        bool ChooseRewardTrack(uint trackId) => false;
+        bool ClaimRewardTrack(uint rewardRowId, uint choice) => false;
+
         void SendInitialPackets();
 
         void Update(double lastTick);

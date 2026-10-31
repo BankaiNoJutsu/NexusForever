@@ -70,6 +70,11 @@ namespace NexusForever.Game.Abstract.Housing
         /// </summary>
         void RemoveResidence(string name);
 
+        /// <summary>
+        /// Forget a disbanded community's cache registrations without deleting residences.
+        /// </summary>
+        void RemoveCommunity(ICommunity community);
+
         IResidenceEntrance GetResidenceEntrance(PropertyInfoId propertyInfoId);
 
         /// <summary>

@@ -4,7 +4,7 @@ using NexusForever.Database.Configuration.Model;
 
 namespace NexusForever.Database.Auth
 {
-    public class AuthContext : DbContext
+    public partial class AuthContext : DbContext
     {
         public DbSet<AccountModel> Account { get; set; }
         public DbSet<AccountCostumeUnlockModel> AccountCostumeUnlock { get; set; }
@@ -14,6 +14,7 @@ namespace NexusForever.Database.Auth
         public DbSet<AccountGenericUnlockModel> AccountGenericUnlock { get; set; }
         public DbSet<AccountInventoryModel> AccountInventory { get; set; }
         public DbSet<AccountPendingItemModel> AccountPendingItem { get; set; }
+        public DbSet<AccountPendingItemDeliveryModel> AccountPendingItemDelivery { get; set; }
         public DbSet<AccountCREDDOrderModel> AccountCREDDOrder { get; set; }
         public DbSet<AccountCREDDHistoryModel> AccountCREDDHistory { get; set; }
         public DbSet<AccountDailyLoginModel> AccountDailyLogin { get; set; }
@@ -49,10 +50,25 @@ namespace NexusForever.Database.Auth
                 optionsBuilder.UseConfiguration(config);
 
             optionsBuilder.EnableSensitiveDataLogging();
+            optionsBuilder.AddInterceptors(SaveUnitInterceptor.Instance);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            ConfigureLoyalty(modelBuilder);
+            ConfigureCurrencyOperations(modelBuilder);
+            ConfigureWorldSessions(modelBuilder);
+            modelBuilder.Entity<AccountPendingItemDeliveryModel>(entity =>
+            {
+                entity.ToTable("account_pending_item_delivery");
+                entity.HasKey(row => new { row.AccountId, row.DeliveryKey }).HasName("PRIMARY");
+                entity.Property(row => row.AccountId).HasColumnName("accountId").HasColumnType("int(10) unsigned");
+                entity.Property(row => row.DeliveryKey).HasColumnName("deliveryKey").HasColumnType("varchar(128)").IsRequired();
+                entity.Property(row => row.PendingItemId).HasColumnName("pendingItemId").HasColumnType("bigint(20) unsigned");
+                entity.HasOne(row => row.Account).WithMany().HasForeignKey(row => row.AccountId)
+                    .HasConstraintName("FK__account_pending_item_delivery_accountId__account_id");
+            });
+
             modelBuilder.Entity<AccountModel>(entity =>
             {
                 entity.ToTable("account");
@@ -70,6 +86,11 @@ namespace NexusForever.Database.Auth
                     .HasColumnName("id")
                     .HasColumnType("int(10) unsigned")
                     .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.NextPendingItemId)
+                    .HasColumnName("nextPendingItemId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(1ul);
 
                 entity.Property(e => e.CreateTime)
                     .HasColumnName("createTime")

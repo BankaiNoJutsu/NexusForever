@@ -93,9 +93,10 @@ namespace NexusForever.Game.Guild
         /// <summary>
         /// Returns if <see cref="IGuildBase"/> is enqueued to be deleted from the database.
         /// </summary>
-        public bool PendingDelete => (saveMask & GuildBaseSaveMask.Delete) != 0;
+        public virtual bool PendingDelete => (saveMask & GuildBaseSaveMask.Delete) != 0;
 
-        public bool NeedsSave => saveMask != GuildBaseSaveMask.None;
+        public virtual bool NeedsSave => saveMask != GuildBaseSaveMask.None
+            || ranks.Values.Any(r => r.NeedsSave) || members.Values.Any(m => m.NeedsSave);
 
         /// <summary>
         /// Maximum number of <see cref="IGuildMember"/>'s allowed in the guild.
@@ -199,7 +200,7 @@ namespace NexusForever.Game.Guild
         /// <summary>
         /// Save this <see cref="IGuildBase"/> to a <see cref="GuildModel"/>
         /// </summary>
-        public void Save(CharacterContext context)
+        public virtual void Save(CharacterContext context)
         {
             if (saveMask != GuildBaseSaveMask.None)
             {
@@ -535,7 +536,7 @@ namespace NexusForever.Game.Guild
         /// <summary>
         /// Disband <see cref="IGuildBase"/>.
         /// </summary>
-        public void DisbandGuild()
+        public virtual void DisbandGuild()
         {
             foreach (IGuildMember member in members.Values.ToList())
             {
@@ -709,7 +710,7 @@ namespace NexusForever.Game.Guild
         /// <summary>
         /// Add a new <see cref="IGuildMember"/> with supplied <see cref="IPlayer"/>.
         /// </summary>
-        private IGuildMember AddMember(IPlayer player, byte rank = 9)
+        protected virtual IGuildMember AddMember(IPlayer player, byte rank = 9)
         {
             if (!ranks.TryGetValue(rank, out IGuildRank guildRank))
                 throw new ArgumentException($"Invalid rank {rank} for guild {Id}.");
@@ -748,7 +749,7 @@ namespace NexusForever.Game.Guild
         /// <summary>
         /// Remove an existing <see cref="IGuildMember"/> with supplied character id.
         /// </summary>
-        private void RemoveMember(ulong characterId, bool disband)
+        protected virtual void RemoveMember(ulong characterId, bool disband)
         {
             if (!members.TryGetValue(characterId, out IGuildMember member))
                 throw new ArgumentException($"Invalid member {characterId} for guild {Id}.");

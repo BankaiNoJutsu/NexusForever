@@ -24,13 +24,8 @@ namespace NexusForever.Server.Character.Network.Internal.Handler.Player
 
         public async Task Handle(PlayerLoggedOutMessage message)
         {
-            var character = await _characterManager.GetCharacterRemoteAsync(message.Identity.ToQueryIdentity());
-            if (character == null)
-                return;
-
-            character.LastOnline = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
+            await _characterManager.UpdateCharacterRemoteAsync<DateTime?>(message.Identity.ToQueryIdentity(),
+                c => c.LastOnline, DateTime.UtcNow);
         }
     }
 }

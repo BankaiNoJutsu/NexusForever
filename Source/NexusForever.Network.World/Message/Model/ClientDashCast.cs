@@ -9,8 +9,10 @@ namespace NexusForever.Network.World.Message.Model
 
         public void Read(GamePacketReader reader)
         {
-            if (reader.BytesRemaining >= sizeof(uint))
-                DirectionOrState = reader.ReadUInt();
+            // Native writer 14007edf0 emits three bits. Keep the existing
+            // empty-body recovery used by short legacy requests.
+            if (reader.BytesRemaining != 0)
+                DirectionOrState = reader.ReadUInt(3u);
         }
     }
 }

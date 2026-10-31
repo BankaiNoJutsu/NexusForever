@@ -23,6 +23,7 @@ using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity
 
 namespace NexusForever.Game.Tests.Account.Inventory;
 
+[Collection(AccountPendingItemRepositoryCollection.Name)]
 public class AccountInventoryPendingGroupTests
 {
     private const ushort RealmId = 1;

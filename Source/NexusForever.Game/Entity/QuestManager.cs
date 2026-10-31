@@ -26,7 +26,7 @@ using NLog;
 
 namespace NexusForever.Game.Entity
 {
-    public class QuestManager : IQuestManager
+    public partial class QuestManager : IQuestManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
         // Build 16042 final Rider's Reef quests receive at the destination surface NPCs
@@ -72,6 +72,8 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary<ushort, IQuest> inactiveQuests = new();
         private readonly Dictionary<ushort, IQuest> activeQuests = new();
         private readonly Dictionary<ushort, uint> pendingSharedQuests = new();
+        private readonly object deletionGate = new();
+        private readonly HashSet<IQuest> committedDeletions = [];
 
         /// <summary>
         /// Create a new <see cref="IQuestManager"/> from existing <see cref="CharacterModel"/> database model.
@@ -126,6 +128,9 @@ namespace NexusForever.Game.Entity
 
         public void Dispose()
         {
+            contractCompletion?.Scope?.Dispose();
+            if (contractCompletion != null) contractCompletion.Scope = null;
+            InvalidateRewardOperations(true);
             foreach (IQuest quest in completedQuests.Values
                 .Concat(inactiveQuests.Values)
                 .Concat(activeQuests.Values))
@@ -134,31 +139,46 @@ namespace NexusForever.Game.Entity
 
         public void Save(CharacterContext context)
         {
-            foreach (IQuest quest in completedQuests.Values)
-                quest.Save(context);
-
-            foreach (IQuest quest in inactiveQuests.Values.ToList())
+            lock (questRewardGate)
+                if (questRewardReload || questRewards.Count != 0 || normalSave != null || HasContractCompletionWork)
+                {
+                    var error = new InvalidOperationException("Quest manager save overlaps provisional reward work or requires reload.");
+                    context.RejectSave(error); throw error;
+                }
+            DrainCommittedDeletions();
+            foreach (IQuest quest in completedQuests.Values.Concat(inactiveQuests.Values).Concat(activeQuests.Values).Distinct().ToList())
             {
-                if (quest.PendingDelete)
-                    inactiveQuests.Remove(quest.Id);
-
                 quest.Save(context);
+                if (quest.PendingDelete)
+                    context.OnSaveSettled(committed =>
+                    {
+                        if (committed && (quest is not Quest.Quest concrete || concrete.IsPersistenceDeleted))
+                            lock (deletionGate) committedDeletions.Add(quest);
+                    });
             }
+        }
 
-            foreach (IQuest quest in activeQuests.Values.ToList())
+        // SQL callbacks only publish acknowledgements. Actor reads/ticks retire
+        // collection entries, and cannot remove a replacement/reaccepted owner.
+        private void DrainCommittedDeletions()
+        {
+            IQuest[] deleted;
+            lock (deletionGate) { deleted = committedDeletions.ToArray(); committedDeletions.Clear(); }
+            foreach (var quest in deleted)
             {
-                if (quest.PendingDelete)
-                    activeQuests.Remove(quest.Id);
-
-                quest.Save(context);
+                if (!quest.PendingDelete || quest is Quest.Quest concrete && !concrete.IsPersistenceDeleted) continue;
+                foreach (var collection in new[] { completedQuests, inactiveQuests, activeQuests })
+                    if (collection.TryGetValue(quest.Id, out var current) && ReferenceEquals(current, quest)) collection.Remove(quest.Id);
             }
         }
 
         public void Update(double lastTick)
         {
+            DrainCommittedDeletions();
             var botchedQuests = new List<IQuest>();
             foreach (IQuest quest in activeQuests.Values.ToList())
             {
+                if (quest.PendingDelete) continue;
                 quest.Update(lastTick);
                 if (quest.State == QuestState.Botched)
                     botchedQuests.Add(quest);
@@ -285,6 +305,7 @@ namespace NexusForever.Game.Entity
 
         private IQuest GetQuest(ushort questId, GetQuestFlags flags = GetQuestFlags.All)
         {
+            DrainCommittedDeletions();
             if ((flags & GetQuestFlags.Active) != 0
                 && activeQuests.TryGetValue(questId, out IQuest quest))
                 return quest;
@@ -554,10 +575,21 @@ namespace NexusForever.Game.Entity
             }
 
             IQuest quest = GetQuest((ushort)info.Entry.Id);
+            bool retainContractAcceptance = quest != null && !quest.PendingDelete
+                && quest.State is QuestState.Accepted or QuestState.Achieved
+                && activeQuests.TryGetValue(quest.Id, out var accepted) && ReferenceEquals(accepted, quest);
             if (quest == null)
                 quest = new Quest.Quest(player, info, assetManager, globalQuestManager, scriptManager, gameTableManager);
             else
                 QuestRemove(quest);
+
+            if (quest is Quest.Quest concrete)
+            {
+                ContractRewardSource source = null;
+                bool supported = info.IsContract() && contractManager != null && contractManager.TryGetRewardSource(info, out source)
+                    && source?.QuestId == quest.Id && source.PeriodicQuestGroupId == info.Entry.PeriodicQuestGroupId;
+                concrete.BeginContractAcceptance(retainContractAcceptance, supported);
+            }
 
             quest.Flags |= QuestStateFlags.Tracked;
             quest.State = info.Objectives.Count == 0 ? QuestState.Achieved : QuestState.Accepted;
@@ -733,7 +765,9 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Complete an achieved quest supplying an optional reward and whether the quest was completed from the communicator.
         /// </summary>
-        public void QuestComplete(ushort questId, ushort reward, bool communicator)
+        public void QuestComplete(ushort questId, ushort reward, bool communicator) => QuestComplete(questId, reward, communicator, admitted: false);
+
+        private void QuestComplete(ushort questId, ushort reward, bool communicator, bool admitted)
         {
             IQuestInfo questInfo = GetGlobalQuestManager().GetQuestInfo(questId);
             if (questInfo == null)
@@ -744,6 +778,8 @@ namespace NexusForever.Game.Entity
                 player.SendSystemMessage($"Unable to complete quest {questId} because it is disabled.");
                 return;
             }
+
+            if (!admitted && TryDeferContractCompletion(questInfo, reward, communicator)) return;
 
             IQuest quest = GetQuest(questId, GetQuestFlags.Active);
             if (quest == null)
@@ -799,6 +835,15 @@ namespace NexusForever.Game.Entity
                 return;
             }
 
+            var ticket = BeginContractCompletion(quest, reward);
+            bool completed = false;
+            try { CompleteOrdinaryQuest(quest, selectedReward, communicator); completed = true; }
+            finally { EndContractCompletion(ticket, completed); }
+        }
+
+        private void CompleteOrdinaryQuest(IQuest quest, Quest2RewardEntry selectedReward, bool communicator)
+        {
+            ushort questId = quest.Id;
             // reclaim any quest specific items
             for (int i = 0; i < quest.Info.Entry.PushedItemIds.Length; i++)
             {
@@ -1185,6 +1230,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public IEnumerable<IQuest> GetActiveQuests()
         {
+            DrainCommittedDeletions();
             return activeQuests.Values.ToList();
         }
     }

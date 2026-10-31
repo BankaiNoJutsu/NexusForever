@@ -26,6 +26,10 @@ namespace NexusForever.Database.Auth
             config = connectionString;
         }
 
+        /// <summary>Create an exclusively caller-owned context for a complete transaction.</summary>
+        public AuthContext CreateContext() => new(config
+            ?? throw new InvalidOperationException("AuthDatabase has not been initialized."));
+
         public async Task Save(Action<AuthContext> action)
         {
             await NexusForeverDiagnostics.MeasureDatabaseAsync("auth", nameof(Save), async () =>
@@ -121,6 +125,8 @@ namespace NexusForever.Database.Auth
                     .Include(a => a.AccountGenericUnlock)
                     .Include(a => a.AccountInventory)
                     .Include(a => a.AccountPendingItem)
+                    .Include(a => a.Loyalty)
+                    .Include(a => a.LoyaltySlots)
                     .Include(a => a.AccountDailyLogin)
                     .Include(a => a.AccountRewardRotationGrant)
                     .Include(a => a.AccountFortuneSession)
@@ -131,6 +137,12 @@ namespace NexusForever.Database.Auth
                     .Include(a => a.AccountRole)
                     .SingleOrDefaultAsync(a => a.Email == email && a.SessionKey == sessionKey);
             });
+        }
+
+        public Task<AccountModel> AdmitWorldSessionAsync(uint accountId, string email, string sessionKey)
+        {
+            if (config == null) throw new InvalidOperationException("Auth database must be initialized before World admission.");
+            return new AccountWorldSessionAdmission(() => new AuthContext(config)).AdmitAsync(accountId, email, sessionKey);
         }
 
         /// <summary>

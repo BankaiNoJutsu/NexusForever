@@ -14,8 +14,11 @@ namespace NexusForever.Game.Prerequisite.Check
     public class PrerequisiteCheckFaction : IPrerequisiteCheck
     {
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => MeetsUnit(player, comparison, value, objectId, parameters);
+
+        public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            return PrerequisiteCompare.Compare(comparison, (uint)player.Faction1, value);
+            return PrerequisiteCompare.Compare(comparison, (uint)subject.Faction1, value);
         }
     }
 }

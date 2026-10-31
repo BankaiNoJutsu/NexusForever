@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Housing;
+using NexusForever.Game.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
@@ -28,6 +29,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
 
         public void HandleMessage(IWorldSession session, ClientItemUseDecor itemUseDecor)
         {
+            if (!InventoryMutationScope.TryAcquire(session.Player.Inventory, out var mutationLease)) return;
+            using var heldMutation = mutationLease;
             IItem item = session.Player.Inventory.GetItem(itemUseDecor.ItemGuid);
             if (item == null)
                 throw new InvalidPacketValueException();

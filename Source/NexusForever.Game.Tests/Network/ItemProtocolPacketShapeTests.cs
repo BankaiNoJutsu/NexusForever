@@ -103,13 +103,17 @@ public class ItemProtocolPacketShapeTests
     }
 
     [Fact]
-    public void ServerItemTradePartners_WriteRejectsCountOutsideSixBitLimit()
+    public void ServerItemTradePartners_WritePreservesThirtyTwoBitCountTimerAndFollowingByte()
     {
-        var update = new ItemTradePartners();
+        var update = new ItemTradePartners { ItemGuid = 0x0102030405060708ul, TradeTimeLeftMs = 0xA1B2C3D4u };
         for (int i = 0; i < 64; i++)
             update.TradingPartnerIdentities.Add(new());
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => WritePacket(update));
+        // Independently assembled native layout: guid64 + count32 + 64 zero
+        // identity rows (each14+64 bits) + time32 + sentinel8.
+        byte[] expected = [.. Convert.FromHexString("080706050403020140000000"), .. new byte[624], .. Convert.FromHexString("D4C3B2A15A")];
+        byte[] actual = WritePacket(writer => { update.Write(writer); writer.Write((byte)0x5A); });
+        Assert.Equal(expected, actual);
     }
 
     [Fact]

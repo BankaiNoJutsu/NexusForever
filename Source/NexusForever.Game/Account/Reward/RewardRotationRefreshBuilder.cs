@@ -71,7 +71,7 @@ namespace NexusForever.Game.Account.Reward
         public ServerRewardRotationEntryStateArray EntryStateArray { get; }
         public string ResponseSource { get; }
         public int ContentContextIdCount => ContentContexts.Sum(context => context?.ContentIds.Count ?? 0);
-        public int ContentContextPacketCount => ContentContexts.Count(context => context != null && context.ContentIds.Count > 0);
+        public int ContentContextPacketCount => 0; // diagnostic rows have no rotation wire owner
         public int ScheduleEntryCount => ScheduleArray.Entries.Count;
         public int EntryStateCount => EntryStateArray.Entries.Count;
         public bool HasContentContext => ContentContextIdCount > 0;

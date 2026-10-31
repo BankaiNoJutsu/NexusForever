@@ -265,6 +265,9 @@ namespace NexusForever.Game.Spell.Effect
         uint DataBits04,
         uint DataBits05);
 
+    // Retain existing diagnostic names: Mode is scope (word0), Spell4Id is the
+    // key in that scope (word1), Operation is native mode (word2), DataFloat03
+    // is the float magnitude (word3). Words4/5 remain diagnostic payload only.
     public sealed record SpellEffectModifySpellCooldownSemantics(
         uint Mode,
         uint Spell4Id,

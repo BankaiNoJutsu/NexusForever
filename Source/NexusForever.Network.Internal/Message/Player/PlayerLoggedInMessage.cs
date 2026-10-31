@@ -6,5 +6,8 @@ namespace NexusForever.Network.Internal.Message.Player
     {
         public Identity Identity { get; set; }
         public uint AccountId { get; set; }
+        public ulong SessionEpoch { get; set; }
+        public ulong Admission { get; set; }
+        public DateTime? OccurredUtc { get; set; }
     }
 }

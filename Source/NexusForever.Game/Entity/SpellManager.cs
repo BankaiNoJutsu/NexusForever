@@ -23,6 +23,7 @@ namespace NexusForever.Game.Entity
         private const ushort MaxBonusAmpPower = 10;
         private const byte GlobalCooldownType = 0;
         private const byte SpellCooldownType = 1;
+        private const byte SharedCooldownType = 2;
         private static readonly UILocation[] AutoSlotLasLocations =
         [
             UILocation.LAS1,
@@ -77,13 +78,17 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary<uint, HashSet<uint>> activePetActionOwnerSpellGroupIdsBySpell4Id = new();
         private ushort bonusAmpPower;
         private byte bonusAbilityTierPoints;
+        private bool initialised;
 
         private readonly IActionSet[] actionSets = new ActionSet[ActionSet.MaxActionSets];
 
         private SpellManagerSaveMask saveMask;
 
         private readonly record struct CooldownKey(byte Type, uint TypeId);
-        private readonly record struct CooldownIdentity(uint TypeId, bool IsCooldownNode);
+        private readonly record struct CooldownIdentity(uint TypeId, bool IsCooldownNode)
+        {
+            public byte Type => IsCooldownNode ? SharedCooldownType : SpellCooldownType;
+        }
 
         private sealed class ActiveCooldown
         {
@@ -116,8 +121,6 @@ namespace NexusForever.Game.Entity
                 spells.Add(spellModel.Spell4BaseId, new CharacterSpell(owner, spellModel, spellBaseInfo, item, prerequisiteManager, globalSpellManager, gameTableManager));
             }
 
-            GrantSpells();
-
             bonusAbilityTierPoints = (byte)Math.Min(model.BonusAbilityTierPoints, ActionSet.MaxBonusTierPoints);
 
             for (byte i = 0; i < ActionSet.MaxActionSets; i++)
@@ -134,6 +137,31 @@ namespace NexusForever.Game.Entity
             }
 
             activeActionSet = model.ActiveSpec;
+        }
+
+        public void Initialise()
+        {
+            if (!ReferenceEquals(player.SpellManager, this))
+                throw new InvalidOperationException("Assign the owner's SpellManager before initialising spell grants.");
+            if (initialised)
+                return;
+            GrantSpells();
+            initialised = true;
+            RefreshAugmentations();
+        }
+
+        public bool IsAmpEnabled(ushort ampId)
+        {
+            return ActiveActionSet < ActionSet.MaxActionSets
+                && actionSets[ActiveActionSet]?.GetAmp(ampId) != null;
+        }
+
+        public void OnActionSetAmpsChanged(byte actionSetIndex)
+        {
+            if (!initialised || actionSetIndex != ActiveActionSet)
+                return;
+            GrantSpells();
+            RefreshAugmentations();
         }
 
         public void GrantSpells()
@@ -223,6 +251,7 @@ namespace NexusForever.Game.Entity
         public void Update(double lastTick)
         {
             UpdateLearnedPassives(lastTick);
+            UpdateAugmentations(lastTick);
             // update cooldowns
             foreach ((CooldownKey key, ActiveCooldown cooldown) in activeCooldowns.ToArray())
             {
@@ -635,7 +664,7 @@ namespace NexusForever.Game.Entity
         {
             double cooldown = 0d;
             foreach (CooldownIdentity identity in GetSpellCooldownIdentities(spellId))
-                if (activeCooldowns.TryGetValue(new CooldownKey(SpellCooldownType, identity.TypeId), out ActiveCooldown activeCooldown))
+                if (activeCooldowns.TryGetValue(new CooldownKey(identity.Type, identity.TypeId), out ActiveCooldown activeCooldown))
                     cooldown = Math.Max(cooldown, activeCooldown.TimeRemaining);
 
             return cooldown;
@@ -649,24 +678,35 @@ namespace NexusForever.Game.Entity
             if (cooldown < 0d)
                 throw new ArgumentOutOfRangeException();
 
+            Spell4Entry entry = gameTableManager?.Spell4?.GetEntry(spell4Id);
             foreach (CooldownIdentity identity in GetSpellCooldownIdentities(spell4Id).ToList())
             {
-                var key = new CooldownKey(SpellCooldownType, identity.TypeId);
+                var key = new CooldownKey(identity.Type, identity.TypeId);
+                double duration = cooldown;
+                if (duration > 0 && identity.IsCooldownNode)
+                {
+                    uint nodeMs = gameTableManager?.SpellCoolDown?.GetEntry(identity.TypeId)?.CooldownTime ?? 0;
+                    if (nodeMs > 0)
+                        duration = nodeMs / 1000d;
+                }
+                duration = ScaleSpellCooldown(entry, duration);
+                bool existing = activeCooldowns.ContainsKey(key);
                 var activeCooldown = new ActiveCooldown
                 {
-                    Type                 = SpellCooldownType,
+                    Type                 = identity.Type,
                     Spell4Id             = spell4Id,
                     TypeId               = identity.TypeId,
                     TypeIdIsCooldownNode = identity.IsCooldownNode,
-                    TimeRemaining        = cooldown
+                    TimeRemaining        = duration > 0 && !existing ? FoldCooldownModifiers(entry, duration) : duration
                 };
 
-                if (cooldown > 0d)
+                if (activeCooldown.TimeRemaining > 0d)
                     activeCooldowns[key] = activeCooldown;
                 else
                     activeCooldowns.Remove(key);
 
-                SendCooldown(activeCooldown);
+                // Newly created client nodes fold their held effect73 records.
+                SendCooldown(activeCooldown, duration);
             }
 
             log.Trace($"Spell {spell4Id} cooldown set to {cooldown} seconds.");
@@ -675,7 +715,7 @@ namespace NexusForever.Game.Entity
         public void ResetAllSpellCooldowns()
         {
             foreach ((CooldownKey key, ActiveCooldown cooldown) in activeCooldowns
-                .Where(c => c.Value.Type == SpellCooldownType)
+                .Where(c => c.Value.Type is SpellCooldownType or SharedCooldownType)
                 .ToArray())
             {
                 cooldown.TimeRemaining = 0d;
@@ -702,6 +742,9 @@ namespace NexusForever.Game.Entity
         {
             if (cooldown < 0d)
                 throw new ArgumentOutOfRangeException();
+
+            if (cooldown > 0d)
+                cooldown = FoldGlobalCooldownModifiers(cooldownId, cooldown);
 
             if (cooldown <= 0d)
             {
@@ -816,6 +859,11 @@ namespace NexusForever.Game.Entity
                 return SpecError.InCombat;
 
             ActiveActionSet = value;
+            if (initialised)
+            {
+                GrantSpells();
+                RefreshAugmentations();
+            }
             return SpecError.Ok;
         }
 
@@ -828,12 +876,13 @@ namespace NexusForever.Game.Entity
             SendServerAmpLists();
             SendServerAmpPowerUpdate();
             ReapplyLearnedPassives();
+            RefreshAugmentations();
 
             player.Session.EnqueueMessageEncrypted(new ServerCooldownList
             {
                 Cooldowns = activeCooldowns.Values
                     .Where(c => c.TimeRemaining > 0d)
-                    .Select(BuildCooldown)
+                    .Select(c => BuildCooldown(c))
                     .ToList()
             });
         }
@@ -1013,6 +1062,7 @@ namespace NexusForever.Game.Entity
                 yield break;
             }
 
+            yield return new CooldownIdentity(spell4Id, false);
             var cooldownNodeIds = new HashSet<uint>();
             foreach (uint cooldownNodeId in EnumerateSpellCooldownNodeIds(entry))
             {
@@ -1022,8 +1072,6 @@ namespace NexusForever.Game.Entity
                 yield return new CooldownIdentity(cooldownNodeId, true);
             }
 
-            if (cooldownNodeIds.Count == 0)
-                yield return new CooldownIdentity(spell4Id, false);
         }
 
         private static IEnumerable<uint> EnumerateSpellCooldownNodeIds(Spell4Entry entry)
@@ -1060,25 +1108,25 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        private void SendCooldown(ActiveCooldown activeCooldown)
+        private void SendCooldown(ActiveCooldown activeCooldown, double? wireDuration = null)
         {
             if (player?.IsLoading != false)
                 return;
 
             player.Session.EnqueueMessageEncrypted(new ServerCooldown
             {
-                Cooldown = BuildCooldown(activeCooldown)
+                Cooldown = BuildCooldown(activeCooldown, wireDuration)
             });
         }
 
-        private static Cooldown BuildCooldown(ActiveCooldown activeCooldown)
+        private static Cooldown BuildCooldown(ActiveCooldown activeCooldown, double? wireDuration = null)
         {
             return new Cooldown
             {
                 Type          = activeCooldown.Type,
                 SpellId       = activeCooldown.Spell4Id,
                 TypeId        = activeCooldown.TypeId,
-                TimeRemaining = ToCooldownMilliseconds(activeCooldown.TimeRemaining)
+                TimeRemaining = ToCooldownMilliseconds(wireDuration ?? activeCooldown.TimeRemaining)
             };
         }
 

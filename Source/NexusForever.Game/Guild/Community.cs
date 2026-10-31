@@ -21,6 +21,7 @@ namespace NexusForever.Game.Guild
 
         private readonly IGlobalResidenceManager globalResidenceManager;
         private readonly IMapLockManager mapLockManager;
+        private readonly IPlayerManager residencePlayerManager;
 
         public Community(
             IRealmContext realmContext,
@@ -35,6 +36,7 @@ namespace NexusForever.Game.Guild
         {
             this.globalResidenceManager = globalResidenceManager;
             this.mapLockManager         = mapLockManager;
+            residencePlayerManager      = playerManager;
         }
 
         #endregion
@@ -44,9 +46,8 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public override void Initialise(string guildName, string leaderRankName, string councilRankName, string memberRankName)
         {
-            Residence = globalResidenceManager.CreateCommunity(this);
-
             base.Initialise(guildName, leaderRankName, councilRankName, memberRankName);
+            Residence = globalResidenceManager.CreateCommunity(this);
         }
 
         /// <summary>

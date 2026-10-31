@@ -2,13 +2,8 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
-    // Server opcode 0x07CD.
-    // Wire format matches ServerRewardRotationContentContext_ReadPayload @ 14008fcb0:
-    // 14-bit reward-rotation index, four 32-bit fields, a counted 32-bit id array, and a trailing 1-bit flag.
-    // UInt0/UInt1/UInt3 correlate with reward-manager request-throttle slots initialized in
-    // RewardRotation_ManagerInit @ 140635840 and read by Reward_SendRewardUpdateRequest @ 140636ba0.
-    // The 0x07CD registrar still exposes no static apply helper, so slot assignment and Flag semantics remain blocked.
-    [Message(GameMessageOpcode.ServerRewardRotationContentContext)]
+    // Retained diagnostic/service data. Native dispatch proves 0x07CD belongs
+    // to reward tracks, not rotation content/throttle metadata. No wire opcode.
     public class ServerRewardRotationContentContext : IWritable
     {
         public uint RewardRotationIndex { get; set; }

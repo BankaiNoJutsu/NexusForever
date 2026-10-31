@@ -35,8 +35,8 @@ public class SpellCooldownNodeTests
         Assert.Equal(5d, manager.GetSpellCooldown(SiblingSpell4Id));
         Assert.True(manager.HasActiveCoolDownNode(SharedCooldownNodeId, gameTableManager));
 
-        ServerCooldown packet = Assert.Single(GetSessionMessages<ServerCooldown>(sessionProxy));
-        Assert.Equal(1, packet.Cooldown.Type);
+        ServerCooldown packet = Assert.Single(GetSessionMessages<ServerCooldown>(sessionProxy), p => p.Cooldown.Type == 2);
+        Assert.Equal(2, packet.Cooldown.Type);
         Assert.Equal(PrimarySpell4Id, packet.Cooldown.SpellId);
         Assert.Equal(SharedCooldownNodeId, packet.Cooldown.TypeId);
         Assert.Equal(5000u, packet.Cooldown.TimeRemaining);
@@ -124,7 +124,7 @@ public class SpellCooldownNodeTests
         Assert.False(manager.HasActiveCoolDownNode(SharedCooldownNodeId, gameTableManager));
 
         ServerCooldown resetPacket = GetSessionMessages<ServerCooldown>(sessionProxy).Last();
-        Assert.Equal(1, resetPacket.Cooldown.Type);
+        Assert.Equal(2, resetPacket.Cooldown.Type);
         Assert.Equal(SharedCooldownNodeId, resetPacket.Cooldown.TypeId);
         Assert.Equal(0u, resetPacket.Cooldown.TimeRemaining);
     }

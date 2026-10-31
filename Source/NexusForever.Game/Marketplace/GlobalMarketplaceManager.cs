@@ -209,6 +209,13 @@ namespace NexusForever.Game.Marketplace
 
         public GenericError PostAuction(IPlayer player, IItem item, ulong minimumBid, ulong buyoutPrice, out AuctionInfo auction)
         {
+            if (!InventoryMutationScope.TryAcquire(player?.Inventory, out var mutationLease))
+            {
+                auction = new AuctionInfo();
+                return GenericError.ItemNotValidForSlot;
+            }
+            using var heldMutation = mutationLease;
+
             auction = new AuctionInfo();
 
             if (player == null || item?.Info == null)
@@ -264,6 +271,13 @@ namespace NexusForever.Game.Marketplace
 
         public GenericError BuyAuction(IPlayer player, ClientAuctionBuyOrderSubmit buyOrderSubmit, out AuctionInfo auction)
         {
+            if (!InventoryMutationScope.TryAcquire(player?.Inventory, out var mutationLease))
+            {
+                auction = new AuctionInfo();
+                return GenericError.ItemNotValidForSlot;
+            }
+            using var heldMutation = mutationLease;
+
             auction = new AuctionInfo
             {
                 AuctionId  = buyOrderSubmit.AuctionId,
@@ -439,6 +453,13 @@ namespace NexusForever.Game.Marketplace
 
         public GenericError CancelAuction(IPlayer player, ulong auctionId, uint item2Id, out AuctionInfo auction)
         {
+            if (!InventoryMutationScope.TryAcquire(player?.Inventory, out var mutationLease))
+            {
+                auction = new AuctionInfo();
+                return GenericError.ItemNotValidForSlot;
+            }
+            using var heldMutation = mutationLease;
+
             auction = new AuctionInfo
             {
                 AuctionId = auctionId,
@@ -525,6 +546,13 @@ namespace NexusForever.Game.Marketplace
 
         public GenericError PostCommodityOrder(IPlayer player, CommodityOrder order, out CommodityOrder postedOrder, IItemManager itemManager = null)
         {
+            if (!InventoryMutationScope.TryAcquire(player?.Inventory, out var mutationLease))
+            {
+                postedOrder = CloneOrder(order);
+                return GenericError.ItemNotValidForSlot;
+            }
+            using var heldMutation = mutationLease;
+
             postedOrder = CloneOrder(order);
             if (player == null)
                 return GenericError.Params;
@@ -618,6 +646,13 @@ namespace NexusForever.Game.Marketplace
 
         public GenericError CancelCommodityOrder(IPlayer player, ulong orderId, uint item2Id, bool isBuyOrder, out CommodityOrder cancelledOrder, IItemManager itemManager = null)
         {
+            if (!InventoryMutationScope.TryAcquire(player?.Inventory, out var mutationLease))
+            {
+                cancelledOrder = new CommodityOrder();
+                return GenericError.ItemNotValidForSlot;
+            }
+            using var heldMutation = mutationLease;
+
             cancelledOrder = new CommodityOrder
             {
                 CommodityOrderId = orderId,

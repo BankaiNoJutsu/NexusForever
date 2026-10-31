@@ -1,5 +1,6 @@
 ﻿using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Housing;
+using NexusForever.Game.Housing;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 
@@ -24,19 +25,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
 
         public void HandleMessage(IWorldSession session, ClientHousingRandomCommunityList _)
         {
-            var serverHousingRandomCommunityList = new ServerHousingRandomCommunityList();
-            foreach (IPublicCommunity community in globalResidenceManager.GetRandomVisitableCommunities())
-            {
-                serverHousingRandomCommunityList.Communities.Add(new ServerHousingRandomCommunityList.Community
-                {
-                    RealmId        = realmContext.RealmId,
-                    NeighborhoodId = community.NeighbourhoodId,
-                    Owner          = community.Owner,
-                    Name           = community.Name
-                });
-            }
-
-            session.EnqueueMessageEncrypted(serverHousingRandomCommunityList);
+            session.EnqueueMessageEncrypted(HousingPacketBuilder.BuildRandomCommunityList(globalResidenceManager, realmContext.RealmId));
         }
     }
 }

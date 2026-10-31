@@ -7,6 +7,16 @@ namespace NexusForever.Game.Abstract.Entity
         ushort[] BuildNetworkPacket();
 
         /// <summary>
+        /// Return whether a newly created ordinary material may be stored automatically,
+        /// and its currently available capacity, without changing inventory or sending packets.
+        /// </summary>
+        bool TryGetAutoStoreCapacity(IItemInfo info, out uint capacity, uint charges = 0)
+        {
+            capacity = 0;
+            return false;
+        }
+
+        /// <summary>
         /// Add the provided amount to the <see cref="ITradeskillMaterial"/> that is associated with the provided <see cref="IItem"/>
         /// </summary>
         /// <returns>

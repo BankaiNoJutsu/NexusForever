@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using NexusForever.Database;
 using NexusForever.Database.Auth;
+using NexusForever.Database.Auth.Model;
 using NexusForever.Game.Abstract.Server;
 using NexusForever.Shared.Configuration;
 using NexusForever.Shared.Game;
@@ -63,8 +64,15 @@ namespace NexusForever.Game.Server
 
         private void InitialiseServers()
         {
-            Servers = GetAuthDatabase().GetServers()
-                .Select(s => (IServerInfo)new ServerInfo(s))
+            RefreshServerDefinitions(GetAuthDatabase().GetServers());
+        }
+
+        internal void RefreshServerDefinitions(IEnumerable<ServerModel> models)
+        {
+            ImmutableList<IServerInfo> previous = Servers;
+            Servers = models
+                .Select(model => (IServerInfo)new ServerInfo(model,
+                    previous?.FirstOrDefault(server => server.Model.Id == model.Id)))
                 .ToImmutableList();
         }
 

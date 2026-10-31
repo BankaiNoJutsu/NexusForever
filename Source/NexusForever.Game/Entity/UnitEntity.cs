@@ -1690,6 +1690,12 @@ namespace NexusForever.Game.Entity
 
             }
 
+            if (this is IPlayer cooldownPlayer && cooldownPlayer.SpellManager != null)
+                foreach (var modifier in cooldownPlayer.SpellManager.GetSpellCooldownModifiers() ?? [])
+                    if (CanRemove(modifier.Spell4Id) && cooldownPlayer.SpellManager.RemoveSpellCooldownModifier(modifier.EffectId))
+                        AddRemoval(new SpellStateRemoval(SpellStateRemovalKind.CooldownModifier,
+                            modifier.Spell4Id, modifier.CastingId, modifier.EffectId));
+
             return removals;
         }
 
@@ -1794,6 +1800,13 @@ namespace NexusForever.Game.Entity
 
             CalculateProperty(property);
             return true;
+        }
+
+        public IReadOnlyCollection<(Property Property, uint EffectId)> GetSpellPropertyInstances(uint spell4Id)
+        {
+            return spellProperties.SelectMany(property => property.Value
+                .Where(state => state.Value.Spell4Id == spell4Id)
+                .Select(state => (property.Key, state.Key))).ToArray();
         }
 
         /// <summary>

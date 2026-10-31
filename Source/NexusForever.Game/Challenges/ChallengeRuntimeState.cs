@@ -3,6 +3,7 @@ namespace NexusForever.Game.Challenges
     internal sealed class ChallengeRuntimeState
     {
         public uint ChallengeId { get; init; }
+        public string ActiveAttemptId { get; set; }
         public bool Activated { get; set; }
         public bool OnCooldown { get; set; }
         public bool LeftArea { get; set; }

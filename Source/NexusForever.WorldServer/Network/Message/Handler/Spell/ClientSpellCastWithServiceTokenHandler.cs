@@ -45,6 +45,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
                 UserInitiatedSpellCast = true,
                 UseServiceTokenCost    = true,
                 ClientContextToken     = serviceTokenCast.ContextToken,
+                HasClientCastRequest   = true,
                 ClientRequestSource    = nameof(ClientSpellCastWithServiceToken)
             };
 

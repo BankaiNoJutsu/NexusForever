@@ -231,7 +231,8 @@ namespace NexusForever.Game.Entity
 
             scriptCollection?.Invoke<IGridEntityScript>(s => s.OnRemoveVisibleEntity(entity));
 
-            CheckEntityInRange(entity);
+            if (HasEnteredRange(entity))
+                RemoveFromRange(entity);
         }
 
         /// <summary>

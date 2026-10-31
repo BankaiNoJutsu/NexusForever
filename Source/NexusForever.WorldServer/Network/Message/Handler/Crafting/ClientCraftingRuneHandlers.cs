@@ -36,6 +36,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public void HandleMessage(IWorldSession session, ClientCraftingAdditive additive)
         {
+            if (!InventoryMutationScope.TryAcquire(session.Player?.Inventory, out var mutationLease)) return;
+            using var heldMutation = mutationLease;
             CraftingRuneRequestHelper.ValidateCraftingAdditive(gameTableManager, additive.AdditiveItem2Id);
             CraftingRuneRequestHelper.ValidateCraftingCatalyst(gameTableManager, additive.CatalystItem2Id);
 
@@ -70,6 +72,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public void HandleMessage(IWorldSession session, ClientCraftingAbandon abandon)
         {
+            if (!InventoryMutationScope.TryAcquire(session.Player?.Inventory, out var mutationLease)) return;
+            using var heldMutation = mutationLease;
             craftingModifierSessionStore.ClearModifiers(session.Player);
             log.LogDebug("Processed crafting abandon request from player {PlayerGuid}.", session.Player?.Guid);
         }
@@ -87,6 +91,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public void HandleMessage(IWorldSession session, ClientCraftingRuneSlotAdd runeSlotAdd)
         {
+            if (!InventoryMutationScope.TryAcquire(session.Player?.Inventory, out var mutationLease)) return;
+            using var heldMutation = mutationLease;
             IItem item = CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotAdd.ItemGuid);
             RuneType type = CraftingRuneRequestHelper.NormalizeRuneType(runeSlotAdd.Type);
 
@@ -111,6 +117,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public void HandleMessage(IWorldSession session, ClientCraftingRuneSlotClear runeSlotClear)
         {
+            if (!InventoryMutationScope.TryAcquire(session.Player?.Inventory, out var mutationLease)) return;
+            using var heldMutation = mutationLease;
             IItem item = CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotClear.ItemGuid);
 
             TradeskillResult result = CraftingRuneRequestHelper.ClearRuneSlot(session, item, runeSlotClear.RuneSlotIndex, runeSlotClear.RecoverRune);
@@ -137,6 +145,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public void HandleMessage(IWorldSession session, ClientCraftingRuneInstall runeInstall)
         {
+            if (!InventoryMutationScope.TryAcquire(session.Player?.Inventory, out var mutationLease)) return;
+            using var heldMutation = mutationLease;
             IItem item = CraftingRuneRequestHelper.GetInventoryItem(session, runeInstall.ItemGuid);
 
             foreach (uint item2Id in runeInstall.RuneSlotItem2Id)
@@ -164,6 +174,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public void HandleMessage(IWorldSession session, ClientCraftingRuneSlotReroll runeSlotReroll)
         {
+            if (!InventoryMutationScope.TryAcquire(session.Player?.Inventory, out var mutationLease)) return;
+            using var heldMutation = mutationLease;
             IItem item = CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotReroll.ItemGuid);
             RuneType type = CraftingRuneRequestHelper.NormalizeRuneType(runeSlotReroll.Type, compactFirst: true);
 

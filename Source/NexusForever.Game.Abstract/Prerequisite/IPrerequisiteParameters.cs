@@ -4,6 +4,10 @@ namespace NexusForever.Game.Abstract.Prerequisite
 {
     public interface IPrerequisiteParameters
     {
+        /// <summary>
+        /// Relationship target. MeetsUnit evaluates its explicit subject; only target-specific
+        /// checks read this entity. Existing Meets(IPlayer, ...) target proxies remain compatible.
+        /// </summary>
         public IUnitEntity Target { get; set; }
 
         /// <summary>

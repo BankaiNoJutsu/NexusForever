@@ -29,6 +29,11 @@ namespace NexusForever.Database.Sqlite.Migrations.Design
     {
         public AuthContext CreateDbContext(string[] args)
         {
+            // Explicit design-time selection never opens a server connection.
+            if (args.Contains("--mysql"))
+                return new AuthContext(new DbContextOptionsBuilder<AuthContext>()
+                    .UseMySql("Server=127.0.0.1;Database=nexus_design;User=design", new MySqlServerVersion(new Version(8, 0, 36)),
+                        options => options.MigrationsAssembly(typeof(AuthContext).Assembly.GetName().Name)).Options);
             return new AuthContext(SqliteDesignTime.CreateOptions<AuthContext>("auth"));
         }
     }
@@ -37,6 +42,11 @@ namespace NexusForever.Database.Sqlite.Migrations.Design
     {
         public CharacterContext CreateDbContext(string[] args)
         {
+            // Explicit design-time selection never opens a server connection.
+            if (args.Contains("--mysql"))
+                return new CharacterContext(new DbContextOptionsBuilder<CharacterContext>()
+                    .UseMySql("Server=127.0.0.1;Database=nexus_design;User=design", new MySqlServerVersion(new Version(8, 0, 36)),
+                        options => options.MigrationsAssembly(typeof(CharacterContext).Assembly.GetName().Name)).Options);
             return new CharacterContext(SqliteDesignTime.CreateOptions<CharacterContext>("character"));
         }
     }
@@ -69,6 +79,10 @@ namespace NexusForever.Database.Sqlite.Migrations.Design
     {
         public FriendshipContext CreateDbContext(string[] args)
         {
+            if (args.Contains("--mysql"))
+                return new FriendshipContext(new DbContextOptionsBuilder<FriendshipContext>()
+                    .UseMySql("Server=127.0.0.1;Database=nexus_design;User=design", new MySqlServerVersion(new Version(8, 0, 36)),
+                        options => options.MigrationsAssembly(typeof(FriendshipContext).Assembly.GetName().Name)).Options);
             return new FriendshipContext(SqliteDesignTime.CreateOptions<FriendshipContext>("friendship"));
         }
     }

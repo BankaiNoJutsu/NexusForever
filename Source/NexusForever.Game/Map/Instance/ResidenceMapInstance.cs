@@ -157,10 +157,14 @@ namespace NexusForever.Game.Map.Instance
 
         protected override void AddEntity(IGridEntity entity, Vector3 vector)
         {
+            ulong? admissionGeneration = PlayerMapAdmissionGuard.Capture(entity);
             base.AddEntity(entity, vector);
+            if (!PlayerMapAdmissionGuard.IsCurrent(entity, admissionGeneration))
+                return;
             if (entity is not IPlayer player)
                 return;
 
+            player.Session.EnqueueMessageEncrypted(HousingPacketBuilder.BuildRandomCommunityList(globalResidenceManager, realmContext.RealmId));
             SendResidences(player);
             SendResidencePlots(player);
             SendResidenceDecor(player);

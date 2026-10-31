@@ -1,7 +1,13 @@
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
+using NexusForever.Game.Abstract.Prerequisite;
+using NexusForever.Game.Abstract.Pvp;
 using NexusForever.Game.Pvp;
+using NexusForever.Game.Prerequisite;
+using NexusForever.Game.Prerequisite.Check;
+using NexusForever.Game.Static.Prerequisite;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Pvp;
 using NexusForever.Game.Tests.TestSupport;
@@ -13,6 +19,69 @@ namespace NexusForever.Game.Tests.Pvp;
 
 public class DuelManagerTests
 {
+    [Fact]
+    public void DuelingCheckIsRegisteredForNativeType204()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IDuelManager>(new DuelManager());
+        services.AddGamePrerequisite();
+        using ServiceProvider provider = services.BuildServiceProvider();
+        Assert.IsType<PrerequisiteCheckDueling>(provider.GetRequiredKeyedService<IPrerequisiteCheck>((PrerequisiteType)204));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void DuelingPrerequisiteUsesOnlyActiveSessionAndIgnoresTableValueFields(int phase)
+    {
+        var manager = new DuelManager();
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
+        IPlayer first = CreatePlayer(101, map, out _, out _);
+        IPlayer second = CreatePlayer(202, map, out _, out _);
+        IPlayer outsider = CreatePlayer(303, map, out _, out _);
+        if (phase >= 1) Assert.Null(manager.Initiate(first, second));
+        if (phase >= 2) Assert.Null(manager.Accept(second));
+        if (phase >= 3) manager.Update(3.1);
+        if (phase >= 4) Assert.True(manager.Forfeit(first));
+        bool active = phase == 3;
+        var check = new PrerequisiteCheckDueling(manager);
+        Assert.Equal(active, manager.IsDueling(first));
+        Assert.Equal(active, manager.IsDueling(second));
+        Assert.False(manager.IsDueling(outsider));
+        Assert.False(manager.IsDueling(null));
+        foreach (IPlayer player in new[] { first, second })
+        {
+            Assert.Equal(active, check.Meets(player, PrerequisiteComparison.Equal, uint.MaxValue, 17, new PrerequisiteParameters()));
+            Assert.Equal(!active, check.Meets(player, PrerequisiteComparison.NotEqual, 0, uint.MaxValue, new PrerequisiteParameters()));
+        }
+        Assert.False(check.Meets(outsider, PrerequisiteComparison.Equal, 0, 0, null));
+        Assert.True(check.Meets(outsider, PrerequisiteComparison.NotEqual, 0, 0, null));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    [InlineData(6)]
+    [InlineData(7)]
+    public void DuelingPrerequisiteRejectsMissingEntityAndUnsupportedComparison(int mode)
+    {
+        var manager = new DuelManager();
+        var check = new PrerequisiteCheckDueling(manager);
+        Assert.False(check.Meets(null, (PrerequisiteComparison)mode, 0, 0, null));
+        if (mode is not 1 and not 2)
+        {
+            IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+            Assert.False(check.Meets(player, (PrerequisiteComparison)mode, 0, 0, null));
+        }
+    }
+
     [Fact]
     public void Accept_TransitionsPendingChallengeThroughCountdownToActive()
     {

@@ -4,7 +4,7 @@ using NexusForever.Database.Configuration.Model;
 
 namespace NexusForever.Database.Character
 {
-    public class CharacterContext : DbContext
+    public partial class CharacterContext : DbContext
     {
         public DbSet<CharacterModel> Character { get; set; }
         public DbSet<CharacterBindModel> CharacterBind { get; set; }
@@ -76,6 +76,7 @@ namespace NexusForever.Database.Character
         {
             if (!optionsBuilder.IsConfigured)
                 optionsBuilder.UseConfiguration(config);
+            optionsBuilder.AddInterceptors(SaveCompletionInterceptor.Instance, SaveValidationInterceptor.Instance);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -1553,6 +1554,11 @@ namespace NexusForever.Database.Character
             {
                 entity.ToTable("character_quest");
 
+                entity.Property(e => e.ContractAcceptanceId).HasColumnName("contractAcceptanceId")
+                    .HasColumnType("char(32)").HasMaxLength(32).IsRequired(false).IsConcurrencyToken();
+                entity.HasIndex(e => new { e.Id, e.ContractAcceptanceId }).IsUnique()
+                    .HasDatabaseName("IX_character_quest_contractAcceptance");
+
                 entity.HasKey(e => new { e.Id, e.QuestId })
                     .HasName("PRIMARY");
 
@@ -1609,9 +1615,12 @@ namespace NexusForever.Database.Character
                     .HasColumnType("smallint(5) unsigned")
                     .HasDefaultValue(0);
 
+                // Objective ordinals are explicit keys, including zero. Keep
+                // SQLite's existing store type when disabling generated values.
                 entity.Property(e => e.Index)
+                    .ValueGeneratedNever()
                     .HasColumnName("index")
-                    .HasColumnType("tinyint(3) unsigned")
+                    .HasColumnType(Database.IsSqlite() ? "INTEGER" : "tinyint(3) unsigned")
                     .HasDefaultValue(0);
 
                 entity.Property(e => e.Progress)
@@ -3296,8 +3305,20 @@ namespace NexusForever.Database.Character
                     .HasColumnName("soulbound")
                     .HasColumnType("tinyint(1)")
                     .HasDefaultValue(false);
+
+                entity.Property(e => e.MicrochipIds)
+                    .HasColumnName("microchipIds")
+                    .HasColumnType("varchar(128)")
+                    .HasDefaultValue(string.Empty);
+
+                entity.Property(e => e.RuneSlots)
+                    .HasColumnName("runeSlots")
+                    .HasColumnType("varchar(256)")
+                    .HasDefaultValue(string.Empty);
             });
 
+            ConfigureRewardTracks(modelBuilder);
+            ConfigureContractRewards(modelBuilder);
             NexusForever.Database.EntityFramework.DatabaseModelBuilderExtensions.UseProviderCompatibility(modelBuilder, Database.ProviderName);
         }
     }

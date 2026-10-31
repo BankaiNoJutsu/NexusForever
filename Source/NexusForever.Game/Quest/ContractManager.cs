@@ -57,6 +57,12 @@ namespace NexusForever.Game.Quest
                 : null;
         }
 
+        public bool TryGetRewardSource(IQuestInfo info, out ContractRewardSource source)
+        {
+            source = TryGetDefinition(info, out ContractDefinition definition) ? definition.RewardSource : null;
+            return source != null;
+        }
+
         private IEnumerable<ContractDefinition> GetAvailableContracts(IEnumerable<IQuest> activeQuests, IEnumerable<IQuest> completedQuests, DateTime utcNow)
         {
             foreach (IGrouping<uint, ContractDefinition> group in contracts.Value.Values
@@ -139,6 +145,19 @@ namespace NexusForever.Game.Quest
         private ImmutableDictionary<ushort, ContractDefinition> BuildContracts()
         {
             ImmutableDictionary<ushort, ContractDefinition>.Builder builder = ImmutableDictionary.CreateBuilder<ushort, ContractDefinition>();
+            // Game.Contract:GetRewardTrackType maps group types1/2 to track
+            // types0/1. GetRewardTrackValue reads quality1..4 from formula1193.
+            // Snapshot the scalars with this lazy catalog; exposed table rows
+            // remain mutable for existing callers but cannot change a quote.
+            RewardTrackEntry[] trackRows = gameTableManager.RewardTrack?.Entries ?? [];
+            var trackRoots = trackRows.Where(row => row.RewardTrackTypeEnum is 0 or 1)
+                .GroupBy(row => row.RewardTrackTypeEnum).Where(group => group.Count() == 1)
+                .Select(group => group.Single()).Where(row => row.Id is > 0 and <= 0x3FFF
+                    && row.Flags == 0 && row.RewardTrackIdParent == 0 && trackRows.Count(other => other.Id == row.Id) == 1)
+                .ToDictionary(row => row.RewardTrackTypeEnum);
+            GameFormulaEntry formula = gameTableManager.GameFormula?.GetEntry(1193);
+            uint[] points = formula == null ? [20, 100, 200, 500]
+                : [formula.Dataint0, formula.Dataint01, formula.Dataint02, formula.Dataint03];
             foreach (Quest2Entry questEntry in gameTableManager.Quest2?.Entries ?? [])
             {
                 if (!IsContractEntry(questEntry))
@@ -151,7 +170,14 @@ namespace NexusForever.Game.Quest
                 if (!HasValidObjectives(questEntry) || !HasValidRewards(questEntry))
                     continue;
 
-                builder[(ushort)questEntry.Id] = new ContractDefinition(questEntry, periodicQuestGroup);
+                ContractRewardSource rewardSource = null;
+                uint type = periodicQuestGroup.ContractTypeEnum;
+                uint quality = periodicQuestGroup.ContractQualityEnum;
+                if (type is 1 or 2 && quality is >= 1 and <= 4 && points[quality - 1] <= int.MaxValue
+                    && trackRoots.TryGetValue(type - 1, out RewardTrackEntry track))
+                    rewardSource = new((ushort)questEntry.Id, periodicQuestGroup.Id, track.Id,
+                        track.RewardTrackTypeEnum, track.PrerequisiteId, quality, points[quality - 1], formula == null);
+                builder[(ushort)questEntry.Id] = new ContractDefinition(questEntry, periodicQuestGroup, rewardSource);
             }
 
             return builder.ToImmutable();
@@ -208,15 +234,17 @@ namespace NexusForever.Game.Quest
 
         private sealed class ContractDefinition
         {
-            public ContractDefinition(Quest2Entry entry, PeriodicQuestGroupEntry periodicQuestGroup)
+            public ContractDefinition(Quest2Entry entry, PeriodicQuestGroupEntry periodicQuestGroup, ContractRewardSource rewardSource)
             {
                 Entry              = entry;
                 PeriodicQuestGroup = periodicQuestGroup;
+                RewardSource = rewardSource;
             }
 
             public ushort QuestId => (ushort)Entry.Id;
             public Quest2Entry Entry { get; }
             public PeriodicQuestGroupEntry PeriodicQuestGroup { get; }
+            public ContractRewardSource RewardSource { get; }
         }
     }
 }

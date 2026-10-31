@@ -12,6 +12,18 @@ namespace NexusForever.Game.Abstract.Entity
         /// </summary>
         byte ActiveActionSet { get; }
 
+        /// <summary>
+        /// Complete initial grants after the owner has assigned this manager.
+        /// </summary>
+        void Initialise() => GrantSpells();
+
+        bool IsAmpEnabled(ushort ampId) => false;
+
+        /// <summary>
+        /// Reconcile spell grants and augment effects after an action set's AMP selection changes.
+        /// </summary>
+        void OnActionSetAmpsChanged(byte actionSetIndex) { }
+
         void GrantSpells();
 
         /// <summary>
@@ -107,6 +119,10 @@ namespace NexusForever.Game.Abstract.Entity
         /// Set spell cooldown in seconds for supplied spell id.
         /// </summary>
         void SetSpellCooldown(uint spell4Id, double cooldown);
+
+        bool ApplySpellCooldownModifier(SpellCooldownModifier modifier, bool held) => false;
+        bool RemoveSpellCooldownModifier(uint effectId) => false;
+        IReadOnlyCollection<SpellCooldownModifier> GetSpellCooldownModifiers() => [];
 
         void ResetAllSpellCooldowns();
         double GetGlobalSpellCooldown();

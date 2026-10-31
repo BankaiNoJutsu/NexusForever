@@ -41,17 +41,23 @@ namespace NexusForever.Game.Map.Lock
         /// </summary>
         public IMapLock CreateSoloLock(Identity identity, uint worldId)
         {
-            IMapLock mapLock = CreateLock<IMapLock>(MapLockType.Solo, worldId);
-            mapLock.AddCharacer(identity);
-
-            if (!soloLocks.TryGetValue(identity, out IMapLockCollection mapLockCollection))
+            lock (soloLocks)
             {
-                mapLockCollection = mapLockCollectionFactory.Resolve();
-                soloLocks[identity] = mapLockCollection;
-            }
+                if (!soloLocks.TryGetValue(identity, out IMapLockCollection mapLockCollection))
+                {
+                    mapLockCollection = mapLockCollectionFactory.Resolve();
+                    soloLocks[identity] = mapLockCollection;
+                }
 
-            mapLockCollection.AddMapLock(mapLock);
-            return mapLock;
+                IMapLock existing = mapLockCollection.GetMapLock<IMapLock>(worldId);
+                if (existing != null)
+                    return existing;
+
+                IMapLock mapLock = CreateLock<IMapLock>(MapLockType.Solo, worldId);
+                mapLock.AddCharacer(identity);
+                mapLockCollection.AddMapLock(mapLock);
+                return mapLock;
+            }
         }
 
         /// <summary>
@@ -112,6 +118,31 @@ namespace NexusForever.Game.Map.Lock
             return soloLocks.TryGetValue(identity, out IMapLockCollection mapLockCollection)
                 ? mapLockCollection.GetMapLock<IMapLock>(worldId)
                 : null;
+        }
+
+        public IReadOnlyList<IMapLock> GetSoloLocks(Identity identity)
+        {
+            lock (soloLocks)
+                return soloLocks.TryGetValue(identity, out IMapLockCollection collection)
+                    ? collection.Where(l => l.Type == MapLockType.Solo).ToList()
+                    : [];
+        }
+
+        public bool RemoveSoloLock(Identity identity, uint worldId, Guid instanceId)
+        {
+            lock (soloLocks)
+            {
+                if (!soloLocks.TryGetValue(identity, out IMapLockCollection collection))
+                    return false;
+
+                IMapLock mapLock = collection.GetMapLock<IMapLock>(worldId);
+                if (mapLock == null || mapLock.Type != MapLockType.Solo || mapLock.InstanceId != instanceId)
+                    return false;
+
+                mapLock.RemoveCharacter(identity);
+                collection.RemoveMapLock(worldId);
+                return true;
+            }
         }
 
         /// <summary>

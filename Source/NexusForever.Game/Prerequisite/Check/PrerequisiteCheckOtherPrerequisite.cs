@@ -28,13 +28,23 @@ namespace NexusForever.Game.Prerequisite.Check
             switch (comparison)
             {
                 case PrerequisiteComparison.NotEqual:
-                    return !prerequisiteManager.Meets(player, objectId);
+                    return !prerequisiteManager.Meets(player, objectId, parameters);
                 case PrerequisiteComparison.Equal:
-                    return prerequisiteManager.Meets(player, objectId);
+                    return prerequisiteManager.Meets(player, objectId, parameters);
                 default:
                     log.LogWarning($"Unhandled {comparison} for {PrerequisiteType.OtherPrerequisite}!");
                     return false;
             }
+        }
+
+        public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+        {
+            return comparison switch
+            {
+                PrerequisiteComparison.Equal => prerequisiteManager.MeetsUnit(subject, objectId, parameters),
+                PrerequisiteComparison.NotEqual => !prerequisiteManager.MeetsUnit(subject, objectId, parameters),
+                _ => false
+            };
         }
     }
 }

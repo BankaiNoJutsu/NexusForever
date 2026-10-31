@@ -11,5 +11,11 @@ namespace NexusForever.Game.Abstract.Quest
         uint[] GetGoodQualityContractQuestIds(IEnumerable<IQuest> activeQuests, IEnumerable<IQuest> completedQuests, DateTime utcNow);
 
         PeriodicQuestGroupEntry GetPeriodicQuestGroup(IQuestInfo info);
+
+        bool TryGetRewardSource(IQuestInfo info, out ContractRewardSource source)
+        {
+            source = null;
+            return false;
+        }
     }
 }

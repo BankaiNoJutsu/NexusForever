@@ -164,7 +164,7 @@ namespace NexusForever.Game.Housing
 
             foreach (IResidence residence in residences.Values)
             {
-                if (residence is Residence concreteResidence && !concreteResidence.NeedsSave)
+                if (residence is Residence concreteResidence && (!concreteResidence.NeedsSave || concreteResidence.CommunitySavePending))
                     continue;
 
                 IResidence residenceToSave = residence;
@@ -294,6 +294,21 @@ namespace NexusForever.Game.Housing
             residences.Remove(residence.Id);
             residenceOwnerCache.Remove(residence.OwnerId.Value);
             residenceSearchCache.Remove(name);
+        }
+
+        public void RemoveCommunity(ICommunity community)
+        {
+            IResidence residence = community?.Residence;
+            if (residence == null)
+                return;
+
+            DeregisterCommunityVists(residence.Id);
+            if (residences.TryGetValue(residence.Id, out IResidence current) && ReferenceEquals(current, residence))
+                residences.Remove(residence.Id);
+            if (communityOwnerCache.TryGetValue(community.Id, out ulong id) && id == residence.Id)
+                communityOwnerCache.Remove(community.Id);
+            foreach (string name in communitySearchCache.Where(p => p.Value == residence.Id).Select(p => p.Key).ToList())
+                communitySearchCache.Remove(name);
         }
 
         public IResidenceEntrance GetResidenceEntrance(PropertyInfoId propertyInfoId)

@@ -170,6 +170,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 WaitForClientSideInteractionResponse = deferClientSideInteractionActivation && effectiveCastTime == 0u,
                 ClientSideInteractionDurationMs = clientSideInteractionDurationMs,
                 ClientContextToken     = contextToken,
+                HasClientCastRequest   = clientRequestSource != null,
                 ClientRequestSource    = clientRequestSource
             };
 
@@ -239,6 +240,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 Position               = position,
                 UserInitiatedSpellCast = true,
                 ClientContextToken     = contextToken,
+                HasClientCastRequest   = clientRequestSource != null,
                 ClientRequestSource    = clientRequestSource
             };
 

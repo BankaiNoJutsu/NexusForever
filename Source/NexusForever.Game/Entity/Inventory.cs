@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Diagnostics;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
@@ -20,7 +20,7 @@ using NLog;
 
 namespace NexusForever.Game.Entity
 {
-    public class Inventory : IInventory
+    public partial class Inventory : IInventory
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
@@ -95,18 +95,41 @@ namespace NexusForever.Game.Entity
 
         public void Update(double lastTick)
         {
-            UpdateItemExpirations(lastTick);
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                UpdateItemExpirations(lastTick);
+            }
         }
 
         public void Save(CharacterContext context)
         {
-            foreach (IItem item in deletedItems)
-                item.Save(context);
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || HasPendingRewardDelivery)
+                {
+                    var error = new InvalidOperationException("Ordinary inventory save overlaps a pending reward delivery.");
+                    context.RejectSave(error);
+                    throw error;
+                }
+                IItem[] tombstones = deletedItems.ToArray();
+                foreach (IItem item in tombstones)
+                    item.Save(context);
+                context.OnSaveCompleted(committed =>
+                {
+                    if (!committed)
+                        return;
+                    lock (MutationGate)
+                        foreach (IItem item in tombstones)
+                            if (item is Item concrete ? !concrete.HasUnsettledDeletion : !item.PendingDelete)
+                                deletedItems.RemoveAll(deleted => ReferenceEquals(deleted, item));
+                });
 
-            deletedItems.Clear();
-
-            foreach (IBag bag in bags.Values.Where(b => b.Location != InventoryLocation.Ability))
-                bag.Save(context);
+                foreach (IBag bag in bags.Values.Where(b => b.Location != InventoryLocation.Ability
+                    && b.Location != InventoryLocation.RealmBank))
+                    bag.Save(context);
+            }
         }
 
         /// <summary>
@@ -144,7 +167,8 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public bool IsInventoryFull(InventoryLocation location)
         {
-            return GetInventorySlotsRemaining(location) == 0u;
+            IBag bag = GetBag(location) ?? throw new ArgumentException();
+            return RequiresAuthoritativeReload || rewardOwnerInvalidated || bag.AvailableSlots == 0u;
         }
 
         /// <summary>
@@ -252,13 +276,18 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public IItem SpellCreate(Spell4BaseEntry spell4BaseEntry, ItemUpdateReason reason = ItemUpdateReason.NoReason)
         {
-            if (spell4BaseEntry == null)
-                throw new ArgumentNullException();
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                if (spell4BaseEntry == null)
+                    throw new ArgumentNullException();
 
-            var spell = new Item(characterId, spell4BaseEntry, itemManager: itemManager, gameTableManager: gameTableManager);
-            AddItem(spell, InventoryLocation.Ability, reason);
+                var spell = new Item(characterId, spell4BaseEntry, itemManager: itemManager, gameTableManager: gameTableManager);
+                AddItem(spell, InventoryLocation.Ability, reason);
 
-            return spell;
+                return spell;
+            }
         }
 
         /// <summary>
@@ -266,17 +295,36 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public bool CanCreateItem(InventoryLocation location, uint itemId, uint count)
         {
-            IItemInfo info = itemManager?.GetItemInfo(itemId);
-            if (info == null)
-                throw new ArgumentNullException();
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) return false;
+                IItemInfo info = itemManager?.GetItemInfo(itemId);
+                if (info == null)
+                    throw new ArgumentNullException();
 
-            return CanCreateItem(location, info, count);
+                return CanCreateItem(location, info, count);
+            }
         }
 
         /// <summary>
         /// Returns if a new item can be created in the supplied <see cref="InventoryLocation"/>.
         /// </summary>
         public bool CanCreateItem(InventoryLocation location, IItemInfo info, uint count)
+        {
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) return false;
+                if (location == InventoryLocation.Inventory
+                    && player?.SupplySatchelManager?.TryGetAutoStoreCapacity(info, out uint capacity) == true)
+                    count -= Math.Min(count, capacity);
+
+                return CanCreateItemInBag(location, info, count);
+            }
+        }
+
+        private bool CanCreateItemInBag(InventoryLocation location, IItemInfo info, uint count)
         {
             if (info == null)
                 throw new ArgumentNullException();
@@ -292,7 +340,7 @@ namespace NexusForever.Game.Entity
             {
                 uint expirationTimeLeft = GetInitialExpirationTimeLeft(info);
                 uint maxStackCount = Math.Max(1u, info.Entry.MaxStackCount);
-                foreach (IItem item in bag.Where(i => i.Info.Id == info.Id && i.ExpirationTimeLeft == expirationTimeLeft))
+                foreach (IItem item in bag.Where(i => !bag.IsSlotReserved(i.BagIndex) && i.Info.Id == info.Id && i.ExpirationTimeLeft == expirationTimeLeft))
                 {
                     if (count == 0u)
                         break;
@@ -312,7 +360,137 @@ namespace NexusForever.Game.Entity
             if (location == InventoryLocation.Equipped)
                 return slotsNeeded <= 1ul && bag.GetFirstAvailableBagIndex((ItemSlot)info.SlotEntry.Id).HasValue;
 
-            return (ulong)bag.SlotsRemaining >= slotsNeeded;
+            return (ulong)bag.AvailableSlots >= slotsNeeded;
+        }
+
+        /// <inheritdoc />
+        public bool SupportsSoulboundItemCreation => true;
+
+        /// <inheritdoc />
+        public bool CanCreateSoulboundItem(InventoryLocation location, IItemInfo info, uint count, out GenericError error, uint charges = 0)
+        {
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                return TryPlanSoulboundCreation(location, info, count, charges, out _, out error);
+            }
+        }
+
+        /// <inheritdoc />
+        public bool TryCreateSoulboundItem(InventoryLocation location, IItemInfo info, uint count, out GenericError error,
+            ItemUpdateReason reason = ItemUpdateReason.NoReason, uint charges = 0)
+        {
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (!TryPlanSoulboundCreation(location, info, count, charges, out SoulboundCreationPlan plan, out error))
+                    return false;
+
+                // The complete physical destination is known before creating any item
+                // (which allocates its ID), changing a stack, or emitting a packet.
+                var newItems = new List<(Item Item, uint BagIndex)>();
+                foreach ((uint bagIndex, uint stackCount) in plan.NewStacks)
+                {
+                    var item = new Item(characterId, info, stackCount, charges, itemManager, gameTableManager);
+                    item.MakeSoulbound();
+                    newItems.Add((item, bagIndex));
+                }
+
+                foreach (var (item, stackCount, _) in plan.StackUpdates)
+                {
+                    if (player == null)
+                        item.StackCount = stackCount;
+                    else
+                        ItemStackCountUpdate(item, stackCount, reason);
+                }
+
+                foreach ((Item item, uint bagIndex) in newItems)
+                {
+                    AddItem(item, location, bagIndex);
+                    if (player?.IsLoading == false)
+                    {
+                        player.Session.EnqueueMessageEncrypted(new ServerItemAdd
+                        {
+                            InventoryItem = new InventoryItem { Item = item.Build(), Reason = reason }
+                        });
+                    }
+                }
+
+                if (count != 0u && location == InventoryLocation.Inventory && player?.IsLoading == false)
+                    InventoryQuestObjectiveUpdater.RefreshCollectItemForItem(player, info.Id);
+                return true;
+            }
+        }
+
+        private bool TryPlanSoulboundCreation(InventoryLocation location, IItemInfo info, uint count, uint charges,
+            out SoulboundCreationPlan plan, out GenericError error)
+        {
+            plan = null;
+            error = GenericError.ItemNotValidForSlot;
+            if (RequiresAuthoritativeReload || rewardOwnerInvalidated) return false;
+            error = GenericError.ItemBadId;
+            if (info?.Entry == null || info.Id == 0u)
+                return false;
+
+            // These are character-owned physical bags. Shared storage and direct
+            // equip paths must retain their separate entitlement/slot validation.
+            error = GenericError.ItemNotValidForSlot;
+            if (location is not (InventoryLocation.Inventory or InventoryLocation.PlayerBank))
+                return false;
+            IBag bag = GetBag(location);
+            error = GenericError.ItemCannotFindBag;
+            if (bag == null)
+                return false;
+
+            plan = new SoulboundCreationPlan();
+            uint remaining = count;
+            uint maxStackCount = info.IsStackable() ? Math.Max(1u, info.Entry.MaxStackCount) : 1u;
+            if (remaining != 0u && info.IsStackable())
+            {
+                uint expiration = GetInitialExpirationTimeLeft(info);
+                uint effectiveCharges = charges != 0u ? charges : info.Entry.MaxCharges;
+                foreach (IItem item in bag.Where(item => !bag.IsSlotReserved(item.BagIndex)))
+                {
+                    ItemModel before = item is Item concrete ? concrete.CaptureRewardModel() : new ItemModel
+                    {
+                        Id = item.Guid, OwnerId = item.CharacterId, ItemId = item.Info?.Id ?? 0u,
+                        Location = (ushort)item.Location, BagIndex = item.BagIndex, StackCount = item.StackCount,
+                        Charges = item.Charges, ExpirationTimeLeft = item.ExpirationTimeLeft, Soulbound = item.Soulbound
+                    };
+                    if (!before.Soulbound || before.ItemId != info.Id || before.ExpirationTimeLeft != expiration
+                        || before.Charges != effectiveCharges || before.StackCount >= maxStackCount)
+                        continue;
+                    uint added = Math.Min(remaining, maxStackCount - before.StackCount);
+                    plan.StackUpdates.Add((item, before.StackCount + added, before));
+                    remaining -= added;
+                    if (remaining == 0u)
+                        break;
+                }
+            }
+
+            error = GenericError.ItemInventoryFull;
+            ulong slotsNeeded = ((ulong)remaining + maxStackCount - 1ul) / maxStackCount;
+            if (slotsNeeded > bag.AvailableSlots)
+                return false;
+            for (uint index = 0; remaining != 0u && index < bag.Slots; index++)
+            {
+                if (bag.GetItem(index) != null || bag.IsSlotReserved(index))
+                    continue;
+                uint stackCount = Math.Min(remaining, maxStackCount);
+                plan.NewStacks.Add((index, stackCount));
+                remaining -= stackCount;
+            }
+            if (remaining != 0u)
+                return false;
+
+            error = GenericError.Ok;
+            return true;
+        }
+
+        private sealed class SoulboundCreationPlan
+        {
+            public List<(IItem Item, uint StackCount, ItemModel Before)> StackUpdates { get; } = new();
+            public List<(uint BagIndex, uint StackCount)> NewStacks { get; } = new();
         }
 
         /// <summary>
@@ -320,11 +498,16 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void ItemCreate(InventoryLocation location, uint itemId, uint count, ItemUpdateReason reason = ItemUpdateReason.NoReason, uint charges = 0)
         {
-            IItemInfo info = itemManager?.GetItemInfo(itemId);
-            if (info == null)
-                throw new ArgumentNullException();
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                IItemInfo info = itemManager?.GetItemInfo(itemId);
+                if (info == null)
+                    throw new ArgumentNullException();
 
-            ItemCreate(location, info, count, reason, charges);
+                ItemCreate(location, info, count, reason, charges);
+            }
         }
 
         /// <summary>
@@ -332,52 +515,629 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void ItemCreate(InventoryLocation location, IItemInfo info, uint count, ItemUpdateReason reason = ItemUpdateReason.NoReason, uint charges = 0)
         {
-            if (info == null)
-                throw new ArgumentNullException();
-
-            IBag bag = GetBag(location);
-            if (bag == null)
-                throw new ArgumentException();
-
-            // update any existing stacks before creating new items
-            if (info.IsStackable())
+            lock (MutationGate)
             {
-                uint expirationTimeLeft = GetInitialExpirationTimeLeft(info);
-                foreach (IItem item in bag.Where(i => i.Info.Id == info.Id && i.ExpirationTimeLeft == expirationTimeLeft))
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                if (info == null)
+                    throw new ArgumentNullException();
+
+                IBag bag = GetBag(location);
+                if (bag == null)
+                    throw new ArgumentException();
+
+                if (count > 0u && location == InventoryLocation.Inventory
+                    && reason != ItemUpdateReason.ResourceConversion
+                    && player?.SupplySatchelManager?.TryGetAutoStoreCapacity(info, out uint capacity, charges) == true)
                 {
-                    if (count == 0u)
-                        break;
-
-                    if (item.StackCount == info.Entry.MaxStackCount)
-                        continue;
-
-                    uint newStackCount = Math.Min(item.StackCount + count, info.Entry.MaxStackCount);
-                    count -= newStackCount - item.StackCount;
-                    ItemStackCountUpdate(item, newStackCount, reason);
-                }
-            }
-
-            // create new stacks for the remaining count
-            while (count > 0)
-            {
-                uint? bagIndex = location == InventoryLocation.Equipped ? bag.GetFirstAvailableBagIndex((ItemSlot)info.SlotEntry.Id) : bag.GetFirstAvailableBagIndex();
-                if (!bagIndex.HasValue)
-                {
-                    // If there is remaining count left, and this was created by SupplySatchelManager, then return the rest to the client.
-                    if (count > 0 && reason == ItemUpdateReason.ResourceConversion)
-                        player.SupplySatchelManager.AddAmount(new Item(characterId, info, count, charges, itemManager, gameTableManager), count);
-                    else
+                    uint toSatchel = Math.Min(count, capacity);
+                    // Validate both destinations before sending a satchel update or modifying
+                    // any bag stack. A full satchel naturally falls back to the bag.
+                    if (!CanCreateItemInBag(location, info, count - toSatchel))
                     {
-                        player.Session.EnqueueMessageEncrypted(new ServerItemError
+                        player.Session.EnqueueMessageEncrypted(new ServerItemError { ErrorCode = GenericError.ItemInventoryFull });
+                        return;
+                    }
+
+                    if (toSatchel > 0u)
+                    {
+                        var material = new Item(characterId, info, toSatchel, charges, itemManager, gameTableManager);
+                        uint remainder = player.SupplySatchelManager.AddAmount(material, toSatchel);
+                        uint stored = toSatchel - remainder;
+                        if (remainder != 0u && !CanCreateItemInBag(location, info, count - stored))
                         {
-                            ErrorCode = GenericError.ItemInventoryFull
+                            // Capacity should be stable on the owning map thread. Retain
+                            // quantities even if a custom manager changes it during this call.
+                            if (stored != 0u)
+                                player.SupplySatchelManager.RemoveAmount(material, stored);
+                            player.Session.EnqueueMessageEncrypted(new ServerItemError { ErrorCode = GenericError.ItemInventoryFull });
+                            return;
+                        }
+                        count -= stored;
+                    }
+                }
+
+                // update any existing stacks before creating new items
+                if (info.IsStackable())
+                {
+                    uint expirationTimeLeft = GetInitialExpirationTimeLeft(info);
+                    foreach (IItem item in bag.Where(i => !bag.IsSlotReserved(i.BagIndex) && i.Info.Id == info.Id && i.ExpirationTimeLeft == expirationTimeLeft))
+                    {
+                        if (count == 0u)
+                            break;
+
+                        if (item.StackCount == info.Entry.MaxStackCount)
+                            continue;
+
+                        uint newStackCount = Math.Min(item.StackCount + count, info.Entry.MaxStackCount);
+                        count -= newStackCount - item.StackCount;
+                        ItemStackCountUpdate(item, newStackCount, reason);
+                    }
+                }
+
+                // create new stacks for the remaining count
+                while (count > 0)
+                {
+                    uint? bagIndex = location == InventoryLocation.Equipped ? bag.GetFirstAvailableBagIndex((ItemSlot)info.SlotEntry.Id) : bag.GetFirstAvailableBagIndex();
+                    if (!bagIndex.HasValue)
+                    {
+                        // If there is remaining count left, and this was created by SupplySatchelManager, then return the rest to the client.
+                        if (count > 0 && reason == ItemUpdateReason.ResourceConversion)
+                            player.SupplySatchelManager.AddAmount(new Item(characterId, info, count, charges, itemManager, gameTableManager), count);
+                        else
+                        {
+                            player.Session.EnqueueMessageEncrypted(new ServerItemError
+                            {
+                                ErrorCode = GenericError.ItemInventoryFull
+                            });
+                        }
+
+                        return;
+                    }
+
+                    var item = new Item(characterId, info, Math.Min(count, info.IsStackable() ? info.Entry.MaxStackCount : 1), charges, itemManager, gameTableManager);
+                    AddItem(item, location, bagIndex.Value);
+
+                    if (!player?.IsLoading ?? false)
+                    {
+                        player.Session.EnqueueMessageEncrypted(new ServerItemAdd
+                        {
+                            InventoryItem = new InventoryItem
+                            {
+                                Item   = item.Build(),
+                                Reason = reason
+                            }
                         });
                     }
 
+                    count -= item.StackCount;
+                }
+
+                if (location == InventoryLocation.Inventory && player != null && !player.IsLoading)
+                    InventoryQuestObjectiveUpdater.RefreshCollectItemForItem(player, info.Id);
+            }
+        }
+
+        /// <summary>
+        /// Returns if <see cref="IItem"/> can be moved to supplied <see cref="ItemLocation"/>.
+        /// </summary>
+        public GenericError? CanMoveItem(IItem item, ItemLocation location)
+        {
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                return CanMoveItem(item, location.Location, location.BagIndex);
+            }
+        }
+
+        /// <summary>
+        /// Returns if <see cref="IItem"/> can be moved to supplied <see cref="InventoryLocation"/> and bag index.
+        /// </summary>
+        public GenericError? CanMoveItem(IItem item, InventoryLocation location, uint bagIndex)
+        {
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) return GenericError.ItemNotValidForSlot;
+                // Move rollback snapshots cover every bag, including unrelated slots.
+                if (bags.Values.Any(bag => bag.HasReservedSlots))
+                    return GenericError.ItemNotValidForSlot;
+                // ItemInventoryFull
+                // ItemUnique
+                // ItemNotValidForSlot
+                // ItemBagMustBeEmpty
+                // ItemWrongRace
+                // ItemWrongClass
+                // ItemLevelToLow
+                // PlayerCannotWhileInCombat
+                // ItemCannotBeSalvaged
+                // ItemWrongFaction
+                // ItemCannotBeDeleted
+
+                if (item == null)
+                    return GenericError.ItemBadId;
+                if (item.Info == null)
+                    return GenericError.ItemNotValidForSlot;
+
+                IBag dstBag = GetBag(location);
+                if (dstBag == null)
+                    return GenericError.ItemNotValidForSlot;
+
+                GenericError? realmBankError = EnsureRealmBankAccessForMove(item, location, bagIndex);
+                if (realmBankError.HasValue)
+                    return realmBankError;
+
+                if (bagIndex >= dstBag.Slots)
+                    return GenericError.ItemNotValidForSlot;
+
+                IItem dstItem = dstBag.GetItem(bagIndex);
+                if (dstItem == null && item.Location != location && dstBag.SlotsRemaining == 0u)
+                    return GenericError.ItemInventoryFull;
+
+                if (location == InventoryLocation.Inventory)
+                {
+                    // when removing bag capacity, make sure there is enough room left for items in the inventory
+                    GenericError? bagCapacityError = CanApplyBagCapacityChangeForMove(item, dstItem, location, bagIndex);
+                    if (bagCapacityError.HasValue)
+                        return bagCapacityError;
+                }
+                else if (location == InventoryLocation.Equipped)
+                {
+                    if (!item.Info.IsEquippable())
+                        return GenericError.ItemNotValidForSlot;
+
+                    if (!item.Info.IsEquippableIntoSlot((EquippedItem)bagIndex))
+                        return GenericError.ItemNotValidForSlot;
+
+                    if (item.RuneSlots.Count == 0)
+                        ItemRuneSlotInitializer.ApplyDefaultSockets(item);
+
+                    uint equipPrerequisiteId = item.Info.Entry.PrerequisiteId;
+                    if (equipPrerequisiteId != 0u && player != null
+                        && !PrerequisiteEvaluation.Meets(player, equipPrerequisiteId, item, prerequisiteManager))
+                        return GenericError.ItemEquipPrereqFailed;
+
+                    GenericError? bagCapacityError = CanApplyBagCapacityChangeForMove(item, dstItem, location, bagIndex);
+                    if (bagCapacityError.HasValue)
+                        return bagCapacityError;
+
+                    /*if (owner.Character.Class != item.Entry.ClassRequired)
+    			        return GenericError.ItemWrongClass;
+
+    		        if (owner.Character.Race != item.Entry.RaceRequired)
+    			        return GenericError.ItemWrongRace;*/
+                }
+                else
+                {
+                    GenericError? bagCapacityError = CanApplyBagCapacityChangeForMove(item, dstItem, location, bagIndex);
+                    if (bagCapacityError.HasValue)
+                        return bagCapacityError;
+                }
+
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Move <see cref="IItem"/> to supplied <see cref="ItemLocation"/>.
+        /// </summary>
+        public void ItemMove(IItem item, ItemLocation location)
+        {
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                ItemMove(item, location.Location, location.BagIndex);
+            }
+        }
+
+        /// <summary>
+        /// Move <see cref="IItem"/> to supplied <see cref="InventoryLocation"/> and bag index.
+        /// </summary>
+        public void ItemMove(IItem item, InventoryLocation location, uint bagIndex)
+        {
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                if (item == null)
+                    throw new ArgumentNullException();
+
+                IBag bag = GetBag(item.Location);
+                if (bag == null)
+                    throw new ArgumentException();
+
+                IBag dstBag = GetBag(location);
+                if (dstBag == null)
+                    throw new ArgumentException();
+
+                GenericError? result = CanMoveItem(item, location, bagIndex);
+                if (result.HasValue)
+                {
+                    player.Session.EnqueueMessageEncrypted(new ServerItemError
+                    {
+                        ErrorCode = result.Value
+                    });
                     return;
                 }
 
-                var item = new Item(characterId, info, Math.Min(count, info.IsStackable() ? info.Entry.MaxStackCount : 1), charges, itemManager, gameTableManager);
+                IItem dstItem = dstBag.GetItem(bagIndex);
+                if (ReferenceEquals(item, dstItem))
+                    return;
+                InventoryOperationSnapshot snapshot = CreateOperationSnapshot();
+                bool wasSoulbound = item.Soulbound;
+                bool dstWasSoulbound = dstItem?.Soulbound ?? false;
+                Task bankPersistence = null;
+
+                try
+                {
+                    if (dstItem == null)
+                    {
+                        // item move is between the same bag, just a simple move
+                        if (bag.Location == dstBag.Location)
+                            bag.MoveItem(item, bagIndex);
+                        else
+                        {
+                            RemoveItem(item);
+
+                            // ensure slot is still valid
+                            // this can happen when removing a bag to a slot that was removed during the resize
+                            if (bagIndex >= dstBag.Slots)
+                            {
+                                uint? newBagIndex = dstBag.GetFirstAvailableBagIndex();
+                                if (!newBagIndex.HasValue)
+                                    throw new InvalidOperationException();
+
+                                bagIndex = newBagIndex.Value;
+                            }
+
+                            AddItem(item, location, bagIndex, persistRealmBank: false);
+                        }
+
+                        BindOnEquip(item);
+                        bankPersistence = PersistRealmBankStorage(item);
+
+                        player.Session.EnqueueMessageEncrypted(new ServerItemMove
+                        {
+                            To = new ItemDragDrop
+                            {
+                                Guid     = item.Guid,
+                                DragDrop = ItemLocationToDragDropData(item.Location, (ushort)item.BagIndex)
+                            }
+                        });
+
+                        SendBindOnEquipRefreshIfNeeded(item, wasSoulbound);
+                    }
+                    else
+                    {
+                        // item at destination with same entry, try and stack
+                        if (dstItem.Info.IsStackable()
+                            && item.Info.Entry.Id == dstItem.Info.Entry.Id
+                            && item.ExpirationTimeLeft == dstItem.ExpirationTimeLeft)
+                        {
+                            uint newStackCount = Math.Min(dstItem.StackCount + item.StackCount, dstItem.Info.Entry.MaxStackCount);
+                            uint oldStackCount = item.StackCount - (newStackCount - dstItem.StackCount);
+                            ItemStackCountUpdate(dstItem, newStackCount, persistRealmBank: false);
+
+                            if (oldStackCount == 0u)
+                            {
+                                ItemDelete(bag, item, ItemUpdateReason.Loot,
+                                    persistRealmBank: bag.Location != InventoryLocation.RealmBank && dstBag.Location != InventoryLocation.RealmBank);
+                            }
+                            else
+                                ItemStackCountUpdate(item, oldStackCount, persistRealmBank: false);
+                        }
+                        // item swap is between the same bag, just a simple move
+                        else if (bag.Location == dstBag.Location)
+                            bag.SwapItem(item, dstItem);
+                        // items being swapped are 2 bags, we need to calculate the difference between the two
+                        else if (item.Info.IsEquippableBag() && dstItem.Info.IsEquippableBag())
+                        {
+                            bag.RemoveItem(item);
+                            dstBag.RemoveItem(dstItem);
+                            bag.AddItem(dstItem, item.PreviousBagIndex);
+                            dstBag.AddItem(item, dstItem.PreviousBagIndex);
+
+                            int capacityChange = (int)dstItem.Info.Entry.MaxStackCount - (int)item.Info.Entry.MaxStackCount;
+                            if (capacityChange != 0)
+                            {
+                                InventoryLocation? expandedLocation = GetExpandedBagLocation(dstItem.Location, dstItem.BagIndex);
+                                if (expandedLocation.HasValue)
+                                    InventoryResize(expandedLocation.Value, capacityChange);
+                            }
+                        }
+                        else
+                        {
+                            RemoveItem(item);
+                            RemoveItem(dstItem);
+                            AddItem(item, dstItem.PreviousLocation, dstItem.PreviousBagIndex, persistRealmBank: false);
+                            AddItem(dstItem, item.PreviousLocation, item.PreviousBagIndex, persistRealmBank: false);
+                        }
+
+                        BindOnEquip(item);
+                        BindOnEquip(dstItem);
+                        if (bag.Location == InventoryLocation.RealmBank || dstBag.Location == InventoryLocation.RealmBank)
+                            bankPersistence = PersistRealmBankMove(item, dstItem);
+                        else
+                        {
+                            PersistRealmBankStorage(item);
+                            PersistRealmBankStorage(dstItem);
+                        }
+
+                        player.Session.EnqueueMessageEncrypted(new ServerItemSwap
+                        {
+                            To = new ItemDragDrop
+                            {
+                                Guid     = item.Guid,
+                                DragDrop = ItemLocationToDragDropData(item.Location, (ushort)item.BagIndex)
+                            },
+                            From = new ItemDragDrop
+                            {
+                                Guid     = dstItem.Guid,
+                                DragDrop = ItemLocationToDragDropData(dstItem.Location, (ushort)dstItem.BagIndex)
+                            }
+                        });
+
+                        SendBindOnEquipRefreshIfNeeded(item, wasSoulbound);
+                        SendBindOnEquipRefreshIfNeeded(dstItem, dstWasSoulbound);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    // Once SQL owns this move, a notification error cannot undo
+                    // its live Items while the captured transaction may commit.
+                    if (bankPersistence != null) rewardRequiresReload = true;
+                    else RestoreOperationSnapshot(snapshot);
+                    log.Fatal(exception);
+                    player.Session.EnqueueMessageEncrypted(new ServerItemError
+                    {
+                        ErrorCode = GenericError.DbFailure
+                    });
+                }
+            }
+        }
+
+        /// <summary>
+        /// Split a subset of <see cref="IItem"/> to create a new <see cref="IItem"/> of split amount
+        /// </summary>
+        public void ItemSplit(ulong itemGuid, ItemLocation newItemLocation, uint count)
+        {
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                IItem item = GetItem(itemGuid);
+                if (item == null)
+                    throw new InvalidPacketValueException();
+
+                if (item.Info.IsEquippableBag())
+                    throw new InvalidPacketValueException();
+
+                if (item.Info.Entry.MaxStackCount <= 1u)
+                    throw new InvalidPacketValueException();
+
+                if (count == 0u || count >= item.StackCount)
+                    throw new InvalidPacketValueException();
+
+                IBag dstBag = GetBag(newItemLocation.Location);
+                if (dstBag == null)
+                    throw new InvalidPacketValueException();
+
+                GenericError? realmBankError = EnsureRealmBankAccessForMove(item, newItemLocation.Location, newItemLocation.BagIndex);
+                if (realmBankError.HasValue)
+                    throw new InvalidPacketValueException();
+
+                IItem dstItem = dstBag.GetItem(newItemLocation.BagIndex);
+                if (dstItem != null)
+                    throw new InvalidPacketValueException();
+                if (bags.Values.Any(bag => bag.HasReservedSlots))
+                    throw new InvalidPacketValueException();
+
+                InventoryOperationSnapshot snapshot = CreateOperationSnapshot();
+                Task bankPersistence = null;
+                try
+                {
+                    var newItem = new Item(characterId, item.Info, Math.Min(count, item.Info.Entry.MaxStackCount), itemManager: itemManager, gameTableManager: gameTableManager);
+                    newItem.ExpirationTimeLeft = item.ExpirationTimeLeft;
+                    if (item.Soulbound)
+                        newItem.MakeSoulbound();
+
+                    bool bankSplit = item.Location == InventoryLocation.RealmBank || newItemLocation.Location == InventoryLocation.RealmBank;
+                    AddItem(newItem, newItemLocation.Location, newItemLocation.BagIndex, persistRealmBank: false);
+                    item.StackCount -= newItem.StackCount;
+                    // Build first so charge/socket initialization belongs to the
+                    // captured SQL state. Preserve Add-before-Stack packet order.
+                    ServerItemAdd added = (!player?.IsLoading ?? false) ? new ServerItemAdd
+                    {
+                        InventoryItem = new InventoryItem
+                        {
+                            Item = newItem.Build(),
+                            Reason = ItemUpdateReason.NoReason
+                        }
+                    } : null;
+                    if (bankSplit) bankPersistence = PersistRealmBankSplit(item, newItem);
+                    if (added != null) player.Session.EnqueueMessageEncrypted(added);
+                    SendItemStackCountUpdate(item, item.StackCount, ItemUpdateReason.NoReason);
+                }
+                catch (Exception error)
+                {
+                    if (bankPersistence != null) rewardRequiresReload = true;
+                    else RestoreOperationSnapshot(snapshot);
+                    log.Error(error, "Failed to split item {0}.", itemGuid);
+                    player.Session.EnqueueMessageEncrypted(new ServerItemError { ErrorCode = GenericError.DbFailure });
+                }
+            }
+        }
+
+        /// <summary>
+        /// Delete <see cref="IItem"/> at supplied <see cref="ItemLocation"/>, this is called directly from a packet hander.
+        /// </summary>
+        public IItem ItemDelete(ItemLocation from, ItemUpdateReason reason = ItemUpdateReason.Loot)
+        {
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                IBag srcBag = GetBag(from.Location);
+                if (srcBag == null)
+                    throw new InvalidPacketValueException();
+
+                IItem srcItem = srcBag.GetItem(from.BagIndex);
+                if (srcItem == null)
+                    throw new InvalidPacketValueException();
+
+                return ItemDelete(srcBag, srcItem, reason);
+            }
+        }
+
+        /// <summary>
+        /// Delete a supplied amount of <see cref="IItem"/> at supplied <see cref="ItemLocation"/>.
+        /// </summary>
+        public IItem ItemDelete(ItemLocation from, uint count, ItemUpdateReason reason = ItemUpdateReason.Loot)
+        {
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                IBag srcBag = GetBag(from.Location);
+                if (srcBag == null)
+                    throw new InvalidPacketValueException();
+
+                IItem srcItem = srcBag.GetItem(from.BagIndex);
+                if (srcItem == null)
+                    throw new InvalidPacketValueException();
+
+                if (IsBankSavePending(srcItem) || count == 0u || count > srcItem.StackCount)
+                    throw new InvalidPacketValueException();
+
+                if (count == srcItem.StackCount)
+                    return ItemDelete(srcBag, srcItem, reason);
+
+                IItem splitItem = new Item(characterId, srcItem.Info, count, srcItem.Charges, itemManager, gameTableManager)
+                {
+                    Durability          = srcItem.Durability,
+                    ExpirationTimeLeft  = srcItem.ExpirationTimeLeft
+                };
+                if (srcItem.Soulbound)
+                    splitItem.MakeSoulbound();
+
+                ItemStackCountUpdate(srcItem, srcItem.StackCount - count, reason);
+                return splitItem;
+            }
+        }
+
+        private IItem ItemDelete(IBag bag, IItem item, ItemUpdateReason reason, bool notify = true, bool persistRealmBank = true)
+        {
+            if (IsBankSavePending(item))
+                throw new InvalidPacketValueException();
+            GenericError? bagCapacityError = CanRemoveItem(item);
+            if (bagCapacityError.HasValue)
+            {
+                player.Session.EnqueueMessageEncrypted(new ServerItemError
+                {
+                    ErrorCode = bagCapacityError.Value
+                });
+                return null;
+            }
+
+            InventoryLocation deletedLocation = item.Location;
+            RemoveItem(item);
+            item.EnqueueDelete(true);
+            if (!deletedItems.Any(deleted => ReferenceEquals(deleted, item)))
+                deletedItems.Add(item);
+            Task bankPersistence = deletedLocation == InventoryLocation.RealmBank && persistRealmBank ? PersistRealmBankDeletion(item) : null;
+
+            try
+            {
+                if (notify && player != null) player.Session.EnqueueMessageEncrypted(new ServerItemDelete
+                {
+                    Guid   = item.Guid,
+                    Reason = reason
+                });
+            }
+            catch
+            {
+                if (bankPersistence != null) rewardRequiresReload = true;
+                throw;
+            }
+
+            return item;
+        }
+
+        /// <summary>
+        /// Delete a supplied amount of an <see cref="IItem"/>.
+        /// </summary>
+        public void ItemDelete(uint itemId, uint count = 1u, ItemUpdateReason reason = ItemUpdateReason.Loot)
+        {
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                IBag bag = GetBag(InventoryLocation.Inventory);
+                foreach (IItem item in bag.Where(i => i.Id == itemId))
+                {
+                    if (item.StackCount > count)
+                    {
+                        ItemStackCountUpdate(item, item.StackCount - count);
+                        count = 0;
+                    }
+                    else
+                    {
+                        ItemDelete(bag, item, reason);
+                        count -= item.StackCount;
+                    }
+
+                    if (count == 0)
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Remove <see cref="IItem"/> from this player's inventory without deleting the item from the DB
+        /// </summary>
+        public void ItemRemove(IItem item, ItemUpdateReason reason = ItemUpdateReason.NoReason)
+        {
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                if (item == null)
+                    throw new ArgumentNullException();
+
+                IBag srcBag = GetBag(item.Location);
+                if (srcBag == null)
+                    throw new ArgumentException();
+
+                RemoveItem(item);
+                item.CharacterId = null;
+
+                player.Session.EnqueueMessageEncrypted(new ServerItemDelete
+                {
+                    Guid   = item.Guid,
+                    Reason = reason
+                });
+            }
+        }
+
+        /// <summary>
+        /// Add <see cref="IItem"/> in the first available bag index for the given <see cref="InventoryLocation"/> .
+        /// </summary>
+        public void AddItem(IItem item, InventoryLocation location, ItemUpdateReason reason = ItemUpdateReason.NoReason)
+        {
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                IBag bag = GetBag(location);
+                if (bag == null)
+                    throw new ArgumentException();
+
+                uint? bagIndex = location == InventoryLocation.Equipped ? bag.GetFirstAvailableBagIndex((ItemSlot)item.Info.SlotEntry.Id) : bag.GetFirstAvailableBagIndex();
+                if (!bagIndex.HasValue)
+                    throw new ArgumentException();
+
+                // Stacks are bought back in full, so no need to worry about splitting stacks
                 AddItem(item, location, bagIndex.Value);
 
                 if (!player?.IsLoading ?? false)
@@ -391,481 +1151,24 @@ namespace NexusForever.Game.Entity
                         }
                     });
                 }
-
-                count -= item.StackCount;
-            }
-
-            if (location == InventoryLocation.Inventory && player != null && !player.IsLoading)
-                InventoryQuestObjectiveUpdater.RefreshCollectItemForItem(player, info.Id);
-        }
-
-        /// <summary>
-        /// Returns if <see cref="IItem"/> can be moved to supplied <see cref="ItemLocation"/>.
-        /// </summary>
-        public GenericError? CanMoveItem(IItem item, ItemLocation location)
-        {
-            return CanMoveItem(item, location.Location, location.BagIndex);
-        }
-
-        /// <summary>
-        /// Returns if <see cref="IItem"/> can be moved to supplied <see cref="InventoryLocation"/> and bag index.
-        /// </summary>
-        public GenericError? CanMoveItem(IItem item, InventoryLocation location, uint bagIndex)
-        {
-            // ItemInventoryFull
-            // ItemUnique
-            // ItemNotValidForSlot
-            // ItemBagMustBeEmpty
-            // ItemWrongRace
-            // ItemWrongClass
-            // ItemLevelToLow
-            // PlayerCannotWhileInCombat
-            // ItemCannotBeSalvaged
-            // ItemWrongFaction
-            // ItemCannotBeDeleted
-
-            if (item == null)
-                return GenericError.ItemBadId;
-            if (item.Info == null)
-                return GenericError.ItemNotValidForSlot;
-
-            IBag dstBag = GetBag(location);
-            if (dstBag == null)
-                return GenericError.ItemNotValidForSlot;
-
-            GenericError? realmBankError = EnsureRealmBankAccessForMove(item, location, bagIndex);
-            if (realmBankError.HasValue)
-                return realmBankError;
-
-            if (bagIndex >= dstBag.Slots)
-                return GenericError.ItemNotValidForSlot;
-
-            IItem dstItem = dstBag.GetItem(bagIndex);
-            if (dstItem == null && item.Location != location && dstBag.SlotsRemaining == 0u)
-                return GenericError.ItemInventoryFull;
-
-            if (location == InventoryLocation.Inventory)
-            {
-                // when removing bag capacity, make sure there is enough room left for items in the inventory
-                GenericError? bagCapacityError = CanApplyBagCapacityChangeForMove(item, dstItem, location, bagIndex);
-                if (bagCapacityError.HasValue)
-                    return bagCapacityError;
-            }
-            else if (location == InventoryLocation.Equipped)
-            {
-                if (!item.Info.IsEquippable())
-                    return GenericError.ItemNotValidForSlot;
-
-                if (!item.Info.IsEquippableIntoSlot((EquippedItem)bagIndex))
-                    return GenericError.ItemNotValidForSlot;
-
-                if (item.RuneSlots.Count == 0)
-                    ItemRuneSlotInitializer.ApplyDefaultSockets(item);
-
-                uint equipPrerequisiteId = item.Info.Entry.PrerequisiteId;
-                if (equipPrerequisiteId != 0u && player != null
-                    && !PrerequisiteEvaluation.Meets(player, equipPrerequisiteId, item, prerequisiteManager))
-                    return GenericError.ItemEquipPrereqFailed;
-
-                GenericError? bagCapacityError = CanApplyBagCapacityChangeForMove(item, dstItem, location, bagIndex);
-                if (bagCapacityError.HasValue)
-                    return bagCapacityError;
-
-                /*if (owner.Character.Class != item.Entry.ClassRequired)
-			        return GenericError.ItemWrongClass;
-
-		        if (owner.Character.Race != item.Entry.RaceRequired)
-			        return GenericError.ItemWrongRace;*/
-            }
-            else
-            {
-                GenericError? bagCapacityError = CanApplyBagCapacityChangeForMove(item, dstItem, location, bagIndex);
-                if (bagCapacityError.HasValue)
-                    return bagCapacityError;
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Move <see cref="IItem"/> to supplied <see cref="ItemLocation"/>.
-        /// </summary>
-        public void ItemMove(IItem item, ItemLocation location)
-        {
-            ItemMove(item, location.Location, location.BagIndex);
-        }
-
-        /// <summary>
-        /// Move <see cref="IItem"/> to supplied <see cref="InventoryLocation"/> and bag index.
-        /// </summary>
-        public void ItemMove(IItem item, InventoryLocation location, uint bagIndex)
-        {
-            if (item == null)
-                throw new ArgumentNullException();
-
-            IBag bag = GetBag(item.Location);
-            if (bag == null)
-                throw new ArgumentException();
-
-            IBag dstBag = GetBag(location);
-            if (dstBag == null)
-                throw new ArgumentException();
-
-            GenericError? result = CanMoveItem(item, location, bagIndex);
-            if (result.HasValue)
-            {
-                player.Session.EnqueueMessageEncrypted(new ServerItemError
-                {
-                    ErrorCode = result.Value
-                });
-                return;
-            }
-
-            IItem dstItem = dstBag.GetItem(bagIndex);
-            InventoryOperationSnapshot snapshot = CreateOperationSnapshot();
-            bool wasSoulbound = item.Soulbound;
-            bool dstWasSoulbound = dstItem?.Soulbound ?? false;
-
-            try
-            {
-                if (dstItem == null)
-                {
-                    // item move is between the same bag, just a simple move
-                    if (bag.Location == dstBag.Location)
-                        bag.MoveItem(item, bagIndex);
-                    else
-                    {
-                        RemoveItem(item);
-
-                        // ensure slot is still valid
-                        // this can happen when removing a bag to a slot that was removed during the resize
-                        if (bagIndex >= dstBag.Slots)
-                        {
-                            uint? newBagIndex = dstBag.GetFirstAvailableBagIndex();
-                            if (!newBagIndex.HasValue)
-                                throw new InvalidOperationException();
-
-                            bagIndex = newBagIndex.Value;
-                        }
-
-                        AddItem(item, location, bagIndex);
-                    }
-
-                    BindOnEquip(item);
-                    PersistRealmBankStorage(item);
-
-                    player.Session.EnqueueMessageEncrypted(new ServerItemMove
-                    {
-                        To = new ItemDragDrop
-                        {
-                            Guid     = item.Guid,
-                            DragDrop = ItemLocationToDragDropData(item.Location, (ushort)item.BagIndex)
-                        }
-                    });
-
-                    SendBindOnEquipRefreshIfNeeded(item, wasSoulbound);
-                }
-                else
-                {
-                    // item at destination with same entry, try and stack
-                    if (dstItem.Info.IsStackable()
-                        && item.Info.Entry.Id == dstItem.Info.Entry.Id
-                        && item.ExpirationTimeLeft == dstItem.ExpirationTimeLeft)
-                    {
-                        uint newStackCount = Math.Min(dstItem.StackCount + item.StackCount, dstItem.Info.Entry.MaxStackCount);
-                        uint oldStackCount = item.StackCount - (newStackCount - dstItem.StackCount);
-                        ItemStackCountUpdate(dstItem, newStackCount);
-
-                        if (oldStackCount == 0u)
-                        {
-                            ItemDelete(new ItemLocation
-                            {
-                                Location = item.Location,
-                                BagIndex = item.BagIndex
-                            });
-                        }
-                        else
-                            ItemStackCountUpdate(item, oldStackCount);
-                    }
-                    // item swap is between the same bag, just a simple move
-                    else if (bag.Location == dstBag.Location)
-                        bag.SwapItem(item, dstItem);
-                    // items being swapped are 2 bags, we need to calculate the difference between the two
-                    else if (item.Info.IsEquippableBag() && dstItem.Info.IsEquippableBag())
-                    {
-                        bag.RemoveItem(item);
-                        dstBag.RemoveItem(dstItem);
-                        bag.AddItem(dstItem, item.PreviousBagIndex);
-                        dstBag.AddItem(item, dstItem.PreviousBagIndex);
-
-                        int capacityChange = (int)dstItem.Info.Entry.MaxStackCount - (int)item.Info.Entry.MaxStackCount;
-                        if (capacityChange != 0)
-                        {
-                            InventoryLocation? expandedLocation = GetExpandedBagLocation(dstItem.Location, dstItem.BagIndex);
-                            if (expandedLocation.HasValue)
-                                InventoryResize(expandedLocation.Value, capacityChange);
-                        }
-                    }
-                    else
-                    {
-                        RemoveItem(item);
-                        RemoveItem(dstItem);
-                        AddItem(item, dstItem.PreviousLocation, dstItem.PreviousBagIndex);
-                        AddItem(dstItem, item.PreviousLocation, item.PreviousBagIndex);
-                    }
-
-                    BindOnEquip(item);
-                    BindOnEquip(dstItem);
-                    PersistRealmBankStorage(item);
-                    PersistRealmBankStorage(dstItem);
-
-                    player.Session.EnqueueMessageEncrypted(new ServerItemSwap
-                    {
-                        To = new ItemDragDrop
-                        {
-                            Guid     = item.Guid,
-                            DragDrop = ItemLocationToDragDropData(item.Location, (ushort)item.BagIndex)
-                        },
-                        From = new ItemDragDrop
-                        {
-                            Guid     = dstItem.Guid,
-                            DragDrop = ItemLocationToDragDropData(dstItem.Location, (ushort)dstItem.BagIndex)
-                        }
-                    });
-
-                    SendBindOnEquipRefreshIfNeeded(item, wasSoulbound);
-                    SendBindOnEquipRefreshIfNeeded(dstItem, dstWasSoulbound);
-                }
-            }
-            catch (Exception exception)
-            {
-                RestoreOperationSnapshot(snapshot);
-                log.Fatal(exception);
-                player.Session.EnqueueMessageEncrypted(new ServerItemError
-                {
-                    ErrorCode = GenericError.DbFailure
-                });
-            }
-        }
-
-        /// <summary>
-        /// Split a subset of <see cref="IItem"/> to create a new <see cref="IItem"/> of split amount
-        /// </summary>
-        public void ItemSplit(ulong itemGuid, ItemLocation newItemLocation, uint count)
-        {
-            IItem item = GetItem(itemGuid);
-            if (item == null)
-                throw new InvalidPacketValueException();
-
-            if (item.Info.IsEquippableBag())
-                throw new InvalidPacketValueException();
-
-            if (item.Info.Entry.MaxStackCount <= 1u)
-                throw new InvalidPacketValueException();
-
-            if (count >= item.StackCount)
-                throw new InvalidPacketValueException();
-
-            IBag dstBag = GetBag(newItemLocation.Location);
-            if (dstBag == null)
-                throw new InvalidPacketValueException();
-
-            GenericError? realmBankError = EnsureRealmBankAccessForMove(item, newItemLocation.Location, newItemLocation.BagIndex);
-            if (realmBankError.HasValue)
-                throw new InvalidPacketValueException();
-
-            IItem dstItem = dstBag.GetItem(newItemLocation.BagIndex);
-            if (dstItem != null)
-                throw new InvalidPacketValueException();
-
-            var newItem = new Item(characterId, item.Info, Math.Min(count, item.Info.Entry.MaxStackCount), itemManager: itemManager, gameTableManager: gameTableManager);
-            newItem.ExpirationTimeLeft = item.ExpirationTimeLeft;
-            if (item.Soulbound)
-                newItem.MakeSoulbound();
-
-            AddItem(newItem, newItemLocation.Location, newItemLocation.BagIndex);
-
-            if (!player?.IsLoading ?? false)
-            {
-                player.Session.EnqueueMessageEncrypted(new ServerItemAdd
-                {
-                    InventoryItem = new InventoryItem
-                    {
-                        Item = newItem.Build(),
-                        Reason = ItemUpdateReason.NoReason
-                    }
-                });
-            }
-
-            ItemStackCountUpdate(item, item.StackCount - count);
-        }
-
-        /// <summary>
-        /// Delete <see cref="IItem"/> at supplied <see cref="ItemLocation"/>, this is called directly from a packet hander.
-        /// </summary>
-        public IItem ItemDelete(ItemLocation from, ItemUpdateReason reason = ItemUpdateReason.Loot)
-        {
-            IBag srcBag = GetBag(from.Location);
-            if (srcBag == null)
-                throw new InvalidPacketValueException();
-
-            IItem srcItem = srcBag.GetItem(from.BagIndex);
-            if (srcItem == null)
-                throw new InvalidPacketValueException();
-
-            return ItemDelete(srcBag, srcItem, reason);
-        }
-
-        /// <summary>
-        /// Delete a supplied amount of <see cref="IItem"/> at supplied <see cref="ItemLocation"/>.
-        /// </summary>
-        public IItem ItemDelete(ItemLocation from, uint count, ItemUpdateReason reason = ItemUpdateReason.Loot)
-        {
-            IBag srcBag = GetBag(from.Location);
-            if (srcBag == null)
-                throw new InvalidPacketValueException();
-
-            IItem srcItem = srcBag.GetItem(from.BagIndex);
-            if (srcItem == null)
-                throw new InvalidPacketValueException();
-
-            if (count == 0u || count > srcItem.StackCount)
-                throw new InvalidPacketValueException();
-
-            if (count == srcItem.StackCount)
-                return ItemDelete(srcBag, srcItem, reason);
-
-            IItem splitItem = new Item(characterId, srcItem.Info, count, srcItem.Charges, itemManager, gameTableManager)
-            {
-                Durability          = srcItem.Durability,
-                ExpirationTimeLeft  = srcItem.ExpirationTimeLeft
-            };
-            if (srcItem.Soulbound)
-                splitItem.MakeSoulbound();
-
-            ItemStackCountUpdate(srcItem, srcItem.StackCount - count, reason);
-            return splitItem;
-        }
-
-        private IItem ItemDelete(IBag bag, IItem item, ItemUpdateReason reason)
-        {
-            GenericError? bagCapacityError = CanRemoveItem(item);
-            if (bagCapacityError.HasValue)
-            {
-                player.Session.EnqueueMessageEncrypted(new ServerItemError
-                {
-                    ErrorCode = bagCapacityError.Value
-                });
-                return null;
-            }
-
-            InventoryLocation deletedLocation = item.Location;
-            RemoveItem(item);
-            if (!item.PendingCreate)
-            {
-                if (deletedLocation == InventoryLocation.RealmBank)
-                    realmBankManager?.DeleteItem(item.Guid);
-                else
-                {
-                    item.EnqueueDelete(true);
-                    deletedItems.Add(item);
-                }
-            }
-
-            player.Session.EnqueueMessageEncrypted(new ServerItemDelete
-            {
-                Guid   = item.Guid,
-                Reason = reason
-            });
-
-            return item;
-        }
-
-        /// <summary>
-        /// Delete a supplied amount of an <see cref="IItem"/>.
-        /// </summary>
-        public void ItemDelete(uint itemId, uint count = 1u, ItemUpdateReason reason = ItemUpdateReason.Loot)
-        {
-            IBag bag = GetBag(InventoryLocation.Inventory);
-            foreach (IItem item in bag.Where(i => i.Id == itemId))
-            {
-                if (item.StackCount > count)
-                {
-                    ItemStackCountUpdate(item, item.StackCount - count);
-                    count = 0;
-                }
-                else
-                {
-                    ItemDelete(bag, item, reason);
-                    count -= item.StackCount;
-                }
-
-                if (count == 0)
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// Remove <see cref="IItem"/> from this player's inventory without deleting the item from the DB
-        /// </summary>
-        public void ItemRemove(IItem item, ItemUpdateReason reason = ItemUpdateReason.NoReason)
-        {
-            if (item == null)
-                throw new ArgumentNullException();
-
-            IBag srcBag = GetBag(item.Location);
-            if (srcBag == null)
-                throw new ArgumentException();
-
-            RemoveItem(item);
-            item.CharacterId = null;
-
-            player.Session.EnqueueMessageEncrypted(new ServerItemDelete
-            {
-                Guid   = item.Guid,
-                Reason = reason
-            });
-        }
-
-        /// <summary>
-        /// Add <see cref="IItem"/> in the first available bag index for the given <see cref="InventoryLocation"/> .
-        /// </summary>
-        public void AddItem(IItem item, InventoryLocation location, ItemUpdateReason reason = ItemUpdateReason.NoReason)
-        {
-            IBag bag = GetBag(location);
-            if (bag == null)
-                throw new ArgumentException();
-
-            uint? bagIndex = location == InventoryLocation.Equipped ? bag.GetFirstAvailableBagIndex((ItemSlot)item.Info.SlotEntry.Id) : bag.GetFirstAvailableBagIndex();
-            if (!bagIndex.HasValue)
-                throw new ArgumentException();
-
-            // Stacks are bought back in full, so no need to worry about splitting stacks
-            AddItem(item, location, bagIndex.Value);
-
-            if (!player?.IsLoading ?? false)
-            {
-                player.Session.EnqueueMessageEncrypted(new ServerItemAdd
-                {
-                    InventoryItem = new InventoryItem
-                    {
-                        Item   = item.Build(),
-                        Reason = reason
-                    }
-                });
             }
         }
 
         /// <inheritdoc />
         public void LoadItem(IItem item, InventoryLocation location, uint bagIndex)
         {
-            AddItem(item, location, bagIndex);
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                AddItem(item, location, bagIndex);
+            }
         }
 
         /// <summary>
         /// Add <see cref="IItem"/> to the supplied <see cref="InventoryLocation"/> and bag index.
         /// </summary>
-        private void AddItem(IItem item, InventoryLocation location, uint bagIndex)
+        private void AddItem(IItem item, InventoryLocation location, uint bagIndex, bool persistRealmBank = true)
         {
             if (item == null)
                 throw new ArgumentNullException();
@@ -877,6 +1180,10 @@ namespace NexusForever.Game.Entity
                 throw new ArgumentException();
 
             bag.AddItem(item, bagIndex);
+            // Vendor buyback restores the same object, including sales whose SQL
+            // deletion is still pending. A former tombstone must not delete it later.
+            item.EnqueueDelete(false);
+            deletedItems.RemoveAll(deleted => ReferenceEquals(deleted, item));
             BindOnEquip(item);
 
             if (location == InventoryLocation.Equipped && player != null)
@@ -890,8 +1197,8 @@ namespace NexusForever.Game.Entity
             if (IsEquippableBankBagSlot(item.Location, item.BagIndex))
                 InventoryResize(InventoryLocation.PlayerBank, (int)item.Info.Entry.MaxStackCount);
 
-            if (location == InventoryLocation.RealmBank && player != null)
-                realmBankManager?.SaveItem(item, player);
+            if (persistRealmBank && location == InventoryLocation.RealmBank && player != null)
+                PersistRealmBankStorage(item);
         }
 
         private static void BindOnEquip(IItem item)
@@ -950,6 +1257,8 @@ namespace NexusForever.Game.Entity
         /// </summary>
         private void InventoryResize(InventoryLocation location, int capacityChange)
         {
+            if (bags.Values.Any(bag => bag.HasReservedSlots))
+                throw new InvalidOperationException("Cannot resize inventory during a pending delivery.");
             IBag bag = GetBag(location);
             if (bag == null)
                 throw new ArgumentException();
@@ -984,6 +1293,8 @@ namespace NexusForever.Game.Entity
                 return;
 
             itemExpirationAccumulator += lastTick;
+            if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked)
+                return;
             if (itemExpirationAccumulator < 1d)
                 return;
 
@@ -999,11 +1310,17 @@ namespace NexusForever.Game.Entity
                 if (item.Location == InventoryLocation.None)
                     continue;
 
+                if (item is Item reserved && reserved.HasRewardMutationReservation)
+                {
+                    DeferRewardExpiration(item, elapsedSeconds);
+                    continue;
+                }
+
                 if (item.ExpirationTimeLeft <= elapsedSeconds)
                 {
                     IBag bag = GetBag(item.Location);
                     if (bag != null)
-                        ItemDelete(bag, item, ItemUpdateReason.Expired);
+                        ItemDelete(bag, item, ItemUpdateReason.Expired, !rewardOwnerInvalidated);
                 }
                 else
                     item.ExpirationTimeLeft -= elapsedSeconds;
@@ -1013,7 +1330,7 @@ namespace NexusForever.Game.Entity
         private static uint? GetFirstAvailableBagIndex(IBag bag, uint maxExclusive)
         {
             for (uint bagIndex = 0u; bagIndex < bag.Slots && bagIndex < maxExclusive; bagIndex++)
-                if (bag.GetItem(bagIndex) == null)
+                if (bag.GetItem(bagIndex) == null && !bag.IsSlotReserved(bagIndex))
                     return bagIndex;
 
             return null;
@@ -1071,7 +1388,17 @@ namespace NexusForever.Game.Entity
             if (item.Location != InventoryLocation.RealmBank && location != InventoryLocation.RealmBank)
                 return null;
 
+            if (IsRealmBankPersistenceBlocked)
+                return GenericError.ItemNotValidForSlot;
+
             if (player == null || realmBankManager == null || !realmBankManager.HasUnlock(player))
+                return GenericError.ItemNotValidForSlot;
+
+            if (item is Item source && source.HasPendingSave)
+                return GenericError.ItemNotValidForSlot;
+            IBag destination = GetBag(location);
+            IItem destinationItem = bagIndex < (destination?.Slots ?? 0) ? destination.GetItem(bagIndex) : null;
+            if (destinationItem is Item target && target.HasPendingSave)
                 return GenericError.ItemNotValidForSlot;
 
             uint capacity = realmBankManager.GetSlotCapacity(player);
@@ -1088,15 +1415,17 @@ namespace NexusForever.Game.Entity
             return null;
         }
 
-        private void PersistRealmBankStorage(IItem item)
-        {
-            if (item == null || item.Location == InventoryLocation.None || player == null)
-                return;
+        private static bool IsBankSavePending(IItem item) =>
+            item?.Location == InventoryLocation.RealmBank && item is Item concrete && concrete.HasPendingSave;
 
-            if (item.Location == InventoryLocation.RealmBank)
-                realmBankManager?.SaveItem(item, player);
-            else if (item.PreviousLocation == InventoryLocation.RealmBank)
-                realmBankManager?.SaveCharacterItem(item, player);
+        private Task PersistRealmBankStorage(IItem item)
+        {
+            if (item == null || item.Location == InventoryLocation.None || player == null || realmBankManager == null)
+                return null;
+
+            Task save = item.Location == InventoryLocation.RealmBank ? realmBankManager.SaveItemAsync(item, player)
+                : item.PreviousLocation == InventoryLocation.RealmBank ? realmBankManager.SaveCharacterItemAsync(item, player) : null;
+            return save == null ? null : ObserveRealmBankPersistence(save, item, item);
         }
 
         private bool CanApplyBagCapacityChange(InventoryLocation location, int capacityChange, uint? reservedBagIndex = null)
@@ -1188,6 +1517,9 @@ namespace NexusForever.Game.Entity
 
         private void RestoreOperationSnapshot(InventoryOperationSnapshot snapshot)
         {
+            // Reject before restoring any Item scalar, not just the later bag array.
+            if (bags.Values.Any(bag => bag.HasReservedSlots))
+                throw new InvalidOperationException("Cannot restore inventory over a pending delivery.");
             foreach (ItemOperationSnapshot itemSnapshot in snapshot.Items.Values)
                 itemSnapshot.Restore();
 
@@ -1204,7 +1536,7 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Update <see cref="IItem"/> with supplied stack count.
         /// </summary>
-        private void ItemStackCountUpdate(IItem item, uint stackCount, ItemUpdateReason reason = ItemUpdateReason.NoReason)
+        private void ItemStackCountUpdate(IItem item, uint stackCount, ItemUpdateReason reason = ItemUpdateReason.NoReason, bool persistRealmBank = true)
         {
             if (item == null)
                 throw new ArgumentNullException();
@@ -1220,15 +1552,18 @@ namespace NexusForever.Game.Entity
                 InventoryQuestObjectiveUpdater.RefreshCollectItemForItem(player, item.Id);
             }
 
+            SendItemStackCountUpdate(item, stackCount, reason);
+
+            if (persistRealmBank && item.Location == InventoryLocation.RealmBank && player != null)
+                PersistRealmBankStorage(item);
+        }
+
+        private void SendItemStackCountUpdate(IItem item, uint stackCount, ItemUpdateReason reason)
+        {
             player.Session.EnqueueMessageEncrypted(new ServerItemStackCountUpdate
             {
-                Guid       = item.Guid,
-                StackCount = stackCount,
-                Reason     = reason
+                Guid = item.Guid, StackCount = stackCount, Reason = reason
             });
-
-            if (item.Location == InventoryLocation.RealmBank && player != null)
-                realmBankManager?.SaveItem(item, player);
         }
 
         /// <summary>
@@ -1236,69 +1571,85 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public bool ItemUse(IItem item)
         {
-            if (item == null)
-                throw new ArgumentNullException(nameof(item), "Item is null.");
-
-            // This should only apply for re-usable items, like Quest Clickies.
-            if (item.Info.Entry.MaxCharges == 0 && item.Info.Entry.MaxStackCount == 1)
-                return true;
-
-            if (item.Info.Entry.MaxStackCount > 1)
+            lock (MutationGate)
             {
-                if (item.StackCount <= 0)
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated || (item is Item reserved && reserved.HasRewardMutationReservation)) return false;
+                if (item == null)
+                    throw new ArgumentNullException(nameof(item), "Item is null.");
+
+                if (IsBankSavePending(item))
                     return false;
 
-                if (item.Info.Entry.MaxCharges > 0 && item.Charges == 0)
-                    item.Charges = item.Info.Entry.MaxCharges;
-            }
-            else if (item.Info.Entry.MaxCharges > 0 && item.Charges <= 0)
-            {
-                return false;
-            }
+                // This should only apply for re-usable items, like Quest Clickies.
+                if (item.Info.Entry.MaxCharges == 0 && item.Info.Entry.MaxStackCount == 1)
+                    return true;
 
-            player.AchievementManager.CheckAchievements(player, AchievementType.ItemConsume, item.Id);
-
-            if (item.Charges >= 1 && item.Info.Entry.MaxStackCount == 1)
-                item.Charges--;
-
-            if (item.Info.Entry.MaxStackCount > 1 && item.StackCount > 0)
-                ItemStackCountUpdate(item, item.StackCount - 1);
-
-            if (item.StackCount == 0 && item.Info.Entry.MaxStackCount > 1
-                || item.Charges == 0 && item.Info.Entry.MaxCharges > 0 && item.Info.Entry.MaxStackCount <= 1)
-            {
-                ItemDelete(new ItemLocation
+                if (item.Info.Entry.MaxStackCount > 1)
                 {
-                    Location = item.Location,
-                    BagIndex = item.BagIndex
-                }, ItemUpdateReason.ConsumeCharge);
-            }
+                    if (item.StackCount <= 0)
+                        return false;
 
-            return true;
+                    if (item.Info.Entry.MaxCharges > 0 && item.Charges == 0)
+                        item.Charges = item.Info.Entry.MaxCharges;
+                }
+                else if (item.Info.Entry.MaxCharges > 0 && item.Charges <= 0)
+                {
+                    return false;
+                }
+
+                player.AchievementManager.CheckAchievements(player, AchievementType.ItemConsume, item.Id);
+
+                if (item.Charges >= 1 && item.Info.Entry.MaxStackCount == 1)
+                    item.Charges--;
+
+                if (item.Info.Entry.MaxStackCount > 1 && item.StackCount > 0)
+                    ItemStackCountUpdate(item, item.StackCount - 1, persistRealmBank: false);
+
+                if (item.StackCount == 0 && item.Info.Entry.MaxStackCount > 1
+                    || item.Charges == 0 && item.Info.Entry.MaxCharges > 0 && item.Info.Entry.MaxStackCount <= 1)
+                {
+                    ItemDelete(new ItemLocation
+                    {
+                        Location = item.Location,
+                        BagIndex = item.BagIndex
+                    }, ItemUpdateReason.ConsumeCharge);
+                }
+
+                if (item.Location == InventoryLocation.RealmBank && player != null)
+                    PersistRealmBankStorage(item);
+
+                return true;
+            }
         }
 
         public void ItemMoveToSupplySatchel(IItem item, uint amount)
         {
-            if (item == null)
-                throw new ArgumentNullException();
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                if (item == null)
+                    throw new ArgumentNullException();
 
-            if (amount == 0u || amount > item.StackCount)
-                throw new InvalidPacketValueException();
+                if (IsBankSavePending(item) || amount == 0u || amount > item.StackCount)
+                    throw new InvalidPacketValueException();
 
-            if (player.SupplySatchelManager.IsFull(item))
-                return;
+                if (player.SupplySatchelManager.IsFull(item))
+                    return;
 
-            uint amountRemaining = player.SupplySatchelManager.AddAmount(item, amount);
-            if (amountRemaining > 0)
-                ItemStackCountUpdate(item, item.StackCount - amount + amountRemaining);
-            else if (amount < item.StackCount)
-                ItemStackCountUpdate(item, item.StackCount - amount);
-            else
-                ItemDelete(new ItemLocation
-                    {
-                        Location = item.Location,
-                        BagIndex = item.BagIndex
-                    }, ItemUpdateReason.MaterialBagConversion);
+                uint amountRemaining = player.SupplySatchelManager.AddAmount(item, amount);
+                if (amountRemaining > 0)
+                    ItemStackCountUpdate(item, item.StackCount - amount + amountRemaining);
+                else if (amount < item.StackCount)
+                    ItemStackCountUpdate(item, item.StackCount - amount);
+                else
+                    ItemDelete(new ItemLocation
+                        {
+                            Location = item.Location,
+                            BagIndex = item.BagIndex
+                        }, ItemUpdateReason.MaterialBagConversion);
+            }
         }
 
         private IBag GetBag(InventoryLocation location)
@@ -1337,6 +1688,7 @@ namespace NexusForever.Game.Entity
             private readonly uint charges;
             private readonly float durability;
             private readonly uint expirationTimeLeft;
+            private readonly bool pendingDelete;
 
             public ItemOperationSnapshot(IItem item)
             {
@@ -1350,6 +1702,7 @@ namespace NexusForever.Game.Entity
                 charges = item.Charges;
                 durability = item.Durability;
                 expirationTimeLeft = item.ExpirationTimeLeft;
+                pendingDelete = item.PendingDelete;
             }
 
             public void Restore()
@@ -1359,6 +1712,7 @@ namespace NexusForever.Game.Entity
                 item.PreviousLocation = previousLocation;
                 item.BagIndex = bagIndex;
                 item.PreviousBagIndex = previousBagIndex;
+                item.EnqueueDelete(pendingDelete);
 
                 if (item.Info == null)
                     return;

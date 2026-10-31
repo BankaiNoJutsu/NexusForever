@@ -12,6 +12,11 @@ namespace NexusForever.Server.Friendship.Game.Account
         private readonly Dictionary<string, Account> _accountEmailCache = [];
         private readonly Dictionary<string, Account> _accountNicknameCache = [];
 
+        internal void ResetPresenceCache()
+        {
+            _accountCache.Clear(); _accountEmailCache.Clear(); _accountNicknameCache.Clear();
+        }
+
         #region Dependency Injection
 
         private readonly AccountRepository _repository;
@@ -70,8 +75,7 @@ namespace NexusForever.Server.Friendship.Game.Account
                 if (apiAccount == null)
                     return null;
 
-                databaseAccount = apiAccount.ToDatabaseAccount();
-                _repository.AddAccount(databaseAccount);
+                databaseAccount = await _repository.EnsureAccountAsync(apiAccount.ToDatabaseAccount());
             }
 
             return InitialiseAccount(databaseAccount);
@@ -97,8 +101,7 @@ namespace NexusForever.Server.Friendship.Game.Account
                 if (apiAccount == null)
                     return null;
 
-                databaseAccount = apiAccount.ToDatabaseAccount();
-                _repository.AddAccount(databaseAccount);
+                databaseAccount = await _repository.EnsureAccountAsync(apiAccount.ToDatabaseAccount());
             }
 
             return InitialiseAccount(databaseAccount);

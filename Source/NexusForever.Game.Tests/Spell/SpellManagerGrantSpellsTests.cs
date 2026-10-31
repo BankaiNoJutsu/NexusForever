@@ -33,6 +33,9 @@ public class SpellManagerGrantSpellsTests
         var manager = new global::NexusForever.Game.Entity.SpellManager(player, new CharacterModel(),
             CreatePrerequisiteManager(_ => true), CreateGlobalSpellManager(CreateSpellBaseInfo(Spell4BaseId, Spell4Id)), tables);
 
+        playerProxy.SetProperty(nameof(IPlayer.SpellManager), manager);
+        manager.Initialise();
+
         var learned = Assert.IsAssignableFrom<ICharacterSpell>(manager.GetSpell(Spell4BaseId));
         manager.GrantSpells();
         Assert.Same(learned, manager.GetSpell(Spell4BaseId));
@@ -76,6 +79,9 @@ public class SpellManagerGrantSpellsTests
                     CreateActionSlotPrerequisite(UILocation.LAS2, LockedSlotPrerequisiteId),
                     CreateActionSlotPrerequisite(UILocation.LAS3, UnlockedSlotPrerequisiteId)
                 ]));
+
+        playerProxy.SetProperty(nameof(IPlayer.SpellManager), manager);
+        manager.Initialise();
 
         playerProxy.SetProperty(nameof(IPlayer.Level), 2u);
 
@@ -126,6 +132,9 @@ public class SpellManagerGrantSpellsTests
                 [
                     CreateActionSlotPrerequisite(UILocation.LAS1, UnlockedSlotPrerequisiteId)
                 ]));
+
+        playerProxy.SetProperty(nameof(IPlayer.SpellManager), manager);
+        manager.Initialise();
 
         Assert.NotNull(manager.GetSpell(Spell4BaseId));
         Assert.Null(manager.GetActionSet(0).GetShortcut(UILocation.LAS1));

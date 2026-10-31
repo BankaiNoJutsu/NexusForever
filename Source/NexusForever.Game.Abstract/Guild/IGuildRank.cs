@@ -8,6 +8,7 @@ namespace NexusForever.Game.Abstract.Guild
 {
     public interface IGuildRank : IDatabaseCharacter, IDatabaseState, INetworkBuildable<GuildRank>, IEnumerable<IGuildMember>
     {
+        bool NeedsSave => PendingCreate || PendingDelete;
         ulong GuildId { get; }
         byte Index { get; }
         string Name { get; set; }

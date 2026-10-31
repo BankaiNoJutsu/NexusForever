@@ -33,6 +33,15 @@ namespace NexusForever.Game.Account
     {
         public uint Id { get; private set; }
         public string Email { get; private set; }
+        public ulong WorldSessionEpoch { get; private set; }
+        private readonly object presenceAdmissionGate = new();
+        private ulong nextPresenceAdmission;
+
+        public ulong NextPresenceAdmission()
+        {
+            if (WorldSessionEpoch == 0) return 0; // explicitly unversioned legacy/test owner
+            lock (presenceAdmissionGate) return nextPresenceAdmission = checked(nextPresenceAdmission + 1);
+        }
 
         public IAccountRBACManager RbacManager { get; private set; }
         public IGenericUnlockManager GenericUnlockManager { get; private set; }
@@ -42,6 +51,7 @@ namespace NexusForever.Game.Account
         public IAccountCostumeManager CostumeManager { get; private set; }
         public IRewardPropertyManager RewardPropertyManager { get; private set; }
         public IAccountRewardRotationGrantManager RewardRotationGrantManager { get; private set; }
+        public IAccountLoyaltyManager LoyaltyManager { get; private set; }
         public IAccountKeybindingManager KeybindingManager { get; private set; } 
 
         public AccountTier AccountTier => RbacManager.HasPermission(Permission.Signature) ? AccountTier.Signature : AccountTier.Basic;
@@ -114,6 +124,7 @@ namespace NexusForever.Game.Account
             Id      = model.Id;
             Email   = model.Email;
             Session = session;
+            WorldSessionEpoch = model.WorldSessionEpoch;
 
             RbacManager           = new AccountRBACManager(this, model, rbacManager, defaultRole);
             GenericUnlockManager  = new GenericUnlockManager(this, model, gameTableManager);
@@ -123,18 +134,23 @@ namespace NexusForever.Game.Account
             CostumeManager        = new AccountCostumeManager(this, model, gameTableManager);
             RewardPropertyManager        = new RewardPropertyManager(this, assetManager, gameTableManager);
             RewardRotationGrantManager   = new AccountRewardRotationGrantManager(this, model);
+            if (gameTableManager.RewardTrack != null && gameTableManager.RewardTrackRewards != null)
+                LoyaltyManager = new AccountLoyaltyManager(this, gameTableManager, databaseManager?.GetDatabase<AuthDatabase>(), prerequisiteManager);
             KeybindingManager              = new AccountKeybindingManager(model);
         }
 
         public void Save(AuthContext context)
         {
+            // Acquire entitlement unit ownership before legacy child saves can
+            // acknowledge unrelated dirty state. Conflicting units must abort here.
+            EntitlementManager.Save(context);
             RbacManager.Save(context);
             GenericUnlockManager.Save(context);
             CurrencyManager.Save(context);
-            EntitlementManager.Save(context);
             InventoryManager.Save(context);
             CostumeManager.Save(context);
             ((AccountRewardRotationGrantManager)RewardRotationGrantManager).Save(context);
+            LoyaltyManager?.Save(context);
             KeybindingManager.Save(context);
         }
     }

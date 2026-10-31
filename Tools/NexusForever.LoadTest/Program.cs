@@ -38,6 +38,10 @@ internal static class Program
                 "seed" => await SeedCommand.Run(new CliArgs(args.Skip(1))),
                 "run" when args.Length > 1 && args[1].Equals("login-world", StringComparison.OrdinalIgnoreCase)
                     => await LoginWorldCommand.Run(new CliArgs(args.Skip(2))),
+                "run" when args.Length > 1 && args[1].Equals("challenge-rewards", StringComparison.OrdinalIgnoreCase)
+                    => await ChallengeRewardsCommand.Run(new CliArgs(args.Skip(2))),
+                "run" when args.Length > 1 && args[1].Equals("contract-acceptance", StringComparison.OrdinalIgnoreCase)
+                    => await ContractAcceptanceCommand.Run(new CliArgs(args.Skip(2))),
                 "report" => await ReportCommand.Run(new CliArgs(args.Skip(1))),
                 _ => Usage()
             };
@@ -56,6 +60,8 @@ internal static class Program
         Console.Error.WriteLine("  NexusForever.LoadTest run login-world --user loadtest0001@example.local --password loadtest --samples 30 --warmup 3");
         Console.Error.WriteLine("  NexusForever.LoadTest run login-world --profile typical --concurrent-users 50 --duration 5m");
         Console.Error.WriteLine("  NexusForever.LoadTest run login-world --client-entered-world-delay-ms 0");
+        Console.Error.WriteLine("  NexusForever.LoadTest run challenge-rewards --user loadtest9701@example.local --recipe recipe.json --allow-fixture-placement");
+        Console.Error.WriteLine("  NexusForever.LoadTest run contract-acceptance --user loadtest9701@example.local --quest 9880 --allow-contract-acceptance");
         Console.Error.WriteLine("  NexusForever.LoadTest report --input artifacts\\load-tests");
         return 1;
     }
@@ -137,14 +143,7 @@ internal static class SeedCommand
             AccountModel? account = await auth.Account.Include(a => a.AccountRole).SingleOrDefaultAsync(a => a.Email == email);
             if (account == null)
             {
-                (string salt, string verifier) = PasswordProvider.GenerateSaltAndVerifier(email, password);
-                account = new AccountModel
-                {
-                    Email      = email,
-                    S          = salt,
-                    V          = verifier,
-                    CreateTime = DateTime.UtcNow
-                };
+                account = CreateNewAccountModel(email, password);
 
                 auth.Account.Add(account);
                 await auth.SaveChangesAsync();
@@ -188,6 +187,21 @@ internal static class SeedCommand
         }
 
         return 0;
+    }
+
+    internal static AccountModel CreateNewAccountModel(string email, string password)
+    {
+        (string salt, string verifier) = PasswordProvider.GenerateSaltAndVerifier(email, password);
+        var account = new AccountModel
+        {
+            Email      = email,
+            S          = salt,
+            V          = verifier,
+            CreateTime = DateTime.UtcNow
+        };
+        // Match normal account creation. Existing seeded accounts retain their custom state.
+        AccountDefaultEntitlements.EnsureBaseline(account);
+        return account;
     }
 
     private static CharacterModel CreateCharacter(uint accountId, ulong id, int userIndex, int characterIndex, string profile)
@@ -268,10 +282,14 @@ internal static class LoginWorldCommand
     {
         string outputDirectory = args.GetString("output", Path.Combine("artifacts", "load-tests"));
         Directory.CreateDirectory(outputDirectory);
+        int startIndex = args.GetInt("start-index", 1);
+        if (startIndex < 1)
+            throw new ArgumentOutOfRangeException("start-index", "The first load-test user index must be positive.");
 
         var options = new LoginWorldOptions
         {
-            User = args.GetString("user", SeedCommand.UserEmail(args.GetInt("start-index", 1))),
+            User = args.GetString("user", SeedCommand.UserEmail(startIndex)),
+            StartIndex = startIndex,
             Password = args.GetString("password", Defaults.Password),
             StsHost = args.GetString("sts-host", "127.0.0.1"),
             AuthHost = args.GetString("auth-host", "127.0.0.1"),
@@ -335,9 +353,8 @@ internal static class LoginWorldCommand
         while (DateTime.UtcNow < deadline)
         {
             List<Task<LoginWorldSample>> tasks = new();
-            for (int i = 0; i < options.ConcurrentUsers; i++)
+            foreach (string user in ConcurrentUserNames(options))
             {
-                string user = SeedCommand.UserEmail(i + 1);
                 tasks.Add(RunOne(options, user, label));
             }
 
@@ -346,6 +363,13 @@ internal static class LoginWorldCommand
             iteration++;
             Console.WriteLine($"{label} iteration {iteration}: {samples.Count(s => s.Success)}/{samples.Length} ok");
         }
+    }
+
+    internal static IReadOnlyList<string> ConcurrentUserNames(LoginWorldOptions options)
+    {
+        if (options.StartIndex < 1)
+            throw new ArgumentOutOfRangeException(nameof(options.StartIndex));
+        return Enumerable.Range(options.StartIndex, options.ConcurrentUsers).Select(SeedCommand.UserEmail).ToArray();
     }
 
     private static async Task<LoginWorldSample> RunOne(LoginWorldOptions options, string user, string label)
@@ -399,18 +423,7 @@ internal static class LoginWorldCommand
                     writer => writer.Write(accountCharacter.CharacterId));
             });
 
-            if (options.ClientEnteredWorldDelayMs > 0)
-            {
-                await Step(sample, "client-entered-world-delay", async () =>
-                    await Task.Delay(options.ClientEnteredWorldDelayMs));
-            }
-
-            await Step(sample, "world-entered-world", async () =>
-            {
-                await world.SendEncrypted(GameMessageOpcode.ClientEnteredWorld,
-                    writer => writer.Write((ushort)accountCharacter.WorldZoneId, 15u));
-                await world.WaitForInnerOpcode(GameMessageOpcode.ServerPlayerEnteredWorld, TimeSpan.FromSeconds(15));
-            });
+            await CompleteWorldEntry(world, accountCharacter.WorldZoneId, options.ClientEnteredWorldDelayMs, sample);
 
             sample.Success = true;
         }
@@ -426,6 +439,54 @@ internal static class LoginWorldCommand
         }
 
         return sample;
+    }
+
+    internal static async Task CompleteWorldEntry(GameProtocolClient world, ushort worldZoneId, int delayMs,
+        LoginWorldSample sample, TimeSpan? bootstrapTimeout = null)
+    {
+        // A wall-clock delay after character selection is not evidence that a map
+        // was assigned. Wait for the actual world transition and player bootstrap
+        // before modelling the client's loading-screen completion.
+        await Step(sample, "world-bootstrap", () => world.WaitForWorldBootstrap(bootstrapTimeout ?? TimeSpan.FromSeconds(15)));
+        if (delayMs > 0)
+            await Step(sample, "client-entered-world-delay", () => Task.Delay(delayMs));
+        await Step(sample, "world-entered-world", async () =>
+        {
+            await world.SendEncrypted(GameMessageOpcode.ClientEnteredWorld,
+                writer => writer.Write(worldZoneId, 15u));
+            await world.WaitForInnerOpcode(GameMessageOpcode.ServerPlayerEnteredWorld, TimeSpan.FromSeconds(15));
+        });
+    }
+
+    internal static async Task<(GameProtocolClient World, AccountCharacter Character)> ConnectForScenario(
+        LoginWorldOptions options, LoginWorldSample sample, Action<GameFrame> receive)
+    {
+        AccountCharacter character = await Step(sample, "lookup-mock-data", () => LookupAccountCharacter(options, options.User));
+        string token;
+        await using (var sts = new StsProtocolClient(options.StsHost, options.StsPort))
+        {
+            await sts.ConnectAsync(); token = await sts.LoginAndRequestGameToken(options.User, options.Password);
+        }
+        RealmTicket ticket;
+        await using (var auth = new GameProtocolClient(options.AuthHost, options.AuthPort, PacketCrypt.GetKeyFromAuthBuildAndMessage()))
+        {
+            await auth.ConnectAsync(); await auth.WaitForOuterOpcode(GameMessageOpcode.ServerHello, TimeSpan.FromSeconds(10));
+            await auth.SendEncrypted(GameMessageOpcode.ClientHelloAuth, writer => PacketWriters.WriteClientHelloAuth(writer, options.User, token));
+            ticket = await auth.WaitForRealmTicket(TimeSpan.FromSeconds(10));
+        }
+        var world = new GameProtocolClient(options.WorldHost, options.WorldPort, PacketCrypt.GetKeyFromAuthBuildAndMessage()) { FrameReceived = receive };
+        try
+        {
+            await world.ConnectAsync(); await world.WaitForInnerOpcode(GameMessageOpcode.ServerHello, TimeSpan.FromSeconds(10));
+            await world.SendEncrypted(GameMessageOpcode.ClientHelloRealm, writer => PacketWriters.WriteClientHelloRealm(writer, ticket.AccountId, ticket.SessionKey, options.User));
+            world.SetCrypt(PacketCrypt.GetKeyFromTicket(ticket.SessionKey));
+            await world.SendEncrypted(GameMessageOpcode.ClientCharacterList, _ => { });
+            await world.WaitForInnerOpcode(GameMessageOpcode.ServerCharacterList, TimeSpan.FromSeconds(15));
+            await world.SendEncrypted(GameMessageOpcode.ClientCharacterSelect, writer => writer.Write(character.CharacterId));
+            await CompleteWorldEntry(world, character.WorldZoneId, options.ClientEnteredWorldDelayMs, sample);
+            return (world, character);
+        }
+        catch { await world.DisposeAsync(); throw; }
     }
 
     private static async Task<T> Step<T>(LoginWorldSample sample, string name, Func<Task<T>> action)
@@ -462,7 +523,7 @@ internal static class LoginWorldCommand
         }
     }
 
-    private static async Task<AccountCharacter> LookupAccountCharacter(LoginWorldOptions options, string user)
+    internal static async Task<AccountCharacter> LookupAccountCharacter(LoginWorldOptions options, string user)
     {
         await using var auth = new AuthContext(new DatabaseConnectionString
         {
@@ -514,6 +575,7 @@ internal static class LoginWorldCommand
 internal sealed record LoginWorldOptions
 {
     public string User { get; init; } = "";
+    public int StartIndex { get; init; } = 1;
     public string Password { get; init; } = "";
     public string StsHost { get; init; } = "";
     public string AuthHost { get; init; } = "";
@@ -535,6 +597,7 @@ internal sealed record LoginWorldOptions
         return new Dictionary<string, string>
         {
             ["user"] = User,
+            ["startIndex"] = StartIndex.ToString(CultureInfo.InvariantCulture),
             ["sts"] = $"{StsHost}:{StsPort}",
             ["auth"] = $"{AuthHost}:{AuthPort}",
             ["world"] = $"{WorldHost}:{WorldPort}",
@@ -560,18 +623,43 @@ internal sealed class StsProtocolClient : IAsyncDisposable
     private Arc4Provider? clientCipher;
     private Arc4Provider? serverCipher;
     private uint sequence;
+    private readonly TimeSpan ioTimeout;
 
-    public StsProtocolClient(string host, int port)
+    public StsProtocolClient(string host, int port, TimeSpan? ioTimeout = null)
     {
         this.host = host;
         this.port = port;
+        this.ioTimeout = ioTimeout ?? TimeSpan.FromSeconds(15);
+        if (this.ioTimeout <= TimeSpan.Zero || this.ioTimeout.TotalMilliseconds > uint.MaxValue - 1)
+            throw new ArgumentOutOfRangeException(nameof(ioTimeout));
     }
 
     public async Task ConnectAsync()
     {
-        await tcpClient.ConnectAsync(host, port);
-        stream = tcpClient.GetStream();
+        using var timeout = new CancellationTokenSource(ioTimeout);
+        try
+        {
+            await tcpClient.ConnectAsync(host, port, timeout.Token);
+            stream = tcpClient.GetStream();
+            // The mapped STS state machine requires this envelope before LoginStart.
+            // Connect has no server reply; its next response belongs to LoginStart.
+            await WriteRequest("/Sts/Connect", BuildConnectEnvelope(host), timeout.Token);
+        }
+        catch (OperationCanceledException ex) when (timeout.IsCancellationRequested)
+        {
+            throw new TimeoutException("Timed out connecting the STS session.", ex);
+        }
     }
+
+    internal static string BuildConnectEnvelope(string address) => new XElement("Connect",
+        new XElement("ConnType", 0),
+        new XElement("Address", address),
+        new XElement("ProductType", 0),
+        new XElement("AppIndex", 0),
+        new XElement("Epoch", 0),
+        new XElement("Program", 0),
+        new XElement("Build", 16042),
+        new XElement("Process", Environment.ProcessId)).ToString(SaveOptions.DisableFormatting);
 
     public async Task<string> LoginAndRequestGameToken(string user, string password)
     {
@@ -600,6 +688,21 @@ internal sealed class StsProtocolClient : IAsyncDisposable
 
     private async Task<StsResponse> Send(string uri, string body)
     {
+        // One deadline covers the complete transaction, including partial progress.
+        using var timeout = new CancellationTokenSource(ioTimeout);
+        try
+        {
+            await WriteRequest(uri, body, timeout.Token);
+            return await ReadResponse(timeout.Token);
+        }
+        catch (OperationCanceledException ex) when (timeout.IsCancellationRequested)
+        {
+            throw new TimeoutException($"Timed out waiting for STS request {uri}.", ex);
+        }
+    }
+
+    private async Task WriteRequest(string uri, string body, CancellationToken cancellationToken)
+    {
         if (stream == null)
             throw new InvalidOperationException("STS client is not connected.");
 
@@ -611,13 +714,11 @@ internal sealed class StsProtocolClient : IAsyncDisposable
         Buffer.BlockCopy(bodyBytes, 0, packet, headerBytes.Length, bodyBytes.Length);
 
         clientCipher?.Encrypt(packet);
-        await stream.WriteAsync(packet);
-        await stream.FlushAsync();
-
-        return await ReadResponse();
+        await stream.WriteAsync(packet, cancellationToken);
+        await stream.FlushAsync(cancellationToken);
     }
 
-    private async Task<StsResponse> ReadResponse()
+    private async Task<StsResponse> ReadResponse(CancellationToken cancellationToken)
     {
         if (stream == null)
             throw new InvalidOperationException("STS client is not connected.");
@@ -625,7 +726,7 @@ internal sealed class StsProtocolClient : IAsyncDisposable
         List<byte> header = new();
         while (header.Count < 4096)
         {
-            header.Add(await ReadByte());
+            header.Add(await ReadByte(cancellationToken));
             if (header.Count >= 4 &&
                 header[^4] == '\r' &&
                 header[^3] == '\n' &&
@@ -640,16 +741,16 @@ internal sealed class StsProtocolClient : IAsyncDisposable
 
         byte[] body = new byte[length];
         for (int i = 0; i < body.Length; i++)
-            body[i] = await ReadByte();
+            body[i] = await ReadByte(cancellationToken);
 
         string bodyText = Encoding.UTF8.GetString(body).Trim();
         return new StsResponse(XElement.Parse(bodyText));
     }
 
-    private async Task<byte> ReadByte()
+    private async Task<byte> ReadByte(CancellationToken cancellationToken)
     {
         byte[] buffer = new byte[1];
-        int read = await stream!.ReadAsync(buffer);
+        int read = await stream!.ReadAsync(buffer, cancellationToken);
         if (read != 1)
             throw new IOException("Unexpected end of STS stream.");
 
@@ -697,6 +798,7 @@ internal sealed class GameProtocolClient : IAsyncDisposable
     private readonly int port;
     private PacketCrypt crypt;
     private NetworkStream? stream;
+    internal Action<GameFrame>? FrameReceived { get; set; }
 
     public GameProtocolClient(string host, int port, ulong cryptKey)
     {
@@ -748,19 +850,34 @@ internal sealed class GameProtocolClient : IAsyncDisposable
         using CancellationTokenSource cts = new(timeout);
         while (!cts.IsCancellationRequested)
         {
-            GameFrame frame = await ReadFrame(cts.Token);
+            GameFrame frame = await ReadInnerFrame(cts.Token);
             if (frame.Opcode == opcode)
                 return;
-
-            if (frame.Opcode is GameMessageOpcode.ServerAuthEncrypted or GameMessageOpcode.ServerRealmEncrypted)
-            {
-                GameFrame inner = DecryptInner(frame);
-                if (inner.Opcode == opcode)
-                    return;
-            }
         }
 
         throw new TimeoutException($"Timed out waiting for {opcode}.");
+    }
+
+    public async Task WaitForWorldBootstrap(TimeSpan timeout)
+    {
+        using CancellationTokenSource cts = new(timeout);
+        bool changeWorld = false;
+        bool playerCreate = false;
+        try
+        {
+            while (!changeWorld || !playerCreate)
+            {
+                GameFrame frame = await ReadInnerFrame(cts.Token);
+                if (frame.Opcode is GameMessageOpcode.ServerCharacterSelectFail or GameMessageOpcode.ServerForceKick)
+                    throw new InvalidOperationException($"World bootstrap rejected by {frame.Opcode}.");
+                changeWorld |= frame.Opcode == GameMessageOpcode.ServerChangeWorld;
+                playerCreate |= frame.Opcode == GameMessageOpcode.ServerPlayerCreate;
+            }
+        }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested)
+        {
+            throw new TimeoutException($"Timed out waiting for world bootstrap (changeWorld={changeWorld}, playerCreate={playerCreate}).");
+        }
     }
 
     public async Task<RealmTicket> WaitForRealmTicket(TimeSpan timeout)
@@ -804,6 +921,14 @@ internal sealed class GameProtocolClient : IAsyncDisposable
         byte[] encrypted = reader.ReadBytes(length - 4u);
         byte[] decrypted = crypt.Decrypt(encrypted, encrypted.Length);
         return PacketWriters.ParsePayload(decrypted);
+    }
+
+    internal async Task<GameFrame> ReadInnerFrame(CancellationToken cancellation)
+    {
+        var frame = await ReadFrame(cancellation);
+        if (frame.Opcode is GameMessageOpcode.ServerAuthEncrypted or GameMessageOpcode.ServerRealmEncrypted) frame = DecryptInner(frame);
+        FrameReceived?.Invoke(frame);
+        return frame;
     }
 
     private async Task<GameFrame> ReadFrame(CancellationToken cancellationToken)

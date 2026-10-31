@@ -1,3 +1,4 @@
+using NexusForever.Game.Entity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -86,6 +87,12 @@ namespace NexusForever.Game.Loot
 
         public bool TrySalvageItem(IPlayer looter, IItem salvagedItem, out string reason)
         {
+            if (!InventoryMutationScope.TryAcquire(looter?.Inventory, out var mutationLease))
+            {
+                reason = "inventory-busy";
+                return false;
+            }
+            using var heldMutation = mutationLease;
             reason = string.Empty;
             if (looter == null)
             {

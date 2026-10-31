@@ -55,6 +55,39 @@ outside the default `.nexusforever-runtime\sqlite` directory.
 
 ## One-Command Local Launch
 
+The launcher validates all runtime-required table headers and complete map
+streams before accepting existing assets; a `World.tbl` file alone is
+insufficient. An unfinished `--prepare` marker also prevents server startup.
+The existing Windows setup, SQLite selection and manual `-e` / `-g` extraction
+commands remain available.
+
+For an inventory-backed cache with staged repair, build MapGenerator and run:
+
+```powershell
+.\Source\NexusForever.MapGenerator\bin\Debug\net10.0\NexusForever.MapGenerator.exe `
+  --prepare --patchPath 'D:\Games\WildStar\Patch' `
+  --output '.nexusforever-runtime\assets' --maxParallelism 4
+```
+
+Preparation verifies SHA256 hashes before reusing a cache. A missing or corrupt
+cache requires the client archives; replacement files are generated in a fresh
+child directory and validated before promotion. A failed attempt retains an
+incomplete marker; rerun this command to repair it. Existing custom asset files
+are retained. Do not combine `--prepare` with world/grid filters.
+
+Aspire has an independent opt-in path: set `Assets:Prepare` to `true`,
+`Assets:ClientPath` to the client installation or Patch directory, and optionally
+`Assets:Root` and `Assets:MaxParallelism` (0 for automatic, or 1–8). World, Chat
+and Friendship wait for preparation to exit successfully and use its shared
+absolute paths. With a verified cache, `Assets:ClientPath` may be omitted.
+The option defaults to false, preserving the existing Aspire startup behavior.
+
+The Windows validation smoke test can run without launching servers or clients:
+
+```powershell
+.\Tools\Setup\Test-GameAssetValidation.ps1
+```
+
 Use `Start-NexusForeverLocal.ps1` when you want one command to build the
 solution, prepare runtime assets, start the standalone servers, and launch the
 WildStar client against localhost.

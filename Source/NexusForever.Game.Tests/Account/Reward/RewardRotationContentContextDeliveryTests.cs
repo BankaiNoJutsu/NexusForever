@@ -7,7 +7,7 @@ namespace NexusForever.Game.Tests.Account.Reward;
 public class RewardRotationContentContextDeliveryTests
 {
     [Fact]
-    public void CreatePackets_SingleRow_UsesSingleContentContextOpcode()
+    public void CreatePackets_SingleDiagnosticRow_DoesNotEmitRewardTrackOpcode()
     {
         var refresh = new RewardRotationRefresh(
             2u,
@@ -19,13 +19,13 @@ public class RewardRotationContentContextDeliveryTests
             new ServerRewardRotationScheduleArray(),
             new ServerRewardRotationEntryStateArray());
 
-        IWritable packet = Assert.Single(refresh.GetContentContextPackets());
-
-        Assert.IsType<ServerRewardRotationContentContext>(packet);
+        Assert.Empty(refresh.GetContentContextPackets());
+        Assert.Equal(0, refresh.ContentContextPacketCount);
+        Assert.Equal(2, refresh.ContentContextIdCount);
     }
 
     [Fact]
-    public void CreatePackets_MultipleRows_UsesContentContextArrayOpcode()
+    public void CreatePackets_MultipleDiagnosticRows_DoNotEmitRewardTrackReload()
     {
         var refresh = new RewardRotationRefresh(
             1u,
@@ -45,10 +45,9 @@ public class RewardRotationContentContextDeliveryTests
             new ServerRewardRotationScheduleArray(),
             new ServerRewardRotationEntryStateArray());
 
-        var packet = Assert.IsType<ServerRewardRotationContentContextArray>(Assert.Single(refresh.GetContentContextPackets()));
-
-        Assert.Equal(2, packet.Entries.Count);
-        Assert.Equal(5, packet.Entries[0].ContentIds.Count);
-        Assert.Equal(new[] { 6u, 7u }, packet.Entries[1].ContentIds);
+        Assert.Empty(refresh.GetContentContextPackets());
+        Assert.Equal(0, refresh.ContentContextPacketCount);
+        Assert.Equal(2, refresh.ContentContexts.Count);
+        Assert.Equal(new[] { 6u, 7u }, refresh.ContentContexts[1].ContentIds);
     }
 }

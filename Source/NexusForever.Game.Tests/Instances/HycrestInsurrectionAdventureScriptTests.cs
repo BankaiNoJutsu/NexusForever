@@ -94,14 +94,14 @@ public class HycrestInsurrectionAdventureScriptTests
     }
 
     [Fact]
-    public void Intro_BriefingPhase_ActivatesAndCreditsScriptObjective()
+    public void Intro_BriefingPhase_ActivatesTimedObjectiveWithoutPrematureCredit()
     {
         HycrestIntroScript script = CreateIntroScript(out RecordingDispatchProxy<IPublicEvent> eventProxy);
 
         script.OnPublicEventPhase((uint)HycrestPhase.ListenToDropShipBriefing);
 
         AssertObjectiveActivated(eventProxy, HycrestObjective.ListenToDropShipBriefing);
-        AssertObjectiveUpdated(eventProxy, HycrestObjective.ListenToDropShipBriefing, 1);
+        Assert.Empty(eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)));
     }
 
     [Fact]
@@ -175,14 +175,23 @@ public class HycrestInsurrectionAdventureScriptTests
         IPublicEventManager manager = RecordingDispatchProxy<IPublicEventManager>.Create(out managerProxy);
         IPublicEvent mainEvent = RecordingDispatchProxy<IPublicEvent>.Create(out mainEventProxy);
         IPublicEvent introEvent = RecordingDispatchProxy<IPublicEvent>.Create(out introEventProxy);
+        var created = new HashSet<uint>();
         managerProxy.SetMethodHandler(nameof(IPublicEventManager.CreateEvent), args =>
         {
+            created.Add((uint)args[0]);
             return (uint)args[0] switch
             {
                 419u => mainEvent,
                 418u => introEvent,
                 _    => null
             };
+        });
+
+        managerProxy.SetMethodHandler(nameof(IPublicEventManager.GetEvent), args => !created.Contains((uint)args[0]) ? null : (uint)args[0] switch
+        {
+            419u => mainEvent,
+            418u => introEvent,
+            _ => null
         });
 
         contentMap = RecordingDispatchProxy<IContentMapInstance>.Create(out var mapProxy);

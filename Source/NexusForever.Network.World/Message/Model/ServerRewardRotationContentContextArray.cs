@@ -2,10 +2,8 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
-    // Server opcode 0x07D3.
-    // Wire format matches ServerRewardRotationContentContextArray_ReadPayload @ 14008fdc0:
-    // 32-bit count followed by count rows, each serialized through ServerRewardRotationContentContext_ReadPayload @ 14008fcb0.
-    [Message(GameMessageOpcode.ServerRewardRotationContentContextArray)]
+    // Retained diagnostic/service data without wire registration.
+    // Opcode 0x07D3 reloads reward tracks (consumer 1404d1640).
     public class ServerRewardRotationContentContextArray : IWritable
     {
         public List<ServerRewardRotationContentContext> Entries { get; set; } = new();

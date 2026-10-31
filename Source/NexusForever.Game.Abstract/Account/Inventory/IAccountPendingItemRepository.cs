@@ -7,6 +7,7 @@ namespace NexusForever.Game.Abstract.Account.Inventory
     {
         public string GroupName { get; init; }
         public IReadOnlyList<uint> AccountItemIds { get; init; }
+        public IReadOnlyList<bool> ForceSoulbind { get; init; }
         public uint SenderAccountId { get; init; }
         public NetworkIdentity SenderIdentity { get; init; }
         public NetworkIdentity TargetIdentity { get; init; }

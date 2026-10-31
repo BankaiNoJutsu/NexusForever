@@ -12,6 +12,13 @@ namespace NexusForever.Server.Friendship.Game.Character
         private readonly Dictionary<Identity, Character> _characterCache = [];
         private readonly Dictionary<IdentityName, Character> _characterNameCache = [];
 
+        internal void ResetPresenceCaches()
+        {
+            _characterCache.Clear(); _characterNameCache.Clear(); _accountManager.ResetPresenceCache();
+        }
+
+        internal Task<Account.Account> GetPresenceAccountRemoteAsync(uint accountId) => _accountManager.GetAccountRemoteAsync(accountId);
+
         #region Dependency Injection
 
         private readonly CharacterRepository _repository;
@@ -63,9 +70,18 @@ namespace NexusForever.Server.Friendship.Game.Character
         /// </remarks>
         /// <param name="identity">Identity of the <see cref="Character"/> to return.</param>
         public async Task<Character> GetCharacterRemoteAsync(Identity identity)
+            => await GetCharacterRemoteCoreAsync(identity, null);
+
+        internal Task<Character> GetPresenceCharacterRemoteAsync(Identity identity, uint accountId)
+            => GetCharacterRemoteCoreAsync(identity, accountId);
+
+        private async Task<Character> GetCharacterRemoteCoreAsync(Identity identity, uint? accountId)
         {
             if (_characterCache.TryGetValue(identity, out Character character))
+            {
+                if (accountId.HasValue && character.AccountId != accountId) throw new InvalidOperationException("Presence character belongs to another account.");
                 return character;
+            }
 
             CharacterModel databaseModel = await _repository.GetCharacterAsync(identity.Id, identity.RealmId);
             if (databaseModel == null)
@@ -74,6 +90,9 @@ namespace NexusForever.Server.Friendship.Game.Character
                 if (apiModel == null)
                     return null;
 
+                if (accountId.HasValue && (apiModel.AccountId != accountId || apiModel.Identity?.Id != identity.Id || apiModel.Identity.RealmId != identity.RealmId))
+                    throw new InvalidOperationException("Presence API character does not match its requested owner/identity.");
+
                 Account.Account account = await _accountManager.GetAccountAsync(apiModel.AccountId);
                 if (account == null)
                     return null;
@@ -81,6 +100,8 @@ namespace NexusForever.Server.Friendship.Game.Character
                 databaseModel = apiModel.ToDatabaseCharacter();
                 _repository.AddCharacter(databaseModel);
             }
+
+            if (accountId.HasValue && databaseModel.AccountId != accountId) throw new InvalidOperationException("Presence character belongs to another account.");
 
             return InitialiseCharacter(databaseModel);
         }

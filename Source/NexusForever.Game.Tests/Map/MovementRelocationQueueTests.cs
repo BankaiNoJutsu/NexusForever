@@ -182,6 +182,7 @@ public class MovementRelocationQueueTests
             var entity = RecordingDispatchProxy<IGridEntity>.Create(out var proxy);
             proxy.SetProperty(nameof(IGridEntity.Guid), guid);
             proxy.SetProperty(nameof(IGridEntity.Map), this);
+            entities[guid] = entity;
             return entity;
         }
 

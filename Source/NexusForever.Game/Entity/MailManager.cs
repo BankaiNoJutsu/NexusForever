@@ -171,11 +171,15 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void SendMail(ClientMailSend mailSend)
         {
-            ICharacter targetCharacter = GetCharacterManager().GetCharacter(mailSend.Name);
+            bool inventoryAvailable = InventoryMutationScope.TryAcquire(player.Inventory, out var mutationLease);
+            using var heldMutation = mutationLease;
+
+            ICharacter targetCharacter = inventoryAvailable ? GetCharacterManager().GetCharacter(mailSend.Name) : null;
 
             var items = new List<IItem>();
             GenericError GetResult()
             {
+                if (!inventoryAvailable) return GenericError.MailBusy;
                 if (targetCharacter == null)
                     return GenericError.MailCannotFindPlayer;
 
@@ -397,9 +401,13 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void MailPayCod(ulong mailId)
         {
-            IMailItem mail;
+            bool inventoryAvailable = InventoryMutationScope.TryAcquire(player.Inventory, out var mutationLease);
+            using var heldMutation = mutationLease;
+
+            IMailItem mail = null;
             GenericError GetResult()
             {
+                if (!inventoryAvailable) return GenericError.MailBusy;
                 if (!availableMail.TryGetValue(mailId, out mail))
                     return GenericError.MailDoesNotExist;
 
@@ -444,7 +452,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void ReturnMail(ulong mailId)
         {
-            IMailItem mailItem;
+            IMailItem mailItem = null;
             GenericError GetResult()
             {
                 if (!availableMail.TryGetValue(mailId, out mailItem))
@@ -489,11 +497,15 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void MailTakeAttachment(ulong mailId, uint attachmentIndex, uint unitId)
         {
-            IMailItem mailItem;
+            bool inventoryAvailable = InventoryMutationScope.TryAcquire(player.Inventory, out var mutationLease);
+            using var heldMutation = mutationLease;
+
+            IMailItem mailItem = null;
             IMailAttachment mailAttachment = null;
 
             GenericError GetResult()
             {
+                if (!inventoryAvailable) return GenericError.MailBusy;
                 if (!availableMail.TryGetValue(mailId, out mailItem))
                     return GenericError.MailDoesNotExist;
 
@@ -536,9 +548,13 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void MailTakeCash(ulong mailId, uint unitId)
         {
-            IMailItem mailItem;
+            bool inventoryAvailable = InventoryMutationScope.TryAcquire(player.Inventory, out var mutationLease);
+            using var heldMutation = mutationLease;
+
+            IMailItem mailItem = null;
             GenericError GetResult()
             {
+                if (!inventoryAvailable) return GenericError.MailBusy;
                 if (!availableMail.TryGetValue(mailId, out mailItem))
                     return GenericError.MailDoesNotExist;
 

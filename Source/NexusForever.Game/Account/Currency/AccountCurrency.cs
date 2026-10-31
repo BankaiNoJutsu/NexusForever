@@ -10,7 +10,7 @@ using ServerAccountCurrency = NexusForever.Network.World.Message.Model.Shared.Ac
 
 namespace NexusForever.Game.Account.Currency
 {
-    public class AccountCurrency : IAccountCurrency
+    public partial class AccountCurrency : IAccountCurrency
     {
         [Flags]
         public enum AccountCurrencySaveMask
@@ -25,12 +25,7 @@ namespace NexusForever.Game.Account.Currency
 
         public ulong Amount
         {
-            get => amount;
-            private set
-            {
-                amount = value;
-                saveMask |= AccountCurrencySaveMask.Amount;
-            }
+            get { lock (saveGate) return amount; }
         }
 
         private ulong amount;
@@ -46,7 +41,7 @@ namespace NexusForever.Game.Account.Currency
         {
             this.account = account;
             CurrencyId   = (AccountCurrencyType)model.CurrencyId;
-            Amount       = model.Amount;
+            amount       = model.Amount;
             Entry        = gameTableManager.AccountCurrencyType?.GetEntry((ulong)CurrencyId);
 
             saveMask = AccountCurrencySaveMask.None;
@@ -59,35 +54,20 @@ namespace NexusForever.Game.Account.Currency
         {
             this.account = account;
             CurrencyId   = currencyType;
-            Amount       = amount;
+            this.amount  = amount;
             Entry        = gameTableManager.AccountCurrencyType?.GetEntry((ulong)CurrencyId);
 
             saveMask = AccountCurrencySaveMask.Create;
+            operations.Add(NewOperation(amount, false));
         }
 
-        public void Save(AuthContext context)
+        internal void SetJournalAmount(ulong value)
         {
-            if (saveMask == AccountCurrencySaveMask.None)
-                return;
-
-            var model = new AccountCurrencyModel
+            lock (saveGate)
             {
-                Id         = account.Id,
-                CurrencyId = (byte)CurrencyId,
-                Amount     = Amount
-            };
-
-            if ((saveMask & AccountCurrencySaveMask.Create) != 0)
-            {
-                context.Add(model);
+                if (pendingSave != null || pendingRefresh != null) throw new InvalidOperationException("A wallet save or observation still owns this currency.");
+                amount = value; operations.Clear(); saveMask = AccountCurrencySaveMask.None;
             }
-            else if ((saveMask & AccountCurrencySaveMask.Amount) != 0)
-            {
-                EntityEntry<AccountCurrencyModel> entity = context.Attach(model);
-                entity.Property(p => p.Amount).IsModified = true;
-            }
-
-            saveMask = AccountCurrencySaveMask.None;
         }
 
         /// <summary>
@@ -95,9 +75,13 @@ namespace NexusForever.Game.Account.Currency
         /// </summary>
         public void AddAmount(ulong amount)
         {
-            checked
+            lock (saveGate)
             {
-                Amount += amount;
+                EnsureCurrent();
+                ulong after = checked(this.amount + amount);
+                if (amount != 0) operations.Add(NewOperation(amount, false));
+                this.amount = after;
+                if (amount != 0) saveMask |= AccountCurrencySaveMask.Amount;
             }
         }
 
@@ -106,9 +90,13 @@ namespace NexusForever.Game.Account.Currency
         /// </summary>
         public void SubtractAmount(ulong amount)
         {
-            checked
+            lock (saveGate)
             {
-                Amount -= amount;
+                EnsureCurrent();
+                ulong after = checked(this.amount - amount);
+                if (amount != 0) operations.Add(NewOperation(amount, true));
+                this.amount = after;
+                if (amount != 0) saveMask |= AccountCurrencySaveMask.Amount;
             }
         }
 
@@ -117,10 +105,7 @@ namespace NexusForever.Game.Account.Currency
         /// </summary>
         public bool CanAfford(ulong amount)
         {
-            if (Amount < amount)
-                return false;
-
-            return true;
+            lock (saveGate) return !requiresReload && this.amount >= amount;
         }
 
         public ServerAccountCurrency Build()

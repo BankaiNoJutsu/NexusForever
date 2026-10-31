@@ -25,15 +25,17 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Authentication
 
         public void HandleMessage(IWorldSession session, ClientHelloRealm helloRealm)
         {
+            if (session.Account != null)
+                throw new InvalidPacketValueException("Realm session is already initialized.");
             // prevent packets from being processed until asynchronous account select task is complete
             session.CanProcessIncomingPackets = false;
 
             string sessionKey = Convert.ToHexString(helloRealm.SessionKey);
-            session.Events.EnqueueEvent(new TaskGenericEvent<AccountModel>(databaseManager.GetDatabase<AuthDatabase>().GetAccountBySessionKeyAsync(helloRealm.AccountString, sessionKey),
+            session.Events.EnqueueEvent(new TaskGenericEvent<AccountModel>(databaseManager.GetDatabase<AuthDatabase>().AdmitWorldSessionAsync(helloRealm.AccountId, helloRealm.AccountString, sessionKey),
                 account =>
             {
                 if (account == null)
-                    throw new InvalidPacketValueException($"Failed to find account, Id:{helloRealm.AccountId}, Email:{helloRealm.AccountString}, SessionKey:{sessionKey}!");
+                    throw new InvalidPacketValueException($"Realm account admission rejected (account={helloRealm.AccountId}).");
 
                 session.Initialise(account);
                 session.SetEncryptionKey(helloRealm.SessionKey);

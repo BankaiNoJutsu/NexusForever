@@ -23,7 +23,7 @@ using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity
 
 namespace NexusForever.Game.Account.Inventory
 {
-    public class AccountInventoryManager : IAccountInventoryManager
+    public partial class AccountInventoryManager : IAccountInventoryManager
     {
         private const string AccountCurrencyTypeTableName = "AccountCurrencyType.tbl";
         private const string EntitlementTableName = "Entitlement.tbl";
@@ -31,12 +31,10 @@ namespace NexusForever.Game.Account.Inventory
         private const string GenericUnlockEntryTableName = "GenericUnlockEntry.tbl";
 
         private readonly Dictionary<ulong, IAccountInventoryItem> items = new();
+        private readonly object inventoryGate = new();
         private readonly Dictionary<string, List<PendingAccountItem>> pendingGroups = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<uint, AccountItemCooldown> cooldowns = new();
         private readonly List<IAccountInventoryItem> deletedItems = [];
-        private readonly HashSet<string> deletedPendingGroups = new(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<ulong> deletedPendingItemIds = [];
-        private bool pendingItemsDirty;
 
         private readonly IAccount account;
         private readonly ILogger<AccountInventoryManager> log;
@@ -84,7 +82,7 @@ namespace NexusForever.Game.Account.Inventory
 
             foreach (AccountInventoryModel itemModel in model.AccountInventory)
             {
-                var item = new AccountInventoryItem(account, itemModel, gameTableManager);
+                var item = new AccountInventoryItem(account, itemModel, gameTableManager, OnPersistedItemConsumed);
                 items.Add(item.Id, item);
                 nextInventoryId = Math.Max(nextInventoryId, item.Id + 1ul);
             }
@@ -105,7 +103,7 @@ namespace NexusForever.Game.Account.Inventory
                     pendingGroups.Add(pendingModel.GroupName, groupItems);
                 }
 
-                groupItems.Add(new PendingAccountItem
+                var pendingItem = new PendingAccountItem
                 {
                     Id              = pendingModel.PendingItemId,
                     AccountItemId   = pendingModel.AccountItemId,
@@ -123,8 +121,11 @@ namespace NexusForever.Game.Account.Inventory
                         Id      = pendingModel.TargetCharacterId
                     },
                     ClaimState              = (AccountItemClaimState)pendingModel.ClaimState,
+                    ForceSoulbind           = pendingModel.ForceSoulbind,
                     HasTargetPlayerIdentity = pendingModel.HasTargetPlayerIdentity
-                });
+                };
+                groupItems.Add(pendingItem);
+                pendingBaseline.Add(pendingItem, CapturePendingState(pendingItem));
 
                 nextPendingItemId = Math.Max(nextPendingItemId, pendingModel.PendingItemId + 1ul);
             }
@@ -132,11 +133,17 @@ namespace NexusForever.Game.Account.Inventory
 
         public void Save(AuthContext context)
         {
-            foreach (IAccountInventoryItem item in deletedItems)
+            IAccountInventoryItem[] deleted;
+            IAccountInventoryItem[] current;
+            lock (inventoryGate)
+            {
+                deletedItems.RemoveAll(item => !item.PendingDelete);
+                deleted = deletedItems.ToArray();
+                current = items.Values.ToArray();
+            }
+            foreach (IAccountInventoryItem item in deleted)
                 item.Save(context);
-            deletedItems.Clear();
-
-            foreach (IAccountInventoryItem item in items.Values)
+            foreach (IAccountInventoryItem item in current)
                 item.Save(context);
 
             foreach (AccountItemCooldown cooldown in cooldowns.Values)
@@ -144,54 +151,26 @@ namespace NexusForever.Game.Account.Inventory
 
             dailyLoginRewardManager?.Save(context);
 
-            if (!pendingItemsDirty && deletedPendingGroups.Count == 0 && deletedPendingItemIds.Count == 0)
-                return;
-
-            List<AccountPendingItemModel> existing = context.AccountPendingItem
-                .Where(p => p.Id == account.Id)
-                .ToList();
-            if (existing.Count != 0)
-                context.AccountPendingItem.RemoveRange(existing);
-
-            foreach (List<PendingAccountItem> group in pendingGroups.Values)
-            {
-                foreach (PendingAccountItem pendingItem in group)
-                {
-                    context.AccountPendingItem.Add(new AccountPendingItemModel
-                    {
-                        Id                = account.Id,
-                        PendingItemId     = pendingItem.Id,
-                        GroupName         = pendingItem.Group,
-                        AccountItemId     = pendingItem.AccountItemId,
-                        SenderAccountId   = pendingItem.SenderAccountId,
-                        SenderRealmId     = pendingItem.SenderIdentity?.RealmId ?? 0,
-                        SenderCharacterId = pendingItem.SenderIdentity?.Id ?? 0ul,
-                        TargetRealmId     = pendingItem.TargetIdentity?.RealmId ?? 0,
-                        TargetCharacterId = pendingItem.TargetIdentity?.Id ?? 0ul,
-                        ClaimState              = (byte)pendingItem.ClaimState,
-                        HasTargetPlayerIdentity = pendingItem.HasTargetPlayerIdentity
-                    });
-                }
-            }
-
-            pendingItemsDirty      = false;
-            deletedPendingGroups.Clear();
-            deletedPendingItemIds.Clear();
+            SavePendingItems(context);
         }
 
         public IAccountInventoryItem GetItem(ulong id)
         {
-            return items.TryGetValue(id, out IAccountInventoryItem item) ? item : null;
+            lock (inventoryGate)
+                return items.TryGetValue(id, out IAccountInventoryItem item) ? item : null;
         }
 
         public IAccountInventoryItem AddItem(uint accountItemId, NetworkIdentity targetPlayerIdentity = null, AccountItemClaimState claimState = AccountItemClaimState.CanClaim, bool hasTargetPlayerIdentity = false, bool notify = true)
+            => AddItemCore(accountItemId, targetPlayerIdentity, claimState, hasTargetPlayerIdentity, notify, false);
+
+        private IAccountInventoryItem AddItemCore(uint accountItemId, NetworkIdentity targetPlayerIdentity, AccountItemClaimState claimState, bool hasTargetPlayerIdentity, bool notify, bool forceSoulbind)
         {
             if (!CanAddItem(accountItemId))
                 throw new ArgumentException($"Account item {accountItemId} does not exist!");
 
             ulong inventoryId = GetNextInventoryId();
-            var item = new AccountInventoryItem(account, inventoryId, accountItemId, targetPlayerIdentity, claimState, hasTargetPlayerIdentity, gameTableManager);
-            items.Add(item.Id, item);
+            var item = new AccountInventoryItem(account, inventoryId, accountItemId, targetPlayerIdentity, claimState, hasTargetPlayerIdentity, gameTableManager, forceSoulbind, OnPersistedItemConsumed);
+            lock (inventoryGate) items.Add(item.Id, item);
 
             if (notify)
                 SendItemAdd(item);
@@ -200,6 +179,12 @@ namespace NexusForever.Game.Account.Inventory
         }
 
         public string AddPendingItemGroup(IEnumerable<uint> accountItemIds, NetworkIdentity senderIdentity = null, NetworkIdentity targetPlayerIdentity = null, string group = null, bool notify = true, uint senderAccountId = 0u, ulong targetAccountId = 0ul)
+        {
+            lock (pendingGate)
+                return AddPendingItemGroupCore(accountItemIds, senderIdentity, targetPlayerIdentity, group, notify, senderAccountId, targetAccountId);
+        }
+
+        private string AddPendingItemGroupCore(IEnumerable<uint> accountItemIds, NetworkIdentity senderIdentity, NetworkIdentity targetPlayerIdentity, string group, bool notify, uint senderAccountId, ulong targetAccountId)
         {
             ArgumentNullException.ThrowIfNull(accountItemIds);
 
@@ -225,6 +210,7 @@ namespace NexusForever.Game.Account.Inventory
                 {
                     Id                = GetNextPendingItemId(),
                     AccountItemId     = accountItemId,
+                    Notified          = notify,
                     Group             = groupName,
                     SenderAccountId   = senderAccountId,
                     TargetAccountId   = targetAccountId,
@@ -234,8 +220,6 @@ namespace NexusForever.Game.Account.Inventory
                     HasTargetPlayerIdentity = targetPlayerIdentity?.Id != 0ul
                 })
                 .ToList());
-
-            pendingItemsDirty = true;
 
             if (notify)
                 SendPendingGroupAdded(groupName);
@@ -255,23 +239,30 @@ namespace NexusForever.Game.Account.Inventory
 
         public bool RemoveItem(ulong id)
         {
+            lock (inventoryGate)
+            {
             if (!items.Remove(id, out IAccountInventoryItem item))
                 return false;
 
             SendItemDelete(id);
 
-            if (!item.PendingCreate)
-            {
-                item.EnqueueDelete(true);
-                deletedItems.Add(item);
-            }
+            item.EnqueueDelete(true);
+            deletedItems.Add(item);
 
             return true;
+            }
+        }
+
+        private void OnPersistedItemConsumed(ulong id)
+        {
+            lock (inventoryGate)
+                if (items.Remove(id)) SendItemDelete(id);
         }
 
         public AccountOperationResult TakeItem(IPlayer player, ulong id)
         {
-            if (!items.TryGetValue(id, out IAccountInventoryItem item))
+            IAccountInventoryItem item = GetItem(id);
+            if (item == null || item.PendingDelete)
                 return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.InvalidInventoryItem);
 
             if (item.ClaimState != AccountItemClaimState.CanClaim)
@@ -294,7 +285,7 @@ namespace NexusForever.Game.Account.Inventory
             GenericError error;
             bool builtGrantPlan = directAccountGrant
                 ? TryBuildImmediateAccountGrantPlan(item, out grants, out error)
-                : TryBuildGrantPlan(player, item.Entry, out grants, out error);
+                : TryBuildGrantPlan(player, item.Entry, out grants, out error, item.ForceSoulbind);
             if (!builtGrantPlan)
                 return SendAccountOperationResult(AccountOperation.TakeItem, ToAccountOperationResult(error));
 
@@ -302,8 +293,19 @@ namespace NexusForever.Game.Account.Inventory
             if (cooldownGroupId != 0u && IsOnCooldown(cooldownGroupId))
                 return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.Cooldown);
 
+            using var currencyScope = account.CurrencyManager is NexusForever.Game.Abstract.Account.Currency.IAccountCurrencySourceScopes sourceScopes && item.ConsumptionKey != null
+                ? sourceScopes.BeginSourceConsumption(item.ConsumptionKey, item.Id, item.PendingCreate)
+                : (account.CurrencyManager as NexusForever.Game.Abstract.Account.Currency.IAccountCurrencyMutationScopes)?.BeginMutationScope();
             foreach (IAccountItemGrant grant in grants)
-                grant.Apply(account, player);
+            {
+                if (grant is ItemGrant { ForceSoulbind: true } bound)
+                {
+                    if (!player.Inventory.TryCreateSoulboundItem(InventoryLocation.Inventory, bound.ItemInfo, 1, out error, ItemUpdateReason.PlayerRequested))
+                        return SendAccountOperationResult(AccountOperation.TakeItem, ToAccountOperationResult(error));
+                }
+                else grant.Apply(account, player);
+            }
+            currencyScope?.Complete();
 
             if (cooldownGroupId != 0u)
                 SetCooldown(cooldownGroupId);
@@ -335,7 +337,7 @@ namespace NexusForever.Game.Account.Inventory
             }
 
             foreach (PendingAccountItem pendingItem in pendingItems)
-                AddItem(pendingItem.AccountItemId, pendingItem.TargetIdentity, pendingItem.ClaimState, pendingItem.HasTargetPlayerIdentity);
+                AddItemCore(pendingItem.AccountItemId, pendingItem.TargetIdentity, pendingItem.ClaimState, pendingItem.HasTargetPlayerIdentity, true, pendingItem.ForceSoulbind);
 
             RemovePendingGroup(group, notify: true);
 
@@ -484,6 +486,12 @@ namespace NexusForever.Game.Account.Inventory
 
         public void SendPendingItems()
         {
+            lock (pendingGate)
+                SendPendingItemsCore();
+        }
+
+        private void SendPendingItemsCore()
+        {
             log.LogInformation("StorefrontCatalogDiagnostics account {AccountId}: pending rows={PendingItemCount} groups={PendingGroupCount} pending=[{PendingGroups}].",
                 account.Id, CountPendingItems(), pendingGroups.Count, FormatPendingGroups());
 
@@ -523,11 +531,14 @@ namespace NexusForever.Game.Account.Inventory
 
         private bool RemovePendingGroup(string groupName, bool notify)
         {
+            lock (pendingGate)
+                return RemovePendingGroupCore(groupName, notify);
+        }
+
+        private bool RemovePendingGroupCore(string groupName, bool notify)
+        {
             if (!pendingGroups.Remove(groupName, out List<PendingAccountItem> pendingItems))
                 return false;
-
-            pendingItemsDirty = true;
-            deletedPendingGroups.Add(groupName);
 
             if (!notify)
                 return true;
@@ -661,16 +672,23 @@ namespace NexusForever.Game.Account.Inventory
 
         private bool TryGetPendingGroup(string group, out List<PendingAccountItem> pendingItems)
         {
-            pendingItems = null;
-            return !string.IsNullOrWhiteSpace(group) && pendingGroups.TryGetValue(group, out pendingItems) && pendingItems.Count != 0;
+            lock (pendingGate)
+            {
+                pendingItems = null;
+                if (string.IsNullOrWhiteSpace(group) || !pendingGroups.TryGetValue(group, out List<PendingAccountItem> found) || found.Count == 0)
+                    return false;
+                pendingItems = found.ToList();
+                return true;
+            }
         }
 
         private AccountOperationResult GiftPendingItemGroup(IPlayer player, string group, List<PendingAccountItem> pendingItems, uint targetAccountId, NetworkIdentity targetIdentity, PendingAccountItemGroupTransferKind transferKind)
         {
             if (targetAccountId == account.Id)
             {
-                foreach (PendingAccountItem pendingItem in pendingItems)
-                    pendingItem.TargetIdentity = CloneIdentity(targetIdentity);
+                lock (pendingGate)
+                    foreach (PendingAccountItem pendingItem in pendingItems)
+                        pendingItem.TargetIdentity = CloneIdentity(targetIdentity);
 
                 SendPendingItems();
                 return SendAccountOperationResult(AccountOperation.GiftItem, AccountOperationResult.Ok);
@@ -689,6 +707,7 @@ namespace NexusForever.Game.Account.Inventory
                 SourceAccountId = account.Id,
                 TargetAccountId = targetAccountId,
                 AccountItemIds  = pendingItems.Select(i => i.AccountItemId).ToList(),
+                ForceSoulbind   = pendingItems.Select(i => i.ForceSoulbind).ToList(),
                 SenderIdentity  = GetPlayerIdentity(player),
                 TargetIdentity  = CloneIdentity(targetIdentity)
             };
@@ -837,12 +856,12 @@ namespace NexusForever.Game.Account.Inventory
             };
         }
 
-        private bool TryBuildGrantPlan(IPlayer player, AccountItemEntry entry, out List<IAccountItemGrant> grants, out GenericError error)
+        private bool TryBuildGrantPlan(IPlayer player, AccountItemEntry entry, out List<IAccountItemGrant> grants, out GenericError error, bool forceSoulbind = false)
         {
             grants = [];
             error  = GenericError.Ok;
 
-            if (entry.Item2Id != 0u && !TryAddItemGrant(player, entry.Item2Id, grants, out error))
+            if (entry.Item2Id != 0u && !TryAddItemGrant(player, entry.Item2Id, grants, out error, forceSoulbind))
                 return false;
 
             if (entry.AccountCurrencyEnum != 0u && !TryAddAccountCurrencyGrant(entry, grants, out error))
@@ -913,7 +932,7 @@ namespace NexusForever.Game.Account.Inventory
             return entry.AccountCurrencyEnum != 0u || entry.EntitlementId != 0u;
         }
 
-        private bool TryAddItemGrant(IPlayer player, uint item2Id, List<IAccountItemGrant> grants, out GenericError error)
+        private bool TryAddItemGrant(IPlayer player, uint item2Id, List<IAccountItemGrant> grants, out GenericError error, bool forceSoulbind = false)
         {
             error = GenericError.Ok;
 
@@ -924,13 +943,18 @@ namespace NexusForever.Game.Account.Inventory
                 return false;
             }
 
-            if (!CanHoldItem(player, itemInfo))
+            if (forceSoulbind && (!player.Inventory.SupportsSoulboundItemCreation || !player.Inventory.CanCreateSoulboundItem(InventoryLocation.Inventory, itemInfo, 1, out error)))
+            {
+                if (error == GenericError.Ok) error = GenericError.ItemBadStaticData;
+                return false;
+            }
+            if (!forceSoulbind && !CanHoldItem(player, itemInfo))
             {
                 error = GenericError.ItemInventoryFull;
                 return false;
             }
 
-            grants.Add(new ItemGrant(itemInfo));
+            grants.Add(new ItemGrant(itemInfo, forceSoulbind));
             return true;
         }
 
@@ -1144,7 +1168,7 @@ namespace NexusForever.Game.Account.Inventory
             void Apply(IAccount account, IPlayer player);
         }
 
-        private readonly record struct ItemGrant(IItemInfo ItemInfo) : IAccountItemGrant
+        private readonly record struct ItemGrant(IItemInfo ItemInfo, bool ForceSoulbind = false) : IAccountItemGrant
         {
             public void Apply(IAccount account, IPlayer player)
             {
@@ -1183,7 +1207,9 @@ namespace NexusForever.Game.Account.Inventory
 
         private sealed class PendingAccountItem
         {
-            public ulong Id { get; init; }
+            public string DeliveryKey { get; } = $"pending:{Guid.NewGuid():N}";
+            public bool Notified { get; set; } = true;
+            public ulong Id { get; set; }
             public uint AccountItemId { get; init; }
             public string Group { get; init; }
             public uint SenderAccountId { get; init; }
@@ -1192,9 +1218,11 @@ namespace NexusForever.Game.Account.Inventory
             public NetworkIdentity TargetIdentity { get; set; }
             public AccountItemClaimState ClaimState { get; init; }
             public bool HasTargetPlayerIdentity { get; init; }
+            public bool ForceSoulbind { get; set; }
 
             public ServerAccountItemsPending.PendingAccountItemGroup Build()
             {
+                Notified = true;
                 return new ServerAccountItemsPending.PendingAccountItemGroup
                 {
                     Id                      = Id,

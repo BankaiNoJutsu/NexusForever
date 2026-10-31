@@ -188,6 +188,7 @@ namespace NexusForever.WorldServer.Account
                 }
             }
 
+            using var currencyScope = (session.Account.CurrencyManager as NexusForever.Game.Abstract.Account.Currency.IAccountCurrencyMutationScopes)?.BeginMutationScope();
             bool chargeDebited = false;
             try
             {
@@ -213,7 +214,7 @@ namespace NexusForever.WorldServer.Account
                 return;
             }
 
-            if (!TryPersistAccount(session, log))
+            if (!TryPersistAccount(session, log, currencyScope))
             {
                 TryRollbackDelivery(rollbackDelivery, log, purchaseScope, session, offerId);
                 TryRefundCharge(session, log, accountCurrencyType, chargeAmount, chargeDebited, purchaseScope, offerId);
@@ -233,6 +234,7 @@ namespace NexusForever.WorldServer.Account
                 return;
             }
 
+            currencyScope?.Complete();
             sendSuccess(session);
 
             log.LogInformation("StorefrontCatalogDiagnostics storefront {PurchaseScope} purchase completed player={PlayerGuid} account={AccountId} offer={OfferId} currency={CurrencyId} price={Price} accountItems={AccountItemCount}.",
@@ -420,6 +422,7 @@ namespace NexusForever.WorldServer.Account
 
         public void ApplyDirectAccountGrantPlan(IWorldSession session, DirectAccountGrantPlan plan)
         {
+            using var currencyScope = (session.Account.CurrencyManager as NexusForever.Game.Abstract.Account.Currency.IAccountCurrencyMutationScopes)?.BeginMutationScope();
             var appliedCurrencyGrants = new List<(AccountCurrencyType CurrencyType, ulong Amount)>();
             var appliedEntitlementGrants = new List<(EntitlementType EntitlementType, int Amount)>();
 
@@ -436,6 +439,7 @@ namespace NexusForever.WorldServer.Account
                     session.Account.EntitlementManager.UpdateEntitlement(entitlementType, amount);
                     appliedEntitlementGrants.Add((entitlementType, amount));
                 }
+                currencyScope?.Complete();
             }
             catch
             {
@@ -680,7 +684,7 @@ namespace NexusForever.WorldServer.Account
             }
         }
 
-        private bool TryPersistAccount(IWorldSession session, ILogger log)
+        private bool TryPersistAccount(IWorldSession session, ILogger log, NexusForever.Game.Abstract.Account.Currency.IAccountCurrencyMutationScope currencyScope = null)
         {
             if (session?.Account == null)
                 return false;
@@ -693,7 +697,11 @@ namespace NexusForever.WorldServer.Account
             try
             {
                 lock (GetAccountLock(session.Account.Id))
-                    authDatabase.SaveBlocking(session.Account.Save);
+                    authDatabase.SaveBlocking(context =>
+                    {
+                        currencyScope?.Enlist(context);
+                        session.Account.Save(context);
+                    });
 
                 return true;
             }

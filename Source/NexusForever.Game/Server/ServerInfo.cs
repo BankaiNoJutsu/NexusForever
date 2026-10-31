@@ -15,6 +15,11 @@ namespace NexusForever.Game.Server
         public bool IsOnline { get; private set; }
 
         public ServerInfo(ServerModel model)
+            : this(model, null)
+        {
+        }
+
+        internal ServerInfo(ServerModel model, IServerInfo previous)
         {
             try
             {
@@ -28,6 +33,10 @@ namespace NexusForever.Game.Server
 
                 Address = (uint)IPAddress.HostToNetworkOrder(BitConverter.ToInt32(ipAddress.GetAddressBytes()));
                 Model   = model;
+                // A metadata refresh is not a failed heartbeat. Never transfer health
+                // to another realm or endpoint; those must pass their own probe.
+                IsOnline = previous?.Model.Id == model.Id && previous.Address == Address
+                    && previous.Model.Port == model.Port && previous.IsOnline;
             }
             catch (Exception e)
             {

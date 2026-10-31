@@ -60,13 +60,17 @@ namespace NexusForever.Network.World.Message.Model.Item
     {
         public ulong ItemGuid { get; set; }
         public List<Identity> TradingPartnerIdentities { get; } = [];
+        public uint TradeTimeLeftMs { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
             writer.Write(ItemGuid);
-            writer.Write(TradingPartnerIdentities.Count, 6u);
+            // Native reader 1400a0a50 -> 1400a0960: count32, identity14+64 rows,
+            // then a trailing32 time field. This differs from the nested Item list.
+            writer.Write(TradingPartnerIdentities.Count);
             foreach (Identity identity in TradingPartnerIdentities)
                 identity.Write(writer);
+            writer.Write(TradeTimeLeftMs);
         }
     }
 }

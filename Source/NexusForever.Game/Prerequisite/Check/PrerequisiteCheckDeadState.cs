@@ -23,5 +23,8 @@ namespace NexusForever.Game.Prerequisite.Check
             uint deadState = unit.IsAlive ? 0u : 1u;
             return PrerequisiteCompare.Compare(comparison, deadState, value);
         }
+
+        public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => subject != null && PrerequisiteCompare.Compare(comparison, subject.IsAlive ? 0u : 1u, value);
     }
 }

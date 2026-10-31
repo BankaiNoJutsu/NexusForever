@@ -638,13 +638,12 @@ namespace NexusForever.Network.World.Message.Model
         }
     }
 
-    [Message(GameMessageOpcode.ServerAuctionsByFilterAux)]
+    // Compatibility serializer only: opcode 0x07D5 updates reward tracks.
     public class ServerAuctionsByFilterAux : IWritable
     {
         /// <summary>
-        /// Client reader <c>ServerAuctionsByFilterAux_ReadPayload</c>
-        /// (<c>14008fe80</c>) reads one 14-bit value, three uint32 fields,
-        /// and one flag. Auction filter semantics remain blocked.
+            /// Retained former auxiliary shape. Native reader 14008fe80 and
+            /// consumer 1404d18e0 establish reward-track ownership instead.
         /// </summary>
         public uint UInt14Value { get; set; }
 

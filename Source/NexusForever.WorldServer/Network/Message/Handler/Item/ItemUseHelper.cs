@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Prerequisite;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
@@ -36,6 +37,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
         {
             if (session?.Player == null || item?.Info == null)
                 return false;
+
+            if (!InventoryMutationScope.TryAcquire(session.Player.Inventory, out var mutationLease)) return false;
+            using var heldMutation = mutationLease;
 
             ItemSpecialEntry itemSpecial = null;
             if (item.Info.Entry.ItemSpecialId00 > 0u)
@@ -98,6 +102,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                 Position            = position,
                 CancelActiveTrade   = true,
                 ClientContextToken  = contextToken,
+                HasClientCastRequest = clientRequestSource != null,
                 ClientRequestSource = clientRequestSource
             };
 

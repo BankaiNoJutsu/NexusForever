@@ -9,6 +9,11 @@ namespace NexusForever.Game.Abstract.Entity
         uint Slots { get; }
         uint SlotsRemaining { get; }
 
+        /// <summary>Empty slots available to ordinary operations, excluding logical reservations.</summary>
+        uint AvailableSlots => SlotsRemaining;
+        bool HasReservedSlots => false;
+        bool IsSlotReserved(uint bagIndex) => false;
+
         /// <summary>
         /// Returns <see cref="IItem"/> with the supplied guid.
         /// </summary>

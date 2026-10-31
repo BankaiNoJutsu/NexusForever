@@ -1,5 +1,6 @@
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network;
 using NexusForever.Network.World.Message.Model;
@@ -12,7 +13,7 @@ namespace NexusForever.Game.Tests.Network;
 public class ClientEnteredWorldHandlerTests
 {
     [Fact]
-    public void HandleMessage_PlayerStillLoading_EntersWorld()
+    public void HandleMessage_AssignedPlayerStillLoading_EntersWorld()
     {
         ClientEnteredWorldHandler handler = new();
         IWorldSession session = CreateSession(isLoading: true, out RecordingDispatchProxy<IPlayer> playerProxy);
@@ -47,6 +48,8 @@ public class ClientEnteredWorldHandlerTests
         IWorldSession session = CreateSessionWithoutPlayer(out RecordingDispatchProxy<IWorldSession> sessionProxy);
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out playerProxy);
         playerProxy.SetProperty(nameof(IPlayer.IsLoading), isLoading);
+        playerProxy.SetProperty(nameof(IPlayer.Guid), 37u);
+        playerProxy.SetProperty(nameof(IPlayer.Map), RecordingDispatchProxy<IBaseMap>.Create(out _));
         sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
         return session;
     }

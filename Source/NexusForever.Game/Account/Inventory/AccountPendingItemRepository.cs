@@ -40,6 +40,8 @@ namespace NexusForever.Game.Account.Inventory
 
             if (insert.AccountItemIds.Count == 0)
                 throw new ArgumentException("Pending account item group must contain at least one item.", nameof(insert));
+            if (insert.ForceSoulbind != null && insert.ForceSoulbind.Count != insert.AccountItemIds.Count)
+                throw new ArgumentException("Binding metadata must match pending items.", nameof(insert));
 
             string groupName = string.IsNullOrWhiteSpace(insert.GroupName)
                 ? $"pending:{targetAccountId}:{Guid.NewGuid():N}"
@@ -47,34 +49,42 @@ namespace NexusForever.Game.Account.Inventory
 
             NetworkIdentity senderIdentity = insert.SenderIdentity ?? new NetworkIdentity();
             NetworkIdentity targetIdentity = insert.TargetIdentity ?? new NetworkIdentity();
+            string[] deliveryKeys = insert.AccountItemIds.Select(_ => $"pending:{Guid.NewGuid():N}").ToArray();
 
             lock (GetAccountLock(targetAccountId))
             {
                 databaseManager.GetDatabase<AuthDatabase>().SaveBlocking(context =>
                 {
-                    ulong nextPendingItemId = context.AccountPendingItem
-                        .Where(p => p.Id == targetAccountId)
-                        .Select(p => (ulong?)p.PendingItemId)
-                        .Max() ?? 0ul;
-                    nextPendingItemId++;
-
-                    foreach (uint accountItemId in insert.AccountItemIds)
+                    var staged = new List<object>();
+                    context.EnlistSaveWork(unit =>
                     {
-                        context.AccountPendingItem.Add(new AccountPendingItemModel
+                        foreach (object row in staged)
+                            unit.Entry(row).State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+                        staged.Clear();
+                        for (int index = 0; index < insert.AccountItemIds.Count; index++)
                         {
-                            Id                = targetAccountId,
-                            PendingItemId     = nextPendingItemId++,
-                            GroupName         = groupName,
-                            AccountItemId     = accountItemId,
-                            SenderAccountId   = insert.SenderAccountId,
-                            SenderRealmId     = senderIdentity.RealmId,
-                            SenderCharacterId = senderIdentity.Id,
-                            TargetRealmId     = targetIdentity.RealmId,
-                            TargetCharacterId = targetIdentity.Id,
-                            ClaimState              = (byte)insert.ClaimState,
-                            HasTargetPlayerIdentity = insert.HasTargetPlayerIdentity
-                        });
-                    }
+                            var row = new AccountPendingItemModel
+                            {
+                                Id                = targetAccountId,
+                                GroupName         = groupName,
+                                AccountItemId     = insert.AccountItemIds[index],
+                                ForceSoulbind     = insert.ForceSoulbind?[index] ?? false,
+                                SenderAccountId   = insert.SenderAccountId,
+                                SenderRealmId     = senderIdentity.RealmId,
+                                SenderCharacterId = senderIdentity.Id,
+                                TargetRealmId     = targetIdentity.RealmId,
+                                TargetCharacterId = targetIdentity.Id,
+                                ClaimState              = (byte)insert.ClaimState,
+                                HasTargetPlayerIdentity = insert.HasTargetPlayerIdentity
+                            };
+                            unit.StagePendingItemAppend(deliveryKeys[index], row);
+                            if (unit.Entry(row).State == Microsoft.EntityFrameworkCore.EntityState.Added)
+                            {
+                                staged.Add(row);
+                                staged.Add(unit.AccountPendingItemDelivery.Local.Single(receipt => receipt.AccountId == targetAccountId && receipt.DeliveryKey == deliveryKeys[index]));
+                            }
+                        }
+                    }, _ => { });
                 });
             }
 
@@ -90,10 +100,14 @@ namespace NexusForever.Game.Account.Inventory
             {
                 databaseManager.GetDatabase<AuthDatabase>().SaveBlocking(context =>
                 {
-                    List<AccountPendingItemModel> rows = context.AccountPendingItem
-                        .Where(p => p.Id == targetAccountId && p.GroupName == groupName)
-                        .ToList();
-                    context.AccountPendingItem.RemoveRange(rows);
+                    context.EnlistSaveWork(unit =>
+                    {
+                        unit.ReservePendingItemIds(targetAccountId, 0u);
+                        List<AccountPendingItemModel> rows = unit.AccountPendingItem
+                            .Where(p => p.Id == targetAccountId && p.GroupName == groupName)
+                            .ToList();
+                        unit.AccountPendingItem.RemoveRange(rows);
+                    }, _ => { });
                 });
             }
         }

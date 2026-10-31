@@ -16,7 +16,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
             if (session.Player == null)
                 return;
 
-            if (!session.Player.IsLoading)
+            if (session.Player.Map == null || session.Player.Guid == 0 || !session.Player.IsLoading)
                 return;
 
             session.Player.OnEnteredWorld();

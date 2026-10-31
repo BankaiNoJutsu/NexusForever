@@ -261,6 +261,7 @@ namespace NexusForever.Game.Spell
                 PrimaryTargetId        = primaryTargetId != 0u ? primaryTargetId : ResolvePrimaryTargetId(),
                 UserInitiatedSpellCast = true,
                 ClientContextToken     = clientContextToken,
+                HasClientCastRequest   = clientRequestSource != null,
                 ClientRequestSource    = clientRequestSource
             };
 

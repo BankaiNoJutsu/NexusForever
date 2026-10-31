@@ -17,5 +17,8 @@ namespace NexusForever.Game.Prerequisite.Check
             uint isCreature = entity is ICreatureEntity ? 1u : 0u;
             return PrerequisiteCompare.Compare(comparison, isCreature, value);
         }
+
+        public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => subject != null && PrerequisiteCompare.Compare(comparison, subject is ICreatureEntity ? 1u : 0u, value);
     }
 }

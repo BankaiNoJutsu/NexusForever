@@ -29,10 +29,21 @@ namespace NexusForever.Game.Account.Inventory
         {
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(request.AccountItemIds);
+            if (request.ForceSoulbind != null && request.ForceSoulbind.Count != request.AccountItemIds.Count)
+                return AccountOperationResult.InvalidAccountItem;
 
             IPlayer targetPlayer = playerManager?.GetPlayerByAccountId(request.TargetAccountId);
             if (targetPlayer != null)
             {
+                if (request.ForceSoulbind?.Any(value => value) == true)
+                {
+                    if (!targetPlayer.Account.InventoryManager.SupportsRewardBinding)
+                        return AccountOperationResult.InvalidAccountItem;
+                    targetPlayer.Account.InventoryManager.AddPendingItemGroupWithBinding(request.AccountItemIds, request.ForceSoulbind,
+                        request.SenderIdentity, request.TargetIdentity, request.SourceGroup,
+                        senderAccountId: request.SourceAccountId, targetAccountId: request.TargetAccountId);
+                    return AccountOperationResult.Ok;
+                }
                 targetPlayer.Account.InventoryManager.AddPendingItemGroup(
                     request.AccountItemIds,
                     request.SenderIdentity,
@@ -52,6 +63,7 @@ namespace NexusForever.Game.Account.Inventory
             {
                 GroupName        = request.SourceGroup,
                 AccountItemIds   = request.AccountItemIds,
+                ForceSoulbind    = request.ForceSoulbind,
                 SenderAccountId  = persistedSenderAccountId,
                 SenderIdentity = request.SenderIdentity,
                 TargetIdentity = request.TargetIdentity,

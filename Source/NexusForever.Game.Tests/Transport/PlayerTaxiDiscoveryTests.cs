@@ -139,19 +139,22 @@ public class PlayerTaxiDiscoveryTests
         using var db = new CharacterContext(new DbContextOptionsBuilder<CharacterContext>().UseSqlite(connection,
             o => o.MigrationsAssembly(NexusForever.Database.Extensions.SqliteMigrationsAssembly)).Options);
         var migrations = db.Database.GetMigrations().ToArray();
-        Assert.EndsWith("_CharacterTaxiNode", migrations[^1]);
+        string taxiMigration = Assert.Single(migrations, migration => migration.EndsWith("_CharacterTaxiNode", StringComparison.Ordinal));
+        int taxiIndex = Array.IndexOf(migrations, taxiMigration);
+        Assert.True(taxiIndex > 0);
+        string previousMigration = migrations[taxiIndex - 1];
         var migrator = db.GetService<IMigrator>();
-        migrator.Migrate(migrations[^2]);
+        migrator.Migrate(previousMigration);
         db.Add(new CharacterModel { Id = 42, Name = "Existing" });
         db.Add(new CharacterBindModel { Id = 42, BindPointId = 7, WorldId = 51 });
         db.Add(new CharacterEntitlementModel { Id = 42, EntitlementId = 1, Amount = 1 });
         db.SaveChanges();
         db.ChangeTracker.Clear();
-        db.Database.Migrate();
+        migrator.Migrate(taxiMigration);
         db.Add(new CharacterTaxiNodeModel { Id = 42, TaxiNodeId = 10 });
         db.SaveChanges();
         Assert.Single(db.CharacterTaxiNode);
-        migrator.Migrate(migrations[^2]);
+        migrator.Migrate(previousMigration);
         Assert.Equal("Existing", db.Character.Single().Name);
         Assert.Equal((ushort)7, db.CharacterBind.Single().BindPointId);
         Assert.Equal(1u, db.CharacterEntitlement.Single().Amount);

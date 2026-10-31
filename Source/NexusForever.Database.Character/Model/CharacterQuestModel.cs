@@ -11,6 +11,7 @@ namespace NexusForever.Database.Character.Model
         public byte Flags { get; set; }
         public uint? Timer { get; set; }
         public DateTime? Reset { get; set; }
+        public string ContractAcceptanceId { get; set; }
 
         public CharacterModel Character { get; set; }
         public ICollection<CharacterQuestObjectiveModel> QuestObjective { get; set; } = new HashSet<CharacterQuestObjectiveModel>();

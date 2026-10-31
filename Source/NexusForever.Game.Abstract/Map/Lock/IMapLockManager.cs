@@ -30,6 +30,16 @@ namespace NexusForever.Game.Abstract.Map.Lock
         IMapLock GetSoloLock(Identity identity, uint worldId);
 
         /// <summary>
+        /// Return a snapshot of the character's solo locks.
+        /// </summary>
+        IReadOnlyList<IMapLock> GetSoloLocks(Identity identity);
+
+        /// <summary>
+        /// Remove the matching solo lock without removing a newer instance for the same world.
+        /// </summary>
+        bool RemoveSoloLock(Identity identity, uint worldId, Guid instanceId);
+
+        /// <summary>
         /// Return <see cref="IMapLock"/> for supplied group id and world id.
         /// </summary>
         IMapLock GetGroupLock(ulong groupId, uint worldId);

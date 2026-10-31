@@ -26,6 +26,9 @@ namespace NexusForever.Game.Abstract.Entity
     {
         IAccount Account { get; }
 
+        /// <summary>Optional actor-owned full reward-track snapshot composition.</summary>
+        NexusForever.Game.Abstract.Reward.IRewardTrackPresentation RewardTrackPresentation => null;
+
         Identity Identity { get; }
         ulong CharacterId { get; }
         string Name { get; }

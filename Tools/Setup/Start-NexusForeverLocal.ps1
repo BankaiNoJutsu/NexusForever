@@ -42,7 +42,7 @@ default. Pass -MapGeneratorParallelism to override it.
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '')]
 [CmdletBinding()]
 param(
-    [string] $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path,
+    [string] $RepoRoot = '',
 
     [ValidateSet('Auto', 'ExternalOnly', 'PortableDocker')]
     [string] $DependencyMode = 'Auto',
@@ -130,6 +130,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+if (!$RepoRoot) { $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path }
 
 $wildStarClientLaunchScript = Join-Path $PSScriptRoot 'WildStarClientLaunch.ps1'
 if (!(Test-Path -LiteralPath $wildStarClientLaunchScript -PathType Leaf)) {
@@ -744,6 +745,31 @@ function Update-RuntimeConfigFiles {
     }
 }
 
+function Test-GeneratedGameAssets {
+    param(
+        [ValidateSet('--validateTables', '--validateMaps')]
+        [string] $ValidationOption,
+        [string] $Path
+    )
+
+    $validator = Join-Path $RepoRoot "Source\NexusForever.MapGenerator\bin\$Configuration\$TargetFramework\NexusForever.MapGenerator.exe"
+    if (!(Test-Path -LiteralPath $validator -PathType Leaf)) {
+        throw "Game asset validator was not built: $validator"
+    }
+
+    # Keep this compatible with Windows PowerShell 5.1 as well as PS7. Native
+    # failure means repair is needed; it must not change caller preferences or
+    # turn stderr into a terminating PowerShell error before we inspect exitcode.
+    $ErrorActionPreference = 'Continue'
+    $PSNativeCommandUseErrorActionPreference = $false
+    $validationOutput = & $validator $ValidationOption $Path 2>&1
+    $valid = $LASTEXITCODE -eq 0
+    if (!$valid) {
+        Write-Verbose "Game asset validation failed: $($validationOutput -join [Environment]::NewLine)"
+    }
+    $valid
+}
+
 function Test-TableAssets {
     param([string] $Path)
 
@@ -751,7 +777,11 @@ function Test-TableAssets {
         return $false
     }
 
-    Test-Path -LiteralPath (Join-Path $Path 'World.tbl') -PathType Leaf
+    if (!(Test-Path -LiteralPath (Join-Path $Path 'World.tbl') -PathType Leaf)) {
+        return $false
+    }
+
+    Test-GeneratedGameAssets -ValidationOption '--validateTables' -Path $Path
 }
 
 function Test-MapAssets {
@@ -774,7 +804,7 @@ function Test-MapAssets {
         }
     }
 
-    $true
+    Test-GeneratedGameAssets -ValidationOption '--validateMaps' -Path $Path
 }
 
 function Initialize-GameAssets {
@@ -846,11 +876,11 @@ function Initialize-GameAssets {
     }
 
     if (!(Test-TableAssets -Path $tablePath)) {
-        throw "Game tables were not found at $tablePath"
+        throw "Game tables are missing, invalid, or from an incomplete preparation at $tablePath"
     }
 
     if (!(Test-MapAssets -Path $mapPath)) {
-        throw "Map assets were not found at $mapPath"
+        throw "Map assets are missing, invalid, or from an incomplete preparation at $mapPath"
     }
 
     [pscustomobject]@{

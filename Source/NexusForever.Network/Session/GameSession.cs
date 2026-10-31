@@ -197,7 +197,7 @@ namespace NexusForever.Network.Session
         {
             try
             {
-                //using IServiceScope serviceScope = CreateHandlePacketScope();
+                using IServiceScope serviceScope = CreateHandlePacketScope();
 
                 using var reader = new ClientGamePacketReader();
                 reader.Initialise(packet, encryption);
@@ -205,8 +205,7 @@ namespace NexusForever.Network.Session
                 if (packet.QueuedTimestamp != 0)
                     NexusForeverDiagnostics.RecordPacketQueueWait("world", opcode.ToString(), NexusForeverDiagnostics.GetElapsedMilliseconds(packet.QueuedTimestamp));
 
-                //IReadable message = serviceScope.ServiceProvider.GetKeyedService<IReadable>(opcode);
-                IReadable message = serviceProvider.GetKeyedService<IReadable>(opcode);
+                IReadable message = serviceScope.ServiceProvider.GetKeyedService<IReadable>(opcode);
                 LogSpellPacketBoundary("incoming-read", opcode, packet.IsEncrypted, message?.GetType().Name, packet.Data?.Length ?? 0);
                 PacketEvidenceRecorder.Record(
                     Id,
@@ -228,8 +227,7 @@ namespace NexusForever.Network.Session
                     return;
                 }
 
-                //object handler = serviceScope.ServiceProvider.GetService(handlerType);
-                object handler = serviceProvider.GetService(handlerType);
+                object handler = serviceScope.ServiceProvider.GetService(handlerType);
                 if (handler == null)
                 {
                     log.Warn($"Received unhandled packet {opcode}(0x{opcode:X}).");

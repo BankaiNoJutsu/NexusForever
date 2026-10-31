@@ -2,6 +2,7 @@
 
 namespace NexusForever.Network.World.Message.Model.Reward
 {
+    [Message(GameMessageOpcode.ClientRewardTrackChooseTrack)]
     public class ClientRewardTrackChooseTrack : IReadable
     {
         public ushort RewardTrackId { get; private set; }

@@ -138,6 +138,12 @@ namespace NexusForever.Game.Pvp
             }
         }
 
+        public bool IsDueling(IPlayer player)
+        {
+            lock (syncRoot)
+                return TryGetSession(player, out DuelSession session) && session.State == DuelState.Active;
+        }
+
         public bool AreDueling(IPlayer player, IPlayer target)
         {
             if (player == null || target == null)

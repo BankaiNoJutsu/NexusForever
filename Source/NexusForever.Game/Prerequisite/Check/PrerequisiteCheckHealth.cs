@@ -17,5 +17,8 @@ namespace NexusForever.Game.Prerequisite.Check
             IWorldEntity entity = parameters.Target as IWorldEntity ?? player;
             return PrerequisiteCompare.Compare(comparison, entity.Health, value);
         }
+
+        public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => subject != null && PrerequisiteCompare.Compare(comparison, subject.Health, value);
     }
 }

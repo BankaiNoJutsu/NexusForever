@@ -22,6 +22,7 @@ namespace NexusForever.Game.Spell
         public uint ClientSideInteractionDurationMs { get; set; }
         public System.Action<ISpell, bool> FinishCallback { get; set; }
         public uint ClientContextToken { get; set; }
+        public bool HasClientCastRequest { get; set; }
         public string ClientRequestSource { get; set; }
         public uint PrimaryTargetId { get; set; }
         public Position Position { get; set; }

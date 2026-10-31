@@ -11,7 +11,7 @@ using NexusForever.Shared.Game;
 
 namespace NexusForever.Game.Quest
 {
-    public class QuestObjective : IQuestObjective
+    public partial class QuestObjective : IQuestObjective
     {
         [Flags]
         public enum QuestObjectiveSaveMask
@@ -32,8 +32,7 @@ namespace NexusForever.Game.Quest
             get => progress;
             set
             {
-                saveMask |= QuestObjectiveSaveMask.Progress;
-                progress = value;
+                lock (persistence.Gate) { progress = value; persistence.Dirty((int)QuestObjectiveSaveMask.Progress); }
                 player.RequestSave();
             }
         }
@@ -45,16 +44,13 @@ namespace NexusForever.Game.Quest
             get => timer;
             set
             {
-                saveMask |= QuestObjectiveSaveMask.Timer;
-                timer = value;
+                lock (persistence.Gate) { timer = value; persistence.Dirty((int)QuestObjectiveSaveMask.Timer); }
             }
         }
 
         private uint? timer;
 
         private List<uint> targetIds = [];
-
-        private QuestObjectiveSaveMask saveMask;
 
         private readonly IPlayer player;
         private readonly IAssetManager assetManager;
@@ -73,6 +69,7 @@ namespace NexusForever.Game.Quest
             Index         = model.Index;
             progress      = model.Progress;
             timer         = model.Timer;
+            InitialisePersistence(model);
 
             if (timer != null)
                 objectiveTimer = new UpdateTimer(timer.Value / 1000d);
@@ -92,6 +89,7 @@ namespace NexusForever.Game.Quest
             QuestInfo     = questInfo;
             ObjectiveInfo = objectiveInfo;
             Index         = index;
+            InitialisePersistence(null);
 
             if (objectiveInfo.Entry.MaxTimeAllowedMS != 0u)
             {
@@ -102,7 +100,7 @@ namespace NexusForever.Game.Quest
             if (IsChecklist() || UsesTargetGroups())
                 BuildTargets();
 
-            saveMask = QuestObjectiveSaveMask.Create;
+            persistence.Dirty((int)QuestObjectiveSaveMask.Create);
         }
 
         /// <summary>
@@ -113,56 +111,7 @@ namespace NexusForever.Game.Quest
             targetIds = (assetManager?.GetQuestObjectiveTargetIds(ObjectiveInfo.Id) ?? Enumerable.Empty<uint>()).ToList();
         }
 
-        public void Save(CharacterContext context)
-        {
-            if (saveMask == QuestObjectiveSaveMask.None)
-                return;
-
-            if ((saveMask & QuestObjectiveSaveMask.Create) != 0)
-            {
-                CharacterQuestObjectiveModel model = context.CharacterQuestObjective.Find(player.CharacterId, (ushort)QuestInfo.Entry.Id, Index);
-                if (model == null)
-                {
-                    context.Add(BuildModel());
-                }
-                else
-                {
-                    model.Progress = Progress;
-                    model.Timer    = Timer;
-                }
-            }
-            else
-            {
-                CharacterQuestObjectiveModel model = context.CharacterQuestObjective.Find(player.CharacterId, (ushort)QuestInfo.Entry.Id, Index);
-                if (model == null)
-                {
-                    context.Add(BuildModel());
-                }
-                else
-                {
-                    if ((saveMask & QuestObjectiveSaveMask.Progress) != 0)
-                        model.Progress = Progress;
-
-                    if ((saveMask & QuestObjectiveSaveMask.Timer) != 0)
-                        model.Timer = Timer;
-                }
-            }
-
-
-            saveMask = QuestObjectiveSaveMask.None;
-        }
-
-        private CharacterQuestObjectiveModel BuildModel()
-        {
-            return new CharacterQuestObjectiveModel
-            {
-                Id       = player.CharacterId,
-                QuestId  = (ushort)QuestInfo.Entry.Id,
-                Index    = Index,
-                Progress = Progress,
-                Timer    = Timer
-            };
-        }
+        public void Save(CharacterContext context) => persistence.Save(context);
 
         public void Update(double lastTick)
         {

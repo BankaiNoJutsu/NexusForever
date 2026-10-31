@@ -1,3 +1,4 @@
+using NexusForever.Game.Entity;
 ﻿using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Message;
@@ -22,6 +23,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
 
         public void HandleMessage(IWorldSession session, ClientBuybackItemFromVendor buybackItemFromVendor)
         {
+            if (!InventoryMutationScope.TryAcquire(session.Player?.Inventory, out var mutationLease)) return;
+            using var heldMutation = mutationLease;
             IBuybackItem buybackItem = buybackManager.GetItem(session.Player, buybackItemFromVendor.UniqueId);
             if (buybackItem == null)
                 return;

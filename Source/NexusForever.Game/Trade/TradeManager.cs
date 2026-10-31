@@ -1,5 +1,6 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Trade;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
@@ -428,6 +429,13 @@ namespace NexusForever.Game.Trade
 
         private void Settle(TradeSession session)
         {
+            if (!InventoryMutationScope.TryAcquire(new[] { session.Initiator.Inventory, session.Target.Inventory }, out var mutationLease))
+            {
+                lock (syncRoot)
+                    if (sessions.Contains(session)) Finish(session, P2PTradeResult.ErrorAddingItem, true);
+                return;
+            }
+            using var heldMutation = mutationLease;
             lock (syncRoot)
             {
                 if (!sessions.Contains(session))

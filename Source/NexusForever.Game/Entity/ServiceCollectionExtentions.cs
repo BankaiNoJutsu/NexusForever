@@ -17,7 +17,9 @@ namespace NexusForever.Game.Entity
         {
             sc.AddGameEntityMovement();
 
-            sc.AddTransient<IEntityFactory, EntityFactory>();
+            // Entities and their deferred runtime resolvers outlive the packet that
+            // creates them. Keep the stateless factory bound to the root provider.
+            sc.AddSingleton<IEntityFactory, EntityFactory>();
             sc.AddTransient<IEntitySummonFactory, EntitySummonFactory>();
             sc.AddTransient<INonPlayerEntity, NonPlayerEntity>();
             sc.AddTransient<IChestEntity, ChestEntity>();

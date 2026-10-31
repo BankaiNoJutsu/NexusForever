@@ -7,13 +7,14 @@ using NLog;
 
 namespace NexusForever.Game.Entity
 {
-    public class Bag : IBag
+    public partial class Bag : IBag
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
         public InventoryLocation Location { get; }
-        public uint Slots => (uint)items.Length;
-        public uint SlotsRemaining { get; private set; }
+        public uint Slots { get { lock (mutationGate) return (uint)items.Length; } }
+        public uint SlotsRemaining { get { lock (mutationGate) return slotsRemaining; } private set => slotsRemaining = value; }
+        private uint slotsRemaining;
 
         private IItem[] items;
         private readonly IItemManager itemManager;
@@ -25,7 +26,7 @@ namespace NexusForever.Game.Entity
         {
             Location       = location;
             SlotsRemaining = capacity;
-            items          = new Item[capacity];
+            items          = new IItem[capacity];
             this.itemManager = itemManager;
 
             log.Trace($"Initialised new bag {Location} with {capacity} slots.");
@@ -33,20 +34,22 @@ namespace NexusForever.Game.Entity
 
         public void Save(CharacterContext context)
         {
-            for (uint i = 0; i < items.Length; ++i)
+            IItem[] snapshot = CreateSnapshot();
+            for (uint index = 0; index < snapshot.Length; ++index)
             {
-                // Item does not exist in slot
-                if (items[i] == null)
-                    continue;
-
-                // Item has incorrect slot, setting the BagIndex to the current index
-                if (i != items[i].BagIndex)
+                IItem item = snapshot[index];
+                if (item == null) continue;
+                lock (mutationGate)
                 {
-                    log.Warn($"Item with guid: 0x{items[i].Guid:X16} has incorrect slot: {items[i].BagIndex}, setting to slot: {i}");
-                    items[i].BagIndex = i;
+                    if (index < items.Length && ReferenceEquals(items[index], item) && index != item.BagIndex)
+                    {
+                        EnsureSlotAvailable(index);
+                        log.Warn($"Item with guid: 0x{item.Guid:X16} has incorrect slot: {item.BagIndex}, setting to slot: {index}");
+                        item.BagIndex = index;
+                    }
                 }
-
-                items[i].Save(context);
+                // Item enrollment can query SQL. Do not retain the bag gate here.
+                item.Save(context);
             }
         }
 
@@ -55,7 +58,10 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public IItem GetItem(ulong guid)
         {
-            return items.SingleOrDefault(i => i.Guid == guid);
+            lock (mutationGate)
+            {
+                return items.SingleOrDefault(i => i != null && i.Guid == guid);
+            }
         }
 
         /// <summary>
@@ -63,10 +69,13 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public IItem GetItem(uint bagIndex)
         {
-            if (bagIndex >= items.Length)
-                throw new ArgumentOutOfRangeException();
+            lock (mutationGate)
+            {
+                if (bagIndex >= items.Length)
+                    throw new ArgumentOutOfRangeException();
 
-            return items[(int)bagIndex];
+                return items[(int)bagIndex];
+            }
         }
 
         /// <summary>
@@ -74,11 +83,14 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public uint? GetFirstAvailableBagIndex()
         {
-            for (uint bagIndex = 0u; bagIndex < items.Length; bagIndex++)
-                if (items[bagIndex] == null)
-                    return bagIndex;
+            lock (mutationGate)
+            {
+                for (uint bagIndex = 0u; bagIndex < items.Length; bagIndex++)
+                    if (items[bagIndex] == null && !reservations.ContainsKey(bagIndex))
+                        return bagIndex;
 
-            return null;
+                return null;
+            }
         }
 
         /// <summary>
@@ -86,15 +98,18 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public uint? GetFirstAvailableBagIndex(ItemSlot slot)
         {
-            if (Location != InventoryLocation.Equipped)
+            lock (mutationGate)
+            {
+                if (Location != InventoryLocation.Equipped)
+                    return null;
+
+                // find first free bag index, some items can be equipped into multiple slots
+                foreach (uint bagIndex in itemManager?.GetEquippedBagIndexes(slot) ?? Enumerable.Empty<EquippedItem>())
+                    if (items[bagIndex] == null && !reservations.ContainsKey(bagIndex))
+                        return bagIndex;
+
                 return null;
-
-            // find first free bag index, some items can be equipped into multiple slots
-            foreach (uint bagIndex in itemManager?.GetEquippedBagIndexes(slot) ?? Enumerable.Empty<EquippedItem>())
-                if (items[bagIndex] == null)
-                    return bagIndex;
-
-            return null;
+            }
         }
 
         /// <summary>
@@ -102,23 +117,28 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void AddItem(IItem item, uint bagIndex)
         {
-            if (item == null)
-                throw new ArgumentNullException(nameof(item));
-            if (item.Location != InventoryLocation.None)
-                throw new ArgumentException();
-            if (items[bagIndex] != null)
-                throw new ArgumentException();
-
-            item.Location = Location;
-            item.BagIndex = bagIndex;
-            items[item.BagIndex] = item;
-
-            checked
+            lock (mutationGate)
             {
-                SlotsRemaining--;
-            }
+                ValidateIndex(bagIndex);
+                EnsureSlotAvailable(bagIndex);
+                if (item == null)
+                    throw new ArgumentNullException(nameof(item));
+                if (item.Location != InventoryLocation.None)
+                    throw new ArgumentException();
+                if (items[bagIndex] != null)
+                    throw new ArgumentException();
 
-            log.Trace($"Added item 0x{item.Guid:X16} to bag {Location} at index {item.BagIndex}.");
+                item.Location = Location;
+                item.BagIndex = bagIndex;
+                items[item.BagIndex] = item;
+
+                checked
+                {
+                    SlotsRemaining--;
+                }
+
+                log.Trace($"Added item 0x{item.Guid:X16} to bag {Location} at index {item.BagIndex}.");
+            }
         }
 
         /// <summary>
@@ -126,29 +146,34 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void RemoveItem(IItem item)
         {
-            if (item == null)
-                throw new ArgumentNullException(nameof(item));
-            if (item.Location != Location)
-                throw new ArgumentException();
-            if (items[item.BagIndex] == null)
-                throw new ArgumentException();
-
-            items[item.BagIndex] = null;
-
-            log.Trace($"Removed item 0x{item.Guid:X16} from bag {Location} at index {item.BagIndex}.");
-
-            item.PreviousLocation = item.Location;
-            item.PreviousBagIndex = item.BagIndex;
-            item.Location = InventoryLocation.None;
-            item.BagIndex = 0u;
-
-            checked
+            lock (mutationGate)
             {
-                SlotsRemaining++;
-            }
+                ValidateResident(item);
+                EnsureSlotAvailable(item.BagIndex);
+                if (item == null)
+                    throw new ArgumentNullException(nameof(item));
+                if (item.Location != Location)
+                    throw new ArgumentException();
+                if (items[item.BagIndex] == null)
+                    throw new ArgumentException();
 
-            if (SlotsRemaining > Slots)
-                throw new InvalidOperationException();
+                items[item.BagIndex] = null;
+
+                log.Trace($"Removed item 0x{item.Guid:X16} from bag {Location} at index {item.BagIndex}.");
+
+                item.PreviousLocation = item.Location;
+                item.PreviousBagIndex = item.BagIndex;
+                item.Location = InventoryLocation.None;
+                item.BagIndex = 0u;
+
+                checked
+                {
+                    SlotsRemaining++;
+                }
+
+                if (SlotsRemaining > Slots)
+                    throw new InvalidOperationException();
+            }
         }
 
         /// <summary>
@@ -156,24 +181,31 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void MoveItem(IItem item, uint bagIndex)
         {
-            if (item == null)
-                throw new ArgumentNullException(nameof(item));
-            if (item.Location != Location)
-                throw new ArgumentException();
-            if (items[item.BagIndex] == null)
-                throw new ArgumentException();
-            if (items[bagIndex] != null)
-                throw new ArgumentException();
+            lock (mutationGate)
+            {
+                ValidateResident(item);
+                ValidateIndex(bagIndex);
+                EnsureSlotAvailable(item.BagIndex);
+                EnsureSlotAvailable(bagIndex);
+                if (item == null)
+                    throw new ArgumentNullException(nameof(item));
+                if (item.Location != Location)
+                    throw new ArgumentException();
+                if (items[item.BagIndex] == null)
+                    throw new ArgumentException();
+                if (items[bagIndex] != null)
+                    throw new ArgumentException();
 
-            item.PreviousLocation = item.Location;
-            item.PreviousBagIndex = item.BagIndex;
+                item.PreviousLocation = item.Location;
+                item.PreviousBagIndex = item.BagIndex;
 
-            items[item.BagIndex] = null;
+                items[item.BagIndex] = null;
 
-            item.BagIndex = bagIndex;
-            items[bagIndex] = item;
+                item.BagIndex = bagIndex;
+                items[bagIndex] = item;
 
-            log.Trace($"Moved item 0x{item.Guid:X16} from bag {Location} at index {item.PreviousBagIndex} to index {item.BagIndex}.");
+                log.Trace($"Moved item 0x{item.Guid:X16} from bag {Location} at index {item.PreviousBagIndex} to index {item.BagIndex}.");
+            }
         }
 
         /// <summary>
@@ -181,31 +213,38 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void SwapItem(IItem item, IItem item2)
         {
-            if (item == null)
-                throw new ArgumentNullException(nameof(item));
-            if (item2 == null)
-                throw new ArgumentNullException(nameof(item2));
-            if (item.Location != Location)
-                throw new ArgumentException();
-            if (item2.Location != Location)
-                throw new ArgumentException();
-            if (items[item.BagIndex] == null)
-                throw new ArgumentException();
-            if (items[item2.BagIndex] == null)
-                throw new ArgumentException();
+            lock (mutationGate)
+            {
+                ValidateResident(item);
+                ValidateResident(item2);
+                EnsureSlotAvailable(item.BagIndex);
+                EnsureSlotAvailable(item2.BagIndex);
+                if (item == null)
+                    throw new ArgumentNullException(nameof(item));
+                if (item2 == null)
+                    throw new ArgumentNullException(nameof(item2));
+                if (item.Location != Location)
+                    throw new ArgumentException();
+                if (item2.Location != Location)
+                    throw new ArgumentException();
+                if (items[item.BagIndex] == null)
+                    throw new ArgumentException();
+                if (items[item2.BagIndex] == null)
+                    throw new ArgumentException();
 
-            item.PreviousLocation = item.Location;
-            item2.PreviousLocation = item2.Location;
-            item.PreviousBagIndex = item.BagIndex;
-            item2.PreviousBagIndex = item2.BagIndex;
+                item.PreviousLocation = item.Location;
+                item2.PreviousLocation = item2.Location;
+                item.PreviousBagIndex = item.BagIndex;
+                item2.PreviousBagIndex = item2.BagIndex;
 
-            items[item.BagIndex] = item2;
-            item2.BagIndex = item.BagIndex;
+                items[item.BagIndex] = item2;
+                item2.BagIndex = item.BagIndex;
 
-            items[item2.PreviousBagIndex] = item;
-            item.BagIndex = item2.PreviousBagIndex;
+                items[item2.PreviousBagIndex] = item;
+                item.BagIndex = item2.PreviousBagIndex;
 
-            log.Trace($"Swapped items 0x{item.Guid:X16} and 0x{item2.Guid:X16} from bag {Location} between index {item.BagIndex} and {item2.BagIndex}.");
+                log.Trace($"Swapped items 0x{item.Guid:X16} and 0x{item2.Guid:X16} from bag {Location} between index {item.BagIndex} and {item2.BagIndex}.");
+            }
         }
 
         /// <summary>
@@ -213,45 +252,61 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void Resize(int capacityChange)
         {
-            if (items.Length + capacityChange < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacityChange));
-
-            Array.Resize(ref items, items.Length + capacityChange);
-            SlotsRemaining = (uint)(SlotsRemaining + capacityChange);
-
-            log.Trace($"Resized bag {Location} from {items.Length - capacityChange} to {items.Length} slots.");
+            lock (mutationGate)
+            {
+                EnsureNoReservations();
+                long newSize = (long)items.Length + capacityChange;
+                if (newSize < 0 || newSize > int.MaxValue)
+                    throw new ArgumentOutOfRangeException(nameof(capacityChange));
+                if (newSize < items.Length && items.Skip((int)newSize).Any(item => item != null))
+                    throw new InvalidOperationException("Cannot remove occupied bag slots.");
+                uint remaining = checked((uint)((long)SlotsRemaining + capacityChange));
+                Array.Resize(ref items, (int)newSize);
+                SlotsRemaining = remaining;
+                log.Trace($"Resized bag {Location} to {items.Length} slots.");
+            }
         }
 
         public IItem[] CreateSnapshot()
         {
-            return items.ToArray();
+            lock (mutationGate)
+            {
+                return items.ToArray();
+            }
         }
 
         public void RestoreSnapshot(IItem[] snapshot)
         {
-            ArgumentNullException.ThrowIfNull(snapshot);
-
-            items = snapshot.ToArray();
-            uint slotsRemaining = (uint)items.Length;
-            for (uint bagIndex = 0u; bagIndex < items.Length; bagIndex++)
+            lock (mutationGate)
             {
-                IItem item = items[bagIndex];
-                if (item == null)
-                    continue;
+                EnsureNoReservations();
+                ArgumentNullException.ThrowIfNull(snapshot);
+                if (snapshot.OfType<Item>().Any(item => item.HasRewardMutationReservation))
+                    throw new InvalidOperationException("Snapshot contains an Item reserved for a pending delivery.");
 
-                item.Location = Location;
-                item.BagIndex = bagIndex;
-                slotsRemaining--;
+                items = snapshot.ToArray();
+                uint slotsRemaining = (uint)items.Length;
+                for (uint bagIndex = 0u; bagIndex < items.Length; bagIndex++)
+                {
+                    IItem item = items[bagIndex];
+                    if (item == null)
+                        continue;
+
+                    item.Location = Location;
+                    item.BagIndex = bagIndex;
+                    slotsRemaining--;
+                }
+
+                SlotsRemaining = slotsRemaining;
             }
-
-            SlotsRemaining = slotsRemaining;
         }
 
         public IEnumerator<IItem> GetEnumerator()
         {
-            return items
-                .Where(i => i != null)
-                .GetEnumerator();
+            lock (mutationGate)
+            {
+                return items.Where(i => i != null).ToArray().AsEnumerable().GetEnumerator();
+            }
         }
 
         IEnumerator IEnumerable.GetEnumerator()

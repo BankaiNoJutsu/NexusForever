@@ -16,5 +16,8 @@ namespace NexusForever.Game.Prerequisite.Check
             uint isPlayer = entity is IPlayer ? 1u : 0u;
             return PrerequisiteCompare.Compare(comparison, isPlayer, value);
         }
+
+        public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => subject != null && PrerequisiteCompare.Compare(comparison, subject is IPlayer ? 1u : 0u, value);
     }
 }

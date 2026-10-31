@@ -86,6 +86,7 @@ namespace NexusForever.Game.Guild
         private ulong repairLimit;
 
         private GuildRankSaveMask saveMask;
+        public bool NeedsSave => saveMask != GuildRankSaveMask.None;
 
         /// <summary>
         /// Returns if <see cref="IGuildRank"/> is enqueued to be saved to the database.

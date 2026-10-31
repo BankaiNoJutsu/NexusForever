@@ -18,7 +18,7 @@
         ItemEquipped                = 13, // Item equipment requirement not met - handler table[13] Prerequisite_CheckItemEquipped 14049d760; NF checks Equipped bag index objectId0
         ItemOnCharacter             = 14, // Inventory requirement not met - handler table[14] Prerequisite_CheckItemOnCharacter 14049d7b0; NF uses Inventory.GetItemCount
         UnderSpell                  = 15, // Spell requirements not met
-        DistanceToWorldLocation     = 16, // Distance requirements not met
+        DistanceToWorldLocation     = 16, // Distance requirements not met - live case 0x10 vtable +0x278 -> 14049e490: same-world WorldLocation2 center distance vs signed-int32 value0 converted to float
         // 17 is unused in PrerequisiteType.tbl
         ScheduledEvent              = 18, // You cannot do that at this time
         TradeSkillProfession        = 19, // You must have the correct tradeskill tier.
@@ -43,7 +43,7 @@
         IsCreature                  = 38, // Incorrect creature - handler table[38] Prerequisite_CheckIsCreature 14049e3a0; NF compares target is ICreatureEntity to value0
         IsPlayer                    = 39, // Incorrect player - handler table[39] Prerequisite_CheckIsPlayer 14049e3f0; NF compares target is IPlayer to value0
         Health                      = 40, // Incorrect health - handler table[40] Prerequisite_CheckHealth 14049e440; NF compares raw IWorldEntity.Health (type 172 HealthScaled uses percent)
-        ZoneExplored                = 41, // Zone exploration criteria not met - handler table[41] Prerequisite_CheckZoneExplored 14049e490; NF uses IZoneMapManager.GetMapZoneExploredPercent for objectId0 MapZone id
+        ZoneExplored                = 41, // Zone exploration criteria not met - NF uses IZoneMapManager.GetMapZoneExploredPercent for objectId0 MapZone id; old table-index attribution to 14049e490 was incorrect (live type 16)
         IsGroupLeader               = 42, // You cannot do that - handler table[42] Prerequisite_CheckIsGroupLeader 14049e540; NF uses IGroupStateManager + GroupLootState.Leader
         IsObjectiveActive           = 43, // You cannot do that right now - handler table[43] Prerequisite_CheckIsObjectiveActive 14049e610; NF uses IQuestManager.IsActiveObjectiveId
         InTargetGroup               = 44, // You cannot do that right now
@@ -73,9 +73,9 @@
         QuestObjective              = 68, // Quest objective requirement not met - handler table[68] Prerequisite_CheckQuestObjective 14049ecc0; NF checks active-quest objective complete by QuestObjective id (objectId0)
         ChallengeRequirement        = 69, // Challenge requirement not met
         ChallengeTier               = 70, // Challenge tier requirement not met - handler table[70] Prerequisite_CheckChallengeTier 14049ed20; NF uses IChallengeManager.GetCompletionCount for objectId0 challenge id (tier proxy)
-        ClassProgress               = 71, // Requirements not met - ObjectId is Class id, value is class progression threshold
+        VitalPercent                = 71, // Live case 0x47 -> 1404a4e30: current vital * 100 / capacity; objectId is Vital
         // 72 is unused in PrerequisiteType.tbl
-        Vital                       = 73, // Requirements not met - Part of Vital
+        Vital                       = 73, // Requirements not met - live case0x49 reads current float vital via140466520; CVTTSS2SI at1404a23ed then unsigned low32 comparison1404a2090; percentage71/215 remain float
         ChallengeLocked             = 74, // The specified challenge is locked
         // 75 is unused in PrerequisiteType.tbl
         CreatureState               = 76, // Requirements not met - handler table[76] Prerequisite_CheckCreatureState 14049ef00; objectId0 optional Creature2 id filter; value0 is unit state index; NF uses IUnitEntity.HasUnitState
@@ -97,7 +97,7 @@
         ActiveSpellTargetMechanic   = 92, // Spell conditions not met - live Prerequisite_CheckActiveSpellTargetMechanic 14049d5b0 (+0x168); table[92] 14049f5b0; NF Spell4TargetMechanics.Flags overlap on active persistent spells
         Spell4EffectCategoryOnUnit  = 93, // Spell conditions not met - live case 0x5d via 1403d6f1c; table[93] 14049f690; NF Spell4EffectGroupList membership for value0 effect-group id on persistent effects
         QuestObjective6             = 94, // Quest objective requirements not met - handler table[94] 14049f700; NF reuses QuestObjectivePrerequisiteHelper (type 68 path)
-        Distance                    = 95, // Distance requirements not met - handler table[95] Prerequisite_CheckDistance 14049f770; NF compares floor 3D distance (player to target) in world units
+        Distance                    = 95, // Distance requirements not met - live case 0x5f at 1404a2f9d compares truncated XYZ distance squared (low uint32) to value0 squared modulo uint32; missing target passes NotEqual only
         EvalContextFloatByObjectId  = 96, // Requirements not met - table[96] Prerequisite_CheckEvalContextFloatByObjectId 14049f810; eval-context list (+0x20 key, +0x28 float); NF item-eval proxy via PrerequisiteEvalListHelper
         AccountItemListItem2CountNpc97 = 97, // Requirements not met - table[97] 14049f8c0 NPC 0x14/0x17 then AccountItemList_WalkItem2IdMatch 140497d9c; NF account-row Item2 count + NPC gate
         AccountItemListItem2CountNpc98 = 98, // Requirements not met - table[98] 14049f990 same Item2 walk family as 97/99; NF account-row Item2 count + NPC gate
@@ -220,7 +220,7 @@
         Personal5V5ArenaRating212   = 212, // Personal arena 5v5 rating requirement not met
         PersonalWarplotRating       = 213, // Personal warplots rating requirement not met
         SpellBaseId                 = 214, // Spell requirement not met
-        Shield215                   = 215, // Shield requirement not met
+        ShieldCapacityPercent       = 215, // Live case 0xd7 -> 1404a4cf0: shield * 100 / capacity
         Shield216                   = 216, // Shield requirement not met
         PvpFlag                     = 217, // Target is not flagged for PvP.
         Datacube                    = 218, // Datacube requirement not met - handler table[218-221] stub 1407db510; NF uses IDatacubeManager progress bitmask (DatacubeType.Datacube) per SimpleEntity.OnActivateCast

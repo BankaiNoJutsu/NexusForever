@@ -32,6 +32,41 @@ namespace NexusForever.Game.Prerequisite
 
         #endregion
 
+        public bool MeetsUnit(IUnitEntity subject, uint prerequisiteId, IPrerequisiteParameters parameters = null)
+        {
+            if (subject == null)
+                return false;
+
+            parameters ??= prerequisiteParametersFactory.Resolve();
+            PrerequisiteEntry entry = gameTableManager?.Prerequisite?.GetEntry(prerequisiteId);
+            if (entry == null)
+            {
+                log.LogWarning("Missing prerequisite row {PrerequisiteId}; failing unit prerequisite check closed.", prerequisiteId);
+                return false;
+            }
+
+            if (entry.Flags is not EvaluationMode.EvaluateAND and not EvaluationMode.EvaluateOR)
+                return false;
+
+            bool evaluateAnd = entry.Flags == EvaluationMode.EvaluateAND;
+            for (int i = 0; i < entry.PrerequisiteTypeId.Length; i++)
+            {
+                PrerequisiteType type = entry.PrerequisiteTypeId[i];
+                if (type == PrerequisiteType.None)
+                    continue;
+
+                IPrerequisiteCheck handler = serviceProvider.GetKeyedService<IPrerequisiteCheck>(type);
+                bool result = handler != null && handler.MeetsUnit(subject, entry.PrerequisiteComparisonId[i], entry.Value[i], entry.ObjectId[i], parameters);
+                if (handler == null)
+                    log.LogWarning("Unhandled unit PrerequisiteType {Type}!", type);
+
+                if (evaluateAnd != result)
+                    return result;
+            }
+
+            return evaluateAnd;
+        }
+
         /// <summary>
         /// Checks if <see cref="IPlayer"/> meets supplied prerequisite.
         /// </summary>

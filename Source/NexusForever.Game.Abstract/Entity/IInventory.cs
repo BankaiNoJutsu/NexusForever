@@ -9,6 +9,7 @@ namespace NexusForever.Game.Abstract.Entity
 {
     public interface IInventory : IDatabaseCharacter, IUpdate, IEnumerable<IBag>
     {
+        bool OwnsRewardReservation(IInventoryRewardReservation reservation) => false;
         /// <summary>
         /// Returns if <see cref="InventoryLocation"/> and bag index is a visible item slot.
         /// </summary>
@@ -43,6 +44,63 @@ namespace NexusForever.Game.Abstract.Entity
         /// Returns if a new item can be created in the supplied <see cref="InventoryLocation"/>.
         /// </summary>
         bool CanCreateItem(InventoryLocation location, IItemInfo info, uint count);
+
+        /// <summary>
+        /// Whether this implementation can create permanently bound physical items
+        /// without losing binding through a quantity-only destination.
+        /// </summary>
+        bool SupportsSoulboundItemCreation => false;
+
+        bool SupportsTransactionalSoulboundDelivery => false;
+        bool HasPendingRewardDelivery => false;
+        bool RequiresAuthoritativeReload => false;
+        bool IsSaveBlocked => HasPendingRewardDelivery || RequiresAuthoritativeReload;
+
+        bool TryReserveSoulboundCreation(InventoryLocation location, IItemInfo info, uint count,
+            out IInventoryRewardReservation reservation, out GenericError error,
+            ItemUpdateReason reason = ItemUpdateReason.NoReason, uint charges = 0)
+        {
+            reservation = null;
+            error = GenericError.ItemNotValidForSlot;
+            return false;
+        }
+
+        /// <summary>Logical leases retain no monitor across asynchronous work.</summary>
+        bool TryAcquireSaveLease(out IDisposable lease)
+        {
+            lease = null;
+            return !HasPendingRewardDelivery && !RequiresAuthoritativeReload;
+        }
+
+        bool TryAcquireMutationLease(out IDisposable lease)
+        {
+            lease = null;
+            return !HasPendingRewardDelivery && !RequiresAuthoritativeReload;
+        }
+
+        void InvalidateRewardDeliveries() { }
+
+        /// <summary>
+        /// Pure whole-quantity preflight for bound items in a character bag.
+        /// Unsupported implementations fail without invoking ordinary item creation.
+        /// </summary>
+        bool CanCreateSoulboundItem(InventoryLocation location, IItemInfo info, uint count, out GenericError error, uint charges = 0)
+        {
+            error = GenericError.ItemNotValidForSlot;
+            return false;
+        }
+
+        /// <summary>
+        /// Create permanently bound physical items, binding new instances before
+        /// their first inventory packet. False never changes items, allocates IDs,
+        /// or sends packets. Invoke on the owning inventory thread.
+        /// </summary>
+        bool TryCreateSoulboundItem(InventoryLocation location, IItemInfo info, uint count, out GenericError error,
+            ItemUpdateReason reason = ItemUpdateReason.NoReason, uint charges = 0)
+        {
+            error = GenericError.ItemNotValidForSlot;
+            return false;
+        }
 
         /// <summary>
         /// Returns if the count of items with id exists in <see cref="InventoryLocation.Inventory"/>.

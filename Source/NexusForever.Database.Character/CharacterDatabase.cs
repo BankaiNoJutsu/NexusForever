@@ -23,6 +23,10 @@ namespace NexusForever.Database.Character
             config = connectionString;
         }
 
+        /// <summary>Create an exclusively caller-owned context for a complete transaction.</summary>
+        public CharacterContext CreateContext() => new(config
+            ?? throw new InvalidOperationException("CharacterDatabase has not been initialized."));
+
         public async Task Save(Action<CharacterContext> action)
         {
             await NexusForeverDiagnostics.MeasureDatabaseAsync("character", nameof(Save), async () =>
@@ -32,6 +36,10 @@ namespace NexusForever.Database.Character
                 await context.SaveChangesAsync();
             });
         }
+
+        /// <summary>Save one actor-enrolled Character graph without replaying gameplay callbacks.</summary>
+        public virtual Task SaveAtomic(ulong characterId, Action<CharacterContext> action)
+            => CharacterAtomicSave.Execute(CreateContext, characterId, action);
 
         /// <summary>
         /// Synchronously persist changes. Blocks the calling thread until the save completes.
@@ -104,7 +112,9 @@ namespace NexusForever.Database.Character
         public ulong GetNextItemId()
         {
             using var context = new CharacterContext(config);
-            return GetMaxId(context.Item.Select(r => r.Id));
+            // Realm-bank transfers retain the same GUID while removing the character row.
+            return Math.Max(GetMaxId(context.Item.Select(r => r.Id)),
+                GetMaxId(context.RealmBankItem.Select(r => r.Id)));
         }
 
         public List<RealmBankItemModel> GetRealmBankItems(uint accountId, ushort realmId)

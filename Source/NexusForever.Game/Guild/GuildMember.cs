@@ -62,6 +62,7 @@ namespace NexusForever.Game.Guild
         private int communityPlotReservation;
 
         private GuildMemberSaveMask saveMask;
+        public bool NeedsSave => saveMask != GuildMemberSaveMask.None;
         private readonly ICharacterManager characterManager;
 
         /// <summary>

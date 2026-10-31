@@ -13,7 +13,7 @@ using NetworkItem = NexusForever.Network.World.Message.Model.Shared.Item;
 
 namespace NexusForever.Game.Entity
 {
-    public class Item : IItem
+    public partial class Item : IItem
     {
         /// <summary>
         /// Determines which fields need saving for <see cref="IItem"/> when being saved to the database.
@@ -46,8 +46,12 @@ namespace NexusForever.Game.Entity
             get => characterId;
             set
             {
-                characterId = value;
-                saveMask |= ItemSaveMask.CharacterId;
+                lock (persistenceGate)
+                {
+                    EnsureRewardMutationAllowed();
+                    characterId = value;
+                    MarkDirty(ItemSaveMask.CharacterId);
+                }
             }
         }
 
@@ -58,8 +62,12 @@ namespace NexusForever.Game.Entity
             get => location;
             set
             {
-                location = value;
-                saveMask |= ItemSaveMask.Location;
+                lock (persistenceGate)
+                {
+                    EnsureRewardMutationAllowed();
+                    location = value;
+                    MarkDirty(ItemSaveMask.Location);
+                }
             }
         }
 
@@ -72,8 +80,12 @@ namespace NexusForever.Game.Entity
             get => bagIndex;
             set
             {
-                bagIndex = value;
-                saveMask |= ItemSaveMask.BagIndex;
+                lock (persistenceGate)
+                {
+                    EnsureRewardMutationAllowed();
+                    bagIndex = value;
+                    MarkDirty(ItemSaveMask.BagIndex);
+                }
             }
         }
 
@@ -89,8 +101,12 @@ namespace NexusForever.Game.Entity
                 if (value > Info.Entry.MaxStackCount)
                     throw new ArgumentOutOfRangeException();
 
-                stackCount = value;
-                saveMask |= ItemSaveMask.StackCount;
+                lock (persistenceGate)
+                {
+                    EnsureRewardMutationAllowed();
+                    stackCount = value;
+                    MarkDirty(ItemSaveMask.StackCount);
+                }
             }
         }
 
@@ -104,8 +120,12 @@ namespace NexusForever.Game.Entity
                 if (value > Info.Entry.MaxCharges)
                     throw new ArgumentOutOfRangeException();
 
-                charges = value;
-                saveMask |= ItemSaveMask.Charges;
+                lock (persistenceGate)
+                {
+                    EnsureRewardMutationAllowed();
+                    charges = value;
+                    MarkDirty(ItemSaveMask.Charges);
+                }
             }
         }
 
@@ -119,8 +139,11 @@ namespace NexusForever.Game.Entity
                 if (value > 1.0f)
                     throw new ArgumentOutOfRangeException();
 
-                durability = value;
-                saveMask |= ItemSaveMask.Durability;
+                lock (persistenceGate)
+                {
+                    durability = value;
+                    MarkDirty(ItemSaveMask.Durability);
+                }
             }
         }
 
@@ -135,8 +158,12 @@ namespace NexusForever.Game.Entity
             get => expirationTimeLeft;
             set
             {
-                expirationTimeLeft = value;
-                saveMask |= ItemSaveMask.ExpirationTimeLeft;
+                lock (persistenceGate)
+                {
+                    EnsureRewardMutationAllowed();
+                    expirationTimeLeft = value;
+                    MarkDirty(ItemSaveMask.ExpirationTimeLeft);
+                }
             }
         }
 
@@ -147,11 +174,15 @@ namespace NexusForever.Game.Entity
             get => soulbound;
             private set
             {
-                if (soulbound == value)
-                    return;
+                lock (persistenceGate)
+                {
+                    if (soulbound == value)
+                        return;
 
-                soulbound = value;
-                saveMask |= ItemSaveMask.Soulbound;
+                    EnsureRewardMutationAllowed();
+                    soulbound = value;
+                    MarkDirty(ItemSaveMask.Soulbound);
+                }
             }
         }
 
@@ -200,6 +231,8 @@ namespace NexusForever.Game.Entity
             ItemRuneSlotsCodec.DeserializeInto(model.RuneSlots, RuneSlots);
 
             saveMask = ItemSaveMask.None;
+            persistenceBaseline = (InventoryLocation)model.Location == InventoryLocation.RealmBank ? null : CopyModel(model);
+            realmBankBaseline = (InventoryLocation)model.Location == InventoryLocation.RealmBank ? CopyModel(model) : null;
         }
 
         /// <summary>
@@ -262,7 +295,14 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void EnqueueDelete(bool state)
         {
-            saveMask = ItemSaveMask.Delete;
+            lock (persistenceGate)
+            {
+                EnsureRewardMutationAllowed();
+                deleteRequested = state;
+                MarkDirty(ItemSaveMask.Delete);
+                if (!state)
+                    saveMask &= ~ItemSaveMask.Delete;
+            }
         }
 
         public void MakeSoulbound()
@@ -272,107 +312,10 @@ namespace NexusForever.Game.Entity
 
         public void TouchRuneSlots()
         {
-            saveMask |= ItemSaveMask.RuneSlots;
+            MarkDirty(ItemSaveMask.RuneSlots);
         }
 
-        public void Save(CharacterContext context)
-        {
-            if (saveMask == ItemSaveMask.None)
-                return;
-
-            if (Location == InventoryLocation.RealmBank)
-            {
-                saveMask = ItemSaveMask.None;
-                return;
-            }
-
-            if ((saveMask & ItemSaveMask.Create) != 0)
-            {
-                // item doesn't exist in database, all information must be saved
-                context.Add(new ItemModel
-                {
-                    Id                 = Guid,
-                    OwnerId            = CharacterId,
-                    ItemId             = Id,
-                    Location           = (ushort)Location,
-                    BagIndex           = BagIndex,
-                    StackCount         = StackCount,
-                    Charges            = Charges,
-                    Durability         = Durability,
-                    ExpirationTimeLeft = ExpirationTimeLeft,
-                    Soulbound          = Soulbound,
-                    MicrochipIds       = ItemMicrochipIdsCodec.Serialize(MicrochipIds),
-                    RuneSlots          = ItemRuneSlotsCodec.Serialize(RuneSlots)
-                });
-            }
-            else if ((saveMask & ItemSaveMask.Delete) != 0)
-            {
-                var model = new ItemModel
-                {
-                    Id = Guid,
-                };
-
-                context.Entry(model).State = EntityState.Deleted;
-            }
-            else
-            {
-                // item already exists in database, save only data that has been modified
-                var model = new ItemModel
-                {
-                    Id = Guid
-                };
-
-                // could probably clean this up with reflection, works for the time being
-                EntityEntry<ItemModel> entity = context.Attach(model);
-                if ((saveMask & ItemSaveMask.CharacterId) != 0)
-                {
-                    model.OwnerId = CharacterId;
-                    entity.Property(p => p.OwnerId).IsModified = true;
-                }
-                if ((saveMask & ItemSaveMask.Location) != 0)
-                {
-                    model.Location = (ushort)Location;
-                    entity.Property(p => p.Location).IsModified = true;
-                }
-                if ((saveMask & ItemSaveMask.BagIndex) != 0)
-                {
-                    model.BagIndex = BagIndex;
-                    entity.Property(p => p.BagIndex).IsModified = true;
-                }
-                if ((saveMask & ItemSaveMask.StackCount) != 0)
-                {
-                    model.StackCount = StackCount;
-                    entity.Property(p => p.StackCount).IsModified = true;
-                }
-                if ((saveMask & ItemSaveMask.Charges) != 0)
-                {
-                    model.Charges = Charges;
-                    entity.Property(p => p.Charges).IsModified = true;
-                }
-                if ((saveMask & ItemSaveMask.Durability) != 0)
-                {
-                    model.Durability = Durability;
-                    entity.Property(p => p.Durability).IsModified = true;
-                }
-                if ((saveMask & ItemSaveMask.ExpirationTimeLeft) != 0)
-                {
-                    model.ExpirationTimeLeft = ExpirationTimeLeft;
-                    entity.Property(p => p.ExpirationTimeLeft).IsModified = true;
-                }
-                if ((saveMask & ItemSaveMask.Soulbound) != 0)
-                {
-                    model.Soulbound = Soulbound;
-                    entity.Property(p => p.Soulbound).IsModified = true;
-                }
-                model.MicrochipIds = ItemMicrochipIdsCodec.Serialize(MicrochipIds);
-                entity.Property(p => p.MicrochipIds).IsModified = true;
-
-                model.RuneSlots = ItemRuneSlotsCodec.Serialize(RuneSlots);
-                entity.Property(p => p.RuneSlots).IsModified = true;
-            }
-
-            saveMask = ItemSaveMask.None;
-        }
+        public void Save(CharacterContext context) => SavePersistence(context, false);
 
         /// <summary>
         /// Return a network representation of the current <see cref="IItem"/> for use in a item related packet.
@@ -443,11 +386,15 @@ namespace NexusForever.Game.Entity
 
         private void EnsureInitialCharges()
         {
-            if (charges != 0u || stackCount == 0u || Info?.Entry?.MaxCharges is null or 0u)
-                return;
+            lock (persistenceGate)
+            {
+                if (charges != 0u || stackCount == 0u || Info?.Entry?.MaxCharges is null or 0u)
+                    return;
 
-            charges = Info.Entry.MaxCharges;
-            saveMask |= ItemSaveMask.Charges;
+                EnsureRewardMutationAllowed();
+                charges = Info.Entry.MaxCharges;
+                MarkDirty(ItemSaveMask.Charges);
+            }
         }
     }
 }

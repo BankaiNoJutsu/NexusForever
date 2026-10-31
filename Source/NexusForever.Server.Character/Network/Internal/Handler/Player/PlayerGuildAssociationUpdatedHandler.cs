@@ -24,13 +24,8 @@ namespace NexusForever.Server.Character.Network.Internal.Handler.Player
 
         public async Task Handle(PlayerGuildAssociationUpdatedMessage message)
         {
-            var character = await _characterManager.GetCharacterRemoteAsync(message.Identity.ToQueryIdentity());
-            if (character == null)
-                return;
-
-            character.GuildName = message.GuildName;
-
-            await _context.SaveChangesAsync();
+            await _characterManager.UpdateCharacterRemoteAsync(message.Identity.ToQueryIdentity(),
+                c => c.GuildName, message.GuildName);
         }
     }
 }

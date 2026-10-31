@@ -45,7 +45,11 @@ namespace NexusForever.Server.Friendship.Network.Internal.Handler.Friendship
             IExecutionStrategy strategy = _context.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
-                await using IDbContextTransaction transaction = await _context.Database.BeginTransactionAsync();
+                // Remote invitee bootstrap can race another message's first account
+                // creation. Keep its subsequent relationship reads current as well.
+                var isolation = _context.Database.IsSqlite()
+                    ? System.Data.IsolationLevel.Serializable : System.Data.IsolationLevel.ReadCommitted;
+                await using IDbContextTransaction transaction = await _context.Database.BeginTransactionAsync(isolation);
 
                 Task<FriendshipResult?> task = InviteAsync(message);
                 await _friendshipResultPublisher.PublishResultAsync(_messagePublisher, message.Inviter, task);

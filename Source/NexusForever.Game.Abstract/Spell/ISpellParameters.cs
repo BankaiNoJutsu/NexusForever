@@ -21,6 +21,11 @@ namespace NexusForever.Game.Abstract.Spell
         uint ClientSideInteractionDurationMs { get; set; }
         System.Action<ISpell, bool> FinishCallback { get; set; }
         uint ClientContextToken { get; set; }
+        /// <summary>
+        /// This cast directly represents a parsed client cast-context request, including token zero.
+        /// Triggered casts may retain the numeric token for diagnostics without owning that request.
+        /// </summary>
+        bool HasClientCastRequest { get => false; set { } }
         string ClientRequestSource { get; set; }
         uint PrimaryTargetId { get; set; }
         Position Position { get; set; }

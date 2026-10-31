@@ -306,6 +306,144 @@ public class PlayerVisibilityPacketTests
         Assert.Null(player.PlatformGuid);
     }
 
+    [Theory]
+    [InlineData(false, VehicleSeatType.Pilot, 0)]
+    [InlineData(true, VehicleSeatType.Pilot, 0)]
+    [InlineData(false, VehicleSeatType.Passenger, 3)]
+    [InlineData(true, VehicleSeatType.Passenger, 3)]
+    public void MountedPlayerVisibilityRestoresSeatOnlyAfterBothCreates(bool riderFirst, VehicleSeatType seat, byte position)
+    {
+        TestPlayer observer = CreatePlayer(out var session);
+        var (rider, vehicle, _) = CreateMountedPair(seat, position);
+        observer.AddVisible(riderFirst ? rider : vehicle);
+        Assert.Empty(Messages(session).OfType<ServerVehiclePassengerSelf>());
+        observer.AddVisible(riderFirst ? vehicle : rider);
+        var messages = Messages(session);
+        var attach = Assert.Single(messages.OfType<ServerVehiclePassengerSelf>());
+        Assert.Equal(rider.Guid, attach.Self);
+        Assert.Equal(vehicle.Guid, attach.Vehicle);
+        Assert.Equal(seat, attach.SeatType);
+        Assert.Equal(position, attach.SeatPosition);
+        Assert.True(messages.FindIndex(m => m is ServerEntityCreate c && c.Guid == rider.Guid) < messages.IndexOf(attach));
+        Assert.True(messages.FindIndex(m => m is ServerEntityCreate c && c.Guid == vehicle.Guid) < messages.IndexOf(attach));
+        Assert.Single(messages.OfType<ServerSetUnitPathType>());
+        Assert.Single(messages.OfType<ServerEntityGroupAssociation>());
+        observer.AddVisible(rider);
+        observer.AddVisible(vehicle);
+        Assert.Single(Messages(session).OfType<ServerVehiclePassengerSelf>());
+    }
+
+    [Fact]
+    public void NearbyListRecreateRestoresMountedPlayersAttachmentAfterCreate()
+    {
+        TestPlayer observer = CreatePlayer(out var session);
+        var (rider, vehicle, _) = CreateMountedPair(VehicleSeatType.Pilot, 0);
+        observer.AddVisible(vehicle);
+        observer.AddVisible(rider);
+        session.Invocations.Clear();
+        observer.RefreshVisiblePlayersForNearbyList();
+        var messages = Messages(session);
+        Assert.IsType<ServerEntityDestroy>(messages[0]);
+        var attach = Assert.Single(messages.OfType<ServerVehiclePassengerSelf>());
+        Assert.True(messages.FindIndex(m => m is ServerEntityCreate) < messages.IndexOf(attach));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MissingOrWrongPassengerDoesNotProduceVehicleAttachment(bool wrongPassenger)
+    {
+        TestPlayer observer = CreatePlayer(out var session);
+        var (rider, vehicle, proxy) = CreateMountedPair(VehicleSeatType.Pilot, 0);
+        proxy.SetMethodReturn(nameof(IVehicleEntity.GetPassenger), wrongPassenger ? new VehiclePassenger(VehicleSeatType.Pilot, 0, 999) : null);
+        observer.AddVisible(vehicle);
+        observer.AddVisible(rider);
+        Assert.Empty(Messages(session).OfType<ServerVehiclePassengerSelf>());
+    }
+
+    [Fact]
+    public void OrdinaryPlatformDoesNotProduceVehicleAttachment()
+    {
+        TestPlayer observer = CreatePlayer(out var session);
+        var (rider, _, _) = CreateMountedPair(VehicleSeatType.Pilot, 0);
+        TestWorldEntity platform = CreateWorldEntity(77);
+        observer.AddVisible(platform);
+        observer.AddVisible(rider);
+        Assert.Empty(Messages(session).OfType<ServerVehiclePassengerSelf>());
+    }
+
+    [Fact]
+    public void HiddenVehicleCannotBeAttachedAndDismountedRiderIsNotReattached()
+    {
+        TestPlayer observer = CreatePlayer(out var session);
+        var (rider, vehicle, _) = CreateMountedPair(VehicleSeatType.Pilot, 0);
+        observer.VisibilityFilter = e => e.Guid != vehicle.Guid;
+        observer.AddVisible(vehicle);
+        observer.AddVisible(rider);
+        Assert.Empty(Messages(session).OfType<ServerVehiclePassengerSelf>());
+        ((RecordingDispatchProxy<IPlayer>)(object)rider).SetProperty(nameof(IPlayer.PlatformGuid), null);
+        observer.VisibilityFilter = null;
+        observer.AddVisible(vehicle);
+        Assert.Empty(Messages(session).OfType<ServerVehiclePassengerSelf>());
+    }
+
+    [Fact]
+    public void VehicleReturningToVisibilityRestoresExistingPassengerAttachment()
+    {
+        TestPlayer observer = CreatePlayer(out var session);
+        var (rider, vehicle, _) = CreateMountedPair(VehicleSeatType.Gunner, 2);
+        observer.AddVisible(vehicle);
+        observer.AddVisible(rider);
+        observer.RemoveVisible(vehicle);
+        session.Invocations.Clear();
+        observer.AddVisible(vehicle);
+        var messages = Messages(session);
+        var attach = Assert.Single(messages.OfType<ServerVehiclePassengerSelf>());
+        Assert.Equal(VehicleSeatType.Gunner, attach.SeatType);
+        Assert.Equal(2, attach.SeatPosition);
+        Assert.IsType<ServerEntityCreate>(messages[0]);
+    }
+
+    [Fact]
+    public void VehicleBecomingVisibleConnectsEachVisiblePassengerWithItsOwnSeat()
+    {
+        TestPlayer observer = CreatePlayer(out var session);
+        var (first, vehicle, proxy) = CreateMountedPair(VehicleSeatType.Pilot, 0);
+        var second = RecordingDispatchProxy<IPlayer>.Create(out var sp);
+        sp.SetProperty(nameof(IPlayer.Guid), 56u);
+        sp.SetProperty(nameof(IPlayer.PlatformGuid), (uint?)77u);
+        sp.SetMethodReturn(nameof(IPlayer.BuildEntityCreateAuxPackets), Array.Empty<IWritable>());
+        sp.SetMethodReturnFactory(nameof(IPlayer.BuildCreatePacket), () => new ServerEntityCreate { Guid = 56 });
+        proxy.SetMethodHandler(nameof(IVehicleEntity.GetPassenger), args => (uint)args[0] == 55
+            ? new VehiclePassenger(VehicleSeatType.Pilot, 0, 55)
+            : new VehiclePassenger(VehicleSeatType.Passenger, 3, 56));
+        observer.AddVisible(first);
+        observer.AddVisible(second);
+        observer.AddVisible(vehicle);
+        var attachments = Messages(session).OfType<ServerVehiclePassengerSelf>().ToList();
+        Assert.Equal(2, attachments.Count);
+        Assert.Contains(attachments, a => a.Self == 55 && a.SeatType == VehicleSeatType.Pilot && a.SeatPosition == 0);
+        Assert.Contains(attachments, a => a.Self == 56 && a.SeatType == VehicleSeatType.Passenger && a.SeatPosition == 3);
+    }
+
+    private static List<object> Messages(RecordingDispatchProxy<IGameSession> session) => session
+        .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Select(i => i.Arguments[0]).ToList();
+
+    private static (IPlayer Rider, IVehicleEntity Vehicle, RecordingDispatchProxy<IVehicleEntity> Proxy) CreateMountedPair(VehicleSeatType seat, byte position)
+    {
+        var rider = RecordingDispatchProxy<IPlayer>.Create(out var rp);
+        rp.SetProperty(nameof(IPlayer.Guid), 55u);
+        rp.SetProperty(nameof(IPlayer.PlatformGuid), (uint?)77u);
+        rp.SetMethodReturn(nameof(IPlayer.BuildEntityCreateAuxPackets), Array.Empty<IWritable>());
+        rp.SetMethodReturnFactory(nameof(IPlayer.BuildCreatePacket), () => new ServerEntityCreate { Guid = 55 });
+        var vehicle = RecordingDispatchProxy<IVehicleEntity>.Create(out var vp);
+        vp.SetProperty(nameof(IVehicleEntity.Guid), 77u);
+        vp.SetMethodReturn(nameof(IVehicleEntity.BuildEntityCreateAuxPackets), Array.Empty<IWritable>());
+        vp.SetMethodReturnFactory(nameof(IVehicleEntity.BuildCreatePacket), () => new ServerEntityCreate { Guid = 77 });
+        vp.SetMethodReturn(nameof(IVehicleEntity.GetPassenger), new VehiclePassenger(seat, position, 55));
+        return (rider, vehicle, vp);
+    }
+
     private static void AssertPositionSnapshot(ServerEntityCreate create, Vector3 expectedPosition)
     {
         INetworkEntityCommand positionCommand = Assert.Single(create.Commands, c => c.Command == EntityCommand.SetPosition);

@@ -18,6 +18,7 @@ namespace NexusForever.Game.Map.Instance
         {
             public IPlayer Player { get; init; }
             public IMapPosition MapPosition { get; init; }
+            public ulong? AdmissionGeneration { get; init; }
             // see comment further down
             public bool ExplictRemove { get; set; }
         }
@@ -59,10 +60,12 @@ namespace NexusForever.Game.Map.Instance
                 // they need to be added to the map instance instead
                 throw new InvalidOperationException();
 
+            entity.OnEnqueueAddToMap();
             pendingAdds.Enqueue(new PendingAdd
             {
                 Player = player,
-                MapPosition = position
+                MapPosition = position,
+                AdmissionGeneration = PlayerMapAdmissionGuard.Capture(player)
             });
         }
 
@@ -99,6 +102,8 @@ namespace NexusForever.Game.Map.Instance
             List<PendingAdd> newActions = null;
             while (pendingAdds.TryDequeue(out PendingAdd pending))
             {
+                if (!PlayerMapAdmissionGuard.IsCurrent(pending.Player, pending.AdmissionGeneration))
+                    continue;
                 IMapLock mapLock = pending.MapPosition.Info.MapLock;
 
                 // find implicit map lock if explicit not specified
@@ -106,6 +111,8 @@ namespace NexusForever.Game.Map.Instance
                 if (mapLock == null)
                     throw new InvalidOperationException();
 
+                if (!PlayerMapAdmissionGuard.IsCurrent(pending.Player, pending.AdmissionGeneration))
+                    continue;
                 T instance = GetInstance(mapLock.InstanceId);
 
                 // specified instance doesn't have an instance yet, create it
@@ -118,6 +125,9 @@ namespace NexusForever.Game.Map.Instance
 
                     GetMapManager().IncreaseInstanceCount(pending.Player);
                 }
+
+                if (!PlayerMapAdmissionGuard.IsCurrent(pending.Player, pending.AdmissionGeneration))
+                    continue;
 
                 // existing instance is unloading
                 if (instance.UnloadStatus.HasValue)
@@ -140,6 +150,8 @@ namespace NexusForever.Game.Map.Instance
                 }
 
                 GenericError? result = instance.CanEnter(pending.Player, pending.MapPosition);
+                if (!PlayerMapAdmissionGuard.IsCurrent(pending.Player, pending.AdmissionGeneration))
+                    continue;
                 if (result.HasValue)
                 {
                     pending.Player.OnTeleportToFailed(result.Value);
@@ -147,7 +159,8 @@ namespace NexusForever.Game.Map.Instance
                 }
 
                 UpdatePosition(pending.Player, pending.MapPosition);
-                instance.EnqueueAdd(pending.Player, pending.MapPosition);
+                PlayerMapAdmissionGuard.Run(pending.Player, pending.AdmissionGeneration,
+                    () => instance.EnqueueAdd(pending.Player, pending.MapPosition));
             }
 
             // new actions are added to the queue after processing so they are processed starting next update

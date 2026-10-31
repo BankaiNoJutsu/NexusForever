@@ -135,7 +135,38 @@ namespace NexusForever.Game.Entity
             GetGlobalLootManager()?.SendLootNotifyForVisibleOwner(this, worldEntity);
 
             if (playerEntity != null)
+            {
                 SendVisiblePlayerMetadata(playerEntity);
+                SendVisibleVehicleAttachment(playerEntity);
+            }
+            else if (worldEntity is IVehicleEntity)
+            {
+                // The vehicle may enter visibility after its passenger.
+                foreach (IPlayer passenger in visibleEntities.Values.OfType<IPlayer>())
+                    if (passenger.PlatformGuid == worldEntity.Guid)
+                        SendVisibleVehicleAttachment(passenger);
+            }
+        }
+
+        private void SendVisibleVehicleAttachment(IPlayer playerEntity)
+        {
+            if (playerEntity.PlatformGuid is not uint platformGuid
+                || !visibleEntities.TryGetValue(platformGuid, out IGridEntity platform)
+                || platform is not IVehicleEntity vehicle)
+                return;
+
+            IVehiclePassenger passenger = vehicle.GetPassenger(playerEntity.Guid);
+            if (passenger == null || passenger.Guid != playerEntity.Guid)
+                return;
+
+            // Both entities have been created for this observer. Restore their seat link.
+            Session.EnqueueMessageEncrypted(new ServerVehiclePassengerSelf
+            {
+                Self = passenger.Guid,
+                Vehicle = vehicle.Guid,
+                SeatType = passenger.SeatType,
+                SeatPosition = passenger.SeatPosition
+            });
         }
 
         internal void RefreshQuestPresentation(ushort questId)

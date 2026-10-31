@@ -11,7 +11,7 @@ using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.Game.Entity
 {
-    public class CurrencyManager : ICurrencyManager
+    public partial class CurrencyManager : ICurrencyManager
     {
         private IPlayer player;
         private readonly Dictionary<CurrencyType, ICurrency> currencies = [];
@@ -47,8 +47,17 @@ namespace NexusForever.Game.Entity
 
         public void Save(CharacterContext context)
         {
+            AssertContractCurrencySaveAllowed(context);
             foreach (ICurrency currency in currencies.Values)
                 currency.Save(context);
+        }
+
+        internal Action<CharacterContext> CaptureNormalSave(object token)
+        {
+            AssertContractCurrencySaveAllowed();
+            var rows = currencies.Values.Select(currency => currency is Currency concrete ? concrete.CaptureNormalSave(token)
+                : throw new InvalidOperationException("Frozen currency save requires concrete currency owners.")).ToArray();
+            return context => { foreach (var row in rows) row(context); };
         }
 
         /// <summary>
@@ -75,6 +84,8 @@ namespace NexusForever.Game.Entity
             if (amount == 0)
                 return true;
 
+            if (ContractCurrencyBlocked(currencyId)) return false;
+
             return GetCurrency(currencyId) >= amount;
         }
 
@@ -95,12 +106,18 @@ namespace NexusForever.Game.Entity
             if (currencyEntry == null)
                 throw new ArgumentNullException();
 
+            if (DeferContractCurrency((CurrencyType)currencyEntry.Id, amount, false, isLoot)) return;
+
+            ApplyCurrencyAdd(currencyEntry, amount, isLoot);
+        }
+
+        private void ApplyCurrencyAdd(CurrencyTypeEntry currencyEntry, ulong amount, bool isLoot)
+        {
+
             if (!currencies.TryGetValue((CurrencyType)currencyEntry.Id, out ICurrency currency))
                 currency = CurrencyCreate(currencyEntry);
 
-            amount += currency.Amount;
-            if (currency.Entry.CapAmount > 0)
-                amount = Math.Min(amount, currency.Entry.CapAmount);
+            amount = AddCurrencyAmount(currency.Amount, amount, currency.Entry.CapAmount);
 
             ulong addedAmount = amount - currency.Amount;
             CurrencyAmountUpdate(currency, amount, isLoot);
@@ -141,6 +158,14 @@ namespace NexusForever.Game.Entity
         {
             if (currencyEntry == null)
                 throw new ArgumentNullException();
+
+            if (DeferContractCurrency((CurrencyType)currencyEntry.Id, amount, true, isLoot)) return;
+
+            ApplyCurrencySubtract(currencyEntry, amount, isLoot);
+        }
+
+        private void ApplyCurrencySubtract(CurrencyTypeEntry currencyEntry, ulong amount, bool isLoot)
+        {
 
             // it is possible to subtract a currency amount of 0 without having the currency in the store
             // in this scenario we should allow this to pass

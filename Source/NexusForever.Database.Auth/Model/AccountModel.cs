@@ -6,12 +6,18 @@ namespace NexusForever.Database.Auth.Model
     public class AccountModel
     {
         public uint Id { get; set; }
+        // Captured admission metadata; the durable counter is a separate row.
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public ulong WorldSessionEpoch { get; set; }
+        public ulong NextPendingItemId { get; set; } = 1ul;
         public string Email { get; set; }
         public string S { get; set; }
         public string V { get; set; }
         public string GameToken { get; set; }
         public string SessionKey { get; set; }
         public DateTime CreateTime { get; set; }
+        public AccountLoyaltyModel Loyalty { get; set; }
+        public ICollection<AccountLoyaltySlotModel> LoyaltySlots { get; set; } = [];
 
         public ICollection<AccountCostumeUnlockModel> AccountCostumeUnlock { get; set; } = [];
         public ICollection<AccountCurrencyModel> AccountCurrency { get; set; } = [];

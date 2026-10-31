@@ -17,8 +17,13 @@ namespace NexusForever.Game.Prerequisite.Check
         }
 
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => MeetsEntity(parameters.Target ?? player, comparison, value, objectId);
+
+        public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => MeetsEntity(subject, comparison, value, objectId);
+
+        private bool MeetsEntity(IWorldEntity entity, PrerequisiteComparison comparison, uint value, uint objectId)
         {
-            IWorldEntity entity = parameters.Target as IWorldEntity ?? player;
             Creature2DifficultyEntry difficulty = entity.CreatureInfo?.DifficultyEntry
                 ?? (CreatureDifficultyPrerequisiteHelper.TryGetCreatureDifficultyId(entity, gameTableManager, out uint creatureDifficultyId)
                     ? gameTableManager.Creature2Difficulty.GetEntry(creatureDifficultyId)
@@ -32,5 +37,6 @@ namespace NexusForever.Game.Prerequisite.Check
 
             return PrerequisiteCompare.Compare(comparison, difficulty.RankValue, value);
         }
+
     }
 }

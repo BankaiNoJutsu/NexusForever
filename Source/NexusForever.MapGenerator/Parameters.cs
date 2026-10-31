@@ -4,7 +4,7 @@ namespace NexusForever.MapGenerator
 {
     public class Parameters
     {
-        [Option('i', "patchPath", Required = true,
+        [Option('i', "patchPath",
             HelpText = "The location of the WildStar client patch folder.")]
         public string PatchPath { get; set; }
 
@@ -15,6 +15,15 @@ namespace NexusForever.MapGenerator
         [Option('g', "generate",
             HelpText = "Generate base map files (.nfmap) from the area files.")]
         public bool Generate { get; set; }
+
+        [Option("prepare", HelpText = "Validate a complete asset cache or repair it through staged extraction and map generation.")]
+        public bool Prepare { get; set; }
+
+        [Option("validateTables", HelpText = "Validate runtime table headers without extracting or changing files.")]
+        public string ValidateTables { get; set; }
+
+        [Option("validateMaps", HelpText = "Validate generated map files without changing them.")]
+        public string ValidateMaps { get; set; }
 
         [Option('o', "output",
             HelpText = "The base directory where output files will be created.", Default = "")]

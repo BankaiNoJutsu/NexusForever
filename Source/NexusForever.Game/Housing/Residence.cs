@@ -293,6 +293,64 @@ namespace NexusForever.Game.Housing
         private readonly List<IPlot> plots = new();
         private readonly IGlobalResidenceManager globalResidenceManager;
         private readonly IGameTableManager gameTableManager;
+        private readonly object saveOwnershipLock = new();
+        private object communitySaveOwner;
+        private readonly Dictionary<CharacterContext, TaskCompletionSource> stagedSaveUnits = [];
+
+        internal Task PreviousSaveUnits(CharacterContext current)
+        {
+            lock (saveOwnershipLock)
+                return Task.WhenAll(stagedSaveUnits.Where(unit => !ReferenceEquals(unit.Key, current)).Select(unit => unit.Value.Task));
+        }
+
+        internal bool IsCommunitySaveOwner(object owner)
+        {
+            lock (saveOwnershipLock)
+                return ReferenceEquals(communitySaveOwner, owner);
+        }
+
+        // Membership removal and its housing association share the guild save unit.
+        // A failed save keeps this reservation until that unit is retried.
+        internal bool CommunitySavePending
+        {
+            get { lock (saveOwnershipLock) return communitySaveOwner != null; }
+        }
+
+        internal void DeferSaveToCommunity(object owner)
+        {
+            lock (saveOwnershipLock)
+                communitySaveOwner = owner;
+        }
+
+        internal void CompleteCommunitySave(object owner)
+        {
+            lock (saveOwnershipLock)
+                if (ReferenceEquals(communitySaveOwner, owner))
+                    communitySaveOwner = null;
+        }
+
+        internal void SaveForCommunity(CharacterContext context)
+        {
+            lock (saveOwnershipLock)
+            {
+                RegisterSaveUnit(context);
+                SaveCore(context);
+            }
+        }
+
+        private void RegisterSaveUnit(CharacterContext context)
+        {
+            if (stagedSaveUnits.ContainsKey(context))
+                return;
+            var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            stagedSaveUnits.Add(context, completion);
+            context.OnSaveCompleted(_ =>
+            {
+                lock (saveOwnershipLock)
+                    stagedSaveUnits.Remove(context);
+                completion.TrySetResult();
+            });
+        }
 
         /// <summary>
         /// Create a new <see cref="IResidence"/> from an existing database model.
@@ -434,6 +492,16 @@ namespace NexusForever.Game.Housing
         }
 
         public void Save(CharacterContext context)
+        {
+            lock (saveOwnershipLock)
+                if (communitySaveOwner == null)
+                {
+                    RegisterSaveUnit(context);
+                    SaveCore(context);
+                }
+        }
+
+        private void SaveCore(CharacterContext context)
         {
             if (saveMask != ResidenceSaveMask.None)
             {

@@ -123,6 +123,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
                 TaxiNode            = rapidTransport.TaxiNode,
                 CancelActiveTrade   = true,
                 ClientContextToken  = rapidTransport.ContextToken,
+                HasClientCastRequest = true,
                 ClientRequestSource = nameof(ClientRapidTransport)
             };
 

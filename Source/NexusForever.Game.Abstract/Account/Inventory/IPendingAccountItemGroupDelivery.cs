@@ -31,6 +31,7 @@ namespace NexusForever.Game.Abstract.Account.Inventory
         public uint SourceAccountId { get; init; }
         public uint TargetAccountId { get; init; }
         public IReadOnlyList<uint> AccountItemIds { get; init; } = Array.Empty<uint>();
+        public IReadOnlyList<bool> ForceSoulbind { get; init; }
         public NetworkIdentity SenderIdentity { get; init; } = new();
         public NetworkIdentity TargetIdentity { get; init; } = new();
     }

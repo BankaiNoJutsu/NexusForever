@@ -76,6 +76,14 @@ namespace NexusForever.Database.Friendship
                 entity.Property(entity => entity.LastOnline)
                     .HasColumnName("lastOnline");
 
+                entity.Property(entity => entity.PresenceSessionEpoch).HasColumnName("presenceSessionEpoch").HasColumnType("bigint(20) unsigned").HasDefaultValue(0ul);
+                entity.Property(entity => entity.PresenceAdmission).HasColumnName("presenceAdmission").HasColumnType("bigint(20) unsigned").HasDefaultValue(0ul);
+                entity.Property(entity => entity.PresenceClosed).HasColumnName("presenceClosed").HasDefaultValue(true);
+                // These retain the source identity after activeCharacter is
+                // cleared/deleted; they intentionally have no character FK.
+                entity.Property(entity => entity.PresenceCharacterId).HasColumnName("presenceCharacterId").HasColumnType("bigint(20) unsigned");
+                entity.Property(entity => entity.PresenceRealmId).HasColumnName("presenceRealmId").HasColumnType("smallint(5) unsigned");
+
                 entity.HasOne(entity => entity.ActiveCharacter)
                     .WithOne()
                     .HasForeignKey<AccountModel>(entity => new { entity.ActiveCharacterId, entity.ActiveRealmId });

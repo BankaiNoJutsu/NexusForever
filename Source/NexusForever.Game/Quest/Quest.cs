@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using Microsoft.EntityFrameworkCore;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
@@ -18,7 +17,7 @@ using NLog;
 
 namespace NexusForever.Game.Quest
 {
-    public class Quest : IQuest
+    public partial class Quest : IQuest
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
@@ -60,7 +59,8 @@ namespace NexusForever.Game.Quest
             Flags  = 0x04,
             Reset  = 0x08,
             Delete = 0x10,
-            Timer  = 0x20
+            Timer  = 0x20,
+            ContractAcceptance = 0x40
         }
 
         private const QuestStateFlags ObjectiveCompletionFlagsMask =
@@ -82,8 +82,7 @@ namespace NexusForever.Game.Quest
             {
                 QuestState oldState = state;
 
-                state = value;
-                saveMask |= QuestSaveMask.State;
+                lock (persistence.Gate) { state = value; persistence.Dirty((int)QuestSaveMask.State); }
 
                 OnStateChange(oldState);
                 player.RequestSave();
@@ -97,8 +96,7 @@ namespace NexusForever.Game.Quest
             get => flags;
             set
             {
-                flags = value;
-                saveMask |= QuestSaveMask.Flags;
+                lock (persistence.Gate) { flags = value; persistence.Dirty((int)QuestSaveMask.Flags); }
                 player.RequestSave();
             }
         }
@@ -110,8 +108,7 @@ namespace NexusForever.Game.Quest
             get => timer;
             set
             {
-                timer = value;
-                saveMask |= QuestSaveMask.Timer;
+                lock (persistence.Gate) { timer = value; persistence.Dirty((int)QuestSaveMask.Timer); }
             }
         }
 
@@ -122,8 +119,7 @@ namespace NexusForever.Game.Quest
             get => reset;
             set
             {
-                reset = value;
-                saveMask |= QuestSaveMask.Reset;
+                lock (persistence.Gate) { reset = value; persistence.Dirty((int)QuestSaveMask.Reset); }
                 player.RequestSave();
             }
         }
@@ -133,14 +129,12 @@ namespace NexusForever.Game.Quest
         /// <summary>
         /// Returns if <see cref="IQuest"/> is enqueued to be saved to the database.
         /// </summary>
-        public bool PendingCreate => (saveMask & QuestSaveMask.Create) != 0;
+        public bool PendingCreate => persistence.Has((int)QuestSaveMask.Create) && !persistence.WasAttempted;
 
         /// <summary>
         /// Returns if <see cref="IQuest"/> is enqueued to be deleted from the database.
         /// </summary>
-        public bool PendingDelete => (saveMask & QuestSaveMask.Delete) != 0;
-
-        private QuestSaveMask saveMask;
+        public bool PendingDelete { get { lock (persistence.Gate) return deleteRequested; } }
 
         private readonly IPlayer player;
         private readonly IAssetManager assetManager;
@@ -177,11 +171,15 @@ namespace NexusForever.Game.Quest
             flags  = (QuestStateFlags)model.Flags;
             timer  = model.Timer;
             reset  = model.Reset;
+            contractAcceptanceId = model.ContractAcceptanceId;
+            if (contractAcceptanceId != null && (!Info.IsContract() || !ValidContractAcceptanceId(contractAcceptanceId)))
+                throw new InvalidOperationException("Stored Contract acceptance identity is invalid.");
+            InitialisePersistence(model);
 
             if (timer != null)
                 questTimer = new UpdateTimer(timer.Value / 1000d);
 
-            foreach (CharacterQuestObjectiveModel objectiveModel in model.QuestObjective)
+            foreach (CharacterQuestObjectiveModel objectiveModel in model.QuestObjective.OrderBy(objective => objective.Index))
                 objectives.Add(new QuestObjective(player, info, info.Objectives[objectiveModel.Index], objectiveModel, assetManager));
 
             SyncObjectiveCompletionFlags(true);
@@ -208,6 +206,7 @@ namespace NexusForever.Game.Quest
             this.gameTableManager = gameTableManager;
             Info              = info;
             state  = QuestState.Accepted;
+            InitialisePersistence(null);
 
             for (byte i = 0; i < info.Objectives.Count; i++)
                 objectives.Add(new QuestObjective(player, info, info.Objectives[i], i, assetManager));
@@ -217,7 +216,7 @@ namespace NexusForever.Game.Quest
 
             SyncObjectiveCompletionFlags(false);
 
-            saveMask = QuestSaveMask.Create;
+            persistence.Dirty((int)QuestSaveMask.Create);
 
             currentObjectiveId = GetCurrentObjectiveId();
             scriptCollection = GetScriptManager().InitialiseOwnedScripts<IQuest>(this, info.Entry.Id);
@@ -262,79 +261,7 @@ namespace NexusForever.Game.Quest
             return objective?.ObjectiveInfo.Id ?? 0u;
         }
 
-        public void Save(CharacterContext context)
-        {
-            if (saveMask != QuestSaveMask.None)
-            {
-                if ((saveMask & QuestSaveMask.Create) != 0)
-                {
-                    CharacterQuestModel model = context.CharacterQuest.Find(player.CharacterId, Id);
-                    if (model == null)
-                    {
-                        context.Add(BuildModel());
-                    }
-                    else
-                    {
-                        ApplySaveMask(model, QuestSaveMask.State | QuestSaveMask.Flags | QuestSaveMask.Timer | QuestSaveMask.Reset);
-                    }
-                }
-                else if ((saveMask & QuestSaveMask.Delete) != 0)
-                {
-                    var model = new CharacterQuestModel
-                    {
-                        Id      = player.CharacterId,
-                        QuestId = Id
-                    };
-
-                    context.Entry(model).State = EntityState.Deleted;
-                }
-                else
-                {
-                    CharacterQuestModel model = context.CharacterQuest.Find(player.CharacterId, Id);
-                    if (model == null)
-                    {
-                        context.Add(BuildModel());
-                    }
-                    else
-                    {
-                        ApplySaveMask(model, saveMask);
-                    }
-                }
-
-                saveMask = QuestSaveMask.None;
-            }
-
-            foreach (IQuestObjective objective in objectives)
-                objective.Save(context);
-        }
-
-        private CharacterQuestModel BuildModel()
-        {
-            return new CharacterQuestModel
-            {
-                Id      = player.CharacterId,
-                QuestId = Id,
-                State   = (byte)State,
-                Flags   = (byte)Flags,
-                Timer   = Timer,
-                Reset   = Reset
-            };
-        }
-
-        private void ApplySaveMask(CharacterQuestModel model, QuestSaveMask mask)
-        {
-            if ((mask & QuestSaveMask.State) != 0)
-                model.State = (byte)State;
-
-            if ((mask & QuestSaveMask.Flags) != 0)
-                model.Flags = (byte)Flags;
-
-            if ((mask & QuestSaveMask.Reset) != 0)
-                model.Reset = Reset;
-
-            if ((mask & QuestSaveMask.Timer) != 0)
-                model.Timer = Timer;
-        }
+        public void Save(CharacterContext context) => SavePersistence(context);
 
         public void Update(double lastTick)
         {
@@ -372,8 +299,7 @@ namespace NexusForever.Game.Quest
             if (syncedFlags == flags)
                 return;
 
-            flags = syncedFlags;
-            saveMask |= QuestSaveMask.Flags;
+            lock (persistence.Gate) { flags = syncedFlags; persistence.Dirty((int)QuestSaveMask.Flags); }
 
             if (requestSave)
                 player.RequestSave();
@@ -398,10 +324,16 @@ namespace NexusForever.Game.Quest
         /// </summary>
         public void EnqueueDelete(bool set)
         {
-            if (set)
-                saveMask |= QuestSaveMask.Delete;
-            else
-                saveMask &= ~QuestSaveMask.Delete;
+            lock (persistence.Gate)
+            {
+                deleteRequested = set;
+                if (set) persistence.Dirty((int)QuestSaveMask.Delete);
+                else
+                {
+                    persistence.Cancel((int)QuestSaveMask.Delete);
+                    persistence.Dirty((int)(QuestSaveMask.State | QuestSaveMask.Flags | QuestSaveMask.Timer | QuestSaveMask.Reset));
+                }
+            }
 
             player.RequestSave();
         }

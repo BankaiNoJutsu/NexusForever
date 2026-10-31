@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using CommandLine;
 using CommandLine.Text;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,12 +33,25 @@ namespace NexusForever.MapGenerator
             Console.Title = Title;
 
             parserResult = Parser.Default.ParseArguments<Parameters>(args);
-            parserResult.WithParsed(parameters => ParameterOk(
-                parameters,
-                serviceProvider.GetRequiredService<ArchiveManager>(),
-                serviceProvider.GetRequiredService<GameTableManager>(),
-                serviceProvider.GetRequiredService<ExtractionManager>(),
-                serviceProvider.GetRequiredService<GenerationManager>()));
+            parserResult.WithParsed(parameters =>
+            {
+                if (!string.IsNullOrWhiteSpace(parameters.ValidateTables) || !string.IsNullOrWhiteSpace(parameters.ValidateMaps))
+                {
+                    if (parameters.Prepare || parameters.Extract || parameters.Generate)
+                        throw new ArgumentException("Validation cannot be combined with asset generation.");
+                    if (!string.IsNullOrWhiteSpace(parameters.ValidateTables)) AssetPreparation.ValidateTables(parameters.ValidateTables);
+                    if (!string.IsNullOrWhiteSpace(parameters.ValidateMaps)) AssetPreparation.ValidateMaps(parameters.ValidateMaps);
+                    return;
+                }
+                void Generate(Parameters selected) => ParameterOk(selected,
+                    serviceProvider.GetRequiredService<ArchiveManager>(),
+                    serviceProvider.GetRequiredService<GameTableManager>(),
+                    serviceProvider.GetRequiredService<ExtractionManager>(),
+                    serviceProvider.GetRequiredService<GenerationManager>());
+                if (parameters.Prepare) AssetPreparation.Run(parameters, Generate);
+                else Generate(parameters);
+            }).WithNotParsed(errors => Environment.ExitCode = errors.All(error =>
+                error.Tag is ErrorType.HelpRequestedError or ErrorType.VersionRequestedError) ? 0 : 1);
 
             log.Info("Finished!");
         }
@@ -49,7 +63,7 @@ namespace NexusForever.MapGenerator
             ExtractionManager extractionManager,
             GenerationManager generationManager)
         {
-            if (!Directory.Exists(parameters.PatchPath))
+            if (string.IsNullOrWhiteSpace(parameters.PatchPath) || !Directory.Exists(parameters.PatchPath))
                 throw new DirectoryNotFoundException();
 
             if (parameters.MaxParallelism < 0)

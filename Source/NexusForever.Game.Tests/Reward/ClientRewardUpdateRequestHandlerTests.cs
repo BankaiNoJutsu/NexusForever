@@ -86,7 +86,7 @@ public class ClientRewardUpdateRequestHandlerTests
     }
 
     [Fact]
-    public void HandleMessage_WithContentContextOnlyRefresh_SkipsEmptyRotationArrays()
+    public void HandleMessage_WithDiagnosticContextOnlyRefresh_DoesNotEmitRewardTrackTraffic()
     {
         var rewardPropertyManager = new TestRewardPropertyManager();
         var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
@@ -96,8 +96,7 @@ public class ClientRewardUpdateRequestHandlerTests
         handler.HandleMessage(session, BuildRequest(2u));
 
         Assert.Equal(1, rewardPropertyManager.SendInitialPacketsCallCount);
-        Assert.Collection(session.EncryptedMessages,
-            message => Assert.IsType<ServerRewardRotationContentContext>(message));
+        Assert.Empty(session.EncryptedMessages);
         Assert.Contains(logger.Entries, entry =>
             entry.Level == LogLevel.Information &&
             entry.Message.Contains("skipping empty ServerRewardRotationScheduleArray", StringComparison.Ordinal) &&

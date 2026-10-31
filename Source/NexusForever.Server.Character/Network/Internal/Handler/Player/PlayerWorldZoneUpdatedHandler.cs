@@ -24,13 +24,8 @@ namespace NexusForever.Server.Character.Network.Internal.Handler.Player
 
         public async Task Handle(PlayerWorldZoneUpdatedMessage message)
         {
-            var character = await _characterManager.GetCharacterRemoteAsync(message.Identity.ToQueryIdentity());
-            if (character == null)
-                return;
-
-            character.WorldZoneId = message.WorldZoneId;
-
-            await _context.SaveChangesAsync();
+            await _characterManager.UpdateCharacterRemoteAsync(message.Identity.ToQueryIdentity(),
+                c => c.WorldZoneId, message.WorldZoneId);
         }
     }
 }

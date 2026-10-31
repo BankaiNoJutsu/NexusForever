@@ -82,6 +82,7 @@ namespace NexusForever.Game.Map.Instance
 
         protected override void AddEntity(IGridEntity entity, Vector3 vector)
         {
+            ulong? admissionGeneration = PlayerMapAdmissionGuard.Capture(entity);
             if (entity is IPlayer contentPlayer
                 && Match == null
                 && contentPlayer.PreviousMap?.Entry != null
@@ -95,6 +96,8 @@ namespace NexusForever.Game.Map.Instance
             }
 
             base.AddEntity(entity, vector);
+            if (!PlayerMapAdmissionGuard.IsCurrent(entity, admissionGeneration))
+                return;
 
             if (entity is IPlayer player)
                 Match?.MatchEnter(player);

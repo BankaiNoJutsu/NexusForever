@@ -82,6 +82,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
                 Position               = castSpellSelected.Position,
                 UserInitiatedSpellCast = true,
                 ClientContextToken     = castSpellSelected.ContextToken,
+                HasClientCastRequest   = true,
                 ClientRequestSource    = nameof(ClientCastSpellSelected)
             };
 

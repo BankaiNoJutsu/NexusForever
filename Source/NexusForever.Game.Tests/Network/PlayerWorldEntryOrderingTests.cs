@@ -2,9 +2,11 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
@@ -103,6 +105,17 @@ public class PlayerWorldEntryOrderingTests
         SetBackingField(player, nameof(Player.Session), session);
         SetBackingField(player, nameof(Player.PathManager), pathManager);
         SetBackingField(player, nameof(Player.QuestManager), questManager);
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
+        mapProxy.SetProperty(nameof(IBaseMap.Entry), new WorldEntry { Id = 51 });
+        typeof(GridEntity).GetProperty(nameof(GridEntity.Map))!.SetValue(player, map);
+        typeof(GridEntity).GetProperty(nameof(GridEntity.Guid))!.SetValue(player, 37u);
+        // These ordering witnesses represent a completed server bootstrap. The
+        // separate admission regressions cover missing and in-progress maps.
+        var admission = new PlayerMapAdmissionState();
+        ulong generation = admission.Queue();
+        admission.BeginBootstrap();
+        admission.FinishBootstrap(generation, true);
+        SetField(player, typeof(Player), "mapAdmissionState", admission);
         player.IsLoading = true;
 
         return player;

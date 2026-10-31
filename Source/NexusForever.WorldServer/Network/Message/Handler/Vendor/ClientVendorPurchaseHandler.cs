@@ -26,6 +26,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
 
         public void HandleMessage(IWorldSession session, ClientVendorPurchase vendorPurchase)
         {
+            if (!InventoryMutationScope.TryAcquire(session.Player?.Inventory, out var mutationLease)) return;
+            using var heldMutation = mutationLease;
             IVendorInfo vendorInfo = session.Player.SelectedVendorInfo;
             if (vendorInfo == null)
                 return;

@@ -35,6 +35,8 @@ namespace NexusForever.Network.Session
 
         private DisconnectState? disconnectState;
 
+        public bool IsDisconnecting => disconnectState.HasValue;
+
         /// <summary>
         /// Initialise <see cref="NetworkSession"/> with new <see cref="Socket"/> and begin listening for data.
         /// </summary>

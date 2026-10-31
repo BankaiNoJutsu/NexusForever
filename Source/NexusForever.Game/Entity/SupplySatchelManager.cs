@@ -4,6 +4,7 @@ using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Reward;
+using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
@@ -53,6 +54,29 @@ namespace NexusForever.Game.Entity
         {
             foreach (ITradeskillMaterial material in tradeskillMaterials.Values)
                 material.Save(context);
+        }
+
+        public bool TryGetAutoStoreCapacity(IItemInfo info, out uint capacity, uint charges = 0)
+        {
+            capacity = 0;
+            if (player?.IsLoading != false || info?.Entry == null || charges != 0u
+                || info.Entry.MaxCharges != 0u || info.Entry.ExpirationTimeMinutes != 0u
+                || !info.IsStackable() || info.IsEquippable()
+                || !TryGetMaterialEntry(info, out TradeskillMaterialEntry entry)
+                || entry.Id >= 512u)
+                return false;
+
+            // CollectItem currently counts/consumes physical bag items. Preserve that
+            // contract while this new routing is limited to ordinary material grants.
+            if (player.QuestManager?.GetActiveQuests()?.Any(quest => quest.Any(objective =>
+                objective.ObjectiveInfo?.Type == QuestObjectiveType.CollectItem
+                && objective.ObjectiveInfo.Entry?.Data == info.Id)) == true)
+                return false;
+
+            uint current = tradeskillMaterials.TryGetValue((ushort)entry.Id, out ITradeskillMaterial material)
+                ? material.Amount : 0u;
+            capacity = maximumStackAmount - Math.Min(current, maximumStackAmount);
+            return true;
         }
 
         public ushort[] BuildNetworkPacket()
@@ -225,9 +249,12 @@ namespace NexusForever.Game.Entity
         }
 
         private bool TryGetMaterialEntry(IItem item, out TradeskillMaterialEntry entry)
+            => TryGetMaterialEntry(item?.Info, out entry);
+
+        private bool TryGetMaterialEntry(IItemInfo info, out TradeskillMaterialEntry entry)
         {
             entry = null;
-            uint itemId = item?.Info?.Entry?.Id ?? 0u;
+            uint itemId = info?.Entry?.Id ?? 0u;
             if (itemId == 0u)
                 return false;
 

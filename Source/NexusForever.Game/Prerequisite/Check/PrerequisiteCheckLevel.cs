@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Static.Prerequisite;
@@ -21,21 +21,24 @@ namespace NexusForever.Game.Prerequisite.Check
         #endregion
 
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => MeetsUnit(player, comparison, value, objectId, parameters);
+
+        public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
             switch (comparison)
             {
                 case PrerequisiteComparison.Equal:
-                    return player.Level == value;
+                    return subject.Level == value;
                 case PrerequisiteComparison.NotEqual:
-                    return player.Level != value;
+                    return subject.Level != value;
                 case PrerequisiteComparison.GreaterThan:
-                    return player.Level > value;
+                    return subject.Level > value;
                 case PrerequisiteComparison.GreaterThanOrEqual:
-                    return player.Level >= value;
+                    return subject.Level >= value;
                 case PrerequisiteComparison.LessThan:
-                    return player.Level < value;
+                    return subject.Level < value;
                 case PrerequisiteComparison.LessThanOrEqual:
-                    return player.Level <= value;
+                    return subject.Level <= value;
                 default:
                     log.LogWarning($"Unhandled PrerequisiteComparison {comparison} for {PrerequisiteType.Level}!");
                     return false;

@@ -21,8 +21,13 @@ namespace NexusForever.Game.Prerequisite.Check
         }
 
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => MeetsEntity(parameters.Target ?? player, comparison, value, objectId);
+
+        public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => MeetsEntity(subject, comparison, value, objectId);
+
+        private bool MeetsEntity(IUnitEntity unit, PrerequisiteComparison comparison, uint value, uint objectId)
         {
-            IUnitEntity unit = parameters.Target as IUnitEntity ?? player;
             if (unit is not IPlayer unitPlayer)
                 return false;
 

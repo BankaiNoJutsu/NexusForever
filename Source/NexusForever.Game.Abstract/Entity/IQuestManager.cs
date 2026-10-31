@@ -7,6 +7,9 @@ namespace NexusForever.Game.Abstract.Entity
 {
     public interface IQuestManager : IDisposable, IDatabaseCharacter, IUpdate
     {
+        bool HasPendingRewardOperation => false;
+        bool RequiresAuthoritativeReload => false;
+        void InvalidateRewardOperations(bool final = false) { }
         void SendInitialPackets();
 
         /// <summary>
@@ -123,5 +126,6 @@ namespace NexusForever.Game.Abstract.Entity
         /// Returns a collection of all active quests.
         /// </summary>
         IEnumerable<IQuest> GetActiveQuests();
+        bool ChooseContractRewardTrack(uint trackId) => false;
     }
 }

@@ -14,6 +14,11 @@ namespace NexusForever.Database.Friendship.Model
         public ulong? ActiveCharacterId { get; set; }
         public ushort? ActiveRealmId { get; set; }
         public DateTime? LastOnline { get; set; }
+        public ulong PresenceSessionEpoch { get; set; }
+        public ulong PresenceAdmission { get; set; }
+        public bool PresenceClosed { get; set; } = true;
+        public ulong? PresenceCharacterId { get; set; }
+        public ushort? PresenceRealmId { get; set; }
 
         public List<AccountFriendModel> Friends { get; set; } = [];
         public List<AccountFriendInverseModel> FriendsInverse { get; set; } = [];

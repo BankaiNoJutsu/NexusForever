@@ -13,9 +13,12 @@ namespace NexusForever.Game.Prerequisite.Check
     public class PrerequisiteCheckCanSeePhase : IPrerequisiteCheck
     {
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => MeetsUnit(player, comparison, value, objectId, parameters);
+
+        public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            IWorldEntity target = parameters.Target as IWorldEntity ?? player;
-            uint canSee = player.PublicEventPhase == target.PublicEventPhase ? 1u : 0u;
+            IWorldEntity target = parameters.Target as IWorldEntity ?? subject;
+            uint canSee = subject.PublicEventPhase == target.PublicEventPhase ? 1u : 0u;
             return PrerequisiteCompare.Compare(comparison, canSee, value);
         }
     }

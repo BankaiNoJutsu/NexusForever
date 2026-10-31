@@ -1,3 +1,4 @@
+using NexusForever.Game.Entity;
 using System.Collections.Generic;
 using System.Linq;
 using NexusForever.Game.Abstract.Entity;
@@ -40,6 +41,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
 
         public static bool SellItem(IPlayer player, IBuybackManager buybackManager, ItemLocation itemLocation, IItem item, uint quantity)
         {
+            if (!InventoryMutationScope.TryAcquire(player?.Inventory, out var mutationLease)) return false;
+            using var heldMutation = mutationLease;
             if (player.SelectedVendorInfo == null)
                 return false;
 

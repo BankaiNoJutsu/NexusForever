@@ -22,7 +22,8 @@ namespace NexusForever.Game.Abstract.Entity
         ItemVisualSwap,
         DisguiseOutfit,
         MimicDisguise,
-        HealingAbsorption
+        HealingAbsorption,
+        CooldownModifier
     }
 
     public sealed record SpellStateRemoval(

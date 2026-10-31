@@ -37,6 +37,10 @@ namespace NexusForever.Game.Abstract.PublicEvent
         /// </summary>
         void UpdateObjective(int count);
 
+        void SetDynamicMax(uint max) => DynamicMax = max;
+
+        void EnableTimedWinCompletion() { }
+
         /// <summary>
         /// Activate the objective.
         /// </summary>

@@ -279,6 +279,7 @@ namespace NexusForever.Game.Spell
             player.RequestSave();
 
             log.Trace($"Added AMP {id} to action set {Index}.");
+            player.SpellManager?.OnActionSetAmpsChanged(Index);
         }
 
         /// <summary>
@@ -350,6 +351,7 @@ namespace NexusForever.Game.Spell
                 default:
                     throw new ArgumentException();
             }
+            player.SpellManager?.OnActionSetAmpsChanged(Index);
         }
 
         private void RemoveAmp(IActionSetAmp amp)

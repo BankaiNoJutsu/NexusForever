@@ -6,6 +6,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement.Force;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Loot;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Combat;
@@ -829,9 +830,15 @@ namespace NexusForever.Game.Spell
             if (!TryTakeEngineerCombatBotPetBar(entity, out EngineerCombatBotPetBarContext context))
                 return;
 
+            ulong? generation = (player as IPlayerMapAdmission)?.MapAdmissionGeneration;
+            if (!IsEngineerPetCallbackCurrent(player, generation)) return;
             SendEngineerCombatBotPetSpawned(player, EngineerCombatBotCommandSurfacePetUnitId, context.SummonSpell4Id);
+            if (!IsEngineerPetCallbackCurrent(player, generation)) return;
+            (player as IPlayerPetMiniBar)?.TryBindPetMiniBar(entity);
+            if (!IsEngineerPetCallbackCurrent(player, generation)) return;
             SendEngineerCombatBotPetSpawned(player, entity.Guid, context.SummonSpell4Id);
-            ShowEngineerCombatBotPrimaryPetBar(player, EngineerCombatBotCommandSurfacePetUnitId);
+            if (!IsEngineerPetCallbackCurrent(player, generation)) return;
+            ShowEngineerCombatBotPrimaryPetBar(player, EngineerCombatBotCommandSurfacePetUnitId, generation);
         }
 
         public static void UnregisterEngineerArtillerybotBarrageAction(IPlayer player, IWorldEntity entity)
@@ -845,24 +852,37 @@ namespace NexusForever.Game.Spell
             if (player == null || entity == null || definition == null)
                 return;
 
+            ulong? generation = (player as IPlayerMapAdmission)?.MapAdmissionGeneration;
+            IReadOnlySet<IWorldEntity> existingBots = SnapshotEngineerCombatBots(player.SummonFactory);
             ClearEngineerCombatBotPetBar(entity);
+            // Clear the departing family's server selectors before any packet can
+            // reenter and register a replacement source. Publication stays guarded below.
+            if (GetActiveEngineerCombatBotCount(player.SummonFactory, definition) == 0u)
+                ClearEngineerCombatBotCommands(player, definition);
+            (player as IPlayerPetMiniBar)?.UnbindPetMiniBar(entity);
+            if (!IsEngineerPetCallbackCurrent(player, generation)) return;
             SendEngineerCombatBotPetDespawned(player, entity.Guid);
+            if (!IsEngineerPetCallbackCurrent(player, generation)) return;
 
-            bool hasActiveSameBotFamily = GetActiveEngineerCombatBotCount(player.SummonFactory, definition) != 0u;
             bool hasActiveEngineerCombatBots = GetActiveEngineerCombatBotCount(player.SummonFactory) != 0u;
 
             if (!hasActiveEngineerCombatBots)
             {
-                HideEngineerCombatBotPrimaryPetBar(player);
-                SendEngineerCombatBotPetDespawned(player, EngineerCombatBotCommandSurfacePetUnitId);
+                HideEngineerCombatBotPrimaryPetBar(player, generation);
+                if (!IsEngineerPetCallbackCurrent(player, generation)) return;
+                if (GetActiveEngineerCombatBotCount(player.SummonFactory) == 0u)
+                    SendEngineerCombatBotPetDespawned(player, EngineerCombatBotCommandSurfacePetUnitId);
             }
 
-            if (!hasActiveSameBotFamily)
-            {
-                ClearEngineerCombatBotCommands(player, definition);
-                HideEngineerCombatBotCommands(player, definition);
-            }
+            if (!IsEngineerPetCallbackCurrent(player, generation)) return;
+            if (GetActiveEngineerCombatBotCount(player.SummonFactory, definition) == 0u)
+                HideEngineerCombatBotCommands(player, definition, generation, existingBots);
         }
+
+        private static bool IsEngineerPetCallbackCurrent(IPlayer player, ulong? generation) =>
+            player.Session is not NexusForever.Network.Session.NetworkSession { IsDisconnecting: true }
+            && (generation == null || player is IPlayerMapAdmission admission
+                && admission.IsMapAdmissionCurrent(generation.Value));
 
         private static void ShowEngineerCombatBotCommand(
             IPlayer player,
@@ -887,21 +907,25 @@ namespace NexusForever.Game.Spell
                 actionEntry.Id);
         }
 
-        private static void HideEngineerCombatBotCommands(IPlayer player, EngineerCombatBotDefinition definition)
+        private static void HideEngineerCombatBotCommands(IPlayer player, EngineerCombatBotDefinition definition, ulong? generation, IReadOnlySet<IWorldEntity> existingBots)
         {
             if (player.Session == null || definition == null)
                 return;
 
             foreach (EngineerCombatBotCommandDefinition command in definition.Commands)
             {
+                if (!IsEngineerPetCallbackCurrent(player, generation)
+                    || GetActiveEngineerCombatBotCount(player.SummonFactory, definition) != 0u)
+                    return;
                 SendEngineerCombatBotCommandSpellUpdate(
                     player,
                     command.PlayerActionBaseSpell4Id,
                     0,
-                    false);
+                    false,
+                    generation);
             }
 
-            RestoreEngineerCombatBotActionSet(player);
+            RestoreEngineerCombatBotActionSet(player, definition, generation, existingBots);
         }
 
         private static void ClearEngineerCombatBotCommands(IPlayer player, EngineerCombatBotDefinition definition)
@@ -955,9 +979,10 @@ namespace NexusForever.Game.Spell
                 EngineerCombatBotPetBarContexts.Remove(entity);
         }
 
-        private static void SendEngineerCombatBotCommandSpellUpdate(IPlayer player, uint spell4BaseId, byte tierIndex, bool activated)
+        private static void SendEngineerCombatBotCommandSpellUpdate(IPlayer player, uint spell4BaseId, byte tierIndex, bool activated, ulong? generation = null)
         {
-            if (player?.Session == null || player.SpellManager == null)
+            generation ??= (player as IPlayerMapAdmission)?.MapAdmissionGeneration;
+            if (player?.Session == null || player.SpellManager == null || !IsEngineerPetCallbackCurrent(player, generation))
                 return;
 
             player.Session.EnqueueMessageEncrypted(new ServerSpellUpdate
@@ -971,7 +996,8 @@ namespace NexusForever.Game.Spell
 
         private static void SendEngineerCombatBotPetSpawned(IPlayer player, uint petUnitId, uint summonSpell4Id)
         {
-            if (player.Session == null || summonSpell4Id == 0u)
+            if (player.Session == null || summonSpell4Id == 0u
+                || !IsEngineerPetCallbackCurrent(player, (player as IPlayerMapAdmission)?.MapAdmissionGeneration))
                 return;
 
             player.Session.EnqueueMessageEncrypted(new ServerPetSpawned
@@ -985,7 +1011,8 @@ namespace NexusForever.Game.Spell
 
         private static void SendEngineerCombatBotPetDespawned(IPlayer player, uint petUnitId)
         {
-            if (player.Session == null)
+            if (player.Session == null
+                || !IsEngineerPetCallbackCurrent(player, (player as IPlayerMapAdmission)?.MapAdmissionGeneration))
                 return;
 
             player.Session.EnqueueMessageEncrypted(new ServerPetDespawned
@@ -994,29 +1021,34 @@ namespace NexusForever.Game.Spell
             });
         }
 
-        private static void ShowEngineerCombatBotPrimaryPetBar(IPlayer player, uint petUnitId)
+        private static void ShowEngineerCombatBotPrimaryPetBar(IPlayer player, uint petUnitId, ulong? generation = null)
         {
-            SendEngineerCombatBotPrimaryPetBarCommandAvailability(player, true);
-            SendEngineerCombatBotPrimaryPetBar(player, EngineerCombatBotPrimaryPetBarShortcutSetId, petUnitId);
+            SendEngineerCombatBotPrimaryPetBarCommandAvailability(player, true, generation);
+            SendEngineerCombatBotPrimaryPetBar(player, EngineerCombatBotPrimaryPetBarShortcutSetId, petUnitId, generation);
         }
 
-        private static void HideEngineerCombatBotPrimaryPetBar(IPlayer player)
+        private static void HideEngineerCombatBotPrimaryPetBar(IPlayer player, ulong? generation = null)
         {
-            SendEngineerCombatBotPrimaryPetBar(player, 0, 0u);
-            SendEngineerCombatBotPrimaryPetBarCommandAvailability(player, false);
+            if (GetActiveEngineerCombatBotCount(player.SummonFactory) != 0u) return;
+            SendEngineerCombatBotPrimaryPetBar(player, 0, 0u, generation);
+            SendEngineerCombatBotPrimaryPetBarCommandAvailability(player, false, generation);
         }
 
-        private static void SendEngineerCombatBotPrimaryPetBarCommandAvailability(IPlayer player, bool activated)
+        private static void SendEngineerCombatBotPrimaryPetBarCommandAvailability(IPlayer player, bool activated, ulong? generation = null)
         {
             byte tierIndex = activated ? (byte)1 : (byte)0;
-            SendEngineerCombatBotCommandSpellUpdate(player, EngineerCombatBotAttackCommandBaseSpell4Id, tierIndex, activated);
-            SendEngineerCombatBotCommandSpellUpdate(player, EngineerCombatBotStopCommandBaseSpell4Id, tierIndex, activated);
-            SendEngineerCombatBotCommandSpellUpdate(player, EngineerCombatBotGoToCommandBaseSpell4Id, tierIndex, activated);
+            if (!activated && GetActiveEngineerCombatBotCount(player.SummonFactory) != 0u) return;
+            SendEngineerCombatBotCommandSpellUpdate(player, EngineerCombatBotAttackCommandBaseSpell4Id, tierIndex, activated, generation);
+            if (!activated && GetActiveEngineerCombatBotCount(player.SummonFactory) != 0u) return;
+            SendEngineerCombatBotCommandSpellUpdate(player, EngineerCombatBotStopCommandBaseSpell4Id, tierIndex, activated, generation);
+            if (!activated && GetActiveEngineerCombatBotCount(player.SummonFactory) != 0u) return;
+            SendEngineerCombatBotCommandSpellUpdate(player, EngineerCombatBotGoToCommandBaseSpell4Id, tierIndex, activated, generation);
         }
 
-        private static void SendEngineerCombatBotPrimaryPetBar(IPlayer player, ushort actionBarShortcutSetId, uint petUnitId)
+        private static void SendEngineerCombatBotPrimaryPetBar(IPlayer player, ushort actionBarShortcutSetId, uint petUnitId, ulong? generation = null)
         {
-            if (player?.Session == null)
+            generation ??= (player as IPlayerMapAdmission)?.MapAdmissionGeneration;
+            if (player?.Session == null || !IsEngineerPetCallbackCurrent(player, generation))
                 return;
 
             player.Session.EnqueueMessageEncrypted(new ServerActionBarSet
@@ -1053,18 +1085,45 @@ namespace NexusForever.Game.Spell
             player.Session.EnqueueMessageEncrypted(serverActionSet);
         }
 
-        private static void RestoreEngineerCombatBotActionSet(IPlayer player)
+        private static void RestoreEngineerCombatBotActionSet(IPlayer player, EngineerCombatBotDefinition definition, ulong? generation, IReadOnlySet<IWorldEntity> existingBots)
         {
-            if (player?.Session == null || player.SpellManager == null)
+            if (player?.Session == null || player.SpellManager == null
+                || !IsEngineerPetCallbackCurrent(player, generation)
+                || GetActiveEngineerCombatBotCount(player.SummonFactory, definition) != 0u
+                || HasNewEngineerCombatBot(player.SummonFactory, existingBots))
                 return;
 
             IActionSet actionSet = player.SpellManager.GetActionSet(player.SpellManager.ActiveActionSet);
             if (actionSet == null)
                 return;
 
+            if (!IsEngineerPetCallbackCurrent(player, generation)
+                || GetActiveEngineerCombatBotCount(player.SummonFactory, definition) != 0u
+                || HasNewEngineerCombatBot(player.SummonFactory, existingBots)) return;
             player.Session.EnqueueMessageEncrypted(new ServerActionSetClearCache());
-            player.Session.EnqueueMessageEncrypted(actionSet.BuildServerActionSet());
+            if (!IsEngineerPetCallbackCurrent(player, generation)
+                || GetActiveEngineerCombatBotCount(player.SummonFactory, definition) != 0u
+                || HasNewEngineerCombatBot(player.SummonFactory, existingBots)) return;
+            ServerActionSet restored = actionSet.BuildServerActionSet();
+            if (!IsEngineerPetCallbackCurrent(player, generation)
+                || GetActiveEngineerCombatBotCount(player.SummonFactory, definition) != 0u
+                || HasNewEngineerCombatBot(player.SummonFactory, existingBots)) return;
+            player.Session.EnqueueMessageEncrypted(restored);
         }
+
+        private static HashSet<IWorldEntity> SnapshotEngineerCombatBots(IEntitySummonFactory factory)
+        {
+            var bots = new HashSet<IWorldEntity>(ReferenceEqualityComparer.Instance);
+            if (factory == null) return bots;
+            foreach (EngineerCombatBotDefinition definition in EngineerCombatBotDefinitions)
+                foreach (uint creatureId in definition.CreatureIds)
+                    foreach (IWorldEntity bot in factory.GetSummonCreatures(creatureId) ?? Array.Empty<IWorldEntity>())
+                        if (bot != null) bots.Add(bot);
+            return bots;
+        }
+
+        private static bool HasNewEngineerCombatBot(IEntitySummonFactory factory, IReadOnlySet<IWorldEntity> existingBots) =>
+            SnapshotEngineerCombatBots(factory).Any(bot => !existingBots.Contains(bot));
 
         private static ServerActionSet BuildEngineerCombatBotActionSet(
             IActionSet actionSet,
@@ -3388,29 +3447,19 @@ namespace NexusForever.Game.Spell
             if (cooldown == null)
                 return;
 
-            IPlayer player = GetPlayerSpellOwner(spell, target);
-            if (player == null)
+            if (target is not IPlayer player)
             {
                 SpellEffectDiagnostics.TraceModifySpellCooldown(spell, target, cooldown, "none", 0u, 0d, 0d, "target-not-player");
                 return;
             }
 
-            uint spell4Id = ResolveSpell4Id(cooldown.Spell4Id);
-            if (spell4Id == 0u)
-            {
-                SpellEffectDiagnostics.TraceModifySpellCooldown(spell, target, cooldown, "none", 0u, 0d, 0d, "no-concrete-spell4-target");
-                return;
-            }
-
-            double beforeCooldown = player.SpellManager.GetSpellCooldown(spell4Id);
-            if (!TryResolveCooldownMutation(cooldown, beforeCooldown, out double afterCooldown, out string action, out string skippedReason))
-            {
-                SpellEffectDiagnostics.TraceModifySpellCooldown(spell, target, cooldown, "none", spell4Id, beforeCooldown, beforeCooldown, skippedReason);
-                return;
-            }
-
-            player.SpellManager.SetSpellCooldown(spell4Id, afterCooldown);
-            SpellEffectDiagnostics.TraceModifySpellCooldown(spell, target, cooldown, action, spell4Id, beforeCooldown, afterCooldown, null);
+            bool held = (info.Entry.Flags & 2u) != 0 || (ulong)info.Entry.DelayTime + info.Entry.DurationTime > 0;
+            var modifier = new SpellCooldownModifier(info.EffectId, spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId, cooldown.Mode, cooldown.Spell4Id, cooldown.Operation, cooldown.DataFloat03);
+            bool applied = player.SpellManager.ApplySpellCooldownModifier(modifier, held);
+            SpellEffectDiagnostics.TraceModifySpellCooldown(spell, target, cooldown,
+                held ? "native-record-held" : "native-record-once", 0u, 0d, 0d,
+                applied ? null : "invalid-or-duplicate-modifier");
         }
 
         [SpellEffectHandler(SpellEffectType.ActivateSpellCooldown)]
@@ -4243,7 +4292,13 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            player.Account.RewardPropertyManager.UpdateRewardProperty(entry, value, rewardProperty.Data);
+            if (entry.Id == 4 && rewardProperty.Data == 3 && entry.RewardModifierValueTypeEnum == 0)
+                player.Account.RewardPropertyManager.UpdateChallengeSpellModifier(player, info.EffectId, spell.Parameters?.SpellInfo?.Entry?.Id ?? info.Entry.SpellId, value, false);
+            else if (entry.Id == 4 && rewardProperty.Data < 2 && entry.RewardModifierValueTypeEnum == 0)
+                player.Account.RewardPropertyManager.UpdateContractSpellModifier(player, info.EffectId,
+                    spell.Parameters?.SpellInfo?.Entry?.Id ?? info.Entry.SpellId, info.Entry.Id, rewardProperty.Data, value, false);
+            else
+                player.Account.RewardPropertyManager.UpdateRewardProperty(entry, value, rewardProperty.Data);
             SpellEffectDiagnostics.TraceRewardPropertyModifier(spell, target, rewardProperty, player.Guid, value, true, false, null);
         }
 
@@ -4989,71 +5044,6 @@ namespace NexusForever.Game.Spell
             }
 
             return 0u;
-        }
-
-        private static bool TryResolveCooldownMutation(SpellEffectModifySpellCooldownSemantics cooldown, double beforeCooldown, out double afterCooldown, out string action, out string skippedReason)
-        {
-            afterCooldown = beforeCooldown;
-            action = null;
-            skippedReason = null;
-
-            if (cooldown.DataFloat03 == 0f && cooldown.Operation == 0u)
-            {
-                afterCooldown = 0d;
-                action = "reset";
-                return true;
-            }
-
-            if (float.IsFinite(cooldown.DataFloat03) && MathF.Abs(cooldown.DataFloat03) >= 0.0001f)
-            {
-                if (cooldown.DataFloat03 <= -1f)
-                {
-                    afterCooldown = Math.Max(0d, beforeCooldown - Math.Abs(cooldown.DataFloat03) / 1000d);
-                    action = "reduce-float-ms";
-                    return true;
-                }
-
-                if (cooldown.DataFloat03 < 0f)
-                {
-                    afterCooldown = Math.Max(0d, beforeCooldown * Math.Max(0d, 1d - Math.Abs(cooldown.DataFloat03)));
-                    action = "reduce-float-ratio";
-                    return true;
-                }
-
-                if (cooldown.DataFloat03 < 1f)
-                {
-                    afterCooldown = Math.Max(0d, beforeCooldown * cooldown.DataFloat03);
-                    action = "scale-float-ratio";
-                    return true;
-                }
-
-                afterCooldown = cooldown.DataFloat03 / 1000d;
-                action = "set-float-ms";
-                return true;
-            }
-
-            int signedDataBits04 = unchecked((int)cooldown.DataBits04);
-            if (signedDataBits04 != 0)
-            {
-                afterCooldown = signedDataBits04 < 0
-                    ? Math.Max(0d, beforeCooldown - Math.Abs(signedDataBits04) / 1000d)
-                    : beforeCooldown + signedDataBits04 / 1000d;
-                action = signedDataBits04 < 0 ? "reduce-int04-ms" : "extend-int04-ms";
-                return true;
-            }
-
-            int signedDataBits05 = unchecked((int)cooldown.DataBits05);
-            if (signedDataBits05 != 0)
-            {
-                afterCooldown = signedDataBits05 < 0
-                    ? Math.Max(0d, beforeCooldown - Math.Abs(signedDataBits05) / 1000d)
-                    : beforeCooldown + signedDataBits05 / 1000d;
-                action = signedDataBits05 < 0 ? "reduce-int05-ms" : "extend-int05-ms";
-                return true;
-            }
-
-            action = "no-op";
-            return true;
         }
 
         private static void SendTrackedStateRemovalMessages(

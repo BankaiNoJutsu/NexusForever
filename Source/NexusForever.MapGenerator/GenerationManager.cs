@@ -201,7 +201,7 @@ namespace NexusForever.MapGenerator
 
             log.Info($"Processing {gridRequest.Asset} grid {gridRequest.X},{gridRequest.Y}...");
 
-            using (Stream stream = archiveManager.MainArchive.OpenFileStream(grid))
+            using (Stream stream = ArchiveStreamReader.OpenFileStream(archiveManager.MainArchive, grid))
             {
                 try
                 {

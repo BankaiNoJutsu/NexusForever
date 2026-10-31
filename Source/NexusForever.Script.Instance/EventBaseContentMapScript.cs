@@ -10,6 +10,7 @@ namespace NexusForever.Script.Instance
     {
         public abstract uint PublicEventId { get; }
         protected virtual IEnumerable<uint> AdditionalPublicEventIds => [];
+        protected virtual bool CreateLinkedChildEvents => true;
 
         protected IContentMapInstance map;
         protected IPublicEvent publicEvent;
@@ -27,7 +28,8 @@ namespace NexusForever.Script.Instance
             foreach (uint additionalPublicEventId in AdditionalPublicEventIds)
                 CreateAdditionalPublicEvent(additionalPublicEventId, createdEventIds);
 
-            CreateChildPublicEvents(publicEvent, createdEventIds);
+            if (CreateLinkedChildEvents)
+                CreateChildPublicEvents(publicEvent, createdEventIds);
         }
 
         private void CreateChildPublicEvents(IPublicEvent owner, ISet<uint> createdEventIds)
@@ -50,7 +52,8 @@ namespace NexusForever.Script.Instance
                 return null;
 
             additionalPublicEvents.Add(additionalPublicEvent);
-            CreateChildPublicEvents(additionalPublicEvent, createdEventIds);
+            if (CreateLinkedChildEvents)
+                CreateChildPublicEvents(additionalPublicEvent, createdEventIds);
             return additionalPublicEvent;
         }
 
@@ -70,7 +73,7 @@ namespace NexusForever.Script.Instance
         /// <summary>
         /// Invoked when <see cref="IPublicEvent"/> finishes with the winning <see cref="IPublicEventTeam"/>.
         /// </summary>
-        public void OnPublicEventFinish(IPublicEvent publicEvent, IPublicEventTeam publicEventTeam)
+        public virtual void OnPublicEventFinish(IPublicEvent publicEvent, IPublicEventTeam publicEventTeam)
         {
             if (this.publicEvent != publicEvent)
                 return;
