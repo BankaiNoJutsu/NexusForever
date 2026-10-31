@@ -1,0 +1,54 @@
+  NexusForever.Shared -> I:\GIT\NexusForever-assessment\Source\NexusForever.Shared\bin\Debug\net10.0\NexusForever.Shared.dll
+  NexusForever.Script.Isigrol -> I:\GIT\NexusForever-assessment\Source\NexusForever.WorldServer\bin\Debug\net10.0\NexusForever.Script.Isigrol.dll
+  NexusForever.IO -> I:\GIT\NexusForever-assessment\Source\NexusForever.IO\bin\Debug\net10.0\NexusForever.IO.dll
+  NexusForever.ClientConnector -> I:\GIT\NexusForever-assessment\Source\NexusForever.ClientConnector\bin\Debug\net10.0\NexusForever.ClientConnector.dll
+  NexusForever.Script.Arcterra -> I:\GIT\NexusForever-assessment\Source\NexusForever.WorldServer\bin\Debug\net10.0\NexusForever.Script.Arcterra.dll
+  NexusForever.Script.Farside -> I:\GIT\NexusForever-assessment\Source\NexusForever.WorldServer\bin\Debug\net10.0\NexusForever.Script.Farside.dll
+  NexusForever.Cryptography -> I:\GIT\NexusForever-assessment\Source\NexusForever.Cryptography\bin\Debug\net10.0\NexusForever.Cryptography.dll
+  NexusForever.PacketSourceGenerator -> I:\GIT\NexusForever-assessment\Source\NexusForever.PacketSourceGenerator\bin\Debug\netstandard2.0\NexusForever.PacketSourceGenerator.dll
+  NexusForever.Network.Sts -> I:\GIT\NexusForever-assessment\Source\NexusForever.Network.Sts\bin\Debug\net10.0\NexusForever.Network.Sts.dll
+  NexusForever.Database -> I:\GIT\NexusForever-assessment\Source\NexusForever.Database\bin\Debug\net10.0\NexusForever.Database.dll
+  NexusForever.Game.Static -> I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Static\bin\Debug\net10.0\NexusForever.Game.Static.dll
+  NexusForever.Network -> I:\GIT\NexusForever-assessment\Source\NexusForever.Network\bin\Debug\net10.0\NexusForever.Network.dll
+  NexusForever.Database.Chat -> I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Chat\bin\Debug\net10.0\NexusForever.Database.Chat.dll
+  NexusForever.API -> I:\GIT\NexusForever-assessment\Source\NexusForever.API\bin\Debug\net10.0\NexusForever.API.dll
+  NexusForever.Database.Query -> I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Query\bin\Debug\net10.0\NexusForever.Database.Query.dll
+  NexusForever.Database.Friendship -> I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Friendship\bin\Debug\net10.0\NexusForever.Database.Friendship.dll
+  NexusForever.Network.Internal -> I:\GIT\NexusForever-assessment\Source\NexusForever.Network.Internal\bin\Debug\net10.0\NexusForever.Network.Internal.dll
+  NexusForever.Database.Group -> I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Group\bin\Debug\net10.0\NexusForever.Database.Group.dll
+  NexusForever.Database.World -> I:\GIT\NexusForever-assessment\Source\NexusForever.Database.World\bin\Debug\net10.0\NexusForever.Database.World.dll
+  NexusForever.API.Account.Client -> I:\GIT\NexusForever-assessment\Source\NexusForever.API.Account.Client\bin\Debug\net10.0\NexusForever.API.Account.Client.dll
+  NexusForever.Database.Character -> I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Character\bin\Debug\net10.0\NexusForever.Database.Character.dll
+  NexusForever.Database.Auth -> I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Auth\bin\Debug\net10.0\NexusForever.Database.Auth.dll
+  NexusForever.Network.Auth -> I:\GIT\NexusForever-assessment\Source\NexusForever.Network.Auth\bin\Debug\net10.0\NexusForever.Network.Auth.dll
+  NexusForever.GameTable -> I:\GIT\NexusForever-assessment\Source\NexusForever.GameTable\bin\Debug\net10.0\NexusForever.GameTable.dll
+  NexusForever.API.Character.Client -> I:\GIT\NexusForever-assessment\Source\NexusForever.API.Character.Client\bin\Debug\net10.0\NexusForever.API.Character.Client.dll
+  NexusForever.StsServer -> I:\GIT\NexusForever-assessment\Source\NexusForever.StsServer\bin\Debug\net10.0\NexusForever.StsServer.dll
+  NexusForever.Network.World -> I:\GIT\NexusForever-assessment\Source\NexusForever.Network.World\bin\Debug\net10.0\NexusForever.Network.World.dll
+  NexusForever.API.Character -> I:\GIT\NexusForever-assessment\Source\NexusForever.API.Character\bin\Debug\net10.0\NexusForever.API.Character.dll
+  NexusForever.Database.Sqlite.Migrations -> I:\GIT\NexusForever-assessment\Source\NexusForever.Database.Sqlite.Migrations\bin\Debug\net10.0\NexusForever.Database.Sqlite.Migrations.dll
+  NexusForever.Server.Friendship -> I:\GIT\NexusForever-assessment\Source\NexusForever.Server.Friendship\bin\Debug\net10.0\NexusForever.Server.Friendship.dll
+  NexusForever.MapGenerator -> I:\GIT\NexusForever-assessment\Source\NexusForever.MapGenerator\bin\Debug\net10.0\NexusForever.MapGenerator.dll
+  NexusForever.Aspire.Database.Migrations -> I:\GIT\NexusForever-assessment\Source\NexusForever.Aspire.Database.Migrations\bin\Debug\net10.0\NexusForever.Aspire.Database.Migrations.dll
+  NexusForever.Server.GroupServer -> I:\GIT\NexusForever-assessment\Source\NexusForever.Server.GroupServer\bin\Debug\net10.0\NexusForever.Server.GroupServer.dll
+  NexusForever.Server.ChatServer -> I:\GIT\NexusForever-assessment\Source\NexusForever.Server.ChatServer\bin\Debug\net10.0\NexusForever.Server.ChatServer.dll
+  NexusForever.Server.Character -> I:\GIT\NexusForever-assessment\Source\NexusForever.Server.Character\bin\Debug\net10.0\NexusForever.Server.Character.dll
+  NexusForever.Game.Abstract -> I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Abstract\bin\Debug\net10.0\NexusForever.Game.Abstract.dll
+  NexusForever.Script -> I:\GIT\NexusForever-assessment\Source\NexusForever.Script\bin\Debug\net10.0\NexusForever.Script.dll
+  NexusForever.API.Account -> I:\GIT\NexusForever-assessment\Source\NexusForever.API.Account\bin\Debug\net10.0\NexusForever.API.Account.dll
+  NexusForever.Script.Olyssia -> I:\GIT\NexusForever-assessment\Source\NexusForever.WorldServer\bin\Debug\net10.0\NexusForever.Script.Olyssia.dll
+  NexusForever.Script.Alizar -> I:\GIT\NexusForever-assessment\Source\NexusForever.WorldServer\bin\Debug\net10.0\NexusForever.Script.Alizar.dll
+  NexusForever.Script.Main -> I:\GIT\NexusForever-assessment\Source\NexusForever.WorldServer\bin\Debug\net10.0\NexusForever.Script.Main.dll
+  NexusForever.Game -> I:\GIT\NexusForever-assessment\Source\NexusForever.Game\bin\Debug\net10.0\NexusForever.Game.dll
+  NexusForever.Script.Instance -> I:\GIT\NexusForever-assessment\Source\NexusForever.WorldServer\bin\Debug\net10.0\NexusForever.Script.Instance.dll
+  NexusForever.AuthServer -> I:\GIT\NexusForever-assessment\Source\NexusForever.AuthServer\bin\Debug\net10.0\NexusForever.AuthServer.dll
+  NexusForever.WorldServer -> I:\GIT\NexusForever-assessment\Source\NexusForever.WorldServer\bin\Debug\net10.0\NexusForever.WorldServer.dll
+  NexusForever.Aspire.AppHost -> I:\GIT\NexusForever-assessment\Source\NexusForever.Aspire.AppHost\bin\Debug\net10.0\NexusForever.Aspire.AppHost.dll
+  NexusForever.LoadTest -> I:\GIT\NexusForever-assessment\Tools\NexusForever.LoadTest\bin\Debug\net10.0\NexusForever.LoadTest.dll
+  NexusForever.Game.Tests -> I:\GIT\NexusForever-assessment\Source\NexusForever.Game.Tests\bin\Debug\net10.0\NexusForever.Game.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:06.81
