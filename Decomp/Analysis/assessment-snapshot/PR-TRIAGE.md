@@ -1,5 +1,17 @@
 # Official pull request comparison
 
+## 2026-11-02 22:16 UTC: scoped upstream514 name reconciliation
+
+Current514 headc684d1fd572d876ea395b5aacdbfc76a86283e8c remains open. Its93
+retained patch records corroborate08CC UnitId/name shape with the pinned native
+apply/get-name paths. [Scientist scanner names](../SCIENTIST_SCANBOT_NAME_PUBLICATION.md)
+now have a real accepted-profile producer and11,648 passing full source tests.
+This is a bounded slice of514. Its093D proposed32-bit selector conflicts with
+the native5-bit reader and is not imported; other fields/producers remain open.
+The final all-state upstream query found no PR updates since21:41UTC, and
+observed official game_rework d8e43d2c / expedition3588ca5f heads are unchanged.
+No new PR inventory or native/retail completion is inferred from that empty query.
+
 [Current unreserved bank currency recovery](../DESTINATION_PROVIDER_QUALIFICATION.md) drains late
 currency for bank move/split/use/delete, single attachment and unreserved/new
 wallet flows, and rejects publication reentry before accepting mutations.
@@ -7,12 +19,11 @@ Frozen `2c4aff9e`/6,202 inputs passes **11,634 full tests**, zero failures/skips
 all26 new/144 focused and all prior11,608 labels,26 MySQL cases and clean build/
 reviews. Final bindings and all7 recorded workload shutdowns verify; schema/DB
 DLLs are unchanged. Defaults15:1/17:1/no44/seven grants and client/CUA stop remain.
-The recovery checkpoint is published as14ea07f0; regular scoped commits/pushes
-remain authorized after verified review. [F-025 apply cases](../F025_STATIC_HANDLER_PROXY_MAPPING.md)
-are now mapped for all six entity-stat aux opcodes through the indexed entity
-dispatch table. Field enums/table identity and server producer/ordering evidence
-remain open; no aux emitter or native/retail qualification is added. The Goal
-remains active. Earlier milestone entries retain their historical boundaries.
+The later [scanner-name source gate](../SCIENTIST_SCANBOT_NAME_PUBLICATION.md) passes11,648 full tests
+and connects the accepted Scientist profile name to pending/active scanners and
+visible08CC updates. Other five aux producers and native/retail timing remain
+unqualified. Regular scoped commits/pushes remain authorized after review; the
+Goal stays active. Earlier milestone entries retain their historical boundaries.
 
 [Current legacy bank reconciliation](../DESTINATION_PROVIDER_QUALIFICATION.md) retains deferred
 currency and the complete original actor through rollback/lost acknowledgement,

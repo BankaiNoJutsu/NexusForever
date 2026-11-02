@@ -33,7 +33,7 @@ using Path = NexusForever.Game.Static.PlayerPath.Path;
 namespace NexusForever.Game.Tests.Entity;
 
 [Collection(MissingGameDataDiagnosticsCollection.Name)]
-public class PathManagerTests
+public partial class PathManagerTests
 {
     private GameTableManager configuredGameTableManager;
     private IPrerequisiteManager configuredPrerequisiteManager;

@@ -2,5 +2,6 @@
 {
     public interface IScannerUnitEntity : IWorldEntity
     {
+        string Name { get; set; }
     }
 }

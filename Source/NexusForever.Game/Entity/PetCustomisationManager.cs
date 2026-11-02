@@ -147,6 +147,9 @@ namespace NexusForever.Game.Entity
                     PetCustomisation = customisation.Build()
                 });
             }
+
+            if (type == PetType.ScanBot)
+                player.PathManager?.RefreshScientistScanbotName(objectId);
         }
 
         /// <summary>

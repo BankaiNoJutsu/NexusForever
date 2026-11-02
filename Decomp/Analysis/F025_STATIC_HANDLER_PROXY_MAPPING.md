@@ -1,5 +1,10 @@
 # F-025 aux apply table and handler proxy mapping
 
+Later [scanner name integration](SCIENTIST_SCANBOT_NAME_PUBLICATION.md) connects
+the corroborated08CC contract to an existing public rename flow. The mapping
+checkpoint below is79568022, before that Source change; its no-emitter statements
+record that historical boundary. Other five aux producers remain unqualified.
+
 2 November 2026. **Apply cases mapped for all six aux opcodes; emission remains
 blocked.** This pass resolves indexed dispatch for
 `0x0889/0x08CC/0x08F4/0x0939/0x093D/0x093E` and additional forwarding structure.

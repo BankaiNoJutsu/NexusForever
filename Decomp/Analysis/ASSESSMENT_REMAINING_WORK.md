@@ -5,6 +5,16 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+[Scientist scanner name publication](SCIENTIST_SCANBOT_NAME_PUBLICATION.md) now
+carries an accepted/unlocked profile name into pending/active scanners, visible
+08CC updates and later create models. Fourteen new/256 affected and all11,648
+full tests pass; build/reviews are clean. Frozen6ae88383/6,204 inputs and all10
+owner/test-copy pairs verify. Two executed empty-name negatives and preliminary
+fixture errors remain distinct. DB source/schema are unchanged; Git revision
+stamps change rebuilt DLL identities, so historical provider bindings remain
+separate. Other five aux producers, native UI/retail timing and broader feature
+requirements stay open. No default/grant change or client/CUA launch.
+
 [Unreserved bank currency recovery](DESTINATION_PROVIDER_QUALIFICATION.md) now
 persists Auth/SQL-gap intent across currency-free bank operations, single mail
 attachments and unreserved/new wallets before publication/retirement. Publication
@@ -74,7 +84,8 @@ unproven, and Fortune's direct03CF..03D2 cases have an additional node+0x60
 apply fallback. No Source behavior/emitter changed. The11,634-test checkpoint
 is published as14ea07f0 with verified local/remote HEAD parity.
 
-Next integrated evidence outcome: corroborate the mapped F-025 field meanings
+Next integrated evidence outcome: continue independent broader feature/upstream
+requirements and corroborate the remaining mapped F-025 field meanings
 and server producer/ordering requirements using independent table, packet or
 accepted runtime evidence; the six per-opcode apply-table edges are now mapped.
 Do not repeat their reader-only/literal-opcode or rejected viewport/grid searches,

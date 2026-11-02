@@ -3,6 +3,7 @@ using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Model;
+using NexusForever.Network.World.Message.Model.Entity;
 using NexusForever.Shared.Game;
 using NLog;
 
@@ -16,6 +17,23 @@ namespace NexusForever.Game.Entity
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
         public override EntityType Type => EntityType.ScannerUnit;
+
+        public string Name
+        {
+            get => name;
+            set
+            {
+                string updatedName = value ?? string.Empty;
+                if (name == updatedName)
+                    return;
+
+                name = updatedName;
+                if (InWorld && Guid != 0u)
+                    EnqueueToVisible(new ServerUnitNameChange { UnitId = Guid, Name = name }, true);
+            }
+        }
+
+        private string name = string.Empty;
 
         private readonly UpdateTimer followTimer = new(1d);
 
@@ -34,7 +52,7 @@ namespace NexusForever.Game.Entity
             {
                 CreatureId = CreatureId,
                 OwnerId    = SummonerGuid ?? 0u,
-                Name       = string.Empty
+                Name       = Name
             };
         }
 

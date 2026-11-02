@@ -147,6 +147,11 @@ namespace NexusForever.Game.Abstract.Entity
         bool TryDeployScientistScanbot(uint pathScientistScanBotProfileId);
 
         /// <summary>
+        /// Refreshes an owned scanner's name from the matching accepted pet customisation.
+        /// </summary>
+        void RefreshScientistScanbotName(uint pathScientistScanBotProfileId);
+
+        /// <summary>
         /// Dismisses the currently deployed Scientist scanbot, if present.
         /// </summary>
         bool DismissScientistScanbot();

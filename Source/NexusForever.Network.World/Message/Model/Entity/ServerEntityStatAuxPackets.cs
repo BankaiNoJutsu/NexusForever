@@ -24,7 +24,7 @@ namespace NexusForever.Network.World.Message.Model.Entity
     }
 
     /// <summary>Entity-stat aux (<c>0x08CC</c>). Reader <c>ServerUInt32WideString_ReadPayload</c> @ <c>1400980f0</c>.</summary>
-    /// <remarks>Wide-string role at apply time blocked - no production emit.</remarks>
+    /// <remarks>Compatibility serializer. The registered unit-name packet is <see cref="ServerUnitNameChange"/>.</remarks>
     [Message(GameMessageOpcode.ServerEntityStatUInt32WideString)]
     public class ServerEntityStatUInt32WideString : Shared.ServerUInt32WideStringPayload
     {

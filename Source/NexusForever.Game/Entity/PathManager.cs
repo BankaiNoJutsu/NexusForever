@@ -80,6 +80,8 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary<uint, SettlerImprovementGroupRuntimeStatus> settlerImprovementGroupStatus = new();
         private IWorldEntity pendingScientistScanbot;
         private uint activeScientistScanbotGuid;
+        private IScannerUnitEntity activeScientistScanbot;
+        private uint scientistScanbotProfileId;
         private bool scientistScanbotDismissPending;
         private bool initialPacketsSent;
         internal ExperiencePersistence.Selection LoadedSelection { get; }
@@ -204,6 +206,7 @@ namespace NexusForever.Game.Entity
             scanbot.Rotation     = player.Rotation;
             scanbot.Faction1     = player.Faction1;
             scanbot.Faction2     = player.Faction2;
+            scanbot.Name         = player.PetCustomisationManager.GetCustomisation(PetType.ScanBot, scanBotProfile.Id)?.Name ?? string.Empty;
 
             var mapPosition = new MapPosition
             {
@@ -219,12 +222,38 @@ namespace NexusForever.Game.Entity
                 return false;
 
             pendingScientistScanbot = scanbot;
+            scientistScanbotProfileId = scanBotProfile.Id;
 
             player.Map.EnqueueAdd(scanbot, mapPosition);
             if (scanbot.Guid != 0u)
                 OnScientistScanbotSummoned(scanbot);
 
             return true;
+        }
+
+        public void RefreshScientistScanbotName(uint pathScientistScanBotProfileId)
+        {
+            if (pathScientistScanBotProfileId == 0u
+                || pathScientistScanBotProfileId != scientistScanbotProfileId
+                || scientistScanbotDismissPending
+                || player.Guid == 0u)
+                return;
+
+            IPetCustomisation customisation = player.PetCustomisationManager?.GetCustomisation(PetType.ScanBot, pathScientistScanBotProfileId);
+            if (customisation == null)
+                return;
+
+            IScannerUnitEntity scanbot = pendingScientistScanbot as IScannerUnitEntity;
+            if (scanbot == null && activeScientistScanbotGuid != 0u)
+            {
+                scanbot = player.Map?.GetEntity<IScannerUnitEntity>(activeScientistScanbotGuid);
+                if (scanbot?.Guid != activeScientistScanbotGuid
+                    || !ReferenceEquals(scanbot, activeScientistScanbot))
+                    return;
+            }
+
+            if (scanbot?.SummonerGuid == player.Guid)
+                scanbot.Name = customisation.Name ?? string.Empty;
         }
 
         private bool TryGetDeployableScientistScanbotProfile(uint pathScientistScanBotProfileId, out PathScientistScanBotProfileEntry scanBotProfile)
@@ -371,6 +400,7 @@ namespace NexusForever.Game.Entity
             }
 
             activeScientistScanbotGuid = entity.Guid;
+            activeScientistScanbot = entity as IScannerUnitEntity;
             pendingScientistScanbot = null;
             SendScientistScanbotState(activeScientistScanbotGuid, 0u);
             return true;
@@ -396,6 +426,8 @@ namespace NexusForever.Game.Entity
         {
             pendingScientistScanbot = null;
             activeScientistScanbotGuid = 0u;
+            activeScientistScanbot = null;
+            scientistScanbotProfileId = 0u;
             scientistScanbotDismissPending = false;
         }
 

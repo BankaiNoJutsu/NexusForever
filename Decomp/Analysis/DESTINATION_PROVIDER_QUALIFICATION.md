@@ -1,5 +1,13 @@
 # Destination configured-provider qualification
 
+[Later scanner-name source gate](SCIENTIST_SCANBOT_NAME_PUBLICATION.md) passes
+11,648 full tests with unchanged database source/schema. Rebuilding after Git
+publication changes assembly revision stamps/MVIDs and DLL identities; the
+historical provider gates below retain their original DLL bindings. No fresh
+current-binary MySQL/migration or native/retail qualification is claimed for
+that cosmetic producer. Its source/DLL/test and21 recorded workload-generation
+shutdown checks are retained separately.
+
 ## Current unreserved bank currency recovery: focused/provider/full pass
 
 Currency-free bank move/split/use/delete and individual attachment operations,

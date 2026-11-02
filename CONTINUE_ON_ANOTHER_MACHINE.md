@@ -13,12 +13,11 @@ Frozen `2c4aff9e`/6,202 inputs passes **11,634 full tests**, zero failures/skips
 all26 new/144 focused and all prior11,608 labels,26 MySQL cases and clean build/
 reviews. Final bindings and all7 recorded workload shutdowns verify; schema/DB
 DLLs are unchanged. Defaults15:1/17:1/no44/seven grants and client/CUA stop remain.
-The recovery checkpoint is published as14ea07f0; regular scoped commits/pushes
-remain authorized after verified review. [F-025 apply cases](Decomp/Analysis/F025_STATIC_HANDLER_PROXY_MAPPING.md)
-are now mapped for all six entity-stat aux opcodes through the indexed entity
-dispatch table. Field enums/table identity and server producer/ordering evidence
-remain open; no aux emitter or native/retail qualification is added. The Goal
-remains active. Earlier milestone entries retain their historical boundaries.
+The later [scanner-name source gate](Decomp/Analysis/SCIENTIST_SCANBOT_NAME_PUBLICATION.md) passes11,648 full tests
+and connects the accepted Scientist profile name to pending/active scanners and
+visible08CC updates. Other five aux producers and native/retail timing remain
+unqualified. Regular scoped commits/pushes remain authorized after review; the
+Goal stays active. Earlier milestone entries retain their historical boundaries.
 
 [Current legacy bank reconciliation](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md) retains deferred
 currency and the complete original actor through rollback/lost acknowledgement,
@@ -474,14 +473,15 @@ Qualify current code on fresh isolated schemas and preserve entitlement policy.
 2. Periodic bank dirty/expiry persistence, captured retry and original-actor
    post-commit publication are implemented, including bank vendor/mail custody,
    legacy deferred currency and currency-free/unreserved/new-wallet recovery.
-   The latest full source gate passes11,634 tests, with26 new/144 focused and26
+   The bank full source gate passes11,634 tests, with26 new/144 focused and26
    configured MySQL cases; see the current provider qualification ledger for
    bindings and retained negative controls. These gates do not prove retail
    permissions or native behavior. Upstream608 refusal paths are reconciled;
    upstream609 is closed unmerged, with reconciliation recorded in PR-TRIAGE.md.
-   All six F-025 aux apply cases are mapped in the linked static record. Continue
-   independent field/table and server producer/ordering corroboration using the
-   matching build16042 artifact; apply mapping alone does not prove emit timing. See
+   All six F-025 aux apply cases are mapped. The later Scientist-name gate
+   connects08CC to the accepted profile flow and passes11,648 full tests; other
+   five producers and native/retail timing stay open. Continue independent
+   field/table and producer corroboration with the matching build16042 artifact. See
    `Decomp/Analysis/ENTITY_AUX_DECODE_ROADMAP.md` and the remaining-work ledger.
 3. Continue public WorldServer **07CE** Contract claim integration, retail cycle
    reset/unclaimed/excess rules, actual full-table delivery, track35 earning,
@@ -553,8 +553,9 @@ Preserve all fork functionality, entitlement defaults15:1/17:1/no44 and original
 data. Periodic bank dirty/expiry persistence, upstream608 refusal reconciliation
 and captured bank recovery/post-commit publication are implemented, including
 bank vendor/mail custody, legacy deferred and unreserved/new-wallet currency
-recovery and guarded publication. F-025 now maps all six aux apply-table cases;
-continue field/table and server producer/ordering corroboration using the matching
+recovery and guarded publication. F-025 maps all six aux apply-table cases, and the
+Scientist scanner-name08CC producer passes11,648 full source tests. Continue
+other field/table and server producer/ordering corroboration using the matching
 build16042 artifact and independent evidence, then complete all
 remaining assessment requirements and continue evidence-backed implementation
 using reverse-engineer-anything and CONTINUATION_GUIDE.md. Add meaningful

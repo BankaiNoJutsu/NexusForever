@@ -2,6 +2,13 @@
 
 Updated: 2026-06-05 (entity-create main Faction1/Faction2 offsets mapped; aux `Value*` names remain blocked pending consumer/apply evidence)
 
+Supplemental update: 2 November 2026 [Scientist scanner name publication](SCIENTIST_SCANBOT_NAME_PUBLICATION.md)
+connects the corroborated08CC unit-name contract to accepted profile renames,
+pending/active scanner state and create models.14 new/256 affected and11,648
+full source tests pass; no native/retail timing claim. The raw writer remains a
+registered compatibility alias. Other five entity-stat aux producers stay
+blocked; do not apply this producer's eligibility to unrelated units or opcodes.
+
 Supplemental update: 2 November 2026 [aux apply table and proxy mapping](F025_STATIC_HANDLER_PROXY_MAPPING.md)
 resolves all six entity-stat aux cases through Entity_DispatchHighRangeMessage
 1403ec6a0 and DWORD RVA table1403f1344. Payload+0 resolves an entity; remaining
@@ -141,7 +148,7 @@ shape-mapped server-output clusters that replaced `Server0xNNNN` placeholders.
 | Bucket | Count | Notes |
 | --- | ---: | --- |
 | Server opcodes with wire models | **699** | Structural queue empty |
-| Shape-mapped aux + spell aux (neutral `ValueN` / raw buffer) | **62** | **12/62** production emit paths (entity-create + housing); **50** still blocked |
+| Shape-mapped aux + spell aux (neutral `ValueN` / raw buffer) | **62** | **13/62** controlled source emit paths (entity-create + housing + scanner names); **49** still blocked |
 | Entity-create aux (`0x025F`-`0x0264`) | **5** | Adjacent to `ServerEntityCreate` (`0x0262`) in registration order |
 | Entity-stat aux (`0x0889`, `0x08CC`, `0x08F4`, `0x0939`, `0x093D`, `0x093E`) | **6** | Several readers shared with other opcodes |
 | Cluster aux (`ServerClusterAuxPackets.cs`) | **35** | Item/options/path/chat/marketplace/PE/story/realm/recruitment bands |
