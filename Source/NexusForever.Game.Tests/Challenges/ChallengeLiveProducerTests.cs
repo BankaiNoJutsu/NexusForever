@@ -323,7 +323,7 @@ public sealed class ChallengeLiveProducerTests
         Assert.Equal(1u, read.CharacterChallenge.Single().CompletionCount); Assert.Equal(2u, read.CharacterQuestObjective.Single().Progress); Assert.NotEmpty(read.Item);
     }
 
-    private Fixture New() { var f = new Fixture(options); f.Seed(); return f; }
+    private Fixture New() { var f = new Fixture(options); f.Source.EnableConnectionDiagnostics(); f.Seed(); return f; }
     private static uint PrepareDirectPrize(Fixture f, uint track)
     {
         var row = f.Source.Tables.RewardTrackRewards.Entries.Where(row => row.RewardTrackId == track && (row.RewardPointFlags & 4) != 0).OrderBy(row => row.Id).First();

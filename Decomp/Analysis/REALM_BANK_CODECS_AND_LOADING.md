@@ -1,5 +1,265 @@
 # Realm bank codecs, relog loading and transfer witnesses
 
+Latest legacy mail header/deletion checkpoint (31 October): [outcome recovery](MAIL_SEND_TRANSACTION_AND_INBOX_RECOVERY.md)
+passes **10,520 full tests**, zero failures/skips and zero full-build warnings/
+errors. All10499 earlier cases remain;21 new cases and302 focused mail/bank cases
+pass. Seven executed pre-change failures and one control are frozen separately.
+All6,056 current inputs and their full archive match; the6,054-input negative
+archive and eight DLLs also verify. Complete17-scalar header witnesses retain
+intent through disposal, rollback and lost acknowledgement, reject conflicting/
+stale owners and preserve later mutations. Delete/expiry tombstones leave only
+after confirmed SQL absence. The player-send companion adopts its confirmed
+header/database into this owner. Immediate legacy packets, attachment row/
+deleted-attachment intent, outgoing publication and economic outcomes remain
+separate work. No fresh MySQL/date conversion, copied-upgrade, socket/deployment,
+native runtime or retail qualification. The Goal stays active; defaults15:1/17:1,
+no automatic44/seven grants, no push and the native/Computer Use stop remain.
+
+Prior player-mail creation checkpoint (31 October): [atomic player sends and inbox recovery](MAIL_SEND_TRANSACTION_AND_INBOX_RECOVERY.md)
+passes **10,421 full tests**, no failures/skips, including223 bank cases. The full
+solution rebuild has zero warnings/errors. This adds31 tests:29 bank/mail cases,
+one world-second mail timer regression and one concurrent event-queue regression.
+Eight executed pre-change failures and exact binaries are frozen. All6,032
+source/tool/binary inputs bound before the full run match afterward; all10,390
+prior test cases remain. Postage plus gift, detached attachments, mail rows and
+bank withdrawal share one retained transaction; actor delivery/polling covers
+late commits, dead senders and delayed dirty attachments. Legacy creature/return/
+COD collection/attachment taking and other mail outcomes remain separate work.
+No fresh MySQL, upgrade, deployment, socket/native or retail qualification is
+claimed. Rebuilt DB DLL identities changed despite unchanged DB source, so old
+provider/upgrade binary bindings do not qualify these DLLs.
+
+Prior upstream609 source checkpoint (31 October): [communicator scheduling and reports](UPSTREAM_609_COMMUNICATOR_RECONCILIATION.md)
+implements the pinned `f9b6f7356798a41beea0768ff1f6b5a758ffeca3` interpretation
+while preserving injected services, scripted packet behavior and existing quest/
+Contract save ownership. The refreshed inventory has56 open PRs; all55 earlier
+heads, including608, remain unchanged. The162-case communicator/cleanup/live-
+Challenge gate passes and the full solution rebuild has zero warnings/errors.
+The full suite passes **10,499 tests**, zero failures/skips:71 communicator
+cases and seven cleanup cases added since10421. All earlier cases remain;6,053
+source/tool/binary inputs and their frozen archive match. Two earlier10492-case
+full runs each reported one
+Windows sharing violation in existing Challenge fixture cleanup; both are retained.
+A bounded two-second cleanup retry preserves gameplay deadlines and propagates
+persistent locks/other errors; seven in-memory cases include two executed negatives.
+This does not identify the original lock holder or qualify native predicates,
+actual full tables, MySQL/copied upgrades, deployment, sockets or retail behavior.
+Public07CE, reset/unclaimed/excess edges, legacy mail outcomes, track35 and broader
+work remain. The Goal is active. Defaults15:1/17:1/no44/no seven automatic grants
+remain; Computer Use/native launch stay stopped. No staging, commit or push.
+
+## Bank vendor payout companion: 31 October continuation
+
+Full and partial Inventory bank sales now capture their payout in the same
+retained `BankSaveCommand` as the affected Item rows. `IBankSaveCompanion` stages
+the currency snapshot in every fresh transaction; actor adoption, publication,
+completion and quarantine share the original bank batch. No currency or buyback
+success is published before confirmed commit. This preserves the existing
+carried-item vendor path and price/cap calculations.
+
+The currency participant reuses `QuestRowPersistence`'s actual-commit, finite
+uncertainty, tracked-state and SQL witnesses. Dirty balances are included in the
+captured target; later normal additions/subtractions are deferred with both
+rollback and commit shadows, then replayed once as dirty later intent. New wallet
+rows and repeated commit acknowledgements share the same operation. Direct row
+setters/saves, normal/frozen Player saving and Contract credit admission cannot
+bypass the bank wallet owner. Row admission and its bank-owner check use the same
+gate. The manager must belong to the original Player, rather than a different
+object with the same Character id.
+
+The original actor publishes the existing ordered delete/stack, currency and
+buyback effects. Failed SQL leaves the stored bank stack and wallet intact and
+quarantines the prepared owner. Publication failure cannot restore a source over
+a committed sale, repay it or replay an earlier effect. Dead/replaced actors
+settle the captured durable payout without success packets. Currency-earned and
+quest callbacks remain eligible live-actor follow-ups, not a durable cross-manager
+journal. Buyback retains its existing ephemeral manager; persistent crash/relog
+buyback recovery or retail permission to sell directly from bank UI is not
+established by this change.
+The restored `vendor-labeled-export/.../selected_decompiled.c` is header-only;
+its exact-client label/export summaries do not resolve that permission question.
+No location restriction is invented from that missing native evidence.
+
+Current verification is local in `artifacts/continuation-20261031/bank-handoffs`:
+`verification.json`, `inputs.json`, `full.trx`, `full-build.log` and `binaries`.
+Six executed early-payout failures are frozen with exact Game/WorldServer/test
+binaries and source hashes (`vendor-negative.trx`, `vendor-negative4.log`,
+`vendor-negative-inputs.json`). Missing-import, fixture and stale-output attempts
+are retained separately and are not behavioral negatives. Intermediate bank
+gates179/190/193 pass. The190-case run completed normally before a requested
+process stop found that its process was already gone; it was not interrupted.
+The final full rebuild has zero warnings/errors. **10,390 full tests pass**,
+no skips, including194 bank cases and21 new vendor regressions. All6,026 bound
+source/tool and binary files captured before the full run match afterward. Tests
+cover dirty/deferred intent, real SQL rewrite/rollback, missing wallets, caps, replay, dead owners, failed publication, full/
+partial buyback with codec/identity preservation, a direct-save admission race
+and cross-wired manager rejection. Fresh MySQL strategy, runtime, native and
+retail qualification remain separate. No schema or entitlement changes.
+
+This vendor checkpoint predates the newer player-mail boundary above. Legacy
+mail collection/return/COD outcomes and further provider/runtime qualification
+remain separate requirements. All wider Contract/retail/track35 and
+assessment requirements remain; this is not full bank or retail completion.
+
+## Periodic dirty fields and countdowns: 31 October continuation
+
+Continued from `293842289f50ea03e17386663da0d59ac9d3576a` in the isolated
+`C:/GIT/NexusForever/continuation` clone. The older archived checkout and its
+uncommitted changes remain untouched. `Tools/Handoff/Verify-Continuation.py`
+passed before editing: 5,888 checkpoint contents and the copied historical
+10,277/207/six-negative records. That verifier intentionally binds the old
+source; it is not a current-source test or a gate to weaken after implementation.
+
+`Inventory.Save` now enrolls dirty realm-bank items through
+`RealmBankManager.EnrollPeriodicItems` in its existing Character context. The
+Player's periodic (60-second default), requested and logout saves already call
+this path. Ordinary bag saving continues to exclude the bank's storage domain;
+the manager uses the existing exact Character/bank SQL witnesses and the real
+Item's actual-commit owner. Bank scalar, countdown and codec-only changes are
+included. Clean, settled bank items need no new enrollment. A failure rejects
+the complete context, retaining both carried and bank intent for a fresh-context
+retry rather than saving only one storage domain.
+
+Bank Items held by a normal context now block new inventory save/mutation
+leases and defer expiry application until that context actually commits,
+rolls back or disposes. Elapsed time remains accumulated. The existing move,
+delete, swap, merge and split guards continue to reject another Item save owner.
+Later field revisions remain dirty after an earlier snapshot commits. This
+changes persistence scheduling, not offline expiry or entitlement policy.
+
+Under .NET SDK 10.0.401, **10,291 full solution tests pass**, none skipped, with
+zero build warnings/errors. The full run includes 122 bank identity cases and
+14 new periodic cases, including suppressed/rewritten SQL and actual post-flush
+rollback. Three new countdown/ownership cases failed against the unchanged
+checkpoint; the intermediate focused run passed 119 bank cases before the last
+three regressions were added. Full-suite results, frozen Game/test binaries and
+source/artifact hashes are retained locally in `artifacts/continuation-20261031`
+(`bank-verification.json`, `full.trx`, `full-build.log`, `periodic-baseline.trx`).
+No fresh MySQL, upgrade, broker, socket, deployment or native
+gate is claimed. All historical provider counts below retain their original
+checkpoint scope.
+
+REA's static PE inspection independently binds the available archived client to
+SHA-256 `231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`:
+Evidence `ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4`,
+19 import descriptors/384 imports, no delay imports. Complete evidence is in
+`artifacts/continuation-20261031/rea-client-identity.json`. It establishes artifact
+identity/import metadata only. The archived September cache has 468 canonical
+fragments; the targeted Contract `1404d2240` fragment is absent there. The current
+REA session reports Ghidra unconfigured, so neither this cache nor the import
+inventory constitutes fresh Contract/reset analysis or runtime evidence.
+
+The next recovery/publication slice is recorded below, followed by remaining
+public Contract claims, retail reset edges, full-table delivery, track35
+and broader assessment requirements. Defaults15:1/17:1, no automatic44 or seven
+baseline character grants, stopped Computer Use/native launch and no push remain
+in force. The Goal remains active.
+
+## Captured bank recovery and actor publication: 31 October continuation
+
+Inventory's separate asynchronous bank paths now use a retained `BankSaveCommand`.
+It captures the account, realm, Character, item identities, storage/deletion route,
+scalar/codecs and dirty revisions before its first asynchronous attempt. The
+configured EF execution strategy runs the same operation in fresh, exclusively
+owned contexts and serializable transactions. Each attempt verifies the retained
+database and nondeleted Character/account owner; MySQL takes the Character row
+lock. Existing exact Item/bank tracked and SQL witnesses settle the actual commit.
+A replay never allocates another split identity or resamples later live intent.
+Later dirty revisions and codec mutations remain for a subsequent save. Changed
+ownership, conflicting stored state and reused/tracked contexts fail closed.
+
+Inventory prepares the complete affected-item unit and ordered packet/equipment
+effect batch before SQL starts. Moves, swaps, splits, consumed merges, creations,
+stack/use/deletion and simultaneous expiry include their affected items in that
+one transaction. Preparation failure restores the bag/deletion/scalar/codec and
+binding snapshot and retains elapsed expiry time. After enrollment, failure
+quarantines the owner; it cannot restore an old location over a possible commit.
+Publication waits for confirmed settlement on the original session actor. The
+barrier rejects ordinary saves and further mutations until publication finishes.
+Equipment property/visual changes publish in their original order with packets;
+eligible quest/consume callbacks run once after the barrier releases. Callbacks
+for stale or quarantined owners are suppressed; they are not a durable
+cross-manager recovery journal. A publication failure quarantines
+without replaying earlier effects. Dead/replaced/disconnecting/logout actors
+settle bookkeeping without packets, even if their event queue is never polled.
+
+Bank open/resync requests coalesce behind the same barrier. Loading existing
+committed identities compares retained SQL baselines while preserving later local
+dirty fields. Conflicting identities quarantine; read-only loading starts no bank
+write. The established unknown-definition skip behavior remains.
+
+Under SDK10.0.401 the final full solution build has zero warnings/errors and
+**10,369 tests pass**, no skips. All173 focused bank cases pass, including51 new
+recovery/publication cases. Six executed regressions against the prior10,318
+binaries reproduce premature publication and rejected-write success. Their
+TRX/logs remain; their original regression DLL was not frozen. Two further
+regressions fail against the separately qualified10,367 Game binary when the
+last packet/gameplay callback replaces the actor; their exact Game/test binaries,
+source hashes and logs are frozen. The corrected owner guard quarantines both
+cases. Intermediate compile/phase-transition failures and the earlier passing
+10,367 run remain separate from the final gate.
+
+The first final-source full attempt exhausted C: (about9 MB free) and aborted
+without a valid TRX; its log, empty TRX and `disk-exhaustion.json` are retained.
+Ignored generated build output was reversibly NTFS-compressed; all6,013 bound
+file contents stayed identical. About3.5 GB was available before the unchanged
+full rerun, which used its own `retry-temp` directory. That complete rerun passes;
+the disk-exhausted attempt is not counted as a pass or a source regression.
+
+Current authority is local in `artifacts/continuation-20261031/bank-recovery`:
+`final-verification.json`, `final-inputs.json`, `final-full.trx`,
+`final-full-build.log`, `final-focused.trx` and `final-binaries`. The verifier
+binds6,013 source/tool and binary files captured before the full run and verifies
+they are unchanged afterward. Controlled fresh-context replay and lost-
+acknowledgement tests use real SQLite transactions; they do not qualify the
+configured MySQL retry strategy.
+The subsequent handoff-only fast-forward to `a50dfa13` changes no committed
+Source file and preserves all6,013 tested input contents. The companion
+`handoff-adoption/verification.json` binds the original full-proof digest without
+rebinding its base. Ten new evidence-store tests pass; all2,154 lean members verify
+and restore under `.continuation-evidence/`. Historical provider harnesses and
+focused exports are now accessible, with original/published hashes and explicit
+redactions. This does not rerun those provider proofs or create native evidence.
+The earlier provider/upgrade counts below retain their historical binary scope.
+No new schema, runtime deployment, broker/socket pass or native evidence is
+claimed. Process-local Item leases do not establish cross-process or
+alias-equivalent concurrency. External ownership handoffs remain a concrete source
+gap: `MailManager.SendMail(ClientMailSend)` excludes equipped attachments but can select bank
+identities; `VendorSellHelper.SellItem` accepts its supplied location and can use
+partial `ItemDelete`. Their mail/payout/buyback owners are not enrolled in this
+asynchronous bank command. Trade and auction admission already restrict items to
+carried inventory. Coordinate bank removal, the external owner and its failure/
+publication outcome before qualifying these handoffs; offline expiry policy is
+unchanged.
+
+### Remaining bank ownership handoffs
+
+- Mail detaches through `Inventory.ItemRemove`; later `MailAttachment.Save` calls
+  `Item.Save`. The real Item's `ReconcileBaseline` requires an enrolled bank-row
+  deletion, which that path does not supply. Cover this with a real SQL regression
+  and coordinate the bank withdrawal, attachment owner, mail costs and outcome in
+  the same retained unit. An unenrolled-withdrawal rejection is not a completed
+  mail handoff and must not be bypassed by weakening the Item witness.
+- The vendor payout companion above now joins full/partial bank sales to their
+  wallet outcome and committed buyback publication. Its10,390-test full-source gate
+  passes. Buyback remains ephemeral; source acceptance of a bank location
+  alone does not establish retail permission to sell from that UI.
+- Preserve the carried-item mail/vendor flows and the existing trade/auction
+  carried-inventory admission. Fresh MySQL configured-strategy/load, large history,
+  copied-runtime upgrades, sockets and native UI remain separate gates.
+- The legacy `RealmBankManager.DeleteItem(ulong)` GUID-only helper has no current
+  Source caller. It retains its old trusted fire-and-forget API and does not
+  inherit the captured command or actor-publication guarantees. Audit its intended
+  compatibility surface before replacing/removing it; Inventory deletion uses
+  the owned tombstone path instead.
+
+Full-solution validation passes for the earlier recovery/publication slice;
+the later vendor companion gate also passes as stated above. Continue the concrete
+mail source handoff next, then public Contract claims, retail
+reset/unclaimed/excess edges, full-table delivery, track35 and the broader
+assessment/upstream requirements. Missing native reset evidence does not block
+the independent source work.
+
 Checkpoint10277 adds tracked single writes, owned deletion and expiry barriers
 to the split, merge, swap, codec and loading fixes from10259/10240/10219/10207. Access, capacity, item
 identity, binding and entitlement policies are retained. The full assessment
@@ -342,8 +602,11 @@ Computer Use. Q5597 remains unavailable and is not requested again.
 
 ## Remaining full Goal
 
-General asynchronous bank retry/post-commit actor publication and periodic bank
-dirty/expiry persistence remain. Checkpoint10277 qualifies the Inventory single-write
+The31 October continuation above connects periodic bank dirty/countdown
+persistence, captured asynchronous retries and original-actor publication;
+current-source verification and provider limits are stated separately there.
+Actual MySQL strategy/load and further ownership-handoff qualification remain.
+Checkpoint10277 qualifies the Inventory single-write
 and owned-deletion paths plus expiry barriers, without claiming full lifecycle parity. Checkpoint10259 also qualifies
 bank split transactions in addition to10240 consumed merges and10219 swaps. The process-local Item lease does not establish cross-process or
 alias-equivalent concurrency, and public collection concurrency retains its

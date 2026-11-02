@@ -56,6 +56,17 @@ namespace NexusForever.Game.Challenges
             internal Dictionary<ushort, CharacterChallengeModel> Rows { get; } = rows;
             internal Dictionary<ushort, long> Revisions { get; } = revisions;
             private bool disposed;
+            private CharacterContext attempted;
+            internal bool RetainBidRollback { get; set; }
+            internal bool CanRetryBidRollback(CharacterContext context, bool partialEnrollment = false) => !disposed && companion == null && RetainBidRollback
+                && (ReferenceEquals(attempted, context) || partialEnrollment && attempted == null)
+                && (context == null || context.IsProvenBidRollback) && !owner.rewardPersistenceRequiresReload
+                && ReferenceEquals(owner.activeSave, unit) && unit.Context == null;
+            internal void RetryBidRollback(CharacterContext context, bool partialEnrollment = false)
+            {
+                if (!CanRetryBidRollback(context, partialEnrollment)) throw new InvalidOperationException("Frozen Challenge save lost its proven bid rollback.");
+                attempted = null;
+            }
             internal Dictionary<ushort, CharacterChallengeModel> ComposedBaselines => companion?.SqlBaselines;
             internal void BeginContractSave(CharacterContext context) => companion?.Stage(context);
             internal bool FinishContract(bool success) => companion?.Finish(success) ?? success;
@@ -67,6 +78,7 @@ namespace NexusForever.Game.Challenges
                     {
                         if (disposed || !ReferenceEquals(owner.activeSave, unit) || unit.Key != (ChallengeSaveDatabaseKey(context), owner.characterId))
                             throw new InvalidOperationException("Frozen Challenge save lost its database/owner.");
+                        attempted = context;
                         owner.SaveChallengePersistence(context, this);
                     }
                     catch (Exception error) { context.RejectSave(error); throw; }

@@ -16,6 +16,25 @@ namespace NexusForever.Database.Character
         private bool savepointRollbackObserved;
         private bool saveInProgress;
         private bool? deferredTerminal;
+        private object recoverableSaveOwner;
+        internal bool RecoverableSaveConfirmed { get; private set; }
+        public bool IsProvenBidRollback { get; private set; }
+
+        internal void RetainUncertainSettlement(object owner, bool beforeEnrollment = false)
+        {
+            if (owner == null || recoverableSaveOwner != null || RecoverableSaveConfirmed
+                || (beforeEnrollment ? !AtomicCharacterId.HasValue || Database.CurrentTransaction == null || AtomicGraphSealed : !AtomicGraphSealed))
+                throw new InvalidOperationException("Recoverable Character settlement lost its atomic transaction owner.");
+            recoverableSaveOwner = owner;
+        }
+
+        internal void ResolveUncertainSettlement(object owner, bool committed)
+        {
+            if (!ReferenceEquals(recoverableSaveOwner, owner) || saveInProgress || committed && HasSavepointRollback)
+                throw new InvalidOperationException("Recoverable Character settlement has conflicting evidence.");
+            recoverableSaveOwner = null; RecoverableSaveConfirmed = committed; IsProvenBidRollback = !committed;
+            CompleteSave(committed);
+        }
 
         /// <summary>
         /// Staged owner state is uncertain after a savepoint rollback. Owners must
@@ -55,6 +74,15 @@ namespace NexusForever.Database.Character
                 // accepts tracked changes. Preserve the commit until base returns.
                 deferredTerminal = deferredTerminal.GetValueOrDefault() || committed;
                 return;
+            }
+
+            // Only the bid reconciliation executor may defer a negative event.
+            // It ends the physical transaction, then probes its full-graph receipt
+            // through a fresh context before releasing the original row owners.
+            if (recoverableSaveOwner != null)
+            {
+                if (!committed || savepointRollbackObserved) return;
+                RecoverableSaveConfirmed = true; recoverableSaveOwner = null;
             }
 
             Action<bool>[] callbacks = saveCompletions.ToArray();

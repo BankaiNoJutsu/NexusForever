@@ -292,7 +292,10 @@ public sealed class ContractNormalSaveUnitTests
         var character = new CharacterModel { Id = 42, TotalXp = 17 }; context.Attach(character); context.Entry(character).Property(row => row.TotalXp).IsModified = true;
         if (wallet)
         {
-            var currency = new CharacterCurrencyModel { Id = 42, CurrencyId = 1, Amount = 125 }; context.Attach(currency); context.Entry(currency).Property(row => row.Amount).IsModified = true;
+            // Match the real Currency owner: keep the loaded original Amount
+            // before assigning its target. The Character above remains a stub.
+            var currency = context.CharacterCurrency.AsNoTracking().Single(row => row.Id == 42 && row.CurrencyId == 1);
+            context.Attach(currency); currency.Amount = 125; context.Entry(currency).Property(row => row.Amount).IsModified = true;
         }
         context.Item.Add(new() { Id = 900, OwnerId = 42, ItemId = 9001, StackCount = 3 });
         if (!questGraph) return;

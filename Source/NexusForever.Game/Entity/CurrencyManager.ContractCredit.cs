@@ -14,16 +14,19 @@ namespace NexusForever.Game.Entity
     public partial class CurrencyManager
     {
         private ContractCreditReservation contractCredit;
-        private bool contractCurrencyReload;
+        private volatile bool contractCurrencyReload;
         private bool publishingContractCredit;
-        internal bool HasPendingContractCurrency => contractCredit != null || publishingContractCredit;
+        internal bool HasPendingContractCurrency => contractCredit != null || publishingContractCredit || bankCurrency != null || auctionBidCurrency != null;
         internal bool RequiresContractCurrencyReload => contractCurrencyReload;
 
-        private bool ContractCurrencyBlocked(CurrencyType currency) => contractCurrencyReload || publishingContractCredit || contractCredit?.Type == currency;
+        private bool ContractCurrencyBlocked(CurrencyType currency) => contractCurrencyReload || publishingContractCredit || contractCredit?.Type == currency || bankCurrency?.Has(currency) == true
+            || auctionBidCurrency != null && currency == CurrencyType.Credits;
         internal void InvalidateContractCredit()
         {
             if (HasPendingContractCurrency) contractCurrencyReload = true;
             contractCredit?.Quarantine();
+            bankCurrency?.Quarantine();
+            auctionBidCurrency?.Quarantine();
         }
         private void AssertContractCurrencySaveAllowed(CharacterContext context = null)
         {
@@ -40,6 +43,9 @@ namespace NexusForever.Game.Entity
         private bool DeferContractCurrency(CurrencyType currency, ulong amount, bool subtract, bool loot)
         {
             if (contractCurrencyReload) throw new InvalidOperationException("Currency requires authoritative reload.");
+            if (auctionBidCurrency != null && currency == CurrencyType.Credits)
+            { auctionBidCurrency.Defer(amount, subtract, loot); return true; }
+            if (DeferBankCurrency(currency, amount, subtract, loot)) return true;
             if (contractCredit?.Type != currency) return false;
             contractCredit.Defer(amount, subtract, loot); return true;
         }
@@ -51,14 +57,15 @@ namespace NexusForever.Game.Entity
             if (player == null || contractCurrencyReload || HasPendingContractCurrency || quote?.Award.CharacterCurrency == null
                 || quote.CharacterId != player.CharacterId || player.Account?.Id is not > 0 || player.Session == null
                 || player.Session is NetworkSession { IsDisconnecting: true } || player.LogoutManager?.State is LogoutState.Logout or LogoutState.Finished
-                || string.IsNullOrEmpty(database) || !Guid.TryParseExact(claimId, "N", out var id) || id == Guid.Empty) return false;
+                || string.IsNullOrEmpty(database) || !HasLoadedCurrencyOwner() || loadedOrigin != null && database != loadedOrigin.Database
+                || !Guid.TryParseExact(claimId, "N", out var id) || id == Guid.Empty) return false;
             var canonical = ContractRewardClaimQuote.Restore(catalog, quote.Json);
             var award = canonical.Award.CharacterCurrency;
             var entry = gameTableManager.CurrencyType?.GetEntry((uint)award.Type);
             if (entry == null || entry.Id != (uint)award.Type || entry.CapAmount != award.CapAmount) return false;
             bool existed = currencies.TryGetValue(award.Type, out var loaded);
             if (existed && (loaded is not Currency currency || currency.NeedsPersistenceSave || currency.CharacterId != player.CharacterId)) return false;
-            var wallet = existed ? (Currency)loaded : new Currency(player.CharacterId, entry);
+            var wallet = existed ? (Currency)loaded : CreateCurrencyOwner(entry);
             var owned = wallet.CaptureContractCredit(existed, award.CapAmount);
             try
             {

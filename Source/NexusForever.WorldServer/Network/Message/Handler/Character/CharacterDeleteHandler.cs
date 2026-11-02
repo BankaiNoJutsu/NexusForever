@@ -5,6 +5,7 @@ using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Character;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Network;
@@ -24,17 +25,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
         private readonly IDatabaseManager databaseManager;
         private readonly IGlobalResidenceManager globalResidenceManager;
         private readonly ICharacterManager characterManager;
+        private readonly ICleanupManager cleanupManager;
 
         public CharacterDeleteHandler(
             IGlobalGuildManager globalGuildManager,
             IDatabaseManager databaseManager,
             IGlobalResidenceManager globalResidenceManager,
-            ICharacterManager characterManager)
+            ICharacterManager characterManager,
+            ICleanupManager cleanupManager = null)
         {
             this.globalGuildManager     = globalGuildManager;
             this.databaseManager        = databaseManager;
             this.globalResidenceManager = globalResidenceManager;
             this.characterManager       = characterManager;
+            this.cleanupManager         = cleanupManager;
         }
 
         #endregion
@@ -43,6 +47,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
         {
             if (session.IsQueued == true)
                 throw new InvalidPacketValueException();
+
+            if (cleanupManager?.IsAccountLocked(session.Account) == true)
+            {
+                session.EnqueueMessageEncrypted(new ServerCharacterDeleteResult { Result = CharacterModifyResult.DeleteFailed });
+                return;
+            }
 
             CharacterModel characterToDelete = session.Characters.FirstOrDefault(c => c.Id == characterDelete.CharacterId);
 

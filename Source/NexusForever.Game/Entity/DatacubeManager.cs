@@ -18,6 +18,17 @@ namespace NexusForever.Game.Entity
         private readonly IPlayer player;
         private readonly IGameTableManager gameTableManager;
         private readonly Dictionary<uint, IDatacube> datacubes = new();
+        internal ulong CollectionCharacter { get; }
+        internal string CollectionDatabase { get; }
+        internal ExperiencePersistence.DatacubeState[] LoadedCollection { get; }
+
+        internal ExperiencePersistence.DatacubeState[] CaptureCollection()
+        {
+            if (player.CharacterId != CollectionCharacter) throw new InvalidOperationException("Collection changed its Character owner.");
+            return datacubes.Values.Select(row => new ExperiencePersistence.DatacubeState(CollectionCharacter, (byte)row.Type, row.Id, row.Progress))
+                .OrderBy(row => row.Type).ThenBy(row => row.Id).ToArray();
+        }
+        internal bool Owns(IDatacube datacube) => datacubes.TryGetValue(DatacubeHash(datacube.Id, datacube.Type), out var owned) && ReferenceEquals(owned, datacube);
 
         /// <summary>
         /// Create a new <see cref="IDatacubeManager"/> from an existing database model.
@@ -34,6 +45,9 @@ namespace NexusForever.Game.Entity
         {
             player                = owner;
             this.gameTableManager = gameTableManager;
+            CollectionCharacter = characterModel.Id;
+            CollectionDatabase = CharacterLoadOrigin.Get(characterModel)?.Database;
+            LoadedCollection = characterModel.Datacube.OrderBy(row => row.Type).ThenBy(row => row.Datacube).Select(ExperiencePersistence.FromModel).ToArray();
 
             foreach (CharacterDatacubeModel model in characterModel.Datacube)
             {
@@ -51,6 +65,15 @@ namespace NexusForever.Game.Entity
 
         public void Save(CharacterContext context)
         {
+            if (player is Player owner)
+            {
+                if (!ReferenceEquals(owner.DatacubeManager, this))
+                {
+                    var error = new InvalidOperationException("Collection lost its loaded manager.");
+                    context.RejectSave(error); throw error;
+                }
+                owner.SaveExperience(context); return;
+            }
             foreach (IDatacube datacube in datacubes.Values)
                 datacube.Save(context);
         }

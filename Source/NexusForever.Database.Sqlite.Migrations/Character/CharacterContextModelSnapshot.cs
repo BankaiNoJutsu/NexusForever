@@ -1233,6 +1233,7 @@ namespace NexusForever.Database.Sqlite.Migrations.Character
                         .HasColumnName("currencyId");
 
                     b.Property<ulong>("Amount")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
@@ -2942,90 +2943,105 @@ namespace NexusForever.Database.Sqlite.Migrations.Character
                         .HasColumnName("id");
 
                     b.Property<ulong>("BuyoutPrice")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("buyoutPrice");
 
                     b.Property<ulong>("CircuitData")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("circuitData");
 
                     b.Property<ulong>("CurrentBid")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("currentBid");
 
                     b.Property<ulong>("ExpirationTime")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("expirationTime");
 
                     b.Property<uint>("GlyphData")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("glyphData");
 
                     b.Property<uint>("Item2Id")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("item2Id");
 
                     b.Property<ulong>("ItemId")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("itemId");
 
                     b.Property<string>("MicrochipIds")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("varchar(255)")
                         .HasDefaultValue("")
                         .HasColumnName("unknownArray");
 
                     b.Property<ulong>("MinimumBid")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("minimumBid");
 
                     b.Property<ulong>("OwnerCharacterId")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("ownerCharacterId");
 
                     b.Property<uint>("Quantity")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("quantity");
 
                     b.Property<ulong>("ThresholdData")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("thresholdData");
 
                     b.Property<ulong>("TopBidderCharacterId")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("topBidderCharacterId");
 
                     b.Property<uint>("Unknown2")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("unknown2");
 
                     b.Property<uint>("WorldRequirementItem2Id")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
@@ -3039,6 +3055,50 @@ namespace NexusForever.Database.Sqlite.Migrations.Character
                     b.ToTable("marketplace_auction", (string)null);
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Character.Model.BankReconciliationReceiptModel", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(32)
+                        .HasColumnType("char(32)")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("createdUtc");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("payload");
+
+                    b.HasKey("Id")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("bank_reconciliation_receipt", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.MarketplaceBidReceiptModel", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(32)
+                        .HasColumnType("char(32)")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("createdUtc");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("payload");
+
+                    b.HasKey("Id")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("marketplace_bid_receipt", (string)null);
+                });
+
             modelBuilder.Entity("NexusForever.Database.Character.Model.MarketplaceCommodityOrderModel", b =>
                 {
                     b.Property<ulong>("Id")
@@ -3048,54 +3108,63 @@ namespace NexusForever.Database.Sqlite.Migrations.Character
                         .HasColumnName("id");
 
                     b.Property<ulong>("ExpirationTime")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("expirationTime");
 
                     b.Property<bool>("ForceImmediate")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("tinyint(1)")
                         .HasDefaultValue(false)
                         .HasColumnName("forceImmediate");
 
                     b.Property<bool>("IsBuyOrder")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("tinyint(1)")
                         .HasDefaultValue(false)
                         .HasColumnName("isBuyOrder");
 
                     b.Property<uint>("Item2Id")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int(10)")
                         .HasDefaultValue(0u)
                         .HasColumnName("item2Id");
 
                     b.Property<ulong>("ListTime")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("listTime");
 
                     b.Property<ulong>("OwnerCharacterId")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("ownerCharacterId");
 
                     b.Property<ulong>("Price")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("price");
 
                     b.Property<ulong>("PricePerUnit")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0ul)
                         .HasColumnName("pricePerUnit");
 
                     b.Property<uint>("Quantity")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int(10)")
                         .HasDefaultValue(0u)

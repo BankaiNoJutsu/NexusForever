@@ -159,6 +159,23 @@ namespace NexusForever.Game.Entity
                 }
             }
 
+            // A committed commodity sale can free and reuse its exact captured
+            // slot. Only this reservation may replace that original occupant.
+            internal void PublishCommodityReplacement(IItem item, uint index)
+            {
+                lock (bag.mutationGate)
+                {
+                    if (released || !expected.TryGetValue(index, out IItem old)
+                        || !bag.reservations.TryGetValue(index, out var owner) || !ReferenceEquals(owner, this)
+                        || !ReferenceEquals(bag.items[index], old)
+                        || item != null && (item.Location != bag.Location || item.BagIndex != index))
+                        throw new InvalidOperationException("Commodity replacement lost its exact captured slot.");
+                    if (old != null) ++bag.slotsRemaining;
+                    if (item != null) --bag.slotsRemaining;
+                    bag.items[index] = item; expected[index] = item;
+                }
+            }
+
             public void Dispose()
             {
                 lock (bag.mutationGate)

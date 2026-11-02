@@ -1,4 +1,4 @@
-﻿using NexusForever.Database.Character;
+using NexusForever.Database.Character;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Shared;
@@ -7,6 +7,14 @@ namespace NexusForever.Game.Abstract.Entity
 {
     public interface IQuestManager : IDisposable, IDatabaseCharacter, IUpdate
     {
+        ICommunicatorTracker Communicator => null;
+        CommunicatorQuestSnapshot? GetCommunicatorSnapshot(ushort questId)
+        {
+            var state = GetQuestState(questId);
+            return state == null ? null : new(state.Value, state is QuestState.Accepted or QuestState.Achieved, 0);
+        }
+        CommunicatorOfferBlock GetCallOfferBlock(ushort questId) => CommunicatorOfferBlock.CannotStart;
+        void QuestCommunicatorAction(ushort questId, bool engaged) { }
         bool HasPendingRewardOperation => false;
         bool RequiresAuthoritativeReload => false;
         void InvalidateRewardOperations(bool final = false) { }

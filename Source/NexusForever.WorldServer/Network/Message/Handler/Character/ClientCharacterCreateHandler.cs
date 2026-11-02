@@ -257,12 +257,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                     Value = 1
                 });
 
-                Task saveTask = databaseManager.GetDatabase<CharacterDatabase>().Save(c =>
-                    {
-                        c.Character.Add(character);
-                        foreach (IItem item in items)
-                            item.Save(c);
-                    });
+                Task saveTask = databaseManager.GetDatabase<CharacterDatabase>().CreateCharacter(character, items);
 
                 session.Events.EnqueueEvent(new TaskEvent(saveTask,
                     () =>

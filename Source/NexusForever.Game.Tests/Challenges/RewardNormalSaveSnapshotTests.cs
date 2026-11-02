@@ -30,6 +30,7 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Shared.Game;
 using NexusForever.Shared.Game.Events;
 using NexusForever.Network.Internal;
+using NexusForever.Network.Session;
 using NexusForever.Network.Internal.Message.Player;
 using NexusForever.Game.Static.Entity;
 using static NexusForever.Game.Tests.Challenges.ChallengeRewardPersistenceOwnershipTests;
@@ -343,7 +344,7 @@ public sealed class RewardNormalSaveSnapshotTests
         internal readonly Player Player;
         internal readonly QuestManager Quests;
         internal readonly ChallengeManager Challenges;
-        internal readonly EventQueue Events = new();
+        internal readonly EventQueue Events;
         internal readonly List<Exception> Errors = [];
         internal readonly RecordingDispatchProxy<ICleanupManager> CleanupProxy;
         internal readonly RecordingDispatchProxy<IInternalMessagePublisher> PublisherProxy;
@@ -352,17 +353,23 @@ public sealed class RewardNormalSaveSnapshotTests
         internal GameQuest Quest => Assert.IsType<GameQuest>(Assert.Single(Quests.GetActiveQuests()));
         internal Actor(Fixture fixture, IPrerequisiteManager prerequisites = null, Func<CharacterContext> rewardContexts = null,
             IGameTableManager questTables = null, IContractManager contracts = null, CharacterDatabase characterDatabase = null,
-            IGameTableManager rewardTables = null, Func<AuthContext> authContexts = null, AuthDatabase authDatabase = null)
+            IGameTableManager rewardTables = null, Func<AuthContext> authContexts = null, AuthDatabase authDatabase = null,
+            CharacterModel actorModel = null, IAccount actorAccount = null, IGameSession actorSession = null,
+            EventQueue actorEvents = null, Func<Player, CharacterModel, IInventory> inventoryFactory = null)
         {
             f = fixture; _ = Manager(f.Source); // installs reviewed tier goals
+            Events = actorEvents ?? new();
             Events.UnhandledExceptionHandler = Errors.Add;
             Player = (Player)RuntimeHelpers.GetUninitializedObject(typeof(Player));
             foreach (var property in typeof(Player).GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.PropertyType.IsInterface && p.Name.EndsWith("Manager", StringComparison.Ordinal)))
             {
                 var args = new object[] { null }; var value = typeof(RecordingDispatchProxy<>).MakeGenericType(property.PropertyType).GetMethod("Create")!.Invoke(null, args); Set(property.Name, value);
             }
-            Set(nameof(Player.Identity), new Identity { Id = 42, RealmId = 1 }); Set(nameof(Player.Inventory), f.Source.Inventory); Set(nameof(Player.Session), f.Source.Player.Session); Set(nameof(Player.Account), f.Source.Player.Account);
-            f.Source.SessionProxy.SetProperty("Events", Events);
+            Set(nameof(Player.Identity), new Identity { Id = actorModel?.Id ?? 42, RealmId = 1 });
+            Set(nameof(Player.Session), actorSession ?? f.Source.Player.Session); Set(nameof(Player.Account), actorAccount ?? f.Source.Player.Account);
+            Set(nameof(Player.Inventory), inventoryFactory?.Invoke(Player, actorModel) ?? f.Source.Inventory);
+            if (actorSession == null) f.Source.SessionProxy.SetProperty("Events", Events);
+            else if (!ReferenceEquals(actorSession.Events, Events)) throw new InvalidOperationException("Test actor must own its supplied queue.");
             foreach (string name in new[] { "tradeskills", "schematics", "taxiNodes", "unsavedTaxiNodes" })
             { var field = typeof(Player).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance)!; field.SetValue(Player, Activator.CreateInstance(field.FieldType)); }
             foreach (string name in new[] { "taxiStateLock", "bindStateLock" }) Field(name, new object());
@@ -376,9 +383,12 @@ public sealed class RewardNormalSaveSnapshotTests
             // Retain the original configuration before the model queries below.
             string configuredConnection = read.Database.GetDbConnection().ConnectionString;
             Identity = ChallengeManager.CaptureRewardPersistenceIdentity(read);
-            var model = new CharacterModel { Id = 42 };
-            foreach (var row in read.CharacterChallenge.AsNoTracking()) model.Challenge.Add(row);
-            foreach (var row in read.CharacterQuest.AsNoTracking().Include(row => row.QuestObjective)) model.Quest.Add(row);
+            var model = actorModel ?? new CharacterModel { Id = 42 };
+            if (actorModel == null)
+            {
+                foreach (var row in read.CharacterChallenge.AsNoTracking().Where(row => row.Id == model.Id)) model.Challenge.Add(row);
+                foreach (var row in read.CharacterQuest.AsNoTracking().Where(row => row.Id == model.Id).Include(row => row.QuestObjective)) model.Quest.Add(row);
+            }
             if (rewardTables != null) ((RecordingDispatchProxy<IGameTableManager>)(object)rewardTables).SetProperty(nameof(IGameTableManager.Challenge), f.Source.Tables.Challenge);
             Challenges = new(Player, model, rewardTables ?? f.Source.Tables, rewardContexts ?? (() => f.Context()), prerequisites,
                 (IItemManager)(object)f.Source.ManagerProxy, authContexts); Set(nameof(Player.ChallengeManager), Challenges);
@@ -420,9 +430,57 @@ public sealed class RewardNormalSaveSnapshotTests
         internal async Task Drain(bool allowErrors = false)
         {
             var timeout = Stopwatch.StartNew();
-            do { Events.Update(.01); Assert.True(timeout.Elapsed < TimeSpan.FromSeconds(20), "Normal-save/reward work did not settle."); await Task.Delay(5); }
+            do
+            {
+                Events.Update(.01);
+                if (timeout.Elapsed >= TimeSpan.FromSeconds(20))
+                    Console.Error.WriteLine(DrainTimeoutState(timeout.Elapsed));
+                Assert.True(timeout.Elapsed < TimeSpan.FromSeconds(20), "Normal-save/reward work did not settle.");
+                await Task.Delay(5);
+            }
             while (Challenges.HasPendingRewardOperation || Player.IsNormalSaveInProgress || Events.PendingEvents);
             if (!allowErrors) Assert.Empty(Errors);
+        }
+        private string DrainTimeoutState(TimeSpan elapsed)
+        {
+            // Failure-only, non-atomic observations: do not acquire the potentially
+            // blocked persistence gate or include database/character contents.
+            try
+            {
+                static object Read(object owner, string name) => owner?.GetType()
+                    .GetField(name, BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(owner);
+                static string State(object value) => value switch
+                {
+                    null => "null",
+                    Task task => task.Status.ToString(),
+                    bool flag => flag.ToString(),
+                    int count => count.ToString(),
+                    _ => "present"
+                };
+                object queue = Read(Challenges, "rewardQueue");
+                object pending = Read(queue, "pending");
+                var observations = new List<string>
+                {
+                    $"elapsed={elapsed.TotalSeconds:F3}",
+                    $"normalSave={Player.IsNormalSaveInProgress}",
+                    $"events={Events.PendingEvents}",
+                    $"pending={pending?.GetType().GetProperty("Count")?.GetValue(pending)}"
+                };
+                foreach (string name in new[] { "current", "executing", "preparingIdentity", "stopped", "invalidated", "finalized", "probing", "recoveries", "lease", "questPreparation" })
+                    observations.Add($"queue.{name}={State(Read(queue, name))}");
+                foreach (string name in new[] { "rewardQueueRequests", "activeRewardLease", "activeSave" })
+                    observations.Add($"manager.{name}={State(Read(Challenges, name))}");
+                ThreadPool.GetAvailableThreads(out int availableWorkers, out int availableIo);
+                ThreadPool.GetMinThreads(out int minimumWorkers, out int minimumIo);
+                ThreadPool.GetMaxThreads(out int maximumWorkers, out int maximumIo);
+                observations.Add($"pool.threads={ThreadPool.ThreadCount};pending={ThreadPool.PendingWorkItemCount};workers={availableWorkers}/{minimumWorkers}/{maximumWorkers};io={availableIo}/{minimumIo}/{maximumIo};processors={Environment.ProcessorCount}");
+                observations.Add("fixtureConnections=" + f.Source.DescribeConnectionDiagnostics());
+                return "Drain timeout (non-atomic): " + string.Join(";", observations);
+            }
+            catch (Exception exception)
+            {
+                return "Drain timeout diagnostic failed: " + exception.GetType().Name;
+            }
         }
         public void Dispose()
         {

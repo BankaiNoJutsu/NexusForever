@@ -12,6 +12,7 @@ namespace NexusForever.Game.Entity
             lock (persistence.Gate)
             {
                 AssertIdentity(); persistence.AssertRewardOwner();
+                if (bankChange != null || auctionOwner != null) throw new InvalidOperationException("Reserved currency cannot join a Contract credit.");
                 if (Entry.CapAmount != cap || existed && persistence.NeedsSave || !existed && amount != 0)
                     throw new InvalidOperationException("Contract credit requires its clean loaded wallet baseline.");
                 var before = new ContractCurrencyBefore(existed, amount);
@@ -39,12 +40,15 @@ namespace NexusForever.Game.Entity
                 }
             }
             internal void Adopt(ulong after)
+                => AdoptCurrent(true, after);
+
+            internal void AdoptCurrent(bool exists, ulong after)
             {
                 lock (owner.persistence.Gate)
                 {
                     Validate();
-                    if (cap != 0 && after > cap) throw new InvalidOperationException("Contract currency exceeds its captured cap.");
-                    row.Adopt(new(true, after)); owner.amount = after; row.Retire(false); ended = true;
+                    if (!exists && after != 0 || cap != 0 && after > cap) throw new InvalidOperationException("Contract currency exceeds its captured cap or existence.");
+                    row.Adopt(new(exists, after)); owner.amount = after; row.Retire(false); ended = true;
                 }
             }
             internal void Cancel()

@@ -33,12 +33,23 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
             string clientRequestSource = null,
             bool applyPendingSpellEvidenceCapture = false,
             bool? selectedBranch = null,
-            IPrerequisiteManager prerequisiteManager = null)
+            IPrerequisiteManager prerequisiteManager = null,
+            bool hasClientCastRequest = false)
         {
-            if (session?.Player == null || item?.Info == null)
+            if (session?.Player == null)
                 return false;
+            if (item?.Info == null)
+            {
+                ClientCastRequest.SendFailure(session.Player, hasClientCastRequest, contextToken, 0,
+                    item == null ? CastResult.ItemUnknown : CastResult.ItemBad);
+                return false;
+            }
 
-            if (!InventoryMutationScope.TryAcquire(session.Player.Inventory, out var mutationLease)) return false;
+            if (!InventoryMutationScope.TryAcquire(session.Player.Inventory, out var mutationLease))
+            {
+                ClientCastRequest.SendFailure(session.Player, hasClientCastRequest, contextToken, 0, CastResult.ItemBad);
+                return false;
+            }
             using var heldMutation = mutationLease;
 
             ItemSpecialEntry itemSpecial = null;
@@ -46,7 +57,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
             {
                 itemSpecial = gameTableManager.ItemSpecial?.GetEntry(item.Info.Entry.ItemSpecialId00);
                 if (itemSpecial == null)
+                {
+                    if (hasClientCastRequest)
+                    {
+                        ClientCastRequest.SendFailure(session.Player, true, contextToken, 0, CastResult.ItemBad);
+                        return false;
+                    }
                     throw new InvalidPacketValueException();
+                }
             }
 
             if (itemSpecial?.Spell4IdOnActivate > 0u)
@@ -60,13 +78,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                     contextToken,
                     clientRequestSource,
                     applyPendingSpellEvidenceCapture,
-                    prerequisiteManager);
+                    prerequisiteManager,
+                    hasClientCastRequest);
                 return true;
             }
 
             bool handled = TryUseCurrencyTreasure(session.Player, item, gameTableManager, clientRequestSource, selectedBranch);
             if (!handled)
                 LogUnhandledItemUse(session, item, targetUnitId, position, contextToken, clientRequestSource, selectedBranch);
+
+            // Currency treasures keep their established non-spell action. A parsed
+            // item cast still needs its pending token retired when no spell runs.
+            ClientCastRequest.SendFailure(session.Player, hasClientCastRequest, contextToken, 0, CastResult.ItemNoSpellId);
 
             return handled;
         }
@@ -80,19 +103,25 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
             uint contextToken,
             string clientRequestSource,
             bool applyPendingSpellEvidenceCapture,
-            IPrerequisiteManager prerequisiteManager)
+            IPrerequisiteManager prerequisiteManager,
+            bool hasClientCastRequest)
         {
             if (itemSpecial.PrerequisiteIdGeneric00 > 0)
             {
                 if (!PrerequisiteEvaluation.Meets(session.Player, itemSpecial.PrerequisiteIdGeneric00, item, prerequisiteManager))
                 {
-                    session.Player.SendGenericError(GenericError.UnlockItemFailed);
+                    if (hasClientCastRequest)
+                        ClientCastRequest.SendFailure(session.Player, true, contextToken, itemSpecial.Spell4IdOnActivate, CastResult.SpellPreRequisites);
+                    else session.Player.SendGenericError(GenericError.UnlockItemFailed);
                     return;
                 }
             }
 
             if (!CanUseItem(item))
+            {
+                ClientCastRequest.SendFailure(session.Player, hasClientCastRequest, contextToken, itemSpecial.Spell4IdOnActivate, CastResult.ItemCharges);
                 return;
+            }
 
             EnsureStackableItemCharges(item);
 
@@ -102,7 +131,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                 Position            = position,
                 CancelActiveTrade   = true,
                 ClientContextToken  = contextToken,
-                HasClientCastRequest = clientRequestSource != null,
+                HasClientCastRequest = hasClientCastRequest,
                 ClientRequestSource = clientRequestSource
             };
 

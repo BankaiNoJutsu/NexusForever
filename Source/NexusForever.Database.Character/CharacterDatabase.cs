@@ -41,6 +41,41 @@ namespace NexusForever.Database.Character
         public virtual Task SaveAtomic(ulong characterId, Action<CharacterContext> action)
             => CharacterAtomicSave.Execute(CreateContext, characterId, action);
 
+        public virtual Task SaveBidReconciliation(ulong characterId, Action<CharacterContext> action, MarketplaceBidReconciliation receipt)
+            => CharacterAtomicSave.ExecuteBidReconciliation(CreateContext, characterId, action, receipt);
+
+        public virtual Task SaveBankReconciliation(ulong characterId, Action<CharacterContext> action, BankSaveReconciliation receipt)
+            => CharacterAtomicSave.ExecuteBankReconciliation(CreateContext, characterId, action, receipt);
+
+        /// <summary>Create a complete Character graph and retain its confirmed database origin.</summary>
+        public async Task CreateCharacter(CharacterModel character, IEnumerable<IDatabaseCharacter> items)
+        {
+            ArgumentNullException.ThrowIfNull(character);
+            ArgumentNullException.ThrowIfNull(items);
+            var startingItems = items.ToArray();
+            await using var context = CreateContext();
+            context.BindAtomicCharacter(character.Id);
+            context.OnSaveValidation(() =>
+            {
+                if (!context.AtomicGraphSealed)
+                    throw new InvalidOperationException("Character creation cannot save before its complete graph is sealed.");
+            });
+            bool entered = false;
+            await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+            {
+                if (entered) throw new InvalidOperationException("Character creation cannot replay its enrollment after an uncertain save.");
+                entered = true;
+                await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+                context.Character.Add(character);
+                foreach (var item in startingItems) item.Save(context);
+                CharacterSaveGraph.Seal(context);
+                var register = CharacterLoadOrigin.Prepare(context, [character]);
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                register();
+            });
+        }
+
         /// <summary>
         /// Synchronously persist changes. Blocks the calling thread until the save completes.
         /// </summary>
@@ -143,7 +178,7 @@ namespace NexusForever.Database.Character
             return await NexusForeverDiagnostics.MeasureDatabaseAsync("character", nameof(GetCharacters), async () =>
             {
                 using var context = new CharacterContext(config);
-                return await context.Character.Where(c => c.AccountId == accountId)
+                var characters = await context.Character.Where(c => c.AccountId == accountId)
                     .AsNoTracking()
                     .AsSplitQuery()
                     .Include(c => c.Appearance)
@@ -181,6 +216,8 @@ namespace NexusForever.Database.Character
                     .Include(c => c.TaxiNode)
                     .Include(c => c.Schematic)
                     .ToListAsync();
+                CharacterLoadOrigin.Capture(context, characters);
+                return characters;
             });
         }
 

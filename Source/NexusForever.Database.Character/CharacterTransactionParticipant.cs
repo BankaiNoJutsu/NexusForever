@@ -163,6 +163,13 @@ namespace NexusForever.Database.Character
                     });
             }
         }
+
+        internal object[] CaptureParticipantReceiptTargets() => participantWrites.Values.Select(row => (object)new
+        {
+            Type = row.Model.GetType().FullName, row.Deleted,
+            Values = new SortedDictionary<string, object>(row.Target.Properties.ToDictionary(property => property.Name,
+                property => row.Target[property.Name]), StringComparer.Ordinal)
+        }).ToArray();
         private static bool SameParticipant(PropertyValues first, PropertyValues second)
             => first.Properties.All(property => property.GetValueComparer()?.Equals(first[property.Name], second[property.Name])
                 ?? Equals(first[property.Name], second[property.Name]));

@@ -338,7 +338,7 @@ namespace NexusForever.Game.Quest
         private static readonly Dictionary<(string Database, string Quest), Scope> scopes = [];
         private sealed class RewardScope(object owner, object frozen) { internal readonly object Owner = owner; internal readonly object Frozen = frozen; internal int References; }
         private static readonly Dictionary<(string Database, string Character), RewardScope> rewards = [];
-        private sealed record FrozenOwner(object Owner, object Token);
+        private sealed record FrozenOwner(object Owner, object Token) { internal int Borrows; }
         private static readonly Dictionary<(string Database, string Character), FrozenOwner> frozenSaves = [];
         internal static IDisposable AcquireFrozen(object owner, object token, string database, ulong character)
         {
@@ -364,6 +364,16 @@ namespace NexusForever.Game.Quest
                 ++current.References; lease = new RewardLease(key, current); return true;
             }
         }
+        internal static IDisposable BorrowFrozen(object owner, object token, string database, ulong character)
+        {
+            lock (gate)
+            {
+                var key = (database, character.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                if (!frozenSaves.TryGetValue(key, out var original) || !ReferenceEquals(original.Owner, owner) || !ReferenceEquals(original.Token, token))
+                    throw new InvalidOperationException("Ordinary reconciliation lost its retained Character freeze.");
+                original.Borrows++; return new FrozenBorrow(key, original);
+            }
+        }
         internal static IDisposable Acquire(CharacterContext context, string database, string quest, object frozen = null)
         {
             lock (gate)
@@ -384,7 +394,26 @@ namespace NexusForever.Game.Quest
         {
             public void Dispose()
             {
-                lock (gate) if (frozenSaves.TryGetValue(key, out var current) && ReferenceEquals(current, entry)) frozenSaves.Remove(key);
+                lock (gate)
+                    if (frozenSaves.TryGetValue(key, out var current) && ReferenceEquals(current, entry))
+                    {
+                        if (entry.Borrows != 0) throw new InvalidOperationException("Character freeze still has an unfinished ordinary save.");
+                        frozenSaves.Remove(key);
+                    }
+            }
+        }
+        private sealed class FrozenBorrow((string Database, string Character) key, FrozenOwner entry) : IDisposable
+        {
+            private bool released;
+            public void Dispose()
+            {
+                lock (gate)
+                {
+                    if (released) return;
+                    if (!frozenSaves.TryGetValue(key, out var original) || !ReferenceEquals(original, entry) || entry.Borrows <= 0)
+                        throw new InvalidOperationException("Ordinary save lost its borrowed Character freeze.");
+                    entry.Borrows--; released = true;
+                }
             }
         }
         private sealed class Lease((string Database, string Quest) key, Scope scope) : IDisposable

@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
-using NexusForever.Database.Character;
+﻿using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.GameTable;
@@ -25,11 +24,10 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public double? TimeRemaining
         {
-            get => timeRemaining;
+            get { lock (Persistence.Gate) return timeRemaining; }
             set
             {
-                timeRemaining = value;
-                saveMask |= TitleSaveMask.TimeRemaining;
+                lock (Persistence.Gate) { timeRemaining = value; storedTime = (uint)(value ?? 0d); }
             }
         }
 
@@ -37,22 +35,26 @@ namespace NexusForever.Game.Entity
 
         public bool Revoked
         {
-            get => revoked;
+            get { lock (Persistence.Gate) return revoked; }
             set
             {
-                revoked = value;
-                saveMask |= TitleSaveMask.Revoked;
+                lock (Persistence.Gate) { revoked = value; storedRevoked = Convert.ToByte(value); }
             }
         }
 
         private bool revoked;
 
-        private TitleSaveMask saveMask;
+        private readonly ushort titleId;
+        private uint storedTime;
+        private byte storedRevoked;
+        internal TitlePersistence Persistence { get; }
 
         /// <summary>
         /// Create a new <see cref="ITitle"/> from an existing database model.
         /// </summary>
-        public Title(CharacterTitleModel model, IGameTableManager gameTableManager)
+        public Title(CharacterTitleModel model, IGameTableManager gameTableManager) : this(model, gameTableManager, null) { }
+
+        internal Title(CharacterTitleModel model, IGameTableManager gameTableManager, TitlePersistence persistence)
         {
             CharacterId = model.Id;
             Entry       = gameTableManager.CharacterTitle?.GetEntry(model.Title);
@@ -61,13 +63,16 @@ namespace NexusForever.Game.Entity
             if (Entry != null && Entry.LifeTimeSeconds != 0u)
                 timeRemaining = model.TimeRemaining;
 
-            saveMask = TitleSaveMask.None;
+            titleId = model.Title; storedTime = model.TimeRemaining; storedRevoked = model.Revoked;
+            Persistence = persistence ?? new(CharacterId, new(null, [TitlePersistence.FromModel(model)]), CaptureSnapshot, title: titleId);
         }
 
         /// <summary>
         /// Create a new <see cref="ITitle"/> from a <see cref="CharacterTitleEntry"/> template.
         /// </summary>
-        public Title(ulong owner, CharacterTitleEntry entry)
+        public Title(ulong owner, CharacterTitleEntry entry) : this(owner, entry, null) { }
+
+        internal Title(ulong owner, CharacterTitleEntry entry, TitlePersistence persistence)
         {
             CharacterId = owner;
             Entry       = entry;
@@ -75,7 +80,8 @@ namespace NexusForever.Game.Entity
             if (Entry.LifeTimeSeconds != 0u)
                 timeRemaining = Entry.LifeTimeSeconds;
 
-            saveMask = TitleSaveMask.Create;
+            titleId = checked((ushort)entry.Id); storedTime = (uint)(timeRemaining ?? 0d);
+            Persistence = persistence ?? new(CharacterId, new(null, []), CaptureSnapshot, title: titleId);
         }
 
         public void Update(double lastTick)
@@ -84,46 +90,13 @@ namespace NexusForever.Game.Entity
                 TimeRemaining -= lastTick;
         }
 
-        public void Save(CharacterContext context)
+        public void Save(CharacterContext context) => Persistence.SaveTitle(context, titleId);
+
+        internal TitlePersistence.State CapturePersistence()
         {
-            if (saveMask == TitleSaveMask.None)
-                return;
-
-            if ((saveMask & TitleSaveMask.Create) != 0)
-            {
-                // title doesn't exist in database, all infomation must be saved
-                context.Add(new CharacterTitleModel
-                {
-                    Id            = CharacterId,
-                    Title         = (ushort)Entry.Id,
-                    TimeRemaining = (uint)(timeRemaining ?? 0d)
-                });
-            }
-            else
-            {
-                // title already exists in database, save only data that has been modified
-                var model = new CharacterTitleModel
-                {
-                    Id    = CharacterId,
-                    Title = (ushort)Entry.Id
-                };
-
-                EntityEntry<CharacterTitleModel> entity = context.Attach(model);
-                if ((saveMask & TitleSaveMask.TimeRemaining) != 0)
-                {
-                    // timeRemaining should never be null here, explicit check?
-                    model.TimeRemaining = (uint)(timeRemaining ?? 0d);
-                    entity.Property(p => p.TimeRemaining).IsModified = true;
-                }
-
-                if ((saveMask & TitleSaveMask.Revoked) != 0)
-                {
-                    model.Revoked = Convert.ToByte(Revoked);
-                    entity.Property(p => p.Revoked).IsModified = true;
-                }
-            }
-
-            saveMask = TitleSaveMask.None;
+            if (Entry != null && Entry.Id != titleId) throw new InvalidOperationException("Title changed its template identity.");
+            return new(titleId, storedTime, storedRevoked);
         }
+        private TitlePersistence.Snapshot CaptureSnapshot() => new(null, [CapturePersistence()]);
     }
 }

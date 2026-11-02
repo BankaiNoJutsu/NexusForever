@@ -5,6 +5,8 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.Prerequisite;
+using NexusForever.Database.Character;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Crafting;
 using NexusForever.GameTable;
@@ -19,6 +21,21 @@ namespace NexusForever.Game.Achievement
         private readonly IPlayerManager playerManager;
         private readonly IGameTableManager gameTableManager;
         protected override ulong OwnerId => owner.CharacterId;
+        protected override Func<CharacterContext, bool> CharacterSaveOwner => TrySaveExperience;
+        private bool TrySaveExperience(CharacterContext context)
+        {
+            if (owner is not Player player) return false;
+            if (!ReferenceEquals(player.AchievementManager, this)) { var error = new InvalidOperationException("Achievements lost their Character owner."); context.RejectSave(error); throw error; }
+            player.SaveExperience(context); return true;
+        }
+        internal ExperiencePersistence.Achievement[] LoadedExperienceAchievements { get; }
+        internal ulong AchievementCharacter { get; }
+        internal string AchievementDatabase { get; }
+        internal ExperiencePersistence.Achievement[] CaptureExperienceAchievements()
+        {
+            if (owner.CharacterId != AchievementCharacter) throw new InvalidOperationException("Achievements changed their Character owner.");
+            return achievements.Values.Select(row => new ExperiencePersistence.Achievement(AchievementCharacter, row.Id, row.ProgressCount, row.CreditedChecklistMask, row.DateCompleted)).OrderBy(row => row.Id).ToArray();
+        }
 
         /// <summary>
         /// Create a new <see cref="CharacterAchievementManager"/> from existing <see cref="CharacterModel"/> database model.
@@ -38,6 +55,8 @@ namespace NexusForever.Game.Achievement
             this.groupStateManager = groupStateManager;
             this.playerManager     = playerManager;
             this.gameTableManager  = gameTableManager;
+            AchievementCharacter = model.Id; AchievementDatabase = CharacterLoadOrigin.Get(model)?.Database;
+            LoadedExperienceAchievements = model.Achievement.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Id).ToArray();
             Initialise(model.Achievement, true);
         }
 

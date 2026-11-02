@@ -7,10 +7,10 @@ using NexusForever.Network.Session;
 
 namespace NexusForever.WorldServer.Network
 {
-    public interface IWorldSession : IGameSession, ILootEvidenceCaptureSession, IAccountRuntimeEvidenceCaptureSession, IRewardRotationEvidenceCaptureSession
+    public interface IWorldSession : IGameSession, IPlayerSession, ILootEvidenceCaptureSession, IAccountRuntimeEvidenceCaptureSession, IRewardRotationEvidenceCaptureSession
     {
         IAccount Account { get; }
-        IPlayer Player { get; set; }
+        new IPlayer Player { get; set; }
 
         bool HasSentCharacterListPackets { get; set; }
 

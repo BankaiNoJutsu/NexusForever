@@ -64,6 +64,15 @@ namespace NexusForever.Game.Entity
 
         public void Save(CharacterContext context)
         {
+            if (player is Player owner)
+            {
+                if (owner.DatacubeManager is not DatacubeManager manager || !manager.Owns(this))
+                {
+                    var error = new InvalidOperationException("Datacube lost its loaded collection owner.");
+                    context.RejectSave(error); throw error;
+                }
+                owner.SaveExperience(context); return;
+            }
             if (saveMask == DatacubeSaveMask.None)
                 return;
 

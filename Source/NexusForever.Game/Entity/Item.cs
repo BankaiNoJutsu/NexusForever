@@ -141,6 +141,7 @@ namespace NexusForever.Game.Entity
 
                 lock (persistenceGate)
                 {
+                    EnsureMarketplaceMutationAllowed();
                     durability = value;
                     MarkDirty(ItemSaveMask.Durability);
                 }
@@ -149,9 +150,15 @@ namespace NexusForever.Game.Entity
 
         private float durability;
 
-        public IList<uint> MicrochipIds { get; } = new List<uint>();
+        public IList<uint> MicrochipIds
+        {
+            get { lock (persistenceGate) return microchipIds ??= new MarketplaceCollection<uint>(this); }
+        }
 
-        public IList<ItemRuneSlot> RuneSlots { get; } = new List<ItemRuneSlot>();
+        public IList<ItemRuneSlot> RuneSlots
+        {
+            get { lock (persistenceGate) return runeSlots ??= new MarketplaceCollection<ItemRuneSlot>(this); }
+        }
 
         public uint ExpirationTimeLeft
         {
@@ -312,7 +319,11 @@ namespace NexusForever.Game.Entity
 
         public void TouchRuneSlots()
         {
-            MarkDirty(ItemSaveMask.RuneSlots);
+            lock (persistenceGate)
+            {
+                EnsureMarketplaceMutationAllowed();
+                MarkDirty(ItemSaveMask.RuneSlots);
+            }
         }
 
         public void Save(CharacterContext context) => SavePersistence(context, false);
@@ -322,8 +333,13 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public NetworkItem Build()
         {
-            EnsureInitialCharges();
-            ItemRuneSlotInitializer.ApplyDefaultSockets(this, gameTableManager);
+            // Marketplace delivery initializes template sockets before the ordinary
+            // save. Publication must not accept new live mutations after that save.
+            if (marketplacePublication == null)
+            {
+                EnsureInitialCharges();
+                ItemRuneSlotInitializer.ApplyDefaultSockets(this, gameTableManager);
+            }
 
             var networkItem = new NetworkItem
             {
@@ -335,7 +351,7 @@ namespace NexusForever.Game.Entity
                     BagIndex = BagIndex
                 },
                 StackCount = StackCount,
-                Charges    = Charges,
+                Charges    = GetInitialCharges(Info, StackCount, Charges),
                 Durability = Durability,
                 DynamicFlags = Soulbound ? DynamicItemFlags.Soulbound : DynamicItemFlags.None,
                 ExpirationTimeLeft = ExpirationTimeLeft,

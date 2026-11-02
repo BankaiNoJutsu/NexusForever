@@ -10,7 +10,7 @@ using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Tests.Quest;
 
-public class CommunicatorMessageTests
+public partial class CommunicatorMessageTests
 {
     private const ushort QuestId = 10510;
 
@@ -71,6 +71,7 @@ public class CommunicatorMessageTests
         uint worldZoneId = 0u,
         IGameTableManager gameTableManager = null)
     {
+        gameTableManager ??= CreateGameTableManager();
         return new CommunicatorMessage(new CommunicatorMessagesEntry
         {
             Id               = 7969u,
@@ -98,6 +99,7 @@ public class CommunicatorMessageTests
             return questState;
         });
 
+        questManagerProxy.SetMethodReturn(nameof(IQuestManager.GetCommunicatorSnapshot), questState == null ? null : new NexusForever.Game.Abstract.Quest.CommunicatorQuestSnapshot(questState.Value, questState is QuestState.Accepted or QuestState.Achieved, 0));
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
         playerProxy.SetProperty(nameof(IPlayer.Map), map);
         playerProxy.SetProperty(nameof(IPlayer.Zone), zone);
@@ -111,6 +113,7 @@ public class CommunicatorMessageTests
         IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(
             out RecordingDispatchProxy<IGameTableManager> gameTableManagerProxy);
         gameTableManagerProxy.SetProperty(nameof(IGameTableManager.WorldZone), CreateGameTable(worldZones));
+        gameTableManagerProxy.SetProperty(nameof(IGameTableManager.Quest2), CreateGameTable(new Quest2Entry { Id = QuestId }));
         return gameTableManager;
     }
 

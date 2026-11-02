@@ -1,4 +1,3 @@
-﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
@@ -21,16 +20,17 @@ namespace NexusForever.Game.Entity
 
         public byte? CostumeIndex
         {
-            get => costumeIndex;
+            get { lock (persistence.Gate) return costumeIndex; }
             set
             {
-                costumeIndex = value;
-                isDirty = true;
+                lock (persistence.Gate) { costumeIndex = value; activeCostumeState = (sbyte)(value ?? -1); }
             }
         }
         private byte? costumeIndex;
 
-        private bool isDirty;
+        private sbyte activeCostumeState;
+        private readonly ulong owner;
+        private readonly CostumePersistence persistence;
 
         // hard limit, array storing costumes at client is 12 in size 
         private const byte MaxCostumes = 12;
@@ -56,27 +56,26 @@ namespace NexusForever.Game.Entity
             this.gameTableManager = gameTableManager;
 
             costumeIndex = characterModel.ActiveCostumeIndex >= 0 ? (byte)characterModel.ActiveCostumeIndex : null;
+            activeCostumeState = characterModel.ActiveCostumeIndex; this.owner = characterModel.Id;
+            var origin = CharacterLoadOrigin.Get(characterModel);
+            if (this.owner != player.CharacterId || origin != null && origin.AccountId != player.Account?.Id)
+                throw new InvalidOperationException("Wardrobe changed its loaded Character/account owner.");
+            persistence = new(this.owner, CostumePersistence.FromModel(characterModel), CapturePersistence, origin?.Database);
 
             foreach (CharacterCostumeModel costumeModel in characterModel.Costume)
-                costumes.Add(costumeModel.Index, new Costume(costumeModel, itemManager, gameTableManager));
+                costumes.Add(costumeModel.Index, new Costume(costumeModel, itemManager, gameTableManager, persistence));
         }
 
-        public void Save(CharacterContext context)
+        public void Save(CharacterContext context) => persistence.Save(context);
+
+        internal Action<CharacterContext> CaptureNormalSave(object token, string database) => persistence.CaptureNormal(token, database);
+
+        private CostumePersistence.Snapshot CapturePersistence()
         {
-            foreach (ICostume costume in costumes.Values)
-                costume.Save(context);
-
-            if (isDirty)
-            {
-                // character is attached in Player::Save, this will only be local lookup
-                CharacterModel character = context.Character.Find(player.CharacterId);
-                EntityEntry<CharacterModel> entity = context.Entry(character);
-
-                character.ActiveCostumeIndex = (sbyte)(CostumeIndex ?? -1);
-                entity.Property(p => p.ActiveCostumeIndex).IsModified = true;
-
-                isDirty = false;
-            }
+            if (owner != player.CharacterId) throw new InvalidOperationException("Wardrobe changed its Character owner.");
+            var state = costumes.Values.Cast<Costume>().Select(costume => costume.CapturePersistence()).ToArray();
+            return new(activeCostumeState, state.SelectMany(value => value.Parents).OrderBy(row => row.Index).ToArray(),
+                state.SelectMany(value => value.Slots).OrderBy(row => row.Index).ThenBy(row => row.Position).ToArray());
         }
 
         public void Update(double lastTick)
@@ -203,7 +202,7 @@ namespace NexusForever.Game.Entity
                 costume.Update(costumeSave);
             else
             {
-                costume = new Costume(player, costumeSave, itemManager, gameTableManager);
+                costume = new Costume(player, costumeSave, itemManager, gameTableManager, persistence);
                 costumes.Add(costume.Index, costume);
             }
 

@@ -234,7 +234,7 @@ public sealed partial class RealmBankItemIdentityTests : IDisposable
     }
 
     [Fact]
-    public async Task PeriodicInventorySaveDoesNotEnrollItemAlreadyOwnedByBankSaveUnit()
+    public async Task PeriodicInventorySaveRejectsAnItemAlreadyOwnedByAnotherBankSaveUnit()
     {
         await Seed(bank: BankRow(401));
         var (manager, player, items) = Access();
@@ -255,9 +255,9 @@ public sealed partial class RealmBankItemIdentityTests : IDisposable
             Assert.True(item.HasPendingSave);
             await using (var periodic = new CharacterContext(Configuration))
             {
-                inventory.Save(periodic);
+                Assert.Throws<InvalidOperationException>(() => inventory.Save(periodic));
                 Assert.Empty(periodic.ChangeTracker.Entries<ItemModel>());
-                await periodic.SaveChangesAsync();
+                await Assert.ThrowsAsync<InvalidOperationException>(() => periodic.SaveChangesAsync());
             }
             Assert.True(item.HasPendingSave);
             await transaction.RollbackAsync();
@@ -311,7 +311,7 @@ public sealed partial class RealmBankItemIdentityTests : IDisposable
         await context.SaveChangesAsync();
     }
 
-    private (RealmBankManager Manager, IPlayer Player, IItemManager Items) Access()
+    private (RealmBankManager Manager, IPlayer Player, IItemManager Items) Access(Func<RealmBankManager.BankSaveCommand, Task> execution = null)
     {
         var databaseManager = RecordingDispatchProxy<IDatabaseManager>.Create(out var databases);
         databases.SetMethodReturn(nameof(IDatabaseManager.GetDatabase), Database());
@@ -326,7 +326,7 @@ public sealed partial class RealmBankItemIdentityTests : IDisposable
         playerProxy.SetProperty(nameof(IPlayer.Account), account);
         playerProxy.SetProperty(nameof(IPlayer.Identity), new Identity { RealmId = 2, Id = 100 });
         playerProxy.SetProperty(nameof(IPlayer.CharacterId), 100ul);
-        return (new RealmBankManager(databaseManager, items), player, items);
+        return (new RealmBankManager(databaseManager, items, execution), player, items);
     }
 
     private static GameItem Load(RealmBankManager manager, IPlayer player)

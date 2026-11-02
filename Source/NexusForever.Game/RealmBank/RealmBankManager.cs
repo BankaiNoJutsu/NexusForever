@@ -55,6 +55,7 @@ namespace NexusForever.Game.RealmBank
         {
             if (!HasUnlock(player))
                 return;
+            if (player.Inventory?.IsSaveBlocked == true) { QueueSync(player, true); return; }
 
             EnsureLoaded(player);
             SyncRealmBankToClient(player);
@@ -64,6 +65,7 @@ namespace NexusForever.Game.RealmBank
         {
             if (player?.Session == null || !HasUnlock(player))
                 return;
+            if (player.Inventory?.IsSaveBlocked == true) { QueueSync(player, false); return; }
 
             foreach (IBag bag in player.Inventory)
             {
@@ -92,6 +94,7 @@ namespace NexusForever.Game.RealmBank
 
         public void EnsureLoaded(IPlayer player)
         {
+            if (player.Inventory?.IsSaveBlocked == true) { QueueSync(player, true, publish: false); return; }
             CharacterDatabase database = GetDatabase();
             if (database == null)
                 return;
@@ -157,35 +160,40 @@ namespace NexusForever.Game.RealmBank
             return SaveBankUnit([source, created], player, created.ValidateSplitCreation);
         }
 
-        private Task SaveBankUnit(IItem[] items, IPlayer player, Action<CharacterContext> beforeStage = null)
+        // Periodic/logout saves share the caller's complete Character transaction.
+        // Bag.Save cannot be used here: it writes the Character storage domain.
+        internal void EnrollPeriodicItems(CharacterContext context, IItem[] items, IPlayer player)
+        {
+            try
+            {
+                uint accountId = player.Account.Id;
+                ushort realmId = player.Identity.RealmId;
+                ulong characterId = player.CharacterId;
+                foreach (IItem item in items)
+                {
+                    if (item.Location != InventoryLocation.RealmBank)
+                        throw new InvalidOperationException("Periodic bank save lost its bank location.");
+                    if (item is Entity.Item concrete && !concrete.HasPendingSave && !concrete.NeedsRealmBankSave)
+                        continue;
+                    StageBankItem(context, item, item is Entity.Item ? null : CaptureAdapter(item, characterId),
+                        accountId, realmId, characterId);
+                }
+            }
+            catch (Exception error) { context.RejectSave(error); throw; }
+        }
+
+        private Task SaveBankUnit(IItem[] items, IPlayer player, Action<CharacterContext> beforeStage = null, Action<CharacterContext> companion = null, IReadOnlySet<ulong> detached = null, bool allowEmpty = false)
         {
             CharacterDatabase database = GetDatabase();
-            if (database == null) return Task.CompletedTask;
-            uint accountId = player.Account.Id; ushort realmId = player.Identity.RealmId; ulong characterId = player.CharacterId;
-            // Capture adapters and routing on the actor before the first asynchronous
-            // flush. Real Items retain their existing actual-commit save ownership.
-            var captured = items.Select(item => (Item: item, Bank: item.Location == InventoryLocation.RealmBank,
-                Consumed: item.Location == InventoryLocation.None && item.PendingDelete,
-                Id: item.Guid, Definition: item.Id, Adapter: item is Entity.Item ? null : CaptureAdapter(item, characterId))).ToArray();
-            return database.Save(context =>
-            {
-                try
-                {
-                    beforeStage?.Invoke(context);
-                    foreach (var entry in captured)
-                        if (entry.Consumed)
-                            StageConsumedItem(context, entry.Item, entry.Adapter, accountId, realmId, characterId, entry.Id, entry.Definition);
-                        else if (entry.Bank)
-                            StageBankItem(context, entry.Item, entry.Adapter, accountId, realmId, characterId);
-                        else
-                            StageCharacterItem(context, entry.Item, entry.Adapter, accountId, realmId, characterId, entry.Id, entry.Definition);
-                }
-                catch (Exception error) { context.RejectSave(error); throw; }
-            });
+            if (database == null)
+                return companion == null ? Task.CompletedTask : Task.FromException(new InvalidOperationException("A bank companion requires its Character database."));
+            var command = new BankSaveCommand(database.CreateContext, items, player, beforeStage, companion, detached, allowEmpty);
+            return bankExecution == null ? command.ExecuteAsync()
+                : bankExecution(command) ?? throw new InvalidOperationException("Bank executor returned no operation.");
         }
 
         private static void StageConsumedItem(CharacterContext context, IItem item, ItemModel adapter,
-            uint accountId, ushort realmId, ulong characterId, ulong itemGuid, uint itemId)
+            uint accountId, ushort realmId, ulong characterId, ulong itemGuid, uint itemId, Entity.Item.BankSaveSnapshot snapshot = null)
         {
             var bank = context.RealmBankItem.SingleOrDefault(row => row.Id == itemGuid);
             ValidateOwnership(bank, accountId, realmId, itemId);
@@ -193,7 +201,7 @@ namespace NexusForever.Game.RealmBank
             if (character != null && (character.OwnerId != characterId || character.ItemId != itemId))
                 throw new InvalidOperationException("Consumed bank source has conflicting Character ownership or definition.");
             if (bank != null) context.RealmBankItem.Remove(bank);
-            var captured = item is Entity.Item concrete ? concrete.SaveConsumedRealmBankItem(context) : adapter;
+            var captured = snapshot?.Stage(context, false, true) ?? (item is Entity.Item concrete ? concrete.SaveConsumedRealmBankItem(context) : adapter);
             if (captured.OwnerId != characterId || captured.Id != itemGuid || captured.ItemId != itemId
                 || captured.Location != (ushort)InventoryLocation.None)
                 throw new InvalidOperationException("Consumed bank source lost its captured Item owner.");
@@ -202,11 +210,11 @@ namespace NexusForever.Game.RealmBank
         }
 
         private static void StageBankItem(CharacterContext context, IItem item, ItemModel adapter,
-            uint accountId, ushort realmId, ulong characterId)
+            uint accountId, ushort realmId, ulong characterId, Entity.Item.BankSaveSnapshot snapshot = null)
         {
             // Reserve the real item's save ownership before staging the bank row.
             // Both storage domains settle only when this one context commits.
-            var captured = item is Entity.Item concreteItem ? concreteItem.SaveToRealmBank(context) : adapter;
+            var captured = snapshot?.Stage(context, true, false) ?? (item is Entity.Item concreteItem ? concreteItem.SaveToRealmBank(context) : adapter);
             if (captured.OwnerId != characterId) throw new InvalidOperationException("Bank deposit lost its captured Character owner.");
             var model = BankModel(captured, accountId, realmId);
             RealmBankItemModel existing = context.RealmBankItem.SingleOrDefault(i => i.Id == model.Id);
@@ -240,7 +248,7 @@ namespace NexusForever.Game.RealmBank
         }
 
         private static void StageCharacterItem(CharacterContext context, IItem item, ItemModel model,
-            uint accountId, ushort realmId, ulong characterId, ulong itemGuid, uint itemId)
+            uint accountId, ushort realmId, ulong characterId, ulong itemGuid, uint itemId, Entity.Item.BankSaveSnapshot snapshot = null, bool detached = false)
         {
             RealmBankItemModel realmBankItem = context.RealmBankItem.SingleOrDefault(i => i.Id == itemGuid);
             ValidateOwnership(realmBankItem, accountId, realmId, itemId);
@@ -249,13 +257,13 @@ namespace NexusForever.Game.RealmBank
 
             if (item is Entity.Item concreteItem)
             {
-                var captured = concreteItem.SaveFromRealmBank(context);
+                var captured = snapshot == null ? concreteItem.SaveFromRealmBank(context) : snapshot.Stage(context, false, false);
                 if (captured == null)
                 {
                     if (realmBankItem != null) throw new InvalidOperationException("Withdrawal has no captured Character write.");
                     return;
                 }
-                if (captured.OwnerId != characterId || captured.ItemId != itemId || captured.Id != itemGuid)
+                if ((detached ? captured.OwnerId != null || captured.Location != (ushort)InventoryLocation.None : captured.OwnerId != characterId) || captured.ItemId != itemId || captured.Id != itemGuid)
                     throw new InvalidOperationException("Bank withdrawal lost its captured Character/item owner.");
                 ProtectTransfer(context, realmBankItem, deposit: false, character: captured);
                 return;

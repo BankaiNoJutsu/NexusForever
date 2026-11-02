@@ -26908,3 +26908,14 @@ F-001 refreshed STS export and live password-path verification (2026-07-28):
   plus an accepted optional-route STS capture. Do not synthesize handlers from
   the client request fields alone, and do not treat absence from this one
   password-path capture as proof that retail never uses the optional branch.
+
+## 2 November 2026 armor-pierce stat display mapping
+
+[Static armor-pierce evidence](NATIVE_STATIC_ARMOR_PIERCE_EVIDENCE.md) binds five
+literal Lua method cells to complete observed unwind ranges. Pierce routes through
+140461df0; three school-mitigation displays share140464240. Both reach the common
+formula routine140453b60 with one unit's scalar inputs. This is mapped display
+behavior, not the missing attacker/victim damage-order proof for#557. The fork
+already implements that PR's physical-offset and strikethrough portions. The
+remaining effective-armor change stays blocked on pairwise/corroborating evidence;
+no Source, default/entitlement, client runtime or retail claim changed.

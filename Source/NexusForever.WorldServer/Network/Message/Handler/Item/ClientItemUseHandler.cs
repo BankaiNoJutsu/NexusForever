@@ -27,8 +27,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
         public void HandleMessage(IWorldSession session, ClientItemUse itemUse)
         {
             IItem item = session.Player.Inventory.GetItem(itemUse.Location);
-            if (item == null)
-                throw new InvalidPacketValueException();
 
             ItemUseHelper.TryUseItem(
                 session,
@@ -39,7 +37,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                 itemUse.ContextToken,
                 nameof(ClientItemUse),
                 applyPendingSpellEvidenceCapture: true,
-                prerequisiteManager: prerequisiteManager);
+                prerequisiteManager: prerequisiteManager,
+                hasClientCastRequest: true);
         }
     }
 }

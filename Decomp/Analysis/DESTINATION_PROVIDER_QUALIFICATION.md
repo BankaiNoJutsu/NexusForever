@@ -1,0 +1,1247 @@
+# Destination configured-provider qualification
+
+## Current unreserved bank currency recovery: focused/provider/full pass
+
+Currency-free bank move/split/use/delete and individual attachment operations,
+and unreserved/new wallets in a paid operation, now drain accepted later currency
+before publication or retirement. An Auth-only edit needs no incidental quest
+save request. Manager and bound direct-row mutations reject publication reentry
+before deferral, wallet registration or dirty values. The original-player scope
+spans successful publication, cleanup and terminal failure replies; public
+standalone Currency constructors retain their behavior.
+
+Frozen `2c4aff9e` has6,202 Source/Tools inputs. All26 new and118 related controls
+pass (144 focused). The full solution passes **11,634 tests**, zero failures/skips,
+including every prior11,608 label and all26 new labels. Build:26.15 seconds,
+zero warnings/errors. Full tests:12m23s (754.59-second command); configured MySQL:
+26/26 in161.91 seconds. Both review axes have zero remaining findings. Final
+source/DLL/archive/review/test-label bindings verify; all7 recorded current
+workload generations and the owned listener are absent. Schema, every database
+source input and database DLL are unchanged; previous copied-SQLite/synthetic-
+MySQL upgrade qualification remains bound separately, not rerun or upgraded.
+
+Three public-flow losses were executed: currency-free withdrawal/attachment
+stored105 instead of112; vendor/Renown stored40 instead of47. Six executed
+publication negatives then accepted mutations after the drain check. The final
+cases cover existing/new wallets, bank/ordinary rollback, lost acknowledgement,
+a held-SQL mutation, retirement/replacement, original metadata/expiry, per-effect
+SQL views and early reserved-wallet/direct-row/failure publication rejection.
+The initial missing explicit caller entitlement and positional attachment-index
+fixture errors, compile-name errors and analyzer-only assertion spelling remain
+retained. The fixture explicitly models an entitled caller; no persistent/default
+44 or seven baseline grants were added. Existing index/wire policy is unchanged.
+
+Evidence: `bank-unreserved-currency/verification.json`, input archive, final
+review and retained negative TRXs. Foreign/mixed parent outcomes still quarantine
+rather than attempt partial salvage; durable independent-income recovery is not
+claimed for an unprovable parent. Physical network loss/SQL ABA, production data
+copies, whole-service/socket/deployment/load/native and retail qualification
+remain separate. Defaults15:1/17:1 and stopped client/CUA remain preserved.
+The Goal stays active. The user now authorizes regular scoped commits/pushes;
+verified milestones are published after review, without runtime deployment.
+
+## Current legacy bank reconciliation: focused/provider/full pass
+
+Captured vendor, mail cash/COD and bulk-selection bank outcomes now drain
+accepted deferred currency and the original real Player's complete ordinary
+save graph before publication. A separate bank reconciliation receipt binds
+that save to the captured complete SQL parent. Exact before/after observations
+reject mixed/foreign outcomes; rollback and lost acknowledgement retain later
+quest/Item metadata and wallet intent. Original session Player checks apply
+before every wallet/failure packet and shared failure-handler enable/disconnect.
+Recipient mail notifications wait for the ordinary commit. Neutral mail Item
+updates require the captured parent and independently verified single-recipient
+SQL custody; the callback cannot widen general Character ownership.
+
+Frozen `824fab02` contains 6,201 Source/Tools inputs. All 41 new regressions and
+100 final focused controls pass. The full solution build is clean: zero warnings/
+errors, 31.86 seconds. Full solution tests pass **11,608**, zero failures/skips,
+11m14s (685.14-second command). Every new/focused label and all 1,201 earlier
+affected labels occur as passes in the final full. Both independent review axes
+have zero remaining findings. Test DLL `932df1f4`, Game DLL `d271ac23`, Character
+DB DLL `5a536bfc`, ten owner/test-copy pairs, 137 native harness copies and the
+complete input archive verify. The final review is the38-file `d57ecfb1` base
+plus two-file shared-failure overlay `8f39d8d3`; other36 hashes are unchanged.
+
+All 38 cases pass on owned MySQL8.4.13 with configured strategy admission,
+including bank/ordinary rollback, lost acknowledgement, observation retry,
+metadata, retirement, session replacement, per-packet replacement and forged
+ownership callbacks. Its synthetic previous-schema upgrade preserves the bank
+row and creates a usable receipt. Both provider models match their snapshots;
+a copied previous SQLite file also upgrades with bank fields and receipts
+preserved. A synthetic upgrade is not a production database-copy qualification.
+The two owned database generations/listeners are stopped. All14 recorded
+original full/native/helper/workload generations are absent; shared SDK build
+servers and unrelated processes were not stopped.
+
+The prior `e01928ee` retains40-new/60-focused,37 MySQL and upgrade passes and
+its1,201 affected pass. Its first full is explicitly excluded/interrupted: an
+added process sampler stalled on a null frontier. Only the exact owned runner,
+vstest, test-host and helper were stopped. A later executed negative reproduced
+a shared-handler disconnect of a replacement session; the corrected candidate
+above has its own full/provider gates. Initial public-sale losses, fixture
+trigger/oracle errors, the introduced neutral-location error, early recipient
+notification and stale publication failures remain retained, not rewritten.
+Evidence: `legacy-deferred-currency/corrected-failure/verification.json` and the
+parent's `retained-gates.json` / `excluded-full-verification.json`.
+
+Defaults15:1/17:1 remain; no44/seven baseline character grants, client/CUA launch,
+commit or push. The33 new real-Player bank cases cover vendor/cash/COD/selection,
+not every entry point sharing the coordinator. Next execute currency-free bank
+and single-attachment flows and unreserved-wallet intent arriving during Auth,
+without an accompanying quest save request. The next-audit record is a source
+observation, not an executed new defect. Actual full-table Contract delivery,
+reset/unclaimed/excess policy, raw Communicator corroboration, SQL ABA/physical
+network loss, production copies, whole-service/socket/deployment/load/native
+and retail qualification remain separate. The Goal remains active.
+
+## Current account keybinding recovery: focused/provider/full pass
+
+Account create/edit/delete replacements now retain their complete loaded or
+uncertain set until Auth confirms commit. Public account manager, set and bound
+member saves share recovery and reject obsolete managers, admitted-session
+changes, foreign tracked/SQL intent and database-route changes after registration.
+Registration freezes membership/values; later actor edits remain pending.
+Same-context SaveChanges(false) restaging accepts only verified owned rows and
+preserves unrelated Auth intent. An unchanged repeated save retains its verified
+flush. Auth account enlistment uses the existing whole-unit receipt so an
+execution-strategy retry can recognize an already committed transaction.
+
+All 34 new public-flow cases and 193 affected controls pass. The latter include
+character inputs and account wallet, pending-item and entitlement recovery.
+Actual Account.Save through AuthDatabase.Save and SaveBlocking commits binding
+and wallet recovery together while preserving exactly defaults15:1/17:1. Unknown
+actions and all twelve raw input fields survive reload; no automatic44 or seven
+baseline character grants were added. Character selector and packet policy are
+preserved. Three real initial account losses and one review-found repeated-save
+refusal were executed and fixed. Missing fixture dependencies, the initial wrong
+wallet-receipt count expectation, inherited MySQL replacement configuration and
+the harness type-reference compile failure remain retained separately. Final
+assertions verify both exact wallet operations.
+
+The full solution build passes with zero warnings/errors (25.6 seconds). Final
+Spec/Standards reviews have zero remaining findings. Frozen `795eae0a` contains
+6,189 Source/Tools inputs, test DLL `b73b55a3`, Game DLL `c75a2e66` and ten
+owner/test-copy pairs. The 32 retained MySQL 8.4.13 Auth cases and two corrected
+retry controls pass on unchanged production DLLs. The original 34-case provider
+gate took 150.5 seconds; corrected controls are bound separately. The 32 use
+configured strategy admission; two explicitly inject a bounded retry fault
+strategy. The foreign-route control also uses private SQLite. Full suite:
+**11,567 passed, zero failures/skips**, including all 34 new and 193 affected
+labels. Final source/DLL/base-archive-plus-test-overlay identities verify. The
+original full gate remains failed at 11,560 passes / 7 provider-cache warnings.
+A one-file test correction owns/disposes injected retry services, preserving
+warning and assertion policy. All 41 narrow controls pass before the corrected
+full gate. The corrected full command took 842.8 seconds; test time was 13m51s.
+The owned MySQL process/listener and both full runner/test-host/provider-helper
+generations are absent.
+Evidence: `artifacts/continuation-20261031/account-options-persistence/verification.json`.
+
+This qualifies source/private-provider recovery. Actual full-table, copied-upgrade,
+physical network-loss, whole-service, deployment/load, socket/native and retail
+qualification remain separate. The historical continuation verifier retains its
+expected Source-divergence result; it was not repeated or weakened. No staging,
+commit, push, Computer Use or game-client launch. Incremental upstream refresh
+found no PR updates or official-head changes since the prior check; #608 remains
+source-reconciled and #609 closed unmerged. The Goal remains active.
+
+## Prior character keybinding/input-selection recovery: focused/provider/full pass
+
+The 32 retained provider passes and four corrected reload controls establish 36
+passing behaviors on unchanged production DLLs. The failed ordering-fixture gate
+remains retained; the corrected test assertion is bound by a one-file overlay on
+the original archive. No wire/iteration order change was made.
+
+Character input selection and the complete binding set now share one terminal
+owner. Bound manager/set/member APIs freeze before Auth and recover creates,
+updates, deletes, cancellation and restoration against one loaded/uncertain SQL
+snapshot. Later edits remain pending. Verified flushed EF rows and the selector
+column can be restaged without accepting unrelated intent. Raw standalone sets
+remain row-only; loaded action IDs, all three input positions and unknown selector
+values are preserved. Account routing/writer and packet validation are unchanged.
+
+Seven executed negatives are retained: three original public binding losses, two
+review-found same-context restaging faults, and two real-handler selector loss/
+Auth-gap ordering faults. All 36 new regressions and 228 final affected controls
+pass. Both final reviews have zero remaining findings/advisories. Full solution
+build is clean. Initial frozen `6cf29eb7` had 32 provider passes/four fixture-only
+reload-order failures, with physical SQL checks passing. The corrected assertion
+sorts and checks complete ID/code pairs; four corrected SQLite/MySQL controls
+pass on unchanged production DLLs. Final `255a0ff9` contains 6,187 Source/Tools
+inputs, test DLL `b5e61663`, Game DLL `c4b8b52d` and ten owner/test-copy pairs.
+Bindings use the original archive plus a one-file test overlay. Full suite:
+**11,533 passed, zero failures/skips**, including all 36 new and 228 affected
+labels. Final source/DLL/base-archive-plus-test-overlay bindings verify; owned
+MySQL and original runner/test-host/provider-helper generations are absent. Evidence:
+`artifacts/continuation-20261031/character-options-persistence/`.
+
+The selector test's initial private-setter compile error is excluded; corrected
+tests parse the actual packet and seed the canonical Account selector. No schema,
+default/grant, deployment or client change is made. Account-setting durability,
+whole-service Auth, actual-data, socket/native and retail qualification remain
+separate. Defaults15:1/17:1; no automatic44/seven baseline grants; no staging,
+commit, push or CUA/game-client launch.
+
+Keybinding milestone validation timing: final affected controls 76 seconds, final
+full build 19.4 seconds, initial provider gate 176.6 seconds plus four corrected
+controls 26.2 seconds, full command 738.1 seconds. Seven negatives and both fixture
+failures remain retained; no unchanged full retry. Final record:
+`character-options-persistence/verification.json`.
+
+## Prior exploration/reputation recovery: focused/provider/full pass
+
+Public map relocation and reputation updates now retain accepted hexgroups and
+standing through the existing guarded progression graph. Normal saves freeze
+values and membership before Auth. The repair preserves later discovery/deltas,
+unavailable loaded map rows, fractional standing and direct-save ownership guards.
+Traversal, discovery/completion rules, faction thresholds, delta amounts and reward
+producers are unchanged. Three public failure/retry negatives against the prior
+passing DLL were executed and fixed; 22 new regressions, 105 focused and 308
+affected cases pass. Full solution build is clean; final Spec/Standards reviews
+have zero findings/advisories. Candidate `aad4a351` contains 6,185 Source/Tools
+inputs, test DLL `365d1ee7`, Game DLL `ac21b8cf` and ten owner/test-copy pairs.
+All 22 configured-MySQL 8.4.13 Character cases pass; Auth is scripted and the
+foreign-route case also uses private SQLite. Full suite: **11,497 passed, zero
+failures/skips**, including all 22 new and 308 affected labels. Final source/DLL/
+archive bindings verify. Owned MySQL and original runner, test-host and provider-
+helper generations are absent. Evidence:
+`artifacts/continuation-20261031/exploration-persistence/`.
+
+The boundary is source/private-provider recovery with synthetic valid tables.
+Whole-service Auth, actual tables, copied-private upgrade/deployment, socket/native
+and retail qualification remain separate. Defaults15:1/17:1, no automatic44/seven
+baseline grants, no staging/commit/push and the CUA/client stop remain in force.
+
+Exploration/reputation validation timing: owning build 16 seconds, focused 33
+seconds, affected 59 seconds, full build 20 seconds, configured-provider 113.7
+seconds, full command 715.5 seconds. Three original public-flow negatives remain
+retained; no unchanged full retry. Final record:
+`exploration-persistence/verification.json`.
+
+## Prior collection recovery: focused/provider/full pass
+
+Datacube, journal/scientist scan progress and Galactic Archive unlock/view state
+now share the existing guarded progression graph. Accepted values and membership
+freeze before Auth, uncertain retries require a whole matching graph, and terminal
+acknowledgement retains later actor edits. Unknown collection types, unavailable
+archive rows and loaded flags remain intact. Direct real-owner manager/member
+saves use the same graph; obsolete owners reject before legacy writes. Proxy
+compatibility and existing linked-article, rule, reward and packet behavior remain.
+
+Four initial public Player.Save losses were executed against the prior DLL and
+fixed. Review found an obsolete-owner bypass; all three new entry-point negatives
+were executed and fixed. All 20 new regressions and 262 affected cases pass,
+including the prior XP/path controls, plus 20 configured-MySQL 8.4.13 Character
+cases. Final
+Spec/Standards reviews have zero remaining findings/advisories. Full solution build
+has zero warnings/errors. Frozen candidate `bc8716e1` has 6,184 Source/Tools inputs,
+test DLL `cfb4208e`, Game DLL `91f845ca` and ten owner/test-copy pairs. Full suite:
+**11,475 passed, zero failures/skips**, including all 20 new and 262 affected
+labels. Final source/DLL/archive bindings verify. Owned MySQL and original runner,
+native-helper and test-host generations are absent. Evidence:
+`artifacts/continuation-20261031/collection-persistence/`.
+
+The first focused run's stale empty-archive Auth fixture assertion is retained and
+excluded; an isolated test-project refresh executes the corrected source, 89 pass.
+The configured-provider boundary uses fresh private Character schemas/strategy;
+Auth is scripted, and the foreign-route case also uses private SQLite. Actual
+tables, whole-service Auth, upgrade/deployment, socket/native and retail remain
+separate. Defaults15:1/17:1 and no automatic44/seven baseline grants are preserved.
+
+Observed validation: clean full build 20 seconds, final 262 affected cases about
+one minute, 20 configured-provider cases 127.7 seconds, full command 784.1 seconds.
+Original failed reproductions and the stale fixture attempt remain retained; no
+unchanged full retry. Final milestone record: `collection-persistence/verification.json`.
+
+## Prior XP/path and coupled rewards: focused/provider/full pass
+
+Accepted character XP, rested XP/consumption, levels, active-path selection,
+path XP/reward markers and mission state now survive failed or uncertain Player
+saves. The typed graph also owns learned spells, action-set shortcuts/AMPs,
+scanbot customisations and character achievement progress/completion. Normal saves
+freeze values and membership before Auth; later earning, selection, deletion and
+restoration remain pending for the next save. Whole graph recovery rejects mixed
+candidates and foreign SQL/EF intent. Loaded unknown mission payloads and flags,
+unknown pet flair bits, standalone upserts and proxy/guild save behavior remain
+represented. Real-owned manager and member save APIs share the same owner.
+
+Ordinary Item captures reuse the existing immutable Item/revision snapshot and
+ordinary write witness. Supply-satchel materials have terminal scalar intent,
+revision and fresh-SQL recovery guards plus frozen membership. The material held
+by commodity reconciliation keeps its existing typed reservation/witness/receipt
+and writer. The first satchel integration regressed two existing rebase/rollback
+cases; those failed controls remain retained, and the corrected path passes.
+No new reward amount, prerequisite, balance, replay, packet or grant policy is
+inferred. Stored rested XP is retained when LastOnline is absent.
+
+Evidence includes four initial real Player.Save negatives; three coupled reward
+losses (spell, scanbot, achievement); physical Item and auto-satchel Auth-gap
+ordering losses; material flush/retry loss; duplicate creates through direct save
+APIs; and the flushed deletion/explicit EF acceptance gap. MySQL activation
+precision was separately reproduced in two native cases, then fixed by the mapped
+SQL DATETIME conversion already used by the atomic graph. Raw actor timestamps
+remain intact; unchanged acknowledged timestamps retain their stored projection.
+Fixture-only constructor/proxy/Ability-bag/property-state failures are excluded.
+
+The completed candidate has39 new regressions. All285 focused cases pass;621
+earlier affected controls and157 final related controls pass, with the final delta
+covering normal/bid/commodity, satchel, item guards, direct saves and guild behavior.
+The full solution build passes with zero warnings/errors in29.43seconds. All39
+new cases pass against fresh private MySQL8.4.13 Character schemas using the
+configured strategy in210.94seconds. Auth-phase scheduling remains scripted by the
+fixture, and the foreign-route case additionally uses a private SQLite Character
+target. This is not whole-service Auth, copied-private upgrade, deployment, socket,
+native game-client, actual-table or retail qualification. Final source reviews:
+Spec0, Standards0; no actionable advisory findings in this candidate.
+
+Frozen Source/Tools SHA256:
+`8d1660aa37d640f9b312c2c125680dd62e8218f6c98bc774fe4cafe0e848ced1`;
+6,182 inputs, ten owning/test-copy DLL pairs and137 native managed copies.
+Test DLL:`f621c99d8650c938969367a686ae2a8dc5a1593d7d655480c62c69aa80a3b2aa`.
+Game DLL:`7012f2afe97dfa16415efc10eea19585782898d454260597a80896c314ecfe64`.
+Archive:`faba0b12987c1b6fcc79fdabf3156694773992992839899d22f8958d2d26e91b`.
+The full solution test gate ran14:25:13-14:36:31UTC on2November2026 and passed
+**11,455tests, zero failures/skips**, including all39 new regressions and every
+previous focused label. Command677.44seconds; test execution11m7s. Source/DLL/archive
+bindings verify after the terminal gate; original runner/test-host/helper generations
+are absent. Final evidence: `xp-path-persistence/verification.json`.
+Default parallelism, deadlines and assertions remain intact; read-only C-volume
+capacity samples are retained after the preceding unrelated SQLite storage errors.
+No cleanup or other workload stop is performed to obtain green.
+
+The same owned MySQL generation7076 became ready after its startup observation
+window expired, then accepted one graceful SQL SHUTDOWN. It and its listener are
+confirmed absent; the initial live-process shutdown observation is retained.
+Both upstream branch heads are unchanged, and the all-state PR update query is
+empty.608 remains source-reconciled;609 remains closed unmerged. No staging,
+commit, push, CUA/client launch, default15:1/17:1 change, auto44 or seven-baseline
+grant. Historical handoff Source divergence remains expected. Evidence:
+`artifacts/continuation-20261031/xp-path-persistence/` (baseline.trx,
+coupled-reward-corrected-baseline.trx, reward-auth-before.trx,
+satchel-direct-before.trx, automatic-las-first.trx, candidate-focused.trx,
+affected.trx, final-controls.trx, precision-before/ and precision-corrected/,
+provider-results.json, review-final.md, final-binding.json and full-run-state.json).
+The full gate passes for this frozen candidate. Prior failed full gates retain
+their original status; this result does not establish their earlier failure causes.
+
+## Current tradeskill/recipe progression: focused/provider pass, full gate failed
+
+Public learning, archiving/reactivation, earned XP, talent selection/reset and
+recipe discovery now retain their accepted state through failed/uncertain saves.
+Three real Player.Save cases fail against the prior Game DLL: learned skill/recipe
+rows disappear after rejected flush/retry; archival and discovery changes are lost;
+and earned XP/talent changes revert. The preceding separate public-flow probe is
+also retained. No public reward, achievement, archive or wire policy is changed.
+
+An immutable combined skill/recipe graph owns both tables. Fresh-context recovery
+requires a whole captured candidate and rejects mixtures of individually matching
+rows. Scalar loaded baselines allow lazy ownership without querying SQL during
+capture; new records remain distinguishable from loaded rows. All ten talent
+tiers, flags, coordinates and unavailable schematic rows are retained. Acknowledgement
+advances only the flushed graph; later reset, earning and reactivation stay pending.
+Normal Player saves freeze both values and membership before Auth, including empty
+collections. The existing tracked-column/explicit EF acceptance guard is reused.
+
+All22 focused cases pass, including17 new cases and five existing archive tests.
+The first expanded run ends21pass/one fixture failure: repeated whole Player.Save
+enrollment attaches a duplicate root in one EF context. The corrected fixture uses
+separate public units to test explicit EF acceptance and later XP, preserving the
+existing root API. All756 affected crafting/progression, title/wardrobe, Contract,
+normal-save and marketplace cases pass. All17 new cases pass in the owned MySQL8.4.13
+configured-strategy harness; its route-refusal case additionally uses a private
+SQLite foreign target. Native e_sqlite3 is explicitly included and hashed for that
+control. This does not establish full-table crafting, copied-private upgrades,
+deployment, sockets, native game-client behavior or retail completeness.
+
+Spec0 and Standards0 blocking findings; one nonblocking settlement-bookkeeping
+duplication advisory remains, with the graph-specific lifecycle kept local for
+this outcome. No generic persistence framework is introduced. Full solution build
+passes with zero warnings/errors. Candidate
+5117180a148d188502aaef9860fbfa2da093da8bfd218d7e43148420d6145727 contains6,175
+Source/Tools inputs, ten owning/test-copy pairs and137 verified native managed copies.
+Test assembly:dd974820cbce8d4012575b7b213103ae3c7388c2910c8bae839408be8bc62ed9.
+Archive SHA256:afb457a8811ec0a059e954c3231d219bca5cb7def5b58847f1759ce2ed4815e2.
+The required full test gate ran12:04:10-12:22:21UTC on2November2026 and ended
+**11,406pass/10fail/0skip**; all17 new progression cases pass within it. Six failures
+report SQLITE_FULL13 and four report IOERR10, clustered near12:06:49UTC across
+unrelated suites, including fixture creation. [SQLite result codes](https://www.sqlite.org/rescode.html)
+identify storage failures but do not establish their underlying cause. Original
+capacity samples and extended IO codes are unavailable; the bounded Windows
+storage-event query returned no relevant events. No source repair is justified
+by that evidence.
+
+All135 cases in the ten failed method groups, including every exact failed label,
+pass afterward on the same binaries in48.60seconds. Read-only C-volume observations
+show at least12.8GB available during those controls; they do not prove capacity
+at the original failing instant. No cleanup, workload stop, source/config change,
+assertion/deadline relaxation or unchanged full retry occurred. The full gate stays
+failed and the storage cause remains unresolved. Build32.14seconds; native provider
+checks151.64seconds; affected checks116seconds; full command1091.02seconds.
+Validation dominates this milestone; the next implementation groups XP/rest/path
+recovery before one coherent gate rather than expanding equivalent permutations.
+
+Startup/shutdown observation windows expired with the owned generation still live;
+the same generation was observed ready, then confirmed absent after one graceful
+SQL SHUTDOWN. Initial shutdown observation is retained. No restart or force stop.
+Original hosts/config/data remain preserved. No staging/commit/push, entitlement
+defaults15:1/17:1 change, auto44/seven-baseline grant, CUA or native game launch.
+Historical handoff Source divergence remains expected. Evidence:
+`artifacts/continuation-20261031/tradeskill-persistence/` (baseline.trx,
+focused-corrected.trx, affected.trx, provider-results.json, final-binding.json,
+review-final.md, source archive, full-run-state.json, storage-controls.trx,
+storage-capacity.jsonl and verification.json). Final source/DLL/archive bindings
+verify; the failed full gate is retained.
+The all-state upstream update query is empty; direct604/608/609 and both official
+branch heads are unchanged.608 remains source-reconciled and609 closed unmerged.
+
+## Current title persistence: focused/provider pass, full gate failed
+
+Public title grant/equip, revocation and expiry now retain the encoded timer,
+revoked state and active selection until their terminal SQL outcome. Three real
+Player.Save cases fail against the prior Game DLL: a grant disappears after a
+rejected flush/retry; expiry leaves its original owned row and active title; and
+a grant revoked before its first successful save is stored with Revoked0. The
+initial actor fixture lacked its visible-entity dictionary and is excluded; all
+three corrected failures occur at persisted-state assertions. The earlier separate
+public-manager probe and its two excluded fixture attempts remain retained.
+
+The title owner stores immutable graph candidates, reconciles fresh SQL after
+uncertainty and acknowledges only the observed flushed target. Partial Title saves
+compose without enrolling the manager's active selection. Later changes survive
+an earlier commit, including regrant/re-equip and timer changes. Player normal saves
+freeze title values before Auth, with the existing Quest token, so a new grant,
+revocation and selection during Auth persist on the next save. Raw unavailable-title
+columns remain intact. Existing timer conversion, expiry/UI policy and message
+timing are preserved; no new retail lifetime rule is inferred from source tests.
+
+The wardrobe's tracked-column guard moved unchanged into CharacterColumnSaveIntent
+for both owners, retaining exact post-flush EF acceptance support. All14 wardrobe
+durability controls pass after extraction. Spec has zero findings; Standards has
+zero documented/correctness findings and one nonblocking duplication advisory for
+local flush/settlement bookkeeping. That bounded duplication is retained rather
+than introducing a generic persistence framework for this outcome.
+
+All33 focused and418 affected cases pass, including Path/archive/title/collection
+producers and normal-save/durability controls. All13 new title cases also pass on
+fresh owned MySQL8.4.13 schemas with the configured retry strategy. This does not
+qualify copied-private upgrades, deployment, sockets, native client or retail.
+The full solution build passes with zero warnings/errors. Candidate
+5d1845a286052dfaf4ee5e3b8d1ba540b87dee4a91cb9d6431b636645859bf4b contains6,172
+Source/Tools inputs, ten owning/test-copy pairs and137 verified native-helper copies.
+Test assembly:37ae7b67bccda7c9441d2bf4eb4f9833be59a1c64c3faf88f2e13f3db69058a7.
+Archive SHA256:e026d3da5c8cc5ae1a43a77cbd55dd0c3df5ab9201921f58c1132645c3ee280e.
+The required full test gate ends **11,397 pass/2 fail/0 skips** at10:16:59UTC
+on2November2026. Its failures are settlement deadlines in normal-save/reward
+sequencing for track17 and commodity cancellation with an online replaced owner
+(sell, non-expiry, present listing). All13 new title cases pass in that gate.
+The gate remains failed; source/SQLite, native-provider and feature-specific passes
+do not replace it. Both failing method groups were checked on the same
+binaries. All55 cases pass, including the exact failed arguments; this does not
+establish cause or replace the failed full gate. No unchanged full retry,
+assertion/deadline change or warning suppression.
+The maximum TRX completion gap is25.790362seconds; completion times and the empty
+per-test stdout/stderr do not establish a scheduling, GC, disk, DB or production
+cause. Earlier related timing failures remain unresolved.
+
+Owned MySQL startup and graceful shutdown exceeded their initial observation
+windows. The same recorded generation was observed ready and later absent;
+the intermediate shutdown observation is retained with the terminal process/listener
+absence proof. No restart, force termination or original host/config/data change.
+Evidence: `artifacts/continuation-20261031/title-persistence/`, including
+baseline-fixed.trx, focused-expanded.trx, affected.trx, provider-results.json,
+review-final.md, final-binding.json, source archive, full-run-state.json and
+verification.json. All6,172 source inputs, archive, ten DLL pairs and137 native
+copies verify after the gate; recorded full root/runner/test-host generations are
+absent. Build26.13seconds, focused12seconds, affected1m7s, native95.95seconds and
+full999.73seconds are observed validation times, not performance comparisons.
+No staging/commit/push, defaults15:1/17:1 change, auto44/seven-baseline grant or
+CUA/native game launch. Historical handoff Source divergence remains expected.
+The all-state upstream update query is empty; direct604/608/609 and both official
+branch heads are unchanged.608 remains source-reconciled and609 closed unmerged.
+The terminal update query since10:06UTC is also empty.
+
+## Current wardrobe persistence: full source and configured-provider checks pass
+
+Public wardrobe create/edit/equip now retains parent, seven-slot and active-selection
+intent through failed flush, disposal, rollback, suppressed writes and lost commit
+acknowledgement. Two real Player.Save regressions fail against the prior Game DLL:
+the accepted create disappears on retry and the edited parent keeps its old value.
+The new wardrobe owner compares immutable complete before/after graphs through
+fresh contexts and acknowledges only the flushed terminal target. Later actor
+edits remain pending, including A/B/A changes. Partial public Costume/CostumeItem
+saves merge without dropping other enrolled scopes. Generated timestamps stay
+outside mutable wardrobe state; missing static item data cannot erase retained IDs.
+
+Normal Player saves capture wardrobe values before Auth, using the existing frozen
+Quest token. An accepted edit/equip change made during Auth remains runtime state
+and is persisted by the next save. Existing public Saved replies, visuals, cooldowns,
+entitlement defaults15:1/17:1 and no-auto44/seven-baseline policy are unchanged.
+No schema, wire, public-claim or retail-policy change is introduced.
+
+The Spec review found one compatibility regression: explicit EF AcceptAllChanges
+after SaveChanges(false) was rejected at commit. Both create/edit negatives were
+executed and retained. The correction accepts only the exact post-flush EF
+transition with unchanged owned targets/keys, target originals and cleared flags;
+SQL validation remains. Synchronous create and asynchronous edit regressions pass.
+Final Spec and Standards re-reviews each have zero remaining findings.
+
+Final170 affected cases pass, including all14 new wardrobe regressions, existing
+costume/account-costume, frozen normal-save, Quest and Currency durability controls.
+All14 new cases also pass on owned MySQL8.4.13 with the configured retry strategy.
+This is fresh disposable-schema execution, not copied-private migration or native
+client qualification. The earlier costume migration proof remains separately bound.
+The owned server exceeded its initial startup window; its same recorded generation
+was observed ready and used, without another start. SQL SHUTDOWN verifies process
+and listener absent. Earlier fixture failures and the two distinct executed negative
+epochs remain retained, not promoted as passing evidence.
+
+Candidate d9c6d95fe3e4959aeb61627d48fd493389a2d9b7e4da577d470ea15ef4665bc6
+contains6,169 Source/Tools inputs, ten owning/test-copy DLL pairs and137 verified
+native-helper DLL copies. Test assembly:
+dd9d22a2c5153a687261d891987582714c4e647be5bd2e56a90621741ad425e9.
+Archive SHA256:cb0555a286debcc30303003213171273fbb41513869e352c28b422abf66b5a21.
+The full solution build passes with zero warnings/errors. The required full test
+gate passes **11,386 cases, zero failures/skips**, on2November2026. The prior failed
+gates remain literal historical results; this passing changed candidate does not
+establish their intermittent timing cause. No unchanged full retry occurred.
+Evidence: `artifacts/continuation-20261031/wardrobe-persistence/` with final-binding,
+source archive, baseline-reproduction/acceptance-before TRXs, affected-reviewed TRX,
+provider-results, shutdown proof, full-run-state and final verification.json. All
+6,169 source inputs, archive, ten DLL pairs and137 native copies verify after the
+gate; the recorded full root, test runner and test host generations are absent.
+
+The all-state upstream update query returns no PR updates since08:22UTC. Direct
+604/608/609 and both official branch heads are unchanged;608 remains source-reconciled
+and609 closed unmerged. A terminal update query since09:19UTC is also empty.
+No upstream writes. Historical handoff verification is
+retained with expected Source divergence. No staging, commit, push, client or CUA.
+
+## Previous costume timestamp repair: provider checks pass, full gate failed
+
+The initial costume candidate's full gate ends11,367pass/5fail/0skips. All five
+failures are EF ManyServiceProvidersCreatedWarning: the new SQL-only regression
+and four Friendship retry cases. That gate remains failed. The new regression
+introduced a distinct8.4.13 metadata profile alongside the existing8.0.0 script
+profile. A controlled isolated process first registers the existing profile, then
+fills EF's cache with owned memory-cache profiles: the actual new regression
+throws while the existing script-test control still passes. The identical
+corrected probe passes both tests with the warning still demonstrably enabled.
+
+The fix extracts the existing script options unchanged and shares them between
+the two SQL-only tests. Assertions, warning behavior, deadlines and production
+configuration are unchanged. This metadata test now uses the established8.0.0
+profile; actual8.4.13/MariaDB timestamp execution remains separate. An initial
+probe lacked SQLite's native library, and logger-factory variation did not grow
+the installed EF cache; both diagnostic attempts are retained, not passed repros.
+The [EF10.0.10 cache source](https://github.com/dotnet/efcore/blob/v10.0.10/src/EFCore/Internal/ServiceProviderCache.cs)
+corroborates the process-wide cache and warning threshold; the controlled Source
+test invocation establishes the observed fixture failure and correction.
+
+Corrected candidate1e3e6f0ab31e9e082ba73df81043d99712cfc0778050d3296ae5622b16e4d640
+retains6,167 inputs/ten owning-test-copy pairs, with only two test files changed
+from the first candidate. All production dependency DLLs used by the native
+driver are byte-identical; its copied Game.Tests DLL is the sole changed dependency
+and is not called by that driver. No unchanged native replay was needed. Corrected
+test DLL:891bd064e69e52187109ae13a1fb9d38081fadfc0760c18d55d704242436978a.
+The original source archive plus the two-file source-delta ZIP reconstructs this
+candidate; delta SHA256:3f2a3fca22d948830a8c310bda2468fe988bf07181214cfc196b922f1ec2f975.
+Corrected268 affected cases, pressure probe, both material-fix reviews and clean
+full build pass. The corrected full gate ends **11,368 pass/4 fail/0 skips**.
+All five earlier cache-warning cases pass in that gate. Its four failures are
+settlement deadlines in auction posting (lost acknowledgement), commodity return
+(retirement), normal bid (buyout-custody) and Challenge track25 normal-save reward
+sequencing. All115 cases in those four method groups pass afterward on the same
+binary, including the exact failed argument labels. The full gate remains failed;
+no unchanged full retry, assertion/deadline relaxation or warning suppression.
+
+TRX completion timestamps contain a45.012674-second gap. Tests can still be active
+during that gap, and the non-atomic actor observations do not establish a GC,
+scheduler, disk, database or production cause. The earlier auction/Challenge
+timing failures remain unexplained. This milestone's provider/SQL checks do not
+replace the failed full gate or qualify runtime failed-save/publication behavior.
+
+Observed commands: first full860.02seconds, corrected full907.19seconds; builds
+30.99/27.48seconds; final MySQL83.55seconds and MariaDB13.44seconds. The diagnostic
+reports1m2s for115 tests. MySQL overlapped the first build, so these are elapsed
+validation observations, not performance comparisons. Evidence is consolidated in
+`provider-schema-constraints/corrected/verification.json`, including source/base-
+archive/delta reconstruction, current DLL checks, original failed gate, pressure
+probe, native proof reuse, both reviews and diagnostic TRXs. Both source epochs
+and all excluded fixture attempts remain retained.
+
+The final all-state upstream update query is empty; direct604/608/609 and both
+official branch heads are unchanged.608 remains source-reconciled. No upstream
+write follows the refresh.
+
+The extended seven-context MySQL8 comparison reads indexes, foreign keys, checks,
+defaults, generated expressions, character sets/collations and table engines from
+the owned migrated schemas and newly rendered EnsureCreated schemas. The raw
+comparison ends4 exact matches/3 contexts with differences; it is retained as
+such. All declared indexes are present, including uniqueness and ordered keys;
+the three additional migrated indexes are nonunique bank/leaderboard indexes.
+Three foreign-key action differences are NO ACTION versus RESTRICT on InnoDB,
+which [MySQL documents as equivalent](https://dev.mysql.com/doc/refman/8.4/en/create-table-foreign-keys.html).
+No absent required foreign key, unique index or check was found in this scope.
+
+One physical difference changes the existing runtime contract:
+character_costume.timestamp has only an insert default, although the model already
+declares ValueGeneratedOnAddOrUpdate. A corrected, identical public Costume.Save
+oracle against frozen5901ec17 DLLs passes the previous-schema control and fails
+the current-upgrade timestamp check: visibility changes but the timestamp stays
+2001-02-03. The new forward migration adds computed/update generation, preserving
+datetime/non-nullability/current_timestamp() and all retained values. Down removes
+only update generation. The generated target model matches the unchanged snapshot.
+
+Both final MySQL cases pass; the current-upgrade case separately passes on
+MariaDB11.4.13. Each upgrade retains two costumes/fourteen items; changing one
+visibility mask updates its timestamp at deterministic session time, a later no-op
+does not update it and an untouched costume retains its timestamp. No entitlements
+are added. These checks do not qualify item-only timestamp semantics, wardrobe
+publication, failed-flush runtime dirty masks or retail behavior.
+
+The first native fixture used a timestamp ignored by EF's generated-value policy.
+The next seed correction incorrectly reset timestamps after each tested write.
+All three original runs (costume-before, costume-before-fixed, costume-final) are
+retained and excluded from production-negative evidence. Only costume-reproduced
+and costume-current share the corrected, byte-identical oracle; the reproduced
+Character DLL hash matches the prior frozen source. The source SQL regression's
+initial failure and final generated upgrade/downgrade checks are separately retained.
+
+Initial candidate2a155d723d9485bc08679901b3d645da3841d08a431300fdfbddb8f1cc868418
+contains6,167 Source/Tools inputs and ten verified owning/test-copy DLL pairs.
+Test DLL:b3bd9104cfa4dd159b158ef7a80c8c12f669dbb6f68274bf1b5525332bc65b52;
+archive:9aefeb63a886844138b305d81ef5654144872175908cc5eb4b277cbaf98431ea.
+The initial focused pass and268 affected cases pass; the final SQL regression
+including Down assertions is covered by the affected gate. Reviews Spec0/Standards0;
+full solution build0 warnings/errors (30.99seconds command). That full test gate
+fails as recorded above. Both owned database process generations/listeners stopped
+before either full gate.
+
+Five numeric-default inconsistencies remain explicit: Auth CREDD order ID,
+daily-login ID and fortune-session ID, Character isOnline and bank Item ID.
+The migrated creature_loot table/three string columns retain their explicitly
+chosen utf8mb4_unicode_ci; EnsureCreated inherits utf8mb4_0900_ai_ci. No collation,
+default or extra-index rewrite was made without a demonstrated supported-flow
+fault or established compatibility policy. These retained differences prevent a
+claim of exact complete schema identity. Copied-private upgrades, actual tables,
+deployment/load/socket/native UI and retail remain separate.
+
+Evidence: `artifacts/continuation-20261031/provider-schema-constraints/`, original
+metadata/results, corrected and excluded native runs, source TRXs, final bindings/
+archive, reviews and terminal fixture records. Source changes are limited to the
+new migration, its generated target model, SQL regression and the existing script
+test's shared-options extraction. No staging/commit/
+push, Computer Use or WildStar launch; defaults15:1/17:1/no44/seven grants preserved.
+
+## Prior schema/migration repairs: provider checks pass, full gate failed
+
+Fresh MySQL8 migrations finish but expose five differences from the existing
+runtime model: account_credd_history.id lacks identity generation; Item codec
+and two leaderboard-name columns are required instead of nullable. The real
+AuthDatabase.AddCREDDHistory writer omits ID and fails1364; the nullable-field
+regression fails1048. Both executed failures are retained. New migrations add
+history identity and widen only those four columns to the existing model contract.
+No logical model, ordinary producer, default/entitlement or retry policy changes.
+
+A plain MySQL identity alteration renumbers a retained zero key. The measured
+guarded variant preserves0, and the Auth repair uses session-local
+NO_AUTO_VALUE_ON_ZERO, restoring the prior mode after successful DDL. The public
+writer regression retains0/9 and allocates distinct later IDs. The Character
+repair preserves existing payload bytes; its downgrade refuses lossy NULL
+narrowing. Both generated target models match the unchanged current snapshots.
+
+Candidate5901ec175d447fb323a78e13b976bb38984e779b383926ae55e27ff48b8cb79b
+contains6,164 Source/Tools inputs and ten verified owning/test-copy DLL pairs.
+Test DLL:f17529a893a5a6c3a6707539e8371faeba868f5da8b17eee381dd90649047427;
+archive:4a0cd98a93ec516a9033dd4a772526c128abbc183d21dbf3fdeb5474435b9152.
+Both native and SQLite focused regressions pass;14 model/snapshot comparisons,
+seven fresh physical-schema probes, six populated synthetic upgrades and272
+affected source cases pass. Both current migration regressions also pass on owned
+MariaDB11.4.13. Reviews0/0; full solution build0 warnings/errors.
+The required full test gate ends **11,369 pass/2 fail/0 skips,11,371 total**.
+Current-source full qualification is not established.
+
+The failures are AuctionBidActorTests.PartialEnrollmentFollowedByCommitFailureRetainsAllEarlierWriteMasks(commit:true)
+and AuctionCancellationCoordinatorTests.PublicCancellationReturnsOriginalItemAndRefundsHeldBidThroughOriginalActors
+(heldBid:true,receiverOnline:true,bidderOnline:true,mailed:false,missingWallet:false,fault:none).
+Both exceed their existing20-second settlement deadlines. The first diagnostic
+observes31.236seconds elapsed with no pending events/save/reward ownership; it is
+non-atomic and does not establish the cause of that delay. All44 cases in these
+two families pass on the same binary afterward. The failed full gate stays failed;
+no unchanged full retry or assertion/deadline relaxation occurred.
+
+GC capture records39,922 events during its attachment interval; largest captured
+suspension269.455ms. The raw lost-event counter2147483527 makes complete coverage
+unestablished. No causal attribution to GC, scheduler or production code follows.
+Observed commands: full build22.98seconds, full test887.48seconds (reported14m35s),
+MySQL fresh34.38seconds, upgrades94.06seconds, native regressions28.03seconds,
+MariaDB compatibility17.08seconds; auction family test-reported44seconds.
+
+Initial artifact native-library/compiler failures, the5pass/2fail physical-schema
+run, three old-boundary EF seed failures and the SQLite ulong ORDERBY fixture
+failure stay retained. Historical owner seeds now insert only six mapped old
+columns; the assertion boundaries are unchanged. Source tests sort retained rows
+after materialization for SQLite. These corrected fixtures do not become new
+production changes or erase earlier failures. Owned MySQL39948/listener56107
+stopped normally at06:42:49UTC before the full gate. MariaDB15376/listener51941
+also stopped through a generation/datadir-verified SQL SHUTDOWN; both are absent.
+
+Evidence: `artifacts/continuation-20261031/provider-model-upgrade/`, final source/
+binary/native bindings, original and corrected model/fresh/upgrade outputs,
+native regression invocations/results, focused/affected TRXs, zero-ID experiment,
+review reports, verification.json, auction diagnostic and terminal server records.
+The incremental all-state upstream query since05:35:56UTC reports no updated PRs;
+reviewed#608 remains reconciled, with no new PR change requiring implementation.
+Other physical constraints/defaults,
+copied-private upgrades, actual-table delivery, deployment/socket/native UI,
+Contract reset/public07CE and retail remain separate gates. No staging/commit/
+push, Computer Use or WildStar launch. Goal active.
+
+## Prior physical COMMIT acknowledgement recovery: full gate passed
+
+Real loopback SQL packet forwarding reproduced four public gift/COD failures:
+the server returned successful COMMIT, a separate connection verified the stored
+wallet/receipt/COD settlement, and the proxy reset the client socket before
+forwarding that acknowledgement. MySqlConnector2.6.1 reports error0 with an IO
+cause and does not classify it as transient. No EF retry occurred.
+
+`RealmBankManager.Command.cs` now resolves that precise commit-boundary failure
+once through the configured strategy with a fresh context/Serializable transaction,
+pinned route and owner lock. Every enrolled row must match the captured complete
+before-state or complete after-state before frozen staging; mixed states reject.
+Save failures and nontransport commit failures remain excluded. The custom
+execution seam, global retry classification, schema and entitlements are unchanged.
+
+That milestone's source pin is
+`c03b3718df533140284128b3bfce9f72709a6edf2fdc4ed2281ba1d7d5d90297`,
+6,159 Source/Tools inputs and ten owning/test-copy DLL pairs. Test assembly:
+`3e42eea7eea73ae8824da349219e0ef6120ab980ea96f5060415676b21f24a0e`.
+Archive: `0098f0c51d13832d6252c2fae871cfb7c69c03ba9b059f1c04019e448159dfad`.
+
+- Four physical pre-fix failures and four failing/three passing source controls
+  are retained. The seven final source regressions and586 affected cases pass.
+- All six current physical/control cases pass. Original actors publish exactly
+  one ordered wallet/result batch; replaced managers publish none and require
+  reload. Repeat requests and ordinary later saves cannot duplicate payment.
+- Full solution build passes with zero warnings/errors. Full solution tests pass
+  **11,369/11,369, zero failures/skips**, terminal0 at04:42:52UTC on2 November.
+- Final Spec/Standards reviews report zero findings after correcting the
+  artifact's publication oracle and GC wrapper's process-ancestry verification.
+- Owned MariaDB11.4.13 fixture stopped normally; its process/listener are absent.
+
+Observed validation time: source full build40.06seconds; physical six-case
+command43.74seconds; affected command362.72seconds; full test command687.21seconds
+(test-reported11m15s). The GC-only capture attached to the verified owned testhost
+records39,804 events and a largest captured suspension165.40ms. Its raw lost-event
+counter is-66, so loss accounting/complete coverage is not established. Capture
+began after testhost startup. This passing run does not explain the prior
+42.14-second completion gap or earlier settlement timeouts; those failed gates
+remain failed historical results. No assertion/deadline was relaxed and no
+unchanged full retry was used to obtain this result.
+
+Canonical local evidence: `artifacts/continuation-20261031/provider-physical-ack/`
+`verification.json`, final source/binary bindings/archive, initial failures,
+focused/affected/full TRXs, exact physical invocation/results, review report,
+REA dependency evidence and terminal process/server records. The incremental
+all-state upstream search found no updates;604/608/609 and both official base
+heads remain unchanged.608 remains source-reconciled;609 closed unmerged.
+
+This closes one lost successful COMMIT response for the selected public gift/COD
+flows. Repeated network loss, physical rollback/deadlock, remaining captured
+mail/reward flows, MySQL8, copied upgrades/models, full actual-table delivery,
+deployment/load, game socket/native UI and retail remain separate gates. Public
+Contract07CE stays disabled pending its recorded evidence/delivery requirements.
+Defaults15:1/17:1 remain; no automatic44 or seven baseline grants. No staging,
+commit, push, Computer Use or game-client launch. Overall Goal remains active.
+
+## Selected manual, expiry and outgoing-mail provider recovery
+
+The next bounded milestone uses the same frozen source/DLLs and passing11,369
+full source gate above. It executes78 original labels across48 existing methods
+from the original test assembly: manual return/delete commit/rollback, incomplete
+acknowledgement, original actors, expiry batches, outgoing retention/publication,
+recipient handoff and Character-coupled creature Item grants. Unique schemas use
+the configured production MySQL strategy on owned MariaDB11.4.13.
+
+The initial batch terminates1 with77 passes and one fixture failure:
+`MailExpiryDeprecationWaitsForAnOwnedCashReceiptBeforeExpiring`. Its custom bank
+execution callback opens a transaction indirectly and needs the same external
+strategy admission as the22 direct-transaction fixture methods. The original
+failure stays retained. A separate corrected invocation executes that unchanged
+original test with the proper scope and passes. No production change follows.
+
+One original SQLite-only second-header expiry trigger case was initially
+excluded explicitly. A separate MariaDB translation now proves its Character/
+whole-batch rollback, no premature packet, retained outcomes and one grouped
+deprecation packet on retry. It preserves the original assertions and records
+`ProviderSqlOverlay=true`; it does not execute the original DLL method body.
+The exact union is78 original labels plus one translated case,79 unique labels,
+not80 original tests. No assertion/deadline/default changes were made.
+
+Both final review axes clear after the strategy-scope and runner evidence-
+overwrite fixes. Repeated runner admission is refused before any execution or
+output write; two executed controls verify all retained result/log hashes stay
+unchanged. The initial batch command takes494.30seconds and the two-case correction
+17.58seconds. A59.87-second passing outgoing case remains literal; the later
+read-only SQL snapshot observes no active transaction and does not establish its
+earlier wait cause. No timeout or retry policy was altered.
+
+Evidence: `artifacts/continuation-20261031/provider-mail-lifecycle/verification.json`,
+original/corrected bindings and invocations/results, translated fault body,
+reviews, admission controls and terminal fixture record. All137 copied dependency
+DLLs match the current test output. The owned process42612/listener54979 are absent
+after verified SQL shutdown at04:55:41UTC. The04:55:48 all-state upstream incremental
+search finds no updates; reuse the five unchanged reviewed refs above.
+
+No Source edit or additional full gate was needed. Captured reward/Quest producer
+and inventory recovery, actual simultaneous transactions, repeated/other physical
+network faults, MySQL8, copied upgrades/models, full-table delivery, deployment/load,
+native game UI and retail remain. Original services/data/configuration, defaults
+and entitlements are preserved. No staging/commit/push/client/CUA; Goal active.
+
+## Selected reward, Quest, Item and dual-database Contract/account recovery
+
+The current frozen source/test DLL above now passes53 additional original
+provider cases:33 selected Character/Quest/Item cases and20 Contract/account
+cases using separate owned Character and Auth schemas. No Source, assertion,
+deadline, default or entitlement changes were made; the passing11,369 full gate
+remains the source gate. Both artifact harness builds pass without warnings/errors.
+The initial artifact-only unreachable-code warning is retained and corrected.
+
+The33 cases cover real shared Quest/Challenge actor credit and settlement,
+original-actor publication, later ordinary intent, ambiguous claim resolution,
+unavailable recovery and consumed/moved Item quarantine. The terminal variants
+select track16, not every catalog. Item controls cover sync/async commit,
+accept-changes variants, rollback/disposal, ambiguous commit, pending creation
+and savepoint recovery. The20 cases exercise internal Contract actor claims,
+Auth compensation, wallet/revision adoption, source/Auth commit uncertainty,
+relog draining and deleted/transferred owner suppression. Original fixtures keep
+their existing provider-options constructors and assertion bodies.
+
+Direct/indirect setup helpers open explicit transactions, so complete test
+bodies are admitted inside the configured provider strategy. This does not
+independently exercise nested automatic retries or establish physical network
+recovery. Internal claims do not enable public07CE, determine retail reset edges
+or prove all726 actual-table deliveries.
+
+Both final review axes report0 findings. All137 copied dependencies per harness,
+current test DLL,6,159 Source/Tools inputs and both harness bindings verify at
+c03b3718. Commands terminate0:33-case batch75.76seconds,20-case batch254.83seconds.
+Two review-only source-enumeration processes overlapped and were interrupted;
+these times are observations, not clean performance measurements. A bounded
+SQL snapshot observes schema/index creation and no lock waits at that instant;
+it does not establish the overall timing cause. No test/engine process was
+interrupted. Verified SQL shutdown at05:08:21UTC leaves engine38592 and
+listener53245 absent.
+
+Evidence: `artifacts/continuation-20261031/provider-reward-recovery/verification.json`,
+parent/contract invocation/results/bindings, source-selection manifests, build
+logs, separate review reports and terminal engine record. The05:09:22 all-state
+incremental PR query finds no updates; previously reviewed heads remain reusable.
+608 stays source-reconciled;609 closed unmerged at the retained state observation.
+
+Remaining work includes fresh MySQL8, current model/populated synthetic upgrades,
+copied-private upgrades, actual-table delivery, actual simultaneous transactions,
+other/repeated physical faults, deployment/load/socket/native UI and retail.
+Contract reset/unclaimed/excess evidence remains missing; public claims stay
+disabled. No original configuration/services/data changes, staging/commit/push,
+Computer Use or game-client launch. Overall Goal active.
+
+## Selected MySQL8.4.13 qualification on the same frozen source
+
+The same53 original reward/Quest/Item/Contract/account cases now pass on owned
+MySQL8.4.13 with required TLS:33-case command210.92seconds and20-case command
+156.03seconds. This is53 unique labels on each of two providers,106 executions
+across this milestone and the MariaDB milestone, not106 distinct tests. Both
+MySQL harness builds pass with0 warnings/errors. Source remainsc03b3718/6,159
+inputs and the existing passing11,369 full source gate; no extra full run.
+
+The complete Windows ZIP comes from [Oracle's MySQL download page](https://dev.mysql.com/downloads/mysql/8.4.html).
+Its listed MD5 matches and GnuPG reports VALIDSIG for the fingerprint in
+[Oracle's signature guide](https://dev.mysql.com/doc/refman/8.4/en/checking-gpg-signature.html):
+`BCA43417C3B485DD128EC6D4B7B3B788A8D3785C`. Archive SHA256:
+`e9cd98b1d23f122987b1afca26ad942efec5891481103d48ae3cde237fa3ea54`;
+engine SHA256:`7a976874ef3974d612081960b1c193c663b4434692b6257382352c587e367ad6`.
+Existing Git GnuPG uses an isolated artifact keyring; no global installation,
+service, keyring or configuration change. The initial Windows path/agent import
+errors are retained; existing-key verification succeeds without agent autostart.
+
+Offline initialization writes the temporary password to its private Windows
+error log. The initial observation failure is corrected by resuming that same
+initialized data. Windows starts monitor13088 and listener33916; the readiness
+failure is retained, and the corrected observation validates both generations,
+parentage, executable/hash and owned loopback endpoint. Required-TLS SQL verifies
+the exact datadir/version/port. There is no second initialized server.
+
+Review found a P1 in the bootstrap CLI: a saved login path could override an
+ordinary option file. Both corrected sites now suppress login paths and pin
+host/port/TCP/root/TLS, with client-hash checks. A private MYSQL_TEST_LOGIN_FILE
+control reproduces old-flag redirection to an owned inert trap; corrected flags
+return the expected SQL identity and TLS cipher. These controls are read-only
+and do not access the user's login file. Before the initial expired-root reset,
+SQL identity queries are unavailable; exact process/endpoint/generated-credential
+guards precede that first mutation and SQL identity follows immediately. The
+actual original response matched the owned fixture; no wrong-target execution
+was established. This does not retrospectively qualify the old CLI flags.
+
+Final Spec/Standards findings0/0. Original executed startup scripts remain as
+`.executed.ps1`; the original binding verifies against that retained version,
+while corrected CLI controls have their own hashes/results. Case drivers and
+all137 copied dependencies per harness match the current frozen test DLL.
+Verified SQL shutdown at05:34:14UTC leaves server33916, monitor13088 and
+listener61887 absent. Source/assertions/deadlines/defaults/entitlements are unchanged.
+
+Evidence: `artifacts/continuation-20261031/provider-mysql8/verification.json`,
+both invocations/results/bindings, runtime acquisition/signature logs, versioned
+startup inputs, CLI trap control, review report and terminal process record.
+The05:35:56 incremental all-state upstream search finds no updates;608 remains
+source-reconciled and609 closed unmerged at the retained state observation.
+
+This proves the selected configured-MySQL8 SQL/recovery paths. Provider model/
+migration comparisons, populated synthetic/copied-private upgrades, independent
+nested automatic retry, other/physical network faults, all726 actual-table
+deliveries, public07CE/reset policy, deployment/load/socket/native UI and retail
+remain separate gates. The completed MariaDB fixture's8,305 files are retained
+in a15,042,136-byte private archive, per-member length/SHA256 verified before
+removing its528,593,212-byte unpacked disposable copy; original data is preserved.
+No staging/commit/push, Computer Use or WildStar launch. Overall Goal active.
+
+## Prior inbox configured-strategy correction: native checked; full gate failed
+
+Background inbox refresh previously opened an explicit transaction outside the
+configured MySQL retry strategy, preventing later committed mail from loading.
+The native first-chance exception and two executed pre-fix source failures are
+retained. Refresh now runs its complete owner/read/commit unit inside the
+configured strategy, creates a fresh context per attempt and pins its database
+route. Original-actor adoption and publication stay outside retries. The cash
+fixture separately reloads its seed to represent the real stored datetime(0)
+baseline; production ownership checks remain intact. The three-file change has
+no model/migration, wire, entitlement or default-policy changes.
+
+Current source is1e5dce6c3cf55633f1a1b4276adc5d61dce41487df82a9a2cdc99aa7980f5f48,
+6,158 Source/Tools inputs, ten owning/test-copy DLL pairs and test DLL
+74e88f149fb5d8f9377d5ef7003182933cd1b5d2562ed552a1f1eb2cfd2678d1.
+The final archive SHA-256 is
+`d5f4df6ba0c8a81c9d62302edd31b48194430708a738d146b9bcb3da102e681b`.
+**It is not full-qualified.** Final review clears both axes; results are:
+
+- The production correction's68 focused and269 affected source cases pass.
+-67 MariaDB cases pass on the initial5aa/1968ad2c test DLL. After a correction
+  limited to the new probe's configuration, both changed cases pass again on
+  the current test DLL. All nine non-test DLL pairs and the other65 case
+  sources/helpers remain unchanged. This is versioned65+2 evidence covering67
+  labels, not67 executions from the current test DLL.
+- Corrected full solution build passes with0 warnings/errors.
+- Corrected full solution tests: **11,361 pass/1 failure/0 skipped**, total11,362.
+  Both inbox probe cases pass. The failure is
+  `CommodityPostingCoordinatorTests.PublicSubmitSettlesWalletInventoryAndMatchingBeforeSuccess(buy: True, immediate: False, match: True, fault: "multi")`,
+  with the existing commodity settlement timeout. That exact case passes alone;
+  all42 posting controls pass on the same binary. The full failure stays retained.
+
+The initial5aa full gate failed only the two new probe tests (11,360 pass/2fail).
+A bounded warmed-cache replay reproduces their empty-publication assertion with
+EF's ManyServiceProvidersCreatedWarning. The test-specific service replacement
+created another internal provider after the cache threshold. Configuring the
+same strategy through the selected provider's public ExecutionStrategy callback
+then passes both cases under the same warmed condition. Warnings, assertions,
+fault injection and deadlines remain enabled. This is a test-fixture correction,
+not a change to production retry policy. The first failed full does not directly
+capture the swallowed task exception; the replay supplies that diagnostic.
+
+The corrected full's commodity case spans44.95seconds. A42.14-second gap with no
+test completions appears in the full-run timing window;857 results overlap that
+case. These observations do not establish GC, storage, scheduling, sleep, a
+specific lock or a common cause with prior Challenge timeouts. A scoped System
+metadata query succeeded but returned no selected power/time provider rows.
+No guessed production fix, deadline change or unchanged full retry was made.
+Capture CLR/managed/SQL/storage waits during a future justified gate if it recurs.
+
+Evidence is under `artifacts/continuation-20261031/provider-mail-recovery/`:
+`corrected-verification.json`, both source archives/bindings, versioned native
+results, failed/corrected full TRXs, isolated/42-case controls, source diffs and
+`review-reports.md`. The initial65 native run's10 failures are retained: eight
+cash seed/baseline failures, the inbox production failure and one migration
+command timeout while diagnostic work overlapped. The latter cause is unproven.
+The self-mutating extra-link trigger case is explicitly excluded from provider
+witness qualification. Diagnostic SQLite-library startup failure and a guarded
+post-shutdown observation mismatch remain literal; neither is a behavioral pass.
+
+REA binds EF10.0.10 metadata at SHA-256acb89dffâ€¦a26933/MVID0e00603c-17f1-4f23-8ce4-b4a25546f43d.
+[The package-pinned cache source](https://github.com/dotnet/dotnet/blob/f7d90799ce4ef09a0bb257852a57248d2a8fb8dd/src/efcore/src/EFCore/Internal/ServiceProviderCache.cs)
+and controlled warmed replay support the fixture finding. Selected metadata is
+not complete control-flow or WildStar runtime proof. Evidence IDs, coverage and
+the local loader failure are retained in `service-cache-diagnostic/finding.md`.
+
+The owned MariaDB11.4.13 fixtures (scope cadc72c0ac9b471d/port51132 and scope
+bf8ab22d3fe04912/port59159) are stopped after validated SQL SHUTDOWN; exact PID/
+listener absence is recorded. No force termination or original-host/config/data
+changes. Native accepted case bodies took612.62seconds; source focused1m18s,
+affected3m46s, first failed full12m21s/754.91s command, corrected full12m05s/
+738.87s command, corrected full build18.38s MSBuild/19.04s command.
+
+Final all-state upstream refresh finds no updates. Read-only Git refs confirm
+reviewed604/608/609 and both base heads unchanged;608 is source-reconciled and609
+remains closed unmerged. Exact refs and query results are retained. No GitHub
+write, commit/staging/push, Computer Use or native client launch. Defaults15:1/
+17:1 and no automatic44/seven baseline grants remain unchanged.
+
+Remaining gates include captured mail action/outgoing/expiry and reward recovery,
+physical simultaneous-transaction/network-loss/deadlock behavior, MySQL8,
+copied-upgrade/model/full-table/deployment/socket/native UI and retail evidence.
+Contract public07CE/reset/unclaimed/excess/full726-choice requirements remain
+separate. The overall Goal remains active; source tests do not establish retail
+completeness. Last passing full qualification remains historical a900 below.
+
+## Bank recovery/publication provider milestone
+
+On2 November the unchanged caa26d61 candidate passes56 selected bank recovery,
+publication and vendor cases on owned MariaDB11.4.13. The driver invokes the
+original frozen test DLL through its existing provider constructor; no test-body
+recompilation, SQL overlays, assertion or deadline changes. Exact ordered labels
+bind33 methods across the Recovery, Publication and VendorRecovery fixtures.
+This checks captured split/dirty intent, lost-acknowledgement simulation,
+original-actor publication barriers and atomic vendor payout, including finalized
+owners. It does not establish physical transient retry.
+
+The initial56-case invocation retained11 failures from custom fixture callbacks
+outside the configured EF execution-strategy scope. One additional reported pass
+was premature strategy rejection before ownership transfer. All12 original
+versions are excluded. A driver scope adapter for precisely seven methods and
+an additional durable AccountId13 acceptance guard pass those12 cases;44 valid
+original passes form the exact56-case union. The outer strategy adapter could
+replay fixture setup if a physical transient escaped; physical network loss and
+deadlock retry remain separate gates. No production change was made.
+
+`artifacts/continuation-20261031/provider-bank-recovery/final-results.json` binds
+the union to all6,157 unchanged Source/Tools inputs, ten original owning/test-copy
+DLL pairs, original test DLL971850e7 and final driver849864fb. Initial failures,
+the excluded false positive, corrected invocation and both review axes are
+retained. Review found0 specification findings and0 standards/correctness
+findings. Corrected results and final PASS log are complete; the root process
+exit code was unavailable after tool-session loss. Selected accepted case bodies
+took485.33seconds in total. A driver build failed from a duplicate compile glob
+after retaining an initial Program snapshot; explicit Program.cs inclusion
+corrected that artifact-only build, with0 warnings/errors.
+
+The loopback fixture scopefd3ba642eb724385/port55201 used only its private root
+and unique per-case schemas. Validated SQL SHUTDOWN returned0; PID19448 and the
+listener are absent in `shutdown-verification.json`. No forced termination,
+service install or original-host/data/config changes occurred. Defaults15:1/17:1
+and no44/no seven automatic grants remain unchanged. No commit/push/client launch.
+
+The independent settlement investigation is in
+`artifacts/continuation-20261031/settlement-wait/diagnosis.json`. A bounded115-case
+overlap cohort passed four times; one collector failed before sampling, and two
+successful instrumented trials retained19 managed-stack samples. Samples show
+SQLite activity without capturing the stuck producer. The original full run's
+18.28-second completion gap is an observation, not proof of GC, storage latency,
+sleep or deadlock. No Source fix, deadline change or unchanged full retry was
+made. **The full gate remains failed at11,359 pass/1 failure/0 skip.**
+
+Incremental all-state upstream refresh found no updates since the last direct
+604/608/609 and base-ref checks; their reviewed heads remain recorded in
+`provider-recovery/upstream-final-heads.json`.608 remains handled,609 closed
+unmerged. Remaining provider work includes captured mail/reward recovery,
+physical simultaneous-transaction/transient behavior, MySQL8 and copied-upgrade/
+model/table/deployment gates. Native UI and retail qualification remain separate.
+
+## Prior collation correction: implemented/native checked; full gate failed
+
+That candidate's source is `caa26d610c9365716929fe62e6282a1b12b95212c8d9862d8c2dd70b2b377fb7`,
+6,157 Source/Tools inputs and ten owning/test-copy DLL pairs. It is **not full-qualified**.
+
+Two-connection tests reproduced a stale DELETE accepting a competing empty-CSV
+to single-space change under MariaDB's padding-insensitive comparison. The row
+was removed. UPDATE was stopped later by the complete postimage guard, rather
+than its conditional SQL predicate. MySQL string concurrency-token predicates
+now use binary comparison while retaining the pinned provider's parameter,
+NULL, batching and affected-row behavior. No schema, migration, entitlement or
+wire change is introduced. The [MariaDB operator documentation](https://mariadb.com/docs/server/reference/sql-functions/string-functions/binary-operator)
+corroborates byte comparison and significant trailing spaces.
+
+Review found an additional real constructor boundary: fresh transaction
+participants called `UseMySql` directly. Shared metadata-only registration at
+Character configuration now covers explicit options and participants without
+new discovery, connections or retry policy. Four participant cases reproduced
+two changed-row failures and two unchanged successes before correction. The
+current production participant caller is Contract companion; this is not a
+claim of a public marketplace-handler participant exploit.
+
+The five-file change is in Database's configuration/generator, Character
+configuration and the listing/participant regression fixtures. All assertions
+and the existing20-second settlement deadline remain intact. Final review clears
+both axes. Current results:
+
+- 82 focused and1,269 affected source cases pass, with no failures/skips.
+- 70 selected MariaDB cases pass:38 listing preimage races,24 wallet races,
+  four public buyout flows and four parent/child listing cases. The exact
+  invocation labels, harness hash and production DLL copies are bound.
+- Full `Source/NexusForever.slnx` build passes with0 warnings/errors.
+- Full solution tests: **11,359 pass/1 failed/0 skipped**, total11,360.
+  `ChallengeLiveProducerTests.RealActivationAndThreeMedalsFreezeEachModifierAndCompleteQuestOnceWithoutTheDirectPrize(track:21)`
+  failed with the existing normal-save/reward settlement timeout.
+- The exact case passes alone on the same binary; all16 activation-track and
+  nine termination controls also pass. These do not rewrite the failed full gate.
+
+The failure-only diagnostic at20.013seconds shows pending work/executor, held
+lease and quest preparation, one observed open connection9.874seconds old,
+and its last reader-disposal event9.821seconds earlier. The thread pool had no
+queued work at that observation. This does not establish an empty-queue false
+alarm, SQL lock, scheduler starvation or common cause with historical failures.
+The current managed/SQL wait remains unproven. Capture that wait, including
+contexts outside the fixture's instrumented factory, before changing behavior.
+No assertion/timeout change or unchanged full-suite retry was made.
+
+Evidence is in `artifacts/continuation-20261031/provider-recovery/`:
+`padding-negative-*`, `participant-negative-*`, `final-focused.trx`,
+`final-native-results.json`, `affected.trx`, `full.trx`, the exact/25-case controls,
+`review-reports.md` and `failed-gate-verification.json`. Initial3749's66 passing
+native cases predate the participant correction. Initial different-CSV probes
+are explicitly excluded as padding reproductions. `iteration-history.md` retains
+these distinctions and the typed-builder compiler correction.
+
+The final source archive SHA-256 is
+`752f66320ef249379850a9f3025cb8d5053a1722cafb2e1be9fce43c1eef1d3f`;
+source-test assembly SHA-256 is
+`971850e75720a964657d42943fe145771e0402169847ed77165a060fd45e42b5`.
+Source/binary/archive identity was rechecked after controls. Last passing full
+qualification remains the historical a900 auction-posting candidate below.
+
+Observed validation time: final native case bodies648.58seconds, affected tests
+8m46s, full build32.42s MSBuild/33.05s command, full tests14m49s/899.88s command.
+Database-wide affected coverage was substantial; future narrow diagnostics
+should select actual wait/ownership dependencies rather than repeat that scope.
+
+REA binds the shipped Microting10.0.9 generator at SHA-256
+`c8dc4aff0fa81bcb09c11c7bbd15780378e39317c32b23f75a85dea4a9894171`.
+Parent Evidence `ev_27fc37087881cd66c2f4ea3b0e83c3940a29309a398536998f9e68f0cb966c0f`
+and the selected type/constructor views establish its metadata extension point.
+The package identifies [provider commit772accd4](https://github.com/microting/Pomelo.EntityFrameworkCore.MySql/blob/772accd4439ead887f7bb0a6829cb73eee4a93e2/src/EFCore.MySql/Update/Internal/MySqlUpdateSqlGenerator.cs).
+This is dependency metadata evidence, not WildStar runtime proof.
+
+Only the new owned loopback fixture (scope8f9b358ce56f4fdd, port54909) was used.
+It is shut down: initial15-second observation expired, normal shutdown completed
+after about31seconds, then both PID10320 and its listener were verified absent.
+No force termination/service installation occurred. Original hosts/data/configs
+remain preserved. The incremental all-state upstream query finds no updates;
+direct604/608/609 and both base refs retain reviewed heads.609 remains closed
+unmerged. No commit/push/client launch; defaults15:1/17:1/no44/no seven grants.
+
+This verifies interleaving before the owner's transaction, not every isolation,
+physical network-loss/deadlock retry, MySQL8, upgrade, full-table delivery,
+deployment/socket/native UI or retail requirement. The Goal remains active for
+these gates and the remaining recovery/Contract/broader roadmap work.
+
+## Historical205-case qualification
+
+Started 2 November 2026 Zurich against the prior auction-posting candidate.
+This is a disposable database fixture, not a server deployment or retail gate.
+
+## Candidate and fixture
+
+At that qualification all6,156 Source/Tools inputs matched `a900f698618a6d3bb2c736f105d0ea327c0b3c2ea6d5078673d9580b44690db7`
+full-source qualification. The 11,354-test full solution result remains valid;
+no Source/Tools edits or unchanged full-suite rerun were made for this fixture.
+Eight referenced production/dependency DLLs match that milestone's hashes.
+The harness assembly is separate from the original xUnit assembly.
+
+The owned portable MariaDB 11.4.13 Windows x64 ZIP matches the official archive
+SHA-256 `d62986d433eeebfde218560b276103831604a61e929e87f1a17f5aebd80257e2`.
+Its engine hash is `103fddd6cb26f4692b2438742d498ec66aa9518a23cbf02dd6f2e3dc7f242de3`.
+Acquisition, extracted paths and bootstrap observations are retained locally in
+`artifacts/continuation-20261031/provider-qualification/`. No service was installed.
+The listener is restricted to loopback, uses a random private credential, and
+has its own data root. Existing hosts, databases, configuration and PATH are
+preserved. Each invocation checks the exact process generation, executable path
+and SQL `@@datadir` before creating only uniquely prefixed owned schemas.
+
+Each schema uses `utf8mb4/utf8mb4_general_ci`; the observed server default is
+`latin1/latin1_swedish_ci`, global timezone UTC and default REPEATABLE-READ.
+Production commands request their own Serializable transactions. The fixture
+selects the production MySQL configuration extension and confirms
+`Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy` at each case.
+
+## Results and interpretation
+
+The auction-posting run passes all 30 original cases: 18 public coordinator
+cases, eight database command cases and four constructor-only controls. The
+database-backed cases exercise commit, known rollback, lost acknowledgement,
+ordinary reconciliation, later intent, original actor/replacement handling,
+custody conflicts, publication, held metadata and expiration. The four constructor
+controls do not themselves exercise SQL. `posting-provider-results.json`,
+`posting-all.log`, `posting-candidate-binding.json` and the retained posting
+fixture diff identify this run. The binding was observed after completion and
+an unchanged incremental harness build; it was not a pre-run freeze.
+
+The other five economic coordinator classes pass all 161 original cases:
+commodity posting42, commodity returns39, auction expiry20, auction cancellation18
+and normal bid/buyout42. Their first invocation completed 16 passing cases, then failed in the harness's post-case
+`DROP DATABASE` cleanup with a command timeout. No failing test was reported.
+The reason a schema handle remained held is unproven. The failure, results,
+program and binary binding are retained as `cleanup-timeout-*`; this invocation
+is not described as a successful complete batch. Cleanup was deferred until
+the harness exited; the next invocation passed cases17â€“161 with exit0. The exact
+ordered union is checked against the original source labels, with no duplicates.
+`economic-final-results.json` retains that union. The resumed projection was
+recovered from it after bank mode overwrote the shared raw result file; its
+provenance explicitly does not claim an independently retained original stream.
+No assertion,
+deadline or production behavior was relaxed.
+
+All 14 original periodic-bank cases also pass: dirty scalars/codecs/countdown,
+whole carried/bank rollback and retry, commit/rollback expiration deferral, later
+intent, stale ownership/value rejection, suppressed/rewritten SQL and ownership
+through physical rollback. This uses the existing provider constructor without
+source/fixture assertion edits. The first invocation has13 passes and one retained
+fixture failure: its directly initiated transaction was rejected by EF's retry
+strategy before the assertion. Only that unchanged test body was then executed
+inside the configured strategy, as required by [EF's transaction guidance](https://learn.microsoft.com/en-us/ef/core/miscellaneous/connection-resiliency#execution-strategies-and-transactions).
+The corrected one-case invocation passes; `bank-final-results.json` checks the
+unique14-case union. This wrapper does not prove a transient retry and could
+replay fixture seeding if one occurred.
+
+Combined scope is205 selected cases, comprising201 database-backed cases and four
+constructor controls. The161 economic case bodies total609.39seconds; the14 bank
+case bodies total75.29seconds. Harness builds pass with zero warnings/errors.
+Reviews clear both axes after fixing empty/invalid selection handling and binding
+the resume boundary. Four executed invalid-selection controls fail closed.
+Pre-run manifests now record arguments, offset, selected labels/count and harness
+hash. `review-reports.md` retains findings and their disposition.
+
+The owned server was shut down through SQL after verifying its process generation,
+executable and exact data root. PID40824 is terminal and the listener is gone.
+Its files/schemas remain local evidence; no service was installed or left running.
+
+Final `verification.json` at23:51:09 UTC on1 November rechecks all6,156 inputs,
+nine original owning/test-copy DLL pairs, current harness inputs/binary,205 case
+results, four runner controls and terminal server observations. All136 referenced
+dependency DLL copies also match the source-test output. The one82-member local
+`qualification-evidence.zip` has SHA-256
+`5092655aa0c74f25e08d2c4df5d9ea2d4f053e6731aae5c92c510858db900824`.
+Private credentials, engine/data directories and runtime package are excluded;
+export members were checked for the random credential before packaging.
+
+The fixture compiles existing assertion bodies against existing production DLLs.
+Its explicit overlays replace the SQLite fixture configuration, retain the
+configured connection string after opening it, and translate fault-injection SQL
+to MariaDB syntax. `prepare-harness.py`, `fixture-overlay.diff` and its hash index
+record every replacement. This is not execution of the original test DLL or
+the entire solution on MariaDB. Initial missing-framework and accidental SQLite
+selection failures are retained; corrected provider-specific execution passes.
+
+## Remaining gates
+
+Qualify the remaining captured bank/mail/reward recovery and actual two-connection
+predicate/collation/isolation boundaries. Configured strategies were enabled;
+simulated acknowledgement loss after real commits is not physical network-loss,
+deadlock or transient-retry proof. Keep copied-upgrade/model, full actual-table reward
+delivery, socket/deployment, load, native UI and retail evidence separate.
+Contract public 07CE remains disabled pending its recorded reset/unclaimed/excess
+and complete delivery requirements. The upstream all-state incremental search
+after 23:03:24 UTC on 1 November found no updates; its query/result is retained
+in `upstream-refresh.json`. Previously reconciled 608 remains the newest open
+PR and 609 remains closed unmerged at the last direct-head observation.
+
+Defaults 15:1/17:1 are unchanged; no automatic 44 or seven baseline grants.
+Computer Use and WildStar client launch remain stopped. No commit or push.
+The overall Goal remains active.

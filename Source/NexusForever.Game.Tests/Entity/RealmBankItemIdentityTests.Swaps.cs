@@ -185,6 +185,8 @@ public sealed partial class RealmBankItemIdentityTests
         ((RecordingDispatchProxy<IAccount>)(object)player.Account)
             .SetProperty(nameof(IAccount.EntitlementManager), entitlements);
         var session = RecordingDispatchProxy<IGameSession>.Create(out _);
+        ((RecordingDispatchProxy<IGameSession>)(object)session).SetProperty(nameof(IGameSession.Events), new NexusForever.Shared.Game.Events.EventQueue());
+        ((RecordingDispatchProxy<IAccount>)(object)player.Account).SetProperty(nameof(IAccount.Session), session);
         ((RecordingDispatchProxy<IPlayer>)(object)player).SetProperty(nameof(IPlayer.Session), session);
         var storedModel = bank == null ? null : BankItemModel(bank);
         if (storedModel != null) { storedModel.MicrochipIds = bank.MicrochipIds; storedModel.RuneSlots = bank.RuneSlots; }

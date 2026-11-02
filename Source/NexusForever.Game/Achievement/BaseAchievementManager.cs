@@ -18,6 +18,7 @@ namespace NexusForever.Game.Achievement
         public uint AchievementPoints { get; protected set; }
 
         protected abstract ulong OwnerId { get; }
+        protected virtual Func<CharacterContext, bool> CharacterSaveOwner => null;
         protected Dictionary<ushort, IAchievement> achievements = new();
         private readonly IDisableManager disableManager;
         private readonly IGlobalAchievementManager globalAchievementManager;
@@ -52,7 +53,7 @@ namespace NexusForever.Game.Achievement
                 if (!isPlayer && info.IsPlayerAchievement)
                     throw new DatabaseDataException($"Guild {model.Id} has player achievement {model.AchievementId} stored!");
 
-                var achievement = new Achievement<T>(info, model);
+                var achievement = new Achievement<T>(info, model) { CharacterSaveOwner = CharacterSaveOwner };
                 if (achievement.IsComplete())
                     AchievementPoints += GetAchievementPoints(achievement.Info);
 
@@ -62,6 +63,7 @@ namespace NexusForever.Game.Achievement
 
         public void Save(CharacterContext context)
         {
+            if (CharacterSaveOwner?.Invoke(context) == true) return;
             foreach (Achievement<T> achievement in achievements.Values)
                 achievement.Save(context);
         }
@@ -410,7 +412,7 @@ namespace NexusForever.Game.Achievement
             if (info == null)
                 throw new ArgumentException();
 
-            achievement = new Achievement<T>(OwnerId, info);
+            achievement = new Achievement<T>(OwnerId, info) { CharacterSaveOwner = CharacterSaveOwner };
             achievements.Add(achievement.Id, achievement);
             return achievement;
         }

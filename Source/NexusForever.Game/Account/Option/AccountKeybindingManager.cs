@@ -1,6 +1,7 @@
 ﻿using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Game.Abstract.Account.Option;
+using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Option;
 using NexusForever.Game.Option;
 using NexusForever.Network.World.Message.Model.Option;
@@ -12,8 +13,19 @@ namespace NexusForever.Game.Account.Option
         private readonly IKeybindingSet bindingSet;
 
         public AccountKeybindingManager(AccountModel model)
+            : this(model, null)
         {
-            bindingSet = new KeybindingSet(model);
+        }
+
+        internal AccountKeybindingManager(AccountModel model, IAccount owner)
+        {
+            uint account = model.Id;
+            ulong epoch = model.WorldSessionEpoch;
+            bindingSet = new KeybindingSet(model, () =>
+            {
+                if (model.Id != account || owner != null && (owner.Id != account || owner.WorldSessionEpoch != epoch || !ReferenceEquals(owner.KeybindingManager, this)))
+                    throw new InvalidOperationException("Keybindings lost their loaded account manager.");
+            });
         }
 
         public void Save(AuthContext context)

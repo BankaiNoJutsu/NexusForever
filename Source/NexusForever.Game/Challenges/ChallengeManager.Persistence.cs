@@ -198,11 +198,19 @@ namespace NexusForever.Game.Challenges
                 }
                 finally
                 {
+                    bool retain = !committed && unit.Context.IsProvenBidRollback && unit.Frozen is NormalSaveSnapshot { RetainBidRollback: true };
                     unit.Context.SavedChanges -= unit.OnFlushed;
-                    activeSave = null;
-                    lock (saveLeaseGate)
-                        if (saveLeases.TryGetValue(unit.Key, out ChallengeSaveUnit current) && ReferenceEquals(current, unit))
-                            saveLeases.Remove(unit.Key);
+                    if (retain)
+                    {
+                        unit.Context = null; unit.OnFlushed = null; unit.Rows.Clear();
+                    }
+                    else
+                    {
+                        activeSave = null;
+                        lock (saveLeaseGate)
+                            if (saveLeases.TryGetValue(unit.Key, out ChallengeSaveUnit current) && ReferenceEquals(current, unit))
+                                saveLeases.Remove(unit.Key);
+                    }
                 }
             }
         }

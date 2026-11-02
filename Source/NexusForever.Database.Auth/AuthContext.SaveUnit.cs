@@ -25,6 +25,9 @@ namespace NexusForever.Database.Auth
         private AccountPendingItemDeliveryModel saveUnitReceipt;
         private bool saveUnitRejected;
 
+        public bool IsSaveUnitRejected => saveUnitRejected;
+        public bool HasSavepointRollback => savepointRollbackObserved;
+
         static AuthContext()
         {
             DiagnosticListener.AllListeners.Subscribe(new TransactionDisposalObserver());
@@ -35,12 +38,20 @@ namespace NexusForever.Database.Auth
         /// Work may run again after a provider retry and must replace its previous staging.
         /// Completion follows the actual outer transaction, including rollback/disposal.
         /// </summary>
-        public void EnlistSaveWork(Action<AuthContext> stage, Action<bool> completed, Func<bool> commitAllowed = null)
+        public void EnlistSaveWork(Action<AuthContext> stage, Action<bool> completed, Func<bool> commitAllowed = null, uint? accountId = null)
         {
             ArgumentNullException.ThrowIfNull(stage);
             ArgumentNullException.ThrowIfNull(completed);
             if (workStaged)
                 throw new InvalidOperationException("Cannot enlist additional work after this save unit has been staged.");
+            if (accountId.HasValue)
+            {
+                if (accountId == 0 || pendingSaveAccount.HasValue && pendingSaveAccount != accountId)
+                    throw new InvalidOperationException("An Auth save unit must retain one account owner.");
+                // A non-inventory producer also needs a whole-unit witness when
+                // the execution strategy retries after an ambiguous commit.
+                pendingSaveAccount = accountId;
+            }
             saveUnitKey ??= $"save-unit:{Guid.NewGuid():N}";
             saveWork.Add(stage);
             saveCompletions.Add(completed);

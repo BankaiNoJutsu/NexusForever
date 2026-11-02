@@ -392,6 +392,9 @@ public sealed class CharacterChallengeRewardRepositoryTests
     {
         private readonly string directory = Path.Combine(Path.GetTempPath(), "NexusForever-CharacterRewardRepo-" + Guid.NewGuid().ToString("N"));
         private readonly DbContextOptions<CharacterContext> options;
+        private FixtureConnectionDiagnostics connectionDiagnostics;
+        internal void EnableConnectionDiagnostics() => connectionDiagnostics ??= new();
+        internal string DescribeConnectionDiagnostics() => connectionDiagnostics?.Describe() ?? "disabled";
         public RewardTrackEntry[] Tracks { get; } = LoyaltyCatalogBuild16042Fixture.Tracks();
         public IGameTableManager Tables { get; }
         public CharacterChallengeRewardCatalog Catalog { get; private set; }
@@ -419,9 +422,23 @@ public sealed class CharacterChallengeRewardRepositoryTests
         }
         public void RebuildCatalog() => Catalog = new(Tables);
         public ushort Challenge(uint track) => checked((ushort)(1000 + track));
-        public CharacterContext Context() => new(options);
+        public CharacterContext Context()
+        {
+            if (connectionDiagnostics == null) return new(options);
+            var builder = new DbContextOptionsBuilder<CharacterContext>(options).AddInterceptors(connectionDiagnostics);
+            builder.LogTo(FixtureConnectionDiagnostics.ShouldObserve, connectionDiagnostics.Observe);
+            return new(builder.Options);
+        }
         public CharacterContext Intercepted(params IInterceptor[] interceptors)
-            => new(new DbContextOptionsBuilder<CharacterContext>(options).AddInterceptors(interceptors).Options);
+        {
+            var builder = new DbContextOptionsBuilder<CharacterContext>(options).AddInterceptors(interceptors);
+            if (connectionDiagnostics != null)
+            {
+                builder.AddInterceptors(connectionDiagnostics);
+                builder.LogTo(FixtureConnectionDiagnostics.ShouldObserve, connectionDiagnostics.Observe);
+            }
+            return new(builder.Options);
+        }
         public DbContextOptions<CharacterContext> Options => options;
         public CharacterChallengeRewardRepository Repository(CharacterContext context)
             => new(context, 42, Catalog, Tables, _ => Meets, count => { Samples++; return 0; });
@@ -493,7 +510,13 @@ public sealed class CharacterChallengeRewardRepositoryTests
         {
             string full = Path.GetFullPath(directory), parent = Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
             if (!full.StartsWith(parent, StringComparison.OrdinalIgnoreCase) || !Path.GetFileName(full).StartsWith("NexusForever-CharacterRewardRepo-", StringComparison.Ordinal)) throw new InvalidOperationException("Fixture cleanup escaped its temp root.");
-            if (Directory.Exists(full)) Directory.Delete(full, true);
+            if (connectionDiagnostics != null) Console.Error.WriteLine("Fixture diagnostic origin cost: " + connectionDiagnostics.OriginCost());
+            try { if (Directory.Exists(full)) TemporaryDirectoryCleanup.Delete(full); }
+            catch
+            {
+                if (connectionDiagnostics != null) Console.Error.WriteLine("Fixture connection lifetimes on cleanup failure: " + connectionDiagnostics.Describe());
+                throw;
+            }
         }
     }
 }

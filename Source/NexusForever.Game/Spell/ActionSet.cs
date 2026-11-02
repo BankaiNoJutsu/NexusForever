@@ -54,6 +54,8 @@ namespace NexusForever.Game.Spell
         private readonly IPlayer player;
         private readonly IGameTableManager gameTableManager;
         private ActionSetSaveMask saveMask;
+        internal Func<CharacterContext, bool> CharacterSaveOwner { private get; init; }
+        internal bool TrySaveCharacter(CharacterContext context) => CharacterSaveOwner?.Invoke(context) == true;
 
         /// <summary>
         /// Create a new <see cref="IActionSet"/> with supplied index.
@@ -70,6 +72,7 @@ namespace NexusForever.Game.Spell
 
         public void Save(CharacterContext context)
         {
+            if (TrySaveCharacter(context)) return;
             if (saveMask == ActionSetSaveMask.None)
                 return;
 

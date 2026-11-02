@@ -4,6 +4,7 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Reputation;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Network.World.Message.Model;
@@ -16,6 +17,16 @@ namespace NexusForever.Game.Reputation
         private readonly IPlayer owner;
         private readonly IFactionManager factionManager;
         private readonly Dictionary<Faction, IReputation> reputations = new();
+        internal ulong ReputationCharacter { get; }
+        internal string ReputationDatabase { get; }
+        internal ExperiencePersistence.ReputationState[] LoadedReputations { get; }
+        internal ExperiencePersistence.ReputationState[] CaptureReputations()
+        {
+            if (owner.CharacterId != ReputationCharacter || reputations.Any(pair => pair.Key != pair.Value.Id))
+                throw new InvalidOperationException("Reputation changed its Character owner or faction.");
+            return reputations.Values.Select(row => new ExperiencePersistence.ReputationState(ReputationCharacter, (uint)row.Id, row.Amount)).OrderBy(row => row.Faction).ToArray();
+        }
+        internal bool Owns(IReputation reputation) => reputations.TryGetValue(reputation.Id, out var owned) && ReferenceEquals(owned, reputation);
 
         /// <summary>
         /// Create a new <see cref="IReputationManager"/> from existing <see cref="CharacterModel"/> database model.
@@ -24,6 +35,9 @@ namespace NexusForever.Game.Reputation
         {
             owner = player;
             this.factionManager = factionManager;
+            ReputationCharacter = model.Id;
+            ReputationDatabase = CharacterLoadOrigin.Get(model)?.Database;
+            LoadedReputations = model.Reputation.OrderBy(row => row.FactionId).Select(ExperiencePersistence.FromModel).ToArray();
 
             foreach (CharacterReputation reputationModel in model.Reputation)
             {
@@ -38,6 +52,15 @@ namespace NexusForever.Game.Reputation
 
         public void Save(CharacterContext context)
         {
+            if (owner is Player player)
+            {
+                if (!ReferenceEquals(player.ReputationManager, this))
+                {
+                    var error = new InvalidOperationException("Reputation lost its loaded manager.");
+                    context.RejectSave(error); throw error;
+                }
+                player.SaveExperience(context); return;
+            }
             foreach (IReputation reputation in reputations.Values)
                 reputation.Save(context);
         }

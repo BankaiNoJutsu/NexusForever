@@ -136,7 +136,7 @@ namespace NexusForever.Game.Account
             RewardRotationGrantManager   = new AccountRewardRotationGrantManager(this, model);
             if (gameTableManager.RewardTrack != null && gameTableManager.RewardTrackRewards != null)
                 LoyaltyManager = new AccountLoyaltyManager(this, gameTableManager, databaseManager?.GetDatabase<AuthDatabase>(), prerequisiteManager);
-            KeybindingManager              = new AccountKeybindingManager(model);
+            KeybindingManager              = new AccountKeybindingManager(model, this);
         }
 
         public void Save(AuthContext context)

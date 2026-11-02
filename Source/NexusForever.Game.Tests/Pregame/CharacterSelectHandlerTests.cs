@@ -20,6 +20,41 @@ namespace NexusForever.Game.Tests.Pregame;
 
 public class CharacterSelectHandlerTests
 {
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void AdmissionLeaseExcludesBidsUntilInitializationRegistersThePlayerAndReleasesOnFailure(bool fail)
+    {
+        var cleanup = new NexusForever.Game.CleanupManager();
+        var handler = CreateHandler(out var factory, out var map, CreateGameTable(new WorldEntry { Id = 10 }), cleanup);
+        var session = CreateSession(123, out _, LogoutState.Finished, [new() { Id = 123, WorldId = 10 }]);
+        var player = RecordingDispatchProxy<IPlayer>.Create(out var pp); bool initialized = false;
+        pp.SetMethodHandler(nameof(IPlayer.Initialise), arguments =>
+        {
+            initialized = true; Assert.True(cleanup.IsAccountLocked(session.Account));
+            Assert.False(cleanup.TryAcquireAccounts([session.Account.Id], out _));
+            if (fail) throw new IOException("Initialization failed before registration.");
+            return null;
+        });
+        factory.SetMethodReturn(nameof(IEntityFactory.CreateEntity), player);
+        if (fail) Assert.Throws<IOException>(() => handler.HandleMessage(session, CreateCharacterSelect(123)));
+        else handler.HandleMessage(session, CreateCharacterSelect(123));
+        Assert.True(initialized); Assert.False(cleanup.IsAccountLocked(session.Account));
+        Assert.Equal(fail ? 0 : 1, map.GetInvocations(nameof(IMapManager.AddToMap)).Count);
+    }
+
+    [Fact]
+    public void ActiveEconomicAccountLeaseRejectsReplacementAdmissionBeforeCreatingAPlayer()
+    {
+        var cleanup = new NexusForever.Game.CleanupManager();
+        var handler = CreateHandler(out var factory, out var map, CreateGameTable(new WorldEntry { Id = 10 }), cleanup);
+        var session = CreateSession(123, out var sp, LogoutState.Finished, [new() { Id = 123, WorldId = 10 }]);
+        Assert.True(cleanup.TryAcquireAccounts([session.Account.Id], out var lease));
+        using (lease) handler.HandleMessage(session, CreateCharacterSelect(123));
+        Assert.Empty(factory.GetInvocations(nameof(IEntityFactory.CreateEntity))); Assert.Empty(map.GetInvocations(nameof(IMapManager.AddToMap)));
+        var failure = Assert.IsType<ServerCharacterSelectFail>(Assert.Single(sp.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))).Arguments[0]);
+        Assert.Equal(CharacterSelectResult.FailedCharacterInWorld, failure.Result);
+    }
+
     [Fact]
     public void HandleMessage_DuplicateSelectForLoadingPlayer_IsIgnored()
     {
@@ -91,10 +126,10 @@ public class CharacterSelectHandlerTests
     private static CharacterSelectHandler CreateHandler(
         out RecordingDispatchProxy<IEntityFactory> entityFactoryProxy,
         out RecordingDispatchProxy<IMapManager> mapManagerProxy,
-        GameTable<WorldEntry> worldTable = null)
+        GameTable<WorldEntry> worldTable = null,
+        ICleanupManager cleanupOverride = null)
     {
-        ICleanupManager cleanupManager = RecordingDispatchProxy<ICleanupManager>.Create(out RecordingDispatchProxy<ICleanupManager> cleanupProxy);
-        cleanupProxy.SetMethodReturn(nameof(ICleanupManager.IsAccountLocked), false);
+        ICleanupManager cleanupManager = cleanupOverride ?? new NexusForever.Game.CleanupManager();
 
         IEntityFactory entityFactory = RecordingDispatchProxy<IEntityFactory>.Create(out entityFactoryProxy);
         IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> gameTableProxy);

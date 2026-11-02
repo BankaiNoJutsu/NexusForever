@@ -25,7 +25,7 @@ public class ClientEntityInteractionHandlerTests
     }
 
     [Theory]
-    [InlineData(45, false, 1f, true)]
+    [InlineData(45, false, 1f, false)]
     [InlineData(46, false, 1f, true)]
     [InlineData(47, false, 1f, true)]
     [InlineData(48, false, 1f, true)]

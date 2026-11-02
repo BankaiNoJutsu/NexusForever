@@ -110,6 +110,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             switch (entityInteraction.Event)
             {
                 case 45: // InvokeShuttlePrompt
+                    if (entity == null)
+                        throw new InvalidPacketValueException();
+                    return true;
                 case 46:
                 case 47:
                 case 48: // InvokeTaxiWindow

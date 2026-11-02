@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using NexusForever.Database.Character;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
@@ -29,6 +30,30 @@ namespace NexusForever.Game.Marketplace
         {
             return database != null;
         }
+
+        internal static MailHeaderState CreateNormalBidRefund(ulong recipient, ulong amount, IGameTableManager tables, IAssetManager assets)
+            => CreateMail(recipient, SenderType.ItemAuction, ContentType.AuctionWon, "Marketplace",
+                "Credits from the marketplace are enclosed.", amount, tables, assets).CaptureMarketplaceCreation();
+
+        internal static MailHeaderState CreateBuyoutDelivery(ulong recipient, IGameTableManager tables, IAssetManager assets)
+            => CreateMail(recipient, SenderType.ItemAuction, ContentType.AuctionWon, ItemAuctionWonSubject,
+                ItemAuctionWonBody, 0, tables, assets).CaptureMarketplaceCreation();
+
+        internal static MailHeaderState CreateCommodityReturn(ulong recipient, IGameTableManager tables, IAssetManager assets)
+            => CreateMail(recipient, SenderType.CommodityAuction, ContentType.AuctionExpired, CommodityReturnSubject,
+                CommodityReturnBody, 0, tables, assets).CaptureMarketplaceCreation();
+
+        internal static MailHeaderState CreateCommodityFill(ulong recipient, IGameTableManager tables, IAssetManager assets)
+            => CreateMail(recipient, SenderType.CommodityAuction, ContentType.AuctionWon, CommodityFillSubject,
+                CommodityFillBody, 0, tables, assets).CaptureMarketplaceCreation();
+
+        internal static MailHeaderState CreateCommodityRecovery(ulong recipient, IGameTableManager tables, IAssetManager assets)
+            => CreateMail(recipient, SenderType.CommodityAuction, ContentType.AuctionExpired, "Your items",
+                "These items could not be placed in your inventory.", 0, tables, assets).CaptureMarketplaceCreation();
+
+        internal static MailHeaderState CreateExpiryReturn(ulong recipient, IGameTableManager tables, IAssetManager assets)
+            => CreateMail(recipient, SenderType.ItemAuction, ContentType.AuctionExpired, ItemAuctionReturnSubject,
+                ItemAuctionReturnBody, 0, tables, assets).CaptureMarketplaceCreation();
 
         public static bool TrySendItemAuctionReturnMail(
             CharacterDatabase database,
@@ -442,7 +467,8 @@ namespace NexusForever.Game.Marketplace
             Action<CharacterContext> additionalSaveAction,
             IPlayerManager playerManager)
         {
-            database.SaveBlocking(context =>
+            string committedDatabase = null;
+            MarketplaceCommittedSave.Save(database, context =>
             {
                 additionalSaveAction?.Invoke(context);
 
@@ -453,10 +479,30 @@ namespace NexusForever.Game.Marketplace
                     if (item is Item itemEntity)
                         itemEntity.Save(context);
                 }
+                committedDatabase = Item.GetRewardDatabaseKey(context);
             });
 
-            IPlayer recipient = playerManager?.GetPlayer(recipientCharacterId);
-            recipient?.MailManager.EnqueueMail(mail);
+            // SQL has succeeded. A notification failure must never enter the
+            // persistence rollback path or restore an attached Item's old owner.
+            try
+            {
+                IPlayer recipient = playerManager?.GetPlayer(recipientCharacterId);
+                if (recipient?.MailManager is MailManager manager)
+                {
+                    using var context = database.CreateContext();
+                    if (Item.GetRewardDatabaseKey(context) != committedDatabase)
+                        return;
+                    var owner = context.Character.AsNoTracking().SingleOrDefault(character => character.Id == recipientCharacterId);
+                    if (owner != null && owner.DeleteTime == null)
+                        manager.EnqueueMarketplaceMail(mail, owner.AccountId, committedDatabase);
+                }
+                else
+                    recipient?.MailManager?.EnqueueMail(mail);
+            }
+            catch (Exception ex)
+            {
+                log.Warn(ex, "Committed marketplace mail notification failed for recipient {0}; SQL inbox recovery remains available.", recipientCharacterId);
+            }
         }
     }
 }

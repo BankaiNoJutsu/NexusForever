@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
@@ -49,6 +49,14 @@ namespace NexusForever.Game.Entity
         private readonly IPlayer player;
         private readonly IGameTableManager gameTableManager;
         private readonly ISharedConfiguration sharedConfiguration;
+        internal ExperiencePersistence.Experience LoadedExperience { get; }
+        internal string LoadedExperienceDatabase { get; }
+        internal ulong ExperienceCharacter { get; }
+        internal ExperiencePersistence.Experience CaptureExperience()
+        {
+            if (player.CharacterId != ExperienceCharacter) throw new InvalidOperationException("Experience changed its Character owner.");
+            return new(TotalXp, RestBonusXp, checked((byte)player.Level));
+        }
 
         /// <summary>
         /// Create a new <see cref="IXpManager"/> from existing <see cref="CharacterModel"/> database model.
@@ -58,7 +66,11 @@ namespace NexusForever.Game.Entity
             this.player = player;
             this.gameTableManager = gameTableManager;
             this.sharedConfiguration = sharedConfiguration;
+            ExperienceCharacter = model.Id;
+            LoadedExperience = ExperiencePersistence.FromExperience(model);
+            LoadedExperienceDatabase = CharacterLoadOrigin.Get(model)?.Database;
             totalXp = model.TotalXp;
+            restBonusXp = model.RestBonusXp;
 
             CalculateRestXpAtLogin(model);
         }
@@ -82,6 +94,7 @@ namespace NexusForever.Game.Entity
 
         public void Save(CharacterContext context)
         {
+            if (player is Player owner && ReferenceEquals(owner.XpManager, this)) { owner.SaveExperience(context); return; }
             if (!isDirty)
                 return;
 
@@ -276,6 +289,7 @@ namespace NexusForever.Game.Entity
                 return;
 
             player.Level = newLevel;
+            player.QuestManager?.Communicator?.OnLevel(oldLevel, newLevel);
 
             if (newLevel <= oldLevel)
                 return;

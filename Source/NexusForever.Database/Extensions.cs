@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Update;
+using Microting.EntityFrameworkCore.MySql.Infrastructure.Internal;
 using NexusForever.Database.Configuration.Model;
 
 namespace NexusForever.Database
@@ -23,6 +25,7 @@ namespace NexusForever.Database
                     {
                         b.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
                     });
+                    optionsBuilder.UseStringConcurrencyChecks();
                     break;
                 case DatabaseProvider.Sqlite:
                     optionsBuilder.UseSqlite(connectionString.ConnectionString, b =>
@@ -34,6 +37,17 @@ namespace NexusForever.Database
                 default:
                     throw new NotSupportedException($"The requested database provider: {connectionString.Provider:G} is not supported.");
             }
+            return optionsBuilder;
+        }
+
+        // Explicit Character options (including a transaction participant's
+        // existing connection) must retain the same predicates without discovery.
+        public static DbContextOptionsBuilder UseStringConcurrencyChecks(this DbContextOptionsBuilder optionsBuilder)
+        {
+#pragma warning disable EF1001
+            if (optionsBuilder.Options.FindExtension<MySqlOptionsExtension>() != null)
+                optionsBuilder.ReplaceService<IUpdateSqlGenerator, MySqlConcurrencySqlGenerator>();
+#pragma warning restore EF1001
             return optionsBuilder;
         }
 

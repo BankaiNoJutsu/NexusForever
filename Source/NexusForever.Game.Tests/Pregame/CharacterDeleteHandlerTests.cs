@@ -2,6 +2,8 @@ using System.Reflection;
 using NexusForever.Database;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Character;
+using NexusForever.Game;
+using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Tests.TestSupport;
@@ -15,6 +17,28 @@ namespace NexusForever.Game.Tests.Pregame;
 
 public class CharacterDeleteHandlerTests
 {
+    [Fact]
+    public void OwnedAuctionAccountCannotDeleteACharacterOrStartDatabaseWork()
+    {
+        var cleanup = new CleanupManager();
+        var account = RecordingDispatchProxy<IAccount>.Create(out var ap); ap.SetProperty(nameof(IAccount.Id), 12u);
+        var session = RecordingDispatchProxy<IWorldSession>.Create(out var sp); sp.SetProperty(nameof(IWorldSession.Account), account);
+        var databases = RecordingDispatchProxy<IDatabaseManager>.Create(out var dp);
+        dp.SetMethodHandler(nameof(IDatabaseManager.GetDatabase), _ => throw new InvalidOperationException("A locked deletion must not start SQL."));
+        Assert.True(cleanup.TryAcquireAccounts([12], out var held));
+        using (held)
+        {
+            var handler = new CharacterDeleteHandler(RecordingDispatchProxy<IGlobalGuildManager>.Create(out _), databases,
+                RecordingDispatchProxy<IGlobalResidenceManager>.Create(out _), RecordingDispatchProxy<ICharacterManager>.Create(out _), cleanup);
+            handler.HandleMessage(session, CreateCharacterDelete(42));
+            var response = Assert.IsType<ServerCharacterDeleteResult>(Assert.Single(sp.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))).Arguments[0]);
+            Assert.Equal(CharacterModifyResult.DeleteFailed, response.Result);
+            Assert.Empty(dp.GetInvocations(nameof(IDatabaseManager.GetDatabase)));
+            Assert.True(cleanup.IsAccountLocked(account));
+        }
+        Assert.False(cleanup.IsAccountLocked(account));
+    }
+
     [Fact]
     public void HandleMessage_WhenCharacterIsGuildLeaderSendsGuildMasterFailure()
     {

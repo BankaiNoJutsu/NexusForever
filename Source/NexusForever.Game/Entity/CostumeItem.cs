@@ -1,4 +1,3 @@
-﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
@@ -59,11 +58,12 @@ namespace NexusForever.Game.Entity
             get => ItemInfo?.Id;
             set
             {
-                if (ItemInfo?.Id == value)
-                    return;
-
-                ItemInfo  = value.HasValue ? itemManager?.GetItemInfo(value.Value) : null;
-                saveMask |= CostumeItemSaveMask.ItemId;
+                lock (persistence.Gate)
+                {
+                    if (ItemInfo?.Id == value) return;
+                    ItemInfo = value.HasValue ? itemManager?.GetItemInfo(value.Value) : null;
+                    storedItemId = ItemInfo?.Id ?? 0;
+                }
             }
         }
 
@@ -71,14 +71,10 @@ namespace NexusForever.Game.Entity
 
         public uint DyeData
         {
-            get => dyeData;
+            get { lock (persistence.Gate) return dyeData; }
             set
             {
-                if (dyeData == value)
-                    return;
-
-                dyeData = value;
-                saveMask |= CostumeItemSaveMask.DyeData;
+                lock (persistence.Gate) dyeData = value;
             }
         }
 
@@ -88,7 +84,10 @@ namespace NexusForever.Game.Entity
         private readonly IItemManager itemManager;
         private readonly IGameTableManager gameTableManager;
 
-        private CostumeItemSaveMask saveMask;
+        private readonly CostumePersistence persistence;
+        private readonly ulong owner;
+        private readonly byte index;
+        private uint storedItemId;
 
         /// <summary>
         /// Create a new <see cref="ICostumeItem"/> from an existing <see cref="CharacterCostumeItemModel"/> database model.
@@ -104,10 +103,13 @@ namespace NexusForever.Game.Entity
             this.gameTableManager = gameTableManager;
             Slot         = (CostumeItemSlot)model.Slot;
             ItemSlot     = GetSlot(Slot);
-            Item2Id      = model.Item2Id > 0 ? model.Item2Id : null;
+            owner = costume.Owner; index = costume.Index;
+            storedItemId = model.Item2Id;
+            ItemInfo = model.Item2Id > 0 ? itemManager?.GetItemInfo(model.Item2Id) : null;
+            persistence = costume is Costume concrete ? concrete.Persistence
+                : new(owner, new(null, [], [new(index, (byte)Slot, model.Item2Id, model.DyeData)]), CaptureSlot, index: index, slot: (byte)Slot);
             dyeData      = model.DyeData;
 
-            saveMask     = CostumeItemSaveMask.None;
         }
 
         /// <summary>
@@ -125,10 +127,12 @@ namespace NexusForever.Game.Entity
             this.gameTableManager = gameTableManager;
             Slot         = slot;
             ItemSlot     = GetSlot(Slot);
+            owner = costume.Owner; index = costume.Index;
+            persistence = costume is Costume concrete ? concrete.Persistence
+                : new(owner, new(null, [], []), CaptureSlot, index: index, slot: (byte)Slot);
             Item2Id      = item.Item2Id > 0 ? item.Item2Id : null;
             dyeData      = GenerateDyeData(item.DyeColorRampIds, gameTableManager);
 
-            saveMask     = CostumeItemSaveMask.Create;
         }
 
         private static ItemSlot GetSlot(CostumeItemSlot slot)
@@ -146,48 +150,14 @@ namespace NexusForever.Game.Entity
             };
         }
 
-        public void Save(CharacterContext context)
+        public void Save(CharacterContext context) => persistence.SaveSlot(context, index, (byte)Slot);
+
+        internal CostumePersistence.Slot CapturePersistence()
         {
-            if (saveMask == CostumeItemSaveMask.None)
-                return;
-
-            if ((saveMask & CostumeItemSaveMask.Create) != 0)
-            {
-                // costume item doesn't exist in database, all infomation must be saved
-                context.Add(new CharacterCostumeItemModel
-                {
-                    Id      = costume.Owner,
-                    Index   = costume.Index,
-                    Slot    = (byte)Slot,
-                    Item2Id = Item2Id ?? 0,
-                    DyeData = dyeData
-                });
-            }
-            else
-            {
-                // costume item already exists in database, save only data that has been modified
-                var model = new CharacterCostumeItemModel
-                {
-                    Id    = costume.Owner,
-                    Index = costume.Index,
-                    Slot  = (byte)Slot
-                };
-
-                EntityEntry<CharacterCostumeItemModel> entity = context.Attach(model);
-                if ((saveMask & CostumeItemSaveMask.ItemId) != 0)
-                {
-                    model.Item2Id = Item2Id ?? 0;
-                    entity.Property(p => p.Item2Id).IsModified = true;
-                }
-                if ((saveMask & CostumeItemSaveMask.DyeData) != 0)
-                {
-                    model.DyeData = dyeData;
-                    entity.Property(p => p.DyeData).IsModified = true;
-                }
-            }
-
-            saveMask = CostumeItemSaveMask.None;
+            if (costume.Owner != owner || costume.Index != index) throw new InvalidOperationException("Costume item changed its owner.");
+            return new(index, (byte)Slot, storedItemId, dyeData);
         }
+        private CostumePersistence.Snapshot CaptureSlot() => new(null, [], [CapturePersistence()]);
 
         /// <summary>
         /// Get <see cref="IItemVisual"/> for <see cref="ICostumeItem"/>.

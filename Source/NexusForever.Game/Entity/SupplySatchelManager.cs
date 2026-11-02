@@ -12,7 +12,7 @@ using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.Game.Entity
 {
-    public class SupplySatchelManager : ISupplySatchelManager
+    public partial class SupplySatchelManager : ISupplySatchelManager
     {
         private const uint DefaultMaximumStackAmount = 100u;
 
@@ -26,12 +26,13 @@ namespace NexusForever.Game.Entity
             CharacterModel model,
             IGameTableManager gameTableManager)
         {
+            loadedOrigin = CharacterLoadOrigin.Get(model);
             player = owner;
             this.gameTableManager = gameTableManager;
             maximumStackAmount = ResolveMaximumStackAmount(owner);
 
             foreach (CharacterTradeskillMaterialModel tradeskillMaterial in model.TradeskillMaterials)
-                tradeskillMaterials.Add(tradeskillMaterial.MaterialId, new TradeskillMaterial(tradeskillMaterial, gameTableManager));
+                tradeskillMaterials.Add(tradeskillMaterial.MaterialId, new TradeskillMaterial(tradeskillMaterial, gameTableManager, CanMutateMaterial));
         }
 
         private static uint ResolveMaximumStackAmount(IPlayer owner)
@@ -52,8 +53,22 @@ namespace NexusForever.Game.Entity
 
         public void Save(CharacterContext context)
         {
-            foreach (ITradeskillMaterial material in tradeskillMaterials.Values)
-                material.Save(context);
+            var held = commodityReturn;
+            foreach (ITradeskillMaterial material in tradeskillMaterials.Values.Where(material => held == null || material.MaterialId != held.Write.Id))
+                if (material is TradeskillMaterial concrete) concrete.SaveMaterial(context, loadedOrigin?.Database); else material.Save(context);
+            held?.SaveOrdinary(context);
+        }
+        internal Action<CharacterContext> CaptureNormalSave(object token, string database)
+        {
+            if (loadedOrigin != null && loadedOrigin.Database != database)
+                throw new InvalidOperationException("Satchel capture changed its loaded database route.");
+            // A retained return owns its material through ordinary reconciliation,
+            // including rebases after settlement. Its existing typed witness and
+            // retry receipt remain responsible for that one row.
+            var held = commodityReturn;
+            var saves = tradeskillMaterials.Values.Where(material => held == null || material.MaterialId != held.Write.Id).Select(material => material is TradeskillMaterial concrete
+                ? concrete.CaptureSave(token, database) : (Action<CharacterContext>)material.Save).ToArray();
+            return context => { foreach (var save in saves) save(context); held?.SaveOrdinary(context); };
         }
 
         public bool TryGetAutoStoreCapacity(IItemInfo info, out uint capacity, uint charges = 0)
@@ -102,6 +117,7 @@ namespace NexusForever.Game.Entity
         /// </returns>
         public uint AddAmount(IItem item, uint amount)
         {
+            RequireCommodityMutationAllowed();
             if (amount == 0)
                 throw new ArgumentException("amount must be more than 0.");
 
@@ -114,7 +130,7 @@ namespace NexusForever.Game.Entity
                 amountAdded = AddAmountToMaterial(materialId, amount);
             else
             {
-                tradeskillMaterials.Add(materialId, new TradeskillMaterial(player.CharacterId, materialId, gameTableManager));
+                tradeskillMaterials.Add(materialId, new TradeskillMaterial(player.CharacterId, materialId, gameTableManager, CanMutateMaterial));
                 amountAdded = AddAmountToMaterial(materialId, amount);
             }
 
@@ -129,6 +145,7 @@ namespace NexusForever.Game.Entity
         /// </returns>
         public uint AddAmount(ushort materialId, uint amount)
         {
+            RequireCommodityMutationAllowed();
             if (amount == 0)
                 throw new ArgumentException("amount must be more than 0");
 
@@ -140,7 +157,7 @@ namespace NexusForever.Game.Entity
                 amountAdded = AddAmountToMaterial(materialId, amount);
             else
             {
-                tradeskillMaterials.Add(materialId, new TradeskillMaterial(player.CharacterId, materialId, gameTableManager));
+                tradeskillMaterials.Add(materialId, new TradeskillMaterial(player.CharacterId, materialId, gameTableManager, CanMutateMaterial));
                 amountAdded = AddAmountToMaterial(materialId, amount);
             }
 
@@ -173,6 +190,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void RemoveAmount(IItem item, uint amount)
         {
+            RequireCommodityMutationAllowed();
             if (!TryGetMaterialEntry(item, out TradeskillMaterialEntry entry))
                 return;
 
@@ -183,13 +201,14 @@ namespace NexusForever.Game.Entity
                     return; // Swallow the issue for now.
             }
             else
-                tradeskillMaterials.Add(materialId, new TradeskillMaterial(player.CharacterId, materialId, gameTableManager));
+                tradeskillMaterials.Add(materialId, new TradeskillMaterial(player.CharacterId, materialId, gameTableManager, CanMutateMaterial));
 
             RemoveAmount(materialId, amount);
         }
 
         public void RemoveAmount(ushort materialId, uint amount)
         {
+            RequireCommodityMutationAllowed();
             if (!tradeskillMaterials.ContainsKey(materialId))
                 throw new ArgumentOutOfRangeException(nameof(materialId));
 
@@ -271,11 +290,13 @@ namespace NexusForever.Game.Entity
 
         private void SendSupplySatchelStackUpdate(ushort materialId)
         {
-            player.Session.EnqueueMessageEncrypted(new ServerSupplySatchelUpdate
+            var packet = new ServerSupplySatchelUpdate
             {
                 MaterialId = materialId,
                 StackCount = tradeskillMaterials[materialId].Amount
-            });
+            };
+            if (player.Inventory is Inventory inventory && inventory.BufferCommodityMessage(packet)) return;
+            player.Session.EnqueueMessageEncrypted(packet);
         }
 
         public IEnumerator<ITradeskillMaterial> GetEnumerator()

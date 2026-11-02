@@ -18,18 +18,42 @@ namespace NexusForever.Database.Character
         private readonly IDbContextTransaction transaction;
         private readonly Row[] rows;
         private bool flushed, terminal;
+        internal string ReceiptPayload { get; }
         private sealed record Row(EntityEntry Entry, EntityState State, PropertyValues Values, PropertyValues Originals,
             PropertyValues Target, string[] Modified, string[] Generated);
 
-        internal static void Seal(CharacterContext context) => _ = new CharacterSaveGraph(context);
-        private CharacterSaveGraph(CharacterContext context)
+        internal static CharacterSaveGraph Seal(CharacterContext context, CharacterSaveReconciliation receipt = null)
+            => new(context, receipt);
+        private CharacterSaveGraph(CharacterContext context, CharacterSaveReconciliation receipt)
         {
             this.context = context;
             Require(context.AtomicCharacterId.HasValue && !context.IsSaveRejected && !context.HasSavepointRollback
                 && context.Database.CurrentTransaction?.GetDbTransaction().IsolationLevel == IsolationLevel.Serializable, "Atomic graph lost its transaction.");
             transaction = context.Database.CurrentTransaction; context.ChangeTracker.DetectChanges();
             context.EnrollTransactionParticipants();
-            rows = context.ChangeTracker.Entries().Select(entry =>
+            rows = context.ChangeTracker.Entries().Select(Capture).ToArray();
+            if (receipt != null)
+            {
+                ReceiptPayload = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    Kind = receipt.Kind, Version = 1, Character = context.AtomicCharacterId.Value,
+                    Database = MarketplaceBidReconciliation.Hash(CharacterDatabaseIdentity.Get(context)), Receipt = (object)receipt,
+                    Participants = context.CaptureParticipantReceiptTargets(),
+                    Rows = rows.Select(row => new
+                    {
+                        Type = row.Entry.Metadata.Name, State = row.State.ToString(), Columns = row.Modified,
+                        Before = Values(row.Originals), Target = row.State == EntityState.Deleted ? null : Values(row.Target)
+                    }).OrderBy(row => row.Type).ThenBy(row => System.Text.Json.JsonSerializer.Serialize(row.Before)).ToArray()
+                });
+                var now = DateTime.UtcNow;
+                var witness = receipt.AddReceipt(context, ReceiptPayload, new DateTime(now.Ticks / 10 * 10, DateTimeKind.Utc));
+                rows = rows.Append(Capture(context.Entry(witness))).ToArray();
+            }
+            context.OnSaveValidation(Validate); context.SavedChanges += OnFlushed;
+            context.OnSaveSettled(_ => { terminal = true; context.SavedChanges -= OnFlushed; });
+            context.AtomicGraphSealed = true;
+
+            Row Capture(EntityEntry entry)
             {
                 ValidateCharacterOwner(context, entry, entry.State == EntityState.Deleted);
                 var values = entry.CurrentValues.Clone(); var original = entry.OriginalValues.Clone();
@@ -44,13 +68,35 @@ namespace NexusForever.Database.Character
                 if (entry.State != EntityState.Deleted) EncodeTarget(target,
                     (entry.State == EntityState.Added ? target.Properties.Select(property => property.Name) : modified).Except(generated).ToHashSet());
                 return new Row(entry, entry.State, values, original, target, modified, generated);
-            }).ToArray();
-            context.OnSaveValidation(Validate); context.SavedChanges += OnFlushed;
-            context.OnSaveSettled(_ => { terminal = true; context.SavedChanges -= OnFlushed; });
-            context.AtomicGraphSealed = true;
+            }
+            static SortedDictionary<string, object> Values(PropertyValues values) => new(values.Properties
+                .ToDictionary(property => property.Name, property => values[property.Name]), StringComparer.Ordinal);
         }
         internal static void ValidateCharacterOwner(CharacterContext context, EntityEntry entry, bool deleted)
         {
+            // A proven bank rollback may leave an Item in its original neutral
+            // mail custody. Only that retained complete parent graph can admit
+            // its ordinary metadata save; general Character ownership is intact.
+            if (entry.Entity is ItemModel item && item.OwnerId == null && item.Location == ushort.MaxValue
+                && entry.State is EntityState.Modified or EntityState.Unchanged
+                && entry.OriginalValues[nameof(ItemModel.OwnerId)] == null
+                && Convert.ToUInt16(entry.OriginalValues[nameof(ItemModel.Location)]) == ushort.MaxValue
+                && context.BankRowOwner?.Invoke(entry) == true)
+            {
+                // The callback can narrow this permission, never expand it to
+                // another Character, owner deletion or unlinked/foreign mail.
+                void Custody()
+                {
+                    var stored = context.Item.AsNoTracking().SingleOrDefault(row => row.Id == item.Id);
+                    var links = context.CharacterMailAttachment.AsNoTracking().Where(row => row.ItemGuid == item.Id).ToArray();
+                    Require(stored != null && stored.OwnerId == null && stored.Location == ushort.MaxValue && stored.ItemId == item.ItemId
+                        && links.Length == 1 && context.CharacterMail.AsNoTracking().Any(mail => mail.Id == links[0].Id
+                            && mail.RecipientId == context.AtomicCharacterId.Value)
+                        && !context.RealmBankItem.AsNoTracking().Any(row => row.Id == item.Id),
+                        "Bank ordinary Item lost its original neutral mail custody.");
+                }
+                Custody(); context.OnSaveValidation(_ => Custody()); return;
+            }
             foreach (var property in CharacterKeys(entry.Metadata, []))
                 Require(Convert.ToUInt64(entry.Property(property.Name).CurrentValue) == context.AtomicCharacterId.Value, "Atomic Character graph contains another character's rows.");
             Require(entry.Metadata.ClrType != typeof(CharacterModel) || !deleted, "Atomic Character save cannot delete its owner.");

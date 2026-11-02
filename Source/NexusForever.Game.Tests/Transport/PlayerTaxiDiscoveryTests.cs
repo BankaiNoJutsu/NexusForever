@@ -22,7 +22,7 @@ using NexusForever.Shared.Game;
 
 namespace NexusForever.Game.Tests.Transport;
 
-public class PlayerTaxiDiscoveryTests
+public partial class PlayerTaxiDiscoveryTests
 {
     [Theory]
     [InlineData(0u, false)]

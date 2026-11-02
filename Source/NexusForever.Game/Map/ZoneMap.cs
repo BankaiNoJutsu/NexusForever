@@ -2,6 +2,7 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
+using NexusForever.Game.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
@@ -29,6 +30,9 @@ namespace NexusForever.Game.Map
 
         private readonly IPlayer player;
         private readonly IGameTableManager gameTableManager;
+        internal ushort MapId => (ushort)entry.Id;
+        internal IEnumerable<ExperiencePersistence.ExploredHexgroup> CaptureExploration()
+            => zoneMapHexGroups.Keys.Select(group => new ExperiencePersistence.ExploredHexgroup(player.CharacterId, MapId, group));
 
         /// <summary>
         /// Create a new <see cref="IZoneMap"/> from supplied <see cref="MapZoneEntry"/>.
@@ -61,6 +65,15 @@ namespace NexusForever.Game.Map
 
         public void Save(CharacterContext context)
         {
+            if (player is Player owner)
+            {
+                if (owner.ZoneMapManager is not ZoneMapManager manager || !manager.Owns(this))
+                {
+                    var error = new InvalidOperationException("Explored map lost its loaded manager.");
+                    context.RejectSave(error); throw error;
+                }
+                owner.SaveExperience(context); return;
+            }
             foreach ((ushort hexGroupId, bool _) in zoneMapHexGroups.Where(z => z.Value).ToList())
             {
                 var model = new CharacterZonemapHexgroupModel

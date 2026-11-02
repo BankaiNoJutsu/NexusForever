@@ -1,10 +1,11 @@
-﻿using NexusForever.Game.Static.Quest;
+using NexusForever.Game.Static.Quest;
 using NexusForever.Shared;
 
 namespace NexusForever.Game.Abstract.Quest
 {
     public interface IGlobalQuestManager : IUpdate
     {
+        ICommunicatorIndex CommunicatorIndex => null;
         /// <summary>
         /// <see cref="DateTime"/> representing the next daily reset.
         /// </summary>

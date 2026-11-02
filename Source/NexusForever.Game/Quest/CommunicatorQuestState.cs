@@ -24,9 +24,6 @@ namespace NexusForever.Game.Quest
                 case (uint)QuestState.Achieved:
                 case (uint)QuestState.Completed:
                 case (uint)QuestState.Botched:
-                case (uint)QuestState.Mentioned:
-                case (uint)QuestState.Abandoned:
-                case (uint)QuestState.Ignored:
                     questState = (QuestState)requiredState;
                     return true;
                 default:

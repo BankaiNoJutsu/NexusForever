@@ -271,7 +271,7 @@ public sealed partial class RealmBankItemIdentityTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public async Task PacketFailureBeforeBankEnrollmentRestoresTheMoveAndAllowsFreshRetry(bool bankFirst, bool afterRemoval)
+    public async Task ConsumedMergeNotificationFailureOccursAfterCommitAndCannotRestoreItsSource(bool bankFirst, bool afterRemoval)
     {
         var character = CharacterRow(); var bank = BankRow(402);
         character.StackCount = bankFirst ? 17u : 3u; bank.StackCount = bankFirst ? 3u : 17u;
@@ -282,17 +282,12 @@ public sealed partial class RealmBankItemIdentityTests
         ((RecordingDispatchProxy<IGameSession>)(object)player.Session).SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), args =>
         {
             if (afterRemoval ? args[0] is ServerItemDelete : args[0] is ServerItemStackCountUpdate)
-                throw new InvalidOperationException("Notification failed before SQL enrollment.");
+                throw new InvalidOperationException("Notification failed after SQL commit.");
             return null;
         });
-        inventory.ItemMove(source, destination.Location, destination.BagIndex);
-        Assert.Same(source, inventory.GetItem(source.Guid)); Assert.False(source.PendingDelete);
-        Assert.Equal(character.StackCount, carried.StackCount); Assert.Equal(bank.StackCount, stored.StackCount);
-        Assert.False(inventory.RequiresAuthoritativeReload); Assert.False(inventory.IsSaveBlocked);
-        using (var read = new CharacterContext(Configuration))
-        { Assert.Equal(character.StackCount, Assert.Single(read.Item).StackCount); Assert.Equal(bank.StackCount, Assert.Single(read.RealmBankItem).StackCount); }
-        ((RecordingDispatchProxy<IGameSession>)(object)player.Session).SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), _ => null);
         inventory.ItemMove(source, destination.Location, destination.BagIndex); await WaitForBankMove(inventory, carried, stored);
+        Assert.Null(inventory.GetItem(source.Guid)); Assert.True(inventory.RequiresAuthoritativeReload);
+        Assert.False(source.HasUnsettledDeletion);
         using var final = new CharacterContext(Configuration);
         if (bankFirst) { Assert.Equal(20u, Assert.Single(final.Item).StackCount); Assert.Empty(final.RealmBankItem); }
         else { Assert.Empty(final.Item); Assert.Equal(20u, Assert.Single(final.RealmBankItem).StackCount); }
@@ -300,9 +295,15 @@ public sealed partial class RealmBankItemIdentityTests
 
     private static async Task WaitForBankMove(Inventory inventory, params GameItem[] items)
     {
-        await WaitForSwapSaves(items);
+        var player = (IPlayer)typeof(Inventory).GetField("player", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(inventory);
         var save = (Task)typeof(Inventory).GetField("realmBankMoveSave", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(inventory);
         if (save == null) return;
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        while (!save.IsCompleted)
+        {
+            player.Session.Events?.Update(0);
+            await Task.Delay(10, timeout.Token);
+        }
         try { await save.WaitAsync(TimeSpan.FromSeconds(15)); }
         catch when (save.IsFaulted || save.IsCanceled) { /* Failure cases assert rejection and unchanged SQL below. */ }
     }

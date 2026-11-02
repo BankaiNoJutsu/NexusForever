@@ -24,6 +24,18 @@ namespace NexusForever.Game.Map
 
         private readonly Player player;
         private readonly IGameTableManager gameTableManager;
+        internal ulong ExplorationCharacter { get; }
+        internal string ExplorationDatabase { get; }
+        internal ExperiencePersistence.ExploredHexgroup[] LoadedExploration { get; }
+        internal ExperiencePersistence.ExploredHexgroup[] CaptureExploration()
+        {
+            if (player.CharacterId != ExplorationCharacter) throw new InvalidOperationException("Exploration changed its Character owner.");
+            // Preserve loaded rows even when their map/table is unavailable.
+            // Discovery adds membership; there is no public forget operation.
+            return LoadedExploration.Concat(zoneMaps.Values.Cast<ZoneMap>().SelectMany(map => map.CaptureExploration()))
+                .Distinct().OrderBy(row => row.Zone).ThenBy(row => row.Group).ToArray();
+        }
+        internal bool Owns(ZoneMap map) => zoneMaps.TryGetValue(map.MapId, out var owned) && ReferenceEquals(owned, map);
 
         /// <summary>
         /// Create a new <see cref="IZoneMapManager"/> from existing <see cref="CharacterModel"/> database model.
@@ -32,6 +44,9 @@ namespace NexusForever.Game.Map
         {
             player = owner;
             this.gameTableManager = gameTableManager;
+            ExplorationCharacter = characterModel.Id;
+            ExplorationDatabase = CharacterLoadOrigin.Get(characterModel)?.Database;
+            LoadedExploration = characterModel.ZonemapHexgroup.OrderBy(row => row.ZoneMap).ThenBy(row => row.HexGroup).Select(ExperiencePersistence.FromModel).ToArray();
 
             GameTable<MapZoneEntry> mapZoneTable = this.gameTableManager?.MapZone;
             foreach (CharacterZonemapHexgroupModel hexGroupModel in characterModel.ZonemapHexgroup)
@@ -52,8 +67,12 @@ namespace NexusForever.Game.Map
 
         public void Save(CharacterContext context)
         {
-            foreach (IZoneMap zoneMap in zoneMaps.Values)
-                zoneMap.Save(context);
+            if (!ReferenceEquals(player.ZoneMapManager, this))
+            {
+                var error = new InvalidOperationException("Exploration lost its loaded manager.");
+                context.RejectSave(error); throw error;
+            }
+            player.SaveExperience(context);
         }
 
         public void SendInitialPackets()

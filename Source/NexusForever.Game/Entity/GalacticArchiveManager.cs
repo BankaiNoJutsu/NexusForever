@@ -17,6 +17,17 @@ namespace NexusForever.Game.Entity
         private readonly IPlayer player;
         private readonly IGameTableManager gameTableManager;
         private readonly Dictionary<uint, ArchiveArticleState> articles = new();
+        private readonly List<ExperiencePersistence.ArchiveState> unavailableArticles = [];
+        internal ulong ArchiveCharacter { get; }
+        internal string ArchiveDatabase { get; }
+        internal ExperiencePersistence.ArchiveState[] LoadedArchive { get; }
+
+        internal ExperiencePersistence.ArchiveState[] CaptureArchive()
+        {
+            if (player.CharacterId != ArchiveCharacter) throw new InvalidOperationException("Archive changed its Character owner.");
+            return articles.Values.Select(row => new ExperiencePersistence.ArchiveState(row.CharacterId, row.ArchiveArticleId, row.UnlockedFlags, row.ViewedFlags))
+                .Concat(unavailableArticles).OrderBy(row => row.Id).ToArray();
+        }
 
         public GalacticArchiveManager(
             IPlayer player,
@@ -25,12 +36,15 @@ namespace NexusForever.Game.Entity
         {
             this.player = player;
             this.gameTableManager = gameTableManager;
+            ArchiveCharacter = model.Id;
+            ArchiveDatabase = CharacterLoadOrigin.Get(model)?.Database;
+            LoadedArchive = model.GalacticArchive.OrderBy(row => row.ArchiveArticleId).Select(ExperiencePersistence.FromModel).ToArray();
 
             GameTable<ArchiveArticleEntry> archiveArticleTable = gameTableManager.ArchiveArticle;
             foreach (CharacterGalacticArchiveModel archiveModel in model.GalacticArchive)
             {
                 if (archiveArticleTable?.GetEntry(archiveModel.ArchiveArticleId) == null)
-                    continue;
+                { unavailableArticles.Add(ExperiencePersistence.FromModel(archiveModel)); continue; }
 
                 articles[archiveModel.ArchiveArticleId] = ArchiveArticleState.FromModel(archiveModel);
             }
@@ -38,6 +52,15 @@ namespace NexusForever.Game.Entity
 
         public void Save(CharacterContext context)
         {
+            if (player is Player owner)
+            {
+                if (!ReferenceEquals(owner.GalacticArchiveManager, this))
+                {
+                    var error = new InvalidOperationException("Archive lost its loaded manager.");
+                    context.RejectSave(error); throw error;
+                }
+                owner.SaveExperience(context); return;
+            }
             foreach (ArchiveArticleState article in articles.Values)
             {
                 CharacterGalacticArchiveModel model = article.BuildModel();

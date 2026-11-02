@@ -17,6 +17,18 @@ namespace NexusForever.Game.Tests.Mail;
 public class MailManagerDeliveryTests
 {
     [Fact]
+    public void WorldSecondPromotesPendingMailWithoutWaitingOneThousandSeconds()
+    {
+        var session = RecordingDispatchProxy<IGameSession>.Create(out var sp);
+        var player = RecordingDispatchProxy<IPlayer>.Create(out var pp);
+        pp.SetProperty(nameof(IPlayer.Session), session);
+        var manager = new MailManager(player, new CharacterModel());
+        GetPendingMail(manager).Add(CreateReadyMail(123));
+        manager.Update(0.5); Assert.Empty(GetEncryptedMessages(sp));
+        manager.Update(0.5); Assert.Single(GetEncryptedMessages(sp).OfType<ServerMailAvailable>());
+    }
+
+    [Fact]
     public void Update_PromotesReadyPendingMailOnlyOnce()
     {
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);

@@ -97,6 +97,11 @@ namespace NexusForever.Game.Entity
             this.scriptManager = scriptManager;
             this.gameTableManager = gameTableManager;
             this.contractManager = contractManager;
+            communicatorSession = player.Session; communicatorAccount = player.Account;
+            communicatorAccountId = communicatorAccount?.Id ?? 0; communicatorCharacter = player.CharacterId;
+            communicatorRealm = player.Identity?.RealmId ?? 0;
+            communicatorTracker = new CommunicatorTracker(new PlayerCommunicatorView(player, this, gameTableManager, prerequisiteManager),
+                globalQuestManager?.CommunicatorIndex, DeliverCommunicator);
 
             foreach (CharacterQuestModel questModel in model.Quest)
             {
@@ -191,6 +196,7 @@ namespace NexusForever.Game.Entity
 
                 log.Trace($"Failed to complete quest {quest.Id} before the timer expired!");
             }
+            UpdateCommunicator(lastTick);
         }
 
         public void SendInitialPackets()
@@ -405,10 +411,7 @@ namespace NexusForever.Game.Entity
             else
             {
                 // make sure the player is in range of a quest giver or they are eligible for a communicator message that starts the quest
-                if (!GetGlobalQuestManager().GetQuestGivers((ushort)info.Entry.Id)
-                        .Any(c => player.GetVisibleCreature<WorldEntity>(c).Any())
-                    && !GetGlobalQuestManager().GetQuestCommunicatorMessages((ushort)info.Entry.Id)
-                        .Any(m => m.Meets(player))
+                if (!IsOfferedByGiverOrCall(info, quest)
                     && !AllowsContractReceiverlessLifecycle(info))
                     throw new QuestException($"Player {player.CharacterId} tried to start quest {info.Entry.Id} without quest giver!");
             }

@@ -67,6 +67,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
                 currencyChange.Add((currencyId, currencyAmount));
             }
 
+            if (item.Location == InventoryLocation.RealmBank && player.Inventory is Inventory bankInventory)
+                return bankInventory.SellRealmBankItem(itemLocation, item, quantity, currencyChange, buybackManager);
+
             IItem soldItem = player.Inventory.ItemDelete(itemLocation, quantity, ItemUpdateReason.Vendor);
             if (soldItem == null)
                 return false;

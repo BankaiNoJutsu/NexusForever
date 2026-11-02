@@ -1,5 +1,4 @@
 using System.Collections;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
@@ -15,14 +14,13 @@ namespace NexusForever.Game.Entity
     {
         public ushort ActiveTitleId
         {
-            get => activeTitleId;
+            get { lock (persistence.Gate) return activeTitleId; }
             set
             {
                 if (value != 0 && (!titles.TryGetValue(value, out ITitle title) || title.Revoked || activeTitleId == value))
                     return;
 
-                activeTitleId = value;
-                activeSaved   = false;
+                lock (persistence.Gate) activeTitleId = value;
 
                 player.EnqueueToVisible(new ServerTitleSet
                 {
@@ -33,7 +31,9 @@ namespace NexusForever.Game.Entity
         }
 
         private ushort activeTitleId;
-        private bool activeSaved = true;
+        private readonly ulong characterId;
+        private readonly TitlePersistence persistence;
+        private readonly List<TitlePersistence.State> unavailableTitles = [];
 
         private readonly IPlayer player;
         private readonly IGameTableManager gameTableManager;
@@ -47,12 +47,17 @@ namespace NexusForever.Game.Entity
             player = owner;
             this.gameTableManager = gameTableManager;
             activeTitleId = model.Title;
+            characterId = model.Id;
+            var origin = CharacterLoadOrigin.Get(model);
+            if (characterId != owner.CharacterId || origin != null && origin.AccountId != owner.Account?.Id)
+                throw new InvalidOperationException("Titles changed their loaded Character/account owner.");
+            persistence = new(characterId, TitlePersistence.FromModel(model), CapturePersistence, origin?.Database);
 
             foreach (CharacterTitleModel titleModel in model.CharacterTitle)
             {
-                var title = new Title(titleModel, gameTableManager);
+                var title = new Title(titleModel, gameTableManager, persistence);
                 if (title.Entry == null)
-                    continue;
+                { unavailableTitles.Add(TitlePersistence.FromModel(titleModel)); continue; }
 
                 titles.Add(titleModel.Title, title);
             }
@@ -73,22 +78,13 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        public void Save(CharacterContext context)
+        public void Save(CharacterContext context) => persistence.Save(context);
+
+        internal Action<CharacterContext> CaptureNormalSave(object token, string database) => persistence.CaptureNormal(token, database);
+        private TitlePersistence.Snapshot CapturePersistence()
         {
-            if (!activeSaved)
-            {
-                // character is attached in Player::Save, this will only be local lookup
-                CharacterModel character = context.Character.Find(player.CharacterId);
-                character.Title = activeTitleId;
-
-                EntityEntry<CharacterModel> entity = context.Entry(character);
-                entity.Property(p => p.Title).IsModified = true;
-
-                activeSaved = true;
-            }
-
-            foreach (ITitle title in titles.Values)
-                title.Save(context);
+            if (player.CharacterId != characterId) throw new InvalidOperationException("Titles changed their Character owner.");
+            return new(activeTitleId, unavailableTitles.Concat(titles.Values.Cast<Title>().Select(title => title.CapturePersistence())).OrderBy(row => row.Id).ToArray());
         }
 
         /// <summary>
@@ -119,7 +115,7 @@ namespace NexusForever.Game.Entity
                 }
             }
             else
-                titles.Add(titleId, new Title(player.CharacterId, entry));
+                titles.Add(titleId, new Title(player.CharacterId, entry, persistence));
 
             player.AchievementManager.CheckAchievements(player, AchievementType.TitleEarned, 0u);
 

@@ -2061,7 +2061,7 @@ namespace NexusForever.Game.Entity
                 throw new ArgumentNullException();
 
             if (!IsAlive)
-                return CastResult.CasterCannotBeDead;
+                return RefuseClientCast(parameters, spell4Id, CastResult.CasterCannotBeDead);
 
             Spell4Entry spell4Entry = GetGameTableManager().Spell4.GetEntry(spell4Id);
             if (spell4Entry == null)
@@ -2084,7 +2084,7 @@ namespace NexusForever.Game.Entity
                 throw new ArgumentNullException();
 
             if (!IsAlive)
-                return CastResult.CasterCannotBeDead;
+                return RefuseClientCast(parameters, parameters.SpellInfo?.Entry?.Id ?? 0u, CastResult.CasterCannotBeDead);
 
             ISpellBaseInfo spellBaseInfo = GetGlobalSpellManager().GetSpellBaseInfo(spell4BaseId);
             if (spellBaseInfo == null)
@@ -2108,29 +2108,29 @@ namespace NexusForever.Game.Entity
 
         private CastResult TryCastSpell(ISpellParameters parameters)
         {
-            if (!IsAlive)
-                return CastResult.CasterCannotBeDead;
-
             if (parameters == null)
                 throw new ArgumentNullException();
+
+            if (!IsAlive)
+                return RefuseClientCast(parameters, parameters.SpellInfo?.Entry?.Id ?? 0u, CastResult.CasterCannotBeDead);
 
             if (IsDisabled(DisableType.BaseSpell, parameters.SpellInfo.BaseInfo.Entry.Id))
             {
                 if (this is IPlayer player)
                     player.SendSystemMessage($"Unable to cast base spell {parameters.SpellInfo.BaseInfo.Entry.Id} because it is disabled.");
-                return CastResult.SpellRemoved;
+                return RefuseClientCast(parameters, parameters.SpellInfo.Entry.Id, CastResult.SpellRemoved);
             }
 
             if (IsDisabled(DisableType.Spell, parameters.SpellInfo.Entry.Id))
             {
                 if (this is IPlayer player)
                     player.SendSystemMessage($"Unable to cast spell {parameters.SpellInfo.Entry.Id} because it is disabled.");
-                return CastResult.SpellRemoved;
+                return RefuseClientCast(parameters, parameters.SpellInfo.Entry.Id, CastResult.SpellRemoved);
             }
 
             CastResult activeCastResult = CheckActiveCastSlot(parameters);
             if (activeCastResult != CastResult.Ok)
-                return activeCastResult;
+                return RefuseClientCast(parameters, parameters.SpellInfo.Entry.Id, activeCastResult);
 
             if (parameters.UserInitiatedSpellCast)
             {
@@ -2152,6 +2152,14 @@ namespace NexusForever.Game.Entity
 
             pendingSpells.Add(spell);
             return CastResult.Ok;
+        }
+
+        private CastResult RefuseClientCast(ISpellParameters parameters, uint spell4Id, CastResult result)
+        {
+            ClientCastRequest.SendFailure(this as IPlayer,
+                parameters.HasClientCastRequest && parameters.ParentSpellInfo == null,
+                parameters.ClientContextToken, spell4Id, result);
+            return result;
         }
 
         internal CastResult CheckActiveCastSlot(ISpellParameters parameters)

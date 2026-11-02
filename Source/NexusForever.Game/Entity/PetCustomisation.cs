@@ -41,6 +41,19 @@ namespace NexusForever.Game.Entity
         private readonly PetFlairEntry[] flairs = new PetFlairEntry[PetCustomisationManager.MaxCustomisationFlairs];
 
         private PetCustomisationSaveMask saveMask;
+        internal Func<CharacterContext, bool> CharacterSaveOwner { private get; init; }
+        private readonly ulong loadedFlairMask;
+        private byte changedFlairSlots;
+        internal ExperiencePersistence.Pet CaptureExperiencePet()
+        {
+            ulong mask = 0;
+            for (int index = 0; index < PetCustomisationManager.MaxCustomisationFlairs; index++)
+            {
+                ulong flair = flairs[index]?.Id ?? ((changedFlairSlots & (1 << index)) == 0 ? loadedFlairMask >> (index * 16) & 0xffff : 0);
+                mask |= flair << (index * 16);
+            }
+            return new(Owner, (byte)Type, ObjectId, Name ?? string.Empty, mask);
+        }
 
         /// <summary>
         /// Create a new <see cref="IPetCustomisation"/> from existing <see cref="CharacterPetCustomisationModel"/> database model.
@@ -50,6 +63,7 @@ namespace NexusForever.Game.Entity
             Owner    = model.Id;
             Type     = (PetType)model.Type;
             ObjectId = model.ObjectId;
+            loadedFlairMask = model.FlairIdMask;
             Name     = model.Name;
 
             for (int i = 0; i < PetCustomisationManager.MaxCustomisationFlairs; i++)
@@ -76,6 +90,7 @@ namespace NexusForever.Game.Entity
 
         public void Save(CharacterContext context)
         {
+            if (CharacterSaveOwner?.Invoke(context) == true) return;
             if (saveMask == PetCustomisationSaveMask.None)
                 return;
 
@@ -224,6 +239,7 @@ namespace NexusForever.Game.Entity
         public void AddFlair(ushort index, PetFlairEntry entry)
         {
             flairs[index] = entry;
+            changedFlairSlots |= (byte)(1 << index);
             saveMask |= PetCustomisationSaveMask.Flairs;
         }
 

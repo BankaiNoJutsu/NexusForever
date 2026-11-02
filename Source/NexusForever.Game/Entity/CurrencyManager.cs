@@ -14,6 +14,7 @@ namespace NexusForever.Game.Entity
     public partial class CurrencyManager : ICurrencyManager
     {
         private IPlayer player;
+        private CharacterLoadOrigin loadedOrigin;
         private readonly Dictionary<CurrencyType, ICurrency> currencies = [];
 
         #region Depenedency Injection
@@ -36,11 +37,14 @@ namespace NexusForever.Game.Entity
             if (player != null)
                 throw new InvalidOperationException("CurrencyManager has already been initialised!");
 
-            player = owner;
+            var origin = CharacterLoadOrigin.Get(model);
+            if (origin != null && (owner == null || origin.CharacterId != owner.CharacterId || origin.AccountId != owner.Account?.Id))
+                throw new InvalidOperationException("Currency manager changed its loaded Character/account owner.");
+            player = owner; loadedOrigin = origin;
 
             foreach (CharacterCurrencyModel currencyModel in model.Currency)
             {
-                var currency = new Currency(currencyModel, gameTableManager);
+                var currency = new Currency(currencyModel, gameTableManager, AssertBankPublicationMutationAllowed);
                 currencies.Add(currency.Id, currency);
             }
         }
@@ -48,16 +52,45 @@ namespace NexusForever.Game.Entity
         public void Save(CharacterContext context)
         {
             AssertContractCurrencySaveAllowed(context);
+            AssertLoadedCurrencyContext(context);
             foreach (ICurrency currency in currencies.Values)
                 currency.Save(context);
         }
 
+        internal bool HasPendingPersistenceSave => currencies.Values.OfType<Currency>().Any(currency => currency.NeedsPersistenceSave);
+
         internal Action<CharacterContext> CaptureNormalSave(object token)
         {
             AssertContractCurrencySaveAllowed();
+            AssertLoadedCurrencyOwner();
             var rows = currencies.Values.Select(currency => currency is Currency concrete ? concrete.CaptureNormalSave(token)
                 : throw new InvalidOperationException("Frozen currency save requires concrete currency owners.")).ToArray();
-            return context => { foreach (var row in rows) row(context); };
+            return context => { AssertLoadedCurrencyContext(context); foreach (var row in rows) row(context); };
+        }
+
+        private bool HasLoadedCurrencyOwner() => loadedOrigin == null || player != null
+            && loadedOrigin.CharacterId == player.CharacterId && loadedOrigin.AccountId == player.Account?.Id;
+
+        private void AssertLoadedCurrencyOwner()
+        {
+            if (!HasLoadedCurrencyOwner()) throw new InvalidOperationException("Currency lost its loaded Character/account owner.");
+        }
+
+        private void AssertLoadedCurrencyContext(CharacterContext context)
+        {
+            if (loadedOrigin != null) CharacterDatabaseIdentity.Require(context, loadedOrigin.Database);
+        }
+
+        private void AssertBankPublicationMutationAllowed()
+        {
+            if (player is Player { IsBankPublicationInProgress: true })
+                throw new InvalidOperationException("Bank publication cannot accept a reentrant currency mutation.");
+        }
+
+        private Currency CreateCurrencyOwner(CurrencyTypeEntry entry)
+        {
+            AssertBankPublicationMutationAllowed(); AssertLoadedCurrencyOwner();
+            return new Currency(player.CharacterId, entry, loadedOrigin?.Database, AssertBankPublicationMutationAllowed);
         }
 
         /// <summary>
@@ -106,6 +139,7 @@ namespace NexusForever.Game.Entity
             if (currencyEntry == null)
                 throw new ArgumentNullException();
 
+            AssertBankPublicationMutationAllowed();
             if (DeferContractCurrency((CurrencyType)currencyEntry.Id, amount, false, isLoot)) return;
 
             ApplyCurrencyAdd(currencyEntry, amount, isLoot);
@@ -137,7 +171,7 @@ namespace NexusForever.Game.Entity
             if (currencies.ContainsKey((CurrencyType)currencyEntry.Id))
                 throw new ArgumentException($"Currency {currencyEntry.Id} is already added to the player!");
 
-            var currency = new Currency(player.CharacterId, currencyEntry);
+            var currency = CreateCurrencyOwner(currencyEntry);
             currencies.Add(currency.Id, currency);
             return currency;
         }
@@ -159,6 +193,7 @@ namespace NexusForever.Game.Entity
             if (currencyEntry == null)
                 throw new ArgumentNullException();
 
+            AssertBankPublicationMutationAllowed();
             if (DeferContractCurrency((CurrencyType)currencyEntry.Id, amount, true, isLoot)) return;
 
             ApplyCurrencySubtract(currencyEntry, amount, isLoot);

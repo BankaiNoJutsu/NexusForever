@@ -23,7 +23,11 @@ namespace NexusForever.Game.Entity
         private readonly struct InventoryMutationOperation : IDisposable
         {
             private readonly Inventory owner;
-            public InventoryMutationOperation(Inventory owner) { this.owner = owner; ++owner.inventoryMutationDepth; }
+            public InventoryMutationOperation(Inventory owner, bool readOnly = false)
+            {
+                if ((owner.realmBankPublishing || owner.IsMarketplacePublishing) && !readOnly) throw new InvalidOperationException("Bank publication cannot reenter inventory mutation.");
+                this.owner = owner; ++owner.inventoryMutationDepth;
+            }
             public void Dispose() => --owner.inventoryMutationDepth;
         }
 
@@ -39,7 +43,7 @@ namespace NexusForever.Game.Entity
             get
             {
                 lock (MutationGate)
-                    return RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || HasPendingRewardDelivery || inventorySaveLeases != 0
+                    return RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || realmBankNotifications != null || HasPendingRealmBankItemSave || HasPendingRewardDelivery || inventorySaveLeases != 0
                         || inventoryMutationLeases != 0 || rewardNotificationDepth != 0;
             }
         }
@@ -60,7 +64,7 @@ namespace NexusForever.Game.Entity
             lock (MutationGate)
             {
                 lease = null;
-                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || HasPendingRewardDelivery || inventorySaveLeases != 0 || inventoryMutationLeases != 0 || rewardNotificationDepth != 0
+                if (RequiresAuthoritativeReload || (IsRealmBankPersistenceBlocked || HasPendingRealmBankItemSave) && !(save && BankReconciliationSaveAllowed) || realmBankNotifications != null || HasPendingRewardDelivery || inventorySaveLeases != 0 || inventoryMutationLeases != 0 || rewardNotificationDepth != 0
                     || (!save && rewardOwnerInvalidated))
                     return false;
                 if (save) ++inventorySaveLeases; else ++inventoryMutationLeases;
@@ -88,6 +92,8 @@ namespace NexusForever.Game.Entity
             lock (MutationGate)
             {
                 rewardOwnerInvalidated = true;
+                if (bankPublications != null)
+                    foreach (var bank in bankPublications.ToArray()) bank.Abandon();
                 foreach (var delivery in RewardDeliveries.ToArray()) delivery.OnOwnerInvalidated();
             }
         }

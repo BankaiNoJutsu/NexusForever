@@ -82,6 +82,24 @@ namespace NexusForever.Game.Entity
         private uint activeScientistScanbotGuid;
         private bool scientistScanbotDismissPending;
         private bool initialPacketsSent;
+        internal ExperiencePersistence.Selection LoadedSelection { get; }
+        internal ExperiencePersistence.PathState[] LoadedPaths { get; }
+        internal ExperiencePersistence.Mission[] LoadedMissions { get; }
+        internal string LoadedPathDatabase { get; }
+        internal ulong PathCharacter { get; }
+
+        internal ExperiencePersistence.Snapshot CapturePathProgress()
+        {
+            if (player.CharacterId != PathCharacter || paths.Any(pair => pair.Value.CharacterId != PathCharacter || pair.Value.Path != pair.Key))
+                throw new InvalidOperationException("Path progress changed its Character owner or path key.");
+            var oldPaths = LoadedPaths.ToDictionary(row => row.Id);
+            var oldMissions = LoadedMissions.ToDictionary(row => row.Id);
+            return new(null, new((uint)player.Path, player.PathActivatedTime),
+                paths.Values.Select(row => new ExperiencePersistence.PathState(row.CharacterId, (byte)row.Path,
+                    oldPaths.TryGetValue((byte)row.Path, out var old) && Convert.ToBoolean(old.Unlocked) == row.Unlocked ? old.Unlocked : Convert.ToByte(row.Unlocked), row.TotalXp, row.LevelRewarded)).OrderBy(row => row.Id).ToArray(),
+                pathMissions.Values.Select(row => new ExperiencePersistence.Mission(row.CharacterId, row.MissionId, row.EpisodeId, (byte)row.State,
+                    oldMissions.TryGetValue(row.MissionId, out var old) && Convert.ToBoolean(old.Completed) == row.Completed ? old.Completed : Convert.ToByte(row.Completed), row.ProgressCount, row.ProgressData, row.Xp)).OrderBy(row => row.Id).ToArray());
+        }
 
         /// <summary>
         /// Create a new <see cref="IPathManager"/> from <see cref="IPlayer"/> database model.
@@ -97,8 +115,13 @@ namespace NexusForever.Game.Entity
             this.prerequisiteManager = prerequisiteManager;
             this.gameTableManager = gameTableManager;
             this.entityFactory = entityFactory;
+            PathCharacter = model.Id;
+            LoadedSelection = ExperiencePersistence.FromSelection(model);
+            LoadedPaths = model.Path.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Id).ToArray();
+            LoadedMissions = model.PathMission.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Id).ToArray();
+            LoadedPathDatabase = CharacterLoadOrigin.Get(model)?.Database;
             foreach (CharacterPathModel pathModel in model.Path)
-                paths.Add((Path)pathModel.Path, new PathEntry(pathModel));
+                paths.Add((Path)pathModel.Path, new PathEntry(pathModel) { CharacterSaveOwner = TrySaveExperience });
 
             foreach (CharacterPathMissionModel pathMissionModel in model.PathMission)
             {
@@ -421,7 +444,7 @@ namespace NexusForever.Game.Entity
                 player.CharacterId,
                 path,
                 unlocked
-            );
+            ) { CharacterSaveOwner = TrySaveExperience };
             SetPathEntry(path, pathEntry);
             return pathEntry;
         }
@@ -1709,6 +1732,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void Save(CharacterContext context)
         {
+            if (TrySaveExperience(context)) return;
             foreach (IPathEntry pathEntry in paths.Values)
                 pathEntry.Save(context);
 
@@ -1716,6 +1740,12 @@ namespace NexusForever.Game.Entity
 
             foreach (PathMissionRuntimeState state in pathMissions.Values)
                 state.Save(context);
+        }
+        private bool TrySaveExperience(CharacterContext context)
+        {
+            if (player is not Player owner) return false;
+            if (!ReferenceEquals(owner.PathManager, this)) { var error = new InvalidOperationException("Path progress lost its Character owner."); context.RejectSave(error); throw error; }
+            owner.SaveExperience(context); return true;
         }
 
         public void SendInitialPackets()

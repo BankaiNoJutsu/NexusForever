@@ -223,11 +223,16 @@ public sealed class ChallengeRewardWorldReadinessTests
         }
         internal CharacterSelectHandler CharacterSelectHandler(out RecordingDispatchProxy<IMapManager> maps)
         {
-            var cleanup = RecordingDispatchProxy<ICleanupManager>.Create(out _);
+            // Selection now owns real account admission through initialization.
+            // Keep the disposable SQL owner, roster and runtime account aligned.
+            ((RecordingDispatchProxy<IAccount>)(object)F.Player.Account).SetProperty(nameof(IAccount.Id), 12u);
+            using (var owner = F.Context())
+            { owner.Character.Single(row => row.Id == 42).AccountId = 12; owner.SaveChanges(); }
+            var cleanup = new NexusForever.Game.CleanupManager();
             var factory = RecordingDispatchProxy<IEntityFactory>.Create(out var fp); fp.SetMethodReturn(nameof(IEntityFactory.CreateEntity), F.Player);
             var map = RecordingDispatchProxy<IMapManager>.Create(out maps);
             ((RecordingDispatchProxy<IGameTableManager>)(object)F.Tables).SetProperty(nameof(IGameTableManager.World), PlayerBindPointTests.Table([new WorldEntry { Id = 10 }]));
-            Session.SetProperty(nameof(IWorldSession.Characters), new List<CharacterModel> { new() { Id = 42, WorldId = 10, LocationX = 1, LocationY = 2, LocationZ = 3 } });
+            Session.SetProperty(nameof(IWorldSession.Characters), new List<CharacterModel> { new() { Id = 42, AccountId = 12, WorldId = 10, LocationX = 1, LocationY = 2, LocationZ = 3 } });
             return new(cleanup, factory, F.Tables, map);
         }
         internal ClientCharacterSelect Select()

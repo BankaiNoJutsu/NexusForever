@@ -72,7 +72,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                 return;
             }
 
-            if (cleanupManager.IsAccountLocked(session.Account))
+            IDisposable admission = null;
+            if (cleanupManager.IsAccountLocked(session.Account)
+                || !cleanupManager.TryAcquireAccounts([session.Account.Id], out admission))
             {
                 session.EnqueueMessageEncrypted(new ServerCharacterSelectFail
                 {
@@ -80,6 +82,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                 });
                 return;
             }
+            using var heldAdmission = admission;
 
             WorldEntry entry = gameTableManager.World.GetEntry(character.WorldId);
             if (entry == null)

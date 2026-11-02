@@ -28,6 +28,18 @@ namespace NexusForever.Game.Entity
         private readonly IPrerequisiteManager prerequisiteManager;
         private readonly Dictionary<uint/*petFlairId*/, IPetFlair> petFlairs = new();
         private readonly Dictionary<ulong/*hash*/, IPetCustomisation> petCustomisations = new();
+        internal ExperiencePersistence.Pet[] LoadedExperiencePets { get; }
+        internal ulong PetCharacter { get; }
+        internal string PetDatabase { get; }
+        internal ExperiencePersistence.Pet[] CaptureExperiencePets()
+        {
+            if (player.CharacterId != PetCharacter || petCustomisations.Values.Any(row => row.Owner != PetCharacter)) throw new InvalidOperationException("Pets changed their Character owner.");
+            return petCustomisations.Values.Select(row => ((PetCustomisation)row).CaptureExperiencePet()).OrderBy(row => row.Type).ThenBy(row => row.Id).ToArray();
+        }
+        internal void SaveFlairs(CharacterContext context)
+        {
+            foreach (IPetFlair flair in petFlairs.Values) flair.Save(context);
+        }
 
         /// <summary>
         /// Create a new <see cref="IPetCustomisationManager"/> from existing <see cref="CharacterModel"/> database model.
@@ -43,6 +55,8 @@ namespace NexusForever.Game.Entity
             this.gameTableManager = gameTableManager;
             this.textFilterManager = textFilterManager;
             this.prerequisiteManager = prerequisiteManager;
+            PetCharacter = model.Id; PetDatabase = CharacterLoadOrigin.Get(model)?.Database;
+            LoadedExperiencePets = model.PetCustomisation.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Type).ThenBy(row => row.Id).ToArray();
 
             foreach (CharacterPetFlairModel flairModel in model.PetFlair)
             {
@@ -55,13 +69,14 @@ namespace NexusForever.Game.Entity
 
             foreach (CharacterPetCustomisationModel customisationModel in model.PetCustomisation)
             {
-                var customisation = new PetCustomisation(customisationModel, GetGameTableManager().PetFlair);
+                var customisation = new PetCustomisation(customisationModel, GetGameTableManager().PetFlair) { CharacterSaveOwner = TrySaveExperience };
                 petCustomisations.Add(PetCustomisationHash(customisation.Type, customisation.ObjectId), customisation);
             }
         }
 
         public void Save(CharacterContext context)
         {
+            if (TrySaveExperience(context)) { SaveFlairs(context); return; }
             foreach (IPetFlair flair in petFlairs.Values)
                 flair.Save(context);
 
@@ -69,6 +84,12 @@ namespace NexusForever.Game.Entity
                 customisation.Save(context);
 
             PetCustomisation.UpsertTrackedCreates(context);
+        }
+        private bool TrySaveExperience(CharacterContext context)
+        {
+            if (player is not Player owner) return false;
+            if (!ReferenceEquals(owner.PetCustomisationManager, this)) { var error = new InvalidOperationException("Pets lost their Character owner."); context.RejectSave(error); throw error; }
+            owner.SaveExperience(context); return true;
         }
 
         /// <summary>
@@ -113,7 +134,7 @@ namespace NexusForever.Game.Entity
             ulong hash = PetCustomisationHash(type, objectId);
             if (!petCustomisations.TryGetValue(hash, out IPetCustomisation customisation))
             {
-                customisation = new PetCustomisation(player.CharacterId, type, objectId);
+                customisation = new PetCustomisation(player.CharacterId, type, objectId) { CharacterSaveOwner = TrySaveExperience };
                 petCustomisations.Add(hash, customisation);
             }
 
@@ -150,7 +171,7 @@ namespace NexusForever.Game.Entity
             ulong hash = PetCustomisationHash(type, objectId);
             if (!petCustomisations.TryGetValue(hash, out IPetCustomisation customisation))
             {
-                customisation = new PetCustomisation(player.CharacterId, type, objectId);
+                customisation = new PetCustomisation(player.CharacterId, type, objectId) { CharacterSaveOwner = TrySaveExperience };
                 petCustomisations.Add(hash, customisation);
             }
 
@@ -193,7 +214,7 @@ namespace NexusForever.Game.Entity
             if (petCustomisations.ContainsKey(hash))
                 return;
 
-            var customisation = new PetCustomisation(player.CharacterId, type, objectId);
+            var customisation = new PetCustomisation(player.CharacterId, type, objectId) { CharacterSaveOwner = TrySaveExperience };
             petCustomisations.Add(hash, customisation);
 
             if (!player.IsLoading)

@@ -8,7 +8,7 @@ using NexusForever.Game.Mail;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Mail;
 using NexusForever.Game.Tests.TestSupport;
-using Microting.EntityFrameworkCore.MySql.Infrastructure;
+
 
 namespace NexusForever.Game.Tests.Mail;
 
@@ -45,11 +45,12 @@ public class MailItemTransactionTests
     [Fact]
     public void PayOrTakeCash_Save_PersistsCurrencyCollectedAndNotReturnable()
     {
-        MailItem mailItem = new(MailModel());
+        var model = MailModel();
+        MailItem mailItem = new(model);
 
         mailItem.PayOrTakeCash();
 
-        using CharacterContext context = CreateContext();
+        using CharacterContext context = CreateContext(model);
         mailItem.Save(context);
 
         EntityEntry<CharacterMailModel> entry = Assert.Single(context.ChangeTracker.Entries<CharacterMailModel>());
@@ -62,15 +63,12 @@ public class MailItemTransactionTests
     [Fact]
     public void ReturnMail_Save_PersistsRecipientSubjectAndNotReturnable()
     {
-        MailItem mailItem = new(MailModel(
-            id: 2ul,
-            recipientId: 100ul,
-            senderId: 200ul,
-            subject: "Settled auction"));
+        var model = MailModel(id: 2ul, recipientId: 100ul, senderId: 200ul, subject: "Settled auction");
+        MailItem mailItem = new(model);
 
         mailItem.ReturnMail();
 
-        using CharacterContext context = CreateContext();
+        using CharacterContext context = CreateContext(model);
         mailItem.Save(context);
 
         EntityEntry<CharacterMailModel> entry = Assert.Single(context.ChangeTracker.Entries<CharacterMailModel>());
@@ -102,7 +100,8 @@ public class MailItemTransactionTests
     [Fact]
     public void AttachmentDelete_Save_EnqueuesDeletedAttachmentOnly()
     {
-        MailItem mailItem = new(MailModel(id: 3ul));
+        var model = MailModel(id: 3ul);
+        MailItem mailItem = new(model);
         IMailAttachment attachment = RecordingDispatchProxy<IMailAttachment>.Create(out RecordingDispatchProxy<IMailAttachment> attachmentProxy);
         mailItem.AttachmentAdd(attachment);
 
@@ -112,7 +111,7 @@ public class MailItemTransactionTests
         Assert.Empty(mailItem);
         Assert.Single(attachmentProxy.GetInvocations(nameof(IMailAttachment.EnqueueDelete)));
 
-        using CharacterContext context = CreateContext();
+        using CharacterContext context = CreateContext(model);
         mailItem.Save(context);
 
         Assert.Single(attachmentProxy.GetInvocations(nameof(IMailAttachment.Save)));
@@ -145,14 +144,12 @@ public class MailItemTransactionTests
         };
     }
 
-    private static CharacterContext CreateContext()
+    private static CharacterContext CreateContext(CharacterMailModel mail)
     {
-        DbContextOptions<CharacterContext> options = new DbContextOptionsBuilder<CharacterContext>()
-            .UseMySql(
-                "Server=127.0.0.1;Database=nexus_forever_character;User ID=nexus_forever;Password=nexus_forever;",
-                new MySqlServerVersion(new Version(8, 0, 0)))
-            .Options;
-
-        return new CharacterContext(options);
+        var context = new CharacterContext(new DbContextOptionsBuilder<CharacterContext>().UseSqlite($"Data Source=NexusForeverMailHeader_{Guid.NewGuid():N};Mode=Memory;Cache=Shared;Pooling=False").Options);
+        context.Database.OpenConnection(); context.Database.EnsureCreated();
+        context.Character.AddRange(new CharacterModel { Id = 100, Name = "Recipient" }, new CharacterModel { Id = 200, Name = "Sender" });
+        context.CharacterMail.Add(mail); context.SaveChanges(); context.ChangeTracker.Clear();
+        return context;
     }
 }

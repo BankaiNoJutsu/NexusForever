@@ -181,7 +181,7 @@ public sealed partial class RealmBankItemIdentityTests
         var (inventory, _, player, _, source) = await SplitFixture(true);
         ((RecordingDispatchProxy<IGameSession>)(object)player.Session).SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), args =>
         { if (args[0] is ServerItemDelete) throw new InvalidOperationException("Delete notification failed"); return null; });
-        Assert.Throws<InvalidOperationException>(() => inventory.ItemDelete(new ItemLocation { Location = source.Location, BagIndex = source.BagIndex }));
+        inventory.ItemDelete(new ItemLocation { Location = source.Location, BagIndex = source.BagIndex });
         await WaitForBankMove(inventory, source); Assert.Null(inventory.GetItem(401ul)); Assert.True(inventory.RequiresAuthoritativeReload);
         using var read = new CharacterContext(Configuration); Assert.Empty(read.RealmBankItem); Assert.Empty(read.Item);
     }

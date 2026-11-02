@@ -34,7 +34,9 @@ namespace NexusForever.Game.Entity
             {
                 lock (persistence.Gate)
                 {
+                    assertActorMutation?.Invoke();
                     AssertIdentity();
+                    if (bankChange != null || auctionOwner != null) throw new InvalidOperationException("Currency belongs to an economic operation.");
                     persistence.AssertRewardOwner();
                     if (Entry.CapAmount > 0 && value > Entry.CapAmount)
                         throw new ArgumentOutOfRangeException();
@@ -45,13 +47,42 @@ namespace NexusForever.Game.Entity
         }
 
         private ulong amount;
+        private object auctionOwner;
 
+        internal void BeginAuctionOwnership(object owner)
+        {
+            lock (persistence.Gate)
+            {
+                if (owner == null || auctionOwner != null) throw new InvalidOperationException("Currency already has an auction owner.");
+                auctionOwner = owner;
+            }
+        }
+        internal void ApplyAuctionAmount(object owner, ulong value)
+        {
+            lock (persistence.Gate)
+            {
+                if (!ReferenceEquals(auctionOwner, owner) || Entry.CapAmount != 0 && value > Entry.CapAmount)
+                    throw new InvalidOperationException("Currency lost its auction mutation owner.");
+                amount = value; persistence.Dirty((int)CurrencySaveMask.Amount);
+            }
+        }
+        internal void EndAuctionOwnership(object owner)
+        {
+            lock (persistence.Gate)
+            {
+                if (!ReferenceEquals(auctionOwner, owner)) throw new InvalidOperationException("Currency lost its auction owner.");
+                auctionOwner = null;
+            }
+        }
+
+        private readonly Action assertActorMutation;
         private readonly ulong owner;
         private readonly byte currencyId;
+        private readonly string loadedDatabase;
         // Reuse the commit-observed row owner and its Character-wide frozen/reward
         // exclusion. A failed flush or later actor mutation cannot clear this row.
         private readonly QuestRowPersistence<CharacterCurrencyModel, CurrencyState> persistence;
-        private sealed record CurrencyState(ulong Character, byte Currency, ulong Amount);
+        internal sealed record CurrencyState(ulong Character, byte Currency, ulong Amount);
         internal bool NeedsPersistenceSave => persistence.NeedsSave;
 
         private void AssertIdentity()
@@ -77,12 +108,18 @@ namespace NexusForever.Game.Entity
             if (Entry == null || Entry.CapAmount > 0 && model.Amount > Entry.CapAmount)
                 throw new ArgumentOutOfRangeException(nameof(model));
             amount = model.Amount; owner = model.Id; currencyId = model.CurrencyId;
+            loadedDatabase = CharacterLoadOrigin.GetCurrencyDatabase(model);
             persistence = CreatePersistence(new(owner, currencyId, amount));
         }
 
         /// <summary>
         /// Create a new <see cref="ICurrency"/> from an <see cref="CurrencyTypeEntry"/> template.
         /// </summary>
+        internal Currency(CharacterCurrencyModel model, IGameTableManager tables, Action guard) : this(model, tables)
+        {
+            assertActorMutation = guard;
+        }
+
         public Currency(ulong owner, CurrencyTypeEntry entry, ulong value = 0u)
         {
             CharacterId = owner;
@@ -95,15 +132,62 @@ namespace NexusForever.Game.Entity
             persistence.Dirty((int)CurrencySaveMask.Create);
         }
 
+        internal Currency(ulong owner, CurrencyTypeEntry entry, string database, Action guard = null) : this(owner, entry)
+        {
+            loadedDatabase = database; assertActorMutation = guard;
+        }
+
         public void Save(CharacterContext context)
         {
-            persistence.Save(context);
+            lock (persistence.Gate)
+            {
+                AssertNoBankSave(context);
+                AssertAuctionSave(null, context);
+                AssertLoadedDatabase(context);
+                persistence.Save(context);
+            }
         }
 
         internal Action<CharacterContext> CaptureNormalSave(object token)
+            => CaptureNormalSave(token, null);
+
+        internal Action<CharacterContext> CaptureNormalSave(object token, object auction)
+            => CaptureNormalSave(token, auction, null);
+
+        internal Action<CharacterContext> CaptureNormalSave(object token, object auction, BankChangeOwner bank)
         {
-            var snapshot = persistence.CaptureNormal(token);
-            return context => persistence.Save(context, frozen: snapshot);
+            lock (persistence.Gate)
+            {
+                AssertBankSave(bank);
+                AssertAuctionSave(auction);
+                var snapshot = persistence.CaptureNormal(token);
+                return context =>
+                {
+                    lock (persistence.Gate) { AssertBankSave(bank, context); AssertAuctionSave(auction, context); AssertLoadedDatabase(context); persistence.Save(context, frozen: snapshot); }
+                };
+            }
+        }
+
+        private void AssertLoadedDatabase(CharacterContext context)
+        {
+            if (loadedDatabase != null) CharacterDatabaseIdentity.Require(context, loadedDatabase);
+        }
+
+        private void AssertAuctionSave(object owner, CharacterContext context = null)
+        {
+            if (ReferenceEquals(auctionOwner, owner)) return;
+            var error = new InvalidOperationException("Currency save lost its captured auction owner.");
+            context?.RejectSave(error); throw error;
+        }
+
+        private void AssertNoBankSave(CharacterContext context = null)
+            => AssertBankSave(null, context);
+
+        private void AssertBankSave(BankChangeOwner bank, CharacterContext context = null)
+        {
+            if (bankChange == null && bank == null || ReferenceEquals(bankChange, bank) && bank?.Reconciling == true) return;
+            var error = new InvalidOperationException("Ordinary currency save overlaps its bank owner.");
+            context?.RejectSave(error); throw error;
         }
     }
 }

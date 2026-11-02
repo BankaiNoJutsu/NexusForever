@@ -10,7 +10,7 @@ using NexusForever.Network.World.Message.Model.Mail;
 
 namespace NexusForever.Game.Mail
 {
-    public class MailAttachment : IMailAttachment
+    public partial class MailAttachment : IMailAttachment
     {
         /// <summary>
         /// Determines which fields need saving for <see cref="IMailAttachment"/> when being saved to the database.
@@ -27,7 +27,6 @@ namespace NexusForever.Game.Mail
         public uint Index { get; }
         public IItem Item { get; }
 
-        private MailAttachmentSaveMask saveMask;
 
         /// <summary>
         /// Create a new <see cref="IMailAttachment"/> from an existing <see cref="CharacterMailAttachmentModel"/> model.
@@ -42,7 +41,7 @@ namespace NexusForever.Game.Mail
             Index    = model.Index;
             Item     = new Item(model.Item, itemManager, gameTableManager);
 
-            saveMask = MailAttachmentSaveMask.None;
+            InitializePersistence(model);
         }
 
         /// <summary>
@@ -54,7 +53,8 @@ namespace NexusForever.Game.Mail
             Index    = index;
             Item     = item;
 
-            saveMask = MailAttachmentSaveMask.Create;
+            InitializePersistence(null);
+            persistence.Dirty((int)MailAttachmentSaveMask.Create);
         }
 
         /// <summary>
@@ -62,38 +62,28 @@ namespace NexusForever.Game.Mail
         /// </summary>
         public void EnqueueDelete()
         {
-            saveMask = MailAttachmentSaveMask.Delete;
-        }
-
-        public void Save(CharacterContext context)
-        {
-            if (saveMask != MailAttachmentSaveMask.None)
+            lock (persistence.Gate)
             {
-                if ((saveMask & MailAttachmentSaveMask.Create) != 0)
-                {
-                    context.Add(new CharacterMailAttachmentModel
-                    {
-                        Id       = Id,
-                        Index    = Index,
-                        ItemGuid = Item.Guid
-                    });
-                }
-                else if ((saveMask & MailAttachmentSaveMask.Delete) != 0)
-                {
-                    var model = new CharacterMailAttachmentModel
-                    {
-                        Id    = Id,
-                        Index = Index
-                    };
-
-                    context.Entry(model).State = EntityState.Deleted;
-                }
-
-                saveMask = MailAttachmentSaveMask.None;
+                if (takeReceipt != null) throw new InvalidOperationException("Mail attachment belongs to an unfinished take.");
+                deleteRequested = true;
+                persistence.Dirty((int)MailAttachmentSaveMask.Delete);
             }
-
-            Item.Save(context);
         }
+
+        internal bool CanAcceptCommittedCreation => persistence.Has((int)MailAttachmentSaveMask.Create)
+            && !deleteRequested && !persistence.WasAttempted;
+        internal void AcceptCommittedCreation(string database)
+        {
+            lock (persistence.Gate)
+            {
+                if (!CanAcceptCommittedCreation) throw new InvalidOperationException("Mail attachment lost its new creation owner.");
+                persistenceDatabase = database ?? throw new ArgumentNullException(nameof(database));
+                InitializePersistence(new CharacterMailAttachmentModel { Id = Id, Index = Index, ItemGuid = Item.Guid });
+            }
+        }
+
+        public void Save(CharacterContext context) => SavePersistence(context, false);
+        internal void Save(CharacterContext context, bool parentDeleted) => SavePersistence(context, parentDeleted);
 
         public ServerMailAvailable.Attachment Build()
         {

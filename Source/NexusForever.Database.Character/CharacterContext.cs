@@ -76,6 +76,7 @@ namespace NexusForever.Database.Character
         {
             if (!optionsBuilder.IsConfigured)
                 optionsBuilder.UseConfiguration(config);
+            optionsBuilder.UseStringConcurrencyChecks();
             optionsBuilder.AddInterceptors(SaveCompletionInterceptor.Instance, SaveValidationInterceptor.Instance);
         }
 
@@ -968,6 +969,7 @@ namespace NexusForever.Database.Character
                     .HasDefaultValue(0);
 
                 entity.Property(e => e.Amount)
+                    .IsConcurrencyToken()
                     .HasColumnName("amount")
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(0);
@@ -2799,76 +2801,91 @@ namespace NexusForever.Database.Character
                     .HasDefaultValue(0ul);
 
                 entity.Property(e => e.OwnerCharacterId)
+                    .IsConcurrencyToken()
                     .HasColumnName("ownerCharacterId")
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(0ul);
 
                 entity.Property(e => e.ItemId)
+                    .IsConcurrencyToken()
                     .HasColumnName("itemId")
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(0ul);
 
                 entity.Property(e => e.MinimumBid)
+                    .IsConcurrencyToken()
                     .HasColumnName("minimumBid")
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(0ul);
 
                 entity.Property(e => e.BuyoutPrice)
+                    .IsConcurrencyToken()
                     .HasColumnName("buyoutPrice")
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(0ul);
 
                 entity.Property(e => e.CurrentBid)
+                    .IsConcurrencyToken()
                     .HasColumnName("currentBid")
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(0ul);
 
                 entity.Property(e => e.TopBidderCharacterId)
+                    .IsConcurrencyToken()
                     .HasColumnName("topBidderCharacterId")
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(0ul);
 
                 entity.Property(e => e.ExpirationTime)
+                    .IsConcurrencyToken()
                     .HasColumnName("expirationTime")
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(0ul);
 
                 entity.Property(e => e.Item2Id)
+                    .IsConcurrencyToken()
                     .HasColumnName("item2Id")
                     .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0u);
 
                 entity.Property(e => e.Quantity)
+                    .IsConcurrencyToken()
                     .HasColumnName("quantity")
                     .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0u);
 
                 entity.Property(e => e.WorldRequirementItem2Id)
+                    .IsConcurrencyToken()
                     .HasColumnName("worldRequirementItem2Id")
                     .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0u);
 
                 entity.Property(e => e.CircuitData)
+                    .IsConcurrencyToken()
                     .HasColumnName("circuitData")
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(0ul);
 
                 entity.Property(e => e.GlyphData)
+                    .IsConcurrencyToken()
                     .HasColumnName("glyphData")
                     .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0u);
 
                 entity.Property(e => e.ThresholdData)
+                    .IsConcurrencyToken()
                     .HasColumnName("thresholdData")
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(0ul);
 
                 entity.Property(e => e.Unknown2)
+                    .IsConcurrencyToken()
                     .HasColumnName("unknown2")
                     .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0u);
 
                 entity.Property(e => e.MicrochipIds)
+                    .IsConcurrencyToken()
                     .HasColumnName("unknownArray")
                     .HasColumnType("varchar(255)")
                     .HasDefaultValue("");
@@ -2893,46 +2910,55 @@ namespace NexusForever.Database.Character
                     .HasDefaultValue(0ul);
 
                 entity.Property(e => e.OwnerCharacterId)
+                    .IsConcurrencyToken()
                     .HasColumnName("ownerCharacterId")
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(0ul);
 
                 entity.Property(e => e.Item2Id)
+                    .IsConcurrencyToken()
                     .HasColumnName("item2Id")
                     .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0u);
 
                 entity.Property(e => e.Quantity)
+                    .IsConcurrencyToken()
                     .HasColumnName("quantity")
                     .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0u);
 
                 entity.Property(e => e.PricePerUnit)
+                    .IsConcurrencyToken()
                     .HasColumnName("pricePerUnit")
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(0ul);
 
                 entity.Property(e => e.Price)
+                    .IsConcurrencyToken()
                     .HasColumnName("price")
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(0ul);
 
                 entity.Property(e => e.IsBuyOrder)
+                    .IsConcurrencyToken()
                     .HasColumnName("isBuyOrder")
                     .HasColumnType("tinyint(1)")
                     .HasDefaultValue(false);
 
                 entity.Property(e => e.ForceImmediate)
+                    .IsConcurrencyToken()
                     .HasColumnName("forceImmediate")
                     .HasColumnType("tinyint(1)")
                     .HasDefaultValue(false);
 
                 entity.Property(e => e.ListTime)
+                    .IsConcurrencyToken()
                     .HasColumnName("listTime")
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(0ul);
 
                 entity.Property(e => e.ExpirationTime)
+                    .IsConcurrencyToken()
                     .HasColumnName("expirationTime")
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(0ul);
@@ -3319,6 +3345,8 @@ namespace NexusForever.Database.Character
 
             ConfigureRewardTracks(modelBuilder);
             ConfigureContractRewards(modelBuilder);
+            ConfigureMarketplaceBids(modelBuilder);
+            ConfigureBankReconciliation(modelBuilder);
             NexusForever.Database.EntityFramework.DatabaseModelBuilderExtensions.UseProviderCompatibility(modelBuilder, Database.ProviderName);
         }
     }

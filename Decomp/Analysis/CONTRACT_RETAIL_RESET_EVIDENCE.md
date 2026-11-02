@@ -5,6 +5,16 @@ search online where uncertain and choose from that evidence. A configurable
 preference between all-claimed and final-claimed reset is no longer pending.
 This evidence pass does not itself enable reset or public claims.
 
+Latest independent source gate,31 October: [player-mail persistence](MAIL_SEND_TRANSACTION_AND_INBOX_RECOVERY.md)
+passes10,421 full tests/223 bank cases with zero full-build warnings/errors.
+It does not change the Contract reset evidence below or enable public07CE.
+Newly discovered [upstream609](UPSTREAM_609_COMMUNICATOR_RECONCILIATION.md) has source
+reconciliation,162 focused and10499 full passing cases; this does not resolve
+the retail Contract reset edges. Source/SQLite mail tests do not qualify retail reset,
+unclaimed/excess-point rules, full-table delivery or fresh provider/deployment
+behavior. Rebuilt DB DLLs have new identities; historical provider/upgrade
+bindings remain historical. The Goal remains active and native launch stays stopped.
+
 ## Contemporaneous first-hand evidence
 
 In a September6,2017 exchange, a player asks whether the Contract reward bar
@@ -21,7 +31,32 @@ Search retrieved the indexed exchange; directly opening the same page returned
 a cache miss. Its exact final-first/unclaimed and excess-point edge cases are
 not stated. No conclusion here relies on modern emulator behavior.
 
+The destination continuation repeated bounded searches on31 October for Contract
+reset, earlier unclaimed rewards and excess/carry-over points, including targeted
+WildStar player-forum queries. The directly opened first-person
+[27 January2018 Contract board account](https://www.greenyneko.com/2018/01/wildstar-contract-board-track-completion.html)
+corroborates separate PvE/PvP tracks, their5000/3000 final milestones and repeated
+board completion. It also describes the unlock-container fallback after its
+unlock pool is exhausted. It does not state the final-first/unclaimed transition
+or excess-point handling. Pre-release previews, unattributed mirrors and results
+for other games do not resolve those edges. This search adds a dated primary
+cross-check, not a server reset specification; public claims remain disabled.
+
 ## Build16042 client cross-check
+
+The handoff-only commit `a50dfa13` supplies the lean evidence store. All2,154
+members verified and restored in the destination continuation. The local
+`.continuation-evidence/assessment-report/remaining-goal/contract-reset-evidence/ArchiveAnchors/Contracts.lua`
+has no redactions: its current SHA-256 matches both the published/original index
+and `ArchiveAnchors/result.json` at
+`F47FCBCB091D95CB4DDC34F9BBC04F6C79215E891E6EF6AD4191D5CEAA5677B2`.
+The handler below was reread from those exact bytes. This restores the historical
+asset/provenance, not an observation of the server reset transition. General
+decompiler cache fragments and fresh Ghidra analysis remain unavailable here. A
+later [static byte cross-check](NATIVE_STATIC_CONTRACT_COMMUNICATOR_CROSSCHECK.md)
+now reconstructs1404d2240 directly from the matching archived executable with
+LLVM, including all four chained unwind parts. Its selected-bit/cost checks
+corroborate the historical fragment without recovering a server reset rule.
 
 The already extracted retail `UI/Contracts/Contracts.lua` distinguishes the final
 reward by the last list index in `OnRewardConfirmTakeBtnSignal` at1167–1180 and
@@ -42,6 +77,29 @@ text candidates under
 None of these candidates resolves reset/unclaimed behavior. This table is not
 assumed to contain the complete Apollo UI localization corpus. The absent wording
 is not negative proof about retail server behavior.
+
+## 1 November2026 bounded online follow-up
+
+Twelve additional indexed queries covered WildStar Contract reset, unclaimed
+rewards, overflow/excess points, carry-over,5000-point milestones, the WildStar
+subreddit and publisher Steam announcements. Results for Rust, Marathon,
+Throne and Liberty, Star Citizen and financial contracts were excluded. A
+current emulator review and mirrored patch notes were not treated as independent
+retail server evidence. This is a bounded search, not proof that no report exists.
+
+The directly reopened [27 January2018 first-person Contract board account](https://www.greenyneko.com/2018/01/wildstar-contract-board-track-completion.html)
+still describes separate tracks, final milestones and repeated completion. Its
+rounded daily-income calculations do not establish whether excess points carry
+or how earlier unclaimed milestones behave when the final reward is collected.
+No stronger edge-rule account was recovered in this follow-up.
+
+An indexed [publisher Steam announcement for1.7.1,2 May2017](https://store.steampowered.com/news/posts/?enddate=1493766765&feed=steam_community_announcements)
+describes a Troubleshooter completion fix for Prime Evil from the Ether. That
+is a separate Contract producer fact, not a reset rule. The search returned the
+publisher excerpt; directly opening the app-filtered page was unavailable, so
+this is not promoted to a fully inspected independent reset/producer proof.
+No source behavior, public07CE gate, reset policy, client/runtime configuration
+or entitlement default changed from this evidence pass.
 
 ## Decision and remaining evidence
 

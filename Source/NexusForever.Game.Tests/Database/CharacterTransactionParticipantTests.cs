@@ -14,6 +14,46 @@ public sealed class CharacterTransactionParticipantTests
     public CharacterTransactionParticipantTests() { }
     internal CharacterTransactionParticipantTests(DbContextOptions<CharacterContext> options) => this.options = options;
 
+    [Theory]
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
+    public async Task ParticipantListingWritesRetainACompetingCommittedString(bool delete, bool changed)
+    {
+        using var f = new Fixture(options);
+        MarketplaceAuctionModel stale;
+        using (var seed = f.Context())
+        {
+            seed.Item.Add(new() { Id = 900, OwnerId = 42, ItemId = 7001, StackCount = 1 });
+            seed.MarketplaceAuction.Add(new() { Id = 1, OwnerCharacterId = 42, ItemId = 900,
+                Item2Id = 7001, Quantity = 1, MicrochipIds = "" });
+            await seed.SaveChangesAsync();
+            stale = seed.MarketplaceAuction.AsNoTracking().Single();
+        }
+        if (changed)
+        {
+            using var other = f.Context();
+            await other.MarketplaceAuction.ExecuteUpdateAsync(set => set.SetProperty(row => row.MicrochipIds, " "));
+        }
+        var error = await Record.ExceptionAsync(() => CharacterAtomicSave.Execute(f.Context, 42, parent =>
+        {
+            using var child = parent.CreateTransactionParticipant();
+            child.Attach(stale);
+            if (delete) child.Remove(stale); else stale.CurrentBid = 11;
+            child.SaveChanges();
+            parent.ProtectTransactionParticipantWrites();
+        }));
+        if (changed) Assert.IsType<DbUpdateConcurrencyException>(error); else Assert.Null(error);
+        using var read = f.Context();
+        if (delete && !changed) Assert.Empty(read.MarketplaceAuction);
+        else
+        {
+            var row = Assert.Single(read.MarketplaceAuction);
+            Assert.Equal(changed ? " " : "", row.MicrochipIds);
+            Assert.Equal(changed ? 0ul : 11ul, row.CurrentBid);
+        }
+        Assert.Single(read.Character); Assert.Single(read.Item);
+    }
+
     [Fact]
     public async Task MultipleFreshTrackersShareOnlyTheParentsConnectionTransactionAndFinalTargets()
     {

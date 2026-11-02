@@ -1,4 +1,4 @@
-﻿using NexusForever.Database;
+using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Quest;
@@ -51,6 +51,7 @@ namespace NexusForever.Game.Abstract.Quest
         /// Update any <see cref="IQuestObjective"/>'s with supplied ID with progress.
         /// </summary>
         void ObjectiveUpdate(uint id, uint progress);
+        byte GetObjectiveCompletionMask() => 0;
 
         /// <summary>
         /// Send objective world-location guidance updates for this quest.

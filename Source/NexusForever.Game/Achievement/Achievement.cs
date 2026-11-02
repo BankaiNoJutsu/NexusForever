@@ -62,6 +62,7 @@ namespace NexusForever.Game.Achievement
         private DateTime? dateCompleted;
 
         protected SaveMask saveMask;
+        internal Func<CharacterContext, bool> CharacterSaveOwner { private get; init; }
 
         // this can either be a characterId or guildId depending on the achievement type
         private readonly ulong ownerId;
@@ -91,6 +92,7 @@ namespace NexusForever.Game.Achievement
 
         public void Save(CharacterContext context)
         {
+            if (CharacterSaveOwner?.Invoke(context) == true) return;
             if (saveMask == SaveMask.None)
                 return;
 

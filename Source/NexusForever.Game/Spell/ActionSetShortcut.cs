@@ -101,6 +101,7 @@ namespace NexusForever.Game.Spell
 
         public void Save(CharacterContext context)
         {
+            if (actionSet.TrySaveCharacter(context)) return;
             if (saveMask == ShortcutSaveMask.None)
                 return;
 

@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
@@ -81,15 +81,15 @@ namespace NexusForever.Game.Quest
             set
             {
                 QuestState oldState = state;
-
-                lock (persistence.Gate) { state = value; persistence.Dirty((int)QuestSaveMask.State); }
-
-                OnStateChange(oldState);
+                bool created = !stateSet;
+                lock (persistence.Gate) { state = value; stateSet = true; persistence.Dirty((int)QuestSaveMask.State); }
+                OnStateChange(oldState, created);
                 player.RequestSave();
             }
         }
 
         private QuestState state;
+        private bool stateSet;
 
         public QuestStateFlags Flags
         {
@@ -168,6 +168,7 @@ namespace NexusForever.Game.Quest
             this.gameTableManager = gameTableManager;
             Info              = info;
             state  = (QuestState)model.State;
+            stateSet = true;
             flags  = (QuestStateFlags)model.Flags;
             timer  = model.Timer;
             reset  = model.Reset;
@@ -402,6 +403,7 @@ namespace NexusForever.Game.Quest
                     SendQuestObjectiveUpdate(objective);
 
                 scriptCollection?.Invoke<IQuestScript>(s => s.OnObjectiveUpdate(objective));
+                if (objective.IsComplete()) player.QuestManager?.Communicator?.OnObjectiveComplete(Id, objective.Index);
             }
 
             if (RequiredObjectivesComplete())
@@ -445,6 +447,7 @@ namespace NexusForever.Game.Quest
                 SendQuestObjectiveUpdate(objective);
 
             scriptCollection?.Invoke<IQuestScript>(s => s.OnObjectiveUpdate(objective));
+            if (objective.IsComplete()) player.QuestManager?.Communicator?.OnObjectiveComplete(Id, objective.Index);
 
             if (RequiredObjectivesComplete())
                 CompleteOptionalObjectives();
@@ -504,7 +507,16 @@ namespace NexusForever.Game.Quest
             {
                 objective.Complete();
                 SendQuestObjectiveUpdate(objective);
+                player.QuestManager?.Communicator?.OnObjectiveComplete(Id, objective.Index);
             }
+        }
+
+        public byte GetObjectiveCompletionMask()
+        {
+            byte mask = 0;
+            foreach (var objective in objectives)
+                if (objective.Index < 8 && objective.IsComplete()) mask |= (byte)(1 << objective.Index);
+            return mask;
         }
 
         private void SendQuestObjectiveUpdate(IQuestObjective objective)
@@ -541,21 +553,13 @@ namespace NexusForever.Game.Quest
         /// <summary>
         /// Invoked when <see cref="QuestState"/> for <see cref="IQuest"/> is updated.
         /// </summary>
-        private void OnStateChange(QuestState oldState)
+        private void OnStateChange(QuestState oldState, bool created)
         {
             SendQuestStateChange(GetCurrentObjectiveId());
 
             SendObjectiveWorldLocationUpdates();
 
-            // check if this quest and state is a trigger for a new communicator message
-            foreach (ICommunicatorMessage message in GetGlobalQuestManager().GetQuestCommunicatorQuestStateTriggers(Id, state))
-                if (message.Meets(player))
-                {
-                    message.Send(player.Session);
-
-                    if (message.DeliversQuest)
-                        player.QuestManager.QuestMention(message.QuestId);
-                }
+            player.QuestManager?.Communicator?.OnQuestState(Id, oldState, state, created);
 
             scriptCollection?.Invoke<IQuestScript>(s => s.OnQuestStateChange(State, oldState));
 

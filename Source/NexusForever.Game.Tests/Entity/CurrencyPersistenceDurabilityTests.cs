@@ -14,7 +14,7 @@ using Fixture = NexusForever.Game.Tests.Challenges.CharacterChallengeRewardRepos
 
 namespace NexusForever.Game.Tests.Entity;
 
-public sealed class CurrencyPersistenceDurabilityTests
+public sealed partial class CurrencyPersistenceDurabilityTests
 {
     private readonly DbContextOptions<CharacterContext> options;
     public CurrencyPersistenceDurabilityTests() { }

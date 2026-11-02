@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
+using NexusForever.Game.Quest;
 using NexusForever.Game.Abstract;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
@@ -15,7 +15,7 @@ using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity
 
 namespace NexusForever.Game.Mail
 {
-    public class MailItem : IMailItem
+    public partial class MailItem : IMailItem
     {
         private const float DefaultExpiryTimeDays = 30f;
 
@@ -43,7 +43,7 @@ namespace NexusForever.Game.Mail
                 if (value == recipientId)
                     throw new ArgumentException("Recipient ID must be different than current recipient.");
                 recipientId = value;
-                saveMask |= MailSaveMask.RecipientChange;
+                persistence.Dirty((int)MailSaveMask.RecipientChange);
             }
         }
         private ulong recipientId;
@@ -68,7 +68,7 @@ namespace NexusForever.Game.Mail
             private set
             {
                 hasPaidOrCollectedCurrency = value;
-                saveMask |= MailSaveMask.CurrencyChange;
+                persistence.Dirty((int)MailSaveMask.CurrencyChange);
             }
         }
         private bool hasPaidOrCollectedCurrency;
@@ -79,7 +79,7 @@ namespace NexusForever.Game.Mail
             private set
             {
                 flags = value;
-                saveMask |= MailSaveMask.Flags;
+                persistence.Dirty((int)MailSaveMask.Flags);
             }
         }
         private MailFlag flags;
@@ -88,14 +88,16 @@ namespace NexusForever.Game.Mail
         public DateTime CreateTime { get; }
         public float ExpiryTime => sharedConfiguration?.Get<WorldConfig>()?.MailExpiryDays ?? DefaultExpiryTimeDays;
 
-        public bool PendingCreate => (saveMask & MailSaveMask.Create) != 0;
+        public bool PendingCreate => persistence.Has((int)MailSaveMask.Create);
 
         /// <summary>
         /// Returns if <see cref="IMailItem"/> is enqueued to be deleted from the database.
         /// </summary>
-        public bool PendingDelete => (saveMask & MailSaveMask.Delete) != 0;
+        public bool PendingDelete => deleteRequested;
 
-        private MailSaveMask saveMask;
+        private readonly byte storedContentType;
+        internal BankMailDelivery CreationOwner { get; set; }
+        internal IOutgoingDelivery OutgoingDelivery { get; set; }
 
         private readonly List<IMailAttachment> mailAttachments = new();
         private readonly HashSet<IMailAttachment> deletedAttachments = new();
@@ -136,7 +138,8 @@ namespace NexusForever.Game.Mail
             foreach (CharacterMailAttachmentModel mailAttachment in model.Attachment)
                 mailAttachments.Add(new MailAttachment(mailAttachment, itemManager, gameTableManager));
 
-            saveMask = MailSaveMask.None;
+            storedContentType = model.ContentType;
+            InitializePersistence(model);
         }
 
         /// <summary>
@@ -183,7 +186,9 @@ namespace NexusForever.Game.Mail
             DeliverySpeed = parameters.DeliverySpeed;
             CreateTime   = DateTime.UtcNow;
 
-            saveMask     = MailSaveMask.Create;
+            storedContentType = (byte)ContentType;
+            InitializePersistence(null);
+            persistence.Dirty((int)MailSaveMask.Create);
         }
 
         /// <summary>
@@ -191,86 +196,31 @@ namespace NexusForever.Game.Mail
         /// </summary>
         public void EnqueueDelete(bool state)
         {
-            saveMask = MailSaveMask.Delete;
-        }
-
-        public void Save(CharacterContext context)
-        {
-            if (saveMask != MailSaveMask.None)
+            lock (persistence.Gate)
             {
-                if ((saveMask & MailSaveMask.Create) != 0)
-                {
-                    context.Add(new CharacterMailModel
-                    {
-                        Id                         = Id,
-                        RecipientId                = RecipientId,
-                        SenderType                 = (byte)SenderType,
-                        ContentType                = (byte)ContentType,
-                        SenderId                   = SenderId,
-                        Subject                    = Subject,
-                        Message                    = Message,
-                        TextEntrySubject           = TextEntrySubject,
-                        TextEntryMessage           = TextEntryMessage,
-                        CreatureId                 = CreatureId,
-                        CurrencyType               = (byte)CurrencyType,
-                        CurrencyAmount             = CurrencyAmount,
-                        IsCashOnDelivery           = Convert.ToByte(IsCashOnDelivery),
-                        HasPaidOrCollectedCurrency = Convert.ToByte(HasPaidOrCollectedCurrency),
-                        Flags                      = (byte)Flags,
-                        DeliveryTime               = (byte)DeliverySpeed,
-                        CreateTime                 = CreateTime
-                    });
-                }
-                else if ((saveMask & MailSaveMask.Delete) != 0)
-                {
-                    var model = new CharacterMailModel
-                    {
-                        Id = Id
-                    };
-
-                    context.Entry(model).State = EntityState.Deleted;
-                }
-                else
-                {
-                    var model = new CharacterMailModel
-                    {
-                        Id = Id
-                    };
-
-                    EntityEntry<CharacterMailModel> entity = context.Attach(model);
-                    if ((saveMask & MailSaveMask.Flags) != 0)
-                    {
-                        model.Flags = Convert.ToByte(Flags);
-                        entity.Property(p => p.Flags).IsModified = true;
-                    }
-
-                    if ((saveMask & MailSaveMask.CurrencyChange) != 0)
-                    {
-                        model.HasPaidOrCollectedCurrency = Convert.ToByte(HasPaidOrCollectedCurrency);
-                        entity.Property(p => p.HasPaidOrCollectedCurrency).IsModified = true;
-                    }
-
-                    if ((saveMask & MailSaveMask.RecipientChange) != 0)
-                    {
-                        model.RecipientId = RecipientId;
-                        entity.Property(p => p.RecipientId).IsModified = true;
-
-                        model.Subject = Subject;
-                        entity.Property(p => p.Subject).IsModified = true;
-                    }
-                }
-
-                saveMask = MailSaveMask.None;
+                AssertNoCashReceipt();
+                deleteRequested = true;
+                persistence.Dirty((int)MailSaveMask.Delete);
             }
-
-            foreach (IMailAttachment mailAttachment in mailAttachments)
-                mailAttachment.Save(context);
-
-            foreach (IMailAttachment mailAttachment in deletedAttachments)
-                mailAttachment.Save(context);
-
-            deletedAttachments.Clear();
         }
+
+        internal void AcceptCommittedCreation(CharacterMailModel confirmed, string database)
+        {
+            lock (persistence.Gate)
+            {
+                if (!PendingCreate || PendingDelete || persistence.WasAttempted
+                    || persistence.Has((int)(MailSaveMask.Flags | MailSaveMask.CurrencyChange | MailSaveMask.RecipientChange))
+                    || confirmed?.Id != Id || deletedAttachments.Count != 0
+                    || mailAttachments.Any(a => a is not MailAttachment concrete || !concrete.CanAcceptCommittedCreation))
+                    throw new InvalidOperationException("Committed mail lost its creation state.");
+                foreach (MailAttachment attachment in mailAttachments) attachment.AcceptCommittedCreation(database);
+                persistenceDatabase = database ?? throw new ArgumentNullException(nameof(database));
+                InitializePersistence(confirmed);
+                membershipBaseline = CurrentAttachmentSet();
+            }
+        }
+
+        public void Save(CharacterContext context) => SavePersistence(context);
 
         /// <summary>
         /// Returns the specific <see cref="IMailAttachment"/> based on its index.
@@ -285,7 +235,10 @@ namespace NexusForever.Game.Mail
         /// </summary>
         public void MarkAsRead()
         {
-            Flags |= MailFlag.IsRead;
+            lock (persistence.Gate)
+            {
+                Flags |= MailFlag.IsRead;
+            }
         }
 
         /// <summary>
@@ -293,8 +246,12 @@ namespace NexusForever.Game.Mail
         /// </summary>
         public void PayOrTakeCash()
         {
-            HasPaidOrCollectedCurrency = true;
-            MarkAsNotReturnable();
+            lock (persistence.Gate)
+            {
+                AssertNoCashReceipt();
+                HasPaidOrCollectedCurrency = true;
+                MarkAsNotReturnable();
+            }
         }
 
         /// <summary>
@@ -302,7 +259,10 @@ namespace NexusForever.Game.Mail
         /// </summary>
         public void MarkAsNotReturnable()
         {
-            Flags |= MailFlag.NotReturnable;
+            lock (persistence.Gate)
+            {
+                Flags |= MailFlag.NotReturnable;
+            }
         }
 
         /// <summary>
@@ -310,12 +270,16 @@ namespace NexusForever.Game.Mail
         /// </summary>
         public void ReturnMail()
         {
-            if (SenderId == 0ul || SenderType != SenderType.Player && SenderType != SenderType.GM)
-                throw new InvalidOperationException("Mail has no player sender to return to.");
+            lock (persistence.Gate)
+            {
+                AssertNoCashReceipt();
+                if (SenderId == 0ul || SenderType != SenderType.Player && SenderType != SenderType.GM)
+                    throw new InvalidOperationException("Mail has no player sender to return to.");
 
-            RecipientId = SenderId;
-            Subject = $"Returned: {Subject}";
-            MarkAsNotReturnable();
+                RecipientId = SenderId;
+                Subject = $"Returned: {Subject}";
+                MarkAsNotReturnable();
+            }
         }
 
         /// <summary>
@@ -344,7 +308,11 @@ namespace NexusForever.Game.Mail
         /// </summary>
         public void AttachmentAdd(IMailAttachment mailAttachment)
         {
-            mailAttachments.Add(mailAttachment);
+            lock (persistence.Gate)
+            {
+                AssertNoCashReceipt();
+                mailAttachments.Add(mailAttachment);
+            }
         }
 
         /// <summary>
@@ -352,10 +320,14 @@ namespace NexusForever.Game.Mail
         /// </summary>
         public void AttachmentDelete(IMailAttachment mailAttachment, uint index)
         {
-            mailAttachment.EnqueueDelete();
+            lock (persistence.Gate)
+            {
+                AssertNoCashReceipt();
+                mailAttachment.EnqueueDelete();
 
-            mailAttachments.RemoveAt((int)index);
-            deletedAttachments.Add(mailAttachment);
+                mailAttachments.RemoveAt((int)index);
+                deletedAttachments.Add(mailAttachment);
+            }
         }
 
         private static ContentType ResolveContentType(SenderType senderType, byte storedContentType = 0)

@@ -68,6 +68,7 @@ namespace NexusForever.Game.Entity
         private byte levelRewarded;
 
         private PathSaveMask saveMask;
+        internal Func<CharacterContext, bool> CharacterSaveOwner { private get; init; }
 
         /// <summary>
         /// Create a new <see cref="IPathEntry"/> for a <see cref="IPlayer"/> from <see cref="CharacterPathModel"/>
@@ -101,6 +102,7 @@ namespace NexusForever.Game.Entity
         /// <param name="context">The character context to save against</param>
         public void Save(CharacterContext context)
         {
+            if (CharacterSaveOwner?.Invoke(context) == true) return;
             if (saveMask == PathSaveMask.None)
                 return;
 

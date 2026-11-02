@@ -63,20 +63,7 @@ namespace NexusForever.Game.Entity
         }
 
         private void SaveTaxiNodes(CharacterContext context)
-        {
-            ushort[] pending;
-            lock (taxiStateLock)
-                pending = unsavedTaxiNodes.ToArray();
-            if (pending.Length == 0)
-                return;
-            foreach (ushort id in pending)
-                context.Add(new CharacterTaxiNodeModel { Id = CharacterId, TaxiNodeId = id });
-            context.SavedChanges += (_, _) =>
-            {
-                lock (taxiStateLock)
-                    unsavedTaxiNodes.ExceptWith(pending);
-            };
-        }
+            => SaveTaxiPersistence(context);
 
         private void SendTaxiNodes()
         {

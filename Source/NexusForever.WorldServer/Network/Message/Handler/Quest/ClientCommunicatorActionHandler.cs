@@ -14,10 +14,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Quest
         }
 
         /// <summary>
-        /// Client sends this when the player opens (Engaged=true) or dismisses (Engaged=false) the communicator for a quest.
+        /// Validate the client communicator report before recording any quest mention.
         /// </summary>
         public void HandleMessage(IWorldSession session, ClientCommunicatorAction communicatorAction)
         {
+            if (session.Player == null || !ReferenceEquals(session.Player.Account, session.Account)
+                || !ReferenceEquals(session.Player.Session, session)) return;
+            if (communicatorAction.QuestId <= ushort.MaxValue)
+                session.Player?.QuestManager?.QuestCommunicatorAction((ushort)communicatorAction.QuestId, communicatorAction.Engaged);
             log.LogDebug("ClientCommunicatorAction: player={Player}, questId={QuestId}, engaged={Engaged}",
                 session.Player?.Guid, communicatorAction.QuestId, communicatorAction.Engaged);
         }

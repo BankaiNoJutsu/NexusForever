@@ -7,7 +7,7 @@ using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Entity
 {
-    public class TradeskillMaterial : ITradeskillMaterial
+    public partial class TradeskillMaterial : ITradeskillMaterial
     {
         /// <summary>
         /// Determines which fields need saving for <see cref="ITradeskillMaterial"/> when being saved to the database.
@@ -26,14 +26,19 @@ namespace NexusForever.Game.Entity
 
         public ushort Amount
         {
-            get => amount;
+            get { lock (materialSaveGate) return amount; }
             set
             {
-                amount = value;
-                saveMask |= TradeskillMaterialSaveMask.Amount;
+                lock (materialSaveGate)
+                {
+                    if (commodityReturnOwner != null || publicationMutationAllowed?.Invoke() == false) throw new InvalidOperationException("Material is reserved for a commodity return.");
+                    amount = value; ++amountRevision;
+                    saveMask |= TradeskillMaterialSaveMask.Amount;
+                }
             }
         }
         private ushort amount;
+        private readonly Func<bool> publicationMutationAllowed;
 
         private TradeskillMaterialSaveMask saveMask;
 
@@ -48,6 +53,7 @@ namespace NexusForever.Game.Entity
             Entry      = gameTableManager?.TradeskillMaterial?.GetEntry(MaterialId);
 
             saveMask   = TradeskillMaterialSaveMask.None;
+            commodityStoredAmount = model.Amount;
         }
 
         public TradeskillMaterial(
@@ -64,39 +70,14 @@ namespace NexusForever.Game.Entity
             saveMask   = TradeskillMaterialSaveMask.Create;
         }
 
-        public void Save(CharacterContext context)
-        {
-            if (saveMask == TradeskillMaterialSaveMask.None)
-                return;
+        internal TradeskillMaterial(CharacterTradeskillMaterialModel model, IGameTableManager gameTableManager,
+            Func<bool> publicationMutationAllowed) : this(model, gameTableManager)
+            => this.publicationMutationAllowed = publicationMutationAllowed;
 
-            if ((saveMask & TradeskillMaterialSaveMask.Create) != 0)
-            {
-                var model = new CharacterTradeskillMaterialModel
-                {
-                    Id         = Owner,
-                    MaterialId = MaterialId,
-                    Amount     = amount
-                };
+        internal TradeskillMaterial(ulong characterId, ushort materialId, IGameTableManager gameTableManager,
+            Func<bool> publicationMutationAllowed) : this(characterId, materialId, gameTableManager)
+            => this.publicationMutationAllowed = publicationMutationAllowed;
 
-                context.Add(model);
-            }
-            else
-            {
-                var model = new CharacterTradeskillMaterialModel
-                {
-                    Id         = Owner,
-                    MaterialId = MaterialId
-                };
-
-                EntityEntry<CharacterTradeskillMaterialModel> entity = context.Attach(model);
-                if ((saveMask & TradeskillMaterialSaveMask.Amount) != 0)
-                {
-                    model.Amount = amount;
-                    entity.Property(p => p.Amount).IsModified = true;
-                }
-            }
-
-            saveMask = TradeskillMaterialSaveMask.None;
-        }
+        public void Save(CharacterContext context) => SaveMaterial(context, null);
     }
 }

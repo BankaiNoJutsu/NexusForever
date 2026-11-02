@@ -39,6 +39,13 @@ namespace NexusForever.Game.RealmBank
                     var items = new List<(Entity.Item Item, uint Index)>();
                     foreach (var model in database.GetRealmBankItems(player.Account.Id, player.Identity.RealmId))
                     {
+                        IItem existing = inventory.GetItem(model.Id);
+                        if (existing != null)
+                        {
+                            if (existing is Entity.Item item && item.MatchesLoadedBankRow(model, player.CharacterId)) continue;
+                            state.RequiresReload = true;
+                            throw new InvalidOperationException("Loaded bank identity conflicts with the retained SQL baseline.");
+                        }
                         if (itemManager.GetItemInfo(model.ItemId) == null) continue; // retain the established unknown-definition policy
                         items.Add((new Entity.Item(new ItemModel
                         {
@@ -61,7 +68,12 @@ namespace NexusForever.Game.RealmBank
                     if (!ReferenceEquals(player.Inventory, inventory)) throw new InvalidOperationException("Realm bank lost its inventory during publication.");
                     state.Loaded = true;
                 }
-                catch { if (publishing) state.RequiresReload = true; throw; }
+                catch
+                {
+                    if (publishing) state.RequiresReload = true;
+                    if (state.RequiresReload && inventory is Entity.Inventory concrete) concrete.RequireRealmBankReload();
+                    throw;
+                }
                 finally { state.Loading = false; }
             }
         }

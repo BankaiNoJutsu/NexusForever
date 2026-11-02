@@ -239,6 +239,7 @@ public sealed class CharacterChallengeRewardRoutingTests
             uint multiples = 1, IPrerequisiteManager prerequisites = null, uint prerequisiteId = 0, Func<Fixture, CharacterContext> contextFactory = null)
         {
             var h = new Harness { F = new Fixture(options), registry = Registry() }; var f = h.F;
+            f.EnableConnectionDiagnostics();
             await f.Begin(track);
             if (earned) await f.Medal(track, 0, new((f.Catalog.GetTrack(track).MaximumPoints * multiples + (multiples > 1 ? 100u : 0)) / 100f, 1));
             PrepareInventory(f); _ = Manager(f);
@@ -267,7 +268,10 @@ public sealed class CharacterChallengeRewardRoutingTests
             var watch = Stopwatch.StartNew();
             while (Owner.HasPendingRewardOperation)
             {
-                Events.Update(.01); Assert.True(watch.Elapsed < TimeSpan.FromSeconds(15), "Reward request did not settle."); await Task.Delay(5);
+                Events.Update(.01);
+                if (watch.Elapsed >= TimeSpan.FromSeconds(15))
+                    Console.Error.WriteLine($"Routing drain timeout elapsed={watch.Elapsed.TotalSeconds:F3};fixtureConnections=" + F.DescribeConnectionDiagnostics());
+                Assert.True(watch.Elapsed < TimeSpan.FromSeconds(15), "Reward request did not settle."); await Task.Delay(5);
             }
         }
         public void Dispose() => F.Dispose();

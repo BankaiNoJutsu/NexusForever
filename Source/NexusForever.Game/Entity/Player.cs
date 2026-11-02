@@ -650,6 +650,7 @@ namespace NexusForever.Game.Entity
             InitialisePvPFlagDisable(model.PvpFlagDisableUntilUtc);
             LoadBindPoint(model.Bind);
             LoadTaxiNodes(model.TaxiNode);
+            progressionDatabase = CharacterLoadOrigin.Get(model)?.Database;
 
             CreateTime        = model.CreateTime;
             TimePlayedTotal   = model.TimePlayedTotal;
@@ -664,7 +665,7 @@ namespace NexusForever.Game.Entity
             foreach (CharacterSchematicModel schematicModel in model.Schematic)
             {
                 if (gameTableManager.TradeskillSchematic2.GetEntry(schematicModel.TradeskillSchematic2Id) == null)
-                    continue;
+                { unavailableSchematics.Add(ProgressionPersistence.FromModel(schematicModel)); continue; }
 
                 schematics[schematicModel.TradeskillSchematic2Id] = SchematicState.FromModel(schematicModel);
             }
@@ -719,7 +720,7 @@ namespace NexusForever.Game.Entity
             KeybindingManager       = new CharacterKeybindingManager(this, model);
             DatacubeManager         = new DatacubeManager(this, model, gameTableManager);
             GalacticArchiveManager  = new GalacticArchiveManager(this, model, gameTableManager);
-            MailManager             = new MailManager(this, model, assetManager, characterManager, realmContext?.RealmId ?? Identity.RealmId, playerManager, itemManager, gameTableManager, sharedConfiguration);
+            MailManager             = new MailManager(this, model, assetManager, characterManager, realmContext?.RealmId ?? Identity.RealmId, playerManager, itemManager, gameTableManager, sharedConfiguration, databaseManager?.GetDatabase<CharacterDatabase>() is { } mailDatabase ? mailDatabase.CreateContext : null);
             ZoneMapManager          = new ZoneMapManager(this, model, gameTableManager);
             ChallengeManager        = new ChallengeManager(this, model, gameTableManager, () => GetCharacterDatabase().CreateContext(), prerequisiteManager, itemManager,
                 () => GetAuthDatabase().CreateContext());
@@ -819,6 +820,10 @@ namespace NexusForever.Game.Entity
 
         public override void Dispose()
         {
+            if (bankActor != null)
+            { bankActor.Retired = true; bankActor.DisposeRequested = true; return; }
+            if (auctionBidActor != null)
+            { auctionBidActor.Retired = true; auctionBidActor.DisposeRequested = true; return; }
             (CurrencyManager as CurrencyManager)?.InvalidateContractCredit();
             InvalidateRewardTrackPresentation();
             Inventory?.InvalidateRewardDeliveries();
@@ -948,7 +953,7 @@ namespace NexusForever.Game.Entity
                     }
                     Session.Events.EnqueueEvent(new TaskEvent(characterSaveTask,
                         () => CompleteSave(callback, failureCallback),
-                        () => HandleSaveFailure("character", failureCallback)));
+                        () => HandleCharacterSaveFailure(characterSaveTask, snapshot, callback, failureCallback)));
                 },
                 () => HandleSaveFailure("auth", failureCallback)));
         }
@@ -965,11 +970,34 @@ namespace NexusForever.Game.Entity
             return characterDatabase ?? throw new InvalidOperationException("CharacterDatabase is not available.");
         }
 
+        private void HandleCharacterSaveFailure(Task task, NormalRewardSave snapshot, Action callback, Action failureCallback)
+        {
+            var rollback = task.Exception?.Flatten().InnerExceptions.OfType<CharacterReconciliationRolledBackException>().SingleOrDefault();
+            if (rollback != null && (rollback is BidReconciliationRolledBackException bid && AuctionBidSaveAllowed && snapshot?.RetryBidRollback(bid) == true
+                || BankSaveAllowed && snapshot?.RetryBankRollback(rollback) == true))
+            {
+                // Preserve the original normal snapshot, inventory/Character
+                // leases and already applied earning effects. Only persistence
+                // enrollment runs again, on this original actor, after proof.
+                Session.Events.EnqueueEvent(new DelayEvent(TimeSpan.FromSeconds(1), () =>
+                {
+                    if (!AuctionBidSaveAllowed && !BankSaveAllowed) { HandleSaveFailure("economic owner", failureCallback); return; }
+                    Task retry;
+                    try { retry = SaveCharacterUnit(snapshot); }
+                    catch { HandleSaveFailure("bid enrollment", failureCallback); throw; }
+                    Session.Events.EnqueueEvent(new TaskEvent(retry, () => CompleteSave(callback, failureCallback),
+                        () => HandleCharacterSaveFailure(retry, snapshot, callback, failureCallback)));
+                }));
+                return;
+            }
+            HandleSaveFailure("character", failureCallback);
+        }
+
         private void CompleteSave(Action callback, Action failureCallback)
         {
             if (!ReleaseNormalRewardSave(true)) { HandleSaveFailure("snapshot", failureCallback); return; }
             ReleaseInventorySave();
-            Session.CanProcessIncomingPackets = true;
+            if (auctionBidActor == null && bankActor == null) Session.CanProcessIncomingPackets = true;
             saveInProgress                    = false;
             saveTimer.Resume();
 
@@ -993,9 +1021,12 @@ namespace NexusForever.Game.Entity
 
         private void HandleSaveFailure(string phase, Action failureCallback)
         {
+            IGameSession failedSession = Session;
+            bool OwnsFailedSession() => ReferenceEquals(Session, failedSession)
+                && (failedSession is not IPlayerSession current || ReferenceEquals(current.Player, this));
             ReleaseNormalRewardSave(false);
             ReleaseInventorySave();
-            log.Error("Failed to save {0} data for character {1}. Disconnecting session.", phase, CharacterId);
+            log.Error("Failed to save {0} data for character {1}.", phase, CharacterId);
             Action chainedFailureCallback = failureCallback;
             chainedFailureCallback += deferredSaveFailureCallback;
 
@@ -1003,7 +1034,7 @@ namespace NexusForever.Game.Entity
             saveRequestedDuringSave           = false;
             deferredSaveCallback              = null;
             deferredSaveFailureCallback       = null;
-            Session.CanProcessIncomingPackets = true;
+            if (OwnsFailedSession() && auctionBidActor == null && bankActor == null) failedSession.CanProcessIncomingPackets = true;
             saveTimer.Resume();
 
             try
@@ -1015,7 +1046,7 @@ namespace NexusForever.Game.Entity
                 log.Error(e, "Failed to execute save failure callback for character {0}.", CharacterId);
             }
 
-            Session.ForceDisconnect();
+            if (OwnsFailedSession()) failedSession.ForceDisconnect();
         }
 
         /// <summary>
@@ -1033,13 +1064,19 @@ namespace NexusForever.Game.Entity
         public void Save(CharacterContext context) => SaveCharacter(context, null);
 
         private Task SaveCharacterUnit(NormalRewardSave snapshot)
-            => snapshot?.Quests.HasContractCompletion == true || CurrencyManager is CurrencyManager
+        {
+            if (snapshot?.BankReceipt is { } bankReceipt)
+                return GetCharacterDatabase().SaveBankReconciliation(CharacterId, context => SaveCharacter(context, snapshot), bankReceipt);
+            if (snapshot?.BidReceipt is { } receipt)
+                return GetCharacterDatabase().SaveBidReconciliation(CharacterId, context => SaveCharacter(context, snapshot), receipt);
+            return snapshot?.Quests.HasContractCompletion == true || CurrencyManager is CurrencyManager
                 ? GetCharacterDatabase().SaveAtomic(CharacterId, context => SaveCharacter(context, snapshot))
                 : GetCharacterDatabase().Save(context => SaveCharacter(context, snapshot));
+        }
 
         private void SaveCharacter(CharacterContext context, NormalRewardSave snapshot)
         {
-            try { snapshot?.Validate(); CheckInventorySaveAllowed(frozen: snapshot != null); snapshot?.Quests.BeginContractSave(context); snapshot?.Challenges.BeginContractSave(context); }
+            try { GetExperiencePersistence(); snapshot?.Validate(); CheckInventorySaveAllowed(frozen: snapshot != null); snapshot?.Quests.BeginContractSave(context); snapshot?.Challenges.BeginContractSave(context); snapshot?.StageDelivery(context); }
             catch (Exception error) { context.RejectSave(error); throw; }
             SaveBindPoint(context);
             SaveTaxiNodes(context);
@@ -1079,7 +1116,7 @@ namespace NexusForever.Game.Entity
                     entity.Property(p => p.WorldZoneId).IsModified = true;
                 }
 
-                if ((saveMask & PlayerSaveMask.Path) != 0)
+                if ((saveMask & PlayerSaveMask.Path) != 0 && experiencePathOwner == null)
                 {
                     model.ActivePath = (uint)Path;
                     entity.Property(p => p.ActivePath).IsModified = true;
@@ -1087,7 +1124,7 @@ namespace NexusForever.Game.Entity
                     entity.Property(p => p.PathActivatedTimestamp).IsModified = true;
                 }
 
-                if ((saveMask & PlayerSaveMask.InputKeySet) != 0)
+                if ((saveMask & PlayerSaveMask.InputKeySet) != 0 && KeybindingManager is not CharacterKeybindingManager)
                 {
                     model.InputKeySet = (sbyte)InputKeySet;
                     entity.Property(p => p.InputKeySet).IsModified = true;
@@ -1099,7 +1136,7 @@ namespace NexusForever.Game.Entity
                     entity.Property(p => p.Flags).IsModified = true;
                 }
 
-                if ((saveMask & PlayerSaveMask.Level) != 0)
+                if ((saveMask & PlayerSaveMask.Level) != 0 && experienceXpOwner == null)
                 {
                     model.Level = checked((byte)Level);
                     entity.Property(p => p.Level).IsModified = true;
@@ -1164,84 +1201,31 @@ namespace NexusForever.Game.Entity
             foreach (IStatValue stat in stats.Values)
                 stat.SaveCharacter(CharacterId, context);
 
-            Inventory.Save(context);
+            if (snapshot == null) Inventory.Save(context); else snapshot.SaveInventory(context);
             if (snapshot == null) CurrencyManager.Save(context); else snapshot.SaveCurrencies(context);
-            PathManager.Save(context);
-            TitleManager.Save(context);
-            CostumeManager.Save(context);
-            PetCustomisationManager.Save(context);
-            KeybindingManager.Save(context);
-            SpellManager.Save(context);
-            DatacubeManager.Save(context);
-            GalacticArchiveManager.Save(context);
+            if (snapshot == null) SaveExperience(context); else snapshot.SaveExperience(context);
+            if (snapshot == null) TitleManager.Save(context); else snapshot.SaveTitles(context);
+            if (snapshot == null) CostumeManager.Save(context); else snapshot.SaveWardrobe(context);
+            if (experiencePetOwner == null) PetCustomisationManager.Save(context); else experiencePetOwner.SaveFlairs(context);
+            if (snapshot == null) KeybindingManager.Save(context); else snapshot.SaveKeybindings(context);
+            if (experienceSpellOwner == null) SpellManager.Save(context);
+            if (experienceDatacubeOwner == null) DatacubeManager.Save(context);
+            if (experienceArchiveOwner == null) GalacticArchiveManager.Save(context);
             MailManager.Save(context);
-            ZoneMapManager.Save(context);
+            if (experienceMapOwner == null) ZoneMapManager.Save(context);
             if (snapshot == null) QuestManager.Save(context); else snapshot.Quests.Save(context);
-            AchievementManager.Save(context);
+            if (experienceAchievementOwner == null) AchievementManager.Save(context);
             if (ChallengeManager is ChallengeManager challengeManager)
             {
                 if (snapshot == null) challengeManager.Save(context); else snapshot.Challenges.Save(context);
             }
-            SupplySatchelManager.Save(context);
-            SaveTradeskills(context);
-            SaveSchematics(context);
-            XpManager.Save(context);
-            ReputationManager.Save(context);
+            if (snapshot == null) SupplySatchelManager.Save(context); else snapshot.SaveSatchel(context);
+            if (snapshot == null) SaveProgression(context); else snapshot.SaveProgression(context);
+            if (experienceReputationOwner == null) ReputationManager.Save(context);
             GuildManager.Save(context);
             EntitlementManager.Save(context);
             AppearanceManager.Save(context);
             snapshot?.Quests.EndContractSave(context);
-        }
-
-        private void SaveTradeskills(CharacterContext context)
-        {
-            foreach (TradeskillState tradeskill in tradeskills.Values)
-            {
-                CharacterTradeskillModel model = tradeskill.BuildModel();
-                if (tradeskill.PendingCreate)
-                {
-                    context.Add(model);
-                }
-                else if (tradeskill.Dirty)
-                {
-                    EntityEntry<CharacterTradeskillModel> entity = context.Attach(model);
-                    entity.Property(p => p.TradeskillXp).IsModified = true;
-                    entity.Property(p => p.IsActive).IsModified = true;
-                    entity.Property(p => p.PropertyProficiencyFlags).IsModified = true;
-                    entity.Property(p => p.TalentPoints).IsModified = true;
-                    entity.Property(p => p.TalentTier00).IsModified = true;
-                    entity.Property(p => p.TalentTier01).IsModified = true;
-                    entity.Property(p => p.TalentTier02).IsModified = true;
-                    entity.Property(p => p.TalentTier03).IsModified = true;
-                    entity.Property(p => p.TalentTier04).IsModified = true;
-                    entity.Property(p => p.TalentTier05).IsModified = true;
-                    entity.Property(p => p.TalentTier06).IsModified = true;
-                    entity.Property(p => p.TalentTier07).IsModified = true;
-                    entity.Property(p => p.TalentTier08).IsModified = true;
-                    entity.Property(p => p.TalentTier09).IsModified = true;
-                }
-
-                tradeskill.ClearSaveState();
-            }
-        }
-
-        private void SaveSchematics(CharacterContext context)
-        {
-            foreach (SchematicState schematic in schematics.Values)
-            {
-                CharacterSchematicModel model = schematic.BuildModel();
-                if (schematic.PendingCreate)
-                    context.Add(model);
-                else if (schematic.Dirty)
-                {
-                    EntityEntry<CharacterSchematicModel> entity = context.Attach(model);
-                    entity.Property(p => p.Discovered).IsModified = true;
-                    entity.Property(p => p.DiscoveryCoordinateX).IsModified = true;
-                    entity.Property(p => p.DiscoveryCoordinateY).IsModified = true;
-                }
-
-                schematic.ClearSaveState();
-            }
         }
 
         protected override IEntityModel BuildEntityModel()
@@ -1403,6 +1387,7 @@ namespace NexusForever.Game.Entity
                     SyncWorldZoneRuntimeState();
             }
 
+            QuestManager?.Communicator?.OnZone(Zone?.Id ?? 0);
             ZoneMapManager.OnZoneUpdate();
 
             messagePublisher.PublishAsync(new PlayerWorldZoneUpdatedMessage
@@ -1610,6 +1595,10 @@ namespace NexusForever.Game.Entity
 
         private void CleanupCore()
         {
+            if (bankActor != null)
+            { bankActor.Retired = true; bankActor.CleanupRequested = true; return; }
+            if (auctionBidActor != null)
+            { auctionBidActor.Retired = true; auctionBidActor.CleanupRequested = true; return; }
             InvalidateRewardTrackPresentation();
             Inventory?.InvalidateRewardDeliveries();
             ChallengeManager?.InvalidateRewardOperations();
@@ -1671,7 +1660,8 @@ namespace NexusForever.Game.Entity
 
                 try
                 {
-                    if (ChallengeManager?.RequiresAuthoritativeReload == true || ChallengeManager?.HasPendingRewardOperation == true
+                    if (CurrencyManager is CurrencyManager { RequiresContractCurrencyReload: true } or CurrencyManager { HasPendingContractCurrency: true }
+                        || ChallengeManager?.RequiresAuthoritativeReload == true || ChallengeManager?.HasPendingRewardOperation == true
                         || QuestManager?.RequiresAuthoritativeReload == true || QuestManager?.HasPendingRewardOperation == true
                         || Inventory?.SupportsTransactionalSoulboundDelivery == true
                         && (Inventory.RequiresAuthoritativeReload || Inventory.HasPendingRewardDelivery))
@@ -1690,6 +1680,7 @@ namespace NexusForever.Game.Entity
         {
             lock (mapAdmission.SyncRoot)
                 return pendingTeleport == null && !mapAdmission.BootstrapGeneration.HasValue
+                    && (CurrencyManager is not CurrencyManager { HasPendingContractCurrency: true } || ((CurrencyManager)CurrencyManager).RequiresContractCurrencyReload)
                     && (ChallengeManager?.HasPendingRewardOperation != true || ChallengeManager.RequiresAuthoritativeReload)
                     && (QuestManager?.HasPendingRewardOperation != true || QuestManager.RequiresAuthoritativeReload)
                     && (Inventory?.HasPendingRewardDelivery != true || Inventory.RequiresAuthoritativeReload);
@@ -1945,7 +1936,10 @@ namespace NexusForever.Game.Entity
             TryRecoverStarterTutorialQuestProgression(allowCombatTransitionRecovery: true);
 
             if (IsAdmissionAllowed() && mapAdmission.IsCurrent(generation))
+            {
                 IsLoading = false;
+                QuestManager?.Communicator?.OnEnteredWorld();
+            }
         }
 
         private void SyncDeferredLoadingWorldZoneRuntimeState()
@@ -2319,7 +2313,6 @@ namespace NexusForever.Game.Entity
                 && droppedTradeskill.IsActive != 0u)
             {
                 droppedTradeskill.IsActive = 0u;
-                droppedTradeskill.MarkDirty();
                 SendProfessionUpdate(BuildInactiveTradeskillInfo(toDropTradeskillId));
             }
 
@@ -2332,7 +2325,6 @@ namespace NexusForever.Game.Entity
             }
 
             learnedTradeskill.IsActive = 1u;
-            learnedTradeskill.MarkDirty();
 
             SendProfessionUpdate(learnedTradeskill.BuildInfo());
             QuestManager.ObjectiveUpdate(QuestObjectiveType.LearnTradeskill, (uint)toLearnTradeskillId, 1u);
@@ -2356,8 +2348,6 @@ namespace NexusForever.Game.Entity
 
             if (tradeskill.TradeskillXp == previousXp)
                 return 0u;
-
-            tradeskill.MarkDirty();
             SendProfessionUpdate(tradeskill.BuildInfo());
             CheckTradeskillTierAchievements(tradeskillId, previousXp, tradeskill.TradeskillXp);
             return tradeskill.TradeskillXp - previousXp;
@@ -2403,8 +2393,6 @@ namespace NexusForever.Game.Entity
 
             uint previousTalentPoints = tradeskill.TalentPoints;
             tradeskill.TalentPoints = requiredUnspentTalentPoints;
-
-            tradeskill.MarkDirty();
             SendProfessionUpdate(tradeskill.BuildInfo());
             return tradeskill.TalentPoints - previousTalentPoints;
         }
@@ -2425,7 +2413,6 @@ namespace NexusForever.Game.Entity
             }
 
             tradeskill.TalentTierIds[index] = tradeskillBonusId;
-            tradeskill.MarkDirty();
 
             SendProfessionUpdate(tradeskill.BuildInfo());
             return true;
@@ -2439,7 +2426,6 @@ namespace NexusForever.Game.Entity
             TradeskillState tradeskill = tradeskills[tradeskillId];
             Array.Clear(tradeskill.TalentTierIds);
             tradeskill.TalentPoints = 0u;
-            tradeskill.MarkDirty();
 
             if (AchievementManager is CharacterAchievementManager characterAchievementManager)
                 characterAchievementManager.GrantCompletedTradeskillAchievementRewards(this);
@@ -2469,7 +2455,6 @@ namespace NexusForever.Game.Entity
                     existingSchematic.Discovered = true;
                     existingSchematic.DiscoveryCoordinateX = schematicEntry.VectorX;
                     existingSchematic.DiscoveryCoordinateY = schematicEntry.VectorY;
-                    existingSchematic.MarkDirty();
                 }
 
                 return false;
@@ -3629,8 +3614,7 @@ namespace NexusForever.Game.Entity
             public bool Discovered { get; set; }
             public float DiscoveryCoordinateX { get; set; }
             public float DiscoveryCoordinateY { get; set; }
-            public bool PendingCreate { get; private set; }
-            public bool Dirty { get; private set; }
+            internal ProgressionPersistence.Recipe Baseline { get; init; }
 
             public static SchematicState Create(ulong characterId, TradeskillSchematic2Entry schematicEntry, bool discovered)
             {
@@ -3640,8 +3624,7 @@ namespace NexusForever.Game.Entity
                     TradeskillSchematic2Id   = schematicEntry.Id,
                     Discovered               = discovered,
                     DiscoveryCoordinateX     = schematicEntry.VectorX,
-                    DiscoveryCoordinateY     = schematicEntry.VectorY,
-                    PendingCreate            = true
+                    DiscoveryCoordinateY     = schematicEntry.VectorY
                 };
             }
 
@@ -3653,20 +3636,9 @@ namespace NexusForever.Game.Entity
                     TradeskillSchematic2Id   = model.TradeskillSchematic2Id,
                     Discovered               = model.Discovered,
                     DiscoveryCoordinateX     = model.DiscoveryCoordinateX,
-                    DiscoveryCoordinateY     = model.DiscoveryCoordinateY
+                    DiscoveryCoordinateY     = model.DiscoveryCoordinateY,
+                    Baseline                 = ProgressionPersistence.FromModel(model)
                 };
-            }
-
-            public void MarkDirty()
-            {
-                if (!PendingCreate)
-                    Dirty = true;
-            }
-
-            public void ClearSaveState()
-            {
-                PendingCreate = false;
-                Dirty         = false;
             }
 
             public CharacterSchematicModel BuildModel()
@@ -3691,8 +3663,7 @@ namespace NexusForever.Game.Entity
             public uint PropertyProficiencyFlags { get; set; }
             public uint TalentPoints { get; set; }
             public uint[] TalentTierIds { get; } = new uint[MaxTradeskillTalentTiers];
-            public bool PendingCreate { get; private set; }
-            public bool Dirty { get; private set; }
+            internal ProgressionPersistence.Skill Baseline { get; init; }
 
             public static TradeskillState Create(ulong characterId, TradeskillType tradeskillId)
             {
@@ -3700,8 +3671,7 @@ namespace NexusForever.Game.Entity
                 {
                     CharacterId   = characterId,
                     TradeskillId  = tradeskillId,
-                    IsActive      = 1u,
-                    PendingCreate = true
+                    IsActive      = 1u
                 };
             }
 
@@ -3714,7 +3684,8 @@ namespace NexusForever.Game.Entity
                     TradeskillXp              = model.TradeskillXp,
                     IsActive                  = model.IsActive,
                     PropertyProficiencyFlags  = model.PropertyProficiencyFlags,
-                    TalentPoints              = model.TalentPoints
+                    TalentPoints              = model.TalentPoints,
+                    Baseline                  = ProgressionPersistence.FromModel(model)
                 };
 
                 state.TalentTierIds[0] = model.TalentTier00;
@@ -3734,18 +3705,6 @@ namespace NexusForever.Game.Entity
             public uint GetSelectedTalentCount()
             {
                 return (uint)TalentTierIds.Count(t => t != 0u);
-            }
-
-            public void MarkDirty()
-            {
-                if (!PendingCreate)
-                    Dirty = true;
-            }
-
-            public void ClearSaveState()
-            {
-                PendingCreate = false;
-                Dirty         = false;
             }
 
             public TradeskillInfo BuildInfo()

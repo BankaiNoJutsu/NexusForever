@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
+using System.Collections;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
@@ -32,14 +31,10 @@ namespace NexusForever.Game.Entity
 
         public uint VisibilityMask
         {
-            get => visibilityMask;
+            get { lock (Persistence.Gate) return visibilityMask; }
             set
             {
-                if (visibilityMask == value)
-                    return;
-
-                visibilityMask = value;
-                saveMask |= CostumeSaveMask.VisibilityMask;
+                lock (Persistence.Gate) visibilityMask = value;
             }
         }
 
@@ -48,7 +43,7 @@ namespace NexusForever.Game.Entity
         private readonly ICostumeItem[] items = new CostumeItem[MaxCostumeItems];
         private readonly IGameTableManager gameTableManager;
 
-        private CostumeSaveMask saveMask;
+        internal CostumePersistence Persistence { get; }
 
         /// <summary>
         /// Create a new <see cref="ICostume"/> from an existing <see cref="CharacterCostumeModel"/> database model.
@@ -56,12 +51,15 @@ namespace NexusForever.Game.Entity
         public Costume(
             CharacterCostumeModel model,
             IItemManager itemManager = null,
-            IGameTableManager gameTableManager = null)
+            IGameTableManager gameTableManager = null) : this(model, itemManager, gameTableManager, null) { }
+
+        internal Costume(CharacterCostumeModel model, IItemManager itemManager, IGameTableManager gameTableManager, CostumePersistence persistence)
         {
             Owner = model.Id;
             Index = model.Index;
             visibilityMask = model.VisibilityMask;
             this.gameTableManager = gameTableManager;
+            Persistence = persistence ?? new(Owner, CostumePersistence.FromModel(model), CapturePersistence, index: Index);
 
             foreach (CharacterCostumeItemModel costumeItemModel in model.CostumeItem)
                 items[costumeItemModel.Slot] = new CostumeItem(this, costumeItemModel, itemManager, gameTableManager);
@@ -74,58 +72,25 @@ namespace NexusForever.Game.Entity
             IPlayer player,
             ClientCostumeSave costumeSave,
             IItemManager itemManager = null,
-            IGameTableManager gameTableManager = null)
+            IGameTableManager gameTableManager = null) : this(player, costumeSave, itemManager, gameTableManager, null) { }
+
+        internal Costume(IPlayer player, ClientCostumeSave costumeSave, IItemManager itemManager, IGameTableManager gameTableManager, CostumePersistence persistence)
         {
             Owner = player.CharacterId;
             Index = (byte)costumeSave.Index;
             visibilityMask = costumeSave.VisibilityMask;
             this.gameTableManager = gameTableManager;
+            Persistence = persistence ?? new(Owner, new(null, [], []), CapturePersistence, index: Index);
 
             for (byte i = 0; i < costumeSave.Items.Count; i++)
                 items[i] = new CostumeItem(this, costumeSave.Items[i], (CostumeItemSlot)i, itemManager, gameTableManager);
 
-            saveMask = CostumeSaveMask.Create;
         }
 
-        public void Save(CharacterContext context)
-        {
-            if (saveMask != CostumeSaveMask.None)
-            {
-                if ((saveMask & CostumeSaveMask.Create) != 0)
-                {
-                    // costume doesn't exist in database, all information must be saved
-                    var model = new CharacterCostumeModel
-                    {
-                        Id    = Owner,
-                        Index = Index,
-                        VisibilityMask  = VisibilityMask
-                    };
+        public void Save(CharacterContext context) => Persistence.SaveCostume(context, Index);
 
-                    context.Add(model);
-                }
-                else
-                {
-                    // costume already exists in database, save only data that has been modified
-                    var model = new CharacterCostumeModel
-                    {
-                        Id    = Owner,
-                        Index = Index
-                    };
-
-                    EntityEntry<CharacterCostumeModel> entity = context.Attach(model);
-                    if ((saveMask & CostumeSaveMask.VisibilityMask) != 0)
-                    {
-                        model.VisibilityMask = visibilityMask;
-                        entity.Property(p => p.VisibilityMask).IsModified = true;
-                    }
-                }
-
-                saveMask = CostumeSaveMask.None;
-            }
-
-            foreach (ICostumeItem costumeItem in items)
-                costumeItem.Save(context);
-        }
+        internal CostumePersistence.Snapshot CapturePersistence()
+            => new(null, [new(Index, visibilityMask)], items.OfType<CostumeItem>().Select(item => item.CapturePersistence()).OrderBy(row => row.Position).ToArray());
 
         /// <summary>
         /// Return <see cref="ICostumeItem"/> at supplied index.

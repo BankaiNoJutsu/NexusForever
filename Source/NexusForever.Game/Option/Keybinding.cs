@@ -57,6 +57,8 @@ namespace NexusForever.Game.Option
         public bool PendingDelete => (saveMask & BindingSaveMask.Delete) != 0;
 
         private BindingSaveMask saveMask;
+        internal Action<CharacterContext> CharacterSave { get; set; }
+        internal Action<AuthContext> AccountSave { get; set; }
 
         /// <summary>
         /// Create a new <see cref="Keybinding"/> from an existing database model.
@@ -124,6 +126,7 @@ namespace NexusForever.Game.Option
 
         public void Save(CharacterContext context)
         {
+            if (CharacterSave != null) { CharacterSave(context); return; }
             if ((saveMask & BindingSaveMask.Create) != 0)
             {
                 var model = new CharacterKeybindingModel
@@ -239,6 +242,7 @@ namespace NexusForever.Game.Option
 
         public void Save(AuthContext context)
         {
+            if (AccountSave != null) { AccountSave(context); return; }
             if ((saveMask & BindingSaveMask.Create) != 0)
             {
                 var model = new AccountKeybindingModel

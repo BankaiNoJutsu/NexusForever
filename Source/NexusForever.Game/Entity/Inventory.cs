@@ -98,6 +98,8 @@ namespace NexusForever.Game.Entity
             lock (MutationGate)
             {
                 using var mutation = new InventoryMutationOperation(this);
+                if (bankPublications != null)
+                    foreach (var bank in bankPublications.ToArray()) if (!bank.CurrentActor()) bank.Abandon();
                 UpdateItemExpirations(lastTick);
             }
         }
@@ -106,13 +108,13 @@ namespace NexusForever.Game.Entity
         {
             lock (MutationGate)
             {
-                using var mutation = new InventoryMutationOperation(this);
-                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || HasPendingRewardDelivery)
+                if (realmBankPublishing || RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || realmBankNotifications != null || HasPendingRewardDelivery)
                 {
                     var error = new InvalidOperationException("Ordinary inventory save overlaps a pending reward delivery.");
                     context.RejectSave(error);
                     throw error;
                 }
+                using var mutation = new InventoryMutationOperation(this);
                 IItem[] tombstones = deletedItems.ToArray();
                 foreach (IItem item in tombstones)
                     item.Save(context);
@@ -129,6 +131,8 @@ namespace NexusForever.Game.Entity
                 foreach (IBag bag in bags.Values.Where(b => b.Location != InventoryLocation.Ability
                     && b.Location != InventoryLocation.RealmBank))
                     bag.Save(context);
+
+                EnrollPeriodicRealmBankSave(context);
             }
         }
 
@@ -168,7 +172,7 @@ namespace NexusForever.Game.Entity
         public bool IsInventoryFull(InventoryLocation location)
         {
             IBag bag = GetBag(location) ?? throw new ArgumentException();
-            return RequiresAuthoritativeReload || rewardOwnerInvalidated || bag.AvailableSlots == 0u;
+            return RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated || bag.AvailableSlots == 0u;
         }
 
         /// <summary>
@@ -279,7 +283,7 @@ namespace NexusForever.Game.Entity
             lock (MutationGate)
             {
                 using var mutation = new InventoryMutationOperation(this);
-                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
                 if (spell4BaseEntry == null)
                     throw new ArgumentNullException();
 
@@ -297,8 +301,8 @@ namespace NexusForever.Game.Entity
         {
             lock (MutationGate)
             {
-                using var mutation = new InventoryMutationOperation(this);
-                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) return false;
+                using var mutation = new InventoryMutationOperation(this, readOnly: true);
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) return false;
                 IItemInfo info = itemManager?.GetItemInfo(itemId);
                 if (info == null)
                     throw new ArgumentNullException();
@@ -314,8 +318,8 @@ namespace NexusForever.Game.Entity
         {
             lock (MutationGate)
             {
-                using var mutation = new InventoryMutationOperation(this);
-                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) return false;
+                using var mutation = new InventoryMutationOperation(this, readOnly: true);
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) return false;
                 if (location == InventoryLocation.Inventory
                     && player?.SupplySatchelManager?.TryGetAutoStoreCapacity(info, out uint capacity) == true)
                     count -= Math.Min(count, capacity);
@@ -386,6 +390,8 @@ namespace NexusForever.Game.Entity
                 if (!TryPlanSoulboundCreation(location, info, count, charges, out SoulboundCreationPlan plan, out error))
                     return false;
 
+                using var notifications = BeginRealmBankNotifications(location == InventoryLocation.RealmBank);
+
                 // The complete physical destination is known before creating any item
                 // (which allocates its ID), changing a stack, or emitting a packet.
                 var newItems = new List<(Item Item, uint BagIndex)>();
@@ -409,7 +415,7 @@ namespace NexusForever.Game.Entity
                     AddItem(item, location, bagIndex);
                     if (player?.IsLoading == false)
                     {
-                        player.Session.EnqueueMessageEncrypted(new ServerItemAdd
+                        EnqueueItemMessage(new ServerItemAdd
                         {
                             InventoryItem = new InventoryItem { Item = item.Build(), Reason = reason }
                         });
@@ -417,7 +423,8 @@ namespace NexusForever.Game.Entity
                 }
 
                 if (count != 0u && location == InventoryLocation.Inventory && player?.IsLoading == false)
-                    InventoryQuestObjectiveUpdater.RefreshCollectItemForItem(player, info.Id);
+                    RefreshCollectedItem(info.Id);
+                notifications?.Complete();
                 return true;
             }
         }
@@ -427,7 +434,7 @@ namespace NexusForever.Game.Entity
         {
             plan = null;
             error = GenericError.ItemNotValidForSlot;
-            if (RequiresAuthoritativeReload || rewardOwnerInvalidated) return false;
+            if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) return false;
             error = GenericError.ItemBadId;
             if (info?.Entry == null || info.Id == 0u)
                 return false;
@@ -501,7 +508,7 @@ namespace NexusForever.Game.Entity
             lock (MutationGate)
             {
                 using var mutation = new InventoryMutationOperation(this);
-                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
                 IItemInfo info = itemManager?.GetItemInfo(itemId);
                 if (info == null)
                     throw new ArgumentNullException();
@@ -517,8 +524,9 @@ namespace NexusForever.Game.Entity
         {
             lock (MutationGate)
             {
+                if (commodityDelivery?.DeferCreation(location, info, count, reason, charges) == true) return;
                 using var mutation = new InventoryMutationOperation(this);
-                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
                 if (info == null)
                     throw new ArgumentNullException();
 
@@ -535,7 +543,7 @@ namespace NexusForever.Game.Entity
                     // any bag stack. A full satchel naturally falls back to the bag.
                     if (!CanCreateItemInBag(location, info, count - toSatchel))
                     {
-                        player.Session.EnqueueMessageEncrypted(new ServerItemError { ErrorCode = GenericError.ItemInventoryFull });
+                        EnqueueItemMessage(new ServerItemError { ErrorCode = GenericError.ItemInventoryFull });
                         return;
                     }
 
@@ -550,13 +558,14 @@ namespace NexusForever.Game.Entity
                             // quantities even if a custom manager changes it during this call.
                             if (stored != 0u)
                                 player.SupplySatchelManager.RemoveAmount(material, stored);
-                            player.Session.EnqueueMessageEncrypted(new ServerItemError { ErrorCode = GenericError.ItemInventoryFull });
+                            EnqueueItemMessage(new ServerItemError { ErrorCode = GenericError.ItemInventoryFull });
                             return;
                         }
                         count -= stored;
                     }
                 }
 
+                using var notifications = BeginRealmBankNotifications(location == InventoryLocation.RealmBank);
                 // update any existing stacks before creating new items
                 if (info.IsStackable())
                 {
@@ -586,12 +595,13 @@ namespace NexusForever.Game.Entity
                             player.SupplySatchelManager.AddAmount(new Item(characterId, info, count, charges, itemManager, gameTableManager), count);
                         else
                         {
-                            player.Session.EnqueueMessageEncrypted(new ServerItemError
+                            EnqueueItemMessage(new ServerItemError
                             {
                                 ErrorCode = GenericError.ItemInventoryFull
                             });
                         }
 
+                        notifications?.Complete();
                         return;
                     }
 
@@ -600,7 +610,7 @@ namespace NexusForever.Game.Entity
 
                     if (!player?.IsLoading ?? false)
                     {
-                        player.Session.EnqueueMessageEncrypted(new ServerItemAdd
+                        EnqueueItemMessage(new ServerItemAdd
                         {
                             InventoryItem = new InventoryItem
                             {
@@ -614,7 +624,8 @@ namespace NexusForever.Game.Entity
                 }
 
                 if (location == InventoryLocation.Inventory && player != null && !player.IsLoading)
-                    InventoryQuestObjectiveUpdater.RefreshCollectItemForItem(player, info.Id);
+                    RefreshCollectedItem(info.Id);
+                notifications?.Complete();
             }
         }
 
@@ -625,7 +636,7 @@ namespace NexusForever.Game.Entity
         {
             lock (MutationGate)
             {
-                using var mutation = new InventoryMutationOperation(this);
+                using var mutation = new InventoryMutationOperation(this, readOnly: true);
                 return CanMoveItem(item, location.Location, location.BagIndex);
             }
         }
@@ -637,8 +648,8 @@ namespace NexusForever.Game.Entity
         {
             lock (MutationGate)
             {
-                using var mutation = new InventoryMutationOperation(this);
-                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) return GenericError.ItemNotValidForSlot;
+                using var mutation = new InventoryMutationOperation(this, readOnly: true);
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) return GenericError.ItemNotValidForSlot;
                 // Move rollback snapshots cover every bag, including unrelated slots.
                 if (bags.Values.Any(bag => bag.HasReservedSlots))
                     return GenericError.ItemNotValidForSlot;
@@ -754,7 +765,7 @@ namespace NexusForever.Game.Entity
                 GenericError? result = CanMoveItem(item, location, bagIndex);
                 if (result.HasValue)
                 {
-                    player.Session.EnqueueMessageEncrypted(new ServerItemError
+                    EnqueueItemMessage(new ServerItemError
                     {
                         ErrorCode = result.Value
                     });
@@ -764,6 +775,7 @@ namespace NexusForever.Game.Entity
                 IItem dstItem = dstBag.GetItem(bagIndex);
                 if (ReferenceEquals(item, dstItem))
                     return;
+                using var notifications = BeginRealmBankNotifications(bag.Location == InventoryLocation.RealmBank || dstBag.Location == InventoryLocation.RealmBank);
                 InventoryOperationSnapshot snapshot = CreateOperationSnapshot();
                 bool wasSoulbound = item.Soulbound;
                 bool dstWasSoulbound = dstItem?.Soulbound ?? false;
@@ -797,7 +809,7 @@ namespace NexusForever.Game.Entity
                         BindOnEquip(item);
                         bankPersistence = PersistRealmBankStorage(item);
 
-                        player.Session.EnqueueMessageEncrypted(new ServerItemMove
+                        EnqueueItemMessage(new ServerItemMove
                         {
                             To = new ItemDragDrop
                             {
@@ -864,7 +876,7 @@ namespace NexusForever.Game.Entity
                             PersistRealmBankStorage(dstItem);
                         }
 
-                        player.Session.EnqueueMessageEncrypted(new ServerItemSwap
+                        EnqueueItemMessage(new ServerItemSwap
                         {
                             To = new ItemDragDrop
                             {
@@ -881,6 +893,7 @@ namespace NexusForever.Game.Entity
                         SendBindOnEquipRefreshIfNeeded(item, wasSoulbound);
                         SendBindOnEquipRefreshIfNeeded(dstItem, dstWasSoulbound);
                     }
+                    notifications?.Complete();
                 }
                 catch (Exception exception)
                 {
@@ -905,7 +918,7 @@ namespace NexusForever.Game.Entity
             lock (MutationGate)
             {
                 using var mutation = new InventoryMutationOperation(this);
-                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
                 IItem item = GetItem(itemGuid);
                 if (item == null)
                     throw new InvalidPacketValueException();
@@ -933,6 +946,8 @@ namespace NexusForever.Game.Entity
                 if (bags.Values.Any(bag => bag.HasReservedSlots))
                     throw new InvalidPacketValueException();
 
+                bool bankSplit = item.Location == InventoryLocation.RealmBank || newItemLocation.Location == InventoryLocation.RealmBank;
+                using var notifications = BeginRealmBankNotifications(bankSplit);
                 InventoryOperationSnapshot snapshot = CreateOperationSnapshot();
                 Task bankPersistence = null;
                 try
@@ -942,7 +957,6 @@ namespace NexusForever.Game.Entity
                     if (item.Soulbound)
                         newItem.MakeSoulbound();
 
-                    bool bankSplit = item.Location == InventoryLocation.RealmBank || newItemLocation.Location == InventoryLocation.RealmBank;
                     AddItem(newItem, newItemLocation.Location, newItemLocation.BagIndex, persistRealmBank: false);
                     item.StackCount -= newItem.StackCount;
                     // Build first so charge/socket initialization belongs to the
@@ -956,8 +970,9 @@ namespace NexusForever.Game.Entity
                         }
                     } : null;
                     if (bankSplit) bankPersistence = PersistRealmBankSplit(item, newItem);
-                    if (added != null) player.Session.EnqueueMessageEncrypted(added);
+                    if (added != null) EnqueueItemMessage(added);
                     SendItemStackCountUpdate(item, item.StackCount, ItemUpdateReason.NoReason);
+                    notifications?.Complete();
                 }
                 catch (Exception error)
                 {
@@ -977,7 +992,7 @@ namespace NexusForever.Game.Entity
             lock (MutationGate)
             {
                 using var mutation = new InventoryMutationOperation(this);
-                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
                 IBag srcBag = GetBag(from.Location);
                 if (srcBag == null)
                     throw new InvalidPacketValueException();
@@ -998,7 +1013,7 @@ namespace NexusForever.Game.Entity
             lock (MutationGate)
             {
                 using var mutation = new InventoryMutationOperation(this);
-                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
                 IBag srcBag = GetBag(from.Location);
                 if (srcBag == null)
                     throw new InvalidPacketValueException();
@@ -1033,27 +1048,30 @@ namespace NexusForever.Game.Entity
             GenericError? bagCapacityError = CanRemoveItem(item);
             if (bagCapacityError.HasValue)
             {
-                player.Session.EnqueueMessageEncrypted(new ServerItemError
+                EnqueueItemMessage(new ServerItemError
                 {
                     ErrorCode = bagCapacityError.Value
                 });
                 return null;
             }
 
+            using var notifications = BeginRealmBankNotifications(persistRealmBank && item.Location == InventoryLocation.RealmBank);
             InventoryLocation deletedLocation = item.Location;
             RemoveItem(item);
             item.EnqueueDelete(true);
             if (!deletedItems.Any(deleted => ReferenceEquals(deleted, item)))
                 deletedItems.Add(item);
             Task bankPersistence = deletedLocation == InventoryLocation.RealmBank && persistRealmBank ? PersistRealmBankDeletion(item) : null;
+            realmBankNotifications?.Stage(item);
 
             try
             {
-                if (notify && player != null) player.Session.EnqueueMessageEncrypted(new ServerItemDelete
+                if (notify && player != null) EnqueueItemMessage(new ServerItemDelete
                 {
                     Guid   = item.Guid,
                     Reason = reason
                 });
+                notifications?.Complete();
             }
             catch
             {
@@ -1072,7 +1090,7 @@ namespace NexusForever.Game.Entity
             lock (MutationGate)
             {
                 using var mutation = new InventoryMutationOperation(this);
-                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
                 IBag bag = GetBag(InventoryLocation.Inventory);
                 foreach (IItem item in bag.Where(i => i.Id == itemId))
                 {
@@ -1101,7 +1119,7 @@ namespace NexusForever.Game.Entity
             lock (MutationGate)
             {
                 using var mutation = new InventoryMutationOperation(this);
-                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
                 if (item == null)
                     throw new ArgumentNullException();
 
@@ -1112,7 +1130,7 @@ namespace NexusForever.Game.Entity
                 RemoveItem(item);
                 item.CharacterId = null;
 
-                player.Session.EnqueueMessageEncrypted(new ServerItemDelete
+                EnqueueItemMessage(new ServerItemDelete
                 {
                     Guid   = item.Guid,
                     Reason = reason
@@ -1128,7 +1146,7 @@ namespace NexusForever.Game.Entity
             lock (MutationGate)
             {
                 using var mutation = new InventoryMutationOperation(this);
-                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
                 IBag bag = GetBag(location);
                 if (bag == null)
                     throw new ArgumentException();
@@ -1137,12 +1155,13 @@ namespace NexusForever.Game.Entity
                 if (!bagIndex.HasValue)
                     throw new ArgumentException();
 
+                using var notifications = BeginRealmBankNotifications(location == InventoryLocation.RealmBank);
                 // Stacks are bought back in full, so no need to worry about splitting stacks
                 AddItem(item, location, bagIndex.Value);
 
                 if (!player?.IsLoading ?? false)
                 {
-                    player.Session.EnqueueMessageEncrypted(new ServerItemAdd
+                    EnqueueItemMessage(new ServerItemAdd
                     {
                         InventoryItem = new InventoryItem
                         {
@@ -1151,6 +1170,7 @@ namespace NexusForever.Game.Entity
                         }
                     });
                 }
+                notifications?.Complete();
             }
         }
 
@@ -1160,8 +1180,8 @@ namespace NexusForever.Game.Entity
             lock (MutationGate)
             {
                 using var mutation = new InventoryMutationOperation(this);
-                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
-                AddItem(item, location, bagIndex);
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                AddItem(item, location, bagIndex, persistRealmBank: false);
             }
         }
 
@@ -1190,7 +1210,10 @@ namespace NexusForever.Game.Entity
                 ApplyProperties(item);
 
             if (IsVisualItemSlot(item.Location, item.BagIndex) && player != null)
-                player.AddVisual((ItemSlot)item.Info.TypeEntry.ItemSlotId, item.Info.GetDisplayId());
+            {
+                ItemSlot slot = (ItemSlot)item.Info.TypeEntry.ItemSlotId; ushort display = item.Info.GetDisplayId();
+                ApplyInventoryEffect(() => player.AddVisual(slot, display));
+            }
 
             if (IsEquippableBagSlot(item.Location, item.BagIndex))
                 InventoryResize(InventoryLocation.Inventory, (int)item.Info.Entry.MaxStackCount);
@@ -1199,6 +1222,7 @@ namespace NexusForever.Game.Entity
 
             if (persistRealmBank && location == InventoryLocation.RealmBank && player != null)
                 PersistRealmBankStorage(item);
+            realmBankNotifications?.Stage(item, item is Item created && created.PendingCreate ? created : null);
         }
 
         private static void BindOnEquip(IItem item)
@@ -1214,7 +1238,7 @@ namespace NexusForever.Game.Entity
             if (wasSoulbound || item?.Soulbound != true || item.Location == InventoryLocation.None || player?.IsLoading != false)
                 return;
 
-            player.Session.EnqueueMessageEncrypted(new ServerItemAdd
+            EnqueueItemMessage(new ServerItemAdd
             {
                 InventoryItem = new InventoryItem
                 {
@@ -1249,7 +1273,10 @@ namespace NexusForever.Game.Entity
             bag.RemoveItem(item);
 
             if (IsVisualItemSlot(item.PreviousLocation, item.PreviousBagIndex) && player != null)
-                player.RemoveVisual((ItemSlot)item.Info.TypeEntry.ItemSlotId);
+            {
+                ItemSlot slot = (ItemSlot)item.Info.TypeEntry.ItemSlotId;
+                ApplyInventoryEffect(() => player.RemoveVisual(slot));
+            }
         }
 
         /// <summary>
@@ -1293,13 +1320,20 @@ namespace NexusForever.Game.Entity
                 return;
 
             itemExpirationAccumulator += lastTick;
-            if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked)
+            if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || realmBankNotifications != null || HasPendingRealmBankItemSave
+                || auctionDelivery?.DefersExpiration == true || commodityDelivery?.DefersExpiration == true)
                 return;
             if (itemExpirationAccumulator < 1d)
                 return;
 
             uint elapsedSeconds = (uint)Math.Min(uint.MaxValue, Math.Floor(itemExpirationAccumulator));
+            bool bankExpiry = bags.Values.Where(bag => bag.Location == InventoryLocation.RealmBank)
+                .SelectMany(bag => bag).Any(item => item.ExpirationTimeLeft > 0 && item.ExpirationTimeLeft <= elapsedSeconds);
+            if (bankExpiry && (inventorySaveLeases != 0 || HasPendingRewardDelivery
+                || bags.Values.SelectMany(bag => bag).OfType<Item>().Any(item => item.HasPendingSave))) return;
+            using var notifications = BeginRealmBankNotifications(bankExpiry);
             itemExpirationAccumulator -= elapsedSeconds;
+            notifications?.RetainExpirationOnAbort(elapsedSeconds);
 
             foreach (IItem item in bags.Values
                 .Where(b => b.Location != InventoryLocation.Ability)
@@ -1323,8 +1357,12 @@ namespace NexusForever.Game.Entity
                         ItemDelete(bag, item, ItemUpdateReason.Expired, !rewardOwnerInvalidated);
                 }
                 else
+                {
                     item.ExpirationTimeLeft -= elapsedSeconds;
+                    realmBankNotifications?.Stage(item);
+                }
             }
+            notifications?.Complete();
         }
 
         private static uint? GetFirstAvailableBagIndex(IBag bag, uint maxExclusive)
@@ -1388,7 +1426,7 @@ namespace NexusForever.Game.Entity
             if (item.Location != InventoryLocation.RealmBank && location != InventoryLocation.RealmBank)
                 return null;
 
-            if (IsRealmBankPersistenceBlocked)
+            if (IsRealmBankPersistenceBlocked || inventorySaveLeases != 0 || HasPendingRewardDelivery)
                 return GenericError.ItemNotValidForSlot;
 
             if (player == null || realmBankManager == null || !realmBankManager.HasUnlock(player))
@@ -1422,6 +1460,11 @@ namespace NexusForever.Game.Entity
         {
             if (item == null || item.Location == InventoryLocation.None || player == null || realmBankManager == null)
                 return null;
+
+            if (realmBankNotifications != null && (item.Location == InventoryLocation.RealmBank || item.PreviousLocation == InventoryLocation.RealmBank))
+            {
+                realmBankNotifications.Stage(item); return null;
+            }
 
             Task save = item.Location == InventoryLocation.RealmBank ? realmBankManager.SaveItemAsync(item, player)
                 : item.PreviousLocation == InventoryLocation.RealmBank ? realmBankManager.SaveCharacterItemAsync(item, player) : null;
@@ -1533,6 +1576,18 @@ namespace NexusForever.Game.Entity
                 deletedItems.RemoveRange(snapshot.DeletedItemCount, deletedItems.Count - snapshot.DeletedItemCount);
         }
 
+        private void RestoreBankPreparation(InventoryOperationSnapshot before, InventoryOperationSnapshot prepared)
+        {
+            if (bags.Count != prepared.Bags.Count || bags.Any(pair => pair.Value.HasReservedSlots
+                || !prepared.Bags.TryGetValue(pair.Key, out var items) || !pair.Value.CreateSnapshot().SequenceEqual(items)))
+                throw new InvalidOperationException("Bank rollback cannot discard later inventory membership.");
+            var restore = before.Items.Select(pair => pair.Value.PrepareRestore(prepared.Items.GetValueOrDefault(pair.Key)
+                ?? throw new InvalidOperationException("Bank rollback lost its prepared Item."))).ToArray();
+            foreach (var apply in restore) apply();
+            foreach (var pair in before.Bags) GetBag(pair.Key).RestoreSnapshot(pair.Value);
+            if (deletedItems.Count > before.DeletedItemCount) deletedItems.RemoveRange(before.DeletedItemCount, deletedItems.Count - before.DeletedItemCount);
+        }
+
         /// <summary>
         /// Update <see cref="IItem"/> with supplied stack count.
         /// </summary>
@@ -1540,6 +1595,8 @@ namespace NexusForever.Game.Entity
         {
             if (item == null)
                 throw new ArgumentNullException();
+
+            using var notifications = BeginRealmBankNotifications(persistRealmBank && item.Location == InventoryLocation.RealmBank);
 
             uint previousStackCount = item.StackCount;
             item.StackCount = stackCount;
@@ -1549,18 +1606,20 @@ namespace NexusForever.Game.Entity
                 && player != null
                 && !player.IsLoading)
             {
-                InventoryQuestObjectiveUpdater.RefreshCollectItemForItem(player, item.Id);
+                RefreshCollectedItem(item.Id);
             }
 
             SendItemStackCountUpdate(item, stackCount, reason);
 
             if (persistRealmBank && item.Location == InventoryLocation.RealmBank && player != null)
                 PersistRealmBankStorage(item);
+            realmBankNotifications?.Stage(item);
+            notifications?.Complete();
         }
 
         private void SendItemStackCountUpdate(IItem item, uint stackCount, ItemUpdateReason reason)
         {
-            player.Session.EnqueueMessageEncrypted(new ServerItemStackCountUpdate
+            EnqueueItemMessage(new ServerItemStackCountUpdate
             {
                 Guid = item.Guid, StackCount = stackCount, Reason = reason
             });
@@ -1574,7 +1633,7 @@ namespace NexusForever.Game.Entity
             lock (MutationGate)
             {
                 using var mutation = new InventoryMutationOperation(this);
-                if (RequiresAuthoritativeReload || rewardOwnerInvalidated || (item is Item reserved && reserved.HasRewardMutationReservation)) return false;
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated || (item is Item reserved && reserved.HasRewardMutationReservation)) return false;
                 if (item == null)
                     throw new ArgumentNullException(nameof(item), "Item is null.");
 
@@ -1584,6 +1643,8 @@ namespace NexusForever.Game.Entity
                 // This should only apply for re-usable items, like Quest Clickies.
                 if (item.Info.Entry.MaxCharges == 0 && item.Info.Entry.MaxStackCount == 1)
                     return true;
+
+                using var notifications = BeginRealmBankNotifications(item.Location == InventoryLocation.RealmBank);
 
                 if (item.Info.Entry.MaxStackCount > 1)
                 {
@@ -1598,7 +1659,8 @@ namespace NexusForever.Game.Entity
                     return false;
                 }
 
-                player.AchievementManager.CheckAchievements(player, AchievementType.ItemConsume, item.Id);
+                uint consumedId = item.Id;
+                AfterBankCommit(() => player.AchievementManager.CheckAchievements(player, AchievementType.ItemConsume, consumedId));
 
                 if (item.Charges >= 1 && item.Info.Entry.MaxStackCount == 1)
                     item.Charges--;
@@ -1619,6 +1681,7 @@ namespace NexusForever.Game.Entity
                 if (item.Location == InventoryLocation.RealmBank && player != null)
                     PersistRealmBankStorage(item);
 
+                notifications?.Complete();
                 return true;
             }
         }
@@ -1628,7 +1691,7 @@ namespace NexusForever.Game.Entity
             lock (MutationGate)
             {
                 using var mutation = new InventoryMutationOperation(this);
-                if (RequiresAuthoritativeReload || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) throw new InvalidOperationException("Inventory requires a current authoritative owner.");
                 if (item == null)
                     throw new ArgumentNullException();
 
@@ -1659,12 +1722,24 @@ namespace NexusForever.Game.Entity
 
         private void ApplyProperties(IItem item)
         {
+            if (realmBankNotifications != null)
+            {
+                var properties = item.Info.Properties.ToArray(); ItemSlot slot = (ItemSlot)item.Info.SlotEntry.Id;
+                ApplyInventoryEffect(() => { foreach (var property in properties) player.AddItemProperty(property.Key, slot, property.Value); });
+                return;
+            }
             foreach (KeyValuePair<Property, float> property in item.Info.Properties)
                 player.AddItemProperty(property.Key, (ItemSlot)item.Info.SlotEntry.Id, property.Value);
         }
 
         private void RemoveProperties(IItem item)
         {
+            if (realmBankNotifications != null)
+            {
+                var properties = item.Info.Properties.Keys.ToArray(); ItemSlot slot = (ItemSlot)item.Info.SlotEntry.Id;
+                ApplyInventoryEffect(() => { foreach (Property property in properties) player.RemoveItemProperty(property, slot); });
+                return;
+            }
             foreach (KeyValuePair<Property, float> property in item.Info.Properties)
                 player.RemoveItemProperty(property.Key, (ItemSlot)item.Info.SlotEntry.Id);
         }
@@ -1689,6 +1764,9 @@ namespace NexusForever.Game.Entity
             private readonly float durability;
             private readonly uint expirationTimeLeft;
             private readonly bool pendingDelete;
+            private readonly bool soulbound;
+            private readonly uint[] microchips;
+            private readonly ItemRuneSlot[] runes;
 
             public ItemOperationSnapshot(IItem item)
             {
@@ -1703,6 +1781,8 @@ namespace NexusForever.Game.Entity
                 durability = item.Durability;
                 expirationTimeLeft = item.ExpirationTimeLeft;
                 pendingDelete = item.PendingDelete;
+                soulbound = item.Soulbound; microchips = item.MicrochipIds?.ToArray() ?? [];
+                runes = item.RuneSlots?.Select(slot => new ItemRuneSlot(slot.Type, slot.RuneItem2Id)).ToArray() ?? [];
             }
 
             public void Restore()
@@ -1721,6 +1801,45 @@ namespace NexusForever.Game.Entity
                 item.Charges = charges;
                 item.Durability = durability;
                 item.ExpirationTimeLeft = expirationTimeLeft;
+                if (item is Item concrete) concrete.RestoreBankPreparationMetadata(soulbound, microchips, runes);
+            }
+
+            internal Action PrepareRestore(ItemOperationSnapshot prepared)
+            {
+                if (!ReferenceEquals(item, prepared.item)) throw new InvalidOperationException("Bank rollback changed its Item reference.");
+                var changes = new List<Action>();
+                void Field<T>(T before, T target, Func<T> current, Action<T> set)
+                {
+                    if (EqualityComparer<T>.Default.Equals(before, target)) return;
+                    if (!EqualityComparer<T>.Default.Equals(current(), target)) throw new InvalidOperationException("Bank rollback conflicts with later Item intent.");
+                    changes.Add(() => set(before));
+                }
+                Field(characterId, prepared.characterId, () => item.CharacterId, value => item.CharacterId = value);
+                Field(location, prepared.location, () => item.Location, value => item.Location = value);
+                Field(previousLocation, prepared.previousLocation, () => item.PreviousLocation, value => item.PreviousLocation = value);
+                Field(bagIndex, prepared.bagIndex, () => item.BagIndex, value => item.BagIndex = value);
+                Field(previousBagIndex, prepared.previousBagIndex, () => item.PreviousBagIndex, value => item.PreviousBagIndex = value);
+                Field(pendingDelete, prepared.pendingDelete, () => item.PendingDelete, item.EnqueueDelete);
+                if (item.Info != null)
+                {
+                    Field(stackCount, prepared.stackCount, () => item.StackCount, value => item.StackCount = value);
+                    Field(charges, prepared.charges, () => item.Charges, value => item.Charges = value);
+                    Field(durability, prepared.durability, () => item.Durability, value => item.Durability = value);
+                    Field(expirationTimeLeft, prepared.expirationTimeLeft, () => item.ExpirationTimeLeft, value => item.ExpirationTimeLeft = value);
+                    static bool SameRunes(IEnumerable<ItemRuneSlot> left, IEnumerable<ItemRuneSlot> right)
+                        => left.Select(slot => (slot.Type, slot.RuneItem2Id)).SequenceEqual(right.Select(slot => (slot.Type, slot.RuneItem2Id)));
+                    bool chipsChanged = !microchips.SequenceEqual(prepared.microchips), runesChanged = !SameRunes(runes, prepared.runes), boundChanged = soulbound != prepared.soulbound;
+                    if (chipsChanged && !prepared.microchips.SequenceEqual(item.MicrochipIds) || runesChanged && !SameRunes(prepared.runes, item.RuneSlots)
+                        || boundChanged && item.Soulbound != prepared.soulbound) throw new InvalidOperationException("Bank rollback conflicts with later Item metadata.");
+                    if ((chipsChanged || runesChanged || boundChanged) && item is Item concrete)
+                    {
+                        bool bound = boundChanged ? soulbound : item.Soulbound;
+                        var chips = chipsChanged ? microchips : item.MicrochipIds.ToArray();
+                        var slots = runesChanged ? runes : item.RuneSlots.Select(slot => new ItemRuneSlot(slot.Type, slot.RuneItem2Id)).ToArray();
+                        changes.Add(() => concrete.RestoreBankPreparationMetadata(bound, chips, slots));
+                    }
+                }
+                return () => { foreach (var change in changes) change(); };
             }
         }
 

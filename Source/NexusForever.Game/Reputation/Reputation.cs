@@ -3,6 +3,7 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Reputation;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Reputation;
 
 namespace NexusForever.Game.Reputation
@@ -64,6 +65,15 @@ namespace NexusForever.Game.Reputation
 
         public void Save(CharacterContext context)
         {
+            if (player is Player owner)
+            {
+                if (owner.ReputationManager is not ReputationManager manager || !manager.Owns(this))
+                {
+                    var error = new InvalidOperationException("Reputation lost its loaded faction owner.");
+                    context.RejectSave(error); throw error;
+                }
+                owner.SaveExperience(context); return;
+            }
             if (saveMask == SaveMask.None)
                 return;
 

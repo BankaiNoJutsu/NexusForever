@@ -78,6 +78,20 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary<uint, HashSet<uint>> activePetActionOwnerSpellGroupIdsBySpell4Id = new();
         private ushort bonusAmpPower;
         private byte bonusAbilityTierPoints;
+        internal ExperiencePersistence.Spellbook LoadedSpellbook { get; }
+        internal ulong SpellbookCharacter { get; }
+        internal string SpellbookDatabase { get; }
+        internal ExperiencePersistence.Spellbook CaptureSpellbook()
+        {
+            if (player.CharacterId != SpellbookCharacter || spells.Values.Any(row => row.Owner.CharacterId != SpellbookCharacter))
+                throw new InvalidOperationException("Spellbook changed its Character owner.");
+            return new(ActiveActionSet, (saveMask & SpellManagerSaveMask.BonusAbilityTierPoints) != 0 ? bonusAbilityTierPoints : LoadedSpellbook.Bonus,
+                spells.Values.Select(row => new ExperiencePersistence.LearnedSpell(SpellbookCharacter, row.BaseInfo.Entry.Id, row.Tier)).OrderBy(row => row.Id).ToArray(),
+                actionSets.SelectMany(set => set.Actions.Select(row => new ExperiencePersistence.Shortcut(set.Owner, set.Index, (ushort)row.Location, (byte)row.ShortcutType, row.ObjectId, row.Tier)))
+                    .Concat(LoadedSpellbook.Shortcuts.Where(row => row.Spec >= ActionSet.MaxActionSets)).OrderBy(row => row.Spec).ThenBy(row => row.Location).ToArray(),
+                actionSets.SelectMany(set => set.Amps.Select(row => new ExperiencePersistence.Amp(set.Owner, set.Index, checked((ushort)row.Entry.Id))))
+                    .Concat(LoadedSpellbook.Amps.Where(row => row.Spec >= ActionSet.MaxActionSets)).OrderBy(row => row.Spec).ThenBy(row => row.Id).ToArray());
+        }
         private bool initialised;
 
         private readonly IActionSet[] actionSets = new ActionSet[ActionSet.MaxActionSets];
@@ -113,19 +127,24 @@ namespace NexusForever.Game.Entity
             this.prerequisiteManager = prerequisiteManager;
             this.globalSpellManager = globalSpellManager;
             this.gameTableManager = gameTableManager;
+            SpellbookCharacter = model.Id; SpellbookDatabase = CharacterLoadOrigin.Get(model)?.Database;
+            LoadedSpellbook = new(model.ActiveSpec, model.BonusAbilityTierPoints,
+                model.Spell.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Id).ToArray(),
+                model.ActionSetShortcut.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Spec).ThenBy(row => row.Location).ToArray(),
+                model.ActionSetAmp.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Spec).ThenBy(row => row.Id).ToArray());
 
             foreach (CharacterSpellModel spellModel in model.Spell)
             {
                 ISpellBaseInfo spellBaseInfo = GetGlobalSpellManager().GetSpellBaseInfo(spellModel.Spell4BaseId);
                 IItem item = player.Inventory.SpellCreate(spellBaseInfo.Entry, ItemUpdateReason.NoReason);
-                spells.Add(spellModel.Spell4BaseId, new CharacterSpell(owner, spellModel, spellBaseInfo, item, prerequisiteManager, globalSpellManager, gameTableManager));
+                spells.Add(spellModel.Spell4BaseId, new CharacterSpell(owner, spellModel, spellBaseInfo, item, prerequisiteManager, globalSpellManager, gameTableManager) { CharacterSaveOwner = TrySaveExperience });
             }
 
             bonusAbilityTierPoints = (byte)Math.Min(model.BonusAbilityTierPoints, ActionSet.MaxBonusTierPoints);
 
             for (byte i = 0; i < ActionSet.MaxActionSets; i++)
             {
-                actionSets[i] = new ActionSet(i, player, gameTableManager, bonusAbilityTierPoints);
+                actionSets[i] = new ActionSet(i, player, gameTableManager, bonusAbilityTierPoints) { CharacterSaveOwner = TrySaveExperience };
 
                 foreach (CharacterActionSetShortcutModel shortcutModel in model.ActionSetShortcut
                     .Where(c => c.SpecIndex == i))
@@ -270,6 +289,7 @@ namespace NexusForever.Game.Entity
 
         public void Save(CharacterContext context)
         {
+            if (TrySaveExperience(context)) return;
             if (saveMask != SpellManagerSaveMask.None)
             {
                 // character is attached in Player::Save, this will only be local lookup
@@ -448,7 +468,7 @@ namespace NexusForever.Game.Entity
 
             IItem item = player.Inventory.SpellCreate(spellBaseInfo.Entry, ItemUpdateReason.NoReason);
 
-            var unlockedSpell = new CharacterSpell(player, spellBaseInfo, tier, item, prerequisiteManager, globalSpellManager, gameTableManager);
+            var unlockedSpell = new CharacterSpell(player, spellBaseInfo, tier, item, prerequisiteManager, globalSpellManager, gameTableManager) { CharacterSaveOwner = TrySaveExperience };
             if (!player.IsLoading)
             {
                 player.Session.EnqueueMessageEncrypted(new ServerSpellUpdate
@@ -465,6 +485,12 @@ namespace NexusForever.Game.Entity
         private IPrerequisiteManager GetPrerequisiteManager()
         {
             return prerequisiteManager ?? throw new InvalidOperationException($"{nameof(SpellManager)} requires an {nameof(IPrerequisiteManager)}.");
+        }
+        private bool TrySaveExperience(CharacterContext context)
+        {
+            if (player is not Player owner) return false;
+            if (!ReferenceEquals(owner.SpellManager, this)) { var error = new InvalidOperationException("Spellbook lost its Character owner."); context.RejectSave(error); throw error; }
+            owner.SaveExperience(context); return true;
         }
 
         private IGlobalSpellManager GetGlobalSpellManager()

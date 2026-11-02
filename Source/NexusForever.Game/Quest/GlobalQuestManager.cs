@@ -62,6 +62,7 @@ namespace NexusForever.Game.Quest
         private ImmutableDictionary<ushort, ImmutableList<uint>> questGiverStore;
         private ImmutableDictionary<ushort, ImmutableList<uint>> questReceiverStore;
 
+        public ICommunicatorIndex CommunicatorIndex { get; private set; } = global::NexusForever.Game.Quest.CommunicatorIndex.Empty;
         private ImmutableDictionary<uint, ICommunicatorMessage> communicatorStore;
         private ImmutableDictionary<ushort, ImmutableList<ICommunicatorMessage>> communicatorQuestStore;
         private ImmutableDictionary<(ushort /*questId*/, QuestState), ImmutableList<ICommunicatorMessage>> communicatorQuestStateTriggerStore;
@@ -199,7 +200,6 @@ namespace NexusForever.Game.Quest
 
         private void InitialiseCommunicatorEntries()
         {
-            var builder = ImmutableDictionary.CreateBuilder<uint, ICommunicatorMessage>();
             if (gameTableManager.CommunicatorMessages?.Entries == null)
                 MissingGameDataDiagnostics.ReportMissingTable(
                     CommunicatorMessagesTableName,
@@ -209,13 +209,13 @@ namespace NexusForever.Game.Quest
 
             IEnumerable<CommunicatorMessagesEntry> communicatorEntries =
                 gameTableManager.CommunicatorMessages?.Entries ?? Enumerable.Empty<CommunicatorMessagesEntry>();
-            foreach (CommunicatorMessagesEntry entry in communicatorEntries)
+            CommunicatorIndex = global::NexusForever.Game.Quest.CommunicatorIndex.Build(communicatorEntries, id =>
             {
-                var communicator = new CommunicatorMessage(entry, prerequisiteManager, gameTableManager);
-                builder.Add(communicator.Id, communicator);
-            }
-
-            communicatorStore = builder.ToImmutable();
+                var info = GetQuestInfo(id);
+                return info == null ? null : new CommunicatorQuestInfo((byte)Math.Min(255, info.Objectives.Count),
+                    (info.Entry.Flags & 0x20u) != 0 || info.Entry.QuestRepeatPeriodEnum != 0, info.Entry.Flags);
+            }, prerequisiteManager, gameTableManager);
+            communicatorStore = CommunicatorIndex.Messages;
         }
 
         private void InitialiseCommunicatorQuests()

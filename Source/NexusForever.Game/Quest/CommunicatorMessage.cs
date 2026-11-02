@@ -1,11 +1,10 @@
-﻿using NexusForever.Game.Abstract.Entity;
+using System.Collections.Immutable;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
+using NexusForever.GameTable;
 using NexusForever.Game.Abstract.Quest;
-using NexusForever.Game.Prerequisite;
-using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
-using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Story;
@@ -14,119 +13,103 @@ namespace NexusForever.Game.Quest
 {
     public class CommunicatorMessage : ICommunicatorMessage
     {
-        public uint Id => entry.Id;
-        public ushort QuestId => (ushort)entry.QuestIdDelivered;
-        public bool DeliversQuest => entry.QuestIdDelivered != 0u;
-
-        private readonly CommunicatorMessagesEntry entry;
-        private readonly IPrerequisiteManager prerequisiteManager;
-        private readonly IGameTableManager gameTableManager;
-
-        /// <summary>
-        /// Create a new <see cref="ICommunicatorMessage"/> with supplied <see cref="CommunicatorMessagesEntry"/>.
-        /// </summary>
-        public CommunicatorMessage(
-            CommunicatorMessagesEntry entry,
-            IPrerequisiteManager prerequisiteManager = null,
-            IGameTableManager gameTableManager = null)
-        {
-            this.entry = entry;
-            this.prerequisiteManager = prerequisiteManager;
-            this.gameTableManager = gameTableManager;
-        }
+        public uint Id => Entry.Id;
+        public ushort QuestId => (ushort)Entry.QuestIdDelivered;
+        public CommunicatorMessagesEntry Entry { get; }
+        public CommunicatorKind Kind { get; }
+        public bool ServerPushed => Kind is CommunicatorKind.PushedScheduled or CommunicatorKind.WorldArmed;
+        // Unconditioned server-pushed rows wait on a script: nothing sends them, and the client drops them, so no player
+        // can have seen one.
+        public bool Reachable => Kind is CommunicatorKind.PushedScheduled or CommunicatorKind.ClientScheduled
+            or CommunicatorKind.ClientUnscheduled or CommunicatorKind.WorldArmed;
+        public bool DeliversQuest => Delivers;
+        public bool Delivers => Entry.QuestIdDelivered != 0u;
+        public ImmutableArray<CommunicatorCondition> Conditions { get; }
+        public ImmutableArray<CommunicatorTrigger> Triggers { get; }
 
         /// <summary>
-        /// Checks if <see cref="IPlayer"/> meets the required conditions for this quest to be added to their communicator.
+        /// Create a new <see cref="ICommunicatorMessage"/> classified by <see cref="CommunicatorIndex"/>.
         /// </summary>
-        public bool Meets(IPlayer player)
+        public CommunicatorMessage(CommunicatorMessagesEntry entry, CommunicatorKind kind,
+            ImmutableArray<CommunicatorCondition> conditions, ImmutableArray<CommunicatorTrigger> triggers,
+            IPrerequisiteManager prerequisiteManager = null, IGameTableManager gameTableManager = null)
         {
-            if (player.Map == null)
-                return false;
+            Entry      = entry;
+            Kind       = kind;
+            Conditions = conditions;
+            Triggers   = triggers;
+            tables = gameTableManager; prerequisites = prerequisiteManager;
+        }
 
-            if (entry.WorldId != 0u && entry.WorldId != player.Map.Entry.Id)
-                return false;
-
-            if (entry.WorldZoneId != 0u && !IsInWorldZone(player.Zone, entry.WorldZoneId))
-                return false;
-
-            if (entry.MinLevel != 0u && player.Level < entry.MinLevel)
-                return false;
-
-            if (entry.MaxLevel != 0u && player.Level > entry.MaxLevel)
-                return false;
-
-            for (int i = 0; i < entry.Quests.Length; i++)
+        private readonly IGameTableManager tables;
+        private readonly IPrerequisiteManager prerequisites;
+        public CommunicatorMessage(CommunicatorMessagesEntry entry, IPrerequisiteManager prerequisiteManager = null, IGameTableManager gameTableManager = null)
+            : this(entry, CommunicatorIndex.Classify(entry, false, false), CommunicatorIndex.GetConditions(entry, id =>
             {
-                ushort questId = (ushort)entry.Quests[i];
-                if (questId == 0)
-                    continue;
+                var info = gameTableManager?.Quest2?.GetEntry(id);
+                return info == null ? null : new CommunicatorQuestInfo((byte)Math.Min(255, (info.Objectives ?? []).Count(x => x != 0)),
+                    (info.Flags & 0x20u) != 0 || info.QuestRepeatPeriodEnum != 0, info.Flags);
+            }), [], prerequisiteManager, gameTableManager)
+        { }
 
-                if (!CommunicatorQuestState.Meets(player.QuestManager.GetQuestState(questId), entry.States[i]))
-                    return false;
+        // Legacy predicate callers retain their explicit offer-independent gate.
+        public bool Meets(IPlayer player) => player.Map != null && Evaluate(new PlayerCommunicatorView(player, player.QuestManager, tables, prerequisites),
+            CommunicatorGates.Offer) == CommunicatorResult.Eligible;
+        // Explicit scripted calls retain their original packet shape and text guard.
+        public void Send(IGameSession session) { if (Entry.LocalizedTextIdMessage != 0) Send(session, false); }
+
+        /// <summary>
+        /// Evaluate the row's conditions for <paramref name="player"/> in the client's order (0x14043d3d0), skipping <paramref name="skip"/>.
+        /// </summary>
+        public CommunicatorResult Evaluate(ICommunicatorPlayerView player, CommunicatorGates skip = CommunicatorGates.None)
+        {
+            if ((skip & CommunicatorGates.World) == 0 && Entry.WorldId != 0u && Entry.WorldId != player.WorldId)
+                return CommunicatorResult.World;
+            if ((skip & CommunicatorGates.Zone) == 0 && Entry.WorldZoneId != 0u && !player.IsInZone(Entry.WorldZoneId))
+                return CommunicatorResult.Zone;
+            if (Entry.ClassId != 0u && Entry.ClassId != (uint)player.Class)
+                return CommunicatorResult.Class;
+            if (Entry.RaceId != 0u && Entry.RaceId != (uint)player.Race)
+                return CommunicatorResult.Race;
+            if (Entry.FactionId != 0u && Entry.FactionId != (uint)player.Faction)
+                return CommunicatorResult.Faction;
+
+            if (Entry.FactionIdReputation != 0u)
+            {
+                // The client's inequality here is unverified.
+                float amount = player.GetReputation((Faction)Entry.FactionIdReputation);
+                if (!(amount >= Entry.ReputationMin)
+                    || Entry.ReputationMax != 0u && !(amount <= Entry.ReputationMax))
+                    return CommunicatorResult.Reputation;
             }
 
-            if (entry.FactionId != 0u && (Faction)entry.FactionId != player.Faction1)
-                return false;
+            if (Entry.MaxLevel != 0u && player.Level > Entry.MaxLevel)
+                return CommunicatorResult.MaxLevel;
+            if (Entry.MinLevel != 0u && player.Level < Entry.MinLevel)
+                return CommunicatorResult.MinLevel;
 
-            if (entry.ClassId != 0u && (Class)entry.ClassId != player.Class)
-                return false;
+            foreach (CommunicatorCondition condition in Conditions)
+                if (!CommunicatorConditions.Meets(condition.TableState, condition.Quest, player.GetQuest(condition.QuestId)))
+                    return CommunicatorResult.QuestCondition;
 
-            if (entry.FactionIdReputation != 0u && !MeetsReputation(player))
-                return false;
+            if (Entry.PrerequisiteId != 0u && !player.MeetsPrerequisite(Entry.PrerequisiteId))
+                return CommunicatorResult.Prerequisite;
 
-            if (entry.PrerequisiteId != 0u && !GetPrerequisiteManager().Meets(player, entry.PrerequisiteId))
-                return false;
+            if ((skip & CommunicatorGates.Offer) == 0 && Delivers && player.CheckOffer(QuestId) != CommunicatorOfferBlock.None)
+                return CommunicatorResult.Offer;
 
-            return true;
-        }
-
-        private bool IsInWorldZone(WorldZoneEntry zone, uint worldZoneId)
-        {
-            if (zone == null || worldZoneId == 0u)
-                return false;
-
-            HashSet<uint> visitedZones = [];
-            WorldZoneEntry currentZone = zone;
-            while (currentZone != null && visitedZones.Add(currentZone.Id))
-            {
-                if (currentZone.Id == worldZoneId)
-                    return true;
-
-                if (currentZone.ParentZoneId == 0u)
-                    return false;
-
-                if (currentZone.ParentZoneId == worldZoneId)
-                    return true;
-
-                currentZone = gameTableManager?.WorldZone?.GetEntry(currentZone.ParentZoneId);
-            }
-
-            return false;
-        }
-
-        private IPrerequisiteManager GetPrerequisiteManager()
-        {
-            return prerequisiteManager ?? throw new InvalidOperationException($"{nameof(CommunicatorMessage)} requires an {nameof(IPrerequisiteManager)}.");
-        }
-
-        private bool MeetsReputation(IPlayer player)
-        {
-            float amount = player.ReputationManager.GetReputation((Faction)entry.FactionIdReputation)?.Amount ?? 0f;
-            return amount >= entry.ReputationMin
-                && (entry.ReputationMax == 0u || amount <= entry.ReputationMax);
+            return CommunicatorResult.Eligible;
         }
 
         /// <summary>
         /// Send communicator message to <see cref="IGameSession"/>.
         /// </summary>
-        public void Send(IGameSession session)
+        public void Send(IGameSession session, bool checkConditions)
         {
-            if (entry.LocalizedTextIdMessage == 0u)
-                return;
-
             session.EnqueueMessageEncrypted(new ServerCommunicatorMessage
             {
-                CommunicatorMessagesId = (ushort)entry.Id
+                CommunicatorMessagesId = (ushort)Entry.Id,
+                CheckConditions        = checkConditions
             });
         }
     }

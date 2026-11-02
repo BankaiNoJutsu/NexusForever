@@ -22,7 +22,9 @@ namespace NexusForever.Game.Marketplace
                 if (record.Item is Item item)
                     item.Save(context);
 
-                context.MarketplaceAuction.Add(ToAuctionModel(record));
+                var model = ToAuctionModel(record);
+                context.MarketplaceAuction.Add(model);
+                ObserveAuctionRow(context, record, model);
             });
         }
 
@@ -49,31 +51,20 @@ namespace NexusForever.Game.Marketplace
 
         private void PersistAuctionUpdate(CharacterContext context, MarketplaceAuction record)
         {
-            MarketplaceAuctionModel model = context.MarketplaceAuction.SingleOrDefault(a => a.Id == record.Auction.AuctionId);
-            if (model == null)
-            {
-                log.Error("PersistAuctionUpdate failed: auction id={0} missing from database.", record.Auction.AuctionId);
-                return;
-            }
-
+            MarketplaceAuctionModel model = RequireAuctionRow(context, record);
             ApplyAuctionModel(model, record.Auction, record.ExpiresAtUtc);
+            ObserveAuctionRow(context, record, model);
         }
 
         private bool PersistCommodityOrderUpdate(MarketplaceCommodityOrder record)
         {
             return Persist(context =>
             {
-                MarketplaceCommodityOrderModel model = context.MarketplaceCommodityOrder
-                    .SingleOrDefault(o => o.Id == record.Order.CommodityOrderId);
-                if (model == null)
-                {
-                    log.Error("PersistCommodityOrderUpdate failed: commodity order id={0} missing from database.", record.Order.CommodityOrderId);
-                    return;
-                }
-
+                MarketplaceCommodityOrderModel model = RequireCommodityRow(context, record);
                 model.Quantity     = record.Order.Quantity;
                 model.Price        = record.Order.Price;
                 model.PricePerUnit = record.Order.PricePerUnit;
+                ObserveCommodityRow(context, record, model);
             });
         }
 
@@ -199,7 +190,9 @@ namespace NexusForever.Game.Marketplace
             uint remainingQuantity,
             ulong remainingPrice)
         {
-            if (!IsRestingCommodityOrder(record))
+            // New incoming orders enter the book before their first insert.
+            // Only a loaded or successfully inserted order owns a stored row.
+            if (!IsRestingCommodityOrder(record) || !record.RequiresStoredRow)
                 return;
 
             if (remainingQuantity == 0u)
@@ -208,17 +201,11 @@ namespace NexusForever.Game.Marketplace
                 return;
             }
 
-            MarketplaceCommodityOrderModel model = context.MarketplaceCommodityOrder
-                .SingleOrDefault(o => o.Id == record.Order.CommodityOrderId);
-            if (model == null)
-            {
-                log.Error("PersistCommodityFillOrderChange failed: commodity order id={0} missing from database.", record.Order.CommodityOrderId);
-                return;
-            }
-
+            MarketplaceCommodityOrderModel model = RequireCommodityRow(context, record);
             model.Quantity     = remainingQuantity;
             model.Price        = remainingPrice;
             model.PricePerUnit = record.Order.PricePerUnit;
+            ObserveCommodityRow(context, record, model);
         }
 
         private bool PersistAuctionDelete(MarketplaceAuction record)
@@ -299,9 +286,9 @@ namespace NexusForever.Game.Marketplace
 
         private static void RemoveAuctionModel(CharacterContext context, MarketplaceAuction record)
         {
-            MarketplaceAuctionModel model = context.MarketplaceAuction.SingleOrDefault(a => a.Id == record.Auction.AuctionId);
-            if (model != null)
-                context.MarketplaceAuction.Remove(model);
+            MarketplaceAuctionModel model = RequireAuctionRow(context, record);
+            context.MarketplaceAuction.Remove(model);
+            ObserveAuctionRow(context, record, null);
         }
 
         private static void SaveSettledAuctionItem(CharacterContext context, IItem item)
@@ -311,7 +298,18 @@ namespace NexusForever.Game.Marketplace
 
         private bool PersistCommodityOrderInsert(MarketplaceCommodityOrder record)
         {
-            return Persist(context => context.MarketplaceCommodityOrder.Add(ToCommodityOrderModel(record)));
+            // Matching can completely consume an incoming order before its
+            // first insert. Do not resurrect it as an empty persisted listing.
+            if (record.Order.Quantity == 0u)
+                return true;
+            bool saved = Persist(context =>
+            {
+                var model = ToCommodityOrderModel(record);
+                context.MarketplaceCommodityOrder.Add(model);
+                ObserveCommodityRow(context, record, model);
+            });
+            if (saved) record.RequiresStoredRow = true;
+            return saved;
         }
 
         private bool PersistCommodityOrderDelete(MarketplaceCommodityOrder record)
@@ -337,10 +335,9 @@ namespace NexusForever.Game.Marketplace
 
         private static void RemoveCommodityOrderModel(CharacterContext context, MarketplaceCommodityOrder record)
         {
-            MarketplaceCommodityOrderModel model = context.MarketplaceCommodityOrder
-                .SingleOrDefault(o => o.Id == record.Order.CommodityOrderId);
-            if (model != null)
-                context.MarketplaceCommodityOrder.Remove(model);
+            MarketplaceCommodityOrderModel model = RequireCommodityRow(context, record);
+            context.MarketplaceCommodityOrder.Remove(model);
+            ObserveCommodityRow(context, record, null);
         }
 
         private bool Persist(Action<CharacterContext> action)
@@ -354,7 +351,7 @@ namespace NexusForever.Game.Marketplace
 
             try
             {
-                database.SaveBlocking(action);
+                MarketplaceCommittedSave.Save(database, action);
                 return true;
             }
             catch (Exception ex)
@@ -375,7 +372,7 @@ namespace NexusForever.Game.Marketplace
 
             try
             {
-                database.SaveBlocking(action);
+                MarketplaceCommittedSave.Save(database, action);
                 return true;
             }
             catch (Exception ex)

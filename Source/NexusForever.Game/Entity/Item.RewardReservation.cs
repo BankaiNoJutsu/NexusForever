@@ -49,6 +49,7 @@ namespace NexusForever.Game.Entity
         // Called under persistenceGate before assignment, not after MarkDirty.
         private void EnsureRewardMutationAllowed()
         {
+            EnsureMarketplaceMutationAllowed();
             if (rewardMutationReservation != null || requiresAuthoritativeRewardReload)
                 throw new InvalidOperationException("Item is reserved for a pending reward delivery.");
         }

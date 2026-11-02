@@ -95,6 +95,7 @@ namespace NexusForever.Game.Spell
             : 0d;
 
         private UnlockedSpellSaveMask saveMask;
+        internal Func<CharacterContext, bool> CharacterSaveOwner { private get; init; }
 
         private UpdateTimer rechargeTimer;
         private bool continuousCastHeld;
@@ -183,6 +184,7 @@ namespace NexusForever.Game.Spell
 
         public void Save(CharacterContext context)
         {
+            if (CharacterSaveOwner?.Invoke(context) == true) return;
             if (saveMask == UnlockedSpellSaveMask.None)
                 return;
 

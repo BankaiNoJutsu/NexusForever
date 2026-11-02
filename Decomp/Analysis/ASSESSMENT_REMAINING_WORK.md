@@ -1,10 +1,712 @@
 # Assessment follow-through goal
 
-Started 2026-10-29 at the user's request. Working checkout:
+Started 2026-10-29 at the user's request. Original checkout:
 `I:\GIT\NexusForever-assessment`, `legacy-di-storefront-hardening`.
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
+Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
-Latest continuation: [Realm bank persistence and loading](REALM_BANK_CODECS_AND_LOADING.md)
+[Unreserved bank currency recovery](DESTINATION_PROVIDER_QUALIFICATION.md) now
+persists Auth/SQL-gap intent across currency-free bank operations, single mail
+attachments and unreserved/new wallets before publication/retirement. Publication
+reentry rejects before value, deferral or membership changes. Frozen `2c4aff9e`/
+6,202 inputs passes **11,634 full tests**, zero failures/skips, all26 new/144 focused
+and every prior11,608 label,26 MySQL cases and clean build/reviews. Source/DLL/
+archive bindings and7 recorded workload-generation shutdowns verify; schema/DB
+DLLs are unchanged and prior migration qualification remains separately bound.
+Three accepted-loss and six publication negatives remain retained. Evidence:
+`bank-unreserved-currency/verification.json`. No default/grant/wire change or
+client/CUA launch. The user authorized regular scoped commits/pushes on2 November;
+verified milestones are published after review. The Goal remains active.
+
+[Legacy bank reconciliation](DESTINATION_PROVIDER_QUALIFICATION.md) now retains
+captured vendor/mail outcomes and deferred wallet intent through the complete
+original real-Player save before guarded publication. Frozen `824fab02`/6,201
+inputs passes **11,608 full tests**, zero failures/skips, all 41 new/100 focused
+and1,201 earlier affected labels,38 MySQL cases and its synthetic upgrade.
+Build/reviews, source/DLL/archive bindings and all14 recorded workload-generation
+shutdowns verify. Retained failures and the excluded original full remain explicit.
+Evidence: `legacy-deferred-currency/corrected-failure/verification.json`.
+Defaults15:1/17:1, no44/seven grants and no client/CUA/commit/push remain. The Goal
+stays active; next real-Player entry-point and external/retail limits are below.
+
+[Account keybinding recovery](DESTINATION_PROVIDER_QUALIFICATION.md) now retains
+complete accepted create/edit/delete sets through failed/uncertain Auth saves,
+registration freezes and later edits. Real Account.Save and AuthDatabase
+Save/SaveBlocking settle bindings and wallet together without changing defaults.
+Direct set/member ownership, whole-set recovery, EF(false) restaging, route and
+manager/session guards and whole-unit retry witnesses are covered. Four executed
+defects are fixed, including review-found unchanged-resave refusal. All 34 new,
+193 affected and 34 MySQL 8.4.13 Auth behaviors pass as 32 retained plus two
+corrected retry controls; full build/reviews are clean.
+Frozen `795eae0a`/6,189 inputs passes **11,567 full tests**, zero failures/skips;
+all new/affected labels and source/DLL/base-archive-plus-test-overlay identities
+verify. The original seven-provider-warning full remains retained; 41 corrected
+cache controls pass with unchanged production/warning/assertion policy. The owned
+fixture and both runner/test-host/helper generations are absent. Evidence:
+`account-options-persistence/verification.json`. Raw fields, character selection,
+defaults15:1/17:1 and no44/seven character autogrants are preserved. Actual-table,
+copied-upgrade, physical network/whole-service/deployment/socket/native/retail
+limits remain explicit. The Goal stays active; no commit/push/client launch.
+
+[Character keybinding/input-selection recovery](DESTINATION_PROVIDER_QUALIFICATION.md)
+retains accepted selection plus complete Character binding replacements through
+failed/uncertain saves, frozen Auth gaps, later edits and delete/restore. Bound
+manager/set/member saves share ownership; mixed/foreign sets and obsolete owners
+reject. Verified flushed state is accepted per row/selector column for restaging,
+preserving unrelated EF intent. All 36 new regressions, 228 final affected and
+36 configured-MySQL Character cases pass; full build and reviews are clean.
+Frozen `255a0ff9`/6,187 inputs passes **11,533 full tests**, zero failures/skips,
+including all new/affected labels. Final bindings verify; owned database and
+original runner/helper/test-host generations are absent. Seven executed negatives
+and the compile/ordering fixture errors remain retained. The final test-only
+ordering correction is an overlay; production DLLs and 32 native passes remain
+unchanged, with four corrected native controls passing. Evidence:
+`character-options-persistence/verification.json`. Account routing/writer, raw
+loaded values, packet policy and defaults/grants are preserved. Actual-data/Auth/
+deployment/socket/native/retail limits remain explicit.
+
+Next integrated evidence outcome: continue the F-025 entity-stat auxiliary
+per-opcode apply-handler/apply-table mapping with the matching build16042 PE,
+REA identity evidence and available static tooling. Target0x0889/0x08CC/0x08F4/
+0x0939/0x093D/0x093E through WorldSocket+0x15b0 /vtable+0x58; shared readers alone
+and the rejected viewport/grid candidate do not prove apply ownership or emit
+timing. Reuse the archived input/unwind tooling and prior negative-search bounds;
+do not retry unavailable Ghidra/runtime capture or enable an emitter without the
+continuation guide's corroboration. This moves into broader feature evidence
+rather than inventing further bank edge cases. The known currency-free/unreserved
+actor gaps above are now executed and fixed. Contract reset/unclaimed/excess/all726
+choices, raw Communicator corroboration, actual-table/native/retail and the other
+feature-matrix requirements remain open. Native client/CUA stay stopped.
+
+[Exploration/reputation recovery](DESTINATION_PROVIDER_QUALIFICATION.md) retains
+public relocation hexgroups and reputation increases/decreases across failed or
+uncertain saves, freezes membership/values before Auth, and preserves later intent,
+completion titles, unavailable loaded maps and direct-owner guards. Three public
+Player.Save negatives were executed and fixed. All 22 new regressions, 105 focused,
+308 affected and 22 configured-MySQL Character cases pass. Build/reviews are clean;
+frozen `aad4a351`/6,185 inputs passes **11,497 full tests**, zero failures/skips,
+including all new and affected labels. Final source/DLL/archive bindings verify;
+owned fixture and original runner/helper/test-host generations are absent.
+Evidence: `exploration-persistence/verification.json`. Discovery, traversal,
+faction thresholds, reward producers, deltas, defaults/grants and wire semantics
+are unchanged. Actual-table/Auth/deployment/socket/native/retail limits remain.
+
+
+[Collection recovery](DESTINATION_PROVIDER_QUALIFICATION.md) now retains accepted
+datacube/journal/scientist progress and Galactic Archive unlock/view state through
+the existing guarded progression graph. Four initial public-flow losses and three
+review-found obsolete-owner bypasses were executed and fixed. All 20 new
+regressions, 262 affected cases and 20 configured-MySQL Character cases pass; full solution
+build and final Spec/Standards reviews are clean. Frozen candidate `bc8716e1` has
+6,184 Source/Tools inputs. Full suite: **11,475 passed, zero failures/skips**;
+all 20 new and 262 affected labels pass within it. Final source/DLL/archive bindings
+verify. Owned MySQL and original full runner, test-host and native-helper
+generations are absent. Evidence: `collection-persistence/verification.json`.
+Linked-article prerequisites, existing rewards, unknown loaded state and proxy
+compatibility remain intact. Actual-table/deployment/native/retail limits remain.
+
+
+[XP/path and coupled reward recovery](DESTINATION_PROVIDER_QUALIFICATION.md) now
+retains accepted progression, spells/LAS, scanbots, achievements and ordinary
+Item/material intent across failed/uncertain saves and the Auth gap.39 new public-
+flow cases,285 focused cases and39 configured-MySQL Character cases pass; reviews0/0
+and the full build are clean. Frozen candidate8d1660aa/6,182 inputs passes11,455
+full tests, zero failures/skips; all39 new cases and prior focused labels pass
+within it. Final source/DLL/archive bindings verify. Owned MySQL and original
+runner/test-host/helper generations are absent. Actual-table/deployment/native/
+retail limits remain explicit. Evidence: `xp-path-persistence/verification.json`.
+
+[Tradeskill/recipe progression persistence](DESTINATION_PROVIDER_QUALIFICATION.md)
+now retains learning, archiving/reactivation, XP/talents/reset and discovery across
+failed/uncertain saves. Three real Player.Save negatives were executed and fixed.
+The combined two-table graph rejects mixed recovery, preserves later edits and
+freezes values/membership before Auth. All22 focused/756 affected and17 configured-
+provider cases pass; the route-refusal control also uses a private SQLite target.
+Full build clean; Spec0/Standards0 blocking with one maintenance advisory retained.
+Candidate5117180a/6,175 inputs/ten DLL pairs ends11,406pass/10SQLite storage
+failures/0skips; all17 new cases pass in that full run. All135 cases in the ten
+failing method groups, including the exact failed arguments, pass afterward on
+the same binaries. Six SQLITE_FULL13 and four IOERR10 failures clustered near
+12:06:49UTC; original capacity/extended IO codes are unavailable, so cause remains
+unresolved. Diagnostic capacity samples cannot establish the earlier condition.
+The full gate stays failed; no unchanged full retry. Final bindings and controls:
+`tradeskill-persistence/verification.json`. Owned MySQL process/listener are absent.
+
+[Title grant/revocation/expiry persistence](DESTINATION_PROVIDER_QUALIFICATION.md)
+now retains accepted timer, revocation and active-selection changes through
+failed/uncertain saves and freezes normal-save values before Auth. Three real
+Player.Save negatives were executed and fixed, including a successful first save
+that omitted early revocation. All33 focused/418 affected and13 configured-MySQL
+cases pass; full build is clean. Candidate5d1845a2/6,172 inputs/ten DLL pairs ends
+11,397 full passes/2 settlement-deadline failures/0 skips. The gate remains failed;
+all55 same-binary method-group controls pass, with no cause established.
+Spec0/Standards0 blocking;
+one maintenance advisory retained. Native/helper/client/retail scopes remain
+distinct; owned MySQL and full runner/test-host generations are absent. Final
+source/DLL/archive bindings verify at `title-persistence/verification.json`.
+
+[Wardrobe durability and normal-save integration](DESTINATION_PROVIDER_QUALIFICATION.md)
+retains accepted create/edit/equip intent through failed flush, rollback, disposal,
+suppression and acknowledgement loss. Both original public Player.Save negatives
+and the review-found EF acceptance negatives were executed and fixed. Later edits,
+partial saves, unknown static IDs and frozen Auth-gap behavior have14 regressions;
+all170 affected and14 configured-MySQL cases pass. Final reviews0/0; clean full
+build. Candidate d9c6d95f/6,169 inputs/ten DLL pairs passes **11,386 full tests**,
+zero failures/skips; final source/DLL/archive bindings verify. Owned MySQL is stopped.
+Canonical evidence: `wardrobe-persistence/verification.json`. Defaults/grants, UI acceptance,
+CUA/client stop and no staging/commit/push boundaries remain unchanged.
+
+[Costume timestamp migration repair](DESTINATION_PROVIDER_QUALIFICATION.md)
+restores the existing update-generation contract found by the extended physical
+schema comparison. The corrected frozen-before public save fails its timestamp
+check; two final MySQL cases and one MariaDB upgrade case pass with retained rows,
+no-op/untouched controls and no grants. Initial ignored-seed and post-write-reset
+fixture failures remain excluded. One focused/268 affected cases and a clean full
+build pass; Spec0/Standards0. Initial2a155d72 full ends11,367pass/5EF provider-cache
+failures/0skips; retained unchanged. A controlled pressure probe reproduces the new
+SQL-test profile fault with the old-profile control passing. Sharing the existing
+script options fixes that probe without warning/assertion/deadline changes.
+Corrected1e3e6f0a/6,167 inputs/ten pairs changes only two test files; native production
+DLLs remain identical. Corrected268 affected cases, clean full build and reviews0/0
+pass. Corrected full ends11,368pass/4settlement-deadline failures/0skips; the five
+cache-warning cases now pass. All115 cases in the four failing method groups pass
+on the same binary afterward; a45.012674-second completion gap has no established
+cause. The full gate stays failed and no unchanged full retry occurred. Evidence:
+`provider-schema-constraints/corrected/verification.json`. Owned MySQL/MariaDB are
+stopped. The raw seven-context
+comparison retains4 exact/3 differing contexts; required FK/index/check coverage,
+documented InnoDB action equivalence, five remaining numeric defaults and explicit
+creature_loot collation differences are distinguished in the linked record.
+No Source model/default/entitlement policy, staging/commit/push or client/CUA change.
+
+Completed Source/configured-Character milestone: XP/rested-XP and path recovery, including coupled
+level/path rewards, later actor intent and normal-save values/membership frozen
+before Auth. The original three public-method failures and four real Player.Save
+negatives (including mission creation) are retained. Root XP/level/selection,
+path/mission, learned spell/action-set, scanbot-customisation and achievement state
+now share a typed recovery graph. Accepted state is distinct from acknowledged SQL;
+mixed graph candidates and foreign tracked/SQL changes reject. Character-owned
+path/pet creates enter the atomic receipt; standalone raw upsert APIs remain intact.
+Review found a MySQL DATETIME precision defect: both deterministic native cases
+fail before correction and pass after provider SQL conversion, retaining raw actor
+timestamps. Unchanged acknowledged dates retain their stored representation.
+Three executed coupled reward negatives lose spell, scanbot or achievement rows
+while the path marker persists; the integrated graph fixes them. An additional
+executed Auth-gap item case stored the item before its frozen marker. Ordinary
+normal saves now capture Item membership/revisions using the existing snapshot
+and ordinary write guard; bid reconciliation retains its specialized witnesses.
+A real character-level grant/automatic LAS slot test found the shared guard's
+explicit EF acceptance gap for flushed deletions; the exact deleted-to-detached
+transition is now guarded by matching captured values/originals and flushed SQL.
+Both material reward failures and direct-save duplicate creates were executed.
+Satchel snapshots now retain terminal intent/revisions, while the held commodity
+row keeps its existing typed receipt/witness writer. Two initial commodity rebase/
+rollback regressions are retained and fixed;157 final related controls pass.
+All285 focused/621 earlier affected cases and39 configured-MySQL Character cases
+pass; final Spec0/Standards0, clean full build. Frozen8d1660aa/6,182 inputs/ten DLL
+pairs passes11,455 full tests, zero failures/skips (14:25:13-14:36:31UTC on
+2November2026), including all39 new cases and all focused labels. Final source/DLL/
+archive identity and original runner/test-host/helper absence verify. Evidence:
+`artifacts/continuation-20261031/xp-path-persistence/verification.json`.
+Owned MySQL8.4.13 generation7076/port60961 is confirmed absent after one graceful
+shutdown; startup/shutdown observation windows and later same-generation checks
+are retained. No restart or forced stop. The final39-case Character provider pass
+uses scripted Auth scheduling; its foreign-route case also uses private SQLite.
+Preserve existing balance, reward, replay, prerequisite and protocol semantics.
+Synthetic tables/source regressions do not establish actual-table balances, complete
+crafting/path gameplay or retail qualification. Do not repeat completed progression,
+wardrobe/title, economic or migration integrations. Contract/reset, actual-table,
+socket/native, retail and the other feature requirements remain open.
+
+[Current schema/migration repairs](DESTINATION_PROVIDER_QUALIFICATION.md)
+correct actual MySQL migration/model drift: CREDD history lacks identity generation,
+and four Item/leaderboard string columns reject values allowed by the existing
+nullable model. Two executed native regressions reproduce1364/1048. New forward
+repairs preserve history key0 and existing payloads; both native/SQLite regressions,
+14 model comparisons, seven fresh schemas, six populated synthetic upgrades and
+272 affected cases pass. Initial5pass/2fail physical-schema run, three historical-
+fixture seed failures and the SQLite ulong-ordering fixture failure remain retained.
+Candidate5901ec17/6,164 inputs/ten DLL pairs has a clean full build and reviews0/0.
+The required full test gate ends11,369pass/2auction settlement-deadline failures/
+0skips. All44 cases in the two failing families pass on the same binary; cause
+remains unproven, the full gate stays failed and no unchanged full retry occurred.
+Both current migration regressions pass separately on MariaDB11.4.13. Owned
+MySQL/MariaDB processes/listeners stopped. No grant/default/retry-policy change,
+staging/commit/push/client/CUA. Evidence: `artifacts/continuation-20261031/provider-model-upgrade/`.
+
+The subsequent [armor-pierce static pass](NATIVE_STATIC_ARMOR_PIERCE_EVIDENCE.md)
+maps five named stat-display methods and ten observed unwind groups on the same
+REA-bound client. It identifies the shared one-unit formula routes; it does not
+prove pairwise combat ordering. #557's physical-offset/strikethrough portions
+already exist; effective-armor piercing remains blocked on specific corroboration.
+No Source input changed or additional full gate was run for this mapping.
+
+[Physical SQL-ack recovery](DESTINATION_PROVIDER_QUALIFICATION.md) now qualifies
+the prior **11,369-case full source gate**, zero failures/skips and build
+warnings/errors. Real loopback COMMIT-ack loss reproduced four public gift/COD
+failures; one fresh configured-strategy resolution now requires the entire
+enrolled SQL graph to match its captured before or after state. Mixed graphs
+reject. Seven focused/586 affected and all six physical/control cases pass,
+including exact once-only wallet/result publication and replaced-owner suppression.
+Candidatec03b3718/6,159 inputs/ten DLL pairs/archive verify; reviews0/0. Owned
+MariaDB and diagnostic processes ended. The captured GC maximum165.40ms does
+not explain earlier timing failures; raw loss accounting is inconclusive. Those
+failed gates below remain literal. No DDL/global retry/default/entitlement change,
+staging/commit/push/client launch. Evidence: `provider-physical-ack/verification.json`.
+
+The subsequent [mail lifecycle provider milestone](DESTINATION_PROVIDER_QUALIFICATION.md)
+passes78 original manual return/delete, expiry and outgoing/creature-mail labels
+plus one separately translated MariaDB second-header trigger case. The initial
+77pass/one indirect-strategy fixture failure is retained; only that corrected
+original case and the translated fault run afterward, both passing. Source/DLLs
+remain frozen atc03b3718 and the passing11,369 full gate; no extra full run.
+Final reviews0/0; both runner repeat-admission controls reject without changing
+evidence. Owned fixture stopped; no original host/config/data changes. Evidence:
+`artifacts/continuation-20261031/provider-mail-lifecycle/verification.json`.
+
+The subsequent [reward/Quest/Item and Contract/account provider milestone](DESTINATION_PROVIDER_QUALIFICATION.md)
+passes53 original cases:33 selected earning/claim/Item recovery and20 dual-database
+internal Contract claim, Auth compensation, actor/relog and account-handoff cases.
+The current test DLL and137 copies per harness remain bound toc03b3718; full11,369
+source gate reused, no Source/assertion/deadline/default changes. Reviews0/0;
+owned engine38592/listener53245 stopped. Explicit fixture strategy admission does
+not independently qualify nested automatic retries. Evidence:
+`artifacts/continuation-20261031/provider-reward-recovery/verification.json`.
+
+[Selected MySQL8 qualification](DESTINATION_PROVIDER_QUALIFICATION.md) now passes
+the same53 original reward/Quest/Item/Contract/account cases on owned MySQL8.4.13
+with required TLS. Official ZIP checksum and publisher GPG signature verify;
+all6159 inputs and137 dependency copies per harness remain bound toc03b3718.
+Reviews0/0 after fixing the bootstrap CLI's login-path override risk; a private
+read-only trap reproduces old flags and fixed flags reach the owned SQL identity.
+Original execution scripts/bindings and startup failures remain retained, not
+relabelled. Server33916/monitor13088/listener61887 stopped normally. Source unchanged;
+the existing11,369 full gate is reused. Evidence: `provider-mysql8/verification.json`.
+
+The model/migration comparison and populated synthetic-upgrade outcome is complete
+within its declared schema boundary. It found and repaired actual CREDD/nullable
+column defects;14 model,7 fresh and6 populated upgrades pass on MySQL8, with two
+public regressions on each provider. Historical proof-source files remain absent;
+these are adapted current-source synthetic upgrades, not copied-private evidence.
+The current full gate remains failed as recorded above. Next select an available
+broader feature producer/evidence outcome from the current queue; retain the
+auction timing issue separately. Other physical constraints/defaults and copied-
+private upgrades remain distinct qualification. Do not repeat completed provider
+batches unchanged or invent further bank edges.
+Contract public claims remain blocked on documented reset/unclaimed/excess and
+complete actual-table delivery evidence. Actual simultaneous/other physical
+faults, copied-private upgrades, actual-table, deployment/socket/native, broader
+content/gameplay and retail remain. Completed MariaDB data is retained in a fully
+verified private archive after reclaiming only its unpacked disposable copy.
+
+[Inbox configured-strategy correction](DESTINATION_PROVIDER_QUALIFICATION.md)
+now implements real configured-provider refresh with fresh retry transactions,
+pinned route and original-actor publication. Prior1e5dce6c/6,158 inputs/ten DLL
+pairs is native checked with versioned67-case evidence plus current two-probe
+rechecks;68 focused/269 affected source cases pass, reviews0/0. The warmed-cache
+fixture defect is reproduced and corrected without warning/assertion/deadline
+suppression. Full build0 warnings/errors; that candidate's full gate remains failed:
+**11,361 pass/1 commodity-posting settlement timeout/0 skips**, with both inbox
+probes passing. Exact isolated1 and posting family42 pass on the same binary;
+42.14-second full-run completion gap has an unproven cause. No unchanged full
+retry. Owned engines stopped; archives, versions, failures and controls are in
+`provider-mail-recovery/corrected-verification.json`. No commit/staging/push/client.
+
+The physical-ack milestone above supersedes this earlier next step: exercise physical loss of a successful SQL
+COMMIT acknowledgement through public gift/COD collection with the configured
+strategy. Require one durable wallet delta/receipt/COD settlement and guarded
+original-actor publication or explicit unresolved recovery. Use only an owned
+loopback fixture; physical network evidence remains separate from injected
+exceptions and from native game-client/retail qualification. Then continue the
+remaining mail/reward, isolation, upgrade and broader roadmap requirements.
+
+Historical [bank recovery/publication provider qualification](DESTINATION_PROVIDER_QUALIFICATION.md)
+passes56 selected cases at caa26d61/original test DLL:44 valid
+original cases plus12 corrected fixture-scope cases, exact labels verified.
+Initial11 failures and one premature reported pass remain excluded and retained;
+no production/assertion/deadline changes within that milestone. Its6,157 inputs/
+ten DLL pairs verified then, reviews0/0; private MariaDB fixture shut down normally. Bounded settlement cohorts
+did not reproduce the full-run timeout;19 managed snapshots do not establish its
+cause. Its full gate remains failed; the later inbox milestone above supersedes
+its mail-recovery next step. Physical transient/upgrade/deployment gates remain.
+No unchanged full retry, commit/push or client launch.
+
+Prior2 November collation candidate: native two-connection qualification reproduced a real
+MySQL/MariaDB string-collation hole: an empty CSV and a single space compare equal,
+allowing a stale auction DELETE to remove a competing committed row. Candidate
+caa26d61/6,157 inputs adds exact binary string concurrency predicates without DDL,
+honors the listing fixture's provider seam and covers explicit Character options
+and transaction participants. Four native failures are retained (root/child
+DELETE and UPDATE), with six new regression/control cases. Owning build and82
+focused source cases pass; final reviews0/0. Final70 native/public controls and
+1,269 affected source cases pass. Full build0 warnings/errors; the full test gate
+is **failed:11,359 pass/1 Challenge settlement timeout/no skips**. Track21's exact
+case passes on the same binary in isolation and all25 producer/termination controls
+pass. No assertion
+or20-second deadline was relaxed and no unchanged full-suite retry was launched.
+The pending executor/open-connection diagnostic is retained; its cause remains
+unproven. The owned MariaDB fixture is stopped. Initial3749's66 native passes
+predate the review-found participant fix. Prior a900f698 qualification below binds
+the prior candidate, not this changed database dependency. Evidence is under
+`artifacts/continuation-20261031/provider-recovery/`; see the
+[current provider record](DESTINATION_PROVIDER_QUALIFICATION.md) and
+`failed-gate-verification.json`. Source/binary/archive identities remain bound;
+this is not a full-qualified candidate. No commit/push/client launch.
+
+[Auction posting settlement](AUCTION_POSTING_TRANSACTION.md) qualifies the
+latest **11,354-case full source/private-SQLite gate**, zero failures/skips and
+build warnings/errors. The public handler atomically escrows the exact whole Item
+and listing, then completes original-actor reconciliation and guarded publication.
+Held metadata/expiry defects have executed regressions and are corrected.193 focused,
+1,106 affected and final reviews0/0 pass; 6,156 inputs/nine DLL pairs/test assembly
+verify at a900f698. This current gate also covers commodity posting; its earlier
+failed full candidate and unresolved timing cause stay retained. Provider,
+actual-table, socket/native and retail gates remain separate. No commit/push/client
+launch. The Goal remains active.
+
+[Commodity return settlement](COMMODITY_RETURN_SETTLEMENT.md) qualifies11,264 full source/private-SQLite
+cases, zero failures/skips and build warnings/errors; final reviews0/0.
+Public buy/sell cancellation and real expiry atomically delete listings with full
+held escrow refund or fungible direct/satchel/fixed-mail return, then complete
+original-actor ordinary reconciliation and guarded publication. Accepted grants
+survive custody conflicts in durable recovery mail; later material+1 rebases
+against current80 as81. Wallet callbacks cannot mutate inventory, Items, codec
+lists/rune children or satchel state. Legacy default sockets persist before
+publication and remain available to crafting; semantic rune intent cannot be
+retired as normalization. 824 affected cases pass. The6,145-input/nine-DLL
+archive verifies at8c4f31890fe18e80f2f8f353e1e74a9c3656b2c0eaeefb23eadaf83ef3a3f8b7. Source/private SQLite is not configured-provider,
+deployment, native/socket, actual-table or retail qualification.
+
+[Auction cancellation settlement](AUCTION_CANCELLATION_TRANSACTION.md) qualifies
+11,203 full source/private-SQLite cases, zero failures/skips and build warnings/
+errors; review0/0. The public handler atomically returns the same whole Item and
+refunds the full held bid through direct/mail custody, zero owner debit/proceeds,
+original actors, complete ordinary reconciliation and guarded publication.
+166 focused/16 final public-boundary/545 affected cases pass; their overlap is
+intentional. The6,135-input archive/nine DLL pairs verify at
+pin1c24292f474dc7eae868aca3c27e4d23a99bfa5a8080f7e80e61db97f880ba7f.
+Full build24.76seconds; full12m57s (command789.02seconds). The11 failing public
+reproductions and one overlapping-build copy failure remain retained. Sequential
+build and final qualification pass without weakening assertions or intervention.
+
+[Commodity posting settlement](COMMODITY_POSTING_SETTLEMENT.md) is covered by the
+current auction-posting full gate above. Its original0cdad38c full remains a
+failed candidate (11,323pass/1Challenge drain failure), with isolated controls and
+unproven cause retained. Do not rewrite that historical failure as a pass.
+
+Historical [a900 configured-provider qualification](DESTINATION_PROVIDER_QUALIFICATION.md)
+passes205 selected cases on owned portable MariaDB with the unchanged production
+DLLs:30 auction-posting,161 economic coordinator and14 periodic-bank cases
+(201 database-backed/four constructor controls). Exact ordered unions retain the
+interrupted cleanup and explicit-transaction fixture failures separately; final
+reviews0/0 and four invalid-selection controls pass. The owned engine is stopped.
+This does not qualify the complete provider surface, actual transient/network
+retry, deployment or retail behavior.
+
+Next required qualification: remaining captured mail/reward recovery and
+actual two-connection predicate/collation/isolation behavior on the configured
+provider, followed by the separate copied-upgrade/model/table/deployment gates. Inspect
+available local engine/client prerequisites first; use only owned disposable
+roots/schemas and preserve original hosts/data/configuration. This requirement
+crosses the completed economic flows and remains distinct from source/SQLite proof.
+Docker was not found on the current PATH. The isolated portable fixture engine
+has been shut down; its files remain local evidence. No runtime deployment was started. Then continue available
+economic/recovery, Contract and broader feature requirements under the execution
+policy, without repeating completed integrations.
+
+[The healing evidence record](HEALING_PERSONAL_MODIFIER_EVIDENCE.md) confirms595's
+unchanged head, existing Heal/HealShields producer integration, and the remaining
+personal-modifier/Focus question. Raw effect151 rows/tooltip bindings and native
+scope/mode/lifetime corroboration remain missing; do not guess Focus seeds or
+reimplement the existing heal path. Contract public07CE/reset/unclaimed/excess/
+full726-choice evidence remains separate. Computer Use/native client launch stay
+stopped. No push or commit. The Goal remains active.
+
+[Auction expiry settlement](AUCTION_EXPIRY_TRANSACTION.md) retains the prior
+11,173-case qualified winning/unsold online/offline boundary. Its139 focused/
+3,918 affected cases, executed failures and final source/DLL binding remain.
+
+[Auction buyout transaction](AUCTION_BUYOUT_TRANSACTION.md) remains the prior
+11,141-case boundary; [normal auction bid](NORMAL_AUCTION_BID_TRANSACTION.md) the
+11,095-case boundary. Their meaningful failures stay retained, including earlier
+intermittent Challenge drain/cleanup causes that remain unproven. Wallet11,019
+and historical handoff evidence remain; Source divergence is expected.
+
+[Currency conditional writes](CURRENCY_CONDITIONAL_WRITES.md)
+pass10,955 full/24 new race cases, retaining all14 frozen-currency,264 marketplace
+and297 reviewed mail cases. Eight executed failures/sixteen controls, both
+original-provider model diffs0 DDL/0 connections, five6,118-input archives/nine
+DLL pairs and final reviews0/0 verify. The first full's66 test-helper failures
+are retained; the loaded-original fixture correction preserves every oracle and
+passes corrected focused/full gates. One later sharing failure/drain diagnostic,
+four isolated passes and the unchanged-binary default full retry remain separate;
+the cause is unproven. Loaded provenance, full financial/actor/
+deferred recovery and provider/Contract/native/retail work remain. No push/client.
+
+[Frozen currency preparation](FROZEN_CURRENCY_PREPARATION.md)
+passes10,931 full/14 focused tests, retaining all264 prior marketplace and297
+reviewed mail cases.14 new cases, one executed review failure retained, four
+6,117-input archives/nine DLL pairs and final reviews0/0 verify; full/test-copy
+rebuilds have zero warnings/errors. Explicit token scope is tested; deferred
+Abort now rejects/quarantines for both legacy/frozen callers instead of silently
+releasing intent. Durable reconciliation is still unimplemented and the API is
+unwired to financial handlers. Source/SQLite only; no push or client launch.
+
+[Actor-queue predicate failure recovery](ACTOR_QUEUE_PREDICATE_RECOVERY.md)
+passes 10,917 full tests and all thirteen queue cases, retaining all 264 prior
+marketplace and 297 reviewed mail cases. Eight new cases, six executed baseline
+failures/seven passes, three 6,116-input archives/nine DLL pairs and both final
+reviews verify; rebuild/test-copy builds have zero warnings/errors. Failed
+predicates no longer poison the front, and throwing hooks retain earlier deferred
+work while preserving propagation. Captured financial/actor/delivery/provider/
+Contract/native/retail work remains. No push or client launch.
+
+[Confirmed marketplace save outcomes](MARKETPLACE_CONFIRMED_SAVE_OUTCOMES.md)
+pass 10,909 full tests, all 264 marketplace and 297 prior reviewed mail cases,
+with 13 new cases and zero failures/skips or rebuild/test-copy warnings/errors.
+Four executed baseline failures/seven controls, a corrected eleven-case run and
+both final reviews verify. Five 6,116-input archives/nine DLL pairs retain one
+excluded stale-DLL prototype caused by preserved copy timestamps. Confirmed SQL
+success survives later errors; unconfirmed outcomes remain explicit errors.
+Complete captured financial/unknown-acknowledgement/actor/direct-delivery recovery,
+provider/Contract/broader qualification remain. No push or client launch.
+
+[Conditional marketplace listing writes](MARKETPLACE_CONDITIONAL_LISTING_WRITES.md)
+pass 10,896 full tests, all 251 marketplace and 297 prior reviewed mail cases,
+with 36 new cases and zero failures/skips or rebuild/test-copy warnings/errors.
+Twenty-eight executed competing-write failures/six controls are retained; both
+nullable CSV directions pass. Four 6,114-input archives/nine DLL pairs and both
+final reviews verify. Original-snapshot to new-runtime model diffs have zero
+migration operations/connections for both providers; no physical migration is
+needed. Live-MySQL predicate semantics, complete captured financial/ambiguity
+and direct-delivery recovery, Contract and broader work remain. Fresh05:47UTC
+metadata has55 open,608 newest open;609 closed unmerged,58 refs unchanged.
+No push or client launch.
+
+[Marketplace listing SQL postimages](MARKETPLACE_LISTING_POSTIMAGES.md)
+pass 10,860 full tests, including all 215 marketplace and 297 prior reviewed mail
+cases; 24 new cases, zero failures/skips and zero rebuild/test-copy warnings or
+errors. Six executed baseline failures/six controls and an executed corrected
+late-writer regression are retained. Five archives bind 6,111 negative/6,112
+later inputs and eight DLL pairs; both final reviews verify. Complete listing
+rows/absence are checked before transaction commit, including shared mail
+callbacks. CAS, captured financial/ambiguity and direct-delivery recovery,
+Contract and broader qualification remain. No push or client launch.
+
+[Revised upstream604 taxi reconciliation](UPSTREAM_604_TAXI_SAVE_RECONCILIATION.md)
+passes10836 full tests and34 focused cases in rebuilt full,16 net-new cases plus
+one explicitly corrected shuttle45 oracle. Five executed baseline failures/18
+controls,6109 negative/6110 final inputs, four archives/eight DLLs and final
+two-axis review verify. Rebuild/test-copy builds have0 warnings/errors. Taxi
+discoveries settle at terminal commit, retain rollback/later intent and support
+key-only lost-ack retry; real Player.Save coupling is covered. The exact revised
+604 head36b59aaaaebbcd0ec3e23a94fd3cf9de8975923b is now reconciled while retaining
+fork injection/stronger guards.608 remains handled;609 closed unmerged. Broader
+marketplace/Contract/provider/native/retail work remains; no push/client launch.
+
+[Marketplace database-route binding](MARKETPLACE_DATABASE_ROUTE_BINDING.md)
+passes10820 full tests, including191 marketplace and297 prior reviewed mail cases
+in rebuilt full,9 new cases and zero rebuild/test-copy warnings/errors. Two
+executed cross-route failures/two controls, a corrected introduced orphan-ID
+regression, five6108-input archives/eight DLLs and final two-axis review verify.
+Equal rows in another database cannot confer ownership; normalized same-route
+ordering, inserted remainders and startup ID marks remain covered. Full SQL
+postimages, CAS and complete economic recovery remain.04:23UTC upstream604 alone
+changed among58 refs; its exact old/new delta and later reconciliation are recorded above.
+No provider/native/retail promotion, push or client launch.
+
+[Marketplace loaded-row preimages](MARKETPLACE_LOADED_ROW_PREIMAGES.md)
+pass10811 full tests, including all182 marketplace and297 prior reviewed mail
+cases in the rebuilt full run,28 new cases and zero rebuild/test-copy warnings
+or errors. Twenty-four executed baseline failures/two controls,6107 final/6106
+negative inputs, four archives/eight DLLs and final two-axis review verify.
+All16 auction/10 commodity scalars and live-view consistency are checked;
+legacy CSV, memory mode, repeated bids and reentrant rejection remain covered.
+This is read/staging validation. SQL postimages, route ownership, CAS and complete
+financial/outcome recovery remain, alongside Contract and broader work. No
+provider/native/retail promotion, push or client launch.
+
+[Marketplace required-row and expiry guards](MARKETPLACE_STORED_ROW_GUARDS.md)
+pass10783 full tests and154 rebuilt marketplace cases,34 new cases, with all297
+prior reviewed mail cases retained in the full run. Rebuild/test-copy builds have
+zero warnings/errors. Twenty distinct real executed failing cases, nine6105-input
+archives/eight DLLs and final two-axis review verify; two earlier review findings
+and one separate fixture failure remain preserved. Missing rows, empty incoming
+resurrection and auction/commodity capacity-transition bypasses are guarded.
+Full wallet/listing/Item settlement, rewritten-row witnesses, acknowledgement
+recovery, Contract and broader work remain.03:30UTC upstream:55 open,608 newest
+open;609 closed unmerged with unchanged head. No provider/native/retail promotion,
+push or client launch.
+
+[Committed marketplace mail publication](MARKETPLACE_MAIL_PUBLICATION.md)
+passes10749 full tests including297 reviewed mail cases on rebuilt DLLs,23 new
+cases and zero rebuild warnings/errors. Six executed baseline failures and one
+control,6104 final/6102 negative inputs, complete archives/eight DLLs and both
+review axes verify. Post-commit lookup/notification errors preserve confirmed
+SQL success and Item ownership; delivery waits for the original recipient actor
+and save scope after SQL account/database routing checks. Marketplace economic
+settlement and SaveBlocking ambiguity, Contract and broader work remain. No
+configured provider/native/retail promotion, push or client launch.02:54UTC
+upstream inventory remains56 open PRs,609 newest; all58 tracked refs unchanged.
+
+[Marketplace mail custody](MARKETPLACE_MAIL_CUSTODY_COMPATIBILITY.md) passes10726
+full tests including274 reviewed mail cases on rebuilt DLLs,23 new cases and
+zero rebuild warnings/errors.6101 final/6100 negative/6101 intermediate-failure
+bindings, archives/eight DLLs and both review axes verify. Actor publication,
+economic settlement, Contract and broader work remain separate.
+
+[Available-mail expiry publication](MAIL_EXPIRY_PUBLICATION.md) passes10703 full
+tests including251 reviewed mail cases on rebuilt DLLs,18 new cases and zero
+rebuild warnings/errors.6099 final/6096 negative/6099 failed-fixture bindings,
+archives/eight DLLs and both review axes verify. Marketplace, Contract and broader
+work continue; source tests do not qualify provider/native/retail behavior.
+
+[Manual return/delete publication](MANUAL_MAIL_ACTION_PUBLICATION.md) passes10685 full tests and233 rebuilt mail cases,27 new cases, zero failures/
+skips and zero rebuild warnings/errors.6095 final/6092 negative inputs, complete
+archives/eight DLLs and both review axes verify. The first full run's one Challenge
+cleanup sharing failure is retained, alongside three isolated passes and the
+same-binary default full retry pass; root cause remains unproven. Expiry,
+marketplace, Contract and broader work continue; source is not retail qualification.
+
+[Bulk selection](MAIL_SELECTION_TRANSACTION.md) passes10658 full tests and206 focused mail cases, including22 new bulk cases,
+with zero failures/skips and zero rebuild warnings/errors. Two executed baseline
+failures,6091 final/6087 negative inputs, complete archives/eight DLLs and two
+independent review axes verify. Manual return/delete publication and broader
+work continue; source tests do not establish provider/native/retail completeness.
+
+[Individual attachment collection](MAIL_ATTACHMENT_TAKE_TRANSACTION.md)
+passes10636 full tests and184 focused mail cases,16 new cases, zero failures/
+skips and zero full-rebuild warnings/errors. All6086 inputs/archive/eight DLLs
+verify, with three separate executed negative epochs and fixture corrections
+retained explicitly. The later bulk gate above has its own binding; this individual-action
+gate does not qualify native index behavior.
+
+[Outgoing-mail retention and publication](OUTGOING_MAIL_RETENTION_AND_PUBLICATION.md)
+passes10620 full tests and49 focused cases, including34 new cases, with zero
+failures/skips and zero full-rebuild warnings/errors. Sixteen distinct failing
+regressions have eight separately frozen source epochs; all6081 final inputs,
+archives and eight DLLs verify. Normal Character coupling, retained offline
+intent, login/poll recovery and atomic inbox acceptance are implemented. Manual
+reply timing, attachment-taking/marketplace economics and broader work continue.
+
+Latest [ordinary Item recovery](ORDINARY_ITEM_OUTCOME_RECOVERY.md)
+passes10586 full tests and64 focused ordinary/mail cases, including21 new cases,
+with zero failures/skips and a zero-warning/error full rebuild. Four executed
+failures/three controls and complete6069/6067/6068-input archives/eight DLLs verify.
+Stored no-ops, later intent and shared-context ownership remain supported; no
+cross-process concurrency token or provider/native/retail qualification was added.
+Outgoing mail retention/publication, attachment taking and broader work continue.
+The10565 cash checkpoint below retains its original inputs.
+
+Latest gift/COD receipt checkpoint passes10565 full tests, zero failures/skips,
+with a zero-warning/error rebuild and23 reviewed cash-focused cases. The full
+run covers347 mail/bank cases. Three executed baseline failures/two controls and
+complete6066/6061-input archives/eight DLLs verify separately. Receipt, wallet
+and COD sender settlement commit together; original-manager publication and
+later read flags are retained. The21:25UTC upstream refresh still has56 open
+PRs and no changed heads. NuGet's current47-project advisory query reports no
+vulnerable package entries. No fresh provider/native/retail qualification is
+claimed. Ordinary non-mail Item recovery, outgoing mail publication, attachment
+taking and marketplace remain work. The mapped reputation proposal stays outside
+Source until the continuation guide's Verified corroboration is available.
+
+Prior attachment recovery checkpoint passes all10542 full tests under default
+concurrency, with zero failures/skips and a zero-warning/error solution rebuild.
+There are22 new aggregate cases and324 focused mail/bank passes. Eight original
+and three introduced failures have separate frozen inputs. The6060-input proof
+in mail-attachments-diagnostic includes only a failure-only test diagnostic over
+the attachment production code. Two preceding default full failures,16 isolated
+producer passes and a two-worker full pass remain preserved separately; no
+deadline/product change or timeout root-cause claim is made. The later cash gate
+above has separate source/binary/test bindings.
+The10520 checkpoint below remains historical without rebinding.
+
+Latest legacy mail header/deletion checkpoint (31 October): [outcome recovery](MAIL_SEND_TRANSACTION_AND_INBOX_RECOVERY.md)
+passes **10,520 full tests**, zero failures/skips and zero full-build warnings/
+errors. All10499 earlier cases remain;21 new cases and302 focused mail/bank cases
+pass. Seven executed pre-change failures and one control are frozen separately.
+All6,056 current inputs and their full archive match; the6,054-input negative
+archive and eight DLLs also verify. Complete17-scalar header witnesses retain
+intent through disposal, rollback and lost acknowledgement, reject conflicting/
+stale owners and preserve later mutations. Delete/expiry tombstones leave only
+after confirmed SQL absence. The player-send companion adopts its confirmed
+header/database into this owner. Immediate legacy packets, attachment row/
+deleted-attachment intent, outgoing publication and economic outcomes remain
+separate work. No fresh MySQL/date conversion, copied-upgrade, socket/deployment,
+native runtime or retail qualification. The Goal stays active; defaults15:1/17:1,
+no automatic44/seven grants, no push and the native/Computer Use stop remain.
+
+Prior player-mail creation checkpoint (31 October): [atomic player sends and inbox recovery](MAIL_SEND_TRANSACTION_AND_INBOX_RECOVERY.md)
+passes **10,421 full tests**, no failures/skips, including223 bank cases. The full
+solution rebuild has zero warnings/errors. This adds31 tests:29 bank/mail cases,
+one world-second mail timer regression and one concurrent event-queue regression.
+Eight executed pre-change failures and exact binaries are frozen. All6,032
+source/tool/binary inputs bound before the full run match afterward; all10,390
+prior test cases remain. Postage plus gift, detached attachments, mail rows and
+bank withdrawal share one retained transaction; actor delivery/polling covers
+late commits, dead senders and delayed dirty attachments. Legacy creature/return/
+COD collection/attachment taking and other mail outcomes remain separate work.
+No fresh MySQL, upgrade, deployment, socket/native or retail qualification is
+claimed. Rebuilt DB DLL identities changed despite unchanged DB source, so old
+provider/upgrade binary bindings do not qualify these DLLs.
+
+Prior upstream609 source checkpoint (31 October): [communicator scheduling and reports](UPSTREAM_609_COMMUNICATOR_RECONCILIATION.md)
+implements the pinned `f9b6f7356798a41beea0768ff1f6b5a758ffeca3` interpretation
+while preserving injected services, scripted packet behavior and existing quest/
+Contract save ownership. The refreshed inventory has56 open PRs; all55 earlier
+heads, including608, remain unchanged. The162-case communicator/cleanup/live-
+Challenge gate passes and the full solution rebuild has zero warnings/errors.
+The full suite passes **10,499 tests**, zero failures/skips:71 communicator
+cases and seven cleanup cases added since10421. All earlier cases remain;6,053
+source/tool/binary inputs and their frozen archive match. Two earlier10492-case
+full runs each reported one
+Windows sharing violation in existing Challenge fixture cleanup; both are retained.
+A bounded two-second cleanup retry preserves gameplay deadlines and propagates
+persistent locks/other errors; seven in-memory cases include two executed negatives.
+This does not identify the original lock holder or qualify native predicates,
+actual full tables, MySQL/copied upgrades, deployment, sockets or retail behavior.
+Public07CE, reset/unclaimed/excess edges, legacy mail outcomes, track35 and broader
+work remain. The Goal is active. Defaults15:1/17:1/no44/no seven automatic grants
+remain; Computer Use/native launch stay stopped. No staging, commit or push.
+
+Prior bank vendor companion (31 October): [bank/payout ownership](REALM_BANK_CODECS_AND_LOADING.md)
+now captures full/partial sales and currency in one retained transaction, with
+committed actor publication of payout and existing buyback effects. The full
+solution rebuild passes with zero warnings/errors; **10,390 full tests** pass,
+no skips, including194 bank cases. This adds21 vendor regressions, including the
+final manager-owner guard. Six executed early-payout negatives are frozen with
+exact binaries/source hashes. Intermediate bank gates179/190/193 remain separate.
+That vendor gate predates the player-mail boundary above. No fresh MySQL,
+native, deployment or retail qualification is claimed. The Goal remains active.
+
+Prior local continuation (31 October): [captured bank recovery and actor publication](REALM_BANK_CODECS_AND_LOADING.md)
+passes **10,369 full tests** and173 focused bank cases, no skips, with zero full-build
+warnings/errors under SDK10.0.401. This adds51 recovery/publication cases. The
+earlier full10,367 gate predates the last two actor-finalization regressions and
+is retained separately. Six original publication negatives and two final-callback
+negatives were executed. Frozen commands retain exact SQL/revision witnesses across fresh-context replay; ordered
+packets and equipment effects wait for the original live actor after commit.
+Preparation rollback, stale/dead actors, reentrancy, expiry batching, deferred
+open/resync and later dirty fields are covered. Mail/vendor bank ownership
+handoffs remain a concrete source gap. Controlled SQLite replay does not qualify
+actual configured MySQL retry/load behavior, deployment, native UI or retail.
+The earlier [upstream608 refusal reconciliation](UPSTREAM_608_CAST_REFUSALS.md) and
+complete55-open-PR refresh remain: only608 is new,598 merged, other open heads
+match the snapshot. The continuation verifier passed before edits. Public07CE,
+retail reset/unclaimed/excess edges, actual full-table delivery, track35 and broader
+requirements remain. Defaults15:1/17:1/no44 and no automatic seven-character grant
+remain. Computer Use/native launch stay stopped. Local implementation changes
+remain unstaged/uncommitted; no push was made. The Goal remains active.
+
+The later handoff-only fast-forward to `a50dfa13` preserves the entire committed
+Source tree and local implementation delta. At adoption, all6,013 tested inputs
+matched without rebinding the10,369-test proof. The later vendor source delta has
+its own6,026-input/10,390-test binding. Ten evidence-store tests pass;2,154 lean
+archive members verify and restore to `.continuation-evidence/`. Historical
+harnesses/focused exports and the exact Contract Lua are now local. Redacted
+members remain derivatives, and restoration is not fresh MySQL/native evidence.
+
+Earlier continuation: [Realm bank persistence and loading](REALM_BANK_CODECS_AND_LOADING.md)
 qualifies checkpoint10277: **10,277 full tests**,18 new/207 focused,1,796 MySQL
 cases (530 configured-strategy cases), four Auth race probes, four model gates and
 31 compatibility probes; zero full-build warnings/errors. Six executed10259
@@ -424,10 +1126,15 @@ The starting full-suite result is 6,015 passing tests and 114 build warnings.
 
 ## Completion gates
 
-| Work | Current state | Required evidence |
+The table retains the recorded checkpoint states and their original evidence
+boundaries. Later continuation entries above supersede completed foundations;
+use the current queue below for the next work. Every remaining qualification and
+broader feature requirement stays in scope.
+
+| Work | Recorded checkpoint state | Evidence recorded or still required |
 | --- | --- | --- |
 | Packet dispatch scopes and dependency lifetimes (#565) | Implemented and live verified | Nine regressions and DI graph review pass; isolated login/world and retained entities pass. |
-| Dependency advisories | Implemented | Zero vulnerable package occurrences; eight archive/native SQLite tests and actual 384-table/one-map client extraction pass. |
+| Dependency advisories | Implemented; query refreshed31 October | Current NuGet.org vulnerable/include-transitive query reports no vulnerable package entries across47 solution projects, exit0, without restore. Raw JSON is in the local mail-cash evidence. The eight archive/native SQLite tests and actual384-table/one-map extraction are historical qualification, not a destination rerun. |
 | Prerequisite comparison values (#594) | Implemented | Exact build-16042 native/REA comparison evidence, imported table correlation and 51 raw-ID regressions pass. |
 | Broader prerequisite/context work (#466/#554/#568/#600) | Supported extension implemented and full gated | Native-correct types 8/10/204, dash layout, NPC/target API and percentage71/215 pass. Type16 has30 regressions; corrected type95 squared-distance and type73 raw-vital quantization add34+27, with independent native/table review and full6,923 gate. Type269 substitution remains rejected; other numeric contexts need evidence. |
 | Missing content evidence | Current source validation passes | All three restored videos validate. The unavailable June 19 Q5597 planning worksheet is superseded by an explicitly dated tracked review with 16 passing tests and pending native UI checks. Regenerated 31 inventories / 167,484 rows pass the unchanged strict validator; every row remains not_retail_complete. |
@@ -461,7 +1168,7 @@ All31 original compatibility probes pass against frozen7,182 references.
 passes9 populated migration/receipt-graph checks on54 tables/22,530 rows;
 all old copied fields and the owned source remained unchanged during that proof.
 The reviewed additive migration was then applied twice to owned Character:
-54→59 tables, old fields preserved, five new tables empty, old attempt markers
+54ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢59 tables, old fields preserved, five new tables empty, old attempt markers
 null. At that checkpoint, WorldPID31676 passed26 complete live protocol/lifecycle cycles;
 9 owned services remain active,8 retain their prior identities and all6 queues
 drain. Original77 tables/43 copied legacy characters and13 old entitlement rows
@@ -517,7 +1224,7 @@ proof. The earlier29f1 proof remains historical6,918 evidence.
 The6,918 live replay passed20 protocol cycles but its fresh-default audit
 failed: the load seeder had bypassed canonical account creation. The new-only
 seed fix preserves existing accounts; an exact70-row/10-table older-account
-negative control is unchanged. Fresh9601–9603 have15/17 before and after login.
+negative control is unchanged. Fresh9601ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“9603 have15/17 before and after login.
 The retained frozen6,923 World/PID39024 passed23 fully audited cycles. New pet/Challenge
 UI behavior is not inferred from this login/load gate.
 
@@ -527,7 +1234,123 @@ rows. The old type41 native label is corrected and re-exported; its existing
 runtime policy is retained. See [WORLD_LOCATION_DISTANCE_PREREQUISITE.md](WORLD_LOCATION_DISTANCE_PREREQUISITE.md).
 That earlier run used frozen6,923; World at that earlier checkpoint used7182/PID31676. No entitlement-default policy changed.
 
-## Next evidence and implementation queue
+## Current next evidence and implementation queue
+
+Follow the [roadmap execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
+Select the next actionable outcome by impact, risk, dependencies and available
+evidence; the entries below define scope rather than a rigid execution order.
+Batch related changes and use focused checks during development, with the full
+solution build/test gate at coherent integration milestones.
+
+31 October destination continuation in `C:/GIT/NexusForever/continuation`:
+
+1. Finish the Contract public claim/reset path in the linked Contract records.
+   Acceptance identities, canonical capture/selections, Character claims,
+   idempotent Auth compensation, account draining and wallet refresh foundations
+   already have later source gates; do not repeat them from the older queue.
+   Current `ClientRewardTrackClaimRewardPointHandler` has no Contract type0/type1
+   case, while `QueueContractRewardClaim` remains internal. Connect the remaining
+   reset/unclaimed/excess policy and complete canonical delivery/recovery gates
+   before enabling public07CE. Do not expose a partial set of726 choices or use
+   synthetic item/stacking metadata as full-table delivery evidence. The reset
+   record contains the current evidence-based direction; no user policy
+   preference question is pending.
+2. Continue remaining economic/publication recovery. Bid, buyout, auction/commodity
+   expiry/cancellation, posting/fills and whole-Item auction posting now have the
+   11,354-case full source/private-SQLite gate above; retain historical failures
+   and do not repeat completed integrations. The historical milestone descriptions below
+   retain their original limits; later linked results supersede old next steps.
+   Continue the separate legacy mail action/publication and ordinary Item audit.
+   Gift/COD wrong-mode and split-receipt bugs are now reproduced and fixed at
+   the10565 full/23 reviewed cash-focused source gate;347 mail/bank cases are
+   covered by that full run. Ordinary non-mail Item recovery is now separately
+   complete at10586 full/64 focused, preserving no-ops/later intent and existing
+   bank/reward capabilities. Do not repeat these completed fixes. Bulk selection
+   now passes10658 full/206 focused with22 new cases and6091 bound inputs. Manual
+   return/delete reply timing now passes10685 full/233 rebuilt mail cases,27 new
+   cases and6095 bound inputs. Expiry/deprecation now passes10703 full/251 mail
+   with18 new cases and6099 bound inputs. Marketplace custody now passes10726 full/
+   274 mail with23 new cases and6101 inputs. Committed marketplace mail actor
+   publication now passes10749 full/297 reviewed mail,23 new cases and6104 inputs.
+   Required-row/expiry guards now pass10783 full/154 rebuilt marketplace cases,
+   with34 new cases,20 distinct executed negatives and6105 bound inputs. Pending
+   incoming orders and zero-quantity resurrection are distinguished; review-found
+   expiry/capacity bypasses were executed and fixed. Loaded scalar preimages now
+   pass10811 full/182 marketplace in rebuilt full,28 new cases,24 baseline failures
+   and6107 final inputs. Database-route binding now passes10820 full/191 marketplace
+   in rebuilt full,9 new cases,2 cross-route negatives and6108 inputs. The introduced
+   orphan-ID regression is corrected and separately retained. Listing SQL postimages now pass10860 full/215 marketplace with24 new
+   cases and6112 final inputs; the six baseline failures and corrected late-writer
+   regression remain retained. Conditional writes now pass10896 full/251 marketplace with36 new cases
+   and6114 inputs/nine DLLs.28 executed two-connection failures and both nullable
+   CSV directions are covered; original-provider-model differentials need no DDL.
+   Continue live-MySQL predicate/collation/isolation proof and complete captured
+   outcome witnesses, multi-party listing/wallet/debit/refund/proceeds settlement,
+   unknown acknowledgement ambiguity and post-commit direct-delivery recovery.
+   Confirmed terminal errors now pass10909 full/264 marketplace with13 new cases
+   and6116 inputs/nine DLLs. Do not repeat that fix or treat the retained stale
+   incremental-build prototype as valid execution. Full graph capture/recovery
+   and original actor ownership are still required before retry/classification.
+   Actor-queue predicate/hook recovery is now qualified at10917 full/13 queue with
+   eight new cases and6116 inputs/nine DLLs; do not repeat that prerequisite fix.
+   It adds no cancellation or full actor-preparation/financial command semantics.
+   Explicit frozen currency scope now qualifies10931 full/14 cases,6117 inputs/
+   nine DLLs. Deferred Abort rejects/quarantines rather than silently ending later
+   intent; that historical boundary is superseded for the captured legacy vendor/mail units by the later bank coordinator above; currency-free/unreserved-wallet entry points remain in the next audit. Do not
+   repeat the token bridge or treat it as a financial coordinator.
+   Currency conditional writes now qualify10955 full/24 new cases,6118 inputs/
+   nine DLLs, with8 negatives/16 controls and no DDL for either provider model.
+   The first full fixture incompatibility is corrected without relaxing assertions.
+   Loaded wallet route provenance, original actors and the complete financial graph
+   remain required; raw SQL/ABA/live provider behavior are not covered by Amount.
+   Revised604 is source-reconciled at10836 full/34 focused with16 net-new cases
+   and the corrected shuttle45 oracle; see UPSTREAM_604_TAXI_SAVE_RECONCILIATION.md.
+   Preserve fork guards and terminal taxi settlement. No stale unbuilt taxi draft
+   remains in the current queue; physical/provider travel is still unqualified.
+   Individual attachment collection now passes10636
+   full/184 focused with16 new cases and6086 bound inputs; its actor/SQL receipt
+   is qualified separately from bulk selection. Outgoing retention/publication and Character-coupled creature grants now pass10620 full/
+   49 focused with34 new cases and6081 bound inputs; do not repeat these fixes.
+   [Attachment index evidence](MAIL_ATTACHMENT_INDEX_EVIDENCE.md) maps the native
+   Lua/0126 producer and nServerIndex export. Receive/update behavior and independent
+   Verified corroboration remain open; no index/wire correction was implemented. Earlier Challenge drain/teardown failures remain retained;
+   failure-only diagnostics preserve the unchanged deadline and no cause is proven.
+3. Qualify current binaries with fresh disposable MySQL/configured-strategy,
+   model/copied-upgrade, actual full-table delivery, socket/deployment and load
+   evidence where supported. Historical I-drive PID/schema/default checks do
+   not qualify the destination's new DLLs. Original hosts/config/data stay
+   preserved; no runtime deployment has been made during this continuation.
+4. Continue609's native/actual-table qualification. The later
+   [static cross-check](NATIVE_STATIC_CONTRACT_COMMUNICATOR_CROSSCHECK.md) binds the
+   matching client with REA and uses installed LLVM to corroborate selected
+   condition/objective/offer-flag branches and Contract selected-point claims.
+   Each zero reputation bound skips its finite comparison. That mapped correction
+   proposal still needs the continuation guide's Verified table/runtime/sniff/
+   packet corroboration before server behavior changes. Twenty-two proposed
+   finite/nonfinite cases remain unbuilt/unexecuted outside Source; the current
+   predicate/tests are preserved. Recover the known481759-byte raw table with
+   SHA2566a46e0e5d3fed29e375206a82707e3c519c2f1ecb7e4a606dc987566f515810c
+   or independent confirmation. Raw tables are absent from the lean store and the
+   bounded archived-repository lookup found no TBL/index inputs. Full-table
+   classification/delivery, native timing/UI and retail qualification remain.
+   Ghidra stays unconfigured; Computer Use/native launch remain stopped.
+5. Continue track35 Zone earning, unsupported Challenge producers/retail odds,
+   broader AMP families, [#595 personal healing/Focus](HEALING_PERSONAL_MODIFIER_EVIDENCE.md), [#557 piercing/mitigation order](NATIVE_STATIC_ARMOR_PIERCE_EVIDENCE.md),
+   remaining prerequisite/protocol semantics, Hycrest later gameplay/physical
+   triggers and Q5597 quest/achievement-specific qualification. The missing
+   planning worksheet is superseded by the existing dated review; do not request
+   it again. All other assessment/feature-matrix requirements remain in scope.
+
+The source gates and local evidence directories are linked at the top. The Goal
+remains active. Preserve defaults15:1/17:1, no automatic44 or seven baseline
+character grants, and the current user-authorized scoped commit/push workflow.
+
+## Historical evidence and implementation queue
+
+The following is the earlier queue retained for provenance. Its foundation work
+is superseded where later entries establish implementation; it is not an
+instruction to repeat completed work.
+
 
 1. General reward tracks (#272): native routing is corrected and full gated.
    Pending-inventory delta persistence and monotonic IDs are complete and
@@ -559,8 +1382,12 @@ That earlier run used frozen6,923; World at that earlier checkpoint used7182/PID
 2. Remaining #595 healing/Focus semantic questions need their specific producer
    and property ownership evidence. The compatible owner-only 0x07FD acceptance
    reply and its token/target/yaw mapping are implemented and full gated.
-3. Armor Pierce order (#557): native stat formula helpers are identified, but
-   attacker piercing versus victim mitigation still needs a complete call chain.
+3. Armor Pierce order (#557): the2 November static pass now binds five literal
+   method cells and ten observed unwind ranges, including the pierce/three-school
+   routes into the shared formula routine. These are one-unit stat-display paths;
+   pairwise damage ordering still needs a complete call chain and independent
+   corroboration. Physical-offset/strikethrough portions already exist in the fork;
+   no combat behavior changed. See NATIVE_STATIC_ARMOR_PIERCE_EVIDENCE.md.
 4. Broader AMP families, remaining protocol/prerequisite semantics and Hycrest
    cinematic/physical-trigger/later-mission behavior remain evidence work.
 5. Q5597 still needs new quest/achievement-specific native UI and persistence

@@ -15,7 +15,7 @@ using NexusForever.WorldServer.Network.Message.Handler.Item;
 
 namespace NexusForever.Game.Tests.Item;
 
-public class ClientItemUseHandlerTests
+public partial class ClientItemUseHandlerTests
 {
     [Fact]
     public void HandleMessage_CastFailure_DoesNotConsumeItem()
@@ -101,7 +101,7 @@ public class ClientItemUseHandlerTests
     }
 
     [Fact]
-    public void HandleMessage_WhenItemSpecialTableMissingThrowsWithoutCastOrConsume()
+    public void HandleMessage_WhenItemSpecialTableMissingRefusesWithoutCastOrConsume()
     {
         ClientItemUseHandler handler = new(CreateGameTableManager(spell4Id: 777u, includeItemSpecial: false));
         var callOrder = new List<string>();
@@ -112,7 +112,9 @@ public class ClientItemUseHandlerTests
             out RecordingDispatchProxy<IInventory> inventoryProxy,
             out RecordingDispatchProxy<IPlayer> playerProxy);
 
-        Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(session, CreateRequest()));
+        var messages = RecordRefusals(session);
+        handler.HandleMessage(session, CreateRequest());
+        Assert.Equal(CastResult.ItemBad, Assert.Single(messages).CastResult);
 
         Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
         Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));

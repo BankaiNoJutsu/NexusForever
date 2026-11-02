@@ -21,7 +21,7 @@ namespace NexusForever.Game.Entity
         {
             lease = null;
             if (QuestManager is QuestManager { IsContractCompletionMutationInProgress: true }
-                || CurrencyManager is CurrencyManager { HasPendingContractCurrency: true } or CurrencyManager { RequiresContractCurrencyReload: true }
+                || CurrencyManager is CurrencyManager currencies && (currencies.RequiresContractCurrencyReload || currencies.HasPendingContractCurrency && !AuctionBidSaveAllowed && !BankSaveAllowed)
                 || ChallengeManager?.HasPendingRewardOperation == true || ChallengeManager?.RequiresAuthoritativeReload == true
                 || QuestManager?.HasPendingRewardOperation == true || QuestManager?.RequiresAuthoritativeReload == true) return false;
             return Inventory?.SupportsTransactionalSoulboundDelivery != true || Inventory.TryAcquireSaveLease(out lease);
@@ -43,7 +43,7 @@ namespace NexusForever.Game.Entity
 
         private void CheckInventorySaveAllowed(bool frozen = false)
         {
-            if (CurrencyManager is CurrencyManager { HasPendingContractCurrency: true } or CurrencyManager { RequiresContractCurrencyReload: true })
+            if (CurrencyManager is CurrencyManager currencies && (currencies.RequiresContractCurrencyReload || currencies.HasPendingContractCurrency && !AuctionBidSaveAllowed && !BankSaveAllowed))
                 throw new InvalidOperationException("Player save overlaps pending or quarantined Contract currency work.");
             if (!frozen && QuestManager is QuestManager { HasContractCompletionWork: true })
                 throw new InvalidOperationException("Player save requires the frozen Contract journal before Auth enrollment.");

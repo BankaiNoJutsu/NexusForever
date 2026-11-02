@@ -19,7 +19,7 @@ namespace NexusForever.Game.Entity
                 foreach (var quest in completedQuests.Values.Concat(inactiveQuests.Values).Concat(activeQuests.Values).OfType<Quest.Quest>()) quest.RetireRewardOwner();
             }
         }
-        internal NormalSaveSnapshot CaptureNormalSave(string database)
+        internal NormalSaveSnapshot CaptureNormalSave(string database, object frozenOwner = null, object frozenToken = null)
         {
             lock (questRewardGate)
             {
@@ -27,8 +27,12 @@ namespace NexusForever.Game.Entity
                     throw new InvalidOperationException("Quest manager already has persistence ownership.");
                 if (contractCompletion != null && (contractCompletion.Database != database || contractCompletion.Scope == null))
                     throw new InvalidOperationException("Contract journal lost its pending frozen owner.");
-                var token = contractCompletion?.Token ?? new object();
-                var scope = contractCompletion?.Scope ?? QuestSaveScope.AcquireFrozen(this, token, database, player.CharacterId);
+                bool borrowed = frozenOwner != null || frozenToken != null;
+                if (borrowed && (frozenOwner == null || frozenToken == null || contractCompletion != null))
+                    throw new InvalidOperationException("Borrowed reconciliation cannot take ownership of a Contract journal.");
+                var token = frozenToken ?? contractCompletion?.Token ?? new object();
+                var scope = borrowed ? QuestSaveScope.BorrowFrozen(frozenOwner, token, database, player.CharacterId)
+                    : contractCompletion?.Scope ?? QuestSaveScope.AcquireFrozen(this, token, database, player.CharacterId);
                 try
                 {
                     DrainCommittedDeletions();
@@ -54,6 +58,14 @@ namespace NexusForever.Game.Entity
             private ContractNormalSaveUnit contractUnit;
             private bool contractEnded;
             internal bool HasContractCompletion => contract != null;
+            internal bool CanRetryBidRollback(CharacterContext context, bool partialEnrollment = false) => !disposed && ReferenceEquals(owner.normalSave, this)
+                && (ReferenceEquals(bound, context) || partialEnrollment && bound == null)
+                && (context == null || context.IsProvenBidRollback) && contract == null && !owner.questRewardReload;
+            internal void RetryBidRollback(CharacterContext context, bool partialEnrollment = false)
+            {
+                if (!CanRetryBidRollback(context, partialEnrollment)) throw new InvalidOperationException("Frozen Quest save lost its proven bid rollback.");
+                bound = null;
+            }
             private void Bind(CharacterContext context)
             {
                 if (disposed || !ReferenceEquals(owner.normalSave, this) || database != Item.GetRewardDatabaseKey(context)

@@ -19,5 +19,8 @@ namespace NexusForever.Game.Abstract
         /// Returns if supplied <see cref="IAccount"/> is locked due to pending <see cref="IPlayer"/> cleanup.
         /// </summary>
         bool IsAccountLocked(IAccount account);
+
+        /// <summary>Hold admission for all accounts participating in one economic operation.</summary>
+        bool TryAcquireAccounts(IReadOnlyCollection<uint> accounts, out IDisposable lease);
     }
 }
