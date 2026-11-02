@@ -18,8 +18,12 @@ Frozen `2c4aff9e`/6,202 inputs passes **11,634 full tests**, zero failures/skips
 all26 new/144 focused and all prior11,608 labels,26 MySQL cases and clean build/
 reviews. Final bindings and all7 recorded workload shutdowns verify; schema/DB
 DLLs are unchanged. Defaults15:1/17:1/no44/seven grants and client/CUA stop remain.
-The user now authorizes regular scoped commits/pushes after verified review. The Goal remains active for broader F-025 apply mapping
-and the explicitly missing external/retail evidence.
+The recovery checkpoint is published as14ea07f0; regular scoped commits/pushes
+remain authorized after verified review. [F-025 apply cases](Decomp/Analysis/F025_STATIC_HANDLER_PROXY_MAPPING.md)
+are now mapped for all six entity-stat aux opcodes through the indexed entity
+dispatch table. Field enums/table identity and server producer/ordering evidence
+remain open; no aux emitter or native/retail qualification is added. The Goal
+remains active. Earlier milestone entries retain their historical boundaries.
 
 [Current legacy bank reconciliation](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md) retains deferred
 currency and the complete original actor through rollback/lost acknowledgement,

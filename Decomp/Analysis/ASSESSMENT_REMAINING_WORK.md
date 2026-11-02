@@ -65,18 +65,26 @@ unchanged, with four corrected native controls passing. Evidence:
 loaded values, packet policy and defaults/grants are preserved. Actual-data/Auth/
 deployment/socket/native/retail limits remain explicit.
 
-Next integrated evidence outcome: continue the F-025 entity-stat auxiliary
-per-opcode apply-handler/apply-table mapping with the matching build16042 PE,
-REA identity evidence and available static tooling. Target0x0889/0x08CC/0x08F4/
-0x0939/0x093D/0x093E through WorldSocket+0x15b0 /vtable+0x58; shared readers alone
-and the rejected viewport/grid candidate do not prove apply ownership or emit
-timing. Reuse the archived input/unwind tooling and prior negative-search bounds;
-do not retry unavailable Ghidra/runtime capture or enable an emitter without the
-continuation guide's corroboration. This moves into broader feature evidence
-rather than inventing further bank edge cases. The known currency-free/unreserved
-actor gaps above are now executed and fixed. Contract reset/unclaimed/excess/all726
-choices, raw Communicator corroboration, actual-table/native/retail and the other
-feature-matrix requirements remain open. Native client/CUA stay stopped.
+[F-025 aux apply table mapping](F025_STATIC_HANDLER_PROXY_MAPPING.md) resolves all six
+entity-stat aux cases through Entity_DispatchHighRangeMessage1403ec6a0 and
+DWORD RVA table1403f1344. Name-text, indexed-array/pair and raw entity-state
+consumers are mapped; selector enums/table identity and producer eligibility/
+ordering remain unqualified. The separate proxy registry owner+0x20 bridge is
+unproven, and Fortune's direct03CF..03D2 cases have an additional node+0x60
+apply fallback. No Source behavior/emitter changed. The11,634-test checkpoint
+is published as14ea07f0 with verified local/remote HEAD parity.
+
+Next integrated evidence outcome: corroborate the mapped F-025 field meanings
+and server producer/ordering requirements using independent table, packet or
+accepted runtime evidence; the six per-opcode apply-table edges are now mapped.
+Do not repeat their reader-only/literal-opcode or rejected viewport/grid searches,
+retry unavailable Ghidra/runtime capture, or enable emitters from these static
+observations alone. Reuse the exact cases and mapped entity-dispatch table.
+Continue independent broader feature work when its evidence permits. The known
+currency-free/unreserved actor gaps above are executed and fixed. Contract
+reset/unclaimed/excess/all726 choices, raw Communicator corroboration,
+actual-table/native/retail and other feature-matrix requirements remain open.
+Native client/CUA stay stopped.
 
 [Exploration/reputation recovery](DESTINATION_PROVIDER_QUALIFICATION.md) retains
 public relocation hexgroups and reputation increases/decreases across failed or

@@ -13,8 +13,12 @@ Frozen `2c4aff9e`/6,202 inputs passes **11,634 full tests**, zero failures/skips
 all26 new/144 focused and all prior11,608 labels,26 MySQL cases and clean build/
 reviews. Final bindings and all7 recorded workload shutdowns verify; schema/DB
 DLLs are unchanged. Defaults15:1/17:1/no44/seven grants and client/CUA stop remain.
-The user now authorizes regular scoped commits/pushes after verified review. The Goal remains active for broader F-025 apply mapping
-and the explicitly missing external/retail evidence.
+The recovery checkpoint is published as14ea07f0; regular scoped commits/pushes
+remain authorized after verified review. [F-025 apply cases](Decomp/Analysis/F025_STATIC_HANDLER_PROXY_MAPPING.md)
+are now mapped for all six entity-stat aux opcodes through the indexed entity
+dispatch table. Field enums/table identity and server producer/ordering evidence
+remain open; no aux emitter or native/retail qualification is added. The Goal
+remains active. Earlier milestone entries retain their historical boundaries.
 
 [Current legacy bank reconciliation](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md) retains deferred
 currency and the complete original actor through rollback/lost acknowledgement,
@@ -475,9 +479,9 @@ Qualify current code on fresh isolated schemas and preserve entitlement policy.
    bindings and retained negative controls. These gates do not prove retail
    permissions or native behavior. Upstream608 refusal paths are reconciled;
    upstream609 is closed unmerged, with reconciliation recorded in PR-TRIAGE.md.
-   Continue broader F-025 per-opcode entity-stat aux apply mapping using the
-   matching build16042 artifact and available static tooling. Reader/viewport
-   candidates do not prove apply ownership or emission timing. See
+   All six F-025 aux apply cases are mapped in the linked static record. Continue
+   independent field/table and server producer/ordering corroboration using the
+   matching build16042 artifact; apply mapping alone does not prove emit timing. See
    `Decomp/Analysis/ENTITY_AUX_DECODE_ROADMAP.md` and the remaining-work ledger.
 3. Continue public WorldServer **07CE** Contract claim integration, retail cycle
    reset/unclaimed/excess rules, actual full-table delivery, track35 earning,
@@ -549,8 +553,9 @@ Preserve all fork functionality, entitlement defaults15:1/17:1/no44 and original
 data. Periodic bank dirty/expiry persistence, upstream608 refusal reconciliation
 and captured bank recovery/post-commit publication are implemented, including
 bank vendor/mail custody, legacy deferred and unreserved/new-wallet currency
-recovery and guarded publication. Continue broader F-025 per-opcode aux apply
-mapping with the matching build16042 artifact and static tooling, then complete all
+recovery and guarded publication. F-025 now maps all six aux apply-table cases;
+continue field/table and server producer/ordering corroboration using the matching
+build16042 artifact and independent evidence, then complete all
 remaining assessment requirements and continue evidence-backed implementation
 using reverse-engineer-anything and CONTINUATION_GUIDE.md. Add meaningful
 regressions and run full build/tests after coherent slices. Keep retail evidence,

@@ -2,6 +2,18 @@
 
 Updated: 2026-06-05 (entity-create main Faction1/Faction2 offsets mapped; aux `Value*` names remain blocked pending consumer/apply evidence)
 
+Supplemental update: 2 November 2026 [aux apply table and proxy mapping](F025_STATIC_HANDLER_PROXY_MAPPING.md)
+resolves all six entity-stat aux cases through Entity_DispatchHighRangeMessage
+1403ec6a0 and DWORD RVA table1403f1344. Payload+0 resolves an entity; remaining
+fields now have bounded name-text, indexed-array/pair or raw state-store consumers.
+Field enums/table identity and server producer/emit timing remain open; no
+Source/emitter change or native launch. This supersedes the historical claim
+that only readers are known for these six opcodes. The proxy table140b55f40
+forwards through node+0x48 and an owner+0x20 registry; its socket bridge is still
+unproven. Fortune1404d60f0 has direct03CF..03D2 cases **and** a node+0x60 apply
+fallback, so earlier Fortune-only exclusion is incomplete. Use the exact case
+slots in the linked record rather than repeating literal-opcode searches.
+
 Supplemental update: 2026-06-09 F-026/F-003 `ServerItemContextActionAck`
 (`0x00B7`) cached-export/source recheck:
 existing cached `WildStar64.exe` fragments were sufficient and no labels or
