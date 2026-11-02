@@ -12,6 +12,13 @@ implement server behavior from the evidence in the existing C# codebase.
 
 ## Current Artifacts
 
+[Guild disband recovery](GUILD_DISBAND_RECOVERY.md) now qualifies the public/periodic
+tombstone, post-commit cleanup and name-release path with 18 new/170 affected and
+11,666 full passing tests. Source reviews/build and final input/DLL/test bindings
+verify. Current upstream #401 is source-reconciled. This does not qualify ordinary
+guild field/rename recovery, live brokers, restart/outbox durability or native/
+retail behavior. No client/CUA launch or database schema/default change occurred.
+
 [Current unreserved bank currency recovery](DESTINATION_PROVIDER_QUALIFICATION.md) drains late
 currency for bank move/split/use/delete, single attachment and unreserved/new
 wallet flows, and rejects publication reentry before accepting mutations.

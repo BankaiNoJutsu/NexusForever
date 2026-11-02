@@ -209,15 +209,6 @@ namespace NexusForever.Game.Guild
                 {
                     if (!guildSavesInFlight.Add(guild.Id))
                         continue;
-                    if (deleting && guild.PendingCreate)
-                    {
-                        if (guild is Community community)
-                            community.CancelUnpersistedDisband();
-                        guilds.Remove(guild.Id);
-                        guildNameCache.Remove((guild.Type, guild.Name));
-                        guildSavesInFlight.Remove(guild.Id);
-                        continue;
-                    }
                 }
                 SaveGuildAsync(database, guild, deleting).FireAndForgetAsync(ex =>
                     log.Error(ex, "Failed to save guild {0}.", guild.Id));
@@ -228,7 +219,10 @@ namespace NexusForever.Game.Guild
         {
             try
             {
-                while (true)
+                bool unpersisted = deleting && guild.PendingCreate;
+                if (unpersisted && guild is Community cancelledCommunity)
+                    cancelledCommunity.CancelUnpersistedDisband();
+                while (!unpersisted)
                 {
                     Task previous = null;
                     await database.Save(context =>
@@ -244,10 +238,12 @@ namespace NexusForever.Game.Guild
                 }
                 if (deleting)
                 {
+                    await guild.PublishDisbandAsync(unpersisted);
                     lock (cacheLock)
                     {
                         guilds.Remove(guild.Id);
-                        guildNameCache.Remove((guild.Type, guild.Name));
+                        foreach (var key in guildNameCache.Where(entry => entry.Value == guild.Id).Select(entry => entry.Key).ToArray())
+                            guildNameCache.Remove(key);
                     }
                 }
             }
@@ -384,7 +380,7 @@ namespace NexusForever.Game.Guild
             IPlayer player, ClientGuildOperation operation)
         {
             IGuildBase guild = GetGuild(operation.GuildIdentity.ToGameIdentity());
-            if (guild == null)
+            if (guild == null || guild is GuildBase { PendingDelete: true })
                 return new GuildResultInfo(GuildResult.NotAGuild);
 
             IGuildMember member = guild.GetMember(player.CharacterId);

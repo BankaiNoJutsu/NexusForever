@@ -6,6 +6,16 @@ runtime deployment was performed. Read this file before starting services or
 migrations. The latest entry below controls; earlier milestone entries record
 their historical state, including then-applicable publication restrictions.
 
+Latest verified source outcome (3 November, Zurich):
+[guild disband recovery](Decomp/Analysis/GUILD_DISBAND_RECOVERY.md) retains accepted
+tombstones through failed/rolled-back saves and holds original actors/names through
+publication retry. All 18 new/170 affected and 11,666 full tests pass; build and
+Source reviews are clean. Frozen `55fc5821`/6,207 inputs and DLL/test bindings verify.
+Upstream #401's current cache-cleanup requirement is source-reconciled. Continue
+ordinary guild field/rename recovery and other roadmap requirements; live broker,
+restart, current-binary MySQL and native/retail gates remain open. Regular reviewed
+commits/pushes remain authorized; the Goal is active and client/CUA stay stopped.
+
 [Current unreserved bank currency recovery](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md) drains late
 currency for bank move/split/use/delete, single attachment and unreserved/new
 wallet flows, and rejects publication reentry before accepting mutations.

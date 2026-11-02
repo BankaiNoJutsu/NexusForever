@@ -23,17 +23,10 @@ namespace NexusForever.Game.Guild
             public ulong CharacterId { get; } = characterId;
         }
 
-        private sealed class DisbandChange(string name, ulong? leaderId)
-        {
-            public string Name { get; } = name;
-            public ulong? LeaderId { get; } = leaderId;
-            public DateTime DeletedAt { get; } = DateTime.UtcNow;
-        }
-
         private readonly object residenceLifecycleLock = new();
         private readonly Dictionary<ulong, ResidenceChange> pendingResidenceChanges = [];
         private readonly Dictionary<ulong, MemberRemoval> pendingMemberRemovals = [];
-        private DisbandChange pendingDisband;
+        private object pendingDisband;
         private bool disbanded;
         private IResidenceEntrance disbandEntrance;
 
@@ -100,7 +93,7 @@ namespace NexusForever.Game.Guild
                             break;
                         }
 
-                var change = new DisbandChange(Name, LeaderId);
+                var change = new object();
                 try
                 {
                     base.DisbandGuild();
@@ -203,7 +196,7 @@ namespace NexusForever.Game.Guild
                     throw new InvalidOperationException("Earlier residence save units must finish before saving the community.");
                 var residences = pendingResidenceChanges.ToArray();
                 var removals = pendingMemberRemovals.ToArray();
-                DisbandChange disband = pendingDisband;
+                object disband = pendingDisband;
                 base.Save(context);
 
                 foreach (var pending in residences)
@@ -257,19 +250,6 @@ namespace NexusForever.Game.Guild
                     // A previous caller-owned transaction may already have committed.
                     if (!tracked && context.GuildMember.Any(m => m.Id == Id && m.CharacterId == characterId))
                         context.Remove(new GuildMemberModel { Id = Id, CharacterId = characterId });
-                }
-
-                if (disband != null && !PendingCreate)
-                {
-                    var entity = context.ChangeTracker.Entries<GuildModel>().SingleOrDefault(e => e.Entity.Id == Id)
-                        ?? context.Attach(new GuildModel { Id = Id });
-                    entity.Property(g => g.DeleteTime).CurrentValue = disband.DeletedAt;
-                    entity.Property(g => g.OriginalName).CurrentValue = disband.Name;
-                    entity.Property(g => g.Name).CurrentValue = null;
-                    entity.Property(g => g.OriginalLeaderId).CurrentValue = disband.LeaderId;
-                    entity.Property(g => g.LeaderId).CurrentValue = null;
-                    foreach (string field in new[] { nameof(GuildModel.DeleteTime), nameof(GuildModel.OriginalName), nameof(GuildModel.Name), nameof(GuildModel.OriginalLeaderId), nameof(GuildModel.LeaderId) })
-                        entity.Property(field).IsModified = true;
                 }
 
                 context.OnSaveCompleted(committed =>

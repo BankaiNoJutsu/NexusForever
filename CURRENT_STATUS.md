@@ -1,6 +1,6 @@
 # NexusForever Feature Restoration - Current Status
 
-Latest assessment follow-through update: 2026-11-02. Regenerated content
+Latest assessment follow-through update: 2026-11-03 (Zurich). Regenerated content
 coverage contains `31` CSVs / `167,484` rows, all `not_retail_complete`.
 The two additional source-evidence rows reflect the implemented Hycrest
 intro/vote slice. The user restored all three tutorial videos. The unavailable
@@ -10,6 +10,14 @@ with 16 passing focused tests and explicit pending native quest/achievement UI
 checks. This supersession does not recover historical UI evidence or upgrade
 retail completion. The historical supplemental snapshots below retain their
 original row counts and verification scope.
+
+[Guild disband recovery](Decomp/Analysis/GUILD_DISBAND_RECOVERY.md) retains the
+accepted tombstone through failed/rolled-back saves, awaits internal cleanup and
+releases the original name reservation after publication. Current upstream #401
+is source-reconciled. All 18 new/170 affected and 11,666 full tests pass; build and
+Source reviews are clean. Ordinary guild field/rename recovery, live broker,
+restart, current-binary MySQL and native/retail qualification remain open. Defaults
+15:1/17:1 and no44/seven baseline grants are preserved; client/CUA remain stopped.
 
 [Current unreserved bank currency recovery](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md) drains late
 currency for bank move/split/use/delete, single attachment and unreserved/new

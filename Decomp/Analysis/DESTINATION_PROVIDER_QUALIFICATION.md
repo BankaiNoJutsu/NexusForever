@@ -1,5 +1,12 @@
 # Destination configured-provider qualification
 
+[Later guild disband source gate](GUILD_DISBAND_RECOVERY.md) passes 11,666 full
+tests, including 18 new/170 affected cases and actual local ChatServer handler
+controls. It changes no database source/schema and adds no current-binary MySQL,
+migration, live-broker or restart qualification. Historical provider results below
+retain their original source/DLL bindings; new assembly revision stamps do not
+upgrade those results. The current gate binds 11 owner/test-copy DLL pairs.
+
 [Later scanner-name source gate](SCIENTIST_SCANBOT_NAME_PUBLICATION.md) passes
 11,648 full tests with unchanged database source/schema. Rebuilding after Git
 publication changes assembly revision stamps/MVIDs and DLL identities; the

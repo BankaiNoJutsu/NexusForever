@@ -1,5 +1,23 @@
 # Official pull request comparison
 
+## 3 November Zurich: current #401 disband cache reconciliation
+
+Official [#401](https://github.com/NexusForever/NexusForever/pull/401) remains open
+at `e35d636cf1ef9cdb64092859cc24bfdb4b8657d6`. Its four-file legacy guild/chat
+cache cleanup is source-reconciled through the current architecture:
+[durable disband and publication](../GUILD_DISBAND_RECOVERY.md) now releases every
+name-index alias owned by the deleted guild after confirmed SQL and acknowledged
+cleanup. Existing member untracking and current identity-referenced ChatServer
+cleanup are verified through public/periodic and actual handler controls.
+All 18 new/170 affected and 11,666 full tests pass; build/Source reviews are clean.
+No obsolete in-process chat cache was imported. Ordinary rename-index/field recovery,
+live broker/restart, provider and native/retail requirements remain separate.
+
+The 22:57 UTC all-state query found no updates since 21:41 UTC. Official heads
+remain game_rework `d8e43d2c` and expedition-evil-from-the-ether `3588ca5f`.
+#608 remains source-reconciled; #609 is closed unmerged. No upstream PR mutation
+or broader native/retail completion is inferred.
+
 ## 2026-11-02 22:16 UTC: scoped upstream514 name reconciliation
 
 Current514 headc684d1fd572d876ea395b5aacdbfc76a86283e8c remains open. Its93
@@ -413,7 +431,7 @@ The fork is `legacy-di-storefront-hardening` at `f069e0b9`. Official game_rework
 | [#272](https://github.com/NexusForever/NexusForever/pull/272) | Loot/RewardTracks: Account & Character Tracks support added | develop | Legacy reward tracks overlap fork reward runtime; compare grant/persistence behavior. |
 | [#260](https://github.com/NexusForever/NexusForever/pull/260) | Spell/Effects: Stealth, Cooldown and ForceRemove - WIP | develop | Legacy predecessor to newer spell work; no direct integration recommendation. |
 | [#411](https://github.com/NexusForever/NexusForever/pull/411) | [Store/Purchases] Purchasing support with current character | develop | Fork has much broader storefront purchases/history/rollback; legacy PR depends on #275. |
-| [#401](https://github.com/NexusForever/NexusForever/pull/401) | [Guilds/Core] Empty guild and chat name caches upon disbanding guild - Resolves #394 | develop | Legacy guild-cache fix; validate current guild lifecycle before porting concept. |
+| [#401](https://github.com/NexusForever/NexusForever/pull/401) | [Guilds/Core] Empty guild and chat name caches upon disbanding guild - Resolves #394 | develop | Current-head cache cleanup source-reconciled through confirmed disband/publication and current ChatServer controls; 18 new/170 affected and 11,666 full tests pass. Live broker/restart and separate field/rename recovery remain open. |
 | [#399](https://github.com/NexusForever/NexusForever/pull/399) | [Item/Runes] Support Runes and Rune Slots | develop | Rune support already exists on fork; compare semantics in current item/microchip model. |
 | [#391](https://github.com/NexusForever/NexusForever/pull/391) | [Guilds/Communities] Handle Residence(s) on Disband or Leave | develop | Legacy guild/housing lifecycle change; inspect current cross-service ownership before porting. |
 | [#329](https://github.com/NexusForever/NexusForever/pull/329) | Auto move materials to satchel then the bag if full | develop | Legacy inventory routing behavior; verify modern satchel/bag flow before considering a port. |

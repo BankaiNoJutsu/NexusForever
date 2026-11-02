@@ -5,6 +5,17 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+[Guild disband recovery](GUILD_DISBAND_RECOVERY.md) now retains deletion intent,
+verifies the SQL tombstone and defers
+internal cleanup/name release until confirmed save and acknowledged publication.
+All 18 new/170 affected tests and both Source reviews pass; full build is clean.
+Frozen `55fc5821`/6,207 inputs passes **11,666 full tests**, zero failures/skips,
+including all previous 11,648 labels; final source/DLL/test bindings verify.
+Seven starting/review negatives and intermediate correction failures are retained.
+The current upstream #401 cache-cleanup requirement is source-reconciled. Ordinary
+non-disband recovery and stale rename-index/collision flows remain actionable;
+live broker, process restart, current-binary MySQL/native/retail gates stay open.
+
 [Scientist scanner name publication](SCIENTIST_SCANBOT_NAME_PUBLICATION.md) now
 carries an accepted/unlocked profile name into pending/active scanners, visible
 08CC updates and later create models. Fourteen new/256 affected and all11,648
@@ -1274,7 +1285,11 @@ solution build/test gate at coherent integration milestones.
    synthetic item/stacking metadata as full-table delivery evidence. The reset
    record contains the current evidence-based direction; no user policy
    preference question is pending.
-2. Continue remaining economic/publication recovery. Bid, buyout, auction/commodity
+2. Continue remaining economic/publication recovery. Guild disband now retains its
+   tombstone and original actor through SQL failure and broker-publication retry
+   at the linked 11,666-test source gate. Continue ordinary non-disband guild field/
+   member recovery and the stale rename-index/name-collision audit; live broker,
+   restart and provider qualification remain separate. Bid, buyout, auction/commodity
    expiry/cancellation, posting/fills and whole-Item auction posting now have the
    11,354-case full source/private-SQLite gate above; retain historical failures
    and do not repeat completed integrations. The historical milestone descriptions below

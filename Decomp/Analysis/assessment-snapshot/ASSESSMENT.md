@@ -1,5 +1,13 @@
 # NexusForever fork assessment
 
+[Guild disband recovery](../GUILD_DISBAND_RECOVERY.md) now retains accepted deletion
+intent across failed/rolled-back saves and holds original actors/names until
+post-commit publication succeeds. All 18 new/170 affected and 11,666 full tests
+pass; build/reviews and final bindings verify. Current upstream #401's cache-cleanup
+requirement is source-reconciled. Ordinary guild field/rename, live broker/restart,
+provider and native/retail qualification remain open; entitlement defaults and
+the client/CUA stop remain intact.
+
 [Current unreserved bank currency recovery](../DESTINATION_PROVIDER_QUALIFICATION.md) drains late
 currency for bank move/split/use/delete, single attachment and unreserved/new
 wallet flows, and rejects publication reentry before accepting mutations.

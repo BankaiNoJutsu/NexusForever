@@ -32,6 +32,7 @@
     <ProjectReference Include="..\NexusForever.Network.Sts\NexusForever.Network.Sts.csproj" />
     <ProjectReference Include="..\NexusForever.Script.Instance\NexusForever.Script.Instance.csproj" />
     <ProjectReference Include="..\NexusForever.Server.Character\NexusForever.Server.Character.csproj" />
+    <ProjectReference Include="..\NexusForever.Server.ChatServer\NexusForever.Server.ChatServer.csproj" />
     <ProjectReference Include="..\NexusForever.Server.Friendship\NexusForever.Server.Friendship.csproj" />
     <ProjectReference Include="..\NexusForever.Server.GroupServer\NexusForever.Server.GroupServer.csproj" />
     <ProjectReference Include="..\NexusForever.StsServer\NexusForever.StsServer.csproj" />
