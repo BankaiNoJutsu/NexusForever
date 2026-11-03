@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -236,6 +236,7 @@ namespace NexusForever.Game.Guild
                         break;
                     await previous;
                 }
+                await guild.PublishMutationsAsync();
                 if (deleting)
                 {
                     await guild.PublishDisbandAsync(unpersisted);
@@ -389,20 +390,24 @@ namespace NexusForever.Game.Guild
             if (guild == null || guild is GuildBase { PendingDelete: true })
                 return new GuildResultInfo(GuildResult.NotAGuild);
 
-            IGuildMember member = guild.GetMember(player.CharacterId);
-            if (member == null)
-                return new GuildResultInfo(GuildResult.NotInThatGuild);
+            lock (guild is GuildBase concrete ? concrete.MutationGate : guild)
+            {
+                if (guild is GuildBase { PendingDelete: true }) return new GuildResultInfo(GuildResult.NotAGuild);
+                IGuildMember member = guild.GetMember(player.CharacterId);
+                if (member == null)
+                    return new GuildResultInfo(GuildResult.NotInThatGuild);
 
-            if (handlers.Delegate != null)
-            {
-                handlers.Delegate.Invoke(guild, member, player, operation);
-                return new GuildResultInfo(GuildResult.Success);
-            }
-            else
-            {
-                IGuildResultInfo info = handlers.ResultDelegate.Invoke(guild, member, player, operation);
-                info.GuildIdentity = guild.Identity;
-                return info;
+                if (handlers.Delegate != null)
+                {
+                    handlers.Delegate.Invoke(guild, member, player, operation);
+                    return new GuildResultInfo(GuildResult.Success);
+                }
+                else
+                {
+                    IGuildResultInfo info = handlers.ResultDelegate.Invoke(guild, member, player, operation);
+                    info.GuildIdentity = guild.Identity;
+                    return info;
+                }
             }
         }
 

@@ -1,4 +1,4 @@
-﻿using NexusForever.Game.Abstract.Character;
+using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Character;
@@ -211,7 +211,7 @@ namespace NexusForever.Game.Guild
                 else
                     LeaveGuild(targetMember);
 
-                AnnounceGuildResult(GuildResult.KickedMember, referenceText: targetPlayer.Name);
+                AnnounceGuildResult(GuildResult.KickedMember, referenceText: targetPlayer?.Name ?? operation.TextValue);
             }
 
             return info;

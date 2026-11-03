@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
@@ -32,60 +32,65 @@ namespace NexusForever.Game.Guild
 
         public string Name
         {
-            get => name;
+            get { lock (MutationGate) return name; }
             set
             {
-                name = value;
-                saveMask |= GuildRankSaveMask.Name;
+                lock (MutationGate) { saveOwner?.RequireMutationEditable(); name = value; saveMask |= GuildRankSaveMask.Name; }
             }
         }
         private string name;
 
         public GuildRankPermission Permissions
         {
-            get => permissions;
+            get { lock (MutationGate) return permissions; }
             set
             {
-                permissions = value;
-                saveMask |= GuildRankSaveMask.Permissions;
+                lock (MutationGate) { saveOwner?.RequireMutationEditable(); permissions = value; saveMask |= GuildRankSaveMask.Permissions; }
             }
         }
         private GuildRankPermission permissions;
 
         public ulong BankPermissions
         {
-            get => bankPermissions;
+            get { lock (MutationGate) return bankPermissions; }
             set
             {
-                bankPermissions = value;
-                saveMask |= GuildRankSaveMask.BankPermissions;
+                lock (MutationGate) { saveOwner?.RequireMutationEditable(); bankPermissions = value; saveMask |= GuildRankSaveMask.BankPermissions; }
             }
         }
         private ulong bankPermissions;
 
         public ulong BankMoneyWithdrawlLimits
         {
-            get => bankMoneyWithdrawlLimits;
+            get { lock (MutationGate) return bankMoneyWithdrawlLimits; }
             set
             {
-                bankMoneyWithdrawlLimits = value;
-                saveMask |= GuildRankSaveMask.BankMoneyWithdrawlLimits;
+                lock (MutationGate) { saveOwner?.RequireMutationEditable(); bankMoneyWithdrawlLimits = value; saveMask |= GuildRankSaveMask.BankMoneyWithdrawlLimits; }
             }
         }
         private ulong bankMoneyWithdrawlLimits;
 
         public ulong RepairLimit
         {
-            get => repairLimit;
+            get { lock (MutationGate) return repairLimit; }
             set
             {
-                repairLimit = value;
-                saveMask |= GuildRankSaveMask.RepairLimit;
+                lock (MutationGate) { saveOwner?.RequireMutationEditable(); repairLimit = value; saveMask |= GuildRankSaveMask.RepairLimit; }
             }
         }
         private ulong repairLimit;
 
         private GuildRankSaveMask saveMask;
+        private GuildBase saveOwner;
+        private object MutationGate => saveOwner?.MutationGate ?? this;
+        internal void BindSaveOwner(GuildBase owner) => saveOwner = owner;
+        internal void AcknowledgeMutation(GuildMutationPersistence.Rank stored)
+        {
+            saveMask &= ~GuildRankSaveMask.Create;
+            if (!PendingDelete && Name == stored.Name && (uint)Permissions == stored.Permission
+                && BankPermissions == stored.Bank && BankMoneyWithdrawlLimits == stored.Money && RepairLimit == stored.Repair)
+                saveMask = GuildRankSaveMask.None;
+        }
         public bool NeedsSave => saveMask != GuildRankSaveMask.None;
 
         /// <summary>
@@ -140,6 +145,7 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public void Save(CharacterContext context)
         {
+            if (saveOwner?.SaveRankMutations(this, context) == true) return;
             if (saveMask == GuildRankSaveMask.None)
                 return;
 
@@ -210,10 +216,14 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public void EnqueueDelete(bool set)
         {
-            if (set)
-                saveMask |= GuildRankSaveMask.Delete;
-            else
-                saveMask &= ~GuildRankSaveMask.Delete;
+            lock (MutationGate)
+            {
+                saveOwner?.RequireMutationEditable();
+                if (set)
+                    saveMask |= GuildRankSaveMask.Delete;
+                else
+                    saveMask &= ~GuildRankSaveMask.Delete;
+            }
         }
 
         /// <summary>

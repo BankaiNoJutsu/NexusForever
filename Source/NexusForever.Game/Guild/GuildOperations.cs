@@ -1,4 +1,4 @@
-﻿using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Static.Guild;
 using NexusForever.GameTable.Text.Filter;
@@ -82,7 +82,7 @@ namespace NexusForever.Game.Guild
 
             IGuildResultInfo result = GetResult();
             if (result.Result == GuildResult.Success)
-                SetTaxes(Convert.ToBoolean(operation.Data));
+                SetTaxes(operation.Data.BoolData);
 
             return result;
         }

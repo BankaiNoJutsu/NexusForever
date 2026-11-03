@@ -191,3 +191,89 @@ settlement, ordinary other guild fields/ranks/members/data, failed or uncertain
 first-create recovery, copied upgrades, live broker, restart/outbox, raw-ADO or
 distributed writers, native gameplay or retail completeness. Defaults15:1/17:1,
 no44/seven baseline grants and the client/CUA stop remain intact.
+
+## Ordinary guild mutations: verified
+
+After250c7fbe, corrected baseline fixtures execute six failures and one direct-save
+positive against retained original Game/WorldServer DLLs. MOTD-only edits never
+reach the timer; failed mixed header/data/rank/member saves consume intent; failed
+rank/member deletes lose their collection owner. Public tax handling casts the
+union object rather than its parsed Boolean; offline kicking dereferences an
+absent player. Evidence: `artifacts/continuation-20261103/guild-mutation-recovery/`
+(`before-corrected-table.trx` and isolated DLL bindings). The first fixture used
+an incorrect IWorldSession namespace; one earlier mixed-edit trigger named the
+wrong table. Those setup failures remain separate, not behavior negatives.
+
+Acceptance: preserve the complete accepted ordinary header/data/rank/member graph
+through failed, rolled-back and uncertain saves; retain later edits and pending
+collection deletions; bind direct child saves to the original guild/route. Observe
+tracked intent, full SQL postimages, a flush and terminal success before retiring
+intent. Publish committed net member changes through the existing periodic owner,
+retain unacknowledged immutable messages and avoid repeating confirmed SQL.
+Names and disband tombstones retain their existing owners. Failed/uncertain parent
+creation, durable restart/outbox, atomic fee settlement and external/native/retail
+qualification remain separate requirements.
+
+The completed existing-guild flow captures immutable ordinary graph targets under
+the original guild gate. Direct rank/member saves join the original parent unit;
+route, tracked-intent, complete SQL pre/postimage, observed flush and terminal
+success checks precede acknowledgement. Pending-deleted child owners remain until
+confirmed deletion; roster/count and promotion/demotion omit them. Same-context
+resave retains its frozen target, later accepted edits remain dirty, and uncertain
+outcomes are retained without duplicate semantic snapshots. First-confirmed parent
+creation initializes its ordinary baseline from SQL; failed/uncertain whole parent
+creation remains open.
+
+The public tax operation reads its parsed Boolean; offline kick no longer requires
+an online target. Periodic MOTD/data-only edits now save. Confirmed net membership/
+rank-permission changes enter immutable FIFO publication records; retry rebuilds
+the message and retains only unacknowledged work. The periodic in-flight owner
+spans SQL and publication. Confirmed SQL is not repeated on publication failure.
+
+Disband combines its separately owned tombstone with the ordinary graph without
+eagerly clearing data or removing child owners. Late accepted edits persist before
+cleanup; an exact read-only committed-tombstone witness protects subsequent saves
+without rewriting deletion fields. Cleanup seals all bound ordinary setters under
+the same gate before publication. Membership changes reject after disband captures
+its cleanup IDs. The captured name/leader tombstone retains its previous behavior.
+
+Useful failures remain retained: six corrected baseline negatives plus a direct
+positive; five original review negatives; the nonzero-header-flags disband failure;
+two late-intent/foreign-Type failures; and two committed-tombstone failures. This is
+16 failing outcomes, not16 independent feature claims. The earlier SQLite ulong
+ORDER BY error was fixed by sorting materialized results. Community fixtures now
+use persisted note/plot defaults, expect the retained original deleted member and
+drain confirmed publication before asserting clean state. The affected214-case
+intermediate run retained its20 fixture/contract failures and later two corrected
+defaults. A too-strict prepublication leader guard broke one old tombstone control
+and was removed. No assertion/deadline was relaxed; all intermediate failures stay
+separate from the final224 affected passes.
+
+Final candidate: **11,710 full tests**, zero failures/skips, all30 new/224 affected
+labels and every prior11,680 label. Full solution build: zero warnings/errors in
+29.36 seconds; full test command: 900.07 seconds. Both Source review axes have
+zero remaining findings after material fixes. Source/Tools SHA256
+`1b7099c484a2e9a66696b8a609cc43537964e25b642f94ee7dc680c28eb71b8a` covers6,217 inputs;
+review patch `4afb8bc201f91925e5047cabc010aa213dd325598560780e2f02e013b95c82b3`. Eleven
+owner/test-copy pairs and the frozen test assembly verify. Database source, models,
+schemas, migrations, packages and entitlement defaults did not change.
+
+All30 provider cases pass in232.48 seconds on owned MySQL8.4.13 with the same production DLLs and
+source assertions/deadlines. The primary provider connection/disposal and six
+SQLite-trigger spellings are overlaid; explicit foreign routes remain private
+SQLite. The fixture uses configured-strategy explicit transactions with replay
+rejection. Its process generation, executable hash, loopback port and SQL datadir/
+version are checked before admission. The owned server/listener and recorded
+provider/full workload generations are absent after validation; no original data
+or configuration was changed. Local evidence root:
+`artifacts/continuation-20261103/guild-mutation-recovery/`, including verification,
+source/binary/provider bindings, full/affected TRX, review pins and failed controls.
+
+This closes ordinary existing-guild header/data/rank/member and net membership
+publication recovery. It does not qualify whole failed/uncertain creation, guild
+achievement recovery, fee/guild/residence financial atomicity, copied upgrades,
+raw-ADO/distributed writers, live brokers, durable restart/outbox, exactly-once
+delivery, native gameplay or retail completeness. Defaults15:1/17:1 and no44/seven
+baseline grants are preserved; CUA/native client stay stopped. Continue independent
+broader feature/upstream work when its evidence permits, retaining the whole-create
+and external qualification requirements in the roadmap.

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
@@ -32,32 +32,40 @@ namespace NexusForever.Game.Guild
         public override GuildType Type => GuildType.Guild;
         public override uint MaxMembers => 40u;
 
-        public IGuildStandard Standard { get; set; }
+        public IGuildStandard Standard
+        {
+            get { lock (MutationGate) return standard; }
+            set { lock (MutationGate) { RequireMutationEditable(); standard = value; } }
+        }
+        private IGuildStandard standard;
         public IGuildAchievementManager AchievementManager { get; private set; }
 
         public string MessageOfTheDay
         {
-            get => messageOfTheDay;
+            get { lock (MutationGate) return messageOfTheDay; }
             set
             {
-                messageOfTheDay = value;
-                saveMask |= GuildSaveMask.MessageOfTheDay;
+                lock (MutationGate) { RequireMutationEditable(); messageOfTheDay = value; saveMask |= GuildSaveMask.MessageOfTheDay; }
             }
         }
         private string messageOfTheDay;
 
         public string AdditionalInfo
         {
-            get => additionalInfo;
+            get { lock (MutationGate) return additionalInfo; }
             set
             {
-                additionalInfo = value;
-                saveMask |= GuildSaveMask.AdditionalInfo;
+                lock (MutationGate) { RequireMutationEditable(); additionalInfo = value; saveMask |= GuildSaveMask.AdditionalInfo; }
             }
         }
         private string additionalInfo;
 
         private GuildSaveMask saveMask;
+        internal void AcknowledgeMutationData(GuildMutationPersistence.Data stored)
+        {
+            if (MessageOfTheDay == stored.Motd) saveMask &= ~GuildSaveMask.MessageOfTheDay;
+            if (AdditionalInfo == stored.Info) saveMask &= ~GuildSaveMask.AdditionalInfo;
+        }
         private readonly IDisableManager disableManager;
         private readonly IGlobalAchievementManager globalAchievementManager;
         private readonly IPrerequisiteManager prerequisiteManager;
@@ -114,6 +122,11 @@ namespace NexusForever.Game.Guild
 
         protected override void Save(CharacterContext context, GuildBaseSaveMask baseSaveMask)
         {
+            if (HasMutationPersistence)
+            {
+                AchievementManager.Save(context);
+                return;
+            }
             if ((baseSaveMask & GuildBaseSaveMask.Create) != 0)
             {
                 context.Add(new GuildDataModel
@@ -155,23 +168,26 @@ namespace NexusForever.Game.Guild
 
         public override GuildData Build()
         {
-            return new GuildData
+            lock (MutationGate)
             {
-                GuildId           = Id,
-                GuildName         = Name,
-                Flags             = Flags,
-                Type              = Type,
-                Ranks             = GetGuildRanksPackets().ToList(),
-                GuildStandard     = Standard.Build(),
-                MemberCount       = (uint)members.Count,
-                OnlineMemberCount = (uint)onlineMembers.Count,
-                GuildInfo =
+                return new GuildData
                 {
-                    MessageOfTheDay         = MessageOfTheDay,
-                    GuildInfo               = AdditionalInfo,
-                    GuildCreationDateInDays = GetGuildCreationDateInDays()
-                }
-            };
+                    GuildId           = Id,
+                    GuildName         = Name,
+                    Flags             = Flags,
+                    Type              = Type,
+                    Ranks             = GetGuildRanksPackets().ToList(),
+                    GuildStandard     = Standard.Build(),
+                    MemberCount       = MemberCount,
+                    OnlineMemberCount = (uint)onlineMembers.Count,
+                    GuildInfo =
+                    {
+                        MessageOfTheDay         = MessageOfTheDay,
+                        GuildInfo               = AdditionalInfo,
+                        GuildCreationDateInDays = GetGuildCreationDateInDays()
+                    }
+                };
+            }
         }
 
         /// <summary>

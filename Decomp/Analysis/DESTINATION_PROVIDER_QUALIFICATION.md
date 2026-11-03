@@ -1,5 +1,15 @@
 # Destination configured-provider qualification
 
+[Ordinary guild mutation recovery](GUILD_DISBAND_RECOVERY.md#ordinary-guild-mutations-verified)
+passes30 unchanged-assertion MySQL8.4.13 cases on the verified owned fixture,
+including late-disband recovery, direct-child route ownership and guarded member
+publication. Six SQLite-trigger spellings and primary connection/disposal differ;
+foreign-route controls retain private SQLite. All30 new/224 affected and11,710 full
+source cases pass; build/reviews,6,217 inputs and11 owner/test/native DLL pairs
+verify. The owned process/listener and recorded workloads are absent. No database
+source/model/schema/migration changed. Whole first-create recovery, copied upgrades,
+atomic fees, live broker/restart and native/retail qualification remain separate.
+
 [Current guild/community name gate](GUILD_DISBAND_RECOVERY.md#name-lifecycle-recovery-verified)
 passes14 configured MySQL8.4.13 name outcomes as12 retained plus2 corrected manual-
 transaction fixtures on identical production DLLs. The initial two strategy-

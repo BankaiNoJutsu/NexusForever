@@ -25,10 +25,12 @@ namespace NexusForever.Game.Guild
                 return row != null && row.Type == guildType && row.DeleteTime == null && StringComparer.Ordinal.Equals(row.Name, target);
             }
             bool flushed = false;
+            GuildMutationPersistence.Snapshot createdMutations = null;
             EventHandler<SavedChangesEventArgs> onFlushed = (_, _) =>
             {
                 if (context.HasSavepointRollback) return;
                 if (!MatchesSql()) throw new InvalidOperationException("Created guild name did not flush its captured value.");
+                createdMutations = GuildMutationPersistence.Read(context, guildId, guildType);
                 flushed = true; guard.Capture(); guard.Flushed = true;
             };
             context.SavedChanges += onFlushed;
@@ -37,6 +39,8 @@ namespace NexusForever.Game.Guild
                 context.SavedChanges -= onFlushed;
                 if (!committed || !flushed || Id != guildId || (byte)Type != guildType) return;
                 namePersistence ??= new GuildNamePersistence(this, target, database, savedName => globalGuildManager?.GuildNameSaved(this, savedName));
+                if (mutationPersistence == null)
+                    InitialiseMutations(createdMutations, database);
                 globalGuildManager?.GuildNameSaved(this, target);
             });
             context.OnSaveValidation(phase =>

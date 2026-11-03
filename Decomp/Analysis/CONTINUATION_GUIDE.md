@@ -1,5 +1,14 @@
 # Client Binary Decompile Continuation Guide
 
+[Ordinary guild mutation recovery](GUILD_DISBAND_RECOVERY.md#ordinary-guild-mutations-verified) retains accepted header/data/rank/member
+edits and deletion owners through failed saves, preserves later disband edits and
+publishes committed net member changes through the periodic owner. All30 new/224
+affected and **11,710 full tests** pass, with clean build/reviews and30 MySQL8.4.13
+cases. Final6,217-input/11-DLL-pair bindings and owned-workload shutdowns verify.
+Failed/uncertain whole creation, financial atomicity, broker/restart and external/
+native/retail gates remain open. Defaults15:1/17:1/no44/seven grants and the client/
+CUA stop remain. The Goal is active; earlier checkpoints retain their own limits.
+
 [Latest guild/community name gate](GUILD_DISBAND_RECOVERY.md#name-lifecycle-recovery-verified)
 reserves names before fees and retains guild/residence name intent and aliases
 through failed saves. All14 new/184 affected and11,680 full tests pass; build,

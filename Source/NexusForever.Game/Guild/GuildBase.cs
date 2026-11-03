@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database;
 using NexusForever.Database.Character;
@@ -69,29 +69,27 @@ namespace NexusForever.Game.Guild
 
         public ulong? LeaderId
         {
-            get => leaderId;
+            get { lock (MutationGate) return leaderId; }
             set
             {
-                leaderId = value;
-                saveMask |= GuildBaseSaveMask.LeaderId;
+                lock (MutationGate) { RequireMutationEditable(); leaderId = value; saveMask |= GuildBaseSaveMask.LeaderId; }
             }
         }
         private ulong? leaderId;
 
         public GuildFlag Flags
         {
-            get => guildFlags;
+            get { lock (MutationGate) return guildFlags; }
             set
             {
-                guildFlags = value;
-                saveMask |= GuildBaseSaveMask.Flags;
+                lock (MutationGate) { RequireMutationEditable(); guildFlags = value; saveMask |= GuildBaseSaveMask.Flags; }
             }
         }
         private GuildFlag guildFlags;
 
         private GuildBaseSaveMask saveMask;
 
-        public uint MemberCount => (uint)members.Count;
+        public uint MemberCount { get { lock (MutationGate) return (uint)members.Values.Count(member => !member.PendingDelete); } }
 
         /// <summary>
         /// Returns if <see cref="IGuildBase"/> is enqueued to be saved to the database.
@@ -103,8 +101,9 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public virtual bool PendingDelete => pendingDisband != null || (saveMask & GuildBaseSaveMask.Delete) != 0;
 
-        public virtual bool NeedsSave => pendingDisband != null ? !pendingDisband.Published : namePersistence?.NeedsSave == true || saveMask != GuildBaseSaveMask.None
-            || ranks.Values.Any(r => r.NeedsSave) || members.Values.Any(m => m.NeedsSave);
+        public virtual bool NeedsSave => pendingDisband != null ? !pendingDisband.Published
+            : NeedsMutationPublication || namePersistence?.NeedsSave == true || (mutationPersistence?.NeedsSave
+                ?? (saveMask != GuildBaseSaveMask.None || ranks.Values.Any(r => r.NeedsSave) || members.Values.Any(m => m.NeedsSave)));
 
         /// <summary>
         /// Maximum number of <see cref="IGuildMember"/>'s allowed in the guild.
@@ -173,6 +172,7 @@ namespace NexusForever.Game.Guild
             saveMask = GuildBaseSaveMask.None;
             namePersistence = new GuildNamePersistence(this, model.Name, GuildLoadOrigin.Get(model),
                 savedName => globalGuildManager?.GuildNameSaved(this, savedName));
+            InitialiseMutations(GuildMutationPersistence.FromModel(model), GuildLoadOrigin.Get(model));
         }
 
         /// <summary>
@@ -212,101 +212,108 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public virtual void Save(CharacterContext context)
         {
-            if (pendingDisband is { Committed: true } or { Published: true })
-                return;
-            if (pendingDisband != null && PendingCreate)
-                return; // A never-enrolled create/disband is canceled by the global manager.
-            if (pendingDisband != null)
-                lock (pendingDisband.Contexts)
-                    if (pendingDisband.Contexts.Contains(context))
-                        return;
-            if (pendingDisband != null && !pendingDisband.Committed && !PendingCreate)
-                saveMask |= GuildBaseSaveMask.Delete;
-            if (pendingDisband == null)
-                namePersistence?.Save(context);
-            bool creating = (saveMask & GuildBaseSaveMask.Create) != 0;
-            if (saveMask != GuildBaseSaveMask.None)
+            lock (MutationGate)
             {
-                if ((saveMask & GuildBaseSaveMask.Create) != 0)
+                mutationPersistence?.RequireAvailable(context);
+                mutationPersistence?.RequireOriginalDatabase(context);
+                namePersistence?.RequireAvailable(context);
+                if (OwnsMutationSave(context) || pendingDisband != null && namePersistence?.Owns(context) == true) return;
+                if (pendingDisband is { Published: true }) return;
+                if (pendingDisband is { Committed: true })
                 {
-                    context.Add(new GuildModel
+                    if (mutationPersistence?.NeedsSave == true)
                     {
-                        Id         = Id,
-                        Type       = (byte)Type,
-                        Name       = Name,
-                        LeaderId   = LeaderId,
-                        CreateTime = CreateTime
-                    });
+                        ObserveDisbandSave(context, pendingDisband, true);
+                        mutationPersistence.Save(context, true);
+                        Save(context, GuildBaseSaveMask.None);
+                    }
+                    return;
                 }
-                else if ((saveMask & GuildBaseSaveMask.Delete) != 0)
+                if (pendingDisband != null && PendingCreate)
+                    return; // A never-enrolled create/disband is canceled by the global manager.
+                if (pendingDisband != null)
+                    lock (pendingDisband.Contexts)
+                        if (pendingDisband.Contexts.Contains(context))
+                            return;
+                if (pendingDisband != null && !pendingDisband.Committed && !PendingCreate)
+                    saveMask |= GuildBaseSaveMask.Delete;
+                if (pendingDisband == null) namePersistence?.Save(context);
+                if (mutationPersistence != null)
                 {
-                    EntityEntry<GuildModel> entity = context.ChangeTracker.Entries<GuildModel>()
-                        .SingleOrDefault(entry => entry.Entity.Id == Id) ?? context.Attach(new GuildModel { Id = Id });
-                    GuildModel model = entity.Entity;
-
-                    model.DeleteTime = pendingDisband?.DeletedAt ?? DateTime.UtcNow;
-                    entity.Property(p => p.DeleteTime).IsModified = true;
-
-                    model.OriginalName = pendingDisband != null ? pendingDisband.Name : Name;
-                    entity.Property(p => p.OriginalName).IsModified = true;
-
-                    model.Name = null;
-                    entity.Property(p => p.Name).IsModified = true;
-
-                    model.OriginalLeaderId = pendingDisband != null ? pendingDisband.LeaderId : LeaderId;
-                    entity.Property(p => p.OriginalLeaderId).IsModified = true;
-
-                    model.LeaderId = null;
-                    entity.Property(p => p.LeaderId).IsModified = true;
+                    if (pendingDisband != null)
+                    {
+                        StageDisbandHeader(context);
+                        ObserveDisbandSave(context, pendingDisband);
+                    }
+                    mutationPersistence.Save(context, pendingDisband != null);
+                    Save(context, GuildBaseSaveMask.None);
+                    return;
                 }
-                else
+                bool creating = (saveMask & GuildBaseSaveMask.Create) != 0;
+                if (saveMask != GuildBaseSaveMask.None)
                 {
-                    EntityEntry<GuildModel> entity = context.ChangeTracker.Entries<GuildModel>()
-                        .SingleOrDefault(row => row.Entity.Id == Id) ?? context.Attach(new GuildModel { Id = Id });
-                    GuildModel model = entity.Entity;
-                    if (namePersistence == null && (saveMask & GuildBaseSaveMask.Name) != 0)
+                    if ((saveMask & GuildBaseSaveMask.Create) != 0)
                     {
-                        model.Name = name;
-                        entity.Property(p => p.Name).IsModified = true;
+                        context.Add(new GuildModel
+                        {
+                            Id         = Id,
+                            Type       = (byte)Type,
+                            Name       = Name,
+                            LeaderId   = LeaderId,
+                            CreateTime = CreateTime
+                        });
                     }
-
-                    if ((saveMask & GuildBaseSaveMask.LeaderId) != 0)
+                    else if ((saveMask & GuildBaseSaveMask.Delete) != 0)
+                        StageDisbandHeader(context);
+                    else
                     {
-                        model.LeaderId = LeaderId;
-                        entity.Property(p => p.LeaderId).IsModified = true;
-                    }
+                        EntityEntry<GuildModel> entity = context.ChangeTracker.Entries<GuildModel>()
+                            .SingleOrDefault(row => row.Entity.Id == Id) ?? context.Attach(new GuildModel { Id = Id });
+                        GuildModel model = entity.Entity;
+                        if (namePersistence == null && (saveMask & GuildBaseSaveMask.Name) != 0)
+                        {
+                            model.Name = name;
+                            entity.Property(p => p.Name).IsModified = true;
+                        }
 
-                    if ((saveMask & GuildBaseSaveMask.Flags) != 0)
-                    {
-                        model.Flags = (uint)Flags;
-                        entity.Property(p => p.Flags).IsModified = true;
+                        if ((saveMask & GuildBaseSaveMask.LeaderId) != 0)
+                        {
+                            model.LeaderId = LeaderId;
+                            entity.Property(p => p.LeaderId).IsModified = true;
+                        }
+
+                        if ((saveMask & GuildBaseSaveMask.Flags) != 0)
+                        {
+                            model.Flags = (uint)Flags;
+                            entity.Property(p => p.Flags).IsModified = true;
+                        }
                     }
                 }
+
+                Save(context, saveMask);
+                saveMask = GuildBaseSaveMask.None;
+
+                if (pendingDisband is { Committed: false } disband)
+                    ObserveDisbandSave(context, disband);
+
+                foreach (IGuildRank rank in ranks.Values.ToList())
+                {
+                    if (rank.PendingDelete)
+                        ranks.Remove(rank.Index);
+
+                    rank.Save(context);
+                }
+
+                foreach (IGuildMember member in members.Values.ToList())
+                {
+                    if (member.PendingDelete)
+                        members.Remove(member.CharacterId);
+
+                    member.Save(context);
+                }
+                if (creating)
+                    ObserveCreatedName(context);
             }
-
-            Save(context, saveMask);
-            saveMask = GuildBaseSaveMask.None;
-
-            if (pendingDisband is { Committed: false } disband)
-                ObserveDisbandSave(context, disband);
-
-            foreach (IGuildRank rank in ranks.Values.ToList())
-            {
-                if (rank.PendingDelete)
-                    ranks.Remove(rank.Index);
-
-                rank.Save(context);
-            }
-
-            foreach (IGuildMember member in members.Values.ToList())
-            {
-                if (member.PendingDelete)
-                    members.Remove(member.CharacterId);
-
-                member.Save(context);
-            }
-            if (creating)
-                ObserveCreatedName(context);
         }
 
         protected virtual void Save(CharacterContext context, GuildBaseSaveMask saveMask)
@@ -316,20 +323,23 @@ namespace NexusForever.Game.Guild
 
         public virtual GuildData Build()
         {
-            return new GuildData
+            lock (MutationGate)
             {
-                GuildId           = Id,
-                GuildName         = Name,
-                Flags             = Flags,
-                Type              = Type,
-                Ranks             = GetGuildRanksPackets().ToList(),
-                MemberCount       = (uint)members.Count,
-                OnlineMemberCount = (uint)onlineMembers.Count,
-                GuildInfo =
+                return new GuildData
                 {
-                    GuildCreationDateInDays = GetGuildCreationDateInDays()
-                }
-            };
+                    GuildId           = Id,
+                    GuildName         = Name,
+                    Flags             = Flags,
+                    Type              = Type,
+                    Ranks             = GetGuildRanksPackets().ToList(),
+                    MemberCount       = MemberCount,
+                    OnlineMemberCount = (uint)onlineMembers.Count,
+                    GuildInfo =
+                    {
+                        GuildCreationDateInDays = GetGuildCreationDateInDays()
+                    }
+                };
+            }
         }
 
         protected float GetGuildCreationDateInDays()
@@ -440,24 +450,28 @@ namespace NexusForever.Game.Guild
         /// </remarks>
         public void JoinGuild(IPlayer player)
         {
-            IGuildMember member;
-            if (MemberCount == 0u)
+            lock (MutationGate)
             {
-                log.Trace($"Guild{Id} has no leader, new member {player.CharacterId} will be assigned to leader.");
+                if (IsDisbandAccepted) throw new InvalidOperationException("Disband has captured its original membership.");
+                IGuildMember member;
+                if (MemberCount == 0u)
+                {
+                    log.Trace($"Guild{Id} has no leader, new member {player.CharacterId} will be assigned to leader.");
 
-                LeaderId = player.CharacterId;
-                member   = AddMember(player, 0);
-                SendGuildResult(player.Session, GuildResult.YouCreated, Identity, referenceText: Name);
-            }
-            else
-            {
-                member = AddMember(player);
-                SendGuildResult(player.Session, GuildResult.YouJoined, Identity, referenceText: Name);
-            }
+                    LeaderId = player.CharacterId;
+                    member   = AddMember(player, 0);
+                    SendGuildResult(player.Session, GuildResult.YouCreated, Identity, referenceText: Name);
+                }
+                else
+                {
+                    member = AddMember(player);
+                    SendGuildResult(player.Session, GuildResult.YouJoined, Identity, referenceText: Name);
+                }
 
-            SendGuildJoin(player, member.Build(), new GuildWithdrawlInfo());
-            SendGuildRoster(player.Session);
-            AnnounceGuildMemberChange(member);
+                SendGuildJoin(player, member.Build(), new GuildWithdrawlInfo());
+                SendGuildRoster(player.Session);
+                AnnounceGuildMemberChange(member);
+            }
         }
 
         private void SendGuildJoin(IPlayer player, NetworkGuildMember guildMember, GuildWithdrawlInfo playerLimits)
@@ -477,6 +491,7 @@ namespace NexusForever.Game.Guild
             {
                 GuildIdentity = Identity.ToNetworkIdentity(),
                 GuildMembers = members.Values
+                    .Where(member => !member.PendingDelete)
                     .Select(m => m.Build())
                     .ToList(),
                 Done       = true
@@ -514,16 +529,20 @@ namespace NexusForever.Game.Guild
         /// </remarks>
         public void LeaveGuild(IPlayer player, GuildResult reason)
         {
-            if (!members.TryGetValue(player.CharacterId, out IGuildMember member))
-                throw new ArgumentException($"Invalid member {player.CharacterId} for guild {Id}.");
-
-            LeaveGuild(member, reason == GuildResult.GuildDisbanded);
-            SendGuildResult(player.Session, reason, Identity, referenceText: Name);
-
-            player.Session.EnqueueMessageEncrypted(new ServerGuildRemove
+            lock (MutationGate)
             {
-                GuildIdentity = Identity.ToNetworkIdentity(),
-            });
+                if (IsDisbandAccepted) throw new InvalidOperationException("Disband has captured its original membership.");
+                if (!members.TryGetValue(player.CharacterId, out IGuildMember member))
+                    throw new ArgumentException($"Invalid member {player.CharacterId} for guild {Id}.");
+
+                LeaveGuild(member, reason == GuildResult.GuildDisbanded);
+                SendGuildResult(player.Session, reason, Identity, referenceText: Name);
+
+                player.Session.EnqueueMessageEncrypted(new ServerGuildRemove
+                {
+                    GuildIdentity = Identity.ToNetworkIdentity(),
+                });
+            }
         }
 
         /// <summary>
@@ -562,22 +581,25 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public virtual void DisbandGuild()
         {
-            if (pendingDisband != null)
-                return;
-            var disband = new DisbandChange(Name, LeaderId, members.Values.Select(member => member.CharacterId).ToArray());
-            foreach (IGuildMember member in members.Values.ToList())
+            lock (MutationGate)
             {
-                // if the player is online handle through the local manager otherwise directly in the guild
-                IPlayer player = playerManager?.GetPlayer(member.CharacterId);
-                if (player != null)
-                    player.GuildManager.LeaveGuild(Id, GuildResult.GuildDisbanded);
-                else
-                    LeaveGuild(member, true);
-            }
+                if (pendingDisband != null)
+                    return;
+                var disband = new DisbandChange(Name, LeaderId, members.Values.Select(member => member.CharacterId).ToArray());
+                foreach (IGuildMember member in members.Values.ToList())
+                {
+                    // if the player is online handle through the local manager otherwise directly in the guild
+                    IPlayer player = playerManager?.GetPlayer(member.CharacterId);
+                    if (player != null)
+                        player.GuildManager.LeaveGuild(Id, GuildResult.GuildDisbanded);
+                    else
+                        LeaveGuild(member, true);
+                }
 
-            pendingDisband = disband;
-            saveMask |= GuildBaseSaveMask.Delete;
-            log.Trace($"Guild {Id} was disbanded.");
+                pendingDisband = disband;
+                saveMask |= GuildBaseSaveMask.Delete;
+                log.Trace($"Guild {Id} was disbanded.");
+            }
         }
 
         /// <summary>
@@ -586,29 +608,35 @@ namespace NexusForever.Game.Guild
         private void AddRank(byte index, string name, GuildRankPermission permissions = GuildRankPermission.Disabled,
             ulong bankPermissions = 0ul, ulong bankMoneyWithdrawlLimits = 0ul, ulong repairLimits = 0ul)
         {
-            if (index > 9)
-                throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} out of range, maximum rank index is 9!");
-
-            if (ranks.TryGetValue(index, out IGuildRank rank))
+            lock (MutationGate)
             {
-                if (!rank.PendingDelete)
-                    throw new InvalidOperationException($"Rank {index} for guild {Id} already exists!");
+                if (IsDisbandAccepted) throw new InvalidOperationException("Disband has captured its original membership.");
+                if (index > 9)
+                    throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} out of range, maximum rank index is 9!");
 
-                // rank is pending delete, reuse object
-                rank.EnqueueDelete(false);
-                rank.Name                     = name;
-                rank.Permissions              = permissions;
-                rank.BankPermissions          = bankPermissions;
-                rank.BankMoneyWithdrawlLimits = bankMoneyWithdrawlLimits;
-                rank.RepairLimit              = repairLimits;
-            }
-            else
-            {
-                rank = new GuildRank(Id, index, name, permissions, bankPermissions, bankMoneyWithdrawlLimits, repairLimits);
-                ranks.Add(index, rank);
-            }
+                if (ranks.TryGetValue(index, out IGuildRank rank))
+                {
+                    if (!rank.PendingDelete)
+                        throw new InvalidOperationException($"Rank {index} for guild {Id} already exists!");
 
-            log.Trace($"Added rank {name}({index}) to guild {Id}.");
+                    // rank is pending delete, reuse object
+                    rank.EnqueueDelete(false);
+                    rank.Name                     = name;
+                    rank.Permissions              = permissions;
+                    rank.BankPermissions          = bankPermissions;
+                    rank.BankMoneyWithdrawlLimits = bankMoneyWithdrawlLimits;
+                    rank.RepairLimit              = repairLimits;
+                }
+                else
+                {
+                    var created = new GuildRank(Id, index, name, permissions, bankPermissions, bankMoneyWithdrawlLimits, repairLimits);
+                    created.BindSaveOwner(this);
+                    rank = created;
+                    ranks.Add(index, rank);
+                }
+
+                log.Trace($"Added rank {name}({index}) to guild {Id}.");
+            }
         }
 
         /// <summary>
@@ -616,22 +644,26 @@ namespace NexusForever.Game.Guild
         /// </summary>
         private void RemoveRank(byte index)
         {
-            if (index > 9)
-                throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} out of range, maximum rank index is 9!");
+            lock (MutationGate)
+            {
+                if (IsDisbandAccepted) throw new InvalidOperationException("Disband has captured its original membership.");
+                if (index > 9)
+                    throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} out of range, maximum rank index is 9!");
 
-            if (!ranks.TryGetValue(index, out IGuildRank rank))
-                throw new ArgumentException($"Invalid rank {rank} for guild {Id}.");
+                if (!ranks.TryGetValue(index, out IGuildRank rank))
+                    throw new ArgumentException($"Invalid rank {rank} for guild {Id}.");
 
-            if (rank.MemberCount > 0u)
-                throw new InvalidOperationException($"Rank {index} for guild {Id} has existing members!");
+                if (rank.MemberCount > 0u)
+                    throw new InvalidOperationException($"Rank {index} for guild {Id} has existing members!");
 
-            // rank is pending create, direct remove
-            if (rank.PendingCreate)
-                ranks.Remove(index);
-            else
-                rank.EnqueueDelete(true);
+                // rank is pending create, direct remove
+                if (rank.PendingCreate && mutationPersistence?.WasRankAttempted(index) != true)
+                    ranks.Remove(index);
+                else
+                    rank.EnqueueDelete(true);
 
-            log.Trace($"Removed rank {rank.Name}({rank.Index}) from guild {Id}.");
+                log.Trace($"Removed rank {rank.Name}({rank.Index}) from guild {Id}.");
+            }
         }
 
         /// <summary>
@@ -665,7 +697,7 @@ namespace NexusForever.Game.Guild
                 throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} out of range, maximum demote rank index is 8!");
 
             for (byte i = (byte)(index + 1); i <= 9; i++)
-                if (ranks.TryGetValue(i, out IGuildRank rank))
+                if (ranks.TryGetValue(i, out IGuildRank rank) && !rank.PendingDelete)
                     return rank;
 
             return null;
@@ -685,7 +717,7 @@ namespace NexusForever.Game.Guild
                 throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} out of range, maximum demote rank index is 9!");
 
             for (sbyte i = (sbyte)(index - 1); i >= 0; i--)
-                if (ranks.TryGetValue((byte)i, out IGuildRank rank))
+                if (ranks.TryGetValue((byte)i, out IGuildRank rank) && !rank.PendingDelete)
                     return rank;
 
             return null;
@@ -693,22 +725,26 @@ namespace NexusForever.Game.Guild
 
         protected virtual void MemberChangeRank(IGuildMember member, IGuildRank newRank)
         {
-            member.Rank.RemoveMember(member);
-            newRank.AddMember(member);
-            member.Rank = newRank;
-
-            messagePublisher.PublishAsync(new GuildMemberRankUpdatedMessage
+            lock (MutationGate)
             {
-                GuildId = Id,
-                Type    = Type,
-                Member  = new Network.Internal.Message.Shared.Identity
+                if (IsDisbandAccepted) throw new InvalidOperationException("Disband has captured its original membership.");
+                member.Rank.RemoveMember(member);
+                newRank.AddMember(member);
+                member.Rank = newRank;
+
+                PublishMemberMutation(new GuildMemberRankUpdatedMessage
                 {
-                    Id      = member.CharacterId,
-                    RealmId = realmContext.RealmId
-                },
-                Rank        = newRank.Index,
-                Permissions = newRank.Permissions
-            }).FireAndForgetAsync();
+                    GuildId = Id,
+                    Type    = Type,
+                    Member  = new Network.Internal.Message.Shared.Identity
+                    {
+                        Id      = member.CharacterId,
+                        RealmId = realmContext.RealmId
+                    },
+                    Rank        = newRank.Index,
+                    Permissions = newRank.Permissions
+                });
+            }
         }
 
         /// <summary>
@@ -734,38 +770,43 @@ namespace NexusForever.Game.Guild
         /// </summary>
         protected virtual IGuildMember AddMember(IPlayer player, byte rank = 9)
         {
-            if (!ranks.TryGetValue(rank, out IGuildRank guildRank))
-                throw new ArgumentException($"Invalid rank {rank} for guild {Id}.");
-
-            if (members.TryGetValue(player.CharacterId, out IGuildMember member))
+            lock (MutationGate)
             {
-                if (!member.PendingDelete)
-                    throw new InvalidOperationException($"Member {player.CharacterId} for guild {Id} already exists!");
+                if (IsDisbandAccepted) throw new InvalidOperationException("Disband has captured its original membership.");
+                if (!ranks.TryGetValue(rank, out IGuildRank guildRank))
+                    throw new ArgumentException($"Invalid rank {rank} for guild {Id}.");
 
-                // rank is pending delete, reuse object
-                member.EnqueueDelete(false);
+                if (members.TryGetValue(player.CharacterId, out IGuildMember member))
+                {
+                    if (!member.PendingDelete)
+                        throw new InvalidOperationException($"Member {player.CharacterId} for guild {Id} already exists!");
+
+                    // rank is pending delete, reuse object
+                    member.EnqueueDelete(false);
+                    member.Rank = guildRank;
+                }
+                else
+                {
+                    // new members default to the lowest rank
+                    member = new GuildMember(this, player.CharacterId, guildRank, characterManager: characterManager);
+                    members.Add(player.CharacterId, member);
+                }
+
+                PublishMemberMutation(new GuildMemberAddedMessage
+                {
+                    GuildId     = Id,
+                    Type        = Type,
+                    Member      = player.Identity.ToInternalIdentity(),
+                    Rank        = guildRank.Index,
+                    Permissions = guildRank.Permissions
+                });
+
+                MemberOnline(member);
+                guildRank.AddMember(member);
+
+                log.Trace($"Added member {player.CharacterId} to guild {Id}.");
+                return member;
             }
-            else
-            {
-                // new members default to the lowest rank
-                member = new GuildMember(this, player.CharacterId, guildRank, characterManager: characterManager);
-                members.Add(player.CharacterId, member);
-            }
-
-            messagePublisher.PublishAsync(new GuildMemberAddedMessage
-            {
-                GuildId     = Id,
-                Type        = Type,
-                Member      = player.Identity.ToInternalIdentity(),
-                Rank        = guildRank.Index,
-                Permissions = guildRank.Permissions
-            }).FireAndForgetAsync();
-
-            MemberOnline(member);
-            guildRank.AddMember(member);
-
-            log.Trace($"Added member {player.CharacterId} to guild {Id}.");
-            return member;
         }
 
         /// <summary>
@@ -773,34 +814,38 @@ namespace NexusForever.Game.Guild
         /// </summary>
         protected virtual void RemoveMember(ulong characterId, bool disband)
         {
-            if (!members.TryGetValue(characterId, out IGuildMember member))
-                throw new ArgumentException($"Invalid member {characterId} for guild {Id}.");
-
-            if (!disband)
+            lock (MutationGate)
             {
-                // member is pending create, direct remove
-                if (member.PendingCreate)
-                    members.Remove(characterId);
-                else
-                    member.EnqueueDelete(true);
-            }
+                if (IsDisbandAccepted) throw new InvalidOperationException("Disband has captured its original membership.");
+                if (!members.TryGetValue(characterId, out IGuildMember member))
+                    throw new ArgumentException($"Invalid member {characterId} for guild {Id}.");
 
-            if (!disband)
-                messagePublisher.PublishAsync(new GuildMemberRemovedMessage
+                if (!disband)
                 {
-                    GuildId = Id,
-                    Type    = Type,
-                    Member  = new Network.Internal.Message.Shared.Identity
+                    // member is pending create, direct remove
+                    if (member.PendingCreate && mutationPersistence?.WasMemberAttempted(characterId) != true)
+                        members.Remove(characterId);
+                    else
+                        member.EnqueueDelete(true);
+                }
+
+                if (!disband)
+                    PublishMemberMutation(new GuildMemberRemovedMessage
                     {
-                        Id      = characterId,
-                        RealmId = realmContext.RealmId
-                    }
-                }).FireAndForgetAsync();
+                        GuildId = Id,
+                        Type    = Type,
+                        Member  = new Network.Internal.Message.Shared.Identity
+                        {
+                            Id      = characterId,
+                            RealmId = realmContext.RealmId
+                        }
+                    });
 
-            MemberOffline(member);
-            member.Rank.RemoveMember(member);
+                MemberOffline(member);
+                member.Rank.RemoveMember(member);
 
-            log.Trace($"Removed member {member.CharacterId} from guild {Id}.");
+                log.Trace($"Removed member {member.CharacterId} from guild {Id}.");
+            }
         }
 
         /// <summary>
@@ -808,9 +853,12 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public IGuildMember GetMember(ulong characterId)
         {
-            if (members.TryGetValue(characterId, out IGuildMember member) && !member.PendingDelete)
-                return member;
-            return null;
+            lock (MutationGate)
+            {
+                if (members.TryGetValue(characterId, out IGuildMember member) && !member.PendingDelete)
+                    return member;
+                return null;
+            }
         }
 
         /// <summary>
@@ -892,7 +940,7 @@ namespace NexusForever.Game.Guild
             {
                 GuildIdentity     = Identity.ToNetworkIdentity(),
                 GuildMember       = member.Build(),
-                MemberCount       = (ushort)members.Count,
+                MemberCount       = (ushort)MemberCount,
                 OnlineMemberCount = (ushort)onlineMembers.Count
             });
         }
@@ -934,7 +982,10 @@ namespace NexusForever.Game.Guild
 
         public IEnumerator<IGuildMember> GetEnumerator()
         {
-            return members.Values.GetEnumerator();
+            lock (MutationGate)
+            {
+                return members.Values.Where(member => !member.PendingDelete).ToArray().AsEnumerable().GetEnumerator();
+            }
         }
 
         IEnumerator IEnumerable.GetEnumerator()

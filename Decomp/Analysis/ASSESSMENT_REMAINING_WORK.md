@@ -5,6 +5,15 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+[Ordinary guild mutation recovery](GUILD_DISBAND_RECOVERY.md#ordinary-guild-mutations-verified) retains accepted header/data/rank/member
+edits and deletion owners through failed saves, preserves later disband edits and
+publishes committed net member changes through the periodic owner. All30 new/224
+affected and **11,710 full tests** pass, with clean build/reviews and30 MySQL8.4.13
+cases. Final6,217-input/11-DLL-pair bindings and owned-workload shutdowns verify.
+Failed/uncertain whole creation, financial atomicity, broker/restart and external/
+native/retail gates remain open. Defaults15:1/17:1/no44/seven grants and the client/
+CUA stop remain. The Goal is active; earlier checkpoints retain their own limits.
+
 [Guild/community name recovery](GUILD_DISBAND_RECOVERY.md#name-lifecycle-recovery-verified)
 now reserves names before the existing fee, rejects conflicts without debit,
 retains accepted names/SQL aliases through failure and persists unloaded residence
@@ -1180,7 +1189,7 @@ broader feature requirement stays in scope.
 | Work | Recorded checkpoint state | Evidence recorded or still required |
 | --- | --- | --- |
 | Packet dispatch scopes and dependency lifetimes (#565) | Implemented and live verified | Nine regressions and DI graph review pass; isolated login/world and retained entities pass. |
-| Dependency advisories | Implemented; query refreshed31 October | Current NuGet.org vulnerable/include-transitive query reports no vulnerable package entries across47 solution projects, exit0, without restore. Raw JSON is in the local mail-cash evidence. The eight archive/native SQLite tests and actual384-table/one-map extraction are historical qualification, not a destination rerun. |
+| Dependency advisories | Implemented; query refreshed3 November | Current NuGet.org vulnerable/include-transitive query reports no vulnerable package entries across47 solution projects, exit0, without restore. Fresh raw JSON is in `guild-mutation-recovery/dependency-advisories.json`;47 projects, no query problems, no restore or package changes. The eight archive/native SQLite tests and actual384-table/one-map extraction are historical qualification, not a destination rerun. |
 | Prerequisite comparison values (#594) | Implemented | Exact build-16042 native/REA comparison evidence, imported table correlation and 51 raw-ID regressions pass. |
 | Broader prerequisite/context work (#466/#554/#568/#600) | Supported extension implemented and full gated | Native-correct types 8/10/204, dash layout, NPC/target API and percentage71/215 pass. Type16 has30 regressions; corrected type95 squared-distance and type73 raw-vital quantization add34+27, with independent native/table review and full6,923 gate. Type269 substitution remains rejected; other numeric contexts need evidence. |
 | Missing content evidence | Current source validation passes | All three restored videos validate. The unavailable June 19 Q5597 planning worksheet is superseded by an explicitly dated tracked review with 16 passing tests and pending native UI checks. Regenerated 31 inventories / 167,484 rows pass the unchanged strict validator; every row remains not_retail_complete. |
@@ -1304,9 +1313,11 @@ solution build/test gate at coherent integration milestones.
 2. Continue remaining economic/publication recovery. Guild disband now retains its
    tombstone and original actor through SQL failure and broker-publication retry
    at the linked 11,666-test source gate. The later name-lifecycle gate above
-   completes the stale index/collision and existing-name/root persistence slice. Continue ordinary other guild fields,
-   ranks/members/data and failed/uncertain creation recovery; live broker,
-   restart and provider qualification remain separate. Bid, buyout, auction/commodity
+   completes the stale index/collision and existing-name/root persistence slice.
+   Ordinary header/data/rank/member recovery and committed member publication now
+   have the later11,710-full/30-MySQL gate above. Do not repeat these completed
+   integrations. Failed/uncertain whole creation, atomic financial settlement,
+   live broker/restart and broader provider qualification remain separate. Bid, buyout, auction/commodity
    expiry/cancellation, posting/fills and whole-Item auction posting now have the
    11,354-case full source/private-SQLite gate above; retain historical failures
    and do not repeat completed integrations. The historical milestone descriptions below

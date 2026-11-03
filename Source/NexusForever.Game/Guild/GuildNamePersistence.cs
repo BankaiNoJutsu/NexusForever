@@ -28,6 +28,17 @@ namespace NexusForever.Game.Guild
         private bool uncertain;
         private Unit active;
 
+        internal bool Owns(CharacterContext context) { lock (gate) return active != null && ReferenceEquals(active.Context, context); }
+        internal void RequireAvailable(CharacterContext context)
+        {
+            lock (gate)
+                if (active != null && !ReferenceEquals(active.Context, context))
+                {
+                    var error = new InvalidOperationException("Guild name belongs to an unfinished save unit.");
+                    context.RejectSave(error); throw error;
+                }
+        }
+
         internal bool NeedsSave
         {
             get { lock (gate) return active != null || uncertain || !StringComparer.Ordinal.Equals(owner.Name, confirmedName); }

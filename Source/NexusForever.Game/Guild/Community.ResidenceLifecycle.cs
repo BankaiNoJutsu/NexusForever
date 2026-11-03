@@ -25,6 +25,7 @@ namespace NexusForever.Game.Guild
         }
 
         private readonly object residenceLifecycleLock = new();
+        internal override object MutationGate => residenceLifecycleLock;
         private readonly Dictionary<ulong, ResidenceChange> pendingResidenceChanges = [];
         private readonly Dictionary<ulong, MemberRemoval> pendingMemberRemovals = [];
         private object pendingDisband;
@@ -194,7 +195,7 @@ namespace NexusForever.Game.Guild
         {
             lock (residenceLifecycleLock)
             {
-                if (renameSaveContexts.Contains(context))
+                if (renameSaveContexts.Contains(context) || OwnsMutationSave(context))
                     return;
                 if (pendingResidenceChanges.Values.Any(change => change.Name != null))
                     RequireNameSaveDatabase(context);
@@ -236,7 +237,7 @@ namespace NexusForever.Game.Guild
                         }
                     }
 
-                    foreach (var pending in removals)
+                    foreach (var pending in HasMutationPersistence && !IsDisbandAccepted ? [] : removals)
                     {
                         ulong characterId = pending.Value.CharacterId;
                         if (members.TryGetValue(characterId, out IGuildMember currentMember) && !currentMember.PendingDelete)

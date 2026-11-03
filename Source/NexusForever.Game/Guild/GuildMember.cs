@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
@@ -30,38 +30,42 @@ namespace NexusForever.Game.Guild
 
         public IGuildRank Rank
         {
-            get => rank;
+            get { lock (MutationGate) return rank; }
             set
             {
-                rank = value;
-                saveMask |= GuildMemberSaveMask.Rank;
+                lock (MutationGate) { (Guild as GuildBase)?.RequireMutationEditable(); rank = value; saveMask |= GuildMemberSaveMask.Rank; }
             }
         }
         private IGuildRank rank;
 
         public string Note
         {
-            get => note;
+            get { lock (MutationGate) return note; }
             set
             {
-                note = value;
-                saveMask |= GuildMemberSaveMask.Note;
+                lock (MutationGate) { (Guild as GuildBase)?.RequireMutationEditable(); note = value; saveMask |= GuildMemberSaveMask.Note; }
             }
         }
         private string note;
 
         public int CommunityPlotReservation
         {
-            get => communityPlotReservation;
+            get { lock (MutationGate) return communityPlotReservation; }
             set
             {
-                communityPlotReservation = value;
-                saveMask |= GuildMemberSaveMask.CommunityPlotReservation;
+                lock (MutationGate) { (Guild as GuildBase)?.RequireMutationEditable(); communityPlotReservation = value; saveMask |= GuildMemberSaveMask.CommunityPlotReservation; }
             }
         }
         private int communityPlotReservation;
 
+        private object MutationGate => (Guild as GuildBase)?.MutationGate ?? this;
         private GuildMemberSaveMask saveMask;
+        internal void AcknowledgeMutation(GuildMutationPersistence.Member stored)
+        {
+            saveMask &= ~GuildMemberSaveMask.Create;
+            if (!PendingDelete && Rank.Index == stored.Rank && Note == stored.Note && CommunityPlotReservation == stored.Plot)
+                saveMask = GuildMemberSaveMask.None;
+        }
         public bool NeedsSave => saveMask != GuildMemberSaveMask.None;
         private readonly ICharacterManager characterManager;
 
@@ -125,6 +129,7 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public void Save(CharacterContext context)
         {
+            if (Guild is GuildBase concrete && concrete.SaveMemberMutations(this, context)) return;
             if (saveMask == GuildMemberSaveMask.None)
                 return;
 
@@ -197,10 +202,14 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public void EnqueueDelete(bool set)
         {
-            if (set)
-                saveMask |= GuildMemberSaveMask.Delete;
-            else
-                saveMask &= ~GuildMemberSaveMask.Delete;
+            lock (MutationGate)
+            {
+                (Guild as GuildBase)?.RequireMutationEditable();
+                if (set)
+                    saveMask |= GuildMemberSaveMask.Delete;
+                else
+                    saveMask &= ~GuildMemberSaveMask.Delete;
+            }
         }
     }
 }

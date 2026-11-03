@@ -403,6 +403,8 @@ public sealed class CommunityResidenceLifecycleTests : IDisposable
         await context.SaveChangesAsync();
         Assert.True(f.Community.NeedsSave);
         await transaction.CommitAsync();
+        Assert.True(f.Community.NeedsSave); // Confirmed SQL still owns an unpublished member removal.
+        var manager = Manager(f); manager.Update(61); await WaitForIdle(manager);
         Assert.False(f.Community.NeedsSave);
         f.Child.Name = "After caller commit";
         using var next = Context();
@@ -491,6 +493,7 @@ public sealed class CommunityResidenceLifecycleTests : IDisposable
         await Seed(f);
         using (var setup = Context())
             await setup.Database.ExecuteSqlRawAsync("CREATE TRIGGER reject_detach BEFORE UPDATE ON residence BEGIN SELECT RAISE(ABORT, 'owned failure'); END");
+        IGuildMember original = f.Community.GetMember(42);
         f.Community.Remove(42);
         var manager = Manager(f);
         manager.Update(61);
@@ -504,7 +507,8 @@ public sealed class CommunityResidenceLifecycleTests : IDisposable
         }
         f.Community.AddAgain(42);
         IGuildMember member = f.Community.GetMember(42);
-        Assert.True(member.PendingCreate);
+        Assert.Same(original, member);
+        Assert.False(member.PendingCreate);
         member.Note = "Rejoined after rollback";
         member.CommunityPlotReservation = 2;
         manager.Update(61);
@@ -637,7 +641,7 @@ public sealed class CommunityResidenceLifecycleTests : IDisposable
         await Seed(f);
         var model = new GuildModel { Id = 88, Name = "Second", Type = (byte)GuildType.Community,
             GuildRank = [new GuildRankModel { Id = 88, Index = 9, Name = "Member" }],
-            GuildMember = [new GuildMemberModel { Id = 88, CharacterId = 42, Rank = 9 }] };
+            GuildMember = [new GuildMemberModel { Id = 88, CharacterId = 42, Rank = 9, Note = "", CommunityPlotReservation = -1 }] };
         var second = AdditionalCommunity(f, model);
         second.Residence = new Residence(new ResidenceModel { Id = 200, GuildOwnerId = 88, PropertyInfoId = (byte)PropertyInfoId.Community }, gameTableManager: f.Tables);
         using (var seed = Context())
@@ -854,8 +858,10 @@ public sealed class CommunityResidenceLifecycleTests : IDisposable
         {
             Id = 77, Type = (byte)GuildType.Community, Name = "Community", LeaderId = 43,
             GuildRank = [new GuildRankModel { Id = 77, Index = 9, Name = "Member" }],
-            GuildMember = [new GuildMemberModel { Id = 77, CharacterId = 42, Rank = 9, Note = "Old" }, new GuildMemberModel { Id = 77, CharacterId = 43, Rank = 9, Note = "Other" }]
+            GuildMember = [new GuildMemberModel { Id = 77, CharacterId = 42, Rank = 9, Note = "Old", CommunityPlotReservation = -1 }, new GuildMemberModel { Id = 77, CharacterId = 43, Rank = 9, Note = "Other", CommunityPlotReservation = -1 }]
         };
+        // This fixture constructs the loaded actor before seeding. Match the
+        // database-generated -1 plot value instead of an EF pre-insert sentinel.
         community.Initialise(model);
         var tables = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         var table = (GameTable<HousingPlotInfoEntry>)RuntimeHelpers.GetUninitializedObject(typeof(GameTable<HousingPlotInfoEntry>));

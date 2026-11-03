@@ -1,5 +1,18 @@
 # Official pull request comparison
 
+## 3 November: ordinary guild recovery and upstream boundary
+
+The [ordinary guild follow-on](../GUILD_DISBAND_RECOVERY.md#ordinary-guild-mutations-verified)
+completes existing-guild header/data/rank/member recovery and post-commit net member
+publication after the name/disband slices. All30 new/224 affected,30 MySQL and11,710
+full tests pass; build/reviews and final bindings verify. Whole creation, financial
+atomicity, live broker/restart and native/retail scope remain open.
+
+The all-state primary GitHub query `repo:NexusForever/NexusForever updated:>=2026-11-02`
+returned no PR updates at this boundary. #608 stays source-reconciled; #609 remains
+closed unmerged. Unchanged reviewed heads are reused; no upstream PR mutation was
+made. Receipt: `guild-mutation-recovery/upstream-refresh.json`.
+
 ## 3 November: name recovery and upstream refresh
 
 The [name-lifecycle follow-on](../GUILD_DISBAND_RECOVERY.md#name-lifecycle-recovery-verified)
