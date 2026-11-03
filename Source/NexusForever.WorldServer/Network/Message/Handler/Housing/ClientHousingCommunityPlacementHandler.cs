@@ -5,6 +5,7 @@ using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Map;
+using NexusForever.Game.Housing;
 using NexusForever.Game.Static.Guild;
 using NexusForever.Game.Static.Housing;
 using NexusForever.Network;
@@ -53,6 +54,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
             IResidence residence = session.Player.ResidenceManager.Residence;
             if (residence == null)
                 throw new InvalidPacketValueException();
+
+            if (residence is Residence registered && registered.TryQueueCommunityPlacement(session.Player, community,
+                housingCommunityPlacement.PropertyIndex, entrance, mapLockManager)) return;
 
             if (residence.Parent != null)
             {

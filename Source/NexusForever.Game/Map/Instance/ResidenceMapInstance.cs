@@ -19,6 +19,7 @@ using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.IO.Map;
 using NexusForever.Network;
+using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Abilities;
 using NexusForever.Network.World.Message.Model.Shared;
@@ -126,13 +127,15 @@ namespace NexusForever.Game.Map.Instance
 
         private void RemoveResidence(IResidence residence)
         {
+            if (!residences.TryGetValue(residence.Id, out var current) || !ReferenceEquals(current, residence)) return;
             residences.Remove(residence.Id);
             ClearEditMode(residence);
+            if (!ReferenceEquals(residence.Map, this)) return;
             residence.Map = null;
 
             foreach (IPlot plot in residence.GetPlots()
                 .Where(p => p.PlugItemEntry != null))
-                plot?.PlugEntity.RemoveFromMap();
+                if (ReferenceEquals(plot.PlugEntity?.Map, this)) plot.PlugEntity.RemoveFromMap();
         }
 
         protected override IMapPosition GetPlayerReturnLocation(IPlayer player)
@@ -209,8 +212,78 @@ namespace NexusForever.Game.Map.Instance
             return packet;
         }
         internal bool ContainsResidence(IResidence residence) => residences.TryGetValue(residence.Id, out var current) && ReferenceEquals(current, residence);
-        internal IPlayer[] CaptureRemodelRecipients() => entities.Values.OfType<IPlayer>().ToArray();
-        internal bool ContainsRemodelRecipient(IPlayer player) => entities.TryGetValue(player.Guid, out var current) && ReferenceEquals(current, player);
+        internal IPlayer[] CaptureHousingRecipients() => entities.Values.OfType<IPlayer>().ToArray();
+        internal bool ContainsHousingRecipient(IPlayer player) => entities.TryGetValue(player.Guid, out var current) && ReferenceEquals(current, player);
+        internal sealed class AssociationDetachment(ResidenceMapInstance map, IResidence residence)
+        {
+            private readonly IPlugEntity[] plugs = residence.GetPlots().Select(plot => plot.PlugEntity)
+                .Where(plug => plug != null && ReferenceEquals(plug.Map, map)).ToArray();
+            private int cursor;
+
+            internal void Apply()
+            {
+                // Membership is released only after every original map-owned
+                // plug has completed its removal. A throw retains this cursor.
+                while (cursor < plugs.Length) { plugs[cursor].RemoveFromMap(); cursor++; }
+                if (!map.ContainsResidence(residence)) return;
+                map.ClearEditMode(residence);
+                map.residences.Remove(residence.Id);
+                if (ReferenceEquals(residence.Map, map)) residence.Map = null;
+            }
+        }
+
+        internal sealed class AssociationAttachment(ResidenceMapInstance map, IResidence residence)
+        {
+            private readonly IPlot[] plots = residence.GetPlots().Where(plot => plot.PlugItemEntry != null).ToArray();
+            private int cursor;
+            private IPlugEntity plug;
+            private bool initialised;
+
+            internal void Apply()
+            {
+                while (cursor < plots.Length)
+                {
+                    IPlot plot = plots[cursor];
+                    plug ??= map.entityFactory.CreateEntity<IPlugEntity>();
+                    if (!initialised) { plug.Initialise(plot.PlotInfoEntry, plot.PlugItemEntry); initialised = true; }
+                    map.EnqueueAdd(plug, new MapPosition { Position = Vector3.Zero });
+                    plot.PlugEntity = plug;
+                    cursor++; plug = null; initialised = false;
+                }
+                if (!map.ContainsResidence(residence)) map.residences.Add(residence.Id, residence);
+                residence.Map = map;
+            }
+        }
+        internal List<Func<IWritable>> AssociationPackets(IResidence residence, bool deleted)
+        {
+            var result = new List<Func<IWritable>>
+            {
+                () =>
+                {
+                    var packet = new ServerHousingProperties(); var row = residence.Build(); row.ResidenceDeleted = deleted;
+                    packet.Residences.Add(row); return packet;
+                }
+            };
+            if (deleted) return result;
+            result.Add(() =>
+            {
+                var packet = new ServerHousingPlots { RealmId = residence.RealmId, ResidenceId = residence.Id };
+                foreach (var plot in residence.GetPlots()) packet.Plots.Add(new()
+                {
+                    PlotPropertyIndex = plot.Index, PlotInfoId = plot is Plot retained ? retained.CapturePersistence().Info : plot.PlotInfoEntry.Id, PlugFacing = plot.PlugFacing,
+                    PlugItemId = plot.PlugItemEntry?.Id ?? 0u, BuildState = plot.BuildState
+                });
+                return packet;
+            });
+            var chunks = residence.GetDecor().Select(row => row.DecorId).Chunk(100).ToArray();
+            foreach (var chunk in chunks) result.Add(() =>
+            {
+                var packet = new ServerHousingResidenceDecor { Operation = 0 };
+                foreach (ulong id in chunk) if (residence.GetDecor(id) is {} decor) packet.DecorData.Add(decor.Build());
+                return packet;
+            });
+            return result;
+        }
 
         private void SendResidence(IResidence residence, IPlayer player = null)
         {

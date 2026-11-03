@@ -58,6 +58,7 @@ namespace NexusForever.Game.Housing
                 lock (MutationGate)
                 {
                     RequirePersistenceEditable();
+                    RequireAssociationAssignment();
                     guildOwnerId = value;
                     saveMask |= ResidenceSaveMask.GuildOwner;
                 }
@@ -74,6 +75,7 @@ namespace NexusForever.Game.Housing
                 lock (MutationGate)
                 {
                     RequirePersistenceEditable();
+                    RequireAssociationAssignment();
                     propertyInfoId = value;
                     saveMask |= ResidenceSaveMask.PropertyInfo;
 
@@ -334,7 +336,8 @@ namespace NexusForever.Game.Housing
                 return Task.WhenAll(stagedSaveUnits.Where(unit => !ReferenceEquals(unit.Key, current)).Select(unit => unit.Value.Task)
                     .Concat(donation is { Prepared: true } ? [donation.Completion.Task] : [])
                     .Concat(paidName != null ? [paidName.Completion] : [])
-                    .Concat(CurrentRemodel?.Prepared == true ? [CurrentRemodel.Completion.Task] : []));
+                    .Concat(CurrentRemodel?.Prepared == true ? [CurrentRemodel.Completion.Task] : [])
+                    .Concat(AssociationSavePending ? [association.Completion.Task] : []));
         }
 
         internal bool IsCommunitySaveOwner(object owner)
@@ -751,6 +754,7 @@ namespace NexusForever.Game.Housing
         /// </remarks>
         public void AddChild(IResidence residence, bool temporary)
         {
+            if (residence is Residence child) child.RequireAssociationAssignment();
             if (Type != ResidenceType.Community)
                 throw new InvalidOperationException("Only community residences can have children!");
 
@@ -775,6 +779,7 @@ namespace NexusForever.Game.Housing
         /// </remarks>
         public void RemoveChild(IResidence residence)
         {
+            if (residence is Residence child) child.RequireAssociationAssignment();
             if (Type != ResidenceType.Community)
                 throw new InvalidOperationException("Only community residences can have children!");
 

@@ -156,6 +156,7 @@ namespace NexusForever.Game.Housing
             PublishCommittedCommunities();
             SaveDonations();
             SaveRemodels();
+            SaveAssociations();
             timeToSave -= lastTick;
             if (timeToSave <= 0d)
             {
@@ -172,7 +173,7 @@ namespace NexusForever.Game.Housing
 
             foreach (IResidence residence in residences.Values)
             {
-                if (residence is Residence concreteResidence && (!concreteResidence.NeedsSave || concreteResidence.CommunitySavePending || concreteResidence.DonationSavePending || concreteResidence.PaidNameSavePending || concreteResidence.RemodelSavePending))
+                if (residence is Residence concreteResidence && (!concreteResidence.NeedsSave || concreteResidence.CommunitySavePending || concreteResidence.DonationSavePending || concreteResidence.PaidNameSavePending || concreteResidence.RemodelSavePending || concreteResidence.AssociationSavePending))
                     continue;
 
                 lock (saveGate) if (!savesInFlight.Add(residence.Id)) continue;

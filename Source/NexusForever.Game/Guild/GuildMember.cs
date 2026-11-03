@@ -53,10 +53,11 @@ namespace NexusForever.Game.Guild
             get { lock (MutationGate) return communityPlotReservation; }
             set
             {
-                lock (MutationGate) { (Guild as GuildBase)?.RequireMutationEditable(); communityPlotReservation = value; saveMask |= GuildMemberSaveMask.CommunityPlotReservation; }
+                lock (MutationGate) { (Guild as GuildBase)?.RequireMutationEditable(); (Guild as Community)?.RequireAssociationPlotAssignment(); communityPlotReservation = value; saveMask |= GuildMemberSaveMask.CommunityPlotReservation; }
             }
         }
         private int communityPlotReservation;
+        internal void AdoptAssociationReservation(int value) => communityPlotReservation = value;
 
         private object MutationGate => (Guild as GuildBase)?.MutationGate ?? this;
         private GuildMemberSaveMask saveMask;

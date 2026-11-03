@@ -5,6 +5,17 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+[Committed community placement/removal](HOUSING_ASSOCIATION_PUBLICATION.md) now
+retains complete guild/two-residence intent through SQL confirmation, then
+resumes map/domain/travel/publication stages on the world update. Failed plug
+work, route-witness poisoning, stale travel, departure and unresolved raw-plot
+publication defects are fixed; authorised orphan-owner removal stays compatible.
+All30 new/526 affected,30 MySQL and11,931 full cases pass; build, both reviews
+and6,245-input/11-DLL bindings verify. Travel admission/geography remain controlled;
+physical/native/retail, restart/outbox and the broader roadmap stay open. Reassess
+the broader queue next; do not extend housing with speculative cases. Defaults
+15:1/17:1/no44/seven grants and client/CUA stop remain unchanged.
+
 [Committed remodel publication](HOUSING_REMODEL_PUBLICATION.md) now retains
 seven cosmetic fields and complete residence persistence through confirmation,
 then applies/publishes on the world update with FIFO requests and guarded
@@ -1407,12 +1418,18 @@ solution build/test gate at coherent integration milestones.
    model-load metadata. Do not repeat that integration. Committed remodel
    publication now has the later11,901-full/22-MySQL gate linked above, including
    all 462 affected cases in that full run. Retain the earlier transfer timeout;
-   do not repeat the completed remodel integration. Next complete committed
-   placement: the controlled public-flow probe reproduces live guild77/parent100/
-   property100 plus placement packet/unload request while SQL stays unassociated
-   through a rejected save. Preserve original graph/slot ownership, permissions
-   and stale-map/session guards. Physical travel remains unqualified. Continue
-   the broader feature queue afterward; model tests do not qualify retail.
+   do not repeat the completed remodel integration. Committed placement/removal
+   now has the11,931-full/30-MySQL gate linked above, including all526 affected
+   cases. It preserves original graph/slot ownership, permissions, stale-map/
+   session guards, resumable plug work and later membership cleanup. Physical
+   travel remains unqualified. The linked real Player/achievement probe now
+   reproduces progress and realm-first publication plus a consumed in-memory
+   claim while SQL stays empty through a rejected save; existing retry commits
+   the rows after removing the owned trigger. Complete committed character
+   achievement publication next; durable realm-first arbitration stays separate.
+   Continue the broader economic/progression/gameplay queue without repeating
+   completed housing integrations or inventing speculative housing cases. Model
+   tests do not qualify retail.
    Cross-character notification atomicity, durable realm-first arbitration,
    other atomic financial settlement, live broker/restart and broader
    provider qualification remain open; the complete feature and assessment scope

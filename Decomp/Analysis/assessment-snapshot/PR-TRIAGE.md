@@ -1,5 +1,11 @@
 # Official pull request comparison
 
+[Committed community placement/removal](../HOUSING_ASSOCIATION_PUBLICATION.md) is the latest housing result.
+The linked30-case/MySQL,526-affected and11,931-full gate preserves controlled
+travel and all external/native/retail limits. Continue the broader roadmap;
+the Goal remains active and client/CUA launch stays stopped.
+The all-state updated-order refresh has no new upstream deltas; reviewed #608/#609 heads remain unchanged. No upstream PR mutation occurred.
+
 [Committed remodel publication](../HOUSING_REMODEL_PUBLICATION.md) is the latest housing result.
 The linked 22-case/MySQL and 11,901-test full gate retains the earlier affected
 timeout and all external/native/retail limits. A controlled placement probe

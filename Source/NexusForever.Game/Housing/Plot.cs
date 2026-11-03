@@ -36,6 +36,7 @@ namespace NexusForever.Game.Housing
                 lock (MutationGate)
                 {
                     saveOwner?.RequirePlotEditable(this);
+                    saveOwner?.RequireAssociationPlotInfoAssignment();
                     ArgumentNullException.ThrowIfNull(value);
                     ushort next = checked((ushort)value.Id);
                     plotInfoEntry = value;

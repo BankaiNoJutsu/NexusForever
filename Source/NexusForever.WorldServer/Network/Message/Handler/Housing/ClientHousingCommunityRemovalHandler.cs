@@ -7,6 +7,7 @@ using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Static.Guild;
+using NexusForever.Game.Housing;
 using NexusForever.Game.Static.Housing;
 using NexusForever.Network;
 using NexusForever.Network.Message;
@@ -63,6 +64,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
                 if (member == null || !member.Rank.HasPermission(GuildRankPermission.RemoveCommunityPlotReservation))
                     throw new InvalidPacketValueException();
             }
+
+            if (child.Residence is Residence registered && registered.TryQueueCommunityRemoval(session.Player, community, entrance, mapLockManager)) return;
 
             if (child.Residence.Map != null)
                 child.Residence.Map.RemoveChild(child.Residence);

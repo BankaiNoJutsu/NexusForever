@@ -113,7 +113,7 @@ namespace NexusForever.Game.Housing
                     if (Finished || !ReferenceEquals(owner.CurrentRemodel, this)) return false;
                     if (Prepared) return true;
                     if (!CurrentRoot || !CurrentPlayer || !owner.CanModifyResidence(player)) { Finish(); return false; }
-                    if (owner.stagedSaveUnits.Count != 0 || owner.communitySaveOwner != null || owner.donation != null || owner.paidName != null) return false;
+                    if (owner.stagedSaveUnits.Count != 0 || owner.communitySaveOwner != null || owner.AssociationSavePending || owner.donation != null || owner.paidName != null) return false;
                     var captured = owner.CapturePersistence();
                     target = captured with { Header = captured.Header with { Roof = roof ?? captured.Header.Roof, Wallpaper = wallpaper ?? captured.Header.Wallpaper,
                         Entry = entry ?? captured.Header.Entry, Door = door ?? captured.Header.Door, Sky = sky ?? captured.Header.Sky,
@@ -147,11 +147,11 @@ namespace NexusForever.Game.Housing
                         if (owner.CaptureHeader() == target.Header) owner.saveMask = ResidenceSaveMask.None;
                         applied = true;
                     }
-                    recipients ??= CurrentRoot ? map.CaptureRemodelRecipients().Select(recipient => (recipient, recipient.Session)).ToArray() : [];
+                    recipients ??= CurrentRoot ? map.CaptureHousingRecipients().Select(recipient => (recipient, recipient.Session)).ToArray() : [];
                     while (cursor < recipients.Length)
                     {
                         var recipient = recipients[cursor];
-                        if (CurrentRoot && map.ContainsRemodelRecipient(recipient.Player) && ReferenceEquals(recipient.Player.Map, map)
+                        if (CurrentRoot && map.ContainsHousingRecipient(recipient.Player) && ReferenceEquals(recipient.Player.Map, map)
                             && ReferenceEquals(recipient.Player.Session, recipient.Session) && recipient.Session is IPlayerSession current
                             && ReferenceEquals(current.Player, recipient.Player) && recipient.Session is not NetworkSession { IsDisconnecting: true })
                             recipient.Session.EnqueueMessageEncrypted(map.BuildProperties());

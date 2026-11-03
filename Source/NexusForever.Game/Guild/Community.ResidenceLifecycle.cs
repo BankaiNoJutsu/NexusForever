@@ -57,6 +57,7 @@ namespace NexusForever.Game.Guild
                     return;
 
                 bool persisted = !member.PendingCreate;
+                RetainAssociationDeparture(characterId);
                 IResidence child = Residence?.GetChild(characterId)?.Residence;
                 if (child != null)
                     DetachResidence(child, disbandEntrance);
@@ -169,6 +170,7 @@ namespace NexusForever.Game.Guild
         {
             lock (residenceLifecycleLock)
             {
+                if (AssociationPrepared) return CurrentAssociation.Completion.Task;
                 Task previous = Task.WhenAll(pendingResidenceChanges.Values
                     .Select(change => change.Residence).OfType<Residence>().Select(residence => residence.PreviousSaveUnits(context)));
                 if (!previous.IsCompleted)
@@ -195,6 +197,8 @@ namespace NexusForever.Game.Guild
         {
             lock (residenceLifecycleLock)
             {
+                try { RequireAssociationSave(null); }
+                catch (Exception error) { context.RejectSave(error); throw; }
                 if (PaidNamePrepared)
                 {
                     var error = new InvalidOperationException("Community belongs to its retained paid rename.");

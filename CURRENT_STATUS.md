@@ -1,5 +1,10 @@
 # NexusForever Feature Restoration - Current Status
 
+[Committed community placement/removal](Decomp/Analysis/HOUSING_ASSOCIATION_PUBLICATION.md) is the latest housing result.
+The linked30-case/MySQL,526-affected and11,931-full gate preserves controlled
+travel and all external/native/retail limits. Continue the broader roadmap;
+the Goal remains active and client/CUA launch stays stopped.
+
 [Committed remodel publication](Decomp/Analysis/HOUSING_REMODEL_PUBLICATION.md) is the latest housing result.
 The linked 22-case/MySQL and 11,901-test full gate retains the earlier affected
 timeout and all external/native/retail limits. A controlled placement probe

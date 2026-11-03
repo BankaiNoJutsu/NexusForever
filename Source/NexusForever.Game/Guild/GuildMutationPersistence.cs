@@ -18,9 +18,10 @@ namespace NexusForever.Game.Guild
         internal sealed record Snapshot(ulong? Leader, uint Flags, Rank[] Ranks, Member[] Members, Data Data, Achievement[] Achievements);
         internal sealed record CreationHeader(string Name, DateTime Created, DateTime? Deleted, string OriginalName, ulong? OriginalLeader);
         internal static Snapshot Empty => new(null, 0, [], [], null, []);
-        private sealed class Unit(CharacterContext context, Snapshot intent, Snapshot target, Snapshot sql, bool disband, string name, bool ownsName, CreationHeader targetHeader, CreationHeader sqlHeader)
+        private sealed class Unit(CharacterContext context, Snapshot intent, Snapshot target, Snapshot sql, bool disband, string name, bool ownsName, CreationHeader targetHeader, CreationHeader sqlHeader, object reservation)
         {
             internal readonly CharacterContext Context = context;
+            internal readonly object Reservation = reservation;
             internal readonly Snapshot Intent = intent;
             internal readonly Snapshot Target = target;
             internal readonly bool Disband = disband;
@@ -75,7 +76,7 @@ namespace NexusForever.Game.Guild
                     context.RejectSave(error); throw error;
                 }
         }
-        private static bool Equal(Snapshot left, Snapshot right) => ReferenceEquals(left, right) || left != null && right != null
+        internal static bool Equal(Snapshot left, Snapshot right) => ReferenceEquals(left, right) || left != null && right != null
             && left.Leader == right.Leader && left.Flags == right.Flags && left.Data == right.Data
             && left.Ranks.SequenceEqual(right.Ranks) && left.Members.SequenceEqual(right.Members)
             && (left.Achievements == null ? right.Achievements == null : right.Achievements != null && left.Achievements.SequenceEqual(right.Achievements));
@@ -110,18 +111,19 @@ namespace NexusForever.Game.Guild
                     .Select(row => new Achievement(row.AchievementId, row.ProgressState, row.CreditedChecklistMask, row.DateCompleted))
                     .ToArray().OrderBy(row => row.Id).ToArray() : null);
         }
-        private void RequireOwner(CharacterContext context)
+        private void RequireOwner(CharacterContext context, object reservation = null)
         {
+            if (owner is Community community) community.RequireAssociationSave(reservation);
             if (owner.Id != guild || (byte)owner.Type != type || owner.Identity.RealmId != realm || context.IsSaveRejected)
                 throw new InvalidOperationException("Guild mutations lost their original actor or fresh context.");
             if (owner is Guild achievementOwner) achievementOwner.RequireCurrentAchievementOwner();
             database ??= CharacterDatabaseIdentity.Get(context);
             CharacterDatabaseIdentity.Require(context, database);
         }
-        internal void RequireOriginalDatabase(CharacterContext context)
+        internal void RequireOriginalDatabase(CharacterContext context, object reservation = null)
         {
             lock (gate)
-                try { RequireOwner(context); }
+                try { RequireOwner(context, reservation); }
                 catch (Exception error) { context.RejectSave(error); throw; }
         }
         private Snapshot Read(Unit unit) => Read(unit.Context, guild, type, unit.Disband ? owner.MatchesMutationTombstone : null, unit.Creating);
@@ -138,7 +140,7 @@ namespace NexusForever.Game.Guild
             if (!unit.OwnsName && !StringComparer.Ordinal.Equals(unit.Context.Guild.AsNoTracking().Where(row => row.Id == guild).Select(row => row.Name).Single(), unit.Name))
                 throw new InvalidOperationException("Ordinary guild mutations cannot change the separately owned name.");
         }
-        internal void Save(CharacterContext context, bool disband = false, bool force = false)
+        internal void Save(CharacterContext context, bool disband = false, bool force = false, Snapshot frozen = null, object reservation = null)
         {
             lock (gate)
             {
@@ -147,10 +149,10 @@ namespace NexusForever.Game.Guild
                     RequireAvailable(context);
                     if (active != null) return;
                     if (!disband && !force && !NeedsSave) return;
-                    RequireOwner(context);
+                    RequireOwner(context, reservation);
                     if (context.HasSavepointRollback) throw new InvalidOperationException("Guild mutations require a fresh context after savepoint rollback.");
                     bool creating = baseline == null;
-                    Snapshot actual = Read(context, guild, type, disband ? owner.MatchesMutationTombstone : null, creating), target = current();
+                    Snapshot actual = Read(context, guild, type, disband ? owner.MatchesMutationTombstone : null, creating), target = frozen ?? current();
                     if (creating) target = target with { Leader = owner.CreationLeader };
                     else if (disband) target = target with { Leader = null };
                     CreationHeader sqlHeader = creating ? ReadHeader(context) : null;
@@ -159,7 +161,7 @@ namespace NexusForever.Game.Guild
                         throw new InvalidOperationException("Guild mutations changed outside their loaded or retained SQL outcomes.");
                     var unit = new Unit(context, target, StoredTarget(context, target), actual, disband,
                         creating ? sqlHeader?.Name : context.Guild.AsNoTracking().Where(row => row.Id == guild).Select(row => row.Name).Single(),
-                        creating || owner.OwnsMutationNameWrite(context), creating ? owner.CaptureCreationHeader() : null, sqlHeader);
+                        creating || owner.OwnsMutationNameWrite(context), creating ? owner.CaptureCreationHeader() : null, sqlHeader, reservation);
                     lock (leaseGate)
                     {
                         if (!leases.TryAdd((database, guild), unit))
@@ -318,7 +320,7 @@ namespace NexusForever.Game.Guild
             {
                 if (!ReferenceEquals(active, unit)) throw new InvalidOperationException("Guild mutations lost their save owner.");
                 if (unit.Context.HasSavepointRollback) return;
-                RequireOwner(unit.Context); ValidateName(unit); unit.Context.ChangeTracker.DetectChanges();
+                RequireOwner(unit.Context, unit.Reservation); ValidateName(unit); unit.Context.ChangeTracker.DetectChanges();
                 ValidateTrackedGraph(unit);
                 ValidateCreationHeader(unit, phase == CharacterSaveValidationPhase.BeforeFlush ? unit.SqlHeader : unit.TargetHeader);
                 foreach (var row in unit.Rows)
@@ -345,7 +347,7 @@ namespace NexusForever.Game.Guild
             lock (gate)
             {
                 if (!ReferenceEquals(active, unit) || unit.Context.HasSavepointRollback) return;
-                ValidateName(unit); ValidateCreationHeader(unit, unit.TargetHeader);
+                RequireOwner(unit.Context, unit.Reservation); ValidateName(unit); ValidateCreationHeader(unit, unit.TargetHeader);
                 if (!Equal(Read(unit), unit.Target))
                     throw new InvalidOperationException("Guild mutations did not flush their complete captured graph.");
                 unit.Sql = unit.Target; unit.SqlHeader = unit.TargetHeader; unit.Flushed = true;
