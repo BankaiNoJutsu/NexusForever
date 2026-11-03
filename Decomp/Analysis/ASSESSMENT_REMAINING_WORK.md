@@ -5,6 +5,16 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+[Guild/community name recovery](GUILD_DISBAND_RECOVERY.md#name-lifecycle-recovery-verified)
+now reserves names before the existing fee, rejects conflicts without debit,
+retains accepted names/SQL aliases through failure and persists unloaded residence
+names with the guild. All14 new/184 affected and **11,680 full tests** pass,
+zero failures/skips; build/reviews and6,213-input/11-DLL-pair bindings verify.
+MySQL name coverage passes as12 retained plus2 corrected strategy fixtures, with
+the original failures preserved. The owned process/listener is absent. Ordinary
+other guild fields/ranks/members/data and failed/uncertain creation, atomic fee
+settlement, broker/restart and external/retail qualification remain actionable.
+
 [Guild disband recovery](GUILD_DISBAND_RECOVERY.md) now retains deletion intent,
 verifies the SQL tombstone and defers
 internal cleanup/name release until confirmed save and acknowledged publication.
@@ -12,9 +22,10 @@ All 18 new/170 affected tests and both Source reviews pass; full build is clean.
 Frozen `55fc5821`/6,207 inputs passes **11,666 full tests**, zero failures/skips,
 including all previous 11,648 labels; final source/DLL/test bindings verify.
 Seven starting/review negatives and intermediate correction failures are retained.
-The current upstream #401 cache-cleanup requirement is source-reconciled. Ordinary
-non-disband recovery and stale rename-index/collision flows remain actionable;
-live broker, process restart, current-binary MySQL/native/retail gates stay open.
+The current upstream #401 cache-cleanup requirement is source-reconciled. At that
+earlier checkpoint, ordinary non-disband and rename flows remained actionable.
+The later name gate above completes the rename slice; other guild recovery,
+live broker/restart, broader provider and native/retail gates stay open.
 
 [Scientist scanner name publication](SCIENTIST_SCANBOT_NAME_PUBLICATION.md) now
 carries an accepted/unlocked profile name into pending/active scanners, visible
@@ -94,6 +105,11 @@ ordering remain unqualified. The separate proxy registry owner+0x20 bridge is
 unproven, and Fortune's direct03CF..03D2 cases have an additional node+0x60
 apply fallback. No Source behavior/emitter changed. The11,634-test checkpoint
 is published as14ea07f0 with verified local/remote HEAD parity.
+
+The later [0939 field cross-check](F025_STATIC_HANDLER_PROXY_MAPPING.md#3-november-0939-name-and-title-fields)
+independently maps its14-bit CharacterTitle and18-bit cached Creature2 name keys.
+The formatter's raw+34 meaning and concrete producer eligibility/order remain
+unqualified. This is mapped-only evidence with no Source/emitter or retail change.
 
 Next integrated evidence outcome: continue independent broader feature/upstream
 requirements and corroborate the remaining mapped F-025 field meanings
@@ -1287,8 +1303,9 @@ solution build/test gate at coherent integration milestones.
    preference question is pending.
 2. Continue remaining economic/publication recovery. Guild disband now retains its
    tombstone and original actor through SQL failure and broker-publication retry
-   at the linked 11,666-test source gate. Continue ordinary non-disband guild field/
-   member recovery and the stale rename-index/name-collision audit; live broker,
+   at the linked 11,666-test source gate. The later name-lifecycle gate above
+   completes the stale index/collision and existing-name/root persistence slice. Continue ordinary other guild fields,
+   ranks/members/data and failed/uncertain creation recovery; live broker,
    restart and provider qualification remain separate. Bid, buyout, auction/commodity
    expiry/cancellation, posting/fills and whole-Item auction posting now have the
    11,354-case full source/private-SQLite gate above; retain historical failures

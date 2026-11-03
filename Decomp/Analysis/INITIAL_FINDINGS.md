@@ -26919,3 +26919,13 @@ behavior, not the missing attacker/victim damage-order proof for#557. The fork
 already implements that PR's physical-offset and strikethrough portions. The
 remaining effective-armor change stays blocked on pairwise/corroborating evidence;
 no Source, default/entitlement, client runtime or retail claim changed.
+
+## 3 November 2026 entity name/title field corroboration
+
+The [0939 cross-check](F025_STATIC_HANDLER_PROXY_MAPPING.md#3-november-0939-name-and-title-fields)
+connects the14-bit argument to CharacterTitle text read by Unit:GetTitle and the
+18-bit argument to a Creature2-keyed cache's localized name. Exact loader literals,
+cache population/render/index edges and the packet apply path corroborate both
+field identities on the pinned build16042 PE. This is mapped-only; producer
+eligibility/order, the formatter's raw+34 meaning and native/retail behavior remain
+open. No Source serializer, emitter, default/grant or client runtime changed.

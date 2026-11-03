@@ -1,5 +1,15 @@
 # Continue on another machine
 
+[Latest guild/community name gate](Decomp/Analysis/GUILD_DISBAND_RECOVERY.md#name-lifecycle-recovery-verified)
+reserves names before fees and retains guild/residence name intent and aliases
+through failed saves. All14 new/184 affected and11,680 full tests pass; build,
+Source reviews and final source/DLL bindings verify. MySQL name coverage passes
+as12 retained plus2 corrected strategy fixtures; original failures stay retained.
+Database load-provenance source changed; schema/migrations did not. Ordinary
+other guild and failed/uncertain creation recovery, atomic fees, broker/restart
+and native/retail limits remain open. Defaults15:1/17:1/no44/seven grants and
+client/CUA stop remain. The Goal stays active; prior entries are historical.
+
 This handoff retains the 31 October 2026 Zurich checkpoint and subsequent
 continuation milestones. The Goal is active and unfinished. No current-source
 runtime deployment was performed. Read this file before starting services or

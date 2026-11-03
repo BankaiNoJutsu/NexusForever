@@ -53,11 +53,19 @@ namespace NexusForever.Game.Guild
             get => name;
             set
             {
-                name = value;
-                saveMask |= GuildBaseSaveMask.Name;
+                if (pendingDisband == null && globalGuildManager?.AssignRegisteredGuildName(this, value) == true)
+                    return;
+                AssignName(value);
             }
         }
         private string name;
+        private GuildNamePersistence namePersistence;
+        internal bool IsDisbandAccepted => pendingDisband != null;
+        internal void AssignName(string value)
+        {
+            name = value;
+            saveMask |= GuildBaseSaveMask.Name;
+        }
 
         public ulong? LeaderId
         {
@@ -95,7 +103,7 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public virtual bool PendingDelete => pendingDisband != null || (saveMask & GuildBaseSaveMask.Delete) != 0;
 
-        public virtual bool NeedsSave => pendingDisband != null ? !pendingDisband.Published : saveMask != GuildBaseSaveMask.None
+        public virtual bool NeedsSave => pendingDisband != null ? !pendingDisband.Published : namePersistence?.NeedsSave == true || saveMask != GuildBaseSaveMask.None
             || ranks.Values.Any(r => r.NeedsSave) || members.Values.Any(m => m.NeedsSave);
 
         /// <summary>
@@ -163,6 +171,8 @@ namespace NexusForever.Game.Guild
             }
 
             saveMask = GuildBaseSaveMask.None;
+            namePersistence = new GuildNamePersistence(this, model.Name, GuildLoadOrigin.Get(model),
+                savedName => globalGuildManager?.GuildNameSaved(this, savedName));
         }
 
         /// <summary>
@@ -212,6 +222,9 @@ namespace NexusForever.Game.Guild
                         return;
             if (pendingDisband != null && !pendingDisband.Committed && !PendingCreate)
                 saveMask |= GuildBaseSaveMask.Delete;
+            if (pendingDisband == null)
+                namePersistence?.Save(context);
+            bool creating = (saveMask & GuildBaseSaveMask.Create) != 0;
             if (saveMask != GuildBaseSaveMask.None)
             {
                 if ((saveMask & GuildBaseSaveMask.Create) != 0)
@@ -248,13 +261,10 @@ namespace NexusForever.Game.Guild
                 }
                 else
                 {
-                    var model = new GuildModel
-                    {
-                        Id = Id
-                    };
-
-                    EntityEntry<GuildModel> entity = context.Attach(model);
-                    if ((saveMask & GuildBaseSaveMask.Name) != 0)
+                    EntityEntry<GuildModel> entity = context.ChangeTracker.Entries<GuildModel>()
+                        .SingleOrDefault(row => row.Entity.Id == Id) ?? context.Attach(new GuildModel { Id = Id });
+                    GuildModel model = entity.Entity;
+                    if (namePersistence == null && (saveMask & GuildBaseSaveMask.Name) != 0)
                     {
                         model.Name = name;
                         entity.Property(p => p.Name).IsModified = true;
@@ -295,6 +305,8 @@ namespace NexusForever.Game.Guild
 
                 member.Save(context);
             }
+            if (creating)
+                ObserveCreatedName(context);
         }
 
         protected virtual void Save(CharacterContext context, GuildBaseSaveMask saveMask)

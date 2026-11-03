@@ -105,6 +105,89 @@ This is a source/private-SQLite recovery outcome. No live broker, current-binary
 MySQL, process restart/outbox durability, socket/native client or retail behavior
 is qualified. An acknowledgement lost after actual broker delivery may cause a
 duplicate cleanup attempt; successful in-process acknowledgements can be retained.
-Ordinary non-disband guild field/member recovery and the separate stale rename
-index/new-name collision path remain actionable audits. Defaults15:1/17:1, no44
+At the disband checkpoint, ordinary field/member recovery and separate rename
+index/collision flows remained actionable. The later name gate below completes
+the rename slice; ordinary other guild recovery remains open. Defaults15:1/17:1, no44
 or seven baseline character grants and the native client/CUA stop remain intact.
+
+## Name lifecycle recovery: verified
+
+After `a5c6d378`, four new executed regressions reproduce the stale accepted-name
+index, a conflicting paid rename charging currency, a failed periodic save losing
+rename intent, and an unloaded community residence retaining its old name. Evidence:
+`artifacts/continuation-20261103/guild-rename-recovery/before-real.trx`. The earlier
+missing IWorldSession import is a fixture compilation failure, not a behavior result.
+
+Acceptance for this integrated outcome: reserve a registered original actor's target
+name before the existing debit; reject known or held conflicts without charging;
+release an unused reservation when payment fails. Retain current and possible SQL
+name aliases until a verified flush/commit, including later accepted edits. Persist
+the community residence name with the guild rename even when its map is unloaded.
+Preserve route, tracked-field, explicit transaction, savepoint and same-context
+ownership, existing fee selection/text policy, and disband/archive behavior. A first
+confirmed create must initialize name ownership and release obsolete draft aliases.
+
+The candidate uses an actor-bound disposable name reservation, atomic field/index
+assignment, loaded database provenance and exact name SQL/tracked-field witnesses.
+Community rename joins the existing residence save graph and captures its name for
+retries. First-create confirmation observes the existing full save; it does not add
+whole-create graph recovery. Ordinary scalar/rank/member/data and failed/uncertain
+first-create recovery remain actionable requirements, as do restart/outbox durability,
+atomic fee/guild/residence settlement and live broker/provider/native/retail gates.
+
+The first candidate build required a System import. Its corrected execution retained
+65 passes/one retry failure. A direct-save control exposed the mutable baseline:
+attaching and changing the loaded model also changed the supposed prior SQL name.
+The scalar string is now captured before staging. The subsequent 72 focused cases
+pass, including ten new cases and the prior community/disband/handler controls.
+The first-create name handoff adds one more case; all 181 affected cases pass.
+Its SQL witness also uses ordinal text comparison after reading the row, rather
+than relying on provider collation. At that intermediate stage, provider execution,
+final review and the full gate were pending; the final result below supersedes
+that candidate limit.
+
+The Source review then found three coupling defects. `review-before.trx` retains
+three executed failures: a new community/root rename assumed an existing SQL row;
+same-name residence intent bypassed the loaded route; and a residence attach error
+left a guild-only rename committable. The correction distinguishes an Added row's
+pre-flush absence, validates the route for residence-name intent even without a
+guild-name delta, and rejects the whole context after partial enrollment fails.
+All 184 affected cases, including 14 new cases, now pass. The first-create residence
+fixture uses a real pending-create model without client plot tables; this does not
+qualify complete housing creation or retail data. Re-review/provider/full gates
+were pending at that intermediate checkpoint; their final results are below.
+The seven starting/review negatives and separate mutable-baseline correction
+failure remain retained rather than rewritten as passes.
+
+The final name-lifecycle candidate passes **11,680 full tests**, zero failures or
+skips, including all14 new/184 affected labels and every prior11,666 label.
+Both Source review axes have zero remaining findings, including the three P1
+coupling corrections and the fixture-only configured-strategy supplement.
+Final Source/Tools SHA256: `ca81304622f5e249ecbefa041d244b11f857a0565656b6cfc951539cf57b02df` over6,213 inputs;
+review patch: `28549d571a7bc7f492dc94cc4d5bad6c7cb1d6301ae24a3e7192c629921982c6`. Eleven owner/test-copy pairs and
+the frozen test assembly verify. Guild load-provenance database source changed;
+models, schemas and migrations did not change.
+
+Configured MySQL8.4.13 name coverage passes as12 retained outcomes plus2 corrected
+manual-transaction fixture outcomes on the same production DLLs. The first14-case
+run retains its two MySqlRetryingExecutionStrategy admission failures. Both
+transaction fixtures now enter the configured strategy and reject any second
+invocation before gameplay callbacks replay; assertions and deadlines are unchanged.
+The corrected two cases pass in18.65 seconds, alongside the original12 passes
+from114.65 seconds. Initial listener admission failed during161-second startup
+before any case ran; the same owned server later became ready. This is separate
+from the two fixture failures. The owned process/listener and all recorded full-run
+workload generations are absent after validation. No original database/config was
+changed. Evidence root: `artifacts/continuation-20261103/guild-rename-recovery/`,
+with verification.json, provider-verification.json, full.trx and retained failures.
+
+Final full build: zero warnings/errors in31.08 seconds. Full test
+command: 713.95 seconds. The earlier passed build (27.68 seconds) is
+retained separately; the final build follows the material test-fixture correction.
+No unchanged passing full suite was repeated. The184 affected cases and final full
+validate the real handler, periodic save, name cache, residence graph and existing
+recovery/disband controls. This does not qualify atomic fee/guild/residence financial
+settlement, ordinary other guild fields/ranks/members/data, failed or uncertain
+first-create recovery, copied upgrades, live broker, restart/outbox, raw-ADO or
+distributed writers, native gameplay or retail completeness. Defaults15:1/17:1,
+no44/seven baseline grants and the client/CUA stop remain intact.

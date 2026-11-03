@@ -1,4 +1,5 @@
 ﻿using NexusForever.Game;
+using System;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.Map.Instance;
@@ -23,15 +24,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
         private readonly ITextFilterManager textFilterManager;
         private readonly IGameTableManager gameTableManager;
         private readonly IRealmContext realmContext;
+        private readonly IGlobalGuildManager globalGuildManager;
 
         public ClientHousingCommunityRenameHandler(
             ITextFilterManager textFilterManager,
             IGameTableManager gameTableManager,
-            IRealmContext realmContext)
+            IRealmContext realmContext,
+            IGlobalGuildManager globalGuildManager)
         {
             this.textFilterManager = textFilterManager;
             this.gameTableManager  = gameTableManager;
             this.realmContext      = realmContext;
+            this.globalGuildManager = globalGuildManager;
         }
 
         #endregion
@@ -77,6 +81,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
             HousingResult result = GetResult();
             if (result == HousingResult.Success)
             {
+                using IDisposable reservation = globalGuildManager.TryReserveGuildName(community, housingCommunityRename.Name);
+                if (reservation == null)
+                {
+                    session.EnqueueMessageEncrypted(new ServerHousingCommunityRenameResult { Result = HousingResult.Failed });
+                    return;
+                }
                 // fun fact: 2395 is the final game formula entry
                 if (housingCommunityRename.AlternativeCurrency)
                     session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Renown, renameCostEntry.Dataint01);

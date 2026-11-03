@@ -1,5 +1,16 @@
 # Destination configured-provider qualification
 
+[Current guild/community name gate](GUILD_DISBAND_RECOVERY.md#name-lifecycle-recovery-verified)
+passes14 configured MySQL8.4.13 name outcomes as12 retained plus2 corrected manual-
+transaction fixtures on identical production DLLs. The initial two strategy-
+admission failures remain retained; the corrected fixtures prevent gameplay replay
+and preserve assertions/deadlines. All14 new/184 affected and11,680 full source
+cases pass; build/reviews and11 owner/test/native-copy DLL bindings verify. The
+owned process/listener is absent. Guild load-provenance database source changed;
+model/schema/migrations did not. This is bounded name/residence recovery coverage,
+not copied-upgrade, atomic fee settlement, whole-guild, live-broker/restart or
+native/retail qualification. Historical provider bindings below stay separate.
+
 [Later guild disband source gate](GUILD_DISBAND_RECOVERY.md) passes 11,666 full
 tests, including 18 new/170 affected cases and actual local ChatServer handler
 controls. It changes no database source/schema and adds no current-binary MySQL,

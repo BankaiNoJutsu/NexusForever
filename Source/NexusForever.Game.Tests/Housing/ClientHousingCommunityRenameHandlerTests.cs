@@ -123,7 +123,10 @@ public class ClientHousingCommunityRenameHandlerTests
         ITextFilterManager textFilterManager = RecordingDispatchProxy<ITextFilterManager>.Create(out textFilterProxy);
         IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out gameTableProxy);
         IRealmContext realmContext = RecordingDispatchProxy<IRealmContext>.Create(out _);
-        return new ClientHousingCommunityRenameHandler(textFilterManager, gameTableManager, realmContext);
+        IGlobalGuildManager globals = RecordingDispatchProxy<IGlobalGuildManager>.Create(out var globalProxy);
+        IDisposable reservation = RecordingDispatchProxy<IDisposable>.Create(out _);
+        globalProxy.SetMethodReturn(nameof(IGlobalGuildManager.TryReserveGuildName), reservation);
+        return new ClientHousingCommunityRenameHandler(textFilterManager, gameTableManager, realmContext, globals);
     }
 
     private static IWorldSession CreateSession(

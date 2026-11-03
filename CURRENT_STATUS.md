@@ -1,5 +1,15 @@
 # NexusForever Feature Restoration - Current Status
 
+[Guild/community name recovery](Decomp/Analysis/GUILD_DISBAND_RECOVERY.md#name-lifecycle-recovery-verified)
+reserves names before fees and retains guild/residence name intent and aliases
+through failed saves. All14 new/184 affected and11,680 full tests pass; build,
+Source reviews and final source/DLL bindings verify. MySQL name coverage passes
+as12 retained plus2 corrected strategy fixtures; original failures stay retained.
+Database load-provenance source changed; schema/migrations did not. Ordinary
+other guild and failed/uncertain creation recovery, atomic fees, broker/restart
+and native/retail limits remain open. Defaults15:1/17:1/no44/seven grants and
+client/CUA stop remain. The Goal stays active; prior entries are historical.
+
 Latest assessment follow-through update: 2026-11-03 (Zurich). Regenerated content
 coverage contains `31` CSVs / `167,484` rows, all `not_retail_complete`.
 The two additional source-evidence rows reflect the implemented Hycrest

@@ -1,5 +1,21 @@
 # Official pull request comparison
 
+## 3 November: name recovery and upstream refresh
+
+The [name-lifecycle follow-on](../GUILD_DISBAND_RECOVERY.md#name-lifecycle-recovery-verified)
+completes the stale rename-index/collision and existing-guild/community-root name
+persistence slice after the #401 disband reconciliation. All14 new/184 affected
+and11,680 full tests pass; build/reviews are clean. MySQL name coverage passes as
+12 retained plus2 corrected fixtures. Broader guild/financial/broker/restart and
+native/retail requirements remain open.
+
+At00:21UTC, the all-state updated-since23:00UTC query returned no PR updates.
+Official game_rework remainsd8e43d2c; the actual expedition-evil-from-the-ether
+branch remains3588ca5f. #608 stays source-reconciled and #609 stays closed unmerged;
+unchanged reviewed heads were reused. The separate [0939 field corroboration](../F025_STATIC_HANDLER_PROXY_MAPPING.md#3-november-0939-name-and-title-fields)
+now identifies CharacterTitle/Creature2 fields independently of514; it adds no
+producer or retail qualification. No upstream PR mutation occurred.
+
 ## 3 November Zurich: current #401 disband cache reconciliation
 
 Official [#401](https://github.com/NexusForever/NexusForever/pull/401) remains open

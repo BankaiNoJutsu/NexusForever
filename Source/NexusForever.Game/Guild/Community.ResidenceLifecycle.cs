@@ -13,9 +13,10 @@ namespace NexusForever.Game.Guild
 {
     public partial class Community
     {
-        private sealed class ResidenceChange(IResidence residence)
+        private sealed class ResidenceChange(IResidence residence, string name = null)
         {
             public IResidence Residence { get; } = residence;
+            public string Name { get; } = name;
         }
 
         private sealed class MemberRemoval(ulong characterId)
@@ -153,9 +154,11 @@ namespace NexusForever.Game.Guild
             }
         }
 
-        private void QueueResidenceChange(IResidence residence)
+        private void QueueResidenceChange(IResidence residence, string name = null)
         {
-            var change = new ResidenceChange(residence);
+            if (name == null && pendingResidenceChanges.TryGetValue(residence.Id, out ResidenceChange previous))
+                name = previous.Name;
+            var change = new ResidenceChange(residence, name);
             if (residence is Residence concrete)
                 concrete.DeferSaveToCommunity(change);
             pendingResidenceChanges[residence.Id] = change;
@@ -191,87 +194,102 @@ namespace NexusForever.Game.Guild
         {
             lock (residenceLifecycleLock)
             {
+                if (renameSaveContexts.Contains(context))
+                    return;
+                if (pendingResidenceChanges.Values.Any(change => change.Name != null))
+                    RequireNameSaveDatabase(context);
                 if (pendingResidenceChanges.Values.Select(change => change.Residence).OfType<Residence>()
                     .Any(residence => !residence.PreviousSaveUnits(context).IsCompleted))
                     throw new InvalidOperationException("Earlier residence save units must finish before saving the community.");
                 var residences = pendingResidenceChanges.ToArray();
                 var removals = pendingMemberRemovals.ToArray();
                 object disband = pendingDisband;
-                base.Save(context);
-
-                foreach (var pending in residences)
+                try
                 {
-                    IResidence residence = pending.Value.Residence;
-                    if (residence is Residence concrete)
+                    base.Save(context);
+
+                    foreach (var pending in residences)
                     {
-                        if (!concrete.IsCommunitySaveOwner(pending.Value))
+                        IResidence residence = pending.Value.Residence;
+                        if (residence is Residence concrete)
+                        {
+                            if (!concrete.IsCommunitySaveOwner(pending.Value))
+                                continue;
+                            concrete.SaveForCommunity(context);
+                        }
+                        else
+                            residence.Save(context);
+                        var entity = context.ChangeTracker.Entries<ResidenceModel>().SingleOrDefault(e => e.Entity.Id == residence.Id)
+                            ?? context.Attach(new ResidenceModel { Id = residence.Id });
+                        entity.Property(r => r.GuildOwnerId).CurrentValue = residence.GuildOwnerId;
+                        entity.Property(r => r.PropertyInfoId).CurrentValue = (byte)residence.PropertyInfoId;
+                        if (entity.State != EntityState.Added)
+                        {
+                            entity.Property(r => r.GuildOwnerId).IsModified = true;
+                            entity.Property(r => r.PropertyInfoId).IsModified = true;
+                        }
+                        if (pending.Value.Name != null)
+                        {
+                            entity.Property(r => r.Name).CurrentValue = pending.Value.Name;
+                            if (entity.State != EntityState.Added)
+                                entity.Property(r => r.Name).IsModified = true;
+                        }
+                    }
+
+                    foreach (var pending in removals)
+                    {
+                        ulong characterId = pending.Value.CharacterId;
+                        if (members.TryGetValue(characterId, out IGuildMember currentMember) && !currentMember.PendingDelete)
+                        {
+                            // A failed delete may already have removed the old in-memory
+                            // member. Rejoin then creates a new member while rollback kept
+                            // its database row. Reconcile the row in this same retry unit.
+                            bool exists = context.GuildMember.Any(m => m.Id == Id && m.CharacterId == characterId);
+                            var entity = context.ChangeTracker.Entries<GuildMemberModel>()
+                                .SingleOrDefault(e => e.Entity.Id == Id && e.Entity.CharacterId == characterId)
+                                ?? context.Entry(new GuildMemberModel { Id = Id, CharacterId = characterId });
+                            entity.State = exists ? EntityState.Unchanged : EntityState.Added;
+                            entity.Property(m => m.Rank).CurrentValue = currentMember.Rank.Index;
+                            entity.Property(m => m.Note).CurrentValue = currentMember.Note;
+                            entity.Property(m => m.CommunityPlotReservation).CurrentValue = currentMember.CommunityPlotReservation;
+                            if (exists)
+                            {
+                                entity.Property(m => m.Rank).IsModified = true;
+                                entity.Property(m => m.Note).IsModified = true;
+                                entity.Property(m => m.CommunityPlotReservation).IsModified = true;
+                            }
                             continue;
-                        concrete.SaveForCommunity(context);
-                    }
-                    else
-                        residence.Save(context);
-                    var entity = context.ChangeTracker.Entries<ResidenceModel>().SingleOrDefault(e => e.Entity.Id == residence.Id)
-                        ?? context.Attach(new ResidenceModel { Id = residence.Id });
-                    entity.Property(r => r.GuildOwnerId).CurrentValue = residence.GuildOwnerId;
-                    entity.Property(r => r.PropertyInfoId).CurrentValue = (byte)residence.PropertyInfoId;
-                    if (entity.State != EntityState.Added)
-                    {
-                        entity.Property(r => r.GuildOwnerId).IsModified = true;
-                        entity.Property(r => r.PropertyInfoId).IsModified = true;
-                    }
-                }
-
-                foreach (var pending in removals)
-                {
-                    ulong characterId = pending.Value.CharacterId;
-                    if (members.TryGetValue(characterId, out IGuildMember currentMember) && !currentMember.PendingDelete)
-                    {
-                        // A failed delete may already have removed the old in-memory
-                        // member. Rejoin then creates a new member while rollback kept
-                        // its database row. Reconcile the row in this same retry unit.
-                        bool exists = context.GuildMember.Any(m => m.Id == Id && m.CharacterId == characterId);
-                        var entity = context.ChangeTracker.Entries<GuildMemberModel>()
-                            .SingleOrDefault(e => e.Entity.Id == Id && e.Entity.CharacterId == characterId)
-                            ?? context.Entry(new GuildMemberModel { Id = Id, CharacterId = characterId });
-                        entity.State = exists ? EntityState.Unchanged : EntityState.Added;
-                        entity.Property(m => m.Rank).CurrentValue = currentMember.Rank.Index;
-                        entity.Property(m => m.Note).CurrentValue = currentMember.Note;
-                        entity.Property(m => m.CommunityPlotReservation).CurrentValue = currentMember.CommunityPlotReservation;
-                        if (exists)
-                        {
-                            entity.Property(m => m.Rank).IsModified = true;
-                            entity.Property(m => m.Note).IsModified = true;
-                            entity.Property(m => m.CommunityPlotReservation).IsModified = true;
                         }
-                        continue;
+                        bool tracked = context.ChangeTracker.Entries<GuildMemberModel>()
+                            .Any(e => e.Entity.Id == Id && e.Entity.CharacterId == characterId);
+                        // A previous caller-owned transaction may already have committed.
+                        if (!tracked && context.GuildMember.Any(m => m.Id == Id && m.CharacterId == characterId))
+                            context.Remove(new GuildMemberModel { Id = Id, CharacterId = characterId });
                     }
-                    bool tracked = context.ChangeTracker.Entries<GuildMemberModel>()
-                        .Any(e => e.Entity.Id == Id && e.Entity.CharacterId == characterId);
-                    // A previous caller-owned transaction may already have committed.
-                    if (!tracked && context.GuildMember.Any(m => m.Id == Id && m.CharacterId == characterId))
-                        context.Remove(new GuildMemberModel { Id = Id, CharacterId = characterId });
-                }
 
-                context.OnSaveCompleted(committed =>
-                {
-                    if (!committed)
-                        return;
-                    lock (residenceLifecycleLock)
+                    Func<bool> renameFlushed = ObserveResidenceRenames(context, residences);
+                    context.OnSaveCompleted(committed =>
                     {
-                        foreach (var pending in residences)
+                        if (!committed || !renameFlushed())
+                            return;
+                        lock (residenceLifecycleLock)
                         {
-                            if (pending.Value.Residence is Residence concrete)
-                                concrete.CompleteCommunitySave(pending.Value);
-                            if (pendingResidenceChanges.TryGetValue(pending.Key, out var current) && ReferenceEquals(current, pending.Value))
-                                pendingResidenceChanges.Remove(pending.Key);
+                            foreach (var pending in residences)
+                            {
+                                if (pending.Value.Residence is Residence concrete)
+                                    concrete.CompleteCommunitySave(pending.Value);
+                                if (pendingResidenceChanges.TryGetValue(pending.Key, out var current) && ReferenceEquals(current, pending.Value))
+                                    pendingResidenceChanges.Remove(pending.Key);
+                            }
+                            foreach (var pending in removals)
+                                if (pendingMemberRemovals.TryGetValue(pending.Key, out var current) && ReferenceEquals(current, pending.Value))
+                                    pendingMemberRemovals.Remove(pending.Key);
+                            if (ReferenceEquals(pendingDisband, disband))
+                                pendingDisband = null;
                         }
-                        foreach (var pending in removals)
-                            if (pendingMemberRemovals.TryGetValue(pending.Key, out var current) && ReferenceEquals(current, pending.Value))
-                                pendingMemberRemovals.Remove(pending.Key);
-                        if (ReferenceEquals(pendingDisband, disband))
-                            pendingDisband = null;
-                    }
-                });
+                    });
+                }
+                catch (Exception error) { context.RejectSave(error); throw; }
             }
         }
     }

@@ -22,7 +22,7 @@ using NLog;
 
 namespace NexusForever.Game.Guild
 {
-    public sealed class GlobalGuildManager : IGlobalGuildManager
+    public sealed partial class GlobalGuildManager : IGlobalGuildManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
@@ -291,7 +291,8 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public IGuildBase GetGuild(GuildType guildType, string name)
         {
-            return guildNameCache.TryGetValue((guildType, name), out ulong guildId) ? GetGuild(guildId) : null; 
+            lock (cacheLock)
+                return guildNameCache.TryGetValue((guildType, name), out ulong guildId) ? GetGuild(guildId) : null;
         }
 
         /// <summary>
@@ -299,7 +300,7 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public T GetGuild<T>(GuildType guildType, string name) where T : IGuildBase
         {
-            return guildNameCache.TryGetValue((guildType, name), out ulong guildId) ? (T)GetGuild(guildId) : default;
+            return (T)GetGuild(guildType, name);
         }
 
         /// <summary>
@@ -352,10 +353,15 @@ namespace NexusForever.Game.Guild
         /// </remarks>
         public IGuildBase RegisterGuild(GuildType type, string name, string leaderRankName, string councilRankName, string memberRankName, IGuildStandard standard = null)
         {
-            IGuildBase baseGuild = guildFactory.CreateGuild(type, name, leaderRankName, councilRankName, memberRankName, standard);
-            guilds.Add(baseGuild.Id, baseGuild);
-            guildNameCache.Add((baseGuild.Type, baseGuild.Name), baseGuild.Id);
-            return baseGuild;
+            lock (cacheLock)
+            {
+                if (guildNameCache.ContainsKey((type, name)))
+                    throw new InvalidOperationException("The guild name is already reserved.");
+                IGuildBase baseGuild = guildFactory.CreateGuild(type, name, leaderRankName, councilRankName, memberRankName, standard);
+                guilds.Add(baseGuild.Id, baseGuild);
+                guildNameCache.Add((baseGuild.Type, baseGuild.Name), baseGuild.Id);
+                return baseGuild;
+            }
         }
 
         /// <summary>

@@ -97,7 +97,7 @@ The previous reader-only blocker is superseded for these apply edges.
 | 0889 | `1403f33e4` -> `1403ede04` -> `1403dede0` | Payload+4/+8 replace entity+0x24/+0x28. Changed bit0x100 triggers additional state clearing; other dirty/selected-entity paths follow. Bit names and producer timing remain unqualified. |
 | 08CC | `1403f34f0` -> `1403edadd` | Entity lookup, then payload+8 wide-string pointer -> `14045b030`. That helper copies name text and references the exact `UnitNameChanged` event string at `140afb7c0`; full naming/fallback policy and server producer remain separate. |
 | 08F4 | `1403f3590` -> `1403ed7a3` | Sign-extended payload+4 selector is compared with24; accepted native reader values0..23 write payload+8 to entity+0x510+4*selector. Selector6/nonzero has an additional selected-entity path. Selector enum and server behavior remain unknown; do not copy native invalid-input behavior. |
-| 0939 | `1403f36a4` -> `1403ed8ff` | Nonzero payload+8 selects a lookup through `1404835c0`; a successful row supplies a localized text ID at+8, otherwise text comes from payload+0x10. Both feed `14045b030`; payload+4 is also sent to `14045b790`. Table identity and the14-bit field's semantic role remain open. |
+| 0939 | `1403f36a4` -> `1403ed8ff` | Nonzero payload+8 selects a lookup through `1404835c0`; a successful row supplies a localized text ID at+8, otherwise text comes from payload+0x10. Both feed `14045b030`; payload+4 is also sent to `14045b790`. The later [field corroboration](#3-november-0939-name-and-title-fields) identifies the18-bit Creature2 key and14-bit CharacterTitle key; producer eligibility/order remain open. |
 | 093D | `1403f36b4` -> `1403ed56a` | Payload+4 selector has an unsigned upper bound26. Payload+8 writes entity+0xBE8+8*selector, and raw payload+0xC is consumed as float32 at entity+0xBEC+8*selector. The reader transports both as32 raw bits; do not silently change the existing UInt32 wire model or infer the selector enum. |
 | 093E | `1403f36b8` -> `1403ed98f` | Skips the entity equal to dispatcher+0x78; otherwise payload+4/+8 go to `14045bcd0`. Its observed body stores DWORD/QWORD at entity+0x124/+0x128, conditionally clears+0x130 and marks dirty state. Gameplay meaning remains open. |
 
@@ -125,3 +125,50 @@ checkpoint `14ea07f0`. That passing
 source suite is not a test of these client-derived semantics. No new full suite
 is needed for this analysis/label-only change; native and retail qualification
 remain open.
+
+## 3 November: 0939 name and title fields
+
+The matching build16042 binary and installed LLVM identities above are unchanged.
+Two independent native data paths now corroborate upstream514's field names:
+the14-bit argument selects CharacterTitle text, and the18-bit argument selects
+a cached Creature2 row's localized name. This resolves these two field identities;
+it does not establish a new server producer or retail emission order. The current
+serializer retains its compatibility fields and wire widths. The existing active
+title producer uses ServerTitleSet and is not replaced by this observation.
+
+For the14-bit field, the mapped0939 case passes payload+4 through14045b790 to
+14045b6f0. When the entity's name at+10 is nonempty, the latter stores the ID at
+entity+168, calls1403ca8b0 and writes display text at+170 (pointer+178).
+The formatter passes the ID to1401f1860 and the resulting row+8 to localized-text
+helper14034bdd0. The lookup uses140c653d0 and initializer1401f1600, whose UTF-16
+literals at140a60ac8/140a60a48 name CharacterTitle and DB\CharacterTitle.tbl.
+The independent Unit:GetTitle binding140c5afa0 ->140652a40 reads entity+178.
+The empty-name branch clears display text without storing the ID at+168; do not
+infer arbitrary title-before-name ordering from the nonempty branch.
+
+For the18-bit field, the already mapped case calls1404835c0 on140c65918, reads
+cached row+8 and passes it to14034bdd0 before14045b030. The selected lookup uses
+the cache's hash index at+18. Initialization140482b70 constructs140482c00,
+initializes through140482ea0 and installs the result at140c65918. The initializer
+tail-calls140485790, which enumerates the table at140c63d10 after1401f6b00.
+The latter's UTF-16 literals140a7c5f0/140a7c5c8 are Creature2 and DB\Creature2.tbl.
+The population's virtual+8 call at140485b9b resolves through the constructor's
+vtable140b67130 to1404836c0. That routine builds the+18 hash index and renders
+rows through virtual+10 ->140483d20. The renderer passes the original row ID to
+140485490 ->1404852b0;1404852b0 rereads Creature2 through1401f6d60, copies its ID
+to cached+0 and native row+10 to cached+8. The index stores that cached row keyed
+by its ID at140483ae4–140483aeb. These cache-construction edges distinguish the
+lookup from a direct table accessor and establish the Creature2 ID/name path.
+Zero or an unsuccessful cached lookup takes the packet's existing wide-text
+fallback; this is an observed consumer branch, not a server fallback policy.
+
+Raw selected ranges, commands, byte/output hashes and table strings are retained
+in `artifacts/continuation-20261102/title-field-corroboration/` and
+`artifacts/continuation-20261103/entity-name-title-evidence/`. The latter's
+verification.json checks69 unique selected ranges against the pinned PE and
+retained output hashes. Its77 displacement candidates are a selection aid;
+only the decoded instructions cited above are accepted references. This is not
+an exhaustive cache/type/call-graph inventory. The formatter's entity+34 meaning,
+full locale/gender formatting, cache eligibility and complete producer/ordering
+requirements remain unresolved. No client launch, native UI observation,
+production emitter, source behavior or retail-matrix promotion occurred.

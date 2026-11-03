@@ -394,13 +394,15 @@ namespace NexusForever.Database.Character
         public List<GuildModel> GetGuilds()
         {
             using var context = new CharacterContext(config);
-            return context.Guild
+            List<GuildModel> models = context.Guild
                 .Where(g => g.DeleteTime == null)
                 .Include(g => g.GuildRank)
                 .Include(g => g.GuildMember)
                 .Include(g => g.GuildData)
                 .Include(g => g.Achievement)
                 .ToList();
+            GuildLoadOrigin.Bind(context, models);
+            return models;
         }
 
         public HashSet<ushort> GetCompletedCharacterAchievementIds()

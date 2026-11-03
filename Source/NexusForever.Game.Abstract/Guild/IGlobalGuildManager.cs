@@ -82,6 +82,16 @@ namespace NexusForever.Game.Abstract.Guild
         /// </remarks>
         IGuildBase RegisterGuild(GuildType type, string name, string leaderRankName, string councilRankName, string memberRankName, IGuildStandard standard = null);
 
+        /// <summary>Reserve a registered guild's proposed name before accepting a paid rename; null means unavailable.</summary>
+        /// <remarks>Disposal releases an unused reservation. Assigning the guild name accepts it until persistence confirms the name.</remarks>
+        IDisposable TryReserveGuildName(IGuildBase guild, string name);
+
+        /// <summary>Track an accepted name assignment, retaining older database reservations until confirmation.</summary>
+        bool AssignRegisteredGuildName(IGuildBase guild, string name);
+
+        /// <summary>Release obsolete name reservations after the original guild's verified name save.</summary>
+        void GuildNameSaved(IGuildBase guild, string savedName);
+
         /// <summary>
         /// Invoke operation delegate to handle <see cref="GuildOperation"/>.
         /// </summary>
