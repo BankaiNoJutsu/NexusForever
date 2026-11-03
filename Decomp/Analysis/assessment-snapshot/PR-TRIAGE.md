@@ -1,5 +1,16 @@
 # Official pull request comparison
 
+[Committed Archive publication](../ARCHIVE_PUBLICATION.md) passes 18 new/241 affected,
+18 MySQL and 12,007 full cases with a clean build and both Source reviews. Original
+confirmed graphs release ordered unlock/view notices; initial sync, quiet rules,
+later frozen bits and packet retries remain correct. Tradeskill publication
+is next. Restart/outbox, deployment and native/retail remain open; the Goal is active and client/CUA stay stopped.
+
+The 2026-11-03T20:08:10.163220+00:00 all-state updated-order refresh has no changed
+reviewed heads, bases or states. #608 remains open at `7db12d9a`; #609 remains
+closed/unmerged at `f9b6f735`. No upstream PR was mutated. Evidence:
+`artifacts/continuation-20261103/archive-publication/upstream-refresh.json`.
+
 [Committed title publication](../TITLE_PUBLICATION.md) passes 19 new/185 affected,
 18 MySQL and 11,989 full cases with a clean build and both Source reviews. Ordinary,
 frozen and bound-row saves release retained notices only after confirmation;

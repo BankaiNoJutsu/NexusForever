@@ -9,7 +9,7 @@ using NexusForever.Network.World.Message.Model.GalacticArchive;
 
 namespace NexusForever.Game.Entity
 {
-    public class GalacticArchiveManager : IGalacticArchiveManager
+    public partial class GalacticArchiveManager : IGalacticArchiveManager
     {
         private const uint ArticleUnlockedFlag = 0x80000000u;
         private const string ArchiveEntryTableName = "ArchiveEntry.tbl";
@@ -48,6 +48,7 @@ namespace NexusForever.Game.Entity
 
                 articles[archiveModel.ArchiveArticleId] = ArchiveArticleState.FromModel(archiveModel);
             }
+            InitialisePublication();
         }
 
         public void Save(CharacterContext context)
@@ -59,7 +60,7 @@ namespace NexusForever.Game.Entity
                     var error = new InvalidOperationException("Archive lost its loaded manager.");
                     context.RejectSave(error); throw error;
                 }
-                owner.SaveExperience(context); return;
+                owner.SaveExperience(context); SchedulePublication(); return;
             }
             foreach (ArchiveArticleState article in articles.Values)
             {
@@ -162,8 +163,12 @@ namespace NexusForever.Game.Entity
                     continue;
 
                 article.MarkDirty();
+                // Rewards may save synchronously. Retain the real player's
+                // archive notice before invoking those outward callbacks.
+                if (sendUpdates && player is Player)
+                    SendUpdate(article);
                 GrantUnlockRewards(articleEntry, previousFlags, article.UnlockedFlags);
-                if (sendUpdates)
+                if (sendUpdates && player is not Player)
                     SendUpdate(article);
             }
         }
@@ -171,6 +176,8 @@ namespace NexusForever.Game.Entity
         public void SendInitialPackets()
         {
             RefreshRuleUnlocks();
+
+            if (player is Player) { SendPublishedInitial(); return; }
 
             player.Session.EnqueueMessageEncrypted(new ServerGalacticArchiveRefresh());
             foreach (ArchiveArticleState article in articles.Values.OrderBy(a => a.ArchiveArticleId))
@@ -326,6 +333,11 @@ namespace NexusForever.Game.Entity
 
         private void SendUpdate(ArchiveArticleState article)
         {
+            if (player is Player)
+            {
+                RetainUpdate(new(ArchiveCharacter, article.ArchiveArticleId, article.UnlockedFlags, article.ViewedFlags));
+                return;
+            }
             player.Session.EnqueueMessageEncrypted(new ServerGalacticArchiveUpdate
             {
                 ArchiveArticleId = article.ArchiveArticleId,

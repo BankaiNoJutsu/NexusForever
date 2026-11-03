@@ -67,16 +67,16 @@ namespace NexusForever.Game.Achievement
         {
             RealmFirst.Retain(id, name);
         }
-        internal void AcknowledgePublication(AchievementRow[] before, AchievementRow[] stored, RealmFirstClaim[] claims)
+        internal void QueuePublication(AchievementRow[] before, AchievementRow[] stored, RealmFirstClaim[] claims)
         {
             lock (publicationGate)
             {
                 var rows = stored.Where(row => before.SingleOrDefault(old => old.Id == row.Id) != row).ToArray();
                 if (rows.Length == 0 && claims.Length == 0) return;
                 publications.Enqueue(new(rows, claims));
-                SchedulePublication();
             }
         }
+        internal void NotifyPublicationReady() => SchedulePublication();
         private void SchedulePublication()
         {
             if (publicationScheduled || publishing || publications.Count == 0 || publicationSession?.Events == null) return;

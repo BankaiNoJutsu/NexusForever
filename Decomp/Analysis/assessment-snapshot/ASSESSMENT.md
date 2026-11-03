@@ -1,5 +1,11 @@
 # NexusForever fork assessment
 
+[Committed Archive publication](../ARCHIVE_PUBLICATION.md) passes 18 new/241 affected,
+18 MySQL and 12,007 full cases with a clean build and both Source reviews. Original
+confirmed graphs release ordered unlock/view notices; initial sync, quiet rules,
+later frozen bits and packet retries remain correct. Tradeskill publication
+is next. Restart/outbox, deployment and native/retail remain open; the Goal is active and client/CUA stay stopped.
+
 [Committed title publication](../TITLE_PUBLICATION.md) passes 19 new/185 affected,
 18 MySQL and 11,989 full cases with a clean build and both Source reviews. Ordinary,
 frozen and bound-row saves release retained notices only after confirmation;

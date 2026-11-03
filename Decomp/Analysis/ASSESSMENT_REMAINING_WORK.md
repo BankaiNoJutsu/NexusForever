@@ -5,6 +5,18 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+[Committed Archive publication](ARCHIVE_PUBLICATION.md) retains real Player
+unlock, rule, link and viewed notices until the complete original graph confirms,
+then publishes on guarded world updates. Initial sync uses confirmed rows and
+preserves quiet changes, accepted order, frozen later bits and packet retries.
+All 18 new/241 affected, 18 MySQL and 12,007 full cases pass; build and both Source
+reviews are clear. Final 6,268-input/11-DLL bindings and owned shutdowns verify.
+The initial-sync duplicate-notice review failure remains retained. Real
+tradeskill/schematic probe reproduces premature updates/initial state;
+that integrated outcome is next. Restart/outbox,
+deployment and external/native/retail gates remain open. Defaults 15:1/17:1,
+no automatic 44/seven grants and client/CUA stop remain; the Goal is active.
+
 [Committed title publication](TITLE_PUBLICATION.md) now retains real Player
 grant/revoke/expiry/selection and bulk notices through the original confirmed
 ordinary or frozen graph, then publishes on guarded world updates. Initial
@@ -1470,13 +1482,14 @@ solution build/test gate at coherent integration milestones.
    provider evidence and56 fixture/6 warmed-cache passes.
    The initial provider cleanup timeout and guild-key failure remain retained.
    Durable global realm-first arbitration now has the11,970-full gate above.
-   Next complete companion publication, starting from the executed title-reward
-   negative, without repeating the completed arbitration/notification integration.
+   Title publication now has the later11,989-full gate above; Archive publication
+   has the later12,007-full gate. Continue tradeskill companion publication
+   without repeating those integrations.
    Continue the broader economic/progression/gameplay queue without repeating
    completed housing integrations or inventing speculative housing cases. Model
    tests do not qualify retail.
-   Cross-character notification atomicity, durable realm-first arbitration,
-   other atomic financial settlement, live broker/restart and broader
+   Cross-character notification atomicity, other atomic financial settlement,
+   live broker/restart and broader
    provider qualification remain open; the complete feature and assessment scope
    remains open. Bid, buyout, auction/commodity
    expiry/cancellation, posting/fills and whole-Item auction posting now have the

@@ -49,6 +49,8 @@ namespace NexusForever.Game.Entity
         private readonly ulong character;
         private readonly Func<Snapshot> current;
         private readonly Action<Achievement[], Achievement[], RealmFirstPersistence.Claim[]> acknowledgeAchievements;
+        private readonly Action<ArchiveState[]> acknowledgeArchive;
+        private readonly Action publicationReady;
         private readonly RealmFirstPersistence realmFirst;
         private readonly bool ownsExperience, ownsPaths, ownsSpells, ownsPets, ownsAchievements, ownsDatacubes, ownsArchive, ownsMaps, ownsReputations;
         private string database;
@@ -59,11 +61,12 @@ namespace NexusForever.Game.Entity
 
         internal ExperiencePersistence(ulong character, Snapshot baseline, Func<Snapshot> current, string database,
             Action<Achievement[], Achievement[], RealmFirstPersistence.Claim[]> acknowledgeAchievements = null,
-            RealmFirstPersistence realmFirst = null)
+            RealmFirstPersistence realmFirst = null, Action<ArchiveState[]> acknowledgeArchive = null, Action publicationReady = null)
         {
             this.character = character; this.baseline = baseline; this.current = current; this.database = database;
             this.acknowledgeAchievements = acknowledgeAchievements;
             this.realmFirst = realmFirst;
+            this.acknowledgeArchive = acknowledgeArchive; this.publicationReady = publicationReady;
             baselineIntent = baseline;
             ownsExperience = baseline.Experience != null; ownsPaths = baseline.Selection != null;
             ownsSpells = baseline.Spells != null; ownsPets = baseline.Pets != null; ownsAchievements = baseline.Achievements != null;
@@ -261,16 +264,19 @@ namespace NexusForever.Game.Entity
         }
         private void Complete(Unit unit, bool committed)
         {
+            bool ready = false;
             lock (gate)
             {
                 if (!ReferenceEquals(active, unit)) return;
                 try
                 {
-                    if (committed && unit.Flushed)
+                    if (committed && unit.Flushed && !unit.Context.HasSavepointRollback)
                     {
                         var claims = realmFirst?.Acknowledge(unit.Claims) ?? [];
                         acknowledgeAchievements?.Invoke(baseline.Achievements ?? [], unit.Sql.Achievements ?? [], claims);
+                        acknowledgeArchive?.Invoke(unit.Sql.Articles ?? []);
                         baseline = unit.Sql; baselineIntent = unit.FlushedIntent; uncertain = null;
+                        ready = true;
                     }
                     else uncertain = (uncertain ?? []).Concat(unit.Possible).Append(baseline).ToList();
                 }
@@ -281,6 +287,7 @@ namespace NexusForever.Game.Entity
                     unit.Scope.Dispose();
                 }
             }
+            if (ready) publicationReady?.Invoke();
         }
     }
 }
