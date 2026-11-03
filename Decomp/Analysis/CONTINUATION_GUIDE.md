@@ -1,5 +1,11 @@
 # Client Binary Decompile Continuation Guide
 
+[Registered residence recovery](RESIDENCE_GRAPH_RECOVERY.md) now persists
+complete residence/plot/decor/neighbor graphs through original owners, including
+community creation and retirement. All20 new/340 affected,20 MySQL and11,772 full
+tests pass; build/reviews and final bindings verify. Donation/fees/publication
+and external/native/retail gates remain open; the Goal is active.
+
 [Guild achievement recovery](GUILD_DISBAND_RECOVERY.md#guild-achievement-recovery-verified) retains guild-owned achievements with their original parent through failed,
 rolled-back and uncertain saves, including achievement-only periodic saves and
 first creation. Progress and reserved realm-first announcements wait for confirmed

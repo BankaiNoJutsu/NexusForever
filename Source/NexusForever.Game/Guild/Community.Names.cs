@@ -13,6 +13,9 @@ namespace NexusForever.Game.Guild
         {
             lock (residenceLifecycleLock)
             {
+                // Reject an obsolete residence before changing either name
+                // ownership or its retained community save reservation.
+                if (Residence is Housing.Residence concrete) concrete.RequirePersistenceEditable();
                 base.RenameGuild(name);
                 if (Residence != null)
                 {

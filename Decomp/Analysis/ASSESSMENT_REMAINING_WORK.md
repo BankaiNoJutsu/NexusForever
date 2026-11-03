@@ -5,6 +5,14 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+[Residence graph recovery](RESIDENCE_GRAPH_RECOVERY.md) now retains complete root/plot/decor/neighbor
+intent through failed, rolled-back and uncertain saves. Child-only periodic saves
+and real community creation/retirement are connected. All20 new/340 affected,
+20 MySQL and **11,772 full tests** pass; build/reviews and6,223-input/11-DLL bindings
+verify. Donation/fee settlement, housing handler publication, actual tables,
+broker/restart and native/retail gates remain open. The Goal stays active; defaults
+15:1/17:1/no44/seven grants and the client/CUA stop remain unchanged.
+
 [Guild achievement recovery](GUILD_DISBAND_RECOVERY.md#guild-achievement-recovery-verified) retains guild-owned achievements with their original parent through failed,
 rolled-back and uncertain saves, including achievement-only periodic saves and
 first creation. Progress and reserved realm-first announcements wait for confirmed
@@ -1338,11 +1346,16 @@ solution build/test gate at coherent integration milestones.
    integrations. Root/data/rank/member creation and attempted-create/disband
    recovery now have the later11,731-full/21-MySQL gate above. Guild achievements
    and their committed progress/realm-first publication now have the later
-   11,752-full/22-MySQL gate above. Continue real plot-backed housing creation/
-   recovery, cross-character notification atomicity, durable realm-first
-   arbitration and atomic financial settlement,
-   live broker/restart and broader provider qualification; the complete feature
-   and assessment scope remains open. Bid, buyout, auction/commodity
+   11,752-full/22-MySQL gate above. Registered root/plot/decor/neighbor recovery,
+   real community creation and retirement now have the later11,772-full/20-MySQL
+   gate above. Continue cross-residence donation and fee settlement plus guarded
+   housing handler publication. The current donation producer copies/removes
+   through independent owners and replies before persistence; reproduce that
+   public flow, including repeated source IDs, before integrating its full
+   settlement. Cross-character notification atomicity, durable realm-first
+   arbitration, other atomic financial settlement, live broker/restart and broader
+   provider qualification remain open; the complete feature and assessment scope
+   remains open. Bid, buyout, auction/commodity
    expiry/cancellation, posting/fills and whole-Item auction posting now have the
    11,354-case full source/private-SQLite gate above; retain historical failures
    and do not repeat completed integrations. The historical milestone descriptions below

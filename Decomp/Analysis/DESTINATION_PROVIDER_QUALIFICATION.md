@@ -1,5 +1,16 @@
 # Destination configured-provider qualification
 
+[Registered residence recovery](RESIDENCE_GRAPH_RECOVERY.md) passes20 MySQL8.4.13
+cases in one run on the verified owned fixture and final DLLs. All source actions,
+assertions and deadlines remain; only primary connection/disposal, four trigger
+spellings and namespaces differ. Foreign routes stay private SQLite. Actual query
+origin, complete graph recovery and real community create/retire paths are
+covered. Database load-provenance source changed; models/schema/migrations did
+not. All20 new/340 affected and11,772 full tests pass, with clean build/reviews and
+11 owner/test/native DLL pairs. Owned fixture and recorded test/helper generations
+are absent. Donation/fees, housing handler publication, copied upgrades, actual
+tables, broker/restart and native/retail gates remain separate.
+
 [Guild achievement recovery](GUILD_DISBAND_RECOVERY.md#guild-achievement-recovery-verified)
 passes22 MySQL8.4.13 cases on the verified owned fixture and final DLLs. Twenty
 common source cases retain assertions/actions/deadlines; primary connection/

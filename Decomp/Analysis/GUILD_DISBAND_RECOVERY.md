@@ -1,5 +1,10 @@
 # Guild disband recovery and upstream #401 reconciliation
 
+[Registered residence graph recovery](RESIDENCE_GRAPH_RECOVERY.md) now connects
+real community creation and retirement to complete residence/plot/decor/neighbor
+saving. Donation/fee settlement, housing handler publication and external/native/
+retail qualification remain separate; earlier guild gates retain their limits.
+
 The implementation after checkpoint `4dd8bf56` passes all 170 affected guild/housing
 tests, including 18 new regressions, and **all 11,666 full tests**, zero failures or
 skips. Every prior 11,648 test label is preserved. Both Source review axes have zero

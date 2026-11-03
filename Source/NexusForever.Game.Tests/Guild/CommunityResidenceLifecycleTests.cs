@@ -237,8 +237,8 @@ public sealed class CommunityResidenceLifecycleTests : IDisposable
     {
         Fixture f = Create();
         var manager = new GlobalResidenceManager();
-        Field<Dictionary<ulong, IResidence>>(manager, "residences").Add(f.Root.Id, f.Root);
-        Field<Dictionary<ulong, IResidence>>(manager, "residences").Add(f.Child.Id, f.Child);
+        Field<IDictionary<ulong, IResidence>>(manager, "residences").Add(f.Root.Id, f.Root);
+        Field<IDictionary<ulong, IResidence>>(manager, "residences").Add(f.Child.Id, f.Child);
         Field<Dictionary<ulong, ulong>>(manager, "communityOwnerCache").Add(77, f.Root.Id);
         Field<Dictionary<string, ulong>>(manager, "communitySearchCache").Add("Old name", f.Root.Id);
         manager.RegisterCommunityVisits(f.Root, f.Community, "Owner");
@@ -314,7 +314,7 @@ public sealed class CommunityResidenceLifecycleTests : IDisposable
         await Seed(f);
         if (disband) f.Community.DisbandGuild(); else f.Community.Remove(42);
         var residences = new GlobalResidenceManager(databaseManager: Databases());
-        Field<Dictionary<ulong, IResidence>>(residences, "residences").Add(f.Child.Id, f.Child);
+        Field<IDictionary<ulong, IResidence>>(residences, "residences").Add(f.Child.Id, f.Child);
         residences.Update(61);
         using (var context = Context())
         {
@@ -620,7 +620,7 @@ public sealed class CommunityResidenceLifecycleTests : IDisposable
         Assert.Null(guilds.GetGuild(77));
         personal.Name = "Still writable";
         var residences = new GlobalResidenceManager(databaseManager: Databases());
-        Field<Dictionary<ulong, IResidence>>(residences, "residences").Add(personal.Id, personal);
+        Field<IDictionary<ulong, IResidence>>(residences, "residences").Add(personal.Id, personal);
         residences.Update(61);
         await personal.PreviousSaveUnits(null).WaitAsync(TimeSpan.FromSeconds(10));
         using var verify = Context();

@@ -14,7 +14,7 @@ using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.Game.Housing
 {
-    public class Residence : IResidence
+    public partial class Residence : IResidence
     {
         private const ushort ResidenceConstructionYardPlugItemId = 531;
         private const ushort CommunityConstructionYardPlugItemId = 573;
@@ -52,11 +52,15 @@ namespace NexusForever.Game.Housing
 
         public ulong? GuildOwnerId
         {
-            get => guildOwnerId;
+            get { lock (MutationGate) return guildOwnerId; }
             set
             {
-                guildOwnerId = value;
-                saveMask |= ResidenceSaveMask.GuildOwner;
+                lock (MutationGate)
+                {
+                    RequirePersistenceEditable();
+                    guildOwnerId = value;
+                    saveMask |= ResidenceSaveMask.GuildOwner;
+                }
             }
         }
 
@@ -64,13 +68,17 @@ namespace NexusForever.Game.Housing
 
         public PropertyInfoId PropertyInfoId
         {
-            get => propertyInfoId;
+            get { lock (MutationGate) return propertyInfoId; }
             set
             {
-                propertyInfoId = value;
-                saveMask |= ResidenceSaveMask.PropertyInfo;
+                lock (MutationGate)
+                {
+                    RequirePersistenceEditable();
+                    propertyInfoId = value;
+                    saveMask |= ResidenceSaveMask.PropertyInfo;
 
-                UpdatePlots();
+                    UpdatePlots();
+                }
             }
         }
 
@@ -78,11 +86,15 @@ namespace NexusForever.Game.Housing
 
         public string Name
         {
-            get => name;
+            get { lock (MutationGate) return name; }
             set
             {
-                name = value;
-                saveMask |= ResidenceSaveMask.Name;
+                lock (MutationGate)
+                {
+                    RequirePersistenceEditable();
+                    name = value;
+                    saveMask |= ResidenceSaveMask.Name;
+                }
             }
         }
 
@@ -90,14 +102,18 @@ namespace NexusForever.Game.Housing
 
         public ResidencePrivacyLevel PrivacyLevel
         {
-            get => privacyLevel;
+            get { lock (MutationGate) return privacyLevel; }
             set
             {
-                if (value > ResidencePrivacyLevel.Private)
-                    throw new ArgumentOutOfRangeException();
+                lock (MutationGate)
+                {
+                    RequirePersistenceEditable();
+                    if (value > ResidencePrivacyLevel.Private)
+                        throw new ArgumentOutOfRangeException();
 
-                privacyLevel = value;
-                saveMask |= ResidenceSaveMask.PrivacyLevel;
+                    privacyLevel = value;
+                    saveMask |= ResidenceSaveMask.PrivacyLevel;
+                }
             }
         }
 
@@ -105,14 +121,18 @@ namespace NexusForever.Game.Housing
 
         public ushort Wallpaper
         {
-            get => wallpaperId;
+            get { lock (MutationGate) return wallpaperId; }
             set
             {
-                if (gameTableManager.HousingWallpaperInfo?.GetEntry(value) == null)
-                    throw new ArgumentOutOfRangeException();
+                lock (MutationGate)
+                {
+                    RequirePersistenceEditable();
+                    if (gameTableManager.HousingWallpaperInfo?.GetEntry(value) == null)
+                        throw new ArgumentOutOfRangeException();
 
-                wallpaperId = value;
-                saveMask |= ResidenceSaveMask.Wallpaper;
+                    wallpaperId = value;
+                    saveMask |= ResidenceSaveMask.Wallpaper;
+                }
             }
         }
 
@@ -120,14 +140,18 @@ namespace NexusForever.Game.Housing
 
         public ushort Roof
         {
-            get => roofDecorInfoId;
+            get { lock (MutationGate) return roofDecorInfoId; }
             set
             {
-                if (gameTableManager.HousingDecorInfo?.GetEntry(value) == null)
-                    throw new ArgumentOutOfRangeException();
+                lock (MutationGate)
+                {
+                    RequirePersistenceEditable();
+                    if (gameTableManager.HousingDecorInfo?.GetEntry(value) == null)
+                        throw new ArgumentOutOfRangeException();
 
-                roofDecorInfoId = value;
-                saveMask |= ResidenceSaveMask.Roof;
+                    roofDecorInfoId = value;
+                    saveMask |= ResidenceSaveMask.Roof;
+                }
             }
         }
 
@@ -135,14 +159,18 @@ namespace NexusForever.Game.Housing
 
         public ushort Entryway
         {
-            get => entrywayDecorInfoId;
+            get { lock (MutationGate) return entrywayDecorInfoId; }
             set
             {
-                if (gameTableManager.HousingDecorInfo?.GetEntry(value) == null)
-                    throw new ArgumentOutOfRangeException();
+                lock (MutationGate)
+                {
+                    RequirePersistenceEditable();
+                    if (gameTableManager.HousingDecorInfo?.GetEntry(value) == null)
+                        throw new ArgumentOutOfRangeException();
 
-                entrywayDecorInfoId = value;
-                saveMask |= ResidenceSaveMask.Entryway;
+                    entrywayDecorInfoId = value;
+                    saveMask |= ResidenceSaveMask.Entryway;
+                }
             }
         }
 
@@ -150,14 +178,18 @@ namespace NexusForever.Game.Housing
 
         public ushort Door
         {
-            get => doorDecorInfoId;
+            get { lock (MutationGate) return doorDecorInfoId; }
             set
             {
-                if (gameTableManager.HousingDecorInfo?.GetEntry(value) == null)
-                    throw new ArgumentOutOfRangeException();
+                lock (MutationGate)
+                {
+                    RequirePersistenceEditable();
+                    if (gameTableManager.HousingDecorInfo?.GetEntry(value) == null)
+                        throw new ArgumentOutOfRangeException();
 
-                doorDecorInfoId = value;
-                saveMask |= ResidenceSaveMask.Door;
+                    doorDecorInfoId = value;
+                    saveMask |= ResidenceSaveMask.Door;
+                }
             }
         }
 
@@ -165,18 +197,22 @@ namespace NexusForever.Game.Housing
 
         public ushort Music
         {
-            get => musicId;
+            get { lock (MutationGate) return musicId; }
             set
             {
-                HousingWallpaperInfoEntry entry = gameTableManager.HousingWallpaperInfo?.GetEntry(value);
-                if (entry == null)
-                    throw new ArgumentOutOfRangeException();
+                lock (MutationGate)
+                {
+                    RequirePersistenceEditable();
+                    HousingWallpaperInfoEntry entry = gameTableManager.HousingWallpaperInfo?.GetEntry(value);
+                    if (entry == null)
+                        throw new ArgumentOutOfRangeException();
 
-                if ((entry.Flags & 0x100) == 0)
-                    throw new ArgumentOutOfRangeException();
+                    if ((entry.Flags & 0x100) == 0)
+                        throw new ArgumentOutOfRangeException();
 
-                musicId = value;
-                saveMask |= ResidenceSaveMask.Music;
+                    musicId = value;
+                    saveMask |= ResidenceSaveMask.Music;
+                }
             }
         }
 
@@ -184,18 +220,22 @@ namespace NexusForever.Game.Housing
 
         public ushort Ground
         {
-            get => groundWallpaperId;
+            get { lock (MutationGate) return groundWallpaperId; }
             set
             {
-                HousingWallpaperInfoEntry entry = gameTableManager.HousingWallpaperInfo?.GetEntry(value);
-                if (entry == null)
-                    throw new ArgumentOutOfRangeException();
+                lock (MutationGate)
+                {
+                    RequirePersistenceEditable();
+                    HousingWallpaperInfoEntry entry = gameTableManager.HousingWallpaperInfo?.GetEntry(value);
+                    if (entry == null)
+                        throw new ArgumentOutOfRangeException();
 
-                if ((entry.Flags & 0x200) == 0)
-                    throw new ArgumentOutOfRangeException();
+                    if ((entry.Flags & 0x200) == 0)
+                        throw new ArgumentOutOfRangeException();
 
-                groundWallpaperId = value;
-                saveMask |= ResidenceSaveMask.Ground;
+                    groundWallpaperId = value;
+                    saveMask |= ResidenceSaveMask.Ground;
+                }
             }
         }
 
@@ -203,18 +243,22 @@ namespace NexusForever.Game.Housing
 
         public ushort Sky
         {
-            get => skyWallpaperId;
+            get { lock (MutationGate) return skyWallpaperId; }
             set
             {
-                HousingWallpaperInfoEntry entry = gameTableManager.HousingWallpaperInfo?.GetEntry(value);
-                if (entry == null)
-                    throw new ArgumentOutOfRangeException();
+                lock (MutationGate)
+                {
+                    RequirePersistenceEditable();
+                    HousingWallpaperInfoEntry entry = gameTableManager.HousingWallpaperInfo?.GetEntry(value);
+                    if (entry == null)
+                        throw new ArgumentOutOfRangeException();
 
-                if ((entry.Flags & 0x40) == 0)
-                    throw new ArgumentOutOfRangeException();
+                    if ((entry.Flags & 0x40) == 0)
+                        throw new ArgumentOutOfRangeException();
 
-                skyWallpaperId = value;
-                saveMask |= ResidenceSaveMask.Sky;
+                    skyWallpaperId = value;
+                    saveMask |= ResidenceSaveMask.Sky;
+                }
             }
         }
 
@@ -222,11 +266,15 @@ namespace NexusForever.Game.Housing
 
         public ResidenceFlags Flags
         {
-            get => flags;
+            get { lock (MutationGate) return flags; }
             set
             {
-                flags = value;
-                saveMask |= ResidenceSaveMask.Flags;
+                lock (MutationGate)
+                {
+                    RequirePersistenceEditable();
+                    flags = value;
+                    saveMask |= ResidenceSaveMask.Flags;
+                }
             }
         }
 
@@ -234,11 +282,15 @@ namespace NexusForever.Game.Housing
 
         public byte ResourceSharing
         {
-            get => resourceSharing;
+            get { lock (MutationGate) return resourceSharing; }
             set
             {
-                resourceSharing = value;
-                saveMask |= ResidenceSaveMask.ResourceSharing;
+                lock (MutationGate)
+                {
+                    RequirePersistenceEditable();
+                    resourceSharing = value;
+                    saveMask |= ResidenceSaveMask.ResourceSharing;
+                }
             }
         }
 
@@ -246,11 +298,15 @@ namespace NexusForever.Game.Housing
 
         public byte GardenSharing
         {
-            get => gardenSharing;
+            get { lock (MutationGate) return gardenSharing; }
             set
             {
-                gardenSharing = value;
-                saveMask |= ResidenceSaveMask.GardenSharing;
+                lock (MutationGate)
+                {
+                    RequirePersistenceEditable();
+                    gardenSharing = value;
+                    saveMask |= ResidenceSaveMask.GardenSharing;
+                }
             }
         }
 
@@ -258,7 +314,7 @@ namespace NexusForever.Game.Housing
 
         private ResidenceSaveMask saveMask;
 
-        public bool NeedsSave => saveMask != ResidenceSaveMask.None;
+        public bool NeedsSave { get { lock (MutationGate) return persistence?.NeedsSave ?? (saveMask != ResidenceSaveMask.None); } }
 
         public bool IsCommunityResidence => GuildOwnerId.HasValue && !OwnerId.HasValue;
 
@@ -326,7 +382,10 @@ namespace NexusForever.Game.Housing
         {
             lock (saveOwnershipLock)
                 if (ReferenceEquals(communitySaveOwner, owner))
+                {
                     communitySaveOwner = null;
+                    if (ReferenceEquals(retiringCommunityOwner, owner)) retiringCommunityOwner = null;
+                }
         }
 
         internal void SaveForCommunity(CharacterContext context)
@@ -334,7 +393,8 @@ namespace NexusForever.Game.Housing
             lock (saveOwnershipLock)
             {
                 RegisterSaveUnit(context);
-                SaveCore(context);
+                if (persistence != null) persistence.Save(context, communitySaveOwner);
+                else SaveCore(context);
             }
         }
 
@@ -344,7 +404,7 @@ namespace NexusForever.Game.Housing
                 return;
             var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             stagedSaveUnits.Add(context, completion);
-            context.OnSaveCompleted(_ =>
+            context.OnSaveSettled(_ =>
             {
                 lock (saveOwnershipLock)
                     stagedSaveUnits.Remove(context);
@@ -413,6 +473,8 @@ namespace NexusForever.Game.Housing
                 plots.Add(new Plot(plotModel, gameTableManager));
 
             saveMask = ResidenceSaveMask.None;
+            loadedPersistence = ResidencePersistence.FromModel(model);
+            loadedDatabase = ResidenceLoadOrigin.Get(model);
         }
 
         /// <summary>
@@ -494,11 +556,17 @@ namespace NexusForever.Game.Housing
         public void Save(CharacterContext context)
         {
             lock (saveOwnershipLock)
-                if (communitySaveOwner == null)
+            {
+                if (communitySaveOwner != null)
                 {
-                    RegisterSaveUnit(context);
-                    SaveCore(context);
+                    if (persistence == null || persistence.Owns(context)) return;
+                    var error = new InvalidOperationException("Residence graph is reserved by its original community save.");
+                    context.RejectSave(error); throw error;
                 }
+                RegisterSaveUnit(context);
+                if (persistence != null) persistence.Save(context);
+                else SaveCore(context);
+            }
         }
 
         private void SaveCore(CharacterContext context)
@@ -771,60 +839,73 @@ namespace NexusForever.Game.Housing
 
         public bool HasNeighbor(ulong characterId)
         {
-            return neighbors.ContainsKey(characterId);
+            lock (MutationGate)
+            {
+                return neighbors.ContainsKey(characterId);
+            }
         }
 
         public bool AddNeighbor(ulong characterId, byte permissionLevel = 0)
         {
-            if (neighbors.ContainsKey(characterId))
-                return false;
-
-            ResidenceNeighbor deletedNeighbor = neighborsPendingDelete
-                .SingleOrDefault(neighbor => neighbor.CharacterId == characterId);
-            if (deletedNeighbor != null)
+            lock (MutationGate)
             {
-                neighborsPendingDelete.Remove(deletedNeighbor);
-                deletedNeighbor.UnmarkDelete();
-                deletedNeighbor.PermissionLevel = permissionLevel;
-                neighbors.Add(characterId, deletedNeighbor);
+                RequirePersistenceEditable();
+                if (neighbors.ContainsKey(characterId))
+                    return false;
+
+                ResidenceNeighbor deletedNeighbor = neighborsPendingDelete
+                    .SingleOrDefault(neighbor => neighbor.CharacterId == characterId);
+                if (deletedNeighbor != null)
+                {
+                    neighborsPendingDelete.Remove(deletedNeighbor);
+                    deletedNeighbor.UnmarkDelete();
+                    deletedNeighbor.PermissionLevel = permissionLevel;
+                    neighbors.Add(characterId, deletedNeighbor);
+                    return true;
+                }
+
+                neighbors.Add(characterId, new ResidenceNeighbor(characterId, permissionLevel));
                 return true;
             }
-
-            neighbors.Add(characterId, new ResidenceNeighbor(characterId, permissionLevel));
-            return true;
         }
 
         public bool RemoveNeighbor(ulong characterId)
         {
-            if (!neighbors.Remove(characterId, out ResidenceNeighbor neighbor))
-                return false;
-
-            if (neighbor.WasPersisted)
+            lock (MutationGate)
             {
-                neighbor.MarkDelete();
-                neighborsPendingDelete.Add(neighbor);
-            }
+                RequirePersistenceEditable();
+                if (!neighbors.Remove(characterId, out ResidenceNeighbor neighbor))
+                    return false;
 
-            return true;
+                if (neighbor.WasPersisted)
+                {
+                    neighbor.MarkDelete();
+                    neighborsPendingDelete.Add(neighbor);
+                }
+
+                return true;
+            }
         }
 
         public bool TrySetNeighborPermission(ulong characterId, byte permissionLevel)
         {
-            if (!neighbors.TryGetValue(characterId, out ResidenceNeighbor neighbor))
-                return false;
+            lock (MutationGate)
+            {
+                RequirePersistenceEditable();
+                if (!neighbors.TryGetValue(characterId, out ResidenceNeighbor neighbor))
+                    return false;
 
-            neighbor.PermissionLevel = permissionLevel;
-            return true;
+                neighbor.PermissionLevel = permissionLevel;
+                return true;
+            }
         }
 
         public IEnumerable<(ulong CharacterId, byte PermissionLevel)> GetNeighbors()
         {
-            foreach (ResidenceNeighbor neighbor in neighbors.Values)
+            lock (MutationGate)
             {
-                if (neighbor.PendingDelete)
-                    continue;
-
-                yield return (neighbor.CharacterId, neighbor.PermissionLevel);
+                return neighbors.Values.Where(neighbor => !neighbor.PendingDelete)
+                    .Select(neighbor => (neighbor.CharacterId, neighbor.PermissionLevel)).ToArray();
             }
         }
 
@@ -833,7 +914,10 @@ namespace NexusForever.Game.Housing
         /// </summary>
         public IEnumerable<IPlot> GetPlots()
         {
-            return plots;
+            lock (MutationGate)
+            {
+                return plots.ToArray();
+            }
         }
 
         /// <summary>
@@ -841,7 +925,10 @@ namespace NexusForever.Game.Housing
         /// </summary>
         public IEnumerable<IDecor> GetDecor()
         {
-            return decors.Values;
+            lock (MutationGate)
+            {
+                return decors.Values.ToArray();
+            }
         }
 
         /// <summary>
@@ -849,9 +936,10 @@ namespace NexusForever.Game.Housing
         /// </summary>
         public IEnumerable<IDecor> GetPlacedDecor()
         {
-            foreach (IDecor decor in decors.Values)
-                if (decor.Type != DecorType.Crate)
-                    yield return decor;
+            lock (MutationGate)
+            {
+                return decors.Values.Where(decor => decor.Type != DecorType.Crate).ToArray();
+            }
         }
 
         /// <summary>
@@ -859,8 +947,11 @@ namespace NexusForever.Game.Housing
         /// </summary>
         public IDecor GetDecor(ulong decorId)
         {
-            decors.TryGetValue(decorId, out IDecor decor);
-            return decor;
+            lock (MutationGate)
+            {
+                decors.TryGetValue(decorId, out IDecor decor);
+                return decor;
+            }
         }
 
         /// <summary>
@@ -868,16 +959,24 @@ namespace NexusForever.Game.Housing
         /// </summary>
         public IDecor DecorCreate(HousingDecorInfoEntry entry)
         {
-            var decor = new Decor(this, GetGlobalResidenceManager().NextDecorId, entry);
-            decors.Add(decor.DecorId, decor);
-            return decor;
+            lock (MutationGate)
+            {
+                RequirePersistenceEditable();
+                var decor = new Decor(this, GetGlobalResidenceManager().NextDecorId, entry);
+                decors.Add(decor.DecorId, decor);
+                return decor;
+            }
         }
 
         public IDecor DecorCreateInteriorWallpaper(uint wallpaperInfoId)
         {
-            var decor = new Decor(this, GetGlobalResidenceManager().NextDecorId, wallpaperInfoId, DecorType.InteriorWallpaper);
-            decors.Add(decor.DecorId, decor);
-            return decor;
+            lock (MutationGate)
+            {
+                RequirePersistenceEditable();
+                var decor = new Decor(this, GetGlobalResidenceManager().NextDecorId, wallpaperInfoId, DecorType.InteriorWallpaper);
+                decors.Add(decor.DecorId, decor);
+                return decor;
+            }
         }
 
         /// <summary>
@@ -888,9 +987,13 @@ namespace NexusForever.Game.Housing
         /// </remarks>
         public IDecor DecorCopy(IDecor decor)
         {
-            var newDecor = new Decor(this, decor, GetGlobalResidenceManager().NextDecorId);
-            decors.Add(newDecor.DecorId, newDecor);
-            return newDecor;
+            lock (MutationGate)
+            {
+                RequirePersistenceEditable();
+                var newDecor = new Decor(this, decor, GetGlobalResidenceManager().NextDecorId);
+                decors.Add(newDecor.DecorId, newDecor);
+                return newDecor;
+            }
         }
 
         private IGlobalResidenceManager GetGlobalResidenceManager()
@@ -907,7 +1010,14 @@ namespace NexusForever.Game.Housing
         /// </remarks>
         public void DecorRemove(IDecor decor)
         {
-            decors.Remove(decor.DecorId);
+            lock (MutationGate)
+            {
+                RequirePersistenceEditable();
+                if (persistence != null && (!decor.PendingCreate || !ReferenceEquals(decor.Residence, this)
+                    || !decors.TryGetValue(decor.DecorId, out IDecor current) || !ReferenceEquals(current, decor)))
+                    throw new InvalidOperationException("Only original provisional decor can be removed without a deletion intent.");
+                decors.Remove(decor.DecorId);
+            }
         }
 
         /// <summary>
@@ -915,7 +1025,10 @@ namespace NexusForever.Game.Housing
         /// </summary>
         public IPlot GetPlot(byte plotIndex)
         {
-            return plots.FirstOrDefault(i => i.Index == plotIndex);
+            lock (MutationGate)
+            {
+                return plots.FirstOrDefault(i => i.Index == plotIndex);
+            }
         }
 
         /// <summary>
@@ -923,7 +1036,10 @@ namespace NexusForever.Game.Housing
         /// </summary>
         public IPlot GetPlot(uint plotInfoId)
         {
-            return plots.FirstOrDefault(i => i.PlotInfoEntry.Id == plotInfoId);
+            lock (MutationGate)
+            {
+                return plots.FirstOrDefault(i => i.PlotInfoEntry.Id == plotInfoId);
+            }
         }
     }
 }

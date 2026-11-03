@@ -230,7 +230,7 @@ namespace NexusForever.Database.Character
         public List<ResidenceModel> GetResidences()
         {
             using var context = new CharacterContext(config);
-            return context.Residence
+            List<ResidenceModel> models = context.Residence
                 .Include(r => r.Plot)
                 .Include(r => r.Decor)
                 .Include(r => r.Neighbors)
@@ -239,6 +239,8 @@ namespace NexusForever.Database.Character
                 // only load residences where the owner character or guild hasn't been deleted
                 .Where(r => (r.OwnerId.HasValue && !r.Character.DeleteTime.HasValue) || (r.GuildOwnerId.HasValue && !r.Guild.DeleteTime.HasValue))
                 .ToList();
+            ResidenceLoadOrigin.Bind(context, models);
+            return models;
         }
 
         public ulong GetNextMailId()

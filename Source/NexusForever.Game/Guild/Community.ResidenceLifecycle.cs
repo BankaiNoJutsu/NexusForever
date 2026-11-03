@@ -217,6 +217,7 @@ namespace NexusForever.Game.Guild
                             if (!concrete.IsCommunitySaveOwner(pending.Value))
                                 continue;
                             concrete.SaveForCommunity(context);
+                            if (concrete.HasPersistence) continue;
                         }
                         else
                             residence.Save(context);

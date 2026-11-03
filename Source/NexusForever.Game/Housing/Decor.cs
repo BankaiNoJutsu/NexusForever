@@ -44,11 +44,15 @@ namespace NexusForever.Game.Housing
 
         public DecorType Type
         {
-            get => type;
+            get { lock (MutationGate) return type; }
             set
             {
-                type = value;
-                saveMask |= DecorSaveMask.Type;
+                lock (MutationGate)
+                {
+                    (Residence as Housing.Residence)?.RequireDecorEditable(this);
+                    type = value;
+                    saveMask |= DecorSaveMask.Type;
+                }
             }
         }
 
@@ -56,11 +60,15 @@ namespace NexusForever.Game.Housing
 
         public uint DecorData
         {
-            get => decorData;
+            get { lock (MutationGate) return decorData; }
             set
             {
-                decorData = value;
-                saveMask |= DecorSaveMask.DecorData;
+                lock (MutationGate)
+                {
+                    (Residence as Housing.Residence)?.RequireDecorEditable(this);
+                    decorData = value;
+                    saveMask |= DecorSaveMask.DecorData;
+                }
             }
         }
 
@@ -68,11 +76,15 @@ namespace NexusForever.Game.Housing
 
         public uint HookBagIndex
         {
-            get => hookBagIndex;
+            get { lock (MutationGate) return hookBagIndex; }
             set
             {
-                hookBagIndex = value;
-                saveMask |= DecorSaveMask.HookBagIndex;
+                lock (MutationGate)
+                {
+                    (Residence as Housing.Residence)?.RequireDecorEditable(this);
+                    hookBagIndex = value;
+                    saveMask |= DecorSaveMask.HookBagIndex;
+                }
             }
         }
 
@@ -80,11 +92,15 @@ namespace NexusForever.Game.Housing
 
         public uint HookIndex
         {
-            get => hookIndex;
+            get { lock (MutationGate) return hookIndex; }
             set
             {
-                hookIndex = value;
-                saveMask |= DecorSaveMask.HookIndex;
+                lock (MutationGate)
+                {
+                    (Residence as Housing.Residence)?.RequireDecorEditable(this);
+                    hookIndex = value;
+                    saveMask |= DecorSaveMask.HookIndex;
+                }
             }
         }
 
@@ -92,11 +108,15 @@ namespace NexusForever.Game.Housing
 
         public uint PlotIndex
         {
-            get => plotIndex;
+            get { lock (MutationGate) return plotIndex; }
             set
             {
-                plotIndex = value;
-                saveMask |= DecorSaveMask.PlotIndex;
+                lock (MutationGate)
+                {
+                    (Residence as Housing.Residence)?.RequireDecorEditable(this);
+                    plotIndex = value;
+                    saveMask |= DecorSaveMask.PlotIndex;
+                }
             }
         }
 
@@ -104,11 +124,15 @@ namespace NexusForever.Game.Housing
 
         public Vector3 Position
         {
-            get => position;
+            get { lock (MutationGate) return position; }
             set
             {
-                position = value;
-                saveMask |= DecorSaveMask.Position;
+                lock (MutationGate)
+                {
+                    (Residence as Housing.Residence)?.RequireDecorEditable(this);
+                    position = value;
+                    saveMask |= DecorSaveMask.Position;
+                }
             }
         }
 
@@ -116,11 +140,15 @@ namespace NexusForever.Game.Housing
 
         public Quaternion Rotation
         {
-            get => rotation;
+            get { lock (MutationGate) return rotation; }
             set
             {
-                rotation = value;
-                saveMask |= DecorSaveMask.Rotation;
+                lock (MutationGate)
+                {
+                    (Residence as Housing.Residence)?.RequireDecorEditable(this);
+                    rotation = value;
+                    saveMask |= DecorSaveMask.Rotation;
+                }
             }
         }
 
@@ -128,11 +156,15 @@ namespace NexusForever.Game.Housing
 
         public float Scale
         {
-            get => scale;
+            get { lock (MutationGate) return scale; }
             set
             {
-                scale = value;
-                saveMask |= DecorSaveMask.Scale;
+                lock (MutationGate)
+                {
+                    (Residence as Housing.Residence)?.RequireDecorEditable(this);
+                    scale = value;
+                    saveMask |= DecorSaveMask.Scale;
+                }
             }
         }
 
@@ -140,11 +172,15 @@ namespace NexusForever.Game.Housing
 
         public uint ActivePropUnitId
         {
-            get => activePropUnitId;
+            get { lock (MutationGate) return activePropUnitId; }
             set
             {
-                activePropUnitId = value;
-                saveMask |= DecorSaveMask.ActivePropUnitId;
+                lock (MutationGate)
+                {
+                    (Residence as Housing.Residence)?.RequireDecorEditable(this);
+                    activePropUnitId = value;
+                    saveMask |= DecorSaveMask.ActivePropUnitId;
+                }
             }
         }
 
@@ -152,11 +188,15 @@ namespace NexusForever.Game.Housing
 
         public ulong DecorParentId
         {
-            get => decorParentId;
+            get { lock (MutationGate) return decorParentId; }
             set
             {
-                decorParentId = value;
-                saveMask |= DecorSaveMask.DecorParentId;
+                lock (MutationGate)
+                {
+                    (Residence as Housing.Residence)?.RequireDecorEditable(this);
+                    decorParentId = value;
+                    saveMask |= DecorSaveMask.DecorParentId;
+                }
             }
         }
 
@@ -164,11 +204,15 @@ namespace NexusForever.Game.Housing
 
         public ushort ColourShiftId
         {
-            get => colourShiftId;
+            get { lock (MutationGate) return colourShiftId; }
             set
             {
-                colourShiftId = value;
-                saveMask |= DecorSaveMask.ColourShiftId;
+                lock (MutationGate)
+                {
+                    (Residence as Housing.Residence)?.RequireDecorEditable(this);
+                    colourShiftId = value;
+                    saveMask |= DecorSaveMask.ColourShiftId;
+                }
             }
         }
 
@@ -177,6 +221,15 @@ namespace NexusForever.Game.Housing
         public IResidence Residence { get; }
 
         private DecorSaveMask saveMask;
+        private object MutationGate => (Residence as Housing.Residence)?.MutationGate ?? this;
+        internal ResidencePersistence.Decoration CapturePersistence() => new(DecorId, DecorInfoId, (uint)Type, DecorData,
+            HookBagIndex, HookIndex, PlotIndex, Scale, Position.X, Position.Y, Position.Z, Rotation.X, Rotation.Y, Rotation.Z, Rotation.W,
+            ActivePropUnitId, DecorParentId, ColourShiftId);
+        internal void AcknowledgePersistence(ResidencePersistence.Decoration target)
+        {
+            saveMask &= ~DecorSaveMask.Create;
+            if (!PendingDelete && CapturePersistence() == target) saveMask = DecorSaveMask.None;
+        }
 
         /// <summary>
         /// Returns if <see cref="IDecor"/> is enqueued to be saved to the database.
@@ -193,7 +246,11 @@ namespace NexusForever.Game.Housing
         /// </summary>
         public void EnqueueDelete(bool set)
         {
-            saveMask = DecorSaveMask.Delete;
+            lock (MutationGate)
+            {
+                (Residence as Housing.Residence)?.RequireDecorEditable(this);
+                saveMask = DecorSaveMask.Delete;
+            }
         }
 
         /// <summary>
@@ -277,6 +334,7 @@ namespace NexusForever.Game.Housing
 
         public void Save(CharacterContext context)
         {
+            if (Residence is Housing.Residence owner && owner.SaveDecor(this, context)) return;
             if (saveMask == DecorSaveMask.None)
                 return;
 
@@ -407,25 +465,37 @@ namespace NexusForever.Game.Housing
         /// </summary>
         public void Move(DecorType type, Vector3 position, Quaternion rotation, float scale, uint plotIndex)
         {
-            Type      = type;
-            Position  = position;
-            Rotation  = rotation;
-            Scale     = scale;
-            PlotIndex = plotIndex;
+            lock (MutationGate)
+            {
+                (Residence as Housing.Residence)?.RequireDecorEditable(this);
+                Type      = type;
+                Position  = position;
+                Rotation  = rotation;
+                Scale     = scale;
+                PlotIndex = plotIndex;
+            }
         }
 
         public void UpdateEntry(HousingDecorInfoEntry entry)
         {
-            Entry = entry ?? throw new ArgumentNullException(nameof(entry));
-            decorInfoId = entry.Id;
-            saveMask |= DecorSaveMask.DecorInfo;
+            lock (MutationGate)
+            {
+                (Residence as Housing.Residence)?.RequireDecorEditable(this);
+                Entry = entry ?? throw new ArgumentNullException(nameof(entry));
+                decorInfoId = entry.Id;
+                saveMask |= DecorSaveMask.DecorInfo;
+            }
         }
 
         public void UpdateDecorInfoId(uint decorInfoId)
         {
-            this.decorInfoId = decorInfoId;
-            Entry = null;
-            saveMask |= DecorSaveMask.DecorInfo;
+            lock (MutationGate)
+            {
+                (Residence as Housing.Residence)?.RequireDecorEditable(this);
+                this.decorInfoId = decorInfoId;
+                Entry = null;
+                saveMask |= DecorSaveMask.DecorInfo;
+            }
         }
 
         /// <summary>
@@ -433,30 +503,37 @@ namespace NexusForever.Game.Housing
         /// </summary>
         public void Crate()
         {
-            Move(DecorType.Crate, Vector3.Zero, Quaternion.Identity, 0f, int.MaxValue);
-            DecorParentId = 0u;
+            lock (MutationGate)
+            {
+                (Residence as Housing.Residence)?.RequireDecorEditable(this);
+                Move(DecorType.Crate, Vector3.Zero, Quaternion.Identity, 0f, int.MaxValue);
+                DecorParentId = 0u;
+            }
         }
 
         public ServerHousingResidenceDecor.Decor Build()
         {
-            return new()
+            lock (MutationGate)
             {
-                RealmId       = Residence.RealmId,
-                DecorId       = DecorId,
-                ResidenceId   = Residence.Id,
-                DecorType     = Type,
-                DecorData     = DecorData,
-                HookBagIndex  = HookBagIndex,
-                HookIndex     = HookIndex,
-                PlotIndex     = PlotIndex,
-                Scale         = Scale,
-                Position      = Position,
-                Rotation      = Rotation,
-                DecorInfoId   = DecorInfoId,
-                ActivePropUnitId = ActivePropUnitId,
-                ParentDecorId = DecorParentId,
-                ColourShift   = ColourShiftId
-            };
+                return new()
+                {
+                    RealmId       = Residence.RealmId,
+                    DecorId       = DecorId,
+                    ResidenceId   = Residence.Id,
+                    DecorType     = Type,
+                    DecorData     = DecorData,
+                    HookBagIndex  = HookBagIndex,
+                    HookIndex     = HookIndex,
+                    PlotIndex     = PlotIndex,
+                    Scale         = Scale,
+                    Position      = Position,
+                    Rotation      = Rotation,
+                    DecorInfoId   = DecorInfoId,
+                    ActivePropUnitId = ActivePropUnitId,
+                    ParentDecorId = DecorParentId,
+                    ColourShift   = ColourShiftId
+                };
+            }
         }
     }
 }

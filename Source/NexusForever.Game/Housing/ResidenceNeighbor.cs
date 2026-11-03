@@ -59,6 +59,16 @@ namespace NexusForever.Game.Housing
             saveMask &= ~SaveMask.Delete;
         }
 
+        internal void AcknowledgePersistence(ResidencePersistence.Neighbor target)
+        {
+            if (target == null) saveMask |= SaveMask.Create;
+            else
+            {
+                saveMask &= ~SaveMask.Create;
+                if (permissionLevel == target.Permission) saveMask = SaveMask.None;
+            }
+        }
+
         public void Save(CharacterContext context, ulong residenceId)
         {
             if (saveMask == SaveMask.None)

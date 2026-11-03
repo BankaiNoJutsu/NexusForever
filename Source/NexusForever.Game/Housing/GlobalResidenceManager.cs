@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
@@ -35,7 +36,9 @@ namespace NexusForever.Game.Housing
         public ulong NextDecorId => nextDecorId++;
         private ulong nextDecorId;
 
-        private readonly Dictionary<ulong, IResidence> residences = new();
+        private readonly ConcurrentDictionary<ulong, IResidence> residences = new();
+        private readonly object saveGate = new();
+        private readonly HashSet<ulong> savesInFlight = [];
         private readonly Dictionary<ulong, ulong> residenceOwnerCache = new();
         private readonly Dictionary<ulong, ulong> communityOwnerCache = new();
         private readonly Dictionary<string, ulong> residenceSearchCache = new(StringComparer.InvariantCultureIgnoreCase);
@@ -167,10 +170,21 @@ namespace NexusForever.Game.Housing
                 if (residence is Residence concreteResidence && (!concreteResidence.NeedsSave || concreteResidence.CommunitySavePending))
                     continue;
 
-                IResidence residenceToSave = residence;
-                database.Save(residenceToSave.Save).FireAndForgetAsync(ex =>
-                    log.Error(ex, "Failed to save residence {0}.", residenceToSave.Id));
+                lock (saveGate) if (!savesInFlight.Add(residence.Id)) continue;
+                SaveResidence(database, residence).FireAndForgetAsync(ex => log.Error(ex, "Failed to save residence {0}.", residence.Id));
             }
+        }
+
+        private async Task SaveResidence(CharacterDatabase database, IResidence residence)
+        {
+            try { await database.Save(residence.Save); }
+            finally { lock (saveGate) savesInFlight.Remove(residence.Id); }
+        }
+        private void BindPersistence(IResidence residence)
+        {
+            if (residence is not Residence concrete || databaseManager?.GetDatabase<CharacterDatabase>() is not {} database) return;
+            using CharacterContext context = database.CreateContext();
+            concrete.BindPersistence(context, () => residences.TryGetValue(residence.Id, out IResidence current) && ReferenceEquals(current, residence));
         }
 
         /// <summary>
@@ -191,7 +205,8 @@ namespace NexusForever.Game.Housing
 
         private void StoreResidence(IResidence residence, string name)
         {
-            residences.Add(residence.Id, residence);
+            if (residence is not Residence { HasPersistence: true }) BindPersistence(residence);
+            if (!residences.TryAdd(residence.Id, residence)) throw new InvalidOperationException("Residence identity is already registered.");
 
             residenceOwnerCache.Add(residence.OwnerId.Value, residence.Id);
             residenceSearchCache.Add(name, residence.Id);
@@ -206,6 +221,8 @@ namespace NexusForever.Game.Housing
         public IResidence CreateCommunity(ICommunity community)
         {
             var residence = new Residence(community, this, realmContext?.RealmId ?? (ushort)0, gameTableManager);
+            BindPersistence(residence);
+            if (residence.HasPersistence && community is Community original) original.PrepareResidenceCreation(residence);
             StoreCommunity(residence, community);
 
             log.Trace($"Created new residence {residence.Id} for community {community.Name}.");
@@ -214,7 +231,8 @@ namespace NexusForever.Game.Housing
 
         private void StoreCommunity(IResidence residence, ICommunity community)
         {
-            residences.Add(residence.Id, residence);
+            if (residence is not Residence { HasPersistence: true }) BindPersistence(residence);
+            if (!residences.TryAdd(residence.Id, residence)) throw new InvalidOperationException("Residence identity is already registered.");
 
             communityOwnerCache.Add(residence.GuildOwnerId.Value, residence.Id);
             communitySearchCache.Add(community.Name, residence.Id);
@@ -291,7 +309,7 @@ namespace NexusForever.Game.Housing
             if (residence.PrivacyLevel == ResidencePrivacyLevel.Public)
                 DeregisterResidenceVists(residence.Id);
 
-            residences.Remove(residence.Id);
+            residences.TryRemove(residence.Id, out _);
             residenceOwnerCache.Remove(residence.OwnerId.Value);
             residenceSearchCache.Remove(name);
         }
@@ -304,7 +322,10 @@ namespace NexusForever.Game.Housing
 
             DeregisterCommunityVists(residence.Id);
             if (residences.TryGetValue(residence.Id, out IResidence current) && ReferenceEquals(current, residence))
-                residences.Remove(residence.Id);
+            {
+                if (residence is Residence concrete) concrete.RetainCommunityRetirement(community);
+                residences.TryRemove(residence.Id, out _);
+            }
             if (communityOwnerCache.TryGetValue(community.Id, out ulong id) && id == residence.Id)
                 communityOwnerCache.Remove(community.Id);
             foreach (string name in communitySearchCache.Where(p => p.Value == residence.Id).Select(p => p.Key).ToList())

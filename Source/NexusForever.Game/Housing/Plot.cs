@@ -30,35 +30,54 @@ namespace NexusForever.Game.Housing
 
         public HousingPlotInfoEntry PlotInfoEntry
         {
-            get => plotInfoEntry;
+            get { lock (MutationGate) return plotInfoEntry; }
             set
             {
-                plotInfoEntry = value;
-                saveMask |= PlotSaveMask.PlotInfoId;
+                lock (MutationGate)
+                {
+                    saveOwner?.RequirePlotEditable(this);
+                    ArgumentNullException.ThrowIfNull(value);
+                    ushort next = checked((ushort)value.Id);
+                    plotInfoEntry = value;
+                    plotInfoId = next;
+                    saveMask |= PlotSaveMask.PlotInfoId;
+                }
             }
         }
 
         private HousingPlotInfoEntry plotInfoEntry;
+        private ushort plotInfoId;
 
         public HousingPlugItemEntry PlugItemEntry
         {
-            get => plugItemEntry;
+            get { lock (MutationGate) return plugItemEntry; }
             set
             {
-                plugItemEntry = value;
-                saveMask |= PlotSaveMask.PlugItemId;
+                lock (MutationGate)
+                {
+                    saveOwner?.RequirePlotEditable(this);
+                    ushort next = checked((ushort)(value?.Id ?? 0));
+                    plugItemEntry = value;
+                    plugItemId = next;
+                    saveMask |= PlotSaveMask.PlugItemId;
+                }
             }
         }
 
         private HousingPlugItemEntry plugItemEntry;
+        private ushort plugItemId;
 
         public HousingPlugFacing PlugFacing
         {
-            get => plugFacing;
+            get { lock (MutationGate) return plugFacing; }
             set
             {
-                plugFacing = value;
-                saveMask |= PlotSaveMask.PlugFacing;
+                lock (MutationGate)
+                {
+                    saveOwner?.RequirePlotEditable(this);
+                    plugFacing = value;
+                    saveMask |= PlotSaveMask.PlugFacing;
+                }
             }
         }
 
@@ -66,17 +85,34 @@ namespace NexusForever.Game.Housing
 
         public byte BuildState
         {
-            get => buildState;
+            get { lock (MutationGate) return buildState; }
             set
             {
-                buildState = value;
-                saveMask |= PlotSaveMask.BuildState;
+                lock (MutationGate)
+                {
+                    saveOwner?.RequirePlotEditable(this);
+                    buildState = value;
+                    saveMask |= PlotSaveMask.BuildState;
+                }
             }
         }
 
         private byte buildState;
 
         private PlotSaveMask saveMask;
+        private Residence saveOwner;
+        private object MutationGate => saveOwner?.MutationGate ?? this;
+        internal void BindSaveOwner(Residence owner)
+        {
+            if (saveOwner != null && !ReferenceEquals(saveOwner, owner)) throw new InvalidOperationException("Plot changed its original save owner.");
+            saveOwner = owner;
+        }
+        internal ResidencePersistence.Plot CapturePersistence() => new(Index, plotInfoId, plugItemId, (byte)PlugFacing, BuildState);
+        internal void AcknowledgePersistence(ResidencePersistence.Plot target)
+        {
+            saveMask &= ~PlotSaveMask.Create;
+            if (CapturePersistence() == target) saveMask = PlotSaveMask.None;
+        }
 
         public IPlugEntity PlugEntity { get; set; }
         private readonly IGameTableManager gameTableManager;
@@ -94,6 +130,8 @@ namespace NexusForever.Game.Housing
             Index         = model.Index;
             plotInfoEntry = gameTableManager?.HousingPlotInfo?.GetEntry(model.PlotInfoId);
             plugItemEntry = gameTableManager?.HousingPlugItem?.GetEntry(model.PlugItemId);
+            plotInfoId    = model.PlotInfoId;
+            plugItemId    = model.PlugItemId;
             plugFacing    = (HousingPlugFacing)model.PlugFacing;
             buildState    = model.BuildState;
 
@@ -113,6 +151,7 @@ namespace NexusForever.Game.Housing
             Id            = id;
             Index         = (byte)entry.HousingPropertyPlotIndex;
             plotInfoEntry = entry;
+            plotInfoId    = checked((ushort)entry.Id);
             plugFacing    = HousingPlugFacing.East;
 
             if (entry.HousingPlugItemIdDefault != 0u)
@@ -128,6 +167,7 @@ namespace NexusForever.Game.Housing
 
         public void Save(CharacterContext context)
         {
+            if (saveOwner?.SavePlot(this, context) == true) return;
             if (saveMask == PlotSaveMask.None)
                 return;
 
@@ -138,8 +178,8 @@ namespace NexusForever.Game.Housing
                 {
                     Id         = Id,
                     Index      = Index,
-                    PlotInfoId = (ushort)PlotInfoEntry.Id,
-                    PlugItemId = (ushort)(PlugItemEntry?.Id ?? 0u),
+                    PlotInfoId = plotInfoId,
+                    PlugItemId = plugItemId,
                     PlugFacing = (byte)PlugFacing,
                     BuildState = BuildState
                 });
@@ -156,13 +196,13 @@ namespace NexusForever.Game.Housing
                 EntityEntry<ResidencePlotModel> entity = context.Attach(model);
                 if ((saveMask & PlotSaveMask.PlotInfoId) != 0)
                 {
-                    model.PlotInfoId = (ushort)PlotInfoEntry.Id;
+                    model.PlotInfoId = plotInfoId;
                     entity.Property(p => p.PlotInfoId).IsModified = true;
                 }
 
                 if ((saveMask & PlotSaveMask.PlugItemId) != 0)
                 {
-                    model.PlugItemId = (ushort)(PlugItemEntry?.Id ?? 0u);
+                    model.PlugItemId = plugItemId;
                     entity.Property(p => p.PlugItemId).IsModified = true;
                 }
 
@@ -184,12 +224,16 @@ namespace NexusForever.Game.Housing
 
         public void SetPlug(ushort plugItemId)
         {
-            HousingPlugItemEntry entry = gameTableManager?.HousingPlugItem?.GetEntry(plugItemId);
-            if (entry == null)
-                throw new ArgumentOutOfRangeException(nameof(plugItemId));
+            lock (MutationGate)
+            {
+                saveOwner?.RequirePlotEditable(this);
+                HousingPlugItemEntry entry = gameTableManager?.HousingPlugItem?.GetEntry(plugItemId);
+                if (entry == null)
+                    throw new ArgumentOutOfRangeException(nameof(plugItemId));
 
-            PlugItemEntry = entry;
-            BuildState = 4;
+                PlugItemEntry = entry;
+                BuildState = 4;
+            }
         }
     }
 }

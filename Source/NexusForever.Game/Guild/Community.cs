@@ -48,6 +48,12 @@ namespace NexusForever.Game.Guild
         {
             base.Initialise(guildName, leaderRankName, councilRankName, memberRankName);
             Residence = globalResidenceManager.CreateCommunity(this);
+
+        }
+
+        internal void PrepareResidenceCreation(IResidence residence)
+        {
+            lock (residenceLifecycleLock) QueueResidenceChange(residence);
         }
 
         /// <summary>
