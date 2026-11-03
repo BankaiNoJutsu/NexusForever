@@ -1,5 +1,19 @@
 # Destination configured-provider qualification
 
+[Guild achievement recovery](GUILD_DISBAND_RECOVERY.md#guild-achievement-recovery-verified)
+passes22 MySQL8.4.13 cases on the verified owned fixture and final DLLs. Twenty
+common source cases retain assertions/actions/deadlines; primary connection/
+disposal, two trigger spellings and namespaces differ. Foreign routes stay private
+SQLite. Two provider-only controls verify actual DATETIME rounding/truncation,
+raw actor intent, stable stored dates under opposite session mode and packet
+FILETIME. Fractional loaded dates remain SQLite-qualified. Initial synchronous-
+runner/session-lifetime fixture failures remain retained. All21 new/439 affected
+and11,752 full tests pass; build/reviews and11 owner/test/native DLL pairs verify.
+The owned process/listener and recorded test/helper generations are absent.
+No database source/model/schema/migration changed. Cross-character notification,
+durable realm-first arbitration, plot-backed housing, fees, copied upgrades,
+live broker/restart and native/retail gates remain separate.
+
 [Guild creation graph recovery](GUILD_DISBAND_RECOVERY.md#guild-creation-graph-recovery-verified)
 passes all21 configured MySQL8.4.13 cases in one run on the verified owned fixture.
 Root/data/rank/member writes, lost acknowledgement, later edits, attempted-create/

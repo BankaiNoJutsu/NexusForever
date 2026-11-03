@@ -33,7 +33,8 @@ namespace NexusForever.Game.Guild
             this is Guild guild ? new(guild.MessageOfTheDay, guild.AdditionalInfo,
                 (ushort)guild.Standard.BackgroundIcon.GuildStandardPartEntry.Id,
                 (ushort)guild.Standard.ForegroundIcon.GuildStandardPartEntry.Id,
-                (ushort)guild.Standard.ScanLines.GuildStandardPartEntry.Id) : null);
+                (ushort)guild.Standard.ScanLines.GuildStandardPartEntry.Id) : null,
+            this is Guild achievementGuild ? achievementGuild.CaptureAchievementMutations() : null);
         }
         internal bool OwnsMutationNameWrite(CharacterContext context)
         {
@@ -66,8 +67,9 @@ namespace NexusForever.Game.Guild
             mutationPersistence = new(this, MutationGate, baseline, database, CaptureMutations, AcknowledgeMutations);
             foreach (GuildRank rank in ranks.Values.OfType<GuildRank>()) rank.BindSaveOwner(this);
         }
-        private void AcknowledgeMutations(GuildMutationPersistence.Snapshot before, GuildMutationPersistence.Snapshot target)
+        private void AcknowledgeMutations(GuildMutationPersistence.Snapshot before, GuildMutationPersistence.Snapshot target, GuildMutationPersistence.Snapshot intent)
         {
+            if (this is Guild achievementGuild) achievementGuild.AcknowledgeAchievementMutations(before.Achievements ?? [], intent.Achievements, target.Achievements);
             // Accepted disband already captured every retained member for its cleanup.
             if (!IsDisbandAccepted) CaptureMutationPublications(before, target);
             if (LeaderId == target.Leader) saveMask &= ~GuildBaseSaveMask.LeaderId;

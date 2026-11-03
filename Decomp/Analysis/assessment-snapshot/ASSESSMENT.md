@@ -1,5 +1,14 @@
 # NexusForever fork assessment
 
+[Guild achievement recovery](../GUILD_DISBAND_RECOVERY.md#guild-achievement-recovery-verified) retains guild-owned achievements with their original parent through failed,
+rolled-back and uncertain saves, including achievement-only periodic saves and
+first creation. Progress and reserved realm-first announcements wait for confirmed
+persistence and retain immutable retry order. All21 new/439 affected,22 MySQL and
+**11,752 full tests** pass; build/reviews and6,219-input/11-DLL bindings verify.
+Cross-character atomicity, durable realm-first arbitration, plot-backed housing,
+fees, live broker/restart and native/retail gates stay open. Defaults15:1/17:1/no44/
+seven grants and client/CUA stop remain; the Goal is active.
+
 [Guild creation graph recovery](../GUILD_DISBAND_RECOVERY.md#guild-creation-graph-recovery-verified) retains the accepted root/data/rank/member
 create through failed, rolled-back and uncertain saves, preserves later edits and
 defers creation/member publication. Registered actors bind their configured route

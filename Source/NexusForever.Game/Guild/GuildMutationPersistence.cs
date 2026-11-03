@@ -14,12 +14,14 @@ namespace NexusForever.Game.Guild
         internal sealed record Rank(byte Index, string Name, uint Permission, ulong Bank, ulong Money, ulong Repair);
         internal sealed record Member(ulong Character, byte Rank, string Note, int Plot);
         internal sealed record Data(string Motd, string Info, ushort Background, ushort Foreground, ushort Scan);
-        internal sealed record Snapshot(ulong? Leader, uint Flags, Rank[] Ranks, Member[] Members, Data Data);
+        internal sealed record Achievement(ushort Id, uint Progress, uint Credited, DateTime? Completed);
+        internal sealed record Snapshot(ulong? Leader, uint Flags, Rank[] Ranks, Member[] Members, Data Data, Achievement[] Achievements);
         internal sealed record CreationHeader(string Name, DateTime Created, DateTime? Deleted, string OriginalName, ulong? OriginalLeader);
-        internal static Snapshot Empty => new(null, 0, [], [], null);
-        private sealed class Unit(CharacterContext context, Snapshot target, Snapshot sql, bool disband, string name, bool ownsName, CreationHeader targetHeader, CreationHeader sqlHeader)
+        internal static Snapshot Empty => new(null, 0, [], [], null, []);
+        private sealed class Unit(CharacterContext context, Snapshot intent, Snapshot target, Snapshot sql, bool disband, string name, bool ownsName, CreationHeader targetHeader, CreationHeader sqlHeader)
         {
             internal readonly CharacterContext Context = context;
+            internal readonly Snapshot Intent = intent;
             internal readonly Snapshot Target = target;
             internal readonly bool Disband = disband;
             internal readonly string Name = name;
@@ -40,11 +42,12 @@ namespace NexusForever.Game.Guild
         private readonly ushort realm;
         private readonly object gate;
         private readonly Func<Snapshot> current;
-        private readonly Action<Snapshot, Snapshot> acknowledge;
+        private readonly Action<Snapshot, Snapshot, Snapshot> acknowledge;
         private readonly HashSet<byte> attemptedRanks = [];
         private readonly HashSet<ulong> attemptedMembers = [];
         private string database;
         private Snapshot baseline;
+        private Snapshot baselineIntent;
         private readonly List<Snapshot> uncertain = [];
         private readonly List<(CreationHeader Header, Snapshot Graph)> possibleCreations = [];
         private bool creationAttempted;
@@ -52,13 +55,13 @@ namespace NexusForever.Game.Guild
         private Unit active;
 
         internal GuildMutationPersistence(GuildBase owner, object gate, Snapshot baseline, string database,
-            Func<Snapshot> current, Action<Snapshot, Snapshot> acknowledge)
+            Func<Snapshot> current, Action<Snapshot, Snapshot, Snapshot> acknowledge)
         {
-            this.owner = owner; this.gate = gate; this.baseline = baseline; this.database = database;
+            this.owner = owner; this.gate = gate; this.baseline = baseline; baselineIntent = baseline; this.database = database;
             this.current = current; this.acknowledge = acknowledge;
             guild = owner.Id; type = (byte)owner.Type; realm = owner.Identity.RealmId;
         }
-        internal bool NeedsSave { get { lock (gate) return active != null || uncertain.Count != 0 || !Equal(current(), baseline); } }
+        internal bool NeedsSave { get { lock (gate) return active != null || uncertain.Count != 0 || !Equal(current(), baselineIntent); } }
         internal bool Owns(CharacterContext context) { lock (gate) return active != null && ReferenceEquals(active.Context, context); }
         internal bool WasRankAttempted(byte index) { lock (gate) return attemptedRanks.Contains(index); }
         internal bool WasMemberAttempted(ulong character) { lock (gate) return attemptedMembers.Contains(character); }
@@ -73,24 +76,27 @@ namespace NexusForever.Game.Guild
         }
         private static bool Equal(Snapshot left, Snapshot right) => ReferenceEquals(left, right) || left != null && right != null
             && left.Leader == right.Leader && left.Flags == right.Flags && left.Data == right.Data
-            && left.Ranks.SequenceEqual(right.Ranks) && left.Members.SequenceEqual(right.Members);
+            && left.Ranks.SequenceEqual(right.Ranks) && left.Members.SequenceEqual(right.Members)
+            && (left.Achievements == null ? right.Achievements == null : right.Achievements != null && left.Achievements.SequenceEqual(right.Achievements));
         internal static Snapshot FromModel(GuildModel model) => new(model.LeaderId, model.Flags,
             model.GuildRank.OrderBy(row => row.Index).Select(row => new Rank(row.Index, row.Name, row.Permission, row.BankWithdrawalPermission, row.MoneyWithdrawalLimit, row.RepairLimit)).ToArray(),
             model.GuildMember.OrderBy(row => row.CharacterId).Select(row => new Member(row.CharacterId, row.Rank, row.Note, row.CommunityPlotReservation)).ToArray(),
-            model.Type == (byte)GuildType.Guild && model.GuildData is {} data ? new(data.MessageOfTheDay, data.AdditionalInfo, data.BackgroundIconPartId, data.ForegroundIconPartId, data.ScanLinesPartId) : null);
+            model.Type == (byte)GuildType.Guild && model.GuildData is {} data ? new(data.MessageOfTheDay, data.AdditionalInfo, data.BackgroundIconPartId, data.ForegroundIconPartId, data.ScanLinesPartId) : null,
+            model.Type == (byte)GuildType.Guild ? model.Achievement.OrderBy(row => row.AchievementId)
+                .Select(row => new Achievement(row.AchievementId, row.ProgressState, row.CreditedChecklistMask, row.DateCompleted)).ToArray() : null);
         internal static Snapshot Read(CharacterContext context, ulong guild, byte type, Func<GuildModel, bool> acceptedTombstone = null, bool allowAbsent = false)
         {
             GuildModel header = context.Guild.AsNoTracking().SingleOrDefault(row => row.Id == guild);
             if (header == null)
             {
                 if (!allowAbsent || context.GuildRank.Any(row => row.Id == guild) || context.GuildMember.Any(row => row.Id == guild)
-                    || context.GuildData.Any(row => row.Id == guild))
+                    || context.GuildData.Any(row => row.Id == guild) || context.GuildAchievement.Any(row => row.Id == guild))
                     throw new InvalidOperationException("Guild creation lost its complete absent graph.");
                 return null;
             }
             if (header.Type != type || header.DeleteTime != null && acceptedTombstone?.Invoke(header) != true)
                 throw new InvalidOperationException("Guild mutations lost their original active guild row.");
-            if (allowAbsent && type != (byte)GuildType.Guild && context.GuildData.Any(row => row.Id == guild))
+            if (allowAbsent && type != (byte)GuildType.Guild && (context.GuildData.Any(row => row.Id == guild) || context.GuildAchievement.Any(row => row.Id == guild)))
                 throw new InvalidOperationException("Non-guild creation has an unexpected guild data row.");
             return new(header.LeaderId, header.Flags,
                 context.GuildRank.AsNoTracking().Where(row => row.Id == guild).OrderBy(row => row.Index)
@@ -98,12 +104,16 @@ namespace NexusForever.Game.Guild
                 context.GuildMember.AsNoTracking().Where(row => row.Id == guild)
                     .Select(row => new Member(row.CharacterId, row.Rank, row.Note, row.CommunityPlotReservation)).ToArray().OrderBy(row => row.Character).ToArray(),
                 type == (byte)GuildType.Guild ? context.GuildData.AsNoTracking().Where(row => row.Id == guild)
-                    .Select(row => new Data(row.MessageOfTheDay, row.AdditionalInfo, row.BackgroundIconPartId, row.ForegroundIconPartId, row.ScanLinesPartId)).SingleOrDefault() : null);
+                    .Select(row => new Data(row.MessageOfTheDay, row.AdditionalInfo, row.BackgroundIconPartId, row.ForegroundIconPartId, row.ScanLinesPartId)).SingleOrDefault() : null,
+                type == (byte)GuildType.Guild ? context.GuildAchievement.AsNoTracking().Where(row => row.Id == guild)
+                    .Select(row => new Achievement(row.AchievementId, row.ProgressState, row.CreditedChecklistMask, row.DateCompleted))
+                    .ToArray().OrderBy(row => row.Id).ToArray() : null);
         }
         private void RequireOwner(CharacterContext context)
         {
             if (owner.Id != guild || (byte)owner.Type != type || owner.Identity.RealmId != realm || context.IsSaveRejected)
                 throw new InvalidOperationException("Guild mutations lost their original actor or fresh context.");
+            if (owner is Guild achievementOwner) achievementOwner.RequireCurrentAchievementOwner();
             database ??= CharacterDatabaseIdentity.Get(context);
             CharacterDatabaseIdentity.Require(context, database);
         }
@@ -146,7 +156,7 @@ namespace NexusForever.Game.Guild
                     if (creating ? actual != null && !possibleCreations.Any(value => value.Header == sqlHeader && Equal(value.Graph, actual))
                         : !Equal(actual, baseline) && !uncertain.Any(value => Equal(value, actual)))
                         throw new InvalidOperationException("Guild mutations changed outside their loaded or retained SQL outcomes.");
-                    var unit = new Unit(context, target, actual, disband,
+                    var unit = new Unit(context, target, StoredTarget(context, target), actual, disband,
                         creating ? sqlHeader?.Name : context.Guild.AsNoTracking().Where(row => row.Id == guild).Select(row => row.Name).Single(),
                         creating || owner.OwnsMutationNameWrite(context), creating ? owner.CaptureCreationHeader() : null, sqlHeader);
                     lock (leaseGate)
@@ -163,10 +173,25 @@ namespace NexusForever.Game.Guild
                     foreach (Rank rank in target.Ranks) attemptedRanks.Add(rank.Index);
                     foreach (Member member in target.Members) attemptedMembers.Add(member.Character);
                     if (creating) StageCreationHeader(unit);
-                    Stage(unit, actual ?? Empty, target, !creating);
+                    Stage(unit, actual ?? Empty, unit.Target, !creating);
                 }
                 catch (Exception error) { context.RejectSave(error); throw; }
             }
+        }
+        private Snapshot StoredTarget(CharacterContext context, Snapshot intent)
+        {
+            if (intent.Achievements == null || !context.Database.IsMySql()) return intent;
+            return intent with { Achievements = intent.Achievements.Select(row =>
+            {
+                if (row.Completed is not DateTime instant) return row;
+                Achievement original = baselineIntent?.Achievements?.SingleOrDefault(value => value.Id == row.Id);
+                Achievement stored = baseline?.Achievements?.SingleOrDefault(value => value.Id == row.Id);
+                if (original != null && stored != null && original.Completed == row.Completed)
+                    return row with { Completed = stored.Completed };
+                DateTime projected = instant.Ticks % TimeSpan.TicksPerSecond == 0 ? instant
+                    : context.Database.SqlQueryRaw<DateTime>("SELECT CAST({0} AS DATETIME) AS Value", instant).AsEnumerable().Single();
+                return row with { Completed = projected };
+            }).ToArray() };
         }
         private void StageCreationHeader(Unit unit)
         {
@@ -202,7 +227,15 @@ namespace NexusForever.Game.Guild
                 Member old = before.Members.SingleOrDefault(row => row.Character == character), next = after.Members.SingleOrDefault(row => row.Character == character);
                 if (old != next) Write(unit, MemberModel(old), MemberModel(next), [nameof(GuildMemberModel.Rank), nameof(GuildMemberModel.Note), nameof(GuildMemberModel.CommunityPlotReservation)]);
             }
+            foreach (ushort id in (before.Achievements ?? []).Select(row => row.Id).Union((after.Achievements ?? []).Select(row => row.Id)))
+            {
+                Achievement old = before.Achievements?.SingleOrDefault(row => row.Id == id), next = after.Achievements?.SingleOrDefault(row => row.Id == id);
+                if (old != next) Write(unit, AchievementModel(old), AchievementModel(next),
+                    [nameof(GuildAchievementModel.ProgressState), nameof(GuildAchievementModel.CreditedChecklistMask), nameof(GuildAchievementModel.DateCompleted)]);
+            }
         }
+        private GuildAchievementModel AchievementModel(Achievement value) => value == null ? null : new() { Id = guild,
+            AchievementId = value.Id, ProgressState = value.Progress, CreditedChecklistMask = value.Credited, DateCompleted = value.Completed };
         private GuildDataModel DataModel(Data value) => value == null ? null : new() { Id = guild, MessageOfTheDay = value.Motd,
             AdditionalInfo = value.Info, BackgroundIconPartId = value.Background, ForegroundIconPartId = value.Foreground, ScanLinesPartId = value.Scan };
         private GuildRankModel RankModel(Rank value) => value == null ? null : new() { Id = guild, Index = value.Index, Name = value.Name,
@@ -271,6 +304,12 @@ namespace NexusForever.Game.Guild
                 GuildDataModel row = entry.Entity;
                 ReadOnly(entry, unit.Sql?.Data == new Data(row.MessageOfTheDay, row.AdditionalInfo, row.BackgroundIconPartId, row.ForegroundIconPartId, row.ScanLinesPartId));
             }
+            foreach (var entry in unit.Context.ChangeTracker.Entries<GuildAchievementModel>().Where(row => (type == (byte)GuildType.Guild || unit.Creating) && row.Entity.Id == guild))
+            {
+                GuildAchievementModel row = entry.Entity;
+                ReadOnly(entry, unit.Sql?.Achievements?.SingleOrDefault(value => value.Id == row.AchievementId)
+                    == new Achievement(row.AchievementId, row.ProgressState, row.CreditedChecklistMask, row.DateCompleted));
+            }
         }
         private void Validate(Unit unit, CharacterSaveValidationPhase phase)
         {
@@ -322,7 +361,7 @@ namespace NexusForever.Game.Guild
                     if (committed && unit.Flushed && !unit.Context.HasSavepointRollback)
                     {
                         if (unit.Creating) owner.AcknowledgeCreation(unit.TargetHeader, database);
-                        acknowledge(baseline ?? Empty, unit.Target); baseline = unit.Target; uncertain.Clear(); possibleCreations.Clear();
+                        acknowledge(baseline ?? Empty, unit.Target, unit.Intent); baseline = unit.Target; baselineIntent = unit.Intent; uncertain.Clear(); possibleCreations.Clear();
                     }
                     else
                     {

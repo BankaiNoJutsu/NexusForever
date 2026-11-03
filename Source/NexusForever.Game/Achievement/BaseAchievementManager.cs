@@ -19,6 +19,9 @@ namespace NexusForever.Game.Achievement
 
         protected abstract ulong OwnerId { get; }
         protected virtual Func<CharacterContext, bool> CharacterSaveOwner => null;
+        protected virtual object RowMutationGate => null;
+        protected virtual Action RowMutationAdmission => null;
+        protected virtual Action<Achievement<T>> RowOwnerAdmission => null;
         protected Dictionary<ushort, IAchievement> achievements = new();
         private readonly IDisableManager disableManager;
         private readonly IGlobalAchievementManager globalAchievementManager;
@@ -40,7 +43,7 @@ namespace NexusForever.Game.Achievement
         /// <summary>
         /// Initialise a collection of existing achievement database models.
         /// </summary>
-        public void Initialise(IEnumerable<T> models, bool isPlayer)
+        public virtual void Initialise(IEnumerable<T> models, bool isPlayer)
         {
             foreach (T model in models)
             {
@@ -53,7 +56,7 @@ namespace NexusForever.Game.Achievement
                 if (!isPlayer && info.IsPlayerAchievement)
                     throw new DatabaseDataException($"Guild {model.Id} has player achievement {model.AchievementId} stored!");
 
-                var achievement = new Achievement<T>(info, model) { CharacterSaveOwner = CharacterSaveOwner };
+                var achievement = new Achievement<T>(info, model) { CharacterSaveOwner = CharacterSaveOwner, MutationGate = RowMutationGate, MutationAdmission = RowMutationAdmission, OwnerAdmission = RowOwnerAdmission };
                 if (achievement.IsComplete())
                     AchievementPoints += GetAchievementPoints(achievement.Info);
 
@@ -71,7 +74,7 @@ namespace NexusForever.Game.Achievement
         /// <summary>
         /// Returns if the supplied achievement id has been completed.
         /// </summary>
-        public bool HasCompletedAchievement(ushort id)
+        public virtual bool HasCompletedAchievement(ushort id)
         {
             return achievements.TryGetValue(id, out IAchievement achievement) && achievement.IsComplete();
         }
@@ -109,7 +112,7 @@ namespace NexusForever.Game.Achievement
         /// <summary>
         /// Grant achievement by supplied achievement id.
         /// </summary>
-        public void GrantAchievement(ushort id)
+        public virtual void GrantAchievement(ushort id)
         {
             IAchievementInfo info = GetGlobalAchievementManager().GetAchievement(id);
             if (info == null)
@@ -365,11 +368,14 @@ namespace NexusForever.Game.Achievement
         }
 
         protected void BroadcastRealmFirstAchievement(IAchievement achievement, bool isGuildAchievement, string name)
+            => BroadcastRealmFirstAchievement(achievement.Id, isGuildAchievement, name);
+
+        protected void BroadcastRealmFirstAchievement(ushort achievement, bool isGuildAchievement, string name)
         {
             foreach (IPlayer player in playerManager ?? Enumerable.Empty<IPlayer>())
                 player.Session?.EnqueueMessageEncrypted(new ServerRealmFirstAchievement
                 {
-                    AchievementId      = achievement.Id,
+                    AchievementId      = achievement,
                     IsGuildAchievement = isGuildAchievement,
                     Name               = name
                 });
@@ -412,7 +418,7 @@ namespace NexusForever.Game.Achievement
             if (info == null)
                 throw new ArgumentException();
 
-            achievement = new Achievement<T>(OwnerId, info) { CharacterSaveOwner = CharacterSaveOwner };
+            achievement = new Achievement<T>(OwnerId, info) { CharacterSaveOwner = CharacterSaveOwner, MutationGate = RowMutationGate, MutationAdmission = RowMutationAdmission, OwnerAdmission = RowOwnerAdmission };
             achievements.Add(achievement.Id, achievement);
             return achievement;
         }

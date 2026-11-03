@@ -360,3 +360,49 @@ settlement, copied upgrades, distributed/raw-ADO ownership, live broker/restart,
 native gameplay and retail qualification as required by the roadmap. The full
 Goal remains active. Defaults15:1/17:1 and no44/seven baseline grants remain;
 Computer Use/native client launch stay stopped.
+
+
+## Guild achievement recovery verified
+
+Guild-owned achievement rows now join their original guild's complete save graph.
+Public progress/grant producers enroll achievement-only periodic saves; bound
+manager and row saves route through the complete parent. Failed inserts/first
+creates, caller rollback and lost acknowledgement retain accepted rows and later
+edits. Complete tracked/SQL set witnesses, original database routing and stable
+manager/row identity reject foreign intent. Replacement after flush rejects before
+commit and preserves original retry. Raw progress/checklist/completion intent is
+retained. MySQL dates use actual DATETIME CAST conversion; unchanged raw dates
+keep their original stored representation under a different session mode.
+
+Committed guild updates enter the existing publication queue. Retry rebuilds
+fresh packets from frozen values; acknowledged stages stay dequeued. Initial
+packets use the published baseline so later live intent cannot precede older
+queued progress. Realm-first reservations retain original in-memory acceptance
+order and guild name; announcements wait for a confirmed completed row. Accepted
+completion-date edits do not strand a reservation; null completion postpones it.
+Partial socket delivery may repeat on retry; no exactly-once or restart/outbox
+guarantee is made. Existing immediate character-achievement notification remains
+compatible. Cross-character atomicity and durable global realm-first arbitration
+remain open.
+
+All21 new/439 affected and **11,752 full tests** pass, retaining all11,731 prior
+labels. Full build has zero warnings/errors; final Source reviews have zero
+remaining correctness findings and one nonblocking inherited-hook naming advisory.
+Source/Tools bd32a0c5763e45af2242eea01a41dac2dda40666d5bef303584291566bb57ce4 binds
+6,219 inputs/eight reviewed Source paths and11 owner/test/native DLL pairs. All22
+configured MySQL8.4.13 cases pass. The fractional loaded-date seed remains
+SQLite-only because it exceeds the existing MySQL DATETIME precision; two separate
+provider controls verify rounding/truncation, stored baseline stability and
+packet FILETIME. Assertions, replay guards and deadlines were preserved.
+
+Five executed starting failure outcomes and one direct-save positive remain
+retained. Two extended fixture errors (transaction admission and SQL spelling),
+two initial provider fixture errors (synchronous runner return and session
+lifetime), and static review corrections remain distinct. Database source/schema,
+packet layout and entitlement defaults are unchanged. The full build took36.47s,
+full test command711.94s and final provider run166.88s. Receipt and bindings: `artifacts/continuation-20261103/guild-achievement-recovery/verification.json`.
+The owned database process/listener and recorded test/helper generations are
+absent. This is source/private SQLite and configured MySQL model-fixture evidence;
+plot-backed housing, fees, copied upgrades, actual tables, broker/restart,
+sockets/native and retail completeness remain open. Defaults15:1/17:1/no44/seven
+grants and the client/CUA stop remain unchanged. The Goal stays active.

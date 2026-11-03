@@ -24,13 +24,13 @@ namespace NexusForever.Game.Achievement
 
         public uint ProgressCount
         {
-            get => progressState;
+            get { lock (MutationGate ?? this) return progressState; }
             set => SetProgressState(value);
         }
 
         public uint CompletedChecklistMask
         {
-            get => progressState;
+            get { lock (MutationGate ?? this) return progressState; }
             set => SetProgressState(value);
         }
 
@@ -39,11 +39,16 @@ namespace NexusForever.Game.Achievement
 
         public uint CreditedChecklistMask
         {
-            get => creditedChecklistMask;
+            get { lock (MutationGate ?? this) return creditedChecklistMask; }
             set
             {
-                saveMask |= SaveMask.CreditedChecklistMask;
-                creditedChecklistMask = value;
+                lock (MutationGate ?? this)
+                {
+                    MutationAdmission?.Invoke();
+                    OwnerAdmission?.Invoke(this);
+                    saveMask |= SaveMask.CreditedChecklistMask;
+                    creditedChecklistMask = value;
+                }
             }
         }
 
@@ -51,11 +56,16 @@ namespace NexusForever.Game.Achievement
 
         public DateTime? DateCompleted
         {
-            get => dateCompleted;
+            get { lock (MutationGate ?? this) return dateCompleted; }
             set
             {
-                saveMask |= SaveMask.TimeCompleted;
-                dateCompleted = value;
+                lock (MutationGate ?? this)
+                {
+                    MutationAdmission?.Invoke();
+                    OwnerAdmission?.Invoke(this);
+                    saveMask |= SaveMask.TimeCompleted;
+                    dateCompleted = value;
+                }
             }
         }
 
@@ -63,6 +73,21 @@ namespace NexusForever.Game.Achievement
 
         protected SaveMask saveMask;
         internal Func<CharacterContext, bool> CharacterSaveOwner { private get; init; }
+        internal object MutationGate { private get; init; }
+        internal Action MutationAdmission { private get; init; }
+        internal Action<Achievement<T>> OwnerAdmission { private get; init; }
+        internal ulong SaveOwnerId => ownerId;
+
+        internal void AcknowledgeGuild(uint progress, uint credited, DateTime? completed)
+        {
+            lock (MutationGate ?? this)
+            {
+                saveMask &= ~SaveMask.Create;
+                if (progressState == progress) saveMask &= ~SaveMask.ProgressState;
+                if (creditedChecklistMask == credited) saveMask &= ~SaveMask.CreditedChecklistMask;
+                if (dateCompleted == completed) saveMask &= ~SaveMask.TimeCompleted;
+            }
+        }
 
         // this can either be a characterId or guildId depending on the achievement type
         private readonly ulong ownerId;
@@ -92,7 +117,24 @@ namespace NexusForever.Game.Achievement
 
         public void Save(CharacterContext context)
         {
-            if (CharacterSaveOwner?.Invoke(context) == true) return;
+            // Character delegation already owns the player's persistence gate.
+            // Do not acquire a row monitor before entering that original owner.
+            if (MutationGate == null)
+            {
+                if (CharacterSaveOwner?.Invoke(context) == true) return;
+            }
+            else
+            {
+                try
+                {
+                    lock (MutationGate)
+                    {
+                        OwnerAdmission?.Invoke(this);
+                        if (CharacterSaveOwner?.Invoke(context) == true) return;
+                    }
+                }
+                catch (Exception error) { context.RejectSave(error); throw; }
+            }
             if (saveMask == SaveMask.None)
                 return;
 
@@ -168,8 +210,13 @@ namespace NexusForever.Game.Achievement
 
         private void SetProgressState(uint value)
         {
-            saveMask |= SaveMask.ProgressState;
-            progressState = value;
+            lock (MutationGate ?? this)
+            {
+                MutationAdmission?.Invoke();
+                OwnerAdmission?.Invoke(this);
+                saveMask |= SaveMask.ProgressState;
+                progressState = value;
+            }
         }
     }
 }

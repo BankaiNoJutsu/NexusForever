@@ -8,22 +8,35 @@ namespace NexusForever.Game.Guild
     {
         private abstract record GuildPublication
         {
-            internal abstract object Build();
+            internal abstract Task Publish(GuildBase owner);
         }
         private sealed record GuildCreatedPublication(ulong Guild, GuildType Type) : GuildPublication
         {
-            internal override object Build() => new GuildCreatedMessage { GuildId = Guild, Type = Type };
+            internal override Task Publish(GuildBase owner) => owner.messagePublisher.PublishAsync(new GuildCreatedMessage { GuildId = Guild, Type = Type });
         }
         private sealed record MemberPublication(ulong Guild, GuildType Type, ushort Realm, ulong Character,
             byte? Rank, GuildRankPermission Permissions, bool Added) : GuildPublication
         {
-            internal override object Build() => !Rank.HasValue ? new GuildMemberRemovedMessage { GuildId = Guild, Type = Type,
+            internal override Task Publish(GuildBase owner) => owner.messagePublisher.PublishAsync(Build());
+            private object Build() => !Rank.HasValue ? new GuildMemberRemovedMessage { GuildId = Guild, Type = Type,
                 Member = new() { Id = Character, RealmId = Realm } }
                 : Added ? new GuildMemberAddedMessage { GuildId = Guild, Type = Type,
                     Member = new() { Id = Character, RealmId = Realm }, Rank = Rank.Value, Permissions = Permissions }
                 : new GuildMemberRankUpdatedMessage { GuildId = Guild, Type = Type,
                     Member = new() { Id = Character, RealmId = Realm }, Rank = Rank.Value, Permissions = Permissions };
         }
+        private sealed record AchievementPublication(Achievement.GuildAchievementManager Manager, GuildMutationPersistence.Achievement[] Rows) : GuildPublication
+        {
+            internal override Task Publish(GuildBase owner) { Manager.Publish(Rows); return Task.CompletedTask; }
+        }
+        private sealed record RealmFirstPublication(Achievement.GuildAchievementManager Manager, ushort Id, string Name) : GuildPublication
+        {
+            internal override Task Publish(GuildBase owner) { Manager.PublishRealmFirst(Id, Name); return Task.CompletedTask; }
+        }
+        internal void EnqueueAchievementUpdate(Achievement.GuildAchievementManager manager, GuildMutationPersistence.Achievement[] rows)
+            => pendingMutationPublications.Enqueue(new AchievementPublication(manager, rows.ToArray()));
+        internal void EnqueueRealmFirst(Achievement.GuildAchievementManager manager, ushort id, string name)
+            => pendingMutationPublications.Enqueue(new RealmFirstPublication(manager, id, name));
         private readonly Queue<GuildPublication> pendingMutationPublications = new();
         private Task mutationPublication;
         private bool NeedsMutationPublication { get { lock (MutationGate) return pendingMutationPublications.Count != 0; } }
@@ -69,7 +82,7 @@ namespace NexusForever.Game.Guild
                     {
                         if (!pendingMutationPublications.TryPeek(out next)) break;
                     }
-                    await messagePublisher.PublishAsync(next.Build());
+                    await next.Publish(this);
                     lock (MutationGate)
                     {
                         if (!ReferenceEquals(pendingMutationPublications.Peek(), next))

@@ -39,6 +39,7 @@ namespace NexusForever.Game.Guild
         }
         private IGuildStandard standard;
         public IGuildAchievementManager AchievementManager { get; private set; }
+        private GuildAchievementManager achievementSaveOwner;
 
         public string MessageOfTheDay
         {
@@ -100,7 +101,7 @@ namespace NexusForever.Game.Guild
         public override void Initialise(GuildModel model)
         {
             Standard           = new GuildStandard(model.GuildData, gameTableManager);
-            AchievementManager = new GuildAchievementManager(this, model, disableManager, globalAchievementManager, prerequisiteManager, playerManager);
+            AchievementManager = achievementSaveOwner = new GuildAchievementManager(this, model, disableManager, globalAchievementManager, prerequisiteManager, playerManager);
             messageOfTheDay    = model.GuildData.MessageOfTheDay;
             additionalInfo     = model.GuildData.AdditionalInfo;
 
@@ -113,20 +114,30 @@ namespace NexusForever.Game.Guild
         public void Initialise(string name, string leaderRankName, string councilRankName, string memberRankName, IGuildStandard standard)
         {
             Standard           = standard;
-            AchievementManager = new GuildAchievementManager(this, disableManager, globalAchievementManager, prerequisiteManager, playerManager);
+            AchievementManager = achievementSaveOwner = new GuildAchievementManager(this, disableManager, globalAchievementManager, prerequisiteManager, playerManager);
             messageOfTheDay    = "";
             additionalInfo     = "";
 
             Initialise(name, leaderRankName, councilRankName, memberRankName);
         }
 
+        internal void RequireCurrentAchievementOwner() => RequireAchievementOwner(achievementSaveOwner);
+        internal void RequireAchievementOwner(GuildAchievementManager manager)
+        {
+            if (!ReferenceEquals(achievementSaveOwner, manager) || !ReferenceEquals(AchievementManager, manager))
+                throw new InvalidOperationException("Guild lost its original achievement manager.");
+        }
+        internal GuildMutationPersistence.Achievement[] CaptureAchievementMutations()
+        {
+            RequireAchievementOwner(achievementSaveOwner);
+            return achievementSaveOwner.Capture();
+        }
+        internal void AcknowledgeAchievementMutations(GuildMutationPersistence.Achievement[] before, GuildMutationPersistence.Achievement[] intent, GuildMutationPersistence.Achievement[] stored)
+            => achievementSaveOwner.Acknowledge(before, intent, stored);
+
         protected override void Save(CharacterContext context, GuildBaseSaveMask baseSaveMask)
         {
-            if (HasMutationPersistence)
-            {
-                AchievementManager.Save(context);
-                return;
-            }
+            if (HasMutationPersistence) return;
             if ((baseSaveMask & GuildBaseSaveMask.Create) != 0)
             {
                 context.Add(new GuildDataModel

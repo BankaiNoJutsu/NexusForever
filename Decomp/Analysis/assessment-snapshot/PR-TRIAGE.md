@@ -1,5 +1,18 @@
 # Official pull request comparison
 
+[Guild achievement recovery](../GUILD_DISBAND_RECOVERY.md#guild-achievement-recovery-verified) retains guild-owned achievements with their original parent through failed,
+rolled-back and uncertain saves, including achievement-only periodic saves and
+first creation. Progress and reserved realm-first announcements wait for confirmed
+persistence and retain immutable retry order. All21 new/439 affected,22 MySQL and
+**11,752 full tests** pass; build/reviews and6,219-input/11-DLL bindings verify.
+Cross-character atomicity, durable realm-first arbitration, plot-backed housing,
+fees, live broker/restart and native/retail gates stay open. Defaults15:1/17:1/no44/
+seven grants and client/CUA stop remain; the Goal is active.
+
+The current all-state upstream refresh returned no updates; official branch and
+#608/#609 heads match the reviewed revisions. #608 remains source-reconciled;
+#609 is closed unmerged. No upstream PR mutation occurred.
+
 ## 3 November: guild creation graph recovery
 
 The [creation follow-on](../GUILD_DISBAND_RECOVERY.md#guild-creation-graph-recovery-verified)
