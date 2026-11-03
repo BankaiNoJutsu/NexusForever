@@ -1,5 +1,15 @@
 # NexusForever fork assessment
 
+[Guild creation graph recovery](../GUILD_DISBAND_RECOVERY.md#guild-creation-graph-recovery-verified) retains the accepted root/data/rank/member
+create through failed, rolled-back and uncertain saves, preserves later edits and
+defers creation/member publication. Registered actors bind their configured route
+before first save; attempted create/disband resolves SQL before cleanup. Arena
+types now reload correctly. All21 new/245 affected,21 MySQL and **11,731 full tests**
+pass; clean build/reviews and6,218-input/11-DLL bindings verify. Achievement and
+plot-backed housing creation, fee atomicity, broker/restart and native/retail
+qualification remain open. Defaults15:1/17:1/no44/seven grants and client/CUA stop
+remain; the Goal is active and earlier checkpoints retain their own limits.
+
 [Ordinary guild mutation recovery](../GUILD_DISBAND_RECOVERY.md#ordinary-guild-mutations-verified) retains accepted header/data/rank/member
 edits and deletion owners through failed saves, preserves later disband edits and
 publishes committed net member changes through the periodic owner. All30 new/224

@@ -5,6 +5,16 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+[Guild creation graph recovery](GUILD_DISBAND_RECOVERY.md#guild-creation-graph-recovery-verified) retains the accepted root/data/rank/member
+create through failed, rolled-back and uncertain saves, preserves later edits and
+defers creation/member publication. Registered actors bind their configured route
+before first save; attempted create/disband resolves SQL before cleanup. Arena
+types now reload correctly. All21 new/245 affected,21 MySQL and **11,731 full tests**
+pass; clean build/reviews and6,218-input/11-DLL bindings verify. Achievement and
+plot-backed housing creation, fee atomicity, broker/restart and native/retail
+qualification remain open. Defaults15:1/17:1/no44/seven grants and client/CUA stop
+remain; the Goal is active and earlier checkpoints retain their own limits.
+
 [Ordinary guild mutation recovery](GUILD_DISBAND_RECOVERY.md#ordinary-guild-mutations-verified) retains accepted header/data/rank/member
 edits and deletion owners through failed saves, preserves later disband edits and
 publishes committed net member changes through the periodic owner. All30 new/224
@@ -1316,8 +1326,11 @@ solution build/test gate at coherent integration milestones.
    completes the stale index/collision and existing-name/root persistence slice.
    Ordinary header/data/rank/member recovery and committed member publication now
    have the later11,710-full/30-MySQL gate above. Do not repeat these completed
-   integrations. Failed/uncertain whole creation, atomic financial settlement,
-   live broker/restart and broader provider qualification remain separate. Bid, buyout, auction/commodity
+   integrations. Root/data/rank/member creation and attempted-create/disband
+   recovery now have the later11,731-full/21-MySQL gate above. Continue achievement
+   and real plot-backed housing creation/recovery, atomic financial settlement,
+   live broker/restart and broader provider qualification; the complete feature
+   and assessment scope remains open. Bid, buyout, auction/commodity
    expiry/cancellation, posting/fills and whole-Item auction posting now have the
    11,354-case full source/private-SQLite gate above; retain historical failures
    and do not repeat completed integrations. The historical milestone descriptions below

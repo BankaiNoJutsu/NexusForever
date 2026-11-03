@@ -6,17 +6,25 @@ namespace NexusForever.Game.Guild
 {
     public abstract partial class GuildBase
     {
-        private sealed record MemberPublication(ulong Guild, GuildType Type, ushort Realm, ulong Character,
-            byte? Rank, GuildRankPermission Permissions, bool Added)
+        private abstract record GuildPublication
         {
-            internal object Build() => !Rank.HasValue ? new GuildMemberRemovedMessage { GuildId = Guild, Type = Type,
+            internal abstract object Build();
+        }
+        private sealed record GuildCreatedPublication(ulong Guild, GuildType Type) : GuildPublication
+        {
+            internal override object Build() => new GuildCreatedMessage { GuildId = Guild, Type = Type };
+        }
+        private sealed record MemberPublication(ulong Guild, GuildType Type, ushort Realm, ulong Character,
+            byte? Rank, GuildRankPermission Permissions, bool Added) : GuildPublication
+        {
+            internal override object Build() => !Rank.HasValue ? new GuildMemberRemovedMessage { GuildId = Guild, Type = Type,
                 Member = new() { Id = Character, RealmId = Realm } }
                 : Added ? new GuildMemberAddedMessage { GuildId = Guild, Type = Type,
                     Member = new() { Id = Character, RealmId = Realm }, Rank = Rank.Value, Permissions = Permissions }
                 : new GuildMemberRankUpdatedMessage { GuildId = Guild, Type = Type,
                     Member = new() { Id = Character, RealmId = Realm }, Rank = Rank.Value, Permissions = Permissions };
         }
-        private readonly Queue<MemberPublication> pendingMutationPublications = new();
+        private readonly Queue<GuildPublication> pendingMutationPublications = new();
         private Task mutationPublication;
         private bool NeedsMutationPublication { get { lock (MutationGate) return pendingMutationPublications.Count != 0; } }
         private void CaptureMutationPublications(GuildMutationPersistence.Snapshot before, GuildMutationPersistence.Snapshot after)
@@ -29,7 +37,7 @@ namespace NexusForever.Game.Guild
                     : (GuildRankPermission)after.Ranks.Single(row => row.Index == next.Rank).Permission;
                 bool changed = old == null || next == null || old.Rank != next.Rank
                     || before.Ranks.Single(row => row.Index == old.Rank).Permission != (uint)permissions;
-                if (changed) pendingMutationPublications.Enqueue(new(Id, Type, Identity.RealmId, character, next?.Rank, permissions, old == null));
+                if (changed) pendingMutationPublications.Enqueue(new MemberPublication(Id, Type, Identity.RealmId, character, next?.Rank, permissions, old == null));
             }
         }
         private void PublishMemberMutation(object message)
@@ -56,7 +64,7 @@ namespace NexusForever.Game.Guild
             {
                 while (true)
                 {
-                    MemberPublication next;
+                    GuildPublication next;
                     lock (MutationGate)
                     {
                         if (!pendingMutationPublications.TryPeek(out next)) break;

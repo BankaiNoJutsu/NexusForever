@@ -1,5 +1,17 @@
 # Destination configured-provider qualification
 
+[Guild creation graph recovery](GUILD_DISBAND_RECOVERY.md#guild-creation-graph-recovery-verified)
+passes all21 configured MySQL8.4.13 cases in one run on the verified owned fixture.
+Root/data/rank/member writes, lost acknowledgement, later edits, attempted-create/
+disband, immutable publication, route pinning, data absence and seven root types
+use unchanged assertions/deadlines. Primary connection/disposal, three trigger
+spellings and local namespaces differ; foreign routes stay private SQLite. All21
+new/245 affected and11,731 full tests pass; clean build/reviews and11 owner/test/
+native DLL pairs verify. The owned server/listener and recorded workloads are
+absent. Database source/model/schema/migrations and packages did not change.
+Community coverage is root-only; achievement, real plot-backed housing, fees,
+copied upgrades, broker/restart and native/retail qualification remain open.
+
 [Ordinary guild mutation recovery](GUILD_DISBAND_RECOVERY.md#ordinary-guild-mutations-verified)
 passes30 unchanged-assertion MySQL8.4.13 cases on the verified owned fixture,
 including late-disband recovery, direct-child route ownership and guarded member

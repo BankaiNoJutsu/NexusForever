@@ -277,3 +277,86 @@ delivery, native gameplay or retail completeness. Defaults15:1/17:1 and no44/sev
 baseline grants are preserved; CUA/native client stay stopped. Continue independent
 broader feature/upstream work when its evidence permits, retaining the whole-create
 and external qualification requirements in the roadmap.
+
+
+## Guild creation graph recovery: verified
+
+Scope: the original guild root, ordinary Guild data, ranks and members created
+through real GlobalGuildManager registration, initial public JoinGuild and the
+periodic save owner. This closes their first-create recovery gap after209d41c1.
+Guild achievements, real plot-backed residence creation, fee/Character/Auth/guild
+financial atomicity and external/runtime/retail requirements remain unfinished.
+
+The retained baseline executes five failures and one unedited complete-create
+control against unchanged production DLLs. Creation/member messages publish before
+SQL; rollback consumes creation intent; initial data edits attach a duplicate data
+model; direct member writes omit the parent; and first registration lacks a bound
+configured database. Evidence: baseline-binding.json and before-with-control.trx
+under `artifacts/continuation-20261103/guild-creation-recovery/`.
+
+Creation now uses the same original-guild coordinator as ordinary mutation saves.
+An absent baseline owns the complete immutable header and root/data/rank/member
+target. Unknown outcomes retain complete header/graph possibilities; a fresh
+original-route context must prove absence or an exact retained result. Foreign or
+partial outcomes reject without adopting or deleting them. Caller rollback and
+same-context frozen resave retain the original actor and later accepted edits.
+Direct rank/member saves enroll their complete original parent. Registered actors
+bind the actual configured Character database before first save.
+
+The writer keeps explicit primary keys stable, including rank zero despite its
+generated-default model metadata. The initial guard diagnostic and failed
+candidate remain retained; this correction does not change model/default/DDL.
+Preflush guards reject extra owned tracked rows. Non-Guild creation proves Guild
+data absence in both tracking and SQL, including uncertain existing outcomes;
+loaded non-Guild stray-data ownership is unchanged. The review counterexample is
+retained as review-before.trx. A separate unknown-outcome control confirms foreign
+data remains untouched until explicit private-fixture repair permits resolution.
+
+Only confirmed complete creation clears create masks and establishes the name
+baseline. Immutable creation publication precedes initial member additions; retry
+rebuilds payloads and does not repeat confirmed parent SQL. Later names/data/rank/
+member edits survive the first commit and preserve name aliases until their next
+verified save. No broker/outbox/restart or exactly-once delivery claim follows.
+
+Never-enrolled create/disband retains its established cancellation path. Attempted
+or uncertain creation first resolves the active root, then archives it in a fresh
+SQL unit before cleanup or actor/name retirement. A generated-default name column
+cannot express the existing NULL-name tombstone with the same INSERT semantics.
+The two units retain the actor on failure; they do not claim financial or housing
+atomicity. Arena reload restores Type from GuildModel before base initialization,
+fixing three executed None-type failures. All seven supported root types reload
+with their original type/member limits; Community fixtures deliberately provide
+no plot-backed residence.
+
+The extended19-case candidate retained15 passes and four actual failures: three
+arena reloads and one attempted-create archive with no prior SQL row. The corrected
+fixture uses a fresh runtime manager for reload. A local-variable shadow compile
+error is retained separately. Together with the initial five and review one, ten
+failing outcomes are retained, not ten independent feature claims. No assertions
+or deadlines were relaxed.
+
+Final result: **11,731 full tests**, zero failures/skips, including all21 new/245
+affected labels and every prior11,710 label. Full build has zero warnings/errors
+in29.84 seconds; full test command takes726.75 seconds. Both Source
+review axes have zero remaining findings. Source/Tools SHA256
+`09d6c119e4448b3c14dd212ffedd8c2792b3d27ccf4b063ccfe30855fa016f9a` covers6,218 inputs;
+review patch `551b50c380e270ffc9f71af39766b5673acd261580e5ec60f0f79b06ea96523f`. Eleven
+owner/test-copy pairs and the frozen test assembly verify. Database source, model,
+schema, migrations, package versions and entitlement defaults did not change.
+
+All21 configured MySQL8.4.13 cases pass in161.49 seconds in one run with
+the same production DLLs and source assertions/deadlines. Primary connection and
+disposal, three SQLite-trigger spellings and local namespaces are overlaid;
+foreign-route controls retain private SQLite. The runner preserves bool/enum
+InlineData values and uses fresh disposable fixtures. Configured-strategy explicit
+transactions reject gameplay replay. Engine hash, process generation, loopback
+port and SQL datadir/version bind the owned fixture. Its server/listener and all
+recorded workload generations are absent after validation; original data/configs
+are preserved. verification.json links full/affected TRX, initial/correction
+failures, reviews and source/binary/provider bindings.
+
+Continue achievement and actual residence creation/recovery, complete financial
+settlement, copied upgrades, distributed/raw-ADO ownership, live broker/restart,
+native gameplay and retail qualification as required by the roadmap. The full
+Goal remains active. Defaults15:1/17:1 and no44/seven baseline grants remain;
+Computer Use/native client launch stay stopped.

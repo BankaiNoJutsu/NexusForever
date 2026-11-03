@@ -1,3 +1,4 @@
+using NexusForever.Database.Character.Model;
 ﻿using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
@@ -38,6 +39,14 @@ namespace NexusForever.Game.Guild
         }
 
         #endregion
+
+        public override void Initialise(GuildModel model)
+        {
+            type = (GuildType)model.Type;
+            if (type is not (GuildType.ArenaTeam2v2 or GuildType.ArenaTeam3v3 or GuildType.ArenaTeam5v5))
+                throw new InvalidOperationException("Arena team model has an invalid type.");
+            base.Initialise(model);
+        }
 
         /// <summary>
         /// Create a new <see cref="IArenaTeam"/> using supplied parameters.

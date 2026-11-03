@@ -219,7 +219,7 @@ namespace NexusForever.Game.Guild
         {
             try
             {
-                bool unpersisted = deleting && guild.PendingCreate;
+                bool unpersisted = deleting && guild.CanCancelUnpersistedCreation;
                 if (unpersisted && guild is Community cancelledCommunity)
                     cancelledCommunity.CancelUnpersistedDisband();
                 while (!unpersisted)
@@ -232,9 +232,10 @@ namespace NexusForever.Game.Guild
                         else
                             guild.Save(context);
                     });
-                    if (previous == null)
+                    if (previous != null)
+                        await previous;
+                    else if (!deleting || guild.DisbandSaveCommitted)
                         break;
-                    await previous;
                 }
                 await guild.PublishMutationsAsync();
                 if (deleting)
@@ -359,6 +360,11 @@ namespace NexusForever.Game.Guild
                 if (guildNameCache.ContainsKey((type, name)))
                     throw new InvalidOperationException("The guild name is already reserved.");
                 IGuildBase baseGuild = guildFactory.CreateGuild(type, name, leaderRankName, councilRankName, memberRankName, standard);
+                if (baseGuild is GuildBase concrete && databaseManager?.GetDatabase<CharacterDatabase>() is {} database)
+                {
+                    using CharacterContext context = database.CreateContext();
+                    concrete.BindCreationDatabase(context);
+                }
                 guilds.Add(baseGuild.Id, baseGuild);
                 guildNameCache.Add((baseGuild.Type, baseGuild.Name), baseGuild.Id);
                 return baseGuild;

@@ -1,5 +1,17 @@
 # Official pull request comparison
 
+## 3 November: guild creation graph recovery
+
+The [creation follow-on](../GUILD_DISBAND_RECOVERY.md#guild-creation-graph-recovery-verified)
+retains root/data/rank/member creates and publishes only after verified commit.
+Arena teams also restore their stored type on reload. All21 new/245 affected,
+21 MySQL and11,731 full tests pass; build/reviews and final bindings verify.
+Achievement/housing creation, financial, broker/restart and native/retail limits
+remain. The all-state primary GitHub query
+`repo:NexusForever/NexusForever updated:>=2026-11-03T01:50:00Z` returned no updates.
+Unchanged reviewed #608/#609 and branch heads are reused; no upstream mutation
+occurred. Receipt: `guild-creation-recovery/upstream-refresh.json`.
+
 ## 3 November: ordinary guild recovery and upstream boundary
 
 The [ordinary guild follow-on](../GUILD_DISBAND_RECOVERY.md#ordinary-guild-mutations-verified)

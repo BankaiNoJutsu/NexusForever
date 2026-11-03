@@ -44,6 +44,23 @@ namespace NexusForever.Game.Guild
         internal bool MatchesMutationTombstone(GuildModel row) => pendingDisband != null
             && row.DeleteTime == pendingDisband.DeletedAt && row.Name == null && row.LeaderId == null
             && row.OriginalName == pendingDisband.Name && row.OriginalLeaderId == pendingDisband.LeaderId;
+        internal bool CanCancelUnpersistedCreation
+        {
+            get { lock (MutationGate) return IsDisbandAccepted && PendingCreate && mutationPersistence?.CreationAttempted != true; }
+        }
+        internal void BindCreationDatabase(CharacterContext context) => mutationPersistence?.RequireOriginalDatabase(context);
+        internal bool DisbandSaveCommitted => pendingDisband?.Committed == true;
+        internal ulong? CreationLeader => pendingDisband != null ? pendingDisband.LeaderId : LeaderId;
+        internal GuildMutationPersistence.CreationHeader CaptureCreationHeader()
+            => new(pendingDisband != null ? pendingDisband.Name : Name, CreateTime, null, null, null);
+        internal void AcknowledgeCreation(GuildMutationPersistence.CreationHeader header, string database)
+        {
+            saveMask &= ~GuildBaseSaveMask.Create;
+            if (StringComparer.Ordinal.Equals(Name, header.Name)) saveMask &= ~GuildBaseSaveMask.Name;
+            namePersistence ??= new GuildNamePersistence(this, header.Name, database, savedName => globalGuildManager?.GuildNameSaved(this, savedName));
+            if (!IsDisbandAccepted) pendingMutationPublications.Enqueue(new GuildCreatedPublication(Id, Type));
+            if (!IsDisbandAccepted) globalGuildManager?.GuildNameSaved(this, header.Name);
+        }
         private void InitialiseMutations(GuildMutationPersistence.Snapshot baseline, string database)
         {
             mutationPersistence = new(this, MutationGate, baseline, database, CaptureMutations, AcknowledgeMutations);

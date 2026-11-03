@@ -187,17 +187,12 @@ namespace NexusForever.Game.Guild
             };
             Name       = guildName;
             Flags      = GuildFlag.None;
-            CreateTime = DateTime.UtcNow;
+            CreateTime = new DateTime(DateTime.UtcNow.Ticks / TimeSpan.TicksPerSecond * TimeSpan.TicksPerSecond, DateTimeKind.Utc);
 
             InitialiseRanks(leaderRankName, councilRankName, memberRankName);
 
-            messagePublisher.PublishAsync(new GuildCreatedMessage
-            {
-                GuildId = Id,
-                Type    = Type
-            }).FireAndForgetAsync();
-
             saveMask = GuildBaseSaveMask.Create;
+            InitialiseMutations(null, null);
         }
 
         protected virtual void InitialiseRanks(string leaderRankName, string councilRankName, string memberRankName)
@@ -230,7 +225,15 @@ namespace NexusForever.Game.Guild
                     return;
                 }
                 if (pendingDisband != null && PendingCreate)
-                    return; // A never-enrolled create/disband is canceled by the global manager.
+                {
+                    if (CanCancelUnpersistedCreation) return;
+                    // Resolve the attempted create before archiving it. Inserting
+                    // NULL into the generated-default name column is not equivalent
+                    // to the existing tombstone UPDATE.
+                    mutationPersistence.Save(context);
+                    Save(context, GuildBaseSaveMask.None);
+                    return;
+                }
                 if (pendingDisband != null)
                     lock (pendingDisband.Contexts)
                         if (pendingDisband.Contexts.Contains(context))
