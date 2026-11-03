@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
+using NexusForever.Game.Achievement;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Quest;
 
@@ -40,13 +41,15 @@ namespace NexusForever.Game.Entity
             internal IDisposable Scope;
             internal bool Flushed;
             internal EventHandler<SavedChangesEventArgs> OnFlushed;
+            internal RealmFirstPersistence.Save[] Claims = [];
         }
         private readonly object gate = new();
         private static readonly object leaseGate = new();
         private static readonly Dictionary<(string, ulong), Unit> leases = [];
         private readonly ulong character;
         private readonly Func<Snapshot> current;
-        private readonly Action<Achievement[], Achievement[], Achievement[]> acknowledgeAchievements;
+        private readonly Action<Achievement[], Achievement[], RealmFirstPersistence.Claim[]> acknowledgeAchievements;
+        private readonly RealmFirstPersistence realmFirst;
         private readonly bool ownsExperience, ownsPaths, ownsSpells, ownsPets, ownsAchievements, ownsDatacubes, ownsArchive, ownsMaps, ownsReputations;
         private string database;
         private Snapshot baseline;
@@ -55,10 +58,12 @@ namespace NexusForever.Game.Entity
         private Unit active;
 
         internal ExperiencePersistence(ulong character, Snapshot baseline, Func<Snapshot> current, string database,
-            Action<Achievement[], Achievement[], Achievement[]> acknowledgeAchievements = null)
+            Action<Achievement[], Achievement[], RealmFirstPersistence.Claim[]> acknowledgeAchievements = null,
+            RealmFirstPersistence realmFirst = null)
         {
             this.character = character; this.baseline = baseline; this.current = current; this.database = database;
             this.acknowledgeAchievements = acknowledgeAchievements;
+            this.realmFirst = realmFirst;
             baselineIntent = baseline;
             ownsExperience = baseline.Experience != null; ownsPaths = baseline.Selection != null;
             ownsSpells = baseline.Spells != null; ownsPets = baseline.Pets != null; ownsAchievements = baseline.Achievements != null;
@@ -111,7 +116,8 @@ namespace NexusForever.Game.Entity
                     Snapshot target = StoredTarget(context, intent);
                     if (active != null && (!ReferenceEquals(active.Context, context) || !ReferenceEquals(active.Token, frozen?.Token)))
                         throw new InvalidOperationException("Experience belongs to an unfinished save unit.");
-                    if (active == null && uncertain == null && Equal(target, baseline)) return;
+                    if (active == null && uncertain == null && Equal(target, baseline)
+                        && realmFirst?.HasPendingFor((target.Achievements ?? []).Where(row => row.Completed != null).Select(row => row.Id)) != true) return;
                     Unit unit = active;
                     if (unit == null)
                     {
@@ -135,6 +141,7 @@ namespace NexusForever.Game.Entity
                     }
                     foreach (var row in unit.Rows.Values) row.Validate();
                     Stage(unit, unit.Sql, target, unit.Target ?? unit.Sql); unit.Target = target; unit.Intent = intent; unit.Possible.Add(target);
+                    unit.Claims = realmFirst?.Stage(context, (target.Achievements ?? []).Where(row => row.Completed != null).Select(row => row.Id)) ?? [];
                 }
                 catch (Exception error) { context.RejectSave(error); throw; }
             }
@@ -261,7 +268,8 @@ namespace NexusForever.Game.Entity
                 {
                     if (committed && unit.Flushed)
                     {
-                        acknowledgeAchievements?.Invoke(baseline.Achievements ?? [], unit.FlushedIntent.Achievements ?? [], unit.Sql.Achievements ?? []);
+                        var claims = realmFirst?.Acknowledge(unit.Claims) ?? [];
+                        acknowledgeAchievements?.Invoke(baseline.Achievements ?? [], unit.Sql.Achievements ?? [], claims);
                         baseline = unit.Sql; baselineIntent = unit.FlushedIntent; uncertain = null;
                     }
                     else uncertain = (uncertain ?? []).Concat(unit.Possible).Append(baseline).ToList();

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
+using NexusForever.Game.Achievement;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Guild;
@@ -34,6 +35,7 @@ namespace NexusForever.Game.Guild
             internal readonly List<CharacterColumnSaveIntent> Rows = [];
             internal bool Flushed;
             internal EventHandler<SavedChangesEventArgs> OnFlushed;
+            internal RealmFirstPersistence.Save[] Claims = [];
         }
         private static readonly object leaseGate = new();
         private static readonly Dictionary<(string Database, ulong Guild), Unit> leases = [];
@@ -62,7 +64,19 @@ namespace NexusForever.Game.Guild
             this.current = current; this.acknowledge = acknowledge;
             guild = owner.Id; type = (byte)owner.Type; realm = owner.Identity.RealmId;
         }
-        internal bool NeedsSave { get { lock (gate) return active != null || uncertain.Count != 0 || !Equal(current(), baselineIntent); } }
+        internal bool NeedsSave
+        {
+            get
+            {
+                lock (gate)
+                {
+                    if (active != null || uncertain.Count != 0) return true;
+                    Snapshot value = current();
+                    return !Equal(value, baselineIntent) || owner is Guild achievementGuild
+                        && achievementGuild.RealmFirst?.HasPendingFor((value.Achievements ?? []).Where(row => row.Completed != null).Select(row => row.Id)) == true;
+                }
+            }
+        }
         internal bool HasActiveUnit { get { lock (gate) return active != null; } }
         internal bool Owns(CharacterContext context) { lock (gate) return active != null && ReferenceEquals(active.Context, context); }
         internal bool WasRankAttempted(byte index) { lock (gate) return attemptedRanks.Contains(index); }
@@ -177,6 +191,8 @@ namespace NexusForever.Game.Guild
                     foreach (Member member in target.Members) attemptedMembers.Add(member.Character);
                     if (creating) StageCreationHeader(unit);
                     Stage(unit, actual ?? Empty, unit.Target, !creating);
+                    if (owner is Guild achievementGuild)
+                        unit.Claims = achievementGuild.RealmFirst?.Stage(context, (unit.Target.Achievements ?? []).Where(row => row.Completed != null).Select(row => row.Id)) ?? [];
                 }
                 catch (Exception error) { context.RejectSave(error); throw; }
             }
@@ -364,7 +380,9 @@ namespace NexusForever.Game.Guild
                     if (committed && unit.Flushed && !unit.Context.HasSavepointRollback)
                     {
                         if (unit.Creating) owner.AcknowledgeCreation(unit.TargetHeader, database, unit.Target.Leader, unit.Target.Flags);
-                        acknowledge(baseline ?? Empty, unit.Target, unit.Intent); baseline = unit.Target; baselineIntent = unit.Intent; uncertain.Clear(); possibleCreations.Clear();
+                        acknowledge(baseline ?? Empty, unit.Target, unit.Intent);
+                        if (owner is Guild achievementGuild) achievementGuild.AcknowledgeRealmFirst(unit.Claims);
+                        baseline = unit.Target; baselineIntent = unit.Intent; uncertain.Clear(); possibleCreations.Clear();
                     }
                     else
                     {

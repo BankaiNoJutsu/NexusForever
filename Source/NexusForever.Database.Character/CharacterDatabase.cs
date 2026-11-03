@@ -430,6 +430,24 @@ namespace NexusForever.Database.Character
                 .ToHashSet();
         }
 
+        /// <summary>
+        /// Preserve observed historical completions without selecting an owner.
+        /// Each insert is idempotent and must never replace an existing winner.
+        /// </summary>
+        public void PreserveCompletedRealmFirstAchievements(IEnumerable<ushort> characters, IEnumerable<ushort> guilds)
+        {
+            using var context = CreateContext();
+            foreach (var key in characters.Select(id => (Guild: false, Id: id)).Concat(guilds.Select(id => (Guild: true, Id: id))).Distinct())
+            {
+                if (context.Database.IsSqlite())
+                    context.Database.ExecuteSqlInterpolated($"INSERT INTO `realm_first_achievement` (`isGuild`, `achievementId`) VALUES ({key.Guild}, {key.Id}) ON CONFLICT (`isGuild`, `achievementId`) DO NOTHING");
+                else if (context.Database.IsMySql())
+                    context.Database.ExecuteSqlInterpolated($"INSERT INTO `realm_first_achievement` (`isGuild`, `achievementId`) VALUES ({key.Guild}, {key.Id}) ON DUPLICATE KEY UPDATE `achievementId` = `achievementId`");
+                else
+                    throw new InvalidOperationException("Unsupported realm-first history provider.");
+            }
+        }
+
         public List<ChatChannelModel> GetChatChannels()
         {
             using var context = new CharacterContext(config);

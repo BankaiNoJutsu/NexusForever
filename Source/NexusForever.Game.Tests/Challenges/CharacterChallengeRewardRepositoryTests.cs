@@ -406,8 +406,10 @@ public sealed class CharacterChallengeRewardRepositoryTests
         public RecordingDispatchProxy<IGameSession> SessionProxy { get; private set; }
         public RecordingDispatchProxy<IItemManager> ManagerProxy { get; private set; }
         private readonly Dictionary<uint, IItemInfo> infos = [];
-        public Fixture(DbContextOptions<CharacterContext> provider)
+        public Fixture(DbContextOptions<CharacterContext> provider) : this(provider, true) { }
+        internal Fixture(DbContextOptions<CharacterContext> provider, bool seedCharacter)
         {
+            if (!seedCharacter && provider == null) throw new ArgumentException("An attached fixture requires explicit provider options.", nameof(provider));
             Directory.CreateDirectory(directory);
             options = provider ?? new DbContextOptionsBuilder<CharacterContext>().UseSqlite($"Data Source={Path.Combine(directory, "repository.sqlite")};Pooling=False;Default Timeout=10").Options;
             Tables = RecordingDispatchProxy<IGameTableManager>.Create(out var proxy);
@@ -417,8 +419,11 @@ public sealed class CharacterChallengeRewardRepositoryTests
                 .Select(row => new ChallengeEntry { Id = Challenge(row.Id), RewardTrackId = row.Id,
                     ChallengeTierId00 = 1, ChallengeTierId01 = 2, ChallengeTierId02 = 3 }).ToArray()));
             RebuildCatalog();
-            using var context = Context(); context.Database.EnsureCreated();
-            context.Character.Add(new CharacterModel { Id = 42, Name = "Character reward repository" }); context.SaveChanges();
+            if (seedCharacter)
+            {
+                using var context = Context(); context.Database.EnsureCreated();
+                context.Character.Add(new CharacterModel { Id = 42, Name = "Character reward repository" }); context.SaveChanges();
+            }
         }
         public void RebuildCatalog() => Catalog = new(Tables);
         public ushort Challenge(uint track) => checked((ushort)(1000 + track));

@@ -1,5 +1,18 @@
 # Official pull request comparison
 
+[Durable realm-first arbitration](../REALM_FIRST_ARBITRATION.md) passes 16 new/237
+affected and11,970 full cases with a clean build and both Source reviews.
+Final MySQL coverage is 12+1 recovered after a retained disk-full setup failure;
+two independent-process scenarios and controlled copied upgrades pass. Historical
+closure and winner deletion remain safe. See the linked evidence boundaries.
+Companion title publication has a new executed negative; restart/outbox and
+native/retail gates remain open. The Goal stays active; client/CUA remain stopped.
+
+The 3 November 18:36UTC all-state updated-order refresh finds no changed reviewed
+heads or states. #608 remains open at `7db12d9a`; #609 remains closed/unmerged at
+`f9b6f735`. The reconciliation is unchanged; no upstream PR was mutated.
+Evidence: `artifacts/continuation-20261103/realm-first-arbitration/upstream-final-refresh.json`.
+
 [Committed character achievement publication](../CHARACTER_ACHIEVEMENT_PUBLICATION.md) passes23 new/1,121
 affected and11,954 full cases, plus56 fixture/6 warmed-cache passes and
 versioned23+6 provider evidence. This includes the corrected

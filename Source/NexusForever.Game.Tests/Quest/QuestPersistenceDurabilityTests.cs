@@ -370,9 +370,11 @@ public sealed class QuestPersistenceDurabilityTests
         internal readonly IQuestInfo Info;
         internal readonly IGlobalQuestManager Global;
         internal readonly IScriptManager Scripts;
-        internal Fixture(DbContextOptions<CharacterContext> options)
+        internal Fixture(DbContextOptions<CharacterContext> options) : this(new SourceFixture(options)) { }
+        internal Fixture(DbContextOptions<CharacterContext> options, bool seedCharacter) : this(new SourceFixture(options, seedCharacter)) { }
+        private Fixture(SourceFixture source)
         {
-            Source = new(options); PrepareInventory(Source);
+            Source = source; PrepareInventory(Source);
             Info = RecordingDispatchProxy<IQuestInfo>.Create(out var info);
             info.SetProperty(nameof(IQuestInfo.Entry), new Quest2Entry { Id = QuestId });
             info.SetProperty(nameof(IQuestInfo.Objectives), ImmutableList.Create<IQuestObjectiveInfo>(new QuestObjectiveInfo(new QuestObjectiveEntry { Id = 90010, Type = (uint)QuestObjectiveType.CompleteChallenge, Count = 5 })));

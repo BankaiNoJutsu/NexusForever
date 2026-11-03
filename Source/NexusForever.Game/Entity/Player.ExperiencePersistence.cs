@@ -56,7 +56,7 @@ namespace NexusForever.Game.Entity
             experienceSpellOwner = spells; experiencePetOwner = pets; experienceAchievementOwner = achievements;
             experienceDatacubeOwner = cubes; experienceArchiveOwner = archive;
             experienceMapOwner = maps; experienceReputationOwner = reputation;
-            return experiencePersistence = new(owner, baseline, Current, database, achievements == null ? null : achievements.AcknowledgePublication);
+            return experiencePersistence = new(owner, baseline, Current, database, achievements == null ? null : achievements.AcknowledgePublication, achievements?.RealmFirst);
         }
         internal void SaveExperience(CharacterContext context)
         {

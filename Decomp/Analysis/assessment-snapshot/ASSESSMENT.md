@@ -1,5 +1,13 @@
 # NexusForever fork assessment
 
+[Durable realm-first arbitration](../REALM_FIRST_ARBITRATION.md) passes 16 new/237
+affected and11,970 full cases with a clean build and both Source reviews.
+Final MySQL coverage is 12+1 recovered after a retained disk-full setup failure;
+two independent-process scenarios and controlled copied upgrades pass. Historical
+closure and winner deletion remain safe. See the linked evidence boundaries.
+Companion title publication has a new executed negative; restart/outbox and
+native/retail gates remain open. The Goal stays active; client/CUA remain stopped.
+
 [Committed character achievement publication](../CHARACTER_ACHIEVEMENT_PUBLICATION.md) passes23 new/1,121
 affected and11,954 full cases, plus56 fixture/6 warmed-cache passes and
 versioned23+6 provider evidence. This includes the corrected

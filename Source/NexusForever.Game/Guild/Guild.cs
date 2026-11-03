@@ -134,6 +134,15 @@ namespace NexusForever.Game.Guild
         }
         internal void AcknowledgeAchievementMutations(GuildMutationPersistence.Achievement[] before, GuildMutationPersistence.Achievement[] intent, GuildMutationPersistence.Achievement[] stored)
             => achievementSaveOwner.Acknowledge(before, intent, stored);
+        internal RealmFirstPersistence RealmFirst
+        {
+            get { RequireCurrentAchievementOwner(); return achievementSaveOwner?.RealmFirst; }
+        }
+        internal void AcknowledgeRealmFirst(RealmFirstPersistence.Save[] saves)
+        {
+            foreach (var claim in RealmFirst?.Acknowledge(saves) ?? [])
+                EnqueueRealmFirst(achievementSaveOwner, claim.Id, claim.Name);
+        }
 
         protected override void Save(CharacterContext context, GuildBaseSaveMask baseSaveMask)
         {

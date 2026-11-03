@@ -80,6 +80,7 @@ namespace NexusForever.Game.Achievement
                 .Where(IsRealmFirstAchievement));
             completedGuildRealmFirstAchievements.UnionWith(database.GetCompletedGuildAchievementIds()
                 .Where(IsRealmFirstAchievement));
+            database.PreserveCompletedRealmFirstAchievements(completedCharacterRealmFirstAchievements, completedGuildRealmFirstAchievements);
         }
 
         private bool IsRealmFirstAchievement(ushort achievementId)

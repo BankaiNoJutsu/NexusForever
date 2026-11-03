@@ -22,6 +22,28 @@ namespace NexusForever.Database.Character.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("NexusForever.Database.Character.Model.BankReconciliationReceiptModel", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(32)
+                        .HasColumnType("char(32)")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("createdUtc");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("payload");
+
+                    b.HasKey("Id")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("bank_reconciliation_receipt", (string)null);
+                });
+
             modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterAchievementModel", b =>
                 {
                     b.Property<ulong>("Id")
@@ -2670,13 +2692,11 @@ namespace NexusForever.Database.Character.Migrations
             modelBuilder.Entity("NexusForever.Database.Character.Model.GuildRankModel", b =>
                 {
                     b.Property<ulong>("Id")
-                        .ValueGeneratedNever()
                         .HasColumnType("bigint(20) unsigned")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("Index")
-                        .ValueGeneratedNever()
                         .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("index");
@@ -3068,28 +3088,6 @@ namespace NexusForever.Database.Character.Migrations
                     b.HasIndex("ItemId");
 
                     b.ToTable("marketplace_auction", (string)null);
-                });
-
-            modelBuilder.Entity("NexusForever.Database.Character.Model.BankReconciliationReceiptModel", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasMaxLength(32)
-                        .HasColumnType("char(32)")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("createdUtc");
-
-                    b.Property<string>("Payload")
-                        .IsRequired()
-                        .HasColumnType("longtext")
-                        .HasColumnName("payload");
-
-                    b.HasKey("Id")
-                        .HasName("PRIMARY");
-
-                    b.ToTable("bank_reconciliation_receipt", (string)null);
                 });
 
             modelBuilder.Entity("NexusForever.Database.Character.Model.MarketplaceBidReceiptModel", b =>
@@ -3627,6 +3625,35 @@ namespace NexusForever.Database.Character.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("realm_bank_item", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Character.Model.RealmFirstAchievementModel", b =>
+                {
+                    b.Property<bool>("IsGuild")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("isGuild");
+
+                    b.Property<ushort>("AchievementId")
+                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnName("achievementId");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("longtext")
+                        .HasColumnName("name");
+
+                    b.Property<ulong?>("OwnerId")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("ownerId");
+
+                    b.Property<string>("Token")
+                        .HasMaxLength(32)
+                        .HasColumnType("char(32)")
+                        .HasColumnName("token");
+
+                    b.HasKey("IsGuild", "AchievementId")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("realm_first_achievement", (string)null);
                 });
 
             modelBuilder.Entity("NexusForever.Database.Character.Model.ResidenceDecor", b =>

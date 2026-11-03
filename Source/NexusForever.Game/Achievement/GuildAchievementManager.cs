@@ -18,8 +18,7 @@ namespace NexusForever.Game.Achievement
         private readonly IGuild guild;
         protected override ulong OwnerId => guild.Id;
         private readonly Dictionary<ushort, GuildMutationPersistence.Achievement> published = [];
-        private sealed record RealmFirst(ushort Id, string Name);
-        private readonly List<RealmFirst> realmFirst = [];
+        internal RealmFirstPersistence RealmFirst { get; private set; }
         protected override object RowMutationGate => (guild as GameGuild)?.MutationGate;
         protected override Action RowMutationAdmission => RequireEditable;
         protected override Action<Achievement<GuildAchievementModel>> RowOwnerAdmission => RequireRow;
@@ -96,12 +95,6 @@ namespace NexusForever.Game.Achievement
                 ((Achievement<GuildAchievementModel>)achievements[row.Id]).AcknowledgeGuild(row.Progress, row.Credited, row.Completed);
             var updates = stored.Where(row => before.SingleOrDefault(old => old.Id == row.Id) != row).ToArray();
             if (updates.Length != 0) original.EnqueueAchievementUpdate(this, updates);
-            foreach (RealmFirst claim in realmFirst.ToArray())
-                if (intent.Any(row => row.Id == claim.Id && row.Completed != null))
-                {
-                    original.EnqueueRealmFirst(this, claim.Id, claim.Name);
-                    realmFirst.Remove(claim);
-                }
         }
         internal void Publish(GuildMutationPersistence.Achievement[] rows)
         {
@@ -162,10 +155,14 @@ namespace NexusForever.Game.Achievement
         {
             base.CompleteAchievement(achievement);
 
-            if (GetGlobalAchievementManager().TryClaimRealmFirstAchievement(achievement.Info, true))
+            if (achievement.Info.IsRealmFirst)
             {
-                if (OriginalGuild() == null) BroadcastRealmFirstAchievement(achievement, true, guild.Name);
-                else realmFirst.Add(new(achievement.Id, guild.Name));
+                if (OriginalGuild() == null)
+                {
+                    if (GetGlobalAchievementManager().TryClaimRealmFirstAchievement(achievement.Info, true))
+                        BroadcastRealmFirstAchievement(achievement, true, guild.Name);
+                }
+                else (RealmFirst ??= new(true, guild.Id)).Retain(achievement.Id, guild.Name);
             }
         }
 

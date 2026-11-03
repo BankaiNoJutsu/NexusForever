@@ -3349,6 +3349,7 @@ namespace NexusForever.Database.Character
             ConfigureContractRewards(modelBuilder);
             ConfigureMarketplaceBids(modelBuilder);
             ConfigureBankReconciliation(modelBuilder);
+            ConfigureRealmFirst(modelBuilder);
             NexusForever.Database.EntityFramework.DatabaseModelBuilderExtensions.UseProviderCompatibility(modelBuilder, Database.ProviderName);
         }
     }

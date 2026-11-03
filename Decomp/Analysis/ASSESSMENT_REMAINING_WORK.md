@@ -5,6 +5,20 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+[Durable realm-first arbitration](REALM_FIRST_ARBITRATION.md) now commits one
+character/guild announcement claim with its original achievement graph. Competing
+writers, rejected saves, lost acknowledgement, savepoint rollback, historical
+closure and winner deletion preserve one winner and other owners' progress.
+All16 new/237 affected and11,970 full cases pass; build and both Source reviews
+are clear. Final MySQL coverage is 12 passes plus one recovered case after a
+retained disk-full schema-creation failure; two independent-process scenarios
+also pass. The controlled copied upgrade preserves all 65 prior runtime tables
+and uses synthetic history. Final 6,260-input/11-DLL bindings and owned workload
+shutdowns verify. The linked real-Player/title-reward probe reproduces premature
+title publication through a rejected save; companion publication is next.
+Restart/outbox, actual deployment and native/retail qualification remain open.
+Defaults15:1/17:1/no44/seven grants and client/CUA stop remain; the Goal is active.
+
 [Committed character achievement publication](CHARACTER_ACHIEVEMENT_PUBLICATION.md)
 now defers updates/initial visibility and realm-first announcements through the
 original confirmed experience graph and guarded world events. The integration
@@ -1443,8 +1457,9 @@ solution build/test gate at coherent integration milestones.
    11,954-full/23-new/1,121-affected gate linked above, with versioned23+6
    provider evidence and56 fixture/6 warmed-cache passes.
    The initial provider cleanup timeout and guild-key failure remain retained.
-   Next complete durable global realm-first arbitration and companion publication
-   rather than repeating this notification integration.
+   Durable global realm-first arbitration now has the11,970-full gate above.
+   Next complete companion publication, starting from the executed title-reward
+   negative, without repeating the completed arbitration/notification integration.
    Continue the broader economic/progression/gameplay queue without repeating
    completed housing integrations or inventing speculative housing cases. Model
    tests do not qualify retail.

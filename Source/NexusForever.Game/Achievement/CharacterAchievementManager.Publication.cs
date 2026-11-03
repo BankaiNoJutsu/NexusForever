@@ -10,6 +10,7 @@ using NexusForever.Shared.Game.Events;
 using NLog;
 using AchievementRow = NexusForever.Game.Entity.ExperiencePersistence.Achievement;
 using AchievementPacketRow = NexusForever.Network.World.Message.Model.Achievement.Achievement;
+using RealmFirstClaim = NexusForever.Game.Achievement.RealmFirstPersistence.Claim;
 
 namespace NexusForever.Game.Achievement
 {
@@ -18,8 +19,7 @@ namespace NexusForever.Game.Achievement
         private static readonly ILogger publicationLog = LogManager.GetCurrentClassLogger();
         private readonly object publicationGate = new();
         private readonly Dictionary<ushort, AchievementRow> publishedAchievements = [];
-        private sealed record RealmFirstClaim(ushort Id, string Name);
-        private readonly List<RealmFirstClaim> pendingRealmFirst = [];
+        internal RealmFirstPersistence RealmFirst { get; private set; }
         private sealed class Publication(AchievementRow[] rows, RealmFirstClaim[] claims)
         {
             internal readonly AchievementRow[] Rows = rows;
@@ -34,6 +34,7 @@ namespace NexusForever.Game.Achievement
 
         private void InitialisePublication(CharacterModel model)
         {
+            if (owner is Player) RealmFirst = new(false, model.Id);
             publicationSession = owner.Session;
             if (owner.Identity != null) publicationIdentity = new Identity { Id = owner.Identity.Id, RealmId = owner.Identity.RealmId };
             foreach (CharacterAchievementModel row in model.Achievement)
@@ -64,16 +65,13 @@ namespace NexusForever.Game.Achievement
         }
         private void RetainRealmFirst(ushort id, string name)
         {
-            lock (publicationGate) pendingRealmFirst.Add(new(id, name));
+            RealmFirst.Retain(id, name);
         }
-        internal void AcknowledgePublication(AchievementRow[] before, AchievementRow[] intent, AchievementRow[] stored)
+        internal void AcknowledgePublication(AchievementRow[] before, AchievementRow[] stored, RealmFirstClaim[] claims)
         {
             lock (publicationGate)
             {
                 var rows = stored.Where(row => before.SingleOrDefault(old => old.Id == row.Id) != row).ToArray();
-                var claims = pendingRealmFirst.Where(claim => intent.Any(row => row.Id == claim.Id && row.Completed != null)
-                    && stored.Any(row => row.Id == claim.Id && row.Completed != null)).ToArray();
-                foreach (var claim in claims) pendingRealmFirst.Remove(claim);
                 if (rows.Length == 0 && claims.Length == 0) return;
                 publications.Enqueue(new(rows, claims));
                 SchedulePublication();

@@ -136,16 +136,19 @@ namespace NexusForever.Game.Achievement
         {
             base.CompleteAchievement(achievement);
 
+            // Companion callbacks may save synchronously. Enrol the claim before
+            // exposing the completed graph to any of those callbacks.
+            if (achievement.Info.IsRealmFirst && owner is Player)
+                RetainRealmFirst(achievement.Id, owner.Name);
+
             if (achievement.Info.Entry.CharacterTitleId != 0u)
                 owner.TitleManager.AddTitle((ushort)achievement.Info.Entry.CharacterTitleId);
 
             owner.GalacticArchiveManager?.RefreshRuleUnlocks(sendUpdates: true);
 
-            if (GetGlobalAchievementManager().TryClaimRealmFirstAchievement(achievement.Info, false))
-            {
-                if (owner is Player) RetainRealmFirst(achievement.Id, owner.Name);
-                else BroadcastRealmFirstAchievement(achievement, false, owner.Name);
-            }
+            if (achievement.Info.IsRealmFirst && owner is not Player
+                && GetGlobalAchievementManager().TryClaimRealmFirstAchievement(achievement.Info, false))
+                BroadcastRealmFirstAchievement(achievement, false, owner.Name);
         }
 
         protected override void CompleteAchievement(IPlayer target, IAchievement achievement)
