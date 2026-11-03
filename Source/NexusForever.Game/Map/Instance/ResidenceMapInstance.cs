@@ -194,15 +194,23 @@ namespace NexusForever.Game.Map.Instance
 
         private void SendResidences(IPlayer player = null)
         {
-            var housingProperties = new ServerHousingProperties();
-            foreach (IResidence residence in residences.Values)
-                housingProperties.Residences.Add(residence.Build());
+            var housingProperties = BuildProperties();
 
             if (player != null)
                 player.Session.EnqueueMessageEncrypted(housingProperties);
             else
                 EnqueueToAll(housingProperties);
         }
+
+        internal ServerHousingProperties BuildProperties()
+        {
+            var packet = new ServerHousingProperties();
+            foreach (IResidence residence in residences.Values) packet.Residences.Add(residence.Build());
+            return packet;
+        }
+        internal bool ContainsResidence(IResidence residence) => residences.TryGetValue(residence.Id, out var current) && ReferenceEquals(current, residence);
+        internal IPlayer[] CaptureRemodelRecipients() => entities.Values.OfType<IPlayer>().ToArray();
+        internal bool ContainsRemodelRecipient(IPlayer player) => entities.TryGetValue(player.Guid, out var current) && ReferenceEquals(current, player);
 
         private void SendResidence(IResidence residence, IPlayer player = null)
         {
@@ -1051,6 +1059,12 @@ namespace NexusForever.Game.Map.Instance
             if (!residences.TryGetValue(targetResidence.ResidenceId, out IResidence residence)
                 || !residence.CanModifyResidence(player))
                 throw new InvalidPacketValueException();
+
+            if (residence is Residence { HasPersistence: true } registered)
+            {
+                registered.QueueRemodel(this, player, housingRemodel);
+                return;
+            }
 
             if (housingRemodel.RoofDecorInfoId != 0u)
                 residence.Roof = (ushort)housingRemodel.RoofDecorInfoId;

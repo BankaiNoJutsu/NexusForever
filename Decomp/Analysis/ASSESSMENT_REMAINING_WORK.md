@@ -5,6 +5,18 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+[Committed remodel publication](HOUSING_REMODEL_PUBLICATION.md) now retains
+seven cosmetic fields and complete residence persistence through confirmation,
+then applies/publishes on the world update with FIFO requests and guarded
+recipient retries. All 22 new/MySQL and 11,901 full cases pass; all 462 affected
+cases are covered by that full gate. The linked record retains the failed
+affected transfer poll, narrow 2-case pass and its unproven cause. Build/reviews
+and 6,240-input/11-DLL bindings verify. A controlled public placement probe now
+reproduces live association, placement packet and unload request while SQL stays
+old through a rejected save; committed placement is next. External/native/retail
+gates and the broader Goal remain open; defaults 15:1/17:1/no44/seven grants and
+client/CUA stop remain unchanged.
+
 [Community directory recovery](COMMUNITY_DIRECTORY_RECOVERY.md) now refreshes
 confirmed name/search/display metadata, restores settled public model loads,
 queues creation/ordinary-name publication and protects privacy/replacement
@@ -1392,11 +1404,14 @@ solution build/test gate at coherent integration milestones.
    11,854-full/26-MySQL gate linked above; do not repeat that integration.
    Community visitor/search directory recovery now has the later11,879-full/
    25-MySQL gate linked above, including creation, ordinary rename and settled
-   model-load metadata. Do not repeat that integration. Next complete committed
-   remodel publication: the linked real handler/map/Player probe retains SQL
-   music0 through a rejected save while live/broadcast music is already29; normal
-   recovery commits29 after removing the owned trigger. Preserve complete root
-   ownership, permissions and stale-map/session guards. Continue placement and
+   model-load metadata. Do not repeat that integration. Committed remodel
+   publication now has the later11,901-full/22-MySQL gate linked above, including
+   all 462 affected cases in that full run. Retain the earlier transfer timeout;
+   do not repeat the completed remodel integration. Next complete committed
+   placement: the controlled public-flow probe reproduces live guild77/parent100/
+   property100 plus placement packet/unload request while SQL stays unassociated
+   through a rejected save. Preserve original graph/slot ownership, permissions
+   and stale-map/session guards. Physical travel remains unqualified. Continue
    the broader feature queue afterward; model tests do not qualify retail.
    Cross-character notification atomicity, durable realm-first arbitration,
    other atomic financial settlement, live broker/restart and broader

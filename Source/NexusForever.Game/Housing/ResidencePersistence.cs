@@ -85,7 +85,8 @@ namespace NexusForever.Game.Housing
         {
             owner.RequireDonationSave(reservation);
             owner.RequirePaidNameSave(reservation);
-            if (context.IsSaveRejected || !registered() && !owner.OwnsCommunityRetirement(reservation) && !owner.OwnsDonation(reservation) && !owner.OwnsPaidName(reservation))
+            owner.RequireRemodelSave(reservation);
+            if (context.IsSaveRejected || !registered() && !owner.OwnsCommunityRetirement(reservation) && !owner.OwnsDonation(reservation) && !owner.OwnsPaidName(reservation) && !owner.OwnsRemodel(reservation))
                 throw new InvalidOperationException("Residence lost its original registered owner or fresh context.");
             CharacterDatabaseIdentity.Require(context, database);
         }

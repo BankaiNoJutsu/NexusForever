@@ -21,7 +21,7 @@ namespace NexusForever.Game.Housing
             {
                 RequirePersistenceEditable();
                 if (persistence == null) throw new InvalidOperationException("Paid name requires a registered residence graph.");
-                if (paidName != null || donation != null || communitySaveOwner != null || stagedSaveUnits.Count != 0) return null;
+                if (paidName != null || donation != null || CurrentRemodel != null || communitySaveOwner != null || stagedSaveUnits.Count != 0) return null;
                 var captured = CapturePersistence();
                 return paidName = new(this, captured with { Header = captured.Header with { Name = name } });
             }

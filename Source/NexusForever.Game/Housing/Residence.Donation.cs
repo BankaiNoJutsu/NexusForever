@@ -77,7 +77,7 @@ namespace NexusForever.Game.Housing
                 {
                     donor.RequirePersistenceEditable(); recipient.RequirePersistenceEditable();
                     if (donor.persistence == null || recipient.persistence == null || donor.donation != null || recipient.donation != null
-                        || donor.paidName != null || recipient.paidName != null
+                        || donor.paidName != null || recipient.paidName != null || donor.CurrentRemodel != null || recipient.CurrentRemodel != null
                         || donor.OwnerId != player.CharacterId || recipient.OwnerId != null || recipient.GuildOwnerId != community.Id
                         || community.PendingDelete || community.GetMember(player.CharacterId) is not { PendingDelete: false }
                         || !OriginalPlayer() || !ReferenceEquals(community.Residence, recipient) || ids.Distinct().Count() != ids.Count)

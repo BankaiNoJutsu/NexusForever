@@ -23,7 +23,7 @@ namespace NexusForever.Game.Housing
         /// Determines which fields need saving for <see cref="IResidence"/> when being saved to the database.
         /// </summary>
         [Flags]
-        private enum ResidenceSaveMask
+        internal enum ResidenceSaveMask
         {
             None            = 0x000000,
             Create          = 0x000001,
@@ -128,10 +128,8 @@ namespace NexusForever.Game.Housing
                 lock (MutationGate)
                 {
                     RequirePersistenceEditable();
-                    if (gameTableManager.HousingWallpaperInfo?.GetEntry(value) == null)
-                        throw new ArgumentOutOfRangeException();
-
-                    wallpaperId = value;
+                    RequireRemodelFieldEditable(ResidenceSaveMask.Wallpaper);
+                    wallpaperId = ValidateWallpaperValue(value);
                     saveMask |= ResidenceSaveMask.Wallpaper;
                 }
             }
@@ -147,10 +145,8 @@ namespace NexusForever.Game.Housing
                 lock (MutationGate)
                 {
                     RequirePersistenceEditable();
-                    if (gameTableManager.HousingDecorInfo?.GetEntry(value) == null)
-                        throw new ArgumentOutOfRangeException();
-
-                    roofDecorInfoId = value;
+                    RequireRemodelFieldEditable(ResidenceSaveMask.Roof);
+                    roofDecorInfoId = ValidateDecorValue(value);
                     saveMask |= ResidenceSaveMask.Roof;
                 }
             }
@@ -166,10 +162,8 @@ namespace NexusForever.Game.Housing
                 lock (MutationGate)
                 {
                     RequirePersistenceEditable();
-                    if (gameTableManager.HousingDecorInfo?.GetEntry(value) == null)
-                        throw new ArgumentOutOfRangeException();
-
-                    entrywayDecorInfoId = value;
+                    RequireRemodelFieldEditable(ResidenceSaveMask.Entryway);
+                    entrywayDecorInfoId = ValidateDecorValue(value);
                     saveMask |= ResidenceSaveMask.Entryway;
                 }
             }
@@ -185,10 +179,8 @@ namespace NexusForever.Game.Housing
                 lock (MutationGate)
                 {
                     RequirePersistenceEditable();
-                    if (gameTableManager.HousingDecorInfo?.GetEntry(value) == null)
-                        throw new ArgumentOutOfRangeException();
-
-                    doorDecorInfoId = value;
+                    RequireRemodelFieldEditable(ResidenceSaveMask.Door);
+                    doorDecorInfoId = ValidateDecorValue(value);
                     saveMask |= ResidenceSaveMask.Door;
                 }
             }
@@ -204,14 +196,8 @@ namespace NexusForever.Game.Housing
                 lock (MutationGate)
                 {
                     RequirePersistenceEditable();
-                    HousingWallpaperInfoEntry entry = gameTableManager.HousingWallpaperInfo?.GetEntry(value);
-                    if (entry == null)
-                        throw new ArgumentOutOfRangeException();
-
-                    if ((entry.Flags & 0x100) == 0)
-                        throw new ArgumentOutOfRangeException();
-
-                    musicId = value;
+                    RequireRemodelFieldEditable(ResidenceSaveMask.Music);
+                    musicId = ValidateWallpaperValue(value, 0x100);
                     saveMask |= ResidenceSaveMask.Music;
                 }
             }
@@ -227,14 +213,8 @@ namespace NexusForever.Game.Housing
                 lock (MutationGate)
                 {
                     RequirePersistenceEditable();
-                    HousingWallpaperInfoEntry entry = gameTableManager.HousingWallpaperInfo?.GetEntry(value);
-                    if (entry == null)
-                        throw new ArgumentOutOfRangeException();
-
-                    if ((entry.Flags & 0x200) == 0)
-                        throw new ArgumentOutOfRangeException();
-
-                    groundWallpaperId = value;
+                    RequireRemodelFieldEditable(ResidenceSaveMask.Ground);
+                    groundWallpaperId = ValidateWallpaperValue(value, 0x200);
                     saveMask |= ResidenceSaveMask.Ground;
                 }
             }
@@ -250,14 +230,8 @@ namespace NexusForever.Game.Housing
                 lock (MutationGate)
                 {
                     RequirePersistenceEditable();
-                    HousingWallpaperInfoEntry entry = gameTableManager.HousingWallpaperInfo?.GetEntry(value);
-                    if (entry == null)
-                        throw new ArgumentOutOfRangeException();
-
-                    if ((entry.Flags & 0x40) == 0)
-                        throw new ArgumentOutOfRangeException();
-
-                    skyWallpaperId = value;
+                    RequireRemodelFieldEditable(ResidenceSaveMask.Sky);
+                    skyWallpaperId = ValidateWallpaperValue(value, 0x40);
                     saveMask |= ResidenceSaveMask.Sky;
                 }
             }
@@ -359,7 +333,8 @@ namespace NexusForever.Game.Housing
             lock (saveOwnershipLock)
                 return Task.WhenAll(stagedSaveUnits.Where(unit => !ReferenceEquals(unit.Key, current)).Select(unit => unit.Value.Task)
                     .Concat(donation is { Prepared: true } ? [donation.Completion.Task] : [])
-                    .Concat(paidName != null ? [paidName.Completion] : []));
+                    .Concat(paidName != null ? [paidName.Completion] : [])
+                    .Concat(CurrentRemodel?.Prepared == true ? [CurrentRemodel.Completion.Task] : []));
         }
 
         internal bool IsCommunitySaveOwner(object owner)

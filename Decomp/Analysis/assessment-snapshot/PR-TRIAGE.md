@@ -1,5 +1,12 @@
 # Official pull request comparison
 
+[Committed remodel publication](../HOUSING_REMODEL_PUBLICATION.md) is the latest housing result.
+The linked 22-case/MySQL and 11,901-test full gate retains the earlier affected
+timeout and all external/native/retail limits. A controlled placement probe
+supplies the next failing flow; the broader Goal remains active.
+The final all-state upstream refresh has no new deltas; reviewed
+game_rework/#608/#609 heads are unchanged. No upstream PR mutation occurred.
+
 [Confirmed community directory recovery](../COMMUNITY_DIRECTORY_RECOVERY.md) is the latest housing result.
 The linked 25-case/MySQL and 11,879-test full gate preserves external/native/retail
 limits. A real remodel-publication probe supplies the next failing flow; the
