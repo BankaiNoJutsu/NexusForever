@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Committed character achievement publication](Decomp/Analysis/CHARACTER_ACHIEVEMENT_PUBLICATION.md) passes23 new/1,121
+affected and11,954 full cases, plus56 fixture/6 warmed-cache passes and
+versioned23+6 provider evidence. This includes the corrected
+zero guild-rank key mapping. Earlier failures remain retained. Durable global
+arbitration, companion publication and external/native/retail gates stay open.
+The Goal is active; client/CUA remain stopped.
+
 [Committed community placement/removal](Decomp/Analysis/HOUSING_ASSOCIATION_PUBLICATION.md) is the latest housing result.
 The linked30-case/MySQL,526-affected and11,931-full gate preserves controlled
 travel and all external/native/retail limits. Continue the broader roadmap;

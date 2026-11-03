@@ -290,7 +290,7 @@ public sealed class HousingAssociationPublicationTests
         Assert.Same(f.Owner.Community.Residence,f.Home.Parent);Assert.Single(PlacementPackets(f));
         using var sql=f.Context();Assert.Equal((ushort)65000,sql.ResidencePlot.Single(row=>row.Id==101&&row.Index==7).PlotInfoId);
         var packet=Assert.Single(f.Owner.Messages.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
-            .Select(row=>row.Arguments[0]).OfType<ServerHousingPlots>().Where(row=>row.ResidenceId==101));
+            .Select(row=>row.Arguments[0]).OfType<ServerHousingPlots>(),row=>row.ResidenceId==101);
         Assert.Equal(65000u,packet.Plots.Single(row=>row.PlotPropertyIndex==7).PlotInfoId);
     }
 

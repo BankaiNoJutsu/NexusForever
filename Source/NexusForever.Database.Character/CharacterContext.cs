@@ -2183,13 +2183,15 @@ namespace NexusForever.Database.Character
 
                 entity.Property(e => e.Id)
                     .HasColumnName("id")
-                    .HasColumnType("bigint(20) unsigned")
-                    .HasDefaultValue(0);
+                    .HasColumnType(Database.IsSqlite() ? "INTEGER" : "bigint(20) unsigned")
+                    .HasDefaultValue(0)
+                    .ValueGeneratedNever();
 
                 entity.Property(e => e.Index)
                     .HasColumnName("index")
-                    .HasColumnType("tinyint(3) unsigned")
-                    .HasDefaultValue(0);
+                    .HasColumnType(Database.IsSqlite() ? "INTEGER" : "tinyint(3) unsigned")
+                    .HasDefaultValue(0)
+                    .ValueGeneratedNever();
 
                 entity.Property(e => e.Name)
                     .HasColumnName("name")

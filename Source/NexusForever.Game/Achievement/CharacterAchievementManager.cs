@@ -14,7 +14,7 @@ using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Achievement
 {
-    public sealed class CharacterAchievementManager : BaseAchievementManager<CharacterAchievementModel>, ICharacterAchievementManager
+    public sealed partial class CharacterAchievementManager : BaseAchievementManager<CharacterAchievementModel>, ICharacterAchievementManager
     {
         private readonly IPlayer owner;
         private readonly IGroupStateManager groupStateManager;
@@ -58,6 +58,7 @@ namespace NexusForever.Game.Achievement
             AchievementCharacter = model.Id; AchievementDatabase = CharacterLoadOrigin.Get(model)?.Database;
             LoadedExperienceAchievements = model.Achievement.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Id).ToArray();
             Initialise(model.Achievement, true);
+            InitialisePublication(model);
         }
 
         /// <summary>
@@ -68,13 +69,17 @@ namespace NexusForever.Game.Achievement
         /// </remarks>
         public override void SendInitialPackets(IPlayer _)
         {
-            base.SendInitialPackets(owner);
+            if (owner is Player)
+            {
+                if (!SendPublishedInitial()) return;
+            }
+            else base.SendInitialPackets(owner);
             owner.GuildManager.Guild?.AchievementManager.SendInitialPackets(owner);
         }
 
         protected override void SendAchievementUpdate(IEnumerable<IAchievement> updates)
         {
-            owner.Session.EnqueueMessageEncrypted(BuildAchievementUpdate(updates));
+            if (owner is not Player) owner.Session.EnqueueMessageEncrypted(BuildAchievementUpdate(updates));
         }
 
         /// <summary>
@@ -137,7 +142,10 @@ namespace NexusForever.Game.Achievement
             owner.GalacticArchiveManager?.RefreshRuleUnlocks(sendUpdates: true);
 
             if (GetGlobalAchievementManager().TryClaimRealmFirstAchievement(achievement.Info, false))
-                BroadcastRealmFirstAchievement(achievement, false, owner.Name);
+            {
+                if (owner is Player) RetainRealmFirst(achievement.Id, owner.Name);
+                else BroadcastRealmFirstAchievement(achievement, false, owner.Name);
+            }
         }
 
         protected override void CompleteAchievement(IPlayer target, IAchievement achievement)

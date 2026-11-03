@@ -2670,13 +2670,13 @@ namespace NexusForever.Database.Character.Migrations
             modelBuilder.Entity("NexusForever.Database.Character.Model.GuildRankModel", b =>
                 {
                     b.Property<ulong>("Id")
-                        .ValueGeneratedOnAdd()
+                        .ValueGeneratedNever()
                         .HasColumnType("bigint(20) unsigned")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("Index")
-                        .ValueGeneratedOnAdd()
+                        .ValueGeneratedNever()
                         .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("index");

@@ -46,6 +46,7 @@ namespace NexusForever.Game.Entity
         private static readonly Dictionary<(string, ulong), Unit> leases = [];
         private readonly ulong character;
         private readonly Func<Snapshot> current;
+        private readonly Action<Achievement[], Achievement[], Achievement[]> acknowledgeAchievements;
         private readonly bool ownsExperience, ownsPaths, ownsSpells, ownsPets, ownsAchievements, ownsDatacubes, ownsArchive, ownsMaps, ownsReputations;
         private string database;
         private Snapshot baseline;
@@ -53,9 +54,11 @@ namespace NexusForever.Game.Entity
         private List<Snapshot> uncertain;
         private Unit active;
 
-        internal ExperiencePersistence(ulong character, Snapshot baseline, Func<Snapshot> current, string database)
+        internal ExperiencePersistence(ulong character, Snapshot baseline, Func<Snapshot> current, string database,
+            Action<Achievement[], Achievement[], Achievement[]> acknowledgeAchievements = null)
         {
             this.character = character; this.baseline = baseline; this.current = current; this.database = database;
+            this.acknowledgeAchievements = acknowledgeAchievements;
             baselineIntent = baseline;
             ownsExperience = baseline.Experience != null; ownsPaths = baseline.Selection != null;
             ownsSpells = baseline.Spells != null; ownsPets = baseline.Pets != null; ownsAchievements = baseline.Achievements != null;
@@ -256,7 +259,11 @@ namespace NexusForever.Game.Entity
                 if (!ReferenceEquals(active, unit)) return;
                 try
                 {
-                    if (committed && unit.Flushed) { baseline = unit.Sql; baselineIntent = unit.FlushedIntent; uncertain = null; }
+                    if (committed && unit.Flushed)
+                    {
+                        acknowledgeAchievements?.Invoke(baseline.Achievements ?? [], unit.FlushedIntent.Achievements ?? [], unit.Sql.Achievements ?? []);
+                        baseline = unit.Sql; baselineIntent = unit.FlushedIntent; uncertain = null;
+                    }
                     else uncertain = (uncertain ?? []).Concat(unit.Possible).Append(baseline).ToList();
                 }
                 finally

@@ -2663,13 +2663,13 @@ namespace NexusForever.Database.Sqlite.Migrations.Character
             modelBuilder.Entity("NexusForever.Database.Character.Model.GuildRankModel", b =>
                 {
                     b.Property<ulong>("Id")
-                        .ValueGeneratedOnAdd()
+                        .ValueGeneratedNever()
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(0ul)
                         .HasColumnName("id");
 
                     b.Property<byte>("Index")
-                        .ValueGeneratedOnAdd()
+                        .ValueGeneratedNever()
                         .HasColumnType("INTEGER")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("index");

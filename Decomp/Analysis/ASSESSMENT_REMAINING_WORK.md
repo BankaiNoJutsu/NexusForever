@@ -5,6 +5,19 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+[Committed character achievement publication](CHARACTER_ACHIEVEMENT_PUBLICATION.md)
+now defers updates/initial visibility and realm-first announcements through the
+original confirmed experience graph and guarded world events. The integration
+also repairs application-assigned zero guild-rank keys without DDL changes.
+All 23 new cases and 1,121 affected cases are covered by the 11,954-pass full gate.
+The fixture correction also passes 56 cases and six warmed-cache cases. Provider
+evidence is versioned: 23 preceding invocations and six changed cases on the final
+test DLL. Build/reviews and 6,248-input/11-DLL bindings verify across 12 reviewed
+paths. Both failed full runs and the initial provider cleanup timeout remain
+retained; the timeout's cause is unproven.
+Durable global arbitration/restart, companion publication and the broader roadmap
+remain open. Defaults15:1/17:1/no44/seven grants and client/CUA stop remain.
+
 [Committed community placement/removal](HOUSING_ASSOCIATION_PUBLICATION.md) now
 retains complete guild/two-residence intent through SQL confirmation, then
 resumes map/domain/travel/publication stages on the world update. Failed plug
@@ -1425,8 +1438,13 @@ solution build/test gate at coherent integration milestones.
    travel remains unqualified. The linked real Player/achievement probe now
    reproduces progress and realm-first publication plus a consumed in-memory
    claim while SQL stays empty through a rejected save; existing retry commits
-   the rows after removing the owned trigger. Complete committed character
-   achievement publication next; durable realm-first arbitration stays separate.
+   the rows after removing the owned trigger. Committed character achievement
+   updates/initial visibility and realm-first announcements now have the later
+   11,954-full/23-new/1,121-affected gate linked above, with versioned23+6
+   provider evidence and56 fixture/6 warmed-cache passes.
+   The initial provider cleanup timeout and guild-key failure remain retained.
+   Next complete durable global realm-first arbitration and companion publication
+   rather than repeating this notification integration.
    Continue the broader economic/progression/gameplay queue without repeating
    completed housing integrations or inventing speculative housing cases. Model
    tests do not qualify retail.

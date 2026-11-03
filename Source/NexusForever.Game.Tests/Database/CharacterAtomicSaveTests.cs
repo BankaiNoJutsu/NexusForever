@@ -1,6 +1,7 @@
 using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
@@ -136,8 +137,17 @@ public sealed class CharacterAtomicSaveTests
     public async Task ConfiguredRetryStrategiesNeverReplayActorCallbacksAfterSyncOrAsyncFailures(bool asynchronous)
     {
         using var f = new Fixture(options); int calls = 0;
-        CharacterContext Factory() => new(new DbContextOptionsBuilder<CharacterContext>(f.Options)
-            .ReplaceService<IExecutionStrategyFactory, RetryFactory>().AddInterceptors(new ThrowFlush(asynchronous)).Options);
+        var configured = new DbContextOptionsBuilder<CharacterContext>(f.Options).AddInterceptors(new ThrowFlush(asynchronous));
+        // Keep the injected strategy scoped to these options without adding a
+        // replacement-service profile to EF's process-wide provider cache.
+        using (var provider = f.Context())
+        {
+            if (provider.Database.IsMySql())
+                new MySqlDbContextOptionsBuilder(configured).ExecutionStrategy(dependencies => new RetryStrategy(dependencies));
+            else
+                new SqliteDbContextOptionsBuilder(configured).ExecutionStrategy(dependencies => new RetryStrategy(dependencies));
+        }
+        CharacterContext Factory() => new(configured.Options);
         await Assert.ThrowsAnyAsync<Exception>(() => CharacterAtomicSave.Execute(Factory, 42, context =>
         {
             calls++; Enroll(context); if (!asynchronous) throw new IOException("Synchronous actor failure.");
@@ -171,10 +181,6 @@ public sealed class CharacterAtomicSaveTests
     {
         public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
             => active ? throw new IOException("Asynchronous atomic save failure.") : new(result);
-    }
-    public sealed class RetryFactory(ExecutionStrategyDependencies dependencies) : IExecutionStrategyFactory
-    {
-        public IExecutionStrategy Create() => new RetryStrategy(dependencies);
     }
     private sealed class RetryStrategy(ExecutionStrategyDependencies dependencies) : ExecutionStrategy(dependencies, 2, TimeSpan.Zero)
     {

@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.Friendship;
@@ -207,8 +208,17 @@ public sealed class FriendshipPresenceGenerationTests
     public async Task RetriedTransactionRebuildsTheGenerationAndOutboxTogether(bool login, bool afterCommit)
     {
         using var f = new Fixture(options); await f.Seed(false); var fault = new CommitFault(afterCommit);
-        var configured = new DbContextOptionsBuilder<FriendshipContext>(f.Options).ReplaceService<IExecutionStrategyFactory, RetryFactory>().AddInterceptors(fault).Options;
-        await using (var context = new FriendshipContext(configured))
+        var configured = new DbContextOptionsBuilder<FriendshipContext>(f.Options).AddInterceptors(fault);
+        // A provider callback preserves the fault policy without allocating a
+        // distinct cached provider for this fixture's strategy implementation.
+        using (var provider = f.Context())
+        {
+            if (provider.Database.IsMySql())
+                new MySqlDbContextOptionsBuilder(configured).ExecutionStrategy(dependencies => new Retry(dependencies));
+            else
+                new SqliteDbContextOptionsBuilder(configured).ExecutionStrategy(dependencies => new Retry(dependencies));
+        }
+        await using (var context = new FriendshipContext(configured.Options))
         {
             using var services = FriendshipPresenceTransactionTests.Services(context);
             if (login) await new LoginHandler(context, services.GetRequiredService<OutboxMessagePublisher>(), services.GetRequiredService<CharacterManager>(),
@@ -239,10 +249,6 @@ public sealed class FriendshipPresenceGenerationTests
             { Requests++; return Task.FromResult(response(request)); }
     }
     private sealed class Transient : IOException;
-    private sealed class RetryFactory(ExecutionStrategyDependencies dependencies) : IExecutionStrategyFactory
-    {
-        public IExecutionStrategy Create() => new Retry(dependencies);
-    }
     private sealed class Retry(ExecutionStrategyDependencies dependencies) : ExecutionStrategy(dependencies, 2, TimeSpan.Zero)
     {
         protected override bool ShouldRetryOn(Exception error) => error is Transient;
