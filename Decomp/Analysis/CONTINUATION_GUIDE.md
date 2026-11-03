@@ -1,5 +1,8 @@
 # Client Binary Decompile Continuation Guide
 
+Latest provider evidence: [44-case MySQL listing concurrency qualification](MARKETPLACE_CONDITIONAL_LISTING_WRITES.md#actual-mysql-qualification---3-november-2026)
+uses unchanged Source/DLLs. Broader financial, physical-failure and retail gates remain open.
+
 [Committed tradeskill publication](TRADESKILL_PUBLICATION.md) passes 15 new/238 scoped
 and 15 MySQL cases with a clean owning-project build and both Source reviews.
 Original ordinary/frozen graphs release immutable skill/recipe/reset notices;

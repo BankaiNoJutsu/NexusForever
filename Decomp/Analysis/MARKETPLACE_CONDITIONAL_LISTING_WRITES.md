@@ -1,5 +1,51 @@
 # Conditional marketplace listing writes
 
+## Actual MySQL qualification - 3 November 2026
+
+The unchanged `decde2c5` Source and its retained DLLs pass **44 scoped MySQL
+8.4.13 cases**: 38 original compiled listing race cases, two additional Unicode
+CSV mutations through the same original assertion body, and four provider-only
+repeatable-read snapshot scenarios. The portable [coverage report](coverage/marketplace-mysql-concurrency-20261103.json)
+records exact case labels, outcomes, connection identities and input hashes.
+Detailed local evidence is under
+`artifacts/continuation-20261103/marketplace-mysql-concurrency/`.
+
+The original cases exercise auction/commodity updates and deletes against
+independently committed changes, including NULL CSV directions, primary keys,
+mapped scalar fields and unchanged controls. All 40 original-body cases observe
+`utf8mb4_0900_ai_ci` on the actual auction column. The U+00AD and U+200B competing
+CSV rows survive their rejected deletions. The existing binary string predicate
+implementation is retained; no new SQL generator or Source correction was needed.
+
+The four additional scenarios establish an owner repeatable-read transaction and
+read its original row before a second connection commits U+00AD. A fresh third
+context observes that commit while the owner still reads its stale snapshot.
+Conditional UPDATE and DELETE each reject with DbUpdateConcurrencyException and
+preserve the foreign row; matching unchanged controls update/delete successfully.
+Recorded owner/writer IDs differ and all four strategy-attempt counts are one.
+These are new provider-only scenarios reusing original fixture/row observers,
+not four additional original compiled xUnit cases.
+
+Source/Tools remains 6,271 inputs under
+`85cc5c60914174d37d5e485c1d81706a0086781539a94d8824da73ebb7e10e81`;
+all 11 owning/test/main-provider/snapshot-provider DLL copies match. The original
+case cohort takes 805.4s; the snapshot cohort takes 121.4s, partly overlapping.
+Both helper builds have zero warnings/errors. The owned server/listener and four
+recorded runner/helper generations are absent after graceful shutdown. Two
+PowerShell attempts failed during managed dependency loading before executing
+their comparison query; they are excluded. The actual column observations come from
+the successful managed provider runner.
+
+This qualifies the named before-transaction and post-snapshot interleavings on
+the observed MySQL profile. Other collations/isolation levels, physical network
+loss/deadlocks, complete multi-party financial commands, broker/restart, deployed
+schemas, native timing and retail qualification remain separate. Original hosts,
+data/configuration, schema, entitlement defaults15:1/17:1 and no44/seven grants
+remain unchanged. Client/CUA remain stopped. No full suite was run, per the user's
+scoped-only policy. The Goal remains active.
+
+## Historical source and SQLite qualification
+
 1 November 2026. Source/private SQLite execution and connection-blocked provider
 model qualification. All 10,896 full solution tests pass with zero failures or
 skips, retaining every previous 10,860 identity and adding 36 cases. All 251

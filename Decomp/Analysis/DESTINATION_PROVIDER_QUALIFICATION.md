@@ -1,5 +1,15 @@
 # Destination configured-provider qualification
 
+[Actual MySQL listing concurrency](MARKETPLACE_CONDITIONAL_LISTING_WRITES.md#actual-mysql-qualification---3-november-2026)
+passes 38 original compiled cases, two original-body Unicode variants and four
+provider-only post-snapshot/control scenarios on MySQL8.4.13. The observed column
+uses utf8mb4_0900_ai_ci; NULL/scalar preimages, conditional affected-row rejection,
+distinct writer connections and stale repeatable-read snapshots are covered.
+The [portable report](coverage/marketplace-mysql-concurrency-20261103.json) binds
+unchanged Source/DLLs and all44 outcomes. Owned workloads are stopped. No full
+suite was run. Other profiles, physical failures, complete financial commands,
+broker/restart, deployment, native and retail qualification remain separate.
+
 [Registered residence recovery](RESIDENCE_GRAPH_RECOVERY.md) passes20 MySQL8.4.13
 cases in one run on the verified owned fixture and final DLLs. All source actions,
 assertions and deadlines remain; only primary connection/disposal, four trigger
@@ -1304,8 +1314,10 @@ selection failures are retained; corrected provider-specific execution passes.
 
 ## Remaining gates
 
-Qualify the remaining captured bank/mail/reward recovery and actual two-connection
-predicate/collation/isolation boundaries. Configured strategies were enabled;
+Qualify the remaining captured bank/mail/reward recovery and broader two-connection
+predicate/collation/isolation boundaries. The later44-case listing gate above
+covers its two named interleavings on the observed MySQL profile, not every
+isolation/collation or whole financial command. Configured strategies were enabled;
 simulated acknowledgement loss after real commits is not physical network-loss,
 deadlock or transient-retry proof. Keep copied-upgrade/model, full actual-table reward
 delivery, socket/deployment, load, native UI and retail evidence separate.

@@ -10,6 +10,15 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Marketplace MySQL concurrency qualification](MARKETPLACE_CONDITIONAL_LISTING_WRITES.md)
+passes 44 scoped cases on unchanged Source/DLLs: 38 original listing cases, two
+additional Unicode mutations through the original body, and four provider-only
+repeatable-read snapshot scenarios. Actual column collation is utf8mb4_0900_ai_ci;
+competing rows survive and unchanged controls succeed. The portable coverage
+report and 6,271-input/11-DLL bindings verify. Owned workloads are absent.
+Other profiles, physical network/deadlock, whole financial-command, deployment,
+restart/outbox and native/retail gates remain open. No full suite was run.
+
 [Committed tradeskill publication](TRADESKILL_PUBLICATION.md) retains learning,
 archiving/reactivation, XP/talent, schematic and successful reset notices until
 the original confirmed ordinary/frozen graph. Initial lists use published rows;
@@ -1537,7 +1546,9 @@ from the changed behavior and dependency surface, including at integration miles
    regression remain retained. Conditional writes now pass10896 full/251 marketplace with36 new cases
    and6114 inputs/nine DLLs.28 executed two-connection failures and both nullable
    CSV directions are covered; original-provider-model differentials need no DDL.
-   Continue live-MySQL predicate/collation/isolation proof and complete captured
+   The later44-case MySQL gate above qualifies the named listing races on its
+   observed default profile, including after a repeatable-read snapshot. Continue
+   qualification of broader profiles/physical failures and finish captured
    outcome witnesses, multi-party listing/wallet/debit/refund/proceeds settlement,
    unknown acknowledgement ambiguity and post-commit direct-delivery recovery.
    Confirmed terminal errors now pass10909 full/264 marketplace with13 new cases
