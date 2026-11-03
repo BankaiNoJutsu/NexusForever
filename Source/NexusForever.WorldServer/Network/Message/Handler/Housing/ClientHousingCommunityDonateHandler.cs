@@ -2,6 +2,7 @@
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Map.Instance;
+using NexusForever.Game.Housing;
 using NexusForever.Game.Static.Guild;
 using NexusForever.Game.Static.Housing;
 using NexusForever.Network;
@@ -30,13 +31,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
             if (community?.Residence == null)
                 throw new InvalidPacketValueException();
 
-            var donateUpdate = new ServerHousingCommunityDonateUpdate();
-            var decorToDonate = new List<IDecor>();
+            var decorToDonate = new List<ulong>();
+            var seen = new HashSet<ulong>();
 
             foreach (DecorInfo decorInfo in housingCommunityDonate.Decor)
             {
                 IDecor decor = residence.GetDecor(decorInfo.DecorId);
-                if (decor == null)
+                if (decor == null || decor.PendingDelete || !seen.Add(decorInfo.DecorId))
                     throw new InvalidPacketValueException();
 
                 if (decor.Type != DecorType.Crate)
@@ -47,39 +48,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
                     SendHousingResult(session, residence, HousingResult.Decor_CannotDonate);
                     return;
                 }
-
-                decorToDonate.Add(decor);
+                decorToDonate.Add(decorInfo.DecorId);
             }
 
-            foreach (IDecor decor in decorToDonate)
-            {
-                uint sourceDecorId = unchecked((uint)decor.DecorId);
-
-                // copy decor to recipient residence
-                IDecor newDecor = community.Residence.Map != null
-                    ? community.Residence.Map.DecorCopy(community.Residence, decor)
-                    : community.Residence.DecorCopy(decor);
-
-                donateUpdate.Entries.Add(new ServerHousingCommunityDonateUpdate.Entry
-                {
-                    Value0 = sourceDecorId,
-                    Value1 = unchecked((uint)newDecor.DecorId),
-                });
-
-                // remove decor from donor residence
-                if (residence.Map != null)
-                    residence.Map.DecorDelete(residence, decor);
-                else
-                {
-                    if (decor.PendingCreate)
-                        residence.DecorRemove(decor);
-                    else
-                        decor.EnqueueDelete(true);
-                }
-            }
-
-            if (donateUpdate.Entries.Count > 0)
-                session.EnqueueMessageEncrypted(donateUpdate);
+            if (decorToDonate.Count == 0) return;
+            if (residence is not Residence donor) throw new InvalidPacketValueException();
+            donor.Donate(session.Player, community, decorToDonate);
         }
 
         private static bool HasCannotDonateFlag(IDecor decor)

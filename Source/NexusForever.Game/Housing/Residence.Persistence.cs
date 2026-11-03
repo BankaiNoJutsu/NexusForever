@@ -38,6 +38,8 @@ namespace NexusForever.Game.Housing
             RequirePersistenceEditable();
             if (!decors.TryGetValue(decor.DecorId, out IDecor row) || !ReferenceEquals(row, decor))
                 throw new InvalidOperationException("Decor lost its original residence collection.");
+            if (donation != null && donation.HoldsDecor(this, decor.DecorId))
+                throw new InvalidOperationException("Decor belongs to an unfinished donation.");
         }
         internal void BindPersistence(CharacterContext context, Func<bool> registered)
         {

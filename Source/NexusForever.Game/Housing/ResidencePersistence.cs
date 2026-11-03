@@ -51,7 +51,7 @@ namespace NexusForever.Game.Housing
         }
         internal bool NeedsSave { get { lock (Gate) return baseline == null || active != null || uncertain.Count != 0 || !Equal(current(), baseline); } }
         internal bool Owns(CharacterContext context) { lock (Gate) return active != null && ReferenceEquals(active.Context, context); }
-        private static bool Equal(Snapshot a, Snapshot b) => ReferenceEquals(a, b) || a != null && b != null
+        internal static bool Equal(Snapshot a, Snapshot b) => ReferenceEquals(a, b) || a != null && b != null
             && a.Header == b.Header && a.Plots.SequenceEqual(b.Plots) && a.Decor.SequenceEqual(b.Decor) && a.Neighbors.SequenceEqual(b.Neighbors);
         internal static Header HeaderFrom(ResidenceModel row) => new(row.OwnerId, row.GuildOwnerId, row.PropertyInfoId, row.Name, row.PrivacyLevel,
             row.WallpaperId, row.RoofDecorInfoId, row.EntrywayDecorInfoId, row.DoorDecorInfoId, row.GroundWallpaperId,
@@ -61,7 +61,7 @@ namespace NexusForever.Game.Housing
             row.HookIndex, row.PlotIndex, row.Scale, row.X, row.Y, row.Z, row.Qx, row.Qy, row.Qz, row.Qw, row.ActivePropUnitId, row.DecorParentId, row.ColourShiftId);
         internal static Snapshot FromModel(ResidenceModel row) => new(HeaderFrom(row), row.Plot.OrderBy(p => p.Index).Select(PlotFrom).ToArray(),
             row.Decor.OrderBy(p => p.DecorId).Select(DecorFrom).ToArray(), row.Neighbors.OrderBy(p => p.NeighborCharacterId).Select(p => new Neighbor(p.NeighborCharacterId, p.PermissionLevel)).ToArray());
-        private Snapshot Read(CharacterContext context)
+        internal Snapshot Read(CharacterContext context)
         {
             ResidenceModel header = context.Residence.AsNoTracking().SingleOrDefault(row => row.Id == Id);
             var plots = context.ResidencePlot.AsNoTracking().Where(row => row.Id == Id).ToArray();
@@ -76,13 +76,14 @@ namespace NexusForever.Game.Housing
             header.Plot = plots; header.Decor = decor; header.Neighbors = neighbors;
             return FromModel(header);
         }
-        private void RequireOwner(CharacterContext context, object reservation)
+        internal void RequireOwner(CharacterContext context, object reservation)
         {
-            if (context.IsSaveRejected || !registered() && !owner.OwnsCommunityRetirement(reservation))
+            owner.RequireDonationSave(reservation);
+            if (context.IsSaveRejected || !registered() && !owner.OwnsCommunityRetirement(reservation) && !owner.OwnsDonation(reservation))
                 throw new InvalidOperationException("Residence lost its original registered owner or fresh context.");
             CharacterDatabaseIdentity.Require(context, database);
         }
-        internal void Save(CharacterContext context, object reservation = null)
+        internal void Save(CharacterContext context, object reservation = null, Snapshot frozen = null)
         {
             lock (Gate)
             {
@@ -95,7 +96,7 @@ namespace NexusForever.Game.Housing
                         throw new InvalidOperationException("Residence belongs to an unfinished save unit.");
                     }
                     if (context.HasSavepointRollback) throw new InvalidOperationException("Residence requires a fresh context after savepoint rollback.");
-                    Snapshot actual = Read(context), target = current();
+                    Snapshot actual = Read(context), target = frozen ?? current();
                     if (!Equal(actual, baseline) && !uncertain.Any(value => Equal(value, actual)))
                         throw new InvalidOperationException("Residence SQL differs from its loaded or retained complete graph.");
                     var unit = new Unit(context, target, actual, reservation);

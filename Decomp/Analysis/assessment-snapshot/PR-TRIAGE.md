@@ -1,5 +1,18 @@
 # Official pull request comparison
 
+[Housing donation settlement](../HOUSING_DONATION_SETTLEMENT.md) now commits both original residence
+graphs atomically and applies/publishes the transfer from the world update only
+after SQL confirmation. All 25 focused/MySQL and 11,797 full tests pass; build,
+reviews and 6,226-input/11-DLL bindings verify. Defaults 15:1/17:1/no44/seven grants
+and client/CUA stop remain. Fees, other housing publication and external/native/
+retail gates stay open; the Goal is active.
+
+The all-state upstream query since 05:44:31 UTC returned no PR updates. The
+newest PR remains #609, closed unmerged at f9b6f735; #608 remains open and
+source-reconciled at 7db12d9a. game_rework remains d8e43d2c. The scoped refresh is
+retained in the donation receipt. Unchanged reviewed heads were reused; no
+upstream PR mutation or retail completeness is inferred.
+
 [Registered residence recovery](../RESIDENCE_GRAPH_RECOVERY.md) now persists
 complete residence/plot/decor/neighbor graphs through original owners, including
 community creation and retirement. All20 new/340 affected,20 MySQL and11,772 full

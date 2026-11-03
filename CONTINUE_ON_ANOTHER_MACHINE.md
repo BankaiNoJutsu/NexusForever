@@ -1,5 +1,12 @@
 # Continue on another machine
 
+[Housing donation settlement](Decomp/Analysis/HOUSING_DONATION_SETTLEMENT.md) now commits both original residence
+graphs atomically and applies/publishes the transfer from the world update only
+after SQL confirmation. All 25 focused/MySQL and 11,797 full tests pass; build,
+reviews and 6,226-input/11-DLL bindings verify. Defaults 15:1/17:1/no44/seven grants
+and client/CUA stop remain. Fees, other housing publication and external/native/
+retail gates stay open; the Goal is active.
+
 [Registered residence recovery](Decomp/Analysis/RESIDENCE_GRAPH_RECOVERY.md) now persists
 complete residence/plot/decor/neighbor graphs through original owners, including
 community creation and retirement. All20 new/340 affected,20 MySQL and11,772 full

@@ -356,7 +356,8 @@ namespace NexusForever.Game.Housing
         internal Task PreviousSaveUnits(CharacterContext current)
         {
             lock (saveOwnershipLock)
-                return Task.WhenAll(stagedSaveUnits.Where(unit => !ReferenceEquals(unit.Key, current)).Select(unit => unit.Value.Task));
+                return Task.WhenAll(stagedSaveUnits.Where(unit => !ReferenceEquals(unit.Key, current)).Select(unit => unit.Value.Task)
+                    .Concat(donation is { Prepared: true } ? [donation.Completion.Task] : []));
         }
 
         internal bool IsCommunitySaveOwner(object owner)
@@ -1013,6 +1014,8 @@ namespace NexusForever.Game.Housing
             lock (MutationGate)
             {
                 RequirePersistenceEditable();
+                if (donation != null && donation.HoldsDecor(this, decor.DecorId))
+                    throw new InvalidOperationException("Decor belongs to an unfinished donation.");
                 if (persistence != null && (!decor.PendingCreate || !ReferenceEquals(decor.Residence, this)
                     || !decors.TryGetValue(decor.DecorId, out IDecor current) || !ReferenceEquals(current, decor)))
                     throw new InvalidOperationException("Only original provisional decor can be removed without a deletion intent.");

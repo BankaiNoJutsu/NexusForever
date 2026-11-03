@@ -5,6 +5,13 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+[Housing donation settlement](HOUSING_DONATION_SETTLEMENT.md) now commits both original residence
+graphs atomically and applies/publishes the transfer from the world update only
+after SQL confirmation. All 25 focused/MySQL and 11,797 full tests pass; build,
+reviews and 6,226-input/11-DLL bindings verify. Defaults 15:1/17:1/no44/seven grants
+and client/CUA stop remain. Fees, other housing publication and external/native/
+retail gates stay open; the Goal is active.
+
 [Residence graph recovery](RESIDENCE_GRAPH_RECOVERY.md) now retains complete root/plot/decor/neighbor
 intent through failed, rolled-back and uncertain saves. Child-only periodic saves
 and real community creation/retirement are connected. All20 new/340 affected,
@@ -1348,12 +1355,13 @@ solution build/test gate at coherent integration milestones.
    and their committed progress/realm-first publication now have the later
    11,752-full/22-MySQL gate above. Registered root/plot/decor/neighbor recovery,
    real community creation and retirement now have the later11,772-full/20-MySQL
-   gate above. Continue cross-residence donation and fee settlement plus guarded
-   housing handler publication. The current donation producer copies/removes
-   through independent owners and replies before persistence; reproduce that
-   public flow, including repeated source IDs, before integrating its full
-   settlement. Cross-character notification atomicity, durable realm-first
-   arbitration, other atomic financial settlement, live broker/restart and broader
+   gate above. Cross-residence donation now has the later11,797-full/25-MySQL
+   settlement and world-update publication gate linked above. Continue fee
+   settlement and guarded publication for the remaining housing handlers;
+   community rename still debits currency and replies outside its guild/residence
+   SQL unit. Reproduce its actual public fee/reply flow before integrating it.
+   Cross-character notification atomicity, durable realm-first arbitration,
+   other atomic financial settlement, live broker/restart and broader
    provider qualification remain open; the complete feature and assessment scope
    remains open. Bid, buyout, auction/commodity
    expiry/cancellation, posting/fills and whole-Item auction posting now have the

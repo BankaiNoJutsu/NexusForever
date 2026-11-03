@@ -20,20 +20,20 @@ using NLog;
 
 namespace NexusForever.Game.Housing
 {
-    public sealed class GlobalResidenceManager : IGlobalResidenceManager
+    public sealed partial class GlobalResidenceManager : IGlobalResidenceManager
     {
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
 
         /// <summary>
         /// Id to be assigned to the next created residence.
         /// </summary>
-        public ulong NextResidenceId => nextResidenceId++;
+        public ulong NextResidenceId { get { lock (saveGate) return nextResidenceId++; } }
         private ulong nextResidenceId;
 
         /// <summary>
         /// Id to be assigned to the next created residence.
         /// </summary>
-        public ulong NextDecorId => nextDecorId++;
+        public ulong NextDecorId { get { lock (saveGate) return nextDecorId++; } }
         private ulong nextDecorId;
 
         private readonly ConcurrentDictionary<ulong, IResidence> residences = new();
@@ -151,6 +151,7 @@ namespace NexusForever.Game.Housing
 
         public void Update(double lastTick)
         {
+            SaveDonations();
             timeToSave -= lastTick;
             if (timeToSave <= 0d)
             {
@@ -167,7 +168,7 @@ namespace NexusForever.Game.Housing
 
             foreach (IResidence residence in residences.Values)
             {
-                if (residence is Residence concreteResidence && (!concreteResidence.NeedsSave || concreteResidence.CommunitySavePending))
+                if (residence is Residence concreteResidence && (!concreteResidence.NeedsSave || concreteResidence.CommunitySavePending || concreteResidence.DonationSavePending))
                     continue;
 
                 lock (saveGate) if (!savesInFlight.Add(residence.Id)) continue;
