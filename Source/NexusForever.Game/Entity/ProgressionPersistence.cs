@@ -14,7 +14,7 @@ namespace NexusForever.Game.Entity
             uint Tier0, uint Tier1, uint Tier2, uint Tier3, uint Tier4, uint Tier5, uint Tier6, uint Tier7, uint Tier8, uint Tier9);
         internal sealed record Recipe(ulong Owner, uint Id, bool Discovered, float X, float Y);
         internal sealed record Snapshot(Skill[] Skills, Recipe[] Recipes);
-        private sealed record Frozen(object Token, string Database, Snapshot State);
+        private sealed record Frozen(object Token, string Database, Snapshot State, long Version);
         private sealed class Unit(CharacterContext context, string database, object token)
         {
             internal readonly CharacterContext Context = context;
@@ -25,36 +25,46 @@ namespace NexusForever.Game.Entity
             internal Snapshot Sql, Target;
             internal IDisposable Scope;
             internal bool Flushed;
+            internal long Version, FlushedVersion;
             internal EventHandler<SavedChangesEventArgs> OnFlushed;
         }
-        private readonly object gate = new();
+        internal readonly object Gate = new();
         private static readonly object leaseGate = new();
         private static readonly Dictionary<(string, ulong), Unit> leases = [];
         private readonly ulong character;
         private readonly Func<Snapshot> current;
+        private readonly Func<long> publicationVersion;
+        private readonly Action<Snapshot, long> acknowledge;
+        private readonly Action publicationReady;
+        private long acknowledgedVersion;
         private string database;
         private Snapshot baseline;
         private List<Snapshot> uncertain;
         private Unit active;
 
-        internal ProgressionPersistence(ulong character, Snapshot baseline, Func<Snapshot> current, string database)
-        { this.character = character; this.baseline = baseline; this.current = current; this.database = database; }
+        internal Snapshot Confirmed { get { lock (Gate) return baseline; } }
+        internal ProgressionPersistence(ulong character, Snapshot baseline, Func<Snapshot> current, string database,
+            Func<long> publicationVersion = null, Action<Snapshot, long> acknowledge = null, Action publicationReady = null)
+        {
+            this.character = character; this.baseline = baseline; this.current = current; this.database = database;
+            this.publicationVersion = publicationVersion; this.acknowledge = acknowledge; this.publicationReady = publicationReady;
+        }
         internal static Skill FromModel(CharacterTradeskillModel row) => new(row.Id, row.TradeskillId, row.TradeskillXp, row.IsActive, row.PropertyProficiencyFlags, row.TalentPoints,
             row.TalentTier00, row.TalentTier01, row.TalentTier02, row.TalentTier03, row.TalentTier04, row.TalentTier05, row.TalentTier06, row.TalentTier07, row.TalentTier08, row.TalentTier09);
         internal static Recipe FromModel(CharacterSchematicModel row) => new(row.Id, row.TradeskillSchematic2Id, row.Discovered, row.DiscoveryCoordinateX, row.DiscoveryCoordinateY);
         private static bool Equal(Snapshot left, Snapshot right) => left != null && right != null && left.Skills.SequenceEqual(right.Skills) && left.Recipes.SequenceEqual(right.Recipes);
         internal Action<CharacterContext> CaptureNormal(object token, string route)
         {
-            lock (gate)
+            lock (Gate)
             {
                 if (active != null) throw new InvalidOperationException("Progression has an unfinished save.");
-                var frozen = new Frozen(token, route, current()); return context => Save(context, frozen);
+                var frozen = new Frozen(token, route, current(), publicationVersion?.Invoke() ?? 0); return context => Save(context, frozen);
             }
         }
         internal void Save(CharacterContext context) => Save(context, null);
         private void Save(CharacterContext context, Frozen frozen)
         {
-            lock (gate)
+            lock (Gate)
             {
                 try
                 {
@@ -64,9 +74,10 @@ namespace NexusForever.Game.Entity
                     if (frozen != null) CharacterDatabaseIdentity.Require(context, frozen.Database);
                     database ??= route;
                     Snapshot target = frozen?.State ?? current();
+                    long version = frozen?.Version ?? publicationVersion?.Invoke() ?? 0;
                     if (active != null && (!ReferenceEquals(active.Context, context) || !ReferenceEquals(active.Token, frozen?.Token)))
                         throw new InvalidOperationException("Progression belongs to an unfinished save unit.");
-                    if (active == null && uncertain == null && Equal(target, baseline)) return;
+                    if (active == null && uncertain == null && Equal(target, baseline) && version <= acknowledgedVersion) return;
                     Unit unit = active;
                     if (unit == null)
                     {
@@ -90,6 +101,7 @@ namespace NexusForever.Game.Entity
                     }
                     foreach (var row in unit.Rows.Values) row.Validate();
                     Stage(unit, unit.Sql, target, unit.Target ?? unit.Sql); unit.Target = target; unit.Possible.Add(target);
+                    unit.Version = version;
                 }
                 catch (Exception error) { context.RejectSave(error); throw; }
             }
@@ -141,7 +153,7 @@ namespace NexusForever.Game.Entity
         }
         private void Validate(Unit unit, CharacterSaveValidationPhase phase)
         {
-            lock (gate)
+            lock (Gate)
             {
                 if (!ReferenceEquals(active, unit)) throw new InvalidOperationException("Progression lost its save owner.");
                 if (unit.Context.HasSavepointRollback) return;
@@ -152,22 +164,29 @@ namespace NexusForever.Game.Entity
         }
         private void Flushed(Unit unit)
         {
-            lock (gate)
+            lock (Gate)
             {
                 if (!ReferenceEquals(active, unit) || unit.Context.HasSavepointRollback) return;
                 Snapshot actual = Read(unit.Context); if (!Equal(actual, unit.Target)) return;
                 unit.Sql = actual; unit.Possible.Add(actual); unit.Flushed = true;
+                unit.FlushedVersion = unit.Version;
                 foreach (var row in unit.Rows.Values) { row.Capture(); row.Flushed = true; }
             }
         }
         private void Complete(Unit unit, bool committed)
         {
-            lock (gate)
+            bool ready = false;
+            lock (Gate)
             {
                 if (!ReferenceEquals(active, unit)) return;
                 try
                 {
-                    if (committed && unit.Flushed) { baseline = unit.Sql; uncertain = null; }
+                    if (committed && unit.Flushed)
+                    {
+                        acknowledge?.Invoke(unit.Sql, unit.FlushedVersion);
+                        baseline = unit.Sql; uncertain = null;
+                        acknowledgedVersion = Math.Max(acknowledgedVersion, unit.FlushedVersion); ready = true;
+                    }
                     else uncertain = (uncertain ?? []).Concat(unit.Possible).Append(baseline).ToList();
                 }
                 finally
@@ -177,6 +196,7 @@ namespace NexusForever.Game.Entity
                     unit.Scope.Dispose();
                 }
             }
+            if (ready) publicationReady?.Invoke();
         }
     }
 }

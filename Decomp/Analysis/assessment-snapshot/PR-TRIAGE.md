@@ -1,5 +1,18 @@
 # Official pull request comparison
 
+[Committed tradeskill publication](../TRADESKILL_PUBLICATION.md) passes 15 new/238 scoped
+and 15 MySQL cases with a clean owning-project build and both Source reviews.
+Original ordinary/frozen graphs release immutable skill/recipe/reset notices;
+initial lists use published rows and preserve quiet discovery and packet retries.
+No full suite was run under the user's scoped-only policy. Broader gameplay,
+restart/outbox, deployment and native/retail gates remain open; the Goal is active
+and client/CUA stay stopped.
+
+The 2026-11-03T20:41:24.273022+00:00 all-state updated-order refresh has no changed
+reviewed heads, bases or states. #608 remains open at `7db12d9a`; #609 remains
+closed/unmerged at `f9b6f735`. No upstream mutation occurred. Evidence:
+`artifacts/continuation-20261103/tradeskill-publication/upstream-refresh.json`.
+
 [Committed Archive publication](../ARCHIVE_PUBLICATION.md) passes 18 new/241 affected,
 18 MySQL and 12,007 full cases with a clean build and both Source reviews. Original
 confirmed graphs release ordered unlock/view notices; initial sync, quiet rules,

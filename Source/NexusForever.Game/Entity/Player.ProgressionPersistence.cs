@@ -22,15 +22,22 @@ namespace NexusForever.Game.Entity
                 return new(tradeskills.Values.Select(row => ProgressionPersistence.FromModel(row.BuildModel())).OrderBy(row => row.Id).ToArray(),
                     schematics.Values.Select(row => ProgressionPersistence.FromModel(row.BuildModel())).Concat(unavailableSchematics ?? []).OrderBy(row => row.Id).ToArray());
             }
-            var candidate = new ProgressionPersistence(owner, baseline, Current, progressionDatabase);
+            var candidate = new ProgressionPersistence(owner, baseline, Current, progressionDatabase,
+                () => tradeskillPublication?.Version ?? 0,
+                (state, version) => tradeskillPublication?.Acknowledge(state, version),
+                () => tradeskillPublication?.Schedule());
             return System.Threading.Interlocked.CompareExchange(ref progressionPersistence, candidate, null) ?? candidate;
         }
         private void SaveProgression(CharacterContext context)
         {
             if (progressionPersistence == null && tradeskills.Count == 0 && schematics.Count == 0 && (unavailableSchematics?.Count ?? 0) == 0) return;
             GetProgressionPersistence().Save(context);
+            tradeskillPublication?.Schedule();
         }
         private Action<CharacterContext> CaptureProgressionSave(object token, string database)
-            => GetProgressionPersistence().CaptureNormal(token, database);
+        {
+            var frozen = GetProgressionPersistence().CaptureNormal(token, database);
+            return context => { frozen(context); tradeskillPublication?.Schedule(); };
+        }
     }
 }

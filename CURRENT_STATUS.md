@@ -1,5 +1,13 @@
 # NexusForever Feature Restoration - Current Status
 
+[Committed tradeskill publication](Decomp/Analysis/TRADESKILL_PUBLICATION.md) passes 15 new/238 scoped
+and 15 MySQL cases with a clean owning-project build and both Source reviews.
+Original ordinary/frozen graphs release immutable skill/recipe/reset notices;
+initial lists use published rows and preserve quiet discovery and packet retries.
+No full suite was run under the user's scoped-only policy. Broader gameplay,
+restart/outbox, deployment and native/retail gates remain open; the Goal is active
+and client/CUA stay stopped.
+
 [Committed Archive publication](Decomp/Analysis/ARCHIVE_PUBLICATION.md) passes 18 new/241 affected,
 18 MySQL and 12,007 full cases with a clean build and both Source reviews. Original
 confirmed graphs release ordered unlock/view notices; initial sync, quiet rules,

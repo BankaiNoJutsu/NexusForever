@@ -2439,7 +2439,7 @@ namespace NexusForever.Game.Entity
             if (AchievementManager is CharacterAchievementManager characterAchievementManager)
                 characterAchievementManager.GrantCompletedTradeskillAchievementRewards(this);
             SendProfessionUpdate(tradeskill.BuildInfo());
-            Session.EnqueueMessageEncrypted(new ServerTradeskillRelearnCooldown());
+            SendTradeskillResetCooldown();
             return true;
         }
 
@@ -2472,12 +2472,8 @@ namespace NexusForever.Game.Entity
             SchematicState schematic = SchematicState.Create(CharacterId, schematicEntry, discovered);
             schematics.Add(tradeskillSchematic2Id, schematic);
 
-            Session.EnqueueMessageEncrypted(new ServerSchematicAddLearned
-            {
-                TradeskillId           = (TradeskillType)schematicEntry.TradeSkillId,
-                TradeskillSchematic2Id = tradeskillSchematic2Id,
-                DiscoveryCoordinates   = new Vector2(schematic.DiscoveryCoordinateX, schematic.DiscoveryCoordinateY)
-            });
+            SendLearnedSchematic((TradeskillType)schematicEntry.TradeSkillId, tradeskillSchematic2Id,
+                schematic.DiscoveryCoordinateX, schematic.DiscoveryCoordinateY);
 
             QuestManager.ObjectiveUpdate(QuestObjectiveType.ObtainSchematic, tradeskillSchematic2Id, 1u);
             return true;
@@ -2490,6 +2486,7 @@ namespace NexusForever.Game.Entity
 
         public void SendTradeskillInitialPackets()
         {
+            if (UsesCommittedTradeskillPublication) { GetTradeskillPublication().SendInitial(); return; }
             List<uint> learnedSchematics = schematics.Keys
                 .OrderBy(s => s)
                 .ToList();
@@ -2533,6 +2530,7 @@ namespace NexusForever.Game.Entity
 
         private void SendProfessionUpdate(TradeskillInfo tradeskillInfo)
         {
+            if (UsesCommittedTradeskillPublication) { GetTradeskillPublication().RetainSkill(tradeskillInfo); return; }
             Session.EnqueueMessageEncrypted(new ServerProfessionUpdate
             {
                 Tradeskill = tradeskillInfo

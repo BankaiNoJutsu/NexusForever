@@ -203,13 +203,13 @@ public sealed class PlayerProgressionPersistenceTests
             => Task.FromException(new IOException("Owned progression acknowledgement loss."));
     }
 
-    private static void Seed(Fixture f, bool existing)
+    internal static void Seed(Fixture f, bool existing)
     {
         if (!existing) return;
         using var context = f.Context(); context.CharacterTradeskill.Add(new() { Id = 42, TradeskillId = (uint)TradeskillType.Armorer, IsActive = 1, TradeskillXp = 180, TalentPoints = 7, TalentTier00 = 77 });
         context.CharacterSchematic.Add(new() { Id = 42, TradeskillSchematic2Id = 501 }); context.SaveChanges();
     }
-    private static void Configure(Fixture f, Actor actor)
+    internal static void Configure(Fixture f, Actor actor)
     {
         var tests = typeof(PlayerTradeskillArchiveTests);
         var entry = new TradeskillSchematic2Entry { Id = 501, TradeSkillId = (uint)TradeskillType.Armorer, VectorX = 18, VectorY = 27 };

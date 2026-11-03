@@ -5,6 +5,22 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+Validation policy updated 3 November at the user's direction: owning-project
+builds and scoped tests only. No automatic full-solution milestone gate; another
+full suite requires an explicit user request. Historical full results below
+retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
+
+[Committed tradeskill publication](TRADESKILL_PUBLICATION.md) retains learning,
+archiving/reactivation, XP/talent, schematic and successful reset notices until
+the original confirmed ordinary/frozen graph. Initial lists use published rows;
+accepted payload order, quiet discovery, late intent, send retries and stale-owner
+guards remain correct. All 15 new/238 scoped and 15 MySQL cases pass; owning build
+and both Source reviews are clear. Final 6,271-input/11-DLL bindings and owned
+shutdowns verify. The two introduced recovery/admission negatives remain retained.
+No full suite was run, per the user's scoped-only policy. Contract/reset, broader
+gameplay, restart/outbox and external/native/retail gates remain open. Defaults
+15:1/17:1/no44/seven grants and client/CUA stop remain; the Goal is active.
+
 [Committed Archive publication](ARCHIVE_PUBLICATION.md) retains real Player
 unlock, rule, link and viewed notices until the complete original graph confirms,
 then publishes on guarded world updates. Initial sync uses confirmed rows and
@@ -1431,8 +1447,8 @@ That earlier run used frozen6,923; World at that earlier checkpoint used7182/PID
 Follow the [roadmap execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 Select the next actionable outcome by impact, risk, dependencies and available
 evidence; the entries below define scope rather than a rigid execution order.
-Batch related changes and use focused checks during development, with the full
-solution build/test gate at coherent integration milestones.
+Batch related changes and use owning-project builds and scoped checks selected
+from the changed behavior and dependency surface, including at integration milestones.
 
 31 October destination continuation in `C:/GIT/NexusForever/continuation`:
 
@@ -1483,8 +1499,9 @@ solution build/test gate at coherent integration milestones.
    The initial provider cleanup timeout and guild-key failure remain retained.
    Durable global realm-first arbitration now has the11,970-full gate above.
    Title publication now has the later11,989-full gate above; Archive publication
-   has the later12,007-full gate. Continue tradeskill companion publication
-   without repeating those integrations.
+   has the later12,007-full gate. Tradeskill companion publication now has the
+   later238-scoped/15-MySQL gate above. Continue the broader queue without
+   repeating those integrations.
    Continue the broader economic/progression/gameplay queue without repeating
    completed housing integrations or inventing speculative housing cases. Model
    tests do not qualify retail.

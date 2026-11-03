@@ -1,7 +1,7 @@
 # Assessment continuation Goal prompt
 
-Updated 2 November 2026 for roadmap-driven execution, proportionate validation
-and the user-authorized regular commit/push workflow.
+Updated 3 November 2026 for roadmap-driven execution, user-directed scoped-only
+validation and the user-authorized regular commit/push workflow.
 Paste the following instructions into the main
 implementation chat. Continue its existing Goal; create a Goal only if no
 unfinished Goal exists. This file does not itself change or restart a Goal.
@@ -63,16 +63,17 @@ Use a short feedback loop
   Add regressions for distinct observable failures and material boundaries,
   rather than mirroring helpers or multiplying equivalent permutations.
 - Batch related implementation, fixture corrections and review fixes into one
-  coherent candidate. Run the full Source/NexusForever.slnx build/test suite
-  after that candidate passes focused and affected integration checks.
-- Do not run a full suite after every helper, API, comment, tracker or small
-  intermediate edit. Do not repeat an unchanged passing full run without a new
-  material concern. When a full gate fails, diagnose and fix narrowly, then run
-  one corrected full gate when required to validate the changed candidate.
-  Never weaken assertions merely to obtain a pass. If an unrelated intermittent
-  failure remains unresolved, record the failed gate and investigate it as a
-  separate issue; do not repeatedly run the whole suite just to obtain green.
-  Continue independent work without claiming the failed candidate qualified.
+  coherent candidate. Use owning-project builds and scoped tests selected from
+  the actual changed behavior and dependency surface. On 3 November the user
+  directed: "Don't run the full suite every time, only scoped". This supersedes
+  the earlier automatic full-solution milestone gate. Do not run another full
+  solution build/test suite unless the user explicitly requests it.
+- When a scoped check fails, diagnose and fix narrowly, then run the affected
+  scoped checks needed to validate the changed candidate. Never weaken assertions
+  merely to obtain a pass. If an unrelated intermittent failure remains unresolved,
+  record it and investigate it as a separate issue; do not repeat passing or
+  unrelated suites merely to obtain green. Continue independent work without
+  claiming an unresolved failed candidate qualified.
 - Consolidate review at the milestone boundary and re-review material fixes.
   Do not restart complete reviews for unchanged code or documentation edits.
 - Use normal incremental builds unless there is evidence of stale output.
@@ -102,13 +103,13 @@ Keep evidence proportionate
   avoid repeating the same unavailable search/tool unless an input changes.
 
 Accountability and constraints
-- Report milestone progress as: behavior completed; focused/full results;
+- Report milestone progress as: behavior completed; owning-build/scoped results;
   material failures or remaining evidence; next integrated outcome. Include a
   brief observed time breakdown when validation dominates a milestone. Do not
   invent completion percentages or treat test growth as feature completion.
 - If validation or evidence administration dominates successive iterations,
   reassess the scope of the checks and group related changes before the next
-  full gate. Keep required correctness checks; remove redundant work and
+  scoped gate. Keep required correctness checks; remove redundant work and
   report completed roadmap behavior instead of using test counts as progress.
 - If repeated iterations produce only infrastructure, reassess the critical
   path and complete its next required integration instead of expanding scope.
@@ -128,6 +129,6 @@ Accountability and constraints
   when its required outcomes are actually achieved; follow the Goal tool's
   status rules for unresolved blocking conditions.
 
-Resume from the latest actual state now. Do not launch another baseline/full
-run merely because these instructions were updated.
+Resume from the latest actual state now. Reuse valid completed checks; do not
+launch another baseline or broader run merely because these instructions changed.
 ```
