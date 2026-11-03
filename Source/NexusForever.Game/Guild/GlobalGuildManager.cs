@@ -179,6 +179,7 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public void Update(double lastTick)
         {
+            UpdatePaidNames();
             saveTimer.Update(lastTick);
 
             if (saveTimer.HasElapsed)
@@ -199,6 +200,7 @@ namespace NexusForever.Game.Guild
                 snapshot = guilds.Values.Cast<GuildBase>().ToArray();
             foreach (GuildBase guild in snapshot)
             {
+                if (guild is Community { PaidNamePrepared: true }) continue;
                 lock (cacheLock)
                     if (guildSavesInFlight.Contains(guild.Id))
                         continue;

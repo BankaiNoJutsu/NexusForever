@@ -15,6 +15,24 @@ namespace NexusForever.Game.Guild
 
         private readonly Dictionary<ulong, NameReservation> nameReservations = [];
 
+        internal bool OwnsPaidNameReservation(IGuildBase guild, string name, IDisposable reservation)
+        {
+            lock (cacheLock)
+                return nameReservations.TryGetValue(guild.Id, out var held) && ReferenceEquals(held, reservation)
+                    && ReferenceEquals(held.Guild, guild) && StringComparer.Ordinal.Equals(held.Name, name);
+        }
+
+        internal void ConfirmPaidName(IGuildBase guild, string name, IDisposable reservation)
+        {
+            lock (cacheLock)
+            {
+                if (!nameReservations.TryGetValue(guild.Id, out var held) || !ReferenceEquals(held, reservation) || !ReferenceEquals(held.Guild, guild)
+                    || !StringComparer.Ordinal.Equals(held.Name, name))
+                    throw new InvalidOperationException("Paid name lost its exact original registry reservation.");
+                held.Accepted = true;
+            }
+        }
+
         public IDisposable TryReserveGuildName(IGuildBase guild, string name)
         {
             ArgumentNullException.ThrowIfNull(guild);

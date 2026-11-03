@@ -23,7 +23,7 @@ namespace NexusForever.Game.Entity
         internal void PrepareAuctionBid(object operation, Action<AuctionBidActor> ready, Action failed)
         {
             ArgumentNullException.ThrowIfNull(operation);
-            if (auctionBidActor != null || CurrencyManager is not CurrencyManager currencies
+            if (auctionBidActor != null || housingNameActor != null || CurrencyManager is not CurrencyManager currencies
                 || Session is NetworkSession { IsDisconnecting: true } || LogoutManager?.State is LogoutState.Logout or LogoutState.Finished)
             { failed(); return; }
             AuctionBidActor actor;

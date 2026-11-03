@@ -82,6 +82,10 @@ namespace NexusForever.Game.Entity
                     acknowledgement.Adopt(snapshot.Value); owner.amount = After; adopted = true;
                 }
             }
+            internal void AdoptForHousingReconciliation()
+            {
+                lock (owner.persistence.Gate) { Adopt(); Reconciling = true; }
+            }
             internal void ApplyDeferred(ulong next)
             {
                 lock (owner.persistence.Gate)

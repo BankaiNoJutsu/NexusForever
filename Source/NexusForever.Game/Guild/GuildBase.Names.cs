@@ -2,11 +2,20 @@ using Microsoft.EntityFrameworkCore;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Entity;
+using NexusForever.Game.Abstract.Guild;
 
 namespace NexusForever.Game.Guild
 {
     public partial class GuildBase
     {
+        internal IGlobalGuildManager NameRegistry => globalGuildManager;
+        internal bool NameUnitActive => namePersistence?.HasActiveUnit == true;
+        internal void SavePaidName(CharacterContext context, string target) => namePersistence.Save(context, target);
+        internal void AdoptPaidName(string target)
+        {
+            Name = target;
+            saveMask &= ~GuildBaseSaveMask.Name;
+        }
         protected void RequireNameSaveDatabase(CharacterContext context) => namePersistence?.RequireDatabase(context);
 
         private void ObserveCreatedName(CharacterContext context)

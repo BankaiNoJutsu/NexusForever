@@ -195,6 +195,11 @@ namespace NexusForever.Game.Guild
         {
             lock (residenceLifecycleLock)
             {
+                if (PaidNamePrepared)
+                {
+                    var error = new InvalidOperationException("Community belongs to its retained paid rename.");
+                    context.RejectSave(error); throw error;
+                }
                 if (renameSaveContexts.Contains(context) || OwnsMutationSave(context))
                     return;
                 if (pendingResidenceChanges.Values.Any(change => change.Name != null))

@@ -20,8 +20,9 @@ namespace NexusForever.Game.Entity
         private bool TryAcquireInventorySave(out IDisposable lease)
         {
             lease = null;
+            if (housingNameActor != null && !HousingNameSaveAllowed) return false;
             if (QuestManager is QuestManager { IsContractCompletionMutationInProgress: true }
-                || CurrencyManager is CurrencyManager currencies && (currencies.RequiresContractCurrencyReload || currencies.HasPendingContractCurrency && !AuctionBidSaveAllowed && !BankSaveAllowed)
+                || CurrencyManager is CurrencyManager currencies && (currencies.RequiresContractCurrencyReload || currencies.HasPendingContractCurrency && !AuctionBidSaveAllowed && !BankSaveAllowed && !HousingNameSaveAllowed)
                 || ChallengeManager?.HasPendingRewardOperation == true || ChallengeManager?.RequiresAuthoritativeReload == true
                 || QuestManager?.HasPendingRewardOperation == true || QuestManager?.RequiresAuthoritativeReload == true) return false;
             return Inventory?.SupportsTransactionalSoulboundDelivery != true || Inventory.TryAcquireSaveLease(out lease);
@@ -41,9 +42,12 @@ namespace NexusForever.Game.Entity
             forceSave = true;
         }
 
-        private void CheckInventorySaveAllowed(bool frozen = false)
+        private void CheckInventorySaveAllowed(bool frozen = false, NormalRewardSave housingSnapshot = null)
         {
-            if (CurrencyManager is CurrencyManager currencies && (currencies.RequiresContractCurrencyReload || currencies.HasPendingContractCurrency && !AuctionBidSaveAllowed && !BankSaveAllowed))
+            bool housingAuth = housingNameActor?.OwnsAuthSnapshot(housingSnapshot) == true;
+            if (housingNameActor != null && !HousingNameSaveAllowed && !housingAuth)
+                throw new InvalidOperationException("Player save overlaps a retained paid housing name.");
+            if (CurrencyManager is CurrencyManager currencies && (currencies.RequiresContractCurrencyReload || currencies.HasPendingContractCurrency && !AuctionBidSaveAllowed && !BankSaveAllowed && !HousingNameSaveAllowed && !housingAuth))
                 throw new InvalidOperationException("Player save overlaps pending or quarantined Contract currency work.");
             if (!frozen && QuestManager is QuestManager { HasContractCompletionWork: true })
                 throw new InvalidOperationException("Player save requires the frozen Contract journal before Auth enrollment.");

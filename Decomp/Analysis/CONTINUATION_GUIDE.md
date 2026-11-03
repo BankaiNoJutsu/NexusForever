@@ -1,5 +1,11 @@
 # Client Binary Decompile Continuation Guide
 
+[Community rename fee settlement](HOUSING_RENAME_FEE_SETTLEMENT.md) is the latest verified housing
+recovery milestone. Its fee/names commit together and publication follows SQL;
+the linked record covers 31 regressions on SQLite/MySQL and 11,828 full tests.
+External, native and retail qualification remain open.
+Community privacy/placement publication remains open; the broader Goal is active.
+
 [Registered residence recovery](RESIDENCE_GRAPH_RECOVERY.md) now persists
 complete residence/plot/decor/neighbor graphs through original owners, including
 community creation and retirement. All20 new/340 affected,20 MySQL and11,772 full

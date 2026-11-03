@@ -29,6 +29,7 @@ namespace NexusForever.Game.Guild
         private Unit active;
 
         internal bool Owns(CharacterContext context) { lock (gate) return active != null && ReferenceEquals(active.Context, context); }
+        internal bool HasActiveUnit { get { lock (gate) return active != null; } }
         internal void RequireAvailable(CharacterContext context)
         {
             lock (gate)
@@ -59,13 +60,13 @@ namespace NexusForever.Game.Guild
             }
         }
 
-        internal void Save(CharacterContext context)
+        internal void Save(CharacterContext context, string captured = null)
         {
             lock (gate)
             {
                 try
                 {
-                    if (active == null && !NeedsSave) return;
+                    if (active == null && captured == null && !NeedsSave) return;
                     RequireDatabase(context);
                     if (active != null)
                     {
@@ -83,7 +84,7 @@ namespace NexusForever.Game.Guild
                         || entry.Property(row => row.Name).IsModified || entry.Property(row => row.Type).IsModified
                         || entry.Property(row => row.DeleteTime).IsModified || entry.Entity.Name != before.Name)
                         throw new InvalidOperationException("Guild name already has foreign tracked intent.");
-                    string target = owner.Name;
+                    string target = captured ?? owner.Name;
                     entry.Property(row => row.Name).OriginalValue = beforeName;
                     entry.Property(row => row.Name).CurrentValue = target;
                     entry.Property(row => row.Name).IsModified = true;

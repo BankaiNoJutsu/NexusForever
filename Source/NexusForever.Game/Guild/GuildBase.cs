@@ -53,6 +53,7 @@ namespace NexusForever.Game.Guild
             get => name;
             set
             {
+                if (this is Community community) community.RequirePaidNameAssignment();
                 if (pendingDisband == null && globalGuildManager?.AssignRegisteredGuildName(this, value) == true)
                     return;
                 AssignName(value);

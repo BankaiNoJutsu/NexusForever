@@ -92,6 +92,7 @@ namespace NexusForever.Game.Housing
                 lock (MutationGate)
                 {
                     RequirePersistenceEditable();
+                    if (paidName != null) throw new InvalidOperationException("Residence name belongs to a retained paid rename.");
                     name = value;
                     saveMask |= ResidenceSaveMask.Name;
                 }
@@ -357,7 +358,8 @@ namespace NexusForever.Game.Housing
         {
             lock (saveOwnershipLock)
                 return Task.WhenAll(stagedSaveUnits.Where(unit => !ReferenceEquals(unit.Key, current)).Select(unit => unit.Value.Task)
-                    .Concat(donation is { Prepared: true } ? [donation.Completion.Task] : []));
+                    .Concat(donation is { Prepared: true } ? [donation.Completion.Task] : [])
+                    .Concat(paidName != null ? [paidName.Completion] : []));
         }
 
         internal bool IsCommunitySaveOwner(object owner)

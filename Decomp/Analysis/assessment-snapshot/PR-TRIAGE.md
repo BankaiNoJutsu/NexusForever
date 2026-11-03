@@ -1,5 +1,14 @@
 # Official pull request comparison
 
+[Community rename fee settlement](../HOUSING_RENAME_FEE_SETTLEMENT.md) is the latest verified housing
+recovery milestone. Its fee/names commit together and publication follows SQL;
+the linked record covers 31 regressions on SQLite/MySQL and 11,828 full tests.
+External, native and retail qualification remain open.
+Community privacy/placement publication remains open; the broader Goal is active.
+The current all-state delta refresh reports no new PR updates. Reviewed
+game_rework/#608/#609 heads are unchanged; #608 remains source-reconciled and
+#609 closed unmerged. The rename receipt retains the query and exact refs.
+
 [Housing donation settlement](../HOUSING_DONATION_SETTLEMENT.md) now commits both original residence
 graphs atomically and applies/publishes the transfer from the world update only
 after SQL confirmation. All 25 focused/MySQL and 11,797 full tests pass; build,

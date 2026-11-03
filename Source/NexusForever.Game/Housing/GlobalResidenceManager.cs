@@ -168,7 +168,7 @@ namespace NexusForever.Game.Housing
 
             foreach (IResidence residence in residences.Values)
             {
-                if (residence is Residence concreteResidence && (!concreteResidence.NeedsSave || concreteResidence.CommunitySavePending || concreteResidence.DonationSavePending))
+                if (residence is Residence concreteResidence && (!concreteResidence.NeedsSave || concreteResidence.CommunitySavePending || concreteResidence.DonationSavePending || concreteResidence.PaidNameSavePending))
                     continue;
 
                 lock (saveGate) if (!savesInFlight.Add(residence.Id)) continue;

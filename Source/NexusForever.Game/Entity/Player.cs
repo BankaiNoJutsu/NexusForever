@@ -820,6 +820,8 @@ namespace NexusForever.Game.Entity
 
         public override void Dispose()
         {
+            if (housingNameActor != null)
+            { housingNameActor.Retired = true; housingNameActor.DisposeRequested = true; return; }
             if (bankActor != null)
             { bankActor.Retired = true; bankActor.DisposeRequested = true; return; }
             if (auctionBidActor != null)
@@ -997,7 +999,7 @@ namespace NexusForever.Game.Entity
         {
             if (!ReleaseNormalRewardSave(true)) { HandleSaveFailure("snapshot", failureCallback); return; }
             ReleaseInventorySave();
-            if (auctionBidActor == null && bankActor == null) Session.CanProcessIncomingPackets = true;
+            if (auctionBidActor == null && bankActor == null && housingNameActor == null) Session.CanProcessIncomingPackets = true;
             saveInProgress                    = false;
             saveTimer.Resume();
 
@@ -1034,7 +1036,7 @@ namespace NexusForever.Game.Entity
             saveRequestedDuringSave           = false;
             deferredSaveCallback              = null;
             deferredSaveFailureCallback       = null;
-            if (OwnsFailedSession() && auctionBidActor == null && bankActor == null) failedSession.CanProcessIncomingPackets = true;
+            if (OwnsFailedSession() && auctionBidActor == null && bankActor == null && housingNameActor == null) failedSession.CanProcessIncomingPackets = true;
             saveTimer.Resume();
 
             try
@@ -1065,6 +1067,11 @@ namespace NexusForever.Game.Entity
 
         private Task SaveCharacterUnit(NormalRewardSave snapshot)
         {
+            if (snapshot?.HousingReceipt is { } housingReceipt)
+                return GetCharacterDatabase().SaveHousingRenameReconciliation(CharacterId, context =>
+                {
+                    SaveCharacter(context, snapshot); housingNameActor.StageNames(context);
+                }, housingReceipt);
             if (snapshot?.BankReceipt is { } bankReceipt)
                 return GetCharacterDatabase().SaveBankReconciliation(CharacterId, context => SaveCharacter(context, snapshot), bankReceipt);
             if (snapshot?.BidReceipt is { } receipt)
@@ -1595,6 +1602,8 @@ namespace NexusForever.Game.Entity
 
         private void CleanupCore()
         {
+            if (housingNameActor != null)
+            { housingNameActor.Retired = true; housingNameActor.CleanupRequested = true; return; }
             if (bankActor != null)
             { bankActor.Retired = true; bankActor.CleanupRequested = true; return; }
             if (auctionBidActor != null)

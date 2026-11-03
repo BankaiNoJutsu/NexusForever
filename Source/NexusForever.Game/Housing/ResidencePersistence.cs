@@ -51,6 +51,11 @@ namespace NexusForever.Game.Housing
         }
         internal bool NeedsSave { get { lock (Gate) return baseline == null || active != null || uncertain.Count != 0 || !Equal(current(), baseline); } }
         internal bool Owns(CharacterContext context) { lock (Gate) return active != null && ReferenceEquals(active.Context, context); }
+        internal bool OwnsRow(EntityEntry entry)
+        {
+            lock (Gate) return active != null && ReferenceEquals(active.Context, entry.Context)
+                && active.Rows.Any(row => ReferenceEquals(row.Entry.Entity, entry.Entity));
+        }
         internal static bool Equal(Snapshot a, Snapshot b) => ReferenceEquals(a, b) || a != null && b != null
             && a.Header == b.Header && a.Plots.SequenceEqual(b.Plots) && a.Decor.SequenceEqual(b.Decor) && a.Neighbors.SequenceEqual(b.Neighbors);
         internal static Header HeaderFrom(ResidenceModel row) => new(row.OwnerId, row.GuildOwnerId, row.PropertyInfoId, row.Name, row.PrivacyLevel,
@@ -79,7 +84,8 @@ namespace NexusForever.Game.Housing
         internal void RequireOwner(CharacterContext context, object reservation)
         {
             owner.RequireDonationSave(reservation);
-            if (context.IsSaveRejected || !registered() && !owner.OwnsCommunityRetirement(reservation) && !owner.OwnsDonation(reservation))
+            owner.RequirePaidNameSave(reservation);
+            if (context.IsSaveRejected || !registered() && !owner.OwnsCommunityRetirement(reservation) && !owner.OwnsDonation(reservation) && !owner.OwnsPaidName(reservation))
                 throw new InvalidOperationException("Residence lost its original registered owner or fresh context.");
             CharacterDatabaseIdentity.Require(context, database);
         }

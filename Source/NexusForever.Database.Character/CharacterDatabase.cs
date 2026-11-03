@@ -47,6 +47,9 @@ namespace NexusForever.Database.Character
         public virtual Task SaveBankReconciliation(ulong characterId, Action<CharacterContext> action, BankSaveReconciliation receipt)
             => CharacterAtomicSave.ExecuteBankReconciliation(CreateContext, characterId, action, receipt);
 
+        public virtual Task SaveHousingRenameReconciliation(ulong characterId, Action<CharacterContext> action, HousingRenameSaveReconciliation receipt)
+            => CharacterAtomicSave.ExecuteHousingRenameReconciliation(CreateContext, characterId, action, receipt);
+
         /// <summary>Create a complete Character graph and retain its confirmed database origin.</summary>
         public async Task CreateCharacter(CharacterModel character, IEnumerable<IDatabaseCharacter> items)
         {

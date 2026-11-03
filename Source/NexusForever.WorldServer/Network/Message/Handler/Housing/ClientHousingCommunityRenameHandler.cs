@@ -3,6 +3,8 @@ using System;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.Map.Instance;
+using NexusForever.Game.Entity;
+using NexusForever.Game.Guild;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Guild;
 using NexusForever.GameTable;
@@ -81,20 +83,37 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
             HousingResult result = GetResult();
             if (result == HousingResult.Success)
             {
-                using IDisposable reservation = globalGuildManager.TryReserveGuildName(community, housingCommunityRename.Name);
+                IDisposable reservation = globalGuildManager.TryReserveGuildName(community, housingCommunityRename.Name);
                 if (reservation == null)
                 {
                     session.EnqueueMessageEncrypted(new ServerHousingCommunityRenameResult { Result = HousingResult.Failed });
                     return;
                 }
-                // fun fact: 2395 is the final game formula entry
-                if (housingCommunityRename.AlternativeCurrency)
-                    session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Renown, renameCostEntry.Dataint01);
-                else
-                    session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, renameCostEntry.Dataint0);
-
-                community.RenameGuild(housingCommunityRename.Name);
-                community.Residence.Map?.RenameResidence(community.Residence, housingCommunityRename.Name);
+                if (session.Player is Player original)
+                {
+                    bool queued = false;
+                    try
+                    {
+                        if (community is Community owner)
+                            queued = owner.QueuePaidRename(original, housingCommunityRename.Name,
+                                housingCommunityRename.AlternativeCurrency ? CurrencyType.Renown : CurrencyType.Credits,
+                                housingCommunityRename.AlternativeCurrency ? renameCostEntry.Dataint01 : renameCostEntry.Dataint0, reservation);
+                    }
+                    finally { if (!queued) reservation.Dispose(); }
+                    if (!queued) session.EnqueueMessageEncrypted(new ServerHousingCommunityRenameResult { Result = HousingResult.Failed });
+                    return;
+                }
+                // Standalone model callers retain their existing synchronous
+                // path. Every real Player uses the registered settlement above.
+                using (reservation)
+                {
+                    if (housingCommunityRename.AlternativeCurrency)
+                        session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Renown, renameCostEntry.Dataint01);
+                    else
+                        session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, renameCostEntry.Dataint0);
+                    community.RenameGuild(housingCommunityRename.Name);
+                    community.Residence.Map?.RenameResidence(community.Residence, housingCommunityRename.Name);
+                }
             }
 
             session.EnqueueMessageEncrypted(new ServerHousingCommunityRenameResult

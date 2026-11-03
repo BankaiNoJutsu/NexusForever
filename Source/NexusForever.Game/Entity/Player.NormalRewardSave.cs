@@ -15,12 +15,14 @@ namespace NexusForever.Game.Entity
             if (QuestManager is not QuestManager quests || ChallengeManager is not ChallengeManager challenges) return null;
             identity ??= challenges.NormalSaveIdentity;
             if (identity == null) return null; // existing startup/legacy path; reward capture still refuses overlap
-            var questSnapshot = AuctionBidSaveAllowed ? auctionBidActor.CaptureQuestReconciliation(quests, identity.ExecutionDatabase)
+            var questSnapshot = HousingNameSaveAllowed ? housingNameActor.CaptureQuests(quests, identity.ExecutionDatabase)
+                : AuctionBidSaveAllowed ? auctionBidActor.CaptureQuestReconciliation(quests, identity.ExecutionDatabase)
                 : BankSaveAllowed ? bankActor.CaptureQuests(quests, identity.ExecutionDatabase)
                 : quests.CaptureNormalSave(identity.ExecutionDatabase);
             try
             {
                 var currencySnapshot = CurrencyManager is not CurrencyManager currencies ? null
+                    : HousingNameSaveAllowed ? housingNameActor.CaptureCurrencies(questSnapshot.Token)
                     : AuctionBidSaveAllowed ? currencies.CaptureAuctionBidNormalSave(questSnapshot.Token, auctionBidActor.Wallet)
                     : BankSaveAllowed && bankActor.Wallet != null ? bankActor.Wallet.CaptureNormalSave(questSnapshot.Token)
                     : currencies.CaptureNormalSave(questSnapshot.Token);
@@ -36,11 +38,12 @@ namespace NexusForever.Game.Entity
                 var challengeSnapshot = challenges.CaptureNormalSave(identity);
                 var bidReceipt = AuctionBidSaveAllowed ? auctionBidActor.CaptureReconciliationReceipt() : null;
                 var bankReceipt = BankSaveAllowed ? bankActor.CaptureReceipt() : null;
-                challengeSnapshot.RetainBidRollback = bidReceipt != null || bankReceipt != null;
+                var housingReceipt = HousingNameSaveAllowed ? housingNameActor.CaptureReceipt() : null;
+                challengeSnapshot.RetainBidRollback = bidReceipt != null || bankReceipt != null || housingReceipt != null;
                 normalRewardSave = new(this, quests, challenges, questSnapshot, challengeSnapshot, currencySnapshot, bidReceipt,
                     AuctionBidSaveAllowed ? auctionBidActor.CaptureDeliveryWitness() : null,
                     AuctionBidSaveAllowed ? auctionBidActor.CaptureCommodityWitness() : null,
-                    AuctionBidSaveAllowed ? auctionBidActor.CaptureEscrowWitness() : null, wardrobeSnapshot, titleSnapshot, progressionSnapshot, experienceSnapshot, inventorySnapshot, satchelSnapshot, keybindingSnapshot, bankReceipt); return normalRewardSave;
+                    AuctionBidSaveAllowed ? auctionBidActor.CaptureEscrowWitness() : null, wardrobeSnapshot, titleSnapshot, progressionSnapshot, experienceSnapshot, inventorySnapshot, satchelSnapshot, keybindingSnapshot, bankReceipt, housingReceipt); return normalRewardSave;
             }
             catch { questSnapshot.Dispose(); throw; }
         }
@@ -58,10 +61,12 @@ namespace NexusForever.Game.Entity
             Action<NexusForever.Database.Character.CharacterContext> inventorySnapshot = null,
             Action<NexusForever.Database.Character.CharacterContext> satchelSnapshot = null,
             Action<NexusForever.Database.Character.CharacterContext> keybindingSnapshot = null,
-            NexusForever.Database.Character.BankSaveReconciliation bankReceipt = null)
+            NexusForever.Database.Character.BankSaveReconciliation bankReceipt = null,
+            NexusForever.Database.Character.HousingRenameSaveReconciliation housingReceipt = null)
         {
             internal NexusForever.Database.Character.MarketplaceBidReconciliation BidReceipt { get; private set; } = bidReceipt;
             internal NexusForever.Database.Character.BankSaveReconciliation BankReceipt { get; private set; } = bankReceipt;
+            internal NexusForever.Database.Character.HousingRenameSaveReconciliation HousingReceipt { get; private set; } = housingReceipt;
             internal QuestManager.NormalSaveSnapshot Quests { get; } = questSnapshot;
             internal ChallengeManager.NormalSaveSnapshot Challenges { get; } = challengeSnapshot;
             internal void SaveCurrencies(NexusForever.Database.Character.CharacterContext context)
@@ -145,6 +150,14 @@ namespace NexusForever.Game.Entity
                 Quests.RetryBidRollback(proof.Context, partial); Challenges.RetryBidRollback(proof.Context, partial);
                 BankReceipt = BankReceipt with { Id = System.Guid.NewGuid().ToString("N") }; return true;
             }
+            internal bool RetryHousingRollback(NexusForever.Database.Character.CharacterReconciliationRolledBackException proof)
+            {
+                Validate(); bool partial = !proof.EnrollmentCompleted;
+                if (HousingReceipt == null || proof.ReceiptId != HousingReceipt.Id || !Quests.CanRetryBidRollback(proof.Context, partial)
+                    || !Challenges.CanRetryBidRollback(proof.Context, partial)) return false;
+                Quests.RetryBidRollback(proof.Context, partial); Challenges.RetryBidRollback(proof.Context, partial);
+                HousingReceipt = HousingReceipt with { Id = System.Guid.NewGuid().ToString("N") }; return true;
+            }
             internal void Validate()
             {
                 if (ended || !ReferenceEquals(owner.normalRewardSave, this)) throw new InvalidOperationException("Player frozen save lost its owner.");
@@ -176,7 +189,7 @@ namespace NexusForever.Game.Entity
         private void SaveFrozenAuth(AuthContext context, NormalRewardSave snapshot)
         {
             if (snapshot == null) { Save(context); return; }
-            snapshot.Validate(); CheckInventorySaveAllowed(frozen: true); Account.Save(context);
+            snapshot.Validate(); CheckInventorySaveAllowed(frozen: true, housingSnapshot: snapshot); Account.Save(context);
         }
         private bool ReleaseNormalRewardSave(bool success) => normalRewardSave?.Finish(success) ?? success;
     }

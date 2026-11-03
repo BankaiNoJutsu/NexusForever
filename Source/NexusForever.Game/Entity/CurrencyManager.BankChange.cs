@@ -65,6 +65,51 @@ namespace NexusForever.Game.Entity
             private int applied;
             private readonly List<Line> notifications = [];
             internal bool CanSave => reconciling && state == 1;
+            internal Action<CharacterContext> CaptureHousingPrimarySave(object token)
+            {
+                Validate();
+                if (state != 0 || reconciling) throw new InvalidOperationException("Housing fee already entered reconciliation.");
+                var other = manager.currencies.Where(pair => !wallets.ContainsKey(pair.Key)).Select(pair => pair.Value is Currency currency
+                    ? currency.CaptureNormalSave(token) : throw new InvalidOperationException("Housing fee requires concrete currency owners.")).ToArray();
+                return context =>
+                {
+                    Validate(); manager.AssertLoadedCurrencyContext(context);
+                    foreach (var row in other) row(context);
+                    Stage(context);
+                };
+            }
+            internal void PrepareHousingOrdinary()
+            {
+                Validate();
+                if (state != 0 || reconciling) throw new InvalidOperationException("Housing fee already reconciles.");
+                foreach (var pair in wallets)
+                {
+                    pair.Value.Owner.AdoptForHousingReconciliation();
+                    if (!pair.Value.Registered) { manager.currencies.Add(pair.Key, pair.Value.Currency); pair.Value.Registered = true; }
+                }
+                reconciling = true; state = 1;
+                foreach (var line in initial) ApplyEffects(line);
+                ApplyLater();
+            }
+            internal IReadOnlyList<Func<NexusForever.Network.Message.IWritable>> CaptureHousingPublication()
+            {
+                Validate();
+                if (!CanSave || applied != deferred.Count) throw new InvalidOperationException("Housing fee has unfinished ordinary currency intent.");
+                publishing = true;
+                var packets = new List<Func<NexusForever.Network.Message.IWritable>>();
+                foreach (var line in notifications)
+                {
+                    if (line.Loot) packets.Add(() => new ServerChannelUpdateLoot { CurrencyId = line.Type, Amount = unchecked(line.After - line.Before) });
+                    packets.Add(() => new ServerCombatReward { Stat = (byte)(line.Type - 1), NewValue = line.After });
+                }
+                return packets;
+            }
+            internal void FinishHousingPublication()
+            {
+                Validate();
+                if (!CanSave || !publishing || applied != deferred.Count) throw new InvalidOperationException("Housing currency publication lost its retained state.");
+                state = 2; Complete();
+            }
             internal void SuppressPublication()
             {
                 Validate(); if (!CanSave || applied != deferred.Count) throw new InvalidOperationException("Bank currency has unfinished ordinary intent.");

@@ -5,6 +5,14 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+[Community rename fee settlement](HOUSING_RENAME_FEE_SETTLEMENT.md) now commits
+the selected fee, both names and the original complete Character graph together,
+then publishes through guarded world-update stages. All 31 new/553 affected,
+31 MySQL and 11,828 full cases pass; build, reviews and 6,233-input/11-DLL bindings
+verify. Other housing privacy/placement/remodel publication and fee flows remain
+open, along with all external/native/retail gates. The Goal stays active;
+defaults 15:1/17:1/no44/seven grants and client/CUA stop remain.
+
 [Housing donation settlement](HOUSING_DONATION_SETTLEMENT.md) now commits both original residence
 graphs atomically and applies/publishes the transfer from the world update only
 after SQL confirmation. All 25 focused/MySQL and 11,797 full tests pass; build,
@@ -1356,10 +1364,13 @@ solution build/test gate at coherent integration milestones.
    11,752-full/22-MySQL gate above. Registered root/plot/decor/neighbor recovery,
    real community creation and retirement now have the later11,772-full/20-MySQL
    gate above. Cross-residence donation now has the later11,797-full/25-MySQL
-   settlement and world-update publication gate linked above. Continue fee
-   settlement and guarded publication for the remaining housing handlers;
-   community rename still debits currency and replies outside its guild/residence
-   SQL unit. Reproduce its actual public fee/reply flow before integrating it.
+   settlement and world-update publication gate linked above. Community rename
+   fee/name settlement now has the later11,828-full/31-MySQL gate linked above;
+   do not repeat that integration. Continue the remaining housing fee and
+   publication flows. The next inspected producer is community privacy: visit
+   indexing, local flag broadcast and private reply currently precede the guild
+   flag SQL save. Reproduce that public flow, then integrate committed guarded
+   publication while preserving existing permissions and privacy wire values.
    Cross-character notification atomicity, durable realm-first arbitration,
    other atomic financial settlement, live broker/restart and broader
    provider qualification remain open; the complete feature and assessment scope

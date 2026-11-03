@@ -83,7 +83,7 @@ namespace NexusForever.Game.Entity
 
         private void AssertBankPublicationMutationAllowed()
         {
-            if (player is Player { IsBankPublicationInProgress: true })
+            if (player is Player { IsBankPublicationInProgress: true } or Player { HousingNamePublishing: true })
                 throw new InvalidOperationException("Bank publication cannot accept a reentrant currency mutation.");
         }
 

@@ -74,6 +74,7 @@ namespace NexusForever.Database.Character
         }
         internal static void ValidateCharacterOwner(CharacterContext context, EntityEntry entry, bool deleted)
         {
+            if (context.HousingRenameOwner?.Authorizes(entry) == true) return;
             // A proven bank rollback may leave an Item in its original neutral
             // mail custody. Only that retained complete parent graph can admit
             // its ordinary metadata save; general Character ownership is intact.

@@ -22,7 +22,7 @@ namespace NexusForever.Game.Entity
         internal Inventory BankInventory => bankActor?.Inventory;
         internal BankActor BeginBankReconciliation(object operation, Inventory inventory)
         {
-            if (bankActor != null || auctionBidActor != null || IsNormalSaveInProgress)
+            if (bankActor != null || auctionBidActor != null || housingNameActor != null || IsNormalSaveInProgress)
                 throw new InvalidOperationException("Bank reconciliation requires an unreserved original actor.");
             var actor = new BankActor(this, operation, inventory); bankActor = actor;
             Session.CanProcessIncomingPackets = false; return actor;

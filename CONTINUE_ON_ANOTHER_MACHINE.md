@@ -1,5 +1,11 @@
 # Continue on another machine
 
+[Community rename fee settlement](Decomp/Analysis/HOUSING_RENAME_FEE_SETTLEMENT.md) is the latest verified housing
+recovery milestone. Its fee/names commit together and publication follows SQL;
+the linked record covers 31 regressions on SQLite/MySQL and 11,828 full tests.
+External, native and retail qualification remain open.
+Community privacy/placement publication remains open; the broader Goal is active.
+
 [Housing donation settlement](Decomp/Analysis/HOUSING_DONATION_SETTLEMENT.md) now commits both original residence
 graphs atomically and applies/publishes the transfer from the world update only
 after SQL confirmation. All 25 focused/MySQL and 11,797 full tests pass; build,
