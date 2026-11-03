@@ -5,6 +5,16 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+[Community directory recovery](COMMUNITY_DIRECTORY_RECOVERY.md) now refreshes
+confirmed name/search/display metadata, restores settled public model loads,
+queues creation/ordinary-name publication and protects privacy/replacement
+metadata. All 25 new/440 affected, 25 MySQL and 11,879 full cases pass; build,
+reviews and 6,237-input/11-DLL bindings verify. A separate real remodel probe now
+reproduces live/broadcast changes while SQL remains old through a rejected save;
+committed remodel publication is next. Other housing and external/native/retail
+gates stay open. The Goal is active; defaults 15:1/17:1/no44/seven grants and the
+client/CUA stop remain unchanged.
+
 [Committed community privacy](HOUSING_PRIVACY_PUBLICATION.md) now retains the
 prior live flag and visit index until its complete guild save confirms the target,
 then publishes ordered world-update stages. All 26 focused/415 affected, 26 MySQL
@@ -1379,13 +1389,15 @@ solution build/test gate at coherent integration milestones.
    fee/name settlement now has the later11,828-full/31-MySQL gate linked above;
    do not repeat that integration. Continue the remaining housing fee and
    publication flows. Committed community privacy now has the later
-   11,854-full/26-MySQL gate linked above; do not repeat that integration. Next,
-   complete community visitor/search index lifecycle: the linked owned SQLite
-   public rename/model-load probe confirms committed SQL and fee, then reproduces
-   a missing new-name lookup, retained old alias, stale visit label and absent
-   public visit entry after a fresh residence-manager load. Preserve exact owner,
-   privacy and retirement guards; no full server restart or retail claim follows.
-   Continue placement/remodel publication and the broader feature queue afterward.
+   11,854-full/26-MySQL gate linked above; do not repeat that integration.
+   Community visitor/search directory recovery now has the later11,879-full/
+   25-MySQL gate linked above, including creation, ordinary rename and settled
+   model-load metadata. Do not repeat that integration. Next complete committed
+   remodel publication: the linked real handler/map/Player probe retains SQL
+   music0 through a rejected save while live/broadcast music is already29; normal
+   recovery commits29 after removing the owned trigger. Preserve complete root
+   ownership, permissions and stale-map/session guards. Continue placement and
+   the broader feature queue afterward; model tests do not qualify retail.
    Cross-character notification atomicity, durable realm-first arbitration,
    other atomic financial settlement, live broker/restart and broader
    provider qualification remain open; the complete feature and assessment scope

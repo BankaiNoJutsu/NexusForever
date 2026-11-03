@@ -361,7 +361,7 @@ namespace NexusForever.Game.Guild
                 {
                     if (committed && unit.Flushed && !unit.Context.HasSavepointRollback)
                     {
-                        if (unit.Creating) owner.AcknowledgeCreation(unit.TargetHeader, database);
+                        if (unit.Creating) owner.AcknowledgeCreation(unit.TargetHeader, database, unit.Target.Leader, unit.Target.Flags);
                         acknowledge(baseline ?? Empty, unit.Target, unit.Intent); baseline = unit.Target; baselineIntent = unit.Intent; uncertain.Clear(); possibleCreations.Clear();
                     }
                     else

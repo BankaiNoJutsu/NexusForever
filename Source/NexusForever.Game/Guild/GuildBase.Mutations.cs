@@ -56,22 +56,28 @@ namespace NexusForever.Game.Guild
         internal ulong? CreationLeader => pendingDisband != null ? pendingDisband.LeaderId : LeaderId;
         internal GuildMutationPersistence.CreationHeader CaptureCreationHeader()
             => new(pendingDisband != null ? pendingDisband.Name : Name, CreateTime, null, null, null);
-        internal void AcknowledgeCreation(GuildMutationPersistence.CreationHeader header, string database)
+        internal void AcknowledgeCreation(GuildMutationPersistence.CreationHeader header, string database, ulong? leader, uint flags)
         {
             saveMask &= ~GuildBaseSaveMask.Create;
             if (StringComparer.Ordinal.Equals(Name, header.Name)) saveMask &= ~GuildBaseSaveMask.Name;
             namePersistence ??= new GuildNamePersistence(this, header.Name, database, savedName => globalGuildManager?.GuildNameSaved(this, savedName));
             if (!IsDisbandAccepted) pendingMutationPublications.Enqueue(new GuildCreatedPublication(Id, Type));
             if (!IsDisbandAccepted) globalGuildManager?.GuildNameSaved(this, header.Name);
+            if (!IsDisbandAccepted && this is Community community) community.QueueCreatedDirectory(header.Name, leader, flags);
         }
         private void InitialiseMutations(GuildMutationPersistence.Snapshot baseline, string database)
         {
+            if (baseline != null && this is Community community) community.ConfirmDirectoryMutations(baseline.Flags, baseline.Leader);
             mutationPersistence = new(this, MutationGate, baseline, database, CaptureMutations, AcknowledgeMutations);
             foreach (GuildRank rank in ranks.Values.OfType<GuildRank>()) rank.BindSaveOwner(this);
         }
         private void AcknowledgeMutations(GuildMutationPersistence.Snapshot before, GuildMutationPersistence.Snapshot target, GuildMutationPersistence.Snapshot intent)
         {
-            if (this is Community community) community.PrivacyMutationCommitted(intent.Flags, target.Flags);
+            if (this is Community community)
+            {
+                community.PrivacyMutationCommitted(intent.Flags, target.Flags);
+                community.ConfirmDirectoryMutations(target.Flags, target.Leader);
+            }
             if (this is Guild achievementGuild) achievementGuild.AcknowledgeAchievementMutations(before.Achievements ?? [], intent.Achievements, target.Achievements);
             // Accepted disband already captured every retained member for its cleanup.
             if (!IsDisbandAccepted) CaptureMutationPublications(before, target);

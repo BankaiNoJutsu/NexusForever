@@ -283,6 +283,8 @@ namespace NexusForever.Game.Guild
                         {
                             foreach (var pending in residences)
                             {
+                                if (pending.Value.Name != null && pending.Value.Residence.GuildOwnerId == Id)
+                                    ConfirmDirectoryName(pending.Value.Residence, pending.Value.Name);
                                 if (pending.Value.Residence is Residence concrete)
                                     concrete.CompleteCommunitySave(pending.Value);
                                 if (pendingResidenceChanges.TryGetValue(pending.Key, out var current) && ReferenceEquals(current, pending.Value))

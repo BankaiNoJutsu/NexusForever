@@ -46,6 +46,8 @@ namespace NexusForever.Game.Housing
 
         private readonly Dictionary<ulong, IPublicResidence> visitableResidences = new();
         private readonly Dictionary<ulong, IPublicCommunity> visitableCommunities = new();
+        private sealed record CommittedCommunity(Community Owner, IResidence Root, string Name, ulong? Leader, bool Private);
+        private readonly ConcurrentDictionary<Community, CommittedCommunity> committedCommunities = new();
 
         private double timeToSave;
 
@@ -111,7 +113,7 @@ namespace NexusForever.Game.Housing
                     var residence = new Residence(model, this, realmContext?.RealmId ?? (ushort)0, gameTableManager);
                     community.Residence = residence;
 
-                    StoreCommunity(residence, community);
+                    StoreCommunity(residence, community, loaded: true);
                 }
             }
 
@@ -151,6 +153,7 @@ namespace NexusForever.Game.Housing
 
         public void Update(double lastTick)
         {
+            PublishCommittedCommunities();
             SaveDonations();
             timeToSave -= lastTick;
             if (timeToSave <= 0d)
@@ -230,20 +233,95 @@ namespace NexusForever.Game.Housing
             return residence;
         }
 
-        private void StoreCommunity(IResidence residence, ICommunity community)
+        private void StoreCommunity(IResidence residence, ICommunity community, bool loaded = false)
         {
             if (residence is not Residence { HasPersistence: true }) BindPersistence(residence);
             if (!residences.TryAdd(residence.Id, residence)) throw new InvalidOperationException("Residence identity is already registered.");
 
             communityOwnerCache.Add(residence.GuildOwnerId.Value, residence.Id);
-            communitySearchCache.Add(community.Name, residence.Id);
-
-            // community residences store the privacy level in the community it self as a guild flag
-            /*if ((community.Flags & GuildFlag.CommunityPrivate) == 0)
+            bool settled = loaded && community is Community { PendingCreate: false, PendingDelete: false } actor
+                && !actor.PaidNamePrepared && !actor.PrivacyPrepared && !actor.NameUnitActive
+                && StringComparer.Ordinal.Equals(community.Name, residence.Name);
+            if (settled)
             {
-                ICharacter character = GetCharacterManager().GetCharacter(community.LeaderId.Value);
-                RegisterCommunityVisits(residence, community, character.Name);
-            }*/
+                communitySearchCache.Add(community.Name, residence.Id);
+                if (community is Community confirmed) confirmed.ConfirmDirectoryName(residence, community.Name);
+            }
+
+            // Only loaded, confirmed actors may restore public directory entries.
+            // A newly created community still belongs to its creation save unit.
+            if (settled && community is Community owner
+                && !owner.DirectoryPrivateConfirmed && !owner.HasFlags(GuildFlag.CommunityPrivate))
+            {
+                ulong? leader = owner.DirectoryLeaderConfirmed;
+                ICharacter character = leader.HasValue ? GetCharacterManager().GetCharacter(leader.Value) : null;
+                if (character != null) PublishCommunityPrivacy(residence, owner, false, character.Name, owner.Name);
+                else log.Warn("Public community {0} has no current owner label; its visit entry remains unavailable.", owner.Id);
+            }
+        }
+
+        internal void QueueConfirmedCommunityDirectory(IResidence residence, Community community, string name, ulong? leader, bool isPrivate)
+            => committedCommunities[community] = new(community, residence, name, leader, isPrivate);
+
+        private void RemoveCommittedCommunity(CommittedCommunity entry)
+            => ((ICollection<KeyValuePair<Community, CommittedCommunity>>)committedCommunities).Remove(new(entry.Owner, entry));
+
+        private void PublishCommittedCommunities()
+        {
+            foreach (var entry in committedCommunities.Values.ToArray())
+            {
+                if (entry.Owner.PendingDelete || !ReferenceEquals(GetResidence(entry.Root.Id), entry.Root)
+                    || !ReferenceEquals(GetGlobalGuildManager().GetGuild<ICommunity>(entry.Owner.Id), entry.Owner)
+                    || !ReferenceEquals(entry.Owner.Residence, entry.Root)) { RemoveCommittedCommunity(entry); continue; }
+                if (entry.Owner.PaidNamePrepared || entry.Owner.PrivacyPrepared || entry.Owner.NameUnitActive)
+                    continue;
+                // Retain ownership while a later ordinary name intent is unsaved.
+                // Its confirmed complete save replaces this captured directory record.
+                if (entry.Owner.Name != entry.Name || entry.Root.Name != entry.Name) continue;
+                try
+                {
+                    PublishCommunityRename(entry.Root, entry.Owner, entry.Name, entry.Leader, entry.Private);
+                    RemoveCommittedCommunity(entry);
+                }
+                catch (Exception error)
+                {
+                    log.Error(error, "Confirmed community directory publication remains queued.");
+                }
+            }
+        }
+
+        internal void PublishCommunityRename(IResidence residence, Community community, string name, ulong? leader, bool? confirmedPrivate = null)
+        {
+            if (residence.OwnerId.HasValue || residence.GuildOwnerId != community.Id
+                || !ReferenceEquals(GetResidence(residence.Id), residence)
+                || !ReferenceEquals(GetGlobalGuildManager().GetGuild<ICommunity>(community.Id), community)) return;
+            bool current = !community.PendingDelete && ReferenceEquals(community.Residence, residence)
+                && ReferenceEquals(GetCommunityByOwner(community.Id), residence);
+            if (current && (!StringComparer.Ordinal.Equals(community.Name, name) || !StringComparer.Ordinal.Equals(residence.Name, name)))
+                throw new InvalidOperationException("Community visitor name requires both adopted names.");
+            if (current && communitySearchCache.TryGetValue(name, out ulong other) && other != residence.Id)
+            {
+                if (GetCommunityByOwner(name) != null)
+                    throw new InvalidOperationException("Community visitor name belongs to another residence.");
+                communitySearchCache.Remove(name); // An inert stale alias cannot reserve a confirmed name.
+            }
+
+            foreach (string alias in communitySearchCache.Where(row => row.Value == residence.Id).Select(row => row.Key).ToArray())
+                if (!current || !communitySearchCache.Comparer.Equals(alias, name)) communitySearchCache.Remove(alias);
+            if (current) communitySearchCache[name] = residence.Id;
+
+            bool isPrivate = confirmedPrivate == true || community.DirectoryPrivateConfirmed || community.HasFlags(GuildFlag.CommunityPrivate);
+            if (visitableCommunities.TryGetValue(residence.Id, out IPublicCommunity entry) && entry.NeighbourhoodId == community.Id)
+            {
+                if (!current || isPrivate) visitableCommunities.Remove(residence.Id);
+                else visitableCommunities[residence.Id] = new PublicCommunity { NeighbourhoodId = community.Id, Owner = entry.Owner, Name = name };
+            }
+            else if (entry == null && current && !isPrivate)
+            {
+                ICharacter character = leader.HasValue ? GetCharacterManager().GetCharacter(leader.Value) : null;
+                if (character != null) PublishCommunityPrivacy(residence, community, false, character.Name, name);
+                else log.Warn("Public community {0} has no confirmed owner label; its visit entry remains unavailable.", community.Id);
+            }
         }
 
         /// <summary>
@@ -275,7 +353,12 @@ namespace NexusForever.Game.Housing
         /// </summary>
         public IResidence GetCommunityByOwner(string name)
         {
-            return communitySearchCache.TryGetValue(name, out ulong residenceId) ? GetResidence(residenceId) : null;
+            if (!communitySearchCache.TryGetValue(name, out ulong residenceId) || GetResidence(residenceId) is not { OwnerId: null, GuildOwnerId: { } guild } root)
+                return null;
+            ICommunity owner = GetGlobalGuildManager().GetGuild<ICommunity>(guild);
+            return owner != null && owner is not GuildBase { PendingCreate: true } and not GuildBase { PendingDelete: true }
+                && ReferenceEquals(owner.Residence, root) && communitySearchCache.Comparer.Equals(owner.Name, name)
+                && communitySearchCache.Comparer.Equals(root.Name, name) ? root : null;
         }
 
         /// <summary>
@@ -320,13 +403,12 @@ namespace NexusForever.Game.Housing
             IResidence residence = community?.Residence;
             if (residence == null)
                 return;
+            if (!residences.TryGetValue(residence.Id, out IResidence current) || !ReferenceEquals(current, residence))
+                return;
 
             DeregisterCommunityVists(residence.Id);
-            if (residences.TryGetValue(residence.Id, out IResidence current) && ReferenceEquals(current, residence))
-            {
-                if (residence is Residence concrete) concrete.RetainCommunityRetirement(community);
-                residences.TryRemove(residence.Id, out _);
-            }
+            if (residence is Residence concrete) concrete.RetainCommunityRetirement(community);
+            residences.TryRemove(residence.Id, out _);
             if (communityOwnerCache.TryGetValue(community.Id, out ulong id) && id == residence.Id)
                 communityOwnerCache.Remove(community.Id);
             foreach (string name in communitySearchCache.Where(p => p.Value == residence.Id).Select(p => p.Key).ToList())

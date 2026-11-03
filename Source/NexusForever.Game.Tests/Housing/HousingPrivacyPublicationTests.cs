@@ -335,7 +335,6 @@ public sealed class HousingPrivacyPublicationTests
         var community = Assert.IsType<Community>(guilds.GetGuild(77));
         var membership = RecordingDispatchProxy<IGuildManager>.Create(out var mp); mp.SetMethodReturn(nameof(IGuildManager.GetGuild), community); actor.SetProperty(nameof(IPlayer.GuildManager), membership);
         community.OnPlayerLogin(player); messages.Invocations.Clear();
-        if (!initiallyPrivate) residences.RegisterCommunityVisits(community.Residence, community, "Leader");
         return new(provider, file, guilds, residences, community, session, messages, events, new(residences, realm));
     }
     private sealed record Fixture(DbContextOptions<CharacterContext> Options, string File, GlobalGuildManager Guilds, GlobalResidenceManager Residences,

@@ -460,7 +460,7 @@ public sealed class HousingRenameFeeRecoveryTests
             ? $"CREATE TRIGGER {trigger} BEFORE UPDATE ON {table} BEGIN SELECT RAISE(ABORT, 'owned rename write failure'); END"
             : $"CREATE TRIGGER {trigger} BEFORE UPDATE ON {table} FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'owned rename write failure'");
     private static object[] Messages(Fixture f) => f.Messages.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Select(row => row.Arguments[0]).ToArray();
-    private static ClientHousingCommunityRename Request(string name, bool renown = false)
+    internal static ClientHousingCommunityRename Request(string name, bool renown = false)
     {
         using var stream = new MemoryStream();
         using (var writer = new GamePacketWriter(stream))
@@ -471,7 +471,7 @@ public sealed class HousingRenameFeeRecoveryTests
         using var input = new MemoryStream(stream.ToArray()); using var reader = new GamePacketReader(input);
         var request = new ClientHousingCommunityRename(); request.Read(reader); return request;
     }
-    private static async Task Flush(Fixture f)
+    internal static async Task Flush(Fixture f)
     {
         // Exercise the actual independent owners as well as both periodic
         // managers. A retained settlement must reject escaping one-sided saves.
@@ -487,7 +487,7 @@ public sealed class HousingRenameFeeRecoveryTests
             await f.Actor.Drain(allowErrors: true);
         }
     }
-    private static async Task Wait(Fixture f, object manager, string gateName, string pendingName)
+    internal static async Task Wait(Fixture f, object manager, string gateName, string pendingName)
     {
         object gate = manager.GetType().GetField(gateName, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(manager);
         var pending = (HashSet<ulong>)manager.GetType().GetField(pendingName, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(manager);
@@ -499,14 +499,14 @@ public sealed class HousingRenameFeeRecoveryTests
         }
         Assert.Fail("The rename owner did not settle.");
     }
-    private async Task<Fixture> Create(IInterceptor interceptor = null, bool zeroFee = false)
+    internal async Task<Fixture> Create(IInterceptor interceptor = null, bool zeroFee = false)
     {
         var source = new OwnerFixture(options); source.Seed();
         var tables = source.Source.Tables; var table = (RecordingDispatchProxy<IGameTableManager>)(object)tables;
         table.SetProperty(nameof(IGameTableManager.CurrencyType), PlayerBindPointTests.Table(new CurrencyTypeEntry { Id = 1, CapAmount = 1000000 }, new CurrencyTypeEntry { Id = 2, CapAmount = 1000000 }));
         table.SetProperty(nameof(IGameTableManager.GameFormula), PlayerBindPointTests.Table(new GameFormulaEntry { Id = 237, Datafloat0 = 5 }, new GameFormulaEntry { Id = 2395, Dataint0 = zeroFee ? 0u : 100u, Dataint01 = 78 }));
         table.SetProperty(nameof(IGameTableManager.HousingPlotInfo), PlayerBindPointTests.Table(new HousingPlotInfoEntry { Id = 3, HousingPropertyInfoId = (uint)PropertyInfoId.Community, HousingPropertyPlotIndex = 0 }));
-        table.SetProperty(nameof(IGameTableManager.HousingPlugItem), PlayerBindPointTests.Table(new HousingPlugItemEntry { Id = 531 }));
+        table.SetProperty(nameof(IGameTableManager.HousingPlugItem), PlayerBindPointTests.Table(new HousingPlugItemEntry { Id = 531 }, new HousingPlugItemEntry { Id = 573 }));
         table.SetProperty(nameof(IGameTableManager.HousingWallpaperInfo), PlayerBindPointTests.Table(new HousingWallpaperInfoEntry { Id = 29, Flags = 0x100 }));
         CharacterDatabase database = interceptor == null ? new CharacterDatabase() : new InterceptedDatabase(interceptor);
         using (var seed = source.Context())
@@ -534,13 +534,16 @@ public sealed class HousingRenameFeeRecoveryTests
         playerProxy.SetMethodReturnFactory(nameof(IPlayerManager.GetPlayer), () => originalPlayer);
         GlobalGuildManager guilds = null;
         var guildProxy = RecordingDispatchProxy<IGlobalGuildManager>.Create(out var forward); forward.SetMethodHandler(nameof(IGlobalGuildManager.GetGuild), args => guilds.GetGuild((ulong)args[0]));
-        var residences = new GlobalResidenceManager(globalGuildManager: guildProxy, databaseManager: databases, gameTableManager: tables);
+        var residences = new GlobalResidenceManager(characterManager: characters, globalGuildManager: guildProxy,
+            realmContext: realm, databaseManager: databases, gameTableManager: tables);
         var factory = RecordingDispatchProxy<IGuildFactory>.Create(out var creation);
         creation.SetMethodHandler(nameof(IGuildFactory.CreateGuild), args =>
         {
             var community = new Community(realm, publisher, residences, filter, RecordingDispatchProxy<IMapLockManager>.Create(out _),
                 characterManager: characters, globalGuildManager: guilds, playerManager: players);
-            community.Initialise((GuildModel)args[0]); return community;
+            if (args[0] is GuildModel loaded) community.Initialise(loaded);
+            else community.Initialise((string)args[1], (string)args[2], (string)args[3], (string)args[4]);
+            return community;
         });
         guilds = new GlobalGuildManager(factory, databases); guilds.Initialise(); residences.Initialise();
         var community = Assert.IsType<Community>(guilds.GetGuild(77));
@@ -593,7 +596,7 @@ public sealed class HousingRenameFeeRecoveryTests
             return result;
         }
     }
-    private sealed record Fixture(OwnerFixture Source, RewardNormalSaveSnapshotTests.Actor Actor, CurrencyManager Currency,
+    internal sealed record Fixture(OwnerFixture Source, RewardNormalSaveSnapshotTests.Actor Actor, CurrencyManager Currency,
         GlobalGuildManager Guilds, GlobalResidenceManager Residences, Community Community, IWorldSession Session,
         RecordingDispatchProxy<IWorldSession> Messages,
         ClientHousingCommunityRenameHandler Handler) : IDisposable

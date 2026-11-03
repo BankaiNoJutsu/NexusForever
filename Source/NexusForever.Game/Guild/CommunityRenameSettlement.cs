@@ -130,6 +130,7 @@ namespace NexusForever.Game.Guild
             community.ApplyPaidRename(this, name);
             residence.Apply();
             var prepared = new List<Action>();
+            prepared.Add(() => residence.PublishName(community, player.CharacterId));
             foreach (var packet in actor.BeginPublication())
                 prepared.Add(() => { if (actor.CanPublish) session.EnqueueMessageEncrypted(packet()); });
             if (CurrentCommunity) prepared.AddRange(community.CapturePaidNameBroadcast(this, name));

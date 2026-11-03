@@ -1,5 +1,10 @@
 # NexusForever Feature Restoration - Current Status
 
+[Confirmed community directory recovery](Decomp/Analysis/COMMUNITY_DIRECTORY_RECOVERY.md) is the latest housing result.
+The linked 25-case/MySQL and 11,879-test full gate preserves external/native/retail
+limits. A real remodel-publication probe supplies the next failing flow; the
+broader Goal remains active.
+
 [Committed community privacy](Decomp/Analysis/HOUSING_PRIVACY_PUBLICATION.md) is the latest housing recovery result.
 The linked record covers 26 SQLite/MySQL regressions and 11,854 full tests.
 External, native and retail qualification remain open. Visitor/search index lifecycle has a separate executed follow-up probe;

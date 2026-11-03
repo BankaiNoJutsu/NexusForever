@@ -66,6 +66,17 @@ namespace NexusForever.Game.Housing
                     owner.name = target.Header.Name; owner.saveMask &= ~ResidenceSaveMask.Name;
                 }
             }
+            internal void PublishName(Guild.Community community, ulong leader)
+            {
+                lock (owner.MutationGate)
+                {
+                    Require();
+                    if (owner.globalResidenceManager is not GlobalResidenceManager registry)
+                        throw new InvalidOperationException("Paid name requires its original visitor registry.");
+                    community.ConfirmDirectoryName(owner, target.Header.Name);
+                    registry.PublishCommunityRename(owner, community, target.Header.Name, leader);
+                }
+            }
             internal ServerHousingProperties Packet()
             {
                 lock (owner.MutationGate)
