@@ -4,6 +4,7 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Static.Guild;
 using NexusForever.Game.Static.Housing;
+using NexusForever.Game.Guild;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
@@ -45,6 +46,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
                 throw new InvalidPacketValueException();
 
             bool isPrivate = housingCommunityPrivacyLevel.PrivacyLevel == CommunityPrivacyLevel.Private;
+            if (community is Community owner)
+            {
+                if (!owner.QueuePrivacyChange(session.Player, isPrivate)) throw new InvalidPacketValueException();
+                return;
+            }
             if (!isPrivate)
             {
                 globalResidenceManager.DeregisterCommunityVists(community.Residence.Id);

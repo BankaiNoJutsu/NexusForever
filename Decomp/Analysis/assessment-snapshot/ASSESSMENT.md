@@ -1,10 +1,15 @@
 # NexusForever fork assessment
 
-[Community rename fee settlement](../HOUSING_RENAME_FEE_SETTLEMENT.md) is the latest verified housing
+[Committed community privacy](../HOUSING_PRIVACY_PUBLICATION.md) is the latest housing recovery result.
+The linked record covers 26 SQLite/MySQL regressions and 11,854 full tests.
+External, native and retail qualification remain open. Visitor/search index lifecycle has a separate executed follow-up probe;
+the broader Goal and remaining housing work stay open.
+
+[Community rename fee settlement](../HOUSING_RENAME_FEE_SETTLEMENT.md) records the preceding verified housing
 recovery milestone. Its fee/names commit together and publication follows SQL;
 the linked record covers 31 regressions on SQLite/MySQL and 11,828 full tests.
 External, native and retail qualification remain open.
-Community privacy/placement publication remains open; the broader Goal is active.
+Placement publication and remaining housing work stay open; the broader Goal is active.
 
 [Housing donation settlement](../HOUSING_DONATION_SETTLEMENT.md) now commits both original residence
 graphs atomically and applies/publishes the transfer from the world update only

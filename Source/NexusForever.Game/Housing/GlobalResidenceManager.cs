@@ -388,6 +388,28 @@ namespace NexusForever.Game.Housing
             visitableCommunities.Remove(residenceId);
         }
 
+        internal void PublishCommunityPrivacy(IResidence residence, Guild.Community community, bool isPrivate, string owner, string name)
+        {
+            if (!ReferenceEquals(GetResidence(residence.Id), residence)
+                || !ReferenceEquals(GetGlobalGuildManager().GetGuild<ICommunity>(community.Id), community)) return;
+            if (isPrivate)
+            {
+                // A replaced current-root reference must not leave this original
+                // root publicly listed after its private flag has committed.
+                if (visitableCommunities.TryGetValue(residence.Id, out var entry) && entry.NeighbourhoodId == community.Id)
+                    visitableCommunities.Remove(residence.Id);
+                return;
+            }
+            if (community.PendingDelete || !ReferenceEquals(community.Residence, residence)
+                || !ReferenceEquals(GetCommunityByOwner(community.Id), residence)) return;
+            visitableCommunities[residence.Id] = new PublicCommunity
+            {
+                NeighbourhoodId = community.Id, Name = name,
+                Owner = owner ?? GetCharacterManager().GetCharacter(community.LeaderId!.Value)?.Name
+                    ?? throw new InvalidOperationException("Community privacy lost its public owner label.")
+            };
+        }
+
         /// <summary>
         /// Return 50 random registered visitable residences.
         /// </summary>

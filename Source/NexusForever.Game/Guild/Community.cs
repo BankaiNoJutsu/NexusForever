@@ -61,6 +61,11 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public void SetCommunityPrivate(bool enabled)
         {
+            if (NameRegistry is GlobalGuildManager registry && ReferenceEquals(registry.GetGuild(Id), this))
+            {
+                if (!QueuePrivacyChange(null, enabled)) throw new InvalidOperationException("Community privacy requires its registered residence.");
+                return;
+            }
             if (enabled)
                 SetFlag(GuildFlag.CommunityPrivate);
             else

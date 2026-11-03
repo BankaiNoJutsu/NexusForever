@@ -10,6 +10,7 @@ namespace NexusForever.Game.Guild
         internal virtual object MutationGate => mutationGate;
         private GuildMutationPersistence mutationPersistence;
         protected bool HasMutationPersistence => mutationPersistence != null;
+        protected bool HasActiveMutationUnit => mutationPersistence?.HasActiveUnit == true;
         protected bool OwnsMutationSave(CharacterContext context) => mutationPersistence?.Owns(context) == true;
         internal void RequireMutationEditable()
         {
@@ -25,7 +26,8 @@ namespace NexusForever.Game.Guild
                 if (!ReferenceEquals(entry.Value.Guild, this) || !ranks.TryGetValue(entry.Value.Rank.Index, out IGuildRank rank)
                     || !ReferenceEquals(rank, entry.Value.Rank) || rank.PendingDelete)
                     throw new InvalidOperationException("Guild member lost its original guild/rank owner.");
-            return new(IsDisbandAccepted ? null : LeaderId, (uint)Flags,
+            uint flags = this is Community community ? community.CapturePrivacyFlags((uint)Flags) : (uint)Flags;
+            return new(IsDisbandAccepted ? null : LeaderId, flags,
             ranks.Values.Where(row => !row.PendingDelete).OrderBy(row => row.Index)
                 .Select(row => new GuildMutationPersistence.Rank(row.Index, row.Name, (uint)row.Permissions, row.BankPermissions, row.BankMoneyWithdrawlLimits, row.RepairLimit)).ToArray(),
             members.Values.Where(row => !row.PendingDelete).OrderBy(row => row.CharacterId)
@@ -69,6 +71,7 @@ namespace NexusForever.Game.Guild
         }
         private void AcknowledgeMutations(GuildMutationPersistence.Snapshot before, GuildMutationPersistence.Snapshot target, GuildMutationPersistence.Snapshot intent)
         {
+            if (this is Community community) community.PrivacyMutationCommitted(intent.Flags, target.Flags);
             if (this is Guild achievementGuild) achievementGuild.AcknowledgeAchievementMutations(before.Achievements ?? [], intent.Achievements, target.Achievements);
             // Accepted disband already captured every retained member for its cleanup.
             if (!IsDisbandAccepted) CaptureMutationPublications(before, target);
@@ -93,6 +96,12 @@ namespace NexusForever.Game.Guild
                 }
                 else if (row.Value is GuildMember member) member.AcknowledgeMutation(stored);
             }
+        }
+
+        internal void AdoptCommunityPrivacy(bool isPrivate, uint committedFlags)
+        {
+            guildFlags = isPrivate ? guildFlags | Static.Guild.GuildFlag.CommunityPrivate : guildFlags & ~Static.Guild.GuildFlag.CommunityPrivate;
+            if ((uint)guildFlags == committedFlags) saveMask &= ~GuildBaseSaveMask.Flags;
         }
         internal bool SaveRankMutations(GuildRank rank, CharacterContext context)
         {

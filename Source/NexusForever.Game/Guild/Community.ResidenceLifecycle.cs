@@ -42,7 +42,7 @@ namespace NexusForever.Game.Guild
             get
             {
                 lock (residenceLifecycleLock)
-                    return base.NeedsSave || pendingResidenceChanges.Count != 0
+                    return base.NeedsSave || PrivacyNeedsCommit || pendingResidenceChanges.Count != 0
                         || pendingMemberRemovals.Count != 0 || pendingDisband != null;
             }
         }

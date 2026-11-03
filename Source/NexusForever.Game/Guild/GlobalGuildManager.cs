@@ -179,6 +179,7 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public void Update(double lastTick)
         {
+            UpdatePrivacyChanges();
             UpdatePaidNames();
             saveTimer.Update(lastTick);
 

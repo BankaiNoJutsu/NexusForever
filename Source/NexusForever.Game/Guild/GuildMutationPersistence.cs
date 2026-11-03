@@ -62,6 +62,7 @@ namespace NexusForever.Game.Guild
             guild = owner.Id; type = (byte)owner.Type; realm = owner.Identity.RealmId;
         }
         internal bool NeedsSave { get { lock (gate) return active != null || uncertain.Count != 0 || !Equal(current(), baselineIntent); } }
+        internal bool HasActiveUnit { get { lock (gate) return active != null; } }
         internal bool Owns(CharacterContext context) { lock (gate) return active != null && ReferenceEquals(active.Context, context); }
         internal bool WasRankAttempted(byte index) { lock (gate) return attemptedRanks.Contains(index); }
         internal bool WasMemberAttempted(ulong character) { lock (gate) return attemptedMembers.Contains(character); }
@@ -137,7 +138,7 @@ namespace NexusForever.Game.Guild
             if (!unit.OwnsName && !StringComparer.Ordinal.Equals(unit.Context.Guild.AsNoTracking().Where(row => row.Id == guild).Select(row => row.Name).Single(), unit.Name))
                 throw new InvalidOperationException("Ordinary guild mutations cannot change the separately owned name.");
         }
-        internal void Save(CharacterContext context, bool disband = false)
+        internal void Save(CharacterContext context, bool disband = false, bool force = false)
         {
             lock (gate)
             {
@@ -145,7 +146,7 @@ namespace NexusForever.Game.Guild
                 {
                     RequireAvailable(context);
                     if (active != null) return;
-                    if (!disband && !NeedsSave) return;
+                    if (!disband && !force && !NeedsSave) return;
                     RequireOwner(context);
                     if (context.HasSavepointRollback) throw new InvalidOperationException("Guild mutations require a fresh context after savepoint rollback.");
                     bool creating = baseline == null;

@@ -83,7 +83,12 @@ namespace NexusForever.Game.Guild
             get { lock (MutationGate) return guildFlags; }
             set
             {
-                lock (MutationGate) { RequireMutationEditable(); guildFlags = value; saveMask |= GuildBaseSaveMask.Flags; }
+                lock (MutationGate)
+                {
+                    RequireMutationEditable();
+                    if (this is Community community) community.RequirePrivacyFlagAssignment(value);
+                    guildFlags = value; saveMask |= GuildBaseSaveMask.Flags;
+                }
             }
         }
         private GuildFlag guildFlags;
@@ -249,7 +254,7 @@ namespace NexusForever.Game.Guild
                         StageDisbandHeader(context);
                         ObserveDisbandSave(context, pendingDisband);
                     }
-                    mutationPersistence.Save(context, pendingDisband != null);
+                    mutationPersistence.Save(context, pendingDisband != null, this is Community { PrivacyNeedsCommit: true });
                     Save(context, GuildBaseSaveMask.None);
                     return;
                 }

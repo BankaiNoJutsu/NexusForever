@@ -63,7 +63,7 @@ namespace NexusForever.Game.Guild
                 {
                     if (!CurrentPlayer || !CurrentCommunity || !CurrentMembership)
                     { Cancel(HousingResult.Failed); return; }
-                    if (community.PendingCreate || community.NeedsSave || community.NameUnitActive || !player.HousingNameCanBegin) return;
+                    if (community.PendingCreate || community.NeedsSave || community.NameUnitActive || community.PrivacyPrepared || !player.HousingNameCanBegin) return;
                     if (!currencies.CanAfford(currency, cost)) { Cancel(HousingResult.InsufficientFunds); return; }
                     residence = root.TryReservePaidName(name);
                     if (residence == null) return;

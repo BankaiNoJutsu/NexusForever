@@ -5,6 +5,17 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+[Committed community privacy](HOUSING_PRIVACY_PUBLICATION.md) now retains the
+prior live flag and visit index until its complete guild save confirms the target,
+then publishes ordered world-update stages. All 26 focused/415 affected, 26 MySQL
+and 11,854 full cases pass; build, reviews and 6,236-input/11-DLL bindings verify.
+The linked record retains the executed root-replacement defect and excluded
+MySQL setup failure. A separate public-flow/model-load probe reproduces stale
+visitor/search metadata after paid rename and missing public visits after load;
+that index lifecycle is next. Other housing and external/native/retail gates stay
+open. The Goal is active; defaults 15:1/17:1/no44/seven grants and client/CUA stop
+remain unchanged.
+
 [Community rename fee settlement](HOUSING_RENAME_FEE_SETTLEMENT.md) now commits
 the selected fee, both names and the original complete Character graph together,
 then publishes through guarded world-update stages. All 31 new/553 affected,
@@ -1367,10 +1378,14 @@ solution build/test gate at coherent integration milestones.
    settlement and world-update publication gate linked above. Community rename
    fee/name settlement now has the later11,828-full/31-MySQL gate linked above;
    do not repeat that integration. Continue the remaining housing fee and
-   publication flows. The next inspected producer is community privacy: visit
-   indexing, local flag broadcast and private reply currently precede the guild
-   flag SQL save. Reproduce that public flow, then integrate committed guarded
-   publication while preserving existing permissions and privacy wire values.
+   publication flows. Committed community privacy now has the later
+   11,854-full/26-MySQL gate linked above; do not repeat that integration. Next,
+   complete community visitor/search index lifecycle: the linked owned SQLite
+   public rename/model-load probe confirms committed SQL and fee, then reproduces
+   a missing new-name lookup, retained old alias, stale visit label and absent
+   public visit entry after a fresh residence-manager load. Preserve exact owner,
+   privacy and retirement guards; no full server restart or retail claim follows.
+   Continue placement/remodel publication and the broader feature queue afterward.
    Cross-character notification atomicity, durable realm-first arbitration,
    other atomic financial settlement, live broker/restart and broader
    provider qualification remain open; the complete feature and assessment scope
