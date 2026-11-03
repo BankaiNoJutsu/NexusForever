@@ -12,7 +12,7 @@ namespace NexusForever.Game.Entity
     {
         internal sealed record State(ushort Id, uint Time, byte Revoked);
         internal sealed record Snapshot(ushort? Active, State[] Titles);
-        private sealed record Frozen(object Token, string Database, Snapshot State);
+        private sealed record Frozen(object Token, string Database, Snapshot State, long Version);
         private sealed class Unit(TitlePersistence owner, CharacterContext context, string database, object token)
         {
             internal readonly TitlePersistence Owner = owner;
@@ -24,6 +24,7 @@ namespace NexusForever.Game.Entity
             internal Snapshot Sql, Target;
             internal IDisposable Scope;
             internal bool Flushed;
+            internal long Version, FlushedVersion;
             internal EventHandler<SavedChangesEventArgs> OnFlushed;
         }
         internal readonly object Gate = new();
@@ -33,15 +34,22 @@ namespace NexusForever.Game.Entity
         private readonly ushort? title;
         private readonly bool ownsActive;
         private readonly Func<Snapshot> current;
+        private readonly Func<long> publicationVersion;
+        private readonly Action<Snapshot, long> acknowledge;
+        private readonly Action publicationReady;
+        private long acknowledgedVersion;
         private string database;
         private Snapshot baseline;
         private List<Snapshot> uncertain;
         private Unit active;
 
-        internal TitlePersistence(ulong character, Snapshot baseline, Func<Snapshot> current, string database = null, ushort? title = null)
+        internal TitlePersistence(ulong character, Snapshot baseline, Func<Snapshot> current, string database = null, ushort? title = null,
+            Func<long> publicationVersion = null, Action<Snapshot, long> acknowledge = null, Action publicationReady = null)
         {
             this.character = character; this.baseline = baseline; this.current = current; this.database = database;
             this.title = title; ownsActive = baseline.Active.HasValue;
+            this.publicationVersion = publicationVersion; this.acknowledge = acknowledge;
+            this.publicationReady = publicationReady;
         }
         internal static State FromModel(CharacterTitleModel row) => new(row.Title, row.TimeRemaining, row.Revoked);
         internal static Snapshot FromModel(CharacterModel model) => new(model.Title, model.CharacterTitle.OrderBy(row => row.Title).Select(FromModel).ToArray());
@@ -51,11 +59,12 @@ namespace NexusForever.Game.Entity
             lock (Gate)
             {
                 if (active != null) throw new InvalidOperationException("Titles have an unfinished save.");
-                var frozen = new Frozen(token, route, current()); return context => Save(context, null, frozen);
+                var frozen = new Frozen(token, route, current(), publicationVersion?.Invoke() ?? 0); return context => Save(context, null, frozen);
             }
         }
         internal void Save(CharacterContext context) => Save(context, null, null);
-        internal void SaveTitle(CharacterContext context, ushort id) => Save(context, id, null);
+        internal void SaveTitle(CharacterContext context, ushort id)
+            => Save(context, ownsActive && publicationVersion != null ? null : id, null);
         private static Snapshot Select(Snapshot stored, Snapshot runtime, ushort? selected)
             => !selected.HasValue ? runtime : new(stored.Active, stored.Titles.Where(row => row.Id != selected).Concat(runtime.Titles.Where(row => row.Id == selected)).OrderBy(row => row.Id).ToArray());
 
@@ -71,10 +80,11 @@ namespace NexusForever.Game.Entity
                     if (frozen != null) CharacterDatabaseIdentity.Require(context, frozen.Database);
                     database ??= route;
                     Snapshot runtime = frozen?.State ?? current();
+                    long version = frozen?.Version ?? publicationVersion?.Invoke() ?? 0;
                     if (active != null && (!ReferenceEquals(active.Context, context) || !ReferenceEquals(active.Token, frozen?.Token)))
                         throw new InvalidOperationException("Titles belong to an unfinished save unit.");
                     Snapshot target = Select(active?.Target ?? baseline, runtime, selected);
-                    if (active == null && uncertain == null && Equal(target, baseline)) return;
+                    if (active == null && uncertain == null && Equal(target, baseline) && version <= acknowledgedVersion) return;
                     Unit unit = active;
                     if (unit == null)
                     {
@@ -102,6 +112,7 @@ namespace NexusForever.Game.Entity
                     foreach (var row in unit.Rows.Values) row.Validate();
                     Snapshot previous = unit.Target ?? unit.Sql; target = Select(previous, runtime, selected);
                     Stage(unit, unit.Sql, target, previous); unit.Target = target; unit.Possible.Add(target);
+                    unit.Version = version;
                 }
                 catch (Exception error) { context.RejectSave(error); throw; }
             }
@@ -171,18 +182,23 @@ namespace NexusForever.Game.Entity
             {
                 if (!ReferenceEquals(active, unit) || unit.Context.HasSavepointRollback) return;
                 Snapshot actual = Read(unit.Context); if (!Equal(actual, unit.Target)) return;
-                unit.Sql = actual; unit.Possible.Add(actual); unit.Flushed = true;
+                unit.Sql = actual; unit.Possible.Add(actual); unit.Flushed = true; unit.FlushedVersion = unit.Version;
                 foreach (var row in unit.Rows.Values) { row.Capture(); row.Flushed = true; }
             }
         }
         private void Complete(Unit unit, bool committed)
         {
+            Snapshot stored = null; long version = 0;
             lock (Gate)
             {
                 if (!ReferenceEquals(active, unit)) return;
                 try
                 {
-                    if (committed && unit.Flushed) { baseline = unit.Sql; uncertain = null; }
+                    if (committed && unit.Flushed && !unit.Context.HasSavepointRollback)
+                    {
+                        baseline = unit.Sql; uncertain = null; acknowledgedVersion = unit.FlushedVersion;
+                        stored = unit.Sql; version = unit.FlushedVersion;
+                    }
                     else uncertain = (uncertain ?? []).Concat(unit.Possible).Append(baseline).ToList();
                 }
                 finally
@@ -191,7 +207,11 @@ namespace NexusForever.Game.Entity
                     lock (leaseGate) { var key = (unit.Database, character); leases[key].Remove(unit); if (leases[key].Count == 0) leases.Remove(key); }
                     unit.Scope.Dispose();
                 }
+                // Queue immutable metadata before another save can enter this
+                // owner. This callback must not inspect sessions or send packets.
+                if (stored != null) acknowledge?.Invoke(stored, version);
             }
+            if (stored != null) publicationReady?.Invoke();
         }
     }
 }

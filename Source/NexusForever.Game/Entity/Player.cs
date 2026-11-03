@@ -1248,7 +1248,7 @@ namespace NexusForever.Game.Entity
                 Bones     = AppearanceManager.GetBones()
                     .Select(b => b.BoneValue)
                     .ToList(),
-                Title     = TitleManager.ActiveTitleId,
+                Title     = TitleManager is TitleManager titles ? titles.PublishedActiveTitle : TitleManager.ActiveTitleId,
                 GuildIds  = GuildManager
                     .Select(g => g.Id)
                     .ToList(),

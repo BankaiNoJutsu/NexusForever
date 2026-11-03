@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Committed title publication](Decomp/Analysis/TITLE_PUBLICATION.md) passes 19 new/185 affected,
+18 MySQL and 11,989 full cases with a clean build and both Source reviews. Ordinary,
+frozen and bound-row saves release retained notices only after confirmation;
+initial/entity state and accepted bulk lists remain correct. The linked archive
+probe supplies the next defect. Restart/outbox and native/retail gates remain
+open; the Goal is active and client/CUA remain stopped.
+
 [Durable realm-first arbitration](Decomp/Analysis/REALM_FIRST_ARBITRATION.md) passes 16 new/237
 affected and11,970 full cases with a clean build and both Source reviews.
 Final MySQL coverage is 12+1 recovered after a retained disk-full setup failure;

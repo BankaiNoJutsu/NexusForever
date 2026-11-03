@@ -1,5 +1,17 @@
 # Official pull request comparison
 
+[Committed title publication](../TITLE_PUBLICATION.md) passes 19 new/185 affected,
+18 MySQL and 11,989 full cases with a clean build and both Source reviews. Ordinary,
+frozen and bound-row saves release retained notices only after confirmation;
+initial/entity state and accepted bulk lists remain correct. The linked archive
+probe supplies the next defect. Restart/outbox and native/retail gates remain
+open; the Goal is active and client/CUA remain stopped.
+
+The 3 November19:32UTC all-state updated-order refresh has no changed reviewed
+heads, bases or states. #608 remains open at `7db12d9a`; #609 remains
+closed/unmerged at `f9b6f735`. No upstream PR was mutated. Evidence:
+`artifacts/continuation-20261103/title-publication/upstream-refresh.json`.
+
 [Durable realm-first arbitration](../REALM_FIRST_ARBITRATION.md) passes 16 new/237
 affected and11,970 full cases with a clean build and both Source reviews.
 Final MySQL coverage is 12+1 recovered after a retained disk-full setup failure;

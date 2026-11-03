@@ -117,6 +117,16 @@ public class TitleManagerTests
         Assert.Empty(titles.Titles);
     }
 
+    [Fact]
+    public void InterfaceOnlyAlreadyOwnedResponseKeepsItsLegacySuppressedCallBehavior()
+    {
+        var tables = CreateGameTableManagerWithCharacterTitle(new CharacterTitleEntry { Id = 21 });
+        var player = CreatePlayer(out RecordingDispatchProxy<IGameSession> session);
+        var titles = new TitleManager(player, CreatePersistedModel(21), tables);
+        titles.AddTitle(21, true);
+        Assert.True(Assert.Single(GetMessages<ServerTitleUpdate>(session)).Alreadyowned);
+    }
+
     private static IPlayer CreatePlayer()
     {
         return CreatePlayer(out _, out _);

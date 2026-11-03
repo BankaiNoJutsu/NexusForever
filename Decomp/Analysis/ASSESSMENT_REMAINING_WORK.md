@@ -5,6 +5,18 @@ Started 2026-10-29 at the user's request. Original checkout:
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.
 Active destination checkout: `C:/GIT/NexusForever/continuation` on the same branch.
 
+[Committed title publication](TITLE_PUBLICATION.md) now retains real Player
+grant/revoke/expiry/selection and bulk notices through the original confirmed
+ordinary or frozen graph, then publishes on guarded world updates. Initial
+lists/entity models use published state; accepted order, late intent, bound leaves,
+standalone/fake compatibility and recipient retries are preserved. All 19 new/185
+affected,18 MySQL and 11,989 full cases pass; build and both Source reviews are
+clear. Final 6,264-input/11-DLL bindings and owned workload shutdowns verify.
+The linked real achievement/archive probe reproduces premature archive packets
+with the new title deferral passing as a control. Archive publication is next;
+tradeskill, restart/outbox and external/native/retail gates remain open. The Goal
+is active; defaults 15:1/17:1/no44/seven grants and client/CUA stop remain.
+
 [Durable realm-first arbitration](REALM_FIRST_ARBITRATION.md) now commits one
 character/guild announcement claim with its original achievement graph. Competing
 writers, rejected saves, lost acknowledgement, savepoint rollback, historical

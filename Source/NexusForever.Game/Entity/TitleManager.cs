@@ -10,7 +10,7 @@ using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.Game.Entity
 {
-    public class TitleManager : ITitleManager
+    public partial class TitleManager : ITitleManager
     {
         public ushort ActiveTitleId
         {
@@ -20,7 +20,11 @@ namespace NexusForever.Game.Entity
                 if (value != 0 && (!titles.TryGetValue(value, out ITitle title) || title.Revoked || activeTitleId == value))
                     return;
 
-                lock (persistence.Gate) activeTitleId = value;
+                lock (persistence.Gate)
+                {
+                    activeTitleId = value;
+                    if (player is Player) { RetainNotice(new SelectTitle(value)); return; }
+                }
 
                 player.EnqueueToVisible(new ServerTitleSet
                 {
@@ -51,7 +55,10 @@ namespace NexusForever.Game.Entity
             var origin = CharacterLoadOrigin.Get(model);
             if (characterId != owner.CharacterId || origin != null && origin.AccountId != owner.Account?.Id)
                 throw new InvalidOperationException("Titles changed their loaded Character/account owner.");
-            persistence = new(characterId, TitlePersistence.FromModel(model), CapturePersistence, origin?.Database);
+            persistence = new(characterId, TitlePersistence.FromModel(model), CapturePersistence, origin?.Database,
+                publicationVersion: player is Player ? () => publicationVersion : null,
+                acknowledge: player is Player ? AcknowledgePublication : null,
+                publicationReady: player is Player ? SchedulePublication : null);
 
             foreach (CharacterTitleModel titleModel in model.CharacterTitle)
             {
@@ -62,6 +69,7 @@ namespace NexusForever.Game.Entity
                 titles.Add(titleModel.Title, title);
             }
 
+            InitialisePublication(model);
             EnsureActiveTitleIsOwned();
         }
 
@@ -70,15 +78,19 @@ namespace NexusForever.Game.Entity
             foreach (ITitle title in titles.Values)
             {
                 title.Update(lastTick);
-                if (title.TimeRemaining != null && title.TimeRemaining <= 0d)
+                if (!title.Revoked && title.TimeRemaining != null && title.TimeRemaining <= 0d)
                 {
                     // title has expired
                     RevokeTitle((ushort)title.Entry.Id);
                 }
             }
+            SchedulePublication();
         }
 
-        public void Save(CharacterContext context) => persistence.Save(context);
+        public void Save(CharacterContext context)
+        {
+            persistence.Save(context); SchedulePublication();
+        }
 
         internal Action<CharacterContext> CaptureNormalSave(object token, string database) => persistence.CaptureNormal(token, database);
         private TitlePersistence.Snapshot CapturePersistence()
@@ -99,27 +111,24 @@ namespace NexusForever.Game.Entity
             if (entry == null)
                 throw new InvalidPacketValueException();
 
-            if (titles.TryGetValue(titleId, out ITitle title))
+            bool alreadyOwned;
+            lock (persistence.Gate)
             {
-                if (title.Revoked)
-                    title.Revoked = false;
-                else
-                {
-                    player.Session.EnqueueMessageEncrypted(new ServerTitleUpdate
-                    {
-                        TitleId      = titleId,
-                        Alreadyowned = true
-                    });
-
-                    return;
-                }
+                alreadyOwned = titles.TryGetValue(titleId, out ITitle title) && !title.Revoked;
+                if (title != null) title.Revoked = false;
+                else titles.Add(titleId, new Title(player.CharacterId, entry, persistence));
+                if (player is Player && !suppress) RetainNotice(new UpdateTitle(titleId, alreadyOwned, false));
             }
-            else
-                titles.Add(titleId, new Title(player.CharacterId, entry, persistence));
+            if (alreadyOwned)
+            {
+                if (player is not Player)
+                    player.Session.EnqueueMessageEncrypted(new ServerTitleUpdate { TitleId = titleId, Alreadyowned = true });
+                return;
+            }
 
             player.AchievementManager.CheckAchievements(player, AchievementType.TitleEarned, 0u);
 
-            if (!suppress)
+            if (!suppress && player is not Player)
             {
                 player.Session.EnqueueMessageEncrypted(new ServerTitleUpdate
                 {
@@ -142,9 +151,14 @@ namespace NexusForever.Game.Entity
             if (!titles.TryGetValue(titleId, out ITitle title))
                 throw new InvalidPacketValueException();
 
-            title.Revoked = true;
+            lock (persistence.Gate)
+            {
+                title.Revoked = true;
+                if (player is Player && !suppress) RetainNotice(new UpdateTitle(titleId, false, true));
+                if (player is Player) EnsureActiveTitleIsOwned();
+            }
 
-            if (!suppress)
+            if (!suppress && player is not Player)
             {
                 player.Session.EnqueueMessageEncrypted(new ServerTitleUpdate
                 {
@@ -153,7 +167,7 @@ namespace NexusForever.Game.Entity
                 });
             }
 
-            EnsureActiveTitleIsOwned();
+            if (player is not Player) EnsureActiveTitleIsOwned();
         }
 
         /// <summary>
@@ -161,6 +175,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void SendTitles()
         {
+            if (player is Player) { SendPublishedTitles(); return; }
             player.Session.EnqueueMessageEncrypted(new ServerTitles
             {
                 Titles = titles.Values.Select(t => new ServerTitles.Title
@@ -195,7 +210,8 @@ namespace NexusForever.Game.Entity
                 AddTitle(titleId, true);
 
             // client crashes if too many single title updates are sent, send as bulk
-            SendTitles();
+            if (player is Player) { lock (persistence.Gate) RetainNotice(new ListTitles(CapturePersistence())); }
+            else SendTitles();
         }
 
         /// <summary>
@@ -214,7 +230,8 @@ namespace NexusForever.Game.Entity
                 RevokeTitle(titleId, true);
 
             // client crashes if too many single title updates are sent, send as bulk
-            SendTitles();
+            if (player is Player) { lock (persistence.Gate) RetainNotice(new ListTitles(CapturePersistence())); }
+            else SendTitles();
         }
 
         private void EnsureActiveTitleIsOwned()

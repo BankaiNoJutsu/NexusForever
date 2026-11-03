@@ -38,7 +38,7 @@ public sealed class TitlePersistenceDurabilityTests
         }
         bool revoked = action != "grant";
         Assert.Equal(!revoked, titles.HasTitle(21)); Assert.Equal(revoked ? (ushort)0 : (ushort)21, titles.ActiveTitleId);
-        Assert.Equal(action == "revoke-before-create" ? 2 : 1, f.Source.SessionProxy.GetInvocations("EnqueueMessageEncrypted").Count(call => call.Arguments[0] is ServerTitleUpdate));
+        Assert.DoesNotContain(f.Source.SessionProxy.GetInvocations("EnqueueMessageEncrypted"), call => call.Arguments[0] is ServerTitleUpdate);
         if (action != "revoke-before-create") await Assert.ThrowsAsync<IOException>(() => Persist(f, actor, true));
         await Persist(f, actor, false);
         using var stored = f.Context(); var title = Assert.Single(stored.CharacterTitle);
