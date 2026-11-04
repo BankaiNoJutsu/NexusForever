@@ -63,6 +63,10 @@ cinematic callbacks and membership removal.
 [Public event completion ownership](../../CURRENT_STATUS.md#public-event-completion-ownership)
 keeps quest and achievement credit and team packets with the original active
 membership, and preserves scoreboard identity after the player departs.
+The [Character rollback probe](../../CURRENT_STATUS.md#public-event-character-save-recovery)
+reproduces a quest update before SQL and loss of unsaved credit on the normal
+World save failure path. Complete committed quest publication and recovery
+without replaying the map event.
 Retail reward tiers and client presentation remain open.
 
 [Instance transfer retries](../../CURRENT_STATUS.md#instance-transfer-retries)

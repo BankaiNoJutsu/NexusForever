@@ -22036,6 +22036,22 @@ achievement publication tests passed. Local evidence is under
 `artifacts/continuation-20261104/public-event-member-ownership/`.
 Retail reward tiers and live client presentation remain open.
 
+#### Public event Character save recovery
+
+5 November 2026. A real public-event objective advanced an enrolled Player's
+quest from Accepted to Achieved. Both a direct Character transaction and the
+World save queue sent a quest objective update before SQL. An injected SQLite
+write rejection left the stored quest Accepted with its original progress
+while the map event remained finalized. A direct retry on the retained owner
+saved the credit without replaying the event. The normal World save requested
+disconnect and required an authoritative quest reload with the old progress.
+
+The owning project built, 62 scoped public-event and persistence checks passed,
+and both fault paths passed the focused follow-up. Evidence is under
+`artifacts/continuation-20261105/public-event-character-save/`. The remaining
+work is to hold the personal quest notices through settlement and recover
+credit after a confirmed rollback without replaying the shared map event.
+
 #### Public event contribution ownership
 
 4 November 2026. Player-driven objective credit, stat changes, scoreboard

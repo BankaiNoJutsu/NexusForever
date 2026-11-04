@@ -370,14 +370,16 @@ public sealed class QuestPersistenceDurabilityTests
         internal readonly IQuestInfo Info;
         internal readonly IGlobalQuestManager Global;
         internal readonly IScriptManager Scripts;
-        internal Fixture(DbContextOptions<CharacterContext> options) : this(new SourceFixture(options)) { }
+        internal Fixture(DbContextOptions<CharacterContext> options, QuestObjectiveEntry objective = null)
+            : this(new SourceFixture(options), objective) { }
         internal Fixture(DbContextOptions<CharacterContext> options, bool seedCharacter) : this(new SourceFixture(options, seedCharacter)) { }
-        private Fixture(SourceFixture source)
+        private Fixture(SourceFixture source, QuestObjectiveEntry objective = null)
         {
             Source = source; PrepareInventory(Source);
             Info = RecordingDispatchProxy<IQuestInfo>.Create(out var info);
             info.SetProperty(nameof(IQuestInfo.Entry), new Quest2Entry { Id = QuestId });
-            info.SetProperty(nameof(IQuestInfo.Objectives), ImmutableList.Create<IQuestObjectiveInfo>(new QuestObjectiveInfo(new QuestObjectiveEntry { Id = 90010, Type = (uint)QuestObjectiveType.CompleteChallenge, Count = 5 })));
+            info.SetProperty(nameof(IQuestInfo.Objectives), ImmutableList.Create<IQuestObjectiveInfo>(new QuestObjectiveInfo(objective
+                ?? new QuestObjectiveEntry { Id = 90010, Type = (uint)QuestObjectiveType.CompleteChallenge, Count = 5 })));
             Global = RecordingDispatchProxy<IGlobalQuestManager>.Create(out var global); global.SetMethodReturn(nameof(IGlobalQuestManager.GetQuestInfo), Info);
             global.SetMethodReturn(nameof(IGlobalQuestManager.GetQuestCommunicatorQuestStateTriggers), Array.Empty<ICommunicatorMessage>());
             Scripts = RecordingDispatchProxy<IScriptManager>.Create(out var scripts); scripts.SetMethodReturn(nameof(IScriptManager.InitialiseOwnedScripts), RecordingDispatchProxy<IScriptCollection>.Create(out _));
