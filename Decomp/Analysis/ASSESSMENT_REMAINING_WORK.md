@@ -78,8 +78,7 @@ socket delivery, restart qualification and retail selector semantics remain open
 keeps delayed requests from charging for a later sale and finishes accepted
 redemptions on the original inventory. [Vendor buyback settlement](../../CURRENT_STATUS.md#vendor-buyback-settlement)
 commits the redemption debit and item together, recovers a lost acknowledgment,
-and publishes to the original session. Configured-provider, restart, and deployed
-client evidence remain open.
+and publishes to the original session.
 
 [Vendor purchase capacity](../../CURRENT_STATUS.md#vendor-purchase-capacity)
 checks the complete delivery before charging, including slots freed by item
@@ -95,8 +94,10 @@ enrolls ledger-backed payments, fences retired session epochs, adopts the
 original wallet after settlement, and compensates confirmed rollback.
 [Cosmic Reward vendor settlement](../../CURRENT_STATUS.md#cosmic-reward-vendor-settlement)
 uses matching Loyalty entries for both debit and refund when the account has a
-Loyalty owner. Configured-provider and deployed restart evidence, socket
-delivery, and retail qualification remain open.
+Loyalty owner. The [configured MySQL gate](DESTINATION_PROVIDER_QUALIFICATION.md#vendor-settlement-and-recovery)
+covers 24 cases across purchase, buyback and Realm recovery. It caught and
+verified the fix for a wallet refresh query that blocked Realm admission on MySQL.
+Deployed restart, socket delivery and retail qualification remain open.
 
 [Fortune deal settlement](../../CURRENT_STATUS.md#persisted-deal-and-coin-settlement)
 commits the one-coin debit and deal together, including consumption and change

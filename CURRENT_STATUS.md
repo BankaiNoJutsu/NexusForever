@@ -22876,8 +22876,9 @@ with injected rollback or lost acknowledgment. Tests ran for 13 seconds of a
 59-second build-and-test run. Evidence is under
 `artifacts/continuation-20261104/vendor-purchase-settlement/`.
 
-Configured-provider, restart, socket delivery, and retail presentation remain
-open for Character-funded purchases.
+The [configured MySQL gate](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#vendor-settlement-and-recovery)
+covers the Character-funded purchase cases. Restart, socket delivery and retail
+presentation remain open.
 
 #### Account-funded vendor purchase settlement protocol
 
@@ -22910,6 +22911,11 @@ purchase charged, and defers the other realm's debit. It also covers rejected
 credentials and a superseded epoch. Build and tests took 53 seconds, including
 seven seconds of test execution. Evidence is under
 `artifacts/continuation-20261104/vendor-account-admission/`.
+
+The [configured MySQL gate](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#vendor-settlement-and-recovery)
+caught a wallet refresh query failure that prevented Realm admission. The fix
+checks the epoch in the same read as the wallet snapshot and filters currency
+IDs after materialization. Both wallet profiles passed after the fix.
 
 #### Live account-funded vendor purchase settlement
 
@@ -22945,8 +22951,10 @@ including 56 seconds of test execution. Evidence is under
 `artifacts/continuation-20261104/vendor-cosmic-loyalty/`.
 
 Cosmic Reward offers on installations without a Loyalty owner still follow the
-legacy handler. Configured-provider, deployed restart, socket delivery, and
-retail evidence remain open.
+legacy handler. The [configured MySQL gate](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#vendor-settlement-and-recovery)
+covers the live Cosmic debit and refund, mixed-wallet delivery and Realm
+admission recovery. Deployed restart, socket delivery and retail evidence
+remain open.
 
 #### Vendor buyback request identity
 
@@ -22981,8 +22989,9 @@ lost acknowledgment, confirmed rollback with a second request, and a replaced
 actor. The broader scoped run found an early wallet read at admission. After
 the fix, the rebuilt candidate passed all 20 affected tests in 18 seconds.
 Evidence is under `artifacts/continuation-20261104/vendor-buyback-settlement/`.
-Configured-provider, process restart, socket delivery, and retail behavior
-remain open. Buyback offers are process-local.
+The [configured MySQL gate](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#vendor-settlement-and-recovery)
+covers four buyback settlement cases. Buyback offers are process-local.
+Process restart, socket delivery and retail behavior remain open.
 
 #### Resource conversion preflight
 

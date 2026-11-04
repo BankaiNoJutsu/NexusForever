@@ -1,5 +1,6 @@
 using System.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using NexusForever.Database;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
@@ -21,6 +22,11 @@ namespace NexusForever.Game.Tests.Account.Currency;
 
 public sealed partial class AccountCurrencyDurabilityTests
 {
+    private readonly DbContextOptions<CharacterContext> vendorCharacterOptions;
+
+    internal AccountCurrencyDurabilityTests(DbContextOptions<AuthContext> authOptions, DbContextOptions<CharacterContext> characterOptions)
+        : this(authOptions) => vendorCharacterOptions = characterOptions;
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
@@ -29,7 +35,7 @@ public sealed partial class AccountCurrencyDurabilityTests
     {
         const string key = "00112233445566778899AABBCCDDEEFF";
         using var auth = new Fixture(providerOptions);
-        using var character = new CharacterFixture(options: null);
+        using var character = new CharacterFixture(vendorCharacterOptions);
         character.Seed();
         await SeedVendorPayment(auth, character);
 
@@ -44,7 +50,8 @@ public sealed partial class AccountCurrencyDurabilityTests
         }
         var characterDatabase = new CharacterDatabase();
         using (var seed = character.Context())
-            characterDatabase.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite, ConnectionString = seed.Database.GetDbConnection().ConnectionString });
+            characterDatabase.Initialise(new DatabaseConnectionString { Provider = seed.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
+                ConnectionString = seed.Database.GetDbConnection().ConnectionString });
 
         await Pay(1, 15, cosmic ? AccountCurrencyType.CosmicReward : AccountCurrencyType.ProtostarPromissoryNote, commit: false);
         await Pay(1, 9, AccountCurrencyType.Omnibit, commit: true);
@@ -122,13 +129,14 @@ public sealed partial class AccountCurrencyDurabilityTests
         {
             var checkout = new VendorAccountPurchase(characterDatabase.CreateContext, authDatabase.CreateContext, purchaseRealm);
             var intent = checkout.Create(77, 42, 7001, 1, new string('A', 64), [new(currency, cost)], epoch: 1);
-            await using var source = characterDatabase.CreateContext();
-            await using var transaction = await source.Database.BeginTransactionAsync(IsolationLevel.Serializable);
-            Assert.Equal(VendorAccountAuthorization.Authorized, await checkout.AuthorizeAsync(source, intent,
-                unit => unit.Item.Add(new() { Id = 911ul + purchaseRealm, OwnerId = 42, ItemId = 7001, Location = (ushort)InventoryLocation.Inventory, StackCount = 1 })));
-            await source.SaveChangesAsync();
-            if (commit) await transaction.CommitAsync();
-            else await transaction.RollbackAsync();
+            await InVendorTransaction(characterDatabase.CreateContext, async (source, transaction) =>
+            {
+                Assert.Equal(VendorAccountAuthorization.Authorized, await checkout.AuthorizeAsync(source, intent,
+                    unit => unit.Item.Add(new() { Id = 911ul + purchaseRealm, OwnerId = 42, ItemId = 7001, Location = (ushort)InventoryLocation.Inventory, StackCount = 1 })));
+                await source.SaveChangesAsync();
+                if (commit) await transaction.CommitAsync();
+                else await transaction.RollbackAsync();
+            });
         }
     }
 
@@ -143,7 +151,7 @@ public sealed partial class AccountCurrencyDurabilityTests
     public async Task VendorDebitRecoveryMakesDeliveryAndRefundMutuallyExclusive(string outcome)
     {
         using var auth = new Fixture(providerOptions);
-        using var character = new CharacterFixture(options: null);
+        using var character = new CharacterFixture(vendorCharacterOptions);
         character.Seed();
         await SeedVendorPayment(auth, character);
         var checkout = new VendorAccountPurchase(() => character.Context(), () => auth.Context(outcome == "auth-ack-lost" ? new CommitFailure(true) : null), 1);
@@ -155,11 +163,12 @@ public sealed partial class AccountCurrencyDurabilityTests
             // Reusing the ID with a wholly different wallet must still hit
             // the original Auth identity after the Character rollback.
             var conflicting = intent with { QuoteFingerprint = new string('B', 64), Costs = [new(AccountCurrencyType.NCoin, 1)] };
-            await using var source = character.Context();
-            await using var transaction = await source.Database.BeginTransactionAsync(IsolationLevel.Serializable);
-            await Assert.ThrowsAsync<InvalidOperationException>(() => checkout.AuthorizeAsync(source, conflicting, _ => { }));
-            Assert.True(source.IsSaveRejected);
-            await transaction.RollbackAsync();
+            await InVendorTransaction(() => character.Context(), async (source, transaction) =>
+            {
+                await Assert.ThrowsAsync<InvalidOperationException>(() => checkout.AuthorizeAsync(source, conflicting, _ => { }));
+                Assert.True(source.IsSaveRejected);
+                await transaction.RollbackAsync();
+            });
         }
         if (outcome == "resumed")
         {
@@ -185,13 +194,12 @@ public sealed partial class AccountCurrencyDurabilityTests
         }
         Assert.Equal(expected, await restarted.RecoverAsync(debit));
         Assert.Equal(expected, await restarted.RecoverAsync(debit));
-        await using (var retry = character.Context())
-        await using (var tx = await retry.Database.BeginTransactionAsync(IsolationLevel.Serializable))
+        await InVendorTransaction(() => character.Context(), async (retry, tx) =>
         {
             Assert.Equal(expected, await restarted.AuthorizeAsync(retry, intent, _ => throw new InvalidOperationException("Terminal delivery replayed.")));
             Assert.Empty(retry.ChangeTracker.Entries());
             await tx.CommitAsync();
-        }
+        });
 
         using var storedAuth = auth.Context();
         Assert.Equal(delivered ? new ulong[] { 61, 50, 85 } : [70, 50, 100], storedAuth.AccountCurrency.OrderBy(row => row.CurrencyId).Select(row => row.Amount));
@@ -202,10 +210,8 @@ public sealed partial class AccountCurrencyDurabilityTests
         if (delivered) Assert.Equal(2u, storedCharacter.Item.Single().StackCount);
         else Assert.Empty(storedCharacter.Item);
 
-        async Task AuthorizeAndWrite(bool commit)
+        Task AuthorizeAndWrite(bool commit) => InVendorTransaction(() => character.Context(), async (source, tx) =>
         {
-            await using var source = character.Context();
-            await using var tx = await source.Database.BeginTransactionAsync(IsolationLevel.Serializable);
             Assert.Equal(VendorAccountAuthorization.Authorized, await checkout.AuthorizeAsync(source, intent,
                 context => context.Item.Add(new() { Id = 912, OwnerId = 42, ItemId = 7001, Location = (ushort)InventoryLocation.Inventory, StackCount = 2 })));
             await source.SaveChangesAsync();
@@ -215,7 +221,9 @@ public sealed partial class AccountCurrencyDurabilityTests
                 var paid = read.AccountCurrencyOperation.AsNoTracking().Single(row => row.CurrencyId == (byte)AccountCurrencyType.Omnibit);
                 var observing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 var competing = new VendorAccountPurchase(() => { observing.TrySetResult(); return character.Context(); }, () => auth.Context(), 1);
-                var result = Task.Run(() => competing.RecoverAsync(paid));
+                Task<VendorAccountAuthorization> result;
+                using (ExecutionContext.SuppressFlow())
+                    result = Task.Run(() => competing.RecoverAsync(paid));
                 await observing.Task.WaitAsync(TimeSpan.FromSeconds(15));
                 Assert.False(result.IsCompleted);
                 await tx.CommitAsync();
@@ -224,7 +232,7 @@ public sealed partial class AccountCurrencyDurabilityTests
             }
             if (commit) await tx.CommitAsync();
             else await tx.RollbackAsync();
-        }
+        });
     }
 
     [Theory]
@@ -233,14 +241,13 @@ public sealed partial class AccountCurrencyDurabilityTests
     public async Task RejectedVendorEnrollmentCannotChangeEitherWalletOrDeliverAnItem(bool earlyFlush)
     {
         using var auth = new Fixture(providerOptions);
-        using var character = new CharacterFixture(options: null);
+        using var character = new CharacterFixture(vendorCharacterOptions);
         character.Seed();
         await SeedVendorPayment(auth, character);
         var checkout = new VendorAccountPurchase(() => character.Context(), () => auth.Context(), 1);
         var intent = checkout.Create(77, 42, 7001, 1, new string('A', 64),
             [new(AccountCurrencyType.Omnibit, 9), new(AccountCurrencyType.ProtostarPromissoryNote, earlyFlush ? 15ul : 101ul)], epoch: 1);
-        await using (var source = character.Context())
-        await using (var tx = await source.Database.BeginTransactionAsync(IsolationLevel.Serializable))
+        await InVendorTransaction(() => character.Context(), async (source, tx) =>
         {
             await Assert.ThrowsAnyAsync<Exception>(() => checkout.AuthorizeAsync(source, intent, context =>
             {
@@ -249,7 +256,7 @@ public sealed partial class AccountCurrencyDurabilityTests
             }));
             Assert.True(source.IsSaveRejected);
             await tx.RollbackAsync();
-        }
+        });
 
         using var storedAuth = auth.Context();
         Assert.Equal(new ulong[] { 70, 50, 100 }, storedAuth.AccountCurrency.OrderBy(row => row.CurrencyId).Select(row => row.Amount));
@@ -257,6 +264,17 @@ public sealed partial class AccountCurrencyDurabilityTests
         using var storedCharacter = character.Context();
         Assert.Empty(storedCharacter.BankReconciliationReceipt);
         Assert.Empty(storedCharacter.Item);
+    }
+
+    private static async Task InVendorTransaction(Func<CharacterContext> createContext, Func<CharacterContext, IDbContextTransaction, Task> action)
+    {
+        await using var strategyContext = createContext();
+        await strategyContext.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+        {
+            await using var context = createContext();
+            await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+            await action(context, transaction);
+        });
     }
 
     private static async Task SeedVendorPayment(Fixture auth, CharacterFixture character)

@@ -70,11 +70,14 @@ namespace NexusForever.Game.Account.Currency
                 throw new InvalidOperationException("Vendor recovery changed its admitted Auth route.");
             var refreshed = await fresh.Account.AsNoTracking()
                 .Where(row => row.Id == account.Id && fresh.AccountWorldSession.Any(epoch => epoch.AccountId == row.Id && epoch.Epoch == account.WorldSessionEpoch))
-                .Select(row => new { Wallets = row.AccountCurrency.Where(wallet => affected.Contains(wallet.CurrencyId)).ToArray(), row.Loyalty })
+                .Select(row => new { Wallets = row.AccountCurrency.ToArray(), row.Loyalty })
                 .SingleOrDefaultAsync();
-            if (refreshed == null || refreshed.Wallets.Length != affected.Length || cosmic && refreshed.Loyalty == null)
+            // MySQL binds byte arrays as binary values. Select the affected IDs
+            // after materializing the bounded set of wallets for this account.
+            var wallets = refreshed?.Wallets.Where(wallet => affected.Contains(wallet.CurrencyId)).ToArray();
+            if (wallets == null || wallets.Length != affected.Length || cosmic && refreshed.Loyalty == null)
                 throw new InvalidOperationException("Vendor recovery lost its admitted account or wallet rows.");
-            account.AccountCurrency = account.AccountCurrency.Where(wallet => !affected.Contains(wallet.CurrencyId)).Concat(refreshed.Wallets).ToList();
+            account.AccountCurrency = account.AccountCurrency.Where(wallet => !affected.Contains(wallet.CurrencyId)).Concat(wallets).ToList();
             if (cosmic) account.Loyalty = refreshed.Loyalty;
         }
 

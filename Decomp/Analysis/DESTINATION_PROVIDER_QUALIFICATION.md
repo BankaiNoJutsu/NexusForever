@@ -1,5 +1,9 @@
 # Destination configured-provider qualification
 
+[Vendor settlement and recovery](#vendor-settlement-and-recovery) passes 24
+purchase, buyback and Realm recovery cases on migrated MySQL 8.4.13 Auth and
+Character schemas.
+
 [Fortune settlement and recovery](#fortune-settlement-and-recovery) passes
 twelve cases on migrated MySQL 8.4.13 Auth schemas with the configured retry
 strategy.
@@ -28,6 +32,43 @@ The [portable report](coverage/marketplace-mysql-concurrency-20261103.json) bind
 unchanged Source/DLLs and all44 outcomes. Owned workloads are stopped. No full
 suite was run. Other profiles, physical failures, other financial commands,
 broker/restart, deployment, native and retail qualification remain separate.
+
+### Vendor settlement and recovery
+
+4 November 2026. The runner covered 24 distinct compiled vendor cases across
+four runs using disposable Auth and Character schemas on MySQL 8.4.13. Each
+case applied all 41 Auth and 48 Character migrations. Both contexts used the
+configured `MySqlRetryingExecutionStrategy`. The TLS control connection reported
+`REPEATABLE-READ`.
+
+The 14 purchase cases cover Character and account payments, bag and satchel
+delivery, a dirty wallet and a same-stack exchange, rollback and lost
+acknowledgments, and replacement or stale World epochs. The Cosmic Reward
+cases cover a debit, a refund after confirmed rollback, and a mixed-wallet
+delivery with a lost Character acknowledgment. Four buyback cases check the
+committed debit and original item, including a pending split sale. Two Realm
+admission cases check that abandoned debits are refunded and delivered
+purchases stay charged. Four protocol cases check simulated lost Auth,
+cancellation and refund acknowledgments and concurrent recovery.
+
+The initial run passed all 18 purchase and buyback cases. Six recovery cases
+stopped during setup because the fixture opened a manual transaction outside
+the configured retry strategy. Correcting the fixture let all four protocol
+cases pass and reproduced a Realm admission failure for both wallet profiles.
+MySQL could not bind the byte-array filter in the wallet refresh query. The
+fix keeps the epoch check and wallet snapshot in one read, then filters the
+wallets in memory. Both Realm cases passed with the fix, as did all 31 scoped
+SQLite cases. The original assertions were preserved.
+
+MySQL startup to runner launch took 202 seconds. Provider execution across
+the four runs took 910 seconds. All 68 case schema drops succeeded. The
+server, listener, runners and helpers stopped. The
+[portable result](coverage/vendor-mysql-20261104.json) binds the fixture and
+assembly hashes. Local runner inputs and outputs are under
+`artifacts/continuation-20261104/vendor-mysql/`.
+
+Session sends and commit failures use fixtures. Physical connection loss,
+deployed restart, live socket delivery and retail presentation remain open.
 
 ### Fortune settlement and recovery
 

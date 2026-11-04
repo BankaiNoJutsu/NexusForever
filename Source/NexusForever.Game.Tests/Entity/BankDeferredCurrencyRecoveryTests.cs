@@ -43,8 +43,11 @@ namespace NexusForever.Game.Tests.Entity;
 public sealed class BankDeferredCurrencyRecoveryTests
 {
     private readonly DbContextOptions<CharacterContext> options;
+    private readonly IConnectionString vendorAuthConnection;
     public BankDeferredCurrencyRecoveryTests() { }
     internal BankDeferredCurrencyRecoveryTests(DbContextOptions<CharacterContext> options) => this.options = options;
+    internal BankDeferredCurrencyRecoveryTests(DbContextOptions<CharacterContext> options, IConnectionString vendorAuthConnection) : this(options)
+        => this.vendorAuthConnection = vendorAuthConnection;
 
     [Theory]
     [InlineData("bag")]
@@ -73,7 +76,7 @@ public sealed class BankDeferredCurrencyRecoveryTests
         AccountCurrencyType funding = cosmic ? AccountCurrencyType.CosmicReward : AccountCurrencyType.Omnibit;
         bool useSatchel = accountPayment || outcome.StartsWith("satchel-", StringComparison.Ordinal);
         bool rollback = outcome.EndsWith("-rollback", StringComparison.Ordinal) || stale;
-        using var auth = accountPayment ? new VendorAuthFixture(funding) : null;
+        using var auth = accountPayment ? new VendorAuthFixture(funding, vendorAuthConnection) : null;
         using var f = new Fixture(options);
         f.Seed();
         var database = new CharacterDatabase();
@@ -261,13 +264,18 @@ public sealed class BankDeferredCurrencyRecoveryTests
 
     private sealed class VendorAuthFixture : IDisposable
     {
-        private readonly string path = Path.GetTempFileName();
+        private readonly string path;
         internal AuthDatabase Database { get; } = new();
         internal AccountModel Model { get; } = new() { Id = 12, Email = "vendor-wallet@example.test" };
 
-        internal VendorAuthFixture(AccountCurrencyType funding)
+        internal VendorAuthFixture(AccountCurrencyType funding, IConnectionString connection)
         {
-            Database.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite, ConnectionString = $"Data Source={path};Pooling=False" });
+            if (connection == null)
+            {
+                path = Path.GetTempFileName();
+                connection = new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite, ConnectionString = $"Data Source={path};Pooling=False" };
+            }
+            Database.Initialise(connection);
             Model.AccountCurrency.Add(new() { Id = 12, CurrencyId = (byte)funding, Amount = 100 });
             Model.AccountCurrency.Add(new() { Id = 12, CurrencyId = 14, Amount = 70 });
             if (funding == AccountCurrencyType.CosmicReward)
@@ -279,7 +287,10 @@ public sealed class BankDeferredCurrencyRecoveryTests
             context.SaveChanges();
         }
 
-        public void Dispose() => File.Delete(path);
+        public void Dispose()
+        {
+            if (path != null) File.Delete(path);
+        }
     }
 
     [Theory]

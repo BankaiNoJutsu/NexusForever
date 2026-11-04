@@ -1,0 +1,229 @@
+{
+  "baselineSourceCommit": "81fddd8f726ce53bbba6815080cc4b6f0cfaace7",
+  "finalSourceBlobs": [
+    {
+      "file": "Source/NexusForever.Game/Account/Currency/VendorAccountPurchase.cs",
+      "gitBlob": "fa4f7c33cbb6e878e6361eea5f4e86e1508fc99b"
+    },
+    {
+      "file": "Source/NexusForever.Game.Tests/Account/Currency/AccountCurrencyDurabilityTests.VendorPurchase.cs",
+      "gitBlob": "a51e58700fe2f394663d840eff4e1f11b7bd701f"
+    },
+    {
+      "file": "Source/NexusForever.Game.Tests/Entity/BankDeferredCurrencyRecoveryTests.cs",
+      "gitBlob": "fa12249677b95b7920a76d30a3474e9ea58c265b"
+    }
+  ],
+  "engine": {
+    "version": "8.4.13",
+    "sha256": "7a976874ef3974d612081960b1c193c663b4434692b6257382352c587e367ad6",
+    "controlConnectionIsolation": "REPEATABLE-READ",
+    "tlsRequired": true
+  },
+  "assembliesByRun": {
+    "NexusForever.Database.dll": "a4f68adca733c7c1bb2971ed79968dc4fcdf6877c98660e858f9104774a4ad3a",
+    "NexusForever.Database.Auth.dll": "7412f700d195a6d66aabefc3ebee2d4272c28f583bb8bfcb0f851fdce5861b77",
+    "NexusForever.Database.Character.dll": "1d8cd00ff718639f0ed9fbed19549cb543e9ea53f5818127c5656ab93a6280fd",
+    "NexusForever.Game.dll": {
+      "provider": "836a579aac634011d8c85c1e6049a40bc75a831cc2c13bfb7ed3f27b893d8e7a",
+      "confirmation": "836a579aac634011d8c85c1e6049a40bc75a831cc2c13bfb7ed3f27b893d8e7a",
+      "admission-diagnostic": "836a579aac634011d8c85c1e6049a40bc75a831cc2c13bfb7ed3f27b893d8e7a",
+      "admission-final": "b5b487409c9d4b801591d2ca25609c83428172495e519f544fa4cc63e38c0043"
+    },
+    "NexusForever.WorldServer.dll": {
+      "provider": "b6daa7313d1be47032947336c4db3d3e1805bb454aa242d774da5ffc986b3d89",
+      "confirmation": "b6daa7313d1be47032947336c4db3d3e1805bb454aa242d774da5ffc986b3d89",
+      "admission-diagnostic": "b6daa7313d1be47032947336c4db3d3e1805bb454aa242d774da5ffc986b3d89",
+      "admission-final": "27f9a041cf3732e85a7d1d6d47816bf3155077558e1ce7d1d6e56faf769a1201"
+    },
+    "NexusForever.Game.Tests.dll": {
+      "provider": "536a9bef4e3d2da28712017db1be6bf923d6cd67c44cc1ed568b463f8f215ea5",
+      "confirmation": "fe0e2566f609054d8e071669b70c5ff47965e26623cea99de3cc2525a61cef81",
+      "admission-diagnostic": "fe0e2566f609054d8e071669b70c5ff47965e26623cea99de3cc2525a61cef81",
+      "admission-final": "619846f4f8be7bf19e78794725f333176429726a97954189e717085b21b58bbc"
+    }
+  },
+  "authMigrationsPerSchema": 41,
+  "characterMigrationsPerSchema": 48,
+  "authStrategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+  "characterStrategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+  "startupToRunnerSeconds": 201.9887349,
+  "runs": [
+    {
+      "name": "provider",
+      "seconds": 616.505746,
+      "exitCode": 1,
+      "cases": 24,
+      "passed": 18,
+      "runnerSha256": "0d0120c52272eb9d3d4f196a79fdd3500ab86251286602d43bbe96e7d7609e43",
+      "resultsSha256": "b945bcea3fb1f15be3fa8192b804fcc7d061ddae07801344fef0594b1e3e6286"
+    },
+    {
+      "name": "confirmation",
+      "seconds": 173.8669679,
+      "exitCode": 1,
+      "cases": 6,
+      "passed": 4,
+      "runnerSha256": "8ed6928728de63d158d7e3fa0398f62fffe945ce8ee0f733f6c4b7881ac66033",
+      "resultsSha256": "7cce6031df10e3741000ce1a0793e99fcc4a6c3752b8f9578a63ee371ce9e901"
+    },
+    {
+      "name": "admission-diagnostic",
+      "seconds": 60.7666894,
+      "exitCode": 1,
+      "cases": 2,
+      "passed": 0,
+      "runnerSha256": "2e4a6404cbdec4956cca9f916827b655840f7ee75dc3e14a8b42df73fbb8f7b5",
+      "resultsSha256": "d25b0dc76749587ba467c6a6129e1c98a2187336650b0992ea8c96c30a2aa1e8"
+    },
+    {
+      "name": "admission-final",
+      "seconds": 58.9539023,
+      "exitCode": 0,
+      "cases": 2,
+      "passed": 2,
+      "runnerSha256": "90c83160d6149cd3aeac66ef6c2b4d8ccc6ee0ebb70c92ed91fa3773fe3c38dc",
+      "resultsSha256": "20d2d6aea7c9f5bc01895150fc4ab36608b070b23176734184238aca02662468"
+    }
+  ],
+  "caseCount": 24,
+  "cases": [
+    {
+      "name": "VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(bag)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(bag-dirty-wallet)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(same-stack)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(satchel-lost)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(satchel-rollback)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(account-commit)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(account-lost)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(account-rollback)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(account-stale)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(account-rebound)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(account-two-wallets)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(cosmic-commit)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(cosmic-rollback)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(cosmic-mixed-lost)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorBuybackReconcilesPaymentAndItemBeforeAcknowledgingTheOriginalOffer(commit)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorBuybackReconcilesPaymentAndItemBeforeAcknowledgingTheOriginalOffer(lost)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorBuybackReconcilesPaymentAndItemBeforeAcknowledgingTheOriginalOffer(rollback)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorBuybackReconcilesPaymentAndItemBeforeAcknowledgingTheOriginalOffer(unsettled-split)",
+      "passed": true,
+      "run": "provider"
+    },
+    {
+      "name": "VendorDebitRecoveryMakesDeliveryAndRefundMutuallyExclusive(auth-ack-lost)",
+      "passed": true,
+      "run": "confirmation"
+    },
+    {
+      "name": "VendorDebitRecoveryMakesDeliveryAndRefundMutuallyExclusive(refund-ack-lost)",
+      "passed": true,
+      "run": "confirmation"
+    },
+    {
+      "name": "VendorDebitRecoveryMakesDeliveryAndRefundMutuallyExclusive(cancel-ack-lost)",
+      "passed": true,
+      "run": "confirmation"
+    },
+    {
+      "name": "VendorDebitRecoveryMakesDeliveryAndRefundMutuallyExclusive(concurrent-recovery)",
+      "passed": true,
+      "run": "confirmation"
+    },
+    {
+      "name": "RealmAdmissionRecoversLocalVendorDebitsBeforePublishingWallets(True,False)",
+      "passed": true,
+      "run": "admission-final"
+    },
+    {
+      "name": "RealmAdmissionRecoversLocalVendorDebitsBeforePublishingWallets(True,True)",
+      "passed": true,
+      "run": "admission-final"
+    }
+  ],
+  "retainedFailures": {
+    "fixtureTransactionOutsideRetryStrategy": 6,
+    "realmWalletParameterBinding": 2,
+    "diagnosticTraceSha256": "76eefc5085afb7ed768f80b27357728cab55941bc6ede1423bcd8e0a59e206fe"
+  },
+  "sqliteControlCases": 31,
+  "ownedShutdown": {
+    "processAbsent": true,
+    "listenerAbsent": true,
+    "runnersAndHelpersAbsent": true,
+    "caseSchemaDropsSucceeded": 68,
+    "observedUtc": "2026-11-04T18:47:34.2967304Z"
+  },
+  "localArtifacts": {
+    "directory": "artifacts/continuation-20261104/vendor-mysql",
+    "sqliteTrxSha256": "4e9c20730c880607a542b75f5d090ae1b7383bb2c6fe5656cb5f508593e35397"
+  }
+}
