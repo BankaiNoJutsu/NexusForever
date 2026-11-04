@@ -1691,6 +1691,10 @@ namespace NexusForever.Game.Entity
                 if (item == null)
                     throw new ArgumentNullException(nameof(item), "Item is null.");
 
+                IBag bag = GetBag(item.Location);
+                if (bag == null || item.BagIndex >= bag.Slots || !ReferenceEquals(bag.GetItem(item.BagIndex), item))
+                    return false;
+
                 if (IsBankSavePending(item))
                     return false;
 

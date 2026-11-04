@@ -60,6 +60,28 @@ public partial class ClientItemUseHandlerTests
     }
 
     [Fact]
+    public void HandleMessage_CastReplacesSessionPlayer_DoesNotConsumeFromEitherInventory()
+    {
+        var handler = CreateHandler(spell4Id: 888u);
+        IInventory replacementInventory = RecordingDispatchProxy<IInventory>.Create(out var replacementInventoryProxy);
+        IPlayer replacementPlayer = RecordingDispatchProxy<IPlayer>.Create(out var replacementPlayerProxy);
+        replacementPlayerProxy.SetProperty(nameof(IPlayer.Inventory), replacementInventory);
+        IWorldSession session = null;
+        session = CreateSession(CreateItem(stackCount: 1u, maxStackCount: 20u), () =>
+        {
+            var sessionProxy = (RecordingDispatchProxy<IWorldSession>)(object)session;
+            sessionProxy.SetProperty(nameof(IWorldSession.Player), replacementPlayer);
+            return CastResult.Ok;
+        }, [], out var inventoryProxy, out _);
+
+        handler.HandleMessage(session, CreateRequest());
+
+        Assert.Same(replacementPlayer, session.Player);
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+        Assert.Empty(replacementInventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+    }
+
+    [Fact]
     public void HandleMessage_EmptyStack_DoesNotCastOrConsumeItem()
     {
         ClientItemUseHandler handler = CreateHandler(spell4Id: 999u);

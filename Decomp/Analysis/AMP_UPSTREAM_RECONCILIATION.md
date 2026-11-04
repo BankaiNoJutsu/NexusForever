@@ -1,5 +1,28 @@
 # AMP prerequisite and lifecycle reconciliation
 
+## Activated item ownership
+
+4 November 2026. Activated item use retains the player and inventory that
+acquired the mutation lease. After prerequisite evaluation it requires the
+original item before priming charges or casting. A replaced item retires the
+parsed cast request with `ItemBad`. A successful cast can consume only through
+the original player and inventory while they are still current. The inventory
+checks the exact item reference in its bag slot before changing the item or
+awarding consume achievement progress, including when a replacement has the
+same item GUID.
+
+The baseline reproduced consumption through a rebound session player and
+acceptance of a stale object at an occupied slot. The focused regressions also
+cover replacement during prerequisite evaluation. The initial 678-case scoped
+run passed in 7 minutes. The final WorldServer build had zero warnings and
+errors, and 52 affected tests passed in 7 seconds against the final handler and
+the same Game DLL. Local TRX, input and binary identities, and review outcome
+are in `artifacts/continuation-20261104/item-use-ownership/`.
+
+This covers shared item-use ownership in source. The final-build bonus AMP
+upgrade item and activation row, atomic consumption and grant, and deployed
+socket behavior remain open. The historical inlaid AMP unlock path is separate.
+
 ## Bonus AMP power publishes after commit
 
 4 November 2026. Build 16042 dispatch slot `0x1403f1844` routes `01A1` to

@@ -16,6 +16,30 @@ namespace NexusForever.Game.Tests.Entity;
 
 public sealed partial class RealmBankItemIdentityTests
 {
+    [Fact]
+    public void ItemUseRejectsStaleReferenceAtAnOccupiedSlot()
+    {
+        var (manager, player, items) = Access();
+        var currentRow = CharacterRow();
+        var (inventory, current, _) = SwapInventory(manager, player, items, currentRow, null);
+        var staleRow = CharacterRow();
+        staleRow.StackCount = 1;
+        var stale = new GameItem(staleRow, items)
+        {
+            Location = current.Location,
+            BagIndex = current.BagIndex
+        };
+        var achievements = RecordingDispatchProxy<ICharacterAchievementManager>.Create(out var hooks);
+        ((RecordingDispatchProxy<IPlayer>)(object)player).SetProperty(nameof(IPlayer.AchievementManager), achievements);
+
+        Assert.False(inventory.ItemUse(stale));
+
+        Assert.Same(current, inventory.GetItem(InventoryLocation.Inventory, currentRow.BagIndex));
+        Assert.Equal(17u, current.StackCount);
+        Assert.Equal(1u, stale.StackCount);
+        Assert.Empty(hooks.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]

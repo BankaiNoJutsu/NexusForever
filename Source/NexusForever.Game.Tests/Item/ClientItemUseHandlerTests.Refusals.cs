@@ -69,6 +69,29 @@ public partial class ClientItemUseHandlerTests
     }
 
     [Fact]
+    public void ItemReplacedDuringPrerequisiteRefusesActivationWithoutPrimingCharges()
+    {
+        var tables = CreateGameTableManager(777);
+        tables.ItemSpecial.GetEntry(123).PrerequisiteIdGeneric00 = 10;
+        var item = CreateItem(1, 20, maxCharges: 3);
+        var session = CreateSession(item, CastResult.Ok, [], out var inventory, out var player);
+        var messages = RecordRefusals(session);
+        var checks = RecordingDispatchProxy<IPrerequisiteManager>.Create(out var checkProxy);
+        checkProxy.SetMethodHandler(nameof(IPrerequisiteManager.Meets), _ =>
+        {
+            inventory.SetMethodReturn(nameof(IInventory.GetItem), CreateItem(1, 20));
+            return true;
+        });
+
+        new ClientItemUseHandler(tables, checks).HandleMessage(session, CreateRequest());
+
+        Assert.Equal(CastResult.ItemBad, Assert.Single(messages).CastResult);
+        Assert.Equal(0u, item.Charges);
+        Assert.Empty(player.GetInvocations(nameof(IPlayer.TryCastSpell)));
+        Assert.Empty(inventory.GetInvocations(nameof(IInventory.ItemUse)));
+    }
+
+    [Fact]
     public void CurrencyTreasureKeepsItsGrantAndRetiresTheParsedNonSpellRequest()
     {
         var session = CreateSession(CreateCurrencyTreasure(1), CastResult.Ok, [], out var inventory, out _, out var currency);
