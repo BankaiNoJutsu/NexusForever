@@ -272,6 +272,17 @@ namespace NexusForever.Game.Account.Inventory
                 ? context.AccountInventory.FromSqlInterpolated($"SELECT * FROM account_inventory WHERE id = {account.Id} AND inventoryId = {Id} FOR UPDATE")
                 : context.AccountInventory.Where(item => item.Id == account.Id && item.InventoryId == Id)).AsNoTracking().SingleOrDefault();
 
+        internal bool MatchesStoredGrant(AuthContext context)
+        {
+            AccountInventoryModel row = ReadInventoryRow(context);
+            return row != null && row.CreationKey == deliveryKey && row.AccountItemId == AccountItemId
+                && row.ClaimState == (byte)ClaimState && row.ForceSoulbind == ForceSoulbind
+                && row.HasTargetPlayerIdentity == HasTargetPlayerIdentity
+                && row.TargetRealmId == TargetPlayerIdentity.RealmId && row.TargetCharacterId == TargetPlayerIdentity.Id
+                && context.AccountInventoryReceipt.AsNoTracking().Any(receipt => receipt.AccountId == account.Id
+                    && receipt.DeliveryKey == deliveryKey && receipt.InventoryId == Id);
+        }
+
         public void EnqueueDelete(bool set)
         {
             lock (saveGate)

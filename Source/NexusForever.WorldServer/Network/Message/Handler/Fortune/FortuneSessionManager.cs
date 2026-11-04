@@ -197,11 +197,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                     }
                     else
                         unit.Entry(staged).CurrentValues.SetValues(model);
-                }, _ => { }, () => OwnsDeal()
-                    && ReadDealForUpdate(context, account.Id, noTracking: true) is { } stored
-                    && ReadCards(stored).SequenceEqual(deal.Cards), account.Id);
+                }, _ => { }, () => OwnsDeal() && MatchesStoredDeal(context, account.Id, epoch, deal), account.Id);
 
-                context.SaveChanges();
+                context.SaveChangesConfirmingCommit(() => OwnsDeal() && IsWorldSessionEpoch(context, account.Id, epoch));
 
                 void FlushBeforeDeal(Func<bool> settled)
                 {
@@ -227,6 +225,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                         Continue();
                     }
                 }
+            }
+            catch (AuthCommitOutcomeUnknownException error)
+            {
+                DisconnectUnconfirmed(session, account, player, error);
+                return;
             }
             catch (Exception ex)
             {
@@ -343,19 +346,31 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                 Action publishGrant = null;
                 IPlayer player = session.Player;
                 IAccountInventoryManager inventory = account.InventoryManager;
-                Func<bool> ownsFlip = () => OwnsSession(session, account, player) && ReferenceEquals(account.InventoryManager, inventory);
-                if (databaseManager == null)
-                    GrantCardReward(account, player, card);
-                else if (!TryCommitFlip(account, player, inventory as AccountInventoryManager, fortuneSession, flipCard.SelectedCardIndex, ownsFlip, out publishGrant))
-                {
-                    if (ownsFlip())
-                        SendClickEmptyReset(session);
-                    return;
-                }
-
                 FortuneCardState[] cards = (FortuneCardState[])fortuneSession.Cards.Clone();
                 cards[flipCard.SelectedCardIndex] = card with { Flipped = true, Granted = card.Granted || card.AccountItemId != 0u };
                 var updated = new FortuneSession(cards);
+                Func<bool> ownsFlip = () => OwnsSession(session, account, player) && ReferenceEquals(account.InventoryManager, inventory);
+                if (databaseManager == null)
+                    GrantCardReward(account, player, card);
+                else
+                {
+                    try
+                    {
+                        if (!TryCommitFlip(account, player, inventory as AccountInventoryManager, fortuneSession, updated,
+                            flipCard.SelectedCardIndex, ownsFlip, out publishGrant))
+                        {
+                            if (ownsFlip())
+                                SendClickEmptyReset(session);
+                            return;
+                        }
+                    }
+                    catch (AuthCommitOutcomeUnknownException error)
+                    {
+                        DisconnectUnconfirmed(session, account, player, error);
+                        return;
+                    }
+                }
+
                 sessions[account.Id] = updated;
                 publishGrant?.Invoke();
                 if (databaseManager != null && (!ownsFlip() || !IsCurrentDeal(account.Id, updated)))
@@ -369,7 +384,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             }
         }
 
-        private bool TryCommitFlip(IAccount account, IPlayer player, AccountInventoryManager inventory, FortuneSession expected,
+        private bool TryCommitFlip(IAccount account, IPlayer player, AccountInventoryManager inventory, FortuneSession expected, FortuneSession updated,
             uint index, Func<bool> ownsFlip, out Action publishGrant)
         {
             publishGrant = null;
@@ -400,15 +415,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                         case 1: staged.Card1Flipped = true; staged.Card1Granted |= grantRequired; break;
                         case 2: staged.Card2Flipped = true; staged.Card2Granted |= grantRequired; break;
                     }
-                }, _ => { }, ownsFlip, account.Id);
+                }, _ => { }, () => ownsFlip() && MatchesStoredDeal(context, account.Id, epoch, updated), account.Id);
 
+                bool OwnsProof() => ownsFlip() && IsWorldSessionEpoch(context, account.Id, epoch);
                 if (grantRequired)
-                    publishGrant = inventory.CommitItemGrant(context, card.AccountItemId, BuildTargetIdentity(player), ownsFlip);
+                    publishGrant = inventory.CommitItemGrant(context, card.AccountItemId, BuildTargetIdentity(player), ownsFlip, OwnsProof);
                 else
-                    context.SaveChanges();
+                    context.SaveChangesConfirmingCommit(OwnsProof);
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AuthCommitOutcomeUnknownException)
             {
                 log.LogWarning(ex, "Could not confirm Fortune card {CardIndex} for account {AccountId}.", index, account.Id);
                 return false;
@@ -419,11 +435,29 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             => ReferenceEquals(session.Account, account) && ReferenceEquals(account.Session, session)
                 && ReferenceEquals(session.Player, player);
 
+        private void DisconnectUnconfirmed(IWorldSession session, IAccount account, IPlayer player, AuthCommitOutcomeUnknownException error)
+        {
+            log.LogWarning(error, "Fortune commit outcome requires account reload for account {AccountId}.", account.Id);
+            if (!OwnsSession(session, account, player))
+                return;
+            sessions.Remove(account.Id);
+            session.CanProcessIncomingPackets = false;
+            session.ForceDisconnect();
+        }
+
         private static void ValidateWorldSessionEpoch(AuthContext context, uint accountId, ulong epoch)
         {
-            if (epoch != 0 && !context.AccountWorldSession.AsNoTracking().Any(row => row.AccountId == accountId && row.Epoch == epoch))
+            if (!IsWorldSessionEpoch(context, accountId, epoch))
                 throw new DbUpdateConcurrencyException("The Fortune account session was superseded.");
         }
+
+        private static bool IsWorldSessionEpoch(AuthContext context, uint accountId, ulong epoch)
+            => epoch == 0 || context.AccountWorldSession.AsNoTracking().Any(row => row.AccountId == accountId && row.Epoch == epoch);
+
+        private static bool MatchesStoredDeal(AuthContext context, uint accountId, ulong epoch, FortuneSession expected)
+            => IsWorldSessionEpoch(context, accountId, epoch)
+                && ReadDealForUpdate(context, accountId, noTracking: true) is { } stored
+                && ReadCards(stored).SequenceEqual(expected.Cards);
 
         private static AccountFortuneSessionModel ReadDealForUpdate(AuthContext context, uint accountId, bool noTracking = false)
         {

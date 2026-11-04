@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
@@ -98,7 +99,34 @@ namespace NexusForever.Database.Auth
         }
 
         private bool SaveUnitAlreadyCommitted() => pendingSaveAccount.HasValue &&
-            AccountPendingItemDelivery.AsNoTracking().Any(row => row.AccountId == pendingSaveAccount.Value && row.DeliveryKey == saveUnitKey);
+            AccountPendingItemDelivery.AsNoTracking().Any(row => row.AccountId == pendingSaveAccount.Value
+                && row.DeliveryKey == saveUnitKey && row.PendingItemId == 0);
+
+        private bool ConfirmOwnedCommit(Func<bool> ownsProof)
+        {
+            // Use a new transaction on the original route. The owner lock waits
+            // for the original writer before deciding whether its receipt exists.
+            using IDbContextTransaction proof = Database.BeginTransaction(IsolationLevel.Serializable);
+            uint accountId = pendingSaveAccount.Value;
+            bool ownerExists = Database.IsSqlite()
+                ? Account.AsNoTracking().Any(row => row.Id == accountId)
+                : Account.FromSqlInterpolated($"SELECT * FROM account WHERE id = {accountId} FOR UPDATE").AsNoTracking().AsEnumerable().Any();
+            if (!ownerExists || !ownsProof())
+                throw new AuthCommitOutcomeUnknownException(new InvalidOperationException("The Auth save owner changed."));
+
+            AccountPendingItemDeliveryModel receipt = AccountPendingItemDelivery.AsNoTracking()
+                .SingleOrDefault(row => row.AccountId == accountId && row.DeliveryKey == saveUnitKey);
+            if (receipt == null)
+                return false;
+            if (receipt.PendingItemId != 0)
+                throw new AuthCommitOutcomeUnknownException(new InvalidOperationException("The Auth save receipt has a conflicting item identity."));
+
+            // Existing guards also check whether the committed rows can still
+            // be adopted by the live owner after the acknowledgement was lost.
+            try { ValidateCommit(); }
+            catch (Exception error) { throw new AuthCommitOutcomeUnknownException(error); }
+            return true;
+        }
 
         private void CompleteSaveUnit(bool committed)
         {
@@ -124,6 +152,19 @@ namespace NexusForever.Database.Auth
         }
 
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
+            => SaveChanges(acceptAllChangesOnSuccess, ownsProof: null);
+
+        /// <summary>Confirm an ambiguous owned save with its exact receipt before completing live owners.</summary>
+        public int SaveChangesConfirmingCommit(Func<bool> ownsProof)
+        {
+            ArgumentNullException.ThrowIfNull(ownsProof);
+            if (!pendingSaveAccount.HasValue || Database.CurrentTransaction != null ||
+                (!Database.IsSqlite() && Database.ProviderName?.Contains("MySql", StringComparison.OrdinalIgnoreCase) != true))
+                throw new InvalidOperationException("Commit confirmation requires an owned SQLite or MySQL account save.");
+            return SaveChanges(acceptAllChangesOnSuccess: true, ownsProof);
+        }
+
+        private int SaveChanges(bool acceptAllChangesOnSuccess, Func<bool> ownsProof)
         {
             ValidateSaveUnit();
             if (saveWork.Count == 0)
@@ -142,20 +183,48 @@ namespace NexusForever.Database.Auth
 
                 owningSaveUnit = true;
                 int stagedResult = 0;
-                int saved = Database.CreateExecutionStrategy().Execute(() =>
+                int saved;
+                bool commitAttempted = false;
+                bool confirmCommit = ownsProof != null;
+                try
                 {
-                    if (SaveUnitAlreadyCommitted())
+                    saved = Database.CreateExecutionStrategy().Execute(() =>
+                    {
+                        if (confirmCommit ? commitAttempted && ConfirmOwnedCommit(ownsProof) : SaveUnitAlreadyCommitted())
+                            return stagedResult;
+                        using IDbContextTransaction transaction = Database.BeginTransaction();
+                        StageSaveWork();
+                        stagedResult = base.SaveChanges(false);
+                        if (confirmCommit && !SaveUnitAlreadyCommitted())
+                            throw new InvalidOperationException("The Auth save is missing its commit receipt.");
+                        commitAttempted = true;
+                        transaction.Commit();
                         return stagedResult;
-                    using IDbContextTransaction transaction = Database.BeginTransaction();
-                    StageSaveWork();
-                    stagedResult = base.SaveChanges(false);
-                    transaction.Commit();
-                    return stagedResult;
-                });
-                if (acceptAllChangesOnSuccess)
-                    ChangeTracker.AcceptAllChanges();
-                owningSaveUnit = false;
-                CompleteSaveUnit(true);
+                    });
+                }
+                catch (Exception error) when (confirmCommit && commitAttempted && error is not AuthCommitOutcomeUnknownException)
+                {
+                    bool confirmed;
+                    try { confirmed = Database.CreateExecutionStrategy().Execute(() => ConfirmOwnedCommit(ownsProof)); }
+                    catch (Exception proofError)
+                    {
+                        throw new AuthCommitOutcomeUnknownException(new AggregateException(error, proofError));
+                    }
+                    if (!confirmed)
+                        throw;
+                    saved = stagedResult;
+                }
+                try
+                {
+                    if (acceptAllChangesOnSuccess)
+                        ChangeTracker.AcceptAllChanges();
+                    owningSaveUnit = false;
+                    CompleteSaveUnit(true);
+                }
+                catch (Exception error) when (confirmCommit)
+                {
+                    throw new AuthCommitOutcomeUnknownException(error);
+                }
                 return saved;
             }
             catch

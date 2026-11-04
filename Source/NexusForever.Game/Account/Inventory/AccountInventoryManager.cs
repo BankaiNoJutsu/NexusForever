@@ -180,7 +180,8 @@ namespace NexusForever.Game.Account.Inventory
         }
 
         /// <summary>Commit an item with the caller's staged Auth work before adopting or announcing it.</summary>
-        public Action CommitItemGrant(AuthContext context, uint accountItemId, NetworkIdentity targetPlayerIdentity, Func<bool> canPublish)
+        public Action CommitItemGrant(AuthContext context, uint accountItemId, NetworkIdentity targetPlayerIdentity,
+            Func<bool> canPublish, Func<bool> ownsProof)
         {
             if (context.Database.CurrentTransaction != null)
                 throw new InvalidOperationException("The inventory grant must own the Auth transaction.");
@@ -189,10 +190,18 @@ namespace NexusForever.Game.Account.Inventory
                 AccountItemClaimState.CanClaim, targetPlayerIdentity?.Id is > 0ul, gameTableManager, consumed: OnPersistedItemConsumed);
             IGameSession session = account.Session;
             item.Save(context);
-            context.SaveChanges();
+            context.EnlistSaveWork(_ => { }, _ => { }, () => canPublish() && item.MatchesStoredGrant(context), account.Id);
+            context.SaveChangesConfirmingCommit(ownsProof);
 
-            lock (inventoryGate)
-                items.Add(item.Id, item);
+            try
+            {
+                lock (inventoryGate)
+                    items.Add(item.Id, item);
+            }
+            catch (ArgumentException error)
+            {
+                throw new AuthCommitOutcomeUnknownException(error);
+            }
             return () => SendItemAdd(item, session, canPublish);
         }
 

@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using NexusForever.Database;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
@@ -678,9 +680,228 @@ public class FortuneSessionManagerTests
         Assert.Equal(AccountOperationResult.Ok, inventory.TakeItem(fixture.Session.Player, 1));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LostStartAcknowledgementAdoptsTheCommittedDealAndFunding(bool useBundle)
+    {
+        using var fixture = new PersistedFortune(coins: useBundle ? 0ul : 2ul, bundleTarget: useBundle ? 9001ul : null);
+        using var fault = new CommitFault(fixture.ConnectionString);
+        FortuneSessionManager manager = fixture.CreateManager();
+
+        manager.Start(fixture.Session);
+
+        Assert.Equal(1, fault.CommitFailures);
+        using AuthContext read = fixture.Database.CreateContext();
+        ulong expected = useBundle ? 4ul : 1ul;
+        Assert.Equal(expected, read.AccountCurrency.Single().Amount);
+        Assert.Equal(expected, fixture.Session.Account.CurrencyManager.GetCurrencyAmount(AccountCurrencyType.FortuneCoin));
+        Assert.Empty(fixture.Session.Account.InventoryManager);
+        Assert.Empty(read.AccountInventory);
+        Assert.Single(read.AccountFortuneSession);
+        Assert.Equal(useBundle ? 2 : 1, read.AccountCurrencyOperation.Count());
+        Assert.Single(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCards>());
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneReset>());
+    }
+
+    [Fact]
+    public void LostFlipAcknowledgementAdoptsTheExactRewardAndDoesNotPayAgain()
+    {
+        using var fixture = new PersistedFortune();
+        FortuneSessionManager manager = fixture.CreateManager();
+        manager.Start(fixture.Session);
+        using var fault = new CommitFault(fixture.ConnectionString);
+
+        manager.FlipCard(fixture.Session, CreateFlipCard(1u));
+
+        Assert.Equal(1, fault.CommitFailures);
+        using AuthContext read = fixture.Database.CreateContext();
+        AccountInventoryModel item = Assert.Single(read.AccountInventory);
+        Assert.Equal(22u, item.AccountItemId);
+        Assert.Equal(9001ul, item.TargetCharacterId);
+        Assert.NotNull(fixture.Session.Account.InventoryManager.GetItem(item.InventoryId));
+        Assert.True(read.AccountFortuneSession.Single().Card1Granted);
+        Assert.Single(GetEncryptedMessages(fixture.Messages).OfType<ServerAccountItemAdd>());
+        Assert.Single(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCardUpdate>());
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneReset>());
+
+        manager.FlipCard(fixture.Session, CreateFlipCard(1u));
+        Assert.Single(read.AccountInventory.AsNoTracking());
+        Assert.Single(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCardUpdate>());
+    }
+
+    [Fact]
+    public void FailureBeforeCommitKeepsTheCoinAndAllowsANewDeal()
+    {
+        using var fixture = new PersistedFortune(coins: 2);
+        using var fault = new CommitFault(fixture.ConnectionString, beforeCommit: true);
+        FortuneSessionManager manager = fixture.CreateManager();
+
+        manager.Start(fixture.Session);
+
+        Assert.Equal(1, fault.CommitFailures);
+        using AuthContext read = fixture.Database.CreateContext();
+        Assert.Empty(read.AccountFortuneSession);
+        Assert.Empty(read.AccountCurrencyOperation);
+        Assert.Equal(2ul, read.AccountCurrency.AsNoTracking().Single().Amount);
+        Assert.Single(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneReset>());
+        Assert.Empty(fixture.Messages.GetInvocations(nameof(IWorldSession.ForceDisconnect)));
+
+        manager.Start(fixture.Session);
+        Assert.Equal(1ul, read.AccountCurrency.AsNoTracking().Single().Amount);
+        Assert.Single(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCards>());
+    }
+
+    [Fact]
+    public void LostAcknowledgementWithAChangedWalletRequiresAccountReload()
+    {
+        using var fixture = new PersistedFortune(coins: 2);
+        using var fault = new CommitFault(fixture.ConnectionString, onFault: () =>
+        {
+            using AuthContext writer = fixture.Database.CreateContext();
+            writer.Database.ExecuteSqlRaw("UPDATE account_currency SET amount = 3 WHERE currencyId = 5");
+        });
+
+        fixture.CreateManager().Start(fixture.Session);
+
+        Assert.Equal(1, fault.CommitFailures);
+        using AuthContext read = fixture.Database.CreateContext();
+        Assert.Equal(3ul, read.AccountCurrency.Single().Amount);
+        Assert.Equal(1ul, read.AccountCurrencyOperation.Single().AfterAmount);
+        Assert.Single(read.AccountFortuneSession);
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCards>());
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneReset>());
+        Assert.Single(fixture.Messages.GetInvocations(nameof(IWorldSession.ForceDisconnect)));
+        Assert.False(fixture.Session.CanProcessIncomingPackets);
+    }
+
+    [Fact]
+    public void AConflictingReceiptDoesNotMasqueradeAsARolledBackDeal()
+    {
+        using var fixture = new PersistedFortune(coins: 2);
+        using var fault = new CommitFault(fixture.ConnectionString, onFault: () =>
+        {
+            using AuthContext writer = fixture.Database.CreateContext();
+            writer.Database.ExecuteSqlRaw("UPDATE account_pending_item_delivery SET pendingItemId = 1");
+        });
+
+        fixture.CreateManager().Start(fixture.Session);
+
+        Assert.Equal(1, fault.CommitFailures);
+        using AuthContext read = fixture.Database.CreateContext();
+        Assert.Equal(1ul, read.AccountPendingItemDelivery.Single().PendingItemId);
+        Assert.Equal(1ul, read.AccountCurrency.Single().Amount);
+        Assert.Single(read.AccountFortuneSession);
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCards>());
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneReset>());
+        Assert.Single(fixture.Messages.GetInvocations(nameof(IWorldSession.ForceDisconnect)));
+    }
+
+    [Fact]
+    public void ARejectedDealWithASupersededEpochDoesNotPublishAReset()
+    {
+        using var fixture = new PersistedFortune(coins: 2);
+        fixture.Owner.SetProperty(nameof(IAccount.WorldSessionEpoch), 1ul);
+        using AuthContext seed = fixture.Database.CreateContext();
+        seed.AccountWorldSession.Add(new AccountWorldSessionModel { AccountId = fixture.Session.Account.Id, Epoch = 1ul });
+        seed.SaveChanges();
+        using var fault = new CommitFault(fixture.ConnectionString, beforeCommit: true, onDisposeAfterFault: () =>
+        {
+            using AuthContext writer = fixture.Database.CreateContext();
+            writer.AccountWorldSession.ExecuteUpdate(setters => setters.SetProperty(row => row.Epoch, 2ul));
+        });
+
+        fixture.CreateManager().Start(fixture.Session);
+
+        Assert.Equal(1, fault.CommitFailures);
+        using AuthContext read = fixture.Database.CreateContext();
+        Assert.Equal(2ul, read.AccountWorldSession.Single().Epoch);
+        Assert.Equal(2ul, read.AccountCurrency.Single().Amount);
+        Assert.Empty(read.AccountFortuneSession);
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneReset>());
+        Assert.Single(fixture.Messages.GetInvocations(nameof(IWorldSession.ForceDisconnect)));
+    }
+
+    [Fact]
+    public void AFailedLiveCompletionAfterCommitRequiresReload()
+    {
+        using var fixture = new PersistedFortune();
+        using AuthContext context = fixture.Database.CreateContext();
+        uint accountId = fixture.Session.Account.Id;
+        context.EnlistSaveWork(unit => unit.AccountFortuneSession.Add(new AccountFortuneSessionModel { Id = accountId, Card0AccountItemId = 11 }),
+            committed =>
+            {
+                Assert.True(committed);
+                throw new IOException("The live deal could not be finalized.");
+            }, accountId: accountId);
+
+        var error = Assert.Throws<AuthCommitOutcomeUnknownException>(() => context.SaveChangesConfirmingCommit(() => true));
+        Assert.IsType<IOException>(error.InnerException);
+
+        using AuthContext read = fixture.Database.CreateContext();
+        Assert.Equal(11u, read.AccountFortuneSession.Single().Card0AccountItemId);
+    }
+
+    private sealed class CommitFault : IObserver<DiagnosticListener>, IObserver<KeyValuePair<string, object>>, IDisposable
+    {
+        private readonly string connectionString;
+        private readonly string commitEvent;
+        private readonly Action onFault;
+        private readonly Action onDisposeAfterFault;
+        private readonly IDisposable allListeners;
+        private readonly List<IDisposable> subscriptions = [];
+        private int commitFailures;
+        private int disposedAfterFault;
+        public int CommitFailures => Volatile.Read(ref commitFailures);
+
+        public CommitFault(string connectionString, bool beforeCommit = false, Action onFault = null, Action onDisposeAfterFault = null)
+        {
+            this.connectionString = connectionString;
+            this.onFault = onFault;
+            this.onDisposeAfterFault = onDisposeAfterFault;
+            commitEvent = beforeCommit ? RelationalEventId.TransactionCommitting.Name : RelationalEventId.TransactionCommitted.Name;
+            allListeners = DiagnosticListener.AllListeners.Subscribe(this);
+        }
+
+        public void OnNext(DiagnosticListener listener)
+        {
+            if (listener.Name == "Microsoft.EntityFrameworkCore")
+                lock (subscriptions)
+                    subscriptions.Add(listener.Subscribe(this, name => name == commitEvent ||
+                        (onDisposeAfterFault != null && name == RelationalEventId.TransactionDisposed.Name)));
+        }
+
+        public void OnNext(KeyValuePair<string, object> item)
+        {
+            if (item.Value is not TransactionEventData { Context: AuthContext context } ||
+                context.Database.GetConnectionString() != connectionString)
+                return;
+            if (item.Key == commitEvent && Interlocked.CompareExchange(ref commitFailures, 1, 0) == 0)
+            {
+                onFault?.Invoke();
+                throw new IOException("Lost the Fortune Auth commit acknowledgement.");
+            }
+            if (item.Key == RelationalEventId.TransactionDisposed.Name && CommitFailures != 0 &&
+                Interlocked.CompareExchange(ref disposedAfterFault, 1, 0) == 0)
+                onDisposeAfterFault?.Invoke();
+        }
+
+        public void OnError(Exception error) { }
+        public void OnCompleted() { }
+
+        public void Dispose()
+        {
+            allListeners.Dispose();
+            lock (subscriptions)
+                foreach (IDisposable subscription in subscriptions)
+                    subscription.Dispose();
+        }
+    }
+
     private sealed class PersistedFortune : IDisposable
     {
         private readonly Microsoft.Data.Sqlite.SqliteConnection connection;
+        public string ConnectionString => connection.ConnectionString;
 
         public AuthDatabase Database { get; } = new();
         public IWorldSession Session { get; }

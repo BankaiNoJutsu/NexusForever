@@ -23287,10 +23287,28 @@ the stored balance without tracking and checks the live wallet separately.
 Private SQLite evidence is under
 `artifacts/continuation-20261104/fortune-start-settlement/`.
 
-If Auth commits and the caller loses a non-retryable acknowledgement, account
-reload exposes the durable outcome. Live re-adoption and packet enqueue recovery
-remain open for deals and reveals, along with configured-provider and retail
-qualification.
+#### Lost Auth commit acknowledgement
+
+4 November 2026. Fortune Start and Flip can recover a non-retryable Auth
+commit acknowledgement loss. The server reopens a transaction on the
+original Auth route, checks the exact save receipt under the account lock,
+and revalidates the session and stored deal, wallet, and item state before
+completing the live owners. An absent receipt for the current owner preserves
+the ordinary failure response and permits retry.
+
+Three baseline tests reproduced committed SQL with stale live funding or
+reward state. The final build passed 51 scoped Fortune tests, including eight
+new cases. The last combined run recorded 188 passes and one failure in the
+existing keybinding savepoint control. That control passed alone and in a
+six-case run alongside the Fortune faults. The cause of the combined failure
+remains unverified. Private SQLite evidence is under
+`artifacts/continuation-20261104/fortune-commit-ack/`.
+
+A conflicting receipt, changed owner or stored state, unavailable proof, or
+failed live finalization requires account reload. The server disconnects the
+original session if it still owns the request. Enqueue recovery after a
+confirmed deal or reveal, configured-provider qualification, and retail
+evidence remain open.
 
 #### Existing Fortune behavior and evidence
 
