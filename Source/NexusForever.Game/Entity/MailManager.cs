@@ -191,13 +191,19 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void EnqueueMail(IMailItem mail)
         {
+            if (AdoptIncomingMail(mail)) SendIncomingMail(mail);
+        }
+
+        // Returns whether the newly adopted mail is ready for an immediate notice.
+        private bool AdoptIncomingMail(IMailItem mail)
+        {
             lock (mailboxGate)
-                if (mail.PendingDelete || knownMail.Contains(mail.Id)) return;
-            if (!TryAcceptMail(mail)) return;
+                if (mail.PendingDelete || knownMail.Contains(mail.Id)) return false;
+            if (!TryAcceptMail(mail)) return false;
             bool send;
             lock (mailboxGate)
             {
-                if (mail.PendingDelete || !knownMail.Add(mail.Id)) return;
+                if (mail.PendingDelete || !knownMail.Add(mail.Id)) return false;
                 send = mail.IsReadyToDeliver();
                 if (send) availableMail.Add(mail.Id, mail);
                 else pendingMail.Add(mail);
@@ -207,7 +213,7 @@ namespace NexusForever.Game.Entity
             {
                 committed.CreationOwner?.Delivered();
             }
-            if (send) SendIncomingMail(mail);
+            return send;
         }
 
         private static bool TryAcceptMail(IMailItem mail)

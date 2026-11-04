@@ -10,6 +10,7 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Mail;
 using NexusForever.Shared.Game.Events;
+using NexusForever.WorldServer.Network;
 using GameItem = NexusForever.Game.Entity.Item;
 
 namespace NexusForever.Game.Tests.Entity;
@@ -82,6 +83,40 @@ public sealed partial class RealmBankItemIdentityTests
         Assert.Equal(100ul, Assert.Single(read.Item).OwnerId);
         session.SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), _ => null);
         f.Player.MailManager.SendInitialPackets(); Assert.NotEmpty(BankMessages(f.Player.Session).OfType<ServerMailAvailable>());
+    }
+
+    [Fact]
+    public async Task MarketplaceMailPublicationRetryDropsAReboundSessionWithoutAnAuctionGuard()
+    {
+        var f = await MailFixture(); PublicationRecipient(f);
+        var events = new EventQueue();
+        var session = RecordingDispatchProxy<IWorldSession>.Create(out var sp);
+        sp.SetProperty(nameof(IWorldSession.Events), events);
+        sp.SetProperty(nameof(IWorldSession.Player), f.Player);
+        ((RecordingDispatchProxy<IPlayer>)(object)f.Player).SetProperty(nameof(IPlayer.Session), session);
+        ((RecordingDispatchProxy<IAccount>)(object)f.Player.Account).SetProperty(nameof(IAccount.Session), session);
+        var manager = new MailManager(f.Player, new CharacterModel(), realmId: 2, itemManager: f.Items, gameTableManager: f.Tables, deliveryContexts: Database().CreateContext);
+        ((RecordingDispatchProxy<IPlayer>)(object)f.Player).SetProperty(nameof(IPlayer.MailManager), manager);
+        int attempts = 0;
+        sp.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerMailAvailable) { attempts++; throw new IOException("Recipient enqueue unavailable."); }
+            return null;
+        });
+
+        Assert.True(await Task.Run(() => MarketplaceMailDelivery.TrySendCommodityAuctionFillMail(
+            Database(), f.Tables, MarketplaceMailAssets(f), 100, 7001, 1, f.Players, f.Items)));
+        events.Update(0);
+        Assert.Equal(1, attempts);
+        Assert.True(events.PendingEvents);
+
+        sp.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+        events.Update(0);
+        Assert.Equal(1, attempts);
+        Assert.False(events.PendingEvents);
+        using var read = new CharacterContext(Configuration);
+        Assert.Single(read.CharacterMail);
+        Assert.Single(read.CharacterMailAttachment);
     }
 
     [Fact]

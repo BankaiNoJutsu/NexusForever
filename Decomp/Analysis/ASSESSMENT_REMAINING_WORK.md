@@ -10,6 +10,12 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Marketplace inbox notice retry](MARKETPLACE_MAIL_PUBLICATION.md#retry-for-the-live-inbox-notice)
+recovers a failed immediate notice after the live mailbox adopts the committed
+delivery. The original actor and mail object remain required. The auction
+expiry regressions cover recovery and replacement; cross-session replay,
+other settlement notifications and deployed delivery remain open.
+
 [Normal bid and buyout SQL settlement](DESTINATION_PROVIDER_QUALIFICATION.md#normal-bid-and-buyout-sql-settlement)
 passes 28 scoped cases on migrated MySQL 8.4.13 with the configured strategy.
 Listing, debit, refund, proceeds, item custody and receipt cases cover successful

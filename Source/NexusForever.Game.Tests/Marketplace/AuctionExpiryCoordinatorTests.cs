@@ -49,6 +49,8 @@ public sealed class AuctionExpiryCoordinatorTests
     [InlineData(true, true, false, false, false, "receiver-retire")]
     [InlineData(true, true, false, false, false, "receiver-replace")]
     [InlineData(true, true, false, true, false, "mail-replace")]
+    [InlineData(true, true, false, true, false, "mail-notify-retry")]
+    [InlineData(true, true, false, true, false, "mail-notify-replace")]
     [InlineData(true, true, true, false, false, "seller-retire")]
     [InlineData(true, true, false, false, true, "main-lost")]
     [InlineData(false, true, false, false, true, "ordinary-rollback")]
@@ -142,12 +144,27 @@ public sealed class AuctionExpiryCoordinatorTests
             return result;
         }); manager.Initialise();
         int activeActor = 0, saves = 0, sellerSaves = 0, won = 0, returned = 0, replacementBoundary = -1;
+        int mailAttempts = 0, mailNotices = 0;
+        bool failMailNotice = fault is "mail-notify-retry" or "mail-notify-replace";
         ulong buyerBalance = (missingWallet ? 0ul : receiverOnline ? 120ul : 100ul) + (fault != "none" && actor != null ? 5ul : 0ul);
         ulong sellerBalance = 124ul + (fault == "seller-retire" ? 3ul : 0ul);
         if (actor != null) actor.OnAuth = () => { Assert.Equal(42, activeActor); saves++; };
         if (seller != null) seller.OnAuth = () => { Assert.Equal(100, activeActor); sellerSaves++; };
         sp.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
         {
+            if (args[0] is ServerMailAvailable notice && failMailNotice)
+            {
+                using var readMail = f.Context(); CheckSql(readMail);
+                Assert.Equal(42, activeActor);
+                Assert.Equal(readMail.CharacterMail.Single(row => row.RecipientId == 42).Id, Assert.Single(notice.MailList).MailId);
+                if (++mailAttempts == 1)
+                {
+                    if (fault == "mail-notify-replace")
+                        sp.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+                    throw new IOException("Marketplace inbox notice failed before enqueue.");
+                }
+                mailNotices++;
+            }
             if (args[0] is not (ServerAuctionWon or ServerAuctionExpired)) return null;
             using var read = f.Context(); CheckSql(read);
             Assert.Equal(42, activeActor);
@@ -195,6 +212,11 @@ public sealed class AuctionExpiryCoordinatorTests
         }
         bool publishes = receiverOnline && fault is not ("receiver-retire" or "receiver-replace");
         Assert.Equal(winning && publishes ? 1 : 0, won); Assert.Equal(!winning && publishes ? 1 : 0, returned);
+        if (failMailNotice)
+        {
+            Assert.Equal(fault == "mail-notify-retry" ? 2 : 1, mailAttempts);
+            Assert.Equal(fault == "mail-notify-retry" ? 1 : 0, mailNotices);
+        }
         Assert.Equal(receiverOnline ? fault == "receiver-retire" ? 3 : 2 : 0, saves);
         Assert.Equal(sellerOnline ? fault == "seller-retire" ? 3 : 2 : 0, sellerSaves);
         Assert.False(cleanup.IsAccountLocked(f.Source.Player.Account));

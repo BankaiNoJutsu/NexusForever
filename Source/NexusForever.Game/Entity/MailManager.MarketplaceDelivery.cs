@@ -1,3 +1,4 @@
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Mail;
 using NexusForever.Shared.Game.Events;
 
@@ -21,18 +22,35 @@ namespace NexusForever.Game.Entity
             if (events == null)
                 return;
             bool CurrentActor() => DeliveryActor() && ReferenceEquals(deliverySession.Events, events)
+                && (deliverySession is not IPlayerSession bound || ReferenceEquals(bound.Player, player))
                 && publicationAllowed?.Invoke() != false;
-            events.EnqueueThreadSafe(new PredicateEvent(
-                () => !CurrentActor() || !IsMailSaveInProgress,
-                () =>
+            bool noticePending = false;
+            void Publish()
+            {
+                if (!CurrentActor()) return;
+                try
                 {
-                    if (!CurrentActor()) return;
-                    try { EnqueueMail(mail); }
-                    catch (Exception error)
+                    if (!noticePending)
                     {
-                        deliveryLog.Warn(error, "Committed marketplace mail publication failed; SQL inbox recovery remains available.");
+                        if (!AdoptIncomingMail(mail)) return;
+                        noticePending = true;
                     }
-                }));
+                    lock (mailboxGate)
+                        if (mail.PendingDelete || !availableMail.TryGetValue(mail.Id, out var current)
+                            || !ReferenceEquals(current, mail)) return;
+                    if (CurrentActor()) SendIncomingMail(mail);
+                }
+                catch (Exception error)
+                {
+                    deliveryLog.Warn(error, "Committed marketplace mail publication failed.");
+                    // The inbox already knows this row, so only the notice can be retried.
+                    if (noticePending) Queue(Task.Delay(TimeSpan.FromSeconds(1)));
+                }
+            }
+            void Queue(Task delay) => events.EnqueueThreadSafe(new PredicateEvent(
+                () => !CurrentActor() || delay.IsCompleted && !IsMailSaveInProgress, Publish));
+
+            Queue(Task.CompletedTask);
         }
     }
 }

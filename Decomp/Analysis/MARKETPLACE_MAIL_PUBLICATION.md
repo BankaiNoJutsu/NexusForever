@@ -1,5 +1,33 @@
 # Committed marketplace mail publication
 
+## Retry for the live inbox notice
+
+4 November 2026. Winning auction expiry reproduces a missing notice after
+the mailbox adopts the committed delivery. A failed packet enqueue leaves
+the row in the known-mail set, so inbox polling skips it. The corrected
+baseline records one failed send and zero subsequent attempts on the same
+session. An earlier fixture used the seller mail ID, and is retained separately.
+
+The marketplace callback now separates inbox adoption from the immediate
+notice. A failed notice is retried on the original actor after one second
+and outside mailbox saves. Each attempt checks the original queue, actor
+and exact available mail object. A replaced session, rebound session player
+or removed mail ends the retry. The attachment and mailbox entry are adopted
+once, and the settlement runs once. Other incoming mail keeps its existing
+adoption/send path.
+
+The two expiry regressions exercise a send failure before enqueue and actor
+replacement at that failure. The first case sees the original notice after
+retry with the committed SQL graph intact. The second sees zero successful
+notices on the replaced actor. A direct commodity-mail regression covers
+session rebinding without an auction callback guard. Evidence is retained in
+`artifacts/continuation-20261104/marketplace-mail-notice/`. The owning build
+and 215 scoped tests passed, including all three regressions. Scope is a live
+actor and a notice ready for immediate publication. Route discovery failures,
+durable notification replay, wire delivery and retail qualification remain open.
+
+## Original committed actor publication
+
 Date: 1 November 2026. Source/private SQLite evidence only. Full solution
 rebuild and refreshed test copies pass with zero warnings/errors. All10749 full
 tests and297 reviewed mail cases pass, including every prior case and23 new
