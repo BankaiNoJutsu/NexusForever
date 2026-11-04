@@ -10,6 +10,11 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Resource conversion preflight](../../CURRENT_STATUS.md#resource-conversion-preflight)
+protects the source items when the full output cannot fit and checks a
+same-currency surcharge with the source debit. Retail selector semantics and
+durable settlement remain open.
+
 [Vendor buyback request identity](../../CURRENT_STATUS.md#vendor-buyback-request-identity)
 keeps delayed requests from charging for a later sale and finishes accepted
 redemptions on the original inventory. Durable redemption settlement remains open.

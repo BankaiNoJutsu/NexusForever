@@ -359,6 +359,31 @@ namespace NexusForever.Game.Entity
                 ? CanCreateItem(InventoryLocation.Inventory, info, count, satchel)
                 : CanCreateItemsAfterReclaim([(info, count)], itemCosts.Select(cost => (cost.Key, cost.Value)), satchel, requireFullReclaim: true);
 
+        /// <summary>Exchange backpack items only when the complete result fits after consumption.</summary>
+        public bool TryConvertResourceItems(uint sourceId, uint sourceCount, uint targetId, uint targetCount)
+        {
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (sourceCount == 0 || targetCount == 0 || RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked
+                    || rewardOwnerInvalidated || commodityDelivery != null || !HasItemCount(sourceId, sourceCount))
+                    return false;
+
+                IItemInfo target = itemManager?.GetItemInfo(targetId);
+                if (target?.Entry == null)
+                    return false;
+                if (!CanCreateItemsAfterReclaim([(target, targetCount)], [(sourceId, sourceCount)], satchel: null, requireFullReclaim: true))
+                {
+                    EnqueueItemMessage(new ServerItemError { ErrorCode = GenericError.ItemInventoryFull });
+                    return false;
+                }
+
+                ItemDelete(sourceId, sourceCount, ItemUpdateReason.ResourceConversion);
+                ItemCreate(InventoryLocation.Inventory, target, targetCount, ItemUpdateReason.ResourceConversion);
+                return true;
+            }
+        }
+
         private bool CanCreateItemsAfterReclaim(IEnumerable<(IItemInfo Info, uint Count)> rewards,
             IEnumerable<(uint ItemId, uint Count)> reclaimedItems, ISupplySatchelManager satchel, bool requireFullReclaim)
         {

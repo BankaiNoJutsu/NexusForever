@@ -22648,6 +22648,23 @@ bank-sale payout, restoration, and currency recovery. Local evidence is under
 `artifacts/continuation-20261104/vendor-buyback-identity/`.
 Durable redemption settlement and deployed client behavior remain open.
 
+#### Resource conversion preflight
+
+4 November 2026. A mapped item-to-item conversion checks backpack capacity
+after projecting the exact source consumption. If the complete output does
+not fit, it sends the existing inventory-full error and keeps the source.
+Successful exchanges can use slots freed by consumption. Satchel withdrawal
+retains its separate partial-delivery and refund behavior.
+
+When a currency conversion charges the same currency for the source and
+surcharge, it checks and debits the combined amount once. The baseline
+reproduced two incomplete item exchanges and a partial currency debit.
+The owning-project build and 96 scoped tests passed, including packet
+decoding, satchel withdrawal, inventory mutation, vendor and quest reward
+controls. Local evidence is under
+`artifacts/continuation-20261104/resource-conversion-preflight/`.
+Retail selector semantics and durable settlement remain open.
+
 #### Existing item and unlock behavior
 
 Inventory, title, pet, costume, unlock surfaces exist. Generic unlock

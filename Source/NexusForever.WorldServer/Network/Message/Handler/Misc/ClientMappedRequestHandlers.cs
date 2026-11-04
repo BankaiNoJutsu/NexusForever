@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Extensions.Logging;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Reputation;
@@ -64,12 +65,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
             if (gameTableManager.Item?.GetEntry(conversion.TargetId) == null)
                 return RejectConversion(session, conversion, $"target item {conversion.TargetId} was not found");
 
-            if (!session.Player.Inventory.HasItemCount(conversion.SourceId, conversion.SourceCount))
-                return RejectConversion(session, conversion, $"missing source item {conversion.SourceId} x{conversion.SourceCount}");
+            IPlayer player = session.Player;
+            if (player?.Inventory is not Inventory inventory || !InventoryMutationScope.TryAcquire(inventory, out var mutationLease))
+                return RejectConversion(session, conversion, "inventory is unavailable");
+            using var heldMutation = mutationLease;
+            if (!ReferenceEquals(session.Player, player) || !ReferenceEquals(player.Inventory, inventory))
+                return false;
 
-            session.Player.Inventory.ItemDelete(conversion.SourceId, conversion.SourceCount, ItemUpdateReason.ResourceConversion);
-            session.Player.Inventory.ItemCreate(InventoryLocation.Inventory, conversion.TargetId, conversion.TargetCount, ItemUpdateReason.ResourceConversion);
-            return true;
+            return inventory.TryConvertResourceItems(conversion.SourceId, conversion.SourceCount, conversion.TargetId, conversion.TargetCount)
+                || RejectConversion(session, conversion, "source items or result capacity unavailable");
         }
 
         private bool TryConvertItemToReputation(IWorldSession session, ResourceConversionEntry conversion)
@@ -111,16 +115,30 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
             if (conversion.SurchargeId != 0u && !TryGetCurrency(conversion.SurchargeId, out surchargeCurrency))
                 return RejectConversion(session, conversion, $"surcharge currency {conversion.SurchargeId} was not found");
 
-            if (!session.Player.CurrencyManager.CanAfford(sourceCurrency, conversion.SourceCount))
-                return RejectConversion(session, conversion, $"missing source currency {conversion.SourceId} x{conversion.SourceCount}");
-            if (surchargeCurrency != CurrencyType.None && !session.Player.CurrencyManager.CanAfford(surchargeCurrency, conversion.SurchargeCount))
+            IPlayer player = session.Player;
+            ICurrencyManager wallet = player?.CurrencyManager;
+            if (wallet == null)
+                return false;
+
+            ulong sourceCost = conversion.SourceCount;
+            if (surchargeCurrency != CurrencyType.None && surchargeCurrency == sourceCurrency)
+            {
+                sourceCost += conversion.SurchargeCount;
+                surchargeCurrency = CurrencyType.None;
+            }
+
+            if (!wallet.CanAfford(sourceCurrency, sourceCost))
+                return RejectConversion(session, conversion, $"missing source currency {conversion.SourceId} x{sourceCost}");
+            if (surchargeCurrency != CurrencyType.None && !wallet.CanAfford(surchargeCurrency, conversion.SurchargeCount))
                 return RejectConversion(session, conversion, $"missing surcharge currency {conversion.SurchargeId} x{conversion.SurchargeCount}");
+            if (!ReferenceEquals(session.Player, player) || !ReferenceEquals(player.CurrencyManager, wallet))
+                return false;
 
-            session.Player.CurrencyManager.CurrencySubtractAmount(sourceCurrency, conversion.SourceCount);
+            wallet.CurrencySubtractAmount(sourceCurrency, sourceCost);
             if (surchargeCurrency != CurrencyType.None)
-                session.Player.CurrencyManager.CurrencySubtractAmount(surchargeCurrency, conversion.SurchargeCount);
+                wallet.CurrencySubtractAmount(surchargeCurrency, conversion.SurchargeCount);
 
-            session.Player.CurrencyManager.CurrencyAddAmount(targetCurrency, conversion.TargetCount);
+            wallet.CurrencyAddAmount(targetCurrency, conversion.TargetCount);
             return true;
         }
 
