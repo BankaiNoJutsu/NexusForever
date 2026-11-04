@@ -63,6 +63,9 @@ public sealed class CommodityPostingCoordinatorTests
     [InlineData(false, true, true, "retire")]
     [InlineData(false, true, true, "reuse-rollback")]
     [InlineData(true, false, true, "online")]
+    [InlineData(true, false, true, "counterparty-paused")]
+    [InlineData(true, false, true, "counterparty-relisted")]
+    [InlineData(true, false, true, "counterparty-reload")]
     [InlineData(false, false, true, "online")]
     [InlineData(true, false, true, "self")]
     [InlineData(false, false, true, "self")]
@@ -94,7 +97,8 @@ public sealed class CommodityPostingCoordinatorTests
         bool full = fault.StartsWith("reuse", StringComparison.Ordinal) || fault == "consume-full";
         bool later = fault is "later" or "replace" or "retire" or "satchel-later";
         bool failFill = fault is "fill-refresh" or "fill-replace";
-        bool otherOnline = fault is "online" or "fill-replace";
+        bool pauseOther = fault is "counterparty-paused" or "counterparty-relisted" or "counterparty-reload";
+        bool otherOnline = pauseOther || fault is "online" or "fill-replace";
         bool routing = fault.StartsWith("routing", StringComparison.Ordinal), earning = fault.StartsWith("earning", StringComparison.Ordinal);
         bool expiryProbe = fault is "legacy-expiry" or "expiry-lookup", lookupProbe = fault == "expiry-lookup";
         bool self = fault is "self" or "competing", multi = fault == "multi" || routing, satchel = fault.StartsWith("satchel", StringComparison.Ordinal), mail = fault == "mail";
@@ -218,6 +222,9 @@ public sealed class CommodityPostingCoordinatorTests
         int rejected = 0, replacementBoundary = -1;
         int fillAttempts = 0, refreshAttempts = 0;
         int reentrantRejected = 0;
+        int otherSaves = 0;
+        bool otherPaused = false, reloaded = false, relisted = false;
+        if (pauseOther) other.OnAuth = () => otherSaves++;
         GenericError? legacyResult = null;
         Exception setterMutation = null, apiMutation = null;
         sp.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
@@ -330,13 +337,52 @@ public sealed class CommodityPostingCoordinatorTests
                     scope.ServiceProvider.GetRequiredService<ClientCommodityOrderCancelHandler>().HandleMessage(session, cancel);
                 }));
             }
-            manager.Update(.01); onActor = true; events.Update(.01); otherEvents.Update(.01); onActor = false;
+            manager.Update(.01); onActor = true; events.Update(.01);
+            if (!otherPaused || replied)
+            {
+                if (otherPaused)
+                {
+                    Assert.False(Pending(manager));
+                    Assert.False(cleanup.IsAccountLocked(actor.Player.Account));
+                    Assert.False(cleanup.IsAccountLocked(other.Player.Account));
+                    if (fault == "counterparty-relisted" && !relisted)
+                    {
+                        using var changed = f.Context();
+                        changed.MarketplaceCommodityOrder.Add(new() { Id = 1, OwnerCharacterId = 100, Item2Id = 7001,
+                            Quantity = 4, PricePerUnit = 20, Price = 80, ListTime = (ulong)DateTime.UtcNow.ToFileTimeUtc(),
+                            ExpirationTime = (ulong)DateTime.UtcNow.AddHours(1).ToFileTimeUtc() });
+                        changed.SaveChanges(); manager.Initialise(); relisted = true;
+                    }
+                    if (fault == "counterparty-reload" && !reloaded) { manager.Initialise(); reloaded = true; }
+                }
+                otherEvents.Update(.01);
+            }
+            if (pauseOther && otherSaves == 2 && otherSession.CanProcessIncomingPackets
+                && !other.Player.IsNormalSaveInProgress && Pending(manager)) otherPaused = true;
+            onActor = false;
             if (rejected == 2) release.TrySetResult(true);
             Assert.Empty(actor.Errors); if (other != null) Assert.Empty(other.Errors);
             Assert.True(deadline.Elapsed < TimeSpan.FromSeconds(20), "Commodity posting did not settle."); await Task.Delay(5);
         } while (Pending(manager) || events.PendingEvents || otherEvents.PendingEvents || actor.Player.IsNormalSaveInProgress || other?.Player.IsNormalSaveInProgress == true);
         using var final = f.Context(); Check(final); Assert.False(cleanup.IsAccountLocked(f.Source.Player.Account));
         Assert.Equal(!suppressed, replied); Assert.Equal(refused ? 0 : 1, executions);
+        if (pauseOther)
+        {
+            Assert.True(otherPaused);
+            var notices = otherSp.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).ToArray();
+            if (relisted || reloaded)
+            {
+                Assert.Empty(notices.OfType<ServerCommodityAuctionFilledPartial>());
+                var orders = Assert.Single(notices.OfType<ServerOwnedCommodityOrders>()).Orders;
+                if (relisted) Assert.Equal(4u, Assert.Single(orders).Quantity);
+                else Assert.Empty(orders);
+            }
+            else Assert.Single(notices.OfType<ServerCommodityAuctionFilledPartial>());
+            var requester = sp.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).ToArray();
+            Assert.Equal(1u, Assert.Single(Assert.Single(requester.OfType<ServerOwnedCommodityOrders>()).Orders).Quantity);
+            Assert.True(Array.FindIndex(requester, packet => packet is ServerCommodityOrderResult)
+                < Array.FindIndex(requester, packet => packet is ServerOwnedCommodityOrders));
+        }
         if (failFill)
         {
             Assert.Equal(1, fillAttempts);
@@ -385,7 +431,8 @@ public sealed class CommodityPostingCoordinatorTests
             if (later) expectedBalance += 5;
             Assert.Equal(expectedBalance, context.CharacterCurrency.Single(row => row.Id == 42).Amount);
             Assert.Equal(earning ? 22u + ExpectedCredits().Aggregate(0u, (sum, value) => sum + value) : 2u, context.CharacterQuestObjective.Single().Progress);
-            var ownBook = context.MarketplaceCommodityOrder.Where(row => !expiryProbe || row.OwnerCharacterId != 200);
+            var ownBook = context.MarketplaceCommodityOrder.Where(row => (!expiryProbe || row.OwnerCharacterId != 200)
+                && (!relisted || row.Id != 1));
             Assert.Equal(immediate || routing ? 0 : 1, ownBook.Count());
             if (!immediate && !routing)
             {

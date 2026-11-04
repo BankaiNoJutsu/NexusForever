@@ -10,6 +10,11 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Independent commodity posting publication](COMMODITY_POSTING_SETTLEMENT.md#independent-publication-after-commodity-settlement)
+releases the account and book holds before each original queue publishes.
+Paused counterparties do not delay the requester. Stale fill notices use a
+fresh owned-order list.
+
 [Committed commodity return publication](COMMODITY_RETURN_SETTLEMENT.md#committed-cancellation-notices-and-mailbox-handoff)
 recovers the cancellation result on the original queue and releases account
 and order reservations before optional mailbox publication.

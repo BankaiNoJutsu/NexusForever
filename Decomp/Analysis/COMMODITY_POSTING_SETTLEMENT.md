@@ -1,5 +1,29 @@
 # Commodity posting and fill settlement
 
+## Independent publication after commodity settlement
+
+4 November 2026. The commodity posting coordinator releases the order-book
+and account reservations after all original actors reconcile. It then queues
+mail and fill publication independently for each original participant. A
+paused counterparty cannot delay the initiating player's result or keep the
+book reserved. A mailbox handoff error leaves the committed mail intact and
+does not stop the recipient's other publication.
+
+Delayed fill sends require the expected order postimage in the original book
+load. A replacement, reload or in-progress order mutation uses an owned-list
+refresh instead of replaying the stale fill. The requester still receives the
+accepted result. When that result carries the original quantity for a filled
+resting order, or the accepted order is no longer current, the subsequent
+owned-list refresh shows current quantity and membership.
+
+Source and private SQLite evidence is in
+`artifacts/continuation-20261104/commodity-posting-queues/`. The baseline
+reproduced two paused-counterparty stalls. The first candidate passed 127
+scoped tests in 62 seconds. The final build and 66 affected tests passed in
+77 seconds, including all three queue and reload regressions. Both review
+findings were addressed and cleared on re-review. A failed posting result
+enqueue, restart replay and deployed delivery remain open.
+
 ## Recovery after a committed fill notice fails
 
 4 November 2026. The build 16042 image with SHA-256

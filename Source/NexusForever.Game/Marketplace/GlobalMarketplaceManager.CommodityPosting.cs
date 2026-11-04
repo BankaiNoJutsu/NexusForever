@@ -19,6 +19,7 @@ namespace NexusForever.Game.Marketplace
     public sealed partial class GlobalMarketplaceManager
     {
         private readonly Dictionary<uint, CommodityPostingOperation> commodityPostings = [];
+        private ulong commodityBookLoadGeneration;
         private readonly Dictionary<uint, LegacyCommodityBookAdmission> legacyCommodityPostings = [];
         private readonly Func<CommodityPostingCommand, Task<BidOutcome>> commodityPostingExecution;
         internal sealed record CommodityPostingExecution(Func<CommodityPostingCommand, Task<BidOutcome>> Execute);
@@ -87,7 +88,10 @@ namespace NexusForever.Game.Marketplace
 
         private sealed class CommodityPostingOperation
         {
-            private sealed record Participant(Player Player, IGameSession Session, IAccount Account);
+            private sealed record Participant(Player Player, IGameSession Session, IAccount Account)
+            {
+                internal EventQueue Queue { get; } = Session?.Events;
+            }
             private sealed record Actor(Participant Owner, Player.AuctionBidActor Prepared);
             private readonly GlobalMarketplaceManager manager;
             private readonly CommodityPostingQuote quote;
@@ -96,11 +100,11 @@ namespace NexusForever.Game.Marketplace
             private readonly Action<GenericError, CommodityOrder> reply;
             private readonly Func<bool> publicationAllowed;
             private readonly CharacterDatabase database;
+            private readonly ulong bookLoadGeneration;
             private readonly string id = Guid.NewGuid().ToString("N");
             private readonly List<Actor> actors = [];
             private readonly HashSet<Actor> reconciled = [];
             private readonly List<CommodityPostingMail> mails = [];
-            private readonly List<(Actor Actor, EventQueue Queue)> fillRefreshes = [];
             private BidCharacter[] characters;
             private Participant[] preparing;
             private string route;
@@ -118,6 +122,7 @@ namespace NexusForever.Game.Marketplace
                 this.manager = manager; this.quote = quote; this.candidates = candidates;
                 initiator = new(owner, owner.Session, owner.Account); this.reply = reply; this.publicationAllowed = publicationAllowed;
                 database = manager.TryGetCharacterDatabase();
+                bookLoadGeneration = manager.commodityBookLoadGeneration;
             }
             private void OnCoordinator(Action action) => manager.settlementEvents.EnqueueThreadSafe(new PredicateEvent(() => true, action));
             private static void OnActor(Participant owner, Action action) => owner.Session.Events.EnqueueThreadSafe(new PredicateEvent(() => true, action));
@@ -141,13 +146,14 @@ namespace NexusForever.Game.Marketplace
                     {
                         var selected = owner.Id == quote.Incoming.Owner ? initiator.Player : manager.playerManager?.GetPlayer(owner.Id);
                         if (selected != null && selected is not Player) { Finish(GenericError.DbFailure); return; }
-                        if (selected is Player player) online.Add(new(player, player.Session, player.Account));
+                        if (selected is Player player) online.Add(owner.Id == quote.Incoming.Owner ? initiator : new(player, player.Session, player.Account));
                     }
                     preparing = online.OrderBy(row => row.Player.CharacterId).ToArray(); PrepareNext();
                 }, () => Finish(GenericError.DbFailure)));
             }
             private bool CanPublish(Participant owner) => (owner.Player.CharacterId != quote.Incoming.Owner || publicationAllowed?.Invoke() != false)
                 && ReferenceEquals(owner.Player.Session, owner.Session) && ReferenceEquals(owner.Player.Account, owner.Account)
+                && owner.Queue != null && ReferenceEquals(owner.Session.Events, owner.Queue)
                 && ReferenceEquals(owner.Account?.Session, owner.Session)
                 && ReferenceEquals(manager.playerManager?.GetPlayer(owner.Player.CharacterId), owner.Player)
                 && (owner.Session is not IPlayerSession bound || ReferenceEquals(bound.Player, owner.Player))
@@ -290,51 +296,56 @@ namespace NexusForever.Game.Marketplace
             private void EndReconciliation()
             {
                 if (failed || outcome?.Committed != true) { Finish(aborting && !reconciliationFailed ? preparationError : GenericError.DbFailure); return; }
-                PublishNext(0);
+                Finish(GenericError.Ok);
             }
-            private void PublishNext(int index)
+            private void PublishCommitted(Actor actor)
             {
-                if (index == actors.Count) { Finish(GenericError.Ok); return; }
-                var actor = actors[index];
-                var queue = actor.Owner.Session.Events;
-                queue.EnqueueThreadSafe(new PredicateEvent(() => true, () =>
+                if (!CanPublish(actor)) return;
+                foreach (var mail in mails.Where(row => row.Header.RecipientId == actor.Prepared.Character && row.Items.Count != 0))
                 {
-                    bool refresh = false;
+                    if (!CanPublish(actor)) return;
                     try
                     {
-                        if (ReferenceEquals(actor.Owner.Session.Events, queue) && CanPublish(actor))
+                        var model = mail.Header.Model();
+                        foreach (ulong key in mail.Items)
                         {
-                            foreach (var mail in mails.Where(row => row.Header.RecipientId == actor.Prepared.Character && row.Items.Count != 0))
-                            {
-                                if (!CanPublish(actor)) break;
-                                var model = mail.Header.Model();
-                                foreach (ulong key in mail.Items)
-                                {
-                                    var item = actor.Prepared.CommodityDelivery.PostingItems.Single(row => row.Id == key).After;
-                                    model.Attachment.Add(new() { Id = model.Id, Index = (byte)model.Attachment.Count, ItemGuid = key, Item = item.Model() });
-                                }
-                                actor.Prepared.PublishDeliveryMail(new MailItem(model, itemManager: manager.itemManager, gameTableManager: manager.GetGameTableManager()));
-                            }
-                            refresh = !TryPublishFills(actor, queue);
+                            var item = actor.Prepared.CommodityDelivery.PostingItems.Single(row => row.Id == key).After;
+                            model.Attachment.Add(new() { Id = model.Id, Index = (byte)model.Attachment.Count, ItemGuid = key, Item = item.Model() });
                         }
+                        actor.Prepared.PublishDeliveryMail(new MailItem(model, itemManager: manager.itemManager, gameTableManager: manager.GetGameTableManager()));
                     }
-                    finally
+                    catch (Exception error)
                     {
-                        OnCoordinator(() =>
-                        {
-                            if (refresh) fillRefreshes.Add((actor, queue));
-                            PublishNext(index + 1);
-                        });
+                        log.Warn(error, "Committed commodity posting mail could not be handed to the live mailbox.");
                     }
-                }));
+                }
+
+                bool refresh = !TryPublishFills(actor);
+                try
+                {
+                    if (ReferenceEquals(actor.Owner, initiator) && CanPublish(actor))
+                    {
+                        // The accepted result carries the original quantity and
+                        // the client may put that quantity back into its list.
+                        refresh |= !quote.Incoming.Immediate && quote.Fills.Count != 0
+                            || !HasCurrentOrderPostimage(quote.Incoming.Id);
+                        Reply(GenericError.Ok);
+                    }
+                }
+                finally
+                {
+                    // Post results can change the initiator's list. Refresh it afterwards.
+                    if (refresh) RefreshOwnedOrders(actor);
+                }
             }
 
-            private bool TryPublishFills(Actor actor, EventQueue queue)
+            private bool TryPublishFills(Actor actor)
             {
                 foreach (var fill in quote.Fills)
                     foreach (var order in new[] { fill.Buy, fill.Sell }.Where(row => row.Owner == actor.Prepared.Character))
                     {
-                        if (!ReferenceEquals(actor.Owner.Session.Events, queue) || !CanPublish(actor)) return true;
+                        if (!CanPublish(actor)) return true;
+                        if (!HasCurrentOrderPostimage(order.Id)) return false;
                         try
                         {
                             actor.Owner.Session.EnqueueMessageEncrypted(new ServerCommodityAuctionFilledPartial
@@ -348,6 +359,23 @@ namespace NexusForever.Game.Marketplace
                     }
                 return true;
             }
+
+            private bool HasCurrentOrderPostimage(ulong orderId)
+            {
+                var target = quote.Orders.Single(row => (row.Before ?? row.After ?? quote.Incoming).Id == orderId).After;
+                lock (manager.syncRoot)
+                {
+                    if (bookLoadGeneration != manager.commodityBookLoadGeneration || manager.IsCommodityPostingBookOwned(quote.Incoming.Definition)
+                        || manager.commodityReturns.ContainsKey(orderId)) return false;
+                    var current = manager.commodityOrders.SingleOrDefault(row => row.Order.CommodityOrderId == orderId);
+                    return target == null ? current == null : current?.StoredRow == target && current.StoredDatabase == route
+                        && manager.HasConsistentCommodityView(current);
+                }
+            }
+
+            private void Reply(GenericError result) => reply(result,
+                ToCommodityOrder((quote.Incoming.Immediate ? quote.Remainder : quote.Incoming).Model()));
+
             private void Finish(GenericError result)
             {
                 if (finished) return; finished = true;
@@ -358,29 +386,30 @@ namespace NexusForever.Game.Marketplace
                     manager.commodityPostings.Remove(quote.Incoming.Definition);
                 }
                 admission?.Dispose(); admission = null;
-                OnActor(initiator, () =>
+                if (result == GenericError.Ok)
+                {
+                    foreach (var actor in actors)
+                        if (CanPublish(actor)) actor.Owner.Queue.EnqueueThreadSafe(new PredicateEvent(() => true, () => PublishCommitted(actor)));
+                    return;
+                }
+
+                initiator.Queue?.EnqueueThreadSafe(new PredicateEvent(() => true, () =>
                 {
                     if (CanPublish(initiator) && !actors.Any(row => ReferenceEquals(row.Owner.Player, initiator.Player) && row.Prepared.Retired))
-                        reply(result, ToCommodityOrder((quote.Incoming.Immediate ? quote.Remainder : quote.Incoming).Model()));
-                });
-                // A successful post reply can itself update the owner's list.
-                // Queue its authoritative refresh after the reply and release.
-                foreach (var (actor, queue) in fillRefreshes)
-                    RefreshOwnedOrders(actor, queue);
+                        Reply(result);
+                }));
             }
 
-            private void RefreshOwnedOrders(Actor actor, EventQueue queue)
+            private void RefreshOwnedOrders(Actor actor)
             {
-                var session = actor.Owner.Session;
-                bool CurrentActor() => ReferenceEquals(session.Events, queue) && CanPublish(actor);
-                void Schedule(Task delay) => queue.EnqueueThreadSafe(new PredicateEvent(
-                    () => !CurrentActor() || delay.IsCompleted, Send));
+                void Schedule(Task delay) => actor.Owner.Queue.EnqueueThreadSafe(new PredicateEvent(
+                    () => !CanPublish(actor) || delay.IsCompleted, Send));
                 void Send()
                 {
-                    if (!CurrentActor()) return;
+                    if (!CanPublish(actor)) return;
                     try
                     {
-                        session.EnqueueMessageEncrypted(new ServerOwnedCommodityOrders
+                        actor.Owner.Session.EnqueueMessageEncrypted(new ServerOwnedCommodityOrders
                             { Orders = manager.GetOwnedCommodityOrders(actor.Owner.Player) });
                     }
                     catch (Exception error)

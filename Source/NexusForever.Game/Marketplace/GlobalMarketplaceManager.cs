@@ -97,6 +97,7 @@ namespace NexusForever.Game.Marketplace
                 if (auctionPostings.Count != 0 || auctionSettlements.Count != 0 || commodityReturns.Count != 0 || commodityPostings.Count != 0 || legacyCommodityPostings.Count != 0) throw new InvalidOperationException("Marketplace loading overlaps an owned normal bid.");
                 nextAuctionId = storedAuctionIds.DefaultIfEmpty(0ul).Max() + 1ul;
                 nextCommodityOrderId = storedOrders.Select(row => row.Id).DefaultIfEmpty(0ul).Max() + 1ul;
+                commodityBookLoadGeneration++;
                 auctions.Clear();
                 commodityOrders.Clear();
                 commodityOrderBooks.Clear();
