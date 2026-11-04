@@ -13,6 +13,7 @@ using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Fortune;
+using NexusForever.Game.Account.Currency;
 using NexusForever.Game.Account.Inventory;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Fortune;
@@ -76,7 +77,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             lock (sync)
             {
                 if (OwnsSession(session, account, player))
-                    PublishPersistedCards(session, account, player, LoadSession(account.Id));
+                    PublishPersistedCards(session, account, player, LoadSession(account.Id), preserveEquivalent: true);
             }
         }
 
@@ -89,7 +90,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             }
             IPlayer player = session.Player;
 
-            if (!EnsureFortuneCoinBalance(session, account))
+            if (databaseManager == null && !EnsureFortuneCoinBalance(session, account))
             {
                 SendClickEmptyReset(session);
                 return;
@@ -105,21 +106,151 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             var fortuneSession = new FortuneSession(cardRewards);
             lock (sync)
             {
-                if (!TryPersistSession(account.Id, fortuneSession))
+                if (databaseManager == null)
+                {
+                    account.CurrencyManager.CurrencySubtractAmount(AccountCurrencyType.FortuneCoin, FortuneCoinCost);
+                    sessions[account.Id] = fortuneSession;
+                    session.EnqueueMessageEncrypted(BuildCards(fortuneSession));
+                    return;
+                }
+
+                StartPersistedDeal(session, account, player, fortuneSession);
+            }
+        }
+
+        private void StartPersistedDeal(IWorldSession session, IAccount account, IPlayer player, FortuneSession deal)
+        {
+            if (!OwnsSession(session, account, player))
+                return;
+            if (account.CurrencyManager is not AccountCurrencyManager wallet)
+            {
+                SendClickEmptyReset(session);
+                return;
+            }
+            IAccountInventoryManager inventory = account.InventoryManager;
+            FortuneSession previous = sessions.GetValueOrDefault(account.Id);
+            bool OwnsDeal() => OwnsSession(session, account, player) && ReferenceEquals(account.CurrencyManager, wallet)
+                && ReferenceEquals(account.InventoryManager, inventory);
+            Action publishWallet;
+            Action publishBundle;
+
+            try
+            {
+                AuthDatabase database = databaseManager.GetDatabase<AuthDatabase>();
+                ulong epoch = account.WorldSessionEpoch;
+                if (wallet.HasPendingFortuneChanges())
+                {
+                    FlushBeforeDeal(() => !wallet.HasPendingFortuneChanges());
+                    return;
+                }
+
+                IAccountInventoryItem bundle = null;
+                bool funded = wallet.CanAfford(AccountCurrencyType.FortuneCoin, FortuneCoinCost);
+                if (!funded && inventory != null)
+                {
+                    foreach (IAccountInventoryItem candidate in GetClaimableFortuneCoinItems(inventory, player))
+                    {
+                        if (inventory is AccountInventoryManager owner && owner.CanEnlistFortuneCoinBundle(player, candidate))
+                        {
+                            if (candidate.PendingCreate)
+                            {
+                                FlushBeforeDeal(() => !candidate.PendingCreate || !ReferenceEquals(inventory.GetItem(candidate.Id), candidate));
+                                return;
+                            }
+                            bundle = candidate;
+                            break;
+                        }
+                        // Mixed account items retain their existing ordinary claim path.
+                        // Wait for its ordinary Auth and Character save before spending.
+                        if (!OwnsDeal())
+                            return;
+                        using AuthContext claim = database.CreateContext();
+                        ValidateWorldSessionEpoch(claim, account.Id, epoch);
+                        if (!TryClaimFortuneCoinAccountItem(account, player, candidate))
+                            continue;
+                        FlushBeforeDeal(() => !wallet.HasPendingFortuneChanges());
+                        return;
+                    }
+                }
+                if (!funded && bundle == null)
                 {
                     SendClickEmptyReset(session);
                     return;
                 }
 
-                account.CurrencyManager.CurrencySubtractAmount(AccountCurrencyType.FortuneCoin, FortuneCoinCost);
-                if (databaseManager == null)
+                using AuthContext context = database.CreateContext();
+                publishBundle = bundle == null ? null : ((AccountInventoryManager)inventory).EnlistFortuneCoinBundle(context, player, bundle, OwnsDeal);
+                publishWallet = wallet.EnlistFortuneSpend(context, FortuneCoinCost, bundle?.Entry.AccountCurrencyAmount ?? 0ul, OwnsDeal);
+                AccountFortuneSessionModel model = BuildDealModel(account.Id, deal);
+                AccountFortuneSessionModel staged = null;
+                context.EnlistSaveWork(unit =>
                 {
-                    sessions[account.Id] = fortuneSession;
-                    session.EnqueueMessageEncrypted(BuildCards(fortuneSession));
+                    if (staged != null)
+                        unit.Entry(staged).State = EntityState.Detached;
+                    // The wallet or bundle already holds the account's Auth lock.
+                    ValidateWorldSessionEpoch(unit, account.Id, epoch);
+                    staged = ReadDealForUpdate(unit, account.Id);
+                    if (staged == null)
+                    {
+                        staged = model;
+                        unit.AccountFortuneSession.Add(staged);
+                    }
+                    else
+                        unit.Entry(staged).CurrentValues.SetValues(model);
+                }, _ => { }, () => OwnsDeal()
+                    && ReadDealForUpdate(context, account.Id, noTracking: true) is { } stored
+                    && ReadCards(stored).SequenceEqual(deal.Cards), account.Id);
+
+                context.SaveChanges();
+
+                void FlushBeforeDeal(Func<bool> settled)
+                {
+                    void Continue()
+                    {
+                        lock (sync)
+                        {
+                            if (!OwnsDeal() || !IsCurrentDeal(account.Id, previous))
+                                return;
+                            if (settled())
+                                StartPersistedDeal(session, account, player, deal);
+                            else
+                                SendClickEmptyReset(session);
+                        }
+                    }
+
+                    if (player != null)
+                        player.Save(Continue);
+                    else
+                    {
+                        using AuthContext pending = database.CreateContext();
+                        SaveAccountBeforeDeal(pending, account, epoch, OwnsDeal);
+                        Continue();
+                    }
                 }
-                else
-                    PublishPersistedCards(session, account, player, fortuneSession);
             }
+            catch (Exception ex)
+            {
+                log.LogWarning(ex, "Could not confirm a new Fortune deal for account {AccountId}.", account.Id);
+                if (OwnsDeal())
+                    SendClickEmptyReset(session);
+                return;
+            }
+
+            publishWallet();
+            publishBundle?.Invoke();
+            if (OwnsDeal() && IsCurrentDeal(account.Id, previous))
+                PublishPersistedCards(session, account, player, deal);
+        }
+
+        private static void SaveAccountBeforeDeal(AuthContext context, IAccount account, ulong epoch, Func<bool> ownsDeal)
+        {
+            context.EnlistSaveWork(unit =>
+            {
+                unit.ReservePendingItemIds(account.Id, 0);
+                ValidateWorldSessionEpoch(unit, account.Id, epoch);
+            }, _ => { }, ownsDeal, account.Id);
+            account.Save(context);
+            context.SaveChanges();
         }
 
         private bool EnsureFortuneCoinBalance(IWorldSession session, IAccount account)
@@ -141,19 +272,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
 
             foreach (IAccountInventoryItem item in GetClaimableFortuneCoinItems(inventoryManager, player))
             {
-                AccountOperationResult result = inventoryManager.TakeItem(player, item.Id);
-                log.LogDebug(
-                    "Fortune start auto-claim account {AccountId}: inventoryId={InventoryId}, accountItemId={AccountItemId}, amount={Amount}, result={Result}.",
-                    account.Id,
-                    item.Id,
-                    item.AccountItemId,
-                    item.Entry.AccountCurrencyAmount,
-                    result);
-                if (result == AccountOperationResult.Ok)
+                if (TryClaimFortuneCoinAccountItem(account, player, item))
                     return true;
             }
 
             return false;
+        }
+
+        private bool TryClaimFortuneCoinAccountItem(IAccount account, IPlayer player, IAccountInventoryItem item)
+        {
+            AccountOperationResult result = account.InventoryManager.TakeItem(player, item.Id);
+            log.LogDebug(
+                "Fortune start auto-claim account {AccountId}: inventoryId={InventoryId}, accountItemId={AccountItemId}, amount={Amount}, result={Result}.",
+                account.Id, item.Id, item.AccountItemId, item.Entry.AccountCurrencyAmount, result);
+            return result == AccountOperationResult.Ok;
         }
 
         private static List<IAccountInventoryItem> GetClaimableFortuneCoinItems(IAccountInventoryManager inventoryManager, IPlayer player)
@@ -257,13 +389,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                         unit.Entry(staged).State = EntityState.Detached;
                     // Use the same owner lock as inventory saves and World admission.
                     unit.ReservePendingItemIds(account.Id, 0);
-                    if (epoch != 0 && !unit.AccountWorldSession.AsNoTracking().Any(row => row.AccountId == account.Id && row.Epoch == epoch))
-                        throw new DbUpdateConcurrencyException("The Fortune account session was superseded.");
-
-                    staged = unit.Database.IsSqlite()
-                        ? unit.AccountFortuneSession.SingleOrDefault(row => row.Id == account.Id)
-                        : unit.AccountFortuneSession.FromSqlInterpolated($"SELECT * FROM account_fortune_session WHERE id = {account.Id} FOR UPDATE")
-                            .AsEnumerable().SingleOrDefault();
+                    ValidateWorldSessionEpoch(unit, account.Id, epoch);
+                    staged = ReadDealForUpdate(unit, account.Id);
                     if (staged == null || !ReadCards(staged).SequenceEqual(expected.Cards))
                         throw new DbUpdateConcurrencyException("The Fortune deal changed before the flip.");
 
@@ -292,10 +419,26 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             => ReferenceEquals(session.Account, account) && ReferenceEquals(account.Session, session)
                 && ReferenceEquals(session.Player, player);
 
+        private static void ValidateWorldSessionEpoch(AuthContext context, uint accountId, ulong epoch)
+        {
+            if (epoch != 0 && !context.AccountWorldSession.AsNoTracking().Any(row => row.AccountId == accountId && row.Epoch == epoch))
+                throw new DbUpdateConcurrencyException("The Fortune account session was superseded.");
+        }
+
+        private static AccountFortuneSessionModel ReadDealForUpdate(AuthContext context, uint accountId, bool noTracking = false)
+        {
+            IQueryable<AccountFortuneSessionModel> rows = context.Database.IsSqlite()
+                ? context.AccountFortuneSession.Where(row => row.Id == accountId)
+                : context.AccountFortuneSession.FromSqlInterpolated($"SELECT * FROM account_fortune_session WHERE id = {accountId} FOR UPDATE");
+            if (noTracking)
+                rows = rows.AsNoTracking();
+            return rows.AsEnumerable().SingleOrDefault();
+        }
+
         private bool IsCurrentDeal(uint accountId, FortuneSession expected)
             => ReferenceEquals(sessions.GetValueOrDefault(accountId), expected);
 
-        private void PublishPersistedCards(IWorldSession session, IAccount account, IPlayer player, FortuneSession cards)
+        private void PublishPersistedCards(IWorldSession session, IAccount account, IPlayer player, FortuneSession cards, bool preserveEquivalent = false)
         {
             if (!OwnsSession(session, account, player))
                 return;
@@ -306,7 +449,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                 return;
             if (cards == null)
                 sessions.Remove(account.Id);
-            else
+            else if (!preserveEquivalent || previous == null || !previous.Cards.SequenceEqual(cards.Cards))
                 sessions[account.Id] = cards;
         }
 
@@ -384,12 +527,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             return cards.All(card => fortuneRewardPool.IsCardRewardDisplayable(card.AccountItemId));
         }
 
-        private bool TryPersistSession(uint accountId, FortuneSession fortuneSession)
-        {
-            if (databaseManager == null || fortuneSession == null)
-                return databaseManager == null;
-
-            var model = new AccountFortuneSessionModel
+        private static AccountFortuneSessionModel BuildDealModel(uint accountId, FortuneSession fortuneSession)
+            => new()
             {
                 Id                 = accountId,
                 Card0AccountItemId = fortuneSession.Cards[0].AccountItemId,
@@ -405,18 +544,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                 Card1Granted       = fortuneSession.Cards[1].Granted,
                 Card2Granted       = fortuneSession.Cards[2].Granted
             };
-
-            try
-            {
-                databaseManager.GetDatabase<AuthDatabase>().UpsertFortuneSession(model);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                log.LogError(ex, "Failed to persist Fortune session for account {AccountId}.", accountId);
-                return false;
-            }
-        }
 
         private ServerFortuneRewards BuildRewards()
         {

@@ -13,6 +13,7 @@ using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Fortune;
 using NexusForever.Game.Account.Inventory;
+using NexusForever.Game.Account.Currency;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Fortune;
 using NexusForever.Game.Tests.TestSupport;
@@ -486,6 +487,197 @@ public class FortuneSessionManagerTests
         Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCardUpdate>());
     }
 
+    [Fact]
+    public void PersistedStartCommitsWalletDebitAndDealBeforePublishing()
+    {
+        using var fixture = new PersistedFortune(coins: 2);
+        fixture.Messages.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerFortuneCards { Operation: FortuneOperation.Update })
+            {
+                using AuthContext read = fixture.Database.CreateContext();
+                Assert.Equal(1ul, read.AccountCurrency.Single().Amount);
+                Assert.Equal(11u, read.AccountFortuneSession.Single().Card0AccountItemId);
+            }
+            return null;
+        });
+        fixture.CreateManager().Start(fixture.Session);
+
+        Assert.Equal(1ul, fixture.Session.Account.CurrencyManager.GetCurrencyAmount(AccountCurrencyType.FortuneCoin));
+        Assert.Single(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCards>());
+    }
+
+    [Fact]
+    public void PersistedStartKeepsTheOriginalDealWhenTheDebitIsRejected()
+    {
+        using var fixture = new PersistedFortune(coins: 2);
+        FortuneSessionManager manager = fixture.CreateManager();
+        manager.Start(fixture.Session);
+        manager.FlipCard(fixture.Session, CreateFlipCard(0u));
+        using AuthContext read = fixture.Database.CreateContext();
+        read.Database.ExecuteSqlRaw("""
+            CREATE TRIGGER reject_fortune_debit BEFORE UPDATE ON account_currency
+            BEGIN SELECT RAISE(ABORT, 'rejected debit'); END
+            """);
+
+        manager.Start(fixture.Session);
+
+        Assert.True(read.AccountFortuneSession.AsNoTracking().Single().Card0Flipped);
+        Assert.Equal(1ul, read.AccountCurrency.Single().Amount);
+        Assert.Equal(1ul, fixture.Session.Account.CurrencyManager.GetCurrencyAmount(AccountCurrencyType.FortuneCoin));
+        Assert.Single(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCards>());
+    }
+
+    [Fact]
+    public void PersistedStartConsumesTheTargetedBundleWithItsDealAndKeepsChange()
+    {
+        using var fixture = new PersistedFortune(coins: 0, bundleTarget: 9001);
+        FortuneSessionManager manager = fixture.CreateManager();
+        using AuthContext read = fixture.Database.CreateContext();
+        read.Database.ExecuteSqlRaw("""
+            CREATE TRIGGER reject_fortune_deal BEFORE INSERT ON account_fortune_session
+            BEGIN SELECT RAISE(ABORT, 'rejected deal'); END
+            """);
+
+        manager.Start(fixture.Session);
+
+        Assert.Empty(read.AccountFortuneSession);
+        Assert.Empty(read.AccountCurrency);
+        Assert.NotNull(fixture.Session.Account.InventoryManager.GetItem(1));
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerAccountItemDelete>());
+        read.Database.ExecuteSqlRaw("DROP TRIGGER reject_fortune_deal");
+
+        manager.Start(fixture.Session);
+
+        Assert.Empty(read.AccountInventory);
+        Assert.Equal(4ul, read.AccountCurrency.Single().Amount);
+        Assert.Equal(4ul, fixture.Session.Account.CurrencyManager.GetCurrencyAmount(AccountCurrencyType.FortuneCoin));
+        Assert.Null(fixture.Session.Account.InventoryManager.GetItem(1));
+        Assert.Single(GetEncryptedMessages(fixture.Messages).OfType<ServerAccountItemDelete>());
+        Assert.Single(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCards>());
+    }
+
+    [Fact]
+    public void PersistedStartRejectsACachedBundleConsumedByAnotherWriter()
+    {
+        using var fixture = new PersistedFortune(coins: 0, bundleTarget: 9001);
+        using AuthContext read = fixture.Database.CreateContext();
+        read.Database.ExecuteSqlRaw("DELETE FROM account_inventory");
+
+        fixture.CreateManager().Start(fixture.Session);
+
+        Assert.Empty(read.AccountCurrency);
+        Assert.Empty(read.AccountFortuneSession);
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCards>());
+    }
+
+    [Fact]
+    public void PersistedStartWaitsForAnUnflushedBundleBeforeConsumingIt()
+    {
+        using var fixture = new PersistedFortune(coins: 0);
+        IAccountInventoryManager inventory = fixture.Session.Account.InventoryManager;
+        inventory.AddItem(901, notify: false);
+
+        fixture.CreateManager().Start(fixture.Session);
+
+        using AuthContext read = fixture.Database.CreateContext();
+        Assert.Empty(read.AccountInventory);
+        Assert.Empty(read.AccountFortuneSession);
+        fixture.CompletePlayerSave();
+
+        inventory.Save(read);
+        read.SaveChanges();
+        Assert.Empty(read.AccountInventory);
+        Assert.Equal(4ul, read.AccountCurrency.Single().Amount);
+        Assert.Single(read.AccountFortuneSession);
+        Assert.Single(read.AccountInventoryReceipt);
+        Assert.Empty(inventory);
+    }
+
+    [Fact]
+    public void PersistedStartSettlesAnAlreadyClaimedBundleBeforeSpendingItsCoins()
+    {
+        using var fixture = new PersistedFortune(coins: 1, bundleTarget: 9001);
+        FortuneSessionManager manager = fixture.CreateManager();
+        manager.Start(fixture.Session);
+        Assert.Equal(AccountOperationResult.Ok, fixture.Session.Account.InventoryManager.TakeItem(fixture.Session.Player, 1));
+        using AuthContext read = fixture.Database.CreateContext();
+        Assert.Single(read.AccountInventory);
+        Assert.Equal(0ul, read.AccountCurrency.AsNoTracking().Single().Amount);
+
+        manager.Start(fixture.Session);
+        manager.SendStatus(fixture.Session);
+
+        Assert.Equal(0ul, read.AccountCurrency.AsNoTracking().Single().Amount);
+        Assert.Equal(2, GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCards>().Count());
+        fixture.CompletePlayerSave();
+
+        Assert.Empty(read.AccountInventory);
+        Assert.Equal(4ul, read.AccountCurrency.AsNoTracking().Single().Amount);
+        Assert.Equal(4ul, fixture.Session.Account.CurrencyManager.GetCurrencyAmount(AccountCurrencyType.FortuneCoin));
+        Assert.Single(read.AccountFortuneSession);
+        Assert.Equal(3, GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCards>().Count());
+    }
+
+    [Fact]
+    public void PersistedStartFindsAValidBundleAfterAnOrdinarySaveAndAnUnclaimableCandidate()
+    {
+        using var fixture = new PersistedFortune(coins: 0, bundleTarget: 9001, unclaimableFirst: true);
+        IAccountCurrencyManager wallet = fixture.Session.Account.CurrencyManager;
+        wallet.CurrencyAddAmount(AccountCurrencyType.FortuneCoin, 1);
+        wallet.CurrencySubtractAmount(AccountCurrencyType.FortuneCoin, 1);
+
+        fixture.CreateManager().Start(fixture.Session);
+        fixture.CompletePlayerSave();
+
+        using AuthContext read = fixture.Database.CreateContext();
+        Assert.Equal(902u, Assert.Single(read.AccountInventory).AccountItemId);
+        Assert.Equal(4ul, read.AccountCurrency.Single().Amount);
+        Assert.Single(read.AccountFortuneSession);
+        Assert.Single(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCards>());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PersistedStartRollsBackIfATriggerChangesTheCommittedDealOrBundle(bool restoreBundle)
+    {
+        using var fixture = new PersistedFortune(coins: 0, bundleTarget: 9001);
+        using AuthContext read = fixture.Database.CreateContext();
+        read.Database.ExecuteSqlRaw(restoreBundle ? """
+            CREATE TRIGGER rewrite_fortune AFTER DELETE ON account_inventory BEGIN
+                INSERT INTO account_inventory(id,inventoryId,accountItemId,targetRealmId,targetCharacterId,hasTargetPlayerIdentity)
+                VALUES(OLD.id,OLD.inventoryId,OLD.accountItemId,OLD.targetRealmId,OLD.targetCharacterId,OLD.hasTargetPlayerIdentity);
+            END
+            """ : """
+            CREATE TRIGGER rewrite_fortune AFTER INSERT ON account_fortune_session BEGIN
+                UPDATE account_fortune_session SET card0AccountItemId = 22 WHERE id = NEW.id;
+            END
+            """);
+
+        fixture.CreateManager().Start(fixture.Session);
+
+        Assert.Empty(read.AccountFortuneSession);
+        Assert.Empty(read.AccountCurrency);
+        Assert.Single(read.AccountInventory);
+        Assert.NotNull(fixture.Session.Account.InventoryManager.GetItem(1));
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCards>());
+    }
+
+    [Fact]
+    public void OrdinaryClaimCannotUseABundleReservedByAFortuneDeal()
+    {
+        using var fixture = new PersistedFortune(coins: 0, bundleTarget: 9001);
+        var inventory = (AccountInventoryManager)fixture.Session.Account.InventoryManager;
+        using (AuthContext context = fixture.Database.CreateContext())
+        {
+            inventory.EnlistFortuneCoinBundle(context, fixture.Session.Player, inventory.GetItem(1), () => true);
+            Assert.Equal(AccountOperationResult.InvalidInventoryItem, inventory.TakeItem(fixture.Session.Player, 1));
+            Assert.Equal(0ul, fixture.Session.Account.CurrencyManager.GetCurrencyAmount(AccountCurrencyType.FortuneCoin));
+        }
+        Assert.Equal(AccountOperationResult.Ok, inventory.TakeItem(fixture.Session.Player, 1));
+    }
+
     private sealed class PersistedFortune : IDisposable
     {
         private readonly Microsoft.Data.Sqlite.SqliteConnection connection;
@@ -494,8 +686,9 @@ public class FortuneSessionManagerTests
         public IWorldSession Session { get; }
         public RecordingDispatchProxy<IWorldSession> Messages { get; }
         public RecordingDispatchProxy<IAccount> Owner { get; }
+        private Action pendingPlayerSave;
 
-        public PersistedFortune()
+        public PersistedFortune(ulong coins = 10, ulong? bundleTarget = null, bool unclaimableFirst = false)
         {
             string name = $"fortune-{Guid.NewGuid():N}";
             connection = new($"Data Source={name};Mode=Memory;Cache=Shared;Pooling=False");
@@ -504,6 +697,13 @@ public class FortuneSessionManagerTests
             using AuthContext context = Database.CreateContext();
             context.Database.EnsureCreated();
             var model = new AccountModel { Id = 42u, Email = "fortune@example.test" };
+            if (coins != 0)
+                model.AccountCurrency.Add(new AccountCurrencyModel { Id = model.Id, CurrencyId = (byte)AccountCurrencyType.FortuneCoin, Amount = coins });
+            if (unclaimableFirst)
+                model.AccountInventory.Add(new AccountInventoryModel { Id = model.Id, InventoryId = 1, AccountItemId = 902 });
+            if (bundleTarget.HasValue)
+                model.AccountInventory.Add(new AccountInventoryModel { Id = model.Id, InventoryId = unclaimableFirst ? 2ul : 1ul, AccountItemId = 901,
+                    TargetCharacterId = bundleTarget.Value, TargetRealmId = TestRealmId, HasTargetPlayerIdentity = true });
             context.Account.Add(model);
             context.SaveChanges();
 
@@ -511,16 +711,33 @@ public class FortuneSessionManagerTests
             Messages = messages;
             IAccount account = RecordingDispatchProxy<IAccount>.Create(out var owner);
             Owner = owner;
-            IAccountCurrencyManager wallet = RecordingDispatchProxy<IAccountCurrencyManager>.Create(out var currency);
             IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var character);
-            currency.SetMethodReturn(nameof(IAccountCurrencyManager.CanAfford), true);
             character.SetProperty(nameof(IPlayer.CharacterId), 9001ul);
             character.SetProperty(nameof(IPlayer.Account), account);
+            character.SetProperty(nameof(IPlayer.Identity), new Identity { RealmId = TestRealmId, Id = 9001ul });
+            character.SetProperty(nameof(IPlayer.AchievementManager), RecordingDispatchProxy<ICharacterAchievementManager>.Create(out _));
+            character.SetMethodHandler(nameof(IPlayer.Save), args =>
+            {
+                pendingPlayerSave = (Action)args[0];
+                return null;
+            });
             owner.SetProperty(nameof(IAccount.Id), model.Id);
             owner.SetProperty(nameof(IAccount.Session), Session);
+            GameTableManager tables = CreateGameTableManager(new AccountItemEntry { Id = 11 }, new AccountItemEntry { Id = 22 },
+                new AccountItemEntry { Id = 33 },
+                new AccountItemEntry { Id = 901, AccountCurrencyEnum = (uint)AccountCurrencyType.FortuneCoin, AccountCurrencyAmount = 5 },
+                new AccountItemEntry { Id = 902, AccountCurrencyEnum = (uint)AccountCurrencyType.FortuneCoin, AccountCurrencyAmount = 5, Item2Id = 1 });
+            var wallet = new AccountCurrencyManager(account, model, tables);
+            var inventory = new AccountInventoryManager(account, model, null, gameTableManager: tables);
             owner.SetProperty(nameof(IAccount.CurrencyManager), wallet);
-            owner.SetProperty(nameof(IAccount.InventoryManager), new AccountInventoryManager(account, model, null,
-                gameTableManager: CreateGameTableManager(new AccountItemEntry { Id = 11 }, new AccountItemEntry { Id = 22 }, new AccountItemEntry { Id = 33 })));
+            owner.SetProperty(nameof(IAccount.InventoryManager), inventory);
+            owner.SetMethodHandler(nameof(IAccount.Save), args =>
+            {
+                var save = (AuthContext)args[0];
+                wallet.Save(save);
+                inventory.Save(save);
+                return null;
+            });
             messages.SetProperty(nameof(IWorldSession.Account), account);
             messages.SetProperty(nameof(IWorldSession.Player), player);
         }
@@ -532,6 +749,17 @@ public class FortuneSessionManagerTests
             IRealmContext realm = RecordingDispatchProxy<IRealmContext>.Create(out var realmProxy);
             realmProxy.SetProperty(nameof(IRealmContext.RealmId), TestRealmId);
             return new FortuneSessionManager(new StubFortuneRewardPool(), realm, databases);
+        }
+
+        public void CompletePlayerSave()
+        {
+            Action callback = pendingPlayerSave;
+            Assert.NotNull(callback);
+            pendingPlayerSave = null;
+            using AuthContext context = Database.CreateContext();
+            Session.Account.Save(context);
+            context.SaveChanges();
+            callback();
         }
 
         public void Dispose() => connection.Dispose();

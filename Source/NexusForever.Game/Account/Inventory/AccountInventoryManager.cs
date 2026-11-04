@@ -196,6 +196,43 @@ namespace NexusForever.Game.Account.Inventory
             return () => SendItemAdd(item, session, canPublish);
         }
 
+        public bool CanEnlistFortuneCoinBundle(IPlayer player, IAccountInventoryItem item)
+            => item is AccountInventoryItem && !item.PendingDelete && ReferenceEquals(GetItem(item.Id), item)
+                && IsTargetPlayer(player, item.TargetPlayerIdentity)
+                && item.Entry.EntitlementId == 0u
+                && TryBuildImmediateAccountGrantPlan(item, out List<IAccountItemGrant> grants, out _)
+                && grants is [AccountCurrencyGrant { CurrencyType: AccountCurrencyType.FortuneCoin }];
+
+        /// <summary>Consume a coin-only bundle in the same unit as the funded deal.</summary>
+        public Action EnlistFortuneCoinBundle(AuthContext context, IPlayer player, IAccountInventoryItem item, Func<bool> ownsDeal)
+        {
+            if (!CanEnlistFortuneCoinBundle(player, item))
+                throw new InvalidOperationException("The Fortune coin bundle is no longer claimable.");
+
+            ((AccountInventoryItem)item).EnlistConsumption(context);
+            IGameSession session = account.Session;
+            context.EnlistSaveWork(_ => { }, committed =>
+            {
+                if (!committed)
+                    return;
+                lock (inventoryGate)
+                    if (ReferenceEquals(items.GetValueOrDefault(item.Id), item))
+                        items.Remove(item.Id);
+            }, () => ownsDeal() && ReferenceEquals(GetItem(item.Id), item));
+
+            return () =>
+            {
+                if (!ownsDeal())
+                    return;
+                if (player != null)
+                    AccountCurrencyAchievementUpdater.Update(player, AccountCurrencyType.FortuneCoin, item.Entry.AccountCurrencyAmount);
+                if (ownsDeal())
+                    session.EnqueueMessageEncrypted(new ServerAccountItemDelete { Id = item.Id });
+                if (ownsDeal())
+                    session.EnqueueMessageEncrypted(new ServerAccountOperationResult { Operation = AccountOperation.TakeItem, Result = AccountOperationResult.Ok });
+            };
+        }
+
         public string AddPendingItemGroup(IEnumerable<uint> accountItemIds, NetworkIdentity senderIdentity = null, NetworkIdentity targetPlayerIdentity = null, string group = null, bool notify = true, uint senderAccountId = 0u, ulong targetAccountId = 0ul)
         {
             lock (pendingGate)
@@ -282,7 +319,15 @@ namespace NexusForever.Game.Account.Inventory
             IAccountInventoryItem item = GetItem(id);
             if (item == null || item.PendingDelete)
                 return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.InvalidInventoryItem);
+            AccountInventoryItem owned = item as AccountInventoryItem;
+            if (owned != null && !owned.TryBeginClaim())
+                return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.InvalidInventoryItem);
+            try { return TakeItemCore(player, item); }
+            finally { owned?.EndClaim(); }
+        }
 
+        private AccountOperationResult TakeItemCore(IPlayer player, IAccountInventoryItem item)
+        {
             if (item.ClaimState != AccountItemClaimState.CanClaim)
                 return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.AlreadyClaimed);
 
@@ -329,7 +374,7 @@ namespace NexusForever.Game.Account.Inventory
                 SetCooldown(cooldownGroupId);
 
             if (!HasAccountItemFlag(item.Entry, AccountItemFlag.MultiClaim))
-                RemoveItem(id);
+                RemoveItem(item.Id);
 
             return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.Ok);
         }

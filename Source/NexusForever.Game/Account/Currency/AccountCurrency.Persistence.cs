@@ -18,7 +18,28 @@ namespace NexusForever.Game.Account.Currency
             if (requiresReload) throw new InvalidOperationException("Wallet owner requires authoritative reload.");
         }
 
-        public void Save(AuthContext context)
+        public void Save(AuthContext context) => Save(context, []);
+
+        internal bool HasPendingOperations
+        {
+            get { lock (saveGate) return operations.Count != 0; }
+        }
+
+        internal void EnlistFortuneSpend(AuthContext context, ulong cost, ulong bundleCredit)
+        {
+            lock (saveGate)
+            {
+                EnsureCurrent();
+                if (operations.Count != 0)
+                    throw new InvalidOperationException("Ordinary Fortune wallet mutations must settle before a deal.");
+                if (CurrencyId != AccountCurrencyType.FortuneCoin || checked(amount + bundleCredit) < cost)
+                    throw new InvalidOperationException("The Fortune wallet cannot afford this deal.");
+                AccountWalletOperation debit = NewOperation(cost, true);
+                Save(context, bundleCredit == 0 ? [debit] : [NewOperation(bundleCredit, false), debit]);
+            }
+        }
+
+        private void Save(AuthContext context, AccountWalletOperation[] commandOperations)
         {
             ArgumentNullException.ThrowIfNull(context);
             if (CurrencyId == AccountCurrencyType.CosmicReward && account.LoyaltyManager != null)
@@ -37,15 +58,17 @@ namespace NexusForever.Game.Account.Currency
                     {
                         if (!ReferenceEquals(pendingSave.Context, context))
                             throw new InvalidOperationException("This wallet currency belongs to another pending save unit.");
+                        if (pendingSave.HasCommand || commandOperations.Length != 0)
+                            throw new InvalidOperationException("The wallet already owns a command save.");
                         if (pendingSave.Operations.SequenceEqual(operations)) return;
                         if (pendingSave.Staged) throw new InvalidOperationException("Wallet changed after staging; retry in a fresh unit.");
                         pendingSave.Operations = operations.ToArray(); return;
                     }
-                    if (operations.Count == 0) return;
+                    if (operations.Count == 0 && commandOperations.Length == 0) return;
                     string actual = AccountCurrencyOperationRepository.DatabaseKey(context);
                     if (database != null && database != actual) throw new InvalidOperationException("Wallet changed its retained Auth database.");
                     database ??= actual;
-                    var registration = new SaveRegistration(context, operations.ToArray(), account.Session);
+                    var registration = new SaveRegistration(context, [.. operations, .. commandOperations], account.Session, commandOperations.Length != 0);
                     pendingSave = registration;
                     try
                     {
@@ -125,11 +148,12 @@ namespace NexusForever.Game.Account.Currency
             if (disconnect) try { registration.Session?.ForceDisconnect(); } catch { }
         }
 
-        private sealed class SaveRegistration(AuthContext context, AccountWalletOperation[] operations, IGameSession session)
+        private sealed class SaveRegistration(AuthContext context, AccountWalletOperation[] operations, IGameSession session, bool hasCommand)
         {
             internal AuthContext Context { get; } = context;
             internal IGameSession Session { get; } = session;
             internal AccountWalletOperation[] Operations { get; set; } = operations;
+            internal bool HasCommand { get; } = hasCommand;
             internal AccountCurrencyOperationRepository Repository { get; set; }
             internal bool Staged { get; set; }
         }

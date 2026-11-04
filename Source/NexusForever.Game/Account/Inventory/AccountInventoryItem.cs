@@ -69,6 +69,8 @@ namespace NexusForever.Game.Account.Inventory
         private readonly object saveGate = new();
         private readonly string deliveryKey = $"account-item:{Guid.NewGuid():N}";
         private bool saveInFlight;
+        private bool claimInFlight;
+        private bool consumptionInFlight;
         private ulong mutationRevision;
         private readonly Action<ulong> consumed;
 
@@ -122,17 +124,41 @@ namespace NexusForever.Game.Account.Inventory
             saveMask = AccountInventorySaveMask.Create;
         }
 
-        public void Save(AuthContext context)
+        public void Save(AuthContext context) => Save(context, consume: false);
+
+        internal void EnlistConsumption(AuthContext context) => Save(context, consume: true);
+
+        internal bool TryBeginClaim()
         {
             lock (saveGate)
             {
-                if (saveInFlight || saveMask == AccountInventorySaveMask.None) return;
+                if (PendingDelete || claimInFlight || consumptionInFlight)
+                    return false;
+                claimInFlight = true;
+                return true;
+            }
+        }
+
+        internal void EndClaim()
+        {
+            lock (saveGate)
+                claimInFlight = false;
+        }
+
+        private void Save(AuthContext context, bool consume)
+        {
+            lock (saveGate)
+            {
+                if (consume && (saveInFlight || PendingCreate || PendingDelete || claimInFlight || consumptionInFlight))
+                    throw new InvalidOperationException("Account item consumption requires a committed, unreserved item.");
+                if (saveInFlight || consumptionInFlight || (!consume && saveMask == AccountInventorySaveMask.None)) return;
                 AccountInventorySaveMask captured = saveMask;
                 ulong revision = mutationRevision;
                 AccountInventoryModel snapshot = BuildModel();
                 var staged = new List<object>();
                 bool alreadyConsumed = false;
                 saveInFlight = true;
+                if (consume) consumptionInFlight = true;
                 try
                 {
                     context.EnlistSaveWork(unit =>
@@ -141,10 +167,19 @@ namespace NexusForever.Game.Account.Inventory
                         staged.Clear();
                         unit.ReservePendingItemIds(account.Id, 0);
                         bool mysql = unit.Database.ProviderName?.Contains("MySql", StringComparison.OrdinalIgnoreCase) == true;
-                        AccountInventoryModel row = (mysql
-                            ? unit.AccountInventory.FromSqlInterpolated($"SELECT * FROM account_inventory WHERE id = {account.Id} AND inventoryId = {Id} FOR UPDATE")
-                            : unit.AccountInventory.Where(item => item.Id == account.Id && item.InventoryId == Id)).AsNoTracking().SingleOrDefault();
+                        AccountInventoryModel row = ReadInventoryRow(unit);
                         alreadyConsumed = false;
+                        if (consume)
+                        {
+                            if (row == null || (row.CreationKey ?? $"legacy:{row.InventoryId}") != deliveryKey
+                                || row.AccountItemId != snapshot.AccountItemId || row.ClaimState != snapshot.ClaimState
+                                || row.TargetRealmId != snapshot.TargetRealmId || row.TargetCharacterId != snapshot.TargetCharacterId
+                                || (row.HasTargetPlayerIdentity || row.TargetCharacterId != 0ul) != snapshot.HasTargetPlayerIdentity)
+                                throw new DbUpdateConcurrencyException("The account item no longer matches its consumption quote.");
+                            unit.Remove(row);
+                            staged.Add(row);
+                            return;
+                        }
                         if (row != null && (row.CreationKey ?? $"legacy:{row.InventoryId}") != deliveryKey)
                         {
                             if ((captured & AccountInventorySaveMask.Create) == 0)
@@ -201,6 +236,8 @@ namespace NexusForever.Game.Account.Inventory
                         lock (saveGate)
                         {
                             saveInFlight = false;
+                            if (consume && !committed)
+                                consumptionInFlight = false;
                             foreach (object entity in staged)
                             {
                                 try { context.Entry(entity).State = EntityState.Detached; }
@@ -215,11 +252,25 @@ namespace NexusForever.Game.Account.Inventory
                             }
                         }
                         if (notifyConsumed) consumed?.Invoke(Id);
-                    });
+                    }, consume ? () =>
+                    {
+                        lock (saveGate)
+                            return mutationRevision == revision && saveInFlight && !PendingDelete && ReadInventoryRow(context) == null;
+                    } : null);
                 }
-                catch { saveInFlight = false; throw; }
+                catch
+                {
+                    saveInFlight = false;
+                    if (consume) consumptionInFlight = false;
+                    throw;
+                }
             }
         }
+
+        private AccountInventoryModel ReadInventoryRow(AuthContext context)
+            => (context.Database.ProviderName?.Contains("MySql", StringComparison.OrdinalIgnoreCase) == true
+                ? context.AccountInventory.FromSqlInterpolated($"SELECT * FROM account_inventory WHERE id = {account.Id} AND inventoryId = {Id} FOR UPDATE")
+                : context.AccountInventory.Where(item => item.Id == account.Id && item.InventoryId == Id)).AsNoTracking().SingleOrDefault();
 
         public void EnqueueDelete(bool set)
         {

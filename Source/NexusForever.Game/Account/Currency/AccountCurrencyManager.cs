@@ -6,6 +6,7 @@ using NexusForever.Game.Static.Account;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.Session;
 
 namespace NexusForever.Game.Account.Currency
 {
@@ -113,6 +114,35 @@ namespace NexusForever.Game.Account.Currency
                 CurrencySubtractAmountCore(currencyType, amount, reason);
         }
 
+        /// <summary>Stage the wallet operations without changing the visible balance before commit.</summary>
+        public Action EnlistFortuneSpend(AuthContext context, ulong cost, ulong bundleCredit, Func<bool> ownsDeal)
+        {
+            lock (currencyGate)
+            {
+                if (walletRefresh != null || !ownsDeal())
+                    throw new InvalidOperationException("The Fortune deal lost its wallet owner.");
+                if (!currencies.TryGetValue(AccountCurrencyType.FortuneCoin, out IAccountCurrency wallet))
+                {
+                    wallet = new AccountCurrency(account, new AccountCurrencyModel
+                    {
+                        Id = account.Id,
+                        CurrencyId = (byte)AccountCurrencyType.FortuneCoin
+                    }, gameTableManager);
+                    currencies.Add(AccountCurrencyType.FortuneCoin, wallet);
+                }
+                ((AccountCurrency)wallet).EnlistFortuneSpend(context, cost, bundleCredit);
+                IGameSession session = account.Session;
+                return () => SendAccountCurrencyUpdate(wallet, 0, session, ownsDeal);
+            }
+        }
+
+        public bool HasPendingFortuneChanges()
+        {
+            lock (currencyGate)
+                return currencies.TryGetValue(AccountCurrencyType.FortuneCoin, out IAccountCurrency value)
+                    && value is AccountCurrency wallet && wallet.HasPendingOperations;
+        }
+
         private void CurrencySubtractAmountCore(AccountCurrencyType currencyType, ulong amount, ulong reason)
         {
             if (!currencies.TryGetValue(currencyType, out IAccountCurrency accountCurrency))
@@ -154,13 +184,19 @@ namespace NexusForever.Game.Account.Currency
         /// Sends information about a player's <see cref="AccountCurrency"/>.
         /// </summary>
         private void SendAccountCurrencyUpdate(IAccountCurrency accountCurrency, ulong reason = 0)
+            => SendAccountCurrencyUpdate(accountCurrency, reason, account.Session, null);
+
+        private static void SendAccountCurrencyUpdate(IAccountCurrency accountCurrency, ulong reason, IGameSession session, Func<bool> canPublish)
         {
-            account.Session.EnqueueMessageEncrypted(new ServerAccountCurrencyGrant
+            if (canPublish?.Invoke() == false)
+                return;
+            session.EnqueueMessageEncrypted(new ServerAccountCurrencyGrant
             {
                 AccountCurrency = accountCurrency.Build(),
                 Reason = reason
             });
-            account.Session.EnqueueMessageEncrypted(new ServerWalletUpdate((uint)accountCurrency.CurrencyId));
+            if (canPublish?.Invoke() != false)
+                session.EnqueueMessageEncrypted(new ServerWalletUpdate((uint)accountCurrency.CurrencyId));
         }
     }
 }

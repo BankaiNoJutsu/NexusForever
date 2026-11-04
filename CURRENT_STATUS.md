@@ -23264,10 +23264,33 @@ publication changes. The final Fortune run rebuilt WorldServer and passed
 all 33 Fortune cases, including seven new regressions. Private SQLite
 results are in `artifacts/continuation-20261104/fortune-flip-settlement/`.
 
-Coin debit and deal creation still need a shared commit. If Auth commits and
-the caller loses a non-retryable acknowledgement, the durable item remains
-available on account reload. Immediate live adoption and enqueue recovery
-remain open, along with configured-provider and retail qualification.
+#### Persisted deal and coin settlement
+
+4 November 2026. Fortune Start now commits its one-coin debit and the new
+deal together. A committed coin-only bundle can fund that same unit, which
+consumes the exact targeted item and retains the change in the wallet. The
+server verifies the stored deal and bundle removal before commit. A rejected
+write preserves the previous deal and funding, and an ordinary inventory claim
+cannot use a bundle while the deal reserves it.
+
+Pending wallet credit and unflushed bundle creation settle through the normal
+save path before Start resumes. Mixed account items retain the ordinary claim
+path, and the deal waits for the player's Auth and Character save callback.
+The callback rechecks the original owner and funding. Refreshing an unchanged
+deal does not discard the waiting Start.
+
+Three baseline failures reproduced the split between debit, deal and bundle
+consumption. The broader wallet, inventory and Fortune run passed 162 scoped
+tests. After the final continuation fixes, the owning projects built and all
+43 Fortune tests passed, including ten new cases. The final fixture reads
+the stored balance without tracking and checks the live wallet separately.
+Private SQLite evidence is under
+`artifacts/continuation-20261104/fortune-start-settlement/`.
+
+If Auth commits and the caller loses a non-retryable acknowledgement, account
+reload exposes the durable outcome. Live re-adoption and packet enqueue recovery
+remain open for deals and reveals, along with configured-provider and retail
+qualification.
 
 #### Existing Fortune behavior and evidence
 

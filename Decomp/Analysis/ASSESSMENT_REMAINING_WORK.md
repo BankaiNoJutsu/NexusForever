@@ -10,11 +10,14 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
-[Fortune flip settlement](../../CURRENT_STATUS.md#persisted-card-reveal-and-reward-settlement)
-commits the card reveal and targeted reward item in the same Auth transaction.
-Replays and owner changes are guarded. Coin debit with deal creation, live
-recovery after lost acknowledgement or enqueue failure, configured-provider
-and retail evidence remain open.
+[Fortune deal settlement](../../CURRENT_STATUS.md#persisted-deal-and-coin-settlement)
+commits the one-coin debit and deal together, including consumption and change
+for the committed coin-only bundle fallback. Pending funding and mixed claims
+wait for ordinary save completion before the spend. The preceding
+[flip settlement](../../CURRENT_STATUS.md#persisted-card-reveal-and-reward-settlement)
+commits each reveal with its targeted reward. Live recovery after lost
+acknowledgement or enqueue failure, configured-provider and retail evidence
+remain open.
 
 [Direct armor and mitigation callers](NATIVE_STATIC_ARMOR_PIERCE_EVIDENCE.md#direct-callers-and-the-rating-curve)
 resolve to single-unit stat getters, and their shared rating conversion uses
