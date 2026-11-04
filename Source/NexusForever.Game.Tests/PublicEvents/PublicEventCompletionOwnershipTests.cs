@@ -1,5 +1,8 @@
+using System.Data.Common;
+using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using NexusForever.Database.Character;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Achievement;
@@ -80,6 +83,9 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
     [InlineData("unflushed-commit")]
     [InlineData("queued-rollback")]
     [InlineData("queued-success")]
+    [InlineData("queued-retry")]
+    [InlineData("queued-lost-ack")]
+    [InlineData("queued-owner-replaced")]
     [InlineData("replaced-after-commit")]
     public async Task PublicEventFinalityAndQuestCreditAreSeparateFromCharacterRollback(string outcome)
     {
@@ -89,9 +95,11 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
             Id = 90010, Type = (uint)QuestObjectiveType.CompletePublicEventObjective, Data = objectiveId, Count = 2
         });
         f.Seed();
-        using var actor = new SaveActor(f);
         bool useWorldSaveQueue = outcome.StartsWith("queued-", StringComparison.Ordinal);
         bool reject = outcome.EndsWith("-rollback", StringComparison.Ordinal);
+        bool replaceOwner = outcome == "queued-owner-replaced";
+        var database = new PublicEventSaveDatabase(f, outcome);
+        using var actor = new SaveActor(f, characterDatabase: database);
         if (useWorldSaveQueue)
             await actor.Load();
         var map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
@@ -115,6 +123,21 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
             Assert.Empty(Packets().OfType<ServerQuestStateChange>());
             Assert.Empty(Packets().OfType<ServerQuestObjectiveWorldLocation>());
         }
+        int authSaves = 0;
+        actor.OnAuth = () => authSaves++;
+        database.BeforeRetry = () =>
+        {
+            AssertNoQuestNotices();
+            using var read = f.Context();
+            Assert.Equal(1u, read.CharacterQuestObjective.Single().Progress);
+            Assert.Empty(read.BankReconciliationReceipt);
+        };
+        if (replaceOwner)
+            database.OnRollback = () =>
+            {
+                var replacement = RecordingDispatchProxy<IWorldSession>.Create(out _);
+                actor.Set(nameof(IPlayer.Session), replacement);
+            };
 
         publicEvent.UpdateObjective(objectiveId, 1);
         Assert.True(publicEvent.IsFinalised);
@@ -128,6 +151,8 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
         {
             actor.StartSave();
             await actor.Drain();
+            Assert.Equal(1, authSaves);
+            Assert.Equal(outcome is "queued-retry" or "queued-rollback" ? 2 : 1, database.Attempts);
             output.WriteLine("World save disconnect requests: {0}. Quest reload required: {1}.",
                 f.Source.SessionProxy.GetInvocations(nameof(IWorldSession.ForceDisconnect)).Count,
                 actor.Quests.RequiresAuthoritativeReload);
@@ -150,7 +175,7 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
         }
         else
             await Save();
-        if (reject)
+        if (reject || replaceOwner)
         {
             actor.Events.Update(.01);
             AssertNoQuestNotices();
@@ -158,10 +183,17 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
             {
                 Assert.Equal((byte)QuestState.Accepted, failed.CharacterQuest.Single().State);
                 Assert.Equal(1u, failed.CharacterQuestObjective.Single().Progress);
-                await failed.Database.ExecuteSqlRawAsync("DROP TRIGGER reject_public_event_quest");
+                Assert.Empty(failed.BankReconciliationReceipt);
+                if (reject)
+                    await failed.Database.ExecuteSqlRawAsync("DROP TRIGGER reject_public_event_quest");
             }
             if (useWorldSaveQueue)
+            {
+                Assert.Equal(replaceOwner ? 0 : 1,
+                    f.Source.SessionProxy.GetInvocations(nameof(IWorldSession.ForceDisconnect)).Count);
+                Assert.True(actor.Quests.RequiresAuthoritativeReload);
                 return;
+            }
             await Save();
         }
 
@@ -169,6 +201,13 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
         {
             Assert.Equal((byte)QuestState.Achieved, committed.CharacterQuest.Single().State);
             Assert.Equal(2u, committed.CharacterQuestObjective.Single().Progress);
+            if (useWorldSaveQueue)
+            {
+                using var payload = JsonDocument.Parse(Assert.Single(committed.BankReconciliationReceipt).Payload);
+                Assert.Equal("normal-public-event-quest", payload.RootElement.GetProperty("Kind").GetString());
+                Assert.Empty(f.Source.SessionProxy.GetInvocations(nameof(IWorldSession.ForceDisconnect)));
+                Assert.False(actor.Quests.RequiresAuthoritativeReload);
+            }
         }
         if (outcome == "replaced-after-commit")
         {
@@ -186,6 +225,44 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
             Assert.Single(Packets().OfType<ServerQuestObjectiveWorldLocation>());
         }
         Assert.Single(mapProxy.GetInvocations(nameof(IBaseMap.OnPublicEventFinish)));
+    }
+
+    private sealed class PublicEventSaveDatabase(SaveFixture fixture, string outcome) : CharacterDatabase
+    {
+        internal int Attempts { get; private set; }
+        internal Action BeforeRetry { get; set; }
+        internal Action OnRollback { get; set; }
+
+        public override async Task SavePublicEventQuestReconciliation(ulong characterId, Action<CharacterContext> action,
+            PublicEventQuestSaveReconciliation receipt)
+        {
+            Attempts++;
+            if (Attempts == 2)
+                BeforeRetry?.Invoke();
+            bool fault = Attempts == 1 && outcome is "queued-retry" or "queued-lost-ack" or "queued-owner-replaced";
+            try
+            {
+                await CharacterAtomicSave.ExecutePublicEventQuestReconciliation(
+                    () => fault ? fixture.Context(new CommitFault(outcome == "queued-lost-ack")) : fixture.Context(),
+                    characterId, action, receipt);
+            }
+            catch (CharacterReconciliationRolledBackException)
+            {
+                OnRollback?.Invoke();
+                throw;
+            }
+        }
+    }
+
+    private sealed class CommitFault(bool afterCommit) : DbTransactionInterceptor
+    {
+        public override ValueTask<InterceptionResult> TransactionCommittingAsync(DbTransaction transaction,
+            TransactionEventData eventData, InterceptionResult result, CancellationToken cancellationToken = default)
+            => afterCommit ? new(result) : throw new IOException("Owned public event failure before commit.");
+
+        public override Task TransactionCommittedAsync(DbTransaction transaction, TransactionEndEventData eventData,
+            CancellationToken cancellationToken = default)
+            => afterCommit ? Task.FromException(new IOException("Owned public event acknowledgement loss.")) : Task.CompletedTask;
     }
 
     private static RuntimeEvent CreateEvent(IPlayerManager players, IBaseMap map, uint objectiveId, uint objectId)

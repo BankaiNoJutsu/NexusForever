@@ -22059,9 +22059,7 @@ cannot receive the old notices. The map event still finalizes and sends its
 shared status independently.
 
 The direct rollback case retains the notices for a fresh save on the same
-Player. The normal World save still disconnects on failure and reloads the
-old progress. Automatic recovery after confirmed rollback, configured-provider
-validation, and deployed client delivery remain open.
+Player. The queued path is covered by the recovery entry below.
 
 The owning build and 692 scoped tests passed on the final candidate, including
 an empty commit without a flush, direct rollback and retry, queued commit and
@@ -22069,6 +22067,24 @@ rollback, and session replacement after commit. The initial broad quest filter
 was stopped after an achievement concurrency timeout. That check passed alone
 and in the final scope. Local results are under
 `artifacts/continuation-20261105/public-event-quest-publication/`.
+
+#### Public event World-save recovery
+
+5 November 2026. The ordinary World save now records a public-event quest
+receipt with the frozen Character writes. A lost commit acknowledgment can
+be confirmed by that receipt. After proven rollback, the original actor
+retries the same Character snapshot once. Auth and the map event each run
+once. A replaced owner cannot retry, and a second rollback publishes no
+credit and triggers the existing disconnect and reload path for the current
+owner.
+
+The owning build and 230 scoped SQLite tests passed. After a diagnostic
+wording change, all 24 targeted public-event and resource-conversion cases
+passed again. The gate exercised committed progress and notices, rollback and
+retry, lost acknowledgment, persistent SQL rejection, and owner replacement.
+Specialized settlement still owns its existing receipt. Configured MySQL,
+deployed client delivery, and retail reward tiers remain open.
+Local results are under `artifacts/continuation-20261105/public-event-quest-save-retry/`.
 
 #### Public event contribution ownership
 

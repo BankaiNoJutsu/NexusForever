@@ -42,7 +42,9 @@ namespace NexusForever.Game.Entity
                     if (contractCompletion is { } ticket && !graphs.Any(graph => ReferenceEquals(graph.Owner, ticket.Quest)
                         && graph.Target?.Quest.State == (byte)QuestState.Completed && graph.Target.Quest.ContractAcceptanceId == ticket.Acceptance))
                         throw new InvalidOperationException("Contract journal lost its frozen terminal Quest generation.");
-                    normalSave = new(this, database, token, graphs, scope, contractCompletion, CapturePublicEventPublications());
+                    var stagePublicEventPublications = CapturePublicEventPublications(out bool hasCurrentPublicEventCredit);
+                    normalSave = new(this, database, token, graphs, scope, contractCompletion,
+                        stagePublicEventPublications, hasCurrentPublicEventCredit);
                     if (contractCompletion != null) contractCompletion.Scope = null; // ownership moves into this snapshot
                     return normalSave;
                 }
@@ -50,7 +52,7 @@ namespace NexusForever.Game.Entity
             }
         }
         internal sealed class NormalSaveSnapshot(QuestManager owner, string database, object token, QuestNormalSaveGraph[] graphs, IDisposable scope,
-            ContractCompletionTicket contract, Action<CharacterContext> stagePublicEventPublications) : IDisposable
+            ContractCompletionTicket contract, Action<CharacterContext> stagePublicEventPublications, bool hasCurrentPublicEventCredit) : IDisposable
         {
             internal object Token { get; } = token;
             private bool disposed;
@@ -58,6 +60,7 @@ namespace NexusForever.Game.Entity
             private ContractNormalSaveUnit contractUnit;
             private bool contractEnded;
             internal bool HasContractCompletion => contract != null;
+            internal bool HasCurrentPublicEventCredit { get; } = hasCurrentPublicEventCredit;
             internal bool CanRetryBidRollback(CharacterContext context, bool partialEnrollment = false) => !disposed && ReferenceEquals(owner.normalSave, this)
                 && (ReferenceEquals(bound, context) || partialEnrollment && bound == null)
                 && (context == null || context.IsProvenBidRollback) && contract == null && !owner.questRewardReload;

@@ -161,7 +161,10 @@ namespace NexusForever.Game.Entity
                 Quests.RetryBidRollback(proof.Context, partial); Challenges.RetryBidRollback(proof.Context, partial);
                 HousingReceipt = HousingReceipt with { Id = System.Guid.NewGuid().ToString("N") }; return true;
             }
-            internal bool RetryResourceConversionRollback(NexusForever.Database.Character.CharacterReconciliationRolledBackException proof)
+            internal bool CanRecoverPublicEventCredit => Quests.HasCurrentPublicEventCredit && !Quests.HasContractCompletion
+                && !Challenges.HasContractCompanion && BidReceipt == null && BankReceipt == null && HousingReceipt == null;
+
+            internal bool RetryConfirmedOrdinaryRollback(NexusForever.Database.Character.CharacterReconciliationRolledBackException proof)
             {
                 Validate();
                 if (!proof.EnrollmentCompleted || proof.CharacterId != owner.CharacterId

@@ -862,18 +862,20 @@ namespace NexusForever.Game.Entity
             Save(callback, null);
         }
 
-        private sealed record ResourceConversionSaveActor(ulong Character, IGameSession Session, EventQueue Events,
+        private sealed record RecoverableSaveActor(ulong Character, IGameSession Session, EventQueue Events,
             IAccount Account, ulong? Epoch, IInventory Inventory, IQuestManager Quests, IChallengeManager Challenges);
-        private ResourceConversionSaveActor pendingConversionSave;
+        private RecoverableSaveActor pendingConversionSave;
 
         internal void SaveResourceConversion(Action callback)
         {
-            pendingConversionSave ??= new(CharacterId, Session, Session.Events, Account, Account?.WorldSessionEpoch,
-                Inventory, QuestManager, ChallengeManager);
+            pendingConversionSave ??= CaptureRecoverableSaveActor();
             Save(callback);
         }
 
-        private bool OwnsResourceConversionActor(ResourceConversionSaveActor actor)
+        private RecoverableSaveActor CaptureRecoverableSaveActor()
+            => new(CharacterId, Session, Session.Events, Account, Account?.WorldSessionEpoch, Inventory, QuestManager, ChallengeManager);
+
+        private bool OwnsRecoverableSaveActor(RecoverableSaveActor actor)
             => CharacterId == actor.Character && ReferenceEquals(Session, actor.Session) && ReferenceEquals(actor.Session.Events, actor.Events)
                 && ReferenceEquals(Account, actor.Account) && Account?.WorldSessionEpoch == actor.Epoch
                 && ReferenceEquals(Inventory, actor.Inventory) && ReferenceEquals(QuestManager, actor.Quests)
@@ -882,8 +884,8 @@ namespace NexusForever.Game.Entity
                 && actor.Session is not NetworkSession { IsDisconnecting: true }
                 && LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished);
 
-        private bool OwnsResourceConversionSave(NormalRewardSave snapshot, ResourceConversionSaveActor actor)
-            => saveInProgress && ReferenceEquals(normalRewardSave, snapshot) && OwnsResourceConversionActor(actor);
+        private bool OwnsRecoverableSave(NormalRewardSave snapshot, RecoverableSaveActor actor)
+            => saveInProgress && ReferenceEquals(normalRewardSave, snapshot) && OwnsRecoverableSaveActor(actor);
 
         private void Save(Action callback, Action failureCallback)
         {
@@ -952,17 +954,17 @@ namespace NexusForever.Game.Entity
 
         private void StartSave(Action callback = null, Action failureCallback = null)
         {
-            var conversionActor = pendingConversionSave;
-            if (conversionActor != null && !OwnsResourceConversionActor(conversionActor))
+            var recoverableActor = pendingConversionSave;
+            if (recoverableActor != null && !OwnsRecoverableSaveActor(recoverableActor))
             {
-                HandleSaveFailure("conversion owner", failureCallback, conversionActor);
+                HandleSaveFailure("recoverable save owner", failureCallback, recoverableActor);
                 return;
             }
 
             if (!TryAcquireInventorySave(out var lease))
             {
                 if (RewardStateRequiresReload)
-                    HandleSaveFailure("inventory", failureCallback, conversionActor);
+                    HandleSaveFailure("inventory", failureCallback, recoverableActor);
                 else DeferInventorySave(callback, failureCallback);
                 return;
             }
@@ -972,10 +974,16 @@ namespace NexusForever.Game.Entity
             deferredSaveCallback = deferredSaveFailureCallback = null;
             NormalRewardSave snapshot;
             try { snapshot = CaptureNormalRewardSave(); }
-            catch { HandleSaveFailure("snapshot", failureCallback, conversionActor); throw; }
-            var conversionReceipt = conversionActor == null ? null
-                : new ResourceConversionSaveReconciliation(System.Guid.NewGuid().ToString("N"), conversionActor.Character);
-            if (conversionReceipt != null && snapshot != null) snapshot.Challenges.RetainBidRollback = true;
+            catch { HandleSaveFailure("snapshot", failureCallback, recoverableActor); throw; }
+            OrdinaryCharacterSaveReconciliation recoveryReceipt = null;
+            if (recoverableActor != null)
+                recoveryReceipt = new ResourceConversionSaveReconciliation(System.Guid.NewGuid().ToString("N"), recoverableActor.Character);
+            else if (snapshot?.CanRecoverPublicEventCredit == true)
+            {
+                recoverableActor = CaptureRecoverableSaveActor();
+                recoveryReceipt = new PublicEventQuestSaveReconciliation(System.Guid.NewGuid().ToString("N"), recoverableActor.Character);
+            }
+            if (recoveryReceipt != null && snapshot != null) snapshot.Challenges.RetainBidRollback = true;
             pendingConversionSave = null;
             saveRequestedDuringSave = false;
             saveInProgress = true;
@@ -988,31 +996,31 @@ namespace NexusForever.Game.Entity
             try { authSaveTask = GetAuthDatabase().Save(context => SaveFrozenAuth(context, snapshot)); }
             catch
             {
-                HandleSaveFailure("auth", failureCallback, conversionActor);
+                HandleSaveFailure("auth", failureCallback, recoverableActor);
                 throw;
             }
-            (conversionActor?.Events ?? Session.Events).EnqueueEvent(new TaskEvent(authSaveTask,
+            (recoverableActor?.Events ?? Session.Events).EnqueueEvent(new TaskEvent(authSaveTask,
                 () =>
                 {
-                    if (conversionActor != null && !OwnsResourceConversionSave(snapshot, conversionActor))
+                    if (recoverableActor != null && !OwnsRecoverableSave(snapshot, recoverableActor))
                     {
-                        HandleSaveFailure("conversion owner", failureCallback, conversionActor);
+                        HandleSaveFailure("recoverable save owner", failureCallback, recoverableActor);
                         return;
                     }
 
                     Task characterSaveTask;
-                    try { characterSaveTask = SaveCharacterUnit(snapshot, conversionReceipt); }
+                    try { characterSaveTask = SaveCharacterUnit(snapshot, recoveryReceipt); }
                     catch
                     {
-                        HandleSaveFailure("character", failureCallback, conversionActor);
+                        HandleSaveFailure("character", failureCallback, recoverableActor);
                         throw;
                     }
-                    (conversionActor?.Events ?? Session.Events).EnqueueEvent(new TaskEvent(characterSaveTask,
-                        () => CompleteSave(callback, failureCallback, conversionActor, snapshot),
+                    (recoverableActor?.Events ?? Session.Events).EnqueueEvent(new TaskEvent(characterSaveTask,
+                        () => CompleteSave(callback, failureCallback, recoverableActor, snapshot),
                         () => HandleCharacterSaveFailure(characterSaveTask, snapshot, callback, failureCallback,
-                            conversionReceipt, conversionActor)));
+                            recoveryReceipt, recoverableActor)));
                 },
-                () => HandleSaveFailure("auth", failureCallback, conversionActor)));
+                () => HandleSaveFailure("auth", failureCallback, recoverableActor)));
         }
 
         internal AuthDatabase GetAuthDatabase()
@@ -1028,39 +1036,39 @@ namespace NexusForever.Game.Entity
         }
 
         private void HandleCharacterSaveFailure(Task task, NormalRewardSave snapshot, Action callback, Action failureCallback,
-            ResourceConversionSaveReconciliation conversionReceipt = null, ResourceConversionSaveActor conversionActor = null)
+            OrdinaryCharacterSaveReconciliation recoveryReceipt = null, RecoverableSaveActor recoverableActor = null)
         {
             var rollback = task.Exception?.Flatten().InnerExceptions.OfType<CharacterReconciliationRolledBackException>().SingleOrDefault();
-            if (conversionActor != null)
+            if (recoverableActor != null)
             {
-                if (rollback?.ReceiptId == conversionReceipt.Id && OwnsResourceConversionSave(snapshot, conversionActor)
-                    && snapshot?.RetryResourceConversionRollback(rollback) == true)
+                if (rollback?.ReceiptId == recoveryReceipt.Id && OwnsRecoverableSave(snapshot, recoverableActor)
+                    && snapshot?.RetryConfirmedOrdinaryRollback(rollback) == true)
                 {
-                    conversionActor.Events.EnqueueEvent(new DelayEvent(TimeSpan.FromSeconds(1), () =>
+                    recoverableActor.Events.EnqueueEvent(new DelayEvent(TimeSpan.FromSeconds(1), () =>
                     {
-                        if (!OwnsResourceConversionSave(snapshot, conversionActor))
+                        if (!OwnsRecoverableSave(snapshot, recoverableActor))
                         {
-                            HandleSaveFailure("conversion owner", failureCallback, conversionActor);
+                            HandleSaveFailure("recoverable save owner", failureCallback, recoverableActor);
                             return;
                         }
 
                         // Retry the same frozen writes once after proven rollback, with a fresh receipt ID.
-                        var retryReceipt = conversionReceipt with { Id = System.Guid.NewGuid().ToString("N") };
+                        var retryReceipt = recoveryReceipt with { Id = System.Guid.NewGuid().ToString("N") };
                         Task retry;
                         try { retry = SaveCharacterUnit(snapshot, retryReceipt); }
                         catch (Exception error)
                         {
-                            log.Error(error, "Failed to enroll a resource conversion save retry.");
-                            HandleSaveFailure("conversion enrollment", failureCallback, conversionActor);
+                            log.Error(error, "Failed to enroll a recoverable Character save retry.");
+                            HandleSaveFailure("recovery enrollment", failureCallback, recoverableActor);
                             return;
                         }
-                        conversionActor.Events.EnqueueEvent(new TaskEvent(retry,
-                            () => CompleteSave(callback, failureCallback, conversionActor, snapshot),
-                            () => HandleSaveFailure("conversion retry", failureCallback, conversionActor)));
+                        recoverableActor.Events.EnqueueEvent(new TaskEvent(retry,
+                            () => CompleteSave(callback, failureCallback, recoverableActor, snapshot),
+                            () => HandleSaveFailure("recovery retry", failureCallback, recoverableActor)));
                     }));
                     return;
                 }
-                HandleSaveFailure("conversion", failureCallback, conversionActor);
+                HandleSaveFailure("recoverable Character", failureCallback, recoverableActor);
                 return;
             }
             if (rollback != null && (rollback is BidReconciliationRolledBackException bid && AuctionBidSaveAllowed && snapshot?.RetryBidRollback(bid) == true
@@ -1083,15 +1091,15 @@ namespace NexusForever.Game.Entity
             HandleSaveFailure("character", failureCallback);
         }
 
-        private void CompleteSave(Action callback, Action failureCallback, ResourceConversionSaveActor conversionActor = null,
+        private void CompleteSave(Action callback, Action failureCallback, RecoverableSaveActor recoverableActor = null,
             NormalRewardSave snapshot = null)
         {
-            if (conversionActor != null && !OwnsResourceConversionSave(snapshot, conversionActor))
+            if (recoverableActor != null && !OwnsRecoverableSave(snapshot, recoverableActor))
             {
-                HandleSaveFailure("conversion owner", failureCallback, conversionActor);
+                HandleSaveFailure("recoverable save owner", failureCallback, recoverableActor);
                 return;
             }
-            if (!ReleaseNormalRewardSave(true)) { HandleSaveFailure("snapshot", failureCallback, conversionActor); return; }
+            if (!ReleaseNormalRewardSave(true)) { HandleSaveFailure("snapshot", failureCallback, recoverableActor); return; }
             ReleaseInventorySave();
             if (auctionBidActor == null && bankActor == null && housingNameActor == null) Session.CanProcessIncomingPackets = true;
             saveInProgress                    = false;
@@ -1115,10 +1123,10 @@ namespace NexusForever.Game.Entity
             callback?.Invoke();
         }
 
-        private void HandleSaveFailure(string phase, Action failureCallback, ResourceConversionSaveActor conversionActor = null)
+        private void HandleSaveFailure(string phase, Action failureCallback, RecoverableSaveActor recoverableActor = null)
         {
-            var failedSession = conversionActor?.Session ?? Session;
-            bool OwnsFailedSession() => conversionActor != null ? OwnsResourceConversionActor(conversionActor)
+            var failedSession = recoverableActor?.Session ?? Session;
+            bool OwnsFailedSession() => recoverableActor != null ? OwnsRecoverableSaveActor(recoverableActor)
                 : ReferenceEquals(Session, failedSession) && (failedSession is not IPlayerSession current || ReferenceEquals(current.Player, this));
             ReleaseNormalRewardSave(false);
             ReleaseInventorySave();
@@ -1160,7 +1168,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void Save(CharacterContext context) => SaveCharacter(context, null);
 
-        private Task SaveCharacterUnit(NormalRewardSave snapshot, ResourceConversionSaveReconciliation conversionReceipt = null)
+        private Task SaveCharacterUnit(NormalRewardSave snapshot, OrdinaryCharacterSaveReconciliation recoveryReceipt = null)
         {
             if (snapshot?.HousingReceipt is { } housingReceipt)
                 return GetCharacterDatabase().SaveHousingRenameReconciliation(CharacterId, context =>
@@ -1171,8 +1179,10 @@ namespace NexusForever.Game.Entity
                 return GetCharacterDatabase().SaveBankReconciliation(CharacterId, context => SaveCharacter(context, snapshot), bankReceipt);
             if (snapshot?.BidReceipt is { } receipt)
                 return GetCharacterDatabase().SaveBidReconciliation(CharacterId, context => SaveCharacter(context, snapshot), receipt);
-            if (conversionReceipt != null)
+            if (recoveryReceipt is ResourceConversionSaveReconciliation conversionReceipt)
                 return GetCharacterDatabase().SaveResourceConversionReconciliation(CharacterId, context => SaveCharacter(context, snapshot), conversionReceipt);
+            if (recoveryReceipt is PublicEventQuestSaveReconciliation publicEventReceipt)
+                return GetCharacterDatabase().SavePublicEventQuestReconciliation(CharacterId, context => SaveCharacter(context, snapshot), publicEventReceipt);
             return snapshot?.Quests.HasContractCompletion == true || CurrencyManager is CurrencyManager
                 ? GetCharacterDatabase().SaveAtomic(CharacterId, context => SaveCharacter(context, snapshot))
                 : GetCharacterDatabase().Save(context => SaveCharacter(context, snapshot));

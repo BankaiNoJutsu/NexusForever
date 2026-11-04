@@ -67,7 +67,9 @@ The [Character rollback probe](../../CURRENT_STATUS.md#public-event-character-sa
 reproduced early quest updates and loss of unsaved credit on the World save
 failure path. [Committed quest notices](../../CURRENT_STATUS.md#committed-public-event-quest-notices)
 now wait for Character settlement while the map event finishes independently.
-Complete automatic World-save recovery without replaying the map event.
+[Queued World-save recovery](../../CURRENT_STATUS.md#public-event-world-save-recovery)
+uses a receipt to confirm commit or retry the original frozen save once.
+Configured-provider, deployed delivery, and retail reward qualification remain open.
 Retail reward tiers and client presentation remain open.
 
 [Instance transfer retries](../../CURRENT_STATUS.md#instance-transfer-retries)

@@ -57,6 +57,7 @@ namespace NexusForever.Game.Challenges
             internal Dictionary<ushort, long> Revisions { get; } = revisions;
             private bool disposed;
             private CharacterContext attempted;
+            internal bool HasContractCompanion => companion != null;
             internal bool RetainBidRollback { get; set; }
             internal bool CanRetryBidRollback(CharacterContext context, bool partialEnrollment = false) => !disposed && companion == null && RetainBidRollback
                 && (ReferenceEquals(attempted, context) || partialEnrollment && attempted == null)

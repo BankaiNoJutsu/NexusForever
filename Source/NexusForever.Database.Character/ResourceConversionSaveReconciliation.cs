@@ -5,20 +5,28 @@ using NexusForever.Database.Character.Model;
 
 namespace NexusForever.Database.Character
 {
-    public sealed record ResourceConversionSaveReconciliation(string Id, ulong Character) : CharacterSaveReconciliation(Id)
+    public sealed record ResourceConversionSaveReconciliation(string Id, ulong Character) : OrdinaryCharacterSaveReconciliation(Id, Character)
     {
         internal override string Kind => "normal-resource-conversion";
+    }
 
+    public sealed record PublicEventQuestSaveReconciliation(string Id, ulong Character) : OrdinaryCharacterSaveReconciliation(Id, Character)
+    {
+        internal override string Kind => "normal-public-event-quest";
+    }
+
+    public abstract record OrdinaryCharacterSaveReconciliation(string Id, ulong Character) : CharacterSaveReconciliation(Id)
+    {
         internal override void Validate()
         {
             if (Character == 0 || !Guid.TryParseExact(Id, "N", out var id) || id == Guid.Empty || Id != id.ToString("N"))
-                throw new InvalidOperationException("Resource conversion save requires its original Character and receipt ID.");
+                throw new InvalidOperationException("Ordinary Character save requires its original Character and receipt ID.");
         }
 
         internal override void ValidateParent(CharacterContext context)
         {
             if (context.AtomicCharacterId != Character)
-                throw new InvalidOperationException("Resource conversion save changed its Character.");
+                throw new InvalidOperationException("Ordinary Character save changed its Character.");
         }
 
         // The existing reconciliation table stores tagged complete-save payloads.

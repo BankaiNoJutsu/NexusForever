@@ -152,7 +152,7 @@ namespace NexusForever.Game.Entity
                     var error = new InvalidOperationException("Quest manager save overlaps provisional reward work or requires reload.");
                     context.RejectSave(error); throw error;
                 }
-            var stagePublicEventPublications = CapturePublicEventPublications();
+            var stagePublicEventPublications = CapturePublicEventPublications(out _);
             DrainCommittedDeletions();
             foreach (IQuest quest in completedQuests.Values.Concat(inactiveQuests.Values).Concat(activeQuests.Values).Distinct().ToList())
             {

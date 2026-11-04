@@ -25,7 +25,7 @@ namespace NexusForever.Database.Character
         public string DatabaseFingerprint { get; }
         public ulong CharacterId { get; }
         internal CharacterReconciliationRolledBackException(CharacterContext context, string database, string receiptId, Exception cause, bool completed)
-            : base("The economic ordinary save is proven rolled back; its original frozen actor graph may retry.", cause)
+            : base("The Character save is proven rolled back; its original frozen actor graph may retry.", cause)
         {
             Context = context; ReceiptId = receiptId; EnrollmentCompleted = completed;
             ContextIdentity = context?.ContextId.ToString(); DatabaseFingerprint = database == null ? null : MarketplaceBidReconciliation.Hash(database);

@@ -65,15 +65,19 @@ namespace NexusForever.Game.Entity
             return true;
         }
 
-        private Action<CharacterContext> CapturePublicEventPublications()
+        private Action<CharacterContext> CapturePublicEventPublications(out bool hasCurrentCredit)
         {
             PublicEventPublication[] pending;
             lock (questRewardGate)
             {
                 if (publicEventPublications.Count == 0)
+                {
+                    hasCurrentCredit = false;
                     return null;
+                }
                 pending = publicEventPublications.ToArray();
             }
+            hasCurrentCredit = pending.Any(publication => publication.OwnsSession());
 
             return context =>
             {
