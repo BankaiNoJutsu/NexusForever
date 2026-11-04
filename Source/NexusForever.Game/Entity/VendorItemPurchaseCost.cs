@@ -14,6 +14,15 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary<AccountCurrencyType, ulong> accountCurrencyCost = new();
         private readonly Dictionary<uint, uint> itemCost = new();
 
+        public bool RequiresAccountSettlement => accountCurrencyCost.Values.Any(amount => amount != 0);
+
+        public void SettleCharacterPurchase(Player player, Inventory inventory, SupplySatchelManager satchel,
+            IItemInfo item, uint count, Func<bool> currentActor)
+        {
+            if (RequiresAccountSettlement) throw new InvalidOperationException("Character purchase cannot enroll an Auth payment.");
+            inventory.SettleVendorPurchase(player, satchel, item, count, itemCost, currencyCost, currentActor);
+        }
+
         /// <summary>
         /// Add a <see cref="CurrencyType"/> cost to the purchase cost.
         /// </summary>

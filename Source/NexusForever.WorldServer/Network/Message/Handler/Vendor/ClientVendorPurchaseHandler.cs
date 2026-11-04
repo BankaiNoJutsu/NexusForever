@@ -106,6 +106,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
                 return;
             }
 
+            if (player is Player owner && inventory is Inventory concrete && satchel is null or SupplySatchelManager
+                && !vendorItemPurchaseCost.RequiresAccountSettlement)
+            {
+                var originalSession = owner.Session;
+                var originalEvents = originalSession.Events;
+                var wallet = owner.CurrencyManager;
+                heldMutation.Dispose();
+                vendorItemPurchaseCost.SettleCharacterPurchase(owner, concrete, satchel as SupplySatchelManager, info, grantedItemCount, () =>
+                    ReferenceEquals(session.Player, owner) && ReferenceEquals(owner.Session, originalSession)
+                    && ReferenceEquals(originalSession.Events, originalEvents) && ReferenceEquals(owner.Inventory, concrete)
+                    && ReferenceEquals(owner.SupplySatchelManager, satchel) && ReferenceEquals(owner.CurrencyManager, wallet));
+                return;
+            }
+
             vendorItemPurchaseCost.ChargeAndDeliver(player, inventory, satchel, info, grantedItemCount);
         }
     }

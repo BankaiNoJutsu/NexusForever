@@ -28,6 +28,8 @@ using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Vendor;
+using NexusForever.Database.World.Model;
+using NexusForever.Game.Tests.Vendor;
 using Fixture = NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.Fixture;
 
 namespace NexusForever.Game.Tests.Entity;
@@ -37,6 +39,140 @@ public sealed class BankDeferredCurrencyRecoveryTests
     private readonly DbContextOptions<CharacterContext> options;
     public BankDeferredCurrencyRecoveryTests() { }
     internal BankDeferredCurrencyRecoveryTests(DbContextOptions<CharacterContext> options) => this.options = options;
+
+    [Theory]
+    [InlineData("bag")]
+    [InlineData("bag-dirty-wallet")]
+    [InlineData("same-stack")]
+    [InlineData("satchel-lost")]
+    [InlineData("satchel-rollback")]
+    public async Task VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(string outcome)
+    {
+        bool sameStack = outcome == "same-stack";
+        bool dirtyWallet = outcome == "bag-dirty-wallet";
+        bool useSatchel = outcome.StartsWith("satchel-", StringComparison.Ordinal);
+        bool rollback = outcome == "satchel-rollback";
+        using var f = new Fixture(options);
+        f.Seed();
+        var database = new CharacterDatabase();
+        using (var seed = f.Context())
+        {
+            database.Initialise(new DatabaseConnectionString
+            {
+                Provider = seed.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
+                ConnectionString = seed.Database.GetDbConnection().ConnectionString
+            });
+            seed.Character.Single().AccountId = 12;
+            seed.CharacterCurrency.Add(new() { Id = 42, CurrencyId = 1, Amount = 100 });
+            seed.Item.Add(new() { Id = 904, OwnerId = 42, ItemId = 7001, Location = (ushort)InventoryLocation.Inventory, StackCount = sameStack ? 2u : 1u });
+            if (dirtyWallet) seed.Item.Add(new() { Id = 950, OwnerId = 42, ItemId = 7001, Location = (ushort)InventoryLocation.Inventory, BagIndex = 1, StackCount = 2 });
+            if (useSatchel) seed.CharacterTradeskillMaterial.Add(new() { Id = 42, MaterialId = 10, Amount = 99 });
+            await seed.SaveChangesAsync();
+        }
+        var tables = (RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables;
+        tables.SetProperty(nameof(IGameTableManager.CurrencyType), PlayerBindPointTests.Table(new CurrencyTypeEntry { Id = 1, CapAmount = 1000 }));
+        if (useSatchel) tables.SetProperty(nameof(IGameTableManager.TradeskillMaterial),
+            PlayerBindPointTests.Table(new TradeskillMaterialEntry { Id = 10, Item2IdStatRevolution = 7002 }));
+        var token = Definition(7001);
+        var delivery = Definition(7002);
+        var items = RecordingDispatchProxy<IItemManager>.Create(out var itemManager);
+        itemManager.SetMethodHandler(nameof(IItemManager.GetItemInfo), args => (uint)args[0] == 7001 ? token : delivery);
+        ulong next = 905;
+        itemManager.SetMethodReturnFactory("get_" + nameof(IItemManager.NextItemId), () => next++);
+        var account = (RecordingDispatchProxy<IAccount>)(object)f.Source.Player.Account;
+        account.SetProperty(nameof(IAccount.Id), 12u);
+        var events = new EventQueue();
+        var session = RecordingDispatchProxy<IWorldSession>.Create(out var network);
+        network.SetProperty(nameof(IWorldSession.Events), events);
+        account.SetProperty(nameof(IAccount.Session), session);
+        var databases = RecordingDispatchProxy<IDatabaseManager>.Create(out var dbs);
+        dbs.SetMethodReturn(nameof(IDatabaseManager.GetDatabase), database);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var bank = new RealmBankManager(databases, items, async command =>
+        {
+            entered.SetResult();
+            await release.Task;
+            if (useSatchel)
+            {
+                var fault = new CommitFault(after: !rollback);
+                typeof(RealmBankManager.BankSaveCommand).GetField("contexts", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .SetValue(command, (Func<CharacterContext>)(() => f.Context(fault)));
+            }
+            await command.ExecuteAsync();
+        });
+        var model = Assert.Single(await database.GetCharacters(12));
+        var ordinary = new OrdinaryDatabase(f, outcome);
+        using var actor = new RewardNormalSaveSnapshotTests.Actor(f, actorModel: model, actorSession: session, actorEvents: events,
+            characterDatabase: ordinary, inventoryFactory: (owner, _) => Inventory(owner, items, f.Source.Tables, bank));
+        network.SetProperty(nameof(IWorldSession.Player), actor.Player);
+        var wallet = new CurrencyManager(f.Source.Tables);
+        wallet.Initialise(actor.Player, model);
+        actor.Set(nameof(Player.CurrencyManager), wallet);
+        actor.Set(nameof(Player.SupplySatchelManager), new SupplySatchelManager(actor.Player, model, f.Source.Tables));
+        await actor.Load();
+        var inventory = Assert.IsType<Inventory>(actor.Player.Inventory);
+        foreach (var row in model.Item)
+            inventory.LoadItem(new NexusForever.Game.Entity.Item(row, items, f.Source.Tables), InventoryLocation.Inventory, row.BagIndex);
+        if (dirtyWallet)
+        {
+            inventory.ItemDelete(new ItemLocation { Location = InventoryLocation.Inventory, BagIndex = 1 }, 1, ItemUpdateReason.Vendor);
+            wallet.CurrencyAddAmount(CurrencyType.Credits, 15);
+        }
+        var vendor = RecordingDispatchProxy<IVendorInfo>.Create(out var offers);
+        offers.SetMethodReturn(nameof(IVendorInfo.GetItemAtIndex), new EntityVendorItemModel
+        {
+            ItemId = sameStack ? 7001u : 7002u, ExtraCost1Type = ItemExtraCostType.Item, ExtraCost1ItemOrCurrencyId = 7001, ExtraCost1Quantity = 1,
+            ExtraCost2Type = ItemExtraCostType.Currency, ExtraCost2ItemOrCurrencyId = 1, ExtraCost2Quantity = sameStack ? 0u : 15u
+        });
+        typeof(Player).GetField("selectedVendorInfo", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(actor.Player, vendor);
+        var notices = new List<object>();
+        network.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerCombatReward or ServerItemAdd or ServerItemDelete or ServerItemStackCountUpdate or ServerSupplySatchelUpdate or ServerItemError)
+                notices.Add(args[0]);
+            return null;
+        });
+
+        new ClientVendorPurchaseHandler(items).HandleMessage(session, ClientVendorPurchaseHandlerTests.CreateRequest(sameStack ? 1u : 2u));
+        try
+        {
+            Assert.Empty(notices);
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            while (!entered.Task.IsCompleted) { events.Update(.01); await Task.Delay(5, timeout.Token); }
+            Assert.Empty(notices);
+            using var before = f.Context();
+            Assert.Equal(dirtyWallet ? 115ul : 100ul, before.CharacterCurrency.Single().Amount);
+            Assert.Equal(7001u, before.Item.Single(row => row.Id == 904).ItemId);
+            if (dirtyWallet) Assert.Equal(1u, before.Item.Single(row => row.Id == 950).StackCount);
+        }
+        finally { release.TrySetResult(); }
+        await actor.Drain();
+
+        using var after = f.Context();
+        Assert.Equal(rollback || sameStack || dirtyWallet ? 100ul : 85ul, after.CharacterCurrency.Single().Amount);
+        var stored = after.Item.Single(row => row.Id != 950);
+        if (dirtyWallet) Assert.Equal(1u, after.Item.Single(row => row.Id == 950).StackCount);
+        Assert.Equal(rollback || sameStack ? 7001u : 7002u, stored.ItemId);
+        Assert.Equal(rollback || useSatchel ? 1u : 2u, stored.StackCount);
+        Assert.Equal(rollback ? 0 : 1, after.BankReconciliationReceipt.Count(row => row.Payload.StartsWith("vendor-character-purchase:")));
+        if (useSatchel) Assert.Equal(rollback ? 99 : 100, after.CharacterTradeskillMaterial.Single().Amount);
+        Assert.Equal(rollback || sameStack ? 0 : 1, notices.OfType<ServerCombatReward>().Count());
+        Assert.Equal(rollback || sameStack ? 0 : 1, notices.OfType<ServerItemAdd>().Count());
+        Assert.Equal(rollback || sameStack ? 0 : 1, notices.OfType<ServerItemDelete>().Count());
+        Assert.Equal(sameStack ? 2 : 0, notices.OfType<ServerItemStackCountUpdate>().Count());
+        Assert.Equal(useSatchel && !rollback ? 1 : 0, notices.OfType<ServerSupplySatchelUpdate>().Count());
+        Assert.Equal(rollback ? 1 : 0, notices.OfType<ServerItemError>().Count());
+
+        static IItemInfo Definition(uint id)
+        {
+            var info = RecordingDispatchProxy<IItemInfo>.Create(out var definition);
+            definition.SetProperty(nameof(IItemInfo.Id), id);
+            definition.SetProperty(nameof(IItemInfo.Entry), new Item2Entry { Id = id, MaxStackCount = 20, BuyFromVendorStackCount = 1 });
+            definition.SetMethodReturn(nameof(IItemInfo.IsStackable), true);
+            return info;
+        }
+    }
 
     [Theory]
     [InlineData("commit")]

@@ -22859,8 +22859,27 @@ The owning-project build and 770 scoped source tests passed, including vendor,
 inventory mutation and delivery, satchel, quest reward persistence, and
 realm-bank identity coverage. See the local evidence under
 `artifacts/continuation-20261104/vendor-purchase-capacity/`.
-Durable purchase settlement, deployed delivery, and retail presentation remain
-open.
+
+#### Character-funded vendor purchase settlement
+
+4 November 2026. The public purchase handler settles pending character writes
+before charging. Character currency and item payment commit in one transaction
+with the complete backpack and satchel delivery. The purchase receipt identifies
+the transaction even when an exchange leaves the original stack unchanged. A
+confirmed rollback restores the prepared inventory and releases the satchel
+reservation. Success notices wait for the confirmed commit on the original
+session.
+
+The final owning-project build and 38 scoped cases passed, including a pending
+sale's stack and wallet, a same-stack exchange, and a split satchel delivery
+with injected rollback or lost acknowledgment. Tests ran for 13 seconds of a
+59-second build-and-test run. Evidence is under
+`artifacts/continuation-20261104/vendor-purchase-settlement/`.
+
+Account-currency purchases still need a durable intent spanning Auth and
+Character. The Auth debit must use a stable operation identity, with recovery
+for confirmed debits whose Character delivery cannot commit. Configured-provider,
+restart, socket delivery, and retail presentation remain open.
 
 #### Vendor buyback request identity
 

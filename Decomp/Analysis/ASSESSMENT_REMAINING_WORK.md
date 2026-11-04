@@ -85,7 +85,9 @@ client evidence remain open.
 checks the complete delivery before charging, including slots freed by item
 payment and the original satchel's available space. Accepted purchases retain
 their original inventory and satchel through session changes. Durable purchase
-settlement and retail qualification remain open.
+settlement for Character payments now uses the [Character-funded vendor purchase path](../../CURRENT_STATUS.md#character-funded-vendor-purchase-settlement).
+Account-currency settlement across Auth and Character, configured-provider and
+restart behavior, and retail qualification remain open.
 
 [Fortune deal settlement](../../CURRENT_STATUS.md#persisted-deal-and-coin-settlement)
 commits the one-coin debit and deal together, including consumption and change
