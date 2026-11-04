@@ -10,6 +10,13 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Arcterra Zone track evidence](ZONE_REWARD_TRACK_35_EVIDENCE.md) separates
+type 4 track 35 from type 3 track 36 through the retained table rows and
+English text. Static build 16042 evidence confirms a generic client slot
+for type 4. A first-hand test realm account narrows the producer search
+to Arcterra Challenge and event completion. Exact earning, award and
+reset behavior remain open.
+
 [Q5597 fixed reward capacity and SQLite reload](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#fixed-reward-capacity-and-sqlite-reload)
 checks the whole item reward batch before ordinary Quest completion.
 The one-slot case preserves the achieved quest, and successful turn-in
@@ -1717,7 +1724,7 @@ from the changed behavior and dependency surface, including at integration miles
    bounded archived-repository lookup found no TBL/index inputs. Full-table
    classification/delivery, native timing/UI and retail qualification remain.
    Ghidra stays unconfigured; Computer Use/native launch remain stopped.
-5. Continue track35 Zone earning, unsupported Challenge producers/retail odds,
+5. Continue [track35 Zone earning](ZONE_REWARD_TRACK_35_EVIDENCE.md), unsupported Challenge producers/retail odds,
    broader AMP families, [#595 personal healing/Focus](HEALING_PERSONAL_MODIFIER_EVIDENCE.md), [#557 piercing/mitigation order](NATIVE_STATIC_ARMOR_PIERCE_EVIDENCE.md),
    remaining prerequisite/protocol semantics, Hycrest later gameplay/physical
    triggers and Q5597 quest/achievement-specific qualification. The missing
