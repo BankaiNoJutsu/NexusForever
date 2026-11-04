@@ -10,6 +10,12 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Datacube and journal publication](ARCHIVE_PUBLICATION.md#datacube-and-journal-companion-publication)
+retains accepted collection notices until the original ordinary or frozen
+Experience graph confirms the bits. Initial lists use committed state, and
+failed sends retry on the original Player session. Native presentation,
+restart replay and retail qualification remain open.
+
 [Committed seller notice](AUCTION_BUYOUT_TRANSACTION.md#committed-notice-for-the-original-seller)
 publishes a confirmed buyout or winning expiry to the original online seller.
 The live retry checks ownership and listing absence, and zero proceeds require

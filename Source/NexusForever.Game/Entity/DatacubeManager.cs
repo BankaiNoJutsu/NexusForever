@@ -8,7 +8,7 @@ using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.Game.Entity
 {
-    public class DatacubeManager : IDatacubeManager
+    public partial class DatacubeManager : IDatacubeManager
     {
         private static uint DatacubeHash(ushort id, DatacubeType type)
         {
@@ -61,6 +61,7 @@ namespace NexusForever.Game.Entity
 
                 datacubes.Add(hash, datacube);
             }
+            if (player is Player) InitialisePublication();
         }
 
         public void Save(CharacterContext context)
@@ -182,6 +183,11 @@ namespace NexusForever.Game.Entity
 
         public void SendInitialPackets()
         {
+            if (player is Player)
+            {
+                SendConfirmedInitial();
+                return;
+            }
             var datacubeUpdateList = new ServerDatacubeUpdateList();
             foreach (IDatacube datacube in datacubes.Values)
             {
@@ -199,6 +205,11 @@ namespace NexusForever.Game.Entity
 
         public void SendDatacube(IDatacube datacube)
         {
+            if (player is Player)
+            {
+                RetainNotice(datacube, false);
+                return;
+            }
             player.Session.EnqueueMessageEncrypted(new ServerDatacubeUpdate
             {
                 DatacubeData = datacube.Build()
@@ -207,6 +218,11 @@ namespace NexusForever.Game.Entity
 
         public void SendDatacubeVolume(IDatacube datacube)
         {
+            if (player is Player)
+            {
+                RetainNotice(datacube, true);
+                return;
+            }
             player.Session.EnqueueMessageEncrypted(new ServerDatacubeVolumeUpdate
             {
                 DatacubeVolumeData = datacube.Build()

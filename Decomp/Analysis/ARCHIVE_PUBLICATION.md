@@ -104,3 +104,27 @@ artifact root rules out a suspected baseline defect: shared CharacterContext
 completion already reports rollback as uncommitted, and the original actor retries
 both skill/recipe rows successfully. Its first failed hypothesis check is retained;
 do not invent a new savepoint recovery fix from that control.
+## Datacube and journal companion publication
+
+4 November 2026. The live creature activation and collection manager previously
+published Datacube and journal progress before the Player save. The baseline
+reproduced premature packets, leaked later bits across an Auth-phase save
+boundary, and let failed duplicate-response sends escape to the caller.
+
+The collection now retains each accepted additive progress snapshot, including
+the existing duplicate interaction response. Its ordinary or frozen Experience
+graph releases only confirmed notices. Initial lists use committed state and
+preserve the last published values while older notices await their world tick.
+The queue retries a failed send on the original Player, manager and session.
+Scientist scan state stays server-side and standalone collection adapters
+retain their existing send behavior.
+
+The regressions cover the real creature activation, rejected save and recovery,
+frozen Auth-gap edits, initial-list ordering, and a duplicate send failure with
+and without session rebinding. Review found that a queued notice could hide
+quiet progress on another entry and that a reentrant send could overtake an
+initial list. Per-entry snapshots and the shared send guard cover both cases.
+The owning build and all 231 scoped cases passed, including six new regressions.
+The scoped tests took 52 seconds. Local results and binary bindings are in
+`artifacts/continuation-20261104/datacube-publication/`. Native presentation,
+restart replay and retail behavior remain open.
