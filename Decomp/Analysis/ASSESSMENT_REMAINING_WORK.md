@@ -10,11 +10,15 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Committed bonus AMP power updates](AMP_UPSTREAM_RECONCILIATION.md#bonus-amp-power-publishes-after-commit)
+send the confirmed spellbook value on the original session. The initial sync
+and live retry use that same committed value. Live item consumption and
+deployed socket behavior remain open.
+
 [Earned bonus AMP power](AMP_UPSTREAM_RECONCILIATION.md#earned-bonus-amp-power-survives-a-character-save)
 now persists through the guarded spellbook save and reloads into all specs.
 The zero-default migration preserves old allocations and withholds additional
-spending until any deficit is cleared. Post-commit power notification and
-live item consumption remain open.
+spending until any deficit is cleared.
 
 [Inlaid AMP unlock list](AMP_UPSTREAM_RECONCILIATION.md#unlocked-inlaid-amp-list-and-prerequisite-231)
 maps the player-create and `019C` packets to the cache used by prerequisite

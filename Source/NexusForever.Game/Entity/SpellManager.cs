@@ -144,6 +144,7 @@ namespace NexusForever.Game.Entity
 
             bonusAbilityTierPoints = (byte)Math.Min(model.BonusAbilityTierPoints, ActionSet.MaxBonusTierPoints);
             bonusAmpPower = Math.Min(model.BonusAmpPower, MaxBonusAmpPower);
+            InitialiseAmpPowerPublication();
 
             for (byte i = 0; i < ActionSet.MaxActionSets; i++)
             {
@@ -845,7 +846,7 @@ namespace NexusForever.Game.Entity
 
             saveMask |= SpellManagerSaveMask.BonusAmpPower;
             player.RequestSave();
-            SendServerAmpPowerUpdate();
+            if (player is not Player) SendAmpPowerUpdate(player.Session, bonusAmpPower);
         }
 
         public void AddAbilityTierPoints(byte amount)
@@ -912,7 +913,7 @@ namespace NexusForever.Game.Entity
             SendServerAbilityPoints();
             SendServerActionSets();
             SendServerAmpLists();
-            SendServerAmpPowerUpdate();
+            SendInitialAmpPower();
             ReapplyLearnedPassives();
             RefreshAugmentations();
 
@@ -1047,13 +1048,6 @@ namespace NexusForever.Game.Entity
             return true;
         }
 
-        private void SendServerAmpPowerUpdate()
-        {
-            player.Session.EnqueueMessageEncrypted(new ServerAmpPowerUpdate
-            {
-                BonusPower = bonusAmpPower
-            });
-        }
 
         /// <summary>
         /// Returns whether any active spell cooldown references the supplied <see cref="SpellCoolDownEntry"/> id.

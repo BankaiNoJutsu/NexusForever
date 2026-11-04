@@ -21,6 +21,9 @@ using NexusForever.Game.Tests.Transport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Static;
+using NexusForever.Network.World.Message.Model.Abilities;
+using NexusForever.Shared.Game.Events;
+using NexusForever.WorldServer.Network;
 using Actor = NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.Actor;
 using Fixture = NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.Fixture;
 using GamePath = NexusForever.Game.Static.PlayerPath.Path;
@@ -33,6 +36,132 @@ public sealed class PlayerExperiencePersistenceTests
     public PlayerExperiencePersistenceTests() { }
     internal PlayerExperiencePersistenceTests(DbContextOptions<CharacterContext> options) => this.options = options;
     private const BindingFlags Instance = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+    [Fact]
+    public async Task AmpPowerPacketsReflectTheCommittedFrozenValue()
+    {
+        using var f = new Fixture(options); f.Seed();
+        using var actor = CreateAmpPowerActor(f, out var session, out var spells);
+        await actor.Load();
+
+        spells.AddAmpPower(3);
+        Assert.Empty(AmpPowerPackets(session));
+        spells.SendInitialPackets();
+        Assert.Equal((ushort)0, Assert.Single(AmpPowerPackets(session)).BonusPower);
+        await Assert.ThrowsAsync<IOException>(() => Persist(f, actor, true));
+        await actor.Drain();
+        Assert.Single(AmpPowerPackets(session));
+
+        actor.OnAuth = () => spells.AddAmpPower(2);
+        await actor.Player.SaveDirect(); await actor.Drain();
+        Assert.Equal(new ushort[] { 0, 3 }, AmpPowerPackets(session).Select(packet => packet.BonusPower));
+        Assert.Equal((byte)50, spells.GetActionSet(0).AmpPoints);
+
+        actor.OnAuth = null;
+        await actor.Player.SaveDirect(); await actor.Drain();
+        Assert.Equal(new ushort[] { 0, 3, 5 }, AmpPowerPackets(session).Select(packet => packet.BonusPower));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CommittedAmpPowerEnqueueRetriesOnlyOnTheOriginalSession(bool replace)
+    {
+        using var f = new Fixture(options); f.Seed();
+        using var actor = CreateAmpPowerActor(f, out var session, out var spells);
+        await actor.Load();
+        int attempts = 0;
+        session.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is not ServerAmpPowerUpdate packet) return null;
+            using var read = f.Context();
+            Assert.Equal((ushort)3, read.Character.Single().BonusAmpPower);
+            Assert.Equal((ushort)3, packet.BonusPower);
+            if (++attempts == 1)
+            {
+                if (replace) session.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+                throw new IOException("AMP power enqueue failed before delivery.");
+            }
+            return null;
+        });
+
+        spells.AddAmpPower(3);
+        await Persist(f, actor, false);
+        await actor.Drain();
+        Assert.Equal(replace ? 1 : 2, attempts);
+        Assert.Equal(attempts, AmpPowerPackets(session).Count());
+    }
+
+    [Fact]
+    public async Task InitialAmpPowerRetriesTheLoadedValueWithoutAnotherGrant()
+    {
+        using var f = new Fixture(options); f.Seed();
+        using (var seed = f.Context())
+        {
+            seed.Character.Single().BonusAmpPower = 4;
+            seed.SaveChanges();
+        }
+        using var actor = CreateAmpPowerActor(f, out var session, out var spells);
+        await actor.Load();
+        int attempts = 0;
+        session.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerAmpPowerUpdate && ++attempts == 1)
+                throw new IOException("Initial AMP power enqueue failed before delivery.");
+            return null;
+        });
+
+        spells.SendInitialPackets();
+        Assert.Equal(1, attempts);
+        await actor.Drain();
+        Assert.Equal(new ushort[] { 4, 4 }, AmpPowerPackets(session).Select(packet => packet.BonusPower));
+        Assert.Equal(2, attempts);
+    }
+
+    [Fact]
+    public async Task ReentrantInitialAmpPowerSyncWaitsForTheInFlightSend()
+    {
+        using var f = new Fixture(options); f.Seed();
+        using var actor = CreateAmpPowerActor(f, out var session, out var spells);
+        await actor.Load();
+        int attempts = 0, countAfterReentry = 0;
+        session.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerAmpPowerUpdate && ++attempts == 1)
+            {
+                spells.AddAmpPower(2);
+                using var context = f.Context();
+                actor.Player.Save(context);
+                context.SaveChanges();
+                spells.SendInitialPackets();
+                countAfterReentry = AmpPowerPackets(session).Count();
+            }
+            return null;
+        });
+
+        spells.AddAmpPower(3);
+        await Persist(f, actor, false);
+        await actor.Drain();
+        Assert.Equal(1, countAfterReentry);
+        Assert.Equal(new ushort[] { 3, 5 }, AmpPowerPackets(session).Select(packet => packet.BonusPower));
+        Assert.Equal(2, attempts);
+    }
+
+    private static Actor CreateAmpPowerActor(Fixture f, out RecordingDispatchProxy<IWorldSession> sessionProxy, out SpellManager spells)
+    {
+        var session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
+        var events = new EventQueue();
+        sessionProxy.SetProperty(nameof(IWorldSession.Events), events);
+        var actor = new Actor(f, actorSession: session, actorEvents: events);
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), actor.Player);
+        using var loaded = f.Context();
+        spells = new SpellManager(actor.Player, loaded.Character.AsNoTracking().Single());
+        actor.Set(nameof(Player.SpellManager), spells);
+        return actor;
+    }
+
+    private static IEnumerable<ServerAmpPowerUpdate> AmpPowerPackets(RecordingDispatchProxy<IWorldSession> session)
+        => session.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).OfType<ServerAmpPowerUpdate>();
 
     [Theory]
     [InlineData(false)]

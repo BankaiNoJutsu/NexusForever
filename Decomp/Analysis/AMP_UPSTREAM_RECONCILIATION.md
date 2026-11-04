@@ -1,5 +1,34 @@
 # AMP prerequisite and lifecycle reconciliation
 
+## Bonus AMP power publishes after commit
+
+4 November 2026. Build 16042 dispatch slot `0x1403f1844` routes `01A1` to
+`0x1403f0f5a`. The client sign-extends the payload's first word and replaces
+the bonus power at player state `+0x6e64`. It recomputes AMP state through
+`0x1403cdbf0` and dispatches `CharacterEldanAugmentationsUpdated`. This is an
+absolute value, so a pending retry can send the latest confirmed value.
+REA bound the executable to the same SHA-256 as the inlaid list trace below.
+
+Live spec budgets still update when power is earned. The real Player now
+enqueues `ServerAmpPowerUpdate` on the original character's queue only after
+the guarded spellbook save confirms its flushed value. The initial sync
+reads the same confirmed value. A later grant during the frozen save waits
+for its own commit. An enqueue failure retries the latest confirmed value,
+including an initial snapshot with no new grant. Actor, manager, session and
+queue ownership guard the send, and ownership is checked again before the
+send is acknowledged. A reentrant initial sync waits for the in-flight
+packet so a newer absolute value cannot be followed by an older one.
+
+Three baseline real-player cases reproduced provisional publication. The
+first candidate passed 179 scoped cases across AMP, experience and its
+publication companions. The final source passed 108 affected cases. The
+strengthened reentry case then passed on the same Game DLL, committing power
+5 inside the power 3 enqueue and observing both packets in order. Local PE
+verifier, scoped TRX and inputs are in
+`artifacts/continuation-20261104/amp-power-publication/`.
+Live item consumption, deployed socket behavior and retail qualification
+remain open.
+
 ## Earned bonus AMP power survives a character save
 
 4 November 2026. The existing bonus AMP power handler updated the four
@@ -34,8 +63,8 @@ process and listener stopped afterward. See the
 [provider record](DESTINATION_PROVIDER_QUALIFICATION.md#earned-bonus-amp-power-save).
 
 The save-and-reload tests exercise the existing `AddAmpPower` entry point.
-Post-commit power notification, live item consumption, deployed sockets and
-retail qualification remain separate.
+See the later [post-commit notification](#bonus-amp-power-publishes-after-commit).
+Live item consumption, deployed sockets and retail qualification remain open.
 
 ## Unlocked inlaid AMP list and prerequisite 231
 
