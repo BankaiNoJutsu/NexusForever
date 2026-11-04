@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore;
+using NexusForever.Database.Auth;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
@@ -17,13 +18,15 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
+using NexusForever.Game.Abstract.Account;
+using NexusForever.Network.Session;
 using Actor = NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.Actor;
 using Fixture = NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.Fixture;
 using GameItem = NexusForever.Game.Entity.Item;
 
 namespace NexusForever.Game.Tests.Quest;
 
-public sealed class Q5597RewardPersistenceTests
+public sealed partial class Q5597RewardPersistenceTests
 {
     private const ushort QuestId = 5597;
     private const ushort AchievementId = 4134;
@@ -47,17 +50,7 @@ public sealed class Q5597RewardPersistenceTests
             await seed.SaveChangesAsync();
         }
         ConfigureQuest(f, reclaim);
-        var items = RecordingDispatchProxy<IItemManager>.Create(out var itemManager);
-        var definitions = RewardIds.Append(PushedItem).ToDictionary(id => id, id =>
-        {
-            var info = RecordingDispatchProxy<IItemInfo>.Create(out var proxy);
-            proxy.SetProperty(nameof(IItemInfo.Id), id);
-            proxy.SetProperty(nameof(IItemInfo.Entry), new Item2Entry { Id = id, MaxStackCount = 1 });
-            return info;
-        });
-        ulong nextId = 100;
-        itemManager.SetMethodReturnFactory("get_" + nameof(IItemManager.NextItemId), () => nextId++);
-        itemManager.SetMethodHandler(nameof(IItemManager.GetItemInfo), args => definitions[(uint)args[0]]);
+        var items = CreateItems();
 
         using (var actor = LoadActor(f, items, slots))
         {
@@ -122,12 +115,33 @@ public sealed class Q5597RewardPersistenceTests
         };
     }
 
-    private static Actor LoadActor(Fixture f, IItemManager items, uint slots)
+    private static IItemManager CreateItems()
     {
-        using var read = f.Context();
-        var model = read.Character.AsNoTracking().Include(row => row.Quest).Include(row => row.Item)
-            .Include(row => row.Achievement).Single();
-        var actor = new Actor(f, actorModel: model, inventoryFactory: (player, loaded) =>
+        var items = RecordingDispatchProxy<IItemManager>.Create(out var itemManager);
+        var definitions = RewardIds.Append(PushedItem).ToDictionary(id => id, id =>
+        {
+            var info = RecordingDispatchProxy<IItemInfo>.Create(out var proxy);
+            proxy.SetProperty(nameof(IItemInfo.Id), id);
+            proxy.SetProperty(nameof(IItemInfo.Entry), new Item2Entry { Id = id, MaxStackCount = 1 });
+            return info;
+        });
+        ulong nextId = 100;
+        itemManager.SetMethodReturnFactory("get_" + nameof(IItemManager.NextItemId), () => nextId++);
+        itemManager.SetMethodHandler(nameof(IItemManager.GetItemInfo), args => definitions[(uint)args[0]]);
+        return items;
+    }
+
+    private static Actor LoadActor(Fixture f, IItemManager items, uint slots,
+        CharacterModel model = null, IGameSession session = null, IAccount account = null, AuthDatabase auth = null)
+    {
+        if (model == null)
+        {
+            using var read = f.Context();
+            model = read.Character.AsNoTracking().Include(row => row.Quest).Include(row => row.Item)
+                .Include(row => row.Achievement).Single();
+        }
+        var actor = new Actor(f, actorModel: model, actorAccount: account, actorSession: session, authDatabase: auth,
+            actorEvents: session?.Events, inventoryFactory: (player, loaded) =>
         {
             var inventory = (Inventory)RuntimeHelpers.GetUninitializedObject(typeof(Inventory));
             var bag = new Bag(InventoryLocation.Inventory, slots, items);

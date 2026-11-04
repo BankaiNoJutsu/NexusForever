@@ -211,7 +211,10 @@ checks the whole item reward batch before ordinary Quest completion.
 The one-slot case preserves the achieved quest, and successful turn-in
 preserves both items and the achievement checklist across fresh actor load.
 The normal path accounts for capacity recovered from pushed quest items.
-Connected relog, native presentation and the full quest chain remain open.
+[Loopback turn-in and fresh World session](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#loopback-turn-in-and-fresh-world-session)
+verify the saved inventory, completed quest and checklist over two encrypted
+World connections and reject a duplicate turn-in. Full-stack relog, native
+presentation and the full quest chain remain open.
 
 [Committed commodity fill recovery](COMMODITY_POSTING_SETTLEMENT.md#recovery-after-a-committed-fill-notice-fails)
 refreshes the original recipient's current orders after an enqueue failure.

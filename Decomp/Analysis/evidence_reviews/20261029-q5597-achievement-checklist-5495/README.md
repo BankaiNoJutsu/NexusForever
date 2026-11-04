@@ -43,7 +43,9 @@ The source/SQLite capacity and reload case is now covered by the follow-up
 below. The remaining gates require additional evidence.
 
 - Native Q5597 turn-in/reward presentation and achievement toast/log/journal UI.
-- Reward inventory and achievement state across a connected world relog.
+- Reward inventory and achievement state across a full-stack relog with
+  Auth, character selection, and actual world data. The loopback fixture
+  below covers the World packet and persistence path.
 - Native duplicate completion and missing-prerequisite/receiver observations.
 - Local Q5596 → Q5597 → Q5604 end-to-end behavior, including objective activation,
   route guidance and spawn/despawn timing.
@@ -90,3 +92,28 @@ field. Plain checklist bits persist in ProgressState, while
 CreditedChecklistMask tracks rows for checklist-count achievements.
 The final cases assert ProgressState and the completion timestamp.
 The earlier fixture build and missing-array failures are retained separately.
+
+## Loopback turn-in and fresh World session
+
+4 November 2026. Two local TCP connections use the real `WorldSession`
+encryption and message dispatch. The first sends `ClientQuestComplete`
+for an achieved Q5597 and receives both item grants. Socket disconnect
+runs the logout manager and Character cleanup. A fresh roster query
+loads the same two item GUIDs and stack counts, completed quest, and
+achievement 4134 with checklist mask 2 and its completion timestamp.
+
+The second connection receives those exact item identities in
+`ServerPlayerCreate`, the completion in `ServerQuestInit`, and the saved
+checklist and timestamp in `ServerAchievementInit`. A duplicate request
+returns the completed state, and the final database read confirms the
+same item rows and achievement timestamp.
+
+The fixture supplies the achieved quest, visible receiver, prepared player
+and bootstrap boundary. It uses disposable SQLite Auth and Character schemas.
+The first attempt exposed a missing fixture XP table. A later run passed 48
+related cases and exposed the fixture's missing Auth storefront table. The
+corrected Q5597 run passed all 20 scoped cases. Logs and hashes are under
+`artifacts/continuation-20261104/q5597-loopback/`.
+
+Full-stack Auth and character selection, physical map entry, native UI, and
+the complete Q5596 → Q5597 → Q5604 chain still need separate evidence.
