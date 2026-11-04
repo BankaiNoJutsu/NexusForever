@@ -21,6 +21,7 @@ namespace NexusForever.Game.Entity
                 : quests.CaptureNormalSave(identity.ExecutionDatabase);
             try
             {
+                long taxiFareVersion = TaxiFareVersion;
                 var currencySnapshot = CurrencyManager is not CurrencyManager currencies ? null
                     : HousingNameSaveAllowed ? housingNameActor.CaptureCurrencies(questSnapshot.Token)
                     : AuctionBidSaveAllowed ? currencies.CaptureAuctionBidNormalSave(questSnapshot.Token, auctionBidActor.Wallet)
@@ -43,7 +44,7 @@ namespace NexusForever.Game.Entity
                 normalRewardSave = new(this, quests, challenges, questSnapshot, challengeSnapshot, currencySnapshot, bidReceipt,
                     AuctionBidSaveAllowed ? auctionBidActor.CaptureDeliveryWitness() : null,
                     AuctionBidSaveAllowed ? auctionBidActor.CaptureCommodityWitness() : null,
-                    AuctionBidSaveAllowed ? auctionBidActor.CaptureEscrowWitness() : null, wardrobeSnapshot, titleSnapshot, progressionSnapshot, experienceSnapshot, inventorySnapshot, satchelSnapshot, keybindingSnapshot, bankReceipt, housingReceipt); return normalRewardSave;
+                    AuctionBidSaveAllowed ? auctionBidActor.CaptureEscrowWitness() : null, wardrobeSnapshot, titleSnapshot, progressionSnapshot, experienceSnapshot, inventorySnapshot, satchelSnapshot, keybindingSnapshot, bankReceipt, housingReceipt, taxiFareVersion); return normalRewardSave;
             }
             catch { questSnapshot.Dispose(); throw; }
         }
@@ -62,8 +63,10 @@ namespace NexusForever.Game.Entity
             Action<NexusForever.Database.Character.CharacterContext> satchelSnapshot = null,
             Action<NexusForever.Database.Character.CharacterContext> keybindingSnapshot = null,
             NexusForever.Database.Character.BankSaveReconciliation bankReceipt = null,
-            NexusForever.Database.Character.HousingRenameSaveReconciliation housingReceipt = null)
+            NexusForever.Database.Character.HousingRenameSaveReconciliation housingReceipt = null,
+            long taxiFareVersion = 0)
         {
+            internal long TaxiFareVersion { get; } = taxiFareVersion;
             internal NexusForever.Database.Character.MarketplaceBidReconciliation BidReceipt { get; private set; } = bidReceipt;
             internal NexusForever.Database.Character.BankSaveReconciliation BankReceipt { get; private set; } = bankReceipt;
             internal NexusForever.Database.Character.HousingRenameSaveReconciliation HousingReceipt { get; private set; } = housingReceipt;

@@ -442,6 +442,8 @@ public class TransportHandlerTests
     [InlineData("grid-fault", false)]
     [InlineData("grid-fault", true)]
     [InlineData("grid-balance-changed", false)]
+    [InlineData("bootstrap-fault", false)]
+    [InlineData("bootstrap-balance-changed", true)]
     public void FlightPathPurchase_SettlesOnlyOnDestinationAdmission(string outcome, bool instanced)
     {
         var handler = CreateFlightPathHandler(out var tables, out _, out var wallet, out _);
@@ -456,6 +458,8 @@ public class TransportHandlerTests
         sourceMap.SetMethodHandler(nameof(IBaseMap.EnqueueRemove), _ => { mapProperty.SetValue(player, null); return null; });
         ulong balance = 100;
         ulong? balanceAtDestination = null;
+        ulong? balanceDuringBootstrap = null;
+        bool discoveredDuringBootstrap = false;
         int destinationAttempts = 0;
         var destination = new TaxiTestDestination(() =>
         {
@@ -463,7 +467,13 @@ public class TransportHandlerTests
             if (outcome == "instance-fault" && ++destinationAttempts == 1)
                 throw new InvalidOperationException("fixture instance admission failure");
             return outcome == "deny" ? GenericError.InstanceLimitExceeded : null;
-        }, failGrid: outcome == "grid-fault");
+        }, failGrid: outcome == "grid-fault", onBootstrap: () =>
+        {
+            balanceDuringBootstrap = balance;
+            discoveredDuringBootstrap = session.EncryptedMessages.OfType<ServerEntitySelectAuxUInt14>().Any();
+            if (outcome == "bootstrap-fault") throw new InvalidOperationException("fixture bootstrap failure");
+            if (outcome == "bootstrap-balance-changed") balance = 11;
+        });
         var factory = RecordingDispatchProxy<IMapFactory>.Create(out var maps);
         IMap destinationRoute = instanced ? new TaxiTestInstancedMap(destination) : destination;
         maps.SetMethodReturn(nameof(IMapFactory.CreateMap), destinationRoute);
@@ -506,6 +516,14 @@ public class TransportHandlerTests
             Assert.Equal(new Vector3(40, 50, 60), Assert.Single(destination.AddedPositions));
             Assert.Empty(session.EncryptedMessages.OfType<ServerGenericError>());
         }
+        else if (outcome is "bootstrap-fault" or "bootstrap-balance-changed")
+        {
+            Assert.Equal(outcome == "bootstrap-fault" ? 100ul : 11ul, balance);
+            Assert.Empty(wallet.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+            Assert.Empty(session.EncryptedMessages.OfType<ServerEntitySelectAuxUInt14>());
+            Assert.Equal(1, session.DisconnectRequests);
+            Assert.False(player.IsLoading);
+        }
         else if (outcome is "grid-fault" or "grid-balance-changed")
         {
             Assert.Equal(outcome == "grid-fault" ? 100ul : 11ul, balance);
@@ -538,6 +556,11 @@ public class TransportHandlerTests
         Assert.False(discoveredBeforeGrid);
         if (outcome != "rebound")
             Assert.Equal(outcome == "balance-changed" ? 11ul : 100ul, balanceAtDestination);
+        if (balanceDuringBootstrap.HasValue)
+        {
+            Assert.Equal(100ul, balanceDuringBootstrap);
+            Assert.False(discoveredDuringBootstrap);
+        }
 
         if (outcome == "instance-fault")
         {
@@ -560,13 +583,15 @@ public class TransportHandlerTests
     {
         private readonly Func<GenericError?> canEnter;
         private readonly bool failGrid;
+        private readonly Action onBootstrap;
         public List<Vector3> AddedPositions { get; } = [];
 
-        public TaxiTestDestination(Func<GenericError?> canEnter, bool failGrid)
+        public TaxiTestDestination(Func<GenericError?> canEnter, bool failGrid, Action onBootstrap)
             : base(null, RecordingDispatchProxy<IPublicEventManager>.Create(out _), sharedConfiguration: CreateConfiguration())
         {
             this.canEnter = canEnter;
             this.failGrid = failGrid;
+            this.onBootstrap = onBootstrap;
             var mapLock = RecordingDispatchProxy<IMapLock>.Create(out var mapLockProxy);
             mapLockProxy.SetProperty(nameof(IMapLock.InstanceId), Guid.NewGuid());
             typeof(MapInstance).GetProperty(nameof(MapLock))!.SetValue(this, mapLock);
@@ -579,7 +604,14 @@ public class TransportHandlerTests
         {
             if (failGrid) throw new InvalidOperationException("fixture destination grid failure");
         }
-        protected override void AddEntity(IGridEntity entity, Vector3 vector) => AddedPositions.Add(vector);
+        protected override void AddEntity(IGridEntity entity, Vector3 vector)
+        {
+            var state = (PlayerMapAdmissionState)typeof(Player).GetField("mapAdmissionState", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(entity)!;
+            Assert.NotNull(state.BeginBootstrap());
+            typeof(GridEntity).GetProperty(nameof(GridEntity.Map))!.SetValue(entity, this);
+            onBootstrap();
+            AddedPositions.Add(vector);
+        }
         protected override IMapPosition GetPlayerReturnLocation(IPlayer player) => null;
 
         private static ISharedConfiguration CreateConfiguration()
@@ -871,6 +903,7 @@ public class TransportHandlerTests
         public EventQueue Events { get; } = new();
         public SocketHeartbeat Heartbeat { get; } = new();
         public List<IWritable> EncryptedMessages { get; } = [];
+        public int DisconnectRequests { get; private set; }
 
         public void EnqueueMessage(IWritable message)
         {
@@ -897,6 +930,7 @@ public class TransportHandlerTests
 
         public void ForceDisconnect()
         {
+            DisconnectRequests++;
         }
 
         public void OnAccept(Socket newSocket)

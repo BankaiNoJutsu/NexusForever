@@ -42,7 +42,7 @@ fails the current request cleanly when instance preparation throws.
 ends admission when the destination grid cannot accept the player after source
 removal. [Failed map bootstrap recovery](../../CURRENT_STATUS.md#failed-map-bootstrap-recovery)
 ends the matching admission on callback failure and retains map cleanup ownership.
-Fare settlement after the grid gate and deployed disconnect/reconnect remain open.
+Deployed disconnect/reconnect remains open.
 [Transfer location persistence](../../CURRENT_STATUS.md#transfer-location-persistence)
 keeps the last saved location through detachment or unsuccessful bootstrap
 while other character changes commit.
@@ -50,8 +50,9 @@ while other character changes commit.
 [Flight-path destination admission](../../CURRENT_STATUS.md#flight-path-destination-admission)
 checks the destination map or selected instance and current funds before source
 removal. [Flight-path grid settlement](../../CURRENT_STATUS.md#flight-path-grid-settlement)
-rechecks funds and settles only when the destination grid is ready to insert
-the player. Physical arrival and failures during or after insertion remain open.
+rechecks funds before insertion. [Flight-path bootstrap settlement](../../CURRENT_STATUS.md#flight-path-bootstrap-settlement)
+charges and unlocks after successful bootstrap and keeps older wallet snapshots
+from saving the paid destination. Native arrival and deployed delivery remain open.
 
 [Rapid Transport cast fare](../../CURRENT_STATUS.md#rapid-transport-cast-fare)
 charges the selected route only after the spell passes admission. Physical

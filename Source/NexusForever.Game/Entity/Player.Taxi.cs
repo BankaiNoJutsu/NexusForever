@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Threading;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
@@ -18,6 +19,8 @@ namespace NexusForever.Game.Entity
         private readonly HashSet<ushort> taxiNodes = [];
         private readonly HashSet<ushort> unsavedTaxiNodes = [];
         private readonly UpdateTimer taxiDiscoveryTimer = new(TimeSpan.FromSeconds(2));
+        private long taxiFareVersion;
+        private long TaxiFareVersion => Volatile.Read(ref taxiFareVersion);
 
         private void LoadTaxiNodes(IEnumerable<CharacterTaxiNodeModel> models)
         {
@@ -62,14 +65,14 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        // Called under the generation guard. Check funds before leaving the source and settle at grid readiness.
-        internal bool TryApplyTaxiAdmission(IMapPosition position, bool checkFare, bool settleFare = false)
+        // Called under the generation guard. Check funds before source removal and again at grid readiness.
+        internal bool TryApplyTaxiAdmission(IMapPosition position, bool checkFare, bool setRotation = true)
         {
             if (pendingTeleport?.TaxiFlight is not { } flight)
                 return true;
             if (flight.Admitted || !ReferenceEquals(pendingTeleport.MapPosition, position))
                 return false;
-            if (!ReferenceEquals(Session, flight.Session) || (Session is IPlayerSession bound && !ReferenceEquals(bound.Player, this)))
+            if (!OwnsTaxiFlight(flight))
             {
                 CancelMapAdmission();
                 return false;
@@ -79,19 +82,41 @@ namespace NexusForever.Game.Entity
                 OnTeleportToFailed(GenericError.VendorNotEnoughCash);
                 return false;
             }
-            if (!settleFare)
-            {
-                // The destination can override the route yaw when it adjusts the arrival position.
-                if (checkFare) Rotation = flight.Rotation;
-                return true;
-            }
-
-            flight.Admitted = true;
-            if (flight.Fare != 0)
-                CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, flight.Fare);
-            DiscoverTaxiNode(flight.DestinationNode);
+            // The destination can override the route yaw when it adjusts the arrival position.
+            if (checkFare && setRotation) Rotation = flight.Rotation;
             return true;
         }
+
+        internal bool TrySettleTaxiFare(IMapPosition position, ulong generation)
+        {
+            if (pendingTeleport?.TaxiFlight is not { } flight)
+                return true;
+            if (flight.Admitted || !ReferenceEquals(pendingTeleport.MapPosition, position)
+                || mapAdmission.BootstrapGeneration != generation || Map == null || !OwnsTaxiFlight(flight))
+                return false;
+
+            if (flight.Fare != 0)
+            {
+                if (CurrencyManager is CurrencyManager wallet)
+                {
+                    if (!wallet.TryDebitTaxiFare(flight.Fare)) return false;
+                }
+                else
+                {
+                    if (!CurrencyManager.CanAfford(CurrencyType.Credits, flight.Fare)) return false;
+                    CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, flight.Fare);
+                }
+            }
+            flight.Admitted = true;
+            Interlocked.Increment(ref taxiFareVersion);
+            saveMask |= PlayerSaveMask.Location;
+            try { DiscoverTaxiNode(flight.DestinationNode); }
+            catch (Exception exception) { log.Warn(exception, "Failed to publish taxi node discovery after fare settlement."); }
+            return true;
+        }
+
+        private bool OwnsTaxiFlight(PendingTaxiFlight flight) => ReferenceEquals(Session, flight.Session)
+            && (Session is not IPlayerSession bound || ReferenceEquals(bound.Player, this));
 
         private void DiscoverNearbyTaxiNodes()
         {

@@ -18,12 +18,14 @@ namespace NexusForever.Game.Entity
             internal bool Enrolling, SettlementRegistered;
         }
 
-        private void SaveTaxiPersistence(CharacterContext context)
+        private void SaveTaxiPersistence(CharacterContext context, long? capturedTaxiFareVersion = null)
         {
             ArgumentNullException.ThrowIfNull(context);
             TaxiSaveUnit unit; ushort[] pending; bool created;
             lock (taxiStateLock)
             {
+                if (capturedTaxiFareVersion.HasValue && capturedTaxiFareVersion.Value != TaxiFareVersion)
+                    return;
                 if (taxiSave != null && (!ReferenceEquals(taxiSave.Context, context) || taxiSave.Enrolling))
                 {
                     var error = new InvalidOperationException("Taxi discovery belongs to an unfinished save unit.");

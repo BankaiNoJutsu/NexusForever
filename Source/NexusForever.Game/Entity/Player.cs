@@ -1086,7 +1086,7 @@ namespace NexusForever.Game.Entity
             try { GetExperiencePersistence(); snapshot?.Validate(); CheckInventorySaveAllowed(frozen: snapshot != null); snapshot?.Quests.BeginContractSave(context); snapshot?.Challenges.BeginContractSave(context); snapshot?.StageDelivery(context); }
             catch (Exception error) { context.RejectSave(error); throw; }
             SaveBindPoint(context);
-            SaveTaxiNodes(context);
+            if (snapshot == null) SaveTaxiNodes(context); else SaveTaxiPersistence(context, snapshot.TaxiFareVersion);
             var model = new CharacterModel
             {
                 Id = CharacterId
@@ -1096,7 +1096,7 @@ namespace NexusForever.Game.Entity
 
             if (saveMask != PlayerSaveMask.None)
             {
-                var location = (saveMask & PlayerSaveMask.Location) != 0 ? CaptureMapLocationForSave() : null;
+                var location = (saveMask & PlayerSaveMask.Location) != 0 ? CaptureMapLocationForSave(snapshot?.TaxiFareVersion) : null;
                 if (location is { } current)
                 {
                     model.LocationX = current.Position.X;

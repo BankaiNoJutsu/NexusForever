@@ -63,7 +63,7 @@ public partial class Player : IPlayerMapAdmission
         && LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished)
         && Session is not NetworkSession { IsDisconnecting: true };
 
-    private (ushort World, ushort Zone, Vector3 Position, Vector3 Rotation)? CaptureMapLocationForSave()
+    private (ushort World, ushort Zone, Vector3 Position, Vector3 Rotation)? CaptureMapLocationForSave(long? capturedTaxiFareVersion)
     {
         var admission = mapAdmission;
         // A Character transaction must not wait on map callbacks that can schedule persistence.
@@ -71,7 +71,8 @@ public partial class Player : IPlayerMapAdmission
             return null;
         try
         {
-            if (admission.HasUnconfirmedLocation || Map?.Entry is not { } world || Zone is not { } zone)
+            if (admission.HasUnconfirmedLocation || (capturedTaxiFareVersion.HasValue && capturedTaxiFareVersion.Value != TaxiFareVersion)
+                || Map?.Entry is not { } world || Zone is not { } zone)
                 return null;
 
             return ((ushort)world.Id, (ushort)zone.Id, Position, Rotation);

@@ -588,7 +588,7 @@ namespace NexusForever.Game.Map
         private void CompleteMapAdd(GridActionAdd action)
         {
             var player = action.Entity as Player;
-            if (player != null && !player.TryApplyTaxiAdmission(action.AdmissionPosition, checkFare: true, settleFare: true))
+            if (player != null && !player.TryApplyTaxiAdmission(action.AdmissionPosition, checkFare: true, setRotation: false))
                 return;
 
             var originalSession = player?.Session;
@@ -596,6 +596,13 @@ namespace NexusForever.Game.Map
             try
             {
                 AddEntity(action.Entity, action.Vector);
+                if (player != null && action.AdmissionGeneration is ulong generation
+                    && PlayerMapAdmissionGuard.IsCurrent(player, generation)
+                    && !player.TrySettleTaxiFare(action.AdmissionPosition, generation))
+                {
+                    player.FailMapBootstrap(generation, originalSession);
+                    return;
+                }
                 successful = true;
             }
             catch (Exception exception) when (player != null && action.AdmissionGeneration.HasValue)

@@ -30,10 +30,12 @@ using NexusForever.Script;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Collection;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.Game.Tests.Transport;
 using NexusForever.Shared.Game;
 using NexusForever.Shared.Game.Events;
 using NexusForever.Network.Internal;
 using NexusForever.Network.Session;
+using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.Internal.Message.Player;
 using NexusForever.Game.Static.Entity;
 using static NexusForever.Game.Tests.Challenges.ChallengeRewardPersistenceOwnershipTests;
@@ -47,6 +49,75 @@ public sealed class RewardNormalSaveSnapshotTests
     private readonly DbContextOptions<CharacterContext> options;
     public RewardNormalSaveSnapshotTests() { }
     internal RewardNormalSaveSnapshotTests(DbContextOptions<CharacterContext> options) => this.options = options;
+
+    [Fact]
+    public async Task FrozenSaveBeforeTaxiFareCannotPersistThePaidDestinationEarly()
+    {
+        using var f = new Fixture(options);
+        f.Seed();
+        var tables = (RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables;
+        tables.SetProperty(nameof(IGameTableManager.CurrencyType), PlayerBindPointTests.Table(new CurrencyTypeEntry { Id = 1, CapAmount = 1000 }));
+        tables.SetProperty(nameof(IGameTableManager.TaxiNode), PlayerBindPointTests.Table(new TaxiNodeEntry { Id = 30 }));
+        var walletRow = new CharacterCurrencyModel { Id = 42, CurrencyId = 1, Amount = 100 };
+        using (var seed = f.Context())
+        {
+            seed.Character.Single().WorldId = 5;
+            seed.CharacterCurrency.Add(walletRow);
+            seed.SaveChanges();
+        }
+        using var actor = new Actor(f);
+        await actor.Load();
+        var player = actor.Player;
+        var model = new CharacterModel { Id = 42 };
+        model.Currency.Add(walletRow);
+        var wallet = new CurrencyManager(f.Source.Tables);
+        wallet.Initialise(player, model);
+        actor.Set(nameof(Player.CurrencyManager), wallet);
+        typeof(Player).GetField("gameTableManager", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(player, f.Source.Tables);
+        var destination = new NexusForever.Game.Map.MapPosition { Info = new NexusForever.Game.Map.MapInfo { Entry = new WorldEntry { Id = 7 } } };
+        var map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
+        mapProxy.SetProperty(nameof(IBaseMap.Entry), destination.Info.Entry);
+        typeof(GridEntity).GetProperty(nameof(GridEntity.Map))!.SetValue(player, map);
+        typeof(WorldEntity).GetProperty(nameof(WorldEntity.Zone))!.SetValue(player, new WorldZoneEntry { Id = 8 });
+        typeof(Player).GetField("pendingTeleport", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(player,
+            new PendingTeleport { MapPosition = destination, TaxiFlight = new(player.Session, 30, 12, Vector3.Zero) });
+        var admission = (IPlayerMapAdmission)player;
+        ulong generation = admission.BeginMapAdmission();
+        var state = (PlayerMapAdmissionState)typeof(Player).GetField("mapAdmissionState", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(player)!;
+        Assert.Equal(generation, state.BeginBootstrap());
+
+        actor.Quest.Single().Progress = 2;
+        int completed = 0;
+        player.Save(() => completed++);
+        Assert.True(player.IsNormalSaveInProgress);
+        int failedNotices = 0;
+        f.Source.SessionProxy.SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is not (ServerCombatReward or ServerEntitySelectAuxUInt14)) return null;
+            failedNotices++;
+            throw new IOException("fixture fare publication failure");
+        });
+        Assert.True(player.TrySettleTaxiFare(destination, generation));
+        admission.CompleteMapAdmission(generation, true);
+        Assert.Equal(2, failedNotices);
+        Assert.Equal(88ul, wallet.Cast<ICurrency>().Single().Amount);
+        await actor.Drain();
+        Assert.Equal(1, completed);
+        using (var first = f.Context())
+        {
+            Assert.Equal((ushort)5, first.Character.Single().WorldId);
+            Assert.Equal(100ul, first.CharacterCurrency.Single().Amount);
+            Assert.Empty(first.CharacterTaxiNode);
+            Assert.Equal(2u, first.CharacterQuestObjective.Single().Progress);
+        }
+        player.Save(() => completed++);
+        await actor.Drain();
+        Assert.Equal(2, completed);
+        using var final = f.Context();
+        Assert.Equal((ushort)7, final.Character.Single().WorldId);
+        Assert.Equal(88ul, final.CharacterCurrency.Single().Amount);
+        Assert.Equal((ushort)30, final.CharacterTaxiNode.Single().TaxiNodeId);
+    }
 
     [Theory]
     [InlineData("detached")]

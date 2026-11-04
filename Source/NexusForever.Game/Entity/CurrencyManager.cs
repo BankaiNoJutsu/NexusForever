@@ -8,11 +8,13 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
+using NLog;
 
 namespace NexusForever.Game.Entity
 {
     public partial class CurrencyManager : ICurrencyManager
     {
+        private static readonly ILogger taxiLog = LogManager.GetCurrentClassLogger();
         private IPlayer player;
         private CharacterLoadOrigin loadedOrigin;
         private readonly Dictionary<CurrencyType, ICurrency> currencies = [];
@@ -230,6 +232,18 @@ namespace NexusForever.Game.Entity
             CurrencyAmountUpdate(currency, currency.Amount - amount, isLoot);
         }
 
+        internal bool TryDebitTaxiFare(ulong amount)
+        {
+            if (amount == 0) return true;
+            if (!HasLoadedCurrencyOwner() || IsMutationPublicationBlocked || !CanAfford(CurrencyType.Credits, amount)) return false;
+
+            var currency = currencies[CurrencyType.Credits];
+            currency.Amount -= amount;
+            try { PublishCurrencyAmount(currency); }
+            catch (Exception exception) { taxiLog.Warn(exception, "Failed to publish the settled taxi fare."); }
+            return true;
+        }
+
         /// <summary>
         /// Update <see cref="ICurrency"/> with supplied amount of currency.
         /// </summary>
@@ -248,7 +262,11 @@ namespace NexusForever.Game.Entity
             }
 
             currency.Amount = amount;
+            PublishCurrencyAmount(currency);
+        }
 
+        private void PublishCurrencyAmount(ICurrency currency)
+        {
             player.Session.EnqueueMessageEncrypted(new ServerCombatReward
             {
                 Stat = (byte)(currency.Id - 1),

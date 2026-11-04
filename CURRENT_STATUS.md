@@ -21250,6 +21250,25 @@ build and 127 scoped tests passed, including exact cell cleanup, ordinary
 removal after attachment, and the rebound-session control. Results are under
 `artifacts/continuation-20261104/map-bootstrap-failure/`.
 
+#### Flight-path bootstrap settlement
+
+4 November 2026. Destination routing and grid readiness still check funds.
+The fare and unlock settle after the destination's add and bootstrap callbacks
+return and before that admission can acknowledge world entry. A throwing
+callback or a balance drop during bootstrap leaves the fare uncharged and
+ends the failed transfer. The wallet debit, unlock and destination remain
+accepted if a notification throws. A frozen character save with an older
+wallet can still save unrelated progress, and leaves the destination and
+taxi discovery pending for a later save with the current wallet. Native
+arrival, notification delivery after transport failure and process-restart
+qualification remain open.
+
+Four baseline transport cases reproduced the early debit. The final
+owning-project build and 205 scoped tests passed, including a SQLite save
+that captured the wallet before settlement and a later save that persisted
+the fare, destination and node together. Test execution took 88 seconds.
+Results are under `artifacts/continuation-20261104/taxi-bootstrap-settlement/`.
+
 #### Rapid Transport cast fare
 
 4 November 2026. The request supplies its validated route fare to the spell
