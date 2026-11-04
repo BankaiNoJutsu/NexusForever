@@ -19,6 +19,11 @@ preserves acceptance when the last stack unit or charge frees the needed slot.
 holds ordinary giver and Character bag acceptance notices until the quest
 and inventory commit. Loopback cases cover failed saves and a fresh retry.
 
+[Committed shared quest acceptance](../../CURRENT_STATUS.md#committed-shared-quest-acceptance)
+commits ordinary acceptance before sending updates to the recipient and
+success to the original sharer. A rejected save or replaced sharer session
+cannot produce a stale success reply.
+
 [Marketplace inbox route recovery](../../CURRENT_STATUS.md#marketplace-inbox-route-recovery)
 retries failed recipient route checks for already committed mail on behalf of
 the original session, with no replay of settlement. A mismatched route or a

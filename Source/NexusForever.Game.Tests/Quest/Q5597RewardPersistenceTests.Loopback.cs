@@ -38,6 +38,7 @@ using NexusForever.Network.Internal;
 using NexusForever.Network.Internal.Message.Player;
 using NexusForever.Network.Message;
 using NexusForever.Network.Message.Handler;
+using NexusForever.Network.Session;
 using NexusForever.Network.Message.Model;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Message;
@@ -83,10 +84,23 @@ public sealed partial class Q5597RewardPersistenceTests
     public Task LoopbackAcceptancePublishesOnlyAfterTheCharacterSave(bool rejectFirstSave, bool itemStarter)
         => RunQuestLoopback(rejectFirstSave, acceptOnly: true, itemStarter: itemStarter);
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public Task LoopbackSharedQuestRepliesOnlyForCommittedAcceptance(bool rejectFirstSave, bool replaceSharer)
+        => RunQuestLoopback(rejectFirstSave, acceptOnly: true, share: true, replaceSharer: replaceSharer);
+
     private async Task RunQuestLoopback(bool rejectFirstSave, bool tutorialRecovery = false, bool levelReward = false,
-        bool replaceMapAdmission = false, bool autoAccept = false, bool acceptOnly = false, bool itemStarter = false)
+        bool replaceMapAdmission = false, bool autoAccept = false, bool acceptOnly = false, bool itemStarter = false,
+        bool share = false, bool replaceSharer = false)
     {
         const uint accountId = 12;
+        const uint sharerGuid = 99;
+        var sharer = RecordingDispatchProxy<IPlayer>.Create(out var sharerPlayer);
+        var sharerSession = RecordingDispatchProxy<IGameSession>.Create(out var originalSharer);
+        var replacementSession = RecordingDispatchProxy<IGameSession>.Create(out var replacementSharer);
+        sharerPlayer.SetProperty(nameof(IPlayer.Session), sharerSession);
         const ulong starterId = 50;
         uint starterDefinition = RewardIds[0];
         ushort questId = tutorialRecovery ? StarterTutorialDefinition.ExileMovementQuestId : QuestId;
@@ -127,6 +141,7 @@ public sealed partial class Q5597RewardPersistenceTests
             await seed.SaveChangesAsync();
         }
         ConfigureQuest(f, reclaim: autoAccept || acceptOnly, questId);
+        if (share) f.Info.Entry.QuestShareEnum = 1;
         if (autoAccept || acceptOnly)
         {
             var info = (RecordingDispatchProxy<IQuestInfo>)(object)f.Info;
@@ -164,12 +179,14 @@ public sealed partial class Q5597RewardPersistenceTests
         messages.RegisterNetworkManagerWorldMessages();
         messages.RegisterMessageHandler(typeof(ClientQuestCompleteHandler));
         messages.RegisterMessageHandler(typeof(ClientQuestAcceptHandler));
+        messages.RegisterMessageHandler(typeof(ClientQuestShareResultHandler));
         using var services = new ServiceCollection()
             .AddKeyedTransient<IReadable, ClientEncrypted>(GameMessageOpcode.ClientEncrypted)
             .AddKeyedTransient<IReadable, ClientQuestComplete>(GameMessageOpcode.ClientQuestComplete)
             .AddKeyedTransient<IReadable, ClientQuestAccept>(GameMessageOpcode.ClientQuestAccept)
+            .AddKeyedTransient<IReadable, ClientQuestShareResult>(GameMessageOpcode.ClientQuestShareResult)
             .AddTransient<ClientEncryptedHandler>().AddTransient<ClientQuestCompleteHandler>()
-            .AddTransient<ClientQuestAcceptHandler>().BuildServiceProvider();
+            .AddTransient<ClientQuestAcceptHandler>().AddTransient<ClientQuestShareResultHandler>().BuildServiceProvider();
 
         if (acceptOnly)
         {
@@ -186,6 +203,7 @@ public sealed partial class Q5597RewardPersistenceTests
                     await SendAcceptanceWithSaveHeld(world, client, actor);
                     await PumpUntil(world, () => world.IsDisconnecting);
                     Assert.True(actor.Quests.RequiresAuthoritativeReload);
+                    Assert.Empty(ShareResults(originalSharer));
                 });
                 using var read = f.Context();
                 Assert.Empty(read.CharacterQuest);
@@ -196,6 +214,7 @@ public sealed partial class Q5597RewardPersistenceTests
             await RunSession(async (world, client, actor) =>
             {
                 await SendAcceptanceWithSaveHeld(world, client, actor);
+                if (replaceSharer) sharerPlayer.SetProperty(nameof(IPlayer.Session), replacementSession);
                 await PumpUntil(world, () => world.CanProcessIncomingPackets);
                 using var read = f.Context();
                 var accepted = Assert.Single(read.CharacterQuest);
@@ -212,7 +231,19 @@ public sealed partial class Q5597RewardPersistenceTests
                 using var state = await ReadPacket(client, GameMessageOpcode.ServerQuestStateChange);
                 Assert.Equal(questId, state.ReadUShort(15));
                 Assert.Equal(QuestState.Achieved, state.ReadEnum<QuestState>(32));
-                if (!itemStarter)
+                if (share)
+                {
+                    Assert.Empty(ShareResults(replacementSharer));
+                    if (replaceSharer) Assert.Empty(ShareResults(originalSharer));
+                    else
+                    {
+                        var result = Assert.Single(ShareResults(originalSharer));
+                        Assert.True(result.Accepted);
+                        Assert.Equal(questId, result.QuestId);
+                        Assert.Equal(actor.Player.Guid, result.SharerUnitId);
+                    }
+                }
+                else if (!itemStarter)
                 {
                     using var dialog = await ReadPacket(client, GameMessageOpcode.ServerDialogEnd);
                 }
@@ -456,7 +487,13 @@ public sealed partial class Q5597RewardPersistenceTests
 
         async Task SendAcceptanceWithSaveHeld(WorldSession world, GameProtocolClient client, Actor actor)
         {
-            await client.SendEncrypted(GameMessageOpcode.ClientQuestAccept, writer =>
+            if (share)
+                await client.SendEncrypted(GameMessageOpcode.ClientQuestShareResult, writer =>
+                {
+                    writer.Write(questId, 15);
+                    writer.Write(true);
+                });
+            else await client.SendEncrypted(GameMessageOpcode.ClientQuestAccept, writer =>
             {
                 new ItemLocation { Location = itemStarter ? InventoryLocation.Inventory : (InventoryLocation)300 }.Write(writer);
                 writer.Write(questId, 15);
@@ -466,6 +503,7 @@ public sealed partial class Q5597RewardPersistenceTests
             using var read = f.Context();
             Assert.Empty(read.CharacterQuest);
             Assert.Equal(itemStarter ? new[] { starterId } : [], read.Item.Select(row => row.Id).ToArray());
+            if (share) Assert.Empty(ShareResults(originalSharer));
             await AssertQuestPacketsWithheld(world, client);
             Assert.True(actor.Player.IsNormalSaveInProgress);
             Assert.False(world.CanProcessIncomingPackets);
@@ -521,6 +559,13 @@ public sealed partial class Q5597RewardPersistenceTests
             actor.Set(nameof(Player.LogoutManager), logout);
             world.Player = actor.Player;
             await actor.Load();
+            if (share)
+            {
+                var visible = (Dictionary<uint, IGridEntity>)typeof(GridEntity)
+                    .GetField("visibleEntities", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(actor.Player);
+                visible.Add(sharerGuid, sharer);
+                actor.Quests.QuestShareReceive(questId, sharerGuid);
+            }
             await exercise(world, client, actor);
 
             await client.DisposeAsync();
@@ -528,6 +573,10 @@ public sealed partial class Q5597RewardPersistenceTests
             Assert.Null(world.Player);
             Assert.Empty(actor.Errors);
         }
+
+        static IEnumerable<ServerQuestShareResult> ShareResults(RecordingDispatchProxy<IGameSession> session)
+            => session.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0])
+                .OfType<ServerQuestShareResult>();
     }
 
     private static void ConfigureExperience(Fixture f, Actor actor, CharacterModel loaded)

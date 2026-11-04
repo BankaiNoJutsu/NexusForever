@@ -72,7 +72,8 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary<ushort, IQuest> completedQuests = new();
         private readonly Dictionary<ushort, IQuest> inactiveQuests = new();
         private readonly Dictionary<ushort, IQuest> activeQuests = new();
-        private readonly Dictionary<ushort, uint> pendingSharedQuests = new();
+        private sealed record PendingQuestShare(uint UnitId, WeakReference<IPlayer> Sharer, WeakReference<IGameSession> Session);
+        private readonly Dictionary<ushort, PendingQuestShare> pendingSharedQuests = new();
         private readonly object deletionGate = new();
         private readonly HashSet<IQuest> committedDeletions = [];
 
@@ -397,7 +398,7 @@ namespace NexusForever.Game.Entity
                 return;
             }
 
-            if (questRewardReload || questRewardInvalidated || contractClaimOperation != null || QuestCompletionBusy(owner))
+            if (QuestAcceptanceBusy(owner))
                 throw new QuestException("Quest acceptance cannot overlap pending or quarantined character work.");
 
             // Validation failures must occur before opening the save-bound mutation.
@@ -467,7 +468,10 @@ namespace NexusForever.Game.Entity
                 throw new QuestException($"Player {player.CharacterId} tried to start quest {info.Entry.Id} without meeting the prerequisites!");
         }
 
-        private void QuestAddShared(IQuestInfo info, IQuest quest)
+        private bool QuestAcceptanceBusy(Player owner)
+            => questRewardReload || questRewardInvalidated || contractClaimOperation != null || QuestCompletionBusy(owner);
+
+        private void PrepareSharedQuestAcceptance(IQuestInfo info, IQuest quest)
         {
             if (quest?.State is QuestState.Accepted or QuestState.Achieved)
                 throw new QuestException($"Player {player.CharacterId} tried to accept shared quest {info.Entry.Id} which is already in progress!");
@@ -484,8 +488,6 @@ namespace NexusForever.Game.Entity
 
             if (!MeetsPrerequisites(info))
                 throw new QuestException($"Player {player.CharacterId} tried to accept shared quest {info.Entry.Id} without meeting the prerequisites!");
-
-            QuestAdd(info);
         }
 
         private bool MeetsPrerequisites(IQuestInfo info)
@@ -1316,7 +1318,10 @@ namespace NexusForever.Game.Entity
             if (recipient == null)
                 throw new QuestException($"Player {player.CharacterId} tried to share quest {questId} to an invalid player!");
 
-            recipient.QuestManager.QuestShareReceive(questId, player.Guid);
+            if (recipient.QuestManager is QuestManager quests)
+                quests.QuestShareReceive(questId, player.Guid, player);
+            else
+                recipient.QuestManager.QuestShareReceive(questId, player.Guid);
 
             log.Trace($"Shared quest {questId} with player {recipient.Name}.");
         }
@@ -1325,6 +1330,9 @@ namespace NexusForever.Game.Entity
         /// Receive a shared quest prompt from another <see cref="IPlayer"/>.
         /// </summary>
         public void QuestShareReceive(ushort questId, uint sharerUnitId)
+            => QuestShareReceive(questId, sharerUnitId, player.GetVisible<IPlayer>(sharerUnitId));
+
+        private void QuestShareReceive(ushort questId, uint sharerUnitId, IPlayer sharer)
         {
             IQuestInfo info = GetGlobalQuestManager().GetQuestInfo(questId);
             if (info == null)
@@ -1333,7 +1341,9 @@ namespace NexusForever.Game.Entity
             if (info.Entry.QuestShareEnum == 0u)
                 throw new QuestException($"Player {player.CharacterId} received unshareable quest {questId}!");
 
-            pendingSharedQuests[questId] = sharerUnitId;
+            var session = sharer?.Session;
+            pendingSharedQuests[questId] = new(sharerUnitId, sharer == null ? null : new(sharer),
+                session == null ? null : new(session));
             player.Session.EnqueueMessageEncrypted(new ServerQuestShared
             {
                 QuestId       = questId,
@@ -1346,25 +1356,61 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void QuestShareResult(ushort questId, bool result)
         {
-            if (!pendingSharedQuests.Remove(questId, out uint sharerUnitId))
+            if (!pendingSharedQuests.Remove(questId, out var offer))
                 throw new QuestException($"Player {player.CharacterId} tried to respond to quest share {questId} without a pending share!");
 
-            IPlayer sharer = player.GetVisible<IPlayer>(sharerUnitId);
-            sharer?.Session.EnqueueMessageEncrypted(new ServerQuestShareResult
+            IPlayer sharer = null;
+            IGameSession sharerSession = null;
+            offer.Sharer?.TryGetTarget(out sharer);
+            offer.Session?.TryGetTarget(out sharerSession);
+            var sharerEvents = sharerSession?.Events;
+            uint recipientUnitId = player.Guid;
+
+            void PublishResult(bool accepted)
             {
-                QuestId       = questId,
-                Accepted      = result,
-                SharerUnitId  = player.Guid,
-            });
+                if (sharer == null || sharerSession == null || sharerSession is NetworkSession { IsDisconnecting: true }
+                    || !ReferenceEquals(sharer.Session, sharerSession) || !ReferenceEquals(sharerSession.Events, sharerEvents)
+                    || (sharerSession is IPlayerSession bound && !ReferenceEquals(bound.Player, sharer))
+                    || !ReferenceEquals(player.GetVisible<IPlayer>(offer.UnitId), sharer) || player.Guid != recipientUnitId)
+                    return;
+
+                sharerSession.EnqueueMessageEncrypted(new ServerQuestShareResult
+                {
+                    QuestId      = questId,
+                    Accepted     = accepted,
+                    SharerUnitId = recipientUnitId
+                });
+            }
 
             if (!result)
+            {
+                PublishResult(false);
                 return;
+            }
 
             IQuestInfo info = GetGlobalQuestManager().GetQuestInfo(questId);
             if (info == null)
                 throw new ArgumentException($"Invalid quest {questId}!");
 
-            QuestAddShared(info, GetQuest(questId, GetQuestFlags.All));
+            var owner = player as Player;
+            var session = player.Session as GameSession;
+            bool saveBeforePublishing = !info.IsContract() && owner != null && session != null;
+            if (saveBeforePublishing && QuestAcceptanceBusy(owner))
+                throw new QuestException("Shared quest acceptance cannot overlap pending or quarantined character work.");
+
+            PrepareSharedQuestAcceptance(info, GetQuest(questId, GetQuestFlags.All));
+            if (!saveBeforePublishing)
+            {
+                if (AddQuest(info) != null)
+                    PublishResult(true);
+                return;
+            }
+
+            bool accepted = false;
+            SaveOrdinaryQuestMutation(owner, session, () => accepted = AddQuest(info) != null, () =>
+            {
+                if (accepted) PublishResult(true);
+            });
         }
 
         /// <summary>

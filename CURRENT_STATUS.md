@@ -21985,8 +21985,24 @@ Four encrypted loopback cases reproduced early inventory packets on the
 baseline. The final owning build and 348 scoped quest and inventory
 tests passed, including the four acceptance cases and existing turn-ins.
 Local evidence is under `artifacts/continuation-20261104/quest-accept-publication/`.
-Contract acceptance, Realm Bank starters, shared and scripted acceptance, and
+Contract acceptance, Realm Bank starters, scripted acceptance, and
 native client verification remain separate.
+
+#### Committed shared quest acceptance
+
+4 November 2026. The recipient's ordinary shared quest and pushed items
+commit before the recipient sees updates or the sharer receives an accepted
+result. The result belongs to the player and session that offered the quest.
+A replacement session cannot receive the old result. Declines still reply
+without saving. A rejected Character save leaves the quest and inventory
+unchanged, and a fresh offer can be accepted after reconnecting.
+
+Three encrypted loopback regressions reproduced the premature success reply.
+The final owning build and 361 scoped quest, inventory and packet cases
+passed, including save rejection and sharer session replacement. Local
+evidence is under `artifacts/continuation-20261104/quest-share-publication/`.
+Contract sharing, delivery after a socket failure and native client behavior
+remain separate.
 
 #### Public event completion ownership
 
