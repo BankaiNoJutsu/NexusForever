@@ -86,7 +86,10 @@ checks the complete delivery before charging, including slots freed by item
 payment and the original satchel's available space. Accepted purchases retain
 their original inventory and satchel through session changes. Durable purchase
 settlement for Character payments now uses the [Character-funded vendor purchase path](../../CURRENT_STATUS.md#character-funded-vendor-purchase-settlement).
-Account-currency settlement across Auth and Character, configured-provider and
+The [account-funded settlement protocol](../../CURRENT_STATUS.md#account-funded-vendor-purchase-settlement-protocol)
+serializes the Character delivery and refund decision and reuses Auth wallet
+operation receipts. Public handler enrollment, wallet adoption, account-admission
+recovery, and the Cosmic Reward Loyalty journal remain open. Configured-provider,
 restart behavior, and retail qualification remain open.
 
 [Fortune deal settlement](../../CURRENT_STATUS.md#persisted-deal-and-coin-settlement)

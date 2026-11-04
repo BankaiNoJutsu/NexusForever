@@ -22876,10 +22876,31 @@ with injected rollback or lost acknowledgment. Tests ran for 13 seconds of a
 59-second build-and-test run. Evidence is under
 `artifacts/continuation-20261104/vendor-purchase-settlement/`.
 
-Account-currency purchases still need a durable intent spanning Auth and
-Character. The Auth debit must use a stable operation identity, with recovery
-for confirmed debits whose Character delivery cannot commit. Configured-provider,
-restart, socket delivery, and retail presentation remain open.
+Configured-provider, restart, socket delivery, and retail presentation remain
+open for Character-funded purchases.
+
+#### Account-funded vendor purchase settlement protocol
+
+4 November 2026. The settlement protocol binds an account payment to the
+original Character, realm, database routes, and purchase quote. It applies the
+account debit lines together through the Auth wallet ledger. The Character
+transaction owns the delivery and its marker. Recovery can reconstruct a
+purchase from a debit receipt, lock the same Character, and either observe the
+delivery or record cancellation before issuing the idempotent refund.
+
+The final build and 11 scoped SQLite tests passed. They cover an overlapping
+recovery, insufficient funds in the second wallet, conflicting reuse of a
+purchase ID, and lost acknowledgments for the debit, cancellation, and refund.
+The earlier key format admitted the conflicting quote in a retained regression.
+The final build and tests took 59 seconds, including 13 seconds of test execution.
+Evidence is under `artifacts/continuation-20261104/vendor-account-settlement-protocol/`.
+
+The public purchase path still requires integration. Connect the frozen vendor
+enrollment to the settlement protocol, adopt and publish the original session's
+wallet state, and discover outstanding debits at account admission before
+constructing the wallet cache. Cosmic Reward requires the existing Loyalty
+journal's participation. Configured-provider and deployed restart evidence
+remain open.
 
 #### Vendor buyback request identity
 
