@@ -10,6 +10,10 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[CREDD redemption admission](../../CURRENT_STATUS.md#credd-redemption-admission)
+checks the full character credit and the usage increment before debiting
+the original account. Cross-database settlement remains open.
+
 [Public event contribution ownership](../../CURRENT_STATUS.md#public-event-contribution-ownership)
 checks the enrolled actor for player-driven progress, stats, votes, scoreboards,
 cinematic callbacks and membership removal.

@@ -16,6 +16,9 @@ namespace NexusForever.Game.Abstract.Entity
         /// </summary>
         bool CanAfford(CurrencyType currencyId, ulong amount);
 
+        /// <summary>Check whether the wallet can accept the entire credit without clipping or deferring it.</summary>
+        bool CanCreditFullAmount(CurrencyType currencyId, ulong amount);
+
         /// <summary>
         /// Add supplied amount of <see cref="CurrencyType"/> currency.
         /// </summary>

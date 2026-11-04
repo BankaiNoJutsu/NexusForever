@@ -36,6 +36,12 @@ namespace NexusForever.Game.Entitlement
             return true;
         }
 
+        public bool CanIncreaseEntitlement(EntitlementType type, int amount)
+        {
+            EntitlementEntry entry = gameTableManager.Entitlement?.GetEntry((ulong)type);
+            return amount > 0 && entry != null && CanUpdateEntitlement(entry, amount);
+        }
+
         /// <summary>
         /// Create or update account or character <see cref="EntitlementType"/> with supplied value.
         /// </summary>

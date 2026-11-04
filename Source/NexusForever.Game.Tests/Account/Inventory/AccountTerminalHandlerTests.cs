@@ -1,13 +1,21 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using NexusForever.Database.Auth.Model;
+using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Currency;
 using NexusForever.Game.Abstract.Account.Entitlement;
 using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Account.Entitlement;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.Game.Tests.Transport;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
@@ -78,7 +86,7 @@ public class AccountTerminalHandlerTests
     [Fact]
     public void CreddRedeem_WithSufficientCredd_ReturnsOkAndRedeemResult()
     {
-        IWorldSession session = CreateCreddSession(out RecordingDispatchProxy<IWorldSession> sessionProxy, creddAmount: 5000ul);
+        IWorldSession session = CreateCreddSession(out RecordingDispatchProxy<IWorldSession> sessionProxy);
         var handler = new ClientCREDDRedeemHandler(NullLogger<ClientCREDDRedeemHandler>.Instance);
 
         handler.HandleMessage(session, ReadCreddRedeem(2ul));
@@ -94,10 +102,100 @@ public class AccountTerminalHandlerTests
     [Fact]
     public void CreddRedeem_WithZeroAmount_ThrowsInvalidPacketValueException()
     {
-        IWorldSession session = CreateCreddSession(out _, creddAmount: 5000ul);
+        IWorldSession session = CreateCreddSession(out _);
         var handler = new ClientCREDDRedeemHandler(NullLogger<ClientCREDDRedeemHandler>.Instance);
 
         Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(session, ReadCreddRedeem(0ul)));
+    }
+
+    [Theory]
+    [InlineData(5000ul, 3500ul, 2ul, false, false)]
+    [InlineData(5000ul, 3000ul, 2ul, false, true)]
+    [InlineData(0ul, ulong.MaxValue - 999ul, 1ul, false, false)]
+    [InlineData(0ul, 0ul, ulong.MaxValue / 1000ul + 1ul, false, false)]
+    [InlineData(0ul, 0ul, 1ul, true, false)]
+    public void CreddRedeem_OnlyDebitsWhenTheFullCreditCanBeDelivered(ulong cap, ulong before, ulong requested, bool missingTable, bool fits)
+    {
+        IWorldSession session = CreateCreddSession(out var packets);
+        var actor = (RecordingDispatchProxy<IPlayer>)(object)session.Player;
+        var wallet = (RecordingDispatchProxy<IAccountCurrencyManager>)(object)session.Account.CurrencyManager;
+        var entitlements = (RecordingDispatchProxy<IAccountEntitlementManager>)(object)session.Account.EntitlementManager;
+        var tables = RecordingDispatchProxy<IGameTableManager>.Create(out var data);
+        if (!missingTable)
+            data.SetProperty(nameof(IGameTableManager.CurrencyType), PlayerBindPointTests.Table(
+                new CurrencyTypeEntry { Id = (uint)CurrencyType.Credits, CapAmount = cap }));
+        var character = new CharacterModel { Id = 42 };
+        if (before != 0)
+            character.Currency.Add(new CharacterCurrencyModel { Id = 42, CurrencyId = (byte)CurrencyType.Credits, Amount = before });
+        var credits = new CurrencyManager(tables);
+        credits.Initialise(session.Player, character);
+        actor.SetProperty(nameof(IPlayer.CharacterId), 42ul);
+        actor.SetProperty(nameof(IPlayer.CurrencyManager), credits);
+        actor.SetProperty(nameof(IPlayer.AchievementManager), RecordingDispatchProxy<ICharacterAchievementManager>.Create(out _));
+
+        new ClientCREDDRedeemHandler(NullLogger<ClientCREDDRedeemHandler>.Instance).HandleMessage(session, ReadCreddRedeem(requested));
+
+        var debits = wallet.GetInvocations(nameof(IAccountCurrencyManager.CurrencySubtractAmount));
+        var uses = entitlements.GetInvocations(nameof(IAccountEntitlementManager.UpdateEntitlement));
+        if (fits)
+        {
+            Assert.Equal(requested, Assert.Single(debits).Arguments[1]);
+            Assert.Equal(EntitlementType.CREDDUsage, Assert.Single(uses).Arguments[0]);
+            Assert.Equal(cap, Assert.Single(credits).Amount);
+        }
+        else
+        {
+            Assert.Empty(debits);
+            Assert.Empty(uses);
+            Assert.Equal(before, credits.SingleOrDefault()?.Amount ?? 0ul);
+        }
+        Assert.Equal(fits ? CREDDRedeemResultType.Ok : CREDDRedeemResultType.GenericFail,
+            (CREDDRedeemResultType)Assert.Single(GetMessages<ServerCREDDRedeemResult>(packets)).Value);
+    }
+
+    [Fact]
+    public void CreddRedeem_RejectsACharacterFromADifferentAccount()
+    {
+        IWorldSession session = CreateCreddSession(out var packets);
+        var actor = (RecordingDispatchProxy<IPlayer>)(object)session.Player;
+        actor.SetProperty(nameof(IPlayer.Account), RecordingDispatchProxy<IAccount>.Create(out _));
+
+        new ClientCREDDRedeemHandler(NullLogger<ClientCREDDRedeemHandler>.Instance).HandleMessage(session, ReadCreddRedeem(1ul));
+
+        var wallet = (RecordingDispatchProxy<IAccountCurrencyManager>)(object)session.Account.CurrencyManager;
+        Assert.Empty(wallet.GetInvocations(nameof(IAccountCurrencyManager.CurrencySubtractAmount)));
+        Assert.Equal(CREDDRedeemResultType.GenericFail,
+            (CREDDRedeemResultType)Assert.Single(GetMessages<ServerCREDDRedeemResult>(packets)).Value);
+    }
+
+    [Theory]
+    [InlineData(null, 0u, false)]
+    [InlineData(1u, 1u, false)]
+    [InlineData(5u, 1u, true)]
+    public void CreddRedeem_RequiresAnAvailableUsageIncrement(uint? cap, uint before, bool fits)
+    {
+        IWorldSession session = CreateCreddSession(out var packets);
+        var account = (RecordingDispatchProxy<IAccount>)(object)session.Account;
+        var tables = RecordingDispatchProxy<IGameTableManager>.Create(out var data);
+        var model = new AccountModel();
+        if (cap.HasValue)
+        {
+            data.SetProperty(nameof(IGameTableManager.Entitlement), PlayerBindPointTests.Table(
+                new EntitlementEntry { Id = (uint)EntitlementType.CREDDUsage, MaxCount = cap.Value }));
+            model.AccountEntitlement.Add(new AccountEntitlementModel { EntitlementId = (byte)EntitlementType.CREDDUsage, Amount = before });
+        }
+        var entitlements = new AccountEntitlementManager(session.Account, model, null, tables);
+        account.SetProperty(nameof(IAccount.EntitlementManager), entitlements);
+
+        new ClientCREDDRedeemHandler(NullLogger<ClientCREDDRedeemHandler>.Instance).HandleMessage(session, ReadCreddRedeem(1ul));
+
+        var wallet = (RecordingDispatchProxy<IAccountCurrencyManager>)(object)session.Account.CurrencyManager;
+        var credits = (RecordingDispatchProxy<ICurrencyManager>)(object)session.Player.CurrencyManager;
+        Assert.Equal(fits ? 1 : 0, wallet.GetInvocations(nameof(IAccountCurrencyManager.CurrencySubtractAmount)).Count);
+        Assert.Equal(fits ? 1 : 0, credits.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)).Count);
+        Assert.Equal(fits ? before + 1u : before, entitlements.GetEntitlement(EntitlementType.CREDDUsage)?.Amount ?? 0u);
+        Assert.Equal(fits ? CREDDRedeemResultType.Ok : CREDDRedeemResultType.GenericFail,
+            (CREDDRedeemResultType)Assert.Single(GetMessages<ServerCREDDRedeemResult>(packets)).Value);
     }
 
     [Fact]
@@ -113,24 +211,26 @@ public class AccountTerminalHandlerTests
         Assert.Equal(AccountOperationResult.InvalidCoupon, result.Result);
     }
 
-    private static IWorldSession CreateCreddSession(
-        out RecordingDispatchProxy<IWorldSession> sessionProxy,
-        ulong creddAmount)
+    private static IWorldSession CreateCreddSession(out RecordingDispatchProxy<IWorldSession> sessionProxy)
     {
         IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
         IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
         IAccountCurrencyManager accountCurrencyManager = RecordingDispatchProxy<IAccountCurrencyManager>.Create(out RecordingDispatchProxy<IAccountCurrencyManager> accountCurrencyProxy);
         ICurrencyManager playerCurrencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out RecordingDispatchProxy<ICurrencyManager> playerCurrencyProxy);
-        IAccountEntitlementManager entitlementManager = RecordingDispatchProxy<IAccountEntitlementManager>.Create(out _);
+        IAccountEntitlementManager entitlementManager = RecordingDispatchProxy<IAccountEntitlementManager>.Create(out var entitlementProxy);
 
         sessionProxy.SetProperty(nameof(IWorldSession.Account), account);
         sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
         accountProxy.SetProperty(nameof(IAccount.CurrencyManager), accountCurrencyManager);
         accountProxy.SetProperty(nameof(IAccount.EntitlementManager), entitlementManager);
+        accountProxy.SetProperty(nameof(IAccount.Session), session);
         accountCurrencyProxy.SetMethodReturn(nameof(IAccountCurrencyManager.CanAfford), true);
+        entitlementProxy.SetMethodReturn(nameof(IAccountEntitlementManager.CanIncreaseEntitlement), true);
+        playerProxy.SetProperty(nameof(IPlayer.Account), account);
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
         playerProxy.SetProperty(nameof(IPlayer.CurrencyManager), playerCurrencyManager);
-        playerCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CurrencyAddAmount), true);
+        playerCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanCreditFullAmount), true);
 
         return session;
     }

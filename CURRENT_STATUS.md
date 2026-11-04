@@ -20899,6 +20899,21 @@ updates, auction delete, or item-return mail saves, and the old marketplace
 `CreditCharacter` fallback has been removed.
 
 ### F-006 - Storefront / Account Inventory - COMPLETE
+
+#### CREDD redemption admission
+
+4 November 2026. The existing 1000:1 redemption checks arithmetic, character
+wallet capacity, account and character binding, and the CREDD usage increment
+before taking any CREDD. A full credit that fits uses the original account
+and character wallets and increments the existing usage entitlement once.
+Six pre-fix cases reproduced an invalid debit or a late failure. The
+owning-project build and 183 scoped redemption, wallet and entitlement
+tests passed. Cross-database settlement and recovery after a committed partial
+outcome remain open. Local evidence is under
+`artifacts/continuation-20261104/credd-redemption-admission/`.
+
+#### Storefront and account inventory coverage
+
 Catalog, supported account-currency purchase, claim/return, pending item groups,
 daily login, coupon redemption, wallet updates, purchase history, privilege
 restriction, purchase-velocity gate (10/hr), and CREDD redeem (1000:1).

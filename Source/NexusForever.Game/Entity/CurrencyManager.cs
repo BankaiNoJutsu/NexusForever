@@ -81,9 +81,11 @@ namespace NexusForever.Game.Entity
             if (loadedOrigin != null) CharacterDatabaseIdentity.Require(context, loadedOrigin.Database);
         }
 
+        private bool IsMutationPublicationBlocked => player is Player { IsBankPublicationInProgress: true } or Player { HousingNamePublishing: true };
+
         private void AssertBankPublicationMutationAllowed()
         {
-            if (player is Player { IsBankPublicationInProgress: true } or Player { HousingNamePublishing: true })
+            if (IsMutationPublicationBlocked)
                 throw new InvalidOperationException("Bank publication cannot accept a reentrant currency mutation.");
         }
 
@@ -120,6 +122,19 @@ namespace NexusForever.Game.Entity
             if (ContractCurrencyBlocked(currencyId)) return false;
 
             return GetCurrency(currencyId) >= amount;
+        }
+
+        public bool CanCreditFullAmount(CurrencyType currencyId, ulong amount)
+        {
+            CurrencyTypeEntry definition = gameTableManager.CurrencyType?.GetEntry((ulong)currencyId);
+            if (definition == null || !HasLoadedCurrencyOwner() || IsMutationPublicationBlocked || ContractCurrencyBlocked(currencyId))
+                return false;
+
+            currencies.TryGetValue(currencyId, out ICurrency currency);
+            ulong before = currency?.Amount ?? 0ul;
+            ulong cap = currency == null ? definition.CapAmount : currency.Entry.CapAmount;
+            ulong limit = cap == 0 ? ulong.MaxValue : cap;
+            return before <= limit && amount <= limit - before;
         }
 
         /// <summary>
