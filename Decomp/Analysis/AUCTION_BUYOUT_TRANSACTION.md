@@ -1,5 +1,32 @@
 # Auction buyout transaction
 
+## Ordered buyer result and won notice
+
+4 November 2026. The public buyout previously sent the buyer's won notice
+before its successful request result. The retained Carbine handlers remove
+the auction by ID on `ItemAuctionWon` and insert or replace it on a successful
+`ItemAuctionBidResult`. The old order could put the terminal listing back.
+See the [mapped client consumers](NORMAL_AUCTION_BID_TRANSACTION.md#client-consumption-of-settlement-notices).
+
+After settlement and actor reconciliation, the buyer now receives the successful
+result followed by the won notice. A failed enqueue resumes at the unsent packet
+on the original buyer's queue. Both stages check that the original actor is
+current and the confirmed listing is still absent. A listing restored while the
+reply is being sent therefore receives no stale removal. A replaced buyer
+receives neither the pending retry nor the second stage. Financial reservations
+release before the pair starts. The prior bidder's notification uses its own
+queue and can complete independently. Delivery and seller publication retain
+their existing paths.
+
+Four public-handler baselines reproduced the ordering, enqueue and replacement
+failures with private SQLite. The first candidate passed 261 scoped cases in
+87 seconds. Review added controls for a listing restored during the result
+callback and a prior bidder's queue paused after reconciliation. The final
+candidate passed all 85 scoped cases in 97 seconds. Local evidence is in
+`artifacts/continuation-20261104/buyout-result-publication/`.
+Error replies, physical socket delivery, cross-process replay and retail
+qualification remain open.
+
 ## Committed notice for the original seller
 
 4 November 2026. The mapped `0564` event carries the auction to the Carbine

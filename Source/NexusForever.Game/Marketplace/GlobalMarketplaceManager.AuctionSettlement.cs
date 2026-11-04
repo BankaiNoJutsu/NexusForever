@@ -400,7 +400,7 @@ namespace NexusForever.Game.Marketplace
                                     winner.Prepared.PublishDeliveryMail(new MailItem(model, itemManager: manager.itemManager,
                                         gameTableManager: manager.GetGameTableManager()));
                                 }
-                                if (!Cancelling)
+                                if (!Cancelling && (kind != AuctionSettlementKind.Buyout || reply == null))
                                     PublishNotice(winner.Owner, () => CanPublish(winner), responseAuction,
                                         auction => winner.Owner.Session.EnqueueMessageEncrypted(Returning
                                             ? new ServerAuctionExpired { Auction = auction } : new ServerAuctionWon { Auction = auction }));
@@ -424,7 +424,7 @@ namespace NexusForever.Game.Marketplace
             }
 
             private void PublishNotice(Participant owner, Func<bool> canPublish, AuctionInfo notification, Action<AuctionInfo> send,
-                Func<NoticeAuthority> authority = null, bool guardInitialAttempt = true)
+                Func<NoticeAuthority> authority = null, bool guardInitialAttempt = true, Action afterSend = null)
             {
                 var session = owner.Session;
                 var queue = session.Events;
@@ -450,7 +450,9 @@ namespace NexusForever.Game.Marketplace
                     {
                         log.Warn(error, "Committed auction notice failed; retrying on its original actor.");
                         Schedule(Task.Delay(TimeSpan.FromSeconds(1)));
+                        return;
                     }
+                    afterSend?.Invoke();
                 }
 
                 Publish(guardInitialAttempt);
@@ -477,14 +479,18 @@ namespace NexusForever.Game.Marketplace
                 if (previous == null) { Finish(GenericError.Ok); return; }
                 var notification = responseAuction ?? CloneAuction(record.Auction, record.ExpiresAtUtc);
                 var accepted = TransfersItem ? null : before with { Bid = amount, Bidder = bidder };
+                void PublishOutbid() => PublishNotice(previous.Owner, () => CanPublish(previous), notification,
+                    auction => previous.Owner.Session.EnqueueMessageEncrypted(new ServerAuctionOutbid { Auction = auction }),
+                    () => ReadNoticeAuthority(accepted));
+                if (kind == AuctionSettlementKind.Buyout)
+                {
+                    if (CanPublish(previous)) OnActor(previous.Owner, PublishOutbid);
+                    Finish(GenericError.Ok);
+                    return;
+                }
                 OnActor(previous.Owner, () =>
                 {
-                    try
-                    {
-                        PublishNotice(previous.Owner, () => CanPublish(previous), notification,
-                            auction => previous.Owner.Session.EnqueueMessageEncrypted(new ServerAuctionOutbid { Auction = auction }),
-                            () => ReadNoticeAuthority(accepted));
-                    }
+                    try { PublishOutbid(); }
                     finally { OnCoordinator(() => Finish(GenericError.Ok)); }
                 });
             }
@@ -493,8 +499,8 @@ namespace NexusForever.Game.Marketplace
             {
                 lock (manager.syncRoot)
                 {
-                    // An outbid event removes this ID from the client's listings.
-                    // A later owner must finish before we can tell if the notice still applies.
+                    // These packets can change the client's entry for this ID. A later owner
+                    // must finish before we can tell if the captured outcome still applies.
                     if (manager.auctionPostings.ContainsKey(before.Id)
                         || manager.auctionSettlements.TryGetValue(before.Id, out var active) && !ReferenceEquals(active, this))
                         return NoticeAuthority.Waiting;
@@ -517,20 +523,9 @@ namespace NexusForever.Game.Marketplace
                 }
                 accounts?.Dispose(); accounts = null;
                 if (reply == null) return;
-                if (error == GenericError.Ok && kind == AuctionSettlementKind.Bid)
+                if (error == GenericError.Ok && kind is AuctionSettlementKind.Bid or AuctionSettlementKind.Buyout)
                 {
-                    var buyer = actors.Single(actor => ReferenceEquals(actor.Owner.Player, receiver));
-                    bool OriginalBuyer() => !buyer.Prepared.Retired && ReferenceEquals(initiator.Session.Events, events)
-                        && initiatorPublicationAllowed?.Invoke() != false && CanPublish(initiator, bidder, buyer.Wallet.Account);
-                    var accepted = before with { Bid = amount, Bidder = bidder };
-                    // The immediate request reply reports the accepted outcome. A delayed
-                    // success would also update the client's listings, so guard every retry.
-                    PublishNotice(initiator, OriginalBuyer, auction, view =>
-                    {
-                        view.ExpirationTime = GetRemainingExpirationSeconds(accepted.Expiration);
-                        reply(error, view);
-                    }, () => GetRemainingExpirationSeconds(accepted.Expiration) == 0 ? NoticeAuthority.Superseded
-                        : ReadNoticeAuthority(accepted), guardInitialAttempt: false);
+                    PublishBuyerResult(auction);
                     return;
                 }
                 if (actors.Any(actor => ReferenceEquals(actor.Owner.Player, receiver) && actor.Prepared.Retired)
@@ -538,6 +533,37 @@ namespace NexusForever.Game.Marketplace
                     || !ReferenceEquals(initiator.Account?.Session, initiator.Session)
                     || !ReferenceEquals(manager.playerManager?.GetPlayer(bidder), receiver)) return;
                 reply(error, auction);
+            }
+
+            private void PublishBuyerResult(AuctionInfo auction)
+            {
+                var buyer = actors.Single(actor => ReferenceEquals(actor.Owner.Player, receiver));
+                bool OriginalBuyer() => !buyer.Prepared.Retired && ReferenceEquals(initiator.Session.Events, events)
+                    && initiatorPublicationAllowed?.Invoke() != false && CanPublish(initiator, bidder, buyer.Wallet.Account);
+                if (kind == AuctionSettlementKind.Buyout)
+                {
+                    // The successful reply can insert this listing. Send terminal removal
+                    // after it, and resume at the unsent packet if either enqueue fails.
+                    NoticeAuthority ListingAuthority() => ReadNoticeAuthority(null);
+                    void PublishWon() => PublishNotice(initiator, OriginalBuyer, auction,
+                        view => initiator.Session.EnqueueMessageEncrypted(new ServerAuctionWon { Auction = view }), ListingAuthority);
+                    PublishNotice(initiator, OriginalBuyer, auction, view =>
+                    {
+                        view.ExpirationTime = GetRemainingExpirationSeconds(before.Expiration);
+                        reply(GenericError.Ok, view);
+                    }, ListingAuthority, afterSend: PublishWon);
+                    return;
+                }
+
+                var accepted = before with { Bid = amount, Bidder = bidder };
+                // The immediate request reply reports the accepted outcome. A delayed
+                // success would also update the client's listings, so guard every retry.
+                PublishNotice(initiator, OriginalBuyer, auction, view =>
+                {
+                    view.ExpirationTime = GetRemainingExpirationSeconds(accepted.Expiration);
+                    reply(GenericError.Ok, view);
+                }, () => GetRemainingExpirationSeconds(accepted.Expiration) == 0 ? NoticeAuthority.Superseded
+                    : ReadNoticeAuthority(accepted), guardInitialAttempt: false);
             }
         }
     }

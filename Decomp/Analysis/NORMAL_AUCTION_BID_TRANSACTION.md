@@ -29,9 +29,9 @@ After correction, all 45 public bid coordinator cases passed in 61 seconds,
 including the decreasing retry countdown. Local evidence is in
 `artifacts/continuation-20261104/normal-bid-result-publication/`.
 
-Buyout and error replies, physical socket loss, cross-process replay and retail
-remain separate. A successful buyout reply also reaches the client's listing
-update handler, so its recovery needs to account for the terminal removal.
+See the [ordered buyout result and won notice](AUCTION_BUYOUT_TRANSACTION.md#ordered-buyer-result-and-won-notice)
+for the separate terminal-removal case. Error replies, physical socket loss,
+cross-process replay and retail remain open.
 
 ## Guarded live outbid retry
 
@@ -59,7 +59,7 @@ notice, which the new case reproduced before the listing proof was narrowed.
 The owning build and 209 scoped cases passed, including all six public-flow
 regressions. The scoped tests ran in 57 seconds. Local evidence is in
 `artifacts/continuation-20261104/auction-outbid/`.
-Cross-server and restart replay, buyout and error reply retry, and wire or
+Cross-server and restart replay, error reply retry, and wire or
 retail qualification remain open. See the later [committed seller notice](AUCTION_BUYOUT_TRANSACTION.md#committed-notice-for-the-original-seller).
 
 ## Client consumption of settlement notices

@@ -55,6 +55,12 @@ public sealed class NormalBidCoordinatorTests
     [InlineData("online-empty", "buyout-direct")] [InlineData("none", "buyout-mail")]
     [InlineData("none", "buyout-seller")] [InlineData("online", "buyout-seller")]
     [InlineData("none", "buyout-lost-reply")] [InlineData("none", "buyout-before")]
+    [InlineData("online", "buyout-result-retry")]
+    [InlineData("none", "buyout-won-retry")]
+    [InlineData("none", "buyout-result-replace")]
+    [InlineData("none", "buyout-replace-after-result")]
+    [InlineData("none", "buyout-reload-after-result")]
+    [InlineData("online", "buyout-prior-queue-unpolled")]
     [InlineData("none", "buyout-after")] [InlineData("none", "buyout-retired")]
     [InlineData("none", "buyout-replacement")] [InlineData("online", "buyout-prior-retired")]
     [InlineData("none", "buyout-ordinary-rollback")] [InlineData("none", "buyout-ordinary-lost")]
@@ -75,8 +81,12 @@ public sealed class NormalBidCoordinatorTests
         bool buyout = competing.StartsWith("buyout-", StringComparison.Ordinal);
         bool mailDelivery = competing is "buyout-mail" or "buyout-mail-replacement-during-won" or "buyout-ordinary-mail-custody" or "buyout-ordinary-header-custody" or "buyout-ordinary-link-custody" or "buyout-ordinary-link-postimage", sellerOnline = competing is "buyout-seller" or "buyout-seller-cap";
         string fault = buyout ? competing[7..] is "direct" or "mail" or "seller" or "seller-cap" or "overoffer" ? "unchanged" : competing[7..] : competing;
-        bool failBidResult = competing.StartsWith("bid-result-", StringComparison.Ordinal);
+        bool failBidResult = competing.StartsWith("bid-result-", StringComparison.Ordinal)
+            || competing is "buyout-result-retry" or "buyout-result-replace";
         if (failBidResult) fault = competing == "bid-result-superseded" ? "after" : "unchanged";
+        bool reloadAfterResult = competing == "buyout-reload-after-result";
+        bool pausePriorPublication = competing == "buyout-prior-queue-unpolled";
+        if (competing is "buyout-won-retry" or "buyout-replace-after-result" || reloadAfterResult || pausePriorPublication) fault = "unchanged";
         bool saleCommitted = buyout && fault is not ("before" or "poor");
         using var f = new Fixture(null); f.Seed();
         ((RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables).SetProperty(nameof(IGameTableManager.CurrencyType),
@@ -196,13 +206,13 @@ public sealed class NormalBidCoordinatorTests
                 return fault == "before" ? await command.ExecuteAsync() : await command.ResolveAsync();
             });
         marketplace.Initialise();
-        int activeActor = 0, auth = 0, priorAuth = 0, sellerAuth = 0, replies = 0, bidResultAttempts = 0;
+        int activeActor = 0, auth = 0, priorAuth = 0, sellerAuth = 0, replies = 0, bidResultAttempts = 0, wonAttempts = 0;
         actor.OnAuth = () => { Assert.Equal(42, activeActor); auth++;
             if (fault == "expiry-during-save" && auth == 2) actor.Player.Inventory.Update(2); };
         if (previous != null) previous.OnAuth = () => { Assert.Equal(200, activeActor); priorAuth++; };
         if (sellerActor != null) sellerActor.OnAuth = () => { Assert.Equal(100, activeActor); sellerAuth++; };
         GenericError result = GenericError.DbFailure;
-        bool scopeDisposed = false;
+        bool scopeDisposed = false, priorPublicationPaused = false;
         ulong firstBidResultExpiration = 0;
         sessionProxy.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
             {
@@ -212,6 +222,22 @@ public sealed class NormalBidCoordinatorTests
                 {
                     sessionProxy.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
                     replacementPublicationBoundary = sessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Count;
+                }
+                if (args[0] is ServerAuctionWon won)
+                {
+                    Assert.Equal(42, activeActor);
+                    Assert.Equal(10ul, won.Auction.CurrentBid);
+                    if (pausePriorPublication)
+                    {
+                        Assert.True(priorPublicationPaused);
+                        Assert.Empty(previousSessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                            .Select(call => call.Arguments[0]).OfType<ServerAuctionOutbid>());
+                    }
+                    if (++wonAttempts == 1 && competing == "buyout-won-retry")
+                    {
+                        won.Auction.CurrentBid = 999;
+                        throw new IOException("Committed buyout won notice failed before enqueue.");
+                    }
                 }
                 if (args[0] is not ServerAuctionBidResult response) return null;
                 GenericError error = response.Result; AuctionInfo view = response.Auction;
@@ -247,10 +273,10 @@ public sealed class NormalBidCoordinatorTests
                 if (++bidResultAttempts == 1 && failBidResult)
                 {
                     firstBidResultExpiration = view.ExpirationTime;
-                    if (competing == "bid-result-replace")
+                    if (competing is "bid-result-replace" or "buyout-result-replace")
                         sessionProxy.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
                     view.CurrentBid = 999; // A failed send must not mutate the retry or listing.
-                    throw new IOException("Committed normal bid result failed before enqueue.");
+                    throw new IOException("Committed auction bid result failed before enqueue.");
                 }
                 if (failBidResult)
                 {
@@ -258,6 +284,19 @@ public sealed class NormalBidCoordinatorTests
                     Assert.InRange(view.ExpirationTime, 1ul, firstBidResultExpiration - 1);
                 }
                 replies++; result = error;
+                if (competing == "buyout-replace-after-result")
+                {
+                    sessionProxy.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+                    replacementPublicationBoundary = sessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Count;
+                }
+                if (reloadAfterResult)
+                {
+                    committed.Item.Add(new() { Id = 1001, ItemId = 7001, StackCount = 1, Location = (ushort)InventoryLocation.None });
+                    committed.MarketplaceAuction.Add(new() { Id = 1, OwnerCharacterId = 100, ItemId = 1001, Item2Id = 7001, Quantity = 1,
+                        MinimumBid = 12, ExpirationTime = (ulong)DateTimeOffset.UtcNow.AddDays(1).ToUnixTimeSeconds() });
+                    committed.SaveChanges();
+                    marketplace.Initialise();
+                }
                 return null;
             });
         var services = new ServiceCollection();
@@ -283,13 +322,19 @@ public sealed class NormalBidCoordinatorTests
                 typeof(ClientAuctionBuyOrderSubmit).GetProperty(nameof(ClientAuctionBuyOrderSubmit.AmountOffered))!.SetValue(request, amount);
             }
         }));
-        bool expectsReply = fault is not ("retired" or "replacement" or "publication-replacement" or "mail-replacement-during-won")
-            && competing is not ("bid-result-replace" or "bid-result-superseded");
+        bool expectsReply = fault is not ("retired" or "replacement" or "publication-replacement")
+            && competing is not ("bid-result-replace" or "bid-result-superseded" or "buyout-result-replace");
         var deadline = Stopwatch.StartNew();
         do
         {
             activeActor = 42; actor.Events.Update(.01);
-            if (previous != null) { activeActor = 200; previous.Events.Update(.01); }
+            if (previous != null && (!priorPublicationPaused || wonAttempts != 0))
+            {
+                activeActor = 200;
+                previous.Events.Update(.01);
+                if (pausePriorPublication && priorAuth == 2 && previous.Player.Session.CanProcessIncomingPackets)
+                    priorPublicationPaused = true;
+            }
             if (sellerActor != null) { activeActor = 100; sellerEvents.Update(.01); Assert.Empty(sellerActor.Errors); }
             activeActor = 0;
             Assert.Empty(actor.Errors); if (previous != null) Assert.Empty(previous.Errors);
@@ -331,11 +376,23 @@ public sealed class NormalBidCoordinatorTests
             Assert.Equal(1, reconciliationDatabase.Faults);
         }
         var published = sessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).ToArray();
-        if (buyout) Assert.Equal(expectsReply && saleCommitted && fault is not ("custody" or "ordinary-mail-custody" or "ordinary-direct-custody" or "ordinary-header-custody" or "ordinary-link-custody" or "ordinary-rollback-custody") && !mailDelivery ? 1 : 0, published.OfType<ServerItemAdd>().Count());
+        bool buyerDelivery = (expectsReply || competing == "buyout-result-replace") && saleCommitted
+            && fault is not ("custody" or "ordinary-mail-custody" or "ordinary-direct-custody" or "ordinary-header-custody" or "ordinary-link-custody" or "ordinary-rollback-custody");
+        if (buyout) Assert.Equal(buyerDelivery && !mailDelivery ? 1 : 0, published.OfType<ServerItemAdd>().Count());
         if (replacementPublicationBoundary >= 0) Assert.DoesNotContain(published.Skip(replacementPublicationBoundary),
             message => message is ServerItemAdd or ServerAuctionWon or ServerAuctionBidResult or ServerCombatReward or ServerMailAvailable);
-        if (buyout) Assert.Equal((expectsReply || fault == "mail-replacement-during-won") && saleCommitted && fault is not ("custody" or "ordinary-mail-custody" or "ordinary-direct-custody" or "ordinary-header-custody" or "ordinary-link-custody" or "ordinary-rollback-custody") ? 1 : 0, sessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).OfType<ServerAuctionWon>().Count());
-        if (saleCommitted) Assert.Empty(marketplace.GetOwnedItemAuctions(seller));
+        if (buyout)
+        {
+            int expectedWonAttempts = buyerDelivery && !reloadAfterResult && competing is not ("buyout-result-replace" or "buyout-replace-after-result")
+                ? competing == "buyout-won-retry" ? 2 : 1 : 0;
+            Assert.Equal(expectedWonAttempts, wonAttempts);
+            Assert.Equal(expectedWonAttempts, published.OfType<ServerAuctionWon>().Count());
+            if (expectedWonAttempts != 0)
+                Assert.True(Array.FindLastIndex(published, packet => packet is ServerAuctionBidResult)
+                    < Array.FindIndex(published, packet => packet is ServerAuctionWon), "Buyout result must precede terminal removal.");
+        }
+        if (reloadAfterResult) Assert.Equal(12ul, Assert.Single(marketplace.GetOwnedItemAuctions(seller)).MinimumBid);
+        else if (saleCommitted) Assert.Empty(marketplace.GetOwnedItemAuctions(seller));
         else Assert.Equal(fault is "before" or "poor" ? 0ul : fault == "after" ? 12ul : 10ul, Assert.Single(marketplace.GetOwnedItemAuctions(seller)).CurrentBid);
         if (fault == "expiry-during-save")
         {
