@@ -341,6 +341,11 @@ namespace NexusForever.Game.Entity
                 ItemRuneSlotInitializer.ApplyDefaultSockets(this, gameTableManager);
             }
 
+            return BuildNetworkItem();
+        }
+
+        internal NetworkItem BuildNetworkItem()
+        {
             var networkItem = new NetworkItem
             {
                 ItemGuid     = Guid,

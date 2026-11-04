@@ -8,6 +8,7 @@ using NexusForever.Game.Marketplace;
 using NexusForever.Game.Mail;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Session;
+using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.Game.Entity
 {
@@ -173,7 +174,8 @@ namespace NexusForever.Game.Entity
                 GlobalMarketplaceManager.BidWalletCurrent current = null,
                 GlobalMarketplaceManager.BidItem deliveredCurrent = null, bool deliveryMatches = true, Func<bool> publicationAllowed = null,
                 MailHeaderState deliveryMail = null, GlobalMarketplaceManager.CommodityReturnView commodityCurrent = null,
-                GlobalMarketplaceManager.AuctionRow postingListing = null, Action publishPostingRemoval = null)
+                GlobalMarketplaceManager.AuctionRow postingListing = null, Action publishPostingRemoval = null,
+                Action<Func<ServerItemAdd>> publishAuctionDelivery = null)
             {
                 if (!Owns() || wallet == null || reconciling) throw new InvalidOperationException("Normal bid has no reconcilable original actor.");
                 reconciling = true;
@@ -209,7 +211,7 @@ namespace NexusForever.Game.Entity
                             publication = (inventory as Inventory)?.BeginMarketplacePublication(Owns);
                             wallet.CompleteOrdinaryReconciliation(CanPublish(), CanPublish);
                             escrow?.Complete(CanPublish, publishPostingRemoval);
-                            delivery?.Complete(CanPublish());
+                            delivery?.Complete(CanPublish(), publishAuctionDelivery);
                             commodityDelivery?.Complete(CanPublish);
                             bool conflict = delivery?.RequiresReload == true || commodityDelivery?.RequiresReload == true || escrow?.RequiresReload == true;
                             End(); if (conflict) failed(); else completed();

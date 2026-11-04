@@ -8,6 +8,7 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Static;
+using NetworkItem = NexusForever.Network.World.Message.Model.Shared.Item;
 
 namespace NexusForever.Game.Entity
 {
@@ -93,15 +94,33 @@ namespace NexusForever.Game.Entity
                 }
             }
 
-            internal void Complete(bool publish)
+            internal void Complete(bool publish, Action<Func<ServerItemAdd>> publishDelivery = null)
             {
                 lock (owner.MutationGate)
                 {
                     if (!settled || !ownsActor()) throw new InvalidOperationException("Auction delivery has not reconciled.");
                     if (conflict) { owner.rewardRequiresReload = true; return; }
-                    if (publish && admitted != null && ReferenceEquals(bag.GetItem(Target.Bag), admitted))
-                        owner.EnqueueItemMessage(new ServerItemAdd { InventoryItem = new InventoryItem
-                            { Item = admitted.Build(), Reason = ItemUpdateReason.Auction } });
+                    if (!publish || admitted == null || !ReferenceEquals(bag.GetItem(Target.Bag), admitted)) return;
+                    if (publishDelivery == null) owner.EnqueueItemMessage(BuildDeliveryNotice(admitted.Build()));
+                    else publishDelivery(BuildCurrentDeliveryNotice);
+                }
+            }
+
+            private static ServerItemAdd BuildDeliveryNotice(NetworkItem wireItem) => new()
+            {
+                InventoryItem = new InventoryItem { Item = wireItem, Reason = ItemUpdateReason.Auction }
+            };
+
+            private ServerItemAdd BuildCurrentDeliveryNotice()
+            {
+                lock (owner.MutationGate)
+                {
+                    if (admitted == null || owner.RequiresAuthoritativeReload || !ReferenceEquals(owner.player.Inventory, owner)
+                        || admitted.CharacterId != owner.characterId || admitted.Location == InventoryLocation.RealmBank) return null;
+                    var currentBag = owner.GetBag(admitted.Location);
+                    if (currentBag == null || admitted.BagIndex >= currentBag.Slots
+                        || !ReferenceEquals(currentBag.GetItem(admitted.BagIndex), admitted)) return null;
+                    return BuildDeliveryNotice(admitted.BuildNetworkItem());
                 }
             }
 

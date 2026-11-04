@@ -1,5 +1,33 @@
 # Auction cancellation settlement
 
+## Recovering the committed item return and cancellation result
+
+4 November 2026. The public cancel handler now recovers an enqueue failure
+after the Character commit. A failed direct ItemAdd previously could report
+`DbFailure` for an already committed return. A failed cancellation result
+escaped the actor event and the reply was lost.
+
+The live retry resumes at the unsent stage after account and listing
+reservations release. A direct return sends the item before the successful
+cancellation result. The item retry uses the exact returned object in its
+current Character-owned slot and builds a read-only packet snapshot. Listing
+absence controls the cancellation result separately. A replacement listing
+can make the result obsolete while the item return remains current. Actor or
+event-queue replacement ends publication for the old request. Item retry
+waits through active inventory save blocks and excludes Realm Bank custody.
+Mail delivery keeps its existing committed publication path.
+
+The baseline reproduces the item-add and result failures. The initial 219
+affected cases passed in 93 seconds. After review, the read-only item projection
+and listing-authority revision passed 164 affected cases in 57 seconds. The
+final build and all 23 cancellation cases passed in 46 seconds, including five
+new public-handler cases. Evidence and final binary identities are retained in
+`artifacts/continuation-20261104/auction-cancel-publication/`. The scope is
+source and private SQLite recovery on the live actor. Cross-process and restart
+replay, deployed delivery and retail qualification remain open.
+
+## Original cancellation settlement
+
 Public ClientAuctionCancel now retains copied request scalars and the original
 owner/session, then queues one owned settlement. Its transaction removes the
 listing, returns the same whole Item directly or through a fixed return mail,

@@ -8,6 +8,7 @@ using NexusForever.Game.Entity;
 using NexusForever.Game.Mail;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Session;
+using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Marketplace;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared.Game.Events;
@@ -130,6 +131,7 @@ namespace NexusForever.Game.Marketplace
             private readonly GlobalMarketplaceManager manager;
             private Player receiver;
             private readonly Participant initiator;
+            private readonly IInventory cancellationInventory;
             private readonly MarketplaceAuction record;
             private readonly CharacterDatabase database;
             private readonly AuctionRow before;
@@ -160,6 +162,7 @@ namespace NexusForever.Game.Marketplace
             private BidOutcome outcome;
             private bool confirmedListingAbsent;
             private AuctionInfo responseAuction;
+            private Func<ServerItemAdd> pendingCancellationDelivery;
             private int next;
             private bool finished, preparationFailed, reconciliationFailed, unresolvedReported;
             private GenericError preparationResult = GenericError.DbFailure;
@@ -172,6 +175,7 @@ namespace NexusForever.Game.Marketplace
                 before = record.StoredRow; database = manager.TryGetCharacterDatabase();
                 events = Expiry ? manager.settlementEvents : receiver.Session.Events;
                 initiator = Expiry ? null : new(receiver, receiver.Session, receiver.Account);
+                cancellationInventory = Cancelling ? receiver.Inventory : null;
                 bidder = Expiry ? Returning ? before.Owner : before.Bidder : receiver.CharacterId;
                 route = record.StoredDatabase;
                 initiatorPublicationAllowed = publicationAllowed;
@@ -363,7 +367,8 @@ namespace NexusForever.Game.Marketplace
                             actor.Prepared.Reconcile(committed, id, command?.PayloadSHA256 ?? abortedPayload,
                                 () => OnCoordinator(() => ActorEnded(actor, true)),
                                 () => OnCoordinator(() => ActorEnded(actor, false)), current?.GetValueOrDefault(actor.Wallet.Character),
-                                current == null ? sale?.DeliveredItem : currentDelivery, deliveryMatches, () => CanPublish(actor), sale?.DeliveryMail);
+                                current == null ? sale?.DeliveredItem : currentDelivery, deliveryMatches, () => CanPublish(actor), sale?.DeliveryMail,
+                                publishAuctionDelivery: Cancelling && actor.Wallet.Character == bidder ? PublishCancellationDelivery : null);
                         }
                         catch { OnCoordinator(() => ActorEnded(actor, false)); }
                     });
@@ -424,7 +429,7 @@ namespace NexusForever.Game.Marketplace
             }
 
             private void PublishNotice(Participant owner, Func<bool> canPublish, AuctionInfo notification, Action<AuctionInfo> send,
-                Func<NoticeAuthority> authority = null, bool guardInitialAttempt = true, Action afterSend = null)
+                Func<NoticeAuthority> authority = null, bool guardInitialAttempt = true, Action afterSend = null, bool deferInitialAttempt = false)
             {
                 var session = owner.Session;
                 var queue = session.Events;
@@ -455,11 +460,14 @@ namespace NexusForever.Game.Marketplace
                     afterSend?.Invoke();
                 }
 
-                Publish(guardInitialAttempt);
+                if (deferInitialAttempt) Schedule(Task.Delay(TimeSpan.FromSeconds(1)));
+                else Publish(guardInitialAttempt);
             }
 
             private bool CanPublish(Actor actor) => !actor.Prepared.Retired
                 && (actor.Wallet.Character != bidder || initiatorPublicationAllowed?.Invoke() != false)
+                && (!Cancelling || actor.Wallet.Character != bidder || ReferenceEquals(initiator.Session.Events, events)
+                    && ReferenceEquals(initiator.Player.Inventory, cancellationInventory))
                 && CanPublish(actor.Owner, actor.Wallet.Character, actor.Wallet.Account);
 
             private bool CanPublish(Participant owner, ulong character, uint account) =>
@@ -523,6 +531,11 @@ namespace NexusForever.Game.Marketplace
                 }
                 accounts?.Dispose(); accounts = null;
                 if (reply == null) return;
+                if (error == GenericError.Ok && Cancelling)
+                {
+                    PublishCancellationResult(auction);
+                    return;
+                }
                 if (error == GenericError.Ok && kind is AuctionSettlementKind.Bid or AuctionSettlementKind.Buyout)
                 {
                     PublishBuyerResult(auction);
@@ -533,6 +546,38 @@ namespace NexusForever.Game.Marketplace
                     || !ReferenceEquals(initiator.Account?.Session, initiator.Session)
                     || !ReferenceEquals(manager.playerManager?.GetPlayer(bidder), receiver)) return;
                 reply(error, auction);
+            }
+
+            private void PublishCancellationDelivery(Func<ServerItemAdd> build)
+            {
+                var packet = build();
+                if (packet == null) return;
+                try { initiator.Session.EnqueueMessageEncrypted(packet); }
+                catch (Exception error)
+                {
+                    log.Warn(error, "Committed cancellation item return failed to publish.");
+                    pendingCancellationDelivery = build;
+                }
+            }
+
+            private void PublishCancellationResult(AuctionInfo auction)
+            {
+                var owner = actors.Single(actor => actor.Wallet.Character == bidder);
+                bool OriginalOwner() => CanPublish(owner);
+                NoticeAuthority ListingAuthority() => ReadNoticeAuthority(null);
+                NoticeAuthority ItemAuthority() => !cancellationInventory.RequiresAuthoritativeReload && cancellationInventory.IsSaveBlocked
+                    ? NoticeAuthority.Waiting : NoticeAuthority.Ready;
+                void PublishResult() => PublishNotice(initiator, OriginalOwner, auction,
+                    view => reply(GenericError.Ok, view), ListingAuthority);
+
+                var build = pendingCancellationDelivery;
+                pendingCancellationDelivery = null;
+                if (build == null) { PublishResult(); return; }
+                PublishNotice(initiator, OriginalOwner, auction, _ =>
+                {
+                    var packet = build();
+                    if (packet != null) initiator.Session.EnqueueMessageEncrypted(packet);
+                }, ItemAuthority, afterSend: PublishResult, deferInitialAttempt: true);
             }
 
             private void PublishBuyerResult(AuctionInfo auction)

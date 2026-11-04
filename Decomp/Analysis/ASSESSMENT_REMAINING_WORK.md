@@ -10,6 +10,11 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Committed auction cancellation publication](AUCTION_CANCELLATION_TRANSACTION.md#recovering-the-committed-item-return-and-cancellation-result)
+retries the returned item and success reply in order on the original actor.
+Item custody and listing absence control their respective notices. Deployed
+and restart delivery remain open.
+
 [Committed auction posting publication](AUCTION_POSTING_TRANSACTION.md#recovering-the-committed-inventory-removal-and-post-result)
 retains a failed item removal or post result for the original actor. It sends
 the removal before success, releases reservations before retry and suppresses

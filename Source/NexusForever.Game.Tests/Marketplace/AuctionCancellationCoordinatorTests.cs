@@ -57,6 +57,11 @@ public sealed class AuctionCancellationCoordinatorTests
     [InlineData(false, true, false, false, false, "refused-item")]
     [InlineData(false, true, false, false, false, "stored-sockets")]
     [InlineData(false, true, false, false, false, "stored-sockets-rollback")]
+    [InlineData(true, true, true, false, false, "add-retry")]
+    [InlineData(true, true, false, true, false, "reply-retry")]
+    [InlineData(false, true, false, false, false, "reply-rebind")]
+    [InlineData(false, true, false, false, false, "add-move")]
+    [InlineData(false, true, false, false, false, "add-relist")]
     public async Task PublicCancellationReturnsOriginalItemAndRefundsHeldBidThroughOriginalActors(
         bool heldBid, bool receiverOnline, bool bidderOnline, bool mailed, bool missingWallet, string fault)
     {
@@ -155,6 +160,8 @@ public sealed class AuctionCancellationCoordinatorTests
             return result;
         }); manager.Initialise();
         int activeActor = 0, saves = 0, bidderSaves = 0, won = 0, returned = 0, replacementBoundary = -1;
+        int addAttempts = 0, replyAttempts = 0;
+        var publication = new List<string>();
         using var provider = new ServiceCollection().AddSingleton<IGlobalMarketplaceManager>(manager).AddSingleton(items)
             .AddSingleton<ILogger<ClientAuctionCancelHandler>>(NullLogger<ClientAuctionCancelHandler>.Instance)
             .AddScoped<MarketplaceRequestHelper>().AddScoped<ClientAuctionCancelHandler>().BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
@@ -173,16 +180,57 @@ public sealed class AuctionCancellationCoordinatorTests
         if (bidder != null) bidder.OnAuth = () => { Assert.Equal(100, activeActor); bidderSaves++; };
         sp.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
         {
+            if (args[0] is ServerItemAdd add && add.InventoryItem.Reason == ItemUpdateReason.Auction)
+            {
+                addAttempts++;
+                if (addAttempts == 1 && fault is "add-retry" or "add-move" or "add-relist")
+                {
+                    if (fault == "add-move") events.EnqueueThreadSafe(new PredicateEvent(() => !cleanup.IsAccountLocked(actor.Player.Account), () =>
+                    {
+                        var item = actor.Player.Inventory.GetItem(1000ul);
+                        actor.Player.Inventory.ItemMove(item, InventoryLocation.Inventory, 1);
+                        item.Charges = 0;
+                        Assert.True(actor.Player.Inventory.TryAcquireSaveLease(out var heldInventory));
+                        events.EnqueueThreadSafe(new DelayEvent(TimeSpan.FromMilliseconds(1250), heldInventory.Dispose));
+                    }));
+                    if (fault == "add-relist") events.EnqueueThreadSafe(new PredicateEvent(() => !cleanup.IsAccountLocked(actor.Player.Account), () =>
+                    {
+                        using var changed = f.Context();
+                        changed.Item.Add(new() { Id = 1001, ItemId = 7001, StackCount = 1, Location = (ushort)InventoryLocation.None });
+                        changed.MarketplaceAuction.Add(new() { Id = 1, OwnerCharacterId = 100, ItemId = 1001, Item2Id = 7001,
+                            Quantity = 1, MinimumBid = 1, ExpirationTime = (ulong)DateTimeOffset.UtcNow.AddMinutes(30).ToUnixTimeSeconds() });
+                        changed.SaveChanges();
+                        manager.Initialise();
+                    }));
+                    throw new IOException("Cancellation inventory return enqueue failed.");
+                }
+                if (addAttempts > 1) Assert.False(cleanup.IsAccountLocked(actor.Player.Account));
+                if (fault == "add-move")
+                {
+                    Assert.False(actor.Player.Inventory.IsSaveBlocked);
+                    Assert.Equal(1u, add.InventoryItem.Item.LocationData.BagIndex);
+                }
+                publication.Add("item");
+            }
             if (args[0] is not ServerAuctionCancelResult cancel) return null;
             if (fault.StartsWith("refused-", StringComparison.Ordinal))
             {
                 Assert.Equal(fault == "refused-owner" ? GenericError.Params : GenericError.ItemBadId, cancel.Result);
                 returned++; return null;
             }
+            replyAttempts++;
             Assert.Equal(fault == "custody-move" ? GenericError.DbFailure : GenericError.Ok, cancel.Result);
+            if (replyAttempts == 1 && fault is "reply-retry" or "reply-rebind")
+            {
+                if (fault == "reply-rebind")
+                    sp.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+                throw new IOException("Cancellation result enqueue failed.");
+            }
+            Assert.False(cleanup.IsAccountLocked(actor.Player.Account));
             using var read = f.Context(); CheckSql(read);
             Assert.Equal(42, activeActor);
             returned++;
+            publication.Add("reply");
             if (fault == "mail-replace")
             {
                 sp.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
@@ -217,6 +265,16 @@ public sealed class AuctionCancellationCoordinatorTests
         } while (Pending(manager) || events.PendingEvents || bidderEvents.PendingEvents || actor?.Player.IsNormalSaveInProgress == true
             || bidder?.Player.IsNormalSaveInProgress == true);
         using var final = f.Context();
+        if (fault == "add-relist")
+        {
+            Assert.Equal(["item"], publication);
+            Assert.Equal(2, addAttempts);
+            Assert.Equal(0, replyAttempts);
+            Assert.Equal(1, executions);
+            Assert.Equal(1001ul, Assert.Single(final.MarketplaceAuction).ItemId);
+            Assert.Equal(42ul, final.Item.Single(row => row.Id == 1000).OwnerId);
+            return;
+        }
         if (fault.StartsWith("refused-", StringComparison.Ordinal))
         {
             Assert.Equal(1, returned); Assert.Equal(0, executions); Assert.Single(final.MarketplaceAuction);
@@ -230,7 +288,7 @@ public sealed class AuctionCancellationCoordinatorTests
             Assert.Equal(fault == "ordinary-lost" ? 1 : 2, ordinaryDatabase.Enrollments);
             Assert.Equal(1, ordinaryDatabase.Failures);
         }
-        bool publishes = receiverOnline && fault is not ("receiver-retire" or "receiver-replace");
+        bool publishes = receiverOnline && fault is not ("receiver-retire" or "receiver-replace" or "reply-rebind");
         Assert.Equal(0, won); Assert.Equal(publishes ? 1 : 0, returned);
         Assert.Equal(receiverOnline ? fault == "receiver-retire" ? 3 : 2 : 0, saves);
         Assert.Equal(bidderOnline ? fault == "bidder-retire" ? 3 : 2 : 0, bidderSaves);
@@ -239,7 +297,16 @@ public sealed class AuctionCancellationCoordinatorTests
         Assert.Empty(packets.OfType<ServerAuctionBidResult>());
         Assert.DoesNotContain(packets, packet => packet is ServerAuctionWon or ServerAuctionExpired or ServerAuctionOutbid);
         Assert.DoesNotContain(bidderSp.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)), call => call.Arguments[0] is ServerAuctionOutbid);
-        Assert.Equal(publishes && !mailed && fault != "custody-move" ? 1 : 0, packets.OfType<ServerItemAdd>().Count());
+        bool addsItem = receiverOnline && !mailed && fault is not ("receiver-retire" or "receiver-replace" or "custody-move");
+        Assert.Equal(addsItem ? fault is "add-retry" or "add-move" ? 2 : 1 : 0, packets.OfType<ServerItemAdd>().Count());
+        if (fault == "add-retry") Assert.Equal(["item", "reply"], publication);
+        if (fault is "reply-retry" or "reply-rebind") Assert.Equal(fault == "reply-retry" ? 2 : 1, replyAttempts);
+        if (fault == "add-move")
+        {
+            Assert.Equal(["item", "reply"], publication);
+            Assert.Equal(1u, actor.Player.Inventory.GetItem(1000ul).BagIndex);
+            Assert.Equal(0u, actor.Player.Inventory.GetItem(1000ul).Charges);
+        }
         if (storedSockets)
         {
             var wire = Assert.Single(packets.OfType<ServerItemAdd>()).InventoryItem.Item;
