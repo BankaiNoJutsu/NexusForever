@@ -10,6 +10,10 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[GameTable cache preparation](assessment-snapshot/PR-TRIAGE.md#gametable-cache-preparation)
+verifies #576's recovery cases on the fork and keeps each cached load bound
+to the directory whose version was checked.
+
 [Quest starter item admission](../../CURRENT_STATUS.md#quest-starter-item-admission)
 checks prerequisites and pushed-item space before consuming the starter. A
 missing or unusable starter cannot accept the quest. The capacity check

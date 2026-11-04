@@ -7,43 +7,41 @@ namespace NexusForever.GameTable
     public static class FileCache
     {
         private static Lazy<string> lazyModuleVersion = new(CreateModuleVersionString, LazyThreadSafetyMode.ExecutionAndPublication);
-        private static Lazy<DirectoryInfo> lazyCacheDirectory => new(CreateCacheDirectory, LazyThreadSafetyMode.ExecutionAndPublication);
         private static ILogger log = LogManager.GetCurrentClassLogger();
         private static CacheConfig cacheConfig = new();
+        private static readonly object cacheLock = new();
+        private static string initializedCachePath;
 
         public static void Configure(CacheConfig config)
         {
-            cacheConfig = config ?? new CacheConfig();
+            lock (cacheLock)
+            {
+                cacheConfig = config ?? new CacheConfig();
+                initializedCachePath = null;
+            }
         }
 
-        private static DirectoryInfo CreateCacheDirectory()
-        {
-            return Directory.CreateDirectory(cacheConfig.CachePath);
-        }
-
-        private static readonly object cacheLock = new();
-        private static bool cacheInitialized;
         private static string CreateModuleVersionString()
         {
             return Convert.ToHexString(typeof(FileCache).Assembly.ManifestModule.ModuleVersionId.ToByteArray());
         }
 
-        private static void CheckAndCleanupCache()
+        private static string PrepareCacheDirectory()
         {
             lock (cacheLock)
             {
-                if (cacheInitialized)
-                    return;
+                if (!cacheConfig.UseCache)
+                    return null;
 
-                DirectoryInfo cacheDirectory = lazyCacheDirectory.Value;
-                FileInfo cacheInfoFile = cacheDirectory.EnumerateFiles("cacheInfo.txt").FirstOrDefault();
-                if (cacheInfoFile != null && cacheInfoFile.Exists)
+                DirectoryInfo cacheDirectory = Directory.CreateDirectory(cacheConfig.CachePath);
+                string directory = cacheDirectory.FullName;
+                string versionFile = Path.Combine(directory, "cacheInfo.txt");
+                if (File.Exists(versionFile))
                 {
-                    string cacheInfo = File.ReadAllText(cacheInfoFile.FullName);
-                    if (cacheInfo == lazyModuleVersion.Value)
+                    if (initializedCachePath == directory || File.ReadAllText(versionFile) == lazyModuleVersion.Value)
                     {
-                        cacheInitialized = true;
-                        return;
+                        initializedCachePath = directory;
+                        return directory;
                     }
                 }
 
@@ -63,17 +61,18 @@ namespace NexusForever.GameTable
                     }
                 }
 
-                File.WriteAllText(Path.Combine(cacheDirectory.FullName, "cacheInfo.txt"), lazyModuleVersion.Value);
-                cacheInitialized = true;
+                File.WriteAllText(versionFile, lazyModuleVersion.Value);
+                initializedCachePath = directory;
+                return directory;
             }
         }
 
         public static T LoadWithCache<T>(string fileName, Func<string, T> creator)
         {
-            if (!cacheConfig.UseCache)
+            string directory = PrepareCacheDirectory();
+            if (directory == null)
                 return creator(fileName);
-            CheckAndCleanupCache();
-            string cacheName = GetCacheFileName(fileName);
+            string cacheName = GetCacheFileName(directory, fileName);
             if (File.Exists(cacheName))
                 return JsonConvert.DeserializeObject<T>(File.ReadAllText(cacheName));
 
@@ -82,10 +81,8 @@ namespace NexusForever.GameTable
             return obj;
         }
 
-        private static string GetCacheFileName(string fileName)
+        private static string GetCacheFileName(string cacheFolder, string fileName)
         {
-            string cacheFolder = lazyCacheDirectory.Value.FullName;
-
             string ext = Path.GetExtension(fileName).TrimStart('.');
             string fileHash = Hasher.HashFile(fileName);
 

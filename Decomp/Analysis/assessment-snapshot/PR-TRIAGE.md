@@ -1,5 +1,23 @@
 # Official pull request comparison
 
+## GameTable cache preparation
+
+4 November 2026. [PR #576](https://github.com/NexusForever/NexusForever/pull/576)
+remains open at `ac913c09cd8bce2fdbcf1839fd33ea9c5662b794`. Its initialization
+failure scenarios were ported to the fork's public cache API. The fork
+already used a lock and marked preparation successful only after writing
+the version file. A separate baseline regression showed that switching to
+a directory with an obsolete marker reused a stale cached value.
+
+Cache preparation now binds each load to the directory whose version was
+checked. An unsuccessful preparation can be retried after the obstruction
+is removed. The owning build and 88 scoped GameTable tests passed,
+including both obstruction cases, matching and obsolete markers, and the
+directory switch. Local evidence is under
+`artifacts/continuation-20261104/gametable-cache-reconciliation/`. This
+qualifies the file-cache API. The default text table loader reads the source
+directly.
+
 [Committed tradeskill publication](../TRADESKILL_PUBLICATION.md) passes 15 new/238 scoped
 and 15 MySQL cases with a clean owning-project build and both Source reviews.
 Original ordinary/frozen graphs release immutable skill/recipe/reset notices;
@@ -553,11 +571,11 @@ The fork is `legacy-di-storefront-hardening` at `f069e0b9`. Official game_rework
 | PR | Subject | Target branch | Relationship and assessment |
 | --- | --- | --- | --- |
 | [#604](https://github.com/NexusForever/NexusForever/pull/604) | Taxi: discover taxi kiosks and handle taxi flights | game_rework | Reconciled through revised36b59aa head: fork discovery/flight guards retained; shuttle45 separated and terminal taxi persistence qualified at10836 source tests. Physical travel remains open. |
-| [#607](https://github.com/NexusForever/NexusForever/pull/607) | Mount: one mount per summon, summon auras pass the global cooldown, Dismount clears a lost mount | game_rework | Partial overlap: dismount exists; pending summon protection and automatic aura/GCD behavior need review. |
+| [#607](https://github.com/NexusForever/NexusForever/pull/607) | Mount: one mount per summon, summon auras pass the global cooldown, Dismount clears a lost mount | game_rework | [Reconciled at `7f044aa`](../TAXI_MOUNT_UPSTREAM_FIXES.md#mount-lifecycle). Covers pending summon protection, stale dismount and explicit mount aura cooldown flags. |
 | [#588](https://github.com/NexusForever/NexusForever/pull/588) | Galactic Archive: unlock articles from achievements and quests | game_rework | Substantial parallel implementation; fix wire widths first, then completion hooks and title reward semantics. |
 | [#598](https://github.com/NexusForever/NexusForever/pull/598) | Fix exception when activating a datacube the character already has | game_rework | Already addressed centrally: AddDatacube merges and resends an existing entry. |
-| [#606](https://github.com/NexusForever/NexusForever/pull/606) | Instance: return location for portal entries and the Leave button | game_rework | Partial overlap: Leave handler and instance return cache exist; persistent bind fallback differs. |
-| [#605](https://github.com/NexusForever/NexusForever/pull/605) | Spell: handle AddSpell and Disembark for the riding licenses | game_rework | AddSpell and Disembark exist; compare learned-passive execution and login reapplication. |
+| [#606](https://github.com/NexusForever/NexusForever/pull/606) | Instance: return location for portal entries and the Leave button | game_rework | [Reconciled at `4ffa050`](../TRAVEL_ARCHIVE_UPSTREAM_FIXES.md). Covers safe Leave routing and the last-open-world and persistent bind fallbacks. |
+| [#605](https://github.com/NexusForever/NexusForever/pull/605) | Spell: handle AddSpell and Disembark for the riding licenses | game_rework | [Reconciled at `972ad3b`](../LEARNED_PASSIVE_HOUSING_UPSTREAM_FIXES.md#learned-passive-behavior). Covers spell tier, learned passive execution and login reapplication. |
 | [#603](https://github.com/NexusForever/NexusForever/pull/603) | Spell: Recall House returns to the residence | game_rework | Housing teleport and stuck housing action exist; reconcile spell teaching and prerequisite dependencies. |
 | [#602](https://github.com/NexusForever/NexusForever/pull/602) | Spell: Recall Transmat returns to the bind point | game_rework | Behavior differs: stuck transmat uses zone exit; zero-location Teleport does not recall to a saved bind. |
 | [#601](https://github.com/NexusForever/NexusForever/pull/601) | Player: bind at transmat terminals and send the bind point | game_rework | Missing persistent bind-point path; useful addition with migration reconciliation. |
@@ -576,7 +594,7 @@ The fork is `legacy-di-storefront-hardening` at `f069e0b9`. Official game_rework
 | [#585](https://github.com/NexusForever/NexusForever/pull/585) | The Hycrest Insurrection: intro and first mission vote (adventure, world 1149) | expedition-evil-from-the-ether | Instance/script work overlaps; compare mission-vote producers and existing fork adventure scripts. |
 | [#580](https://github.com/NexusForever/NexusForever/pull/580) | Fix players standing on platform entities | expedition-evil-from-the-ether | Inventory and path comparison only; verify platform movement with mounted/visible entity cases. |
 | [#570](https://github.com/NexusForever/NexusForever/pull/570) | Fix Aspire setup and migrations | game_rework | Complementary bootstrap work; retain fork Windows/SQLite setup and compare migration ordering. |
-| [#576](https://github.com/NexusForever/NexusForever/pull/576) | GameTable: allow retry after cache initialization fails | game_rework | Fork lock-based initialization avoids the stuck claimed-flag design; source comparison only. |
+| [#576](https://github.com/NexusForever/NexusForever/pull/576) | GameTable: allow retry after cache initialization fails | game_rework | [Reconciled at `ac913c0`](#gametable-cache-preparation). Executed obstruction recovery and version checks, including cache directory changes. |
 | [#575](https://github.com/NexusForever/NexusForever/pull/575) | GameTable: read supplementary Unicode characters in wide strings | game_rework | Missing: three supplementary UTF-16 regression cases fail on fork and official. |
 | [#573](https://github.com/NexusForever/NexusForever/pull/573) | Network: reject reads past the end of a game packet | game_rework | Partly addressed: fork passes 8/10 probes; repeated EOF state remains broken. |
 | [#572](https://github.com/NexusForever/NexusForever/pull/572) | Network: make listener startup and shutdown reliable | game_rework | Missing lifecycle fix: occupied-port and shutdown-wait probes fail on both branches. |
