@@ -34,6 +34,7 @@ public sealed partial class AuctionExpiryCoordinatorTests
     [InlineData("replace")]
     [InlineData("buyout")]
     [InlineData("buyout-wallet")]
+    [InlineData("buyout-zero-proceeds")]
     public async Task PublicBidRetriesOutbidNoticeOnlyWhileTheOriginalOutcomeApplies(string mode)
     {
         using var f = new Fixture(null);
@@ -41,16 +42,18 @@ public sealed partial class AuctionExpiryCoordinatorTests
         ((RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables).SetProperty(nameof(IGameTableManager.CurrencyType),
             PlayerBindPointTests.Table(new CurrencyTypeEntry { Id = 1, CapAmount = 1000 }));
         var database = new CharacterDatabase();
+        bool zeroProceeds = mode == "buyout-zero-proceeds";
+        ulong startingBuyerWallet = zeroProceeds ? 1000ul : 100ul;
         using (var seed = f.Context())
         {
             seed.Character.Single().AccountId = 12;
             seed.Character.Add(new() { Id = 100, AccountId = 13, Name = "Prior bidder", OriginalName = "Prior bidder" });
             seed.Character.Add(new() { Id = 200, AccountId = 14, Name = "Seller", OriginalName = "Seller" });
-            seed.CharacterCurrency.Add(new() { Id = 42, CurrencyId = 1, Amount = 100 });
+            seed.CharacterCurrency.Add(new() { Id = 42, CurrencyId = 1, Amount = startingBuyerWallet });
             seed.CharacterCurrency.Add(new() { Id = 100, CurrencyId = 1, Amount = 100 });
             seed.Item.Add(new() { Id = 1000, ItemId = 7001, StackCount = 1, Location = (ushort)InventoryLocation.None });
             seed.MarketplaceAuction.Add(new() { Id = 1, OwnerCharacterId = 200, ItemId = 1000, Item2Id = 7001,
-                Quantity = 1, MinimumBid = 1, CurrentBid = 10, TopBidderCharacterId = 100, BuyoutPrice = 80,
+                Quantity = 1, MinimumBid = 1, CurrentBid = 10, TopBidderCharacterId = 100, BuyoutPrice = zeroProceeds ? 500ul : 80ul,
                 ExpirationTime = (ulong)DateTimeOffset.UtcNow.AddMinutes(30).ToUnixTimeSeconds() });
             await seed.SaveChangesAsync();
             database.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite,
@@ -63,8 +66,10 @@ public sealed partial class AuctionExpiryCoordinatorTests
         itemProxy.SetMethodReturn(nameof(IItemManager.GetItemInfo), itemInfo);
         var buyerSession = RecordingDispatchProxy<IWorldSession>.Create(out var buyerProxy);
         var priorSession = RecordingDispatchProxy<IWorldSession>.Create(out var priorProxy);
+        var sellerSession = RecordingDispatchProxy<IWorldSession>.Create(out var sellerProxy);
         using var buyer = await CreateActor(12, buyerSession, buyerProxy);
         using var prior = await CreateActor(13, priorSession, priorProxy);
+        using var seller = zeroProceeds ? await CreateActor(14, sellerSession, sellerProxy) : null;
         var databases = RecordingDispatchProxy<IDatabaseManager>.Create(out var dp);
         dp.SetMethodReturn(nameof(IDatabaseManager.GetDatabase), database);
         var players = RecordingDispatchProxy<IPlayerManager>.Create(out var pp);
@@ -72,6 +77,7 @@ public sealed partial class AuctionExpiryCoordinatorTests
         {
             42ul => buyer.Player,
             100ul => prior.Player,
+            200ul => seller?.Player,
             _ => null
         });
         var assets = RecordingDispatchProxy<IAssetManager>.Create(out var ap);
@@ -79,7 +85,7 @@ public sealed partial class AuctionExpiryCoordinatorTests
         var cleanup = new CleanupManager();
         var rebidStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseRebid = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        bool buyout = mode is "buyout" or "buyout-wallet";
+        bool buyout = zeroProceeds || mode is "buyout" or "buyout-wallet";
         int executions = 0;
         var manager = new GlobalMarketplaceManager(databases, f.Source.Tables, assets, players, items, cleanup, async command =>
         {
@@ -101,12 +107,26 @@ public sealed partial class AuctionExpiryCoordinatorTests
         manager.Initialise();
         var handler = new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance,
             items, new MarketplaceRequestHelper(manager));
-        ulong firstAmount = buyout ? 80ul : 20ul;
-        ulong buyerAfterFirst = mode == "buyout-wallet" ? 25ul : 100ul - firstAmount;
+        ulong firstAmount = zeroProceeds ? 500ul : buyout ? 80ul : 20ul;
+        ulong buyerAfterFirst = mode == "buyout-wallet" ? 25ul : startingBuyerWallet - firstAmount;
         bool rebids = mode is "rebid" or "rebid-rejected";
         int attempts = 0, notices = 0, firstReplies = 0, rebidReplies = 0;
+        int sellerNotices = 0, sellerSaves = 0;
         Stopwatch heldRebid = null;
 
+        if (seller != null) seller.OnAuth = () => sellerSaves++;
+        sellerProxy.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is not ServerAuctionWon notice) return null;
+            Assert.Equal(200ul, notice.Auction.OwnerCharacterId);
+            Assert.Equal(500ul, notice.Auction.CurrentBid);
+            using var read = f.Context();
+            Assert.Empty(read.MarketplaceAuction);
+            Assert.Empty(read.CharacterMail);
+            Assert.Equal(42ul, Assert.Single(read.Item).OwnerId);
+            sellerNotices++;
+            return null;
+        });
         priorProxy.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
         {
             if (args[0] is ServerAuctionBidResult reply)
@@ -156,8 +176,10 @@ public sealed partial class AuctionExpiryCoordinatorTests
                 manager.Update(.01);
                 buyer.Events.Update(.01);
                 prior.Events.Update(.01);
+                seller?.Events.Update(.01);
                 Assert.Empty(buyer.Errors);
                 Assert.Empty(prior.Errors);
+                if (seller != null) Assert.Empty(seller.Errors);
                 if (rebidStarted.Task.IsCompleted)
                 {
                     heldRebid ??= Stopwatch.StartNew();
@@ -165,7 +187,7 @@ public sealed partial class AuctionExpiryCoordinatorTests
                 }
                 Assert.True(deadline.Elapsed < TimeSpan.FromSeconds(20), "Outbid publication did not settle.");
                 await Task.Delay(5);
-            } while (Pending(manager) || buyer.Events.PendingEvents || prior.Events.PendingEvents);
+            } while (Pending(manager) || buyer.Events.PendingEvents || prior.Events.PendingEvents || seller?.Events.PendingEvents == true);
         }
         finally { releaseRebid.TrySetResult(); }
 
@@ -175,6 +197,8 @@ public sealed partial class AuctionExpiryCoordinatorTests
         Assert.Equal(1, firstReplies);
         Assert.Equal(rebids ? 1 : 0, rebidReplies);
         Assert.Equal(rebids ? 2 : 1, executions);
+        Assert.Equal(zeroProceeds ? 1 : 0, sellerNotices);
+        Assert.Equal(0, sellerSaves);
         Assert.False(cleanup.IsAccountLocked(buyer.Player.Account));
         Assert.False(cleanup.IsAccountLocked(prior.Player.Account));
         using var final = f.Context();
@@ -184,7 +208,8 @@ public sealed partial class AuctionExpiryCoordinatorTests
         {
             Assert.Empty(final.MarketplaceAuction);
             Assert.Equal(42ul, Assert.Single(final.Item).OwnerId);
-            Assert.Equal(76ul, Assert.Single(final.CharacterMail).CurrencyAmount);
+            if (zeroProceeds) Assert.Empty(final.CharacterMail);
+            else Assert.Equal(76ul, Assert.Single(final.CharacterMail).CurrencyAmount);
         }
         else
         {

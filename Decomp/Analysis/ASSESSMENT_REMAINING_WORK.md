@@ -10,6 +10,12 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Committed seller notice](AUCTION_BUYOUT_TRANSACTION.md#committed-notice-for-the-original-seller)
+publishes a confirmed buyout or winning expiry to the original online seller.
+The live retry checks ownership and listing absence, and zero proceeds require
+no seller save. Cross-server and restart replay, deployed sockets and retail
+qualification remain open.
+
 [Guarded live outbid retry](NORMAL_AUCTION_BID_TRANSACTION.md#guarded-live-outbid-retry)
 retains committed bid and buyout notices on the original session and waits for
 later local settlement authority before retrying. A successful rebid suppresses
@@ -20,7 +26,7 @@ and account reservation release proceed independently of the retry.
 binds build 16042 bid-result, expired, outbid and won dispatch to the Lua
 events. Archived Carbine handlers remove the auction by ID on outbid and
 distinguish seller and winner messages. A retry now has an explicit
-superseding-bid guard requirement. Seller publication and replay remain open.
+superseding-bid guard requirement. The committed seller producer is linked above.
 
 [Effect 151 native validation](HEALING_PERSONAL_MODIFIER_EVIDENCE.md#build-16042-effect-151-row-validator)
 now binds the build 16042 validator, row field offsets and distinct dispatch
@@ -31,7 +37,7 @@ separate evidence requirements for #595.
 [Terminal auction notice retry](AUCTION_EXPIRY_TRANSACTION.md#retry-for-terminal-auction-notices)
 recovers failed won/expired packet sends on the original live actor after
 settlement. The retry retains the accepted snapshot and leaves listing and
-account reservations free. Seller notices, request replies, restart replay and
+account reservations free. Request replies, restart replay and
 wire or retail qualification remain open.
 
 [Marketplace inbox notice retry](MARKETPLACE_MAIL_PUBLICATION.md#retry-for-the-live-inbox-notice)

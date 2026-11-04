@@ -26,8 +26,8 @@ notice, which the new case reproduced before the listing proof was narrowed.
 The owning build and 209 scoped cases passed, including all six public-flow
 regressions. The scoped tests ran in 57 seconds. Local evidence is in
 `artifacts/continuation-20261104/auction-outbid/`.
-Cross-server and restart replay, seller notices, request-reply retry and
-wire or retail qualification remain open.
+Cross-server and restart replay, request-reply retry and wire or retail
+qualification remain open. See the later [committed seller notice](AUCTION_BUYOUT_TRANSACTION.md#committed-notice-for-the-original-seller).
 
 ## Client consumption of settlement notices
 
@@ -64,8 +64,8 @@ superseding bid on the same auction. Replaying an old notice after the
 recipient bids again can remove that auction from the refreshed listings.
 The current committed transfer path sends `ServerAuctionWon` to the
 receiver. The owner-sale branch identifies a separate seller publication
-candidate whose original-recipient and committed-producer coverage remain
-open. The later guard is recorded above.
+candidate now covered by the later [committed seller notice](AUCTION_BUYOUT_TRANSACTION.md#committed-notice-for-the-original-seller).
+The later outbid guard is recorded above.
 
 The pinned PE reads, LLVM excerpts and four byte-verified addon files are
 retained under `artifacts/continuation-20261104/auction-consumer/`. This is

@@ -142,6 +142,7 @@ namespace NexusForever.Game.Marketplace
             private bool Expiry => kind is AuctionSettlementKind.WinningExpiry or AuctionSettlementKind.UnsoldReturn;
             private bool Cancelling => kind == AuctionSettlementKind.CancelledReturn;
             private bool Returning => kind is AuctionSettlementKind.UnsoldReturn or AuctionSettlementKind.CancelledReturn;
+            private bool Sold => kind is AuctionSettlementKind.Buyout or AuctionSettlementKind.WinningExpiry;
             private bool DebitsReceiver => !Expiry && !Cancelling;
             private readonly ulong proceeds;
             private AuctionDeliverySettlement sale;
@@ -154,6 +155,7 @@ namespace NexusForever.Game.Marketplace
             private readonly HashSet<Actor> reconciled = [];
             private BidCharacter[] characters;
             private Participant[] preparing;
+            private Participant saleSeller;
             private IDisposable accounts;
             private AuctionSettlementCommand command;
             private BidOutcome outcome;
@@ -174,7 +176,7 @@ namespace NexusForever.Game.Marketplace
                 bidder = Expiry ? Returning ? before.Owner : before.Bidder : receiver.CharacterId;
                 route = record.StoredDatabase;
                 initiatorPublicationAllowed = publicationAllowed;
-                proceeds = TransfersItem && !Returning ? MarketplaceTransactionFee.CalculateItemAuctionSellerProceeds(amount, manager.GetGameTableManager()) : 0;
+                proceeds = Sold ? MarketplaceTransactionFee.CalculateItemAuctionSellerProceeds(amount, manager.GetGameTableManager()) : 0;
                 abortedPayload = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"aborted-normal-bid:{id}:{before.Id}:{bidder}:{amount}")));
             }
 
@@ -198,11 +200,14 @@ namespace NexusForever.Game.Marketplace
                     { Finish(GenericError.DbFailure); return; }
                     var selectedReceiver = Expiry ? manager.playerManager?.GetPlayer(bidder) : receiver;
                     var prior = !Expiry && before.Bidder != 0 && before.Bidder != bidder ? manager.playerManager?.GetPlayer(before.Bidder) : null;
-                    var seller = TransfersItem && proceeds != 0 ? manager.playerManager?.GetPlayer(before.Owner) : null;
-                    if (selectedReceiver != null && selectedReceiver is not Player || prior != null && prior is not Player || seller != null && seller is not Player)
+                    var seller = Sold ? manager.playerManager?.GetPlayer(before.Owner) : null;
+                    var paidSeller = proceeds != 0 ? seller : null;
+                    if (selectedReceiver != null && selectedReceiver is not Player || prior != null && prior is not Player || paidSeller != null && paidSeller is not Player)
                     { Finish(GenericError.DbFailure); return; }
+                    if (seller is Player originalSeller && originalSeller.Session?.Events != null && originalSeller.Account != null)
+                        saleSeller = new(originalSeller, originalSeller.Session, originalSeller.Account);
                     if (Expiry) receiver = selectedReceiver as Player;
-                    preparing = new[] { receiver, prior as Player, seller as Player }.Where(player => player != null).Distinct().OrderBy(player => player.CharacterId)
+                    preparing = new[] { receiver, prior as Player, paidSeller as Player }.Where(player => player != null).Distinct().OrderBy(player => player.CharacterId)
                         .Select(player => new Participant(player, player.Session, player.Account)).ToArray();
                     PrepareNext();
                 }, () => Finish(GenericError.DbFailure)));
@@ -377,6 +382,7 @@ namespace NexusForever.Game.Marketplace
             {
                 if (preparationFailed || reconciliationFailed || outcome?.Committed != true)
                 { Finish(preparationFailed && !reconciliationFailed ? preparationResult : GenericError.DbFailure); return; }
+                NotifySeller();
                 if (TransfersItem)
                 {
                     var winner = actors.SingleOrDefault(candidate => candidate.Wallet.Character == bidder);
@@ -396,7 +402,7 @@ namespace NexusForever.Game.Marketplace
                                         gameTableManager: manager.GetGameTableManager()));
                                 }
                                 if (!Cancelling)
-                                    PublishNotice(winner, responseAuction, auction => Returning
+                                    PublishNotice(winner.Owner, () => CanPublish(winner), responseAuction, auction => Returning
                                         ? new ServerAuctionExpired { Auction = auction } : new ServerAuctionWon { Auction = auction });
                             }
                         }
@@ -406,13 +412,23 @@ namespace NexusForever.Game.Marketplace
                 else NotifyPrevious();
             }
 
-            private void PublishNotice(Actor actor, AuctionInfo notification, Func<AuctionInfo, IWritable> packet,
+            private void NotifySeller()
+            {
+                if (saleSeller == null) return;
+                var owner = characters.Single(row => row.Id == before.Owner);
+                var prepared = actors.SingleOrDefault(actor => actor.Wallet.Character == owner.Id)?.Prepared;
+                bool OriginalSeller() => prepared?.Retired != true && CanPublish(saleSeller, owner.Id, owner.Account);
+                OnActor(saleSeller, () => PublishNotice(saleSeller, OriginalSeller, responseAuction,
+                    auction => new ServerAuctionWon { Auction = auction }, () => ReadNoticeAuthority(null)));
+            }
+
+            private void PublishNotice(Participant owner, Func<bool> canPublish, AuctionInfo notification, Func<AuctionInfo, IWritable> packet,
                 Func<NoticeAuthority> authority = null)
             {
-                var session = actor.Owner.Session;
+                var session = owner.Session;
                 var queue = session.Events;
                 var snapshot = CloneAuction(notification);
-                bool CurrentActor() => ReferenceEquals(session.Events, queue) && CanPublish(actor);
+                bool CurrentActor() => ReferenceEquals(session.Events, queue) && canPublish();
                 NoticeAuthority GetAuthority() => authority?.Invoke() ?? NoticeAuthority.Ready;
                 void Schedule(Task delay) => queue.EnqueueThreadSafe(new PredicateEvent(
                     () => !CurrentActor() || delay.IsCompleted && GetAuthority() != NoticeAuthority.Waiting, Publish));
@@ -440,13 +456,17 @@ namespace NexusForever.Game.Marketplace
 
             private bool CanPublish(Actor actor) => !actor.Prepared.Retired
                 && (actor.Wallet.Character != bidder || initiatorPublicationAllowed?.Invoke() != false)
-                && ReferenceEquals(actor.Owner.Player.Session, actor.Owner.Session)
-                && (actor.Owner.Session is not IPlayerSession bound || ReferenceEquals(bound.Player, actor.Owner.Player))
-                && ReferenceEquals(actor.Owner.Player.Account, actor.Owner.Account) && actor.Owner.Account.Id == actor.Wallet.Account
-                && ReferenceEquals(actor.Owner.Account.Session, actor.Owner.Session)
-                && ReferenceEquals(manager.playerManager?.GetPlayer(actor.Wallet.Character), actor.Owner.Player)
-                && actor.Owner.Session is not NetworkSession { IsDisconnecting: true }
-                && actor.Owner.Player.LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished);
+                && CanPublish(actor.Owner, actor.Wallet.Character, actor.Wallet.Account);
+
+            private bool CanPublish(Participant owner, ulong character, uint account) =>
+                owner.Player.CharacterId == character
+                && ReferenceEquals(owner.Player.Session, owner.Session)
+                && (owner.Session is not IPlayerSession bound || ReferenceEquals(bound.Player, owner.Player))
+                && ReferenceEquals(owner.Player.Account, owner.Account) && owner.Account.Id == account
+                && ReferenceEquals(owner.Account.Session, owner.Session)
+                && ReferenceEquals(manager.playerManager?.GetPlayer(character), owner.Player)
+                && owner.Session is not NetworkSession { IsDisconnecting: true }
+                && owner.Player.LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished);
 
             private void NotifyPrevious()
             {
@@ -454,19 +474,19 @@ namespace NexusForever.Game.Marketplace
                 var previous = actors.SingleOrDefault(candidate => candidate.Wallet.Character == before.Bidder && before.Bidder != bidder);
                 if (previous == null) { Finish(GenericError.Ok); return; }
                 var notification = responseAuction ?? CloneAuction(record.Auction, record.ExpiresAtUtc);
-                var accepted = before with { Bid = amount, Bidder = bidder };
+                var accepted = TransfersItem ? null : before with { Bid = amount, Bidder = bidder };
                 OnActor(previous.Owner, () =>
                 {
                     try
                     {
-                        PublishNotice(previous, notification, auction => new ServerAuctionOutbid { Auction = auction },
-                            () => ReadOutbidAuthority(accepted));
+                        PublishNotice(previous.Owner, () => CanPublish(previous), notification,
+                            auction => new ServerAuctionOutbid { Auction = auction }, () => ReadNoticeAuthority(accepted));
                     }
                     finally { OnCoordinator(() => Finish(GenericError.Ok)); }
                 });
             }
 
-            private NoticeAuthority ReadOutbidAuthority(AuctionRow accepted)
+            private NoticeAuthority ReadNoticeAuthority(AuctionRow accepted)
             {
                 lock (manager.syncRoot)
                 {
@@ -476,7 +496,7 @@ namespace NexusForever.Game.Marketplace
                         || manager.auctionSettlements.TryGetValue(before.Id, out var active) && !ReferenceEquals(active, this))
                         return NoticeAuthority.Waiting;
                     var current = manager.auctions.SingleOrDefault(row => row.Auction.AuctionId == before.Id);
-                    bool matches = TransfersItem ? current == null && confirmedListingAbsent
+                    bool matches = accepted == null ? current == null && confirmedListingAbsent
                         : current?.StoredRow == accepted && current.StoredDatabase == route && manager.HasConsistentAuctionView(current);
                     return matches ? NoticeAuthority.Ready : NoticeAuthority.Superseded;
                 }

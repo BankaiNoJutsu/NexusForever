@@ -1,5 +1,33 @@
 # Auction buyout transaction
 
+## Committed notice for the original seller
+
+4 November 2026. The mapped `0564` event carries the auction to the Carbine
+won handler. Its seller branch uses `Game.ItemAuction.IsOwned`. In the pinned
+build 16042 PE, the binding at `0x140c5d510` leads to `0x1406a1fc0`, which
+compares the decoded owner at +0x10 with the local player. This corroborates
+the seller consumer. Original retail server timing remains unobserved.
+[Archived won handler](https://github.com/NexusInstruments/CarbineAddons/blob/cf063b3e22b08f49ff51c12cec258a9f1cf86d68/MarketplaceAuction/MarketplaceAuction.lua#L1383)
+
+Confirmed buyouts and winning expiries now send the sold notice to the original
+online seller after actor reconciliation and proof that the listing is gone.
+The notice retains the accepted auction and uses the original player, account,
+session and queue. A transient send failure retries there. A retired or
+rebound session drops the notice. Buyer replies and reservation release proceed
+independently. The zero-proceeds path captures the notice recipient without
+enrolling a seller wallet or ordinary save. An offline buyer can still settle
+by mail while the online seller receives the notice.
+
+The retained baseline shows six missing notices. The tests cover live seller
+publication, retry, rebinding, retirement, offline buyers and the zero-proceeds
+public buyout. The owning build and all 212 scoped cases passed. The scoped
+tests ran in 58 seconds. Evidence is in
+`artifacts/continuation-20261104/auction-seller/`. Qualification covers the
+persisted auction producer and the live session enqueue boundary. Legacy
+adapter paths, cross-server and restart replay, and retail behavior remain separate.
+
+## Original buyout settlement
+
 1 November 2026. Qualified source/private-SQLite boundary11,141: zero full-test
 failures/skips, zero build warnings/errors and zero remaining findings on either
 review axis. SourceTools pin
