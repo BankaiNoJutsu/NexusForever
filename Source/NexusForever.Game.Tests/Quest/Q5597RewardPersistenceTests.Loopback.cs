@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +16,8 @@ using NexusForever.Database.Configuration.Model;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Movement;
+using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Abstract.RBAC;
@@ -35,6 +38,7 @@ using NexusForever.Network.Internal.Message.Player;
 using NexusForever.Network.Message;
 using NexusForever.Network.Message.Handler;
 using NexusForever.Network.Message.Model;
+using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Shared;
@@ -71,6 +75,7 @@ public sealed partial class Q5597RewardPersistenceTests
         const ushort nextQuestId = StarterTutorialDefinition.ExileHoverboardQuestId;
         RecordingDispatchProxy<IWorldSession> observer = null;
         RecordingDispatchProxy<IWorldSession> retiredObserver = null;
+        RecordingDispatchProxy<IWorldSession> lateObserverSession = null;
         RecordingDispatchProxy<IAccount> retiredObserverAccount = null;
         using var f = new Fixture(null);
         using var authConnection = new SqliteConnection(new SqliteConnectionStringBuilder
@@ -138,6 +143,7 @@ public sealed partial class Q5597RewardPersistenceTests
                 {
                     Assert.Empty(LevelPackets(observer));
                     Assert.Empty(LevelPackets(retiredObserver));
+                    Assert.Empty(LevelPackets(lateObserverSession));
                     Assert.Empty(LevelMessages(actor));
                     Assert.Empty(FanfarePackets(observer));
                     FlushPropertyUpdates(actor);
@@ -172,11 +178,14 @@ public sealed partial class Q5597RewardPersistenceTests
                     var character = read.Character.Single();
                     Assert.Equal((2, 120u), ((int)character.Level, character.TotalXp));
                     Assert.Equal(2f, Assert.Single(LevelPackets(observer)).Stat.Value);
+                    Assert.Equal(2f, Assert.Single(LevelPackets(lateObserverSession)).Stat.Value);
                     Assert.Equal(2f, Assert.Single(LevelMessages(actor)).Value);
                     Assert.Empty(LevelPackets(retiredObserver));
                     Assert.Equal(25f, Assert.Single(PropertyMessages(actor), update => update.Property == FixtureLevelProperty).Value);
                     FlushPropertyUpdates(actor);
                     Assert.Equal(25f, Assert.Single(Assert.Single(PropertyPackets(observer)).Properties,
+                        property => property.Property == FixtureLevelProperty).Value);
+                    Assert.Equal(25f, Assert.Single(Assert.Single(PropertyPackets(lateObserverSession)).Properties,
                         property => property.Property == FixtureLevelProperty).Value);
                     world.FlushPackets();
                     if (replaceMapAdmission)
@@ -302,6 +311,13 @@ public sealed partial class Q5597RewardPersistenceTests
                 FlushPropertyUpdates(actor);
                 Assert.Empty(PropertyPackets(observer));
                 Assert.Empty(PropertyMessages(actor));
+                lateObserverSession = CreateLateObserver(actor.Player);
+                var create = Assert.Single(lateObserverSession.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
+                    .SelectMany(call => call.Arguments).OfType<ServerEntityCreate>());
+                Assert.Equal(1f, Assert.Single(create.Stats, stat => stat.Stat == Stat.Level).Value);
+                Assert.Equal(10f, Assert.Single(create.Properties, property => property.Property == FixtureLevelProperty).Value);
+                Assert.DoesNotContain(create.Properties, property => property.Property == Property.BaseVigor);
+                Assert.Empty(LevelPackets(lateObserverSession));
                 retiredObserverAccount.SetProperty(nameof(IAccount.WorldSessionEpoch), 2ul);
                 if (replaceMapAdmission)
                     ((IPlayerMapAdmission)actor.Player).BeginMapAdmission();
@@ -391,12 +407,42 @@ public sealed partial class Q5597RewardPersistenceTests
         typeof(Player).GetField("characterManager", instance)!.SetValue(actor.Player, characters);
         actor.Player.IsLoading = true;
         actor.Player.Level = loaded.Level;
+        actor.Player.SetBaseProperty(FixtureLevelProperty, loaded.Level * 10f);
         typeof(Player).GetField("attributePointAllocations", instance)!.SetValue(actor.Player, new uint[6]);
         actor.Player.IsLoading = false;
         ((RecordingDispatchProxy<IAccount>)(object)actor.Player.Account).SetProperty(nameof(IAccount.RbacManager),
             RecordingDispatchProxy<IAccountRBACManager>.Create(out _));
         actor.Set(nameof(Player.XpManager), new XpManager(actor.Player, loaded, f.Source.Tables));
         actor.PublisherProxy.Invocations.Clear();
+    }
+
+    private static RecordingDispatchProxy<IWorldSession> CreateLateObserver(Player source)
+    {
+        const BindingFlags instance = BindingFlags.Instance | BindingFlags.NonPublic;
+        var observer = (Player)RuntimeHelpers.GetUninitializedObject(typeof(Player));
+        var session = RecordingDispatchProxy<IWorldSession>.Create(out var sessionProxy);
+        var account = RecordingDispatchProxy<IAccount>.Create(out var accountProxy);
+        accountProxy.SetProperty(nameof(IAccount.WorldSessionEpoch), 1ul);
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), observer);
+        typeof(Player).GetProperty(nameof(Player.Session))!.SetValue(observer, session);
+        typeof(Player).GetProperty(nameof(Player.Account))!.SetValue(observer, account);
+        typeof(GridEntity).GetProperty(nameof(GridEntity.Guid))!.SetValue(observer, 72u);
+        typeof(GridEntity).GetProperty(nameof(GridEntity.Map))!.SetValue(observer, source.Map);
+        var visible = (Dictionary<uint, IGridEntity>)typeof(GridEntity).GetField("visibleEntities", instance)!.GetValue(source)!;
+        visible.Add(observer.Guid, observer);
+
+        var movement = RecordingDispatchProxy<IMovementManager>.Create(out var movementProxy);
+        movementProxy.SetMethodReturn(nameof(IMovementManager.GetNetworkEntityCommands), Array.Empty<INetworkEntityCommand>());
+        typeof(WorldEntity).GetProperty(nameof(WorldEntity.MovementManager))!.SetValue(source, movement);
+        var visuals = typeof(WorldEntity).GetField("itemVisuals", instance)!;
+        visuals.SetValue(source, Activator.CreateInstance(visuals.FieldType));
+        ((RecordingDispatchProxy<IAppearanceManager>)(object)source.AppearanceManager)
+            .SetMethodReturn(nameof(IAppearanceManager.GetBones), Array.Empty<IBone>());
+        ((RecordingDispatchProxy<IGuildManager>)(object)source.GuildManager)
+            .SetMethodReturnFactory("GetEnumerator", () => Enumerable.Empty<IGuildBase>().GetEnumerator());
+
+        typeof(Player).GetMethod("SendVisibleEntityCreate", instance)!.Invoke(observer, [source, false]);
+        return sessionProxy;
     }
 
     private static RecordingDispatchProxy<IWorldSession> AddObserver(Player source, IBaseMap map, uint guid,

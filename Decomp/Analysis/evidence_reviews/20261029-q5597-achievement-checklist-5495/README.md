@@ -254,3 +254,23 @@ in the seven-case loopback rerun. An earlier socket run expected that
 packet during map loading and timed out in the replacement-admission case.
 Results and binary hashes are under
 `artifacts/continuation-20261104/quest-property-publication/`.
+
+## Quest observer snapshots
+
+4 November 2026. The player visibility create path uses the prior level
+and affected property rows while the ordinary quest Character save is held.
+A property that had no prior row is omitted until commit. Observers that
+received the older level join the same deduplicated, session-checked level
+publication as observers already in range when the level changed. The
+normal world-tick route supplies committed property updates.
+
+The XP loopback exercises the production visibility create producer during
+the held save. Its recording observer receives the old level and BaseHealth.
+On commit it receives one level update and the latest property wave. The
+SQL rejection path produces no level catch-up or property wave. This covers
+the create packet producer and the post-commit observer route. Native
+rendering, dependent vitals, live broker delivery and deployed behavior
+remain open.
+
+All 56 checks passed in the final scoped run. Results and binary hashes are under
+`artifacts/continuation-20261104/quest-observer-snapshot/`.

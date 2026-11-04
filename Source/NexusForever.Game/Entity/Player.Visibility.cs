@@ -2,12 +2,15 @@ using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Loot;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Entity.Movement.Command;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Network.Message;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Command;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Shared;
 
 namespace NexusForever.Game.Entity
@@ -20,6 +23,101 @@ namespace NexusForever.Game.Entity
         private const uint NorthernWildsLandingSiteDeadeyeCreatureId = 11063u;
         private const uint NorthernWildsAvalancheVisualCreatureId = 15615u;
         private const uint NorthernWildsAvalancheCasterCreatureId = 67662u;
+
+        private QuestVisibilityLevel questVisibilityLevel;
+
+        private sealed class QuestVisibilityLevel(StatValueInitial previous)
+        {
+            internal StatValueInitial Previous { get; } = previous;
+            internal uint Level { get; set; }
+            internal Dictionary<IPlayer, Action<ServerEntityStatUpdateInteger>> Observers { get; } = new(ReferenceEqualityComparer.Instance);
+        }
+
+        private void RetainQuestLevelForVisibility(uint level)
+        {
+            if (QuestManager is not QuestManager { IsOrdinaryCompletionMutationInProgress: true } quests)
+                return;
+
+            if (questVisibilityLevel == null)
+            {
+                stats.TryGetValue(Stat.Level, out IStatValue previous);
+                var snapshot = new QuestVisibilityLevel(new StatValueInitial
+                {
+                    Stat = Stat.Level, Type = StatType.Integer, Value = Level, Data = previous?.Data ?? 0u
+                });
+                questVisibilityLevel = snapshot;
+                quests.RetainOrdinaryCompletionPublication(() =>
+                {
+                    questVisibilityLevel = null;
+                    if (Level != snapshot.Level)
+                        return;
+
+                    var update = new ServerEntityStatUpdateInteger
+                    {
+                        UnitId = Guid,
+                        Stat = new StatValueUpdate { Stat = Stat.Level, Type = StatType.Integer, Value = Level }
+                    };
+                    foreach (Action<ServerEntityStatUpdateInteger> publish in snapshot.Observers.Values)
+                    {
+                        try { publish(update); }
+                        catch (Exception exception) { log.Error(exception, "Failed to publish a committed quest level to an observer."); }
+                    }
+                });
+            }
+
+            questVisibilityLevel.Level = level;
+        }
+
+        internal void RetainQuestLevelObserver(IPlayer recipient)
+        {
+            if (questVisibilityLevel == null)
+                return;
+
+            var map = Map;
+            uint sourceGuid = Guid;
+            uint recipientGuid = recipient.Guid;
+            var session = recipient.Session;
+            var account = recipient.Account;
+            ulong? epoch = account?.WorldSessionEpoch;
+            questVisibilityLevel.Observers[recipient] = update =>
+            {
+                if (map == null || !ReferenceEquals(Map, map) || Guid != sourceGuid
+                    || !visibleEntities.TryGetValue(recipientGuid, out IGridEntity visible) || !ReferenceEquals(visible, recipient)
+                    || !ReferenceEquals(recipient.Map, map) || recipient.Guid != recipientGuid || recipient.IsLoading
+                    || !ReferenceEquals(recipient.Session, session) || !ReferenceEquals(recipient.Account, account)
+                    || account?.WorldSessionEpoch != epoch || session is NetworkSession { IsDisconnecting: true }
+                    || session is not IPlayerSession bound || !ReferenceEquals(bound.Player, recipient))
+                    return;
+
+                session.EnqueueMessageEncrypted(update);
+            };
+        }
+
+        private void ApplyQuestVisibilitySnapshot(ServerEntityCreate packet, Player observer)
+        {
+            if (questVisibilityLevel is { } snapshot && Level == snapshot.Level)
+            {
+                int index = packet.Stats.FindIndex(stat => stat.Stat == Stat.Level);
+                if (index >= 0)
+                {
+                    packet.Stats[index] = snapshot.Previous;
+                    RetainQuestLevelObserver(observer);
+                }
+            }
+
+            if (!HasRetainedQuestProperties)
+                return;
+
+            for (int i = packet.Properties.Count - 1; i >= 0; i--)
+            {
+                if (!retainedQuestProperties.TryGetValue(packet.Properties[i].Property, out var previous))
+                    continue;
+                if (previous == null)
+                    packet.Properties.RemoveAt(i);
+                else
+                    packet.Properties[i] = previous;
+            }
+        }
 
         public override bool CanSeeEntity(IGridEntity entity)
         {
@@ -126,6 +224,8 @@ namespace NexusForever.Game.Entity
                 Session.EnqueueMessageEncrypted(auxiliary);
 
             ServerEntityCreate createPacket = worldEntity.BuildCreatePacket(IsLoading);
+            if (worldEntity is Player source && !ReferenceEquals(source, this))
+                source.ApplyQuestVisibilitySnapshot(createPacket, this);
 
             IPlayer playerEntity = worldEntity as IPlayer;
             if (playerEntity != null)

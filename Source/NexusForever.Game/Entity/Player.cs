@@ -83,6 +83,7 @@ using NexusForever.Shared.Configuration;
 using NexusForever.Shared.Game;
 using NexusForever.Shared.Game.Events;
 using NLog;
+using NetworkPropertyValue = NexusForever.Network.World.Message.Model.Shared.PropertyValue;
 using Path = NexusForever.Game.Static.PlayerPath.Path;
 using static NexusForever.Game.Static.Tutorial.StarterTutorialDefinition;
 
@@ -340,6 +341,7 @@ namespace NexusForever.Game.Entity
                 if (base.Level == value)
                     return;
 
+                RetainQuestLevelForVisibility(value);
                 base.Level = value;
                 saveMask |= PlayerSaveMask.Level;
 
@@ -3582,9 +3584,20 @@ namespace NexusForever.Game.Entity
                     propertyValue.Value += values;
         }
 
-        private HashSet<Property> retainedQuestProperties;
+        private Dictionary<Property, NetworkPropertyValue> retainedQuestProperties;
         internal bool HasRetainedQuestProperties => retainedQuestProperties?.Count > 0;
-        internal bool IsRetainingQuestProperty(Property property) => retainedQuestProperties?.Contains(property) == true;
+        internal bool IsRetainingQuestProperty(Property property) => retainedQuestProperties?.ContainsKey(property) == true;
+
+        internal void RetainQuestProperty(QuestManager quests, Property property, NetworkPropertyValue previous)
+        {
+            (retainedQuestProperties ??= []).Add(property, previous);
+            quests.RetainOrdinaryCompletionPublication(() =>
+            {
+                retainedQuestProperties.Remove(property);
+                SetPropertyEmit(property);
+                PublishPropertyUpdate(property, GetPropertyValue(property));
+            });
+        }
 
         /// <summary>
         /// Invoked when <see cref="IPlayer"/> has a <see cref="Property"/> updated.
@@ -3593,23 +3606,8 @@ namespace NexusForever.Game.Entity
         {
             base.OnPropertyUpdate(propertyValue);
 
-            Property property = propertyValue.Property;
-            if (IsRetainingQuestProperty(property))
-                return;
-
-            if (QuestManager is QuestManager { IsOrdinaryCompletionMutationInProgress: true } quests)
-            {
-                (retainedQuestProperties ??= []).Add(property);
-                quests.RetainOrdinaryCompletionPublication(() =>
-                {
-                    retainedQuestProperties.Remove(property);
-                    SetPropertyEmit(property);
-                    PublishPropertyUpdate(property, GetPropertyValue(property));
-                });
-                return;
-            }
-
-            PublishPropertyUpdate(property, propertyValue.Value);
+            if (!IsRetainingQuestProperty(propertyValue.Property))
+                PublishPropertyUpdate(propertyValue.Property, propertyValue.Value);
         }
 
         private void PublishPropertyUpdate(Property property, float value)
