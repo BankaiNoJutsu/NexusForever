@@ -128,9 +128,11 @@ public sealed class MapAdmissionQueueTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void AFailedInstanceEntryPreservesOtherTransfers(bool admissionThrows)
+    [InlineData("denied")]
+    [InlineData("admission-fault")]
+    [InlineData("creation-fault")]
+    [InlineData("superseded-fault")]
+    public void AFailedInstanceEntryPreservesOtherTransfers(string outcome)
     {
         var waiting = new TestPlayer();
         var refused = new TestPlayer();
@@ -138,11 +140,13 @@ public sealed class MapAdmissionQueueTests
         var map = new TestInstancedMap();
         map.InstanceProxy.SetProperty(nameof(IMapInstance.UnloadStatus), MapUnloadStatus.UnloadingPlayers);
         MapPosition otherDestination = map.AddDestination(out var otherInstance);
+        if (outcome == "creation-fault") map.FailCreationFor = refused.Player;
         otherInstance.SetMethodHandler(nameof(IMap.CanEnter), args =>
         {
             if (!ReferenceEquals(args[0], refused.Player))
                 return null;
-            if (admissionThrows)
+            if (outcome == "superseded-fault") refused.State.Queue();
+            if (outcome is "admission-fault" or "superseded-fault")
                 throw new InvalidOperationException("fixture admission failure");
             return GenericError.InstanceFull;
         });
@@ -150,15 +154,16 @@ public sealed class MapAdmissionQueueTests
         map.EnqueueAdd(refused.Player, otherDestination);
         map.EnqueueAdd(following.Player, otherDestination);
 
-        if (admissionThrows)
+        map.Update(0);
+        var failures = refused.Proxy.GetInvocations(nameof(IPlayer.OnTeleportToFailed));
+        if (outcome == "superseded-fault")
         {
-            Assert.Equal("fixture admission failure", Assert.Throws<InvalidOperationException>(() => map.Update(0)).Message);
+            Assert.Empty(failures);
         }
         else
         {
-            map.Update(0);
-            var failure = Assert.Single(refused.Proxy.GetInvocations(nameof(IPlayer.OnTeleportToFailed)));
-            Assert.Equal(GenericError.InstanceFull, failure.Arguments[0]);
+            Assert.Equal(outcome == "denied" ? GenericError.InstanceFull : GenericError.InstanceInvalidDestination,
+                Assert.Single(failures).Arguments[0]);
         }
 
         int followingAddsOnFirstTick = otherInstance.GetInvocations(nameof(IMap.EnqueueAdd)).Count;
@@ -169,7 +174,7 @@ public sealed class MapAdmissionQueueTests
 
         Assert.Same(waiting.Player, Assert.Single(map.InstanceProxy.GetInvocations(nameof(IMap.EnqueueAdd))).Arguments[0]);
         Assert.Same(following.Player, Assert.Single(otherInstance.GetInvocations(nameof(IMap.EnqueueAdd))).Arguments[0]);
-        Assert.Equal(admissionThrows ? 0 : 1, followingAddsOnFirstTick);
+        Assert.Equal(1, followingAddsOnFirstTick);
     }
 
     [Theory]
@@ -323,6 +328,7 @@ public sealed class MapAdmissionQueueTests
     private sealed class TestInstancedMap : InstancedMap<IMapInstance>
     {
         public int Created { get; private set; }
+        public IPlayer FailCreationFor { get; set; }
         public RecordingDispatchProxy<IMapManager> ManagerProxy { get; }
         public RecordingDispatchProxy<IMapInstance> InstanceProxy { get; }
         private readonly Dictionary<Guid, IMapInstance> destinations = new();
@@ -351,6 +357,7 @@ public sealed class MapAdmissionQueueTests
         protected override IMapLock GetMapLock(IPlayer player) => mapLock;
         protected override IMapInstance CreateInstance(IPlayer player, IMapLock mapLock)
         {
+            if (ReferenceEquals(FailCreationFor, player)) throw new InvalidOperationException("fixture creation failure");
             Created++;
             return destinations[mapLock.InstanceId];
         }

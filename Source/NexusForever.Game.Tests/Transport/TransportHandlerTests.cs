@@ -434,6 +434,7 @@ public class TransportHandlerTests
     [InlineData("admit", true)]
     [InlineData("deny", true)]
     [InlineData("balance-changed", true)]
+    [InlineData("instance-fault", true)]
     public void FlightPathPurchase_SettlesOnlyOnDestinationAdmission(string outcome, bool instanced)
     {
         var handler = CreateFlightPathHandler(out var tables, out _, out var wallet, out _);
@@ -447,9 +448,12 @@ public class TransportHandlerTests
         var destination = RecordingDispatchProxy<IMapInstance>.Create(out var destinationMap);
         ulong balance = 100;
         ulong? balanceAtDestination = null;
+        int destinationAttempts = 0;
         destinationMap.SetMethodHandler(nameof(IMap.CanEnter), _ =>
         {
             balanceAtDestination = balance;
+            if (outcome == "instance-fault" && ++destinationAttempts == 1)
+                throw new InvalidOperationException("fixture instance admission failure");
             return outcome == "deny" ? GenericError.InstanceLimitExceeded : null;
         });
         var factory = RecordingDispatchProxy<IMapFactory>.Create(out var maps);
@@ -502,14 +506,30 @@ public class TransportHandlerTests
             if (outcome == "rebound")
                 Assert.Empty(errors);
             else
-                Assert.Equal(outcome == "deny" ? GenericError.InstanceLimitExceeded : GenericError.VendorNotEnoughCash,
-                    Assert.Single(errors).Error);
+                Assert.Equal(outcome switch
+                {
+                    "deny" => GenericError.InstanceLimitExceeded,
+                    "instance-fault" => GenericError.InstanceInvalidDestination,
+                    _ => GenericError.VendorNotEnoughCash
+                }, Assert.Single(errors).Error);
             Assert.True(player.CanTeleport());
         }
         Assert.Equal(100ul, balanceBeforeAdmission);
         Assert.False(discoveredBeforeAdmission);
         if (outcome != "rebound")
             Assert.Equal(outcome == "balance-changed" ? 11ul : 100ul, balanceAtDestination);
+
+        if (outcome == "instance-fault")
+        {
+            Assert.Equal(player.Guid, player.ControlGuid);
+            handler.HandleMessage(session, BuildFlightPathPurchase(1u, 2u));
+            mapManager.Update(0);
+            Assert.Equal(88ul, balance);
+            Assert.Single(wallet.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+            Assert.Equal(30u, Assert.Single(session.EncryptedMessages.OfType<ServerEntitySelectAuxUInt14>()).Value);
+            Assert.Single(destinationMap.GetInvocations(nameof(IMap.EnqueueAdd)));
+            Assert.Single(session.EncryptedMessages.OfType<ServerGenericError>());
+        }
 
         void SetField(Type type, string name, object value)
             => type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(player, value);

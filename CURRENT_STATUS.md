@@ -21171,6 +21171,22 @@ transport, instance-binding, map-admission and world-entry tests passed.
 Local evidence is under
 `artifacts/continuation-20261104/instance-transfer-retry/`.
 
+#### Instance admission recovery
+
+4 November 2026. An exception while resolving, creating or checking the
+destination instance reports `InstanceInvalidDestination` through the
+existing teleport failure path for the current admission generation. The
+player can retry from the source map, and the queue continues processing
+other transfers in the same tick. A superseded request cannot fail a newer
+generation. The flight-path regression verifies that an exception leaves the
+balance and discovered nodes intact, restores player control, and allows a
+fresh purchase to settle once. Recovery after handoff to the destination map
+and physical arrival remain open.
+
+Four baseline cases reproduced the failure. The owning-project build and
+115 scoped transport, instance-binding, map-admission and world-entry tests
+passed. Results are under `artifacts/continuation-20261104/instance-admission-fault/`.
+
 #### Rapid Transport cast fare
 
 4 November 2026. The request supplies its validated route fare to the spell

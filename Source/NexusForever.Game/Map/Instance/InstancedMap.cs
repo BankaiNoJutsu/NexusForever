@@ -106,38 +106,51 @@ namespace NexusForever.Game.Map.Instance
             {
                 if (!PlayerMapAdmissionGuard.IsCurrent(pending.Player, pending.AdmissionGeneration))
                     continue;
-                IMapLock mapLock = pending.MapPosition.Info.MapLock;
-
-                // find implicit map lock if explicit not specified
-                mapLock ??= GetMapLock(pending.Player);
-                if (mapLock == null)
-                    throw new InvalidOperationException();
-
-                if (!PlayerMapAdmissionGuard.IsCurrent(pending.Player, pending.AdmissionGeneration))
-                    continue;
-                T instance = GetInstance(mapLock.InstanceId);
-
-                // specified instance doesn't have an instance yet, create it
-                if (instance == null)
+                T instance = default;
+                MapUnloadStatus? unloadStatus = null;
+                GenericError? result = null;
+                try
                 {
-                    instance = CreateInstance(pending.Player, mapLock);
-                    instances.Add(instance.InstanceId, instance);
+                    IMapLock mapLock = pending.MapPosition.Info.MapLock ?? GetMapLock(pending.Player);
+                    if (mapLock == null)
+                        throw new InvalidOperationException("Instance admission requires a map lock.");
 
-                    log.Trace($"Created new instance {instance.InstanceId} for map {instance.Entry.Id}.");
+                    if (!PlayerMapAdmissionGuard.IsCurrent(pending.Player, pending.AdmissionGeneration))
+                        continue;
+                    instance = GetInstance(mapLock.InstanceId);
 
-                    GetMapManager().IncreaseInstanceCount(pending.Player);
+                    if (instance == null)
+                    {
+                        instance = CreateInstance(pending.Player, mapLock);
+                        instances.Add(instance.InstanceId, instance);
+
+                        log.Trace($"Created new instance {instance.InstanceId} for map {instance.Entry.Id}.");
+
+                        GetMapManager().IncreaseInstanceCount(pending.Player);
+                    }
+
+                    if (!PlayerMapAdmissionGuard.IsCurrent(pending.Player, pending.AdmissionGeneration))
+                        continue;
+                    unloadStatus = instance.UnloadStatus;
+                    if (!unloadStatus.HasValue)
+                        result = instance.CanEnter(pending.Player, pending.MapPosition);
+                }
+                catch (Exception exception)
+                {
+                    log.Error(exception, "Failed to prepare admission to instanced world {0}.", Entry?.Id);
+                    result = GenericError.InstanceInvalidDestination;
                 }
 
                 if (!PlayerMapAdmissionGuard.IsCurrent(pending.Player, pending.AdmissionGeneration))
                     continue;
 
                 // existing instance is unloading
-                if (instance.UnloadStatus.HasValue)
+                if (unloadStatus.HasValue)
                 {
                     // this is a special rare case when a player is removed from an instance during unload but the return position is the same instance
                     // in this case we must explicitly remove the player from the instance and wait for the instance to unload before recreating
                     // you can replicate this functionality by invoking the instance unload command while on your own residence
-                    if (instance.UnloadStatus == MapUnloadStatus.UnloadingPlayers
+                    if (unloadStatus == MapUnloadStatus.UnloadingPlayers
                         && pending.Player.Map == (IBaseMap)instance
                         && !pending.ExplictRemove)
                     {
@@ -150,9 +163,6 @@ namespace NexusForever.Game.Map.Instance
                     continue;
                 }
 
-                GenericError? result = instance.CanEnter(pending.Player, pending.MapPosition);
-                if (!PlayerMapAdmissionGuard.IsCurrent(pending.Player, pending.AdmissionGeneration))
-                    continue;
                 PlayerMapAdmissionGuard.Run(pending.Player, pending.AdmissionGeneration, () =>
                 {
                     if (pending.Player is Player player && !player.TryApplyTaxiAdmission(
