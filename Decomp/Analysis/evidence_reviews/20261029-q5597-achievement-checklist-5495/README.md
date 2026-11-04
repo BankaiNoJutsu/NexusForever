@@ -117,3 +117,25 @@ corrected Q5597 run passed all 20 scoped cases. Logs and hashes are under
 
 Full-stack Auth and character selection, physical map entry, native UI, and
 the complete Q5596 → Q5597 → Q5604 chain still need separate evidence.
+
+## Rejected Character save and retry
+
+4 November 2026. The encrypted turn-in fixture installs a SQLite trigger on
+the Q5597 completion write and invokes `Player.SaveDirect`. The save surfaces
+the trigger rejection and marks the original Quest manager for reload. The
+packet trace captures both `ServerItemAdd` messages for Item2 29664 and 81917
+and one completed `ServerQuestStateChange` before the save. It records zero
+achievement updates before and after rejection.
+
+The fresh Character roster contains the achieved quest and zero reward or
+achievement rows. After the fixture removes the trigger, a fresh connection
+can turn in again. The two resulting item GUIDs differ from the abandoned
+grants, and the next connection reloads the committed rewards once. The test
+asserts rollback and safe retry. Its trace records the early packets without
+requiring them as future behavior.
+
+All 80 scoped cases passed. The raw TRX and build record are under
+`artifacts/continuation-20261104/q5597-save-rejection/`. This covers a direct
+Character save on the loopback fixture. Ordinary item and quest-state notices
+still need a commit boundary. Other reward kinds, asynchronous save failure,
+deployed sockets and retail presentation remain separate gates.

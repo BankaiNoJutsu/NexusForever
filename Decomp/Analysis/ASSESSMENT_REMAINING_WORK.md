@@ -215,6 +215,11 @@ The normal path accounts for capacity recovered from pushed quest items.
 verify the saved inventory, completed quest and checklist over two encrypted
 World connections and reject a duplicate turn-in. Full-stack relog, native
 presentation and the full quest chain remain open.
+[The rejected-save trace](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#rejected-character-save-and-retry)
+shows item grants and completed quest state reaching the client before a
+rejected Character write. Achievement publication stays withheld. Fresh
+session recovery works after rollback. The item and quest-state commit
+boundary remains open.
 
 [Committed commodity fill recovery](COMMODITY_POSTING_SETTLEMENT.md#recovery-after-a-committed-fill-notice-fails)
 refreshes the original recipient's current orders after an enqueue failure.

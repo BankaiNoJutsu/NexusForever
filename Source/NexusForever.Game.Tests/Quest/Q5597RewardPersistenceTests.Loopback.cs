@@ -28,6 +28,7 @@ using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.WorldServer;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Quest;
+using Xunit.Abstractions;
 using Actor = NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.Actor;
 using Fixture = NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.Fixture;
 
@@ -35,8 +36,14 @@ namespace NexusForever.Game.Tests.Quest;
 
 public sealed partial class Q5597RewardPersistenceTests
 {
-    [Fact]
-    public async Task Q5597LoopbackTurnInCleanupAndFreshSessionPublishSavedRewardsOnce()
+    private readonly ITestOutputHelper output;
+
+    public Q5597RewardPersistenceTests(ITestOutputHelper output) => this.output = output;
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Q5597LoopbackTurnInCleanupAndFreshSessionPublishSavedRewardsOnce(bool rejectFirstSave)
     {
         const uint accountId = 12;
         using var f = new Fixture(null);
@@ -70,6 +77,36 @@ public sealed partial class Q5597RewardPersistenceTests
             .AddKeyedTransient<IReadable, ClientQuestComplete>(GameMessageOpcode.ClientQuestComplete)
             .AddTransient<ClientEncryptedHandler>().AddTransient<ClientQuestCompleteHandler>().BuildServiceProvider();
 
+        var rejectedItems = new List<ulong>();
+        if (rejectFirstSave)
+        {
+            using (var fault = f.Context())
+                await fault.Database.ExecuteSqlRawAsync("""
+                    CREATE TRIGGER q5597_reject_completion BEFORE UPDATE OF state ON character_quest
+                    WHEN NEW.id = 42 AND NEW.questId = 5597 AND NEW.state = 3
+                    BEGIN SELECT RAISE(ABORT, 'Q5597 test rejected completion'); END;
+                    """);
+            await RunSession(async (world, client, actor) =>
+            {
+                await SendTurnIn(client);
+                await PumpUntil(world, () => actor.Quests.GetQuestState(QuestId) == QuestState.Completed);
+                await ObserveFailedTurnInPackets(world, client, "before save", rejectedItems);
+
+                var error = await Assert.ThrowsAsync<DbUpdateException>(() => actor.Player.SaveDirect());
+                var rejection = Assert.IsType<SqliteException>(error.GetBaseException());
+                Assert.Contains("Q5597 test rejected completion", rejection.Message);
+                Assert.True(actor.Quests.RequiresAuthoritativeReload);
+                await ObserveFailedTurnInPackets(world, client, "after rejection", rejectedItems);
+            });
+
+            var rolledBack = Assert.Single(await database.GetCharacters(accountId));
+            Assert.Equal(QuestState.Achieved, (QuestState)Assert.Single(rolledBack.Quest).State);
+            Assert.Empty(rolledBack.Item);
+            Assert.Empty(rolledBack.Achievement);
+            using var recovered = f.Context();
+            await recovered.Database.ExecuteSqlRawAsync("DROP TRIGGER q5597_reject_completion");
+        }
+
         (ulong Id, uint ItemId, uint StackCount)[] delivered = null;
         await RunSession(async (world, client, actor) =>
         {
@@ -85,6 +122,7 @@ public sealed partial class Q5597RewardPersistenceTests
         Assert.Equal(savedItems, delivered);
         Assert.Equal(RewardIds, savedItems.Select(item => item.ItemId));
         Assert.All(savedItems, item => Assert.Equal(1u, item.StackCount));
+        Assert.All(savedItems, item => Assert.DoesNotContain(item.Id, rejectedItems));
         Assert.Equal(QuestState.Completed, (QuestState)Assert.Single(saved.Quest).State);
         var completed = Assert.Single(saved.Achievement);
         Assert.Equal(AchievementId, completed.AchievementId);
@@ -162,6 +200,35 @@ public sealed partial class Q5597RewardPersistenceTests
             Assert.Null(world.Player);
             Assert.Empty(actor.Errors);
         }
+    }
+
+    private async Task ObserveFailedTurnInPackets(WorldSession world, GameProtocolClient client, string phase, List<ulong> itemIds)
+    {
+        // The marker delimits a flush on this private socket. Item and Quest
+        // publication counts are observations so a future timing fix can remove them.
+        world.Update(.01);
+        world.EnqueueMessageEncrypted(new ServerPlayerEnteredWorld());
+        world.FlushPackets();
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var itemTypes = new List<uint>();
+        int completions = 0;
+        while (true)
+        {
+            var frame = await client.ReadInnerFrame(deadline.Token);
+            if (frame.Opcode == GameMessageOpcode.ServerPlayerEnteredWorld) break;
+            Assert.NotEqual(GameMessageOpcode.ServerAchievementUpdate, frame.Opcode);
+            using var reader = new GamePacketReader(new MemoryStream(frame.Body));
+            if (frame.Opcode == GameMessageOpcode.ServerItemAdd)
+            {
+                var item = ReadFixtureInventoryItem(reader);
+                itemIds.Add(item.Id);
+                itemTypes.Add(item.ItemId);
+            }
+            else if (frame.Opcode == GameMessageOpcode.ServerQuestStateChange
+                && reader.ReadUShort(15) == QuestId && reader.ReadEnum<QuestState>(32) == QuestState.Completed)
+                completions++;
+        }
+        output.WriteLine($"{phase}: item types [{string.Join(", ", itemTypes.Order())}], completed notices {completions}, achievement updates 0");
     }
 
     private static Task SendTurnIn(GameProtocolClient client) => client.SendEncrypted(GameMessageOpcode.ClientQuestComplete, writer =>
