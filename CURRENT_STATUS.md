@@ -21322,6 +21322,24 @@ post-cast failure fare policy open. Resolving those cases needs an authoritative
 server trace or a capture that pairs the cast outcome with the balance update.
 Physical arrival and formula pricing also remain open.
 
+#### Rapid Transport map admission ownership
+
+5 November 2026. A priced Rapid Transport cast retains the casting player's
+map admission generation. The delayed effect queues relocation only for that
+player while the generation is current. An admission already in progress
+rejects the cast before debit. A later admission keeps its pending transfer
+and the player's facing when the old effect runs.
+
+The baseline reproduced a stale `AddToMap` call after the player queued another
+admission. The scoped run passed 234 of 235 cases. The loading-state case had
+expected a spell result packet during loading. After correcting that fixture
+expectation, all six Rapid Transport admission cases passed with identical
+Game and WorldServer binaries. Local evidence is under
+`artifacts/continuation-20261105/rapid-transport-admission-owner/`.
+The existing fare timing still applies. An authoritative cast outcome paired
+with a balance update is needed to resolve the retail interruption and
+post-cast failure fare rules.
+
 #### Route and client evidence
 
 Pricing/request validation is partial. The 2026-06-04 taxi/rapid-transport

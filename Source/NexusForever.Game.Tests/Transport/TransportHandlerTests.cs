@@ -315,11 +315,14 @@ public class TransportHandlerTests
     }
 
     [Theory]
-    [InlineData(false, false, false)]
-    [InlineData(true, true, false)]
-    [InlineData(true, false, false)]
-    [InlineData(true, false, true)]
-    public void RapidTransport_ValidatesWorldAtCastAndTransfer(bool worldExists, bool disabled, bool disableAfterCast)
+    [InlineData(false, false, false, null)]
+    [InlineData(true, true, false, null)]
+    [InlineData(true, false, false, null)]
+    [InlineData(true, false, true, null)]
+    [InlineData(true, false, false, "before-cast")]
+    [InlineData(true, false, false, "after-cast")]
+    public void RapidTransport_ValidatesWorldAtCastAndTransfer(bool worldExists, bool disabled, bool disableAfterCast,
+        string queuedAdmission)
     {
         CreateRapidTransportHandler(out var tables, out _, out var wallet, out var spells, out _, out _);
         tables.SetProperty(nameof(IGameTableManager.World), worldExists
@@ -352,15 +355,28 @@ public class TransportHandlerTests
         using var spell = new Game.Spell.Spell(player, parameters,
             globalSpellManager: RecordingDispatchProxy<IGlobalSpellManager>.Create(out _), scriptManager: scripts);
 
-        bool available = worldExists && !disabled;
+        if (queuedAdmission == "before-cast")
+            player.OnEnqueueAddToMap();
+        bool available = worldExists && !disabled && queuedAdmission != "before-cast";
         Assert.Equal(available ? CastResult.Ok : CastResult.RapidTransportInvalid, spell.Cast());
         if (available)
         {
             disabled = disableAfterCast;
+            var admission = (IPlayerMapAdmission)player;
+            if (queuedAdmission == "after-cast")
+                player.OnEnqueueAddToMap();
+            ulong generation = admission.MapAdmissionGeneration;
             Game.Spell.SpellHandler.HandleEffectRapidTransport(spell, player, null);
             Assert.Equal(25ul, Assert.Single(wallet.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount))).Arguments[1]);
             Assert.Single(session.EncryptedMessages.OfType<ServerSpellCastPositionSync>());
-            if (disableAfterCast)
+            if (queuedAdmission == "after-cast")
+            {
+                Assert.Empty(maps.GetInvocations(nameof(IMapManager.AddToMap)));
+                Assert.Empty(moves.GetInvocations(nameof(IMovementManager.SetRotation)));
+                Assert.True(player.IsLoading);
+                Assert.Equal(generation, admission.MapAdmissionGeneration);
+            }
+            else if (disableAfterCast)
             {
                 Assert.Empty(maps.GetInvocations(nameof(IMapManager.AddToMap)));
                 Assert.Empty(moves.GetInvocations(nameof(IMovementManager.SetRotation)));
@@ -381,6 +397,12 @@ public class TransportHandlerTests
             Assert.Empty(wallet.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
             Assert.Empty(maps.GetInvocations(nameof(IMapManager.AddToMap)));
             Assert.Empty(session.EncryptedMessages.OfType<ServerSpellCastPositionSync>());
+            if (queuedAdmission == "before-cast")
+            {
+                Assert.True(player.IsLoading);
+                Assert.Empty(session.EncryptedMessages.OfType<ServerSpellCastResult>());
+                return;
+            }
             var result = Assert.Single(session.EncryptedMessages.OfType<ServerSpellCastResult>());
             Assert.Equal(CastResult.RapidTransportInvalid, result.CastResult);
             Assert.Equal(parameters.ClientContextToken, result.ContextToken);

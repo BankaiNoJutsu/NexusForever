@@ -91,8 +91,9 @@ arrival and delivery after socket failure remain open.
 charges the selected route only after the spell passes admission.
 [Destination availability](../../CURRENT_STATUS.md#rapid-transport-destination-availability)
 rejects a missing or disabled world before charging and rechecks the destination
-when the spell effect runs. Physical transfer, later interruption or failure fare
-settlement, and formula pricing remain open.
+when the spell effect runs. [Map admission ownership](../../CURRENT_STATUS.md#rapid-transport-map-admission-ownership)
+keeps a delayed cast from replacing a newer map admission. Physical transfer,
+later interruption or failure fare settlement, and formula pricing remain open.
 
 [Resource conversion preflight](../../CURRENT_STATUS.md#resource-conversion-preflight)
 protects the source items when the full output cannot fit and checks a

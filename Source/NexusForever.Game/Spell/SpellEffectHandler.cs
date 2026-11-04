@@ -2958,7 +2958,10 @@ namespace NexusForever.Game.Spell
         {
             if (target is Player concrete)
             {
-                concrete.QueueRapidTransport(spell.Parameters.TaxiNode);
+                if (spell.Parameters is RapidTransportSpellParameters)
+                    (spell as Spell)?.QueueRapidTransport(concrete);
+                else
+                    concrete.QueueRapidTransport(spell.Parameters.TaxiNode);
                 return;
             }
 

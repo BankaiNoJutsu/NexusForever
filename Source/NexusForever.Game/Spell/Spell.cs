@@ -66,6 +66,7 @@ namespace NexusForever.Game.Spell
         private bool awaitingInitialImpact;
         private bool channelCompletePending;
         private bool casterVitalCostsPerChannelPulse;
+        private ulong? rapidTransportAdmissionGeneration;
 
         private readonly List<ISpellTargetInfo> targets = new();
         private readonly List<ITelegraph> telegraphs = new();
@@ -284,18 +285,34 @@ namespace NexusForever.Game.Spell
 
         private CastResult TryConsumeRapidTransportFare(uint fare)
         {
-            if (Caster is not IPlayer player || !player.CanTeleport()
-                || player is Player concrete && !concrete.CanStartRapidTransport(Parameters.TaxiNode))
+            if (Caster is not IPlayer player || !player.CanTeleport())
                 return CastResult.RapidTransportInvalid;
-            if (fare == 0)
-                return CastResult.Ok;
 
-            ICurrencyManager wallet = player.CurrencyManager;
-            if (!wallet.CanAfford(CurrencyType.Credits, fare))
-                return CastResult.CasterVitalCostMoney;
+            ulong? admissionGeneration = null;
+            if (player is Player concrete)
+            {
+                admissionGeneration = concrete.GetRapidTransportAdmissionGeneration(Parameters.TaxiNode);
+                if (!admissionGeneration.HasValue)
+                    return CastResult.RapidTransportInvalid;
+            }
 
-            wallet.CurrencySubtractAmount(CurrencyType.Credits, fare);
+            if (fare != 0)
+            {
+                ICurrencyManager wallet = player.CurrencyManager;
+                if (!wallet.CanAfford(CurrencyType.Credits, fare))
+                    return CastResult.CasterVitalCostMoney;
+
+                wallet.CurrencySubtractAmount(CurrencyType.Credits, fare);
+            }
+
+            rapidTransportAdmissionGeneration = admissionGeneration;
             return CastResult.Ok;
+        }
+
+        internal void QueueRapidTransport(Player player)
+        {
+            if (ReferenceEquals(Caster, player) && rapidTransportAdmissionGeneration is ulong generation)
+                player.QueueRapidTransport(Parameters.TaxiNode, generation);
         }
 
         private CastResult CheckPrimaryTarget()

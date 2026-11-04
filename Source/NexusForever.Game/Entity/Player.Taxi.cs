@@ -78,19 +78,27 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        internal bool CanStartRapidTransport(ushort nodeId)
+        internal ulong? GetRapidTransportAdmissionGeneration(ushort nodeId)
         {
             lock (mapAdmission.SyncRoot)
             {
+                if (IsLoading)
+                    return null;
+
                 var world = ResolveRapidTransportWorld(nodeId, out _);
-                return world != null && disableManager?.IsDisabled(DisableType.World, world.Id) != true;
+                return world != null && disableManager?.IsDisabled(DisableType.World, world.Id) != true
+                    ? mapAdmission.Generation
+                    : null;
             }
         }
 
-        internal void QueueRapidTransport(ushort nodeId)
+        internal void QueueRapidTransport(ushort nodeId, ulong? castAdmissionGeneration = null)
         {
             lock (mapAdmission.SyncRoot)
             {
+                if (castAdmissionGeneration is ulong generation && !mapAdmission.IsCurrent(generation))
+                    return;
+
                 var world = ResolveRapidTransportWorld(nodeId, out var location);
                 if (world == null) return;
 
