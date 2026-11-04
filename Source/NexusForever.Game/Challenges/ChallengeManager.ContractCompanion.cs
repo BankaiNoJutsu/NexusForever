@@ -47,6 +47,7 @@ namespace NexusForever.Game.Challenges
             internal object Lease { get; } = lease;
             internal bool Captured;
             private readonly List<CharacterChallengeRewardCommand> commands = [];
+            private readonly List<Action> afterCommit = [];
             private readonly Dictionary<ushort, CharacterChallengeState> expected = [];
             private CharacterContext context;
             private CharacterChallengeRewardsState candidate;
@@ -61,12 +62,13 @@ namespace NexusForever.Game.Challenges
                 }
                 return value;
             }
-            internal void Add(CharacterChallengeRewardCommand command)
+            internal void Add(CharacterChallengeRewardCommand command, Action publish = null)
             {
                 if (Captured || ended || !ReferenceEquals(owner.contractCompanion, this) || command.CharacterId != owner.characterId
                     || command.After == null || command.Before != Expected(command.After.ChallengeId))
                     throw new InvalidOperationException("Contract Challenge command lost its captured predecessor.");
                 commands.Add(command); expected[command.After.ChallengeId] = command.After;
+                if (publish != null) afterCommit.Add(publish);
             }
             internal void Stage(CharacterContext parent)
             {
@@ -113,13 +115,14 @@ namespace NexusForever.Game.Challenges
                     owner.PublishWorldReadiness();
                     if (owner.characterRewardPacketsRequested) owner.PublishCharacterRewards(reload: false);
                 }
+                foreach (Action publish in afterCommit) publish();
                 return true;
             }
             internal void Abandon() { if (!ended) Finish(false); }
         }
 
         private bool CaptureContractTransition(ChallengeRuntimeState state, byte? medal, bool completion,
-            Abstract.Account.Reward.ChallengeRewardModifierSnapshot modifier)
+            Abstract.Account.Reward.ChallengeRewardModifierSnapshot modifier, Action afterCommit)
         {
             var mode = ProducerMode(state); var after = CharacterChallengeState.FromModel(BuildModel(state));
             var before = contractCompanion.Expected(after.ChallengeId);
@@ -127,7 +130,7 @@ namespace NexusForever.Game.Challenges
                 ? mode.Mode == CharacterChallengeRewardMode.CharacterTrack
                     ? CharacterChallengeRewardCommand.Credit(before, after, medal.Value, modifier, DateTime.UtcNow)
                     : CharacterChallengeRewardCommand.AdvanceLegacy(before, after, medal.Value)
-                : CharacterChallengeRewardCommand.Finish(before, after));
+                : CharacterChallengeRewardCommand.Finish(before, after), afterCommit);
             // Reserve the transition before invoking reentrant callbacks. Every
             // ordinary item/Quest effect joins the enclosing frozen normal save.
             if (completion)

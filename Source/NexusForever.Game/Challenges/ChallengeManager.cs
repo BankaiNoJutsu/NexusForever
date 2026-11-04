@@ -11,6 +11,7 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Challenges;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared;
@@ -329,10 +330,13 @@ namespace NexusForever.Game.Challenges
             MarkDirty(challengeId);
             if (durable && !QueueProducerActivation(state, entry, previousAttempt, legacyPredecessor)) return;
 
-            SendChallengeUpdate();
-            SendResult(challengeId, ChallengeResult.Activate);
+            string attempt = state.ActiveAttemptId;
+            SendChallengeUpdate(durable);
+            if (!state.Activated || state.ActiveAttemptId != attempt) return;
+            SendResult(challengeId, ChallengeResult.Activate, tolerateSendFailure: durable);
 
-            if (entry != null && goalCount > 0u && state.CurrentCount >= goalCount)
+            if (entry != null && goalCount > 0u && state.Activated && state.ActiveAttemptId == attempt
+                && state.CurrentTier == 0u && state.CurrentCount >= goalCount)
                 HandleTierGoalReached(challengeId, state, entry, tierGoals);
         }
 
@@ -683,9 +687,11 @@ namespace NexusForever.Game.Challenges
 
             state.CurrentCount = (uint)Math.Min((ulong)state.CurrentCount + progress, goalCount);
             MarkDirty(challengeId);
-            SendChallengeUpdate();
+            string attempt = state.ActiveAttemptId;
+            uint tier = state.CurrentTier;
+            SendChallengeUpdate(characterRewardLoadRequired && attempt != null);
 
-            if (state.CurrentCount < goalCount)
+            if (!state.Activated || state.ActiveAttemptId != attempt || state.CurrentTier != tier || state.CurrentCount < goalCount)
                 return true;
 
             HandleTierGoalReached(challengeId, state, entry, tierGoals);
@@ -704,7 +710,7 @@ namespace NexusForever.Game.Challenges
             if (mode?.Mode == Reward.CharacterChallengeRewardMode.CharacterTrack && !CaptureProducerModifier(out modifier))
             { RejectProducer(); return; }
             state.LastRewardTier = achievedTier;
-            SendResult(challengeId, ChallengeResult.TierAchieved, (int)achievedTier);
+            if (mode == null) SendResult(challengeId, ChallengeResult.TierAchieved, (int)achievedTier);
 
             if (achievedTier + 1u >= tierGoals.Length)
             {
@@ -716,7 +722,7 @@ namespace NexusForever.Game.Challenges
             state.CurrentCount = 0u;
             MarkDirty(challengeId);
             if (mode != null && !QueueProducerTransition(state, (byte)achievedTier, false, modifier)) return;
-            SendChallengeUpdate();
+            SendChallengeUpdate(mode != null);
         }
 
         private void CompleteChallenge(ChallengeRuntimeState state, ChallengeEntry entry, byte? medal = null,
@@ -730,17 +736,17 @@ namespace NexusForever.Game.Challenges
 
             state.CompletionCount++;
             MarkDirty((ushort)state.ChallengeId);
-            SendResult((ushort)state.ChallengeId, ChallengeResult.Completed, (int)state.LastRewardTier);
-            if (ProducerMode(state) != null)
+            if (medal.HasValue)
             {
                 if (!QueueProducerTransition(state, medal, true, modifier)) return;
             }
             else
             {
+                SendResult((ushort)state.ChallengeId, ChallengeResult.Completed, (int)state.LastRewardTier);
                 GrantRewardTrackItem(entry, state.LastRewardTier);
                 player.QuestManager.ObjectiveUpdate(QuestObjectiveType.CompleteChallenge, 0u, 1u);
             }
-            SendChallengeUpdate();
+            SendChallengeUpdate(medal.HasValue);
         }
 
         private void GrantRewardTrackItem(ChallengeEntry entry, uint achievedTier)
@@ -801,17 +807,17 @@ namespace NexusForever.Game.Challenges
             return tier?.Count ?? 0u;
         }
 
-        private void SendResult(ushort challengeId, ChallengeResult result, int data = 0)
+        private void SendResult(ushort challengeId, ChallengeResult result, int data = 0, bool tolerateSendFailure = false)
         {
-            player.Session?.EnqueueMessageEncrypted(new ServerChallengeResult
+            SendChallengePacket(new ServerChallengeResult
             {
                 ChallengeId = challengeId,
                 Result      = result,
                 Data        = data
-            });
+            }, tolerateSendFailure);
         }
 
-        private void SendChallengeUpdate()
+        private void SendChallengeUpdate(bool tolerateSendFailure = false)
         {
             var update = new ServerChallengeUpdate();
             foreach (ChallengeRuntimeState state in activeChallenges.Values)
@@ -852,7 +858,16 @@ namespace NexusForever.Game.Challenges
                 });
             }
 
-            player.Session?.EnqueueMessageEncrypted(update);
+            SendChallengePacket(update, tolerateSendFailure);
+        }
+
+        private void SendChallengePacket(IWritable packet, bool tolerateSendFailure)
+        {
+            try { player.Session?.EnqueueMessageEncrypted(packet); }
+            catch (Exception error) when (tolerateSendFailure)
+            {
+                challengePublicationLog.Warn(error, "Live Challenge packet failed during a durable attempt.");
+            }
         }
 
         private uint ResolveRewardPaneTargetGroupId(ChallengeEntry entry)

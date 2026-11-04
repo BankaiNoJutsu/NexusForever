@@ -18,6 +18,7 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
+using NexusForever.Network.World.Message.Model.Challenges;
 using NexusForever.Network.World.Message.Model.Reward;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Reward;
@@ -32,6 +33,102 @@ public sealed class ChallengeLiveProducerTests
     private readonly DbContextOptions<CharacterContext> options;
     public ChallengeLiveProducerTests() { }
     internal ChallengeLiveProducerTests(DbContextOptions<CharacterContext> options) => this.options = options;
+
+    [Theory]
+    [InlineData("normal")]
+    [InlineData("result-retry")]
+    [InlineData("result-replace")]
+    [InlineData("status-error")]
+    [InlineData("status-reentry")]
+    [InlineData("reload-error")]
+    [InlineData("lost-ack")]
+    public async Task DurableTerminalResultWaitsForMedalAndQuestCommit(string fault)
+    {
+        using var f = New();
+        ushort challenge = f.Source.Challenge(16);
+        var entry = f.Source.Tables.Challenge.GetEntry(challenge);
+        entry.ChallengeTierId01 = entry.ChallengeTierId02 = 0;
+        var lost = new LostAck();
+        using var h = new Harness(f, () => f.Context(lost));
+        await h.Load();
+        h.Activate(16);
+        await h.Actor.Drain();
+        lost.Enabled = fault == "lost-ack";
+
+        var sent = new List<ChallengeResult>();
+        int attempts = 0, reloadAttempts = 0;
+        bool statusFailed = false;
+        h.Session.SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), args =>
+        {
+            if (fault == "reload-error" && args[0] is ServerRewardTracksReload && ++reloadAttempts == 1)
+                throw new IOException("Challenge reward-pane reload failed before enqueue.");
+            if (fault is "status-error" or "status-reentry" && !statusFailed && args[0] is ServerChallengeUpdate)
+            {
+                statusFailed = true;
+                if (fault == "status-reentry") h.Progress(16, 10);
+                throw new IOException("Challenge status failed before enqueue.");
+            }
+            if (args[0] is not ServerChallengeResult notice
+                || notice.Result is not (ChallengeResult.TierAchieved or ChallengeResult.Completed)) return null;
+            Assert.Equal(challenge, notice.ChallengeId);
+            Assert.Equal(0, notice.Data);
+            attempts++;
+            if (attempts == 1 && fault is "result-retry" or "result-replace")
+            {
+                if (fault == "result-replace")
+                    h.Session.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+                throw new IOException("Challenge result failed before enqueue.");
+            }
+            using var confirmed = f.Context();
+            Assert.True(confirmed.CharacterChallengeAttempt.Single().Terminal);
+            Assert.Single(confirmed.CharacterChallengeMedalReceipt);
+            Assert.Equal(2u, confirmed.CharacterQuestObjective.Single().Progress);
+            sent.Add(notice.Result);
+            return null;
+        });
+
+        h.Progress(16, 10);
+        Assert.Equal(0, attempts);
+        await h.Actor.Drain();
+        Assert.Equal(fault == "result-replace" ? [] : new[] { ChallengeResult.TierAchieved, ChallengeResult.Completed }, sent);
+        Assert.Equal(fault == "result-replace" ? 1 : fault == "result-retry" ? 3 : 2, attempts);
+        Assert.Equal(fault is "status-error" or "status-reentry", statusFailed);
+        Assert.Equal(fault == "reload-error" ? 2 : 0, reloadAttempts);
+        Assert.Equal(lost.Enabled, lost.Fired);
+        using var read = f.Context();
+        Assert.Equal(1u, read.CharacterChallenge.Single().CompletionCount);
+        Assert.Single(read.CharacterChallengeMedalReceipt);
+        Assert.Equal(2u, read.CharacterQuestObjective.Single().Progress);
+    }
+
+    [Fact]
+    public async Task RestartBeforePublicationDropsOldAttemptResults()
+    {
+        using var f = New();
+        ushort id = f.Source.Challenge(16);
+        var entry = f.Source.Tables.Challenge.GetEntry(id);
+        entry.ChallengeTierId01 = entry.ChallengeTierId02 = 0;
+        using var h = new Harness(f);
+        await h.Load();
+        h.Activate(16);
+        await h.Actor.Drain();
+        string original = Runtime(h.Actor.Challenges, id).ActiveAttemptId;
+
+        h.Progress(16, 10);
+        h.Activate(16);
+        await h.Actor.Drain();
+
+        var results = h.Session.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(call => call.Arguments[0]).OfType<ServerChallengeResult>();
+        Assert.DoesNotContain(results, result => result.Result is ChallengeResult.TierAchieved or ChallengeResult.Completed);
+        using var read = f.Context();
+        Assert.Single(read.CharacterChallengeMedalReceipt);
+        Assert.True(read.CharacterChallengeAttempt.Single(row => row.AttemptId == original).Terminal);
+        var active = Assert.Single(read.CharacterChallenge);
+        Assert.True(active.Activated);
+        Assert.NotEqual(original, active.ActiveAttemptId);
+        Assert.Equal(1u, active.CompletionCount);
+    }
 
     [Theory]
     [InlineData(15u)] [InlineData(16u)] [InlineData(17u)] [InlineData(18u)]

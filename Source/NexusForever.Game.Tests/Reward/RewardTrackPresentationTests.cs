@@ -10,11 +10,39 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Reward;
+using NexusForever.WorldServer.Network;
 
 namespace NexusForever.Game.Tests.Reward;
 
 public sealed class RewardTrackPresentationTests
 {
+    [Fact]
+    public void ReloadRetryCannotAuthorizeClaimsAfterItsEnqueueRebindsThePlayer()
+    {
+        var f = new Fixture();
+        var actor = (IPlayer)(object)f.PlayerProxy;
+        var world = RecordingDispatchProxy<IWorldSession>.Create(out var session);
+        session.SetProperty(nameof(IWorldSession.Player), actor);
+        f.PlayerProxy.SetProperty(nameof(IPlayer.Session), world);
+        f.AccountProxy.SetProperty(nameof(IAccount.Session), world);
+        Assert.True(f.Presentation.PublishAccountTracks([AccountTrack()], reload: false));
+        object snapshot = new();
+        int attempts = 0;
+        var replacement = RecordingDispatchProxy<IPlayer>.Create(out _);
+        session.SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), _ =>
+        {
+            if (++attempts == 1) throw new IOException("First reload failed before enqueue.");
+            session.SetProperty(nameof(IWorldSession.Player), replacement);
+            return null;
+        });
+
+        Assert.True(f.Presentation.PublishCharacterTracks([CharacterTrack()], snapshot));
+        Assert.Equal(2, attempts);
+        Assert.False(f.Presentation.IsPublishedCharacterSnapshot(snapshot));
+        session.SetProperty(nameof(IWorldSession.Player), actor);
+        Assert.False(f.Presentation.IsPublishedCharacterSnapshot(snapshot));
+    }
+
     [Theory]
     [InlineData(0, 1, 2)] [InlineData(0, 2, 1)] [InlineData(1, 0, 2)]
     [InlineData(1, 2, 0)] [InlineData(2, 0, 1)] [InlineData(2, 1, 0)]

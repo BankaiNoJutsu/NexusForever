@@ -69,7 +69,8 @@ namespace NexusForever.Game.Challenges
         private bool QueueProducerTransition(ChallengeRuntimeState state, byte? medal, bool completion,
             ChallengeRewardModifierSnapshot modifier = default)
         {
-            if (CapturingContractCompanion) return CaptureContractTransition(state, medal, completion, modifier);
+            Action afterCommit = medal.HasValue ? CaptureMedalNotices(state, medal.Value, completion) : null;
+            if (CapturingContractCompanion) return CaptureContractTransition(state, medal, completion, modifier, afterCommit);
             var mode = ProducerMode(state);
             var after = CharacterChallengeState.FromModel(BuildModel(state));
             var created = DateTime.UtcNow;
@@ -89,7 +90,7 @@ namespace NexusForever.Game.Challenges
                     ? mode.Mode == CharacterChallengeRewardMode.CharacterTrack
                         ? CharacterChallengeRewardCommand.Credit(held.Expected(after.ChallengeId), after, medal.Value, modifier, created)
                         : CharacterChallengeRewardCommand.AdvanceLegacy(held.Expected(after.ChallengeId), after, medal.Value)
-                    : CharacterChallengeRewardCommand.Finish(held.Expected(after.ChallengeId), after), capture);
+                    : CharacterChallengeRewardCommand.Finish(held.Expected(after.ChallengeId), after), capture, afterCommit);
                 if (!queued) capture?.Dispose();
                 return queued;
             }
@@ -97,14 +98,15 @@ namespace NexusForever.Game.Challenges
         }
 
         private bool EnqueueProducer(ChallengeRuntimeState state, string previousAttempt, bool activation,
-            Func<RewardPersistenceLease, CharacterChallengeRewardCommand> build, QuestManager.QuestRewardCapture quests = null)
+            Func<RewardPersistenceLease, CharacterChallengeRewardCommand> build, QuestManager.QuestRewardCapture quests = null,
+            Action afterCommit = null)
         {
             var intent = CaptureRewardIntent((ushort)state.ChallengeId);
             var transition = new ProducerTransition(intent, previousAttempt, activation);
             producerTransitions.Add(transition);
             try
             {
-                if (rewardQueue.Enqueue([intent], build, quests: quests)) return true;
+                if (rewardQueue.Enqueue([intent], build, quests: quests, afterCommit: afterCommit)) return true;
             }
             catch { producerTransitions.Remove(transition); RejectProducer(); throw; }
             producerTransitions.Remove(transition); return RejectProducer();

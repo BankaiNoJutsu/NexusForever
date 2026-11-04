@@ -10,6 +10,12 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Confirmed Challenge medal and completion results](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#confirmed-medal-and-completion-results)
+publish after the original Character or Contract transaction confirms.
+The producer keeps live status separate from durable results, guards
+reentrant advancement, and drops retries for replaced sessions or attempts.
+Unsupported earning producers, deployed sockets and native behavior remain open.
+
 [Arcterra Zone track evidence](ZONE_REWARD_TRACK_35_EVIDENCE.md) separates
 type 4 track 35 from type 3 track 36 through the retained table rows and
 English text. Static build 16042 evidence confirms a generic client slot

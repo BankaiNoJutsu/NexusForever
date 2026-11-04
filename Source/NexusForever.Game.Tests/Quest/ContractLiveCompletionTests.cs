@@ -26,6 +26,7 @@ using NexusForever.Game.Static.Challenges;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Quest.Reward;
 using NexusForever.Network.World.Message.Model.Reward;
+using NexusForever.Network.World.Message.Model.Challenges;
 using Actor = NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.Actor;
 using PersistenceFixture = NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.Fixture;
 
@@ -41,6 +42,9 @@ public sealed partial class ContractLiveCompletionTests
 
     private static ServerRewardTracksReload[] Reloads(Fixture f) => f.Inner.Source.SessionProxy.GetInvocations("EnqueueMessageEncrypted")
         .Select(call => call.Arguments[0]).OfType<ServerRewardTracksReload>().ToArray();
+    private static IEnumerable<ServerChallengeResult> MedalResults(Fixture f) => f.Inner.Source.SessionProxy.GetInvocations("EnqueueMessageEncrypted")
+        .Select(call => call.Arguments[0]).OfType<ServerChallengeResult>()
+        .Where(result => result.Result is ChallengeResult.TierAchieved or ChallengeResult.Completed);
 
     [Theory]
     [InlineData("reward")] [InlineData("json")] [InlineData("marker")] [InlineData("drop")]
@@ -147,13 +151,16 @@ public sealed partial class ContractLiveCompletionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public async Task OnlyTheSuccessfulCompositeCommitPublishesContractPointsAlongsideTheFinalChallengeAndLoyaltyRows(bool challenge)
+    [InlineData(false, false)] [InlineData(true, false)] [InlineData(true, true)]
+    public async Task OnlyTheSuccessfulCompositeCommitPublishesContractPointsAlongsideTheFinalChallengeAndLoyaltyRows(bool challenge, bool retry)
     {
         using var f = new Fixture(options); await f.Actor.Load();
         Assert.True(f.Actor.Player.RewardTrackPresentation.PublishAccountTracks([new() { RewardTrackId = 9, RewardPointsEarned = 800 }]));
         var before = f.Actor.Quests.CommittedContractTracks; Assert.NotNull(before); Assert.Empty(before);
         int count = Reloads(f).Length;
+        int reloadAttempts = 0;
+        if (retry) f.Inner.Source.SessionProxy.SetMethodHandler("EnqueueMessageEncrypted", args =>
+            args[0] is ServerRewardTracksReload && ++reloadAttempts == 1 ? throw new IOException("Composite reload failed before enqueue.") : null);
         f.OnXp = () =>
         {
             Assert.Same(before, f.Actor.Quests.CommittedContractTracks); Assert.Equal(count, Reloads(f).Length);
@@ -161,13 +168,17 @@ public sealed partial class ContractLiveCompletionTests
         };
         f.Actor.OnAuth = () => { f.AuthCalls++; Assert.Same(before, f.Actor.Quests.CommittedContractTracks); Assert.Equal(count, Reloads(f).Length); };
         f.Complete(); Assert.Equal(count, Reloads(f).Length); await f.Actor.Drain(); f.AssertCommitted();
-        Assert.Equal(count + 1, Reloads(f).Length); var packet = Reloads(f).Last();
+        Assert.Equal(count + (retry ? 2 : 1), Reloads(f).Length); var packet = Reloads(f).Last();
         var contract = Assert.Single(packet.RewardsTracks, row => row.RewardTrackId == f.Source.TrackId);
         Assert.Equal(f.Source.BasePoints, contract.RewardPointsEarned);
         Assert.Equal(Assert.Single(f.Actor.Quests.CommittedContractTracks).Slots.Select(slot => slot.RewardRowId), contract.RewardTrackRewardsIds);
         Assert.Equal(0u, contract.Unlocked); Assert.All(contract.ClaimedRewards.GetBuffer(), value => Assert.Equal(0, value));
         Assert.Equal(800u, Assert.Single(packet.RewardsTracks, row => row.RewardTrackId == 9).RewardPointsEarned);
-        if (challenge) Assert.Equal(100u, Assert.Single(packet.RewardsTracks, row => row.RewardTrackId == 16).RewardPointsEarned);
+        if (challenge)
+        {
+            Assert.Equal(100u, Assert.Single(packet.RewardsTracks, row => row.RewardTrackId == 16).RewardPointsEarned);
+            Assert.Equal(ChallengeResult.TierAchieved, Assert.Single(MedalResults(f)).Result);
+        }
         Assert.True(f.Actor.Player.RewardTrackPresentation.IsPublishedContractSnapshot(f.Actor.Quests.CommittedContractTracks));
     }
 
@@ -479,11 +490,14 @@ public sealed partial class ContractLiveCompletionTests
             for (int i = previousMedals; i < 3; i++) Assert.True(f.Actor.Challenges.TryAdvanceProgress(id, goals[i]));
             Assert.Equal(1u, f.Actor.Challenges.GetCompletionCount(id));
             Assert.False(f.Actor.Challenges.HasPendingRewardOperation);
+            Assert.Equal(previousMedals, MedalResults(f).Count());
         };
         f.Complete(); await f.Actor.Drain(); f.AssertCommitted();
         Assert.False(f.Actor.Challenges.RequiresAuthoritativeReload);
         using var read = f.Inner.Context(); Assert.Equal(3, read.CharacterChallengeMedalReceipt.Count());
         Assert.Equal(1u, read.CharacterChallenge.Single().CompletionCount);
+        Assert.Equal(new[] { (ChallengeResult.TierAchieved, 0), (ChallengeResult.TierAchieved, 1),
+            (ChallengeResult.TierAchieved, 2), (ChallengeResult.Completed, 2) }, MedalResults(f).Select(row => (row.Result, row.Data)));
         Assert.Equal((uint)read.CharacterChallengeMedalReceipt.AsEnumerable().Sum(row => row.Points), read.CharacterChallengeRewardTrack.Single().Points);
         Assert.Single(read.Item);
     }
@@ -496,6 +510,7 @@ public sealed partial class ContractLiveCompletionTests
         f.Actor.Challenges.HandleChoice(id, ChallengeChoice.Activate); await f.Actor.Drain();
         f.OnXp = () => { foreach (uint count in new uint[] { 10,20,30 }) Assert.True(f.Actor.Challenges.TryAdvanceProgress(id, count)); };
         f.Complete(); await f.Actor.Drain(allowErrors: true); Assert.True(f.Actor.Quests.RequiresAuthoritativeReload);
+        Assert.Empty(MedalResults(f));
         using var read = f.Inner.Context();
         if (fault == "lost-ack")
         {

@@ -5,6 +5,7 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Network;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Reward;
+using NLog;
 
 namespace NexusForever.Game.Reward
 {
@@ -14,6 +15,7 @@ namespace NexusForever.Game.Reward
     /// </summary>
     public sealed class RewardTrackPresentation(IPlayer actor) : IRewardTrackPresentation
     {
+        private static readonly ILogger log = LogManager.GetCurrentClassLogger();
         private readonly object gate = new();
         private RewardTrack[] accountRows = [], characterRows = [], contractRows = [];
         private bool accountReady, characterReady, characterExpected, contractReady, contractExpected, invalidated;
@@ -103,12 +105,26 @@ namespace NexusForever.Game.Reward
                     // cannot change the next composed snapshot. No owner locks are
                     // acquired while this presentation gate is held.
                     long sequence = ++sentReloadSequence;
-                    object sentSnapshot = characterSnapshot;
-                    object sentContractSnapshot = contractSnapshot;
-                    actor.Session.EnqueueMessageEncrypted(new ServerRewardTracksReload
+                    var session = actor.Session;
+                    object sentSnapshot = null, sentContractSnapshot = null;
+                    void SendReload()
                     {
-                        RewardsTracks = accountRows.Concat(characterRows).Concat(contractRows).Select(Copy).ToList()
-                    });
+                        sentSnapshot = characterSnapshot;
+                        sentContractSnapshot = contractSnapshot;
+                        session.EnqueueMessageEncrypted(new ServerRewardTracksReload
+                        {
+                            RewardsTracks = accountRows.Concat(characterRows).Concat(contractRows).Select(Copy).ToList()
+                        });
+                    }
+
+                    try { SendReload(); }
+                    catch (Exception error)
+                    {
+                        if (sequence != sentReloadSequence || !CurrentActor()) throw;
+
+                        log.Warn(error, "Reward-track reload failed; retrying the current snapshot on its original actor.");
+                        SendReload();
+                    }
                     // Enqueue can reenter presentation. Only the last actual
                     // full reload binds claims; an accepted but unsent
                     // contribution must not authorize a new cycle.
@@ -124,6 +140,7 @@ namespace NexusForever.Game.Reward
 
         private bool CurrentActor() => !invalidated && actor?.Session != null && actor.Account != null
             && actor.Session is not NetworkSession { IsDisconnecting: true }
+            && (actor.Session is not IPlayerSession bound || ReferenceEquals(bound.Player, actor))
             && actor.LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished)
             && ReferenceEquals(actor.Account.Session, actor.Session)
             && (boundSession == null || (ReferenceEquals(boundSession, actor.Session)

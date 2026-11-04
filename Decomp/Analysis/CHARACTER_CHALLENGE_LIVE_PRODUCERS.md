@@ -1,5 +1,46 @@
 # Live Character Challenge earning producers
 
+## Confirmed medal and completion results
+
+4 November 2026. Four baseline cases reproduced a live Challenge result
+or status enqueue running before the durable medal and Quest transition
+was admitted. A failing enqueue could interrupt the producer.
+
+Durable count-based attempts now publish the existing TierAchieved and
+Completed results after the owning Character transaction confirms and
+the actor adopts its state. The same rule applies when the Challenge
+transitions join a Contract transaction. Live status and activation
+packets still follow gameplay progress. A failed live status send can no
+longer interrupt a durable transition. Progress and activation recheck the
+original active attempt and tier after an immediate send, so a reentrant
+advance cannot complete it twice. Historical and unsupported attempts keep
+their immediate result path.
+
+Committed results retain their original tier, recipient and attempt.
+Send retries leave the next result queued, so Completed cannot overtake
+its medal. A new attempt or a rebound session invalidates old notices.
+A composed reward-pane reload gets one retry with fresh copies of the
+current rows on the same actor. A superseded or persistent reload failure
+still follows the original failure and quarantine path.
+The session's bound Player is checked both before enqueue and before
+acknowledging the published snapshot for claims.
+
+Build 16042 PE reads bind 00C6 at `0x1403ef25b` to `0x14048e2b0`.
+Cases 8 and 9 use payload+8 plus one and call `0x14048dde0`.
+That helper writes the tier for a key matching the Challenge ID.
+00C7 uses a separate consumer at `0x14048ded0`. The keyed result
+write is the reason to avoid applying an old result to a restarted
+attempt. Evidence is in
+`artifacts/continuation-20261104/challenge-result-publication/`.
+Scoped coverage spans 270 cases across two runs on the same Game DLL.
+The first run passed 254 and exposed 16 readiness fixtures without a bound
+Player. The corrected readiness and retry run passed all 34 cases, including
+those 16. The runs took 87 and 18 seconds of test execution. The earlier
+fixture compile failure and disk-full interruption are retained separately.
+Deployed socket order, restart replay and native presentation remain open.
+
+## Original earning integration
+
 Current socket earning/claims and production retry follow-through are recorded in
 [checkpoint7983](CHARACTER_CHALLENGE_SOCKET.md). The7959 results below retain their
 original scope; its open socket gate is superseded by that bounded actual-source

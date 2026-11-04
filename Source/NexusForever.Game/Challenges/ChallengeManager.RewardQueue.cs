@@ -39,7 +39,7 @@ namespace NexusForever.Game.Challenges
 
             private sealed record Request(RewardIntent[] Intents, Func<RewardPersistenceLease, CharacterChallengeRewardCommand> Build,
                 IInventoryRewardReservation Delivery, IDisposable Ticket, QuestManager.QuestRewardCapture Quests, QuestManager.ContractClaimOperation Contract,
-                ContractAccountSync Accounts = null);
+                ContractAccountSync Accounts = null, Action AfterCommit = null);
 
             internal CharacterRewardQueue(ChallengeManager owner, Func<CharacterContext> contexts,
                 CharacterChallengeRewardExecutor executor, EventQueue events,
@@ -58,7 +58,8 @@ namespace NexusForever.Game.Challenges
 
             internal bool Enqueue(IReadOnlyCollection<RewardIntent> intents,
                 Func<RewardPersistenceLease, CharacterChallengeRewardCommand> build, IInventoryRewardReservation delivery = null,
-                QuestManager.QuestRewardCapture quests = null, QuestManager.ContractClaimOperation contract = null)
+                QuestManager.QuestRewardCapture quests = null, QuestManager.ContractClaimOperation contract = null,
+                Action afterCommit = null)
             {
                 ArgumentNullException.ThrowIfNull(intents); ArgumentNullException.ThrowIfNull(build);
                 lock (gate)
@@ -72,7 +73,7 @@ namespace NexusForever.Game.Challenges
                     var ticket = owner.HoldRewardQueue();
                     if (quests != null && !quests.TryQueue(this, owner.player)) { ticket.Dispose(); return false; }
                     if (contract != null && !contract.TryQueue(this, owner.player)) { ticket.Dispose(); return false; }
-                    pending.Enqueue(new(copy, build, delivery, ticket, quests, contract));
+                    pending.Enqueue(new(copy, build, delivery, ticket, quests, contract, AfterCommit: afterCommit));
                     Pump(); return true;
                 }
             }
@@ -236,6 +237,7 @@ namespace NexusForever.Game.Challenges
                     if (current.Accounts != null && !current.Accounts.CanPublish()) throw new InvalidOperationException("Contract account publication lost its live actor.");
                     owner.CompleteContractAccounts(current.Accounts);
                     if (current.Contract != null && !current.Contract.Finish(result)) throw new InvalidOperationException("Contract claim publication lost its owner.");
+                    if (!invalidated) current.AfterCommit?.Invoke();
                 }
                 catch { Stop(); return; }
                 bool accountAward = current.Contract?.HasAccountAward == true;

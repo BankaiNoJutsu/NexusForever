@@ -43,6 +43,7 @@ public sealed class ChallengeRewardWorldReadinessTests
     {
         using var f = new Fixture(options); await f.Begin(track); await f.Medal(track, 0, new(1.25f, 7));
         using var h = new Harness(f); int entered = 0;
+        h.Session.SetProperty(nameof(IWorldSession.Player), f.Player);
         h.Owner.PrepareForWorld(() =>
         {
             Assert.False(h.Owner.HasPendingRewardOperation);
