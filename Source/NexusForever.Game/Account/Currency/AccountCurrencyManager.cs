@@ -195,10 +195,13 @@ namespace NexusForever.Game.Account.Currency
         }
 
         private static void SendCurrencyGrant(IAccountCurrency accountCurrency, ulong reason, IGameSession session)
-            => session.EnqueueMessageEncrypted(new ServerAccountCurrencyGrant
+            => session.EnqueueMessageEncrypted(BuildCurrencyGrant(accountCurrency, reason));
+
+        private static ServerAccountCurrencyGrant BuildCurrencyGrant(IAccountCurrency accountCurrency, ulong reason)
+            => new()
             {
                 AccountCurrency = accountCurrency.Build(),
                 Reason = reason
-            });
+            };
     }
 }

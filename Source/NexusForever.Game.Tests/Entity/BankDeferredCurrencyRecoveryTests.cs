@@ -56,6 +56,7 @@ public sealed class BankDeferredCurrencyRecoveryTests
     [InlineData("satchel-lost")]
     [InlineData("satchel-rollback")]
     [InlineData("account-commit")]
+    [InlineData("account-notice")]
     [InlineData("account-lost")]
     [InlineData("account-rollback")]
     [InlineData("account-stale")]
@@ -173,8 +174,11 @@ public sealed class BankDeferredCurrencyRecoveryTests
         });
         typeof(Player).GetField("selectedVendorInfo", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(actor.Player, vendor);
         var notices = new List<object>();
+        int walletNoticeAttempts = 0;
         network.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
         {
+            if (outcome == "account-notice" && args[0] is ServerWalletUpdate && ++walletNoticeAttempts == 1)
+                throw new InvalidOperationException("Rejected vendor wallet update.");
             if (args[0] is ServerCombatReward or ServerItemAdd or ServerItemDelete or ServerItemStackCountUpdate or ServerSupplySatchelUpdate or ServerItemError
                 or ServerAccountCurrencyGrant or ServerWalletUpdate)
                 notices.Add(args[0]);
@@ -241,6 +245,14 @@ public sealed class BankDeferredCurrencyRecoveryTests
             Assert.Equal(rollback || rebound ? 0 : twoWallets ? 2 : 1, notices.OfType<ServerWalletUpdate>().Count());
             if (!rollback && !rebound)
                 Assert.Equal(twoWallets ? new ulong[] { 85, 61 } : [85], notices.OfType<ServerAccountCurrencyGrant>().Select(row => row.AccountCurrency.Amount));
+            if (outcome == "account-notice")
+            {
+                Assert.Equal(2, walletNoticeAttempts);
+                Assert.IsType<ServerAccountCurrencyGrant>(notices[0]);
+                Assert.IsType<ServerWalletUpdate>(notices[1]);
+                Assert.True(session.CanProcessIncomingPackets);
+                Assert.Empty(network.GetInvocations(nameof(IWorldSession.ForceDisconnect)));
+            }
             if (cosmic)
             {
                 Assert.Equal(480ul, settled.AccountLoyalty.Single().EarnedPoints);
@@ -299,6 +311,9 @@ public sealed class BankDeferredCurrencyRecoveryTests
     [InlineData("rollback")]
     [InlineData("replacement")]
     [InlineData("unsettled-split")]
+    [InlineData("notice-retry")]
+    [InlineData("notice-replaced")]
+    [InlineData("notice-permanent")]
     public async Task VendorBuybackReconcilesPaymentAndItemBeforeAcknowledgingTheOriginalOffer(string outcome)
     {
         bool split = outcome == "unsettled-split";
@@ -367,8 +382,17 @@ public sealed class BankDeferredCurrencyRecoveryTests
         var buyback = new BuybackManager();
         buyback.AddItem(actor.Player, sold, sold.StackCount, [(CurrencyType.Credits, 15)]);
         var notices = new List<object>();
+        int itemNoticeAttempts = 0;
         network.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
         {
+            if (args[0] is ServerItemAdd && outcome.StartsWith("notice-", StringComparison.Ordinal))
+            {
+                itemNoticeAttempts++;
+                if (outcome == "notice-replaced")
+                    network.SetProperty(nameof(IWorldSession.Events), new EventQueue());
+                if (itemNoticeAttempts == 1 || outcome == "notice-permanent")
+                    throw new InvalidOperationException("Rejected restored item notice.");
+            }
             if (args[0] is ServerBuybackItemRemoved or ServerCombatReward or ServerItemAdd or ServerItemError)
                 notices.Add(args[0]);
             return null;
@@ -447,8 +471,26 @@ public sealed class BankDeferredCurrencyRecoveryTests
         Assert.Equal(85ul, Assert.Single(wallet).Amount);
         Assert.Equal(outcome == "rollback" ? 2 : 1, attempts);
         Assert.Equal(85ul, Assert.Single(notices.OfType<ServerCombatReward>()).NewValue);
+        Assert.Empty(notices.OfType<ServerItemError>());
+        if (outcome is "notice-replaced" or "notice-permanent")
+        {
+            Assert.Equal(outcome == "notice-replaced" ? 1 : 2, itemNoticeAttempts);
+            Assert.Empty(notices.OfType<ServerItemAdd>());
+            Assert.Empty(notices.OfType<ServerBuybackItemRemoved>());
+            Assert.False(session.CanProcessIncomingPackets);
+            Assert.Equal(outcome == "notice-replaced" ? 0 : 1, network.GetInvocations(nameof(IWorldSession.ForceDisconnect)).Count);
+            return;
+        }
         Assert.Single(notices.OfType<ServerItemAdd>());
         Assert.Equal(0u, Assert.Single(notices.OfType<ServerBuybackItemRemoved>()).UniqueId);
+        if (outcome == "notice-retry")
+        {
+            Assert.Equal(2, itemNoticeAttempts);
+            Assert.Collection(notices, value => Assert.IsType<ServerCombatReward>(value),
+                value => Assert.IsType<ServerItemAdd>(value), value => Assert.IsType<ServerBuybackItemRemoved>(value));
+            Assert.True(session.CanProcessIncomingPackets);
+            Assert.Empty(network.GetInvocations(nameof(IWorldSession.ForceDisconnect)));
+        }
     }
 
     [Theory]

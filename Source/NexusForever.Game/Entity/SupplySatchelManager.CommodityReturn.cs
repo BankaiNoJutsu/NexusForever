@@ -2,6 +2,7 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Marketplace;
+using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.Game.Entity
@@ -125,9 +126,11 @@ namespace NexusForever.Game.Entity
                 if (current is not TradeskillMaterial concrete) throw new InvalidOperationException("Material rebase requires its concrete owner.");
                 concrete.RebaseCommodityAmount(stored, checked((ushort)desired));
             }
-            internal void Publish(Func<bool> allowed)
+            internal void Publish(Func<bool> allowed, Action<IWritable> send = null)
             {
-                if (allowed()) manager.player.Session.EnqueueMessageEncrypted(new ServerSupplySatchelUpdate
+                if (!allowed()) return;
+                send ??= manager.player.Session.EnqueueMessageEncrypted;
+                send(new ServerSupplySatchelUpdate
                     { MaterialId = Write.Id, StackCount = manager.tradeskillMaterials.TryGetValue(Write.Id, out var current) ? current.Amount : (ushort)0 });
             }
             public void Dispose()

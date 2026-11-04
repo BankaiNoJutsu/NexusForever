@@ -22993,6 +22993,21 @@ The [configured MySQL gate](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.m
 covers four buyback settlement cases. Buyback offers are process-local.
 Process restart, socket delivery and retail behavior remain open.
 
+#### Committed vendor notice recovery
+
+4 November 2026. The durable vendor purchase and buyback handlers retry a
+rejected packet once within the original publication callback. The retry
+requires the same session, event queue, and account epoch. It preserves the
+order of wallet, item, satchel, and buyback notices and leaves the committed
+settlement intact. A replacement stops the remaining notices. A second failure
+requires an authoritative reload and disconnects only the still-owning session.
+
+All four added cases reproduced the publication gap before the fix. The final
+owning build and 279 scoped cases passed, including the new wallet update,
+buyback suffix, replacement queue, and repeated rejection cases. Evidence is
+under `artifacts/continuation-20261104/vendor-publication/`. The rejected enqueue
+is a fixture fault. Socket delivery, restart replay, and retail remain open.
+
 #### Resource conversion preflight
 
 4 November 2026. A mapped item-to-item conversion checks backpack capacity

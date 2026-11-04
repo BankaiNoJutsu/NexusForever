@@ -4,6 +4,7 @@ using NexusForever.Game.Quest;
 using NexusForever.Game.RealmBank;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.Game.Entity
@@ -238,7 +239,9 @@ namespace NexusForever.Game.Entity
                 }
                 state = 1;
             }
-            internal void Publish()
+            internal void Publish() => Publish(packet => player.Session.EnqueueMessageEncrypted(packet));
+
+            internal void Publish(Action<IWritable> send)
             {
                 Validate(); if (state != 1) throw new InvalidOperationException("Bank currency has no confirmed settlement.");
                 publishing = true;
@@ -248,8 +251,8 @@ namespace NexusForever.Game.Entity
                     foreach (var line in notifications)
                     {
                         ValidatePublication();
-                        if (line.Loot) player.Session.EnqueueMessageEncrypted(new ServerChannelUpdateLoot { CurrencyId = line.Type, Amount = unchecked(line.After - line.Before) });
-                        ValidatePublication(); player.Session.EnqueueMessageEncrypted(new ServerCombatReward { Stat = (byte)(line.Type - 1), NewValue = line.After });
+                        if (line.Loot) send(new ServerChannelUpdateLoot { CurrencyId = line.Type, Amount = unchecked(line.After - line.Before) });
+                        ValidatePublication(); send(new ServerCombatReward { Stat = (byte)(line.Type - 1), NewValue = line.After });
                     }
                     state = 2; return;
                 }

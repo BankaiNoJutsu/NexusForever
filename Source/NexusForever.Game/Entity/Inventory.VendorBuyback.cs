@@ -37,7 +37,7 @@ namespace NexusForever.Game.Entity
                 if (!slot.HasValue) return;
                 try
                 {
-                    using var batch = BeginRealmBankNotifications(true);
+                    using var batch = BeginRealmBankNotifications(true, retryVendorNotices: true);
                     if (batch == null || !offer.TryReserveRedemption()) return;
                     batch.Attach(new VendorBuybackReservation(offer));
                     batch.RequireActor(currentOwner);
@@ -46,7 +46,7 @@ namespace NexusForever.Game.Entity
                         new CurrencyManager.BankCurrencyChange(cost.CurrencyTypeId, cost.CurrencyAmount, Subtract: true)),
                         batch.CurrentActor, batch.After);
                     batch.Attach(payment);
-                    batch.Add(payment.Publish);
+                    batch.Add(() => payment.Publish(batch.Send));
 
                     AddItem(item, InventoryLocation.Inventory, slot.Value);
                     if (!player.IsLoading)

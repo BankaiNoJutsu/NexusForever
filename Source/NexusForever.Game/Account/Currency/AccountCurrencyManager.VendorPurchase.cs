@@ -1,5 +1,6 @@
 using NexusForever.Database.Auth;
 using NexusForever.Game.Static.Account;
+using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 
@@ -60,14 +61,14 @@ namespace NexusForever.Game.Account.Currency
                 }
             }
 
-            internal void Publish(Func<bool> currentActor)
+            internal void Publish(Func<bool> currentActor, Action<IWritable> send)
             {
                 foreach (var row in rows)
                 {
                     if (!Current() || !currentActor()) throw new InvalidOperationException("Vendor wallet publication lost its original session.");
-                    SendCurrencyGrant(row.Wallet, 0, session);
+                    send(BuildCurrencyGrant(row.Wallet, 0));
                     if (!Current() || !currentActor()) throw new InvalidOperationException("Vendor wallet publication lost its original session.");
-                    session.EnqueueMessageEncrypted(new ServerWalletUpdate((uint)row.Wallet.CurrencyId));
+                    send(new ServerWalletUpdate((uint)row.Wallet.CurrencyId));
                 }
             }
 

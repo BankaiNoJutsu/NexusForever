@@ -9,6 +9,7 @@ using NexusForever.Game.Account.Currency;
 using NexusForever.Game.RealmBank;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Account;
+using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.Game.Entity
@@ -36,7 +37,7 @@ namespace NexusForever.Game.Entity
                     try
                     {
                         string database = wallet.GetAuctionBidDatabase(owner);
-                        using var batch = BeginRealmBankNotifications(true);
+                        using var batch = BeginRealmBankNotifications(true, retryVendorNotices: true);
                         if (batch == null) return;
                         batch.RequireActor(currentActor);
                         var costs = accountCosts.Where(cost => cost.Value != 0)
@@ -56,7 +57,7 @@ namespace NexusForever.Game.Entity
                                 Convert.ToHexString(SHA256.HashData(quote)), costs, owner.Account.WorldSessionEpoch);
                             var account = new VendorAccountSettlement(protocol, intent, auth.CreateContext, accountWallet.CaptureVendorWallets(costs));
                             batch.AttachAccountSettlement(account);
-                            batch.Add(() => account.Publish(batch.CurrentActor));
+                            batch.Add(() => account.Publish(batch.CurrentActor, batch.Send));
                         }
                         var purchase = new VendorPurchaseSettlement(characterId, database,
                             satchel?.ReserveCommodityReturn(item, count, database));
@@ -64,11 +65,11 @@ namespace NexusForever.Game.Entity
                         var payment = wallet.CaptureBankCurrency(owner, currencyCosts.Where(cost => cost.Value != 0).Select(cost =>
                             new CurrencyManager.BankCurrencyChange(cost.Key, cost.Value, Subtract: true)), batch.CurrentActor, batch.After);
                         batch.Attach(payment);
-                        batch.Add(payment.Publish);
+                        batch.Add(() => payment.Publish(batch.Send));
                         foreach (var cost in itemCosts.Where(cost => cost.Value != 0))
                             ItemDelete(cost.Key, cost.Value, ItemUpdateReason.Vendor);
                         CreateVendorPurchase(item, count - purchase.MaterialCount, satchel: null);
-                        batch.Add(() => purchase.Publish(batch.CurrentActor));
+                        batch.Add(() => purchase.Publish(batch.CurrentActor, batch.Send));
                         batch.Complete();
                     }
                     catch (Exception error)
@@ -100,7 +101,7 @@ namespace NexusForever.Game.Entity
             public void Complete() => wallets.Dispose();
             public void Abort() => wallets.Dispose();
             public void Quarantine() => wallets.Quarantine();
-            internal void Publish(Func<bool> currentActor) => wallets.Publish(currentActor);
+            internal void Publish(Func<bool> currentActor, Action<IWritable> send) => wallets.Publish(currentActor, send);
         }
 
         private sealed class VendorPurchaseSettlement(ulong character, string database,
@@ -155,7 +156,7 @@ namespace NexusForever.Game.Entity
             public void Complete() => material?.Dispose();
             public void Abort() => material?.Dispose();
             public void Quarantine() => material?.Dispose();
-            internal void Publish(Func<bool> allowed) => material?.Publish(allowed);
+            internal void Publish(Func<bool> allowed, Action<IWritable> send) => material?.Publish(allowed, send);
         }
     }
 }

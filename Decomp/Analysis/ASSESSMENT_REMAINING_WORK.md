@@ -99,6 +99,10 @@ covers 24 cases across purchase, buyback and Realm recovery. It caught and
 verified the fix for a wallet refresh query that blocked Realm admission on MySQL.
 Deployed restart, socket delivery and retail qualification remain open.
 
+[Committed vendor notice recovery](../../CURRENT_STATUS.md#committed-vendor-notice-recovery)
+retries one rejected packet on the original session and stops the remaining
+notices on queue replacement or repeated rejection. Settlement runs once.
+
 [Fortune deal settlement](../../CURRENT_STATUS.md#persisted-deal-and-coin-settlement)
 commits the one-coin debit and deal together, including consumption and change
 for the committed coin-only bundle fallback. Pending funding and mixed claims

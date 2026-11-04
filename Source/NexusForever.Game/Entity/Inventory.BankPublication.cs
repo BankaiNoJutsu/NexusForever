@@ -18,13 +18,13 @@ namespace NexusForever.Game.Entity
         private bool realmBankPublishing;
         private HashSet<BankPublication> bankPublications;
 
-        private BankPublication BeginRealmBankNotifications(bool needed)
+        private BankPublication BeginRealmBankNotifications(bool needed, bool retryVendorNotices = false)
         {
             if (!needed || realmBankNotifications != null || player == null || realmBankManager == null) return null;
             if (IsRealmBankPersistenceBlocked || inventorySaveLeases != 0 || HasPendingRewardDelivery || RequiresAuthoritativeReload
                 || bags.Values.SelectMany(bag => bag).OfType<Item>().Any(item => item.HasPendingSave))
                 throw new InvalidOperationException("A bank operation is already owned.");
-            var batch = new BankPublication(this);
+            var batch = new BankPublication(this, retryVendorNotices);
             if (!batch.CurrentActor()) throw new InvalidOperationException("Bank operation lost its live actor.");
             realmBankNotifications = batch;
             return batch;
@@ -70,6 +70,8 @@ namespace NexusForever.Game.Entity
             private readonly uint accountId;
             private readonly ushort realm;
             private readonly EventQueue events;
+            private readonly bool retryVendorNotices;
+            private readonly ulong worldEpoch;
             private readonly InventoryOperationSnapshot before;
             private readonly Dictionary<ulong, IItem> items = [];
             private readonly List<Item> splits = [];
@@ -90,9 +92,11 @@ namespace NexusForever.Game.Entity
             private VendorAccountSettlement accountSettlement;
             private readonly HashSet<IBankSaveCompanion> released = [];
 
-            internal BankPublication(Inventory owner)
+            internal BankPublication(Inventory owner, bool retryVendorNotices)
             {
                 this.owner = owner; session = owner.player.Session; account = owner.player.Account;
+                this.retryVendorNotices = retryVendorNotices;
+                if (retryVendorNotices) worldEpoch = account.WorldSessionEpoch;
                 accountId = account.Id; realm = owner.player.Identity.RealmId;
                 events = session?.Events ?? throw new InvalidOperationException("Bank publication requires the session actor queue.");
                 before = owner.CreateOperationSnapshot();
@@ -110,7 +114,28 @@ namespace NexusForever.Game.Entity
 
             internal void RequireActor(Func<bool> actor) => additionalActor = actor ?? throw new ArgumentNullException(nameof(actor));
 
-            internal void Add(IWritable packet) => publication.Add(() => session.EnqueueMessageEncrypted(packet));
+            private bool CanPublishVendorNotice() => CurrentActor() && bankActor.CanPublish
+                && ReferenceEquals(session.Events, events) && account.WorldSessionEpoch == worldEpoch;
+
+            internal void Send(IWritable packet)
+            {
+                if (!retryVendorNotices || bankActor == null)
+                {
+                    session.EnqueueMessageEncrypted(packet);
+                    return;
+                }
+                if (!CanPublishVendorNotice())
+                    throw new InvalidOperationException("Vendor notification lost its original actor queue.");
+                try { session.EnqueueMessageEncrypted(packet); }
+                catch (Exception error) when (CanPublishVendorNotice())
+                {
+                    // Keep the current publication guard and retry this packet only.
+                    log.Warn(error, "Retrying an enqueue for a committed vendor settlement.");
+                    session.EnqueueMessageEncrypted(packet);
+                }
+            }
+
+            internal void Add(IWritable packet) => publication.Add(() => Send(packet));
             internal void Add(Action effect) => publication.Add(effect);
             internal void After(Action effect) => afterPublication.Add(effect);
             internal void AfterSave(Action effect) => afterSavePublication.Add(effect);
@@ -270,11 +295,26 @@ namespace NexusForever.Game.Entity
                             if (committed) foreach (var effect in publication.Concat(afterSavePublication))
                             { if (!CurrentActor() || !bankActor.CanPublish) throw new InvalidOperationException("Bank publication lost its original actor."); effect(); }
                             else { payment?.Publish(); PublishFailure(); }
+                            if (committed && retryVendorNotices && !CanPublishVendorNotice())
+                                throw new InvalidOperationException("Vendor notification lost its original actor queue.");
                         }
                         else payment?.SuppressPublication();
                         if (committed) foreach (var companion in companions.Where(value => !ReferenceEquals(value, payment) && !released.Contains(value))) companion.Complete();
                         payment?.Complete();
                         finished = true;
+                    }
+                    catch (Exception error) when (committed && retryVendorNotices)
+                    {
+                        // Settlement is already durable. Retire only the original
+                        // actor and do not report a failed purchase or buyback.
+                        bool disconnect = CanPublishVendorNotice();
+                        log.Error(error, "Committed vendor settlement could not publish its notifications.");
+                        QuarantineCompanions();
+                        bankActor.Quarantine();
+                        finished = true;
+                        if (disconnect && ReferenceEquals(session.Events, events)
+                            && session is IPlayerSession original && ReferenceEquals(original.Player, owner.player))
+                            session.ForceDisconnect();
                     }
                     finally
                     {
