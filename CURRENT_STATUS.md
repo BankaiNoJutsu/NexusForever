@@ -22876,7 +22876,27 @@ replacement inventory in two owner-change cases. The owning-project build and
 111 scoped tests passed, including vendor handlers, inventory mutation, and
 bank-sale payout, restoration, and currency recovery. Local evidence is under
 `artifacts/continuation-20261104/vendor-buyback-identity/`.
-Durable redemption settlement and deployed client behavior remain open.
+
+#### Vendor buyback settlement
+
+4 November 2026. The world handler reserves the exact buyback offer and uses
+the Character settlement path to commit its wallet debit and original item
+together. If the preceding sale still has an unsaved deletion or stack
+reduction, that sale settles before the redemption starts. The debit, restored
+item, and offer removal are published to the original session after the commit
+is confirmed, including when the commit acknowledgment was lost. A confirmed
+rollback leaves the offer available again. An actor replacement suppresses
+publication without replaying settlement.
+
+The baseline sent three additional notices before any buyback SQL commit for
+both full and partial bank-sale redemptions. SQLite cases exercise the world
+handler with the Player implementation, covering full and split ordinary sales,
+lost acknowledgment, confirmed rollback with a second request, and a replaced
+actor. The broader scoped run found an early wallet read at admission. After
+the fix, the rebuilt candidate passed all 20 affected tests in 18 seconds.
+Evidence is under `artifacts/continuation-20261104/vendor-buyback-settlement/`.
+Configured-provider, process restart, socket delivery, and retail behavior
+remain open. Buyback offers are process-local.
 
 #### Resource conversion preflight
 

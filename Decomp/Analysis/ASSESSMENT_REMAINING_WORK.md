@@ -76,7 +76,10 @@ socket delivery, restart qualification and retail selector semantics remain open
 
 [Vendor buyback request identity](../../CURRENT_STATUS.md#vendor-buyback-request-identity)
 keeps delayed requests from charging for a later sale and finishes accepted
-redemptions on the original inventory. Durable redemption settlement remains open.
+redemptions on the original inventory. [Vendor buyback settlement](../../CURRENT_STATUS.md#vendor-buyback-settlement)
+commits the redemption debit and item together, recovers a lost acknowledgment,
+and publishes to the original session. Configured-provider, restart, and deployed
+client evidence remain open.
 
 [Vendor purchase capacity](../../CURRENT_STATUS.md#vendor-purchase-capacity)
 checks the complete delivery before charging, including slots freed by item

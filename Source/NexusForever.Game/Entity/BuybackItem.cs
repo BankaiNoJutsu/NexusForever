@@ -14,6 +14,14 @@ namespace NexusForever.Game.Entity
         public bool HasExpired => timeToExpire <= 0d;
         private double timeToExpire = 1800d;
 
+        private const int Available = 0, Redeeming = 1, Redeemed = 2;
+        private int redemption;
+        internal bool IsAvailableForRedemption => Volatile.Read(ref redemption) == Available;
+        internal bool IsRedeemed => Volatile.Read(ref redemption) == Redeemed;
+        internal bool TryReserveRedemption() => Interlocked.CompareExchange(ref redemption, Redeeming, Available) == Available;
+        internal void ReleaseRedemption() => Interlocked.CompareExchange(ref redemption, Available, Redeeming);
+        internal void ConsumeRedemption() => Interlocked.Exchange(ref redemption, Redeemed);
+
         public BuybackItem(uint uniqueId, IItem item, uint quantity, List<(CurrencyType CurrencyTypeId, ulong CurrencyAmount)> currencyChange)
         {
             UniqueId       = uniqueId;

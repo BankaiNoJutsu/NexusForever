@@ -27,6 +27,7 @@ using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Network;
+using NexusForever.WorldServer.Network.Message.Handler.Vendor;
 using Fixture = NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.Fixture;
 
 namespace NexusForever.Game.Tests.Entity;
@@ -36,6 +37,164 @@ public sealed class BankDeferredCurrencyRecoveryTests
     private readonly DbContextOptions<CharacterContext> options;
     public BankDeferredCurrencyRecoveryTests() { }
     internal BankDeferredCurrencyRecoveryTests(DbContextOptions<CharacterContext> options) => this.options = options;
+
+    [Theory]
+    [InlineData("commit")]
+    [InlineData("lost")]
+    [InlineData("rollback")]
+    [InlineData("replacement")]
+    [InlineData("unsettled-split")]
+    public async Task VendorBuybackReconcilesPaymentAndItemBeforeAcknowledgingTheOriginalOffer(string outcome)
+    {
+        bool split = outcome == "unsettled-split";
+        using var f = new Fixture(options);
+        f.Seed();
+        var database = new CharacterDatabase();
+        using (var seed = f.Context())
+        {
+            database.Initialise(new DatabaseConnectionString
+            {
+                Provider = seed.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
+                ConnectionString = seed.Database.GetDbConnection().ConnectionString
+            });
+            seed.Character.Single().AccountId = 12;
+            seed.CharacterCurrency.Add(new() { Id = 42, CurrencyId = 1, Amount = 85 });
+            seed.Item.Add(new() { Id = 904, OwnerId = 42, ItemId = 7001, Location = (ushort)InventoryLocation.Inventory,
+                BagIndex = 0, StackCount = 2, Charges = 1, Durability = .75f, MicrochipIds = "91", RuneSlots = "10:9001" });
+            await seed.SaveChangesAsync();
+        }
+        var account = (RecordingDispatchProxy<IAccount>)(object)f.Source.Player.Account;
+        account.SetProperty(nameof(IAccount.Id), 12u);
+        var session = RecordingDispatchProxy<IWorldSession>.Create(out var network);
+        var events = new EventQueue();
+        network.SetProperty(nameof(IWorldSession.Events), events);
+        account.SetProperty(nameof(IAccount.Session), session);
+        ((RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables).SetProperty(nameof(IGameTableManager.CurrencyType),
+            PlayerBindPointTests.Table(new CurrencyTypeEntry { Id = 1, CapAmount = 1000 }));
+        var info = RecordingDispatchProxy<IItemInfo>.Create(out var definition);
+        definition.SetProperty(nameof(IItemInfo.Id), 7001u);
+        definition.SetProperty(nameof(IItemInfo.Entry), new Item2Entry { Id = 7001, MaxStackCount = 20, MaxCharges = 3 });
+        var items = RecordingDispatchProxy<IItemManager>.Create(out var itemManager);
+        itemManager.SetMethodReturn(nameof(IItemManager.GetItemInfo), info);
+        itemManager.SetProperty(nameof(IItemManager.NextItemId), 905ul);
+        var databases = RecordingDispatchProxy<IDatabaseManager>.Create(out var dbs);
+        dbs.SetMethodReturn(nameof(IDatabaseManager.GetDatabase), database);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        int attempts = 0;
+        var bank = new RealmBankManager(databases, items, async command =>
+        {
+            int attempt = ++attempts;
+            await release.Task;
+            if (attempt == 1 && outcome is "lost" or "rollback")
+            {
+                var fault = new CommitFault(outcome == "lost");
+                typeof(RealmBankManager.BankSaveCommand).GetField("contexts", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .SetValue(command, (Func<CharacterContext>)(() => f.Context(fault)));
+            }
+            await command.ExecuteAsync();
+        });
+        var model = Assert.Single(await database.GetCharacters(12));
+        var ordinary = new OrdinaryDatabase(f, outcome);
+        using var actor = new RewardNormalSaveSnapshotTests.Actor(f, actorModel: model, actorSession: session, actorEvents: events,
+            characterDatabase: ordinary, inventoryFactory: (owner, _) => Inventory(owner, items, f.Source.Tables, bank));
+        network.SetProperty(nameof(IWorldSession.Player), actor.Player);
+        var wallet = new CurrencyManager(f.Source.Tables);
+        wallet.Initialise(actor.Player, model);
+        actor.Set(nameof(Player.CurrencyManager), wallet);
+        await actor.Load();
+        var inventory = Assert.IsType<Inventory>(actor.Player.Inventory);
+        var location = new ItemLocation { Location = InventoryLocation.Inventory, BagIndex = 0 };
+        var source = new NexusForever.Game.Entity.Item(Assert.Single(model.Item), items, f.Source.Tables);
+        inventory.LoadItem(source, location.Location, location.BagIndex);
+        var sold = inventory.ItemDelete(location, split ? 1u : 2u, ItemUpdateReason.Vendor);
+        Assert.NotNull(sold);
+        wallet.CurrencyAddAmount(CurrencyType.Credits, 15);
+        var buyback = new BuybackManager();
+        buyback.AddItem(actor.Player, sold, sold.StackCount, [(CurrencyType.Credits, 15)]);
+        var notices = new List<object>();
+        network.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerBuybackItemRemoved or ServerCombatReward or ServerItemAdd or ServerItemError)
+                notices.Add(args[0]);
+            return null;
+        });
+        using var reader = new NexusForever.Network.GamePacketReader(new MemoryStream(new byte[4]));
+        var request = new ClientBuybackItemFromVendor();
+        request.Read(reader);
+        var handler = new ClientBuybackItemFromVendorHandler(buyback);
+
+        handler.HandleMessage(session, request);
+        try
+        {
+            Assert.Equal(0, attempts);
+            using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15)))
+            {
+                while (attempts == 0)
+                {
+                    events.Update(.01);
+                    await Task.Delay(5, timeout.Token);
+                }
+            }
+            using (var predecessor = f.Context())
+            {
+                if (split) Assert.Equal(1u, Assert.Single(predecessor.Item).StackCount);
+                else Assert.Empty(predecessor.Item);
+                Assert.Equal(100ul, predecessor.CharacterCurrency.Single().Amount);
+            }
+            Assert.Equal(1, attempts);
+            Assert.False(session.CanProcessIncomingPackets);
+            Assert.Equal(100ul, Assert.Single(wallet).Amount);
+            Assert.Empty(notices);
+            handler.HandleMessage(session, request);
+            Assert.Equal(1, attempts);
+            if (outcome == "replacement")
+                network.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+        }
+        finally { release.TrySetResult(); }
+        await actor.Drain();
+
+        if (outcome == "rollback")
+        {
+            using var rolledBack = f.Context();
+            Assert.Empty(rolledBack.Item);
+            Assert.Equal(100ul, rolledBack.CharacterCurrency.Single().Amount);
+            Assert.Same(sold, buyback.GetItem(actor.Player, 0)?.Item);
+            Assert.Null(inventory.GetItem(sold.Guid));
+            Assert.Single(notices.OfType<ServerItemError>());
+            Assert.Empty(notices.OfType<ServerBuybackItemRemoved>());
+            Assert.Empty(notices.OfType<ServerItemAdd>());
+            notices.Clear();
+            handler.HandleMessage(session, request);
+            await actor.Drain();
+        }
+
+        using var read = f.Context();
+        var restored = read.Item.Single(item => item.Id == sold.Guid);
+        Assert.Equal(split ? 2 : 1, read.Item.Count());
+        Assert.Equal(sold.Guid, restored.Id);
+        Assert.Equal(split ? 1u : 2u, restored.StackCount);
+        if (split) Assert.Equal(1u, read.Item.Single(item => item.Id == source.Guid).StackCount);
+        else
+        {
+            Assert.Equal("91", restored.MicrochipIds);
+            Assert.Equal("10:9001", restored.RuneSlots);
+        }
+        Assert.Equal(85ul, read.CharacterCurrency.Single().Amount);
+        Assert.Null(buyback.GetItem(actor.Player, 0));
+        if (outcome == "replacement")
+        {
+            Assert.Equal(1, attempts);
+            Assert.Empty(notices);
+            Assert.False(session.CanProcessIncomingPackets);
+            Assert.Empty(network.GetInvocations(nameof(IWorldSession.ForceDisconnect)));
+            return;
+        }
+        Assert.Equal(85ul, Assert.Single(wallet).Amount);
+        Assert.Equal(outcome == "rollback" ? 2 : 1, attempts);
+        Assert.Equal(85ul, Assert.Single(notices.OfType<ServerCombatReward>()).NewValue);
+        Assert.Single(notices.OfType<ServerItemAdd>());
+        Assert.Equal(0u, Assert.Single(notices.OfType<ServerBuybackItemRemoved>()).UniqueId);
+    }
 
     [Theory]
     [InlineData("before-sql")] [InlineData("rollback")]

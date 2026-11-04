@@ -195,11 +195,24 @@ public sealed partial class RealmBankItemIdentityTests
         Assert.True(Sell(f, partial ? 3u : 17u)); await WaitForBankMove(f.Inventory, f.Item);
         var sold = f.Buyback.GetItem(f.Player, 0).Item;
         var world = RecordingDispatchProxy<IWorldSession>.Create(out var wp); wp.SetProperty(nameof(IWorldSession.Player), f.Player);
+        int previousMessages = BankMessages(f.Player.Session).Length;
         using var reader = new GamePacketReader(new MemoryStream(new byte[4]));
         var request = new ClientBuybackItemFromVendor(); request.Read(reader);
         new ClientBuybackItemFromVendorHandler(f.Buyback).HandleMessage(world, request);
+        Assert.Equal(previousMessages, BankMessages(f.Player.Session).Length);
+        Assert.Equal(100ul + (partial ? 21ul : 119ul), Assert.Single(f.Currency).Amount);
+        new ClientBuybackItemFromVendorHandler(f.Buyback).HandleMessage(world, request);
+        await WaitForBankMove(f.Inventory, (GameItem)sold);
         Assert.Null(f.Buyback.GetItem(f.Player, 0)); Assert.Same(sold, f.Inventory.GetItem(sold.Guid));
         Assert.Equal(100ul, Assert.Single(f.Currency).Amount);
+        var notices = BankMessages(f.Player.Session).Skip(previousMessages).ToArray();
+        Assert.Single(notices.OfType<ServerBuybackItemRemoved>());
+        Assert.Single(notices.OfType<ServerCombatReward>());
+        using (var committed = new CharacterContext(Configuration))
+        {
+            Assert.Equal(100ul, committed.CharacterCurrency.Single().Amount);
+            Assert.Equal(sold.Guid, committed.Item.Single().Id);
+        }
         using (var save = new CharacterContext(Configuration)) { f.Inventory.Save(save); f.Currency.Save(save); await save.SaveChangesAsync(); }
         using var read = new CharacterContext(Configuration); var restored = Assert.Single(read.Item);
         Assert.Equal(partial ? 205ul : 401ul, restored.Id); Assert.Equal(partial ? 3u : 17u, restored.StackCount);

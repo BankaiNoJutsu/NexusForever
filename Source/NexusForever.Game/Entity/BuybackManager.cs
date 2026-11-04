@@ -21,8 +21,13 @@ namespace NexusForever.Game.Entity
             {
                 foreach (IBuybackItem buybackItem in info.ToArray())
                 {
+                    if (buybackItem is BuybackItem { IsRedeemed: true })
+                    {
+                        info.RemoveItem(buybackItem.UniqueId);
+                        continue;
+                    }
                     buybackItem.Update(lastTick);
-                    if (!buybackItem.HasExpired)
+                    if (!buybackItem.HasExpired || buybackItem is BuybackItem { IsAvailableForRedemption: false })
                         continue;
 
                     info.RemoveItem(buybackItem.UniqueId);
@@ -41,7 +46,8 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public IBuybackItem GetItem(IPlayer player, uint uniqueId)
         {
-            return buybackInfo.TryGetValue(player.CharacterId, out IBuybackInfo info) ? info.GetItem(uniqueId) : null;
+            IBuybackItem item = buybackInfo.TryGetValue(player.CharacterId, out IBuybackInfo info) ? info.GetItem(uniqueId) : null;
+            return item is BuybackItem { IsAvailableForRedemption: false } ? null : item;
         }
 
         /// <summary>
@@ -91,7 +97,8 @@ namespace NexusForever.Game.Entity
 
             var serverBuybackItems = new ServerBuybackItems();
             foreach (IBuybackItem buybackItem in info)
-                serverBuybackItems.BuybackItems.Add(buybackItem.Build());
+                if (buybackItem is not BuybackItem { IsRedeemed: true })
+                    serverBuybackItems.BuybackItems.Add(buybackItem.Build());
 
             player.Session.EnqueueMessageEncrypted(serverBuybackItems);
         }
