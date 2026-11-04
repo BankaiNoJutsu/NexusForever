@@ -28,4 +28,9 @@ namespace NexusForever.Game.Spell
         public Position Position { get; set; }
         public ushort TaxiNode { get; set; }
     }
+
+    public sealed class RapidTransportSpellParameters(uint fare) : SpellParameters
+    {
+        public uint Fare { get; } = fare;
+    }
 }

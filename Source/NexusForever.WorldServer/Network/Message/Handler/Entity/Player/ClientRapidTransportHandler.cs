@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Numerics;
 using Microsoft.Extensions.Logging;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
@@ -33,13 +34,17 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
 
         public void HandleMessage(IWorldSession session, ClientRapidTransport rapidTransport)
         {
+            IPlayer player = session.Player;
+            if (player == null)
+                return;
+
             log.LogTrace("Received rapid transport request from player {PlayerGuid}: TaxiNode={TaxiNode}, ContextToken={ContextToken}.",
-                session.Player?.Guid, rapidTransport.TaxiNode, rapidTransport.ContextToken);
+                player.Guid, rapidTransport.TaxiNode, rapidTransport.ContextToken);
 
             if (gameTableManager.TaxiNode == null)
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: taxi node table is unavailable.",
-                    session.Player?.Guid);
+                    player.Guid);
                 SendRapidTransportCastResult(session, rapidTransport.ContextToken, 0u, CastResult.RapidTransportInvalid);
                 return;
             }
@@ -48,15 +53,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             if (taxiNode == null)
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: destination taxi node {TaxiNode} was not found.",
-                    session.Player?.Guid, rapidTransport.TaxiNode);
+                    player.Guid, rapidTransport.TaxiNode);
                 SendRapidTransportCastResult(session, rapidTransport.ContextToken, 0u, CastResult.RapidTransportInvalid);
                 return;
             }
 
-            if (session.Player.Level < taxiNode.AutoUnlockLevel)
+            if (player.Level < taxiNode.AutoUnlockLevel)
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: level {PlayerLevel} is below required {RequiredLevel} for taxi node {TaxiNode}.",
-                    session.Player?.Guid, session.Player.Level, taxiNode.AutoUnlockLevel, rapidTransport.TaxiNode);
+                    player.Guid, player.Level, taxiNode.AutoUnlockLevel, rapidTransport.TaxiNode);
                 SendRapidTransportCastResult(session, rapidTransport.ContextToken, 0u, CastResult.RapidTransportInvalid);
                 return;
             }
@@ -64,7 +69,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             if (gameTableManager.WorldLocation2 == null)
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: world location table is unavailable.",
-                    session.Player?.Guid);
+                    player.Guid);
                 SendRapidTransportCastResult(session, rapidTransport.ContextToken, 0u, CastResult.RapidTransportInvalid);
                 return;
             }
@@ -73,7 +78,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             if (worldLocation == null)
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: world location {WorldLocation2Id} for taxi node {TaxiNode} was not found.",
-                    session.Player?.Guid, taxiNode.WorldLocation2Id, rapidTransport.TaxiNode);
+                    player.Guid, taxiNode.WorldLocation2Id, rapidTransport.TaxiNode);
                 SendRapidTransportCastResult(session, rapidTransport.ContextToken, 0u, CastResult.RapidTransportInvalid);
                 return;
             }
@@ -82,40 +87,39 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             if (formula == null || formula.Dataint0 == 0u)
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: rapid transport spell formula {GameFormulaId} is unavailable or empty.",
-                    session.Player?.Guid, RapidTransportSpellGameFormulaId);
+                    player.Guid, RapidTransportSpellGameFormulaId);
                 SendRapidTransportCastResult(session, rapidTransport.ContextToken, 0u, CastResult.RapidTransportInvalid);
                 return;
             }
 
-            if (session.Player.SpellManager.GetSpellCooldown(formula.Dataint0) > 0d)
+            if (player.SpellManager.GetSpellCooldown(formula.Dataint0) > 0d)
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: spell {Spell4Id} is on cooldown.",
-                    session.Player?.Guid, formula.Dataint0);
+                    player.Guid, formula.Dataint0);
                 SendRapidTransportCastResult(session, rapidTransport.ContextToken, formula.Dataint0, CastResult.SpellCooldown);
                 return;
             }
 
-            TaxiRouteEntry route = ResolveRapidTransportRoute(session, rapidTransport.TaxiNode);
+            TaxiRouteEntry route = ResolveRapidTransportRoute(player, rapidTransport.TaxiNode);
             if (route == null)
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: no route found to destination taxi node {TaxiNode}.",
-                    session.Player?.Guid, rapidTransport.TaxiNode);
+                    player.Guid, rapidTransport.TaxiNode);
                 SendRapidTransportCastResult(session, rapidTransport.ContextToken, formula.Dataint0, CastResult.RapidTransportInvalid);
                 return;
             }
 
-            if (!session.Player.CurrencyManager.CanAfford(CurrencyType.Credits, route.Price))
+            if (!player.CurrencyManager.CanAfford(CurrencyType.Credits, route.Price))
             {
                 log.LogTrace("Rapid transport rejected for player {PlayerGuid}: insufficient credits for route {RouteId} with price {Price}.",
-                    session.Player?.Guid, route.Id, route.Price);
+                    player.Guid, route.Id, route.Price);
                 SendRapidTransportCastResult(session, rapidTransport.ContextToken, formula.Dataint0, CastResult.CasterVitalCostMoney);
                 return;
             }
 
-            log.LogTrace("Rapid transport accepted for player {PlayerGuid}: route {RouteId}, destination taxi node {TaxiNode}, price {Price}, spell {Spell4Id}.",
-                session.Player?.Guid, route.Id, rapidTransport.TaxiNode, route.Price, formula.Dataint0);
-            session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, route.Price);
-            var spellParameters = new SpellParameters
+            log.LogTrace("Attempting rapid transport for player {PlayerGuid}: route {RouteId}, destination taxi node {TaxiNode}, price {Price}, spell {Spell4Id}.",
+                player.Guid, route.Id, rapidTransport.TaxiNode, route.Price, formula.Dataint0);
+            var spellParameters = new RapidTransportSpellParameters(route.Price)
             {
                 // Native cast-context construction indicates the client packet's secondary 32-bit field is a
                 // generated cast-context token, not a wall-clock time value.
@@ -128,19 +132,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             };
 
             ClientSpellEvidenceCaptureHelper.ApplyPendingCapture(session, spellParameters);
-            session.Player.CastSpell(formula.Dataint0, spellParameters);
+            if (ReferenceEquals(session.Player, player))
+                player.CastSpell(formula.Dataint0, spellParameters);
         }
 
-        private TaxiRouteEntry ResolveRapidTransportRoute(IWorldSession session, ushort destinationNodeId)
+        private TaxiRouteEntry ResolveRapidTransportRoute(IPlayer player, ushort destinationNodeId)
         {
-            if (session.Player.Map?.Entry == null
+            if (player.Map?.Entry == null
                 || gameTableManager.TaxiRoute == null
                 || gameTableManager.TaxiNode == null
                 || gameTableManager.WorldLocation2 == null)
                 return null;
 
-            uint worldId = session.Player.Map.Entry.Id;
-            Vector3 playerPosition = session.Player.Position;
+            uint worldId = player.Map.Entry.Id;
+            Vector3 playerPosition = player.Position;
 
             return gameTableManager.TaxiRoute.Entries
                 .Where(route => route != null && route.TaxiNodeIdDestination == destinationNodeId)

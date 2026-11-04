@@ -19,6 +19,8 @@ using NexusForever.Network.Packet;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
+using NexusForever.Script;
+using NexusForever.Script.Template.Collection;
 using NexusForever.Shared;
 using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Network;
@@ -208,24 +210,67 @@ public class TransportHandlerTests
         Assert.Equal(CastResult.RapidTransportInvalid, result.CastResult);
     }
 
-    [Fact]
-    public void RapidTransport_ChargesNearestRouteAndCastsRapidTransportSpell()
+    [Theory]
+    [InlineData(CastResult.Ok)]
+    [InlineData(CastResult.SpellGlobalCooldown)]
+    [InlineData(CastResult.RapidTransportInvalid)]
+    [InlineData(CastResult.CasterVitalCostMoney)]
+    public void RapidTransport_ChargesTheSelectedFareOnlyForAnAcceptedCast(CastResult expected)
     {
         ClientRapidTransportHandler handler = CreateRapidTransportHandler(
             out _,
             out IPlayer player,
             out RecordingDispatchProxy<ICurrencyManager> currencyProxy,
-            out _,
+            out RecordingDispatchProxy<ISpellManager> spellManager,
             out _,
             out _);
 
         TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
-        handler.HandleMessage(session, BuildRapidTransport(destinationNodeId: 20, contextToken: 0xAABBCCDDu));
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+        playerProxy.SetMethodReturn(nameof(IPlayer.CanTeleport), expected != CastResult.RapidTransportInvalid);
+        spellManager.SetMethodReturn(nameof(ISpellManager.GetGlobalSpellCooldown), expected == CastResult.SpellGlobalCooldown ? 1d : 0d);
+        ulong balance = 100ul;
+        currencyProxy.SetMethodHandler(nameof(ICurrencyManager.CanAfford), args => balance >= (ulong)args[1]);
+        currencyProxy.SetMethodHandler(nameof(ICurrencyManager.CurrencySubtractAmount), args =>
+        {
+            Assert.Equal(CurrencyType.Credits, args[0]);
+            balance -= (ulong)args[1];
+            return null;
+        });
+        playerProxy.SetMethodHandler(nameof(IPlayer.EnqueueToVisible), args =>
+        {
+            if (args[0] is ServerSpellStart)
+                Assert.Equal(75ul, balance);
+            return null;
+        });
 
-        RecordingDispatchProxy<ICurrencyManager>.Invocation debit =
-            Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
-        Assert.Equal(CurrencyType.Credits, debit.Arguments[0]);
-        Assert.Equal(25ul, debit.Arguments[1]);
+        var info = RecordingDispatchProxy<ISpellInfo>.Create(out var spellInfo);
+        var baseInfo = RecordingDispatchProxy<ISpellBaseInfo>.Create(out var spellBase);
+        spellBase.SetProperty(nameof(ISpellBaseInfo.Entry), new Spell4BaseEntry { Id = 12 });
+        spellInfo.SetProperty(nameof(ISpellInfo.BaseInfo), baseInfo);
+        spellInfo.SetProperty(nameof(ISpellInfo.Entry), new Spell4Entry { Id = RapidTransportSpell4Id, Spell4BaseIdBaseSpell = 12, CastTime = 1000 });
+        spellInfo.SetProperty(nameof(ISpellInfo.GlobalCooldown), new SpellCoolDownEntry { Id = 7, CooldownTime = 1000 });
+        spellInfo.SetProperty(nameof(ISpellInfo.Effects), new List<Spell4EffectsEntry>());
+        spellInfo.SetProperty(nameof(ISpellInfo.Telegraphs), new List<TelegraphDamageEntry>());
+        var global = RecordingDispatchProxy<IGlobalSpellManager>.Create(out var globalSpellManager);
+        globalSpellManager.SetProperty(nameof(IGlobalSpellManager.NextCastingId), 77u);
+        var scripts = RecordingDispatchProxy<IScriptManager>.Create(out var scriptManager);
+        scriptManager.SetMethodReturn(nameof(IScriptManager.InitialiseOwnedScripts), RecordingDispatchProxy<IScriptCollection>.Create(out _));
+
+        CastResult? castResult = null;
+        playerProxy.SetMethodHandler(nameof(IUnitEntity.CastSpell), args =>
+        {
+            var parameters = Assert.IsAssignableFrom<ISpellParameters>(args[1]);
+            parameters.SpellInfo = info;
+            // Model the balance changing after the handler's quote check.
+            if (expected == CastResult.CasterVitalCostMoney)
+                balance = 24;
+            using var spell = new Game.Spell.Spell(player, parameters, globalSpellManager: global, scriptManager: scripts);
+            castResult = spell.Cast();
+            return null;
+        });
+
+        handler.HandleMessage(session, BuildRapidTransport(destinationNodeId: 20, contextToken: 0xAABBCCDDu));
 
         RecordingDispatchProxy<IPlayer>.Invocation cast =
             Assert.Single(playerProxy.GetInvocations(nameof(IUnitEntity.CastSpell)));
@@ -234,6 +279,25 @@ public class TransportHandlerTests
         Assert.Equal((ushort)20, parameters.TaxiNode);
         Assert.Equal(0xAABBCCDDu, parameters.ClientContextToken);
         Assert.Equal(nameof(ClientRapidTransport), parameters.ClientRequestSource);
+
+        var debits = currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount));
+        if (expected == CastResult.Ok)
+        {
+            Assert.Equal(25ul, Assert.Single(debits).Arguments[1]);
+            Assert.Equal(75ul, balance);
+            Assert.Single(session.EncryptedMessages.OfType<ServerSpellCastPositionSync>());
+            Assert.Empty(session.EncryptedMessages.OfType<ServerSpellCastResult>());
+        }
+        else
+        {
+            Assert.Empty(debits);
+            Assert.Equal(expected == CastResult.CasterVitalCostMoney ? 24ul : 100ul, balance);
+            Assert.Empty(session.EncryptedMessages.OfType<ServerSpellCastPositionSync>());
+            var failure = Assert.Single(session.EncryptedMessages.OfType<ServerSpellCastResult>());
+            Assert.Equal(expected, failure.CastResult);
+            Assert.Equal(parameters.ClientContextToken, failure.ContextToken);
+        }
+        Assert.Equal(expected, castResult);
     }
 
     [Fact]
@@ -572,9 +636,16 @@ public class TransportHandlerTests
 
     private static ClientRapidTransport BuildRapidTransport(ushort destinationNodeId, uint contextToken = 0u)
     {
-        var message = (ClientRapidTransport)RuntimeHelpers.GetUninitializedObject(typeof(ClientRapidTransport));
-        SetPrivateProperty(message, nameof(ClientRapidTransport.TaxiNode), destinationNodeId);
-        SetPrivateProperty(message, nameof(ClientRapidTransport.ContextToken), contextToken);
+        using var stream = new MemoryStream();
+        using (var writer = new GamePacketWriter(stream))
+        {
+            writer.Write(destinationNodeId, 14u);
+            writer.Write(contextToken);
+            writer.FlushBits();
+        }
+        using var reader = new GamePacketReader(new MemoryStream(stream.ToArray()));
+        var message = new ClientRapidTransport();
+        message.Read(reader);
         return message;
     }
 

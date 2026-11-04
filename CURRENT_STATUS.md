@@ -21099,6 +21099,24 @@ finish/hot-cold consumer. Current source emits `ServerCraftingFinish` and
   (microchip taxonomy cleanup verification passed 149/149)
 
 ### F-009 - Rapid Transport / Taxi / Flight Path - PARTIAL (route-table fix verified; blockers remain)
+
+#### Rapid Transport cast fare
+
+4 November 2026. The request supplies its validated route fare to the spell
+engine. Spell admission checks the current balance and pending teleport after
+normal cast validation, then charges once before publishing the cast start.
+A rejected cast keeps the fare and uses the existing client context token in
+its failure reply. The baseline reproduced early charging in three cases.
+The scoped build passed and 241 tests passed on the first run. Two historical
+SQLite migration fixtures failed because they used the current model against
+schemas predating `bonusAmpPower`. Both passed after the fixtures were updated
+to use historical columns, with identical Game and WorldServer binaries.
+Local evidence is under `artifacts/continuation-20261104/rapid-transport-cast-fare/`.
+Physical transfer, fare settlement after interruption or a later map failure,
+and formula-driven pricing beyond the captured route cases remain open.
+
+#### Route and client evidence
+
 Pricing/request validation is partial. The 2026-06-04 taxi/rapid-transport
 capture proved live `ClientRapidTransport` (`0x0141`) requests for taxi nodes
 `89`/`88` plus `ClientFlightPathPurchase` (`0x00FF`) route chains

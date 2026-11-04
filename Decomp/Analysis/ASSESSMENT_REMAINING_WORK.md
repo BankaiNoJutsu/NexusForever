@@ -10,6 +10,10 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Rapid Transport cast fare](../../CURRENT_STATUS.md#rapid-transport-cast-fare)
+charges the selected route only after the spell passes admission. Physical
+transfer, later interruption/failure settlement, and formula pricing remain open.
+
 [Resource conversion preflight](../../CURRENT_STATUS.md#resource-conversion-preflight)
 protects the source items when the full output cannot fit and checks a
 same-currency surcharge with the source debit. Retail selector semantics and

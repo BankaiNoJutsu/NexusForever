@@ -145,7 +145,7 @@ public partial class PlayerTaxiDiscoveryTests
         string previousMigration = migrations[taxiIndex - 1];
         var migrator = db.GetService<IMigrator>();
         migrator.Migrate(previousMigration);
-        db.Add(new CharacterModel { Id = 42, Name = "Existing" });
+        db.Database.ExecuteSqlRaw("INSERT INTO character (id,name,isOnline) VALUES (42,'Existing',0)");
         db.Add(new CharacterBindModel { Id = 42, BindPointId = 7, WorldId = 51 });
         db.Add(new CharacterEntitlementModel { Id = 42, EntitlementId = 1, Amount = 1 });
         db.SaveChanges();
@@ -155,7 +155,7 @@ public partial class PlayerTaxiDiscoveryTests
         db.SaveChanges();
         Assert.Single(db.CharacterTaxiNode);
         migrator.Migrate(previousMigration);
-        Assert.Equal("Existing", db.Character.Single().Name);
+        Assert.Equal("Existing", db.Character.Select(character => character.Name).Single());
         Assert.Equal((ushort)7, db.CharacterBind.Single().BindPointId);
         Assert.Equal(1u, db.CharacterEntitlement.Single().Amount);
     }

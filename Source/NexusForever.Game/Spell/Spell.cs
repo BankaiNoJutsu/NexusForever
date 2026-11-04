@@ -152,6 +152,8 @@ namespace NexusForever.Game.Spell
             log.Trace($"Spell {Parameters.SpellInfo.Entry.Id} has started initating.");
 
             CastResult result = CheckCast();
+            if (result == CastResult.Ok && Parameters is RapidTransportSpellParameters transport)
+                result = TryConsumeRapidTransportFare(transport.Fare);
             if (result != CastResult.Ok)
             {
                 SpellRuntimeEvidenceCollector.RecordCastAttempt(this, result);
@@ -277,6 +279,21 @@ namespace NexusForever.Game.Spell
 
             player.Account.CurrencyManager.CurrencySubtractAmount(AccountCurrencyType.ServiceToken, serviceTokenCost);
             return true;
+        }
+
+        private CastResult TryConsumeRapidTransportFare(uint fare)
+        {
+            if (Caster is not IPlayer player || !player.CanTeleport())
+                return CastResult.RapidTransportInvalid;
+            if (fare == 0)
+                return CastResult.Ok;
+
+            ICurrencyManager wallet = player.CurrencyManager;
+            if (!wallet.CanAfford(CurrencyType.Credits, fare))
+                return CastResult.CasterVitalCostMoney;
+
+            wallet.CurrencySubtractAmount(CurrencyType.Credits, fare);
+            return CastResult.Ok;
         }
 
         private CastResult CheckPrimaryTarget()
