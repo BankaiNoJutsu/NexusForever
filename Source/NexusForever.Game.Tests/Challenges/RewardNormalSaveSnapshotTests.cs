@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Numerics;
 using System.Collections.Immutable;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -14,6 +15,8 @@ using NexusForever.Database.Configuration.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Movement;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Challenges;
@@ -44,6 +47,79 @@ public sealed class RewardNormalSaveSnapshotTests
     private readonly DbContextOptions<CharacterContext> options;
     public RewardNormalSaveSnapshotTests() { }
     internal RewardNormalSaveSnapshotTests(DbContextOptions<CharacterContext> options) => this.options = options;
+
+    [Theory]
+    [InlineData("detached")]
+    [InlineData("bootstrapping")]
+    [InlineData("failed-bootstrap")]
+    public async Task NormalSaveCommitsProgressWithoutReplacingLocationUntilDestinationBootstrapSucceeds(string phase)
+    {
+        using var f = new Fixture(options);
+        f.Seed();
+        using (var seed = f.Context())
+        {
+            var row = seed.Character.Single();
+            row.WorldId = 5;
+            row.WorldZoneId = 6;
+            row.LocationX = 10;
+            row.LocationY = 11;
+            row.LocationZ = 12;
+            row.RotationX = 0.5f;
+            seed.SaveChanges();
+        }
+
+        using var actor = new Actor(f);
+        await actor.Load();
+        actor.Quest.Single().Progress = 2;
+        var player = actor.Player;
+        var admission = (IPlayerMapAdmission)player;
+        var map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
+        mapProxy.SetProperty(nameof(IBaseMap.Entry), new WorldEntry { Id = 7 });
+        var mapProperty = typeof(GridEntity).GetProperty(nameof(GridEntity.Map))!;
+        typeof(GridEntity).GetProperty(nameof(GridEntity.Position))!.SetValue(player, new Vector3(40, 50, 60));
+        typeof(WorldEntity).GetProperty(nameof(WorldEntity.Zone))!.SetValue(player, new WorldZoneEntry { Id = 8 });
+        ((RecordingDispatchProxy<IMovementManager>)(object)player.MovementManager)
+            .SetMethodReturn(nameof(IMovementManager.GetRotation), new Vector3(1.5f, 2f, 3f));
+        typeof(Player).GetField("saveMask", BindingFlags.NonPublic | BindingFlags.Instance)!
+            .SetValue(player, Player.PlayerSaveMask.Location);
+
+        ulong generation = admission.BeginMapAdmission();
+        var state = (PlayerMapAdmissionState)typeof(Player).GetField("mapAdmissionState", BindingFlags.NonPublic | BindingFlags.Instance)!
+            .GetValue(player)!;
+        if (phase != "detached")
+        {
+            Assert.Equal(generation, state.BeginBootstrap());
+            mapProperty.SetValue(player, map);
+            if (phase == "failed-bootstrap") admission.CompleteMapAdmission(generation, false);
+        }
+
+        int completed = 0;
+        player.Save(() => completed++);
+        await actor.Drain();
+        Assert.Equal(1, completed);
+        using (var read = f.Context())
+        {
+            var row = read.Character.Single();
+            Assert.Equal(((ushort)5, (ushort)6, 10f, 11f, 12f, 0.5f),
+                (row.WorldId, row.WorldZoneId, row.LocationX, row.LocationY, row.LocationZ, row.RotationX));
+            Assert.Equal(2u, read.CharacterQuestObjective.Single().Progress);
+        }
+
+        if (phase != "bootstrapping")
+        {
+            if (phase == "failed-bootstrap") generation = admission.BeginMapAdmission();
+            Assert.Equal(generation, state.BeginBootstrap());
+            mapProperty.SetValue(player, map);
+        }
+        admission.CompleteMapAdmission(generation, true);
+        player.Save(() => completed++);
+        await actor.Drain();
+        Assert.Equal(2, completed);
+        using var final = f.Context();
+        var arrived = final.Character.Single();
+        Assert.Equal(((ushort)7, (ushort)8, 40f, 50f, 60f, 1.5f),
+            (arrived.WorldId, arrived.WorldZoneId, arrived.LocationX, arrived.LocationY, arrived.LocationZ, arrived.RotationX));
+    }
 
     [Theory]
     [InlineData(15u)] [InlineData(16u)] [InlineData(17u)] [InlineData(18u)]

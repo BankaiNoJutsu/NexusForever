@@ -8,6 +8,7 @@ internal sealed class PlayerMapAdmissionState
     public bool Canceled { get; private set; }
     public bool Queued { get; private set; }
     public ulong? BootstrapGeneration { get; private set; }
+    public bool HasUnconfirmedLocation { get; private set; }
     private bool ready;
     private bool entered;
     private bool deferred;
@@ -33,6 +34,7 @@ internal sealed class PlayerMapAdmissionState
             return null;
         Queued = false;
         BootstrapGeneration = Generation;
+        HasUnconfirmedLocation = true;
         return Generation;
     }
 
@@ -59,6 +61,7 @@ internal sealed class PlayerMapAdmissionState
         BootstrapGeneration = null;
         if (!successful || !IsCurrent(generation))
             return false;
+        HasUnconfirmedLocation = false;
         ready = true;
         return deferred && RequestEntry(true);
     }

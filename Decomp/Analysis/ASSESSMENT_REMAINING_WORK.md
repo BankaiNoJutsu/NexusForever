@@ -41,6 +41,9 @@ fails the current request cleanly when instance preparation throws.
 [Detached destination grid recovery](../../CURRENT_STATUS.md#detached-destination-grid-recovery)
 ends admission when the destination grid cannot accept the player after source
 removal. Recovery after insertion and fare settlement on later failures remain open.
+[Transfer location persistence](../../CURRENT_STATUS.md#transfer-location-persistence)
+keeps the last saved location through detachment or unsuccessful bootstrap
+while other character changes commit.
 
 [Flight-path destination admission](../../CURRENT_STATUS.md#flight-path-destination-admission)
 checks the destination map or selected instance and current funds before source

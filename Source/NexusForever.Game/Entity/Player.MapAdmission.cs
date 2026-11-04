@@ -1,3 +1,5 @@
+using System.Numerics;
+using System.Threading;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Session;
@@ -44,6 +46,22 @@ public partial class Player : IPlayerMapAdmission
     private bool IsAdmissionAllowed() => !mapAdmission.Canceled
         && LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished)
         && Session is not NetworkSession { IsDisconnecting: true };
+
+    private (ushort World, ushort Zone, Vector3 Position, Vector3 Rotation)? CaptureMapLocationForSave()
+    {
+        var admission = mapAdmission;
+        // A Character transaction must not wait on map callbacks that can schedule persistence.
+        if (!Monitor.TryEnter(admission.SyncRoot))
+            return null;
+        try
+        {
+            if (admission.HasUnconfirmedLocation || Map?.Entry is not { } world || Zone is not { } zone)
+                return null;
+
+            return ((ushort)world.Id, (ushort)zone.Id, Position, Rotation);
+        }
+        finally { Monitor.Exit(admission.SyncRoot); }
+    }
 
     public override void OnEnqueueAddToMap()
     {

@@ -21218,6 +21218,22 @@ Both new regressions reproduced the defect on the baseline assembly. The
 owning-project build and 119 scoped map, transport and world-entry tests
 passed. Results are under `artifacts/continuation-20261104/detached-grid-admission/`.
 
+#### Transfer location persistence
+
+4 November 2026. Character saves leave the previous location intact while
+the player is detached or the destination bootstrap has yet to succeed. The
+save can still commit other character changes, and retains the location dirty
+bit for a subsequent save after successful bootstrap. Location capture shares
+the admission guard and skips a contended capture so persistence can proceed
+while map callbacks run. Fare recovery after the grid gate and native arrival
+remain open.
+
+Three SQLite-backed normal-save regressions reproduced failed or premature
+location writes and now verify quest progress, the retained checkpoint and the
+later destination save. The owning-project build and 163 scoped tests passed.
+Test execution took 54 seconds. Results are under
+`artifacts/continuation-20261104/transfer-location-save/`.
+
 #### Rapid Transport cast fare
 
 4 November 2026. The request supplies its validated route fare to the spell

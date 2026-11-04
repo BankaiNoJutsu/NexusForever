@@ -1096,30 +1096,31 @@ namespace NexusForever.Game.Entity
 
             if (saveMask != PlayerSaveMask.None)
             {
-                if ((saveMask & PlayerSaveMask.Location) != 0)
+                var location = (saveMask & PlayerSaveMask.Location) != 0 ? CaptureMapLocationForSave() : null;
+                if (location is { } current)
                 {
-                    model.LocationX = Position.X;
+                    model.LocationX = current.Position.X;
                     entity.Property(p => p.LocationX).IsModified = true;
 
-                    model.LocationY = Position.Y;
+                    model.LocationY = current.Position.Y;
                     entity.Property(p => p.LocationY).IsModified = true;
 
-                    model.LocationZ = Position.Z;
+                    model.LocationZ = current.Position.Z;
                     entity.Property(p => p.LocationZ).IsModified = true;
 
-                    model.RotationX = Rotation.X;
+                    model.RotationX = current.Rotation.X;
                     entity.Property(p => p.RotationX).IsModified = true;
 
-                    model.RotationY = Rotation.Y;
+                    model.RotationY = current.Rotation.Y;
                     entity.Property(p => p.RotationY).IsModified = true;
 
-                    model.RotationZ = Rotation.Z;
+                    model.RotationZ = current.Rotation.Z;
                     entity.Property(p => p.RotationZ).IsModified = true;
 
-                    model.WorldId = (ushort)Map.Entry.Id;
+                    model.WorldId = current.World;
                     entity.Property(p => p.WorldId).IsModified = true;
 
-                    model.WorldZoneId = (ushort)Zone.Id;
+                    model.WorldZoneId = current.Zone;
                     entity.Property(p => p.WorldZoneId).IsModified = true;
                 }
 
@@ -1188,7 +1189,8 @@ namespace NexusForever.Game.Entity
                     entity.Property(p => p.PvpFlagDisableUntilUtc).IsModified = true;
                 }
 
-                saveMask = PlayerSaveMask.None;
+                // Keep location dirty when this save only staged the other character fields.
+                saveMask = location.HasValue ? PlayerSaveMask.None : saveMask & PlayerSaveMask.Location;
             }
 
             model.TimePlayedLevel = (uint)TimePlayedLevel;
