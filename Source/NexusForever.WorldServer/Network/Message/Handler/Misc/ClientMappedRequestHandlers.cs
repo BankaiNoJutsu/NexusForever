@@ -7,6 +7,7 @@ using NexusForever.Game.Static.Reputation;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
 
@@ -66,7 +67,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
                 return RejectConversion(session, conversion, $"target item {conversion.TargetId} was not found");
 
             IPlayer player = session.Player;
-            if (player?.Inventory is not Inventory inventory || !InventoryMutationScope.TryAcquire(inventory, out var mutationLease))
+            if (player?.Inventory is not Inventory inventory)
+                return RejectConversion(session, conversion, "inventory is unavailable");
+            if (player is Player && session is GameSession connection)
+                return inventory.TrySaveResourceItemConversion(connection, conversion.SourceId, conversion.SourceCount,
+                    conversion.TargetId, conversion.TargetCount)
+                    || RejectConversion(session, conversion, "source items or result capacity unavailable");
+
+            if (!InventoryMutationScope.TryAcquire(inventory, out var mutationLease))
                 return RejectConversion(session, conversion, "inventory is unavailable");
             using var heldMutation = mutationLease;
             if (!ReferenceEquals(session.Player, player) || !ReferenceEquals(player.Inventory, inventory))

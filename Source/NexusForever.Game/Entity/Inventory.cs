@@ -13,6 +13,7 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Static;
@@ -358,6 +359,55 @@ namespace NexusForever.Game.Entity
             => itemCosts.Count == 0
                 ? CanCreateItem(InventoryLocation.Inventory, info, count, satchel)
                 : CanCreateItemsAfterReclaim([(info, count)], itemCosts.Select(cost => (cost.Key, cost.Value)), satchel, requireFullReclaim: true);
+
+        public bool TrySaveResourceItemConversion(GameSession session, uint sourceId, uint sourceCount, uint targetId, uint targetCount)
+        {
+            if (player is not Player owner || owner.IsNormalSaveInProgress)
+                return false;
+
+            var account = owner.Account;
+            ulong? epoch = account?.WorldSessionEpoch;
+            var events = session.Events;
+            bool OwnsActor() => ReferenceEquals(owner.Session, session) && ReferenceEquals(session.Events, events)
+                && ReferenceEquals(owner.Inventory, this) && owner.CharacterId == characterId
+                && ReferenceEquals(owner.Account, account) && account?.WorldSessionEpoch == epoch
+                && session is IPlayerSession bound && ReferenceEquals(bound.Player, owner)
+                && !session.IsDisconnecting && owner.LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished);
+
+            if (!OwnsActor() || !InventoryMutationScope.TryAcquire(this, out var lease))
+                return false;
+
+            try
+            {
+                bool converted = false;
+                Action publish;
+                using (lease)
+                    publish = session.CaptureOutgoingPackets(() =>
+                        converted = TryConvertResourceItems(sourceId, sourceCount, targetId, targetCount));
+
+                if (converted)
+                {
+                    if (!OwnsActor())
+                        throw new InvalidOperationException("Resource conversion lost its original actor before saving.");
+
+                    session.CanProcessIncomingPackets = false;
+                    owner.SaveResourceConversion(Publish);
+                }
+                else Publish();
+                return converted;
+
+                void Publish()
+                {
+                    if (OwnsActor()) publish();
+                }
+            }
+            catch
+            {
+                rewardRequiresReload = true;
+                if (OwnsActor()) session.ForceDisconnect();
+                throw;
+            }
+        }
 
         /// <summary>Exchange backpack items only when the complete result fits after consumption.</summary>
         public bool TryConvertResourceItems(uint sourceId, uint sourceCount, uint targetId, uint targetCount)

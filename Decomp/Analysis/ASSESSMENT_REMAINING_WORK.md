@@ -108,6 +108,10 @@ confirms the exact character save after a lost acknowledgment. [Resource convers
 retries the frozen Character writes once after a proven rollback. Deployed
 socket delivery, restart qualification and retail selector semantics remain open.
 
+[Committed item resource conversion](../../CURRENT_STATUS.md#committed-item-resource-conversion)
+uses the same save receipt for item-to-item exchanges. The original session
+sees the inventory changes after confirmed settlement.
+
 [Vendor buyback request identity](../../CURRENT_STATUS.md#vendor-buyback-request-identity)
 keeps delayed requests from charging for a later sale and finishes accepted
 redemptions on the original inventory. [Vendor buyback settlement](../../CURRENT_STATUS.md#vendor-buyback-settlement)

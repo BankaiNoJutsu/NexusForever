@@ -133,7 +133,7 @@ public sealed partial class Q5597RewardPersistenceTests
 
     private static Actor LoadActor(Fixture f, IItemManager items, uint slots,
         CharacterModel model = null, IGameSession session = null, IAccount account = null, AuthDatabase auth = null,
-        ushort questId = QuestId)
+        ushort questId = QuestId, CharacterDatabase characterDatabase = null)
     {
         if (model == null)
         {
@@ -142,6 +142,7 @@ public sealed partial class Q5597RewardPersistenceTests
                 .Include(row => row.Achievement).Single();
         }
         var actor = new Actor(f, actorModel: model, actorAccount: account, actorSession: session, authDatabase: auth,
+            characterDatabase: characterDatabase,
             actorEvents: session?.Events, inventoryFactory: (player, loaded) =>
         {
             var inventory = (Inventory)RuntimeHelpers.GetUninitializedObject(typeof(Inventory));

@@ -145,7 +145,7 @@ public sealed class RewardNormalSaveSnapshotTests
         }
     }
 
-    private sealed class ConversionSaveDatabase(Fixture fixture, string outcome) : CharacterDatabase
+    internal sealed class ConversionSaveDatabase(Fixture fixture, string outcome) : CharacterDatabase
     {
         public int Attempts { get; private set; }
         public Action OnRollback { get; set; }

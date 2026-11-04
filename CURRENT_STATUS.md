@@ -23185,6 +23185,21 @@ The SQLite assertions cover wallet, quest and legacy field writes, one Auth save
 and earning effect, and suppression of notices when the session loses ownership.
 Results are under `artifacts/continuation-20261104/resource-conversion-rollback-retry/`.
 
+#### Committed item resource conversion
+
+4 November 2026. The public item-to-item conversion saves source consumption
+and the complete result in one Character transaction. It holds the original
+session's inventory packets until the save is confirmed. The existing
+conversion receipt resolves a lost acknowledgment, and a proven rollback
+can retry the frozen writes without rerunning the conversion.
+
+Four encrypted loopback regressions reproduced an early deletion packet.
+The owning build and 69 scoped tests passed. The loopback cases cover
+normal commit, recovered acknowledgment, retry after rollback, and a
+second rollback with no durable conversion. Local evidence is under
+`artifacts/continuation-20261104/item-resource-conversion/`. Configured
+MySQL, deployed delivery and retail selector semantics remain separate.
+
 #### Existing item and unlock behavior
 
 Inventory, title, pet, costume, unlock surfaces exist. Generic unlock

@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Cryptography;
 using NexusForever.Database;
@@ -47,9 +48,11 @@ using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Script;
 using NexusForever.WorldServer;
 using NexusForever.WorldServer.Network;
+using NexusForever.WorldServer.Network.Message.Handler.Misc;
 using NexusForever.WorldServer.Network.Message.Handler.Quest;
 using Xunit.Abstractions;
 using Actor = NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.Actor;
+using ConversionSaveDatabase = NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ConversionSaveDatabase;
 using Fixture = NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.Fixture;
 
 namespace NexusForever.Game.Tests.Quest;
@@ -91,9 +94,17 @@ public sealed partial class Q5597RewardPersistenceTests
     public Task LoopbackSharedQuestRepliesOnlyForCommittedAcceptance(bool rejectFirstSave, bool replaceSharer)
         => RunQuestLoopback(rejectFirstSave, acceptOnly: true, share: true, replaceSharer: replaceSharer);
 
+    [Theory]
+    [InlineData("success")]
+    [InlineData("lost-ack")]
+    [InlineData("retry")]
+    [InlineData("rollback")]
+    public Task LoopbackItemConversionPublishesOnlyAfterItsCharacterSave(string outcome)
+        => RunQuestLoopback(false, itemConversion: outcome);
+
     private async Task RunQuestLoopback(bool rejectFirstSave, bool tutorialRecovery = false, bool levelReward = false,
         bool replaceMapAdmission = false, bool autoAccept = false, bool acceptOnly = false, bool itemStarter = false,
-        bool share = false, bool replaceSharer = false)
+        bool share = false, bool replaceSharer = false, string itemConversion = null)
     {
         const uint accountId = 12;
         const uint sharerGuid = 99;
@@ -135,7 +146,7 @@ public sealed partial class Q5597RewardPersistenceTests
             }
             if (!autoAccept && !acceptOnly)
                 seed.CharacterQuest.Add(new() { Id = 42, QuestId = questId, State = (byte)QuestState.Achieved });
-            if (itemStarter)
+            if (itemStarter || itemConversion != null)
                 seed.Item.Add(new() { Id = starterId, OwnerId = 42, ItemId = starterDefinition,
                     Location = (ushort)InventoryLocation.Inventory, StackCount = 1 });
             await seed.SaveChangesAsync();
@@ -174,19 +185,79 @@ public sealed partial class Q5597RewardPersistenceTests
             starter.Quest2IdActivation = questId;
             starter.MaxStackCount = 10;
         }
+        var conversionDatabase = itemConversion == null ? null : new ConversionSaveDatabase(f, itemConversion);
+        if (conversionDatabase != null)
+        {
+            var tables = (RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables;
+            tables.SetProperty(nameof(IGameTableManager.Item), PlayerBindPointTests.Table(items.GetItemInfo(PushedItem).Entry));
+            tables.SetProperty(nameof(IGameTableManager.ResourceConversion), PlayerBindPointTests.Table(new ResourceConversionEntry
+            {
+                Id = 10, ResourceConversionTypeEnum = 0, SourceId = starterDefinition, SourceCount = 1,
+                TargetId = PushedItem, TargetCount = 1
+            }));
+        }
         var messages = new MessageManager(NullLogger<MessageManager>.Instance);
         messages.RegisterNetworkManagerMessagesAndHandlers();
         messages.RegisterNetworkManagerWorldMessages();
         messages.RegisterMessageHandler(typeof(ClientQuestCompleteHandler));
         messages.RegisterMessageHandler(typeof(ClientQuestAcceptHandler));
         messages.RegisterMessageHandler(typeof(ClientQuestShareResultHandler));
+        messages.RegisterMessageHandler(typeof(ClientConvertResourceHandler));
         using var services = new ServiceCollection()
             .AddKeyedTransient<IReadable, ClientEncrypted>(GameMessageOpcode.ClientEncrypted)
             .AddKeyedTransient<IReadable, ClientQuestComplete>(GameMessageOpcode.ClientQuestComplete)
             .AddKeyedTransient<IReadable, ClientQuestAccept>(GameMessageOpcode.ClientQuestAccept)
             .AddKeyedTransient<IReadable, ClientQuestShareResult>(GameMessageOpcode.ClientQuestShareResult)
+            .AddKeyedTransient<IReadable, ClientConvertResource>(GameMessageOpcode.ClientConvertResource)
+            .AddSingleton(f.Source.Tables)
+            .AddSingleton<ILogger<ClientConvertResourceHandler>>(NullLogger<ClientConvertResourceHandler>.Instance)
             .AddTransient<ClientEncryptedHandler>().AddTransient<ClientQuestCompleteHandler>()
-            .AddTransient<ClientQuestAcceptHandler>().AddTransient<ClientQuestShareResultHandler>().BuildServiceProvider();
+            .AddTransient<ClientQuestAcceptHandler>().AddTransient<ClientQuestShareResultHandler>()
+            .AddTransient<ClientConvertResourceHandler>().BuildServiceProvider();
+
+        if (conversionDatabase != null)
+        {
+            await RunSession(async (world, client, actor) =>
+            {
+                int authSaves = 0;
+                actor.OnAuth = () => authSaves++;
+                await client.SendEncrypted(GameMessageOpcode.ClientConvertResource, writer =>
+                {
+                    writer.Write(10u, 14);
+                    writer.Write(0u);
+                    writer.Write(0ul);
+                });
+                await PumpUntil(world, () => actor.Player.Inventory.GetItemCount(PushedItem) == 1 || world.IsDisconnecting);
+                Assert.False(world.IsDisconnecting);
+                using (var held = f.Context()) Assert.Equal(starterId, Assert.Single(held.Item).Id);
+                await AssertQuestPacketsWithheld(world, client);
+                Assert.True(actor.Player.IsNormalSaveInProgress);
+                Assert.False(world.CanProcessIncomingPackets);
+
+                bool rolledBack = itemConversion == "rollback";
+                await PumpUntil(world, () => world.CanProcessIncomingPackets || world.IsDisconnecting);
+                Assert.Equal(rolledBack, world.IsDisconnecting);
+                Assert.Equal(itemConversion is "retry" or "rollback" ? 2 : 1, conversionDatabase.Attempts);
+                Assert.Equal(1, authSaves);
+                using var read = f.Context();
+                var row = Assert.Single(read.Item);
+                if (rolledBack)
+                {
+                    Assert.Equal(starterId, row.Id);
+                    Assert.Empty(read.BankReconciliationReceipt);
+                    return;
+                }
+
+                Assert.Equal(PushedItem, row.ItemId);
+                Assert.NotEqual(starterId, row.Id);
+                Assert.Single(read.BankReconciliationReceipt);
+                using var removed = await ReadPacket(client, GameMessageOpcode.ServerItemDelete);
+                Assert.Equal(starterId, removed.ReadULong());
+                using var added = await ReadPacket(client, GameMessageOpcode.ServerItemAdd);
+                Assert.Equal((row.Id, PushedItem, 1u), ReadFixtureInventoryItem(added));
+            });
+            return;
+        }
 
         if (acceptOnly)
         {
@@ -530,7 +601,7 @@ public sealed partial class Q5597RewardPersistenceTests
             accountProxy.SetProperty(nameof(IAccount.Session), world);
             typeof(WorldSession).GetProperty(nameof(WorldSession.Account))!.SetValue(world, account);
             var model = Assert.Single(await database.GetCharacters(accountId));
-            using var actor = LoadActor(f, items, 2, model, world, account, auth, questId);
+            using var actor = LoadActor(f, items, 2, model, world, account, auth, questId, conversionDatabase);
             if (autoAccept || acceptOnly) actor.Set(nameof(Player.Faction1), Faction.Exile);
             if (levelReward)
             {
