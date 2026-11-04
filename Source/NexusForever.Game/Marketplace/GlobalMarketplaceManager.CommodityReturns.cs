@@ -97,7 +97,7 @@ namespace NexusForever.Game.Marketplace
             private CommodityReturnCommand command;
             private BidOutcome outcome;
             private MailHeaderState deliveryMail;
-            private bool finished;
+            private bool finished, confirmedOrderAbsent;
 
             internal CommodityReturnOperation(GlobalMarketplaceManager manager, Player owner, MarketplaceCommodityOrder record,
                 bool expiry, Action<GenericError, CommodityOrder> reply, Func<bool> publicationAllowed)
@@ -194,6 +194,7 @@ namespace NexusForever.Game.Marketplace
                 events.EnqueueThreadSafe(new TaskGenericEvent<CommodityReturnView>(Task.Run(command.ReadReconciliationAsync), view =>
                 {
                     outcome = view.Outcome;
+                    confirmedOrderAbsent = view.Order == null;
                     lock (manager.syncRoot)
                     {
                         manager.RemoveCommodityOrderRecord(record);
@@ -251,10 +252,34 @@ namespace NexusForever.Game.Marketplace
                 admission?.Dispose(); admission = null;
                 if (!CanPublish()) return;
                 if (!expiry) reply(result, CloneOrder(record.Order));
-                else if (result == GenericError.Ok) OnActor(() =>
+                else if (result == GenericError.Ok && confirmedOrderAbsent) PublishExpiryNotice();
+            }
+
+            private void PublishExpiryNotice()
+            {
+                var queue = session.Events;
+                bool CurrentActor() => ReferenceEquals(session.Events, queue) && CanPublish();
+                void Schedule(Task delay) => queue.EnqueueThreadSafe(new PredicateEvent(
+                    () => !CurrentActor() || delay.IsCompleted, Send));
+                void Send()
                 {
-                    if (CanPublish()) session.EnqueueMessageEncrypted(new ServerCommodityAuctionRemoved { OrderRemoved = CloneOrder(record.Order), Type = AuctionEventType.Expire });
-                });
+                    if (!CurrentActor()) return;
+                    lock (manager.syncRoot)
+                        if (manager.commodityOrders.Any(row => row.Order.CommodityOrderId == before.Id)) return;
+
+                    try
+                    {
+                        session.EnqueueMessageEncrypted(new ServerCommodityAuctionRemoved
+                            { OrderRemoved = ToCommodityOrder(before.Model()), Type = AuctionEventType.Expire });
+                    }
+                    catch (Exception error)
+                    {
+                        log.Warn(error, "Committed commodity expiry notice failed; retrying on its original actor.");
+                        Schedule(Task.Delay(TimeSpan.FromSeconds(1)));
+                    }
+                }
+
+                Schedule(Task.CompletedTask);
             }
         }
     }

@@ -10,6 +10,11 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Committed commodity expiry notices](COMMODITY_RETURN_SETTLEMENT.md#live-expiry-notice-recovery)
+retry on the original live actor after SQL confirmation and reservation release.
+The retry rebuilds the accepted payload and checks the current order and session.
+Commodity fill publication and restart replay remain separate work.
+
 ### Committed reputation deltas
 
 4 November 2026. Four baseline cases reproduced early reputation deltas,

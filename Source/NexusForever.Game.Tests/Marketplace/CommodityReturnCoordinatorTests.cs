@@ -44,6 +44,8 @@ public sealed class CommodityReturnCoordinatorTests
     [InlineData(true, false, true, false, "none")]
     [InlineData(true, false, true, true, "none")]
     [InlineData(true, true, true, false, "none")]
+    [InlineData(true, true, true, false, "notice-retry")]
+    [InlineData(true, true, true, false, "notice-replace")]
     [InlineData(true, true, false, false, "none")]
     [InlineData(true, false, true, false, "lost")]
     [InlineData(true, true, false, false, "lost")]
@@ -83,6 +85,8 @@ public sealed class CommodityReturnCoordinatorTests
     public async Task PublicCancellationAndRealExpiryReturnEscrowAndFungibleItems(bool buy, bool expiry, bool online, bool absent, string fault)
     {
         using var f = new Fixture(null); f.Seed();
+        bool failNotice = fault is "notice-retry" or "notice-replace";
+        bool addLaterCurrency = fault != "none" && !failNotice;
         uint quantity = fault == "multi" ? 45u : 3u;
         bool mailed = !buy && (!online || fault.StartsWith("mail", StringComparison.Ordinal));
         ulong price = quantity * 10ul;
@@ -154,7 +158,7 @@ public sealed class CommodityReturnCoordinatorTests
                 var result = await command.ExecuteAsync();
                 if (fault is "custody-main" or "custody-grant")
                 { using var changed = f.Context(); changed.Item.Single(row => row.Id == custodyItem).Location = (ushort)InventoryLocation.PlayerBank; await changed.SaveChangesAsync(); }
-                if (actor != null && fault != "none") events.EnqueueThreadSafe(new PredicateEvent(() => true, () =>
+                if (actor != null && addLaterCurrency) events.EnqueueThreadSafe(new PredicateEvent(() => true, () =>
                 {
                     currency.CurrencyAddAmount(CurrencyType.Credits, 5);
                     if (laterItems != 0) actor.Player.Inventory.ItemCreate(InventoryLocation.Inventory, info, laterItems);
@@ -164,10 +168,10 @@ public sealed class CommodityReturnCoordinatorTests
                 if (fault == "lost") throw new IOException("Commodity committed; acknowledgement lost.");
                 return result;
             })); manager.Initialise();
-        int packets = 0, replacementBoundary = -1; bool onActor = false, scopeDisposed = false;
+        int packets = 0, noticeAttempts = 0, replacementBoundary = -1; bool onActor = false, scopeDisposed = false;
         bool custodyConflict = fault.StartsWith("custody-", StringComparison.Ordinal);
         Exception publicationMutation = null, directPublicationMutation = null;
-        ulong balance = online ? (absent ? 0ul : 120ul) + (buy ? price : 0ul) + (fault != "none" ? 5ul : 0ul) + (fault is "satchel-rollback" or "satchel-rebase" ? 1ul : 0ul) : 100ul;
+        ulong balance = online ? (absent ? 0ul : 120ul) + (buy ? price : 0ul) + (addLaterCurrency ? 5ul : 0ul) + (fault is "satchel-rollback" or "satchel-rebase" ? 1ul : 0ul) : 100ul;
         sp.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
         {
             if (args[0] is ServerCombatReward && fault.StartsWith("wallet-item-", StringComparison.Ordinal) && fault != "wallet-item-publish")
@@ -210,7 +214,22 @@ public sealed class CommodityReturnCoordinatorTests
             using var read = f.Context(); Check(read);
             Assert.True(onActor); if (!expiry) Assert.True(scopeDisposed);
             Assert.Equal(expiry ? AuctionEventType.Expire : AuctionEventType.Cancel, removed.Type);
-            Assert.False(custodyConflict); Assert.Equal(1ul, removed.OrderRemoved.CommodityOrderId); packets++;
+            Assert.False(custodyConflict); Assert.Equal(1ul, removed.OrderRemoved.CommodityOrderId);
+            if (failNotice)
+            {
+                Assert.False(Pending(manager));
+                Assert.False(cleanup.IsAccountLocked(f.Source.Player.Account));
+                Assert.Equal(7001u, removed.OrderRemoved.Item2Id);
+                Assert.Equal(quantity, removed.OrderRemoved.Quantity);
+                Assert.Equal(price, removed.OrderRemoved.Price);
+                if (++noticeAttempts == 1)
+                {
+                    if (fault == "notice-replace")
+                        sp.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+                    throw new IOException("Expiry notice failed before enqueue.");
+                }
+            }
+            packets++;
             if (fault == "mail-replace")
             {
                 sp.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
@@ -246,7 +265,8 @@ public sealed class CommodityReturnCoordinatorTests
             Assert.True(deadline.Elapsed < TimeSpan.FromSeconds(20), "Commodity return did not settle."); await Task.Delay(5);
         } while (Pending(manager) || events.PendingEvents || actor?.Player.IsNormalSaveInProgress == true);
         using var final = f.Context(); Check(final); Assert.Equal(1, executions);
-        Assert.Equal(online && fault is not ("replace" or "retire" or "packet-replace") ? 1 : 0, packets);
+        Assert.Equal(online && fault is not ("replace" or "retire" or "packet-replace" or "notice-replace") ? 1 : 0, packets);
+        if (failNotice) Assert.Equal(fault == "notice-retry" ? 2 : 1, noticeAttempts);
         var emitted = sp.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).ToArray();
         if (custodyConflict) { Assert.False(actor.Player.Session.CanProcessIncomingPackets); Assert.Empty(emitted.OfType<ServerItemAdd>()); }
         if (replacementBoundary >= 0) Assert.DoesNotContain(emitted.Skip(replacementBoundary), packet => packet is ServerItemAdd or ServerMailAvailable or ServerCommodityAuctionRemoved);

@@ -1,5 +1,25 @@
 # Commodity cancellation and expiry settlement
 
+## Live expiry notice recovery
+
+4 November 2026. A confirmed expiry releases the original order and account
+reservations before scheduling the removal notice. Each send builds a fresh
+packet from the captured order. An enqueue failure retries on the original
+actor and queue. A rebound session or a live order with the same ID suppresses
+the notice. The cancellation request still returns its result through its
+existing path.
+
+Two baseline tests reproduce the enqueue failure escaping the expiry event.
+Their controls cover a successful retry and replacement during the failed
+send. Both check that the command runs once and the account and order
+reservations are free before the notice is attempted. The owning build and 83
+scoped tests passed, including the commodity command and legacy handler
+controls. Test execution took 54 seconds. Evidence is in
+`artifacts/continuation-20261104/commodity-expiry-publication/`.
+Restart replay, deployed socket delivery and native presentation remain open.
+
+## Original settlement qualification
+
 Completed in source/private SQLite on1November2026. Full solution build:
 0warnings/errors,22.53seconds MSBuild (23.13seconds command).
 Full solution tests:11,264passed,0failed/skipped,642.34seconds command.
