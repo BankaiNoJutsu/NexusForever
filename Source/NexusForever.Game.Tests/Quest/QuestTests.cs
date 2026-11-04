@@ -33,6 +33,8 @@ using NexusForever.Network.World.Message.Model;
 using NexusForever.Script;
 using NexusForever.Script.Main.Quests.NorthernWilds;
 using NexusForever.Script.Template.Collection;
+using NexusForever.WorldServer.Network;
+using NexusForever.WorldServer.Network.Message.Handler.Quest;
 
 namespace NexusForever.Game.Tests.Quest;
 
@@ -437,6 +439,64 @@ public class QuestTests
         manager.QuestAdd(3479, item: null);
 
         Assert.Equal(QuestState.Accepted, manager.GetQuestState(3479));
+    }
+
+    [Theory]
+    [InlineData("prerequisite")]
+    [InlineData("unusable")]
+    [InlineData("full")]
+    [InlineData("last-stack")]
+    [InlineData("last-charge")]
+    [InlineData("missing")]
+    public void ItemQuestAcceptRequiresAnEligibleUsableStarterAndRoomForPushedItems(string mode)
+    {
+        const ushort questId = 3479;
+        var player = CreateQuestAcceptPlayer(ImmutableHashSet.Create(11062u), Faction.Exile, mode == "prerequisite" ? 0u : 3u);
+        var inventory = (RecordingDispatchProxy<IInventory>)(object)player.Inventory;
+        var quest = CreateQ3479Q3480TrappedSurvivorQuestInfo(questId, 4467);
+        quest.Entry.PushedItemIds = [9001u];
+        quest.Entry.PushedItemCounts = [1u];
+        var manager = CreateQuestManager(player, CreateGlobalQuestManager(new Dictionary<ushort, IQuestInfo> { [questId] = quest },
+            questGivers: new Dictionary<ushort, ImmutableList<uint>> { [questId] = ImmutableList.Create(11062u) }));
+        ((RecordingDispatchProxy<IPlayer>)(object)player).SetProperty(nameof(IPlayer.QuestManager), manager);
+        var session = RecordingDispatchProxy<IWorldSession>.Create(out var sessionProxy);
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
+
+        var item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);
+        var info = RecordingDispatchProxy<IItemInfo>.Create(out var infoProxy);
+        infoProxy.SetProperty(nameof(IItemInfo.Entry), new Item2Entry { Id = 123, Quest2IdActivation = questId,
+            MaxStackCount = mode == "last-charge" ? 1u : 10u, MaxCharges = mode == "last-charge" ? 1u : 0u });
+        itemProxy.SetProperty(nameof(IItem.Info), info);
+        itemProxy.SetProperty(nameof(IItem.Location), InventoryLocation.Inventory);
+        itemProxy.SetProperty(nameof(IItem.StackCount), mode == "last-stack" || mode == "last-charge" ? 1u : 2u);
+        itemProxy.SetProperty(nameof(IItem.Charges), mode == "last-charge" ? 1u : 0u);
+        inventory.SetMethodReturn(nameof(IInventory.GetItem), mode == "missing" ? null : item);
+        uint slots = mode is "full" or "last-stack" or "last-charge" ? 0u : 1u;
+        bool canUse = mode != "unusable";
+        bool freesSlot = mode is "last-stack" or "last-charge";
+        inventory.SetMethodHandler(nameof(IInventory.GetInventorySlotsRemaining), _ => slots);
+        inventory.SetMethodHandler(nameof(IInventory.ItemUse), args =>
+        {
+            Assert.Same(item, args[0]);
+            if (freesSlot) slots++;
+            return canUse;
+        });
+
+        var request = new ClientQuestAccept();
+        typeof(ClientQuestAccept).GetProperty(nameof(ClientQuestAccept.QuestId))!.SetValue(request, questId);
+        request.ItemLocation.Location = InventoryLocation.Inventory;
+        var handler = new ClientQuestAcceptHandler();
+
+        if (mode == "prerequisite")
+            Assert.Throws<QuestException>(() => handler.HandleMessage(session, request));
+        else if (mode == "missing")
+            Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(session, request));
+        else
+            handler.HandleMessage(session, request);
+
+        Assert.Equal(freesSlot ? QuestState.Accepted : (QuestState?)null, manager.GetQuestState(questId));
+        Assert.Equal(freesSlot || !canUse ? 1 : 0, inventory.GetInvocations(nameof(IInventory.ItemUse)).Count);
+        Assert.Equal(freesSlot ? 1 : 0, inventory.GetInvocations(nameof(IInventory.ItemCreate)).Count);
     }
 
     [Fact]

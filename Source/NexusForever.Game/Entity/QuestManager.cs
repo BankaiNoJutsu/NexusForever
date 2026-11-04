@@ -388,8 +388,21 @@ namespace NexusForever.Game.Entity
 
         private void QuestAdd(IQuestInfo info, IQuest quest, IItem item)
         {
+            var inventory = player.Inventory;
+            IDisposable mutation = null;
+            if (item != null && !InventoryMutationScope.TryAcquire(inventory, out mutation))
+                return;
+
+            using var heldMutation = mutation;
             PrepareQuestAcceptance(info, quest, item);
-            QuestAdd(info);
+            if (item != null)
+            {
+                uint freedSlots = item.Location == InventoryLocation.Inventory && Inventory.WillRemoveOnUse(item) ? 1u : 0u;
+                if (!HasPushedItemSpace(info, freedSlots) || !inventory.ItemUse(item))
+                    return;
+            }
+
+            AddQuest(info);
         }
 
         private void PrepareQuestAcceptance(IQuestInfo info, IQuest quest, IItem item)
@@ -412,8 +425,6 @@ namespace NexusForever.Game.Entity
             {
                 if (info.Entry.Id != item.Info.Entry.Quest2IdActivation)
                     throw new QuestException($"Player {player.CharacterId} tried to start quest {info.Entry.Id} from invalid item {item.Info.Entry.Id}!");
-
-                player.Inventory.ItemUse(item);
             }
             else
             {
@@ -567,15 +578,20 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void QuestAdd(IQuestInfo info) => AddQuest(info);
 
+        private bool HasPushedItemSpace(IQuestInfo info, uint freedSlots = 0)
+        {
+            ulong slots = player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory);
+            if (slots + freedSlots >= (uint)info.Entry.PushedItemIds.Count(id => id != 0u))
+                return true;
+
+            player.SendGenericError(GenericError.ItemInventoryFull);
+            return false;
+        }
+
         private IQuest AddQuest(IQuestInfo info)
         {
-            // make sure player has room for all pushed items
-            if (player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory)
-                < info.Entry.PushedItemIds.Count(i => i != 0u))
-            {
-                player.SendGenericError(GenericError.ItemInventoryFull);
+            if (!HasPushedItemSpace(info))
                 return null;
-            }
 
             for (int i = 0; i < info.Entry.PushedItemIds.Length; i++)
             {

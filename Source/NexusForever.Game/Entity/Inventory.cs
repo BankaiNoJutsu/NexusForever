@@ -1722,6 +1722,13 @@ namespace NexusForever.Game.Entity
             });
         }
 
+        internal static bool WillRemoveOnUse(IItem item)
+        {
+            var entry = item.Info.Entry;
+            return entry.MaxStackCount > 1 ? item.StackCount == 1
+                : entry.MaxStackCount == 1 && entry.MaxCharges > 0 && item.Charges == 1;
+        }
+
         /// <summary>
         /// Apply stack updates and deletion to <see cref="IItem"/> on use
         /// </summary>
@@ -1763,14 +1770,14 @@ namespace NexusForever.Game.Entity
                 uint consumedId = item.Id;
                 AfterBankCommit(() => player.AchievementManager.CheckAchievements(player, AchievementType.ItemConsume, consumedId));
 
+                bool remove = WillRemoveOnUse(item);
                 if (item.Charges >= 1 && item.Info.Entry.MaxStackCount == 1)
                     item.Charges--;
 
                 if (item.Info.Entry.MaxStackCount > 1 && item.StackCount > 0)
                     ItemStackCountUpdate(item, item.StackCount - 1, persistRealmBank: false);
 
-                if (item.StackCount == 0 && item.Info.Entry.MaxStackCount > 1
-                    || item.Charges == 0 && item.Info.Entry.MaxCharges > 0 && item.Info.Entry.MaxStackCount <= 1)
+                if (remove)
                 {
                     ItemDelete(new ItemLocation
                     {

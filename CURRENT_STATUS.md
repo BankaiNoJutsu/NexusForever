@@ -21960,6 +21960,20 @@ clear, packet timing, and result surface.
 
 ### F-022 - Quests / Path Missions / Public Events - PARTIAL
 
+#### Quest starter item admission
+
+4 November 2026. Item-started quests now check prerequisites and space for
+pushed items before using the starter. An empty requested item slot is
+rejected at the handler, and a failed item use stops acceptance. A full bag
+can still accept a quest when using the last stack unit or charge frees the
+required slot.
+
+Four public-handler regressions reproduced the admission defects on the
+baseline. The two slot-recovery controls and all four regressions passed in
+the final 340 scoped quest and inventory cases. The owning build passed.
+Local evidence is under `artifacts/continuation-20261104/item-quest-admission/`.
+Commit-gated acceptance publication and native client verification remain open.
+
 #### Public event completion ownership
 
 4 November 2026. Objective completion credit and team broadcasts belong to the

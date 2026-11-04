@@ -10,6 +10,11 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Quest starter item admission](../../CURRENT_STATUS.md#quest-starter-item-admission)
+checks prerequisites and pushed-item space before consuming the starter. A
+missing or unusable starter cannot accept the quest. The capacity check
+preserves acceptance when the last stack unit or charge frees the needed slot.
+
 [Marketplace inbox route recovery](../../CURRENT_STATUS.md#marketplace-inbox-route-recovery)
 retries failed recipient route checks for already committed mail on behalf of
 the original session, with no replay of settlement. A mismatched route or a
