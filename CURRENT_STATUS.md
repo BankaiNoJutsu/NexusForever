@@ -21972,7 +21972,21 @@ Four public-handler regressions reproduced the admission defects on the
 baseline. The two slot-recovery controls and all four regressions passed in
 the final 340 scoped quest and inventory cases. The owning build passed.
 Local evidence is under `artifacts/continuation-20261104/item-quest-admission/`.
-Commit-gated acceptance publication and native client verification remain open.
+
+#### Committed client quest acceptance
+
+4 November 2026. Ordinary client acceptance from a giver or a Character bag
+saves the quest, pushed items and starter consumption together before the
+original session sees the updates. A giver dialog closes after the save.
+Rejected saves leave the original inventory and quest rows intact, and a
+fresh session can accept the quest again.
+
+Four encrypted loopback cases reproduced early inventory packets on the
+baseline. The final owning build and 348 scoped quest and inventory
+tests passed, including the four acceptance cases and existing turn-ins.
+Local evidence is under `artifacts/continuation-20261104/quest-accept-publication/`.
+Contract acceptance, Realm Bank starters, shared and scripted acceptance, and
+native client verification remain separate.
 
 #### Public event completion ownership
 

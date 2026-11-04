@@ -2981,7 +2981,7 @@ namespace NexusForever.Game.Entity
                     }
 
                     starterTutorialCompletionInFlight = true;
-                    quests.CompleteOrdinaryQuestsWithSave(this, session, () =>
+                    quests.SaveOrdinaryQuestMutation(this, session, () =>
                     {
                         bool changed = RecoverQuests(strictCompletion: true);
                         if (updatedObjectives || changed) SyncStarterTutorialEntityVisibility();

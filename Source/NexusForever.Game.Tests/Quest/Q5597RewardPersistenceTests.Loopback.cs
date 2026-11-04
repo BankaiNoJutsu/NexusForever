@@ -71,10 +71,24 @@ public sealed partial class Q5597RewardPersistenceTests
     [InlineData(false, false, true, true, false)]
     [InlineData(false, false, false, false, true)]
     [InlineData(true, false, false, false, true)]
-    public async Task LoopbackTurnInPublishesSavedRewardsOnce(bool rejectFirstSave, bool tutorialRecovery, bool levelReward,
+    public Task LoopbackTurnInPublishesSavedRewardsOnce(bool rejectFirstSave, bool tutorialRecovery, bool levelReward,
         bool replaceMapAdmission, bool autoAccept)
+        => RunQuestLoopback(rejectFirstSave, tutorialRecovery, levelReward, replaceMapAdmission, autoAccept);
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public Task LoopbackAcceptancePublishesOnlyAfterTheCharacterSave(bool rejectFirstSave, bool itemStarter)
+        => RunQuestLoopback(rejectFirstSave, acceptOnly: true, itemStarter: itemStarter);
+
+    private async Task RunQuestLoopback(bool rejectFirstSave, bool tutorialRecovery = false, bool levelReward = false,
+        bool replaceMapAdmission = false, bool autoAccept = false, bool acceptOnly = false, bool itemStarter = false)
     {
         const uint accountId = 12;
+        const ulong starterId = 50;
+        uint starterDefinition = RewardIds[0];
         ushort questId = tutorialRecovery ? StarterTutorialDefinition.ExileMovementQuestId : QuestId;
         const ushort nextQuestId = StarterTutorialDefinition.ExileHoverboardQuestId;
         RecordingDispatchProxy<IWorldSession> observer = null;
@@ -105,15 +119,18 @@ public sealed partial class Q5597RewardPersistenceTests
                     new CharacterStatModel { Id = 42, Stat = (byte)Stat.Health, Value = 9f },
                     new CharacterStatModel { Id = 42, Stat = (byte)Stat.Shield, Value = 14f });
             }
-            if (!autoAccept)
+            if (!autoAccept && !acceptOnly)
                 seed.CharacterQuest.Add(new() { Id = 42, QuestId = questId, State = (byte)QuestState.Achieved });
+            if (itemStarter)
+                seed.Item.Add(new() { Id = starterId, OwnerId = 42, ItemId = starterDefinition,
+                    Location = (ushort)InventoryLocation.Inventory, StackCount = 1 });
             await seed.SaveChangesAsync();
         }
-        ConfigureQuest(f, reclaim: autoAccept, questId);
-        if (autoAccept)
+        ConfigureQuest(f, reclaim: autoAccept || acceptOnly, questId);
+        if (autoAccept || acceptOnly)
         {
             var info = (RecordingDispatchProxy<IQuestInfo>)(object)f.Info;
-            info.SetMethodReturn(nameof(IQuestInfo.IsAutoComplete), true);
+            if (autoAccept) info.SetMethodReturn(nameof(IQuestInfo.IsAutoComplete), true);
             info.SetProperty(nameof(IQuestInfo.PrerequisiteQuests), ImmutableList<Quest2Entry>.Empty);
             ((RecordingDispatchProxy<IGlobalQuestManager>)(object)f.Global)
                 .SetMethodReturn(nameof(IGlobalQuestManager.GetQuestGivers), new[] { Receiver });
@@ -136,14 +153,72 @@ public sealed partial class Q5597RewardPersistenceTests
             });
         }
         var items = CreateItems();
+        if (itemStarter)
+        {
+            var starter = items.GetItemInfo(starterDefinition).Entry;
+            starter.Quest2IdActivation = questId;
+            starter.MaxStackCount = 10;
+        }
         var messages = new MessageManager(NullLogger<MessageManager>.Instance);
         messages.RegisterNetworkManagerMessagesAndHandlers();
         messages.RegisterNetworkManagerWorldMessages();
         messages.RegisterMessageHandler(typeof(ClientQuestCompleteHandler));
+        messages.RegisterMessageHandler(typeof(ClientQuestAcceptHandler));
         using var services = new ServiceCollection()
             .AddKeyedTransient<IReadable, ClientEncrypted>(GameMessageOpcode.ClientEncrypted)
             .AddKeyedTransient<IReadable, ClientQuestComplete>(GameMessageOpcode.ClientQuestComplete)
-            .AddTransient<ClientEncryptedHandler>().AddTransient<ClientQuestCompleteHandler>().BuildServiceProvider();
+            .AddKeyedTransient<IReadable, ClientQuestAccept>(GameMessageOpcode.ClientQuestAccept)
+            .AddTransient<ClientEncryptedHandler>().AddTransient<ClientQuestCompleteHandler>()
+            .AddTransient<ClientQuestAcceptHandler>().BuildServiceProvider();
+
+        if (acceptOnly)
+        {
+            if (rejectFirstSave)
+            {
+                using var fault = f.Context();
+                await fault.Database.ExecuteSqlRawAsync("""
+                    CREATE TRIGGER reject_quest_accept BEFORE INSERT ON character_quest
+                    WHEN NEW.id = 42 AND NEW.state = 2
+                    BEGIN SELECT RAISE(ABORT, 'Loopback test rejected quest acceptance'); END;
+                    """);
+                await RunSession(async (world, client, actor) =>
+                {
+                    await SendAcceptanceWithSaveHeld(world, client, actor);
+                    await PumpUntil(world, () => world.IsDisconnecting);
+                    Assert.True(actor.Quests.RequiresAuthoritativeReload);
+                });
+                using var read = f.Context();
+                Assert.Empty(read.CharacterQuest);
+                Assert.Equal(itemStarter ? new[] { starterId } : [], read.Item.Select(row => row.Id).ToArray());
+                await read.Database.ExecuteSqlRawAsync("DROP TRIGGER reject_quest_accept");
+            }
+
+            await RunSession(async (world, client, actor) =>
+            {
+                await SendAcceptanceWithSaveHeld(world, client, actor);
+                await PumpUntil(world, () => world.CanProcessIncomingPackets);
+                using var read = f.Context();
+                var accepted = Assert.Single(read.CharacterQuest);
+                Assert.Equal((questId, (byte)QuestState.Achieved), (accepted.QuestId, accepted.State));
+                var pushed = Assert.Single(read.Item);
+                Assert.Equal(PushedItem, pushed.ItemId);
+                if (itemStarter)
+                {
+                    using var consumed = await ReadPacket(client, GameMessageOpcode.ServerItemDelete);
+                    Assert.Equal(starterId, consumed.ReadULong());
+                }
+                using var grant = await ReadPacket(client, GameMessageOpcode.ServerItemAdd);
+                Assert.Equal((pushed.Id, PushedItem, 1u), ReadFixtureInventoryItem(grant));
+                using var state = await ReadPacket(client, GameMessageOpcode.ServerQuestStateChange);
+                Assert.Equal(questId, state.ReadUShort(15));
+                Assert.Equal(QuestState.Achieved, state.ReadEnum<QuestState>(32));
+                if (!itemStarter)
+                {
+                    using var dialog = await ReadPacket(client, GameMessageOpcode.ServerDialogEnd);
+                }
+            });
+            return;
+        }
 
         if (rejectFirstSave)
         {
@@ -376,7 +451,24 @@ public sealed partial class Q5597RewardPersistenceTests
                 if (replaceMapAdmission)
                     ((IPlayerMapAdmission)actor.Player).BeginMapAdmission();
             }
-            await AssertTurnInPacketsWithheld(world, client);
+            await AssertQuestPacketsWithheld(world, client);
+        }
+
+        async Task SendAcceptanceWithSaveHeld(WorldSession world, GameProtocolClient client, Actor actor)
+        {
+            await client.SendEncrypted(GameMessageOpcode.ClientQuestAccept, writer =>
+            {
+                new ItemLocation { Location = itemStarter ? InventoryLocation.Inventory : (InventoryLocation)300 }.Write(writer);
+                writer.Write(questId, 15);
+            });
+            await PumpUntil(world, () => actor.Quests.GetQuestState(questId) == QuestState.Achieved || world.IsDisconnecting);
+            Assert.False(world.IsDisconnecting);
+            using var read = f.Context();
+            Assert.Empty(read.CharacterQuest);
+            Assert.Equal(itemStarter ? new[] { starterId } : [], read.Item.Select(row => row.Id).ToArray());
+            await AssertQuestPacketsWithheld(world, client);
+            Assert.True(actor.Player.IsNormalSaveInProgress);
+            Assert.False(world.CanProcessIncomingPackets);
         }
 
         async Task RunSession(Func<WorldSession, GameProtocolClient, Actor, Task> exercise)
@@ -401,7 +493,7 @@ public sealed partial class Q5597RewardPersistenceTests
             typeof(WorldSession).GetProperty(nameof(WorldSession.Account))!.SetValue(world, account);
             var model = Assert.Single(await database.GetCharacters(accountId));
             using var actor = LoadActor(f, items, 2, model, world, account, auth, questId);
-            if (autoAccept) actor.Set(nameof(Player.Faction1), Faction.Exile);
+            if (autoAccept || acceptOnly) actor.Set(nameof(Player.Faction1), Faction.Exile);
             if (levelReward)
             {
                 var map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
@@ -590,7 +682,7 @@ public sealed partial class Q5597RewardPersistenceTests
         => typeof(WorldEntity).GetMethod("FlushPropertyUpdates", BindingFlags.Instance | BindingFlags.NonPublic)!
             .Invoke(actor.Player, null);
 
-    private async Task AssertTurnInPacketsWithheld(WorldSession world, GameProtocolClient client)
+    private async Task AssertQuestPacketsWithheld(WorldSession world, GameProtocolClient client)
     {
         // The marker delimits a flush on this private socket while the save is held.
         world.EnqueueMessageEncrypted(new ServerPlayerEnteredWorld());
@@ -601,12 +693,13 @@ public sealed partial class Q5597RewardPersistenceTests
             var frame = await client.ReadInnerFrame(deadline.Token);
             if (frame.Opcode == GameMessageOpcode.ServerPlayerEnteredWorld) break;
             Assert.False(frame.Opcode is GameMessageOpcode.ServerItemAdd or GameMessageOpcode.ServerQuestStateChange
+                or GameMessageOpcode.ServerItemDelete or GameMessageOpcode.ServerItemStackCountUpdate
                 or GameMessageOpcode.ServerAchievementUpdate or GameMessageOpcode.ServerDialogEnd
                 or GameMessageOpcode.ServerExperienceGained or GameMessageOpcode.ServerEntityStatUpdateInteger
                 or GameMessageOpcode.ServerSpellStart or GameMessageOpcode.ServerEntityPropertiesUpdate
                 or GameMessageOpcode.ServerEntityHealthUpdate, $"Premature {frame.Opcode}");
         }
-        output.WriteLine("No item, quest-state, achievement or dialog-end packets while the turn-in save was held.");
+        output.WriteLine("No item, quest-state, achievement or dialog-end packets while the quest save was held.");
     }
 
     private static Task SendTurnIn(GameProtocolClient client, ushort questId) => client.SendEncrypted(GameMessageOpcode.ClientQuestComplete, writer =>

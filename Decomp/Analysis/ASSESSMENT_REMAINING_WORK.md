@@ -15,6 +15,10 @@ checks prerequisites and pushed-item space before consuming the starter. A
 missing or unusable starter cannot accept the quest. The capacity check
 preserves acceptance when the last stack unit or charge frees the needed slot.
 
+[Committed client quest acceptance](../../CURRENT_STATUS.md#committed-client-quest-acceptance)
+holds ordinary giver and Character bag acceptance notices until the quest
+and inventory commit. Loopback cases cover failed saves and a fresh retry.
+
 [Marketplace inbox route recovery](../../CURRENT_STATUS.md#marketplace-inbox-route-recovery)
 retries failed recipient route checks for already committed mail on behalf of
 the original session, with no replay of settlement. A mismatched route or a

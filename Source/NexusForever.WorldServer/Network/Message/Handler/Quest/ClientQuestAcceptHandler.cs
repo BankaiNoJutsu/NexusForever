@@ -1,4 +1,6 @@
-﻿using NexusForever.Game.Abstract.Entity;
+﻿using System;
+using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network;
 using NexusForever.Network.Message;
@@ -11,19 +13,26 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Quest
     {
         public void HandleMessage(IWorldSession session, ClientQuestAccept questAccept)
         {
+            var player = session.Player;
+            if (player is Player actor && !ReferenceEquals(actor.Session, session)) return;
+
             IItem item = null;
             bool startedFromItem = questAccept.ItemLocation.Location != (InventoryLocation)300;
             if (startedFromItem)
             {
-                item = session.Player.Inventory.GetItem(questAccept.ItemLocation);
+                item = player.Inventory.GetItem(questAccept.ItemLocation);
                 if (item == null)
                     throw new InvalidPacketValueException();
             }
 
-            session.Player.QuestManager.QuestAdd(questAccept.QuestId, item);
-
-            if (!startedFromItem)
-                DialogSessionState.EndActiveDialog(session);
+            Action closeDialog = startedFromItem ? null : () => DialogSessionState.EndActiveDialog(session);
+            if (player is Player && player.QuestManager is QuestManager quests)
+                quests.QuestAddFromClient(questAccept.QuestId, item, closeDialog);
+            else
+            {
+                player.QuestManager.QuestAdd(questAccept.QuestId, item);
+                closeDialog?.Invoke();
+            }
         }
     }
 }

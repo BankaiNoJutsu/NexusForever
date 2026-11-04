@@ -370,7 +370,12 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Add a quest from supplied id, optionally supplying <see cref="IItem"/> which was used to start the quest.
         /// </summary>
-        public void QuestAdd(ushort questId, IItem item)
+        public void QuestAdd(ushort questId, IItem item) => QuestAdd(questId, item, publishOnSave: false, closeDialog: null);
+
+        public void QuestAddFromClient(ushort questId, IItem item, Action closeDialog)
+            => QuestAdd(questId, item, publishOnSave: true, closeDialog);
+
+        private void QuestAdd(ushort questId, IItem item, bool publishOnSave, Action closeDialog)
         {
             IQuestInfo info = GetGlobalQuestManager().GetQuestInfo(questId);
             if (info == null)
@@ -379,30 +384,52 @@ namespace NexusForever.Game.Entity
             if (IsDisabled(DisableType.Quest, questId))
             {
                 player.SendSystemMessage($"Unable to add quest {questId} because it is disabled.");
+                closeDialog?.Invoke();
                 return;
             }
 
             IQuest quest = GetQuest(questId);
-            QuestAdd(info, quest, item);
+            if (!publishOnSave || info.IsContract() || item?.Location == InventoryLocation.RealmBank
+                || player is not Player owner || player.Session is not GameSession session)
+            {
+                QuestAdd(info, quest, item);
+                closeDialog?.Invoke();
+                return;
+            }
+
+            if (questRewardReload || questRewardInvalidated || contractClaimOperation != null || QuestCompletionBusy(owner))
+                throw new QuestException("Quest acceptance cannot overlap pending or quarantined character work.");
+
+            // Validation failures must occur before opening the save-bound mutation.
+            PrepareQuestAcceptance(info, quest, item);
+            SaveOrdinaryQuestMutation(owner, session, () => TryApplyQuestAcceptance(info, item), closeDialog);
         }
 
         private void QuestAdd(IQuestInfo info, IQuest quest, IItem item)
         {
+            PrepareQuestAcceptance(info, quest, item);
+            TryApplyQuestAcceptance(info, item);
+        }
+
+        private bool TryApplyQuestAcceptance(IQuestInfo info, IItem item)
+        {
             var inventory = player.Inventory;
             IDisposable mutation = null;
             if (item != null && !InventoryMutationScope.TryAcquire(inventory, out mutation))
-                return;
+                return false;
 
             using var heldMutation = mutation;
-            PrepareQuestAcceptance(info, quest, item);
             if (item != null)
             {
                 uint freedSlots = item.Location == InventoryLocation.Inventory && Inventory.WillRemoveOnUse(item) ? 1u : 0u;
                 if (!HasPushedItemSpace(info, freedSlots) || !inventory.ItemUse(item))
-                    return;
+                    return false;
             }
 
-            AddQuest(info);
+            bool accepted = AddQuest(info) != null;
+            if (!accepted && item != null && IsOrdinaryCompletionMutationInProgress)
+                throw new InvalidOperationException("Quest acceptance lost item capacity after using the starter.");
+            return accepted;
         }
 
         private void PrepareQuestAcceptance(IQuestInfo info, IQuest quest, IItem item)
@@ -885,7 +912,7 @@ namespace NexusForever.Game.Entity
 
             if (retainPublication)
             {
-                CompleteOrdinaryQuestsWithSave(owner, session, () =>
+                SaveOrdinaryQuestMutation(owner, session, () =>
                 {
                     if (acceptWithCompletion)
                     {
@@ -927,7 +954,7 @@ namespace NexusForever.Game.Entity
 
         internal bool CanStartTutorialQuestCompletion(Player owner) => !QuestCompletionBusy(owner);
 
-        internal void CompleteOrdinaryQuestsWithSave(Player owner, GameSession session, Func<bool> complete, Action afterCommit)
+        internal void SaveOrdinaryQuestMutation(Player owner, GameSession session, Func<bool> mutate, Action afterCommit)
         {
             var account = owner.Account;
             var events = session.Events;
@@ -939,15 +966,15 @@ namespace NexusForever.Game.Entity
                 && session is IPlayerSession bound && ReferenceEquals(bound.Player, owner);
 
             if (!OwnsSession() || session.IsDisconnecting)
-                throw new InvalidOperationException("Quest completion lost its original World session.");
+                throw new InvalidOperationException("Quest mutation lost its original World session.");
 
             try
             {
-                bool completed = false;
+                bool changed = false;
                 Action publish;
                 List<Action> publications = [];
                 ordinaryCompletionPublications = publications;
-                try { publish = session.CaptureOutgoingPackets(() => completed = complete()); }
+                try { publish = session.CaptureOutgoingPackets(() => changed = mutate()); }
                 finally { ordinaryCompletionPublications = null; }
 
                 void Publish()
@@ -962,7 +989,7 @@ namespace NexusForever.Game.Entity
                     afterCommit?.Invoke();
                 }
 
-                if (completed)
+                if (changed)
                 {
                     session.CanProcessIncomingPackets = false;
                     owner.Save(Publish);
@@ -973,7 +1000,7 @@ namespace NexusForever.Game.Entity
             {
                 RequireNormalSaveReload();
                 if (OwnsSession()) session.ForceDisconnect();
-                throw new InvalidOperationException("Quest completion could not establish its Character save.", exception);
+                throw new InvalidOperationException("Quest mutation could not establish its Character save.", exception);
             }
         }
 
