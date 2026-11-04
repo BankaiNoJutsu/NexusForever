@@ -46,6 +46,8 @@ public sealed class CommodityReturnCoordinatorTests
     [InlineData(true, true, true, false, "none")]
     [InlineData(true, true, true, false, "notice-retry")]
     [InlineData(true, true, true, false, "notice-replace")]
+    [InlineData(true, false, true, false, "notice-retry")]
+    [InlineData(false, false, true, false, "notice-replace")]
     [InlineData(true, true, false, false, "none")]
     [InlineData(true, false, true, false, "lost")]
     [InlineData(true, true, false, false, "lost")]
@@ -56,6 +58,7 @@ public sealed class CommodityReturnCoordinatorTests
     [InlineData(false, false, true, true, "none")]
     [InlineData(false, false, true, false, "multi")]
     [InlineData(false, false, true, false, "mail")]
+    [InlineData(false, true, true, false, "mail-queue-paused")]
     [InlineData(false, true, true, false, "none")]
     [InlineData(false, true, false, false, "none")]
     [InlineData(false, false, true, false, "lost")]
@@ -226,7 +229,8 @@ public sealed class CommodityReturnCoordinatorTests
                 {
                     if (fault == "notice-replace")
                         sp.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
-                    throw new IOException("Expiry notice failed before enqueue.");
+                    removed.OrderRemoved.Quantity = 0;
+                    throw new IOException("Removal notice failed before enqueue.");
                 }
             }
             packets++;
@@ -249,7 +253,9 @@ public sealed class CommodityReturnCoordinatorTests
             using (var scope = provider.CreateScope()) scope.ServiceProvider.GetRequiredService<ClientCommodityOrderCancelHandler>().HandleMessage(session, request);
             scopeDisposed = true; typeof(ClientCommodityOrderCancel).GetProperty(nameof(ClientCommodityOrderCancel.CommodityOrderId))!.SetValue(request, 999ul);
         }));
-        var deadline = Stopwatch.StartNew(); bool competed = false;
+        int saveCount = 0;
+        if (fault == "mail-queue-paused") actor.OnAuth = () => saveCount++;
+        var deadline = Stopwatch.StartNew(); bool competed = false, pausedMailbox = false;
         do
         {
             manager.Update(1.01);
@@ -259,7 +265,12 @@ public sealed class CommodityReturnCoordinatorTests
                 events.EnqueueThreadSafe(new PredicateEvent(() => true, () =>
                     manager.TryQueueCommodityCancellation(actor.Player, 1, 7001, true, (error, _) => { Assert.Equal(GenericError.DbFailure, error); rejected++; })));
             }
-            onActor = true; events.Update(.01); onActor = false;
+            onActor = true;
+            if (pausedMailbox && !Pending(manager)) Assert.False(cleanup.IsAccountLocked(actor.Player.Account));
+            if (!pausedMailbox || !Pending(manager)) events.Update(.01);
+            onActor = false;
+            if (fault == "mail-queue-paused" && saveCount == 2 && session.CanProcessIncomingPackets
+                && !actor.Player.IsNormalSaveInProgress && Pending(manager)) pausedMailbox = true;
             if (rejected == 1) release.TrySetResult(true);
             if (actor != null) Assert.Empty(actor.Errors);
             Assert.True(deadline.Elapsed < TimeSpan.FromSeconds(20), "Commodity return did not settle."); await Task.Delay(5);
@@ -268,6 +279,11 @@ public sealed class CommodityReturnCoordinatorTests
         Assert.Equal(online && fault is not ("replace" or "retire" or "packet-replace" or "notice-replace") ? 1 : 0, packets);
         if (failNotice) Assert.Equal(fault == "notice-retry" ? 2 : 1, noticeAttempts);
         var emitted = sp.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).ToArray();
+        if (fault == "mail-queue-paused")
+        {
+            Assert.True(pausedMailbox);
+            Assert.Single(emitted.OfType<ServerMailAvailable>());
+        }
         if (custodyConflict) { Assert.False(actor.Player.Session.CanProcessIncomingPackets); Assert.Empty(emitted.OfType<ServerItemAdd>()); }
         if (replacementBoundary >= 0) Assert.DoesNotContain(emitted.Skip(replacementBoundary), packet => packet is ServerItemAdd or ServerMailAvailable or ServerCommodityAuctionRemoved);
         if (fault == "duplicate-late") Assert.Equal(1, ordinary.Injections);

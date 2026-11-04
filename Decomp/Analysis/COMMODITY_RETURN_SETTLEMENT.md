@@ -1,5 +1,27 @@
 # Commodity cancellation and expiry settlement
 
+## Committed cancellation notices and mailbox handoff
+
+4 November 2026. Public commodity cancellation now shares the guarded expiry
+removal retry. An enqueue failure retains the successful cancellation notice
+on the original actor queue. Each attempt uses a fresh copy of the order and
+keeps the original cancel or expire event type. If the actor or queue changes,
+or the order ID has a live or active replacement, the old notice is dropped.
+An actual cancellation error still uses the existing failure response.
+
+Cancellation and expiry release account and order reservations before handing
+committed return mail to the original mailbox queue. A paused queue cannot
+hold settlement open. A live mailbox route error leaves the durable mail
+available for inbox recovery and lets the order notice proceed.
+
+Source and private SQLite evidence is in
+`artifacts/continuation-20261104/commodity-return-publication/`. Three
+baseline failures reproduced cancellation enqueue errors and mailbox queue
+retention. The final build and 131 scoped tests passed in 65 seconds,
+including all three new cases. The paused queue resumed after both holds
+cleared and delivered one mail notice. Restart replay, deployed socket
+delivery and retail qualification remain open.
+
 ## Live expiry notice recovery
 
 4 November 2026. A confirmed expiry releases the original order and account

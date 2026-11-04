@@ -90,6 +90,7 @@ namespace NexusForever.Game.Marketplace
             private readonly Func<bool> publicationAllowed;
             private Player owner;
             private IGameSession session;
+            private EventQueue recipientQueue;
             private IAccount account;
             private Player.AuctionBidActor actor;
             private BidCharacter character;
@@ -106,7 +107,7 @@ namespace NexusForever.Game.Marketplace
                 this.reply = reply; this.publicationAllowed = publicationAllowed;
                 before = record.StoredRow; route = record.StoredDatabase; database = manager.TryGetCharacterDatabase();
                 events = expiry ? manager.settlementEvents : owner.Session.Events;
-                if (!expiry) { session = owner.Session; account = owner.Account; }
+                if (!expiry) { session = owner.Session; account = owner.Account; recipientQueue = events; }
             }
             private void OnCoordinator(Action action) => events.EnqueueThreadSafe(new PredicateEvent(() => true, action));
             private void OnActor(Action action) => session.Events.EnqueueThreadSafe(new PredicateEvent(() => true, action));
@@ -128,6 +129,7 @@ namespace NexusForever.Game.Marketplace
                         var online = manager.playerManager?.GetPlayer(character.Id);
                         if (online != null && online is not Player) { Finish(GenericError.DbFailure); return; }
                         owner = online as Player; session = owner?.Session; account = owner?.Account;
+                        recipientQueue = session?.Events;
                     }
                     if (owner == null) { Execute(); return; }
                     OnActor(() =>
@@ -210,31 +212,33 @@ namespace NexusForever.Game.Marketplace
                 if (actor?.Wallet == null) { Finish(outcome?.Committed == true ? GenericError.Ok : GenericError.DbFailure); return; }
                 OnActor(() => actor.Reconcile(outcome?.Committed == true, id,
                     command?.PayloadSHA256 ?? Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"aborted-commodity:{id}"))),
-                    () => OnCoordinator(() => PublishDelivery(outcome?.Committed == true ? GenericError.Ok : GenericError.DbFailure)),
+                    () => OnCoordinator(() => Finish(outcome?.Committed == true ? GenericError.Ok : GenericError.DbFailure)),
                     () => OnCoordinator(() => Finish(GenericError.DbFailure)), view?.Wallet, publicationAllowed: CanPublish,
                     deliveryMail: deliveryMail, commodityCurrent: view));
             }
-            private void PublishDelivery(GenericError result)
+            private void QueueCommittedMail()
             {
-                if (result != GenericError.Ok || deliveryMail == null || actor == null) { Finish(result); return; }
-                OnActor(() =>
+                recipientQueue.EnqueueThreadSafe(new PredicateEvent(() => true, () =>
                 {
+                    if (!CanPublish()) return;
                     try
                     {
-                        if (CanPublish())
-                        {
-                            var mail = deliveryMail.Model();
-                            var item = actor.CommodityDelivery.Writes.Single().After;
-                            mail.Attachment.Add(new() { Id = mail.Id, Index = 0, ItemGuid = item.Id, Item = item.Model() });
-                            actor.PublishDeliveryMail(new MailItem(mail, itemManager: manager.itemManager, gameTableManager: manager.GetGameTableManager()));
-                        }
+                        var mail = deliveryMail.Model();
+                        var item = actor.CommodityDelivery.Writes.Single().After;
+                        mail.Attachment.Add(new() { Id = mail.Id, Index = 0, ItemGuid = item.Id, Item = item.Model() });
+                        actor.PublishDeliveryMail(new MailItem(mail, itemManager: manager.itemManager, gameTableManager: manager.GetGameTableManager()));
                     }
-                    finally { OnCoordinator(() => Finish(result)); }
-                });
+                    catch (Exception error)
+                    {
+                        log.Warn(error, "Committed commodity return mail could not be handed to the live mailbox.");
+                    }
+                    PublishRemovalNotice();
+                }));
             }
             private bool CanPublish() => owner != null && actor?.Retired != true
                 && (character == null || account?.Id == character.Account)
                 && publicationAllowed?.Invoke() != false && ReferenceEquals(owner.Session, session)
+                && recipientQueue != null && ReferenceEquals(session.Events, recipientQueue)
                 && ReferenceEquals(owner.Account, account) && ReferenceEquals(account?.Session, session)
                 && ReferenceEquals(manager.playerManager?.GetPlayer(before.Owner), owner)
                 && (session is not IPlayerSession bound || ReferenceEquals(bound.Player, owner))
@@ -251,30 +255,39 @@ namespace NexusForever.Game.Marketplace
                 }
                 admission?.Dispose(); admission = null;
                 if (!CanPublish()) return;
-                if (!expiry) reply(result, CloneOrder(record.Order));
-                else if (result == GenericError.Ok && confirmedOrderAbsent) PublishExpiryNotice();
+                if (result != GenericError.Ok)
+                {
+                    if (!expiry) reply(result, CloneOrder(record.Order));
+                    return;
+                }
+
+                if (deliveryMail != null && actor != null) QueueCommittedMail();
+                else PublishRemovalNotice();
             }
 
-            private void PublishExpiryNotice()
+            private void PublishRemovalNotice()
             {
-                var queue = session.Events;
-                bool CurrentActor() => ReferenceEquals(session.Events, queue) && CanPublish();
-                void Schedule(Task delay) => queue.EnqueueThreadSafe(new PredicateEvent(
-                    () => !CurrentActor() || delay.IsCompleted, Send));
+                if (!confirmedOrderAbsent) return;
+                var snapshot = expiry ? ToCommodityOrder(before.Model()) : CloneOrder(record.Order);
+                void Schedule(Task delay) => recipientQueue.EnqueueThreadSafe(new PredicateEvent(
+                    () => !CanPublish() || delay.IsCompleted, Send));
                 void Send()
                 {
-                    if (!CurrentActor()) return;
+                    if (!CanPublish()) return;
                     lock (manager.syncRoot)
-                        if (manager.commodityOrders.Any(row => row.Order.CommodityOrderId == before.Id)) return;
+                        if (manager.commodityReturns.ContainsKey(before.Id)
+                            || manager.commodityOrders.Any(row => row.Order.CommodityOrderId == before.Id)) return;
 
                     try
                     {
-                        session.EnqueueMessageEncrypted(new ServerCommodityAuctionRemoved
-                            { OrderRemoved = ToCommodityOrder(before.Model()), Type = AuctionEventType.Expire });
+                        var order = CloneOrder(snapshot);
+                        if (expiry) session.EnqueueMessageEncrypted(new ServerCommodityAuctionRemoved
+                            { OrderRemoved = order, Type = AuctionEventType.Expire });
+                        else reply(GenericError.Ok, order);
                     }
                     catch (Exception error)
                     {
-                        log.Warn(error, "Committed commodity expiry notice failed; retrying on its original actor.");
+                        log.Warn(error, "Committed commodity removal notice failed; retrying on its original actor.");
                         Schedule(Task.Delay(TimeSpan.FromSeconds(1)));
                     }
                 }
