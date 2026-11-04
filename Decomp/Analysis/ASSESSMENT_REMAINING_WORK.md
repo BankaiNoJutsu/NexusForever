@@ -107,6 +107,12 @@ The live retry checks ownership and listing absence, and zero proceeds require
 no seller save. Cross-server and restart replay, deployed sockets and retail
 qualification remain open.
 
+[Committed normal bid reply recovery](NORMAL_AUCTION_BID_TRANSACTION.md#recovery-for-the-committed-buyer-result)
+retains a failed successful reply on the original buyer's queue, checks the
+accepted listing before retry, and recomputes the remaining expiry from its
+deadline. Financial reservations release before publication. Buyout and error
+replies, cross-process recovery and deployed delivery remain open.
+
 [Guarded live outbid retry](NORMAL_AUCTION_BID_TRANSACTION.md#guarded-live-outbid-retry)
 retains committed bid and buyout notices on the original session and waits for
 later local settlement authority before retrying. A successful rebid suppresses
@@ -128,7 +134,7 @@ separate evidence requirements for #595.
 [Terminal auction notice retry](AUCTION_EXPIRY_TRANSACTION.md#retry-for-terminal-auction-notices)
 recovers failed won/expired packet sends on the original live actor after
 settlement. The retry retains the accepted snapshot and leaves listing and
-account reservations free. Request replies, restart replay and
+account reservations free. Buyout and error replies, restart replay and
 wire or retail qualification remain open.
 
 [Marketplace inbox notice retry](MARKETPLACE_MAIL_PUBLICATION.md#retry-for-the-live-inbox-notice)

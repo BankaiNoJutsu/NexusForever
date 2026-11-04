@@ -1,5 +1,38 @@
 # Normal auction bid transaction
 
+## Recovery for the committed buyer result
+
+4 November 2026. Three public-handler cases reproduced an exception reaching
+the buyer's event queue after the ordinary bid and its wallet settlement had
+already committed. The buyer lost the successful result.
+
+The original reply still reports the accepted outcome as soon as settlement
+finishes and releases the listing and account reservations. If enqueue fails,
+the original buyer's event queue retains the reply. A retry
+waits through a competing local settlement and sends only while the captured
+listing still applies, its deadline is in the future, and the original buyer
+and session remain current. Each send gets a fresh copy of the accepted bid
+with the countdown calculated from the listing's absolute deadline.
+
+The retained Carbine listing handlers route a successful `ItemAuctionBidResult`
+through `OnItemAuctionUpdated`, which replaces or inserts the auction by ID.
+The auction browse handler also displays the accepted message and refreshes the
+search. This is why a delayed success cannot carry an older listing through a
+superseding bid. See the [client consumer evidence](#client-consumption-of-settlement-notices).
+
+The private SQLite regressions exercise retry after payload mutation, replacement
+of the original session's player, and suppression after a newer bid is adopted
+during reconciliation. They verify the original wallet debit, receipt counts,
+and ordinary save before the reply. The first candidate passed 257 scoped
+auction cases in 85 seconds. Review identified the relative expiry issue.
+After correction, all 45 public bid coordinator cases passed in 61 seconds,
+including the decreasing retry countdown. Local evidence is in
+`artifacts/continuation-20261104/normal-bid-result-publication/`.
+
+Buyout and error replies, physical socket loss, cross-process replay and retail
+remain separate. A successful buyout reply also reaches the client's listing
+update handler, so its recovery needs to account for the terminal removal.
+
 ## Guarded live outbid retry
 
 4 November 2026. A transient send failure on the original outbid recipient
@@ -26,8 +59,8 @@ notice, which the new case reproduced before the listing proof was narrowed.
 The owning build and 209 scoped cases passed, including all six public-flow
 regressions. The scoped tests ran in 57 seconds. Local evidence is in
 `artifacts/continuation-20261104/auction-outbid/`.
-Cross-server and restart replay, request-reply retry and wire or retail
-qualification remain open. See the later [committed seller notice](AUCTION_BUYOUT_TRANSACTION.md#committed-notice-for-the-original-seller).
+Cross-server and restart replay, buyout and error reply retry, and wire or
+retail qualification remain open. See the later [committed seller notice](AUCTION_BUYOUT_TRANSACTION.md#committed-notice-for-the-original-seller).
 
 ## Client consumption of settlement notices
 

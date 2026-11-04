@@ -44,6 +44,9 @@ public sealed class NormalBidCoordinatorTests
     [InlineData("offline", "unchanged")] [InlineData("online", "unchanged")]
     [InlineData("none", "before")] [InlineData("none", "after")]
     [InlineData("none", "lost-reply")] [InlineData("none", "retired")]
+    [InlineData("none", "bid-result-retry")]
+    [InlineData("none", "bid-result-replace")]
+    [InlineData("none", "bid-result-superseded")]
     [InlineData("none", "replacement")] [InlineData("online", "prior-retired")]
     [InlineData("none", "poor")]
     [InlineData("online-empty", "unchanged")]
@@ -72,6 +75,8 @@ public sealed class NormalBidCoordinatorTests
         bool buyout = competing.StartsWith("buyout-", StringComparison.Ordinal);
         bool mailDelivery = competing is "buyout-mail" or "buyout-mail-replacement-during-won" or "buyout-ordinary-mail-custody" or "buyout-ordinary-header-custody" or "buyout-ordinary-link-custody" or "buyout-ordinary-link-postimage", sellerOnline = competing is "buyout-seller" or "buyout-seller-cap";
         string fault = buyout ? competing[7..] is "direct" or "mail" or "seller" or "seller-cap" or "overoffer" ? "unchanged" : competing[7..] : competing;
+        bool failBidResult = competing.StartsWith("bid-result-", StringComparison.Ordinal);
+        if (failBidResult) fault = competing == "bid-result-superseded" ? "after" : "unchanged";
         bool saleCommitted = buyout && fault is not ("before" or "poor");
         using var f = new Fixture(null); f.Seed();
         ((RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables).SetProperty(nameof(IGameTableManager.CurrencyType),
@@ -191,13 +196,14 @@ public sealed class NormalBidCoordinatorTests
                 return fault == "before" ? await command.ExecuteAsync() : await command.ResolveAsync();
             });
         marketplace.Initialise();
-        int activeActor = 0, auth = 0, priorAuth = 0, sellerAuth = 0, replies = 0;
+        int activeActor = 0, auth = 0, priorAuth = 0, sellerAuth = 0, replies = 0, bidResultAttempts = 0;
         actor.OnAuth = () => { Assert.Equal(42, activeActor); auth++;
             if (fault == "expiry-during-save" && auth == 2) actor.Player.Inventory.Update(2); };
         if (previous != null) previous.OnAuth = () => { Assert.Equal(200, activeActor); priorAuth++; };
         if (sellerActor != null) sellerActor.OnAuth = () => { Assert.Equal(100, activeActor); sellerAuth++; };
         GenericError result = GenericError.DbFailure;
         bool scopeDisposed = false;
+        ulong firstBidResultExpiration = 0;
         sessionProxy.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
             {
                 bool replaceDuringWallet = fault == "publication-replacement" && args[0] is ServerCombatReward;
@@ -209,7 +215,7 @@ public sealed class NormalBidCoordinatorTests
                 }
                 if (args[0] is not ServerAuctionBidResult response) return null;
                 GenericError error = response.Result; AuctionInfo view = response.Auction;
-                Assert.Equal(42, activeActor); replies++; result = error;
+                Assert.Equal(42, activeActor);
                 Assert.Equal(fault is "before" or "poor" ? 0ul : 10ul, view.CurrentBid);
                 Assert.Equal(fault is "before" or "poor" ? 0ul : 42ul, view.TopBidderCharacterId);
                 using var committed = f.Context();
@@ -238,6 +244,20 @@ public sealed class NormalBidCoordinatorTests
                 Assert.Equal(0u, Assert.Single(committed.Item).Charges); // Read-only bid preserves stored zero despite hydration to1.
                 if (prior == "offline") Assert.Equal(5ul, Assert.Single(committed.CharacterMail.Where(row => row.RecipientId == 200)).CurrencyAmount);
                 else if (!buyout) Assert.Empty(committed.CharacterMail);
+                if (++bidResultAttempts == 1 && failBidResult)
+                {
+                    firstBidResultExpiration = view.ExpirationTime;
+                    if (competing == "bid-result-replace")
+                        sessionProxy.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+                    view.CurrentBid = 999; // A failed send must not mutate the retry or listing.
+                    throw new IOException("Committed normal bid result failed before enqueue.");
+                }
+                if (failBidResult)
+                {
+                    Assert.False(cleanup.IsAccountLocked(actor.Player.Account));
+                    Assert.InRange(view.ExpirationTime, 1ul, firstBidResultExpiration - 1);
+                }
+                replies++; result = error;
                 return null;
             });
         var services = new ServiceCollection();
@@ -263,7 +283,8 @@ public sealed class NormalBidCoordinatorTests
                 typeof(ClientAuctionBuyOrderSubmit).GetProperty(nameof(ClientAuctionBuyOrderSubmit.AmountOffered))!.SetValue(request, amount);
             }
         }));
-        bool expectsReply = fault is not ("retired" or "replacement" or "publication-replacement" or "mail-replacement-during-won");
+        bool expectsReply = fault is not ("retired" or "replacement" or "publication-replacement" or "mail-replacement-during-won")
+            && competing is not ("bid-result-replace" or "bid-result-superseded");
         var deadline = Stopwatch.StartNew();
         do
         {
@@ -278,6 +299,7 @@ public sealed class NormalBidCoordinatorTests
         } while ((expectsReply ? replies == 0 : cleanup.IsAccountLocked(actor.Player.Account)) || actor.Events.PendingEvents || actor.Player.IsNormalSaveInProgress
             || previous?.Events.PendingEvents == true || previous?.Player.IsNormalSaveInProgress == true || sellerActor?.Events.PendingEvents == true || sellerActor?.Player.IsNormalSaveInProgress == true);
         Assert.Empty(actor.Errors); Assert.Equal(expectsReply ? 1 : 0, replies);
+        Assert.Equal((expectsReply ? 1 : 0) + (failBidResult ? 1 : 0), bidResultAttempts);
         if (expectsReply) Assert.Equal(fault == "poor" ? GenericError.VendorNotEnoughCash : fault is "before" or "custody" or "ordinary-mail-custody" or "ordinary-direct-custody" or "ordinary-header-custody" or "ordinary-link-custody" or "ordinary-rollback-custody" ? GenericError.DbFailure : GenericError.Ok, result);
         Assert.Equal(fault == "poor" ? 1 : fault == "retired" ? 3 : 2, auth);
         Assert.Equal(previous != null ? fault == "prior-retired" ? 3 : 2 : 0, priorAuth);
@@ -291,8 +313,8 @@ public sealed class NormalBidCoordinatorTests
             .Where(message => message is ServerMarketplaceStatus or ServerAuctionBidResult).ToArray();
         Assert.IsType<ServerMarketplaceStatus>(wire[0]);
         if (expectsReply) Assert.IsType<ServerAuctionBidResult>(wire[1]);
-        Assert.Equal(expectsReply ? 2 : 1, wire.Length);
-        if (!expectsReply)
+        Assert.Equal(1 + bidResultAttempts, wire.Length);
+        if (!expectsReply && !failBidResult)
         {
             using var committed = f.Context();
             Assert.Equal(fault == "publication-replacement" ? 118ul : 115ul, committed.CharacterCurrency.Single(row => row.Id == 42).Amount);
