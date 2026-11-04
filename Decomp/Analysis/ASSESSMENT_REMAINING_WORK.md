@@ -70,8 +70,9 @@ retries a failed balance enqueue for the original wallet and session queue.
 [Resource conversion character save](../../CURRENT_STATUS.md#resource-conversion-character-save)
 enrolls accepted live wallet changes in an atomic Character save before sending
 balance notices. [Resource conversion save receipt](../../CURRENT_STATUS.md#resource-conversion-save-receipt)
-confirms the exact character save after a lost acknowledgment. Deployed socket
-delivery, restart qualification and retail selector semantics remain open.
+confirms the exact character save after a lost acknowledgment. [Resource conversion rollback retry](../../CURRENT_STATUS.md#resource-conversion-rollback-retry)
+retries the frozen Character writes once after a proven rollback. Deployed
+socket delivery, restart qualification and retail selector semantics remain open.
 
 [Vendor buyback request identity](../../CURRENT_STATUS.md#vendor-buyback-request-identity)
 keeps delayed requests from charging for a later sale and finishes accepted

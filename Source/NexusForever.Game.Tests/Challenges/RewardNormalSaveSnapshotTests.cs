@@ -55,8 +55,11 @@ public sealed class RewardNormalSaveSnapshotTests
 
     [Theory]
     [InlineData("success")]
+    [InlineData("retry")]
     [InlineData("rollback")]
     [InlineData("lost-ack")]
+    [InlineData("rebound")]
+    [InlineData("rebound-during-retry")]
     public async Task ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(string outcome)
     {
         using var f = new Fixture(options);
@@ -91,6 +94,13 @@ public sealed class RewardNormalSaveSnapshotTests
         wallet.Initialise(player, model);
         actor.Set(nameof(Player.CurrencyManager), wallet);
         actor.Quest.Single().Progress = 2;
+        player.Flags = (CharacterFlag)1;
+        int authSaves = 0;
+        actor.OnAuth = () => authSaves++;
+        if (outcome == "rebound")
+            database.OnRollback = () => network.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+        if (outcome == "rebound-during-retry")
+            database.OnRetryCommitted = () => network.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
 
         var request = new ClientConvertResource();
         typeof(ClientConvertResource).GetProperty(nameof(ClientConvertResource.ConversionId))!.SetValue(request, 10u);
@@ -109,14 +119,20 @@ public sealed class RewardNormalSaveSnapshotTests
             Assert.Equal(new ulong[] { 40, 20, 10 }, before.CharacterCurrency.OrderBy(row => row.CurrencyId).Select(row => row.Amount));
         await actor.Drain();
 
-        Assert.Equal(1, database.Attempts);
+        bool committed = outcome is not ("rollback" or "rebound");
+        Assert.Equal(outcome is "retry" or "rollback" or "rebound-during-retry" ? 2 : 1, database.Attempts);
+        Assert.Equal(1, authSaves);
+        var achievements = (RecordingDispatchProxy<NexusForever.Game.Abstract.Achievement.ICharacterAchievementManager>)(object)player.AchievementManager;
+        Assert.Single(achievements.GetInvocations(nameof(NexusForever.Game.Abstract.Achievement.ICharacterAchievementManager.CheckAchievements)));
         using var after = f.Context();
-        Assert.Equal(outcome == "rollback" ? new ulong[] { 40, 20, 10 } : [15, 25, 7],
+        Assert.Equal(committed ? new ulong[] { 15, 25, 7 } : [40, 20, 10],
             after.CharacterCurrency.OrderBy(row => row.CurrencyId).Select(row => row.Amount));
-        Assert.Equal(outcome == "rollback" ? 1u : 2u, after.CharacterQuestObjective.Single().Progress);
-        Assert.Equal(outcome == "rollback" ? [] : new ulong[] { 7, 15, 25 }, notices.Order());
+        Assert.Equal(committed ? 2u : 1u, after.CharacterQuestObjective.Single().Progress);
+        Assert.Equal(committed ? 1u : 0u, after.Character.Single().Flags);
+        Assert.Equal(committed && outcome != "rebound-during-retry" ? new ulong[] { 7, 15, 25 } : [], notices.Order());
         Assert.Equal(outcome == "rollback" ? 1 : 0, network.GetInvocations(nameof(IWorldSession.ForceDisconnect)).Count);
-        if (outcome == "rollback")
+        if (outcome is "rebound" or "rebound-during-retry") Assert.False(session.CanProcessIncomingPackets);
+        if (!committed)
             Assert.Empty(after.BankReconciliationReceipt);
         else
         {
@@ -132,13 +148,25 @@ public sealed class RewardNormalSaveSnapshotTests
     private sealed class ConversionSaveDatabase(Fixture fixture, string outcome) : CharacterDatabase
     {
         public int Attempts { get; private set; }
+        public Action OnRollback { get; set; }
+        public Action OnRetryCommitted { get; set; }
 
-        public override Task SaveResourceConversionReconciliation(ulong characterId, Action<CharacterContext> action,
+        public override async Task SaveResourceConversionReconciliation(ulong characterId, Action<CharacterContext> action,
             ResourceConversionSaveReconciliation receipt)
         {
             Attempts++;
-            return CharacterAtomicSave.ExecuteResourceConversionReconciliation(() => outcome == "success" ? fixture.Context()
-                : fixture.Context(new CommitFault(outcome == "lost-ack")), characterId, action, receipt);
+            bool injectFault = outcome != "success" && (outcome is not ("retry" or "rebound-during-retry") || Attempts == 1);
+            try
+            {
+                await CharacterAtomicSave.ExecuteResourceConversionReconciliation(() => injectFault
+                    ? fixture.Context(new CommitFault(outcome == "lost-ack")) : fixture.Context(), characterId, action, receipt);
+                if (Attempts == 2) OnRetryCommitted?.Invoke();
+            }
+            catch (CharacterReconciliationRolledBackException)
+            {
+                OnRollback?.Invoke();
+                throw;
+            }
         }
     }
 

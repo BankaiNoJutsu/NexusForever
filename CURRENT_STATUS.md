@@ -22971,6 +22971,22 @@ covered confirmed commit, recovered acknowledgment without another conversion
 save, and rollback with no receipt. Test execution took 57 seconds. Results
 are under `artifacts/continuation-20261104/resource-conversion-save-receipt/`.
 
+#### Resource conversion rollback retry
+
+4 November 2026. A proven rollback after full Character enrollment can retry
+the conversion's original frozen save once. The retry uses a fresh receipt ID
+and retains the original database route, wallet changes and other enrolled
+writes. It does not repeat Auth, earning progress or the conversion request.
+If the original actor or queue has changed, or the retry fails, publication
+stays suppressed. Configured-provider, socket and restart evidence remain open.
+
+The baseline attempted persistence once in both rollback regressions. The
+initial candidate passed 93 scoped tests. The final rebuilt candidate passed
+50 focused tests in 68 seconds, including a session rebound after retry commit.
+The SQLite assertions cover wallet, quest and legacy field writes, one Auth save
+and earning effect, and suppression of notices when the session loses ownership.
+Results are under `artifacts/continuation-20261104/resource-conversion-rollback-retry/`.
+
 #### Existing item and unlock behavior
 
 Inventory, title, pet, costume, unlock surfaces exist. Generic unlock

@@ -161,6 +161,15 @@ namespace NexusForever.Game.Entity
                 Quests.RetryBidRollback(proof.Context, partial); Challenges.RetryBidRollback(proof.Context, partial);
                 HousingReceipt = HousingReceipt with { Id = System.Guid.NewGuid().ToString("N") }; return true;
             }
+            internal bool RetryResourceConversionRollback(NexusForever.Database.Character.CharacterReconciliationRolledBackException proof)
+            {
+                Validate();
+                if (!proof.EnrollmentCompleted || proof.CharacterId != owner.CharacterId
+                    || !Quests.CanRetryBidRollback(proof.Context) || !Challenges.CanRetryBidRollback(proof.Context)) return false;
+                Quests.RetryBidRollback(proof.Context);
+                Challenges.RetryBidRollback(proof.Context);
+                return true;
+            }
             internal void Validate()
             {
                 if (ended || !ReferenceEquals(owner.normalRewardSave, this)) throw new InvalidOperationException("Player frozen save lost its owner.");

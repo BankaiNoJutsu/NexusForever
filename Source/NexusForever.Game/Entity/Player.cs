@@ -939,6 +939,9 @@ namespace NexusForever.Game.Entity
             catch { HandleSaveFailure("snapshot", failureCallback); throw; }
             var conversionReceipt = resourceConversionSaveRequested
                 ? new ResourceConversionSaveReconciliation(System.Guid.NewGuid().ToString("N"), CharacterId) : null;
+            if (conversionReceipt != null && snapshot != null) snapshot.Challenges.RetainBidRollback = true;
+            var originalSession = Session;
+            var originalEvents = originalSession.Events;
             resourceConversionSaveRequested = false;
             saveRequestedDuringSave = false;
             saveInProgress = true;
@@ -954,7 +957,7 @@ namespace NexusForever.Game.Entity
                 HandleSaveFailure("auth", failureCallback);
                 throw;
             }
-            Session.Events.EnqueueEvent(new TaskEvent(authSaveTask,
+            (conversionReceipt == null ? Session.Events : originalEvents).EnqueueEvent(new TaskEvent(authSaveTask,
                 () =>
                 {
                     Task characterSaveTask;
@@ -964,9 +967,10 @@ namespace NexusForever.Game.Entity
                         HandleSaveFailure("character", failureCallback);
                         throw;
                     }
-                    Session.Events.EnqueueEvent(new TaskEvent(characterSaveTask,
+                    (conversionReceipt == null ? Session.Events : originalEvents).EnqueueEvent(new TaskEvent(characterSaveTask,
                         () => CompleteSave(callback, failureCallback),
-                        () => HandleCharacterSaveFailure(characterSaveTask, snapshot, callback, failureCallback)));
+                        () => HandleCharacterSaveFailure(characterSaveTask, snapshot, callback, failureCallback,
+                            conversionReceipt, originalSession, originalEvents)));
                 },
                 () => HandleSaveFailure("auth", failureCallback)));
         }
@@ -983,9 +987,50 @@ namespace NexusForever.Game.Entity
             return characterDatabase ?? throw new InvalidOperationException("CharacterDatabase is not available.");
         }
 
-        private void HandleCharacterSaveFailure(Task task, NormalRewardSave snapshot, Action callback, Action failureCallback)
+        private void HandleCharacterSaveFailure(Task task, NormalRewardSave snapshot, Action callback, Action failureCallback,
+            ResourceConversionSaveReconciliation conversionReceipt = null, IGameSession originalSession = null, EventQueue originalEvents = null)
         {
             var rollback = task.Exception?.Flatten().InnerExceptions.OfType<CharacterReconciliationRolledBackException>().SingleOrDefault();
+            if (conversionReceipt != null && rollback?.ReceiptId == conversionReceipt.Id)
+            {
+                bool OwnsConversionSave() => ReferenceEquals(Session, originalSession) && ReferenceEquals(originalSession.Events, originalEvents)
+                    && (originalSession is not IPlayerSession bound || ReferenceEquals(bound.Player, this))
+                    && originalSession is not NetworkSession { IsDisconnecting: true }
+                    && LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished)
+                    && CharacterId == conversionReceipt.Character && ReferenceEquals(normalRewardSave, snapshot) && saveInProgress;
+
+                if (OwnsConversionSave() && snapshot?.RetryResourceConversionRollback(rollback) == true)
+                {
+                    originalEvents.EnqueueEvent(new DelayEvent(TimeSpan.FromSeconds(1), () =>
+                    {
+                        if (!OwnsConversionSave())
+                        {
+                            HandleSaveFailure("conversion owner", failureCallback, originalSession, originalEvents);
+                            return;
+                        }
+
+                        // Retry the same frozen writes once after proven rollback, with a fresh receipt ID.
+                        var retryReceipt = conversionReceipt with { Id = System.Guid.NewGuid().ToString("N") };
+                        Task retry;
+                        try { retry = SaveCharacterUnit(snapshot, retryReceipt); }
+                        catch (Exception error)
+                        {
+                            log.Error(error, "Failed to enroll a resource conversion save retry.");
+                            HandleSaveFailure("conversion enrollment", failureCallback, originalSession, originalEvents);
+                            return;
+                        }
+                        originalEvents.EnqueueEvent(new TaskEvent(retry, () =>
+                        {
+                            if (OwnsConversionSave()) CompleteSave(callback, failureCallback);
+                            else HandleSaveFailure("conversion owner", failureCallback, originalSession, originalEvents);
+                        },
+                            () => HandleSaveFailure("conversion retry", failureCallback, originalSession, originalEvents)));
+                    }));
+                    return;
+                }
+                HandleSaveFailure("conversion", failureCallback, originalSession, originalEvents);
+                return;
+            }
             if (rollback != null && (rollback is BidReconciliationRolledBackException bid && AuctionBidSaveAllowed && snapshot?.RetryBidRollback(bid) == true
                 || BankSaveAllowed && snapshot?.RetryBankRollback(rollback) == true))
             {
@@ -1032,10 +1077,11 @@ namespace NexusForever.Game.Entity
             callback?.Invoke();
         }
 
-        private void HandleSaveFailure(string phase, Action failureCallback)
+        private void HandleSaveFailure(string phase, Action failureCallback, IGameSession failedSession = null, EventQueue failedEvents = null)
         {
-            IGameSession failedSession = Session;
+            failedSession ??= Session;
             bool OwnsFailedSession() => ReferenceEquals(Session, failedSession)
+                && (failedEvents == null || ReferenceEquals(failedSession.Events, failedEvents))
                 && (failedSession is not IPlayerSession current || ReferenceEquals(current.Player, this));
             ReleaseNormalRewardSave(false);
             ReleaseInventorySave();
