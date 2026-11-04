@@ -18,8 +18,11 @@ wait for ordinary save completion before the spend. The preceding
 commits each reveal with its targeted reward.
 [Lost Auth acknowledgement recovery](../../CURRENT_STATUS.md#lost-auth-commit-acknowledgement)
 checks the exact receipt and current stored state before adopting the outcome.
-The original session reloads when safe adoption cannot be confirmed. Enqueue
-recovery, configured-provider and retail evidence remain open.
+The original session reloads when safe adoption cannot be confirmed.
+[Fortune packet recovery](../../CURRENT_STATUS.md#committed-packet-recovery)
+resumes confirmed deal and reveal responses on the original queue after a
+failed enqueue. Configured-provider, ambiguous transport acceptance and
+retail evidence remain open.
 
 [Direct armor and mitigation callers](NATIVE_STATIC_ARMOR_PIERCE_EVIDENCE.md#direct-callers-and-the-rating-curve)
 resolve to single-unit stat getters, and their shared rating conversion uses

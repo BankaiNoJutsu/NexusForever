@@ -23306,9 +23306,29 @@ remains unverified. Private SQLite evidence is under
 
 A conflicting receipt, changed owner or stored state, unavailable proof, or
 failed live finalization requires account reload. The server disconnects the
-original session if it still owns the request. Enqueue recovery after a
-confirmed deal or reveal, configured-provider qualification, and retail
-evidence remain open.
+original session if it still owns the request.
+
+#### Committed packet recovery
+
+4 November 2026. A failed enqueue during a confirmed Fortune deal or reveal
+resumes at the first unsent wallet, item, or card packet on the original
+session queue. Already enqueued steps retire individually. While that response
+is pending, overlapping Fortune requests cannot spend or grant again. Coin
+bundle achievement credit is applied once before the packet sequence.
+
+Retries verify the durable World epoch, current deal, and relevant inventory
+state. A retired queue receives no more sends. A conflicting stored state or
+failure after two retries requires reload for the original session. Recovery
+preserves any deal already admitted by a newer session.
+
+Four baseline cases reproduced a send failure after Auth had committed. The
+owning build and all 189 scoped tests passed, including 60 Fortune cases and
+nine new regressions. Evidence is under
+`artifacts/continuation-20261104/fortune-packet-recovery/`.
+
+This covers injected failures before queue acceptance. Configured MySQL,
+transport failures with ambiguous acceptance, and retail presentation
+remain separate qualification gates.
 
 #### Existing Fortune behavior and evidence
 

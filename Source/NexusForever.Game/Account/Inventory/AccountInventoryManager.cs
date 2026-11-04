@@ -179,8 +179,11 @@ namespace NexusForever.Game.Account.Inventory
             return item;
         }
 
+        public sealed record FortuneInventoryPublication(IReadOnlyList<Action> Steps, Func<AuthContext, bool> VerifyRetry,
+            Action ApplyEarnedCredit = null);
+
         /// <summary>Commit an item with the caller's staged Auth work before adopting or announcing it.</summary>
-        public Action CommitItemGrant(AuthContext context, uint accountItemId, NetworkIdentity targetPlayerIdentity,
+        public FortuneInventoryPublication CommitItemGrant(AuthContext context, uint accountItemId, NetworkIdentity targetPlayerIdentity,
             Func<bool> canPublish, Func<bool> ownsProof)
         {
             if (context.Database.CurrentTransaction != null)
@@ -202,7 +205,12 @@ namespace NexusForever.Game.Account.Inventory
             {
                 throw new AuthCommitOutcomeUnknownException(error);
             }
-            return () => SendItemAdd(item, session, canPublish);
+            bool IsCurrent() => canPublish() && ReferenceEquals(GetItem(item.Id), item);
+            return new FortuneInventoryPublication(
+            [
+                () => { if (IsCurrent()) SendItemCacheAdd(item, session); },
+                () => { if (IsCurrent()) SendItemAddPacket(item, session); }
+            ], proof => !ReferenceEquals(GetItem(item.Id), item) || item.MatchesStoredGrant(proof));
         }
 
         public bool CanEnlistFortuneCoinBundle(IPlayer player, IAccountInventoryItem item)
@@ -213,7 +221,7 @@ namespace NexusForever.Game.Account.Inventory
                 && grants is [AccountCurrencyGrant { CurrencyType: AccountCurrencyType.FortuneCoin }];
 
         /// <summary>Consume a coin-only bundle in the same unit as the funded deal.</summary>
-        public Action EnlistFortuneCoinBundle(AuthContext context, IPlayer player, IAccountInventoryItem item, Func<bool> ownsDeal)
+        public FortuneInventoryPublication EnlistFortuneCoinBundle(AuthContext context, IPlayer player, IAccountInventoryItem item, Func<bool> ownsDeal)
         {
             if (!CanEnlistFortuneCoinBundle(player, item))
                 throw new InvalidOperationException("The Fortune coin bundle is no longer claimable.");
@@ -229,17 +237,17 @@ namespace NexusForever.Game.Account.Inventory
                         items.Remove(item.Id);
             }, () => ownsDeal() && ReferenceEquals(GetItem(item.Id), item));
 
-            return () =>
-            {
-                if (!ownsDeal())
-                    return;
-                if (player != null)
-                    AccountCurrencyAchievementUpdater.Update(player, AccountCurrencyType.FortuneCoin, item.Entry.AccountCurrencyAmount);
-                if (ownsDeal())
-                    session.EnqueueMessageEncrypted(new ServerAccountItemDelete { Id = item.Id });
-                if (ownsDeal())
-                    session.EnqueueMessageEncrypted(new ServerAccountOperationResult { Operation = AccountOperation.TakeItem, Result = AccountOperationResult.Ok });
-            };
+            return new FortuneInventoryPublication(
+            [
+                () => { if (GetItem(item.Id) == null) session.EnqueueMessageEncrypted(new ServerAccountItemDelete { Id = item.Id }); },
+                () =>
+                {
+                    if (GetItem(item.Id) == null)
+                        session.EnqueueMessageEncrypted(new ServerAccountOperationResult { Operation = AccountOperation.TakeItem, Result = AccountOperationResult.Ok });
+                }
+            ], proof => GetItem(item.Id) != null ||
+                !proof.AccountInventory.Any(row => row.Id == account.Id && row.InventoryId == item.Id),
+                player == null ? null : () => AccountCurrencyAchievementUpdater.Update(player, AccountCurrencyType.FortuneCoin, item.Entry.AccountCurrencyAmount));
         }
 
         public string AddPendingItemGroup(IEnumerable<uint> accountItemIds, NetworkIdentity senderIdentity = null, NetworkIdentity targetPlayerIdentity = null, string group = null, bool notify = true, uint senderAccountId = 0u, ulong targetAccountId = 0ul)
@@ -701,29 +709,27 @@ namespace NexusForever.Game.Account.Inventory
             return nextPendingItemId++;
         }
 
-        private void SendItemAdd(IAccountInventoryItem item) => SendItemAdd(item, account.Session, null);
-
-        private void SendItemAdd(IAccountInventoryItem item, IGameSession session, Func<bool> canPublish)
+        private void SendItemAdd(IAccountInventoryItem item)
         {
-            if (canPublish?.Invoke() == false)
-                return;
-
             log.LogInformation("StorefrontCatalogDiagnostics account {AccountId}: sending account item add inventoryId={InventoryId} accountItemId={AccountItemId} claimState={ClaimState} hasTarget={HasTargetPlayerIdentity} target={TargetPlayerIdentity}.",
                 account.Id, item.Id, item.AccountItemId, item.ClaimState, item.HasTargetPlayerIdentity, item.TargetPlayerIdentity);
 
-            session.EnqueueMessageEncrypted(new ServerAccountItemCacheAdd
+            IGameSession session = account.Session;
+            SendItemCacheAdd(item, session);
+            SendItemAddPacket(item, session);
+        }
+
+        private static void SendItemCacheAdd(IAccountInventoryItem item, IGameSession session)
+            => session.EnqueueMessageEncrypted(new ServerAccountItemCacheAdd
             {
                 UnusedLeadingField = 0u,
                 AccountItem        = item.Build()
             });
-            if (canPublish?.Invoke() == false)
-                return;
-
-            session.EnqueueMessageEncrypted(new ServerAccountItemAdd
+        private static void SendItemAddPacket(IAccountInventoryItem item, IGameSession session)
+            => session.EnqueueMessageEncrypted(new ServerAccountItemAdd
             {
                 AccountItem = item.Build()
             });
-        }
 
         private void SendItemDelete(ulong id)
         {

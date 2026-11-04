@@ -24,6 +24,7 @@ using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Fortune;
+using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Fortune;
 using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
@@ -842,6 +843,238 @@ public class FortuneSessionManagerTests
         Assert.Equal(11u, read.AccountFortuneSession.Single().Card0AccountItemId);
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(4)]
+    public async Task CommittedStartResumesAtTheFailedPacketAndDoesNotSpendAgain(int failedIndex)
+    {
+        using var fixture = new PersistedFortune(coins: 0, bundleTarget: 9001);
+        FortuneSessionManager manager = fixture.CreateManager();
+        Type[] expected = [typeof(ServerAccountCurrencyGrant), typeof(ServerWalletUpdate), typeof(ServerAccountItemDelete),
+            typeof(ServerAccountOperationResult), typeof(ServerFortuneCards)];
+        var sent = new List<Type>();
+        int failures = 0;
+        fixture.Messages.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            Type type = args[0].GetType();
+            if (type == expected[failedIndex] && failures == 0)
+            {
+                failures++;
+                throw new IOException("Fortune deal packet was not queued.");
+            }
+            sent.Add(type);
+            return null;
+        });
+
+        manager.Start(fixture.Session);
+        Assert.Equal(expected.Take(failedIndex), sent);
+        Assert.True(fixture.Events.PendingEvents);
+        using AuthContext read = fixture.Database.CreateContext();
+        Assert.Equal(4ul, read.AccountCurrency.Single().Amount);
+        Assert.Empty(read.AccountInventory);
+
+        manager.Start(fixture.Session);
+        await DrainFortuneEvents(fixture.Events);
+
+        Assert.Equal(expected, sent);
+        Assert.Equal(1, failures);
+        Assert.Equal(2, read.AccountCurrencyOperation.Count());
+        Assert.Single(read.AccountFortuneSession);
+        Assert.Empty(fixture.Messages.GetInvocations(nameof(IWorldSession.ForceDisconnect)));
+    }
+
+    [Fact]
+    public async Task CommittedFlipRetriesTheItemAddBeforeRevealingWithoutRegranting()
+    {
+        using var fixture = new PersistedFortune();
+        FortuneSessionManager manager = fixture.CreateManager();
+        manager.Start(fixture.Session);
+        var sent = new List<Type>();
+        int failures = 0;
+        fixture.Messages.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerAccountItemAdd && failures == 0)
+            {
+                failures++;
+                throw new IOException("Fortune item add was not queued.");
+            }
+            sent.Add(args[0].GetType());
+            return null;
+        });
+
+        manager.FlipCard(fixture.Session, CreateFlipCard(1u));
+        Assert.Equal([typeof(ServerAccountItemCacheAdd)], sent);
+        manager.FlipCard(fixture.Session, CreateFlipCard(1u));
+        await DrainFortuneEvents(fixture.Events);
+
+        Assert.Equal([typeof(ServerAccountItemCacheAdd), typeof(ServerAccountItemAdd), typeof(ServerFortuneCardUpdate)], sent);
+        using AuthContext read = fixture.Database.CreateContext();
+        Assert.Equal(22u, Assert.Single(read.AccountInventory).AccountItemId);
+        Assert.True(read.AccountFortuneSession.Single().Card1Granted);
+        Assert.Equal(1, failures);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CommittedFlipDoesNotRetryAnItemAlreadyRemovedFromInventory(bool durableOnly)
+    {
+        using var fixture = new PersistedFortune();
+        FortuneSessionManager manager = fixture.CreateManager();
+        manager.Start(fixture.Session);
+        int adds = 0;
+        fixture.Messages.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerAccountItemAdd)
+            {
+                adds++;
+                throw new IOException("Fortune item add was not queued.");
+            }
+            return null;
+        });
+
+        manager.FlipCard(fixture.Session, CreateFlipCard(0u));
+        var inventory = fixture.Session.Account.InventoryManager;
+        if (durableOnly)
+        {
+            using AuthContext writer = fixture.Database.CreateContext();
+            writer.AccountInventory.ExecuteDelete();
+        }
+        else
+            Assert.True(inventory.RemoveItem(Assert.Single(inventory).Id));
+        await DrainFortuneEvents(fixture.Events);
+
+        Assert.Equal(1, adds);
+        if (durableOnly)
+        {
+            Assert.Single(inventory);
+            Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCardUpdate>());
+            Assert.Single(fixture.Messages.GetInvocations(nameof(IWorldSession.ForceDisconnect)));
+        }
+        else
+        {
+            Assert.Empty(inventory);
+            Assert.Single(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCardUpdate>());
+        }
+    }
+
+    [Fact]
+    public async Task CommittedStartDoesNotPublishOnAReplacementQueue()
+    {
+        using var fixture = new PersistedFortune(coins: 2);
+        FortuneSessionManager manager = fixture.CreateManager();
+        int cards = 0;
+        fixture.Messages.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerFortuneCards && ++cards == 1)
+                throw new IOException("Fortune cards were not queued.");
+            return null;
+        });
+
+        manager.Start(fixture.Session);
+        var replacement = new EventQueue();
+        fixture.Messages.SetProperty(nameof(IWorldSession.Events), replacement);
+        await DrainFortuneEvents(fixture.Events);
+
+        Assert.Equal(1, cards);
+        Assert.False(replacement.PendingEvents);
+        Assert.Empty(fixture.Messages.GetInvocations(nameof(IWorldSession.ForceDisconnect)));
+        manager.SendStatus(fixture.Session);
+        Assert.Equal(2, cards);
+        using AuthContext read = fixture.Database.CreateContext();
+        Assert.Equal(1ul, read.AccountCurrency.Single().Amount);
+    }
+
+    [Fact]
+    public async Task CommittedStartCannotRetryForASupersededWorldEpochOrEvictTheNewDeal()
+    {
+        using var fixture = new PersistedFortune(coins: 2);
+        fixture.Owner.SetProperty(nameof(IAccount.WorldSessionEpoch), 1ul);
+        using AuthContext seed = fixture.Database.CreateContext();
+        seed.AccountWorldSession.Add(new AccountWorldSessionModel { AccountId = fixture.Session.Account.Id, Epoch = 1ul });
+        seed.SaveChanges();
+        int cardAttempts = 0;
+        fixture.Messages.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerFortuneCards)
+            {
+                cardAttempts++;
+                throw new IOException("Fortune cards were not queued.");
+            }
+            return null;
+        });
+
+        FortuneSessionManager manager = fixture.CreateManager();
+        manager.Start(fixture.Session);
+        seed.AccountWorldSession.ExecuteUpdate(setters => setters.SetProperty(row => row.Epoch, 2ul));
+        IWorldSession replacement = RecordingDispatchProxy<IWorldSession>.Create(out var replacementSession);
+        IAccount replacementAccount = RecordingDispatchProxy<IAccount>.Create(out var replacementOwner);
+        replacementOwner.SetProperty(nameof(IAccount.Id), fixture.Session.Account.Id);
+        replacementOwner.SetProperty(nameof(IAccount.WorldSessionEpoch), 2ul);
+        replacementOwner.SetProperty(nameof(IAccount.Session), replacement);
+        replacementSession.SetProperty(nameof(IWorldSession.Account), replacementAccount);
+        replacementSession.SetProperty(nameof(IWorldSession.Events), new EventQueue());
+        manager.SendStatus(replacement);
+        Assert.Single(GetEncryptedMessages(replacementSession).OfType<ServerFortuneCards>());
+
+        await DrainFortuneEvents(fixture.Events);
+
+        Assert.Equal(1, cardAttempts);
+        Assert.Single(fixture.Messages.GetInvocations(nameof(IWorldSession.ForceDisconnect)));
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneReset>());
+        Assert.Equal(1ul, seed.AccountCurrency.Single().Amount);
+
+        seed.AccountFortuneSession.ExecuteUpdate(setters => setters.SetProperty(row => row.Card0Granted, true));
+        manager.FlipCard(replacement, CreateFlipCard(0u));
+        Assert.False(seed.AccountFortuneSession.AsNoTracking().Single().Card0Flipped);
+        Assert.Single(GetEncryptedMessages(replacementSession).OfType<ServerFortuneReset>());
+    }
+
+    [Fact]
+    public async Task PermanentFortunePacketFailureStopsAfterTwoRetriesAndKeepsTheCommit()
+    {
+        using var fixture = new PersistedFortune(coins: 0, bundleTarget: 9001);
+        int walletAttempts = 0;
+        fixture.Messages.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerAccountCurrencyGrant)
+            {
+                walletAttempts++;
+                throw new IOException("Fortune wallet grant was not queued.");
+            }
+            return null;
+        });
+
+        fixture.CreateManager().Start(fixture.Session);
+        Assert.Single(fixture.Achievements.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+        await DrainFortuneEvents(fixture.Events);
+
+        Assert.Equal(3, walletAttempts);
+        Assert.Single(fixture.Messages.GetInvocations(nameof(IWorldSession.ForceDisconnect)));
+        Assert.False(fixture.Session.CanProcessIncomingPackets);
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneReset>());
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCards>());
+        using AuthContext read = fixture.Database.CreateContext();
+        Assert.Equal(4ul, read.AccountCurrency.Single().Amount);
+        Assert.Equal(2, read.AccountCurrencyOperation.Count());
+        Assert.Single(read.AccountFortuneSession);
+        Assert.Empty(read.AccountInventory);
+        Assert.Single(fixture.Achievements.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+    }
+
+    private static async Task DrainFortuneEvents(EventQueue events)
+    {
+        var timeout = Stopwatch.StartNew();
+        while (events.PendingEvents && timeout.Elapsed < TimeSpan.FromSeconds(8))
+        {
+            events.Update(0);
+            if (events.PendingEvents)
+                await Task.Delay(25);
+        }
+        Assert.False(events.PendingEvents);
+    }
+
     private sealed class CommitFault : IObserver<DiagnosticListener>, IObserver<KeyValuePair<string, object>>, IDisposable
     {
         private readonly string connectionString;
@@ -907,6 +1140,8 @@ public class FortuneSessionManagerTests
         public IWorldSession Session { get; }
         public RecordingDispatchProxy<IWorldSession> Messages { get; }
         public RecordingDispatchProxy<IAccount> Owner { get; }
+        public RecordingDispatchProxy<ICharacterAchievementManager> Achievements { get; }
+        public EventQueue Events { get; } = new();
         private Action pendingPlayerSave;
 
         public PersistedFortune(ulong coins = 10, ulong? bundleTarget = null, bool unclaimableFirst = false)
@@ -930,13 +1165,15 @@ public class FortuneSessionManagerTests
 
             Session = RecordingDispatchProxy<IWorldSession>.Create(out var messages);
             Messages = messages;
+            messages.SetProperty(nameof(IWorldSession.Events), Events);
             IAccount account = RecordingDispatchProxy<IAccount>.Create(out var owner);
             Owner = owner;
             IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var character);
             character.SetProperty(nameof(IPlayer.CharacterId), 9001ul);
             character.SetProperty(nameof(IPlayer.Account), account);
             character.SetProperty(nameof(IPlayer.Identity), new Identity { RealmId = TestRealmId, Id = 9001ul });
-            character.SetProperty(nameof(IPlayer.AchievementManager), RecordingDispatchProxy<ICharacterAchievementManager>.Create(out _));
+            character.SetProperty(nameof(IPlayer.AchievementManager), RecordingDispatchProxy<ICharacterAchievementManager>.Create(out var achievements));
+            Achievements = achievements;
             character.SetMethodHandler(nameof(IPlayer.Save), args =>
             {
                 pendingPlayerSave = (Action)args[0];

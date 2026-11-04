@@ -23,7 +23,7 @@ using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
 {
-    public class FortuneSessionManager : IFortuneSessionManager
+    public partial class FortuneSessionManager : IFortuneSessionManager
     {
         private const int CardCount = 3;
         private const ulong FortuneCoinCost = 1ul;
@@ -63,19 +63,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
 
         public void SendStatus(IWorldSession session)
         {
-            IAccount account = session.Account;
-            IPlayer player = session.Player;
-            ServerFortuneRewards rewards = BuildRewards();
-            LogRewardCatalogProbabilities(rewards);
-            session.EnqueueMessageEncrypted(rewards);
-            if (databaseManager == null || account == null || account.Id == 0u)
-            {
-                session.EnqueueMessageEncrypted(BuildCards(GetSession(session)));
-                return;
-            }
-
             lock (sync)
             {
+                if (databaseManager != null && HasPendingPublication(session))
+                    return;
+                IAccount account = session.Account;
+                IPlayer player = session.Player;
+                ServerFortuneRewards rewards = BuildRewards();
+                LogRewardCatalogProbabilities(rewards);
+                session.EnqueueMessageEncrypted(rewards);
+                if (databaseManager == null || account == null || account.Id == 0u)
+                {
+                    session.EnqueueMessageEncrypted(BuildCards(GetSession(session)));
+                    return;
+                }
                 if (OwnsSession(session, account, player))
                     PublishPersistedCards(session, account, player, LoadSession(account.Id), preserveEquivalent: true);
             }
@@ -83,29 +84,29 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
 
         public void Start(IWorldSession session)
         {
-            if (!TryGetAccount(session, out IAccount account))
-            {
-                SendClickEmptyReset(session);
-                return;
-            }
-            IPlayer player = session.Player;
-
-            if (databaseManager == null && !EnsureFortuneCoinBalance(session, account))
-            {
-                SendClickEmptyReset(session);
-                return;
-            }
-
-            FortuneCardReward[] cardRewards = fortuneRewardPool.PickCardRewards(Random.Shared);
-            if (cardRewards.Length != CardCount || !AreCardRewardsDisplayable(cardRewards))
-            {
-                SendClickEmptyReset(session);
-                return;
-            }
-
-            var fortuneSession = new FortuneSession(cardRewards);
             lock (sync)
             {
+                if (databaseManager != null && HasPendingPublication(session))
+                    return;
+                if (!TryGetAccount(session, out IAccount account))
+                {
+                    SendClickEmptyReset(session);
+                    return;
+                }
+                IPlayer player = session.Player;
+                if (databaseManager == null && !EnsureFortuneCoinBalance(session, account))
+                {
+                    SendClickEmptyReset(session);
+                    return;
+                }
+                FortuneCardReward[] cardRewards = fortuneRewardPool.PickCardRewards(Random.Shared);
+                if (cardRewards.Length != CardCount || !AreCardRewardsDisplayable(cardRewards))
+                {
+                    SendClickEmptyReset(session);
+                    return;
+                }
+
+                var fortuneSession = new FortuneSession(cardRewards);
                 if (databaseManager == null)
                 {
                     account.CurrencyManager.CurrencySubtractAmount(AccountCurrencyType.FortuneCoin, FortuneCoinCost);
@@ -120,7 +121,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
 
         private void StartPersistedDeal(IWorldSession session, IAccount account, IPlayer player, FortuneSession deal)
         {
-            if (!OwnsSession(session, account, player))
+            if (!OwnsSession(session, account, player) || HasPendingPublication(session))
                 return;
             if (account.CurrencyManager is not AccountCurrencyManager wallet)
             {
@@ -129,10 +130,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             }
             IAccountInventoryManager inventory = account.InventoryManager;
             FortuneSession previous = sessions.GetValueOrDefault(account.Id);
-            bool OwnsDeal() => OwnsSession(session, account, player) && ReferenceEquals(account.CurrencyManager, wallet)
+            var events = session.Events;
+            bool OwnsDeal() => OwnsPublicationQueue(session, account, player, events) && ReferenceEquals(account.CurrencyManager, wallet)
                 && ReferenceEquals(account.InventoryManager, inventory);
-            Action publishWallet;
-            Action publishBundle;
+            bool CardsAreCurrent() => IsCurrentDeal(account.Id, previous);
+            IReadOnlyList<Action> publishWallet;
+            AccountInventoryManager.FortuneInventoryPublication publishBundle;
 
             try
             {
@@ -239,10 +242,17 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                 return;
             }
 
-            publishWallet();
-            publishBundle?.Invoke();
-            if (OwnsDeal() && IsCurrentDeal(account.Id, previous))
-                PublishPersistedCards(session, account, player, deal);
+            if (OwnsDeal() && publishBundle?.ApplyEarnedCredit != null)
+            {
+                try { publishBundle.ApplyEarnedCredit(); }
+                catch (Exception error) { log.LogWarning(error, "Fortune bundle credit could not finish on its original character for account {AccountId}.", account.Id); }
+            }
+
+            PublishCommitted(session, account, events, OwnsDeal, CardsAreCurrent, deal, publishBundle?.VerifyRetry,
+            [
+                .. publishWallet, .. (publishBundle?.Steps ?? []),
+                () => { if (CardsAreCurrent()) PublishPersistedCards(session, account, player, deal); }
+            ]);
         }
 
         private static void SaveAccountBeforeDeal(AuthContext context, IAccount account, ulong epoch, Func<bool> ownsDeal)
@@ -327,14 +337,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
 
         public void FlipCard(IWorldSession session, ClientFortuneFlipCard flipCard)
         {
-            if (flipCard.SelectedCardIndex >= CardCount || !TryGetAccount(session, out IAccount account))
-            {
-                SendClickEmptyReset(session);
-                return;
-            }
-
             lock (sync)
             {
+                if (databaseManager != null && HasPendingPublication(session))
+                    return;
+                if (flipCard.SelectedCardIndex >= CardCount || !TryGetAccount(session, out IAccount account))
+                {
+                    SendClickEmptyReset(session);
+                    return;
+                }
                 FortuneSession fortuneSession = GetSession(session);
                 FortuneCardState card = fortuneSession?.Cards[flipCard.SelectedCardIndex];
                 if (card == null || card.Flipped || !CanGrantCardReward(account, card))
@@ -343,13 +354,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                     return;
                 }
 
-                Action publishGrant = null;
+                AccountInventoryManager.FortuneInventoryPublication publishGrant = null;
                 IPlayer player = session.Player;
                 IAccountInventoryManager inventory = account.InventoryManager;
+                var events = session.Events;
                 FortuneCardState[] cards = (FortuneCardState[])fortuneSession.Cards.Clone();
                 cards[flipCard.SelectedCardIndex] = card with { Flipped = true, Granted = card.Granted || card.AccountItemId != 0u };
                 var updated = new FortuneSession(cards);
-                Func<bool> ownsFlip = () => OwnsSession(session, account, player) && ReferenceEquals(account.InventoryManager, inventory);
+                bool OwnsFlip() => OwnsPublicationQueue(session, account, player, events) && ReferenceEquals(account.InventoryManager, inventory);
+                bool CardsAreCurrent() => IsCurrentDeal(account.Id, updated);
                 if (databaseManager == null)
                     GrantCardReward(account, player, card);
                 else
@@ -357,9 +370,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                     try
                     {
                         if (!TryCommitFlip(account, player, inventory as AccountInventoryManager, fortuneSession, updated,
-                            flipCard.SelectedCardIndex, ownsFlip, out publishGrant))
+                            flipCard.SelectedCardIndex, OwnsFlip, out publishGrant))
                         {
-                            if (ownsFlip())
+                            if (OwnsFlip())
                                 SendClickEmptyReset(session);
                             return;
                         }
@@ -372,20 +385,26 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                 }
 
                 sessions[account.Id] = updated;
-                publishGrant?.Invoke();
-                if (databaseManager != null && (!ownsFlip() || !IsCurrentDeal(account.Id, updated)))
-                    return;
+                if (databaseManager == null)
+                    SendReveal();
+                else
+                    PublishCommitted(session, account, events, OwnsFlip, CardsAreCurrent, updated, publishGrant?.VerifyRetry,
+                        [.. (publishGrant?.Steps ?? []), SendReveal]);
 
-                session.EnqueueMessageEncrypted(new ServerFortuneCardUpdate
+                void SendReveal()
                 {
-                    Operation   = FortuneOperation.Update,
-                    CardFlipped = CopyCardFlips(updated)
-                });
+                    if (CardsAreCurrent())
+                        session.EnqueueMessageEncrypted(new ServerFortuneCardUpdate
+                        {
+                            Operation   = FortuneOperation.Update,
+                            CardFlipped = CopyCardFlips(updated)
+                        });
+                }
             }
         }
 
         private bool TryCommitFlip(IAccount account, IPlayer player, AccountInventoryManager inventory, FortuneSession expected, FortuneSession updated,
-            uint index, Func<bool> ownsFlip, out Action publishGrant)
+            uint index, Func<bool> ownsFlip, out AccountInventoryManager.FortuneInventoryPublication publishGrant)
         {
             publishGrant = null;
             FortuneCardState card = expected.Cards[index];
@@ -441,8 +460,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             if (!OwnsSession(session, account, player))
                 return;
             sessions.Remove(account.Id);
-            session.CanProcessIncomingPackets = false;
-            session.ForceDisconnect();
+            DisconnectFortune(session);
         }
 
         private static void ValidateWorldSessionEpoch(AuthContext context, uint accountId, ulong epoch)

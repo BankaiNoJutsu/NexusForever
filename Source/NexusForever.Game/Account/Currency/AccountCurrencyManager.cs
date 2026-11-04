@@ -115,7 +115,7 @@ namespace NexusForever.Game.Account.Currency
         }
 
         /// <summary>Stage the wallet operations without changing the visible balance before commit.</summary>
-        public Action EnlistFortuneSpend(AuthContext context, ulong cost, ulong bundleCredit, Func<bool> ownsDeal)
+        public IReadOnlyList<Action> EnlistFortuneSpend(AuthContext context, ulong cost, ulong bundleCredit, Func<bool> ownsDeal)
         {
             lock (currencyGate)
             {
@@ -132,7 +132,11 @@ namespace NexusForever.Game.Account.Currency
                 }
                 ((AccountCurrency)wallet).EnlistFortuneSpend(context, cost, bundleCredit);
                 IGameSession session = account.Session;
-                return () => SendAccountCurrencyUpdate(wallet, 0, session, ownsDeal);
+                return
+                [
+                    () => SendCurrencyGrant(wallet, 0, session),
+                    () => session.EnqueueMessageEncrypted(new ServerWalletUpdate((uint)wallet.CurrencyId))
+                ];
             }
         }
 
@@ -184,19 +188,17 @@ namespace NexusForever.Game.Account.Currency
         /// Sends information about a player's <see cref="AccountCurrency"/>.
         /// </summary>
         private void SendAccountCurrencyUpdate(IAccountCurrency accountCurrency, ulong reason = 0)
-            => SendAccountCurrencyUpdate(accountCurrency, reason, account.Session, null);
-
-        private static void SendAccountCurrencyUpdate(IAccountCurrency accountCurrency, ulong reason, IGameSession session, Func<bool> canPublish)
         {
-            if (canPublish?.Invoke() == false)
-                return;
-            session.EnqueueMessageEncrypted(new ServerAccountCurrencyGrant
+            IGameSession session = account.Session;
+            SendCurrencyGrant(accountCurrency, reason, session);
+            session.EnqueueMessageEncrypted(new ServerWalletUpdate((uint)accountCurrency.CurrencyId));
+        }
+
+        private static void SendCurrencyGrant(IAccountCurrency accountCurrency, ulong reason, IGameSession session)
+            => session.EnqueueMessageEncrypted(new ServerAccountCurrencyGrant
             {
                 AccountCurrency = accountCurrency.Build(),
                 Reason = reason
             });
-            if (canPublish?.Invoke() != false)
-                session.EnqueueMessageEncrypted(new ServerWalletUpdate((uint)accountCurrency.CurrencyId));
-        }
     }
 }
