@@ -1,5 +1,10 @@
 # Destination configured-provider qualification
 
+[Challenge and Contract result publication](#challenge-and-contract-result-publication)
+passes nine scoped cases on migrated MySQL 8.4.13 schemas with the configured
+retry strategy. It covers commit-before-enqueue ordering, retry, session and
+attempt replacement, and the composed reward-pane reload.
+
 [Normal bid and buyout SQL settlement](#normal-bid-and-buyout-sql-settlement)
 qualifies 28 cases on migrated MySQL 8.4.13 schemas with the configured retry
 strategy. It covers complete command graphs, simulated commit acknowledgement
@@ -15,6 +20,32 @@ The [portable report](coverage/marketplace-mysql-concurrency-20261103.json) bind
 unchanged Source/DLLs and all44 outcomes. Owned workloads are stopped. No full
 suite was run. Other profiles, physical failures, other financial commands,
 broker/restart, deployment, native and retail qualification remain separate.
+
+### Challenge and Contract result publication
+
+4 November 2026, Source at `c709469e26914bed5d98a7772bdeeedec18ba37d`.
+The runner invoked nine original compiled test cases with Character database
+options from `UseConfiguration`. Each case used its own schema with 47 applied
+migrations on the disposable MySQL 8.4.13 instance. The runner verified the
+configured `MySqlRetryingExecutionStrategy` and dropped each schema after its
+case. The server default isolation observed on the control connection was
+`REPEATABLE-READ`.
+
+The cases cover the Quest companion commit before terminal Challenge result
+enqueue, send retry and session replacement, live status enqueue failure and
+reentrancy, a one-shot reward-pane reload failure, simulated commit
+acknowledgment loss, and discarding notices from a superseded attempt. The
+Contract case confirms the final Contract, Challenge and Loyalty rows in the
+same reload after a first enqueue failure. Its session and Auth callbacks are
+fixtures. The acknowledgment fault uses an interceptor.
+
+All nine passed in 154 seconds after about 136 seconds for startup. The scoped
+runner build passed. The owned process and listener stopped after the run.
+The [result record](coverage/challenge-result-publication-mysql-20261104.json)
+binds the cases to the engine and DLLs. Local inputs, runner and raw outputs
+are in `artifacts/continuation-20261104/challenge-result-publication-mysql/`.
+Physical connection loss, cross-process restart, deployed socket ordering,
+actual Contract table delivery, native presentation and retail remain open.
 
 ### Normal bid and buyout SQL settlement
 

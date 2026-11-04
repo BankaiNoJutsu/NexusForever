@@ -1,0 +1,77 @@
+{
+  "sourceCommit": "c709469e26914bed5d98a7772bdeeedec18ba37d",
+  "engine": {
+    "version": "8.4.13",
+    "sha256": "7a976874ef3974d612081960b1c193c663b4434692b6257382352c587e367ad6",
+    "controlConnectionIsolation": "REPEATABLE-READ"
+  },
+  "assemblies": [
+    {
+      "File": "NexusForever.Game.dll",
+      "SHA256": "DB9901FA12010AB1D603D3179FE48CEFF36FCB560BEC1B010E53D67F6C4F35A4"
+    },
+    {
+      "File": "NexusForever.Game.Tests.dll",
+      "SHA256": "0D5310A733E0A78E74716F8988B6F80CB287AF6A166555B94214BEFB80D0EB6C"
+    },
+    {
+      "File": "NexusForever.Database.Character.dll",
+      "SHA256": "11575D8108560CF2257EE592BD1204F3D754C31AF9BEB7C058BE08F940B78389"
+    }
+  ],
+  "elapsedSeconds": 154.1639935,
+  "caseCount": 9,
+  "strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+  "migrationsPerSchema": 47,
+  "cases": [
+    {
+      "name": "DurableTerminalResultWaitsForMedalAndQuestCommit(normal)",
+      "passed": true
+    },
+    {
+      "name": "DurableTerminalResultWaitsForMedalAndQuestCommit(result-retry)",
+      "passed": true
+    },
+    {
+      "name": "DurableTerminalResultWaitsForMedalAndQuestCommit(result-replace)",
+      "passed": true
+    },
+    {
+      "name": "DurableTerminalResultWaitsForMedalAndQuestCommit(status-error)",
+      "passed": true
+    },
+    {
+      "name": "DurableTerminalResultWaitsForMedalAndQuestCommit(status-reentry)",
+      "passed": true
+    },
+    {
+      "name": "DurableTerminalResultWaitsForMedalAndQuestCommit(reload-error)",
+      "passed": true
+    },
+    {
+      "name": "DurableTerminalResultWaitsForMedalAndQuestCommit(lost-ack)",
+      "passed": true
+    },
+    {
+      "name": "RestartBeforePublicationDropsOldAttemptResults",
+      "passed": true
+    },
+    {
+      "name": "OnlyTheSuccessfulCompositeCommitPublishesContractPointsAlongsideTheFinalChallengeAndLoyaltyRows(True,True)",
+      "passed": true
+    }
+  ],
+  "ownedShutdown": {
+    "processAbsent": true,
+    "listenerAbsent": true,
+    "observedUtc": "2026-11-04T09:37:47.4062026Z"
+  },
+  "localArtifacts": {
+    "directory": "artifacts/continuation-20261104/challenge-result-publication-mysql",
+    "sha256": {
+      "provider/Program.cs": "B5C997FF6D39629F264B8E9FF69C1B7CD3454456464061CF6FF11370248DA096",
+      "provider/results.json": "19864365F6018941E4ED705A47940AD8F379BC26DC032D7F0EA0079EBDEBAC47",
+      "shutdown-verification.json": "792E4BC76BF36878D8D0E1B1BE7AA59815BC30767B5EE1273FB0AEE0438FB50C"
+    }
+  }
+}

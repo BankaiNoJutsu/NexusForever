@@ -14,6 +14,9 @@ retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_
 publish after the original Character or Contract transaction confirms.
 The producer keeps live status separate from durable results, guards
 reentrant advancement, and drops retries for replaced sessions or attempts.
+The [configured MySQL gate](DESTINATION_PROVIDER_QUALIFICATION.md#challenge-and-contract-result-publication)
+passes nine original compiled cases, including the Contract companion reload
+and simulated lost commit acknowledgment, on separately migrated schemas.
 Unsupported earning producers, deployed sockets and native behavior remain open.
 
 [Arcterra Zone track evidence](ZONE_REWARD_TRACK_35_EVIDENCE.md) separates
