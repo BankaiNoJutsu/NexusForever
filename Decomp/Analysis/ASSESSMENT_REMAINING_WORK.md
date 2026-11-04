@@ -10,6 +10,10 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[AMP property ownership](AMP_UPSTREAM_RECONCILIATION.md#property-ownership-when-an-effect-key-is-reused)
+now preserves a same-spell replacement that reuses the AMP's numeric effect
+and casting IDs. Proc and mixed AMP ownership and row evidence remain open.
+
 [Confirmed Challenge medal and completion results](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#confirmed-medal-and-completion-results)
 publish after the original Character or Contract transaction confirms.
 The producer keeps live status separate from durable results, guards

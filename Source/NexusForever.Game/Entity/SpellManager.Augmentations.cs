@@ -7,7 +7,7 @@ namespace NexusForever.Game.Entity
 {
     public partial class SpellManager
     {
-        private readonly Dictionary<uint, HashSet<(Property Property, uint EffectId)>> augmentationProperties = [];
+        private readonly Dictionary<uint, IReadOnlyCollection<ISpellPropertyInstance>> augmentationProperties = [];
         private readonly Dictionary<uint, HashSet<SpellCooldownModifier>> augmentationCooldowns = [];
         private double augmentationRetryTime;
 
@@ -23,9 +23,8 @@ namespace NexusForever.Game.Entity
 
             foreach (uint id in augmentationProperties.Keys.Where(id => !desired.Contains(id)).ToArray())
             {
-                var existing = player.GetSpellPropertyInstances(id).ToHashSet();
-                foreach (var instance in augmentationProperties[id].Intersect(existing))
-                    player.RemoveSpellProperty(instance.Property, instance.EffectId);
+                foreach (var instance in augmentationProperties[id])
+                    player.RemoveSpellPropertyInstance(instance);
                 augmentationProperties.Remove(id);
             }
 
@@ -44,10 +43,8 @@ namespace NexusForever.Game.Entity
             {
                 // A modifier from another source may have replaced our instance. Never
                 // overwrite or claim that source, even when it uses the same spell.
-                var existing = player.GetSpellPropertyInstances(id).ToHashSet();
+                var existing = player.GetSpellPropertyInstances(id);
                 var existingCooldowns = GetSpellCooldownModifiers().Where(m => m.Spell4Id == id).ToArray();
-                if (augmentationProperties.TryGetValue(id, out var owned))
-                    owned.IntersectWith(existing);
                 if (augmentationCooldowns.TryGetValue(id, out var ownedCooldowns))
                     ownedCooldowns.IntersectWith(existingCooldowns);
                 if (existing.Count != 0 || existingCooldowns.Length != 0)
@@ -62,7 +59,7 @@ namespace NexusForever.Game.Entity
                 });
                 if (result == CastResult.Ok)
                 {
-                    augmentationProperties[id] = player.GetSpellPropertyInstances(id).ToHashSet();
+                    augmentationProperties[id] = player.CaptureSpellPropertyInstances(id);
                     // Records are immutable but can be replaced with value-equal
                     // instances. Only the actual objects installed by this cast
                     // belong to this AMP, never a replacement from another owner.

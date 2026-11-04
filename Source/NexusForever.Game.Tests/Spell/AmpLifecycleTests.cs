@@ -202,6 +202,23 @@ public class AmpLifecycleTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void SameSpellReplacementWithReusedEffectAndCastingIdsSurvivesRespec(bool refreshBeforeRemoval)
+    {
+        var f = new Fixture(Model(0, (0, Node)));
+        uint effectId = Assert.Single(f.Unit.GetSpellPropertyInstances(Augment)).EffectId;
+        f.ApplyProperty(effectId, amount: 0.3f);
+        if (refreshBeforeRemoval) f.Manager.Update(1);
+
+        f.Manager.GetActionSet(0).RemoveAmp(AmpRespecType.Full, 0);
+
+        Assert.Single(f.CastCalls);
+        Assert.Equal((Property.MountSpeedMultiplier, effectId), Assert.Single(f.Unit.GetSpellPropertyInstances(Augment)));
+        Assert.Equal(1.3f, f.Unit.GetPropertyValue(Property.MountSpeedMultiplier), 3);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void DeadAndOutOfWorldLoginRetryWithoutDuplicateModifiers(bool outOfWorld)
     {
         var f = new Fixture(Model(0, (0, Node)), initialise: false);
@@ -366,7 +383,8 @@ public class AmpLifecycleTests
             pp.SetProperty(nameof(IPlayer.Inventory), inventory);
             pp.SetProperty(nameof(IPlayer.Session), RecordingDispatchProxy<IGameSession>.Create(out _));
             pp.SetMethodHandler(nameof(IPlayer.GetSpellPropertyInstances), args => Unit.GetSpellPropertyInstances((uint)args[0]));
-            pp.SetMethodHandler(nameof(IPlayer.RemoveSpellProperty), args => Unit.RemoveSpellProperty((Property)args[0], (uint)args[1]));
+            pp.SetMethodHandler(nameof(IPlayer.CaptureSpellPropertyInstances), args => Unit.CaptureSpellPropertyInstances((uint)args[0]));
+            pp.SetMethodHandler(nameof(IPlayer.RemoveSpellPropertyInstance), args => Unit.RemoveSpellPropertyInstance((ISpellPropertyInstance)args[0]));
             uint nextEffect = 0;
             pp.SetMethodHandler(nameof(IPlayer.TryCastSpell), args =>
             {

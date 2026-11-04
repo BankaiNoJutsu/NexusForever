@@ -1,5 +1,27 @@
 # AMP prerequisite and lifecycle reconciliation
 
+## Property ownership when an effect key is reused
+
+4 November 2026. A same-spell replacement could reuse the original AMP's
+property, effect and casting IDs. Respec then removed the replacement because
+the ownership check compared numeric keys. Two baseline cases reproduced the
+loss with and without an intervening augmentation refresh.
+
+The supported property path now retains the installed effect instance itself.
+Removal checks that exact instance against the current unit state, so a
+replacement survives even when the numeric IDs match. The existing numeric
+snapshot remains available for lookup, and supported casts still avoid
+overwriting any current same-spell modifier. The held-cooldown path continues
+to use its own instance identity.
+
+The regressions exercise the normal respec and property-effect handler with an
+injected same-key replacement. The owning build and all 160 scoped cases passed.
+Local evidence is in
+`artifacts/continuation-20261104/amp-property-ownership/`. Actual proc and mixed
+AMP families still require row evidence and safe effect-lifetime ownership.
+
+## Original reconciliation
+
 2026-10-29. Fork: `legacy-di-storefront-hardening`.
 
 ## Evidence and upstream scope
@@ -32,7 +54,7 @@ Desired augment spell IDs come from the active set and are deduplicated across n
 
 **Real-data correction:** the earlier group0-only filter passed synthetic property tests but excluded all 206 actual property-only augmentation spells in the extracted build16042 dataset. Those spells use group2; its exact row is `Id=2, StackCap=0, StackTypeEnum=4`. The gate now permits group0 compatibility and only this exact table-backed group2 contract. Missing rows, different identities, positive caps and other arbitration types fail closed. The existing property handler only invokes cap arbitration for positive caps; no unknown arbitration rule was introduced.
 
-Ownership records the actual `(Property, EffectId)` instances produced by a successful cast. Removal intersects those handles with the current source spell's instances and removes only those exact properties. A pre-existing same-spell modifier is neither overwritten nor claimed. A later replacement remains owned by its source, including a different spell reusing a concrete key. No augmentation is inserted into the learned-spell database and no global source-spell removal is used. Shared augment IDs remain applied until the final active node stops requiring them.
+The original ownership guard recorded `(Property, EffectId)` after a successful cast and intersected those keys with current instances of the same source spell. The later [instance check](#property-ownership-when-an-effect-key-is-reused) covers same-spell key reuse. A pre-existing same-spell modifier keeps its existing owner, and a different spell reusing a key retains its modifier. Shared augment IDs remain applied until the final active node stops requiring them. Augmentations stay outside the learned-spell database.
 
 Pure held-cooldown ownership uses the actual immutable `SpellCooldownModifier` objects installed by the normal cast/handler73 path. Reference identity matters: a value-equal replacement with reused effect and casting IDs is still a different owner and survives removal. Pre-existing same-spell records prevent recasting and are never claimed. Removal drops only owned records and does not undo already-running cooldowns. The existing native effect73 scope/key/mode/magnitude interpretation, shared-node handling, wire behavior and lifetime rules are reused without Spell/UnitEntity changes.
 

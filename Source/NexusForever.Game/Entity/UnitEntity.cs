@@ -186,8 +186,10 @@ namespace NexusForever.Game.Entity
             public uint CastingId { get; init; }
         }
 
-        private sealed class SpellPropertyState : TrackedSpellState
+        private sealed class SpellPropertyState : TrackedSpellState, ISpellPropertyInstance
         {
+            public Property Property { get; init; }
+            public uint EffectId { get; init; }
             public uint EffectEntryId { get; init; }
             public ISpellPropertyModifier Modifier { get; init; }
         }
@@ -1748,10 +1750,11 @@ namespace NexusForever.Game.Entity
 
         private void AddSpellModifierPropertyState(ISpellPropertyModifier spellModifier, uint effectId, uint spell4Id, uint spell4EffectId, uint castingId)
         {
-            if (!spellProperties.TryGetValue(spellModifier.Property, out Dictionary<uint, SpellPropertyState> spellDict))
+            Property property = spellModifier.Property;
+            if (!spellProperties.TryGetValue(property, out Dictionary<uint, SpellPropertyState> spellDict))
             {
                 spellDict = new Dictionary<uint, SpellPropertyState>();
-                spellProperties.Add(spellModifier.Property, spellDict);
+                spellProperties.Add(property, spellDict);
             }
 
             foreach (KeyValuePair<uint, SpellPropertyState> state in spellDict.ToArray())
@@ -1762,6 +1765,8 @@ namespace NexusForever.Game.Entity
 
             spellDict[effectId] = new SpellPropertyState
             {
+                Property      = property,
+                EffectId      = effectId,
                 Spell4Id      = spell4Id,
                 CastingId     = castingId,
                 EffectEntryId = spell4EffectId,
@@ -1802,11 +1807,23 @@ namespace NexusForever.Game.Entity
             return true;
         }
 
-        public IReadOnlyCollection<(Property Property, uint EffectId)> GetSpellPropertyInstances(uint spell4Id)
+        private IEnumerable<SpellPropertyState> EnumerateSpellPropertyInstances(uint spell4Id)
         {
-            return spellProperties.SelectMany(property => property.Value
-                .Where(state => state.Value.Spell4Id == spell4Id)
-                .Select(state => (property.Key, state.Key))).ToArray();
+            return spellProperties.Values.SelectMany(states => states.Values)
+                .Where(state => state.Spell4Id == spell4Id);
+        }
+
+        public IReadOnlyCollection<(Property Property, uint EffectId)> GetSpellPropertyInstances(uint spell4Id)
+            => EnumerateSpellPropertyInstances(spell4Id).Select(state => (state.Property, state.EffectId)).ToArray();
+
+        public IReadOnlyCollection<ISpellPropertyInstance> CaptureSpellPropertyInstances(uint spell4Id)
+            => EnumerateSpellPropertyInstances(spell4Id).ToArray();
+
+        public bool RemoveSpellPropertyInstance(ISpellPropertyInstance instance)
+        {
+            return instance != null && spellProperties.TryGetValue(instance.Property, out var states)
+                && states.TryGetValue(instance.EffectId, out var current) && ReferenceEquals(current, instance)
+                && RemoveSpellProperty(instance.Property, instance.EffectId);
         }
 
         /// <summary>

@@ -356,7 +356,8 @@ public class AmpTableAugmentationTests
             pp.SetProperty(nameof(IPlayer.Inventory), inventory);
             pp.SetProperty(nameof(IPlayer.Session), RecordingDispatchProxy<IGameSession>.Create(out _));
             pp.SetMethodHandler(nameof(IPlayer.GetSpellPropertyInstances), args => Unit.GetSpellPropertyInstances((uint)args[0]));
-            pp.SetMethodHandler(nameof(IPlayer.RemoveSpellProperty), args => Unit.RemoveSpellProperty((Property)args[0], (uint)args[1]));
+            pp.SetMethodHandler(nameof(IPlayer.CaptureSpellPropertyInstances), args => Unit.CaptureSpellPropertyInstances((uint)args[0]));
+            pp.SetMethodHandler(nameof(IPlayer.RemoveSpellPropertyInstance), args => Unit.RemoveSpellPropertyInstance((ISpellPropertyInstance)args[0]));
             Unit.SetBaseProperty(Property.BaseCritChance, 0.1f);
             uint nextEffect = 0;
             pp.SetMethodHandler(nameof(IPlayer.TryCastSpell), args =>
