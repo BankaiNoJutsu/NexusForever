@@ -105,7 +105,7 @@ namespace NexusForever.Game.Entity
             protected set
             {
                 SetStat(Stat.Health, Math.Clamp(value, 0u, MaxHealth));
-                EnqueueEntityHealthUpdate();
+                EnqueueEntityHealthUpdate(Stat.Health);
             }
         }
 
@@ -123,7 +123,7 @@ namespace NexusForever.Game.Entity
                 uint previousShield = Shield;
                 SetStat(Stat.Shield, Math.Clamp(value, 0u, MaxShieldCapacity));
                 if (Shield != previousShield)
-                    EnqueueEntityHealthUpdate();
+                    EnqueueEntityHealthUpdate(Stat.Shield);
             }
         }
 
@@ -456,8 +456,11 @@ namespace NexusForever.Game.Entity
             Shield = MaxShieldCapacity;
         }
 
-        private void EnqueueEntityHealthUpdate()
+        protected void EnqueueEntityHealthUpdate(Stat cause)
         {
+            if (this is Player player && player.RetainQuestHealthPacket(cause))
+                return;
+
             EnqueueToVisible(new ServerEntityHealthUpdate
             {
                 UnitId = Guid,
@@ -1136,7 +1139,11 @@ namespace NexusForever.Game.Entity
             if (attribute?.Type is not StatType.Integer and not StatType.Data)
                 throw new ArgumentException();
 
-            if (stats.TryGetValue(stat, out IStatValue statValue))
+            stats.TryGetValue(stat, out IStatValue statValue);
+            if (this is Player player && stat is Stat.Health or Stat.Shield)
+                player.RetainQuestVital(stat, statValue);
+
+            if (statValue != null)
             {
                 statValue.Value = value;
                 if (attribute.Type == StatType.Data)
@@ -1152,21 +1159,19 @@ namespace NexusForever.Game.Entity
                 stats.Add(stat, statValue);
             }
 
-            if (attribute.SendUpdate)
-            {
-                EnqueueToVisible(new ServerEntityStatUpdateInteger
-                {
-                    UnitId = Guid,
-                    Stat   = new StatValueUpdate
-                    {
-                        Stat  = statValue.Stat,
-                        Type  = statValue.Type,
-                        Value = statValue.Value
-                    }
-                }, true);
-            }
+            if (attribute.SendUpdate && (this is not Player owner || !owner.IsRetainingQuestVital(stat)))
+                EnqueueIntegerStatUpdate(statValue);
 
             OnStatUpdate(statValue);
+        }
+
+        protected void EnqueueIntegerStatUpdate(IStatValue statValue)
+        {
+            EnqueueToVisible(new ServerEntityStatUpdateInteger
+            {
+                UnitId = Guid,
+                Stat = new StatValueUpdate { Stat = statValue.Stat, Type = statValue.Type, Value = statValue.Value }
+            }, true);
         }
 
         /// <summary>

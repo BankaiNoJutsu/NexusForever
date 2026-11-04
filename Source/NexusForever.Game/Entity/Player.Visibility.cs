@@ -25,6 +25,56 @@ namespace NexusForever.Game.Entity
         private const uint NorthernWildsAvalancheCasterCreatureId = 67662u;
 
         private QuestVisibilityLevel questVisibilityLevel;
+        private QuestVisibilityVitals questVisibilityVitals;
+
+        private sealed class QuestVisibilityVitals
+        {
+            internal Dictionary<Stat, StatValueInitial> Previous { get; } = [];
+            internal bool HealthPacketPending { get; set; }
+        }
+
+        internal bool IsRetainingQuestVital(Stat stat) => questVisibilityVitals?.Previous.ContainsKey(stat) == true;
+
+        internal void RetainQuestVital(Stat stat, IStatValue previous)
+        {
+            if (IsRetainingQuestVital(stat) || QuestManager is not QuestManager { IsOrdinaryCompletionMutationInProgress: true } quests)
+                return;
+
+            if (questVisibilityVitals == null)
+            {
+                questVisibilityVitals = new QuestVisibilityVitals();
+                quests.RetainOrdinaryCompletionPublication(PublishQuestVitals);
+            }
+
+            questVisibilityVitals.Previous.Add(stat, previous == null ? null : new StatValueInitial
+            {
+                Stat = previous.Stat, Type = previous.Type, Value = previous.Value, Data = previous.Data
+            });
+        }
+
+        internal bool RetainQuestHealthPacket(Stat cause)
+        {
+            if (!IsRetainingQuestVital(Stat.Health) && !IsRetainingQuestVital(cause))
+                return false;
+
+            questVisibilityVitals.HealthPacketPending = true;
+            return true;
+        }
+
+        private void PublishQuestVitals()
+        {
+            QuestVisibilityVitals snapshot = questVisibilityVitals;
+            questVisibilityVitals = null;
+            foreach (Stat stat in snapshot.Previous.Keys)
+            {
+                IStatValue current = stats[stat];
+                if (stat == Stat.Shield)
+                    EnqueueIntegerStatUpdate(current);
+                PublishStatUpdate(stat, current.Value);
+            }
+            if (snapshot.HealthPacketPending)
+                EnqueueEntityHealthUpdate(Stat.Health);
+        }
 
         private sealed class QuestVisibilityLevel(StatValueInitial previous)
         {
@@ -102,6 +152,19 @@ namespace NexusForever.Game.Entity
                 {
                     packet.Stats[index] = snapshot.Previous;
                     RetainQuestLevelObserver(observer);
+                }
+            }
+
+            if (questVisibilityVitals is { } vitals)
+            {
+                for (int i = packet.Stats.Count - 1; i >= 0; i--)
+                {
+                    if (!vitals.Previous.TryGetValue(packet.Stats[i].Stat, out StatValueInitial previous))
+                        continue;
+                    if (previous == null)
+                        packet.Stats.RemoveAt(i);
+                    else
+                        packet.Stats[i] = previous;
                 }
             }
 

@@ -32,6 +32,7 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Game.Tests.Transport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.GameTable.Static;
 using NexusForever.Network;
 using NexusForever.Network.Internal;
 using NexusForever.Network.Internal.Message.Player;
@@ -94,7 +95,13 @@ public sealed partial class Q5597RewardPersistenceTests
             database.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite,
                 ConnectionString = seed.Database.GetDbConnection().ConnectionString });
             seed.Character.Single().AccountId = accountId;
-            if (levelReward) seed.Character.Single().Level = 1;
+            if (levelReward)
+            {
+                seed.Character.Single().Level = 1;
+                seed.CharacterStat.AddRange(
+                    new CharacterStatModel { Id = 42, Stat = (byte)Stat.Health, Value = 9f },
+                    new CharacterStatModel { Id = 42, Stat = (byte)Stat.Shield, Value = 14f });
+            }
             seed.CharacterQuest.Add(new() { Id = 42, QuestId = questId, State = (byte)QuestState.Achieved });
             await seed.SaveChangesAsync();
         }
@@ -144,6 +151,8 @@ public sealed partial class Q5597RewardPersistenceTests
                     Assert.Empty(LevelPackets(observer));
                     Assert.Empty(LevelPackets(retiredObserver));
                     Assert.Empty(LevelPackets(lateObserverSession));
+                    AssertNoVitals(observer, actor);
+                    AssertNoVitals(lateObserverSession, actor);
                     Assert.Empty(LevelMessages(actor));
                     Assert.Empty(FanfarePackets(observer));
                     FlushPropertyUpdates(actor);
@@ -157,6 +166,11 @@ public sealed partial class Q5597RewardPersistenceTests
             Assert.Empty(rolledBack.Item);
             Assert.Empty(rolledBack.Achievement);
             if (levelReward) Assert.Equal((1, 0u), ((int)rolledBack.Level, rolledBack.TotalXp));
+            if (levelReward)
+            {
+                Assert.Equal(9f, Assert.Single(rolledBack.Stat, stat => stat.Stat == (byte)Stat.Health).Value);
+                Assert.Equal(14f, Assert.Single(rolledBack.Stat, stat => stat.Stat == (byte)Stat.Shield).Value);
+            }
             using var recovered = f.Context();
             await recovered.Database.ExecuteSqlRawAsync("DROP TRIGGER q5597_reject_completion");
         }
@@ -181,6 +195,15 @@ public sealed partial class Q5597RewardPersistenceTests
                     Assert.Equal(2f, Assert.Single(LevelPackets(lateObserverSession)).Stat.Value);
                     Assert.Equal(2f, Assert.Single(LevelMessages(actor)).Value);
                     Assert.Empty(LevelPackets(retiredObserver));
+                    Assert.Equal(6f, read.CharacterStat.Single(stat => stat.Stat == (byte)Stat.Health).Value);
+                    Assert.Equal(7f, read.CharacterStat.Single(stat => stat.Stat == (byte)Stat.Shield).Value);
+                    Assert.Equal(6f, Assert.Single(VitalMessages(actor), update => update.Stat == Stat.Health).Value);
+                    Assert.Equal(7f, Assert.Single(VitalMessages(actor), update => update.Stat == Stat.Shield).Value);
+                    foreach (var recipient in new[] { observer, lateObserverSession })
+                    {
+                        Assert.Equal(6u, Assert.Single(HealthPackets(recipient)).Health);
+                        Assert.Equal(7f, Assert.Single(ShieldPackets(recipient)).Stat.Value);
+                    }
                     Assert.Equal(25f, Assert.Single(PropertyMessages(actor), update => update.Property == FixtureLevelProperty).Value);
                     FlushPropertyUpdates(actor);
                     Assert.Equal(25f, Assert.Single(Assert.Single(PropertyPackets(observer)).Properties,
@@ -306,6 +329,9 @@ public sealed partial class Q5597RewardPersistenceTests
                 Assert.Empty(LevelPackets(retiredObserver));
                 Assert.Empty(LevelMessages(actor));
                 Assert.Empty(FanfarePackets(observer));
+                Assert.Equal(6u, actor.Player.Health);
+                Assert.Equal(7u, actor.Player.Shield);
+                AssertNoVitals(observer, actor);
                 Assert.Equal(20f, actor.Player.GetPropertyValue(FixtureLevelProperty));
                 actor.Player.SetBaseProperty(FixtureLevelProperty, 25f);
                 FlushPropertyUpdates(actor);
@@ -316,6 +342,8 @@ public sealed partial class Q5597RewardPersistenceTests
                     .SelectMany(call => call.Arguments).OfType<ServerEntityCreate>());
                 Assert.Equal(1f, Assert.Single(create.Stats, stat => stat.Stat == Stat.Level).Value);
                 Assert.Equal(10f, Assert.Single(create.Properties, property => property.Property == FixtureLevelProperty).Value);
+                Assert.Equal(9f, Assert.Single(create.Stats, stat => stat.Stat == Stat.Health).Value);
+                Assert.Equal(14f, Assert.Single(create.Stats, stat => stat.Stat == Stat.Shield).Value);
                 Assert.DoesNotContain(create.Properties, property => property.Property == Property.BaseVigor);
                 Assert.Empty(LevelPackets(lateObserverSession));
                 retiredObserverAccount.SetProperty(nameof(IAccount.WorldSessionEpoch), 2ul);
@@ -389,7 +417,9 @@ public sealed partial class Q5597RewardPersistenceTests
         var tables = (RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables;
         tables.SetProperty(nameof(IGameTableManager.XpPerLevel), PlayerBindPointTests.Table(
             new XpPerLevelEntry { Id = 1 }, new XpPerLevelEntry { Id = 2, MinXpForLevel = 100 }));
-        tables.SetProperty(nameof(IGameTableManager.UnitProperty2), PlayerBindPointTests.Table<UnitProperty2Entry>());
+        tables.SetProperty(nameof(IGameTableManager.UnitProperty2), PlayerBindPointTests.Table(
+            new UnitProperty2Entry { Id = (uint)Property.BaseHealth, DefaultValue = 6, Flags = UnitPropertyFlags.Static },
+            new UnitProperty2Entry { Id = (uint)Property.ShieldCapacityMax, DefaultValue = 7, Flags = UnitPropertyFlags.Static }));
         typeof(Player).GetField("gameTableManager", instance)!.SetValue(actor.Player, f.Source.Tables);
         typeof(WorldEntity).GetField("gameTableManagerResolver", instance)!.SetValue(actor.Player, (Func<IGameTableManager>)(() => f.Source.Tables));
         foreach (var (type, fieldName) in new[] { (typeof(WorldEntity), "properties"), (typeof(WorldEntity), "dirtyProperties"), (typeof(Player), "itemProperties"),
@@ -408,6 +438,11 @@ public sealed partial class Q5597RewardPersistenceTests
         actor.Player.IsLoading = true;
         actor.Player.Level = loaded.Level;
         actor.Player.SetBaseProperty(FixtureLevelProperty, loaded.Level * 10f);
+        actor.Player.SetBaseProperty(Property.ShieldCapacityMax, 15f);
+        var stats = (Dictionary<Stat, IStatValue>)typeof(WorldEntity).GetField("stats", instance)!.GetValue(actor.Player)!;
+        foreach (CharacterStatModel stat in loaded.Stat.Where(row => (Stat)row.Stat is Stat.Health or Stat.Shield))
+            stats.Add((Stat)stat.Stat, new StatValue(stat));
+        typeof(WorldEntity).GetMethod("SetDependantStatBalance", instance)!.Invoke(actor.Player, [true]);
         typeof(Player).GetField("attributePointAllocations", instance)!.SetValue(actor.Player, new uint[6]);
         actor.Player.IsLoading = false;
         ((RecordingDispatchProxy<IAccount>)(object)actor.Player.Account).SetProperty(nameof(IAccount.RbacManager),
@@ -483,8 +518,6 @@ public sealed partial class Q5597RewardPersistenceTests
             var field = typeof(UnitEntity).GetField(name, instance)!;
             field.SetValue(player, Activator.CreateInstance(field.FieldType));
         }
-        var stats = (Dictionary<Stat, IStatValue>)typeof(WorldEntity).GetField("stats", instance)!.GetValue(player)!;
-        stats.Add(Stat.Health, new StatValue(Stat.Health, 1u));
     }
 
     private static IEnumerable<ServerSpellStart> FanfarePackets(RecordingDispatchProxy<IWorldSession> observer)
@@ -498,6 +531,25 @@ public sealed partial class Q5597RewardPersistenceTests
     private static IEnumerable<PlayerStatUpdatedMessage> LevelMessages(Actor actor)
         => actor.PublisherProxy.GetInvocations(nameof(IInternalMessagePublisher.PublishAsync)).SelectMany(call => call.Arguments)
             .OfType<PlayerStatUpdatedMessage>().Where(message => message.Stat == Stat.Level);
+
+    private static IEnumerable<PlayerStatUpdatedMessage> VitalMessages(Actor actor)
+        => actor.PublisherProxy.GetInvocations(nameof(IInternalMessagePublisher.PublishAsync)).SelectMany(call => call.Arguments)
+            .OfType<PlayerStatUpdatedMessage>().Where(message => message.Stat is Stat.Health or Stat.Shield);
+
+    private static IEnumerable<ServerEntityHealthUpdate> HealthPackets(RecordingDispatchProxy<IWorldSession> observer)
+        => observer.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).SelectMany(call => call.Arguments)
+            .OfType<ServerEntityHealthUpdate>();
+
+    private static IEnumerable<ServerEntityStatUpdateInteger> ShieldPackets(RecordingDispatchProxy<IWorldSession> observer)
+        => observer.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).SelectMany(call => call.Arguments)
+            .OfType<ServerEntityStatUpdateInteger>().Where(packet => packet.Stat.Stat == Stat.Shield);
+
+    private static void AssertNoVitals(RecordingDispatchProxy<IWorldSession> observer, Actor actor)
+    {
+        Assert.Empty(HealthPackets(observer));
+        Assert.Empty(ShieldPackets(observer));
+        Assert.Empty(VitalMessages(actor));
+    }
 
     private static IEnumerable<ServerEntityPropertiesUpdate> PropertyPackets(RecordingDispatchProxy<IWorldSession> observer)
         => observer.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).SelectMany(call => call.Arguments)
@@ -524,7 +576,8 @@ public sealed partial class Q5597RewardPersistenceTests
             Assert.False(frame.Opcode is GameMessageOpcode.ServerItemAdd or GameMessageOpcode.ServerQuestStateChange
                 or GameMessageOpcode.ServerAchievementUpdate or GameMessageOpcode.ServerDialogEnd
                 or GameMessageOpcode.ServerExperienceGained or GameMessageOpcode.ServerEntityStatUpdateInteger
-                or GameMessageOpcode.ServerSpellStart or GameMessageOpcode.ServerEntityPropertiesUpdate, $"Premature {frame.Opcode}");
+                or GameMessageOpcode.ServerSpellStart or GameMessageOpcode.ServerEntityPropertiesUpdate
+                or GameMessageOpcode.ServerEntityHealthUpdate, $"Premature {frame.Opcode}");
         }
         output.WriteLine("No item, quest-state, achievement or dialog-end packets while the turn-in save was held.");
     }

@@ -274,3 +274,24 @@ remain open.
 
 All 56 checks passed in the final scoped run. Results and binary hashes are under
 `artifacts/continuation-20261104/quest-observer-snapshot/`.
+
+## Quest dependent vitals
+
+4 November 2026. Quest-driven health and shield clamps remain live for
+gameplay. The normal health and shield packets and broker stat messages
+wait for the same Character save as the derived properties. The create
+packet uses the prior vital rows during the save. Updates to a held vital
+coalesce until success. A failed save retires the actor without releasing
+the held values.
+
+The XP loopback drives both production clamps with fixture property caps.
+While the write is held, live health and shield are 6 and 7, and the new
+observer's create packet has the saved values 9 and 14. A rejected save
+retains those rows and releases no vital packets or broker messages.
+Successful retry commits 6 and 7 and publishes the new values once to the
+existing observer, the newly visible observer and the broker producer.
+Deployed consumer delivery and native or retail presentation remain open.
+
+All 43 focused checks and 67 combat and vital packet controls passed.
+Results and binary hashes are under
+`artifacts/continuation-20261104/quest-dependent-vitals/`.
