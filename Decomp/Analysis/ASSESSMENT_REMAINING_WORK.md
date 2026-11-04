@@ -37,8 +37,10 @@ Retail reward tiers and client presentation remain open.
 [Instance transfer retries](../../CURRENT_STATUS.md#instance-transfer-retries)
 preserve queued transfers waiting on an unload. The follow-up
 [instance admission recovery](../../CURRENT_STATUS.md#instance-admission-recovery)
-fails the current request cleanly when instance preparation throws. Failure
-after handoff to the destination map remains open.
+fails the current request cleanly when instance preparation throws.
+[Detached destination grid recovery](../../CURRENT_STATUS.md#detached-destination-grid-recovery)
+ends admission when the destination grid cannot accept the player after source
+removal. Recovery after insertion and fare settlement on later failures remain open.
 
 [Flight-path destination admission](../../CURRENT_STATUS.md#flight-path-destination-admission)
 checks the destination map or selected instance and current funds before

@@ -1877,18 +1877,18 @@ namespace NexusForever.Game.Entity
             {
                 if (!IsAdmissionAllowed())
                     return;
-                mapAdmission.AbortQueue();
                 OnTeleportToFailedCore(error);
             }
         }
 
         private void OnTeleportToFailedCore(GenericError error)
         {
+            pendingTeleport = null;
+            IsLoading = false;
             if (Map != null)
             {
+                mapAdmission.AbortQueue();
                 SendGenericError(error);
-                pendingTeleport = null;
-                IsLoading = false;
 
                 SetControl(this);
 
@@ -1896,8 +1896,8 @@ namespace NexusForever.Game.Entity
             }
             else
             {
-                // player failed prerequisites to enter map on login
-                // can not proceed, disconnect the client with a message
+                // Login or a transfer that has already left the source map cannot resume in place.
+                mapAdmission.Cancel();
                 Session.EnqueueMessageEncrypted(new ServerForceKick
                 {
                     Reason = ForceKickReason.WorldDisconnect

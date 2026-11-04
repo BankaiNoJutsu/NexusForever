@@ -150,7 +150,19 @@ namespace NexusForever.Game.Map
                         if (!PlayerMapAdmissionGuard.IsCurrent(actionAdd.Entity, actionAdd.AdmissionGeneration)
                             || actionAdd.Entity is IPlayer { Map: not null })
                             break;
-                        if (CanAddEntity(actionAdd.Entity, actionAdd.Vector))
+                        bool gridReady;
+                        try
+                        {
+                            gridReady = CanAddEntity(actionAdd.Entity, actionAdd.Vector);
+                        }
+                        catch (Exception exception) when (actionAdd.Entity is IPlayer)
+                        {
+                            log.Error(exception, "Failed to prepare a player destination grid in world {0}.", Entry?.Id);
+                            FailPlayerGridAdmission(actionAdd);
+                            break;
+                        }
+
+                        if (gridReady)
                             PlayerMapAdmissionGuard.Run(actionAdd.Entity, actionAdd.AdmissionGeneration,
                                 () => CompleteMapAdd(actionAdd));
                         else
@@ -159,7 +171,8 @@ namespace NexusForever.Game.Map
                             actionAdd.RequeueCount++;
                             if (actionAdd.RequeueCount > (mapConfig.GridActionMaxRetry ?? 5u))
                             {
-                                log.Error($"Failed to add entity to map {Entry.Id} at position X: {actionAdd.Vector.X}, Y: {actionAdd.Vector.Y}, Z: {actionAdd.Vector.Z}!");
+                                log.Error($"Failed to add entity to map {Entry?.Id} at position X: {actionAdd.Vector.X}, Y: {actionAdd.Vector.Y}, Z: {actionAdd.Vector.Z}!");
+                                FailPlayerGridAdmission(actionAdd);
                             }
                             else
                             {
@@ -218,6 +231,16 @@ namespace NexusForever.Game.Map
             if (newActions != null)
                 foreach (IGridAction action in newActions)
                     pendingActions.Enqueue(action);
+        }
+
+        private static void FailPlayerGridAdmission(GridActionAdd action)
+        {
+            if (action.Entity is IPlayer player)
+                PlayerMapAdmissionGuard.Run(player, action.AdmissionGeneration, () =>
+                {
+                    if (player.Map == null)
+                        player.OnTeleportToFailed(GenericError.InstanceInvalidDestination);
+                });
         }
 
         private void UpdateGrids(double lastTick)

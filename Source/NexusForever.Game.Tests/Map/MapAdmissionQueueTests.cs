@@ -1,7 +1,9 @@
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Map.Lock;
@@ -15,6 +17,8 @@ using NexusForever.Game.Static.Map;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
 using NexusForever.IO.Map;
+using NexusForever.Network.Session;
+using NexusForever.Network.World.Message.Model.Pregame;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared.Configuration;
 
@@ -48,6 +52,70 @@ public sealed class MapAdmissionQueueTests
         map.Tick();
         Assert.Equal(1, map.SpawnCount);
         Assert.Empty(map.Added);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DetachedTransferFailsOnceWhenDestinationGridCannotAdmit(bool activationFault)
+    {
+        var player = (Player)RuntimeHelpers.GetUninitializedObject(typeof(Player));
+        var session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
+        typeof(Player).GetProperty(nameof(Player.Session))!.SetValue(player, session);
+        typeof(Player).GetProperty(nameof(Player.Identity))!.SetValue(player, new Game.Abstract.Identity { RealmId = 1, Id = 42 });
+        typeof(WorldEntity).GetProperty(nameof(WorldEntity.MovementManager))!.SetValue(player, RecordingDispatchProxy<IMovementManager>.Create(out _));
+        var source = RecordingDispatchProxy<IBaseMap>.Create(out var sourceProxy);
+        var mapProperty = typeof(GridEntity).GetProperty(nameof(GridEntity.Map))!;
+        mapProperty.SetValue(player, source);
+        sourceProxy.SetMethodHandler(nameof(IBaseMap.EnqueueRemove), _ => { mapProperty.SetValue(player, null); return null; });
+
+        int spawnAttempts = 0;
+        var map = new TestMap { OnSpawn = () =>
+        {
+            if (activationFault && ++spawnAttempts == 1) throw new InvalidOperationException("fixture grid activation failure");
+        }};
+        var mapManager = RecordingDispatchProxy<IMapManager>.Create(out var managerProxy);
+        managerProxy.SetMethodHandler(nameof(IMapManager.AddToMap), args =>
+        {
+            map.EnqueueAdd((IPlayer)args[0], (IMapPosition)args[1]);
+            return null;
+        });
+        typeof(Player).GetField("mapManager", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(player, mapManager);
+
+        var position = Position();
+        typeof(BaseMap).GetProperty(nameof(BaseMap.Entry))!.SetValue(map, position.Info.Entry);
+        if (!activationFault) map.HoldGridUnloading(position.Position);
+        player.TeleportTo(position);
+        Assert.Null(player.Map);
+        Assert.False(player.CanTeleport());
+        Assert.True(player.IsLoading);
+        var admission = (IPlayerMapAdmission)player;
+        ulong generation = admission.MapAdmissionGeneration;
+        map.Tick(); // The destination now owns the add after source removal.
+
+        if (!activationFault)
+        {
+            for (int attempt = 0; attempt < 5; attempt++) map.Tick();
+            Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(call => call.Arguments[0]).OfType<ServerForceKick>());
+            Assert.Equal(1, map.QueueCount);
+        }
+
+        var following = new TestPlayer();
+        var nextPosition = Position();
+        nextPosition.Position = new Vector3(3 * MapDefines.GridSize, 0, 0);
+        map.EnqueueAdd(following.Player, nextPosition);
+        map.Tick();
+        map.Tick();
+        var kick = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(call => call.Arguments[0]).OfType<ServerForceKick>());
+        Assert.Equal(ForceKickReason.WorldDisconnect, kick.Reason);
+        Assert.False(player.IsLoading);
+        Assert.True(player.CanTeleport());
+        Assert.False(admission.IsMapAdmissionCurrent(generation));
+        Assert.False(admission.IsMapAdmissionCurrent(admission.BeginMapAdmission()));
+        Assert.Same(following.Player, Assert.Single(map.Added));
+        Assert.Equal(0, map.QueueCount);
     }
 
     [Fact]
@@ -317,6 +385,14 @@ public sealed class MapAdmissionQueueTests
         public int QueueCount => pendingActions.Count;
         public TestMap() : base(null, null, sharedConfiguration: Configuration()) { }
         public void Tick() => typeof(BaseMap).GetMethod("ProcessGridActions", BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(this, null);
+        public void HoldGridUnloading(Vector3 position)
+        {
+            var (x, z) = MapGrid.GetGridCoord(position);
+            var grid = new MapGrid(x, z, allowUnload: true);
+            grid.Unload();
+            var grids = (IMapGrid[])typeof(BaseMap).GetField("grids", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(this)!;
+            grids[z * MapDefines.WorldGridCount + x] = grid;
+        }
         protected override void SpawnGrid(uint x, uint z) { SpawnCount++; OnSpawn?.Invoke(); }
         protected override void AddEntity(IGridEntity entity, Vector3 vector)
         {

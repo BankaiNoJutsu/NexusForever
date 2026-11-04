@@ -21187,6 +21187,21 @@ Four baseline cases reproduced the failure. The owning-project build and
 115 scoped transport, instance-binding, map-admission and world-entry tests
 passed. Results are under `artifacts/continuation-20261104/instance-admission-fault/`.
 
+#### Detached destination grid recovery
+
+4 November 2026. When destination grid preparation throws or the grid
+exhausts its retries, the map fails the matching admission generation. The
+detached player clears its pending transfer and loading state, invalidates
+further admission on that actor, and receives the existing world-disconnect
+packet. Unrelated grid adds continue. The fixture drives `Player.TeleportTo`
+and the destination queue with a simulated source removal. Recovery after
+entity insertion, fare settlement on later failure, and native reconnect
+behavior remain open.
+
+Both new regressions reproduced the defect on the baseline assembly. The
+owning-project build and 119 scoped map, transport and world-entry tests
+passed. Results are under `artifacts/continuation-20261104/detached-grid-admission/`.
+
 #### Rapid Transport cast fare
 
 4 November 2026. The request supplies its validated route fare to the spell
