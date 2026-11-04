@@ -215,8 +215,20 @@ namespace NexusForever.Game.Map
                             vector = actionRelocate.Vector;
                         }
                         // A queued move must never relocate an entity on another map.
-                        if (ReferenceEquals(actionRelocate.Entity.Map, this))
-                            RelocateEntity(actionRelocate.Entity, vector);
+                        var entity = actionRelocate.Entity;
+                        if (!ReferenceEquals(entity.Map, this))
+                            break;
+
+                        if (actionRelocate.OwnsPassengerSeat == null)
+                            RelocateEntity(entity, vector);
+                        else
+                            PlayerMapAdmissionGuard.Run(entity, actionRelocate.PassengerAdmission, () =>
+                            {
+                                if (ReferenceEquals(entity.Map, this)
+                                    && entities.TryGetValue(entity.Guid, out var rider) && ReferenceEquals(rider, entity)
+                                    && actionRelocate.OwnsPassengerSeat())
+                                    RelocateEntity(entity, vector);
+                            });
                         break;
                     }
                     case GridActionRemove actionRemove:
@@ -358,6 +370,12 @@ namespace NexusForever.Game.Map
             => EnqueueRelocate(entity, position, coalesce: false);
 
         public void EnqueueRelocate(IGridEntity entity, Vector3 position, bool coalesce)
+            => EnqueueRelocate(entity, position, coalesce, null, null);
+
+        internal void EnqueuePassengerRelocate(IPlayer player, Vector3 position, ulong? admission, Func<bool> ownsSeat)
+            => EnqueueRelocate(player, position, coalesce: false, admission, ownsSeat);
+
+        private void EnqueueRelocate(IGridEntity entity, Vector3 position, bool coalesce, ulong? admission, Func<bool> ownsSeat)
         {
             lock (relocationLock)
             {
@@ -370,7 +388,10 @@ namespace NexusForever.Game.Map
                 // Explicit moves seal earlier movement. A later movement update
                 // must be queued after that boundary, never folded across it.
                 pendingRelocations.Remove(entity);
-                var action = new GridActionRelocate { Entity = entity, Vector = position };
+                var action = new GridActionRelocate
+                {
+                    Entity = entity, Vector = position, PassengerAdmission = admission, OwnsPassengerSeat = ownsSeat
+                };
                 if (coalesce)
                     pendingRelocations.Add(entity, action);
                 pendingActions.Enqueue(action);

@@ -61,6 +61,22 @@ is retained.
 No packet layout, database model/migration, entitlement default, entitlement
 scope, storefront grant or account-item behavior changes in this slice.
 
+### Queued vehicle passenger movement
+
+4 November 2026. Vehicle relocation uses its original occupied seats.
+An attached rider can follow the vehicle outside its visibility list.
+The map checks that the rider is still registered and owns the same
+seat and map admission when it executes the queued move. A reused unit
+ID, dismount, or new map admission cannot inherit the old move.
+Passenger moves retain explicit queue ordering.
+
+Four baseline cases reproduced a null relocation or stale movement,
+with the current-seat control passing. The owning build and 149
+scoped movement, map, visibility and transport tests passed. The final
+fixture registers the rider and its replacement in the map index. Local
+evidence is under `artifacts/continuation-20261104/vehicle-passenger-movement/`.
+Deployed and native movement remain separate.
+
 ## Verification
 
 Twenty-five new regression cases extend the 5,964-test passive/housing baseline:

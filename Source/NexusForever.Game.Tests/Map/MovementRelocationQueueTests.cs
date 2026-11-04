@@ -3,12 +3,17 @@ using System.Numerics;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Configuration.Model;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Map;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
+using NexusForever.IO.Map;
+using NexusForever.Network.Session;
 using NexusForever.Shared.Configuration;
 
 namespace NexusForever.Game.Tests.Map;
@@ -163,6 +168,69 @@ public class MovementRelocationQueueTests
         Assert.Equal(0, map.PendingCount);
     }
 
+    [Theory]
+    [InlineData("current")]
+    [InlineData("invisible")]
+    [InlineData("reused")]
+    [InlineData("dismounted")]
+    [InlineData("new-admission")]
+    public void VehicleMovementUsesTheSeatOwnerAtEnqueueAndExecution(string state)
+    {
+        var map = new TestMap();
+        typeof(BaseMap).GetProperty(nameof(BaseMap.File))!.SetValue(map, new MapFile());
+        var rider = RecordingDispatchProxy<IAdmissionTestPlayer>.Create(out var player);
+        var admission = new PlayerMapAdmissionState();
+        admission.Queue();
+        player.SetProperty(nameof(IPlayerMapAdmission.MapAdmissionSyncRoot), admission.SyncRoot);
+        player.SetMethodReturnFactory("get_MapAdmissionGeneration", () => admission.Generation);
+        player.SetMethodHandler(nameof(IPlayerMapAdmission.IsMapAdmissionCurrent), args => admission.IsCurrent((ulong)args[0]));
+        player.SetProperty(nameof(IPlayer.Map), map);
+        player.SetProperty(nameof(IPlayer.Guid), 42u);
+        map.Register(rider);
+        player.SetProperty(nameof(IPlayer.Session), RecordingDispatchProxy<IGameSession>.Create(out _));
+        player.SetMethodHandler(nameof(IPlayer.SetPlatform), args =>
+        {
+            player.SetProperty(nameof(IPlayer.PlatformGuid), (args[0] as IWorldEntity)?.Guid);
+            return null;
+        });
+
+        var vehicle = new VehicleEntity(RecordingDispatchProxy<IMovementManager>.Create(out _));
+        typeof(GridEntity).GetProperty(nameof(IGridEntity.Map))!.SetValue(vehicle, map);
+        typeof(GridEntity).GetProperty(nameof(IGridEntity.Guid))!.SetValue(vehicle, 55u);
+        typeof(VehicleEntity).GetProperty(nameof(VehicleEntity.VehicleEntry))!.SetValue(vehicle, new UnitVehicleEntry { NumberPilots = 1 });
+        var visible = (Dictionary<uint, IGridEntity>)typeof(GridEntity)
+            .GetField("visibleEntities", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(vehicle);
+        visible[rider.Guid] = rider;
+        vehicle.EnqueuePassengerAdd(rider, VehicleSeatType.Pilot, 0);
+        vehicle.Update(.01);
+        Assert.Equal(55u, rider.PlatformGuid);
+
+        if (state == "invisible") visible.Remove(rider.Guid);
+        if (state == "reused")
+        {
+            var replacement = RecordingDispatchProxy<IPlayer>.Create(out var replacementPlayer);
+            replacementPlayer.SetProperty(nameof(IPlayer.Map), map);
+            replacementPlayer.SetProperty(nameof(IPlayer.Guid), rider.Guid);
+            visible[rider.Guid] = replacement;
+            map.Register(replacement);
+        }
+
+        var destination = new Vector3(10, 0, 12);
+        vehicle.OnRelocate(destination);
+        if (state == "dismounted") vehicle.PassengerRemove(rider);
+        if (state == "new-admission") admission.Queue();
+        map.Tick();
+
+        Assert.Equal(destination, vehicle.Position);
+        if (state is "current" or "invisible")
+        {
+            var moved = Assert.Single(map.Moves);
+            Assert.Same(rider, moved.Entity);
+            Assert.Equal(destination, moved.Position);
+        }
+        else Assert.Empty(map.Moves);
+    }
+
     private sealed class TestMap : BaseMap
     {
         public List<(IGridEntity Entity, Vector3 Position)> Moves { get; } = [];
@@ -187,6 +255,7 @@ public class MovementRelocationQueueTests
         }
 
         public void Tick() => typeof(BaseMap).GetMethod("ProcessGridActions", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(this, null);
+        public void Register(IGridEntity entity) => entities[entity.Guid] = entity;
         protected override void RelocateEntity(IGridEntity entity, Vector3 vector)
         {
             Moves.Add((entity, vector));

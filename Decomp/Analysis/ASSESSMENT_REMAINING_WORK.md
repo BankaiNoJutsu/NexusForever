@@ -23,6 +23,10 @@ any newer summon reservation.
 clears queued and occupied seats on teardown and detaches only their
 original attached riders. Reused unit IDs keep their current platform.
 
+[Queued vehicle passenger movement](MOVEMENT_PLATFORM_UPSTREAM_FIXES.md#queued-vehicle-passenger-movement)
+uses the original seat and checks that it still owns the move when the map
+processes it. An attached rider keeps following the vehicle outside visibility.
+
 [Quest starter item admission](../../CURRENT_STATUS.md#quest-starter-item-admission)
 checks prerequisites and pushed-item space before consuming the starter. A
 missing or unusable starter cannot accept the quest. The capacity check

@@ -82,10 +82,17 @@ namespace NexusForever.Game.Entity
 
         public override void OnRelocate(Vector3 vector)
         {
-            foreach (IVehiclePassenger passenger in Passengers)
+            foreach (var admission in passengers)
             {
-                IPlayer entity = GetVisible<IPlayer>(passenger.Guid);
-                Map.EnqueueRelocate(entity, vector);
+                var player = admission.Player;
+                if (!OwnsAttachedRider(admission) || !PlayerMapAdmissionGuard.IsCurrent(player, admission.Admission))
+                    continue;
+
+                if (Map is BaseMap map)
+                    map.EnqueuePassengerRelocate(player, vector, admission.Admission,
+                        () => passengers.Contains(admission) && OwnsAttachedRider(admission));
+                else
+                    Map.EnqueueRelocate(player, vector);
             }
 
             base.OnRelocate(vector);
@@ -269,9 +276,7 @@ namespace NexusForever.Game.Entity
             // The generic platform cleanup also uses unit IDs. Retire this seat's
             // platform entry before base teardown can resolve it to another actor.
             RemovePlatformPassenger(passenger.Guid);
-            if (Map == null || !ReferenceEquals(player.Map, Map) || player.Guid != passenger.Guid || player.PlatformGuid != Guid
-                || !ReferenceEquals(player.Session, admission.Session)
-                || (admission.Session is IPlayerSession bound && !ReferenceEquals(bound.Player, player)))
+            if (!OwnsAttachedRider(admission))
                 return false;
 
             player.SetPlatform(null);
@@ -288,6 +293,14 @@ namespace NexusForever.Game.Entity
             }, true);
 
             return true;
+        }
+
+        private bool OwnsAttachedRider(PassengerAdmission admission)
+        {
+            var player = admission.Player;
+            return Map != null && ReferenceEquals(player.Map, Map) && player.Guid == admission.Seat.Guid && player.PlatformGuid == Guid
+                && ReferenceEquals(player.Session, admission.Session)
+                && (admission.Session is not IPlayerSession bound || ReferenceEquals(bound.Player, player));
         }
 
         /// <summary>
