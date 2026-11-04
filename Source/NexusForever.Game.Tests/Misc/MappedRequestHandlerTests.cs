@@ -376,6 +376,11 @@ public class MappedRequestHandlerTests
         playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
         playerProxy.SetProperty(nameof(IPlayer.CurrencyManager), currencyManager);
         playerProxy.SetProperty(nameof(IPlayer.ReputationManager), reputationManager);
+        playerProxy.SetMethodHandler(nameof(IPlayer.Save), args =>
+        {
+            if (args is [Action saved]) saved();
+            return null;
+        });
         sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
         return session;
     }

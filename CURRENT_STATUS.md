@@ -22937,6 +22937,23 @@ The baseline lost the notice. The owning-project builds and 36 scoped tests
 passed, including a later balance change and both replacement controls.
 Results are under `artifacts/continuation-20261104/resource-conversion-notice-recovery/`.
 
+#### Resource conversion character save
+
+4 November 2026. An accepted currency-to-currency conversion requests a
+normal Character save through the original player. The source, surcharge,
+grant and ordinary Character changes use the existing atomic save, and the
+balance notices wait for its success callback. A rejected save or lost commit
+acknowledgment suppresses the notices and follows the ordinary disconnect
+path. Receipt-based outcome recovery, socket delivery and retail selector
+semantics remain open.
+
+Three baseline cases emitted balances before the save. The owning-project
+builds and 97 scoped tests passed. SQLite verified that a rejected transaction
+left all balances and quest progress unchanged in SQL, a confirmed commit
+published the new balances, and a simulated lost acknowledgment left the
+committed SQL intact without a success notice. Test execution took 77 seconds.
+Results are under `artifacts/continuation-20261104/resource-conversion-character-save/`.
+
 #### Existing item and unlock behavior
 
 Inventory, title, pet, costume, unlock surfaces exist. Generic unlock

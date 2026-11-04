@@ -85,11 +85,16 @@ namespace NexusForever.Game.Entity
                 }
             }
 
-            foreach (var row in rows)
-                PublishBalance(row.Key, row.Value);
             try { CreditCurrencyProgress(targetRow, grant); }
             catch (Exception exception) { resourceConversionLog.Warn(exception, "Failed to publish progress for an accepted resource conversion."); }
+            if (OwnsActor()) player.Save(PublishBalances);
             return true;
+
+            void PublishBalances()
+            {
+                foreach (var row in rows)
+                    PublishBalance(row.Key, row.Value);
+            }
 
             void PublishBalance(CurrencyType type, Currency row)
             {

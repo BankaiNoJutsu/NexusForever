@@ -67,7 +67,10 @@ also checks the full currency grant after projected debits. [Resource conversion
 validates and applies the affected live wallets before publication.
 [Resource conversion notice recovery](../../CURRENT_STATUS.md#resource-conversion-notice-recovery)
 retries a failed balance enqueue for the original wallet and session queue.
-Retail selector semantics, durable settlement and socket delivery remain open.
+[Resource conversion character save](../../CURRENT_STATUS.md#resource-conversion-character-save)
+enrolls accepted live wallet changes in an atomic Character save before sending
+balance notices. Receipt-based acknowledgment recovery, socket delivery and
+retail selector semantics remain open.
 
 [Vendor buyback request identity](../../CURRENT_STATUS.md#vendor-buyback-request-identity)
 keeps delayed requests from charging for a later sale and finishes accepted

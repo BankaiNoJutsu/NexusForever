@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Collections.Immutable;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Database;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Character;
@@ -39,6 +40,7 @@ using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.Internal.Message.Player;
 using NexusForever.Game.Static.Entity;
 using NexusForever.WorldServer.Network;
+using NexusForever.WorldServer.Network.Message.Handler.Misc;
 using static NexusForever.Game.Tests.Challenges.ChallengeRewardPersistenceOwnershipTests;
 using Fixture = NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.Fixture;
 using GameQuest = NexusForever.Game.Quest.Quest;
@@ -50,6 +52,83 @@ public sealed class RewardNormalSaveSnapshotTests
     private readonly DbContextOptions<CharacterContext> options;
     public RewardNormalSaveSnapshotTests() { }
     internal RewardNormalSaveSnapshotTests(DbContextOptions<CharacterContext> options) => this.options = options;
+
+    [Theory]
+    [InlineData("success")]
+    [InlineData("rollback")]
+    [InlineData("lost-ack")]
+    public async Task ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(string outcome)
+    {
+        using var f = new Fixture(options);
+        f.Seed();
+        var tables = (RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables;
+        tables.SetProperty(nameof(IGameTableManager.CurrencyType), PlayerBindPointTests.Table(
+            new CurrencyTypeEntry { Id = 1 }, new CurrencyTypeEntry { Id = 2 }, new CurrencyTypeEntry { Id = 3 }));
+        tables.SetProperty(nameof(IGameTableManager.ResourceConversion), PlayerBindPointTests.Table(new ResourceConversionEntry
+        {
+            Id = 10, ResourceConversionTypeEnum = 4, SourceId = 1, SourceCount = 25, SurchargeId = 3,
+            SurchargeCount = 3, TargetId = 2, TargetCount = 5
+        }));
+        var model = new CharacterModel { Id = 42 };
+        model.Currency.Add(new() { Id = 42, CurrencyId = 1, Amount = 40 });
+        model.Currency.Add(new() { Id = 42, CurrencyId = 2, Amount = 20 });
+        model.Currency.Add(new() { Id = 42, CurrencyId = 3, Amount = 10 });
+        using (var seed = f.Context())
+        {
+            seed.CharacterCurrency.AddRange(model.Currency);
+            seed.SaveChanges();
+        }
+
+        var database = new ConversionSaveDatabase(f, outcome);
+        var events = new EventQueue();
+        var session = RecordingDispatchProxy<IWorldSession>.Create(out var network);
+        network.SetProperty(nameof(IWorldSession.Events), events);
+        using var actor = new Actor(f, characterDatabase: database, actorSession: session, actorEvents: events);
+        var player = actor.Player;
+        network.SetProperty(nameof(IWorldSession.Player), player);
+        await actor.Load();
+        var wallet = new CurrencyManager(f.Source.Tables);
+        wallet.Initialise(player, model);
+        actor.Set(nameof(Player.CurrencyManager), wallet);
+        actor.Quest.Single().Progress = 2;
+
+        var request = new ClientConvertResource();
+        typeof(ClientConvertResource).GetProperty(nameof(ClientConvertResource.ConversionId))!.SetValue(request, 10u);
+        var notices = new List<ulong>();
+        network.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerCombatReward balance) notices.Add(balance.NewValue);
+            return null;
+        });
+        new ClientConvertResourceHandler(NullLogger<ClientConvertResourceHandler>.Instance, f.Source.Tables)
+            .HandleMessage(session, request);
+
+        Assert.Equal(new ulong[] { 15, 25, 7 }, wallet.OrderBy(currency => currency.Id).Select(currency => currency.Amount));
+        Assert.Empty(notices);
+        using (var before = f.Context())
+            Assert.Equal(new ulong[] { 40, 20, 10 }, before.CharacterCurrency.OrderBy(row => row.CurrencyId).Select(row => row.Amount));
+        await actor.Drain();
+
+        Assert.Equal(1, database.Attempts);
+        using var after = f.Context();
+        Assert.Equal(outcome == "rollback" ? new ulong[] { 40, 20, 10 } : [15, 25, 7],
+            after.CharacterCurrency.OrderBy(row => row.CurrencyId).Select(row => row.Amount));
+        Assert.Equal(outcome == "rollback" ? 1u : 2u, after.CharacterQuestObjective.Single().Progress);
+        Assert.Equal(outcome == "success" ? new ulong[] { 7, 15, 25 } : [], notices.Order());
+        Assert.Equal(outcome == "success" ? 0 : 1, network.GetInvocations(nameof(IWorldSession.ForceDisconnect)).Count);
+    }
+
+    private sealed class ConversionSaveDatabase(Fixture fixture, string outcome) : CharacterDatabase
+    {
+        public int Attempts { get; private set; }
+
+        public override Task SaveAtomic(ulong characterId, Action<CharacterContext> action)
+        {
+            Attempts++;
+            return CharacterAtomicSave.Execute(() => outcome == "success" ? fixture.Context()
+                : fixture.Context(new CommitFault(outcome == "lost-ack")), characterId, action);
+        }
+    }
 
     [Theory]
     [InlineData(false)]
