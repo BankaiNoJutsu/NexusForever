@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static.Achievement;
@@ -294,7 +295,7 @@ namespace NexusForever.Game.Entity
             if (newLevel <= oldLevel)
                 return;
 
-            player.CastSpell(LevelUpFanfareSpell4BaseId, GetLevelUpFanfareTier(newLevel), new SpellParameters());
+            PlayLevelUpFanfare(newLevel);
             player.AchievementManager.SetAchievementProgress(player, AchievementType.CharacterLevel, 0u, 0u, newLevel);
             if (oldLevel < DefaultMaxCharacterLevel && newLevel >= DefaultMaxCharacterLevel)
                 player.AchievementManager.CheckAchievements(player, AchievementType.ClassLevel50, (uint)player.Class);
@@ -304,6 +305,30 @@ namespace NexusForever.Game.Entity
             // Unlock LAS slots
             // Unlock AMPs
             // Add feature access
+        }
+
+        private void PlayLevelUpFanfare(byte level)
+        {
+            if (player is Player { QuestManager: QuestManager { IsOrdinaryCompletionMutationInProgress: true } quests } owner)
+            {
+                if (!owner.IsAlive)
+                    return;
+
+                var map = owner.Map;
+                uint guid = owner.Guid;
+                IPlayerMapAdmission admission = owner;
+                ulong generation = admission.MapAdmissionGeneration;
+                quests.RetainOrdinaryCompletionPublication(() =>
+                {
+                    if (ReferenceEquals(owner.Map, map) && owner.Guid == guid && admission.IsMapAdmissionCurrent(generation)
+                        && owner.Level >= level)
+                        CastFanfare();
+                });
+            }
+            else
+                CastFanfare();
+
+            void CastFanfare() => player.CastSpell(LevelUpFanfareSpell4BaseId, GetLevelUpFanfareTier(level), new SpellParameters());
         }
 
         private static byte GetMaxCharacterLevel(ISharedConfiguration sharedConfiguration = null)

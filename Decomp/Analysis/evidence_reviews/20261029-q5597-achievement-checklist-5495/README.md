@@ -211,3 +211,23 @@ The final six loopback cases passed. The preceding scoped run passed the
 other 46 cases and exposed two XP fixture setup failures. The scoped test
 results and assembly hashes are under
 `artifacts/continuation-20261104/quest-level-publication/`.
+
+## Quest level-up fanfare
+
+4 November 2026. XP earned during ordinary quest completion retains the
+level-up cast until the Character save succeeds. The existing tier lookup
+and spell pipeline start the cast if the original player is still in the
+same map admission. This also keeps delayed spell work from starting before
+the save. A rejected save or a replacement map admission drops the fanfare.
+
+The XP loopback exercises the actual spell-start producer with a synthetic
+level-two fanfare entry. It observes no start at the held save or after
+rollback, then sees the start on the requesting socket and the visible
+observer route on a successful retry. A separate case advances the map
+admission before commit and confirms that XP and level persist without the
+stale fanfare. The fixture qualifies spell-start publication. Native
+rendering, the retail fanfare effect payload and deployed behavior remain
+open.
+
+All 21 scoped tests passed. The results and binary hashes are under
+`artifacts/continuation-20261104/quest-fanfare-publication/`.

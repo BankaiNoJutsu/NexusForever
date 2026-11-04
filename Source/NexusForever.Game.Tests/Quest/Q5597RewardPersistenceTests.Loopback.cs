@@ -18,6 +18,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Abstract.RBAC;
+using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Quest;
 using NexusForever.Game.Static.Entity;
@@ -37,6 +38,7 @@ using NexusForever.Network.Message.Model;
 using NexusForever.Network.World.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Shared;
+using NexusForever.Script;
 using NexusForever.WorldServer;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Quest;
@@ -49,17 +51,19 @@ namespace NexusForever.Game.Tests.Quest;
 public sealed partial class Q5597RewardPersistenceTests
 {
     private readonly ITestOutputHelper output;
+    private const uint FixtureFanfareSpellId = 91001;
 
     public Q5597RewardPersistenceTests(ITestOutputHelper output) => this.output = output;
 
     [Theory]
-    [InlineData(false, false, false)]
-    [InlineData(true, false, false)]
-    [InlineData(false, true, false)]
-    [InlineData(true, true, false)]
-    [InlineData(false, false, true)]
-    [InlineData(true, false, true)]
-    public async Task LoopbackTurnInPublishesSavedRewardsOnce(bool rejectFirstSave, bool tutorialRecovery, bool levelReward)
+    [InlineData(false, false, false, false)]
+    [InlineData(true, false, false, false)]
+    [InlineData(false, true, false, false)]
+    [InlineData(true, true, false, false)]
+    [InlineData(false, false, true, false)]
+    [InlineData(true, false, true, false)]
+    [InlineData(false, false, true, true)]
+    public async Task LoopbackTurnInPublishesSavedRewardsOnce(bool rejectFirstSave, bool tutorialRecovery, bool levelReward, bool replaceMapAdmission)
     {
         const uint accountId = 12;
         ushort questId = tutorialRecovery ? StarterTutorialDefinition.ExileMovementQuestId : QuestId;
@@ -134,6 +138,7 @@ public sealed partial class Q5597RewardPersistenceTests
                     Assert.Empty(LevelPackets(observer));
                     Assert.Empty(LevelPackets(retiredObserver));
                     Assert.Empty(LevelMessages(actor));
+                    Assert.Empty(FanfarePackets(observer));
                 }
             });
 
@@ -165,6 +170,10 @@ public sealed partial class Q5597RewardPersistenceTests
                     Assert.Equal(2f, Assert.Single(LevelPackets(observer)).Stat.Value);
                     Assert.Equal(2f, Assert.Single(LevelMessages(actor)).Value);
                     Assert.Empty(LevelPackets(retiredObserver));
+                    if (replaceMapAdmission)
+                        Assert.Empty(FanfarePackets(observer));
+                    else
+                        Assert.Equal(FixtureFanfareSpellId, Assert.Single(FanfarePackets(observer)).Spell4Id);
                 }
             }
             using var first = await ReadPacket(client, GameMessageOpcode.ServerItemAdd);
@@ -173,6 +182,10 @@ public sealed partial class Q5597RewardPersistenceTests
             using var state = await ReadPacket(client, GameMessageOpcode.ServerQuestStateChange);
             Assert.Equal(questId, state.ReadUShort(15));
             Assert.Equal(QuestState.Completed, state.ReadEnum<QuestState>(32));
+            if (levelReward && !replaceMapAdmission)
+            {
+                using var fanfare = await ReadPacket(client, GameMessageOpcode.ServerSpellStart);
+            }
             if (tutorialRecovery)
             {
                 using var next = await ReadPacket(client, GameMessageOpcode.ServerQuestStateChange);
@@ -270,7 +283,10 @@ public sealed partial class Q5597RewardPersistenceTests
                 Assert.Empty(LevelPackets(observer));
                 Assert.Empty(LevelPackets(retiredObserver));
                 Assert.Empty(LevelMessages(actor));
+                Assert.Empty(FanfarePackets(observer));
                 retiredObserverAccount.SetProperty(nameof(IAccount.WorldSessionEpoch), 2ul);
+                if (replaceMapAdmission)
+                    ((IPlayerMapAdmission)actor.Player).BeginMapAdmission();
             }
             await AssertTurnInPacketsWithheld(world, client);
         }
@@ -303,6 +319,7 @@ public sealed partial class Q5597RewardPersistenceTests
                 mapProxy.SetProperty(nameof(IBaseMap.Entry), new WorldEntry { Id = 870 });
                 typeof(GridEntity).GetProperty(nameof(GridEntity.Map))!.SetValue(actor.Player, map);
                 ConfigureExperience(f, actor, model);
+                ConfigureFanfare(actor.Player, f.Scripts);
                 observer = AddObserver(actor.Player, map, 70, out _);
                 retiredObserver = AddObserver(actor.Player, map, 71, out retiredObserverAccount);
             }
@@ -379,6 +396,34 @@ public sealed partial class Q5597RewardPersistenceTests
         return sessionProxy;
     }
 
+    private static void ConfigureFanfare(Player player, IScriptManager scripts)
+    {
+        const BindingFlags instance = BindingFlags.Instance | BindingFlags.NonPublic;
+        const uint fanfareBaseId = 53378;
+        var baseInfo = RecordingDispatchProxy<ISpellBaseInfo>.Create(out var baseProxy);
+        baseProxy.SetProperty(nameof(ISpellBaseInfo.Entry), new Spell4BaseEntry { Id = fanfareBaseId });
+        var spell = RecordingDispatchProxy<ISpellInfo>.Create(out var spellProxy);
+        spellProxy.SetProperty(nameof(ISpellInfo.Entry), new Spell4Entry { Id = FixtureFanfareSpellId, Spell4BaseIdBaseSpell = fanfareBaseId, CastTime = 1000 });
+        spellProxy.SetProperty(nameof(ISpellInfo.BaseInfo), baseInfo);
+        baseProxy.SetMethodHandler(nameof(ISpellBaseInfo.GetSpellInfo), args => (byte)args[0] == 1 ? spell : null);
+        var global = RecordingDispatchProxy<IGlobalSpellManager>.Create(out var globalProxy);
+        globalProxy.SetMethodHandler(nameof(IGlobalSpellManager.GetSpellBaseInfo), args => (uint)args[0] == fanfareBaseId ? baseInfo : null);
+        globalProxy.SetProperty(nameof(IGlobalSpellManager.NextCastingId), 99u);
+        typeof(UnitEntity).GetField("globalSpellManagerResolver", instance)!.SetValue(player, (Func<IGlobalSpellManager>)(() => global));
+        typeof(GridEntity).GetField("scriptManagerResolver", instance)!.SetValue(player, (Func<IScriptManager>)(() => scripts));
+        foreach (string name in new[] { "procStates", "ccStates" })
+        {
+            var field = typeof(UnitEntity).GetField(name, instance)!;
+            field.SetValue(player, Activator.CreateInstance(field.FieldType));
+        }
+        var stats = (Dictionary<Stat, IStatValue>)typeof(WorldEntity).GetField("stats", instance)!.GetValue(player)!;
+        stats.Add(Stat.Health, new StatValue(Stat.Health, 1u));
+    }
+
+    private static IEnumerable<ServerSpellStart> FanfarePackets(RecordingDispatchProxy<IWorldSession> observer)
+        => observer.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).SelectMany(call => call.Arguments)
+            .OfType<ServerSpellStart>().Where(packet => packet.Spell4Id == FixtureFanfareSpellId);
+
     private static IEnumerable<ServerEntityStatUpdateInteger> LevelPackets(RecordingDispatchProxy<IWorldSession> observer)
         => observer.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).SelectMany(call => call.Arguments)
             .OfType<ServerEntityStatUpdateInteger>().Where(packet => packet.Stat.Stat == Stat.Level);
@@ -399,7 +444,8 @@ public sealed partial class Q5597RewardPersistenceTests
             if (frame.Opcode == GameMessageOpcode.ServerPlayerEnteredWorld) break;
             Assert.False(frame.Opcode is GameMessageOpcode.ServerItemAdd or GameMessageOpcode.ServerQuestStateChange
                 or GameMessageOpcode.ServerAchievementUpdate or GameMessageOpcode.ServerDialogEnd
-                or GameMessageOpcode.ServerExperienceGained or GameMessageOpcode.ServerEntityStatUpdateInteger, $"Premature {frame.Opcode}");
+                or GameMessageOpcode.ServerExperienceGained or GameMessageOpcode.ServerEntityStatUpdateInteger
+                or GameMessageOpcode.ServerSpellStart, $"Premature {frame.Opcode}");
         }
         output.WriteLine("No item, quest-state, achievement or dialog-end packets while the turn-in save was held.");
     }
