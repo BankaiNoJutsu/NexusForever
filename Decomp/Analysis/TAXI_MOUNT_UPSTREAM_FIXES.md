@@ -95,6 +95,24 @@ tests passed. Local evidence is under
 `artifacts/continuation-20261104/mount-pilot-admission/`. Physical movement
 and native mount presentation remain open.
 
+### Vehicle map removal
+
+4 November 2026. Vehicle removal drains queued seating and clears the
+occupied seat list without modifying the list being enumerated or
+requesting another removal. The seat keeps its original rider and session
+through teardown. An original rider who is still attached can be detached
+after leaving the vehicle's visibility list. A replacement using the same
+unit ID keeps its platform and controls. Seat-owned platform entries are
+retired before generic platform cleanup runs.
+
+Three baseline cases reproduced teardown exceptions. The owning build and
+168 scoped tests passed, including removal with two riders, an invisible
+rider and a reused unit ID. The first candidate reached base cleanup and
+exposed a missing fixture threat manager. The fixture was corrected and the
+same assertions passed. Local evidence is under
+`artifacts/continuation-20261104/vehicle-teardown/`. Deployed map transitions
+and native client behavior remain open.
+
 ## Verification
 
 There are 39 additional regression cases relative to the 5,885-case

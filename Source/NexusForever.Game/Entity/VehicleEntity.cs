@@ -22,9 +22,11 @@ namespace NexusForever.Game.Entity
         public UnitVehicleEntry VehicleEntry { get; private set; }
         public Spell4Entry SpellEntry { get; private set; }
 
-        protected readonly List<IVehiclePassenger> passengers = new();
-        private sealed record PendingPassenger(IVehiclePassenger Seat, IPlayer Player, IGameSession Session, ulong? Admission);
-        private readonly Queue<PendingPassenger> pendingAdd = new();
+        private sealed record PassengerAdmission(IVehiclePassenger Seat, IPlayer Player, IGameSession Session, ulong? Admission);
+        private readonly List<PassengerAdmission> passengers = new();
+        private readonly Queue<PassengerAdmission> pendingAdd = new();
+        protected IEnumerable<IVehiclePassenger> Passengers => passengers.Select(passenger => passenger.Seat);
+        protected bool HasPassengers => passengers.Count != 0;
 
         #region Dependency Injection
 
@@ -56,7 +58,7 @@ namespace NexusForever.Game.Entity
             {
                 CreatureId    = CreatureEntry.Id,
                 UnitVehicleId = (ushort)VehicleEntry.Id,
-                Passengers    = passengers
+                Passengers    = Passengers
                     .Select(p => new NetworkVehiclePassenger
                     {
                         SeatType     = p.SeatType,
@@ -69,18 +71,18 @@ namespace NexusForever.Game.Entity
 
         public override void OnRemoveFromMap()
         {
-            foreach (IVehiclePassenger passenger in passengers)
-            {
-                IPlayer entity = GetVisible<IPlayer>(passenger.Guid);
-                PassengerRemove(entity, passenger);
-            }
+            while (pendingAdd.TryDequeue(out var pending))
+                OnPassengerAdmissionRejected(pending.Player, pending.Seat.SeatType, removingVehicle: true);
+
+            foreach (var passenger in passengers.ToArray())
+                RemovePassenger(passenger);
 
             base.OnRemoveFromMap();
         }
 
         public override void OnRelocate(Vector3 vector)
         {
-            foreach (IVehiclePassenger passenger in passengers)
+            foreach (IVehiclePassenger passenger in Passengers)
             {
                 IPlayer entity = GetVisible<IPlayer>(passenger.Guid);
                 Map.EnqueueRelocate(entity, vector);
@@ -103,7 +105,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public IVehiclePassenger GetPassenger(uint guid)
         {
-            return passengers.SingleOrDefault(p => p.Guid == guid);
+            return Passengers.SingleOrDefault(p => p.Guid == guid);
         }
 
         /// <summary>
@@ -111,7 +113,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public IVehiclePassenger GetPassenger(VehicleSeatType seatType, byte seatPosition)
         {
-            return passengers.SingleOrDefault(p => p.SeatType == seatType && p.SeatPosition == seatPosition);
+            return Passengers.SingleOrDefault(p => p.SeatType == seatType && p.SeatPosition == seatPosition);
         }
 
         /// <summary>
@@ -122,7 +124,7 @@ namespace NexusForever.Game.Entity
             if (seatType >= VehicleSeatType.Invalid)
                 throw new ArgumentOutOfRangeException();
 
-            byte passengerCount = (byte)passengers.Count(p => p.SeatType == seatType);
+            byte passengerCount = (byte)passengers.Count(p => p.Seat.SeatType == seatType);
             switch (seatType)
             {
                 case VehicleSeatType.Pilot:
@@ -149,7 +151,7 @@ namespace NexusForever.Game.Entity
                 player, player.Session, PlayerMapAdmissionGuard.Capture(player)));
         }
 
-        private void PassengerAdd(PendingPassenger pending)
+        private void PassengerAdd(PassengerAdmission pending)
         {
             var player = pending.Player;
             var seat = pending.Seat;
@@ -163,18 +165,20 @@ namespace NexusForever.Game.Entity
                     || !CanSeatPassenger(player, seat.SeatType))
                     return;
 
-                SeatPassenger(player, seat);
+                SeatPassenger(pending);
                 seated = true;
             });
-            if (!seated) OnPassengerAdmissionRejected(player, seat.SeatType);
+            if (!seated) OnPassengerAdmissionRejected(player, seat.SeatType, removingVehicle: false);
         }
 
         protected virtual bool CanSeatPassenger(IPlayer player, VehicleSeatType seatType) => true;
 
-        protected virtual void OnPassengerAdmissionRejected(IPlayer player, VehicleSeatType seatType) { }
+        protected virtual void OnPassengerAdmissionRejected(IPlayer player, VehicleSeatType seatType, bool removingVehicle) { }
 
-        private void SeatPassenger(IPlayer player, IVehiclePassenger passenger)
+        private void SeatPassenger(PassengerAdmission admission)
         {
+            var player = admission.Player;
+            var passenger = admission.Seat;
             player.Session.EnqueueMessageEncrypted(new ServerPathScientistUnitScanParameters
             {
                 UnitId = Guid,
@@ -222,7 +226,7 @@ namespace NexusForever.Game.Entity
             player.TryRecoverStarterTutorialQuestProgression();
             player.SyncStarterTutorialEntityVisibility();
 
-            passengers.Add(passenger);
+            passengers.Add(admission);
             OnPassengerAdd(player, passenger.SeatType, passenger.SeatPosition);
         }
 
@@ -239,21 +243,42 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void PassengerRemove(IPlayer player)
         {
-            IVehiclePassenger passenger = GetPassenger(player.Guid);
-            if (passenger == null)
+            if (!TryRemovePassenger(player))
                 throw new ArgumentException();
-
-            PassengerRemove(player, passenger);
         }
 
-        private void PassengerRemove(IPlayer player, IVehiclePassenger passenger)
+        internal bool TryRemovePassenger(IPlayer player)
         {
+            var passenger = passengers.SingleOrDefault(row => row.Seat.Guid == player.Guid && ReferenceEquals(row.Player, player));
+            if (passenger == null)
+                return false;
+
+            bool detached = RemovePassenger(passenger);
+            if (!HasPassengers && Map != null)
+                RemoveFromMap();
+            return detached;
+        }
+
+        private bool RemovePassenger(PassengerAdmission admission)
+        {
+            if (!passengers.Remove(admission))
+                return false;
+
+            var player = admission.Player;
+            var passenger = admission.Seat;
+            // The generic platform cleanup also uses unit IDs. Retire this seat's
+            // platform entry before base teardown can resolve it to another actor.
+            RemovePlatformPassenger(passenger.Guid);
+            if (Map == null || !ReferenceEquals(player.Map, Map) || player.Guid != passenger.Guid || player.PlatformGuid != Guid
+                || !ReferenceEquals(player.Session, admission.Session)
+                || (admission.Session is IPlayerSession bound && !ReferenceEquals(bound.Player, player)))
+                return false;
+
             player.SetPlatform(null);
-           
-            if (passenger.SeatType == VehicleSeatType.Pilot)
+
+            if (passenger.SeatType == VehicleSeatType.Pilot && (player.ControlGuid == Guid || player.ControlGuid == null))
                 player.SetControl(player);
 
-            passengers.Remove(passenger);
             OnPassengerRemove(player, passenger.SeatType, passenger.SeatPosition);
 
             EnqueueToVisible(new ServerVehiclePassengerRemove
@@ -262,9 +287,7 @@ namespace NexusForever.Game.Entity
                 Passenger = passenger.Guid
             }, true);
 
-            // this probably isn't correct for all cases
-            if (passengers.Count == 0)
-                RemoveFromMap();
+            return true;
         }
 
         /// <summary>
@@ -277,7 +300,7 @@ namespace NexusForever.Game.Entity
 
         public IEnumerator<IVehiclePassenger> GetEnumerator()
         {
-            return passengers.GetEnumerator();
+            return Passengers.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

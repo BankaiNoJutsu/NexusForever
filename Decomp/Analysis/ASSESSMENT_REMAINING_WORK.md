@@ -19,6 +19,10 @@ prevents an expired summon or superseded actor from taking control after the
 mount's queued seating delay. It retires the rejected empty mount and keeps
 any newer summon reservation.
 
+[Vehicle map removal](TAXI_MOUNT_UPSTREAM_FIXES.md#vehicle-map-removal)
+clears queued and occupied seats on teardown and detaches only their
+original attached riders. Reused unit IDs keep their current platform.
+
 [Quest starter item admission](../../CURRENT_STATUS.md#quest-starter-item-admission)
 checks prerequisites and pushed-item space before consuming the starter. A
 missing or unusable starter cannot accept the quest. The capacity check

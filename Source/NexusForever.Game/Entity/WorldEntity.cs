@@ -1494,10 +1494,9 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Remove <see cref="IWorldEntity"/> as a passenger on this <see cref="IWorldEntity"/>.
         /// </summary>
-        public void RemovePlatformPassenger(IWorldEntity passenger)
-        {
-            platformPassengerGuids.Remove(passenger.Guid);
-        }
+        public void RemovePlatformPassenger(IWorldEntity passenger) => RemovePlatformPassenger(passenger.Guid);
+
+        protected void RemovePlatformPassenger(uint guid) => platformPassengerGuids.Remove(guid);
 
         /// <summary>
         /// Set the emote id for this <see cref="IWorldEntity"/>.

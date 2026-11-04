@@ -2671,7 +2671,12 @@ namespace NexusForever.Game.Entity
             pendingMount = null;
 
             IWorldEntity platform = GetVisible<IWorldEntity>(PlatformGuid.Value);
-            if (platform is IVehicleEntity vehicle && vehicle.GetPassenger(Guid) != null)
+            if (platform is VehicleEntity concrete)
+            {
+                if (concrete.TryRemovePassenger(this))
+                    return;
+            }
+            else if (platform is IVehicleEntity vehicle && vehicle.GetPassenger(Guid) != null)
             {
                 vehicle.PassengerRemove(this);
                 return;
