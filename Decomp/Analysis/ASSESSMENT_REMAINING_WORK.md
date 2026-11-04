@@ -10,6 +10,11 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Flight-path destination admission](../../CURRENT_STATUS.md#flight-path-destination-admission)
+checks destination admission and current funds before charging a queued fare
+and unlocking the destination. Physical arrival and later failure recovery
+remain open.
+
 [Rapid Transport cast fare](../../CURRENT_STATUS.md#rapid-transport-cast-fare)
 charges the selected route only after the spell passes admission. Physical
 transfer, later interruption/failure settlement, and formula pricing remain open.

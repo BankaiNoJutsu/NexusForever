@@ -7,8 +7,11 @@ using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Entity;
+using NexusForever.Game.Map;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
@@ -18,6 +21,7 @@ using NexusForever.Network.Message;
 using NexusForever.Network.Packet;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Info;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Script;
 using NexusForever.Script.Template.Collection;
@@ -315,7 +319,7 @@ public class TransportHandlerTests
         TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
         handler.HandleMessage(session, BuildFlightPathPurchase(1u, 2u));
 
-        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.QueueTaxiFlight)));
         RecordingDispatchProxy<IPlayer>.Invocation error =
             Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.SendGenericError)));
         Assert.Equal(GenericError.EmbarkNoSplineForTaxi, error.Arguments[0]);
@@ -334,7 +338,7 @@ public class TransportHandlerTests
         TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
         handler.HandleMessage(session, BuildFlightPathPurchase(1u));
 
-        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.QueueTaxiFlight)));
         RecordingDispatchProxy<IPlayer>.Invocation error =
             Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.SendGenericError)));
         Assert.Equal(GenericError.EmbarkNoSplineForTaxi, error.Arguments[0]);
@@ -353,7 +357,7 @@ public class TransportHandlerTests
         TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
         handler.HandleMessage(session, BuildFlightPathPurchase(1u));
 
-        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.QueueTaxiFlight)));
         Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
         RecordingDispatchProxy<IPlayer>.Invocation error =
             Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.SendGenericError)));
@@ -373,7 +377,7 @@ public class TransportHandlerTests
         TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
         handler.HandleMessage(session, BuildFlightPathPurchase(1u));
 
-        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.QueueTaxiFlight)));
         Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
         RecordingDispatchProxy<IPlayer>.Invocation error =
             Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.SendGenericError)));
@@ -393,14 +397,14 @@ public class TransportHandlerTests
         TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
         handler.HandleMessage(session, BuildFlightPathPurchase(1u, 2u));
 
-        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.QueueTaxiFlight)));
         RecordingDispatchProxy<IPlayer>.Invocation error =
             Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.SendGenericError)));
         Assert.Equal(GenericError.VendorNotEnoughCash, error.Arguments[0]);
     }
 
     [Fact]
-    public void FlightPathPurchase_ChargesContiguousRoutesAndTeleportsToDestination()
+    public void FlightPathPurchase_QueuesValidatedContiguousRouteAndFare()
     {
         ClientFlightPathPurchaseHandler handler = CreateFlightPathHandler(
             out _,
@@ -411,18 +415,91 @@ public class TransportHandlerTests
         TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
         handler.HandleMessage(session, BuildFlightPathPurchase(1u, 2u));
 
-        RecordingDispatchProxy<ICurrencyManager>.Invocation debit =
-            Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
-        Assert.Equal(CurrencyType.Credits, debit.Arguments[0]);
-        Assert.Equal(12ul, debit.Arguments[1]);
+        Assert.Empty(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        var quote = Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.QueueTaxiFlight)));
+        Assert.Equal(7u, Assert.IsType<WorldEntry>(quote.Arguments[0]).Id);
+        Assert.Equal(new Vector3(40, 50, 60), quote.Arguments[1]);
+        Assert.Equal(30u, quote.Arguments[3]);
+        Assert.Equal(12ul, quote.Arguments[4]);
+    }
 
-        RecordingDispatchProxy<IPlayer>.Invocation teleport =
-            Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
-        Assert.Equal((ushort)7u, teleport.Arguments[0]);
-        Assert.Equal(40f, teleport.Arguments[1]);
-        Assert.Equal(50f, teleport.Arguments[2]);
-        Assert.Equal(60f, teleport.Arguments[3]);
-        Assert.Equal(30u, Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.DiscoverTaxiNode))).Arguments[0]);
+    [Theory]
+    [InlineData("admit")]
+    [InlineData("deny")]
+    [InlineData("balance-changed")]
+    [InlineData("rebound")]
+    public void FlightPathPurchase_SettlesOnlyOnDestinationAdmission(string outcome)
+    {
+        var handler = CreateFlightPathHandler(out var tables, out _, out var wallet, out _);
+        var player = (Player)RuntimeHelpers.GetUninitializedObject(typeof(Player));
+        var session = new TransportTestSession { Player = player };
+        var source = RecordingDispatchProxy<IBaseMap>.Create(out var sourceMap);
+        sourceMap.SetProperty(nameof(IMap.Entry), new WorldEntry { Id = 5u });
+        var kiosk = RecordingDispatchProxy<IWorldEntity>.Create(out var kioskProxy);
+        kioskProxy.SetProperty(nameof(IWorldEntity.Map), source);
+        kioskProxy.SetProperty(nameof(IWorldEntity.CreatureEntry), new Creature2Entry { TaxiNodeId = 10u });
+        var destination = RecordingDispatchProxy<IBaseMap>.Create(out var destinationMap);
+        if (outcome == "deny")
+            destinationMap.SetMethodReturn(nameof(IMap.CanEnter), GenericError.InstanceLimitExceeded);
+        var factory = RecordingDispatchProxy<IMapFactory>.Create(out var maps);
+        maps.SetMethodReturn(nameof(IMapFactory.CreateMap), destination);
+        var mapManager = new MapManager(factory);
+        var movement = RecordingDispatchProxy<IMovementManager>.Create(out _);
+        typeof(Player).GetProperty(nameof(IPlayer.Session))!.SetValue(player, session);
+        typeof(Player).GetProperty(nameof(IPlayer.Identity))!.SetValue(player, new Game.Abstract.Identity { RealmId = 1, Id = 42 });
+        typeof(GridEntity).GetProperty(nameof(IPlayer.Map))!.SetValue(player, source);
+        typeof(GridEntity).GetProperty(nameof(IPlayer.Guid))!.SetValue(player, 42u);
+        typeof(WorldEntity).GetProperty(nameof(IPlayer.MovementManager))!.SetValue(player, movement);
+        SetField(typeof(GridEntity), "visibleEntities", new Dictionary<uint, IGridEntity> { [10] = kiosk });
+        SetField(typeof(Player), "gameTableManager", (IGameTableManager)(object)tables);
+        SetField(typeof(Player), "mapManager", mapManager);
+        SetField(typeof(Player), "taxiStateLock", new object());
+        SetField(typeof(Player), "taxiNodes", new HashSet<ushort>());
+        SetField(typeof(Player), "unsavedTaxiNodes", new HashSet<ushort>());
+        SetField(typeof(Player), "<CurrencyManager>k__BackingField", (ICurrencyManager)(object)wallet);
+        ulong balance = 100;
+        wallet.SetMethodHandler(nameof(ICurrencyManager.CanAfford), args => balance >= (ulong)args[1]);
+        wallet.SetMethodHandler(nameof(ICurrencyManager.CurrencySubtractAmount), args => { balance -= (ulong)args[1]; return null; });
+
+        handler.HandleMessage(session, BuildFlightPathPurchase(1u, 2u));
+        ulong balanceBeforeAdmission = balance;
+        bool discoveredBeforeAdmission = session.EncryptedMessages.OfType<ServerEntitySelectAuxUInt14>().Any();
+
+        if (outcome == "balance-changed")
+            balance = 11;
+        if (outcome == "rebound")
+            session.Player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        mapManager.Update(0);
+        mapManager.Update(0);
+
+        if (outcome == "admit")
+        {
+            Assert.Equal(88ul, balance);
+            Assert.Single(wallet.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+            Assert.Equal(30u, Assert.Single(session.EncryptedMessages.OfType<ServerEntitySelectAuxUInt14>()).Value);
+            var add = Assert.Single(destinationMap.GetInvocations(nameof(IMap.EnqueueAdd)));
+            Assert.Equal(new Vector3(40, 50, 60), Assert.IsAssignableFrom<IMapPosition>(add.Arguments[1]).Position);
+            Assert.Empty(session.EncryptedMessages.OfType<ServerGenericError>());
+        }
+        else
+        {
+            Assert.Equal(outcome == "balance-changed" ? 11ul : 100ul, balance);
+            Assert.Empty(wallet.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+            Assert.Empty(session.EncryptedMessages.OfType<ServerEntitySelectAuxUInt14>());
+            Assert.Empty(destinationMap.GetInvocations(nameof(IMap.EnqueueAdd)));
+            var errors = session.EncryptedMessages.OfType<ServerGenericError>();
+            if (outcome == "rebound")
+                Assert.Empty(errors);
+            else
+                Assert.Equal(outcome == "deny" ? GenericError.InstanceLimitExceeded : GenericError.VendorNotEnoughCash,
+                    Assert.Single(errors).Error);
+            Assert.True(player.CanTeleport());
+        }
+        Assert.Equal(100ul, balanceBeforeAdmission);
+        Assert.False(discoveredBeforeAdmission);
+
+        void SetField(Type type, string name, object value)
+            => type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(player, value);
     }
 
     [Theory]
@@ -463,7 +540,7 @@ public class TransportHandlerTests
         tables.SetProperty(nameof(IGameTableManager.TaxiNode), CreateGameTable(source, intermediate, destination));
         handler.HandleMessage(CreateSession(player, out _), BuildFlightPathPurchase(1, 2));
         Assert.Empty(currency.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
-        Assert.Empty(pp.GetInvocations(nameof(IPlayer.TeleportTo)));
+        Assert.Empty(pp.GetInvocations(nameof(IPlayer.QueueTaxiFlight)));
         Assert.Empty(pp.GetInvocations(nameof(IPlayer.DiscoverTaxiNode)));
     }
 
@@ -473,18 +550,19 @@ public class TransportHandlerTests
         var handler = CreateFlightPathHandler(out _, out var player, out var currency, out var pp);
         handler.HandleMessage(CreateSession(player, out _), BuildFlightPathPurchase(Enumerable.Repeat(1u, 31).ToArray()));
         Assert.Empty(currency.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
-        Assert.Empty(pp.GetInvocations(nameof(IPlayer.TeleportTo)));
+        Assert.Empty(pp.GetInvocations(nameof(IPlayer.QueueTaxiFlight)));
     }
 
     [Fact]
     public void FlightPathPurchase_SumsFaresWithoutUIntOverflow()
     {
-        var handler = CreateFlightPathHandler(out var tables, out var player, out var currency, out _);
+        var handler = CreateFlightPathHandler(out var tables, out var player, out var currency, out var pp);
         tables.SetProperty(nameof(IGameTableManager.TaxiRoute), CreateGameTable(
             new TaxiRouteEntry { Id = 1, TaxiNodeIdSource = 10, TaxiNodeIdDestination = 20, Price = uint.MaxValue },
             new TaxiRouteEntry { Id = 2, TaxiNodeIdSource = 20, TaxiNodeIdDestination = 30, Price = uint.MaxValue }));
         handler.HandleMessage(CreateSession(player, out _), BuildFlightPathPurchase(1, 2));
-        Assert.Equal(2ul * uint.MaxValue, Assert.Single(currency.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount))).Arguments[1]);
+        Assert.Empty(currency.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        Assert.Equal(2ul * uint.MaxValue, Assert.Single(pp.GetInvocations(nameof(IPlayer.QueueTaxiFlight))).Arguments[4]);
     }
 
     [Fact]

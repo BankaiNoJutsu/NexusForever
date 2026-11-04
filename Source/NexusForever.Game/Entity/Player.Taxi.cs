@@ -2,7 +2,12 @@ using System.Numerics;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
+using NexusForever.Game.Map;
+using NexusForever.Game.Static.Entity;
+using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared.Game;
 
 namespace NexusForever.Game.Entity
@@ -43,6 +48,46 @@ namespace NexusForever.Game.Entity
             return visibleEntities.Values.OfType<IWorldEntity>().Any(e =>
                 e.Map == Map && e.CreatureEntry?.TaxiNodeId == taxiNodeId
                 && Vector3.DistanceSquared(e.Position, Position) <= range * range);
+        }
+
+        public void QueueTaxiFlight(WorldEntry world, Vector3 position, Vector3 rotation, uint destinationNode, ulong fare)
+        {
+            lock (mapAdmission.SyncRoot)
+            {
+                if (!IsAdmissionAllowed())
+                    return;
+
+                var destination = new MapPosition { Info = new MapInfo { Entry = world }, Position = position };
+                TeleportToCore(destination, TeleportReason.Relocate, new PendingTaxiFlight(Session, destinationNode, fare, rotation));
+            }
+        }
+
+        // Called under the generation's admission guard with the destination's decision.
+        internal bool TryApplyTaxiAdmission(IMapPosition position, bool destinationAllowsEntry)
+        {
+            if (pendingTeleport?.TaxiFlight is not { } flight)
+                return true;
+            if (flight.Admitted || !ReferenceEquals(pendingTeleport.MapPosition, position))
+                return false;
+            if (!ReferenceEquals(Session, flight.Session) || (Session is IPlayerSession bound && !ReferenceEquals(bound.Player, this)))
+            {
+                CancelMapAdmission();
+                return false;
+            }
+            if (!destinationAllowsEntry)
+                return true;
+            if (flight.Fare != 0 && !CurrencyManager.CanAfford(CurrencyType.Credits, flight.Fare))
+            {
+                OnTeleportToFailed(GenericError.VendorNotEnoughCash);
+                return false;
+            }
+
+            flight.Admitted = true;
+            if (flight.Fare != 0)
+                CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, flight.Fare);
+            Rotation = flight.Rotation;
+            DiscoverTaxiNode(flight.DestinationNode);
+            return true;
         }
 
         private void DiscoverNearbyTaxiNodes()

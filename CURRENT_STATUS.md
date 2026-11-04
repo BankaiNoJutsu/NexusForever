@@ -21100,6 +21100,19 @@ finish/hot-cold consumer. Current source emits `ServerCraftingFinish` and
 
 ### F-009 - Rapid Transport / Taxi / Flight Path - PARTIAL (route-table fix verified; blockers remain)
 
+#### Flight-path destination admission
+
+4 November 2026. A validated flight-path purchase queues its route fare and
+destination on the original player's pending teleport. The map manager checks
+destination admission first. A denied destination leaves credits and taxi
+discovery unchanged. An admitted route rechecks the balance before taking the
+fare and unlocking the node once. A rebound session discards the old request.
+Three baseline cases reproduced the early debit, including a denied destination.
+The owning-project build and 189 scoped transport, map-admission and world-entry
+tests passed. Local evidence is under
+`artifacts/continuation-20261104/taxi-destination-admission/`.
+Physical arrival and recovery after a later map failure remain open.
+
 #### Rapid Transport cast fare
 
 4 November 2026. The request supplies its validated route fare to the spell

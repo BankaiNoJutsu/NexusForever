@@ -3,6 +3,7 @@ using System.Diagnostics;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Configuration.Model;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Static.RBAC;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Static;
@@ -82,14 +83,17 @@ namespace NexusForever.Game.Map
                 GenericError? result = map.CanEnter(pending.Player, pending.MapPosition);
                 if (!PlayerMapAdmissionGuard.IsCurrent(pending.Player, pending.AdmissionGeneration))
                     continue;
-                if (result.HasValue)
+                PlayerMapAdmissionGuard.Run(pending.Player, pending.AdmissionGeneration, () =>
                 {
-                    pending.Player.OnTeleportToFailed(result.Value);
+                    if (pending.Player is Player player && !player.TryApplyTaxiAdmission(pending.MapPosition, !result.HasValue))
+                        return;
+                    if (result.HasValue)
+                        pending.Player.OnTeleportToFailed(result.Value);
+                    else
+                        map.EnqueueAdd(pending.Player, pending.MapPosition);
+                });
+                if (result.HasValue)
                     return;
-                }
-
-                PlayerMapAdmissionGuard.Run(pending.Player, pending.AdmissionGeneration,
-                    () => map.EnqueueAdd(pending.Player, pending.MapPosition));
             }
 
             sw.Stop();

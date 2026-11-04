@@ -1796,7 +1796,7 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        private void TeleportToCore(IMapPosition mapPosition, TeleportReason reason)
+        private void TeleportToCore(IMapPosition mapPosition, TeleportReason reason, PendingTaxiFlight taxiFlight = null)
         {
             if (!CanTeleport())
             {
@@ -1822,7 +1822,8 @@ namespace NexusForever.Game.Entity
             {
                 Reason      = reason,
                 MapPosition = mapPosition,
-                VanityPetId = vanityPetId
+                VanityPetId = vanityPetId,
+                TaxiFlight  = taxiFlight
             };
 
             SetControl(null);

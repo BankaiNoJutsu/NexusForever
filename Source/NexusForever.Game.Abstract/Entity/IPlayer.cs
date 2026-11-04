@@ -173,6 +173,7 @@ namespace NexusForever.Game.Abstract.Entity
         IMapPosition GetOpenWorldReturnPosition();
         void DiscoverTaxiNode(uint taxiNodeId);
         bool IsNearTaxiNode(uint taxiNodeId, float range);
+        void QueueTaxiFlight(WorldEntry world, Vector3 position, Vector3 rotation, uint destinationNode, ulong fare);
 
         /// <summary>
         /// Teleport <see cref="IPlayer"/> to supplied location.
