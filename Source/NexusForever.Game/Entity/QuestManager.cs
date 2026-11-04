@@ -388,6 +388,12 @@ namespace NexusForever.Game.Entity
 
         private void QuestAdd(IQuestInfo info, IQuest quest, IItem item)
         {
+            PrepareQuestAcceptance(info, quest, item);
+            QuestAdd(info);
+        }
+
+        private void PrepareQuestAcceptance(IQuestInfo info, IQuest quest, IItem item)
+        {
             if (quest?.State is QuestState.Accepted or QuestState.Achieved)
                 throw new QuestException($"Player {player.CharacterId} tried to start quest {info.Entry.Id} which is already in progress!");
 
@@ -421,8 +427,6 @@ namespace NexusForever.Game.Entity
             // it's assumed that a player could never get here without cheating in some way
             if (!MeetsPrerequisites(info))
                 throw new QuestException($"Player {player.CharacterId} tried to start quest {info.Entry.Id} without meeting the prerequisites!");
-
-            QuestAdd(info);
         }
 
         private void QuestAddShared(IQuestInfo info, IQuest quest)
@@ -561,14 +565,16 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Add a quest from supplied <see cref="IQuestInfo"/>, skipping any prerequisites checks.
         /// </summary>
-        public void QuestAdd(IQuestInfo info)
+        public void QuestAdd(IQuestInfo info) => AddQuest(info);
+
+        private IQuest AddQuest(IQuestInfo info)
         {
             // make sure player has room for all pushed items
             if (player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory)
                 < info.Entry.PushedItemIds.Count(i => i != 0u))
             {
                 player.SendGenericError(GenericError.ItemInventoryFull);
-                return;
+                return null;
             }
 
             for (int i = 0; i < info.Entry.PushedItemIds.Length; i++)
@@ -606,6 +612,7 @@ namespace NexusForever.Game.Entity
 
             log.Trace($"Accepted new quest {info.Entry.Id}.");
             LogTutorialRegionQuestLifecycle("accepted", (ushort)info.Entry.Id, quest.State);
+            return quest;
         }
 
         private void LogTutorialRegionQuestLifecycle(string action, ushort questId, QuestState state)
@@ -796,36 +803,50 @@ namespace NexusForever.Game.Entity
                 throw new QuestException("Quest completion cannot overlap pending or quarantined character work.");
 
             IQuest quest = GetQuest(questId, GetQuestFlags.Active);
+            bool acceptWithCompletion = retainPublication && quest == null;
+            IQuestInfo completionInfo;
             if (quest == null)
             {
                 if (!questInfo.IsAutoComplete())
                     throw new QuestException($"Player {player.CharacterId} tried to complete quest {questId} which they don't have!");
 
-                QuestAdd(questId, null);
-                quest = GetQuest(questId);
-                quest.State = QuestState.Achieved;
+                if (acceptWithCompletion)
+                {
+                    IQuest existing = GetQuest(questId);
+                    PrepareQuestAcceptance(questInfo, existing, null);
+                    completionInfo = existing?.Info ?? questInfo;
+                }
+                else
+                {
+                    QuestAdd(questId, null);
+                    quest = GetQuest(questId);
+                    quest.State = QuestState.Achieved;
+                    completionInfo = quest.Info;
+                }
             }
+            else
+                completionInfo = quest.Info;
 
-            if (quest.State != QuestState.Achieved)
+            if (!acceptWithCompletion && quest.State != QuestState.Achieved)
                 throw new QuestException($"Player {player.CharacterId} tried to complete quest {questId} which wasn't complete!");
 
             bool allowStarterTutorialReceiverlessCompletion = AllowsStarterTutorialReceiverlessCompletion(questId);
-            bool allowContractReceiverlessCompletion = AllowsContractReceiverlessLifecycle(quest.Info);
+            bool allowContractReceiverlessCompletion = AllowsContractReceiverlessLifecycle(completionInfo);
             bool hasVisibleReceiver = HasVisibleQuestReceiver(questId);
 
             if (communicator)
             {
                 // for more see QuestTracker:HelperShowQuestCallbackBtn in LUA which contains the logic to show the complete button in the quest tracker
-                if (!quest.Info.IsCommunicatorReceived() && !allowStarterTutorialReceiverlessCompletion && !allowContractReceiverlessCompletion && !hasVisibleReceiver)
+                if (!completionInfo.IsCommunicatorReceived() && !allowStarterTutorialReceiverlessCompletion && !allowContractReceiverlessCompletion && !hasVisibleReceiver)
                     throw new QuestException($"Player {player.CharacterId} tried to complete quest {questId} without communicator message!");
 
-                if (!quest.Info.IsCommunicatorReceived() && allowStarterTutorialReceiverlessCompletion)
+                if (!completionInfo.IsCommunicatorReceived() && allowStarterTutorialReceiverlessCompletion)
                     log.Debug($"Allowing starter tutorial communicator completion without communicator metadata for player {player.CharacterId}, quest {questId}.");
 
-                if (!quest.Info.IsCommunicatorReceived() && allowContractReceiverlessCompletion)
+                if (!completionInfo.IsCommunicatorReceived() && allowContractReceiverlessCompletion)
                     log.Debug($"Allowing Quest2-backed contract communicator completion without communicator metadata for player {player.CharacterId}, quest {questId}.");
 
-                if (!quest.Info.IsCommunicatorReceived() && hasVisibleReceiver)
+                if (!completionInfo.IsCommunicatorReceived() && hasVisibleReceiver)
                     log.Debug($"Allowing communicator-flagged receiver completion without communicator metadata for player {player.CharacterId}, quest {questId}.");
             }
             else
@@ -842,17 +863,25 @@ namespace NexusForever.Game.Entity
                 }
             }
 
-            Quest2RewardEntry selectedReward = GetSelectedQuestReward(quest.Info, reward);
-            if (!CanGrantQuestItemRewards(quest.Info, selectedReward))
-            {
-                player.SendGenericError(GenericError.ItemInventoryFull);
+            Quest2RewardEntry selectedReward = GetSelectedQuestReward(completionInfo, reward);
+            if (!acceptWithCompletion && !HasRewardSpace())
                 return false;
-            }
 
             if (retainPublication)
             {
                 CompleteOrdinaryQuestsWithSave(owner, session, () =>
                 {
+                    if (acceptWithCompletion)
+                    {
+                        quest = AddQuest(questInfo);
+                        if (quest == null)
+                            return false;
+
+                        quest.State = QuestState.Achieved;
+                        if (!HasRewardSpace())
+                            return true;
+                    }
+
                     CompleteOrdinaryQuest(quest, selectedReward, communicator);
                     return true;
                 }, communicator ? null : closeDialog);
@@ -864,6 +893,15 @@ namespace NexusForever.Game.Entity
             try { CompleteOrdinaryQuest(quest, selectedReward, communicator); completed = true; }
             finally { EndContractCompletion(ticket, completed); }
             return false;
+
+            bool HasRewardSpace()
+            {
+                if (CanGrantQuestItemRewards(completionInfo, selectedReward))
+                    return true;
+
+                player.SendGenericError(GenericError.ItemInventoryFull);
+                return false;
+            }
         }
 
         private List<Action> ordinaryCompletionPublications;

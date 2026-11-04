@@ -62,14 +62,17 @@ public sealed partial class Q5597RewardPersistenceTests
     public Q5597RewardPersistenceTests(ITestOutputHelper output) => this.output = output;
 
     [Theory]
-    [InlineData(false, false, false, false)]
-    [InlineData(true, false, false, false)]
-    [InlineData(false, true, false, false)]
-    [InlineData(true, true, false, false)]
-    [InlineData(false, false, true, false)]
-    [InlineData(true, false, true, false)]
-    [InlineData(false, false, true, true)]
-    public async Task LoopbackTurnInPublishesSavedRewardsOnce(bool rejectFirstSave, bool tutorialRecovery, bool levelReward, bool replaceMapAdmission)
+    [InlineData(false, false, false, false, false)]
+    [InlineData(true, false, false, false, false)]
+    [InlineData(false, true, false, false, false)]
+    [InlineData(true, true, false, false, false)]
+    [InlineData(false, false, true, false, false)]
+    [InlineData(true, false, true, false, false)]
+    [InlineData(false, false, true, true, false)]
+    [InlineData(false, false, false, false, true)]
+    [InlineData(true, false, false, false, true)]
+    public async Task LoopbackTurnInPublishesSavedRewardsOnce(bool rejectFirstSave, bool tutorialRecovery, bool levelReward,
+        bool replaceMapAdmission, bool autoAccept)
     {
         const uint accountId = 12;
         ushort questId = tutorialRecovery ? StarterTutorialDefinition.ExileMovementQuestId : QuestId;
@@ -102,10 +105,19 @@ public sealed partial class Q5597RewardPersistenceTests
                     new CharacterStatModel { Id = 42, Stat = (byte)Stat.Health, Value = 9f },
                     new CharacterStatModel { Id = 42, Stat = (byte)Stat.Shield, Value = 14f });
             }
-            seed.CharacterQuest.Add(new() { Id = 42, QuestId = questId, State = (byte)QuestState.Achieved });
+            if (!autoAccept)
+                seed.CharacterQuest.Add(new() { Id = 42, QuestId = questId, State = (byte)QuestState.Achieved });
             await seed.SaveChangesAsync();
         }
-        ConfigureQuest(f, reclaim: false, questId);
+        ConfigureQuest(f, reclaim: autoAccept, questId);
+        if (autoAccept)
+        {
+            var info = (RecordingDispatchProxy<IQuestInfo>)(object)f.Info;
+            info.SetMethodReturn(nameof(IQuestInfo.IsAutoComplete), true);
+            info.SetProperty(nameof(IQuestInfo.PrerequisiteQuests), ImmutableList<Quest2Entry>.Empty);
+            ((RecordingDispatchProxy<IGlobalQuestManager>)(object)f.Global)
+                .SetMethodReturn(nameof(IGlobalQuestManager.GetQuestGivers), new[] { Receiver });
+        }
         if (levelReward)
             ((RecordingDispatchProxy<IQuestInfo>)(object)f.Info).SetMethodReturn(nameof(IQuestInfo.GetRewardExperience), 120u);
         if (tutorialRecovery)
@@ -136,11 +148,18 @@ public sealed partial class Q5597RewardPersistenceTests
         if (rejectFirstSave)
         {
             using (var fault = f.Context())
-                await fault.Database.ExecuteSqlRawAsync("""
+            {
+                string trigger = autoAccept ? """
+                    CREATE TRIGGER q5597_reject_completion BEFORE INSERT ON character_quest
+                    WHEN NEW.id = 42 AND NEW.state = 3
+                    BEGIN SELECT RAISE(ABORT, 'Loopback test rejected quest completion'); END;
+                    """ : """
                     CREATE TRIGGER q5597_reject_completion BEFORE UPDATE OF state ON character_quest
                     WHEN NEW.id = 42 AND NEW.state = 3
                     BEGIN SELECT RAISE(ABORT, 'Loopback test rejected quest completion'); END;
-                    """);
+                    """;
+                await fault.Database.ExecuteSqlRawAsync(trigger);
+            }
             await RunSession(async (world, client, actor) =>
             {
                 await SendWithSaveHeld(world, client, actor);
@@ -162,7 +181,8 @@ public sealed partial class Q5597RewardPersistenceTests
             });
 
             var rolledBack = Assert.Single(await database.GetCharacters(accountId));
-            Assert.Equal(QuestState.Achieved, (QuestState)Assert.Single(rolledBack.Quest).State);
+            if (autoAccept) Assert.Empty(rolledBack.Quest);
+            else Assert.Equal(QuestState.Achieved, (QuestState)Assert.Single(rolledBack.Quest).State);
             Assert.Empty(rolledBack.Item);
             Assert.Empty(rolledBack.Achievement);
             if (levelReward) Assert.Equal((1, 0u), ((int)rolledBack.Level, rolledBack.TotalXp));
@@ -216,6 +236,11 @@ public sealed partial class Q5597RewardPersistenceTests
                     else
                         Assert.Equal(FixtureFanfareSpellId, Assert.Single(FanfarePackets(observer)).Spell4Id);
                 }
+            }
+            if (autoAccept)
+            {
+                using var pushed = await ReadPacket(client, GameMessageOpcode.ServerItemAdd);
+                Assert.Equal(PushedItem, ReadFixtureInventoryItem(pushed).ItemId);
             }
             using var first = await ReadPacket(client, GameMessageOpcode.ServerItemAdd);
             using var second = await ReadPacket(client, GameMessageOpcode.ServerItemAdd);
@@ -318,7 +343,8 @@ public sealed partial class Q5597RewardPersistenceTests
                 actor.Player.TryRecoverStarterTutorialQuestProgression();
             }
             using var read = f.Context();
-            Assert.Equal(QuestState.Achieved, (QuestState)read.CharacterQuest.Single().State);
+            if (autoAccept) Assert.Empty(read.CharacterQuest);
+            else Assert.Equal(QuestState.Achieved, (QuestState)read.CharacterQuest.Single().State);
             Assert.Empty(read.Item);
             Assert.Empty(read.CharacterAchievement);
             if (levelReward)
@@ -375,6 +401,7 @@ public sealed partial class Q5597RewardPersistenceTests
             typeof(WorldSession).GetProperty(nameof(WorldSession.Account))!.SetValue(world, account);
             var model = Assert.Single(await database.GetCharacters(accountId));
             using var actor = LoadActor(f, items, 2, model, world, account, auth, questId);
+            if (autoAccept) actor.Set(nameof(Player.Faction1), Faction.Exile);
             if (levelReward)
             {
                 var map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);

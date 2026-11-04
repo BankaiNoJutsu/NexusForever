@@ -295,3 +295,23 @@ Deployed consumer delivery and native or retail presentation remain open.
 All 43 focused checks and 67 combat and vital packet controls passed.
 Results and binary hashes are under
 `artifacts/continuation-20261104/quest-dependent-vitals/`.
+
+## Client auto-complete acceptance
+
+4 November 2026. An ordinary client turn-in for an inactive auto-complete
+quest validates the start, turn-in and reward selection before accepting the
+quest. Acceptance, its pushed items and completion now use the same
+Character save. If the acceptance succeeds but the completion rewards
+cannot fit, the achieved quest and its pushed items still wait for the save
+before publication.
+
+The loopback uses fixture auto-complete metadata and a pushed item. Before
+the write, the database has no quest or reward rows and the socket has no
+acceptance or item notices. A rejected insert leaves those rows absent.
+Successful retry publishes the notices after commit. Reload retains the
+completed quest and the two final rewards, and replay leaves them intact.
+The metadata is synthetic and does not qualify retail auto-complete
+behavior or deployed providers.
+
+All 279 scoped checks passed. Results and binary hashes are under
+`artifacts/continuation-20261104/quest-auto-accept-publication/`.
