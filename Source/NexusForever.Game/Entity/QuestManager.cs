@@ -18,6 +18,7 @@ using NexusForever.Game.Static.Tutorial;
 using NexusForever.Game.Reputation;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Script;
@@ -770,7 +771,11 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void QuestComplete(ushort questId, ushort reward, bool communicator) => QuestComplete(questId, reward, communicator, admitted: false);
 
-        private void QuestComplete(ushort questId, ushort reward, bool communicator, bool admitted)
+        public bool QuestCompleteFromClient(ushort questId, ushort reward, bool communicator, Action closeDialog)
+            => QuestComplete(questId, reward, communicator, admitted: false, publishOnSave: true, closeDialog: closeDialog);
+
+        private bool QuestComplete(ushort questId, ushort reward, bool communicator, bool admitted,
+            bool publishOnSave = false, Action closeDialog = null)
         {
             IQuestInfo questInfo = GetGlobalQuestManager().GetQuestInfo(questId);
             if (questInfo == null)
@@ -779,10 +784,16 @@ namespace NexusForever.Game.Entity
             if (IsDisabled(DisableType.Quest, questId))
             {
                 player.SendSystemMessage($"Unable to complete quest {questId} because it is disabled.");
-                return;
+                return false;
             }
 
-            if (!admitted && TryDeferContractCompletion(questInfo, reward, communicator)) return;
+            if (!admitted && TryDeferContractCompletion(questInfo, reward, communicator)) return false;
+
+            var owner = player as Player;
+            var session = player.Session as GameSession;
+            bool retainPublication = publishOnSave && !questInfo.IsContract() && owner != null && session != null;
+            if (retainPublication && (questRewardReload || questRewardInvalidated || QuestCompletionBusy(owner)))
+                throw new QuestException("Quest completion cannot overlap pending or quarantined character work.");
 
             IQuest quest = GetQuest(questId, GetQuestFlags.Active);
             if (quest == null)
@@ -835,13 +846,60 @@ namespace NexusForever.Game.Entity
             if (!CanGrantQuestItemRewards(quest.Info, selectedReward))
             {
                 player.SendGenericError(GenericError.ItemInventoryFull);
-                return;
+                return false;
+            }
+
+            if (retainPublication)
+            {
+                CompleteClientQuestWithSave(owner, session, quest, selectedReward, communicator, closeDialog);
+                return true;
             }
 
             var ticket = BeginContractCompletion(quest, reward);
             bool completed = false;
             try { CompleteOrdinaryQuest(quest, selectedReward, communicator); completed = true; }
             finally { EndContractCompletion(ticket, completed); }
+            return false;
+        }
+
+        internal bool IsOrdinaryCompletionMutationInProgress { get; private set; }
+
+        private void CompleteClientQuestWithSave(Player owner, GameSession session, IQuest quest,
+            Quest2RewardEntry selectedReward, bool communicator, Action closeDialog)
+        {
+            var account = owner.Account;
+            var events = session.Events;
+            var inventory = owner.Inventory;
+            ulong epoch = account?.WorldSessionEpoch ?? 0;
+            bool OwnsSession() => ReferenceEquals(owner.Session, session) && ReferenceEquals(session.Events, events)
+                && ReferenceEquals(owner.Account, account) && account?.WorldSessionEpoch == epoch
+                && ReferenceEquals(owner.Inventory, inventory) && ReferenceEquals(owner.QuestManager, this)
+                && session is IPlayerSession bound && ReferenceEquals(bound.Player, owner);
+
+            if (!OwnsSession() || session.IsDisconnecting)
+                throw new InvalidOperationException("Quest completion lost its original World session.");
+
+            session.CanProcessIncomingPackets = false;
+            try
+            {
+                Action publish;
+                IsOrdinaryCompletionMutationInProgress = true;
+                try { publish = session.CaptureOutgoingPackets(() => CompleteOrdinaryQuest(quest, selectedReward, communicator)); }
+                finally { IsOrdinaryCompletionMutationInProgress = false; }
+
+                owner.Save(() =>
+                {
+                    if (!OwnsSession() || session.IsDisconnecting) return;
+                    publish();
+                    if (!communicator) closeDialog?.Invoke();
+                });
+            }
+            catch (Exception exception)
+            {
+                RequireNormalSaveReload();
+                if (OwnsSession()) session.ForceDisconnect();
+                throw new InvalidOperationException("Quest completion could not establish its Character save.", exception);
+            }
         }
 
         private void CompleteOrdinaryQuest(IQuest quest, Quest2RewardEntry selectedReward, bool communicator)

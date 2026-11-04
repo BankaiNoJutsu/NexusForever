@@ -29,6 +29,30 @@ namespace NexusForever.Network.Session
         private FragmentedBuffer onDeck;
         private readonly ConcurrentQueue<ClientGamePacket> incomingPackets = new();
         private readonly ConcurrentQueue<ServerGamePacket> outgoingPackets = new();
+        [ThreadStatic]
+        private static OutgoingCapture outgoingCapture;
+
+        private sealed record OutgoingCapture(GameSession Owner, List<ServerGamePacket> Packets);
+
+        /// <summary>
+        /// Serializes packets produced synchronously for this session and returns a one-shot release.
+        /// Packets for other sessions and worker threads follow the normal queue path.
+        /// </summary>
+        public Action CaptureOutgoingPackets(Action produce)
+        {
+            if (outgoingCapture != null) throw new InvalidOperationException("An outgoing packet capture is already active on this thread.");
+            List<ServerGamePacket> pending = [];
+            outgoingCapture = new(this, pending);
+            try { produce(); }
+            finally { outgoingCapture = null; }
+
+            return () =>
+            {
+                var committed = Interlocked.Exchange(ref pending, null);
+                if (committed == null || IsDisconnecting) return;
+                foreach (var packet in committed) QueueOutgoingPacket(packet);
+            };
+        }
 
         #region Dependency Injection
 
@@ -62,9 +86,19 @@ namespace NexusForever.Network.Session
                 log.Trace($"Sent packet {opcode}(0x{opcode:X}).");
 
             var packet = new ServerGamePacket(opcode.Value, message);
+            if (outgoingCapture is { } capture && ReferenceEquals(capture.Owner, this))
+            {
+                capture.Packets.Add(packet);
+                return;
+            }
+            QueueOutgoingPacket(packet);
+            LogSpellPacketBoundary("outgoing-queued", opcode.Value, false, message.GetType().Name, packet.Data.Length);
+        }
+
+        private void QueueOutgoingPacket(ServerGamePacket packet)
+        {
             outgoingPackets.Enqueue(packet);
             NexusForeverDiagnostics.RecordPacketQueueLength("world", "outgoing", outgoingPackets.Count);
-            LogSpellPacketBoundary("outgoing-queued", opcode.Value, false, message.GetType().Name, packet.Data.Length);
         }
 
         /// <summary>

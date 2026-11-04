@@ -139,3 +139,28 @@ All 80 scoped cases passed. The raw TRX and build record are under
 Character save on the loopback fixture. Ordinary item and quest-state notices
 still need a commit boundary. Other reward kinds, asynchronous save failure,
 deployed sockets and retail presentation remain separate gates.
+
+## Commit-gated client turn-in
+
+4 November 2026. The World request for an ordinary quest now retains the
+original session's synchronously produced packets. The normal Player save
+blocks input and releases the batch after its Character commit. The dialog
+closes after release. Rejected saves discard the batch and retire the actor
+through the existing reload and disconnect path. Session, queue, account
+epoch and inventory ownership are checked before release.
+
+The Q5597 loopback regression stops after the turn-in dispatch and before the
+queued Character save. Both the success and SQL rejection cases see the
+achieved database state and no item, quest-state, achievement or dialog-end
+packet at this boundary. After success the two item grants and completion
+arrive, and reload retains the saved identities. After rejection the original
+session closes and a fresh session can complete the quest once.
+
+The first broader run passed 323 cases. Its two loopback cases timed out
+because the test held Auth on the same thread that processes requests. The
+corrected fixture pauses between World ticks. The corrected scoped run passed
+all 33 cases. The test results and assembly hashes are under `artifacts/continuation-20261104/quest-turn-in-publication/`.
+
+This gate covers the requesting session's ordinary client turn-in notices.
+Server-triggered completion, cross-player script effects, full-stack world
+entry and retail presentation remain separate.

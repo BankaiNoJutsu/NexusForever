@@ -38,7 +38,8 @@ namespace NexusForever.Game.Entity
             internal bool Ready;
         }
 
-        private bool ContractCompletionBusy(Player actor) => contractCompletion != null || normalSave != null || actor.IsNormalSaveInProgress
+        private bool QuestCompletionBusy(Player actor) => contractCompletion != null || normalSave != null || actor.IsNormalSaveInProgress
+            || IsOrdinaryCompletionMutationInProgress
             || questRewardCaptureDepth != 0 || questRewards.Count != 0 || player.ChallengeManager?.HasPendingRewardOperation == true
             || player.Inventory?.SupportsTransactionalSoulboundDelivery == true && player.Inventory.IsSaveBlocked;
 
@@ -49,7 +50,7 @@ namespace NexusForever.Game.Entity
             if (!info.IsContract() || player is not Player actor || !ReferenceEquals(actor.QuestManager, this)) return false;
             if (questRewardReload || questRewardInvalidated || player.ChallengeManager?.RequiresAuthoritativeReload == true)
                 throw new InvalidOperationException("Contract completion requires authoritative reload.");
-            if (!ContractCompletionBusy(actor) && deferredContractCompletions.Count == 0) return false;
+            if (!QuestCompletionBusy(actor) && deferredContractCompletions.Count == 0) return false;
             ushort id = (ushort)info.Entry.Id;
             var quest = GetQuest(id);
             string acceptance = (quest as Quest.Quest)?.ContractAcceptanceId;
@@ -58,7 +59,7 @@ namespace NexusForever.Game.Entity
             deferredContractCompletions.Enqueue(request);
             player.Session.Events.EnqueueEvent(new PredicateEvent(
                 () => questRewardReload || questRewardInvalidated || player.ChallengeManager?.RequiresAuthoritativeReload == true
-                    || deferredContractCompletions.TryPeek(out var head) && ReferenceEquals(head, request) && !ContractCompletionBusy(actor),
+                    || deferredContractCompletions.TryPeek(out var head) && ReferenceEquals(head, request) && !QuestCompletionBusy(actor),
                 () =>
                 {
                     if (questRewardReload || questRewardInvalidated || player.ChallengeManager?.RequiresAuthoritativeReload == true)
@@ -80,7 +81,7 @@ namespace NexusForever.Game.Entity
                 || contractManager?.TryGetRewardSource(quest.Info, out var source) != true
                 || player.Account?.RewardPropertyManager?.CaptureContractModifier(player, source.TrackId, source.TrackType, out var modifier) != true
                 || !modifier.TryGetPoints(source.BasePoints, out _)) return null;
-            if (ContractCompletionBusy(actor)) throw new InvalidOperationException("Contract completion lost its exclusive actor window.");
+            if (QuestCompletionBusy(actor)) throw new InvalidOperationException("Contract completion lost its exclusive actor window.");
             uint[] prerequisites = source.TrackPrerequisiteId == 0 ? []
                 : GetPrerequisiteManager().Meets(player, source.TrackPrerequisiteId) ? [source.TrackPrerequisiteId]
                 : throw new InvalidOperationException("Contract completion track prerequisite is not satisfied.");

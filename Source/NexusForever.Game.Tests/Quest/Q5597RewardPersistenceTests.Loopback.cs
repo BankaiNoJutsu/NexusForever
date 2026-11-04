@@ -77,7 +77,6 @@ public sealed partial class Q5597RewardPersistenceTests
             .AddKeyedTransient<IReadable, ClientQuestComplete>(GameMessageOpcode.ClientQuestComplete)
             .AddTransient<ClientEncryptedHandler>().AddTransient<ClientQuestCompleteHandler>().BuildServiceProvider();
 
-        var rejectedItems = new List<ulong>();
         if (rejectFirstSave)
         {
             using (var fault = f.Context())
@@ -88,15 +87,9 @@ public sealed partial class Q5597RewardPersistenceTests
                     """);
             await RunSession(async (world, client, actor) =>
             {
-                await SendTurnIn(client);
-                await PumpUntil(world, () => actor.Quests.GetQuestState(QuestId) == QuestState.Completed);
-                await ObserveFailedTurnInPackets(world, client, "before save", rejectedItems);
-
-                var error = await Assert.ThrowsAsync<DbUpdateException>(() => actor.Player.SaveDirect());
-                var rejection = Assert.IsType<SqliteException>(error.GetBaseException());
-                Assert.Contains("Q5597 test rejected completion", rejection.Message);
+                await SendWithSaveHeld(world, client, actor);
+                await PumpUntil(world, () => world.IsDisconnecting);
                 Assert.True(actor.Quests.RequiresAuthoritativeReload);
-                await ObserveFailedTurnInPackets(world, client, "after rejection", rejectedItems);
             });
 
             var rolledBack = Assert.Single(await database.GetCharacters(accountId));
@@ -110,11 +103,21 @@ public sealed partial class Q5597RewardPersistenceTests
         (ulong Id, uint ItemId, uint StackCount)[] delivered = null;
         await RunSession(async (world, client, actor) =>
         {
-            await SendTurnIn(client);
-            await PumpUntil(world, () => actor.Quests.GetQuestState(QuestId) == QuestState.Completed);
+            await SendWithSaveHeld(world, client, actor);
+            await PumpUntil(world, () => world.CanProcessIncomingPackets);
+            using (var read = f.Context())
+            {
+                Assert.Equal(QuestState.Completed, (QuestState)read.CharacterQuest.Single().State);
+                Assert.Equal(2, read.Item.Count());
+                Assert.Equal(2u, read.CharacterAchievement.Single().ProgressState);
+            }
             using var first = await ReadPacket(client, GameMessageOpcode.ServerItemAdd);
             using var second = await ReadPacket(client, GameMessageOpcode.ServerItemAdd);
             delivered = new[] { ReadFixtureInventoryItem(first), ReadFixtureInventoryItem(second) }.OrderBy(item => item.ItemId).ToArray();
+            using var state = await ReadPacket(client, GameMessageOpcode.ServerQuestStateChange);
+            Assert.Equal(QuestId, state.ReadUShort(15));
+            Assert.Equal(QuestState.Completed, state.ReadEnum<QuestState>(32));
+            using var dialog = await ReadPacket(client, GameMessageOpcode.ServerDialogEnd);
         });
 
         var saved = Assert.Single(await database.GetCharacters(accountId));
@@ -122,7 +125,6 @@ public sealed partial class Q5597RewardPersistenceTests
         Assert.Equal(savedItems, delivered);
         Assert.Equal(RewardIds, savedItems.Select(item => item.ItemId));
         Assert.All(savedItems, item => Assert.Equal(1u, item.StackCount));
-        Assert.All(savedItems, item => Assert.DoesNotContain(item.Id, rejectedItems));
         Assert.Equal(QuestState.Completed, (QuestState)Assert.Single(saved.Quest).State);
         var completed = Assert.Single(saved.Achievement);
         Assert.Equal(AchievementId, completed.AchievementId);
@@ -166,6 +168,22 @@ public sealed partial class Q5597RewardPersistenceTests
         Assert.Equal(savedItems, final.Item.OrderBy(item => item.ItemId).Select(item => (item.Id, item.ItemId, item.StackCount)).ToArray());
         Assert.Equal(completed.DateCompleted, Assert.Single(final.Achievement).DateCompleted);
 
+        async Task SendWithSaveHeld(WorldSession world, GameProtocolClient client, Actor actor)
+        {
+            await SendTurnIn(client);
+            // The session pumps events before handling input. Stop after the
+            // request and before its queued Character save continuation runs.
+            await PumpUntil(world, () => !world.CanProcessIncomingPackets || world.IsDisconnecting);
+            Assert.False(world.IsDisconnecting);
+            Assert.True(actor.Player.IsNormalSaveInProgress);
+            Assert.Equal(QuestState.Completed, actor.Quests.GetQuestState(QuestId));
+            using var read = f.Context();
+            Assert.Equal(QuestState.Achieved, (QuestState)read.CharacterQuest.Single().State);
+            Assert.Empty(read.Item);
+            Assert.Empty(read.CharacterAchievement);
+            await AssertTurnInPacketsWithheld(world, client);
+        }
+
         async Task RunSession(Func<WorldSession, GameProtocolClient, Actor, Task> exercise)
         {
             using var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -202,33 +220,20 @@ public sealed partial class Q5597RewardPersistenceTests
         }
     }
 
-    private async Task ObserveFailedTurnInPackets(WorldSession world, GameProtocolClient client, string phase, List<ulong> itemIds)
+    private async Task AssertTurnInPacketsWithheld(WorldSession world, GameProtocolClient client)
     {
-        // The marker delimits a flush on this private socket. Item and Quest
-        // publication counts are observations so a future timing fix can remove them.
-        world.Update(.01);
+        // The marker delimits a flush on this private socket while the save is held.
         world.EnqueueMessageEncrypted(new ServerPlayerEnteredWorld());
         world.FlushPackets();
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-        var itemTypes = new List<uint>();
-        int completions = 0;
         while (true)
         {
             var frame = await client.ReadInnerFrame(deadline.Token);
             if (frame.Opcode == GameMessageOpcode.ServerPlayerEnteredWorld) break;
-            Assert.NotEqual(GameMessageOpcode.ServerAchievementUpdate, frame.Opcode);
-            using var reader = new GamePacketReader(new MemoryStream(frame.Body));
-            if (frame.Opcode == GameMessageOpcode.ServerItemAdd)
-            {
-                var item = ReadFixtureInventoryItem(reader);
-                itemIds.Add(item.Id);
-                itemTypes.Add(item.ItemId);
-            }
-            else if (frame.Opcode == GameMessageOpcode.ServerQuestStateChange
-                && reader.ReadUShort(15) == QuestId && reader.ReadEnum<QuestState>(32) == QuestState.Completed)
-                completions++;
+            Assert.False(frame.Opcode is GameMessageOpcode.ServerItemAdd or GameMessageOpcode.ServerQuestStateChange
+                or GameMessageOpcode.ServerAchievementUpdate or GameMessageOpcode.ServerDialogEnd, $"Premature {frame.Opcode}");
         }
-        output.WriteLine($"{phase}: item types [{string.Join(", ", itemTypes.Order())}], completed notices {completions}, achievement updates 0");
+        output.WriteLine("No item, quest-state, achievement or dialog-end packets while the turn-in save was held.");
     }
 
     private static Task SendTurnIn(GameProtocolClient client) => client.SendEncrypted(GameMessageOpcode.ClientQuestComplete, writer =>

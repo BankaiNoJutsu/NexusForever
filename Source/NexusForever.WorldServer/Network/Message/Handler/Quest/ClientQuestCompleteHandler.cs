@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Quest;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
@@ -19,9 +20,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Quest
 
         public void HandleMessage(IWorldSession session, ClientQuestComplete questComplete)
         {
+            bool publishingAfterSave = false;
             try
             {
-                session.Player.QuestManager.QuestComplete(questComplete.QuestId, questComplete.RewardSelection, questComplete.IsCommunicatorMsg);
+                if (session.Player is Player actor && !ReferenceEquals(actor.Session, session)) return;
+                if (session.Player is Player && session.Player.QuestManager is QuestManager quests)
+                    publishingAfterSave = quests.QuestCompleteFromClient(questComplete.QuestId, questComplete.RewardSelection,
+                        questComplete.IsCommunicatorMsg, () => DialogSessionState.EndActiveDialog(session));
+                else
+                    session.Player.QuestManager.QuestComplete(questComplete.QuestId, questComplete.RewardSelection, questComplete.IsCommunicatorMsg);
             }
             catch (QuestException exception)
             {
@@ -36,7 +43,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Quest
                 return;
             }
 
-            if (!questComplete.IsCommunicatorMsg)
+            if (!publishingAfterSave && !questComplete.IsCommunicatorMsg)
                 DialogSessionState.EndActiveDialog(session);
         }
     }

@@ -22,6 +22,7 @@ namespace NexusForever.Game.Entity
             lease = null;
             if (housingNameActor != null && !HousingNameSaveAllowed) return false;
             if (QuestManager is QuestManager { IsContractCompletionMutationInProgress: true }
+                    or QuestManager { IsOrdinaryCompletionMutationInProgress: true }
                 || CurrencyManager is CurrencyManager currencies && (currencies.RequiresContractCurrencyReload || currencies.HasPendingContractCurrency && !AuctionBidSaveAllowed && !BankSaveAllowed && !HousingNameSaveAllowed)
                 || ChallengeManager?.HasPendingRewardOperation == true || ChallengeManager?.RequiresAuthoritativeReload == true
                 || QuestManager?.HasPendingRewardOperation == true || QuestManager?.RequiresAuthoritativeReload == true) return false;

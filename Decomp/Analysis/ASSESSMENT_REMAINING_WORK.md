@@ -218,8 +218,10 @@ presentation and the full quest chain remain open.
 [The rejected-save trace](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#rejected-character-save-and-retry)
 shows item grants and completed quest state reaching the client before a
 rejected Character write. Achievement publication stays withheld. Fresh
-session recovery works after rollback. The item and quest-state commit
-boundary remains open.
+session recovery works after rollback. The later [commit-gated turn-in](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#commit-gated-client-turn-in)
+releases ordinary client turn-in notices to the original session only after
+the Character save. Server-triggered completion, cross-player effects and
+deployed qualification remain open.
 
 [Committed commodity fill recovery](COMMODITY_POSTING_SETTLEMENT.md#recovery-after-a-committed-fill-notice-fails)
 refreshes the original recipient's current orders after an enqueue failure.
