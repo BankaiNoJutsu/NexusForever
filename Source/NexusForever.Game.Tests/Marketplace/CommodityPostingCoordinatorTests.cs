@@ -73,6 +73,10 @@ public sealed class CommodityPostingCoordinatorTests
     [InlineData(true, false, true, "fill-refresh")]
     [InlineData(true, true, true, "fill-refresh")]
     [InlineData(true, false, true, "fill-replace")]
+    [InlineData(true, false, true, "reply-retry")]
+    [InlineData(true, false, true, "reply-replace")]
+    [InlineData(true, false, false, "reply-relisted")]
+    [InlineData(true, false, true, "reply-held")]
     [InlineData(true, false, true, "satchel")]
     [InlineData(true, false, true, "satchel-later")]
     [InlineData(true, false, true, "mail")]
@@ -97,6 +101,7 @@ public sealed class CommodityPostingCoordinatorTests
         bool full = fault.StartsWith("reuse", StringComparison.Ordinal) || fault == "consume-full";
         bool later = fault is "later" or "replace" or "retire" or "satchel-later";
         bool failFill = fault is "fill-refresh" or "fill-replace";
+        bool failReply = fault is "reply-retry" or "reply-replace" or "reply-relisted" or "reply-held";
         bool pauseOther = fault is "counterparty-paused" or "counterparty-relisted" or "counterparty-reload";
         bool otherOnline = pauseOther || fault is "online" or "fill-replace";
         bool routing = fault.StartsWith("routing", StringComparison.Ordinal), earning = fault.StartsWith("earning", StringComparison.Ordinal);
@@ -104,7 +109,7 @@ public sealed class CommodityPostingCoordinatorTests
         bool self = fault is "self" or "competing", multi = fault == "multi" || routing, satchel = fault.StartsWith("satchel", StringComparison.Ordinal), mail = fault == "mail";
         uint quantity = fault == "routing-split" ? 22u : fault == "routing-merge" ? 20u : 3u;
         uint oppositeQuantity = routing ? quantity / 2 : multi ? 1u : 2u;
-        bool refused = fault.StartsWith("missing", StringComparison.Ordinal), suppressed = fault is "replace" or "retire" or "reuse-packet-replace" or "fill-replace";
+        bool refused = fault.StartsWith("missing", StringComparison.Ordinal), suppressed = fault is "replace" or "retire" or "reuse-packet-replace" or "fill-replace" or "reply-replace";
         uint stock = fault == "missing-items" ? 2u : full ? 3u : 10u;
         using var f = new Fixture(null); f.Seed();
         if (earning) ((RecordingDispatchProxy<IQuestInfo>)(object)f.Info).SetProperty(nameof(IQuestInfo.Objectives),
@@ -221,6 +226,8 @@ public sealed class CommodityPostingCoordinatorTests
         bool replied = false, onActor = false, scopeDisposed = false, competingQueued = false, insideLegacy = false, expiryProtected = false;
         int rejected = 0, replacementBoundary = -1;
         int fillAttempts = 0, refreshAttempts = 0;
+        int replyAttempts = 0;
+        bool replyRelisted = false;
         int reentrantRejected = 0;
         int otherSaves = 0;
         bool otherPaused = false, reloaded = false, relisted = false;
@@ -266,7 +273,27 @@ public sealed class CommodityPostingCoordinatorTests
                 using var refusal = f.Context(); Check(refusal); replied = true; return null;
             }
             Assert.Equal(GenericError.Ok, response.Result); Assert.True(onActor); Assert.True(scopeDisposed);
-            using var read = f.Context(); Check(read); replied = true; return null;
+            using var read = f.Context(); Check(read);
+            if (failReply)
+            {
+                Assert.False(Pending(manager));
+                Assert.False(cleanup.IsAccountLocked(actor.Player.Account));
+                Assert.Equal(quantity, response.OrderPosted.Quantity);
+                if (++replyAttempts <= (fault == "reply-held" ? 2 : 1))
+                {
+                    if (fault == "reply-replace")
+                        sp.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+                    if (fault == "reply-relisted")
+                    {
+                        var order = read.MarketplaceCommodityOrder.Single();
+                        order.Quantity = 4; order.Price = order.PricePerUnit * order.Quantity;
+                        read.SaveChanges(); manager.Initialise(); replyRelisted = true;
+                    }
+                    response.OrderPosted.Quantity = 0;
+                    throw new IOException("Commodity post result failed before enqueue.");
+                }
+            }
+            replied = true; return null;
         });
         using var provider = new ServiceCollection().AddSingleton<IGlobalMarketplaceManager>(manager).AddSingleton(items)
             .AddSingleton<IGameTableManager>(f.Source.Tables)
@@ -366,6 +393,24 @@ public sealed class CommodityPostingCoordinatorTests
         } while (Pending(manager) || events.PendingEvents || otherEvents.PendingEvents || actor.Player.IsNormalSaveInProgress || other?.Player.IsNormalSaveInProgress == true);
         using var final = f.Context(); Check(final); Assert.False(cleanup.IsAccountLocked(f.Source.Player.Account));
         Assert.Equal(!suppressed, replied); Assert.Equal(refused ? 0 : 1, executions);
+        if (failReply)
+        {
+            var emitted = sp.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).ToArray();
+            Assert.Equal(suppressed ? 1 : fault == "reply-held" ? 3 : 2, replyAttempts);
+            Assert.Equal(match ? 1 : 0, emitted.OfType<ServerCommodityAuctionFilledPartial>().Count());
+            if (suppressed) Assert.Empty(emitted.OfType<ServerOwnedCommodityOrders>());
+            else
+            {
+                var refreshes = emitted.OfType<ServerOwnedCommodityOrders>().ToArray();
+                Assert.Equal(2, refreshes.Length);
+                Assert.All(refreshes, refresh => Assert.Equal(replyRelisted ? 4u : 1u, Assert.Single(refresh.Orders).Quantity));
+                var resultIndices = Enumerable.Range(0, emitted.Length).Where(index => emitted[index] is ServerCommodityOrderResult).ToArray();
+                int firstRefresh = Array.IndexOf(emitted, refreshes[0]);
+                Assert.InRange(resultIndices[^1], firstRefresh + 1, Array.IndexOf(emitted, refreshes[1]) - 1);
+                if (fault == "reply-held")
+                    Assert.True(firstRefresh < resultIndices[1]);
+            }
+        }
         if (pauseOther)
         {
             Assert.True(otherPaused);
@@ -437,7 +482,7 @@ public sealed class CommodityPostingCoordinatorTests
             if (!immediate && !routing)
             {
                 var order = ownBook.Single();
-                Assert.Equal(42ul, order.OwnerCharacterId); Assert.Equal(match ? 1u : 3u, order.Quantity);
+                Assert.Equal(42ul, order.OwnerCharacterId); Assert.Equal(replyRelisted ? 4u : match ? 1u : 3u, order.Quantity);
                 Assert.Equal(7001u, order.Item2Id);
                 Assert.Equal(order.PricePerUnit * order.Quantity, order.Price);
             }

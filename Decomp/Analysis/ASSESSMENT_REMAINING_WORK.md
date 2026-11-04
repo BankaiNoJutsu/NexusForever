@@ -10,6 +10,10 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Committed commodity posting result retry](COMMODITY_POSTING_SETTLEMENT.md#retry-for-the-committed-posting-result)
+retains the successful result for the original actor and refreshes the current
+owned-order list after success when the result could leave it stale.
+
 [Independent commodity posting publication](COMMODITY_POSTING_SETTLEMENT.md#independent-publication-after-commodity-settlement)
 releases the account and book holds before each original queue publishes.
 Paused counterparties do not delay the requester. Stale fill notices use a

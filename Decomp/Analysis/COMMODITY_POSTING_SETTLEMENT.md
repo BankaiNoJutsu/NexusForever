@@ -1,5 +1,26 @@
 # Commodity posting and fill settlement
 
+## Retry for the committed posting result
+
+4 November 2026. If the successful commodity post result cannot enqueue, the
+original requester retries the accepted reply on its original actor queue.
+Each attempt rebuilds the reply from the captured quote. A replaced actor or
+queue drops the retry. The command, mail handoff and fills are independent of
+reply recovery, and the book and account reservations are already released.
+
+The owned-order list can refresh while the result is still pending. A
+successful retry supersedes any pending refresh and sends a fresh list after
+the reply, so the accepted snapshot cannot leave the list stale. An immediate
+success also refreshes after skipped or failed fills, after a pre-fill
+quantity, or when the accepted order no longer matches the current book.
+Each refresh reads the live book at send time.
+
+Three baseline cases reproduced the result exception escaping the actor.
+The final build and 88 scoped tests passed in 82 seconds, including four
+new cases. Evidence is in `artifacts/continuation-20261104/commodity-posting-result/`.
+The gate covers source and private SQLite with pre-enqueue faults. Deployed
+socket delivery, restart replay and retail qualification remain open.
+
 ## Independent publication after commodity settlement
 
 4 November 2026. The commodity posting coordinator releases the order-book
@@ -21,8 +42,8 @@ Source and private SQLite evidence is in
 reproduced two paused-counterparty stalls. The first candidate passed 127
 scoped tests in 62 seconds. The final build and 66 affected tests passed in
 77 seconds, including all three queue and reload regressions. Both review
-findings were addressed and cleared on re-review. A failed posting result
-enqueue, restart replay and deployed delivery remain open.
+findings were addressed and cleared on re-review. Posting result recovery
+is recorded above. Restart replay and deployed delivery remain open.
 
 ## Recovery after a committed fill notice fails
 

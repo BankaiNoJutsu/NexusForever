@@ -321,22 +321,35 @@ namespace NexusForever.Game.Marketplace
                 }
 
                 bool refresh = !TryPublishFills(actor);
-                try
+                if (ReferenceEquals(actor.Owner, initiator)) PublishCommittedReply(actor, refresh);
+                else if (refresh) RefreshOwnedOrders(actor);
+            }
+
+            private void PublishCommittedReply(Actor actor, bool refresh)
+            {
+                bool sent = false;
+                void Send(bool retry)
                 {
-                    if (ReferenceEquals(actor.Owner, initiator) && CanPublish(actor))
+                    if (!CanPublish(actor)) return;
+                    try { Reply(GenericError.Ok); }
+                    catch (Exception error)
                     {
-                        // The accepted result carries the original quantity and
-                        // the client may put that quantity back into its list.
-                        refresh |= !quote.Incoming.Immediate && quote.Fills.Count != 0
-                            || !HasCurrentOrderPostimage(quote.Incoming.Id);
-                        Reply(GenericError.Ok);
+                        log.Warn(error, "Committed commodity post result failed; retrying on its original actor.");
+                        // A sendable list can recover independently while the result is pending.
+                        if (!retry) RefreshOwnedOrders(actor, () => !sent);
+                        var delay = Task.Delay(TimeSpan.FromSeconds(1));
+                        actor.Owner.Queue.EnqueueThreadSafe(new PredicateEvent(
+                            () => !CanPublish(actor) || delay.IsCompleted, () => Send(true)));
+                        return;
                     }
+
+                    sent = true;
+                    // A successful result can put the original quantity back into
+                    // the list. Recheck the book and supersede any pending refresh.
+                    if (CanPublish(actor) && (refresh || retry || !quote.Incoming.Immediate && quote.Fills.Count != 0
+                        || !HasCurrentOrderPostimage(quote.Incoming.Id))) RefreshOwnedOrders(actor);
                 }
-                finally
-                {
-                    // Post results can change the initiator's list. Refresh it afterwards.
-                    if (refresh) RefreshOwnedOrders(actor);
-                }
+                Send(false);
             }
 
             private bool TryPublishFills(Actor actor)
@@ -400,13 +413,14 @@ namespace NexusForever.Game.Marketplace
                 }));
             }
 
-            private void RefreshOwnedOrders(Actor actor)
+            private void RefreshOwnedOrders(Actor actor, Func<bool> publicationAllowed = null)
             {
+                bool CanRefresh() => publicationAllowed?.Invoke() != false && CanPublish(actor);
                 void Schedule(Task delay) => actor.Owner.Queue.EnqueueThreadSafe(new PredicateEvent(
-                    () => !CanPublish(actor) || delay.IsCompleted, Send));
+                    () => !CanRefresh() || delay.IsCompleted, Send));
                 void Send()
                 {
-                    if (!CanPublish(actor)) return;
+                    if (!CanRefresh()) return;
                     try
                     {
                         actor.Owner.Session.EnqueueMessageEncrypted(new ServerOwnedCommodityOrders
