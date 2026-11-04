@@ -1,5 +1,39 @@
 # AMP prerequisite and lifecycle reconciliation
 
+## Unlocked inlaid AMP list and prerequisite 231
+
+4 November 2026. Build 16042 static evidence identifies the character's
+unlocked inlaid AMP list separately from the active spec's selected AMPs.
+REA evidence `ev_da27f0ff8de8665b152bc739b7654db7aa4f78845a3d9775591172e68e5ccf3d`
+binds the client image SHA-256
+`231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+Pinned PE reads and LLVM disassembly verify these paths.
+
+| Path | Client evidence |
+| --- | --- |
+| Player create `025E` | Dispatch slot `0x1403f1b38` routes through `0x1403ec91d` to `0x1403b5f80`. Reader `0x14008d205` reads a 6-bit count into payload `+0xe4`, then a count-sized ushort array through `+0xe8`. The apply path at `0x1403b626e` writes the count to player state `+0x6df0` and copies the IDs to `+0x6df4`. |
+| Unlock list update `019C` | Dispatch slot `0x1403f1830` routes through `0x1403f0f48` to `0x1403d1c00`. Reader `0x14008e222` reads a 7-bit count and the same ushort IDs. The apply routine replaces the same cache and dispatches `CharacterUnlockedInlaidEldanAugmentation`. The pinned Carbine AMP add-on subscribes to that event and rebuilds its view. [Archived consumer](https://github.com/NexusInstruments/CarbineAddons/blob/cf063b3e22b08f49ff51c12cec258a9f1cf86d68/AbilityAMPs/AbilityAMPs.lua#L88) |
+| Prerequisite 231 | Live dispatch at `0x1404a2ead` uses slot `0x140b678e0` and handler `0x14049d7b0`. It requires the local player, compares the row's `objectId` with a zero-extended ushort in the unlock cache, and handles Equal and NotEqual. Type 227 instead reads the active spec's selected AMPs. |
+| AMP allocation | The branch at `0x1403d0746` checks the node's field `+0x1c` (`Item2IdUnlock` in the table model). When nonzero, it tests membership by the node ID and returns result `0x20` (`EldanAugmentationLockedInlaid`) if absent. |
+
+The update apply caps the stored count at 54 but uses the incoming count for
+the copy. The following player-state field is at `+0x6e60`, exactly 54
+ushort slots after `+0x6df4`. Both outgoing models now reject oversized lists
+before writing. They expose the named IDs and keep the legacy collection
+aliases. The player-create field was previously called `KnownDyes` and had
+no producer. Empty payloads retain their existing encoding.
+
+Two baseline tests reproduced oversized serialization. The owning build and
+all 73 scoped tests passed, including empty and 54-ID lists for both packets
+and rejection at 55. Native verifier, PE reads, bounded disassembly, and the
+pinned add-on are in
+`artifacts/continuation-20261104/amp-prerequisite-231/`.
+
+Runtime prerequisite 231, server grant/persistence, and `019C` emission remain
+open. Before adding them, bind an actual build 16042 `UnlockInlaidAugment`
+effect row and its unlock item to the node and confirm the authoritative
+grant and consumption path. The client cache is a consumer of that state.
+
 ## Property ownership when an effect key is reused
 
 4 November 2026. A same-spell replacement could reuse the original AMP's
@@ -40,7 +74,7 @@ Cached fragments reside under `Decomp/Analysis/exports/WildStar64.exe/selected_d
 
 - Live prerequisite dispatch `1404a2100`, case `0xe3`, selects vtable `140b67740+0x198`, function `14049d760`. The handler requires the local player, supports Equal/NotEqual, and passes **objectId** to `1403cdf50` with active spec at `+0x6dec`; value is not the AMP identity.
 - `1403cdf50` scans the selected spec's ushort AMP array, plus the active pending list; spec indices above3 fail. Server state includes newly added nodes and excludes pending deletion.
-- Type231 selects `14049d7b0` through the separate `+0x1a0` slot and scans a global ushort list at `+0x6df0/+0x6df4`. The old cached function label is misleading; the live dispatch and body identify a distinct list. This change registers only227 and does not equate231 with enabled AMPs.
+- Type231 selects `14049d7b0` through the separate `+0x1a0` slot and scans a global ushort list at `+0x6df0/+0x6df4`. The later [unlocked inlaid AMP mapping](#unlocked-inlaid-amp-list-and-prerequisite-231) identifies the list. This change registers only227.
 
 ## Initialization and retained behavior
 
@@ -79,4 +113,4 @@ SHA256 inputs:
 
 `AmpTableAugmentationTests` adds the actual property/cooldown raw witnesses, exact passive group identity/cap/type gates, login and active/inactive/shared spec transitions, removal/recast/retry, unchanged running cooldowns, pre-existing/unrelated/value-equal replacement ownership, unsupported timing/mixed/scope/mode payloads and SQLite node save/remove/relog without learned spells or entitlements. Combined focused gate:146 passed, zero failures, skips, warnings or errors.
 
-Mixed, proc, timed, periodic, delayed, channeled, other stack-group contracts, property-conversion and conditional-persistence augment families need effect-wide runtime ownership/retail semantics before automatic application is safe. They are intentionally unsupported here. Type231's separate global-list ownership is also unresolved; this is not a claim of complete AMP gameplay parity.
+Mixed, proc, timed, periodic, delayed, channeled, other stack-group contracts, property-conversion and conditional-persistence augment families need effect-wide runtime ownership and retail semantics before automatic application is safe. Server authority for the inlaid unlock list remains open.

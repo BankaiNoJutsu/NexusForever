@@ -239,7 +239,7 @@ namespace NexusForever.Network.Message
         ServerSupplySatchelUpdate       = 0x0199,
         ServerSupplySatchelAux          = 0x019A, // native 14007fcf0 reads one 6-bit field plus one uint32 via shared MatchingQueueResultWaitTime_ReadPayload; semantics unresolved
         ServerPlayerChanged             = 0x019B,
-        ServerActionSetUInt16List       = 0x019C, // 7-bit count + ushort rows; reader FUN_14008e1f0
+        ServerActionSetUInt16List       = 0x019C, // Replaces the unlocked inlaid AMP list; reader 0x14008e1f0
         ServerActionSet                 = 0x019D,
         ServerAttributePoints           = 0x019E,
         ServerStanceChanged             = 0x019F,

@@ -66,21 +66,33 @@ public class ActionSetUnresolvedPacketShapeTests
         Assert.Equal(stream.Length, stream.Position);
     }
 
-    [Fact]
-    public void ServerActionSetUInt16List_Writes7BitCountAndUshortRows()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(54)]
+    public void InlaidAugmentationUpdateWrites7BitCountAndUshortIds(int count)
     {
         var packet = new ServerActionSetUInt16List();
-        packet.Values.AddRange([(ushort)100, (ushort)200, (ushort)300]);
+        var ids = Enumerable.Range(300, count).Select(id => (ushort)id).ToArray();
+        packet.UnlockedInlaidAugmentationIds.AddRange(ids);
+        Assert.Same(packet.UnlockedInlaidAugmentationIds, packet.Values);
 
         byte[] packetData = WritePacket(packet);
 
         using var stream = new MemoryStream(packetData);
         using var reader = new GamePacketReader(stream);
-        Assert.Equal(3u, reader.ReadUInt(7u));
-        Assert.Equal((ushort)100, reader.ReadUShort());
-        Assert.Equal((ushort)200, reader.ReadUShort());
-        Assert.Equal((ushort)300, reader.ReadUShort());
+        Assert.Equal((uint)count, reader.ReadUInt(7u));
+        foreach (ushort id in ids)
+            Assert.Equal(id, reader.ReadUShort());
         Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
+    public void InlaidAugmentationUpdateRejectsAListLargerThanTheClientBuffer()
+    {
+        var packet = new ServerActionSetUInt16List();
+        packet.Values.AddRange(Enumerable.Range(300, 55).Select(id => (ushort)id));
+
+        Assert.Throws<InvalidOperationException>(() => WritePacket(packet));
     }
 
     [Fact]

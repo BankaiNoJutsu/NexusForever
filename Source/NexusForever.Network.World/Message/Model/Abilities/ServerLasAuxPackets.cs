@@ -65,18 +65,25 @@ namespace NexusForever.Network.World.Message.Model.Abilities
         }
     }
 
-    // Client reader FUN_14008e1f0 @ 14008e1f0 (FUN_14006c290 registration 0x019C, object size 0x10).
-    // Wire: 7-bit count followed by count ushort values (same ushort tail family as ServerAmpList).
+    // 0x019C replaces the unlocked inlaid AMP list and raises CharacterUnlockedInlaidEldanAugmentation.
+    // The client reader at 0x14008e1f0 uses a 7-bit count followed by ushort IDs.
     [Message(GameMessageOpcode.ServerActionSetUInt16List)]
     public class ServerActionSetUInt16List : IWritable
     {
-        public List<ushort> Values { get; } = [];
+        // The apply handler at 0x1403d1c00 clamps the visible count but copies all incoming rows.
+        public const int MaxUnlockedInlaidAugmentations = 54;
+
+        public List<ushort> UnlockedInlaidAugmentationIds { get; } = [];
+        public List<ushort> Values => UnlockedInlaidAugmentationIds;
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(Values.Count, 7u);
-            foreach (ushort value in Values)
-                writer.Write(value);
+            if (UnlockedInlaidAugmentationIds.Count > MaxUnlockedInlaidAugmentations)
+                throw new InvalidOperationException("Unlocked inlaid AMP list exceeds the client capacity.");
+
+            writer.Write(UnlockedInlaidAugmentationIds.Count, 7u);
+            foreach (ushort id in UnlockedInlaidAugmentationIds)
+                writer.Write(id);
         }
     }
 

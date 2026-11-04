@@ -330,6 +330,7 @@ WildStar64.exe,1403bef30,SpellThreshold_ClearActiveState,Marks the active thresh
 WildStar64.exe,1403bfbf0,SpellThreshold_ResolveDisplaySpellId,Uses the active threshold state and threshold-stage map to resolve the displayed Spell4 id override for threshold spells before UI spell resolution.
 WildStar64.exe,1403c0210,SpellThreshold_GetStageTimeOrFallback,Returns the active threshold-stage time value from the threshold cache for a spell, or falls back to the base spell-wrapper value when no stage override is active.
 WildStar64.exe,1403d19a0,AbilityBook_SendClientCommitAmpSpec,Sends opcode 0x01A2 ClientCommitAmpSpec with the current spec AMP list and clears the pending AMP cache.
+WildStar64.exe,1403d1c00,ServerInlaidAugmentationUnlockList_Apply,Replaces the local character inlaid AMP unlock cache for opcode 0x019C and dispatches CharacterUnlockedInlaidEldanAugmentation.
 WildStar64.exe,1403db7f0,UnitState_UpdateCachedStateFields,Resolves the subject unit for a raw unit-state/target record, forwards target id and secondary data into EntityTarget_ApplyTargetedByUnitUpdate, and refreshes cached target entity id at +0x108 plus relationship code at +0x10c via Entity_GetRelationshipCodeToTargetId when the target id changes.
 WildStar64.exe,1403db870,UnitState_ApplyResolvedState,Resolves the target unit for a raw unit-state update, applies the raw state value, and special-cases state 0 cleanup for the local subject/UI path.
 WildStar64.exe,1403db920,UnitState_MaybeDispatchUnitEvaded,Emits the UnitEvaded client event when a resolved unit-state update carries raw state value 4.
@@ -992,7 +993,7 @@ WildStar64.exe,1403c2630,Vendor_SendClientSellItemToVendor,Validates vendor stat
 WildStar64.exe,1403c2850,Vendor_SendClientBuybackItemFromVendor,Validates inventory and buyback state before sending opcode 0x00BB with the selected buyback unique id.
 WildStar64.exe,14050cbc0,Lua_GameLib_GetRestXp,GameLib.GetRestXp Lua method that returns the local player's current rested XP pool from current player state offset 0x1688.
 WildStar64.exe,14050cbf0,Lua_GameLib_GetRestXpKillCreaturePool,GameLib.GetRestXpKillCreaturePool Lua method that returns current rested XP adjusted by a client lookup coefficient used for kill creature pool display.
-WildStar64.exe,1403b5f80,ServerPlayerCreate_ApplyPlayerXpState,Applies the large current player creation state payload including total XP and rested XP pool before dispatching CharacterCreated.
+WildStar64.exe,1403b5f80,ServerPlayerCreate_ApplyPlayerXpState,Applies player creation state including XP and the inlaid AMP unlock list before dispatching CharacterCreated.
 WildStar64.exe,1403c6d80,PlayerXpState_DispatchUiXpChanged,Calculates level XP progress from player XP state and dispatches UI_XPChanged with total XP level range and rested XP pool.
 WildStar64.exe,1403c8760,ServerExperienceGained_ApplyPlayerXpState,Applies the experience gained payload by adding total XP subtracting the rested XP amount and dispatching ExperienceGained events.
 WildStar64.exe,14050cd50,Lua_GameLib_SellItemToVendor,GameLib SellItemToVendor Lua method that reads item location and quantity before routing opcode 0x0166.
@@ -1052,7 +1053,7 @@ WildStar64.exe,140095fb0,ServerSpellThresholdUpdate_ReadPayload,Registration blo
 WildStar64.exe,14008dc30,ServerActionSetDualUInt32Lists_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x016B and 0x20-byte object size; reads 4-bit field 32-bit field 4-bit count then two counted uint32 arrays.
 WildStar64.exe,14008e030,ServerInstanceResetAux_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x0157 and 8-byte object size; reads one 4-bit field followed by one uint32 field.
 WildStar64.exe,14008ed80,ServerActionSetUInt16_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x016D; reads one 16-bit field through FUN_14006c090.
-WildStar64.exe,14008e1f0,ServerActionSetUInt16List_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x019C and 0x10-byte object size; reads 7-bit count then count ushort values.
+WildStar64.exe,14008e1f0,ServerInlaidAugmentationUnlockList_ReadPayload,Reads the 7-bit count and ushort inlaid AMP unlock IDs for server opcode 0x019C.
 WildStar64.exe,1400819b0,ServerActionSetFiveUInt32_ReadPayload,Registration block FUN_14006c290 wires server opcodes 0x01A4 and 0x01AC with 0x14-byte object size; reads five consecutive 32-bit fields.
 WildStar64.exe,140096120,ServerCooldownList_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x091B ServerCooldownList and 0x10-byte object size to this reader.
 WildStar64.exe,140096fa0,ServerEntityCreate_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x0262 ServerEntityCreate and 0x120-byte object size to this reader; after spell list reads +0xd0 CurrentSpellUniqueId then +0xd4 and +0xd8 as 14-bit Faction1/Faction2 then +0xdc UnitTagOwner and +0xe0 GroupTagOwner.
@@ -2827,8 +2828,8 @@ WildStar64.exe,14049e3f0,Prerequisite_CheckIsPlayer,Prerequisite type 39 handler
 WildStar64.exe,14049d3f0,Prerequisite_CheckFactionType4,Prerequisite type 4 handler table[4]: entity faction id at +0xdc path then integer ApplyComparison; distinct from type 128 Prerequisite_CheckFaction 14049c720.
 WildStar64.exe,14049d470,Prerequisite_CheckEntityIdInEvalContextList_Table5Orphan,Prerequisite handler table[5] @ 0x140b67870 only (DATA ref 140b67898): walks int list at eval-context+0x2b8/+0x2c0 vs entity id at param_2+8; not live type 5 — case 0x5 inline uses entity+0x118 faction component vtable+0x20 then PrerequisiteManager_ApplyComparisonFloat 1404a2010.
 WildStar64.exe,1404a2010,PrerequisiteManager_ApplyComparisonFloat,Float prerequisite comparison helper (Equal/NotEqual/etc.); live type 5 Reputation case 0x5 and type 172 HealthScaled case 0xac; distinct from integer PrerequisiteManager_ApplyComparison 1404a2090.
-WildStar64.exe,14049d760,Prerequisite_CheckItemEquipped,Prerequisite type 13 handler table[13]: equipped inventory slot / item presence bit test.
-WildStar64.exe,14049d7b0,Prerequisite_CheckItemOnCharacter,Prerequisite type 14 handler table[14]: inventory item count on character.
+WildStar64.exe,14049d760,Prerequisite_CheckAmpEnabled,Live prerequisite type 227 checks objectId against the local character active spec AMP selection.
+WildStar64.exe,14049d7b0,Prerequisite_CheckInlaidAugmentationUnlocked,Live prerequisite type 231 checks objectId against the local character unlocked inlaid AMP cache.
 WildStar64.exe,14049e780,Prerequisite_CheckItemQuantity,Prerequisite type 51 handler table[51]: inventory manager vtable item quantity compare.
 WildStar64.exe,14049e7e0,Prerequisite_CheckCurrency,Prerequisite type 55 handler table[55] and live type 240 vtable +0x2e8: player currency amount at manager+0x14 then ApplyComparison 1404a2090.
 WildStar64.exe,1404a5150,Prerequisite_CheckHouseOwnership,Prerequisite type 182 handler table[182]: housing manager ownership lookup via 1404a5590.

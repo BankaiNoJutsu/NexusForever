@@ -1,5 +1,6 @@
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Message;
+using NexusForever.Network.World.Message.Model.Abilities;
 using NexusForever.Network.World.Message.Model.Shared;
 using FactionId = NexusForever.Game.Static.Reputation.Faction;
 
@@ -80,7 +81,8 @@ namespace NexusForever.Network.World.Message.Model
         public int ActiveCostumeIndex { get; set; }
         public uint UnknownC4 { get; set; }
         public uint UnknownC8 { get; set; }
-        public List<ushort> KnownDyes { get; } = new();
+        public List<ushort> UnlockedInlaidAugmentationIds { get; } = new();
+        public List<ushort> KnownDyes => UnlockedInlaidAugmentationIds; // Legacy model name for this wire field.
         public ushort[] TradeskillMaterials { get; set; } = new ushort[512];
         public float GearScore { get; set; }
         public bool IsPvpServer { get; set; }
@@ -89,6 +91,9 @@ namespace NexusForever.Network.World.Message.Model
 
         public void Write(GamePacketWriter writer)
         {
+            if (UnlockedInlaidAugmentationIds.Count > ServerActionSetUInt16List.MaxUnlockedInlaidAugmentations)
+                throw new InvalidOperationException("Unlocked inlaid AMP list exceeds the client capacity.");
+
             writer.Write(Inventory.Count);
             Inventory.ForEach(i => i.Write(writer));
 
@@ -115,8 +120,8 @@ namespace NexusForever.Network.World.Message.Model
             writer.Write(UnknownC4);
             writer.Write(UnknownC8);
 
-            writer.Write((byte)KnownDyes.Count, 6u);
-            KnownDyes.ForEach(a => writer.Write(a));
+            writer.Write((byte)UnlockedInlaidAugmentationIds.Count, 6u);
+            UnlockedInlaidAugmentationIds.ForEach(id => writer.Write(id));
 
             for (uint i = 0u; i < TradeskillMaterials.Length; i++)
                 writer.Write(TradeskillMaterials[i]);
