@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Text.Json;
 using NexusForever.Database;
 using NexusForever.Database.Auth.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.RBAC;
 using NexusForever.Game.Static.RBAC;
@@ -43,7 +44,8 @@ public sealed class PresenceGenerationProducerTests
         var account = RecordingDispatchProxy<IAccount>.Create(out _);
         var session = RecordingDispatchProxy<IWorldSession>.Create(out var proxy); proxy.SetProperty(nameof(IWorldSession.Account), account);
         var databases = RecordingDispatchProxy<IDatabaseManager>.Create(out var db);
-        var error = Assert.Throws<InvalidPacketValueException>(() => new ClientHelloRealmHandler(databases).HandleMessage(session, new ClientHelloRealm()));
+        var realm = RecordingDispatchProxy<IRealmContext>.Create(out _);
+        var error = Assert.Throws<InvalidPacketValueException>(() => new ClientHelloRealmHandler(databases, realm).HandleMessage(session, new ClientHelloRealm()));
         Assert.DoesNotContain("SessionKey", error.Message); Assert.Empty(db.Invocations);
     }
 

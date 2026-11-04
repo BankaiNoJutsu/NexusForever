@@ -1,17 +1,124 @@
 using System.Data;
 using Microsoft.EntityFrameworkCore;
+using NexusForever.Database;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Character;
+using NexusForever.Database.Configuration.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Account.Currency;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Tests.TestSupport;
+using NexusForever.Network;
+using NexusForever.Network.World.Message.Model.Pregame;
+using NexusForever.Shared.Game.Events;
+using NexusForever.WorldServer.Network;
+using NexusForever.WorldServer.Network.Message.Handler.Authentication;
 using CharacterFixture = NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.Fixture;
 
 namespace NexusForever.Game.Tests.Account.Currency;
 
 public sealed partial class AccountCurrencyDurabilityTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RealmAdmissionRecoversLocalVendorDebitsBeforePublishingWallets(bool validKey)
+    {
+        const string key = "00112233445566778899AABBCCDDEEFF";
+        using var auth = new Fixture(providerOptions);
+        using var character = new CharacterFixture(options: null);
+        character.Seed();
+        await SeedVendorPayment(auth, character);
+
+        var authDatabase = new AuthDatabase();
+        using (var seed = auth.Context())
+        {
+            authDatabase.Initialise(new DatabaseConnectionString { Provider = seed.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
+                ConnectionString = seed.Database.GetDbConnection().ConnectionString });
+            seed.Account.Single().SessionKey = key;
+            await seed.SaveChangesAsync();
+        }
+        var characterDatabase = new CharacterDatabase();
+        using (var seed = character.Context())
+            characterDatabase.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite, ConnectionString = seed.Database.GetDbConnection().ConnectionString });
+
+        await Pay(1, 15, AccountCurrencyType.ProtostarPromissoryNote, commit: false);
+        await Pay(1, 9, AccountCurrencyType.Omnibit, commit: true);
+        await Pay(2, 7, AccountCurrencyType.NCoin, commit: false);
+
+        var databases = RecordingDispatchProxy<IDatabaseManager>.Create(out var databaseProxy);
+        databaseProxy.SetMethodHandler(nameof(IDatabaseManager.GetDatabase), (method, _) =>
+            method.GetGenericArguments()[0] == typeof(AuthDatabase) ? authDatabase : characterDatabase);
+        var realm = RecordingDispatchProxy<IRealmContext>.Create(out var realmProxy);
+        realmProxy.SetProperty(nameof(IRealmContext.RealmId), (ushort)1);
+        var handler = new ClientHelloRealmHandler(databases, realm);
+        AccountModel firstAdmission = null;
+        for (int attempt = 0; attempt < (validKey ? 2 : 1); attempt++)
+        {
+            var events = new EventQueue();
+            Exception error = null;
+            events.UnhandledExceptionHandler = exception => error = exception;
+            var session = RecordingDispatchProxy<IWorldSession>.Create(out var network);
+            network.SetProperty(nameof(IWorldSession.Events), events);
+            AccountModel initialized = null;
+            network.SetMethodHandler(nameof(IWorldSession.Initialise), args => { initialized = Assert.IsType<AccountModel>(args[0]); return null; });
+            var request = new ClientHelloRealm();
+            typeof(ClientHelloRealm).GetProperty(nameof(ClientHelloRealm.AccountId))!.SetValue(request, 77u);
+            typeof(ClientHelloRealm).GetProperty(nameof(ClientHelloRealm.AccountString))!.SetValue(request, "wallet-77@example.local");
+            typeof(ClientHelloRealm).GetProperty(nameof(ClientHelloRealm.SessionKey))!.SetValue(request, Convert.FromHexString(validKey ? key : new string('F', 32)));
+
+            handler.HandleMessage(session, request);
+            Assert.Null(initialized);
+            Assert.False(session.CanProcessIncomingPackets);
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            while (events.PendingEvents) { events.Update(.01); await Task.Delay(5, timeout.Token); }
+            if (validKey)
+            {
+                Assert.Null(error);
+                Assert.NotNull(initialized);
+                Assert.Equal((ulong)attempt + 1, initialized.WorldSessionEpoch);
+                Assert.Equal(new ulong[] { 61, 43, 100 }, initialized.AccountCurrency.OrderBy(row => row.CurrencyId).Select(row => row.Amount));
+                firstAdmission ??= initialized;
+                Assert.Single(network.GetInvocations(nameof(IWorldSession.SetEncryptionKey)));
+                Assert.True(session.CanProcessIncomingPackets);
+            }
+            else
+            {
+                Assert.IsType<InvalidPacketValueException>(error);
+                Assert.Null(initialized);
+                Assert.Empty(network.GetInvocations(nameof(IWorldSession.SetEncryptionKey)));
+            }
+        }
+        if (validKey)
+        {
+            var stale = await Assert.ThrowsAsync<InvalidOperationException>(() => VendorAccountPurchase.RecoverAtAdmissionAsync(firstAdmission, authDatabase, characterDatabase, 1));
+            Assert.Contains("admitted account epoch", stale.Message);
+        }
+        using var storedAuth = auth.Context();
+        Assert.Equal(3, storedAuth.AccountCurrencyOperation.Count(row => row.Subtract));
+        Assert.Equal(validKey ? 1 : 0, storedAuth.AccountCurrencyOperation.Count(row => !row.Subtract));
+        Assert.Equal(validKey ? new ulong[] { 61, 43, 100 } : [61, 43, 85],
+            storedAuth.AccountCurrency.OrderBy(row => row.CurrencyId).Select(row => row.Amount));
+        using var storedCharacter = character.Context();
+        Assert.Equal(validKey ? 2 : 1, storedCharacter.BankReconciliationReceipt.Count());
+        Assert.Equal(912ul, storedCharacter.Item.Single().Id);
+
+        async Task Pay(ushort purchaseRealm, ulong cost, AccountCurrencyType currency, bool commit)
+        {
+            var checkout = new VendorAccountPurchase(characterDatabase.CreateContext, authDatabase.CreateContext, purchaseRealm);
+            var intent = checkout.Create(77, 42, 7001, 1, new string('A', 64), [new(currency, cost)]);
+            await using var source = characterDatabase.CreateContext();
+            await using var transaction = await source.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+            Assert.Equal(VendorAccountAuthorization.Authorized, await checkout.AuthorizeAsync(source, intent,
+                unit => unit.Item.Add(new() { Id = 911ul + purchaseRealm, OwnerId = 42, ItemId = 7001, Location = (ushort)InventoryLocation.Inventory, StackCount = 1 })));
+            await source.SaveChangesAsync();
+            if (commit) await transaction.CommitAsync();
+            else await transaction.RollbackAsync();
+        }
+    }
+
     [Theory]
     [InlineData("delivered")]
     [InlineData("abandoned")]

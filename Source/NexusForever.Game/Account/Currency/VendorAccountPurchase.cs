@@ -18,11 +18,61 @@ namespace NexusForever.Game.Account.Currency
     internal enum VendorAccountAuthorization { Authorized, Delivered, Cancelled }
 
     /// <summary>Durable account payment and compensation for a single Character delivery transaction.</summary>
-    internal sealed class VendorAccountPurchase(Func<CharacterContext> characters, Func<AuthContext> auth, ushort realm)
+    public sealed class VendorAccountPurchase
     {
         private const string DebitPrefix = "vendor-debit:";
         private const string DeliveredPrefix = "vendor-account-delivered:";
         private const string CancelledPrefix = "vendor-account-cancelled:";
+
+        private readonly Func<CharacterContext> characters;
+        private readonly Func<AuthContext> auth;
+        private readonly ushort realm;
+
+        internal VendorAccountPurchase(Func<CharacterContext> characters, Func<AuthContext> auth, ushort realm)
+        {
+            this.characters = characters;
+            this.auth = auth;
+            this.realm = realm;
+        }
+
+        public static Task RecoverAtAdmissionAsync(AccountModel account, AuthDatabase auth, CharacterDatabase characters, ushort realm)
+            => new VendorAccountPurchase(characters.CreateContext, auth.CreateContext, realm).RecoverAdmissionAsync(account);
+
+        private async Task RecoverAdmissionAsync(AccountModel account)
+        {
+            if (realm == 0 || account.Id == 0 || account.WorldSessionEpoch == 0)
+                throw new InvalidOperationException("Vendor recovery requires an admitted account and realm.");
+
+            await using var reader = auth();
+            string route = AccountCurrencyOperationRepository.DatabaseKey(reader);
+            var anchors = await reader.AccountCurrencyOperation.AsNoTracking()
+                .Where(row => row.AccountId == account.Id && row.Subtract
+                    && row.OperationKey.StartsWith(DebitPrefix) && row.OperationKey.EndsWith(":0"))
+                .OrderBy(row => row.OperationKey).ToArrayAsync();
+            var local = anchors.Select(row => (Debit: row, Intent: ReadIntent(row)))
+                .Where(entry => entry.Intent.Realm == realm).ToArray();
+            if (local.Length == 0) return;
+
+            if (local.Any(entry => entry.Intent.AuthRoute != route))
+                throw new InvalidOperationException("Vendor recovery found a debit from a different Auth route.");
+            if (!await reader.AccountWorldSession.AnyAsync(row => row.AccountId == account.Id && row.Epoch == account.WorldSessionEpoch))
+                throw new InvalidOperationException("Vendor recovery lost its admitted account epoch.");
+
+            foreach (var entry in local)
+                await RecoverAsync(entry.Debit, entry.Intent);
+
+            byte[] affected = local.SelectMany(entry => entry.Intent.Costs).Select(cost => (byte)cost.Currency).Distinct().ToArray();
+            await using var fresh = auth();
+            if (AccountCurrencyOperationRepository.DatabaseKey(fresh) != route)
+                throw new InvalidOperationException("Vendor recovery changed its admitted Auth route.");
+            var refreshed = await fresh.Account.AsNoTracking()
+                .Where(row => row.Id == account.Id && fresh.AccountWorldSession.Any(epoch => epoch.AccountId == row.Id && epoch.Epoch == account.WorldSessionEpoch))
+                .Select(row => new { Wallets = row.AccountCurrency.Where(wallet => affected.Contains(wallet.CurrencyId)).ToArray() })
+                .SingleOrDefaultAsync();
+            if (refreshed == null || refreshed.Wallets.Length != affected.Length)
+                throw new InvalidOperationException("Vendor recovery lost its admitted account or wallet rows.");
+            account.AccountCurrency = account.AccountCurrency.Where(wallet => !affected.Contains(wallet.CurrencyId)).Concat(refreshed.Wallets).ToList();
+        }
 
         internal sealed record Cost(AccountCurrencyType Currency, ulong Amount);
         internal sealed record Intent(string Id, uint Account, ulong Character, ushort Realm, string CharacterRoute, string AuthRoute,
@@ -84,9 +134,18 @@ namespace NexusForever.Game.Account.Currency
         // A fresh process can reconstruct the purchase from an immutable debit
         // receipt. Cancellation and delivery share the same Character lock and
         // key, so a late attempt cannot deliver after a refund.
-        internal async Task<VendorAccountAuthorization> RecoverAsync(AccountCurrencyOperationModel debit)
+        internal Task<VendorAccountAuthorization> RecoverAsync(AccountCurrencyOperationModel debit) => RecoverAsync(debit, ReadIntent(debit));
+
+        private static Intent ReadIntent(AccountCurrencyOperationModel debit)
         {
             var intent = JsonSerializer.Deserialize<Intent>(debit.SourceJson);
+            if (intent == null || intent.Realm == 0 || intent.Account != debit.AccountId)
+                throw new InvalidOperationException("Vendor recovery found a debit with a foreign account or realm.");
+            return intent;
+        }
+
+        private async Task<VendorAccountAuthorization> RecoverAsync(AccountCurrencyOperationModel debit, Intent intent)
+        {
             Validate(intent);
             var operation = Operations(intent, subtract: true).SingleOrDefault(candidate => candidate.Key == debit.OperationKey);
             if (operation == null) throw new InvalidOperationException("Unknown vendor debit identity.");

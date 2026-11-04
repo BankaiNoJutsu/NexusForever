@@ -22895,10 +22895,25 @@ The earlier key format admitted the conflicting quote in a retained regression.
 The final build and tests took 59 seconds, including 13 seconds of test execution.
 Evidence is under `artifacts/continuation-20261104/vendor-account-settlement-protocol/`.
 
-The public purchase path still requires integration. Connect the frozen vendor
-enrollment to the settlement protocol, adopt and publish the original session's
-wallet state, and discover outstanding debits at account admission before
-constructing the wallet cache. Cosmic Reward requires the existing Loyalty
+#### Account-funded vendor recovery at Realm admission
+
+4 November 2026. After credential validation, the Realm login handler resolves
+vendor debit receipts for the admitted account and current realm before it
+initializes the session. The recovery path reloads only affected wallet rows
+and checks the durable World session epoch before recovery and before adopting
+the refreshed balance. An epoch change observed during recovery rejects that
+admission.
+
+The final build and seven scoped tests passed. The public handler fixture
+refunds an abandoned local debit once across repeated logins, keeps the delivered
+purchase charged, and defers the other realm's debit. It also covers rejected
+credentials and a superseded epoch. Build and tests took 53 seconds, including
+seven seconds of test execution. Evidence is under
+`artifacts/continuation-20261104/vendor-account-admission/`.
+
+The public purchase handler still needs to enroll the frozen vendor delivery,
+bind the Auth debit to the current admission epoch, and adopt and publish the
+original session's wallet state. Cosmic Reward requires the existing Loyalty
 journal's participation. Configured-provider and deployed restart evidence
 remain open.
 

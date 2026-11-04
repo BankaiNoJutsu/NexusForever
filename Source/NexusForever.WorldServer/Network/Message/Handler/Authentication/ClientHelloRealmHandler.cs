@@ -1,9 +1,14 @@
 ﻿using System;
+using System.Threading.Tasks;
 using NexusForever.Database;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
+using NexusForever.Database.Character;
+using NexusForever.Game.Abstract;
+using NexusForever.Game.Account.Currency;
 using NexusForever.Network;
 using NexusForever.Network.Message;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Pregame;
 using NexusForever.Shared.Game.Events;
 
@@ -14,11 +19,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Authentication
         #region Depenency Injection
 
         private readonly IDatabaseManager databaseManager;
+        private readonly IRealmContext realmContext;
 
         public ClientHelloRealmHandler(
-            IDatabaseManager databaseManager)
+            IDatabaseManager databaseManager,
+            IRealmContext realmContext)
         {
             this.databaseManager = databaseManager;
+            this.realmContext = realmContext;
         }
 
         #endregion
@@ -31,9 +39,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Authentication
             session.CanProcessIncomingPackets = false;
 
             string sessionKey = Convert.ToHexString(helloRealm.SessionKey);
-            session.Events.EnqueueEvent(new TaskGenericEvent<AccountModel>(databaseManager.GetDatabase<AuthDatabase>().AdmitWorldSessionAsync(helloRealm.AccountId, helloRealm.AccountString, sessionKey),
+            session.Events.EnqueueEvent(new TaskGenericEvent<AccountModel>(AdmitAsync(helloRealm.AccountId, helloRealm.AccountString, sessionKey),
                 account =>
             {
+                if (session is NetworkSession { IsDisconnecting: true }) return;
                 if (account == null)
                     throw new InvalidPacketValueException($"Realm account admission rejected (account={helloRealm.AccountId}).");
 
@@ -43,9 +52,19 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Authentication
             },
             () =>
             {
+                if (session is NetworkSession { IsDisconnecting: true }) return;
                 session.CanProcessIncomingPackets = true;
                 session.ForceDisconnect();
             }));
+        }
+
+        private async Task<AccountModel> AdmitAsync(uint accountId, string accountName, string sessionKey)
+        {
+            var auth = databaseManager.GetDatabase<AuthDatabase>();
+            var account = await auth.AdmitWorldSessionAsync(accountId, accountName, sessionKey);
+            if (account != null)
+                await VendorAccountPurchase.RecoverAtAdmissionAsync(account, auth, databaseManager.GetDatabase<CharacterDatabase>(), realmContext.RealmId);
+            return account;
         }
     }
 }
