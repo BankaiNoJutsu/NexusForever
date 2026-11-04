@@ -52,6 +52,7 @@ public sealed partial class Q5597RewardPersistenceTests
 {
     private readonly ITestOutputHelper output;
     private const uint FixtureFanfareSpellId = 91001;
+    private const Property FixtureLevelProperty = Property.BaseHealth;
 
     public Q5597RewardPersistenceTests(ITestOutputHelper output) => this.output = output;
 
@@ -139,6 +140,9 @@ public sealed partial class Q5597RewardPersistenceTests
                     Assert.Empty(LevelPackets(retiredObserver));
                     Assert.Empty(LevelMessages(actor));
                     Assert.Empty(FanfarePackets(observer));
+                    FlushPropertyUpdates(actor);
+                    Assert.Empty(PropertyPackets(observer));
+                    Assert.Empty(PropertyMessages(actor));
                 }
             });
 
@@ -170,6 +174,11 @@ public sealed partial class Q5597RewardPersistenceTests
                     Assert.Equal(2f, Assert.Single(LevelPackets(observer)).Stat.Value);
                     Assert.Equal(2f, Assert.Single(LevelMessages(actor)).Value);
                     Assert.Empty(LevelPackets(retiredObserver));
+                    Assert.Equal(25f, Assert.Single(PropertyMessages(actor), update => update.Property == FixtureLevelProperty).Value);
+                    FlushPropertyUpdates(actor);
+                    Assert.Equal(25f, Assert.Single(Assert.Single(PropertyPackets(observer)).Properties,
+                        property => property.Property == FixtureLevelProperty).Value);
+                    world.FlushPackets();
                     if (replaceMapAdmission)
                         Assert.Empty(FanfarePackets(observer));
                     else
@@ -195,6 +204,10 @@ public sealed partial class Q5597RewardPersistenceTests
             else
             {
                 using var dialog = await ReadPacket(client, GameMessageOpcode.ServerDialogEnd);
+            }
+            if (levelReward && !replaceMapAdmission)
+            {
+                using var properties = await ReadPacket(client, GameMessageOpcode.ServerEntityPropertiesUpdate);
             }
         });
 
@@ -284,6 +297,11 @@ public sealed partial class Q5597RewardPersistenceTests
                 Assert.Empty(LevelPackets(retiredObserver));
                 Assert.Empty(LevelMessages(actor));
                 Assert.Empty(FanfarePackets(observer));
+                Assert.Equal(20f, actor.Player.GetPropertyValue(FixtureLevelProperty));
+                actor.Player.SetBaseProperty(FixtureLevelProperty, 25f);
+                FlushPropertyUpdates(actor);
+                Assert.Empty(PropertyPackets(observer));
+                Assert.Empty(PropertyMessages(actor));
                 retiredObserverAccount.SetProperty(nameof(IAccount.WorldSessionEpoch), 2ul);
                 if (replaceMapAdmission)
                     ((IPlayerMapAdmission)actor.Player).BeginMapAdmission();
@@ -365,7 +383,10 @@ public sealed partial class Q5597RewardPersistenceTests
             field.SetValue(actor.Player, Activator.CreateInstance(field.FieldType));
         }
         var characters = RecordingDispatchProxy<ICharacterManager>.Create(out var characterProxy);
-        characterProxy.SetMethodReturn(nameof(ICharacterManager.GetCharacterBaseProperties), Array.Empty<IPropertyModifier>());
+        var levelProperty = RecordingDispatchProxy<IPropertyModifier>.Create(out var propertyProxy);
+        propertyProxy.SetProperty(nameof(IPropertyModifier.Property), FixtureLevelProperty);
+        propertyProxy.SetMethodHandler(nameof(IPropertyModifier.GetValue), args => (uint)args[0] * 10f);
+        characterProxy.SetMethodReturn(nameof(ICharacterManager.GetCharacterBaseProperties), new[] { levelProperty });
         characterProxy.SetMethodReturn(nameof(ICharacterManager.GetCharacterClassBaseProperties), Array.Empty<IPropertyModifier>());
         typeof(Player).GetField("characterManager", instance)!.SetValue(actor.Player, characters);
         actor.Player.IsLoading = true;
@@ -432,6 +453,18 @@ public sealed partial class Q5597RewardPersistenceTests
         => actor.PublisherProxy.GetInvocations(nameof(IInternalMessagePublisher.PublishAsync)).SelectMany(call => call.Arguments)
             .OfType<PlayerStatUpdatedMessage>().Where(message => message.Stat == Stat.Level);
 
+    private static IEnumerable<ServerEntityPropertiesUpdate> PropertyPackets(RecordingDispatchProxy<IWorldSession> observer)
+        => observer.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).SelectMany(call => call.Arguments)
+            .OfType<ServerEntityPropertiesUpdate>();
+
+    private static IEnumerable<PlayerPropertyUpdatedMessage> PropertyMessages(Actor actor)
+        => actor.PublisherProxy.GetInvocations(nameof(IInternalMessagePublisher.PublishAsync)).SelectMany(call => call.Arguments)
+            .OfType<PlayerPropertyUpdatedMessage>();
+
+    private static void FlushPropertyUpdates(Actor actor)
+        => typeof(WorldEntity).GetMethod("FlushPropertyUpdates", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(actor.Player, null);
+
     private async Task AssertTurnInPacketsWithheld(WorldSession world, GameProtocolClient client)
     {
         // The marker delimits a flush on this private socket while the save is held.
@@ -445,7 +478,7 @@ public sealed partial class Q5597RewardPersistenceTests
             Assert.False(frame.Opcode is GameMessageOpcode.ServerItemAdd or GameMessageOpcode.ServerQuestStateChange
                 or GameMessageOpcode.ServerAchievementUpdate or GameMessageOpcode.ServerDialogEnd
                 or GameMessageOpcode.ServerExperienceGained or GameMessageOpcode.ServerEntityStatUpdateInteger
-                or GameMessageOpcode.ServerSpellStart, $"Premature {frame.Opcode}");
+                or GameMessageOpcode.ServerSpellStart or GameMessageOpcode.ServerEntityPropertiesUpdate, $"Premature {frame.Opcode}");
         }
         output.WriteLine("No item, quest-state, achievement or dialog-end packets while the turn-in save was held.");
     }

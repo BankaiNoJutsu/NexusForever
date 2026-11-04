@@ -231,3 +231,26 @@ open.
 
 All 21 scoped tests passed. The results and binary hashes are under
 `artifacts/continuation-20261104/quest-fanfare-publication/`.
+
+## Quest derived properties
+
+4 November 2026. Quest-generated property updates now wait for the ordinary
+turn-in's Character save on both the next-tick visibility route and the
+Group broker producer. The live property remains available to gameplay.
+Updates to the same property while the write is held coalesce and publish
+the latest value after success. A rejected save keeps the old actor's
+property updates withheld through retirement.
+
+The XP loopback configures BaseHealth to derive from the level, changes it
+again while the save is held and runs the production property flush. It
+sees neither an observer packet nor a broker update during the hold or
+after rejection. A successful retry publishes the latest BaseHealth once
+on each route. The in-world requester also receives its property packet
+after commit. This covers an existing observer and the broker producer. New observer bootstrap, dependent
+vital changes, live broker delivery and retail behavior remain open.
+
+All 44 focused checks passed. The final requester socket assertion passed
+in the seven-case loopback rerun. An earlier socket run expected that
+packet during map loading and timed out in the replacement-admission case.
+Results and binary hashes are under
+`artifacts/continuation-20261104/quest-property-publication/`.

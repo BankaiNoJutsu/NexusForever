@@ -3582,6 +3582,10 @@ namespace NexusForever.Game.Entity
                     propertyValue.Value += values;
         }
 
+        private HashSet<Property> retainedQuestProperties;
+        internal bool HasRetainedQuestProperties => retainedQuestProperties?.Count > 0;
+        internal bool IsRetainingQuestProperty(Property property) => retainedQuestProperties?.Contains(property) == true;
+
         /// <summary>
         /// Invoked when <see cref="IPlayer"/> has a <see cref="Property"/> updated.
         /// </summary>
@@ -3589,13 +3593,32 @@ namespace NexusForever.Game.Entity
         {
             base.OnPropertyUpdate(propertyValue);
 
-            messagePublisher.PublishAsync(new PlayerPropertyUpdatedMessage
+            Property property = propertyValue.Property;
+            if (IsRetainingQuestProperty(property))
+                return;
+
+            if (QuestManager is QuestManager { IsOrdinaryCompletionMutationInProgress: true } quests)
+            {
+                (retainedQuestProperties ??= []).Add(property);
+                quests.RetainOrdinaryCompletionPublication(() =>
+                {
+                    retainedQuestProperties.Remove(property);
+                    SetPropertyEmit(property);
+                    PublishPropertyUpdate(property, GetPropertyValue(property));
+                });
+                return;
+            }
+
+            PublishPropertyUpdate(property, propertyValue.Value);
+        }
+
+        private void PublishPropertyUpdate(Property property, float value)
+            => messagePublisher.PublishAsync(new PlayerPropertyUpdatedMessage
             {
                 Identity = Identity.ToInternalIdentity(),
-                Property = propertyValue.Property,
-                Value    = propertyValue.Value
+                Property = property,
+                Value    = value
             }).FireAndForgetAsync();
-        }
 
         /// <summary>
         /// Invoked when <see cref="IWorldEntity"/> has a <see cref="Stat"/> updated.

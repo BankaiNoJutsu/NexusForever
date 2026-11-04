@@ -558,6 +558,17 @@ namespace NexusForever.Game.Entity
                 SetVisualEmit(false);
             }
 
+            FlushPropertyUpdates();
+        }
+
+        private void FlushPropertyUpdates()
+        {
+            if (dirtyProperties.Count == 0)
+                return;
+
+            if (this is Player { HasRetainedQuestProperties: true } player)
+                dirtyProperties.RemoveWhere(player.IsRetainingQuestProperty);
+
             if (dirtyProperties.Count != 0)
             {
                 EnqueueToVisible(BuildPropertyUpdates(), true);

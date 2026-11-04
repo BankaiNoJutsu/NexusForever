@@ -225,9 +225,10 @@ uses the same boundary for its turn-in and follow-up quest. [Quest level
 publication](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#quest-level-publication)
 also gates nearby-player level packets and broker stat updates. The
 [level-up fanfare](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#quest-level-up-fanfare)
-now starts after the same save on the original map admission. Derived
-property publication, other cross-player effects and deployed qualification
-remain open.
+now starts after the same save on the original map admission. [Derived
+properties](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#quest-derived-properties)
+wait for commit on the world-tick and broker routes. New observer bootstrap,
+other cross-player effects and deployed qualification remain open.
 
 [Committed commodity fill recovery](COMMODITY_POSTING_SETTLEMENT.md#recovery-after-a-committed-fill-notice-fails)
 refreshes the original recipient's current orders after an enqueue failure.
