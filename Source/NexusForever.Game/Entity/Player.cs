@@ -888,7 +888,8 @@ namespace NexusForever.Game.Entity
         private void Save(Action callback, Action failureCallback)
         {
             if (QuestManager is QuestManager { IsContractCompletionMutationInProgress: true }
-                or QuestManager { IsOrdinaryCompletionMutationInProgress: true })
+                or QuestManager { IsOrdinaryCompletionMutationInProgress: true }
+                or QuestManager { IsPublicEventQuestMutationInProgress: true })
             {
                 DeferInventorySave(callback, failureCallback); return;
             }

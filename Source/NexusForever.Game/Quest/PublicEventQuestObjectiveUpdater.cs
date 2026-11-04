@@ -1,4 +1,5 @@
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Quest;
 
 namespace NexusForever.Game.Quest
@@ -26,6 +27,12 @@ namespace NexusForever.Game.Quest
         {
             if (player?.QuestManager == null || publicEventObjectiveId == 0u)
                 return;
+
+            if (player is Player && player.QuestManager is QuestManager manager)
+            {
+                manager.CreditPublicEventQuestObjective(publicEventObjectiveId, PublicEventObjectiveLinkedTypes);
+                return;
+            }
 
             foreach (QuestObjectiveType objectiveType in PublicEventObjectiveLinkedTypes)
                 player.QuestManager.ObjectiveUpdate(objectiveType, publicEventObjectiveId, 1u);

@@ -152,6 +152,7 @@ namespace NexusForever.Game.Entity
                     var error = new InvalidOperationException("Quest manager save overlaps provisional reward work or requires reload.");
                     context.RejectSave(error); throw error;
                 }
+            var stagePublicEventPublications = CapturePublicEventPublications();
             DrainCommittedDeletions();
             foreach (IQuest quest in completedQuests.Values.Concat(inactiveQuests.Values).Concat(activeQuests.Values).Distinct().ToList())
             {
@@ -163,6 +164,7 @@ namespace NexusForever.Game.Entity
                             lock (deletionGate) committedDeletions.Add(quest);
                     });
             }
+            stagePublicEventPublications?.Invoke(context);
         }
 
         // SQL callbacks only publish acknowledgements. Actor reads/ticks retire

@@ -4,6 +4,7 @@ using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -403,7 +404,7 @@ namespace NexusForever.Game.Quest
                     SendQuestObjectiveUpdate(objective);
 
                 scriptCollection?.Invoke<IQuestScript>(s => s.OnObjectiveUpdate(objective));
-                if (objective.IsComplete()) player.QuestManager?.Communicator?.OnObjectiveComplete(Id, objective.Index);
+                if (objective.IsComplete()) PublishObjectiveCompletion(objective);
             }
 
             if (RequiredObjectivesComplete())
@@ -447,7 +448,7 @@ namespace NexusForever.Game.Quest
                 SendQuestObjectiveUpdate(objective);
 
             scriptCollection?.Invoke<IQuestScript>(s => s.OnObjectiveUpdate(objective));
-            if (objective.IsComplete()) player.QuestManager?.Communicator?.OnObjectiveComplete(Id, objective.Index);
+            if (objective.IsComplete()) PublishObjectiveCompletion(objective);
 
             if (RequiredObjectivesComplete())
                 CompleteOptionalObjectives();
@@ -465,12 +466,15 @@ namespace NexusForever.Game.Quest
             foreach (IQuestObjective objective in objectives)
             {
                 ObjectiveWorldLocationResolution resolution = ResolveObjectiveWorldLocation(objective);
-                player.Session.EnqueueMessageEncrypted(new ServerQuestObjectiveWorldLocation
+                var packet = new ServerQuestObjectiveWorldLocation
                 {
                     QuestId = Id,
                     QuestObjectiveIndex = objective.Index,
                     WorldLocation2Id = resolution.WorldLocationId
-                });
+                };
+                var session = player.Session;
+                PublishProgressNotice(() => session.EnqueueMessageEncrypted(packet),
+                    () => !PendingDelete && ResolveObjectiveWorldLocation(objective) == resolution);
 
                 LogObjectiveWorldLocationUpdate(objective, resolution);
             }
@@ -507,8 +511,21 @@ namespace NexusForever.Game.Quest
             {
                 objective.Complete();
                 SendQuestObjectiveUpdate(objective);
-                player.QuestManager?.Communicator?.OnObjectiveComplete(Id, objective.Index);
+                PublishObjectiveCompletion(objective);
             }
+        }
+
+        private void PublishObjectiveCompletion(IQuestObjective objective)
+        {
+            PublishProgressNotice(() => player.QuestManager?.Communicator?.OnObjectiveComplete(Id, objective.Index),
+                () => !PendingDelete && objective.IsComplete());
+        }
+
+        private void PublishProgressNotice(Action publish, Func<bool> current)
+        {
+            if (player.QuestManager is not QuestManager manager
+                || !manager.RetainPublicEventQuestNotice(() => { if (current()) publish(); }))
+                publish();
         }
 
         public byte GetObjectiveCompletionMask()
@@ -525,12 +542,15 @@ namespace NexusForever.Game.Quest
             if (State == QuestState.Completed)
                 return;
 
-            player.Session.EnqueueMessageEncrypted(new ServerQuestObjectiveUpdate
+            var packet = new ServerQuestObjectiveUpdate
             {
                 QuestId   = Id,
                 QuestObjectiveIndex     = objective.Index,
                 Completed = objective.Progress
-            });
+            };
+            var session = player.Session;
+            PublishProgressNotice(() => session.EnqueueMessageEncrypted(packet),
+                () => !PendingDelete && State != QuestState.Completed && objective.Progress == packet.Completed);
 
             if (log.IsDebugEnabled && guidanceDiagnosticQuestIds.Contains(Id))
             {
@@ -559,7 +579,9 @@ namespace NexusForever.Game.Quest
 
             SendObjectiveWorldLocationUpdates();
 
-            player.QuestManager?.Communicator?.OnQuestState(Id, oldState, state, created);
+            QuestState newState = state;
+            PublishProgressNotice(() => player.QuestManager?.Communicator?.OnQuestState(Id, oldState, newState, created),
+                () => !PendingDelete && State == newState);
 
             scriptCollection?.Invoke<IQuestScript>(s => s.OnQuestStateChange(State, oldState));
 
@@ -588,12 +610,15 @@ namespace NexusForever.Game.Quest
         private void SendQuestStateChange(uint objectiveId)
         {
             currentObjectiveId = objectiveId;
-            player.Session.EnqueueMessageEncrypted(new ServerQuestStateChange
+            var packet = new ServerQuestStateChange
             {
                 QuestId          = Id,
                 QuestState       = State,
                 QuestObjectiveId = objectiveId
-            });
+            };
+            var session = player.Session;
+            PublishProgressNotice(() => session.EnqueueMessageEncrypted(packet),
+                () => !PendingDelete && State == packet.QuestState && currentObjectiveId == objectiveId);
 
             if (log.IsDebugEnabled && guidanceDiagnosticQuestIds.Contains(Id))
             {

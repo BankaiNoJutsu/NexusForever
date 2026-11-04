@@ -64,9 +64,10 @@ cinematic callbacks and membership removal.
 keeps quest and achievement credit and team packets with the original active
 membership, and preserves scoreboard identity after the player departs.
 The [Character rollback probe](../../CURRENT_STATUS.md#public-event-character-save-recovery)
-reproduces a quest update before SQL and loss of unsaved credit on the normal
-World save failure path. Complete committed quest publication and recovery
-without replaying the map event.
+reproduced early quest updates and loss of unsaved credit on the World save
+failure path. [Committed quest notices](../../CURRENT_STATUS.md#committed-public-event-quest-notices)
+now wait for Character settlement while the map event finishes independently.
+Complete automatic World-save recovery without replaying the map event.
 Retail reward tiers and client presentation remain open.
 
 [Instance transfer retries](../../CURRENT_STATUS.md#instance-transfer-retries)

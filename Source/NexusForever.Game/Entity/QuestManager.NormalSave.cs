@@ -42,7 +42,7 @@ namespace NexusForever.Game.Entity
                     if (contractCompletion is { } ticket && !graphs.Any(graph => ReferenceEquals(graph.Owner, ticket.Quest)
                         && graph.Target?.Quest.State == (byte)QuestState.Completed && graph.Target.Quest.ContractAcceptanceId == ticket.Acceptance))
                         throw new InvalidOperationException("Contract journal lost its frozen terminal Quest generation.");
-                    normalSave = new(this, database, token, graphs, scope, contractCompletion);
+                    normalSave = new(this, database, token, graphs, scope, contractCompletion, CapturePublicEventPublications());
                     if (contractCompletion != null) contractCompletion.Scope = null; // ownership moves into this snapshot
                     return normalSave;
                 }
@@ -50,7 +50,7 @@ namespace NexusForever.Game.Entity
             }
         }
         internal sealed class NormalSaveSnapshot(QuestManager owner, string database, object token, QuestNormalSaveGraph[] graphs, IDisposable scope,
-            ContractCompletionTicket contract) : IDisposable
+            ContractCompletionTicket contract, Action<CharacterContext> stagePublicEventPublications) : IDisposable
         {
             internal object Token { get; } = token;
             private bool disposed;
@@ -131,6 +131,7 @@ namespace NexusForever.Game.Entity
                                     lock (owner.deletionGate) owner.committedDeletions.Add(graph.Owner);
                             });
                         }
+                        stagePublicEventPublications?.Invoke(context);
                     }
                     catch (Exception error) { context.RejectSave(error); throw; }
                 }

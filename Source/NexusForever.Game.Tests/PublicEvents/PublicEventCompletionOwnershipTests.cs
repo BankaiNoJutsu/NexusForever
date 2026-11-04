@@ -76,9 +76,12 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task PublicEventFinalityAndQuestCreditAreSeparateFromCharacterRollback(bool useWorldSaveQueue)
+    [InlineData("direct-rollback")]
+    [InlineData("unflushed-commit")]
+    [InlineData("queued-rollback")]
+    [InlineData("queued-success")]
+    [InlineData("replaced-after-commit")]
+    public async Task PublicEventFinalityAndQuestCreditAreSeparateFromCharacterRollback(string outcome)
     {
         const uint objectiveId = 201u;
         using var f = new SaveFixture(null, new QuestObjectiveEntry
@@ -87,6 +90,8 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
         });
         f.Seed();
         using var actor = new SaveActor(f);
+        bool useWorldSaveQueue = outcome.StartsWith("queued-", StringComparison.Ordinal);
+        bool reject = outcome.EndsWith("-rollback", StringComparison.Ordinal);
         if (useWorldSaveQueue)
             await actor.Load();
         var map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
@@ -95,18 +100,28 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
         registry.SetMethodReturn(nameof(IPlayerManager.GetPlayer), actor.Player);
         var publicEvent = CreateEvent(players, map, objectiveId, 501);
         publicEvent.JoinEvent(actor.Player, EventTeam.PublicTeam);
-        using (var setup = f.Context())
-            await setup.Database.ExecuteSqlRawAsync("""
-                CREATE TRIGGER reject_public_event_quest BEFORE UPDATE ON character_quest_objective
-                BEGIN SELECT RAISE(ABORT, 'owned public event quest write failure'); END
-                """);
+        if (reject)
+            using (var setup = f.Context())
+                await setup.Database.ExecuteSqlRawAsync("""
+                    CREATE TRIGGER reject_public_event_quest BEFORE UPDATE ON character_quest_objective
+                    BEGIN SELECT RAISE(ABORT, 'owned public event quest write failure'); END
+                    """);
+
+        IEnumerable<object> Packets() => f.Source.SessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
+            .Select(call => call.Arguments[0]);
+        void AssertNoQuestNotices()
+        {
+            Assert.Empty(Packets().OfType<ServerQuestObjectiveUpdate>());
+            Assert.Empty(Packets().OfType<ServerQuestStateChange>());
+            Assert.Empty(Packets().OfType<ServerQuestObjectiveWorldLocation>());
+        }
 
         publicEvent.UpdateObjective(objectiveId, 1);
         Assert.True(publicEvent.IsFinalised);
+        Assert.Single(Packets().OfType<ServerPublicEventEnd>());
+        Assert.Single(mapProxy.GetInvocations(nameof(IBaseMap.OnPublicEventFinish)));
         Assert.Equal(QuestState.Achieved, actor.Quest.State);
-        output.WriteLine("Quest objective updates before Character save: {0}",
-            f.Source.SessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
-                .Count(call => call.Arguments[0] is ServerQuestObjectiveUpdate));
+        AssertNoQuestNotices();
 
         Task Save() => CharacterAtomicSave.Execute(() => f.Context(), actor.Player.CharacterId, actor.Player.Save);
         if (useWorldSaveQueue)
@@ -117,21 +132,58 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
                 f.Source.SessionProxy.GetInvocations(nameof(IWorldSession.ForceDisconnect)).Count,
                 actor.Quests.RequiresAuthoritativeReload);
         }
-        else
+        else if (reject)
             await Assert.ThrowsAsync<DbUpdateException>(Save);
-        using (var failed = f.Context())
+        else if (outcome == "unflushed-commit")
         {
-            Assert.Equal((byte)QuestState.Accepted, failed.CharacterQuest.Single().State);
-            Assert.Equal(1u, failed.CharacterQuestObjective.Single().Progress);
-            await failed.Database.ExecuteSqlRawAsync("DROP TRIGGER reject_public_event_quest");
+            await using (var context = f.Context())
+            await using (var transaction = await context.Database.BeginTransactionAsync())
+            {
+                actor.Player.Save(context);
+                await transaction.CommitAsync();
+            }
+            actor.Events.Update(.01);
+            AssertNoQuestNotices();
+            using (var unflushed = f.Context())
+                Assert.Equal(1u, unflushed.CharacterQuestObjective.Single().Progress);
+            await Save();
+        }
+        else
+            await Save();
+        if (reject)
+        {
+            actor.Events.Update(.01);
+            AssertNoQuestNotices();
+            using (var failed = f.Context())
+            {
+                Assert.Equal((byte)QuestState.Accepted, failed.CharacterQuest.Single().State);
+                Assert.Equal(1u, failed.CharacterQuestObjective.Single().Progress);
+                await failed.Database.ExecuteSqlRawAsync("DROP TRIGGER reject_public_event_quest");
+            }
+            if (useWorldSaveQueue)
+                return;
+            await Save();
         }
 
-        if (!useWorldSaveQueue)
+        using (var committed = f.Context())
         {
-            await Save();
-            using var committed = f.Context();
             Assert.Equal((byte)QuestState.Achieved, committed.CharacterQuest.Single().State);
             Assert.Equal(2u, committed.CharacterQuestObjective.Single().Progress);
+        }
+        if (outcome == "replaced-after-commit")
+        {
+            var replacement = RecordingDispatchProxy<IWorldSession>.Create(out var replacementNetwork);
+            actor.Set(nameof(IPlayer.Session), replacement);
+            actor.Events.Update(.01);
+            AssertNoQuestNotices();
+            Assert.Empty(replacementNetwork.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)));
+        }
+        else
+        {
+            actor.Events.Update(.01);
+            Assert.Equal(2u, Assert.Single(Packets().OfType<ServerQuestObjectiveUpdate>()).Completed);
+            Assert.Equal(QuestState.Achieved, Assert.Single(Packets().OfType<ServerQuestStateChange>()).QuestState);
+            Assert.Single(Packets().OfType<ServerQuestObjectiveWorldLocation>());
         }
         Assert.Single(mapProxy.GetInvocations(nameof(IBaseMap.OnPublicEventFinish)));
     }

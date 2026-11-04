@@ -22048,9 +22048,27 @@ disconnect and required an authoritative quest reload with the old progress.
 
 The owning project built, 62 scoped public-event and persistence checks passed,
 and both fault paths passed the focused follow-up. Evidence is under
-`artifacts/continuation-20261105/public-event-character-save/`. The remaining
-work is to hold the personal quest notices through settlement and recover
-credit after a confirmed rollback without replaying the shared map event.
+`artifacts/continuation-20261105/public-event-character-save/`.
+
+#### Committed public event quest notices
+
+5 November 2026. Public-event quest progress, state, guidance, and communicator
+triggers wait for the Character save to flush and commit. The original World
+queue releases them after settlement. A replaced session or account epoch
+cannot receive the old notices. The map event still finalizes and sends its
+shared status independently.
+
+The direct rollback case retains the notices for a fresh save on the same
+Player. The normal World save still disconnects on failure and reloads the
+old progress. Automatic recovery after confirmed rollback, configured-provider
+validation, and deployed client delivery remain open.
+
+The owning build and 692 scoped tests passed on the final candidate, including
+an empty commit without a flush, direct rollback and retry, queued commit and
+rollback, and session replacement after commit. The initial broad quest filter
+was stopped after an achievement concurrency timeout. That check passed alone
+and in the final scope. Local results are under
+`artifacts/continuation-20261105/public-event-quest-publication/`.
 
 #### Public event contribution ownership
 
