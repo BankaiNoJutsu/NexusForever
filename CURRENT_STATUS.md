@@ -21111,6 +21111,13 @@ Three baseline cases reproduced the early debit, including a denied destination.
 The owning-project build and 189 scoped transport, map-admission and world-entry
 tests passed. Local evidence is under
 `artifacts/continuation-20261104/taxi-destination-admission/`.
+Instanced destinations now defer settlement through the world router and
+settle only at the selected instance's admission decision. The baseline
+reproduced the 12-credit debit before instance refusal and the premature
+debit before a successful instance decision. A balance change is checked
+at final admission. The owning-project build and 220 scoped transport,
+instance-binding, map-admission and world-entry tests passed. Local evidence is under
+`artifacts/continuation-20261104/taxi-instance-admission/`.
 Physical arrival and recovery after a later map failure remain open.
 
 #### Rapid Transport cast fare

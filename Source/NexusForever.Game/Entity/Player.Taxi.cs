@@ -62,8 +62,8 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        // Called under the generation's admission guard with the destination's decision.
-        internal bool TryApplyTaxiAdmission(IMapPosition position, bool destinationAllowsEntry)
+        // Called under the generation's guard at each stage. Only the final map can settle the fare.
+        internal bool TryApplyTaxiAdmission(IMapPosition position, bool settleFare)
         {
             if (pendingTeleport?.TaxiFlight is not { } flight)
                 return true;
@@ -74,7 +74,7 @@ namespace NexusForever.Game.Entity
                 CancelMapAdmission();
                 return false;
             }
-            if (!destinationAllowsEntry)
+            if (!settleFare)
                 return true;
             if (flight.Fare != 0 && !CurrencyManager.CanAfford(CurrencyType.Credits, flight.Fare))
             {

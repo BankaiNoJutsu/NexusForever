@@ -9,9 +9,12 @@ using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Map;
+using NexusForever.Game.Abstract.Map.Instance;
+using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Map;
+using NexusForever.Game.Map.Instance;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
@@ -424,11 +427,14 @@ public class TransportHandlerTests
     }
 
     [Theory]
-    [InlineData("admit")]
-    [InlineData("deny")]
-    [InlineData("balance-changed")]
-    [InlineData("rebound")]
-    public void FlightPathPurchase_SettlesOnlyOnDestinationAdmission(string outcome)
+    [InlineData("admit", false)]
+    [InlineData("deny", false)]
+    [InlineData("balance-changed", false)]
+    [InlineData("rebound", false)]
+    [InlineData("admit", true)]
+    [InlineData("deny", true)]
+    [InlineData("balance-changed", true)]
+    public void FlightPathPurchase_SettlesOnlyOnDestinationAdmission(string outcome, bool instanced)
     {
         var handler = CreateFlightPathHandler(out var tables, out _, out var wallet, out _);
         var player = (Player)RuntimeHelpers.GetUninitializedObject(typeof(Player));
@@ -438,11 +444,17 @@ public class TransportHandlerTests
         var kiosk = RecordingDispatchProxy<IWorldEntity>.Create(out var kioskProxy);
         kioskProxy.SetProperty(nameof(IWorldEntity.Map), source);
         kioskProxy.SetProperty(nameof(IWorldEntity.CreatureEntry), new Creature2Entry { TaxiNodeId = 10u });
-        var destination = RecordingDispatchProxy<IBaseMap>.Create(out var destinationMap);
-        if (outcome == "deny")
-            destinationMap.SetMethodReturn(nameof(IMap.CanEnter), GenericError.InstanceLimitExceeded);
+        var destination = RecordingDispatchProxy<IMapInstance>.Create(out var destinationMap);
+        ulong balance = 100;
+        ulong? balanceAtDestination = null;
+        destinationMap.SetMethodHandler(nameof(IMap.CanEnter), _ =>
+        {
+            balanceAtDestination = balance;
+            return outcome == "deny" ? GenericError.InstanceLimitExceeded : null;
+        });
         var factory = RecordingDispatchProxy<IMapFactory>.Create(out var maps);
-        maps.SetMethodReturn(nameof(IMapFactory.CreateMap), destination);
+        IMap destinationRoute = instanced ? new TaxiTestInstancedMap(destination, destinationMap) : destination;
+        maps.SetMethodReturn(nameof(IMapFactory.CreateMap), destinationRoute);
         var mapManager = new MapManager(factory);
         var movement = RecordingDispatchProxy<IMovementManager>.Create(out _);
         typeof(Player).GetProperty(nameof(IPlayer.Session))!.SetValue(player, session);
@@ -457,7 +469,6 @@ public class TransportHandlerTests
         SetField(typeof(Player), "taxiNodes", new HashSet<ushort>());
         SetField(typeof(Player), "unsavedTaxiNodes", new HashSet<ushort>());
         SetField(typeof(Player), "<CurrencyManager>k__BackingField", (ICurrencyManager)(object)wallet);
-        ulong balance = 100;
         wallet.SetMethodHandler(nameof(ICurrencyManager.CanAfford), args => balance >= (ulong)args[1]);
         wallet.SetMethodHandler(nameof(ICurrencyManager.CurrencySubtractAmount), args => { balance -= (ulong)args[1]; return null; });
 
@@ -497,9 +508,38 @@ public class TransportHandlerTests
         }
         Assert.Equal(100ul, balanceBeforeAdmission);
         Assert.False(discoveredBeforeAdmission);
+        if (outcome != "rebound")
+            Assert.Equal(outcome == "balance-changed" ? 11ul : 100ul, balanceAtDestination);
 
         void SetField(Type type, string name, object value)
             => type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(player, value);
+    }
+
+    private sealed class TaxiTestInstancedMap : InstancedMap<IMapInstance>
+    {
+        private readonly IMapInstance instance;
+        private readonly IMapLock mapLock;
+
+        public TaxiTestInstancedMap(IMapInstance instance, RecordingDispatchProxy<IMapInstance> instanceProxy)
+            : base(CreateRouterServices())
+        {
+            this.instance = instance;
+            Guid instanceId = Guid.NewGuid();
+            instanceProxy.SetProperty(nameof(IMapInstance.InstanceId), instanceId);
+            instanceProxy.SetProperty(nameof(IMap.Entry), new WorldEntry { Id = 7u });
+            mapLock = RecordingDispatchProxy<IMapLock>.Create(out var mapLockProxy);
+            mapLockProxy.SetProperty(nameof(IMapLock.InstanceId), instanceId);
+        }
+
+        protected override IMapLock GetMapLock(IPlayer player) => mapLock;
+        protected override IMapInstance CreateInstance(IPlayer player, IMapLock lockForInstance) => instance;
+
+        private static IMapManager CreateRouterServices()
+        {
+            IMapManager manager = RecordingDispatchProxy<IMapManager>.Create(out var proxy);
+            proxy.SetMethodReturn(nameof(IMapManager.CanCreateInstance), true);
+            return manager;
+        }
     }
 
     [Theory]

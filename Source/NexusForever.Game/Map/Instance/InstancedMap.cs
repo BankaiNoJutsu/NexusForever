@@ -4,6 +4,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Map.Lock;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Map;
 using NexusForever.GameTable.Model;
@@ -152,15 +153,22 @@ namespace NexusForever.Game.Map.Instance
                 GenericError? result = instance.CanEnter(pending.Player, pending.MapPosition);
                 if (!PlayerMapAdmissionGuard.IsCurrent(pending.Player, pending.AdmissionGeneration))
                     continue;
-                if (result.HasValue)
+                PlayerMapAdmissionGuard.Run(pending.Player, pending.AdmissionGeneration, () =>
                 {
-                    pending.Player.OnTeleportToFailed(result.Value);
-                    return;
-                }
+                    if (pending.Player is Player player && !player.TryApplyTaxiAdmission(
+                        pending.MapPosition, settleFare: !result.HasValue))
+                        return;
+                    if (result.HasValue)
+                    {
+                        pending.Player.OnTeleportToFailed(result.Value);
+                        return;
+                    }
 
-                UpdatePosition(pending.Player, pending.MapPosition);
-                PlayerMapAdmissionGuard.Run(pending.Player, pending.AdmissionGeneration,
-                    () => instance.EnqueueAdd(pending.Player, pending.MapPosition));
+                    UpdatePosition(pending.Player, pending.MapPosition);
+                    instance.EnqueueAdd(pending.Player, pending.MapPosition);
+                });
+                if (result.HasValue)
+                    return;
             }
 
             // new actions are added to the queue after processing so they are processed starting next update
