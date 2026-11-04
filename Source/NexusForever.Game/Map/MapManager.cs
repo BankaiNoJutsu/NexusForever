@@ -87,7 +87,7 @@ namespace NexusForever.Game.Map
                 {
                     // Instanced worlds only route the request here. The selected instance still has to admit it.
                     if (pending.Player is Player player && !player.TryApplyTaxiAdmission(
-                        pending.MapPosition, settleFare: !result.HasValue && map is IBaseMap))
+                        pending.MapPosition, checkFare: !result.HasValue && map is IBaseMap))
                         return;
                     if (result.HasValue)
                         pending.Player.OnTeleportToFailed(result.Value);

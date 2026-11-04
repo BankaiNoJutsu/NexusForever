@@ -8,6 +8,7 @@ using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Search;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Map.Instance;
 using NexusForever.Game.Static.Entity;
@@ -194,6 +195,7 @@ namespace NexusForever.Game.Map
                             {
                                 Entity = actionPending.Entity,
                                 Vector = actionPending.Vector,
+                                AdmissionPosition = actionPending.AdmissionPosition,
                                 AdmissionGeneration = actionPending.AdmissionGeneration
                             });
                         }
@@ -287,6 +289,7 @@ namespace NexusForever.Game.Map
                 {
                     Entity = entity,
                     Vector = position.Position,
+                    AdmissionPosition = position,
                     AdmissionGeneration = generation
                 });
             }
@@ -296,6 +299,7 @@ namespace NexusForever.Game.Map
                 {
                     Entity = entity,
                     Vector = position.Position,
+                    AdmissionPosition = position,
                     AdmissionGeneration = generation
                 });
             }
@@ -583,6 +587,9 @@ namespace NexusForever.Game.Map
 
         private void CompleteMapAdd(GridActionAdd action)
         {
+            if (action.Entity is Player player && !player.TryApplyTaxiAdmission(action.AdmissionPosition, checkFare: true, settleFare: true))
+                return;
+
             bool successful = false;
             try
             {

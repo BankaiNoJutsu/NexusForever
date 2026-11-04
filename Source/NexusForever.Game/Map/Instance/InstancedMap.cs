@@ -166,7 +166,7 @@ namespace NexusForever.Game.Map.Instance
                 PlayerMapAdmissionGuard.Run(pending.Player, pending.AdmissionGeneration, () =>
                 {
                     if (pending.Player is Player player && !player.TryApplyTaxiAdmission(
-                        pending.MapPosition, settleFare: !result.HasValue))
+                        pending.MapPosition, checkFare: !result.HasValue))
                         return;
                     if (result.HasValue)
                     {

@@ -11,7 +11,9 @@ using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Map.Lock;
+using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Map;
 using NexusForever.Game.Map.Instance;
@@ -25,10 +27,12 @@ using NexusForever.Network.Packet;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Info;
+using NexusForever.Network.World.Message.Model.Pregame;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Script;
 using NexusForever.Script.Template.Collection;
 using NexusForever.Shared;
+using NexusForever.Shared.Configuration;
 using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Entity.Player;
@@ -435,6 +439,9 @@ public class TransportHandlerTests
     [InlineData("deny", true)]
     [InlineData("balance-changed", true)]
     [InlineData("instance-fault", true)]
+    [InlineData("grid-fault", false)]
+    [InlineData("grid-fault", true)]
+    [InlineData("grid-balance-changed", false)]
     public void FlightPathPurchase_SettlesOnlyOnDestinationAdmission(string outcome, bool instanced)
     {
         var handler = CreateFlightPathHandler(out var tables, out _, out var wallet, out _);
@@ -445,25 +452,26 @@ public class TransportHandlerTests
         var kiosk = RecordingDispatchProxy<IWorldEntity>.Create(out var kioskProxy);
         kioskProxy.SetProperty(nameof(IWorldEntity.Map), source);
         kioskProxy.SetProperty(nameof(IWorldEntity.CreatureEntry), new Creature2Entry { TaxiNodeId = 10u });
-        var destination = RecordingDispatchProxy<IMapInstance>.Create(out var destinationMap);
+        var mapProperty = typeof(GridEntity).GetProperty(nameof(IPlayer.Map))!;
+        sourceMap.SetMethodHandler(nameof(IBaseMap.EnqueueRemove), _ => { mapProperty.SetValue(player, null); return null; });
         ulong balance = 100;
         ulong? balanceAtDestination = null;
         int destinationAttempts = 0;
-        destinationMap.SetMethodHandler(nameof(IMap.CanEnter), _ =>
+        var destination = new TaxiTestDestination(() =>
         {
             balanceAtDestination = balance;
             if (outcome == "instance-fault" && ++destinationAttempts == 1)
                 throw new InvalidOperationException("fixture instance admission failure");
             return outcome == "deny" ? GenericError.InstanceLimitExceeded : null;
-        });
+        }, failGrid: outcome == "grid-fault");
         var factory = RecordingDispatchProxy<IMapFactory>.Create(out var maps);
-        IMap destinationRoute = instanced ? new TaxiTestInstancedMap(destination, destinationMap) : destination;
+        IMap destinationRoute = instanced ? new TaxiTestInstancedMap(destination) : destination;
         maps.SetMethodReturn(nameof(IMapFactory.CreateMap), destinationRoute);
         var mapManager = new MapManager(factory);
         var movement = RecordingDispatchProxy<IMovementManager>.Create(out _);
         typeof(Player).GetProperty(nameof(IPlayer.Session))!.SetValue(player, session);
         typeof(Player).GetProperty(nameof(IPlayer.Identity))!.SetValue(player, new Game.Abstract.Identity { RealmId = 1, Id = 42 });
-        typeof(GridEntity).GetProperty(nameof(IPlayer.Map))!.SetValue(player, source);
+        mapProperty.SetValue(player, source);
         typeof(GridEntity).GetProperty(nameof(IPlayer.Guid))!.SetValue(player, 42u);
         typeof(WorldEntity).GetProperty(nameof(IPlayer.MovementManager))!.SetValue(player, movement);
         SetField(typeof(GridEntity), "visibleEntities", new Dictionary<uint, IGridEntity> { [10] = kiosk });
@@ -485,6 +493,9 @@ public class TransportHandlerTests
         if (outcome == "rebound")
             session.Player = RecordingDispatchProxy<IPlayer>.Create(out _);
         mapManager.Update(0);
+        ulong balanceBeforeGrid = balance;
+        bool discoveredBeforeGrid = session.EncryptedMessages.OfType<ServerEntitySelectAuxUInt14>().Any();
+        if (outcome == "grid-balance-changed") balance = 11;
         mapManager.Update(0);
 
         if (outcome == "admit")
@@ -492,16 +503,23 @@ public class TransportHandlerTests
             Assert.Equal(88ul, balance);
             Assert.Single(wallet.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
             Assert.Equal(30u, Assert.Single(session.EncryptedMessages.OfType<ServerEntitySelectAuxUInt14>()).Value);
-            var add = Assert.Single(destinationMap.GetInvocations(nameof(IMap.EnqueueAdd)));
-            Assert.Equal(new Vector3(40, 50, 60), Assert.IsAssignableFrom<IMapPosition>(add.Arguments[1]).Position);
+            Assert.Equal(new Vector3(40, 50, 60), Assert.Single(destination.AddedPositions));
             Assert.Empty(session.EncryptedMessages.OfType<ServerGenericError>());
+        }
+        else if (outcome is "grid-fault" or "grid-balance-changed")
+        {
+            Assert.Equal(outcome == "grid-fault" ? 100ul : 11ul, balance);
+            Assert.Empty(wallet.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+            Assert.Empty(session.EncryptedMessages.OfType<ServerEntitySelectAuxUInt14>());
+            Assert.Empty(destination.AddedPositions);
+            Assert.Equal(ForceKickReason.WorldDisconnect, Assert.Single(session.EncryptedMessages.OfType<ServerForceKick>()).Reason);
         }
         else
         {
             Assert.Equal(outcome == "balance-changed" ? 11ul : 100ul, balance);
             Assert.Empty(wallet.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
             Assert.Empty(session.EncryptedMessages.OfType<ServerEntitySelectAuxUInt14>());
-            Assert.Empty(destinationMap.GetInvocations(nameof(IMap.EnqueueAdd)));
+            Assert.Empty(destination.AddedPositions);
             var errors = session.EncryptedMessages.OfType<ServerGenericError>();
             if (outcome == "rebound")
                 Assert.Empty(errors);
@@ -516,6 +534,8 @@ public class TransportHandlerTests
         }
         Assert.Equal(100ul, balanceBeforeAdmission);
         Assert.False(discoveredBeforeAdmission);
+        Assert.Equal(outcome == "balance-changed" ? 11ul : 100ul, balanceBeforeGrid);
+        Assert.False(discoveredBeforeGrid);
         if (outcome != "rebound")
             Assert.Equal(outcome == "balance-changed" ? 11ul : 100ul, balanceAtDestination);
 
@@ -524,10 +544,11 @@ public class TransportHandlerTests
             Assert.Equal(player.Guid, player.ControlGuid);
             handler.HandleMessage(session, BuildFlightPathPurchase(1u, 2u));
             mapManager.Update(0);
+            mapManager.Update(0);
             Assert.Equal(88ul, balance);
             Assert.Single(wallet.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
             Assert.Equal(30u, Assert.Single(session.EncryptedMessages.OfType<ServerEntitySelectAuxUInt14>()).Value);
-            Assert.Single(destinationMap.GetInvocations(nameof(IMap.EnqueueAdd)));
+            Assert.Single(destination.AddedPositions);
             Assert.Single(session.EncryptedMessages.OfType<ServerGenericError>());
         }
 
@@ -535,23 +556,51 @@ public class TransportHandlerTests
             => type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(player, value);
     }
 
+    private sealed class TaxiTestDestination : MapInstance
+    {
+        private readonly Func<GenericError?> canEnter;
+        private readonly bool failGrid;
+        public List<Vector3> AddedPositions { get; } = [];
+
+        public TaxiTestDestination(Func<GenericError?> canEnter, bool failGrid)
+            : base(null, RecordingDispatchProxy<IPublicEventManager>.Create(out _), sharedConfiguration: CreateConfiguration())
+        {
+            this.canEnter = canEnter;
+            this.failGrid = failGrid;
+            var mapLock = RecordingDispatchProxy<IMapLock>.Create(out var mapLockProxy);
+            mapLockProxy.SetProperty(nameof(IMapLock.InstanceId), Guid.NewGuid());
+            typeof(MapInstance).GetProperty(nameof(MapLock))!.SetValue(this, mapLock);
+            Initialise(new WorldEntry { Id = 7 });
+        }
+
+        public override void Initialise(WorldEntry entry) => typeof(BaseMap).GetProperty(nameof(Entry))!.SetValue(this, entry);
+        public override GenericError? CanEnter(IPlayer player, IMapPosition position) => canEnter();
+        protected override void SpawnGrid(uint gridX, uint gridZ)
+        {
+            if (failGrid) throw new InvalidOperationException("fixture destination grid failure");
+        }
+        protected override void AddEntity(IGridEntity entity, Vector3 vector) => AddedPositions.Add(vector);
+        protected override IMapPosition GetPlayerReturnLocation(IPlayer player) => null;
+
+        private static ISharedConfiguration CreateConfiguration()
+        {
+            var configuration = RecordingDispatchProxy<ISharedConfiguration>.Create(out var proxy);
+            proxy.SetMethodReturn(nameof(ISharedConfiguration.Get), new MapConfig());
+            return configuration;
+        }
+    }
+
     private sealed class TaxiTestInstancedMap : InstancedMap<IMapInstance>
     {
-        private readonly IMapInstance instance;
-        private readonly IMapLock mapLock;
+        private readonly TaxiTestDestination instance;
 
-        public TaxiTestInstancedMap(IMapInstance instance, RecordingDispatchProxy<IMapInstance> instanceProxy)
+        public TaxiTestInstancedMap(TaxiTestDestination instance)
             : base(CreateRouterServices())
         {
             this.instance = instance;
-            Guid instanceId = Guid.NewGuid();
-            instanceProxy.SetProperty(nameof(IMapInstance.InstanceId), instanceId);
-            instanceProxy.SetProperty(nameof(IMap.Entry), new WorldEntry { Id = 7u });
-            mapLock = RecordingDispatchProxy<IMapLock>.Create(out var mapLockProxy);
-            mapLockProxy.SetProperty(nameof(IMapLock.InstanceId), instanceId);
         }
 
-        protected override IMapLock GetMapLock(IPlayer player) => mapLock;
+        protected override IMapLock GetMapLock(IPlayer player) => instance.MapLock;
         protected override IMapInstance CreateInstance(IPlayer player, IMapLock lockForInstance) => instance;
 
         private static IMapManager CreateRouterServices()

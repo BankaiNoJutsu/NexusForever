@@ -8,6 +8,7 @@ namespace NexusForever.Game.Map
     {
         public IGridEntity Entity { get; init; }
         public Vector3 Vector { get; init; }
+        internal IMapPosition AdmissionPosition { get; init; }
         public ulong? AdmissionGeneration { get; init; }
     }
 }

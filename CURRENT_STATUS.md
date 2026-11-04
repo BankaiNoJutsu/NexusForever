@@ -21159,6 +21159,22 @@ instance-binding, map-admission and world-entry tests passed. Local evidence is 
 `artifacts/continuation-20261104/taxi-instance-admission/`.
 Physical arrival and recovery after a later map failure remain open.
 
+#### Flight-path grid settlement
+
+4 November 2026. Destination routing still checks the fare before removing the
+player from the source map. The destination grid queue retains the same flight
+position and admission generation through source removal. The fare and node
+unlock wait until the destination grid is ready and the original actor can
+still pay. A grid preparation failure leaves the balance and discovered nodes
+intact. The funds check also catches a balance drop while the transfer is
+queued. Charging and discovery still precede entity insertion and its callbacks.
+Physical arrival and failure after the grid gate remain open.
+
+Five baseline cases reproduced early charging or the missing funds recheck.
+The owning-project build and 148 scoped tests passed. The flight-path handler
+fixtures exercised direct and instanced routing through the real grid queue.
+Results are under `artifacts/continuation-20261104/taxi-grid-settlement/`.
+
 #### Instance transfer retries
 
 4 November 2026. An instance transfer waiting for its destination to unload

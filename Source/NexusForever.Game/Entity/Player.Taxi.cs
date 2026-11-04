@@ -62,8 +62,8 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        // Called under the generation's guard at each stage. Only the final map can settle the fare.
-        internal bool TryApplyTaxiAdmission(IMapPosition position, bool settleFare)
+        // Called under the generation guard. Check funds before leaving the source and settle at grid readiness.
+        internal bool TryApplyTaxiAdmission(IMapPosition position, bool checkFare, bool settleFare = false)
         {
             if (pendingTeleport?.TaxiFlight is not { } flight)
                 return true;
@@ -74,18 +74,21 @@ namespace NexusForever.Game.Entity
                 CancelMapAdmission();
                 return false;
             }
-            if (!settleFare)
-                return true;
-            if (flight.Fare != 0 && !CurrencyManager.CanAfford(CurrencyType.Credits, flight.Fare))
+            if (checkFare && flight.Fare != 0 && !CurrencyManager.CanAfford(CurrencyType.Credits, flight.Fare))
             {
                 OnTeleportToFailed(GenericError.VendorNotEnoughCash);
                 return false;
+            }
+            if (!settleFare)
+            {
+                // The destination can override the route yaw when it adjusts the arrival position.
+                if (checkFare) Rotation = flight.Rotation;
+                return true;
             }
 
             flight.Admitted = true;
             if (flight.Fare != 0)
                 CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, flight.Fare);
-            Rotation = flight.Rotation;
             DiscoverTaxiNode(flight.DestinationNode);
             return true;
         }

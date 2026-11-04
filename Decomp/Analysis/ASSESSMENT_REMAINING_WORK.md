@@ -43,9 +43,10 @@ ends admission when the destination grid cannot accept the player after source
 removal. Recovery after insertion and fare settlement on later failures remain open.
 
 [Flight-path destination admission](../../CURRENT_STATUS.md#flight-path-destination-admission)
-checks the destination map or selected instance and current funds before
-charging a queued fare and unlocking the destination. Physical arrival and
-later failure recovery remain open.
+checks the destination map or selected instance and current funds before source
+removal. [Flight-path grid settlement](../../CURRENT_STATUS.md#flight-path-grid-settlement)
+rechecks funds and settles only when the destination grid is ready to insert
+the player. Physical arrival and failures during or after insertion remain open.
 
 [Rapid Transport cast fare](../../CURRENT_STATUS.md#rapid-transport-cast-fare)
 charges the selected route only after the spell passes admission. Physical
