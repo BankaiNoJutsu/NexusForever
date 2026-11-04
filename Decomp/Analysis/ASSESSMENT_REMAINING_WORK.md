@@ -10,6 +10,11 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Committed auction posting publication](AUCTION_POSTING_TRANSACTION.md#recovering-the-committed-inventory-removal-and-post-result)
+retains a failed item removal or post result for the original actor. It sends
+the removal before success, releases reservations before retry and suppresses
+obsolete packets after a local return. Deployed and restart delivery remain open.
+
 [Activated item ownership](AMP_UPSTREAM_RECONCILIATION.md#activated-item-ownership)
 now keeps casts and consumption on the original player and inventory, and
 rejects a stale object at an occupied slot. Final-build AMP upgrade activation

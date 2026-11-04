@@ -55,11 +55,15 @@ public sealed class AuctionPostingCoordinatorTests
     [InlineData(true, "held-metadata")]
     [InlineData(true, "expiry-commit")]
     [InlineData(true, "expiry-rollback")]
+    [InlineData(true, "delete-retry")]
+    [InlineData(true, "reply-retry")]
+    [InlineData(true, "reply-rebind")]
+    [InlineData(true, "delete-return")]
     public async Task PublicPostPersistsEscrowAndWholeCharacterBeforePublication(bool checkItemPublication, string fault)
     {
         bool timed = fault.StartsWith("expiry-", StringComparison.Ordinal), metadata = fault == "held-metadata";
         bool rollback = fault is "rollback" or "expiry-rollback", custody = fault is "custody" or "ordinary-custody";
-        bool suppressed = fault is "retire" or "replace" or "packet-replace";
+        bool suppressed = fault is "retire" or "replace" or "packet-replace" or "reply-rebind";
         bool later = fault is "later" or "rollback" or "retire" or "replace" or "packet-replace" or "ordinary-rollback" or "ordinary-lost" or "custody" or "ordinary-custody";
         using var f = new Fixture(null); f.Seed();
         var account = (RecordingDispatchProxy<IAccount>)(object)f.Source.Player.Account;
@@ -140,11 +144,28 @@ public sealed class AuctionPostingCoordinatorTests
         Exception itemMutation = null, inventoryMutation = null;
         Exception durabilityEdit = null, codecEdit = null, runeEdit = null, touchEdit = null;
         GenericError? replyResult = null;
-        int removals = 0;
+        GenericError? cancelResult = null;
+        int removals = 0, removalAttempts = 0, successAttempts = 0;
+        bool lockedDuringRetry = false;
         sp.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
         {
             if (args[0] is ServerItemDelete deletion && deletion.Reason == ItemUpdateReason.Auction)
             {
+                removalAttempts++;
+                if (fault == "delete-retry")
+                {
+                    if (removalAttempts == 1) throw new IOException("Auction item removal enqueue failed.");
+                    lockedDuringRetry |= cleanup.IsAccountLocked(actor.Player.Account);
+                }
+                if (fault == "delete-return" && removalAttempts == 1)
+                {
+                    events.EnqueueThreadSafe(new PredicateEvent(() => true, () =>
+                    {
+                        ulong auctionId = Assert.Single(manager.GetOwnedItemAuctions(actor.Player)).AuctionId;
+                        Assert.True(manager.TryQueueAuctionCancellation(actor.Player, auctionId, 7001, (error, _) => cancelResult = error));
+                    }));
+                    throw new IOException("Auction item removal enqueue failed before cancellation.");
+                }
                 removals++;
                 using var observed = f.Context();
                 publishedBeforeSql |= !observed.MarketplaceAuction.Any(row => row.ItemId == 900)
@@ -163,6 +184,18 @@ public sealed class AuctionPostingCoordinatorTests
             if (args[0] is ServerAuctionPostResult response)
             {
                 if (fault == "competing" && response.Result == GenericError.DbFailure) { rejected++; return null; }
+                if (response.Result == GenericError.Ok)
+                {
+                    successAttempts++;
+                    if (successAttempts == 1 && fault is "reply-retry" or "reply-rebind")
+                    {
+                        if (fault == "reply-rebind")
+                            sp.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+                        throw new IOException("Auction post result enqueue failed.");
+                    }
+                    if (fault is "delete-retry" or "reply-retry")
+                        lockedDuringRetry |= cleanup.IsAccountLocked(actor.Player.Account);
+                }
                 replied = true; replyResult = response.Result;
                 if (response.Result != GenericError.Ok) return null;
                 successBeforeDisposal = !scopeDisposed;
@@ -228,6 +261,19 @@ public sealed class AuctionPostingCoordinatorTests
             Assert.True(deadline.Elapsed < TimeSpan.FromSeconds(20), "Auction posting did not settle.");
             await Task.Delay(5);
         } while (Pending(manager) || events.PendingEvents || actor.Player.IsNormalSaveInProgress);
+        if (fault == "delete-return")
+        {
+            Assert.Equal(GenericError.Ok, cancelResult);
+            Assert.False(replied);
+            Assert.Equal(1, removalAttempts);
+            Assert.Equal(1, executions);
+            Assert.Equal(900ul, actor.Player.Inventory.GetItem(900ul)?.Guid);
+            using var cancelled = f.Context();
+            Assert.Empty(cancelled.MarketplaceAuction);
+            Assert.Equal(42ul, cancelled.Item.Single(row => row.Id == 900).OwnerId);
+            Assert.False(cleanup.IsAccountLocked(actor.Player.Account));
+            return;
+        }
         if (fault == "bound")
         {
             Assert.Equal(GenericError.AuctionCannotFillOrder, replyResult); Assert.Equal(0, executions); Assert.Equal(0, removals);
@@ -239,6 +285,18 @@ public sealed class AuctionPostingCoordinatorTests
         if (!suppressed) Assert.True(replyResult == (rollback || custody ? GenericError.DbFailure : GenericError.Ok), $"Reply={replyResult};executed={executed};ordinary={ordinary.Failure}");
         Assert.Equal(1, executions); Assert.Equal(fault == "competing" ? 1 : 0, rejected);
         Assert.Equal(rollback || custody || fault is "retire" or "replace" ? 0 : 1, removals);
+        if (fault is "delete-retry" or "reply-retry" or "reply-rebind")
+        {
+            Assert.Equal(fault == "delete-retry" ? 2 : 1, removalAttempts);
+            Assert.Equal(fault == "reply-retry" ? 2 : 1, successAttempts);
+            Assert.False(lockedDuringRetry);
+            var publication = sp.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
+                .Where(call => call.Arguments[0] is ServerItemDelete { Reason: ItemUpdateReason.Auction } or ServerAuctionPostResult)
+                .Select(call => call.Arguments[0].GetType()).ToArray();
+            Assert.Equal(typeof(ServerItemDelete), publication[0]);
+            Assert.Equal(typeof(ServerAuctionPostResult), publication[^1]);
+            if (fault == "delete-retry") Assert.Equal(typeof(ServerItemDelete), publication[1]);
+        }
         Assert.False(successBeforeDisposal);
         Assert.False(successBeforeOrdinary);
         if (checkItemPublication) Assert.False(publishedBeforeSql, "ItemDelete was published before stored auction escrow existed.");

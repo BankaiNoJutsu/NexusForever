@@ -1,5 +1,32 @@
 # Whole-Item auction posting
 
+## Recovering the committed inventory removal and post result
+
+4 November 2026. The public sell handler could lose the successful post
+result after the listing and Character commit. An earlier failure sending the
+item-removal packet could instead report `DbFailure` for the committed sale.
+The baseline reproduced both failures through the public handler.
+
+The original actor still attempts inventory removal during committed
+publication. The posting operation retains a failed removal across the end
+of reconciliation and retries it on the original event queue after releasing
+the account and listing reservations. The successful result follows removal.
+A failure sending the result retries only the result, using the listing's
+remaining lifetime. Retry checks the original actor and current local listing.
+If cancellation returns the same Item before retry, the old removal and result
+are dropped. No settlement is repeated.
+
+The local source and SQLite evidence is in
+`artifacts/continuation-20261104/auction-post-publication/`. It includes the
+reproduced baseline and the first candidate that retried removal too early
+for a queued cancellation. The final build and 103 scoped tests passed,
+including four new public-handler cases. The test run took 68 seconds. Both
+review axes cleared the candidate, with a targeted re-review of the delay fix.
+This gate covers live actor retry after an enqueue exception. Cross-process
+and restart replay, socket and retail qualification remain open.
+
+## Original posting settlement
+
 Completed at the source/private-SQLite boundary on 1 November 2026 UTC. The full
 solution passes **11,354 tests**, zero failures/skips; build zero warnings/errors.
 193 focused and 1,106 affected cases pass. Final Spec0 / Standards0 findings.

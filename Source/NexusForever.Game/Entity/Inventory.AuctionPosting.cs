@@ -4,8 +4,6 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Mail;
 using NexusForever.Game.Marketplace;
 using NexusForever.Game.Static.Entity;
-using NexusForever.Network.World.Message.Model;
-using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.Game.Entity
 {
@@ -82,12 +80,12 @@ namespace NexusForever.Game.Entity
             internal AuctionEscrowWitness CaptureWitness(string database, GlobalMarketplaceManager.AuctionRow listing)
                 => committed && !conflict ? new(database, owner.characterId, listing, Target) : null;
             internal void RejectCustody() => conflict = true;
-            internal void Complete(Func<bool> allowed)
+            internal void Complete(Func<bool> allowed, Action publishRemoval)
             {
                 if (!settled || !ownsActor() || !owner.IsMarketplacePublishing)
                     throw new InvalidOperationException("Auction posting lost its publication owner.");
                 if (conflict) { owner.rewardRequiresReload = true; return; }
-                if (committed && allowed()) owner.player.Session.EnqueueMessageEncrypted(new ServerItemDelete { Guid = before.Id, Reason = ItemUpdateReason.Auction });
+                if (committed && allowed()) publishRemoval();
             }
             public void Dispose()
             {

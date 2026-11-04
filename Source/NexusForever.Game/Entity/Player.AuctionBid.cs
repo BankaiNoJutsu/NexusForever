@@ -173,7 +173,7 @@ namespace NexusForever.Game.Entity
                 GlobalMarketplaceManager.BidWalletCurrent current = null,
                 GlobalMarketplaceManager.BidItem deliveredCurrent = null, bool deliveryMatches = true, Func<bool> publicationAllowed = null,
                 MailHeaderState deliveryMail = null, GlobalMarketplaceManager.CommodityReturnView commodityCurrent = null,
-                GlobalMarketplaceManager.AuctionRow postingListing = null)
+                GlobalMarketplaceManager.AuctionRow postingListing = null, Action publishPostingRemoval = null)
             {
                 if (!Owns() || wallet == null || reconciling) throw new InvalidOperationException("Normal bid has no reconcilable original actor.");
                 reconciling = true;
@@ -208,7 +208,7 @@ namespace NexusForever.Game.Entity
                                 && player.LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished);
                             publication = (inventory as Inventory)?.BeginMarketplacePublication(Owns);
                             wallet.CompleteOrdinaryReconciliation(CanPublish(), CanPublish);
-                            escrow?.Complete(CanPublish);
+                            escrow?.Complete(CanPublish, publishPostingRemoval);
                             delivery?.Complete(CanPublish());
                             commodityDelivery?.Complete(CanPublish);
                             bool conflict = delivery?.RequiresReload == true || commodityDelivery?.RequiresReload == true || escrow?.RequiresReload == true;
