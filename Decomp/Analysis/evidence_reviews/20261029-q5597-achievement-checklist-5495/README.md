@@ -164,3 +164,27 @@ all 33 cases. The test results and assembly hashes are under `artifacts/continua
 This gate covers the requesting session's ordinary client turn-in notices.
 Server-triggered completion, cross-player script effects, full-stack world
 entry and retail presentation remain separate.
+
+## Commit-gated starter tutorial recovery
+
+4 November 2026. Starter tutorial recovery runs achieved receiverless
+turn-ins and the resulting quest-chain recovery through one Character save.
+Packets produced synchronously for that session release after commit. A
+busy save defers recovery on the original session queue. A failed save
+retires the actor without releasing the retained notices.
+
+The loopback World regression invokes the actual Player recovery entry point
+for an achieved Exile movement quest with fixture item and achievement
+rewards. While the write is held, neither completion nor follow-up
+acceptance appears on the socket and the database still has only the
+achieved quest. A rejected Character update rolls back both quest rows and
+the reward rows. A fresh session can recover once and receives both quest
+updates after commit. Reload retains the rewards and active follow-up.
+
+The final scoped build and all 31 selected tests passed, including three
+Contract save-order controls. Results and binary hashes are under
+`artifacts/continuation-20261104/tutorial-turn-in-publication/`. The first
+broader attempt hit fixture setup errors and then exhausted free space during
+Contract SQLite seeding. It did not produce a complete test result.
+Cross-player and delayed script effects, deployed provider behavior and
+native tutorial gameplay remain open.

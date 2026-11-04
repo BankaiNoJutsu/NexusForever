@@ -97,21 +97,21 @@ public sealed partial class Q5597RewardPersistenceTests
         }
     }
 
-    private static void ConfigureQuest(Fixture f, bool reclaim)
+    private static void ConfigureQuest(Fixture f, bool reclaim, ushort questId = QuestId)
     {
         var info = (RecordingDispatchProxy<IQuestInfo>)(object)f.Info;
         info.SetProperty(nameof(IQuestInfo.Entry), new Quest2Entry
         {
-            Id = QuestId, PushedItemIds = reclaim ? [PushedItem] : [], PushedItemCounts = reclaim ? [1u] : []
+            Id = questId, PushedItemIds = reclaim ? [PushedItem] : [], PushedItemCounts = reclaim ? [1u] : []
         });
         info.SetProperty(nameof(IQuestInfo.Objectives), ImmutableList<IQuestObjectiveInfo>.Empty);
         info.SetProperty(nameof(IQuestInfo.Rewards), new[] { Reward(3000, 81917), Reward(5236, 29664) }.ToImmutableDictionary(row => row.Id));
         ((RecordingDispatchProxy<IGlobalQuestManager>)(object)f.Global)
             .SetMethodReturn(nameof(IGlobalQuestManager.GetQuestReceivers), ImmutableList.Create(Receiver));
 
-        static Quest2RewardEntry Reward(uint id, uint item) => new()
+        Quest2RewardEntry Reward(uint id, uint item) => new()
         {
-            Id = id, Quest2Id = QuestId, Quest2RewardTypeId = (uint)QuestRewardType.Item, ObjectId = item, ObjectAmount = 1
+            Id = id, Quest2Id = questId, Quest2RewardTypeId = (uint)QuestRewardType.Item, ObjectId = item, ObjectAmount = 1
         };
     }
 
@@ -132,7 +132,8 @@ public sealed partial class Q5597RewardPersistenceTests
     }
 
     private static Actor LoadActor(Fixture f, IItemManager items, uint slots,
-        CharacterModel model = null, IGameSession session = null, IAccount account = null, AuthDatabase auth = null)
+        CharacterModel model = null, IGameSession session = null, IAccount account = null, AuthDatabase auth = null,
+        ushort questId = QuestId)
     {
         if (model == null)
         {
@@ -166,7 +167,7 @@ public sealed partial class Q5597RewardPersistenceTests
             PrerequisiteId = 18, PrerequisiteIdServer = 18
         });
         bloodstone.ChecklistEntries.Add(new AchievementChecklistEntry
-            { Id = 5495, AchievementId = AchievementId, Bit = 1, ObjectId = QuestId });
+            { Id = 5495, AchievementId = AchievementId, Bit = 1, ObjectId = questId });
         var registry = RecordingDispatchProxy<IGlobalAchievementManager>.Create(out var achievementManager);
         achievementManager.SetMethodReturn(nameof(IGlobalAchievementManager.GetAchievement), bloodstone);
         achievementManager.SetMethodHandler(nameof(IGlobalAchievementManager.GetCharacterAchievements),

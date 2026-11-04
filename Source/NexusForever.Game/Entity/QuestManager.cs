@@ -851,7 +851,11 @@ namespace NexusForever.Game.Entity
 
             if (retainPublication)
             {
-                CompleteClientQuestWithSave(owner, session, quest, selectedReward, communicator, closeDialog);
+                CompleteOrdinaryQuestsWithSave(owner, session, () =>
+                {
+                    CompleteOrdinaryQuest(quest, selectedReward, communicator);
+                    return true;
+                }, communicator ? null : closeDialog);
                 return true;
             }
 
@@ -864,8 +868,9 @@ namespace NexusForever.Game.Entity
 
         internal bool IsOrdinaryCompletionMutationInProgress { get; private set; }
 
-        private void CompleteClientQuestWithSave(Player owner, GameSession session, IQuest quest,
-            Quest2RewardEntry selectedReward, bool communicator, Action closeDialog)
+        internal bool CanStartTutorialQuestCompletion(Player owner) => !QuestCompletionBusy(owner);
+
+        internal void CompleteOrdinaryQuestsWithSave(Player owner, GameSession session, Func<bool> complete, Action afterCommit)
         {
             var account = owner.Account;
             var events = session.Events;
@@ -879,20 +884,27 @@ namespace NexusForever.Game.Entity
             if (!OwnsSession() || session.IsDisconnecting)
                 throw new InvalidOperationException("Quest completion lost its original World session.");
 
-            session.CanProcessIncomingPackets = false;
             try
             {
+                bool completed = false;
                 Action publish;
                 IsOrdinaryCompletionMutationInProgress = true;
-                try { publish = session.CaptureOutgoingPackets(() => CompleteOrdinaryQuest(quest, selectedReward, communicator)); }
+                try { publish = session.CaptureOutgoingPackets(() => completed = complete()); }
                 finally { IsOrdinaryCompletionMutationInProgress = false; }
 
-                owner.Save(() =>
+                void Publish()
                 {
                     if (!OwnsSession() || session.IsDisconnecting) return;
                     publish();
-                    if (!communicator) closeDialog?.Invoke();
-                });
+                    afterCommit?.Invoke();
+                }
+
+                if (completed)
+                {
+                    session.CanProcessIncomingPackets = false;
+                    owner.Save(Publish);
+                }
+                else Publish();
             }
             catch (Exception exception)
             {

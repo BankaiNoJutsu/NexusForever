@@ -175,6 +175,16 @@ namespace NexusForever.Game.Entity
         private static readonly StarterTutorialEntitySearchCheck starterTutorialEntitySearchCheck = new();
 
         private bool recoveringStarterTutorialQuestProgression;
+        private bool starterTutorialCompletionInFlight;
+        private StarterTutorialRecovery? queuedStarterTutorialRecovery;
+
+        [Flags]
+        private enum StarterTutorialRecovery
+        {
+            QuestProgression = 1,
+            FinishLocation = 2,
+            CombatProjector = 4
+        }
 
         public override EntityType Type => EntityType.Player;
 
@@ -2935,21 +2945,71 @@ namespace NexusForever.Game.Entity
         }
 
         public void TryRecoverStarterTutorialQuestProgression(bool allowCombatTransitionRecovery)
+            => RecoverStarterTutorialProgression(allowCombatTransitionRecovery
+                ? StarterTutorialRecovery.FinishLocation : StarterTutorialRecovery.QuestProgression);
+
+        public void TryRecoverStarterTutorialCombatProjectorActivation()
+            => RecoverStarterTutorialProgression(StarterTutorialRecovery.CombatProjector);
+
+        private void RecoverStarterTutorialProgression(StarterTutorialRecovery recovery)
         {
-            if (Map?.Entry?.Id != TutorialWorldId || recoveringStarterTutorialQuestProgression)
+            if (Map?.Entry?.Id != TutorialWorldId || recoveringStarterTutorialQuestProgression
+                || Session is GameSession { IsDisconnecting: true })
                 return;
 
-            recoveringStarterTutorialQuestProgression = true;
+            if (queuedStarterTutorialRecovery is { } queued)
+            {
+                queuedStarterTutorialRecovery = queued | recovery;
+                return;
+            }
 
+            recoveringStarterTutorialQuestProgression = true;
             try
             {
-                bool updatedObjectives = TryRecoverStarterTutorialHoverboardRideObjective();
-                bool completedQuests = TryCompleteAchievedStarterTutorialQuests();
-                bool advancedQuestChain = TryRecoverStarterTutorialQuestChain();
-                bool recoveredCombatTransition = allowCombatTransitionRecovery && TryRecoverStarterTutorialCombatTransition();
+                bool updatedObjectives = (recovery & (StarterTutorialRecovery.QuestProgression | StarterTutorialRecovery.FinishLocation)) != 0
+                    && TryRecoverStarterTutorialHoverboardRideObjective();
+                if (QuestManager is QuestManager quests && Session is GameSession session
+                    && (starterTutorialCompletionInFlight || ReceiverlessQuestIds.Any(id => quests.GetQuestState(id) == QuestState.Achieved)))
+                {
+                    if (RewardStateRequiresReload) return;
+                    if (starterTutorialCompletionInFlight || !quests.CanStartTutorialQuestCompletion(this))
+                    {
+                        QueueStarterTutorialRecovery(quests, session, recovery);
+                        return;
+                    }
 
-                if (updatedObjectives || completedQuests || advancedQuestChain || recoveredCombatTransition)
-                    SyncStarterTutorialEntityVisibility();
+                    starterTutorialCompletionInFlight = true;
+                    quests.CompleteOrdinaryQuestsWithSave(this, session, () =>
+                    {
+                        bool changed = RecoverQuests(strictCompletion: true);
+                        if (updatedObjectives || changed) SyncStarterTutorialEntityVisibility();
+                        return changed;
+                    }, () =>
+                    {
+                        starterTutorialCompletionInFlight = false;
+                        if (RecoverCombatTransition()) SyncStarterTutorialEntityVisibility();
+                    });
+                }
+                else
+                {
+                    bool changed = RecoverQuests(strictCompletion: false);
+                    bool transitioned = RecoverCombatTransition();
+                    if (updatedObjectives || changed || transitioned) SyncStarterTutorialEntityVisibility();
+                }
+
+                bool RecoverQuests(bool strictCompletion)
+                {
+                    bool completedQuests = TryCompleteAchievedStarterTutorialQuests(strictCompletion);
+                    bool advancedQuestChain = TryRecoverStarterTutorialQuestChain(strictCompletion);
+                    return completedQuests || advancedQuestChain;
+                }
+
+                bool RecoverCombatTransition()
+                {
+                    bool projector = recovery.HasFlag(StarterTutorialRecovery.CombatProjector);
+                    return (projector || recovery.HasFlag(StarterTutorialRecovery.FinishLocation))
+                        && TryRecoverStarterTutorialCombatTransition(requireFinishWorldLocation: !projector);
+                }
             }
             finally
             {
@@ -2957,28 +3017,23 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        public void TryRecoverStarterTutorialCombatProjectorActivation()
+        private void QueueStarterTutorialRecovery(QuestManager quests, GameSession session, StarterTutorialRecovery recovery)
         {
-            if (Map?.Entry?.Id != TutorialWorldId || recoveringStarterTutorialQuestProgression)
-                return;
+            var events = session.Events;
+            var account = Account;
+            ulong epoch = account?.WorldSessionEpoch ?? 0;
+            bool CanResume() => !session.IsDisconnecting && ReferenceEquals(Session, session) && ReferenceEquals(session.Events, events)
+                && ReferenceEquals(Account, account) && account?.WorldSessionEpoch == epoch && ReferenceEquals(QuestManager, quests)
+                && session is IPlayerSession bound && ReferenceEquals(bound.Player, this) && !RewardStateRequiresReload;
 
-            recoveringStarterTutorialQuestProgression = true;
-
-            try
+            queuedStarterTutorialRecovery = recovery;
+            events.EnqueueEvent(new PredicateEvent(
+                () => !CanResume() || !starterTutorialCompletionInFlight && quests.CanStartTutorialQuestCompletion(this), () =>
             {
-                bool completedQuests = TryCompleteAchievedStarterTutorialQuests();
-                bool advancedQuestChain = TryRecoverStarterTutorialQuestChain();
-                bool recoveredCombatTransition = TryRecoverStarterTutorialCombatTransition(requireFinishWorldLocation: false);
-
-                log.Debug($"Starter tutorial combat projector activation recovery for player {Guid}: completedQuests={completedQuests}, advancedQuestChain={advancedQuestChain}, recoveredCombatTransition={recoveredCombatTransition}, position=({Position.X}, {Position.Y}, {Position.Z}), progress [{FormatStarterHoverboardQuestProgress()}].");
-
-                if (completedQuests || advancedQuestChain || recoveredCombatTransition)
-                    SyncStarterTutorialEntityVisibility();
-            }
-            finally
-            {
-                recoveringStarterTutorialQuestProgression = false;
-            }
+                StarterTutorialRecovery next = queuedStarterTutorialRecovery ?? recovery;
+                queuedStarterTutorialRecovery = null;
+                if (CanResume()) RecoverStarterTutorialProgression(next);
+            }));
         }
 
         private bool TryRecoverStarterTutorialHoverboardRideObjective()
@@ -3129,7 +3184,7 @@ namespace NexusForever.Game.Entity
             return quest.Any(objective => objective.ObjectiveInfo.Id == objectiveId && objective.IsComplete());
         }
 
-        private bool TryCompleteAchievedStarterTutorialQuests()
+        private bool TryCompleteAchievedStarterTutorialQuests(bool strictCompletion)
         {
             bool completedAny = false;
 
@@ -3141,10 +3196,10 @@ namespace NexusForever.Game.Entity
                 try
                 {
                     QuestManager.QuestComplete(questId, 0, false);
-                    completedAny = true;
+                    completedAny |= QuestManager.GetQuestState(questId) == QuestState.Completed;
                     log.Debug($"Tutorial quest completion recovery for player {Guid}: quest={questId}, states [{FormatQuestStates(ReceiverlessQuestIds)}].");
                 }
-                catch (Exception exception)
+                catch (Exception exception) when (!strictCompletion || exception is QuestException)
                 {
                     log.Debug(exception, $"Tutorial quest completion recovery skipped for player {Guid}: quest={questId}, states [{FormatQuestStates(ReceiverlessQuestIds)}].");
                 }
@@ -3153,7 +3208,7 @@ namespace NexusForever.Game.Entity
             return completedAny;
         }
 
-        private bool TryRecoverStarterTutorialQuestChain()
+        private bool TryRecoverStarterTutorialQuestChain(bool strictCompletion)
         {
             ushort[] questChain;
             switch (Faction1)
@@ -3189,9 +3244,9 @@ namespace NexusForever.Game.Entity
                     QuestManager.QuestAdd(nextQuestInfo);
 
                     log.Debug($"Starter tutorial quest chain recovery for player {Guid}: previousQuest={previousQuestId}, addedQuest={nextQuestId}, chain states [{FormatQuestStates(questChain)}].");
-                    return true;
+                    return QuestManager.GetQuestState(nextQuestId) is QuestState.Accepted or QuestState.Achieved;
                 }
-                catch (Exception exception)
+                catch (Exception exception) when (!strictCompletion || exception is QuestException)
                 {
                     log.Debug(exception, $"Starter tutorial quest chain recovery skipped for player {Guid}: previousQuest={previousQuestId}, nextQuest={nextQuestId}, chain states [{FormatQuestStates(questChain)}].");
                 }

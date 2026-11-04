@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
@@ -12,8 +13,13 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Configuration.Model;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
+using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Entity;
+using NexusForever.Game.Quest;
 using NexusForever.Game.Static.Quest;
+using NexusForever.Game.Static.Reputation;
+using NexusForever.Game.Static.Tutorial;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Game.Tests.Transport;
 using NexusForever.GameTable;
@@ -41,11 +47,15 @@ public sealed partial class Q5597RewardPersistenceTests
     public Q5597RewardPersistenceTests(ITestOutputHelper output) => this.output = output;
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task Q5597LoopbackTurnInCleanupAndFreshSessionPublishSavedRewardsOnce(bool rejectFirstSave)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task LoopbackTurnInPublishesSavedRewardsOnce(bool rejectFirstSave, bool tutorialRecovery)
     {
         const uint accountId = 12;
+        ushort questId = tutorialRecovery ? StarterTutorialDefinition.ExileMovementQuestId : QuestId;
+        const ushort nextQuestId = StarterTutorialDefinition.ExileHoverboardQuestId;
         using var f = new Fixture(null);
         using var authConnection = new SqliteConnection(new SqliteConnectionStringBuilder
         {
@@ -63,10 +73,25 @@ public sealed partial class Q5597RewardPersistenceTests
             database.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite,
                 ConnectionString = seed.Database.GetDbConnection().ConnectionString });
             seed.Character.Single().AccountId = accountId;
-            seed.CharacterQuest.Add(new() { Id = 42, QuestId = QuestId, State = (byte)QuestState.Achieved });
+            seed.CharacterQuest.Add(new() { Id = 42, QuestId = questId, State = (byte)QuestState.Achieved });
             await seed.SaveChangesAsync();
         }
-        ConfigureQuest(f, reclaim: false);
+        ConfigureQuest(f, reclaim: false, questId);
+        if (tutorialRecovery)
+        {
+            var next = RecordingDispatchProxy<IQuestInfo>.Create(out var nextProxy);
+            nextProxy.SetProperty(nameof(IQuestInfo.Entry), new Quest2Entry { Id = nextQuestId, PushedItemIds = [] });
+            nextProxy.SetProperty(nameof(IQuestInfo.Objectives), ImmutableList.Create<IQuestObjectiveInfo>(
+                new QuestObjectiveInfo(new QuestObjectiveEntry { Id = 21324, Type = (uint)QuestObjectiveType.CompleteChallenge, Count = 1 })));
+            var global = (RecordingDispatchProxy<IGlobalQuestManager>)(object)f.Global;
+            global.SetMethodReturn(nameof(IGlobalQuestManager.GetQuestGivers), Array.Empty<uint>());
+            global.SetMethodHandler(nameof(IGlobalQuestManager.GetQuestInfo), args => (ushort)args[0] switch
+            {
+                StarterTutorialDefinition.ExileMovementQuestId => f.Info,
+                nextQuestId => next,
+                _ => null
+            });
+        }
         var items = CreateItems();
         var messages = new MessageManager(NullLogger<MessageManager>.Instance);
         messages.RegisterNetworkManagerMessagesAndHandlers();
@@ -82,8 +107,8 @@ public sealed partial class Q5597RewardPersistenceTests
             using (var fault = f.Context())
                 await fault.Database.ExecuteSqlRawAsync("""
                     CREATE TRIGGER q5597_reject_completion BEFORE UPDATE OF state ON character_quest
-                    WHEN NEW.id = 42 AND NEW.questId = 5597 AND NEW.state = 3
-                    BEGIN SELECT RAISE(ABORT, 'Q5597 test rejected completion'); END;
+                    WHEN NEW.id = 42 AND NEW.state = 3
+                    BEGIN SELECT RAISE(ABORT, 'Loopback test rejected quest completion'); END;
                     """);
             await RunSession(async (world, client, actor) =>
             {
@@ -107,7 +132,9 @@ public sealed partial class Q5597RewardPersistenceTests
             await PumpUntil(world, () => world.CanProcessIncomingPackets);
             using (var read = f.Context())
             {
-                Assert.Equal(QuestState.Completed, (QuestState)read.CharacterQuest.Single().State);
+                Assert.Equal(QuestState.Completed, (QuestState)read.CharacterQuest.Single(row => row.QuestId == questId).State);
+                if (tutorialRecovery)
+                    Assert.Equal(QuestState.Accepted, (QuestState)read.CharacterQuest.Single(row => row.QuestId == nextQuestId).State);
                 Assert.Equal(2, read.Item.Count());
                 Assert.Equal(2u, read.CharacterAchievement.Single().ProgressState);
             }
@@ -115,9 +142,18 @@ public sealed partial class Q5597RewardPersistenceTests
             using var second = await ReadPacket(client, GameMessageOpcode.ServerItemAdd);
             delivered = new[] { ReadFixtureInventoryItem(first), ReadFixtureInventoryItem(second) }.OrderBy(item => item.ItemId).ToArray();
             using var state = await ReadPacket(client, GameMessageOpcode.ServerQuestStateChange);
-            Assert.Equal(QuestId, state.ReadUShort(15));
+            Assert.Equal(questId, state.ReadUShort(15));
             Assert.Equal(QuestState.Completed, state.ReadEnum<QuestState>(32));
-            using var dialog = await ReadPacket(client, GameMessageOpcode.ServerDialogEnd);
+            if (tutorialRecovery)
+            {
+                using var next = await ReadPacket(client, GameMessageOpcode.ServerQuestStateChange);
+                Assert.Equal(nextQuestId, next.ReadUShort(15));
+                Assert.Equal(QuestState.Accepted, next.ReadEnum<QuestState>(32));
+            }
+            else
+            {
+                using var dialog = await ReadPacket(client, GameMessageOpcode.ServerDialogEnd);
+            }
         });
 
         var saved = Assert.Single(await database.GetCharacters(accountId));
@@ -125,7 +161,7 @@ public sealed partial class Q5597RewardPersistenceTests
         Assert.Equal(savedItems, delivered);
         Assert.Equal(RewardIds, savedItems.Select(item => item.ItemId));
         Assert.All(savedItems, item => Assert.Equal(1u, item.StackCount));
-        Assert.Equal(QuestState.Completed, (QuestState)Assert.Single(saved.Quest).State);
+        Assert.Equal(QuestState.Completed, (QuestState)saved.Quest.Single(row => row.QuestId == questId).State);
         var completed = Assert.Single(saved.Achievement);
         Assert.Equal(AchievementId, completed.AchievementId);
         Assert.Equal(2u, completed.ProgressState);
@@ -152,15 +188,21 @@ public sealed partial class Q5597RewardPersistenceTests
             }
             using (var quest = await ReadPacket(client, GameMessageOpcode.ServerQuestInit))
             {
-                Assert.Equal(1u, quest.ReadUInt());
-                Assert.Equal(QuestId, quest.ReadUShort(15));
+                Assert.Equal(tutorialRecovery ? 0u : 1u, quest.ReadUInt());
+                if (!tutorialRecovery) Assert.Equal(questId, quest.ReadUShort(15));
+            }
+            if (tutorialRecovery)
+            {
+                using var next = await ReadPacket(client, GameMessageOpcode.ServerQuestStateChange);
+                Assert.Equal(nextQuestId, next.ReadUShort(15));
+                Assert.Equal(QuestState.Accepted, next.ReadEnum<QuestState>(32));
             }
 
-            await SendTurnIn(client);
+            await SendTurnIn(client, questId);
             var reply = ReadPacket(client, GameMessageOpcode.ServerQuestStateChange);
             await PumpUntil(world, () => reply.IsCompleted);
             using var state = await reply;
-            Assert.Equal(QuestId, state.ReadUShort(15));
+            Assert.Equal(questId, state.ReadUShort(15));
             Assert.Equal(QuestState.Completed, state.ReadEnum<QuestState>(32));
         });
 
@@ -170,13 +212,23 @@ public sealed partial class Q5597RewardPersistenceTests
 
         async Task SendWithSaveHeld(WorldSession world, GameProtocolClient client, Actor actor)
         {
-            await SendTurnIn(client);
-            // The session pumps events before handling input. Stop after the
-            // request and before its queued Character save continuation runs.
-            await PumpUntil(world, () => !world.CanProcessIncomingPackets || world.IsDisconnecting);
+            if (tutorialRecovery)
+                actor.Player.TryRecoverStarterTutorialQuestProgression();
+            else
+            {
+                await SendTurnIn(client, questId);
+                // The session pumps events before handling input. Stop after the
+                // request and before its queued Character save continuation runs.
+                await PumpUntil(world, () => !world.CanProcessIncomingPackets || world.IsDisconnecting);
+            }
             Assert.False(world.IsDisconnecting);
             Assert.True(actor.Player.IsNormalSaveInProgress);
-            Assert.Equal(QuestState.Completed, actor.Quests.GetQuestState(QuestId));
+            Assert.Equal(QuestState.Completed, actor.Quests.GetQuestState(questId));
+            if (tutorialRecovery)
+            {
+                Assert.Equal(QuestState.Accepted, actor.Quests.GetQuestState(nextQuestId));
+                actor.Player.TryRecoverStarterTutorialQuestProgression();
+            }
             using var read = f.Context();
             Assert.Equal(QuestState.Achieved, (QuestState)read.CharacterQuest.Single().State);
             Assert.Empty(read.Item);
@@ -205,7 +257,19 @@ public sealed partial class Q5597RewardPersistenceTests
             accountProxy.SetProperty(nameof(IAccount.Session), world);
             typeof(WorldSession).GetProperty(nameof(WorldSession.Account))!.SetValue(world, account);
             var model = Assert.Single(await database.GetCharacters(accountId));
-            using var actor = LoadActor(f, items, 2, model, world, account, auth);
+            using var actor = LoadActor(f, items, 2, model, world, account, auth, questId);
+            if (tutorialRecovery)
+            {
+                var map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
+                mapProxy.SetProperty(nameof(IBaseMap.Entry), new WorldEntry { Id = 3460 });
+                mapProxy.SetMethodReturn(nameof(IBaseMap.Search), Array.Empty<IGridEntity>());
+                typeof(GridEntity).GetProperty(nameof(GridEntity.Map))!.SetValue(actor.Player, map);
+                actor.Set(nameof(Player.Faction1), Faction.Exile);
+                typeof(Player).GetField("globalQuestManager", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(actor.Player, f.Global);
+                typeof(Player).GetField("gameTableManager", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(actor.Player, f.Source.Tables);
+                ((RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables).SetProperty(nameof(IGameTableManager.WorldLocation2),
+                    PlayerBindPointTests.Table<WorldLocation2Entry>());
+            }
             var logout = new LogoutManager(actor.Player);
             logout.OnTimerFinished += actor.Cleanup;
             actor.Set(nameof(Player.LogoutManager), logout);
@@ -236,9 +300,9 @@ public sealed partial class Q5597RewardPersistenceTests
         output.WriteLine("No item, quest-state, achievement or dialog-end packets while the turn-in save was held.");
     }
 
-    private static Task SendTurnIn(GameProtocolClient client) => client.SendEncrypted(GameMessageOpcode.ClientQuestComplete, writer =>
+    private static Task SendTurnIn(GameProtocolClient client, ushort questId) => client.SendEncrypted(GameMessageOpcode.ClientQuestComplete, writer =>
     {
-        writer.Write(QuestId, 15);
+        writer.Write(questId, 15);
         writer.Write((ushort)0, 15);
         writer.Write(false);
     });
