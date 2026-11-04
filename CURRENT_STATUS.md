@@ -23247,6 +23247,30 @@ presets passed 2/2, content-retail validation passed 31 files / 168101 rows,
 and the WildStar64 decompile manifest passed 200/200.
 
 ### F-031 - Fortune Minigame - EMULATOR IMPLEMENTED / RETAIL WEIGHTS BLOCKED
+#### Persisted card reveal and reward settlement
+
+4 November 2026. The persisted flip now commits the selected card and its
+character-targeted account item together in the existing Auth save unit. The
+live inventory adopts the committed item before the original session receives
+its add packets and reveal. A rejected write on either table leaves both
+unchanged and allows another attempt. A superseded World session or stale deal
+cannot settle a flip. A refreshed deal becomes eligible for flips after its
+cards packet is enqueued. A session or deal replacement suppresses any later
+stale publication without undoing the committed reward.
+
+Two baseline failures reproduced the split between reveal and reward. The
+owning projects built and 148 scoped cases passed before the final deal
+publication changes. The final Fortune run rebuilt WorldServer and passed
+all 33 Fortune cases, including seven new regressions. Private SQLite
+results are in `artifacts/continuation-20261104/fortune-flip-settlement/`.
+
+Coin debit and deal creation still need a shared commit. If Auth commits and
+the caller loses a non-retryable acknowledgement, the durable item remains
+available on account reload. Immediate live adoption and enqueue recovery
+remain open, along with configured-provider and retail qualification.
+
+#### Existing Fortune behavior and evidence
+
 4 handlers functional, session persistence code path via `account_fortune_session`,
 reward payouts with account item grants, card flip state tracking.
 Weighted emulator rarity-tier pool + `ServerFortuneRewards.RewardItemProbabilities`

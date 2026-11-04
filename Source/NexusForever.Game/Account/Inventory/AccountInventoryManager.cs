@@ -16,6 +16,7 @@ using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared;
@@ -176,6 +177,23 @@ namespace NexusForever.Game.Account.Inventory
                 SendItemAdd(item);
 
             return item;
+        }
+
+        /// <summary>Commit an item with the caller's staged Auth work before adopting or announcing it.</summary>
+        public Action CommitItemGrant(AuthContext context, uint accountItemId, NetworkIdentity targetPlayerIdentity, Func<bool> canPublish)
+        {
+            if (context.Database.CurrentTransaction != null)
+                throw new InvalidOperationException("The inventory grant must own the Auth transaction.");
+
+            var item = new AccountInventoryItem(account, GetNextInventoryId(), accountItemId, targetPlayerIdentity,
+                AccountItemClaimState.CanClaim, targetPlayerIdentity?.Id is > 0ul, gameTableManager, consumed: OnPersistedItemConsumed);
+            IGameSession session = account.Session;
+            item.Save(context);
+            context.SaveChanges();
+
+            lock (inventoryGate)
+                items.Add(item.Id, item);
+            return () => SendItemAdd(item, session, canPublish);
         }
 
         public string AddPendingItemGroup(IEnumerable<uint> accountItemIds, NetworkIdentity senderIdentity = null, NetworkIdentity targetPlayerIdentity = null, string group = null, bool notify = true, uint senderAccountId = 0u, ulong targetAccountId = 0ul)
@@ -612,10 +630,13 @@ namespace NexusForever.Game.Account.Inventory
 
         private ulong GetNextInventoryId()
         {
-            if (nextInventoryId == 0ul)
-                throw new InvalidOperationException("No account inventory ids are available.");
+            lock (inventoryGate)
+            {
+                if (nextInventoryId == 0ul)
+                    throw new InvalidOperationException("No account inventory ids are available.");
 
-            return nextInventoryId++;
+                return nextInventoryId++;
+            }
         }
 
         private ulong GetNextPendingItemId()
@@ -626,17 +647,25 @@ namespace NexusForever.Game.Account.Inventory
             return nextPendingItemId++;
         }
 
-        private void SendItemAdd(IAccountInventoryItem item)
+        private void SendItemAdd(IAccountInventoryItem item) => SendItemAdd(item, account.Session, null);
+
+        private void SendItemAdd(IAccountInventoryItem item, IGameSession session, Func<bool> canPublish)
         {
+            if (canPublish?.Invoke() == false)
+                return;
+
             log.LogInformation("StorefrontCatalogDiagnostics account {AccountId}: sending account item add inventoryId={InventoryId} accountItemId={AccountItemId} claimState={ClaimState} hasTarget={HasTargetPlayerIdentity} target={TargetPlayerIdentity}.",
                 account.Id, item.Id, item.AccountItemId, item.ClaimState, item.HasTargetPlayerIdentity, item.TargetPlayerIdentity);
 
-            account.Session.EnqueueMessageEncrypted(new ServerAccountItemCacheAdd
+            session.EnqueueMessageEncrypted(new ServerAccountItemCacheAdd
             {
                 UnusedLeadingField = 0u,
                 AccountItem        = item.Build()
             });
-            account.Session.EnqueueMessageEncrypted(new ServerAccountItemAdd
+            if (canPublish?.Invoke() == false)
+                return;
+
+            session.EnqueueMessageEncrypted(new ServerAccountItemAdd
             {
                 AccountItem = item.Build()
             });

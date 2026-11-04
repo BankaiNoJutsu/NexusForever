@@ -1,6 +1,10 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Microsoft.EntityFrameworkCore;
+using NexusForever.Database;
+using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
+using NexusForever.Database.Configuration.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Currency;
@@ -15,6 +19,7 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
+using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Fortune;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Fortune;
@@ -310,6 +315,226 @@ public class FortuneSessionManagerTests
 
         ServerFortuneReset reset = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneReset>().Last();
         Assert.Equal(ClickEmptyResetCode, reset.ResetCode);
+    }
+
+    [Fact]
+    public void PersistedFlipGrantsTargetedItemBeforeAnAccountSaveAndCannotGrantAgainAfterReload()
+    {
+        using var fixture = new PersistedFortune();
+        FortuneSessionManager manager = fixture.CreateManager();
+        manager.Start(fixture.Session);
+        manager.FlipCard(fixture.Session, CreateFlipCard(1u));
+
+        using (AuthContext read = fixture.Database.CreateContext())
+        {
+            AccountInventoryModel item = Assert.Single(read.AccountInventory);
+            Assert.Equal(22u, item.AccountItemId);
+            Assert.Equal(9001ul, item.TargetCharacterId);
+            Assert.Equal(TestRealmId, item.TargetRealmId);
+            Assert.True(item.HasTargetPlayerIdentity);
+            Assert.NotNull(fixture.Session.Account.InventoryManager.GetItem(item.InventoryId));
+            AccountFortuneSessionModel cards = Assert.Single(read.AccountFortuneSession);
+            Assert.True(cards.Card1Flipped);
+            Assert.True(cards.Card1Granted);
+        }
+        object[] messages = GetEncryptedMessages(fixture.Messages).ToArray();
+        Assert.IsType<ServerAccountItemCacheAdd>(messages[^3]);
+        Assert.IsType<ServerAccountItemAdd>(messages[^2]);
+        Assert.Equal(new[] { false, true, false }, Assert.IsType<ServerFortuneCardUpdate>(messages[^1]).CardFlipped);
+
+        fixture.CreateManager().FlipCard(fixture.Session, CreateFlipCard(1u));
+        using AuthContext afterRetry = fixture.Database.CreateContext();
+        Assert.Single(afterRetry.AccountInventory);
+        Assert.Single(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCardUpdate>());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RejectedRevealLeavesInventoryAndCardUnchangedAndAllowsRetry(bool rejectGrant)
+    {
+        using var fixture = new PersistedFortune();
+        FortuneSessionManager manager = fixture.CreateManager();
+        manager.Start(fixture.Session);
+        using AuthContext schema = fixture.Database.CreateContext();
+        schema.Database.ExecuteSqlRaw(rejectGrant ? """
+            CREATE TRIGGER reject_fortune_flip BEFORE INSERT ON account_inventory
+            BEGIN SELECT RAISE(ABORT, 'rejected grant'); END
+            """ : """
+            CREATE TRIGGER reject_fortune_flip BEFORE UPDATE ON account_fortune_session
+            WHEN NEW.card0Flipped = 1 BEGIN SELECT RAISE(ABORT, 'rejected reveal'); END
+            """);
+
+        manager.FlipCard(fixture.Session, CreateFlipCard(0u));
+
+        Assert.False(schema.AccountFortuneSession.AsNoTracking().Single().Card0Flipped);
+        Assert.Empty(schema.AccountInventory);
+        Assert.Empty(fixture.Session.Account.InventoryManager);
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerAccountItemAdd>());
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCardUpdate>());
+
+        schema.Database.ExecuteSqlRaw("DROP TRIGGER reject_fortune_flip");
+        manager.FlipCard(fixture.Session, CreateFlipCard(0u));
+
+        Assert.True(schema.AccountFortuneSession.AsNoTracking().Single().Card0Granted);
+        Assert.Equal(11u, Assert.Single(schema.AccountInventory).AccountItemId);
+        Assert.Single(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCardUpdate>());
+    }
+
+    [Fact]
+    public void CachedDealCannotReplaceADifferentDurableDeal()
+    {
+        using var fixture = new PersistedFortune();
+        FortuneSessionManager manager = fixture.CreateManager();
+        manager.Start(fixture.Session);
+        using AuthContext schema = fixture.Database.CreateContext();
+        schema.Database.ExecuteSqlRaw("UPDATE account_fortune_session SET card0AccountItemId = 22");
+
+        manager.FlipCard(fixture.Session, CreateFlipCard(0u));
+        manager.FlipCard(fixture.Session, CreateFlipCard(0u));
+
+        AccountFortuneSessionModel current = schema.AccountFortuneSession.AsNoTracking().Single();
+        Assert.Equal(22u, current.Card0AccountItemId);
+        Assert.False(current.Card0Flipped);
+        Assert.Empty(schema.AccountInventory);
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCardUpdate>());
+
+        bool rejectCards = true;
+        fixture.Messages.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (rejectCards && args[0] is ServerFortuneCards)
+                throw new IOException("Status cards enqueue failed.");
+            return null;
+        });
+        Assert.Throws<IOException>(() => manager.SendStatus(fixture.Session));
+        manager.FlipCard(fixture.Session, CreateFlipCard(0u));
+        Assert.Empty(schema.AccountInventory);
+
+        rejectCards = false;
+        manager.SendStatus(fixture.Session);
+        Assert.Equal(22u, GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCards>().Last().AccountItemId[0]);
+
+        manager.FlipCard(fixture.Session, CreateFlipCard(0u));
+        Assert.Equal(22u, Assert.Single(schema.AccountInventory).AccountItemId);
+    }
+
+    [Fact]
+    public void CommittedFlipStopsPublishingIfCacheAddRebindsTheCharacter()
+    {
+        using var fixture = new PersistedFortune();
+        FortuneSessionManager manager = fixture.CreateManager();
+        manager.Start(fixture.Session);
+        IPlayer replacement = RecordingDispatchProxy<IPlayer>.Create(out var character);
+        character.SetProperty(nameof(IPlayer.CharacterId), 9002ul);
+        fixture.Messages.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerAccountItemCacheAdd)
+                fixture.Messages.SetProperty(nameof(IWorldSession.Player), replacement);
+            return null;
+        });
+
+        manager.FlipCard(fixture.Session, CreateFlipCard(0u));
+
+        using AuthContext read = fixture.Database.CreateContext();
+        Assert.True(read.AccountFortuneSession.Single().Card0Granted);
+        Assert.Equal(9001ul, Assert.Single(read.AccountInventory).TargetCharacterId);
+        object[] messages = GetEncryptedMessages(fixture.Messages).ToArray();
+        Assert.Single(messages.OfType<ServerAccountItemCacheAdd>());
+        Assert.Empty(messages.OfType<ServerAccountItemAdd>());
+        Assert.Empty(messages.OfType<ServerFortuneCardUpdate>());
+    }
+
+    [Fact]
+    public void CommittedFlipKeepsTheGrantButSuppressesTheRevealWhenADealReplacesItDuringPublication()
+    {
+        using var fixture = new PersistedFortune();
+        FortuneSessionManager manager = fixture.CreateManager();
+        manager.Start(fixture.Session);
+        fixture.Messages.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerAccountItemCacheAdd)
+                manager.Start(fixture.Session);
+            return null;
+        });
+
+        manager.FlipCard(fixture.Session, CreateFlipCard(0u));
+
+        using AuthContext read = fixture.Database.CreateContext();
+        Assert.False(read.AccountFortuneSession.Single().Card0Flipped);
+        Assert.Equal(11u, Assert.Single(read.AccountInventory).AccountItemId);
+        object[] messages = GetEncryptedMessages(fixture.Messages).ToArray();
+        Assert.All(messages.OfType<ServerFortuneCards>().Last().CardFlipped, Assert.False);
+        Assert.Single(messages.OfType<ServerAccountItemAdd>());
+        Assert.Empty(messages.OfType<ServerFortuneCardUpdate>());
+    }
+
+    [Fact]
+    public void PersistedFlipRejectsTheOldWorldSessionEpoch()
+    {
+        using var fixture = new PersistedFortune();
+        FortuneSessionManager manager = fixture.CreateManager();
+        manager.Start(fixture.Session);
+        fixture.Owner.SetProperty(nameof(IAccount.WorldSessionEpoch), 1ul);
+        using AuthContext context = fixture.Database.CreateContext();
+        context.AccountWorldSession.Add(new AccountWorldSessionModel { AccountId = fixture.Session.Account.Id, Epoch = 2ul });
+        context.SaveChanges();
+
+        manager.FlipCard(fixture.Session, CreateFlipCard(0u));
+
+        Assert.False(context.AccountFortuneSession.Single().Card0Flipped);
+        Assert.Empty(context.AccountInventory);
+        Assert.Empty(GetEncryptedMessages(fixture.Messages).OfType<ServerFortuneCardUpdate>());
+    }
+
+    private sealed class PersistedFortune : IDisposable
+    {
+        private readonly Microsoft.Data.Sqlite.SqliteConnection connection;
+
+        public AuthDatabase Database { get; } = new();
+        public IWorldSession Session { get; }
+        public RecordingDispatchProxy<IWorldSession> Messages { get; }
+        public RecordingDispatchProxy<IAccount> Owner { get; }
+
+        public PersistedFortune()
+        {
+            string name = $"fortune-{Guid.NewGuid():N}";
+            connection = new($"Data Source={name};Mode=Memory;Cache=Shared;Pooling=False");
+            connection.Open();
+            Database.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite, ConnectionString = connection.ConnectionString });
+            using AuthContext context = Database.CreateContext();
+            context.Database.EnsureCreated();
+            var model = new AccountModel { Id = 42u, Email = "fortune@example.test" };
+            context.Account.Add(model);
+            context.SaveChanges();
+
+            Session = RecordingDispatchProxy<IWorldSession>.Create(out var messages);
+            Messages = messages;
+            IAccount account = RecordingDispatchProxy<IAccount>.Create(out var owner);
+            Owner = owner;
+            IAccountCurrencyManager wallet = RecordingDispatchProxy<IAccountCurrencyManager>.Create(out var currency);
+            IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var character);
+            currency.SetMethodReturn(nameof(IAccountCurrencyManager.CanAfford), true);
+            character.SetProperty(nameof(IPlayer.CharacterId), 9001ul);
+            character.SetProperty(nameof(IPlayer.Account), account);
+            owner.SetProperty(nameof(IAccount.Id), model.Id);
+            owner.SetProperty(nameof(IAccount.Session), Session);
+            owner.SetProperty(nameof(IAccount.CurrencyManager), wallet);
+            owner.SetProperty(nameof(IAccount.InventoryManager), new AccountInventoryManager(account, model, null,
+                gameTableManager: CreateGameTableManager(new AccountItemEntry { Id = 11 }, new AccountItemEntry { Id = 22 }, new AccountItemEntry { Id = 33 })));
+            messages.SetProperty(nameof(IWorldSession.Account), account);
+            messages.SetProperty(nameof(IWorldSession.Player), player);
+        }
+
+        public FortuneSessionManager CreateManager()
+        {
+            IDatabaseManager databases = RecordingDispatchProxy<IDatabaseManager>.Create(out var database);
+            database.SetMethodReturn(nameof(IDatabaseManager.GetDatabase), Database);
+            IRealmContext realm = RecordingDispatchProxy<IRealmContext>.Create(out var realmProxy);
+            realmProxy.SetProperty(nameof(IRealmContext.RealmId), TestRealmId);
+            return new FortuneSessionManager(new StubFortuneRewardPool(), realm, databases);
+        }
+
+        public void Dispose() => connection.Dispose();
     }
 
     private const ushort TestRealmId = 7;
