@@ -1,0 +1,177 @@
+{
+  "productionSourceCommit": "1026128537ad0801d67dde6dcd5968410178d4b3",
+  "testFixture": {
+    "path": "Source/NexusForever.Game.Tests/Quest/Q5597RewardPersistenceTests.Loopback.cs",
+    "gitBlob": "52b0859a47c80483fc10710d41af3eaa41af6065"
+  },
+  "engine": {
+    "version": "8.4.13",
+    "sha256": "7a976874ef3974d612081960b1c193c663b4434692b6257382352c587e367ad6",
+    "controlConnectionIsolation": "REPEATABLE-READ",
+    "tlsRequired": true
+  },
+  "assemblies": [
+    {
+      "file": "NexusForever.Database.Auth.dll",
+      "sha256": "bb8ce208e42ccda28707ab4197b09addbb14669ccbcfca85fefaa3e9c489a678"
+    },
+    {
+      "file": "NexusForever.Database.Character.dll",
+      "sha256": "ee199849b8c8c1f75ac41d7d69caceb00c08c96fce1fe4a4361901e5e7202882"
+    },
+    {
+      "file": "NexusForever.Game.dll",
+      "sha256": "5325140b3dd1094a2024dcb4e47b3e44b07a11081ed87814ef2dbf42a6a4968b"
+    },
+    {
+      "file": "NexusForever.Game.Tests.dll",
+      "sha256": "0decbeaf78a286ed3936e2418e311390bb1fee4687d1a25faaa2fd46f01d83fb"
+    },
+    {
+      "file": "NexusForever.WorldServer.dll",
+      "sha256": "3a92171264c657f7d93b7c3213c1a1880400e8bd6b489c83af102704acb417f4"
+    }
+  ],
+  "strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+  "migrationsPerSchema": 48,
+  "startupToRunnerSeconds": 212.648,
+  "runs": [
+    {
+      "elapsedSeconds": 534.491,
+      "passed": 19,
+      "setupTimeout": "ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(queue-replaced-after-commit)",
+      "setupFailure": "Command timeout during EF Character migrations before the test body.",
+      "runnerSha256": "019f9f62db93a0a49981b2540a81f9f041410a01384e5dedcc02b6ad53a3db39"
+    },
+    {
+      "elapsedSeconds": 125.382,
+      "passed": 2,
+      "migrationCommandTimeoutSeconds": 120,
+      "runnerSha256": "d62ccc54496f156a1a809784275e255d06856ca9d37a658cd22e214668d7ca0f"
+    }
+  ],
+  "cases": [
+    {
+      "name": "LoopbackItemConversionPublishesOnlyAfterItsCharacterSave(success)",
+      "passed": true
+    },
+    {
+      "name": "LoopbackItemConversionPublishesOnlyAfterItsCharacterSave(lost-ack)",
+      "passed": true
+    },
+    {
+      "name": "LoopbackItemConversionPublishesOnlyAfterItsCharacterSave(retry)",
+      "passed": true
+    },
+    {
+      "name": "LoopbackItemConversionPublishesOnlyAfterItsCharacterSave(rollback)",
+      "passed": true
+    },
+    {
+      "name": "LoopbackReputationConversionCommitsTheDebitAndStandingTogether(1,success)",
+      "passed": true
+    },
+    {
+      "name": "LoopbackReputationConversionCommitsTheDebitAndStandingTogether(2,retry)",
+      "passed": true
+    },
+    {
+      "name": "LoopbackReputationConversionCommitsTheDebitAndStandingTogether(3,lost-ack)",
+      "passed": true
+    },
+    {
+      "name": "LoopbackReputationConversionCommitsTheDebitAndStandingTogether(3,rollback)",
+      "passed": true
+    },
+    {
+      "name": "LoopbackReputationConversionCommitsTheDebitAndStandingTogether(1,missing-faction)",
+      "passed": true
+    },
+    {
+      "name": "LoopbackReputationConversionCommitsTheDebitAndStandingTogether(3,missing-faction)",
+      "passed": true
+    },
+    {
+      "name": "ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(success)",
+      "passed": true
+    },
+    {
+      "name": "ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(retry)",
+      "passed": true
+    },
+    {
+      "name": "ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(rollback)",
+      "passed": true
+    },
+    {
+      "name": "ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(lost-ack)",
+      "passed": true
+    },
+    {
+      "name": "ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(rebound)",
+      "passed": true
+    },
+    {
+      "name": "ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(rebound-during-retry)",
+      "passed": true
+    },
+    {
+      "name": "ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(rebound-before-character)",
+      "passed": true
+    },
+    {
+      "name": "ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(rebound-after-commit)",
+      "passed": true
+    },
+    {
+      "name": "ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(rebound-after-lost-ack)",
+      "passed": true
+    },
+    {
+      "name": "ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(queue-replaced-after-commit)",
+      "passed": true
+    },
+    {
+      "name": "ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(epoch-replaced-after-commit)",
+      "passed": true
+    }
+  ],
+  "sqliteControl": {
+    "passed": 21,
+    "failed": 0,
+    "trxSha256": "72b16d6e9026c3831f684e1f4f4f9143c717bb5514e3ea8364bcec67aaf4cf19"
+  },
+  "ownedShutdown": {
+    "caseSchemasDropped": 22,
+    "processAbsent": true,
+    "listenerAbsent": true,
+    "runnerAndHelperAbsent": true,
+    "observedUtc": "2026-11-04T23:28:36.3639787Z"
+  },
+  "scope": [
+    "Item-to-item and all three reputation selectors exercise the registered encrypted World handler on loopback. Character storage is migrated MySQL and the separate Auth fixture is SQLite.",
+    "Currency-to-currency uses the handler and real Player save queue with a recording session and a fixture Auth phase.",
+    "Commit faults and actor replacement use interceptors or callbacks. Physical connection loss, deployed restart and delivery, native play and retail selector semantics remain open."
+  ],
+  "localArtifacts": [
+    {
+      "directory": "artifacts/continuation-20261105/resource-conversion-mysql",
+      "sha256": {
+        "owning-build.log": "452d1c1e2595319ccbffcc34aa935428b5227bb9c10dd8450487f96d91966e47",
+        "provider/Program.cs": "47c96d8077209f60e568b4fe4e3f0596710c4b384c3e1aa91cf6beec0f512905",
+        "provider/Provider.csproj": "10b806000fc4254de1c1e333d688f93e38e6e29c677f9f3b0964dffe1d5683b5",
+        "provider/results.json": "85012621f4ecf6a0222ccbc7404688b7b6726f0a62311838bf5d44c4623dd873",
+        "provider/native-run-state.json": "5000cdddf8faa227fd9eabab130fd08a6072a4411469b37dae8f4d2700043dec"
+      }
+    },
+    {
+      "directory": "artifacts/continuation-20261105/resource-conversion-mysql-final-cases",
+      "sha256": {
+        "provider/Program.cs": "6aa15a7d5a1165d4d6a26d12a0ce6c5c0d92740d56ffd192681e1ecb17ab6f6a",
+        "provider/results.json": "19f5cb3c2ba14171230838d4f32dc0b60c38b23ef054ce80d9be27e4bd8e6b28",
+        "provider/native-run-state.json": "9525c84f392109cfddd8b954757fc738dff84054626a56531dde34a309be5501",
+        "shutdown-verification.json": "ed24dcf5b1779e15287f4e01da06205ffff5622a3c96b1c7eaa01f40da0ae497"
+      }
+    }
+  ]
+}

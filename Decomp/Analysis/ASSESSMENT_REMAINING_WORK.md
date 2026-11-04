@@ -119,6 +119,10 @@ debit with the standing change before publishing either.
 [Resource conversion save ownership](../../CURRENT_STATUS.md#resource-conversion-save-ownership)
 keeps enrollment and completion on the original Character actor. A session,
 queue or account epoch replacement cannot publish a prior conversion.
+[Configured MySQL resource conversion](DESTINATION_PROVIDER_QUALIFICATION.md#resource-conversion-settlement)
+covers the receipt-backed Character paths for item, reputation and wallet
+conversions. Deployed delivery and restart, physical connection failure and
+retail selector semantics remain open.
 
 [Vendor buyback request identity](../../CURRENT_STATUS.md#vendor-buyback-request-identity)
 keeps delayed requests from charging for a later sale and finishes accepted

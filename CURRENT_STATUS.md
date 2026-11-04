@@ -23197,8 +23197,10 @@ Four encrypted loopback regressions reproduced an early deletion packet.
 The owning build and 69 scoped tests passed. The loopback cases cover
 normal commit, recovered acknowledgment, retry after rollback, and a
 second rollback with no durable conversion. Local evidence is under
-`artifacts/continuation-20261104/item-resource-conversion/`. Configured
-MySQL, deployed delivery and retail selector semantics remain separate.
+`artifacts/continuation-20261104/item-resource-conversion/`.
+The [configured MySQL gate](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#resource-conversion-settlement)
+covers these Character saves through the same loopback handler. Deployed
+delivery and retail selector semantics remain open.
 
 #### Committed reputation resource conversion
 
@@ -23213,7 +23215,9 @@ Four loopback baselines reproduced early source notices. The owning build
 and 109 scoped tests passed, including both missing-faction cases,
 commit, lost acknowledgment, rollback and retry. Local evidence is under
 `artifacts/continuation-20261105/reputation-resource-conversion/`.
-Configured MySQL, deployed delivery and retail selector semantics remain open.
+The [configured MySQL gate](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#resource-conversion-settlement)
+covers all three reputation selectors through the same loopback handler.
+Deployed delivery and retail selector semantics remain open.
 
 #### Resource conversion save ownership
 

@@ -62,10 +62,17 @@ namespace NexusForever.Game.Tests.Quest;
 public sealed partial class Q5597RewardPersistenceTests
 {
     private readonly ITestOutputHelper output;
+    private readonly DbContextOptions<CharacterContext> conversionOptions;
     private const uint FixtureFanfareSpellId = 91001;
     private const Property FixtureLevelProperty = Property.BaseHealth;
 
     public Q5597RewardPersistenceTests(ITestOutputHelper output) => this.output = output;
+
+    internal Q5597RewardPersistenceTests(ITestOutputHelper output, DbContextOptions<CharacterContext> conversionOptions)
+        : this(output)
+    {
+        this.conversionOptions = conversionOptions;
+    }
 
     [Theory]
     [InlineData(false, false, false, false, false)]
@@ -137,7 +144,7 @@ public sealed partial class Q5597RewardPersistenceTests
         RecordingDispatchProxy<IWorldSession> retiredObserver = null;
         RecordingDispatchProxy<IWorldSession> lateObserverSession = null;
         RecordingDispatchProxy<IAccount> retiredObserverAccount = null;
-        using var f = new Fixture(null);
+        using var f = new Fixture(itemConversion == null ? null : conversionOptions);
         using var authConnection = new SqliteConnection(new SqliteConnectionStringBuilder
         {
             DataSource = $"q5597-{Guid.NewGuid():N}", Mode = SqliteOpenMode.Memory,
@@ -151,8 +158,11 @@ public sealed partial class Q5597RewardPersistenceTests
         var database = new CharacterDatabase();
         using (var seed = f.Context())
         {
-            database.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite,
-                ConnectionString = seed.Database.GetDbConnection().ConnectionString });
+            database.Initialise(new DatabaseConnectionString
+            {
+                Provider = seed.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
+                ConnectionString = seed.Database.GetDbConnection().ConnectionString
+            });
             seed.Character.Single().AccountId = accountId;
             if (levelReward)
             {

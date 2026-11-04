@@ -1,5 +1,9 @@
 # Destination configured-provider qualification
 
+[Resource conversion settlement](#resource-conversion-settlement) covers
+receipt-backed item, reputation and wallet conversions on migrated MySQL
+8.4.13 Character schemas.
+
 [Vendor settlement and recovery](#vendor-settlement-and-recovery) passes 24
 purchase, buyback and Realm recovery cases on migrated MySQL 8.4.13 Auth and
 Character schemas.
@@ -36,6 +40,33 @@ The [portable report](coverage/marketplace-mysql-concurrency-20261103.json) bind
 unchanged Source/DLLs and all44 outcomes. Owned workloads are stopped. No full
 suite was run. Other profiles, physical failures, other financial commands,
 broker/restart, deployment, native and retail qualification remain separate.
+
+### Resource conversion settlement
+
+5 November 2026. Ten encrypted World loopback cases cover item-to-item
+settlement and all three reputation selectors. They verify that the source
+and output commit together, that a simulated lost commit acknowledgment
+recovers through the receipt, and that a confirmed rollback either retries
+the frozen save or leaves storage unchanged. Both missing-faction cases
+keep the source intact. The loopback cases use migrated MySQL Character
+schemas and separate SQLite Auth fixtures.
+
+Eleven currency-to-currency cases use the real Player save queue with a
+recording session and a fixture Auth phase. They cover the currency receipt,
+rollback and retry, plus ownership changes before Character enrollment, during
+retry, after commit and after receipt confirmation. Replaced players, queues
+and account epochs cannot publish a prior conversion.
+
+Each case used a fresh schema with all 48 Character migrations and the
+configured `MySqlRetryingExecutionStrategy`. The TLS control connection
+reported `REPEATABLE-READ`. The owning project built and the same 21 scoped
+SQLite controls passed. The initial run passed 19 cases before a schema
+migration timed out. Only the final two cases were retried, with a longer
+migration command timeout and identical test binaries.
+The [portable result](coverage/resource-conversion-mysql-20261105.json)
+binds the cases, binaries and owned shutdown. Physical connection failures,
+deployed restart and delivery, native play and retail selector semantics
+remain open.
 
 ### Vendor settlement and recovery
 
