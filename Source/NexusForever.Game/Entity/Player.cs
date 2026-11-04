@@ -850,6 +850,14 @@ namespace NexusForever.Game.Entity
             Save(callback, null);
         }
 
+        private bool resourceConversionSaveRequested;
+
+        internal void SaveResourceConversion(Action callback)
+        {
+            resourceConversionSaveRequested = true;
+            Save(callback);
+        }
+
         private void Save(Action callback, Action failureCallback)
         {
             if (QuestManager is QuestManager { IsContractCompletionMutationInProgress: true })
@@ -929,6 +937,9 @@ namespace NexusForever.Game.Entity
             NormalRewardSave snapshot;
             try { snapshot = CaptureNormalRewardSave(); }
             catch { HandleSaveFailure("snapshot", failureCallback); throw; }
+            var conversionReceipt = resourceConversionSaveRequested
+                ? new ResourceConversionSaveReconciliation(System.Guid.NewGuid().ToString("N"), CharacterId) : null;
+            resourceConversionSaveRequested = false;
             saveRequestedDuringSave = false;
             saveInProgress = true;
             saveTimer.Reset(false);
@@ -947,7 +958,7 @@ namespace NexusForever.Game.Entity
                 () =>
                 {
                     Task characterSaveTask;
-                    try { characterSaveTask = SaveCharacterUnit(snapshot); }
+                    try { characterSaveTask = SaveCharacterUnit(snapshot, conversionReceipt); }
                     catch
                     {
                         HandleSaveFailure("character", failureCallback);
@@ -1034,6 +1045,7 @@ namespace NexusForever.Game.Entity
 
             saveInProgress                    = false;
             saveRequestedDuringSave           = false;
+            resourceConversionSaveRequested    = false;
             deferredSaveCallback              = null;
             deferredSaveFailureCallback       = null;
             if (OwnsFailedSession() && auctionBidActor == null && bankActor == null && housingNameActor == null) failedSession.CanProcessIncomingPackets = true;
@@ -1065,7 +1077,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void Save(CharacterContext context) => SaveCharacter(context, null);
 
-        private Task SaveCharacterUnit(NormalRewardSave snapshot)
+        private Task SaveCharacterUnit(NormalRewardSave snapshot, ResourceConversionSaveReconciliation conversionReceipt = null)
         {
             if (snapshot?.HousingReceipt is { } housingReceipt)
                 return GetCharacterDatabase().SaveHousingRenameReconciliation(CharacterId, context =>
@@ -1076,6 +1088,8 @@ namespace NexusForever.Game.Entity
                 return GetCharacterDatabase().SaveBankReconciliation(CharacterId, context => SaveCharacter(context, snapshot), bankReceipt);
             if (snapshot?.BidReceipt is { } receipt)
                 return GetCharacterDatabase().SaveBidReconciliation(CharacterId, context => SaveCharacter(context, snapshot), receipt);
+            if (conversionReceipt != null)
+                return GetCharacterDatabase().SaveResourceConversionReconciliation(CharacterId, context => SaveCharacter(context, snapshot), conversionReceipt);
             return snapshot?.Quests.HasContractCompletion == true || CurrencyManager is CurrencyManager
                 ? GetCharacterDatabase().SaveAtomic(CharacterId, context => SaveCharacter(context, snapshot))
                 : GetCharacterDatabase().Save(context => SaveCharacter(context, snapshot));

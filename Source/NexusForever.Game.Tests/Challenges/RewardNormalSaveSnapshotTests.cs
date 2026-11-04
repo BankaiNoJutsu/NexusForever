@@ -114,19 +114,31 @@ public sealed class RewardNormalSaveSnapshotTests
         Assert.Equal(outcome == "rollback" ? new ulong[] { 40, 20, 10 } : [15, 25, 7],
             after.CharacterCurrency.OrderBy(row => row.CurrencyId).Select(row => row.Amount));
         Assert.Equal(outcome == "rollback" ? 1u : 2u, after.CharacterQuestObjective.Single().Progress);
-        Assert.Equal(outcome == "success" ? new ulong[] { 7, 15, 25 } : [], notices.Order());
-        Assert.Equal(outcome == "success" ? 0 : 1, network.GetInvocations(nameof(IWorldSession.ForceDisconnect)).Count);
+        Assert.Equal(outcome == "rollback" ? [] : new ulong[] { 7, 15, 25 }, notices.Order());
+        Assert.Equal(outcome == "rollback" ? 1 : 0, network.GetInvocations(nameof(IWorldSession.ForceDisconnect)).Count);
+        if (outcome == "rollback")
+            Assert.Empty(after.BankReconciliationReceipt);
+        else
+        {
+            var receipt = Assert.Single(after.BankReconciliationReceipt);
+            using var payload = System.Text.Json.JsonDocument.Parse(receipt.Payload);
+            Assert.Equal("normal-resource-conversion", payload.RootElement.GetProperty("Kind").GetString());
+            Assert.Equal(42ul, payload.RootElement.GetProperty("Character").GetUInt64());
+            Assert.Equal(3, payload.RootElement.GetProperty("Rows").EnumerateArray()
+                .Count(row => row.GetProperty("Type").GetString()!.EndsWith(".CharacterCurrencyModel", StringComparison.Ordinal)));
+        }
     }
 
     private sealed class ConversionSaveDatabase(Fixture fixture, string outcome) : CharacterDatabase
     {
         public int Attempts { get; private set; }
 
-        public override Task SaveAtomic(ulong characterId, Action<CharacterContext> action)
+        public override Task SaveResourceConversionReconciliation(ulong characterId, Action<CharacterContext> action,
+            ResourceConversionSaveReconciliation receipt)
         {
             Attempts++;
-            return CharacterAtomicSave.Execute(() => outcome == "success" ? fixture.Context()
-                : fixture.Context(new CommitFault(outcome == "lost-ack")), characterId, action);
+            return CharacterAtomicSave.ExecuteResourceConversionReconciliation(() => outcome == "success" ? fixture.Context()
+                : fixture.Context(new CommitFault(outcome == "lost-ack")), characterId, action, receipt);
         }
     }
 

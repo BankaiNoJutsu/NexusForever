@@ -44,6 +44,10 @@ namespace NexusForever.Database.Character
             Action<CharacterContext> enroll, HousingRenameSaveReconciliation receipt)
             => ExecuteReconciliation(contexts, characterId, enroll, receipt);
 
+        public static Task ExecuteResourceConversionReconciliation(Func<CharacterContext> contexts, ulong characterId,
+            Action<CharacterContext> enroll, ResourceConversionSaveReconciliation receipt)
+            => ExecuteReconciliation(contexts, characterId, enroll, receipt);
+
         private static Task ExecuteReconciliation(Func<CharacterContext> contexts, ulong characterId,
             Action<CharacterContext> enroll, CharacterSaveReconciliation receipt)
         {

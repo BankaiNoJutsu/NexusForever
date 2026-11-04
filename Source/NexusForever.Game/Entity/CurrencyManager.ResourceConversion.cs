@@ -87,7 +87,11 @@ namespace NexusForever.Game.Entity
 
             try { CreditCurrencyProgress(targetRow, grant); }
             catch (Exception exception) { resourceConversionLog.Warn(exception, "Failed to publish progress for an accepted resource conversion."); }
-            if (OwnsActor()) player.Save(PublishBalances);
+            if (OwnsActor())
+            {
+                if (player is Player original) original.SaveResourceConversion(PublishBalances);
+                else player.Save(PublishBalances);
+            }
             return true;
 
             void PublishBalances()

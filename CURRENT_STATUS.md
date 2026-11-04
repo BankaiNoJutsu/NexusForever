@@ -22954,6 +22954,23 @@ published the new balances, and a simulated lost acknowledgment left the
 committed SQL intact without a success notice. Test execution took 77 seconds.
 Results are under `artifacts/continuation-20261104/resource-conversion-character-save/`.
 
+#### Resource conversion save receipt
+
+4 November 2026. The conversion's ordinary Character save writes a tagged
+receipt with the complete save graph in the existing reconciliation table.
+After a lost commit acknowledgment, the save probes the original database
+for the exact receipt before releasing the wallet snapshot and publishing
+balances. A proven rollback still follows ordinary save failure handling.
+The recovery reuses the original save and does not replay the conversion.
+Configured provider, deployed socket delivery, restart and retail selector
+qualification remain open.
+
+The baseline lacked the receipt and suppressed notices after lost
+acknowledgment. The owning-project builds and 101 scoped tests passed. SQLite
+covered confirmed commit, recovered acknowledgment without another conversion
+save, and rollback with no receipt. Test execution took 57 seconds. Results
+are under `artifacts/continuation-20261104/resource-conversion-save-receipt/`.
+
 #### Existing item and unlock behavior
 
 Inventory, title, pet, costume, unlock surfaces exist. Generic unlock
