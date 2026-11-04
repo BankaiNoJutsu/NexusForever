@@ -1,5 +1,11 @@
 # Destination configured-provider qualification
 
+[Normal bid and buyout SQL settlement](#normal-bid-and-buyout-sql-settlement)
+qualifies 28 cases on migrated MySQL 8.4.13 schemas with the configured retry
+strategy. It covers complete command graphs, simulated commit acknowledgement
+loss, receipt reconciliation and rollback after SQL rejection or row rewrites.
+The actor, public packet and deployment gates remain separate.
+
 [Actual MySQL listing concurrency](MARKETPLACE_CONDITIONAL_LISTING_WRITES.md#actual-mysql-qualification---3-november-2026)
 passes 38 original compiled cases, two original-body Unicode variants and four
 provider-only post-snapshot/control scenarios on MySQL8.4.13. The observed column
@@ -7,8 +13,44 @@ uses utf8mb4_0900_ai_ci; NULL/scalar preimages, conditional affected-row rejecti
 distinct writer connections and stale repeatable-read snapshots are covered.
 The [portable report](coverage/marketplace-mysql-concurrency-20261103.json) binds
 unchanged Source/DLLs and all44 outcomes. Owned workloads are stopped. No full
-suite was run. Other profiles, physical failures, complete financial commands,
+suite was run. Other profiles, physical failures, other financial commands,
 broker/restart, deployment, native and retail qualification remain separate.
+
+### Normal bid and buyout SQL settlement
+
+4 November 2026, Source at `a7cd13ba1bf538fe0e460909e7dae687d2d8c615`.
+The scoped provider harness ran the `NormalAuctionBidCommandTests` settlement
+cases against one owned MySQL 8.4.13 server over loopback. Every case used a fresh
+schema with all 47 Character migrations applied and
+`Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy` enabled.
+The harness compiled the original fixture and assertions with only the test
+type name, connection, schema setup and seven trigger dialects adapted.
+It used the unchanged Game, Database and Character Database binaries.
+
+| Cases | Verified outcome |
+| --- | --- |
+| 10 normal bids | Listing, debit and prior refund settle together with no prior bid, a self-bid, online or offline prior bidders, and an online prior bidder whose wallet must be created. Each has a normal and simulated lost-acknowledgement variant. |
+| 8 buyouts | Listing deletion, buyer debit, prior refund, seller proceeds and the original whole item settle together, including direct delivery and mail attachment. Two cases simulate acknowledgement loss. |
+| 3 receipt checks | A different payload cannot use an existing command receipt. Later balance/listing edits and changed item custody survive reconciliation. |
+| 7 fault cases | Bid update and sale delete rejection, plus rewrites of item quantity, wallet balance, refund mail, proceeds mail or receipt payload, leave the fixture's pre-transaction state intact. |
+
+The acknowledgement fault comes from a transaction interceptor after commit.
+The MySQL rewrite fixtures assign `NEW` values before the write to produce
+the same altered stored image as the SQLite fixture. Results cover the SQL
+command and reconciliation boundary on this configuration. Concurrent actor
+admission and publication, online seller-wallet cases, other settlement types,
+physical acknowledgement loss/deadlock, copied upgrades, broker/restart,
+deployed services and native/retail behavior require separate evidence.
+
+Retained local evidence in
+`artifacts/continuation-20261103/auction-mysql-settlement/` includes the adapter
+generator and diff, clean scoped harness build, original per-case results,
+source/DLL bindings, upstream refresh and shutdown verification. All 28 cases
+passed in 517.9 seconds after server startup. The server, listener and two
+runner generations were absent after graceful shutdown. The SHA-256 of
+`provider/results.json` is
+`a30f452440d9fb45c30c211f346ee50e870fa2b518e73e1e233fc91dbcb82cc8`.
+No full suite was run. No production code, schema or migration changed.
 
 [Registered residence recovery](RESIDENCE_GRAPH_RECOVERY.md) passes20 MySQL8.4.13
 cases in one run on the verified owned fixture and final DLLs. All source actions,

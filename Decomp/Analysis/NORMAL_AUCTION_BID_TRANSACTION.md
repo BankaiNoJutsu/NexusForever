@@ -3,7 +3,9 @@
 1 November 2026. Qualified source/private-SQLite boundary11,095: zero full-test
 failures/skips, zero build warnings/errors and zero remaining findings on either
 review axis. SourceTools pin d212179e32372141aad6dbc8423a4cf7b67dfe61fac093f74e47f418135efc11.
-This record does not qualify deployment, live MySQL or retail behavior.
+The [4 November MySQL qualification](DESTINATION_PROVIDER_QUALIFICATION.md#normal-bid-and-buyout-sql-settlement)
+adds migrated-schema command and reconciliation evidence. Public-flow,
+deployment and retail gates remain open.
 
 The existing `ClientAuctionBuyOrderSubmitHandler` now sends persisted normal
 bids through one owned operation. Its asynchronous callback retains the three

@@ -5,6 +5,10 @@ failures/skips, zero build warnings/errors and zero remaining findings on either
 review axis. SourceTools pin
 6dcc49b5662fde0b6fe3a80639342658f28fae04ccc3baeb82d7214a2938731d.
 
+The [4 November MySQL qualification](DESTINATION_PROVIDER_QUALIFICATION.md#normal-bid-and-buyout-sql-settlement)
+adds migrated-schema command and reconciliation evidence. Public-flow,
+deployment and retail gates remain open.
+
 The existing public ClientAuctionBuyOrderSubmit flow now captures a buyout at
 its accepted price and prepares the original buyer, online seller and online
 prior bidder. Complete ordinary preflight precedes wallet capture. The shared

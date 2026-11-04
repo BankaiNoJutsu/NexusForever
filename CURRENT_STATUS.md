@@ -1,7 +1,9 @@
 # NexusForever Feature Restoration - Current Status
 
-Latest provider evidence: [44-case MySQL listing concurrency qualification](Decomp/Analysis/MARKETPLACE_CONDITIONAL_LISTING_WRITES.md#actual-mysql-qualification---3-november-2026)
-uses unchanged Source/DLLs; broader financial, physical-failure and retail gates remain open.
+The [28-case MySQL normal bid and buyout settlement gate](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#normal-bid-and-buyout-sql-settlement)
+covers command-level atomicity, rollback and receipt reconciliation on migrated
+schemas. Public-flow actor publication, other settlement commands, physical
+failures and retail remain open.
 
 [Committed tradeskill publication](Decomp/Analysis/TRADESKILL_PUBLICATION.md) passes 15 new/238 scoped
 and 15 MySQL cases with a clean owning-project build and both Source reviews.

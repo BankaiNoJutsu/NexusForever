@@ -10,6 +10,13 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Normal bid and buyout SQL settlement](DESTINATION_PROVIDER_QUALIFICATION.md#normal-bid-and-buyout-sql-settlement)
+passes 28 scoped cases on migrated MySQL 8.4.13 with the configured strategy.
+Listing, debit, refund, proceeds, item custody and receipt cases cover successful
+settlement, SQL rejection and simulated lost acknowledgement. Owned workloads
+are stopped. Public-flow actor publication, other financial commands, physical
+failures and external qualification remain open. No full suite was run.
+
 [Marketplace MySQL concurrency qualification](MARKETPLACE_CONDITIONAL_LISTING_WRITES.md)
 passes 44 scoped cases on unchanged Source/DLLs: 38 original listing cases, two
 additional Unicode mutations through the original body, and four provider-only
@@ -1548,8 +1555,9 @@ from the changed behavior and dependency surface, including at integration miles
    CSV directions are covered; original-provider-model differentials need no DDL.
    The later44-case MySQL gate above qualifies the named listing races on its
    observed default profile, including after a repeatable-read snapshot. Continue
-   qualification of broader profiles/physical failures and finish captured
-   outcome witnesses, multi-party listing/wallet/debit/refund/proceeds settlement,
+   from the later 28-case MySQL bid/buyout command gate above. Continue
+   qualification of the full public flow and broader profiles/physical failures.
+   Finish captured outcome witnesses, multi-party listing/wallet/debit/refund/proceeds settlement,
    unknown acknowledgement ambiguity and post-commit direct-delivery recovery.
    Confirmed terminal errors now pass10909 full/264 marketplace with13 new cases
    and6116 inputs/nine DLLs. Do not repeat that fix or treat the retained stale
