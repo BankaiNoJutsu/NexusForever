@@ -1,5 +1,50 @@
 # Normal auction bid transaction
 
+## Client consumption of settlement notices
+
+4 November 2026. The retained build 16042 image
+`231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`
+selects these cases from the entity dispatch table at `0x1403f1344`.
+
+| Opcode | Table slot | Case | Event |
+| --- | --- | --- | --- |
+| 0560 | `0x1403f2740` | `0x1403f0d55` | `ItemAuctionBidResult` |
+| 0561 | `0x1403f2744` | `0x1403f0cf3` | `ItemAuctionExpired` |
+| 0562 | `0x1403f2748` | `0x1403f0cc7` | `ItemAuctionOutbid` |
+| 0564 | `0x1403f2750` | `0x1403f0cdd` | `ItemAuctionWon` |
+
+The outbid, expired and won cases pass the decoded object through the same
+event-dispatch branch at `0x1403ecfef`. The bid result passes the first
+DWORD and a pointer to the payload at +8. The native `Game.ItemAuction`
+`__eq` binding points to `0x1406a0270`. It compares the two objects' +8
+QWORDs, excluding the both-zero case. The cancellation producer at
+`0x1406a20c0` uses the same QWORD for the auction ID sent in 0094.
+
+Both archived Carbine listings scripts route outbid, won and expired to
+the same removal callback. It removes an equal auction from the current
+list and redraws. The auction script also emits a message containing the
+outbid amount, and distinguishes an owner sale from a winner purchase in
+the won handler. One archived variant additionally requests updates after
+an outbid. The archives corroborate these consumers. Their exact patch
+provenance and the original server's emission timing remain unverified.
+[Listings archive](https://github.com/wildstarnasa/NASADocs/blob/5a154a6f1ec384ef852f216ed07f5ae0ed174126/Carbine%20Addons/MarketplaceListings/MarketplaceListings.lua#L453)
+· [Auction archive](https://github.com/NexusInstruments/CarbineAddons/blob/cf063b3e22b08f49ff51c12cec258a9f1cf86d68/MarketplaceAuction/MarketplaceAuction.lua#L1383)
+
+An outbid retry therefore needs the original recipient and a check for a
+superseding bid on the same auction. Replaying an old notice after the
+recipient bids again can remove that auction from the refreshed listings.
+The current committed transfer path sends `ServerAuctionWon` to the
+receiver. The owner-sale branch identifies a separate seller publication
+candidate whose original-recipient and committed-producer coverage remain
+open. Neither behavior was changed in this pass.
+
+The pinned PE reads, LLVM excerpts and four byte-verified addon files are
+retained under `artifacts/continuation-20261104/auction-consumer/`. This is
+static consumer evidence. Client execution, socket delivery, replay timing
+and retail parity remain open.
+
+## Original bid settlement
+
 1 November 2026. Qualified source/private-SQLite boundary11,095: zero full-test
 failures/skips, zero build warnings/errors and zero remaining findings on either
 review axis. SourceTools pin d212179e32372141aad6dbc8423a4cf7b67dfe61fac093f74e47f418135efc11.

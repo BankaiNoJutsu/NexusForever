@@ -10,6 +10,12 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Auction notice consumer evidence](NORMAL_AUCTION_BID_TRANSACTION.md#client-consumption-of-settlement-notices)
+binds build 16042 bid-result, expired, outbid and won dispatch to the Lua
+events. Archived Carbine handlers remove the auction by ID on outbid and
+distinguish seller and winner messages. A retry now has an explicit
+superseding-bid guard requirement. Seller publication and replay remain open.
+
 [Effect 151 native validation](HEALING_PERSONAL_MODIFIER_EVIDENCE.md#build-16042-effect-151-row-validator)
 now binds the build 16042 validator, row field offsets and distinct dispatch
 branches for ordinary property modifiers and personal modifiers. The actual

@@ -3083,3 +3083,5 @@ WildStar64.exe,1404d6210,FortuneNode_SetDelegateAndConnection,Stores retained ar
 WildStar64.exe,1403dede0,Entity_ApplyServer0889StatePair,Resolves payload+0 entity id and stores payload+4/+8 at entity+24/+28; bit100 transition controls additional state clearing; server timing and bit names not established.
 WildStar64.exe,14045b030,Entity_ApplyNameTextAndNotify,Copies/selects wide name text with observed entity+88/+10 storage and references UnitNameChanged event; used by08CC and0939 cases; server producer policy remains open.
 WildStar64.exe,140567af0,Spell4Effects_ValidateRow,Build16042 runtime builder validator; effect151 slot18 at140568133 checks flag2/duration200 and nonzero dataBits01 while bypassing the UnitProperty2 lookup used by effect11. See HEALING_PERSONAL_MODIFIER_EVIDENCE.md.
+WildStar64.exe,1403f0cc7,EntityMessageCase_ServerAuctionOutbid,Interior case of1403ec6a0; opcode0562 slot1403f2748 forwards its decoded object and ItemAuctionOutbid event name to1403ecfef.
+WildStar64.exe,1406a0270,Lua_ItemAuction_Equal,Game.ItemAuction __eq function pointer at140c5d488; compares +8 auction ID QWORDs of the two typed objects and excludes both-zero IDs.
