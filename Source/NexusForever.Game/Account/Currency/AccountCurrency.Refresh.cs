@@ -33,7 +33,7 @@ namespace NexusForever.Game.Account.Currency
             private sealed record Observation(string Database, ulong Amount, bool Exists, HashSet<string> Applied);
             private Task<Observation> observation;
             private bool adopted;
-            internal Task ReadAsync(Func<AuthContext> contexts, Task beforeRead = null)
+            internal Task ReadAsync(Func<AuthContext> contexts, Task beforeRead = null, ulong? epoch = null)
             {
                 ArgumentNullException.ThrowIfNull(contexts);
                 lock (owner.saveGate)
@@ -43,12 +43,12 @@ namespace NexusForever.Game.Account.Currency
                     return observation = Task.Run(async () =>
                     {
                         if (beforeRead != null) await beforeRead;
-                        return await Read(contexts);
+                        return await Read(contexts, epoch);
                     });
                 }
             }
 
-            private async Task<Observation> Read(Func<AuthContext> contexts)
+            private async Task<Observation> Read(Func<AuthContext> contexts, ulong? epoch)
             {
                 string retained = expectedDatabase;
                 AuthContext Fresh()
@@ -76,6 +76,8 @@ namespace NexusForever.Game.Account.Currency
                         ? context.Account.FromSqlInterpolated($"SELECT * FROM account WHERE id={accountId} FOR UPDATE")
                         : context.Account.Where(row => row.Id == accountId)).AsNoTracking().SingleOrDefaultAsync();
                     if (account == null) throw new InvalidOperationException("Wallet observation lost its account.");
+                    if (epoch.HasValue && !await context.AccountWorldSession.AnyAsync(row => row.AccountId == accountId && row.Epoch == epoch.Value))
+                        throw new InvalidOperationException("Wallet observation lost its admitted account epoch.");
                     byte id = (byte)currency;
                     var wallet = await (mysql
                         ? context.AccountCurrency.FromSqlInterpolated($"SELECT * FROM account_currency WHERE id={accountId} AND currencyId={id} FOR UPDATE")

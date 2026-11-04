@@ -107,16 +107,19 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
             }
 
             if (player is Player owner && inventory is Inventory concrete && satchel is null or SupplySatchelManager
-                && !vendorItemPurchaseCost.RequiresAccountSettlement)
+                && vendorItemPurchaseCost.CanSettlePurchase)
             {
                 var originalSession = owner.Session;
                 var originalEvents = originalSession.Events;
                 var wallet = owner.CurrencyManager;
+                var account = owner.Account;
+                var accountWallet = account?.CurrencyManager;
                 heldMutation.Dispose();
-                vendorItemPurchaseCost.SettleCharacterPurchase(owner, concrete, satchel as SupplySatchelManager, info, grantedItemCount, () =>
+                vendorItemPurchaseCost.SettlePurchase(owner, concrete, satchel as SupplySatchelManager, info, grantedItemCount, () =>
                     ReferenceEquals(session.Player, owner) && ReferenceEquals(owner.Session, originalSession)
                     && ReferenceEquals(originalSession.Events, originalEvents) && ReferenceEquals(owner.Inventory, concrete)
-                    && ReferenceEquals(owner.SupplySatchelManager, satchel) && ReferenceEquals(owner.CurrencyManager, wallet));
+                    && ReferenceEquals(owner.SupplySatchelManager, satchel) && ReferenceEquals(owner.CurrencyManager, wallet)
+                    && ReferenceEquals(owner.Account, account) && ReferenceEquals(account?.CurrencyManager, accountWallet));
                 return;
             }
 

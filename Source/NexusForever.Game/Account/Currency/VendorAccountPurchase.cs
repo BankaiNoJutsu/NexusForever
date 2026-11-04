@@ -4,6 +4,7 @@ using System.Data.Common;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -76,15 +77,17 @@ namespace NexusForever.Game.Account.Currency
 
         internal sealed record Cost(AccountCurrencyType Currency, ulong Amount);
         internal sealed record Intent(string Id, uint Account, ulong Character, ushort Realm, string CharacterRoute, string AuthRoute,
-            uint Item, uint Quantity, string QuoteFingerprint, ImmutableArray<Cost> Costs);
+            uint Item, uint Quantity, string QuoteFingerprint, ImmutableArray<Cost> Costs,
+            [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] ulong Epoch = 0);
 
-        internal Intent Create(uint account, ulong character, uint item, uint quantity, string quoteFingerprint, IEnumerable<Cost> costs)
+        internal Intent Create(uint account, ulong character, uint item, uint quantity, string quoteFingerprint, IEnumerable<Cost> costs, ulong epoch)
         {
+            if (epoch == 0) throw new InvalidOperationException("Vendor payment requires an admitted session epoch.");
             using var source = characters();
             using var wallet = auth();
             RequireDurableStorage(wallet.Database.GetDbConnection());
             var intent = new Intent(Guid.NewGuid().ToString("N"), account, character, realm, CharacterRoute(source),
-                AccountCurrencyOperationRepository.DatabaseKey(wallet), item, quantity, quoteFingerprint, costs.OrderBy(cost => cost.Currency).ToImmutableArray());
+                AccountCurrencyOperationRepository.DatabaseKey(wallet), item, quantity, quoteFingerprint, costs.OrderBy(cost => cost.Currency).ToImmutableArray(), epoch);
             Validate(intent);
             return intent;
         }
@@ -99,6 +102,7 @@ namespace NexusForever.Game.Account.Currency
             {
                 ArgumentNullException.ThrowIfNull(enrollDelivery);
                 Validate(intent);
+                if (intent.Epoch == 0) throw new InvalidOperationException("Vendor authorization requires an admitted session epoch.");
                 RequireRoute(context, intent);
                 var transaction = context.Database.CurrentTransaction;
                 if (transaction?.GetDbTransaction().IsolationLevel != IsolationLevel.Serializable)
@@ -194,6 +198,10 @@ namespace NexusForever.Game.Account.Currency
                         repository?.Detach();
                         repository = new(unit, operation.AccountId, operation.Currency, [operation]);
                         repository.Stage();
+                        // The repository holds the same account lock used to
+                        // allocate Realm admission epochs before committing.
+                        if (subtract && !HasAdmittedEpoch(unit, intent))
+                            throw new InvalidOperationException("Vendor payment lost its admitted account epoch.");
                     }, _ => { }, () => repository?.CanCommit() == true);
                 }
                 await context.SaveChangesAsync();
@@ -203,6 +211,29 @@ namespace NexusForever.Game.Account.Currency
                 // A lost Auth commit reply leaves the exact keys observable in a
                 // fresh context. A partial or conflicting witness fails closed.
                 if (!await Observed(intent, subtract)) throw;
+            }
+        }
+
+        private static bool HasAdmittedEpoch(AuthContext context, Intent intent)
+        {
+            var epochs = context.Database.IsSqlite()
+                ? context.AccountWorldSession.Where(row => row.AccountId == intent.Account)
+                : context.AccountWorldSession.FromSqlInterpolated($"SELECT * FROM account_world_session WHERE accountId={intent.Account} FOR UPDATE");
+            return epochs.AsNoTracking().AsEnumerable().SingleOrDefault()?.Epoch == intent.Epoch;
+        }
+
+        internal async Task ResolveWalletAsync(Intent intent, bool delivered)
+        {
+            var paid = await Observed(intent, subtract: true);
+            if (delivered && !paid)
+                throw new InvalidOperationException("Vendor delivery lost its account debit.");
+            if (!delivered && paid)
+            {
+                await using var context = OpenAuth(intent);
+                string key = Operations(intent, subtract: true)[0].Key;
+                var anchor = await context.AccountCurrencyOperation.AsNoTracking().SingleAsync(row => row.OperationKey == key);
+                if (await RecoverAsync(anchor, intent) != VendorAccountAuthorization.Cancelled)
+                    throw new InvalidOperationException("Vendor cancellation found a committed delivery.");
             }
         }
 
@@ -297,7 +328,8 @@ namespace NexusForever.Game.Account.Currency
 
         private static void StageMarker(CharacterContext context, string id, string payload)
         {
-            var marker = new BankReconciliationReceiptModel { Id = id, Payload = payload, CreatedUtc = DateTime.UtcNow };
+            var marker = new BankReconciliationReceiptModel { Id = id, Payload = payload,
+                CreatedUtc = DateTimeOffset.FromUnixTimeSeconds(DateTimeOffset.UtcNow.ToUnixTimeSeconds()).UtcDateTime };
             context.BankReconciliationReceipt.Add(marker);
             context.OnSaveValidation(phase =>
             {

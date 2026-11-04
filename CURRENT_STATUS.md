@@ -22911,10 +22911,25 @@ credentials and a superseded epoch. Build and tests took 53 seconds, including
 seven seconds of test execution. Evidence is under
 `artifacts/continuation-20261104/vendor-account-admission/`.
 
-The public purchase handler still needs to enroll the frozen vendor delivery,
-bind the Auth debit to the current admission epoch, and adopt and publish the
-original session's wallet state. Cosmic Reward requires the existing Loyalty
-journal's participation. Configured-provider and deployed restart evidence
+#### Live account-funded vendor purchase settlement
+
+4 November 2026. Ledger-backed account costs in the vendor handler use the
+frozen Character delivery and the original account's admitted World epoch.
+The Auth debit validates the epoch under the account lock. Character commit
+proof precedes wallet adoption and publication to the original session. A
+confirmed Character rollback records cancellation and refunds the Auth debit
+before the original actor reconciles and reports failure.
+
+The initial scoped run reproduced a follow-up save rejecting the newly written
+cancellation marker after the refund. The final build and 32 scoped tests passed
+after separating that marker from the follow-up Character guard. The public
+handler cases cover mixed payment, two account wallets, rollback, lost commit
+acknowledgment, a stale epoch, and session replacement. Build and tests took 71
+seconds, including 18 seconds of test execution. Evidence is under
+`artifacts/continuation-20261104/vendor-account-live/`.
+
+Cosmic Reward purchases still need to enlist the existing Loyalty journal.
+Configured-provider, deployed restart, socket delivery, and retail evidence
 remain open.
 
 #### Vendor buyback request identity

@@ -1,9 +1,14 @@
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text.Json;
+using NexusForever.Database.Auth;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Account.Currency;
 using NexusForever.Game.RealmBank;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Account;
 using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.Game.Entity
@@ -11,7 +16,8 @@ namespace NexusForever.Game.Entity
     public partial class Inventory
     {
         internal void SettleVendorPurchase(Player owner, SupplySatchelManager satchel, IItemInfo item, uint count,
-            IReadOnlyDictionary<uint, uint> itemCosts, IReadOnlyDictionary<CurrencyType, ulong> currencyCosts, Func<bool> currentActor)
+            IReadOnlyDictionary<uint, uint> itemCosts, IReadOnlyDictionary<CurrencyType, ulong> currencyCosts,
+            IReadOnlyDictionary<AccountCurrencyType, ulong> accountCosts, Func<bool> currentActor)
         {
             if (!currentActor()) return;
             // Settle earlier gameplay as one unit before spending its proceeds
@@ -33,6 +39,25 @@ namespace NexusForever.Game.Entity
                         using var batch = BeginRealmBankNotifications(true);
                         if (batch == null) return;
                         batch.RequireActor(currentActor);
+                        var costs = accountCosts.Where(cost => cost.Value != 0)
+                            .Select(cost => new VendorAccountPurchase.Cost(cost.Key, cost.Value)).OrderBy(cost => cost.Currency).ToArray();
+                        if (costs.Length != 0)
+                        {
+                            if (owner.Account.CurrencyManager is not AccountCurrencyManager accountWallet)
+                                throw new InvalidOperationException("Vendor payment requires its original account wallet manager.");
+                            var auth = owner.GetAuthDatabase();
+                            var protocol = new VendorAccountPurchase(owner.GetCharacterDatabase().CreateContext, auth.CreateContext, owner.Identity.RealmId);
+                            var quote = JsonSerializer.SerializeToUtf8Bytes(new
+                            {
+                                Item = item.Id, Count = count, Items = itemCosts.OrderBy(cost => cost.Key),
+                                Currencies = currencyCosts.OrderBy(cost => cost.Key), Account = costs
+                            });
+                            var intent = protocol.Create(owner.Account.Id, characterId, item.Id, count,
+                                Convert.ToHexString(SHA256.HashData(quote)), costs, owner.Account.WorldSessionEpoch);
+                            var account = new VendorAccountSettlement(protocol, intent, auth.CreateContext, accountWallet.CaptureVendorWallets(costs));
+                            batch.AttachAccountSettlement(account);
+                            batch.Add(() => account.Publish(batch.CurrentActor));
+                        }
                         var purchase = new VendorPurchaseSettlement(characterId, database,
                             satchel?.ReserveCommodityReturn(item, count, database));
                         batch.Attach(purchase);
@@ -52,6 +77,30 @@ namespace NexusForever.Game.Entity
                     }
                 }
             }
+        }
+
+        private sealed class VendorAccountSettlement(VendorAccountPurchase protocol, VendorAccountPurchase.Intent intent,
+            Func<AuthContext> auth, AccountCurrencyManager.VendorWallets wallets) : IBankSaveCompanion
+        {
+            internal string ReceiptId => intent.Id;
+            internal Func<CharacterContext, Action<CharacterContext>, Task<bool>> Authorization => async (context, enroll) =>
+                await protocol.AuthorizeAsync(context, intent, enroll) == VendorAccountAuthorization.Authorized;
+
+            internal async Task ObserveAsync(Task<RealmBankManager.BankOutcome> outcome)
+            {
+                var resolved = await outcome;
+                await protocol.ResolveWalletAsync(intent, resolved.Committed);
+                await wallets.ReadAsync(auth);
+            }
+
+            public void Stage(CharacterContext context) { }
+            internal void AdoptWallets() => wallets.Adopt();
+            public void Adopt() { }
+            public bool ReleaseForOrdinarySave() => true;
+            public void Complete() => wallets.Dispose();
+            public void Abort() => wallets.Dispose();
+            public void Quarantine() => wallets.Quarantine();
+            internal void Publish(Func<bool> currentActor) => wallets.Publish(currentActor);
         }
 
         private sealed class VendorPurchaseSettlement(ulong character, string database,

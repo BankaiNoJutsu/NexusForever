@@ -975,13 +975,13 @@ namespace NexusForever.Game.Entity
                 () => HandleSaveFailure("auth", failureCallback)));
         }
 
-        private AuthDatabase GetAuthDatabase()
+        internal AuthDatabase GetAuthDatabase()
         {
             AuthDatabase authDatabase = databaseManager?.GetDatabase<AuthDatabase>();
             return authDatabase ?? throw new InvalidOperationException("AuthDatabase is not available.");
         }
 
-        private CharacterDatabase GetCharacterDatabase()
+        internal CharacterDatabase GetCharacterDatabase()
         {
             CharacterDatabase characterDatabase = databaseManager?.GetDatabase<CharacterDatabase>();
             return characterDatabase ?? throw new InvalidOperationException("CharacterDatabase is not available.");

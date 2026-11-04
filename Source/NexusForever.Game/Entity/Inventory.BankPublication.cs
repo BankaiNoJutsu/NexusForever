@@ -87,6 +87,7 @@ namespace NexusForever.Game.Entity
             private readonly Player.BankActor bankActor;
             private InventoryOperationSnapshot prepared;
             private Task<RealmBankManager.BankOutcome> outcome;
+            private VendorAccountSettlement accountSettlement;
             private readonly HashSet<IBankSaveCompanion> released = [];
 
             internal BankPublication(Inventory owner)
@@ -114,6 +115,11 @@ namespace NexusForever.Game.Entity
             internal void After(Action effect) => afterPublication.Add(effect);
             internal void AfterSave(Action effect) => afterSavePublication.Add(effect);
             internal void Attach(IBankSaveCompanion companion) => companions.Add(companion);
+            internal void AttachAccountSettlement(VendorAccountSettlement settlement)
+            {
+                accountSettlement = settlement;
+                Attach(settlement);
+            }
             internal void Stage(IItem item, Item split = null)
             {
                 if (items.TryGetValue(item.Guid, out IItem prior) && !ReferenceEquals(prior, item))
@@ -173,9 +179,10 @@ namespace NexusForever.Game.Entity
                     prepared = owner.CreateOperationSnapshot();
                     foreach (var item in items.Values) prepared.Items.TryAdd(item.Guid, new ItemOperationSnapshot(item));
                     try { outcome = owner.realmBankManager.SaveReconciledInventoryOperationAsync(items.Values.ToArray(), splits.ToArray(), owner.player,
-                        context => { foreach (var companion in companions) companion.Stage(context); }, detached, companions.Any(companion => companion.CanExecuteWithoutItems)); }
+                        context => { foreach (var companion in companions) companion.Stage(context); }, detached,
+                        companions.Any(companion => companion.CanExecuteWithoutItems), accountSettlement?.Authorization); }
                     catch (Exception error) { outcome = Task.FromException<RealmBankManager.BankOutcome>(error); }
-                    saved = outcome;
+                    saved = accountSettlement == null ? outcome : accountSettlement.ObserveAsync(outcome);
                     owner.realmBankMoveSave = Task.WhenAll(saved, published.Task);
                     (owner.bankPublications ??= []).Add(this);
                     events.EnqueueEvent(new TaskEvent(saved, Reconcile, FailReconciliation));
@@ -222,6 +229,12 @@ namespace NexusForever.Game.Entity
                     {
                         if (!CurrentActor()) { Abandon(); return; }
                         var result = outcome.GetAwaiter().GetResult();
+                        accountSettlement?.AdoptWallets();
+                        // Auth recovery may replace the absent delivery witness
+                        // with a cancellation after the primary rollback proof.
+                        // Keep guarding the Character payment and delivery rows.
+                        if (!result.Committed && accountSettlement != null)
+                            result = result with { Graph = result.Graph.WithoutReceipt(accountSettlement.ReceiptId) };
                         var payment = companions.OfType<CurrencyManager.BankCurrencyReservation>().SingleOrDefault();
                         bankActor.Reconcile(result, payment, () =>
                         {

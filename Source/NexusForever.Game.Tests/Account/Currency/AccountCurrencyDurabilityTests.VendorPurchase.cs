@@ -78,7 +78,7 @@ public sealed partial class AccountCurrencyDurabilityTests
             {
                 Assert.Null(error);
                 Assert.NotNull(initialized);
-                Assert.Equal((ulong)attempt + 1, initialized.WorldSessionEpoch);
+                Assert.Equal((ulong)attempt + 2, initialized.WorldSessionEpoch);
                 Assert.Equal(new ulong[] { 61, 43, 100 }, initialized.AccountCurrency.OrderBy(row => row.CurrencyId).Select(row => row.Amount));
                 firstAdmission ??= initialized;
                 Assert.Single(network.GetInvocations(nameof(IWorldSession.SetEncryptionKey)));
@@ -108,7 +108,7 @@ public sealed partial class AccountCurrencyDurabilityTests
         async Task Pay(ushort purchaseRealm, ulong cost, AccountCurrencyType currency, bool commit)
         {
             var checkout = new VendorAccountPurchase(characterDatabase.CreateContext, authDatabase.CreateContext, purchaseRealm);
-            var intent = checkout.Create(77, 42, 7001, 1, new string('A', 64), [new(currency, cost)]);
+            var intent = checkout.Create(77, 42, 7001, 1, new string('A', 64), [new(currency, cost)], epoch: 1);
             await using var source = characterDatabase.CreateContext();
             await using var transaction = await source.Database.BeginTransactionAsync(IsolationLevel.Serializable);
             Assert.Equal(VendorAccountAuthorization.Authorized, await checkout.AuthorizeAsync(source, intent,
@@ -134,7 +134,7 @@ public sealed partial class AccountCurrencyDurabilityTests
         character.Seed();
         await SeedVendorPayment(auth, character);
         var checkout = new VendorAccountPurchase(() => character.Context(), () => auth.Context(outcome == "auth-ack-lost" ? new CommitFailure(true) : null), 1);
-        var intent = checkout.Create(77, 42, 7001, 2, new string('A', 64), [new(AccountCurrencyType.ProtostarPromissoryNote, 15), new(AccountCurrencyType.Omnibit, 9)]);
+        var intent = checkout.Create(77, 42, 7001, 2, new string('A', 64), [new(AccountCurrencyType.ProtostarPromissoryNote, 15), new(AccountCurrencyType.Omnibit, 9)], epoch: 1);
         bool delivered = outcome is "delivered" or "auth-ack-lost" or "concurrent-recovery";
         await AuthorizeAndWrite(delivered);
         if (outcome == "abandoned")
@@ -225,7 +225,7 @@ public sealed partial class AccountCurrencyDurabilityTests
         await SeedVendorPayment(auth, character);
         var checkout = new VendorAccountPurchase(() => character.Context(), () => auth.Context(), 1);
         var intent = checkout.Create(77, 42, 7001, 1, new string('A', 64),
-            [new(AccountCurrencyType.Omnibit, 9), new(AccountCurrencyType.ProtostarPromissoryNote, earlyFlush ? 15ul : 101ul)]);
+            [new(AccountCurrencyType.Omnibit, 9), new(AccountCurrencyType.ProtostarPromissoryNote, earlyFlush ? 15ul : 101ul)], epoch: 1);
         await using (var source = character.Context())
         await using (var tx = await source.Database.BeginTransactionAsync(IsolationLevel.Serializable))
         {
@@ -256,6 +256,7 @@ public sealed partial class AccountCurrencyDurabilityTests
         using var wallet = auth.Context();
         wallet.AccountCurrency.Add(new() { Id = 77, CurrencyId = (byte)AccountCurrencyType.Omnibit, Amount = 70 });
         wallet.AccountCurrency.Add(new() { Id = 77, CurrencyId = (byte)AccountCurrencyType.NCoin, Amount = 50 });
+        wallet.AccountWorldSession.Add(new() { AccountId = 77, Epoch = 1 });
         await wallet.SaveChangesAsync();
     }
 
@@ -272,7 +273,7 @@ public sealed partial class AccountCurrencyDurabilityTests
             () => ephemeralAuth ? new AuthContext(new DbContextOptionsBuilder<AuthContext>().UseSqlite("Data Source=:memory:").Options) : auth.Context(), 1);
 
         var error = Assert.Throws<InvalidOperationException>(() => checkout.Create(77, 42, 7001, 1, new string('A', 64),
-            [new(AccountCurrencyType.ProtostarPromissoryNote, 15)]));
+            [new(AccountCurrencyType.ProtostarPromissoryNote, 15)], epoch: 1));
         Assert.Contains("durable database storage", error.Message);
     }
 }

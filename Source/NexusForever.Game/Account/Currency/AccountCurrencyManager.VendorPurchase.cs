@@ -1,0 +1,76 @@
+using NexusForever.Database.Auth;
+using NexusForever.Game.Static.Account;
+using NexusForever.Network.Session;
+using NexusForever.Network.World.Message.Model;
+
+namespace NexusForever.Game.Account.Currency
+{
+    public partial class AccountCurrencyManager
+    {
+        internal VendorWallets CaptureVendorWallets(IEnumerable<VendorAccountPurchase.Cost> costs)
+        {
+            lock (currencyGate)
+            {
+                if (walletRefresh != null || account.WorldSessionEpoch == 0 || !ReferenceEquals(account.CurrencyManager, this))
+                    throw new InvalidOperationException("Vendor payment requires its original admitted wallets.");
+                var rows = new List<(AccountCurrency Wallet, AccountCurrency.RefreshReservation Refresh)>();
+                try
+                {
+                    foreach (var cost in costs)
+                    {
+                        if (!currencies.TryGetValue(cost.Currency, out var value) || value is not AccountCurrency wallet || !wallet.CanAfford(cost.Amount))
+                            throw new InvalidOperationException("Vendor payment lost its original wallet or available balance.");
+                        rows.Add((wallet, wallet.CaptureRefresh()));
+                    }
+                    return new(this, account.WorldSessionEpoch, account.Session, rows);
+                }
+                catch
+                {
+                    foreach (var row in rows) row.Refresh.Dispose();
+                    throw;
+                }
+            }
+        }
+
+        internal sealed class VendorWallets(AccountCurrencyManager manager, ulong epoch, IGameSession session,
+            List<(AccountCurrency Wallet, AccountCurrency.RefreshReservation Refresh)> rows) : IDisposable
+        {
+            private bool Current() => manager.account.WorldSessionEpoch == epoch && ReferenceEquals(manager.account.Session, session)
+                && ReferenceEquals(manager.account.CurrencyManager, manager) && session is not NetworkSession { IsDisconnecting: true };
+
+            internal Task ReadAsync(Func<AuthContext> contexts)
+                => Task.WhenAll(rows.Select(row => row.Refresh.ReadAsync(contexts, epoch: epoch)));
+
+            internal void Adopt()
+            {
+                lock (manager.currencyGate)
+                {
+                    if (!Current() || rows.Any(row => !row.Refresh.TryAdopt()))
+                        throw new InvalidOperationException("Vendor payment cannot adopt its original wallet observations.");
+                    Dispose();
+                }
+            }
+
+            internal void Publish(Func<bool> currentActor)
+            {
+                foreach (var row in rows)
+                {
+                    if (!Current() || !currentActor()) throw new InvalidOperationException("Vendor wallet publication lost its original session.");
+                    SendCurrencyGrant(row.Wallet, 0, session);
+                    if (!Current() || !currentActor()) throw new InvalidOperationException("Vendor wallet publication lost its original session.");
+                    session.EnqueueMessageEncrypted(new ServerWalletUpdate((uint)row.Wallet.CurrencyId));
+                }
+            }
+
+            internal void Quarantine()
+            {
+                foreach (var row in rows) row.Refresh.Quarantine();
+            }
+
+            public void Dispose()
+            {
+                foreach (var row in rows) row.Refresh.Dispose();
+            }
+        }
+    }
+}

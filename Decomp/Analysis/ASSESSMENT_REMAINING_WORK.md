@@ -90,9 +90,11 @@ The [account-funded settlement protocol](../../CURRENT_STATUS.md#account-funded-
 serializes the Character delivery and refund decision and reuses Auth wallet
 operation receipts. [Realm admission recovery](../../CURRENT_STATUS.md#account-funded-vendor-recovery-at-realm-admission)
 resolves local receipts and refreshes the wallet before session initialization.
-Public purchase enrollment, live wallet adoption, and the Cosmic Reward Loyalty
-journal remain open. Configured-provider, deployed restart behavior, and retail
-qualification remain open.
+[Live account-funded vendor settlement](../../CURRENT_STATUS.md#live-account-funded-vendor-purchase-settlement)
+enrolls ledger-backed payments, fences retired session epochs, adopts the
+original wallet after settlement, and compensates confirmed rollback. Cosmic
+Reward Loyalty participation, configured-provider and deployed restart evidence,
+and retail qualification remain open.
 
 [Fortune deal settlement](../../CURRENT_STATUS.md#persisted-deal-and-coin-settlement)
 commits the one-coin debit and deal together, including consumption and change

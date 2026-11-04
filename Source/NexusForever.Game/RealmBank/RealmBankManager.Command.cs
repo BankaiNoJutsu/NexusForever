@@ -27,11 +27,12 @@ namespace NexusForever.Game.RealmBank
             }, companion, detached, allowEmpty);
 
         internal async Task<BankOutcome> SaveReconciledInventoryOperationAsync(IItem[] items, Item[] splitCreations, IPlayer player,
-            Action<CharacterContext> companion, IReadOnlySet<ulong> detached, bool allowEmpty)
+            Action<CharacterContext> companion, IReadOnlySet<ulong> detached, bool allowEmpty,
+            Func<CharacterContext, Action<CharacterContext>, Task<bool>> authorize = null)
         {
             var database = GetDatabase() ?? throw new InvalidOperationException("Bank reconciliation requires its Character database.");
             var command = new BankSaveCommand(database.CreateContext, items, player,
-                context => { foreach (var item in splitCreations) item.ValidateSplitCreation(context); }, companion, detached, allowEmpty);
+                context => { foreach (var item in splitCreations) item.ValidateSplitCreation(context); }, companion, detached, allowEmpty, authorize);
             try
             {
                 if (bankExecution == null) await command.ExecuteAsync();
@@ -47,6 +48,7 @@ namespace NexusForever.Game.RealmBank
                 bool Bank, bool Consumed, bool Detached, ulong Id, uint Definition);
             private readonly Func<CharacterContext> contexts;
             private readonly Entry[] entries;
+            private readonly Func<CharacterContext, Action<CharacterContext>, Task<bool>> authorize;
             private readonly uint account;
             private readonly ushort realm;
             private readonly ulong character;
@@ -74,6 +76,8 @@ namespace NexusForever.Game.RealmBank
                 private Dictionary<Row, PropertyValues> ordinary;
                 private CommitGraph(Row[] rows) { this.rows = rows; }
                 internal CommitGraph Freeze() => new(rows.Select(row => row with { Entry = null, Before = row.Before?.Clone(), After = row.After?.Clone() }).ToArray());
+                internal CommitGraph WithoutReceipt(string id) => new(rows.Where(row =>
+                    (row.After ?? row.Before).ToObject() is not BankReconciliationReceiptModel receipt || receipt.Id != id).ToArray());
                 internal string Fingerprint
                 {
                     get
@@ -184,7 +188,9 @@ namespace NexusForever.Game.RealmBank
                         property.GetValueComparer()?.Equals(first[property.Name], second[property.Name]) ?? Equals(first[property.Name], second[property.Name]));
             }
 
-            internal BankSaveCommand(Func<CharacterContext> contexts, IItem[] items, IPlayer player, Action<CharacterContext> firstStage = null, Action<CharacterContext> companion = null, IReadOnlySet<ulong> detached = null, bool allowEmpty = false)
+            internal BankSaveCommand(Func<CharacterContext> contexts, IItem[] items, IPlayer player, Action<CharacterContext> firstStage = null,
+                Action<CharacterContext> companion = null, IReadOnlySet<ulong> detached = null, bool allowEmpty = false,
+                Func<CharacterContext, Action<CharacterContext>, Task<bool>> authorize = null)
             {
                 this.contexts = contexts ?? throw new ArgumentNullException(nameof(contexts));
                 account = player.Account.Id; realm = player.Identity.RealmId; character = player.CharacterId;
@@ -192,6 +198,7 @@ namespace NexusForever.Game.RealmBank
                     throw new InvalidOperationException("Bank command requires distinct Items and one Character owner.");
                 this.firstStage = firstStage;
                 this.companion = companion;
+                this.authorize = authorize;
                 entries = items.Select(item =>
                 {
                     var snapshot = item is Item concrete ? new Item.BankSaveSnapshot(concrete) : null;
@@ -266,7 +273,8 @@ namespace NexusForever.Game.RealmBank
                         if (recovery != null) await recovery.RequireCompleteState(context);
                         try
                         {
-                            Stage(context);
+                            if (authorize == null) Stage(context);
+                            else if (!await authorize(context, Stage)) return;
                             var graph = new CommitGraph(context); graph.Flushed();
                             retainedGraph ??= graph;
                             await context.SaveChangesAsync();

@@ -4,12 +4,15 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore;
 using NexusForever.Database;
+using NexusForever.Database.Auth;
+using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Database.Configuration.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Character;
+using NexusForever.Game.Account.Currency;
 using NexusForever.Game.Mail;
 using NexusForever.Game.Static.Mail;
 using NexusForever.Network.World.Message.Model.Mail;
@@ -18,6 +21,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
 using NexusForever.Game.RealmBank;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Account;
 using NexusForever.Game.Tests.Challenges;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Game.Tests.Transport;
@@ -46,12 +50,23 @@ public sealed class BankDeferredCurrencyRecoveryTests
     [InlineData("same-stack")]
     [InlineData("satchel-lost")]
     [InlineData("satchel-rollback")]
+    [InlineData("account-commit")]
+    [InlineData("account-lost")]
+    [InlineData("account-rollback")]
+    [InlineData("account-stale")]
+    [InlineData("account-rebound")]
+    [InlineData("account-two-wallets")]
     public async Task VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(string outcome)
     {
         bool sameStack = outcome == "same-stack";
         bool dirtyWallet = outcome == "bag-dirty-wallet";
-        bool useSatchel = outcome.StartsWith("satchel-", StringComparison.Ordinal);
-        bool rollback = outcome == "satchel-rollback";
+        bool accountPayment = outcome.StartsWith("account-", StringComparison.Ordinal);
+        bool stale = outcome == "account-stale";
+        bool rebound = outcome == "account-rebound";
+        bool twoWallets = outcome == "account-two-wallets";
+        bool useSatchel = accountPayment || outcome.StartsWith("satchel-", StringComparison.Ordinal);
+        bool rollback = outcome.EndsWith("-rollback", StringComparison.Ordinal) || stale;
+        using var auth = accountPayment ? new VendorAuthFixture() : null;
         using var f = new Fixture(options);
         f.Seed();
         var database = new CharacterDatabase();
@@ -81,6 +96,15 @@ public sealed class BankDeferredCurrencyRecoveryTests
         itemManager.SetMethodReturnFactory("get_" + nameof(IItemManager.NextItemId), () => next++);
         var account = (RecordingDispatchProxy<IAccount>)(object)f.Source.Player.Account;
         account.SetProperty(nameof(IAccount.Id), 12u);
+        AccountCurrencyManager accountWallet = null;
+        if (accountPayment)
+        {
+            tables.SetProperty(nameof(IGameTableManager.AccountCurrencyType), PlayerBindPointTests.Table(
+                new AccountCurrencyTypeEntry { Id = 6 }, new AccountCurrencyTypeEntry { Id = 14 }));
+            account.SetProperty(nameof(IAccount.WorldSessionEpoch), 1ul);
+            accountWallet = new AccountCurrencyManager(f.Source.Player.Account, auth.Model, f.Source.Tables);
+            account.SetProperty(nameof(IAccount.CurrencyManager), accountWallet);
+        }
         var events = new EventQueue();
         var session = RecordingDispatchProxy<IWorldSession>.Create(out var network);
         network.SetProperty(nameof(IWorldSession.Events), events);
@@ -93,23 +117,25 @@ public sealed class BankDeferredCurrencyRecoveryTests
         {
             entered.SetResult();
             await release.Task;
-            if (useSatchel)
+            if (outcome.EndsWith("-lost", StringComparison.Ordinal) || rollback && !stale)
             {
                 var fault = new CommitFault(after: !rollback);
                 typeof(RealmBankManager.BankSaveCommand).GetField("contexts", BindingFlags.Instance | BindingFlags.NonPublic)!
                     .SetValue(command, (Func<CharacterContext>)(() => f.Context(fault)));
             }
             await command.ExecuteAsync();
+            if (rebound) network.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
         });
         var model = Assert.Single(await database.GetCharacters(12));
         var ordinary = new OrdinaryDatabase(f, outcome);
         using var actor = new RewardNormalSaveSnapshotTests.Actor(f, actorModel: model, actorSession: session, actorEvents: events,
-            characterDatabase: ordinary, inventoryFactory: (owner, _) => Inventory(owner, items, f.Source.Tables, bank));
+            characterDatabase: ordinary, authDatabase: auth?.Database, inventoryFactory: (owner, _) => Inventory(owner, items, f.Source.Tables, bank));
         network.SetProperty(nameof(IWorldSession.Player), actor.Player);
         var wallet = new CurrencyManager(f.Source.Tables);
         wallet.Initialise(actor.Player, model);
         actor.Set(nameof(Player.CurrencyManager), wallet);
         actor.Set(nameof(Player.SupplySatchelManager), new SupplySatchelManager(actor.Player, model, f.Source.Tables));
+        if (accountPayment) account.SetMethodHandler(nameof(IAccount.Save), args => { accountWallet.Save((AuthContext)args[0]); return null; });
         await actor.Load();
         var inventory = Assert.IsType<Inventory>(actor.Player.Inventory);
         foreach (var row in model.Item)
@@ -122,14 +148,18 @@ public sealed class BankDeferredCurrencyRecoveryTests
         var vendor = RecordingDispatchProxy<IVendorInfo>.Create(out var offers);
         offers.SetMethodReturn(nameof(IVendorInfo.GetItemAtIndex), new EntityVendorItemModel
         {
-            ItemId = sameStack ? 7001u : 7002u, ExtraCost1Type = ItemExtraCostType.Item, ExtraCost1ItemOrCurrencyId = 7001, ExtraCost1Quantity = 1,
-            ExtraCost2Type = ItemExtraCostType.Currency, ExtraCost2ItemOrCurrencyId = 1, ExtraCost2Quantity = sameStack ? 0u : 15u
+            ItemId = sameStack ? 7001u : 7002u,
+            ExtraCost1Type = twoWallets ? ItemExtraCostType.AccountCurrency : ItemExtraCostType.Item,
+            ExtraCost1ItemOrCurrencyId = twoWallets ? 14u : 7001u, ExtraCost1Quantity = twoWallets ? 9u : 1u,
+            ExtraCost2Type = accountPayment ? ItemExtraCostType.AccountCurrency : ItemExtraCostType.Currency,
+            ExtraCost2ItemOrCurrencyId = accountPayment ? 6u : 1u, ExtraCost2Quantity = sameStack ? 0u : 15u
         });
         typeof(Player).GetField("selectedVendorInfo", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(actor.Player, vendor);
         var notices = new List<object>();
         network.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
         {
-            if (args[0] is ServerCombatReward or ServerItemAdd or ServerItemDelete or ServerItemStackCountUpdate or ServerSupplySatchelUpdate or ServerItemError)
+            if (args[0] is ServerCombatReward or ServerItemAdd or ServerItemDelete or ServerItemStackCountUpdate or ServerSupplySatchelUpdate or ServerItemError
+                or ServerAccountCurrencyGrant or ServerWalletUpdate)
                 notices.Add(args[0]);
             return null;
         });
@@ -145,24 +175,50 @@ public sealed class BankDeferredCurrencyRecoveryTests
             Assert.Equal(dirtyWallet ? 115ul : 100ul, before.CharacterCurrency.Single().Amount);
             Assert.Equal(7001u, before.Item.Single(row => row.Id == 904).ItemId);
             if (dirtyWallet) Assert.Equal(1u, before.Item.Single(row => row.Id == 950).StackCount);
+            if (accountPayment)
+            {
+                using var pendingAuth = auth.Database.CreateContext();
+                Assert.Equal(100ul, pendingAuth.AccountCurrency.Single(row => row.CurrencyId == 6).Amount);
+                Assert.Equal(100ul, accountWallet.GetCurrencyAmount(AccountCurrencyType.Omnibit));
+                if (stale)
+                {
+                    pendingAuth.AccountWorldSession.Single().Epoch = 2;
+                    await pendingAuth.SaveChangesAsync();
+                }
+            }
         }
         finally { release.TrySetResult(); }
         await actor.Drain();
 
         using var after = f.Context();
-        Assert.Equal(rollback || sameStack || dirtyWallet ? 100ul : 85ul, after.CharacterCurrency.Single().Amount);
-        var stored = after.Item.Single(row => row.Id != 950);
+        Assert.Equal(rollback || sameStack || dirtyWallet || accountPayment ? 100ul : 85ul, after.CharacterCurrency.Single().Amount);
+        var stored = after.Item.Single(row => row.Id != 950 && (!twoWallets || row.Id != 904));
+        if (twoWallets) Assert.Equal(1u, after.Item.Single(row => row.Id == 904).StackCount);
         if (dirtyWallet) Assert.Equal(1u, after.Item.Single(row => row.Id == 950).StackCount);
         Assert.Equal(rollback || sameStack ? 7001u : 7002u, stored.ItemId);
         Assert.Equal(rollback || useSatchel ? 1u : 2u, stored.StackCount);
         Assert.Equal(rollback ? 0 : 1, after.BankReconciliationReceipt.Count(row => row.Payload.StartsWith("vendor-character-purchase:")));
         if (useSatchel) Assert.Equal(rollback ? 99 : 100, after.CharacterTradeskillMaterial.Single().Amount);
-        Assert.Equal(rollback || sameStack ? 0 : 1, notices.OfType<ServerCombatReward>().Count());
-        Assert.Equal(rollback || sameStack ? 0 : 1, notices.OfType<ServerItemAdd>().Count());
-        Assert.Equal(rollback || sameStack ? 0 : 1, notices.OfType<ServerItemDelete>().Count());
+        Assert.Equal(rollback || sameStack || accountPayment ? 0 : 1, notices.OfType<ServerCombatReward>().Count());
+        Assert.Equal(rollback || sameStack || rebound ? 0 : 1, notices.OfType<ServerItemAdd>().Count());
+        Assert.Equal(rollback || sameStack || rebound || twoWallets ? 0 : 1, notices.OfType<ServerItemDelete>().Count());
         Assert.Equal(sameStack ? 2 : 0, notices.OfType<ServerItemStackCountUpdate>().Count());
-        Assert.Equal(useSatchel && !rollback ? 1 : 0, notices.OfType<ServerSupplySatchelUpdate>().Count());
+        Assert.Equal(useSatchel && !rollback && !rebound ? 1 : 0, notices.OfType<ServerSupplySatchelUpdate>().Count());
+        Assert.Null(ordinary.LastFailure);
         Assert.Equal(rollback ? 1 : 0, notices.OfType<ServerItemError>().Count());
+        if (accountPayment)
+        {
+            using var settled = auth.Database.CreateContext();
+            Assert.Equal(rollback ? 100ul : 85ul, settled.AccountCurrency.Single(row => row.CurrencyId == 6).Amount);
+            Assert.Equal(twoWallets ? 61ul : 70ul, settled.AccountCurrency.Single(row => row.CurrencyId == 14).Amount);
+            Assert.Equal(rollback || rebound ? 100ul : 85ul, accountWallet.GetCurrencyAmount(AccountCurrencyType.Omnibit));
+            Assert.Equal(stale ? 0 : twoWallets ? 2 : 1, settled.AccountCurrencyOperation.Count(row => row.Subtract));
+            Assert.Equal(rollback && !stale ? 1 : 0, settled.AccountCurrencyOperation.Count(row => !row.Subtract));
+            Assert.Equal(rollback || rebound ? 0 : twoWallets ? 2 : 1, notices.OfType<ServerAccountCurrencyGrant>().Count());
+            Assert.Equal(rollback || rebound ? 0 : twoWallets ? 2 : 1, notices.OfType<ServerWalletUpdate>().Count());
+            if (!rollback && !rebound)
+                Assert.Equal(twoWallets ? new ulong[] { 85, 61 } : [85], notices.OfType<ServerAccountCurrencyGrant>().Select(row => row.AccountCurrency.Amount));
+        }
 
         static IItemInfo Definition(uint id)
         {
@@ -172,6 +228,27 @@ public sealed class BankDeferredCurrencyRecoveryTests
             definition.SetMethodReturn(nameof(IItemInfo.IsStackable), true);
             return info;
         }
+    }
+
+    private sealed class VendorAuthFixture : IDisposable
+    {
+        private readonly string path = Path.GetTempFileName();
+        internal AuthDatabase Database { get; } = new();
+        internal AccountModel Model { get; } = new() { Id = 12, Email = "vendor-wallet@example.test" };
+
+        internal VendorAuthFixture()
+        {
+            Database.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite, ConnectionString = $"Data Source={path};Pooling=False" });
+            Model.AccountCurrency.Add(new() { Id = 12, CurrencyId = 6, Amount = 100 });
+            Model.AccountCurrency.Add(new() { Id = 12, CurrencyId = 14, Amount = 70 });
+            using var context = Database.CreateContext();
+            context.Database.EnsureCreated();
+            context.Account.Add(Model);
+            context.AccountWorldSession.Add(new() { AccountId = 12, Epoch = 1 });
+            context.SaveChanges();
+        }
+
+        public void Dispose() => File.Delete(path);
     }
 
     [Theory]
