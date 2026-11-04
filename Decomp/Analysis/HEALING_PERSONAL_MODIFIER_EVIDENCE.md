@@ -1,5 +1,46 @@
 # Healing personal-modifier evidence boundary
 
+## Build 16042 effect 151 row validator
+
+4 November 2026. The retained WildStar64 executable has SHA-256
+`231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+REA PE evidence
+`ev_da27f0ff8de8665b152bc739b7654db7aa4f78845a3d9775591172e68e5ccf3d`
+binds the image. The REA objdump provider could not start its configured
+executable on Windows. Installed LLVM and direct PE reads supplied the
+instruction and dispatch evidence without launching the target.
+
+`Spell4Manager_BuildRuntimeData` calls the validator at `0x140560227`.
+The zero return continues to `0x140560260`. A nonzero return follows
+the diagnostic path and skips that insertion path. The validator starts
+at `0x140567af0`. Its switch reads the effect type at row offset
+`0x0c` and subtracts one before indexing the byte table.
+
+| Effect | Byte entry | Slot | RVA entry | Target |
+| --- | --- | --- | --- | --- |
+| 11, UnitPropertyModifier | `0x1405681d2` | 6 | `0x140568190` | `0x140567c85` |
+| 151, PersonalDmgHealMod | `0x14056825e` | 18 | `0x1405681c0` | `0x140568133` |
+
+The image's Spell4Effects field descriptors bind `effectType`, `durationTime`,
+`flags`, `dataBits00` and `dataBits01` to row offsets `0x0c`, `0x1c`,
+`0x20`, `0x24` and `0x28` respectively. For effect 151, flag bit `0x2`
+skips the unsigned 200 ms minimum. Otherwise a lower duration returns 13.
+The surviving path jumps to `0x140567cb7`, where zero `dataBits01` returns
+15 and a nonzero value succeeds in this branch. Effect 11 goes through the
+`dataBits00` UnitProperty2 lookup at `0x1402479c0` before reaching that
+shared code. The effect 151 branch bypasses the lookup.
+
+These bytes corroborate #595's validation claim. This is mapped row validation.
+The validator does not establish kind 12 caster-target ownership, actual row
+values, mode meaning, stacking, effect application or Focus rates. The next
+evidence remains the actual rows and tooltip bindings plus an independently
+corroborated application or healing path. Server behavior awaits that evidence.
+Local evidence is in `artifacts/continuation-20261104/healing-validator/`,
+including the verifier, dispatch addresses, named field descriptors and
+four bounded LLVM extracts.
+
+## Original source comparison
+
 1 November 2026 read-only continuation while auction-posting full validation runs.
 This is a source comparison and evidence-gap record, not a new healing runtime
 implementation or Verified retail semantics. Source/Tools and test binaries were

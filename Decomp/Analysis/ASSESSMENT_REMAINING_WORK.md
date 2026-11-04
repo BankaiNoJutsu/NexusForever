@@ -10,6 +10,12 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Effect 151 native validation](HEALING_PERSONAL_MODIFIER_EVIDENCE.md#build-16042-effect-151-row-validator)
+now binds the build 16042 validator, row field offsets and distinct dispatch
+branches for ordinary property modifiers and personal modifiers. The actual
+effect rows, tooltip bindings, caster-target application and Focus rates remain
+separate evidence requirements for #595.
+
 [Terminal auction notice retry](AUCTION_EXPIRY_TRANSACTION.md#retry-for-terminal-auction-notices)
 recovers failed won/expired packet sends on the original live actor after
 settlement. The retry retains the accepted snapshot and leaves listing and
