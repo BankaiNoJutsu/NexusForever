@@ -23200,6 +23200,21 @@ second rollback with no durable conversion. Local evidence is under
 `artifacts/continuation-20261104/item-resource-conversion/`. Configured
 MySQL, deployed delivery and retail selector semantics remain separate.
 
+#### Committed reputation resource conversion
+
+5 November 2026. Both item-to-reputation types and currency-to-reputation
+confirm the loaded faction before spending. The receipt-backed Character
+save settles the source and standing together. The original session's
+source update and the standing delta follow confirmation. A lost
+acknowledgment can be confirmed by receipt, and a proven rollback can
+retry the frozen save once.
+
+Four loopback baselines reproduced early source notices. The owning build
+and 109 scoped tests passed, including both missing-faction cases,
+commit, lost acknowledgment, rollback and retry. Local evidence is under
+`artifacts/continuation-20261105/reputation-resource-conversion/`.
+Configured MySQL, deployed delivery and retail selector semantics remain open.
+
 #### Existing item and unlock behavior
 
 Inventory, title, pet, costume, unlock surfaces exist. Generic unlock

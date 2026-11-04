@@ -70,6 +70,9 @@ namespace NexusForever.Game.Reputation
                 reputation.Save(context);
         }
 
+        public bool HasResourceConversionFaction(Faction factionId)
+            => owner.CharacterId == ReputationCharacter && factionManager?.GetFaction(factionId)?.FactionId == factionId;
+
         /// <summary>
         /// Update <see cref="IReputation"/> for supplied <see cref="Faction"/> and value.
         /// </summary>

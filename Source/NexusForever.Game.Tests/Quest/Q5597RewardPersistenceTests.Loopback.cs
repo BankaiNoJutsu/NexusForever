@@ -22,9 +22,11 @@ using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Abstract.RBAC;
+using NexusForever.Game.Abstract.Reputation;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Quest;
+using NexusForever.Game.Reputation;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
@@ -102,9 +104,19 @@ public sealed partial class Q5597RewardPersistenceTests
     public Task LoopbackItemConversionPublishesOnlyAfterItsCharacterSave(string outcome)
         => RunQuestLoopback(false, itemConversion: outcome);
 
+    [Theory]
+    [InlineData(1u, "success")]
+    [InlineData(2u, "retry")]
+    [InlineData(3u, "lost-ack")]
+    [InlineData(3u, "rollback")]
+    [InlineData(1u, "missing-faction")]
+    [InlineData(3u, "missing-faction")]
+    public Task LoopbackReputationConversionCommitsTheDebitAndStandingTogether(uint conversionType, string outcome)
+        => RunQuestLoopback(false, itemConversion: outcome, conversionType: conversionType);
+
     private async Task RunQuestLoopback(bool rejectFirstSave, bool tutorialRecovery = false, bool levelReward = false,
         bool replaceMapAdmission = false, bool autoAccept = false, bool acceptOnly = false, bool itemStarter = false,
-        bool share = false, bool replaceSharer = false, string itemConversion = null)
+        bool share = false, bool replaceSharer = false, string itemConversion = null, uint conversionType = 0)
     {
         const uint accountId = 12;
         const uint sharerGuid = 99;
@@ -113,6 +125,11 @@ public sealed partial class Q5597RewardPersistenceTests
         var replacementSession = RecordingDispatchProxy<IGameSession>.Create(out var replacementSharer);
         sharerPlayer.SetProperty(nameof(IPlayer.Session), sharerSession);
         const ulong starterId = 50;
+        const uint conversionPrice = 1;
+        const uint reputationReward = 5;
+        const Faction reputationFaction = Faction.Exile;
+        bool reputationConversion = conversionType != 0;
+        bool spendsCurrency = conversionType == 3;
         uint starterDefinition = RewardIds[0];
         ushort questId = tutorialRecovery ? StarterTutorialDefinition.ExileMovementQuestId : QuestId;
         const ushort nextQuestId = StarterTutorialDefinition.ExileHoverboardQuestId;
@@ -146,9 +163,11 @@ public sealed partial class Q5597RewardPersistenceTests
             }
             if (!autoAccept && !acceptOnly)
                 seed.CharacterQuest.Add(new() { Id = 42, QuestId = questId, State = (byte)QuestState.Achieved });
-            if (itemStarter || itemConversion != null)
+            if (itemStarter || itemConversion != null && !spendsCurrency)
                 seed.Item.Add(new() { Id = starterId, OwnerId = 42, ItemId = starterDefinition,
                     Location = (ushort)InventoryLocation.Inventory, StackCount = 1 });
+            if (spendsCurrency)
+                seed.CharacterCurrency.Add(new() { Id = 42, CurrencyId = (byte)CurrencyType.Credits, Amount = 40 });
             await seed.SaveChangesAsync();
         }
         ConfigureQuest(f, reclaim: autoAccept || acceptOnly, questId);
@@ -190,10 +209,15 @@ public sealed partial class Q5597RewardPersistenceTests
         {
             var tables = (RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables;
             tables.SetProperty(nameof(IGameTableManager.Item), PlayerBindPointTests.Table(items.GetItemInfo(PushedItem).Entry));
+            if (spendsCurrency)
+                tables.SetProperty(nameof(IGameTableManager.CurrencyType), PlayerBindPointTests.Table(new CurrencyTypeEntry
+                    { Id = (uint)CurrencyType.Credits }));
             tables.SetProperty(nameof(IGameTableManager.ResourceConversion), PlayerBindPointTests.Table(new ResourceConversionEntry
             {
-                Id = 10, ResourceConversionTypeEnum = 0, SourceId = starterDefinition, SourceCount = 1,
-                TargetId = PushedItem, TargetCount = 1
+                Id = 10, ResourceConversionTypeEnum = conversionType,
+                SourceId = spendsCurrency ? (uint)CurrencyType.Credits : starterDefinition, SourceCount = conversionPrice,
+                TargetId = reputationConversion ? (uint)reputationFaction : PushedItem,
+                TargetCount = reputationConversion ? reputationReward : 1
             }));
         }
         var messages = new MessageManager(NullLogger<MessageManager>.Instance);
@@ -221,15 +245,36 @@ public sealed partial class Q5597RewardPersistenceTests
             {
                 int authSaves = 0;
                 actor.OnAuth = () => authSaves++;
+                if (itemConversion == "missing-faction")
+                {
+                    var request = new ClientConvertResource();
+                    typeof(ClientConvertResource).GetProperty(nameof(ClientConvertResource.ConversionId))!.SetValue(request, 10u);
+                    new ClientConvertResourceHandler(NullLogger<ClientConvertResourceHandler>.Instance, f.Source.Tables)
+                        .HandleMessage(world, request);
+                    if (spendsCurrency) Assert.Equal(40ul, Assert.Single(actor.Player.CurrencyManager).Amount);
+                    else Assert.Equal(1u, actor.Player.Inventory.GetItemCount(starterDefinition));
+                    Assert.False(actor.Player.IsNormalSaveInProgress);
+                    Assert.Equal(0, authSaves);
+                    Assert.Equal(0, conversionDatabase.Attempts);
+                    await AssertQuestPacketsWithheld(world, client);
+                    return;
+                }
                 await client.SendEncrypted(GameMessageOpcode.ClientConvertResource, writer =>
                 {
                     writer.Write(10u, 14);
                     writer.Write(0u);
                     writer.Write(0ul);
                 });
-                await PumpUntil(world, () => actor.Player.Inventory.GetItemCount(PushedItem) == 1 || world.IsDisconnecting);
+                await PumpUntil(world, () => world.IsDisconnecting || (reputationConversion
+                    ? actor.Player.ReputationManager.GetReputation(reputationFaction)?.Amount == reputationReward
+                    : actor.Player.Inventory.GetItemCount(PushedItem) == 1));
                 Assert.False(world.IsDisconnecting);
-                using (var held = f.Context()) Assert.Equal(starterId, Assert.Single(held.Item).Id);
+                using (var held = f.Context())
+                {
+                    Assert.Empty(held.CharacterReputation);
+                    if (spendsCurrency) Assert.Equal(40ul, Assert.Single(held.CharacterCurrency).Amount);
+                    else Assert.Equal(starterId, Assert.Single(held.Item).Id);
+                }
                 await AssertQuestPacketsWithheld(world, client);
                 Assert.True(actor.Player.IsNormalSaveInProgress);
                 Assert.False(world.CanProcessIncomingPackets);
@@ -240,21 +285,48 @@ public sealed partial class Q5597RewardPersistenceTests
                 Assert.Equal(itemConversion is "retry" or "rollback" ? 2 : 1, conversionDatabase.Attempts);
                 Assert.Equal(1, authSaves);
                 using var read = f.Context();
-                var row = Assert.Single(read.Item);
+                if (spendsCurrency)
+                    Assert.Equal(rolledBack ? 40ul : 39ul, Assert.Single(read.CharacterCurrency).Amount);
                 if (rolledBack)
                 {
-                    Assert.Equal(starterId, row.Id);
+                    if (!spendsCurrency) Assert.Equal(starterId, Assert.Single(read.Item).Id);
+                    Assert.Empty(read.CharacterReputation);
                     Assert.Empty(read.BankReconciliationReceipt);
                     return;
                 }
 
-                Assert.Equal(PushedItem, row.ItemId);
-                Assert.NotEqual(starterId, row.Id);
                 Assert.Single(read.BankReconciliationReceipt);
-                using var removed = await ReadPacket(client, GameMessageOpcode.ServerItemDelete);
-                Assert.Equal(starterId, removed.ReadULong());
-                using var added = await ReadPacket(client, GameMessageOpcode.ServerItemAdd);
-                Assert.Equal((row.Id, PushedItem, 1u), ReadFixtureInventoryItem(added));
+                if (spendsCurrency)
+                {
+                    using var balance = await ReadPacket(client, GameMessageOpcode.ServerCombatReward);
+                    Assert.Equal(0u, balance.ReadUInt(5));
+                    Assert.Equal(39ul, balance.ReadULong());
+                }
+                else
+                {
+                    using var removed = await ReadPacket(client, GameMessageOpcode.ServerItemDelete);
+                    Assert.Equal(starterId, removed.ReadULong());
+                }
+                if (reputationConversion)
+                {
+                    Assert.Empty(read.Item);
+                    var standing = Assert.Single(read.CharacterReputation);
+                    Assert.Equal((uint)reputationFaction, standing.FactionId);
+                    Assert.Equal((float)reputationReward, standing.Amount);
+                    var notice = ReadPacket(client, GameMessageOpcode.ServerReputationUpdate);
+                    await PumpUntil(world, () => notice.IsCompleted);
+                    using var delta = await notice;
+                    Assert.Equal((uint)reputationFaction, delta.ReadUInt(14));
+                    Assert.Equal((float)reputationReward, delta.ReadSingle());
+                }
+                else
+                {
+                    var row = Assert.Single(read.Item);
+                    Assert.Equal(PushedItem, row.ItemId);
+                    Assert.NotEqual(starterId, row.Id);
+                    using var added = await ReadPacket(client, GameMessageOpcode.ServerItemAdd);
+                    Assert.Equal((row.Id, PushedItem, 1u), ReadFixtureInventoryItem(added));
+                }
             });
             return;
         }
@@ -602,6 +674,20 @@ public sealed partial class Q5597RewardPersistenceTests
             typeof(WorldSession).GetProperty(nameof(WorldSession.Account))!.SetValue(world, account);
             var model = Assert.Single(await database.GetCharacters(accountId));
             using var actor = LoadActor(f, items, 2, model, world, account, auth, questId, conversionDatabase);
+            if (reputationConversion)
+            {
+                var factions = RecordingDispatchProxy<IFactionManager>.Create(out var factionManager);
+                var faction = RecordingDispatchProxy<IFactionNode>.Create(out var node);
+                node.SetProperty(nameof(IFactionNode.FactionId), reputationFaction);
+                factionManager.SetMethodReturn(nameof(IFactionManager.GetFaction), itemConversion == "missing-faction" ? null : faction);
+                actor.Set(nameof(Player.ReputationManager), new ReputationManager(actor.Player, model, factions));
+                if (spendsCurrency)
+                {
+                    var wallet = new CurrencyManager(f.Source.Tables);
+                    wallet.Initialise(actor.Player, model);
+                    actor.Set(nameof(Player.CurrencyManager), wallet);
+                }
+            }
             if (autoAccept || acceptOnly) actor.Set(nameof(Player.Faction1), Faction.Exile);
             if (levelReward)
             {
@@ -814,6 +900,7 @@ public sealed partial class Q5597RewardPersistenceTests
             if (frame.Opcode == GameMessageOpcode.ServerPlayerEnteredWorld) break;
             Assert.False(frame.Opcode is GameMessageOpcode.ServerItemAdd or GameMessageOpcode.ServerQuestStateChange
                 or GameMessageOpcode.ServerItemDelete or GameMessageOpcode.ServerItemStackCountUpdate
+                or GameMessageOpcode.ServerCombatReward or GameMessageOpcode.ServerReputationUpdate
                 or GameMessageOpcode.ServerAchievementUpdate or GameMessageOpcode.ServerDialogEnd
                 or GameMessageOpcode.ServerExperienceGained or GameMessageOpcode.ServerEntityStatUpdateInteger
                 or GameMessageOpcode.ServerSpellStart or GameMessageOpcode.ServerEntityPropertiesUpdate

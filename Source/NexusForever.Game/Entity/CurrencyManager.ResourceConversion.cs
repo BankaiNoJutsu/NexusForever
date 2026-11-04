@@ -11,6 +11,35 @@ namespace NexusForever.Game.Entity
         private static readonly ILogger resourceConversionLog = LogManager.GetCurrentClassLogger();
         private readonly object currencyGraphGate = new();
 
+        public bool TryDebitResourceConversion(CurrencyType source, ulong amount)
+        {
+            Currency row;
+            lock (currencyGraphGate)
+            {
+                if (!ReferenceEquals(player?.CurrencyManager, this) || !HasLoadedCurrencyOwner()
+                    || IsMutationPublicationBlocked || ContractCurrencyBlocked(source))
+                    return false;
+                if (amount == 0) return true;
+                if (!currencies.TryGetValue(source, out var currency) || currency is not Currency loaded)
+                    return false;
+                row = loaded;
+
+                lock (row.MutationGate)
+                {
+                    ulong before = row.Amount;
+                    if (amount > before) return false;
+                    try { row.Amount = before - amount; }
+                    catch (Exception error) when (error is InvalidOperationException or ArgumentOutOfRangeException)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            PublishCurrencyAmount(row, player.Session);
+            return true;
+        }
+
         public bool TryApplyResourceConversion(IGameSession session, CurrencyType source, ulong sourceCost,
             CurrencyType surcharge, ulong surchargeCost, CurrencyType target, ulong grant)
         {

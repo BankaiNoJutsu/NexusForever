@@ -360,7 +360,7 @@ namespace NexusForever.Game.Entity
                 ? CanCreateItem(InventoryLocation.Inventory, info, count, satchel)
                 : CanCreateItemsAfterReclaim([(info, count)], itemCosts.Select(cost => (cost.Key, cost.Value)), satchel, requireFullReclaim: true);
 
-        public bool TrySaveResourceItemConversion(GameSession session, uint sourceId, uint sourceCount, uint targetId, uint targetCount)
+        public bool TrySaveResourceConversion(GameSession session, Func<bool> convert)
         {
             if (player is not Player owner || owner.IsNormalSaveInProgress)
                 return false;
@@ -382,8 +382,7 @@ namespace NexusForever.Game.Entity
                 bool converted = false;
                 Action publish;
                 using (lease)
-                    publish = session.CaptureOutgoingPackets(() =>
-                        converted = TryConvertResourceItems(sourceId, sourceCount, targetId, targetCount));
+                    publish = session.CaptureOutgoingPackets(() => converted = convert());
 
                 if (converted)
                 {

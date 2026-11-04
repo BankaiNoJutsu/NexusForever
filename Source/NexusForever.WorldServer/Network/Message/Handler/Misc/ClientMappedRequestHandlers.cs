@@ -2,6 +2,7 @@ using System;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
+using NexusForever.Game.Reputation;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.GameTable;
@@ -70,8 +71,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
             if (player?.Inventory is not Inventory inventory)
                 return RejectConversion(session, conversion, "inventory is unavailable");
             if (player is Player && session is GameSession connection)
-                return inventory.TrySaveResourceItemConversion(connection, conversion.SourceId, conversion.SourceCount,
-                    conversion.TargetId, conversion.TargetCount)
+                return inventory.TrySaveResourceConversion(connection, () => inventory.TryConvertResourceItems(
+                    conversion.SourceId, conversion.SourceCount, conversion.TargetId, conversion.TargetCount))
                     || RejectConversion(session, conversion, "source items or result capacity unavailable");
 
             if (!InventoryMutationScope.TryAcquire(inventory, out var mutationLease))
@@ -89,12 +90,17 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
             if (!Enum.IsDefined(typeof(Faction), conversion.TargetId))
                 return RejectConversion(session, conversion, $"target faction {conversion.TargetId} was not found");
 
-            if (!session.Player.Inventory.HasItemCount(conversion.SourceId, conversion.SourceCount))
-                return RejectConversion(session, conversion, $"missing source item {conversion.SourceId} x{conversion.SourceCount}");
+            var player = session.Player;
+            var inventory = player?.Inventory;
+            return TrySaveReputationConversion(session, player, conversion, () =>
+            {
+                if (inventory == null || !ReferenceEquals(player.Inventory, inventory)
+                    || !inventory.HasItemCount(conversion.SourceId, conversion.SourceCount))
+                    return RejectConversion(session, conversion, $"missing source item {conversion.SourceId} x{conversion.SourceCount}");
 
-            session.Player.Inventory.ItemDelete(conversion.SourceId, conversion.SourceCount, ItemUpdateReason.ResourceConversion);
-            session.Player.ReputationManager.UpdateReputation((Faction)conversion.TargetId, conversion.TargetCount);
-            return true;
+                inventory.ItemDelete(conversion.SourceId, conversion.SourceCount, ItemUpdateReason.ResourceConversion);
+                return true;
+            });
         }
 
         private bool TryConvertCurrencyToReputation(IWorldSession session, ResourceConversionEntry conversion)
@@ -104,12 +110,40 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
             if (!Enum.IsDefined(typeof(Faction), conversion.TargetId))
                 return RejectConversion(session, conversion, $"target faction {conversion.TargetId} was not found");
 
-            if (!session.Player.CurrencyManager.CanAfford(sourceCurrency, conversion.SourceCount))
-                return RejectConversion(session, conversion, $"missing source currency {conversion.SourceId} x{conversion.SourceCount}");
+            var player = session.Player;
+            var wallet = player?.CurrencyManager;
+            return TrySaveReputationConversion(session, player, conversion, () =>
+            {
+                if (player is Player && session is GameSession)
+                    return wallet is CurrencyManager concrete && concrete.TryDebitResourceConversion(sourceCurrency, conversion.SourceCount);
+                if (wallet == null || !wallet.CanAfford(sourceCurrency, conversion.SourceCount))
+                    return RejectConversion(session, conversion, $"missing source currency {conversion.SourceId} x{conversion.SourceCount}");
 
-            session.Player.CurrencyManager.CurrencySubtractAmount(sourceCurrency, conversion.SourceCount);
-            session.Player.ReputationManager.UpdateReputation((Faction)conversion.TargetId, conversion.TargetCount);
-            return true;
+                wallet.CurrencySubtractAmount(sourceCurrency, conversion.SourceCount);
+                return true;
+            });
+        }
+
+        private bool TrySaveReputationConversion(IWorldSession session, IPlayer player, ResourceConversionEntry conversion, Func<bool> spend)
+        {
+            var reputation = player?.ReputationManager;
+            if (reputation == null) return false;
+            var faction = (Faction)conversion.TargetId;
+
+            bool Convert()
+            {
+                if (!ReferenceEquals(session.Player, player) || !ReferenceEquals(player.ReputationManager, reputation) || !spend())
+                    return false;
+                reputation.UpdateReputation(faction, conversion.TargetCount);
+                return true;
+            }
+
+            if (player is not Player || session is not GameSession connection)
+                return Convert();
+            if (player.Inventory is not Inventory inventory || reputation is not ReputationManager concrete
+                || !concrete.HasResourceConversionFaction(faction))
+                return RejectConversion(session, conversion, "loaded reputation or inventory is unavailable");
+            return inventory.TrySaveResourceConversion(connection, Convert);
         }
 
         private bool TryConvertCurrencyToCurrency(IWorldSession session, ResourceConversionEntry conversion)

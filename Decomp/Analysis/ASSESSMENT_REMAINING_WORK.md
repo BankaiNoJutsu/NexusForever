@@ -112,6 +112,10 @@ socket delivery, restart qualification and retail selector semantics remain open
 uses the same save receipt for item-to-item exchanges. The original session
 sees the inventory changes after confirmed settlement.
 
+[Committed reputation resource conversion](../../CURRENT_STATUS.md#committed-reputation-resource-conversion)
+validates the loaded faction before spending, then saves the item or wallet
+debit with the standing change before publishing either.
+
 [Vendor buyback request identity](../../CURRENT_STATUS.md#vendor-buyback-request-identity)
 keeps delayed requests from charging for a later sale and finishes accepted
 redemptions on the original inventory. [Vendor buyback settlement](../../CURRENT_STATUS.md#vendor-buyback-settlement)
