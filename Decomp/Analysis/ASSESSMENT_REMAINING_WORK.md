@@ -12,7 +12,9 @@ retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_
 
 [Build 16042 account-inventory CREDD wire evidence](CREDD_ACCOUNT_REDEEM_WIRE_EVIDENCE.md)
 maps empty `0x0770` and separates the local confirmation event from a server
-result. The retail grant and settlement remain open.
+result. Publisher evidence establishes historical Signature redemption, and
+the client confirms the separate `0x033D` subscription timer. Build 16042
+grant rules, result correlation and durable settlement remain open.
 
 [CREDD redemption admission](../../CURRENT_STATUS.md#credd-redemption-admission)
 checks the full character credit and the usage increment before debiting

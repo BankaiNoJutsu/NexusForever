@@ -20901,9 +20901,11 @@ updates, auction delete, or item-return mail saves, and the old marketplace
 ### F-006 - Storefront / Account Inventory - PARTIAL
 
 Build 16042 account inventory uses a separate empty `0x0770` redeem request.
-The packet model and native sender are mapped. Its server grant and result
-correlation remain open. The existing 1000:1 exchange is a compatibility
-path. [CREDD wire evidence](Decomp/Analysis/CREDD_ACCOUNT_REDEEM_WIRE_EVIDENCE.md)
+The packet model and native sender are mapped, and the separate `0x033D`
+subscription timer matches the native reader. Historical redemption granted
+Signature time. Build 16042 grant rules and result correlation remain open.
+The existing 1000:1 exchange is a compatibility path.
+[CREDD wire evidence](Decomp/Analysis/CREDD_ACCOUNT_REDEEM_WIRE_EVIDENCE.md)
 
 #### CREDD redemption admission
 

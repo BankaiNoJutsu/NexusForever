@@ -28,8 +28,33 @@ emulator exchange keeps its 64-bit amount and 1000:1 rule. The selected
 They establish neither a build 16042 send path for that opcode nor absence of
 such a path elsewhere.
 
-The retail grant, account restrictions, server-result correlation and durable
-settlement require independent server or capture evidence. The native byte
-verifier and 103 scoped packet and account tests passed. Local evidence and
-the verifier are under
+The native byte verifier and 103 scoped packet and account tests passed for
+the original wire mapping. Local evidence and the verifier are under
 `artifacts/continuation-20261104/credd-native-wire/`.
+
+## Signature policy and subscription wire
+
+WildStar's publisher confirmed on 26 September 2018 that used CREDD had
+redeemed Signature membership with active days remaining. At sunset the
+publisher handled unused CREDD and remaining redeemed days through NCoin
+reimbursement for eligible accounts, and the final update granted Signature
+globally. The announcement establishes the historical grant and the separate
+shutdown policy. It gives no normal redemption duration or build 16042 result
+mapping. [WildStar Signing Off November 28](https://store.steampowered.com/oldnews/?appgroupname=WildStar&appids=376570&feed=steam_community_announcements&headlines=0)
+
+On the same pinned client, registration at `0x14006d8ba` assigns `0x033D` to
+reader `0x14007e970`. It reads 32 flag bits, one expiry bit, and an unaligned
+32-bit float. The consumer at `0x1400225e0` references `SubscriptionExpired`
+and `GameTimeHoursRemaining`. It converts the hours to ticks with the
+`36,000,000,000` multiplier at `0x140b7a098` and adds them to the current
+time value. This matches the existing `ServerSubscriptionInfo` model. The
+native verifier and both scoped packet tests passed, including the byte-level
+regression for the width and order of its fields. Results and disassembly are under
+`artifacts/continuation-20261104/credd-signature-policy/`.
+
+The emulator derives Signature from `Permission.Signature`, and no producer
+sends `ServerSubscriptionInfo`. A durable timed grant needs an account-level
+expiry that participates in tier and reward checks. Evidence is still needed
+for build 16042 redemption eligibility, duration and extension rules, result
+values and packet order, and any accompanying rewards. `0x0770` remains
+model-only pending those inputs.
