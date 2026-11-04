@@ -23326,9 +23326,10 @@ owning build and all 189 scoped tests passed, including 60 Fortune cases and
 nine new regressions. Evidence is under
 `artifacts/continuation-20261104/fortune-packet-recovery/`.
 
-This covers injected failures before queue acceptance. Configured MySQL,
-transport failures with ambiguous acceptance, and retail presentation
-remain separate qualification gates.
+The [configured MySQL gate](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#fortune-settlement-and-recovery)
+passed twelve selected settlement and recovery cases on migrated Auth schemas.
+Transport failures with ambiguous acceptance, deployed World integration, and
+retail presentation remain separate qualification gates.
 
 #### Existing Fortune behavior and evidence
 

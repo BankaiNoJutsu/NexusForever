@@ -1,5 +1,9 @@
 # Destination configured-provider qualification
 
+[Fortune settlement and recovery](#fortune-settlement-and-recovery) passes
+twelve cases on migrated MySQL 8.4.13 Auth schemas with the configured retry
+strategy.
+
 [Earned bonus AMP power save](#earned-bonus-amp-power-save) passes two
 real-player cases on migrated MySQL 8.4.13, including a rejected flush and
 power earned during the frozen save's Auth phase.
@@ -24,6 +28,31 @@ The [portable report](coverage/marketplace-mysql-concurrency-20261103.json) bind
 unchanged Source/DLLs and all44 outcomes. Owned workloads are stopped. No full
 suite was run. Other profiles, physical failures, other financial commands,
 broker/restart, deployment, native and retail qualification remain separate.
+
+### Fortune settlement and recovery
+
+4 November 2026. Twelve original compiled Fortune cases ran against separate
+disposable Auth schemas on MySQL 8.4.13. Each applied all 41 migrations and
+used `MySqlRetryingExecutionStrategy` from production configuration. The
+TLS control connection reported `REPEATABLE-READ`.
+
+The cases cover coin debit and deal settlement, a pending coin bundle, known
+rollback, lost acknowledgements for wallet-funded and bundle-funded deals and
+a targeted reveal, and reload when the committed wallet changes before
+adoption. They also cover retry after a rejected enqueue, obsolete durable
+inventory custody, a superseded World epoch, and bounded failure that keeps the
+committed deal and bundle achievement credit. Session sends, the ordinary
+Player save callback, and commit faults are fixtures.
+
+The SQLite control passed all 60 Fortune cases. The provider cases took
+86 seconds after 302 seconds to start the retained MySQL instance and reach
+the runner. All 12 case schemas were removed. The owned server, listener,
+runner and helper stopped. The [portable result](coverage/fortune-mysql-20261104.json)
+binds the cases and DLLs. Local inputs and output are under
+`artifacts/continuation-20261104/fortune-mysql/`.
+
+Physical connection loss, socket acceptance, real World session integration,
+deployed providers, and retail presentation remain separate.
 
 ### Earned bonus AMP power save
 

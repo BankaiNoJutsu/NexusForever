@@ -21,8 +21,9 @@ checks the exact receipt and current stored state before adopting the outcome.
 The original session reloads when safe adoption cannot be confirmed.
 [Fortune packet recovery](../../CURRENT_STATUS.md#committed-packet-recovery)
 resumes confirmed deal and reveal responses on the original queue after a
-failed enqueue. Configured-provider, ambiguous transport acceptance and
-retail evidence remain open.
+failed enqueue. The [configured MySQL gate](DESTINATION_PROVIDER_QUALIFICATION.md#fortune-settlement-and-recovery)
+passes twelve selected cases on migrated Auth schemas. Ambiguous transport
+acceptance, deployed World integration and retail evidence remain open.
 
 [Direct armor and mitigation callers](NATIVE_STATIC_ARMOR_PIERCE_EVIDENCE.md#direct-callers-and-the-rating-curve)
 resolve to single-unit stat getters, and their shared rating conversion uses

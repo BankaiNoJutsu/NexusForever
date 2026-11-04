@@ -1,0 +1,97 @@
+{
+  "productionSourceCommit": "38a855db5781608622f655d50b12d9e589946a3c",
+  "testFixtureGitBlob": "824c35f7872f60a2c57382ba9d6331c5f2de51ff",
+  "engine": {
+    "version": "8.4.13",
+    "sha256": "7a976874ef3974d612081960b1c193c663b4434692b6257382352c587e367ad6",
+    "controlConnectionIsolation": "REPEATABLE-READ",
+    "tlsRequired": true
+  },
+  "assemblies": [
+    {
+      "file": "NexusForever.Database.Auth.dll",
+      "sha256": "42E43DFD2CDDB52701473279233FCC5B296815E8236030EBBADD04CEB1AF13ED"
+    },
+    {
+      "file": "NexusForever.Game.dll",
+      "sha256": "07C3460FD9803D77FED7AD97E9DA7C303B69231084934B994B73995CDE885889"
+    },
+    {
+      "file": "NexusForever.WorldServer.dll",
+      "sha256": "74122BEBE95CF05F95D77F25DB2C4E6E094F509289E191A5ABF95F469540B2F6"
+    },
+    {
+      "file": "NexusForever.Game.Tests.dll",
+      "sha256": "F1F9E3F5DFD3671EE6DBDC7ADF05F09ADD7044ED2960C9D3F4610694F6C1287E"
+    }
+  ],
+  "strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+  "migrationsPerSchema": 41,
+  "startupToRunnerSeconds": 301.6485698,
+  "elapsedSeconds": 85.726036,
+  "caseCount": 12,
+  "cases": [
+    {
+      "name": "PersistedStartCommitsWalletDebitAndDealBeforePublishing",
+      "passed": true
+    },
+    {
+      "name": "PersistedStartWaitsForAnUnflushedBundleBeforeConsumingIt",
+      "passed": true
+    },
+    {
+      "name": "FailureBeforeCommitKeepsTheCoinAndAllowsANewDeal",
+      "passed": true
+    },
+    {
+      "name": "LostStartAcknowledgementAdoptsTheCommittedDealAndFunding(False)",
+      "passed": true
+    },
+    {
+      "name": "LostStartAcknowledgementAdoptsTheCommittedDealAndFunding(True)",
+      "passed": true
+    },
+    {
+      "name": "LostFlipAcknowledgementAdoptsTheExactRewardAndDoesNotPayAgain",
+      "passed": true
+    },
+    {
+      "name": "LostAcknowledgementWithAChangedWalletRequiresAccountReload",
+      "passed": true
+    },
+    {
+      "name": "CommittedStartResumesAtTheFailedPacketAndDoesNotSpendAgain(2)",
+      "passed": true
+    },
+    {
+      "name": "CommittedFlipRetriesTheItemAddBeforeRevealingWithoutRegranting",
+      "passed": true
+    },
+    {
+      "name": "CommittedFlipDoesNotRetryAnItemAlreadyRemovedFromInventory(True)",
+      "passed": true
+    },
+    {
+      "name": "CommittedStartCannotRetryForASupersededWorldEpochOrEvictTheNewDeal",
+      "passed": true
+    },
+    {
+      "name": "PermanentFortunePacketFailureStopsAfterTwoRetriesAndKeepsTheCommit",
+      "passed": true
+    }
+  ],
+  "sqliteControlCases": 60,
+  "ownedShutdown": {
+    "processAbsent": true,
+    "listenerAbsent": true,
+    "runnerAndHelperAbsent": true,
+    "caseSchemasAbsent": true,
+    "observedUtc": "2026-11-04T13:43:45.2151143Z"
+  },
+  "localArtifacts": {
+    "directory": "artifacts/continuation-20261104/fortune-mysql",
+    "runnerSha256": "240C4B6ACFCAF804B508C729D7C8A1D6C4C65B37DDF820E2F4DBCF489E4FE8A8",
+    "resultsSha256": "5782D003CCAAC074617B60C24A5740A289A6F50435CFE83BD93A842706A6BC1E",
+    "sqliteTrxSha256": "B05408C876D941B63F3C5DE71707DD2F7BB9470A6917AEBD597888FBC387F062"
+  }
+}

@@ -34,6 +34,14 @@ namespace NexusForever.Game.Tests.Fortune;
 public class FortuneSessionManagerTests
 {
     private const uint ClickEmptyResetCode = 3u;
+    private readonly DatabaseConnectionString provider;
+
+    public FortuneSessionManagerTests() { }
+
+    internal FortuneSessionManagerTests(DatabaseConnectionString provider) => this.provider = provider;
+
+    private PersistedFortune CreatePersistedFortune(ulong coins = 10, ulong? bundleTarget = null, bool unclaimableFirst = false)
+        => new(provider, coins, bundleTarget, unclaimableFirst);
 
     [Fact]
     public void SendStatus_WithNoSessionSendsRewardCatalogAndResetCards()
@@ -324,7 +332,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void PersistedFlipGrantsTargetedItemBeforeAnAccountSaveAndCannotGrantAgainAfterReload()
     {
-        using var fixture = new PersistedFortune();
+        using var fixture = CreatePersistedFortune();
         FortuneSessionManager manager = fixture.CreateManager();
         manager.Start(fixture.Session);
         manager.FlipCard(fixture.Session, CreateFlipCard(1u));
@@ -357,7 +365,7 @@ public class FortuneSessionManagerTests
     [InlineData(true)]
     public void RejectedRevealLeavesInventoryAndCardUnchangedAndAllowsRetry(bool rejectGrant)
     {
-        using var fixture = new PersistedFortune();
+        using var fixture = CreatePersistedFortune();
         FortuneSessionManager manager = fixture.CreateManager();
         manager.Start(fixture.Session);
         using AuthContext schema = fixture.Database.CreateContext();
@@ -388,7 +396,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void CachedDealCannotReplaceADifferentDurableDeal()
     {
-        using var fixture = new PersistedFortune();
+        using var fixture = CreatePersistedFortune();
         FortuneSessionManager manager = fixture.CreateManager();
         manager.Start(fixture.Session);
         using AuthContext schema = fixture.Database.CreateContext();
@@ -425,7 +433,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void CommittedFlipStopsPublishingIfCacheAddRebindsTheCharacter()
     {
-        using var fixture = new PersistedFortune();
+        using var fixture = CreatePersistedFortune();
         FortuneSessionManager manager = fixture.CreateManager();
         manager.Start(fixture.Session);
         IPlayer replacement = RecordingDispatchProxy<IPlayer>.Create(out var character);
@@ -451,7 +459,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void CommittedFlipKeepsTheGrantButSuppressesTheRevealWhenADealReplacesItDuringPublication()
     {
-        using var fixture = new PersistedFortune();
+        using var fixture = CreatePersistedFortune();
         FortuneSessionManager manager = fixture.CreateManager();
         manager.Start(fixture.Session);
         fixture.Messages.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
@@ -475,7 +483,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void PersistedFlipRejectsTheOldWorldSessionEpoch()
     {
-        using var fixture = new PersistedFortune();
+        using var fixture = CreatePersistedFortune();
         FortuneSessionManager manager = fixture.CreateManager();
         manager.Start(fixture.Session);
         fixture.Owner.SetProperty(nameof(IAccount.WorldSessionEpoch), 1ul);
@@ -493,7 +501,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void PersistedStartCommitsWalletDebitAndDealBeforePublishing()
     {
-        using var fixture = new PersistedFortune(coins: 2);
+        using var fixture = CreatePersistedFortune(coins: 2);
         fixture.Messages.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
         {
             if (args[0] is ServerFortuneCards { Operation: FortuneOperation.Update })
@@ -513,7 +521,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void PersistedStartKeepsTheOriginalDealWhenTheDebitIsRejected()
     {
-        using var fixture = new PersistedFortune(coins: 2);
+        using var fixture = CreatePersistedFortune(coins: 2);
         FortuneSessionManager manager = fixture.CreateManager();
         manager.Start(fixture.Session);
         manager.FlipCard(fixture.Session, CreateFlipCard(0u));
@@ -534,7 +542,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void PersistedStartConsumesTheTargetedBundleWithItsDealAndKeepsChange()
     {
-        using var fixture = new PersistedFortune(coins: 0, bundleTarget: 9001);
+        using var fixture = CreatePersistedFortune(coins: 0, bundleTarget: 9001);
         FortuneSessionManager manager = fixture.CreateManager();
         using AuthContext read = fixture.Database.CreateContext();
         read.Database.ExecuteSqlRaw("""
@@ -563,7 +571,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void PersistedStartRejectsACachedBundleConsumedByAnotherWriter()
     {
-        using var fixture = new PersistedFortune(coins: 0, bundleTarget: 9001);
+        using var fixture = CreatePersistedFortune(coins: 0, bundleTarget: 9001);
         using AuthContext read = fixture.Database.CreateContext();
         read.Database.ExecuteSqlRaw("DELETE FROM account_inventory");
 
@@ -577,7 +585,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void PersistedStartWaitsForAnUnflushedBundleBeforeConsumingIt()
     {
-        using var fixture = new PersistedFortune(coins: 0);
+        using var fixture = CreatePersistedFortune(coins: 0);
         IAccountInventoryManager inventory = fixture.Session.Account.InventoryManager;
         inventory.AddItem(901, notify: false);
 
@@ -600,7 +608,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void PersistedStartSettlesAnAlreadyClaimedBundleBeforeSpendingItsCoins()
     {
-        using var fixture = new PersistedFortune(coins: 1, bundleTarget: 9001);
+        using var fixture = CreatePersistedFortune(coins: 1, bundleTarget: 9001);
         FortuneSessionManager manager = fixture.CreateManager();
         manager.Start(fixture.Session);
         Assert.Equal(AccountOperationResult.Ok, fixture.Session.Account.InventoryManager.TakeItem(fixture.Session.Player, 1));
@@ -625,7 +633,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void PersistedStartFindsAValidBundleAfterAnOrdinarySaveAndAnUnclaimableCandidate()
     {
-        using var fixture = new PersistedFortune(coins: 0, bundleTarget: 9001, unclaimableFirst: true);
+        using var fixture = CreatePersistedFortune(coins: 0, bundleTarget: 9001, unclaimableFirst: true);
         IAccountCurrencyManager wallet = fixture.Session.Account.CurrencyManager;
         wallet.CurrencyAddAmount(AccountCurrencyType.FortuneCoin, 1);
         wallet.CurrencySubtractAmount(AccountCurrencyType.FortuneCoin, 1);
@@ -645,7 +653,7 @@ public class FortuneSessionManagerTests
     [InlineData(true)]
     public void PersistedStartRollsBackIfATriggerChangesTheCommittedDealOrBundle(bool restoreBundle)
     {
-        using var fixture = new PersistedFortune(coins: 0, bundleTarget: 9001);
+        using var fixture = CreatePersistedFortune(coins: 0, bundleTarget: 9001);
         using AuthContext read = fixture.Database.CreateContext();
         read.Database.ExecuteSqlRaw(restoreBundle ? """
             CREATE TRIGGER rewrite_fortune AFTER DELETE ON account_inventory BEGIN
@@ -670,7 +678,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void OrdinaryClaimCannotUseABundleReservedByAFortuneDeal()
     {
-        using var fixture = new PersistedFortune(coins: 0, bundleTarget: 9001);
+        using var fixture = CreatePersistedFortune(coins: 0, bundleTarget: 9001);
         var inventory = (AccountInventoryManager)fixture.Session.Account.InventoryManager;
         using (AuthContext context = fixture.Database.CreateContext())
         {
@@ -686,7 +694,7 @@ public class FortuneSessionManagerTests
     [InlineData(true)]
     public void LostStartAcknowledgementAdoptsTheCommittedDealAndFunding(bool useBundle)
     {
-        using var fixture = new PersistedFortune(coins: useBundle ? 0ul : 2ul, bundleTarget: useBundle ? 9001ul : null);
+        using var fixture = CreatePersistedFortune(coins: useBundle ? 0ul : 2ul, bundleTarget: useBundle ? 9001ul : null);
         using var fault = new CommitFault(fixture.ConnectionString);
         FortuneSessionManager manager = fixture.CreateManager();
 
@@ -708,7 +716,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void LostFlipAcknowledgementAdoptsTheExactRewardAndDoesNotPayAgain()
     {
-        using var fixture = new PersistedFortune();
+        using var fixture = CreatePersistedFortune();
         FortuneSessionManager manager = fixture.CreateManager();
         manager.Start(fixture.Session);
         using var fault = new CommitFault(fixture.ConnectionString);
@@ -734,7 +742,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void FailureBeforeCommitKeepsTheCoinAndAllowsANewDeal()
     {
-        using var fixture = new PersistedFortune(coins: 2);
+        using var fixture = CreatePersistedFortune(coins: 2);
         using var fault = new CommitFault(fixture.ConnectionString, beforeCommit: true);
         FortuneSessionManager manager = fixture.CreateManager();
 
@@ -756,7 +764,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void LostAcknowledgementWithAChangedWalletRequiresAccountReload()
     {
-        using var fixture = new PersistedFortune(coins: 2);
+        using var fixture = CreatePersistedFortune(coins: 2);
         using var fault = new CommitFault(fixture.ConnectionString, onFault: () =>
         {
             using AuthContext writer = fixture.Database.CreateContext();
@@ -779,7 +787,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void AConflictingReceiptDoesNotMasqueradeAsARolledBackDeal()
     {
-        using var fixture = new PersistedFortune(coins: 2);
+        using var fixture = CreatePersistedFortune(coins: 2);
         using var fault = new CommitFault(fixture.ConnectionString, onFault: () =>
         {
             using AuthContext writer = fixture.Database.CreateContext();
@@ -801,7 +809,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void ARejectedDealWithASupersededEpochDoesNotPublishAReset()
     {
-        using var fixture = new PersistedFortune(coins: 2);
+        using var fixture = CreatePersistedFortune(coins: 2);
         fixture.Owner.SetProperty(nameof(IAccount.WorldSessionEpoch), 1ul);
         using AuthContext seed = fixture.Database.CreateContext();
         seed.AccountWorldSession.Add(new AccountWorldSessionModel { AccountId = fixture.Session.Account.Id, Epoch = 1ul });
@@ -826,7 +834,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public void AFailedLiveCompletionAfterCommitRequiresReload()
     {
-        using var fixture = new PersistedFortune();
+        using var fixture = CreatePersistedFortune();
         using AuthContext context = fixture.Database.CreateContext();
         uint accountId = fixture.Session.Account.Id;
         context.EnlistSaveWork(unit => unit.AccountFortuneSession.Add(new AccountFortuneSessionModel { Id = accountId, Card0AccountItemId = 11 }),
@@ -849,7 +857,7 @@ public class FortuneSessionManagerTests
     [InlineData(4)]
     public async Task CommittedStartResumesAtTheFailedPacketAndDoesNotSpendAgain(int failedIndex)
     {
-        using var fixture = new PersistedFortune(coins: 0, bundleTarget: 9001);
+        using var fixture = CreatePersistedFortune(coins: 0, bundleTarget: 9001);
         FortuneSessionManager manager = fixture.CreateManager();
         Type[] expected = [typeof(ServerAccountCurrencyGrant), typeof(ServerWalletUpdate), typeof(ServerAccountItemDelete),
             typeof(ServerAccountOperationResult), typeof(ServerFortuneCards)];
@@ -887,7 +895,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public async Task CommittedFlipRetriesTheItemAddBeforeRevealingWithoutRegranting()
     {
-        using var fixture = new PersistedFortune();
+        using var fixture = CreatePersistedFortune();
         FortuneSessionManager manager = fixture.CreateManager();
         manager.Start(fixture.Session);
         var sent = new List<Type>();
@@ -920,7 +928,7 @@ public class FortuneSessionManagerTests
     [InlineData(true)]
     public async Task CommittedFlipDoesNotRetryAnItemAlreadyRemovedFromInventory(bool durableOnly)
     {
-        using var fixture = new PersistedFortune();
+        using var fixture = CreatePersistedFortune();
         FortuneSessionManager manager = fixture.CreateManager();
         manager.Start(fixture.Session);
         int adds = 0;
@@ -962,7 +970,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public async Task CommittedStartDoesNotPublishOnAReplacementQueue()
     {
-        using var fixture = new PersistedFortune(coins: 2);
+        using var fixture = CreatePersistedFortune(coins: 2);
         FortuneSessionManager manager = fixture.CreateManager();
         int cards = 0;
         fixture.Messages.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
@@ -989,7 +997,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public async Task CommittedStartCannotRetryForASupersededWorldEpochOrEvictTheNewDeal()
     {
-        using var fixture = new PersistedFortune(coins: 2);
+        using var fixture = CreatePersistedFortune(coins: 2);
         fixture.Owner.SetProperty(nameof(IAccount.WorldSessionEpoch), 1ul);
         using AuthContext seed = fixture.Database.CreateContext();
         seed.AccountWorldSession.Add(new AccountWorldSessionModel { AccountId = fixture.Session.Account.Id, Epoch = 1ul });
@@ -1034,7 +1042,7 @@ public class FortuneSessionManagerTests
     [Fact]
     public async Task PermanentFortunePacketFailureStopsAfterTwoRetriesAndKeepsTheCommit()
     {
-        using var fixture = new PersistedFortune(coins: 0, bundleTarget: 9001);
+        using var fixture = CreatePersistedFortune(coins: 0, bundleTarget: 9001);
         int walletAttempts = 0;
         fixture.Messages.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
         {
@@ -1134,7 +1142,7 @@ public class FortuneSessionManagerTests
     private sealed class PersistedFortune : IDisposable
     {
         private readonly Microsoft.Data.Sqlite.SqliteConnection connection;
-        public string ConnectionString => connection.ConnectionString;
+        public string ConnectionString { get; }
 
         public AuthDatabase Database { get; } = new();
         public IWorldSession Session { get; }
@@ -1144,14 +1152,20 @@ public class FortuneSessionManagerTests
         public EventQueue Events { get; } = new();
         private Action pendingPlayerSave;
 
-        public PersistedFortune(ulong coins = 10, ulong? bundleTarget = null, bool unclaimableFirst = false)
+        public PersistedFortune(DatabaseConnectionString provider, ulong coins, ulong? bundleTarget, bool unclaimableFirst)
         {
-            string name = $"fortune-{Guid.NewGuid():N}";
-            connection = new($"Data Source={name};Mode=Memory;Cache=Shared;Pooling=False");
-            connection.Open();
-            Database.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite, ConnectionString = connection.ConnectionString });
+            if (provider == null)
+            {
+                string name = $"fortune-{Guid.NewGuid():N}";
+                connection = new($"Data Source={name};Mode=Memory;Cache=Shared;Pooling=False");
+                connection.Open();
+                provider = new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite, ConnectionString = connection.ConnectionString };
+            }
+            Database.Initialise(provider);
             using AuthContext context = Database.CreateContext();
-            context.Database.EnsureCreated();
+            ConnectionString = context.Database.GetConnectionString();
+            if (connection != null)
+                context.Database.EnsureCreated();
             var model = new AccountModel { Id = 42u, Email = "fortune@example.test" };
             if (coins != 0)
                 model.AccountCurrency.Add(new AccountCurrencyModel { Id = model.Id, CurrencyId = (byte)AccountCurrencyType.FortuneCoin, Amount = coins });
@@ -1220,7 +1234,7 @@ public class FortuneSessionManagerTests
             callback();
         }
 
-        public void Dispose() => connection.Dispose();
+        public void Dispose() => connection?.Dispose();
     }
 
     private const ushort TestRealmId = 7;
