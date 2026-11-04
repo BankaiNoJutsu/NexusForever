@@ -21269,6 +21269,20 @@ that captured the wallet before settlement and a later save that persisted
 the fare, destination and node together. Test execution took 88 seconds.
 Results are under `artifacts/continuation-20261104/taxi-bootstrap-settlement/`.
 
+#### Flight-path notice recovery
+
+4 November 2026. The server retries the wallet and node notices separately
+when enqueue throws after a flight-path settlement. The retry uses the
+original player's session queue and reads the current wallet, so later spending
+cannot be overwritten by the old fare balance. A replaced actor, session or
+queue drops the old notice. The retry leaves the fare, node and persistence
+intent untouched. Native arrival, socket delivery and restart remain open.
+
+The baseline dropped the wallet retry. The owning-project build and 189
+scoped tests passed, including both notices after intervening spending, the
+rebound-session control and SQLite settlement. Test execution took 58 seconds.
+Results are under `artifacts/continuation-20261104/taxi-publication-recovery/`.
+
 #### Rapid Transport cast fare
 
 4 November 2026. The request supplies its validated route fare to the spell

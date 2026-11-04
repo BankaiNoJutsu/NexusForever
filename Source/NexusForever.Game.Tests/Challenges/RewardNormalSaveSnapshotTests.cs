@@ -38,6 +38,7 @@ using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.Internal.Message.Player;
 using NexusForever.Game.Static.Entity;
+using NexusForever.WorldServer.Network;
 using static NexusForever.Game.Tests.Challenges.ChallengeRewardPersistenceOwnershipTests;
 using Fixture = NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.Fixture;
 using GameQuest = NexusForever.Game.Quest.Quest;
@@ -50,8 +51,10 @@ public sealed class RewardNormalSaveSnapshotTests
     public RewardNormalSaveSnapshotTests() { }
     internal RewardNormalSaveSnapshotTests(DbContextOptions<CharacterContext> options) => this.options = options;
 
-    [Fact]
-    public async Task FrozenSaveBeforeTaxiFareCannotPersistThePaidDestinationEarly()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FrozenSaveBeforeTaxiFareCannotPersistThePaidDestinationEarly(bool replaced)
     {
         using var f = new Fixture(options);
         f.Seed();
@@ -65,9 +68,13 @@ public sealed class RewardNormalSaveSnapshotTests
             seed.CharacterCurrency.Add(walletRow);
             seed.SaveChanges();
         }
-        using var actor = new Actor(f);
-        await actor.Load();
+        var events = new EventQueue();
+        var session = RecordingDispatchProxy<IWorldSession>.Create(out var sessionProxy);
+        sessionProxy.SetProperty(nameof(IWorldSession.Events), events);
+        using var actor = new Actor(f, actorSession: session, actorEvents: events);
         var player = actor.Player;
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
+        await actor.Load();
         var model = new CharacterModel { Id = 42 };
         model.Currency.Add(walletRow);
         var wallet = new CurrencyManager(f.Source.Tables);
@@ -91,17 +98,43 @@ public sealed class RewardNormalSaveSnapshotTests
         player.Save(() => completed++);
         Assert.True(player.IsNormalSaveInProgress);
         int failedNotices = 0;
-        f.Source.SessionProxy.SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), args =>
+        var balances = new List<ulong>();
+        var nodes = new List<uint>();
+        sessionProxy.SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), args =>
         {
             if (args[0] is not (ServerCombatReward or ServerEntitySelectAuxUInt14)) return null;
-            failedNotices++;
-            throw new IOException("fixture fare publication failure");
+            if (failedNotices < 2)
+            {
+                failedNotices++;
+                throw new IOException("fixture fare publication failure");
+            }
+            if (args[0] is ServerCombatReward credit) balances.Add(credit.NewValue);
+            if (args[0] is ServerEntitySelectAuxUInt14 unlock) nodes.Add(unlock.Value);
+            return null;
         });
         Assert.True(player.TrySettleTaxiFare(destination, generation));
         admission.CompleteMapAdmission(generation, true);
         Assert.Equal(2, failedNotices);
         Assert.Equal(88ul, wallet.Cast<ICurrency>().Single().Amount);
+        if (replaced)
+            sessionProxy.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+        else
+        {
+            wallet.CurrencySubtractAmount(CurrencyType.Credits, 5);
+            Assert.Equal(83ul, Assert.Single(balances));
+            balances.Clear();
+        }
         await actor.Drain();
+        if (replaced)
+        {
+            Assert.Empty(balances);
+            Assert.Empty(nodes);
+        }
+        else
+        {
+            Assert.Equal(83ul, Assert.Single(balances));
+            Assert.Equal(30u, Assert.Single(nodes));
+        }
         Assert.Equal(1, completed);
         using (var first = f.Context())
         {
@@ -115,7 +148,7 @@ public sealed class RewardNormalSaveSnapshotTests
         Assert.Equal(2, completed);
         using var final = f.Context();
         Assert.Equal((ushort)7, final.Character.Single().WorldId);
-        Assert.Equal(88ul, final.CharacterCurrency.Single().Amount);
+        Assert.Equal(replaced ? 88ul : 83ul, final.CharacterCurrency.Single().Amount);
         Assert.Equal((ushort)30, final.CharacterTaxiNode.Single().TaxiNodeId);
     }
 

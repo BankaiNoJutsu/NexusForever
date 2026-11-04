@@ -52,7 +52,9 @@ checks the destination map or selected instance and current funds before source
 removal. [Flight-path grid settlement](../../CURRENT_STATUS.md#flight-path-grid-settlement)
 rechecks funds before insertion. [Flight-path bootstrap settlement](../../CURRENT_STATUS.md#flight-path-bootstrap-settlement)
 charges and unlocks after successful bootstrap and keeps older wallet snapshots
-from saving the paid destination. Native arrival and deployed delivery remain open.
+from saving the paid destination. [Flight-path notice recovery](../../CURRENT_STATUS.md#flight-path-notice-recovery)
+retries failed wallet and unlock enqueues for the original session. Native
+arrival and delivery after socket failure remain open.
 
 [Rapid Transport cast fare](../../CURRENT_STATUS.md#rapid-transport-cast-fare)
 charges the selected route only after the spell passes admission. Physical

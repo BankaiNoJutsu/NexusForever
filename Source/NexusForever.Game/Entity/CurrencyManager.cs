@@ -7,14 +7,13 @@ using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
-using NLog;
 
 namespace NexusForever.Game.Entity
 {
     public partial class CurrencyManager : ICurrencyManager
     {
-        private static readonly ILogger taxiLog = LogManager.GetCurrentClassLogger();
         private IPlayer player;
         private CharacterLoadOrigin loadedOrigin;
         private readonly Dictionary<CurrencyType, ICurrency> currencies = [];
@@ -239,10 +238,10 @@ namespace NexusForever.Game.Entity
 
             var currency = currencies[CurrencyType.Credits];
             currency.Amount -= amount;
-            try { PublishCurrencyAmount(currency); }
-            catch (Exception exception) { taxiLog.Warn(exception, "Failed to publish the settled taxi fare."); }
             return true;
         }
+
+        internal void PublishTaxiBalance(IGameSession session) => PublishCurrencyAmount(currencies[CurrencyType.Credits], session);
 
         /// <summary>
         /// Update <see cref="ICurrency"/> with supplied amount of currency.
@@ -262,12 +261,12 @@ namespace NexusForever.Game.Entity
             }
 
             currency.Amount = amount;
-            PublishCurrencyAmount(currency);
+            PublishCurrencyAmount(currency, player.Session);
         }
 
-        private void PublishCurrencyAmount(ICurrency currency)
+        private static void PublishCurrencyAmount(ICurrency currency, IGameSession session)
         {
-            player.Session.EnqueueMessageEncrypted(new ServerCombatReward
+            session.EnqueueMessageEncrypted(new ServerCombatReward
             {
                 Stat = (byte)(currency.Id - 1),
                 NewValue = currency.Amount

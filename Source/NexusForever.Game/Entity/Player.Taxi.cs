@@ -7,9 +7,11 @@ using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Map;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable.Model;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared.Game;
+using NexusForever.Shared.Game.Events;
 
 namespace NexusForever.Game.Entity
 {
@@ -32,16 +34,26 @@ namespace NexusForever.Game.Entity
 
         public void DiscoverTaxiNode(uint taxiNodeId)
         {
+            if (TryLearnTaxiNode(taxiNodeId)) SendTaxiNodeUnlock(Session, taxiNodeId);
+        }
+
+        private bool TryLearnTaxiNode(uint taxiNodeId)
+        {
             if (!TaxiNodeAccess.IsAllowed(gameTableManager?.TaxiNode?.GetEntry(taxiNodeId), Faction1))
-                return;
+                return false;
             lock (taxiStateLock)
             {
                 if (!taxiNodes.Add((ushort)taxiNodeId))
-                    return;
+                    return false;
                 unsavedTaxiNodes.Add((ushort)taxiNodeId);
             }
+            return true;
+        }
+
+        private static void SendTaxiNodeUnlock(IGameSession session, uint taxiNodeId)
+        {
             // 0x0186 already has the upstream 14-bit taxi-unlock wire shape.
-            Session.EnqueueMessageEncrypted(new ServerEntitySelectAuxUInt14 { Value = taxiNodeId });
+            session.EnqueueMessageEncrypted(new ServerEntitySelectAuxUInt14 { Value = taxiNodeId });
         }
 
         public bool IsNearTaxiNode(uint taxiNodeId, float range)
@@ -95,9 +107,12 @@ namespace NexusForever.Game.Entity
                 || mapAdmission.BootstrapGeneration != generation || Map == null || !OwnsTaxiFlight(flight))
                 return false;
 
+            var session = flight.Session;
+            var events = session.Events;
+            var wallet = CurrencyManager as CurrencyManager;
             if (flight.Fare != 0)
             {
-                if (CurrencyManager is CurrencyManager wallet)
+                if (wallet != null)
                 {
                     if (!wallet.TryDebitTaxiFare(flight.Fare)) return false;
                 }
@@ -110,9 +125,36 @@ namespace NexusForever.Game.Entity
             flight.Admitted = true;
             Interlocked.Increment(ref taxiFareVersion);
             saveMask |= PlayerSaveMask.Location;
-            try { DiscoverTaxiNode(flight.DestinationNode); }
-            catch (Exception exception) { log.Warn(exception, "Failed to publish taxi node discovery after fare settlement."); }
+            bool learned = false;
+            try { learned = TryLearnTaxiNode(flight.DestinationNode); }
+            catch (Exception exception) { log.Warn(exception, "Failed to record taxi node discovery after fare settlement."); }
+            if (flight.Fare != 0 && wallet != null)
+                PublishSettledTaxiNotice(session, events, () =>
+                {
+                    if (ReferenceEquals(CurrencyManager, wallet)) wallet.PublishTaxiBalance(session);
+                });
+            if (learned)
+                PublishSettledTaxiNotice(session, events, () => SendTaxiNodeUnlock(session, flight.DestinationNode));
             return true;
+        }
+
+        private void PublishSettledTaxiNotice(IGameSession session, EventQueue events, Action publish)
+        {
+            void Attempt()
+            {
+                lock (mapAdmission.SyncRoot)
+                {
+                    if (!IsAdmissionAllowed() || !ReferenceEquals(Session, session) || !ReferenceEquals(session.Events, events)
+                        || (session is IPlayerSession bound && !ReferenceEquals(bound.Player, this))) return;
+                    try { publish(); }
+                    catch (Exception exception)
+                    {
+                        log.Warn(exception, "Failed to enqueue a settled taxi notice.");
+                        events?.EnqueueThreadSafe(new DelayEvent(TimeSpan.FromSeconds(1), Attempt));
+                    }
+                }
+            }
+            Attempt();
         }
 
         private bool OwnsTaxiFlight(PendingTaxiFlight flight) => ReferenceEquals(Session, flight.Session)
