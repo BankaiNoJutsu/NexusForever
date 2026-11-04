@@ -15,6 +15,7 @@ using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Entity;
+using NexusForever.Game.Spell;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Game.Tests.Transport;
 using NexusForever.GameTable;
@@ -32,6 +33,37 @@ public sealed class PlayerExperiencePersistenceTests
     public PlayerExperiencePersistenceTests() { }
     internal PlayerExperiencePersistenceTests(DbContextOptions<CharacterContext> options) => this.options = options;
     private const BindingFlags Instance = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BonusAmpPowerSurvivesRelogAndRespectsTheFrozenSave(bool rejectFirstSave)
+    {
+        using var f = new Fixture(options); f.Seed();
+        using var actor = new Actor(f); await actor.Load();
+        using var initial = f.Context();
+        var spells = new SpellManager(actor.Player, initial.Character.AsNoTracking().Single());
+        actor.Set(nameof(Player.SpellManager), spells);
+        spells.AddAmpPower(3);
+        if (rejectFirstSave)
+            await Assert.ThrowsAsync<IOException>(() => Persist(f, actor, true));
+
+        actor.OnAuth = () => spells.AddAmpPower(ushort.MaxValue);
+        await actor.Player.SaveDirect(); await actor.Drain();
+        AssertStoredAmpBudget(48);
+
+        actor.OnAuth = null;
+        await actor.Player.SaveDirect(); await actor.Drain();
+        AssertStoredAmpBudget(55);
+
+        void AssertStoredAmpBudget(byte expected)
+        {
+            using var stored = f.Context();
+            var relog = new SpellManager(actor.Player, stored.Character.AsNoTracking().Single());
+            for (byte spec = 0; spec < ActionSet.MaxActionSets; spec++)
+                Assert.Equal(expected, relog.GetActionSet(spec).AmpPoints);
+        }
+    }
 
     [Theory]
     [InlineData("xp")] [InlineData("rest")] [InlineData("path")] [InlineData("mission")]

@@ -41,7 +41,7 @@ public sealed class ContractCompletionSchemaTests
         var options = new DbContextOptionsBuilder<CharacterContext>().UseSqlite(connection, b => b.MigrationsAssembly(typeof(Factory).Assembly.GetName().Name)).Options;
         await using var context = new CharacterContext(options);
         await context.GetService<IMigrator>().MigrateAsync("20261030230524_ContractQuestAcceptance");
-        context.Character.Add(new() { Id = 42, Name = "Contract journal upgrade" });
+        await context.Database.ExecuteSqlRawAsync("INSERT INTO character (id,name,isOnline) VALUES (42,'Contract journal upgrade',0)");
         context.CharacterQuest.Add(new() { Id = 42, QuestId = 9880, State = 2, Flags = 7, Timer = 123, ContractAcceptanceId = "123456781234123412341234567890ab" });
         context.CharacterQuestObjective.Add(new() { Id = 42, QuestId = 9880, Index = 0, Progress = 4, Timer = 250 }); await context.SaveChangesAsync();
         await context.Database.MigrateAsync(); await context.Database.MigrateAsync(); context.ChangeTracker.Clear();

@@ -1689,6 +1689,12 @@ namespace NexusForever.Database.Sqlite.Migrations.Character
                         .HasDefaultValue((byte)0)
                         .HasColumnName("bonusAbilityTierPoints");
 
+                    b.Property<ushort>("BonusAmpPower")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint(5)")
+                        .HasDefaultValue((ushort)0)
+                        .HasColumnName("bonusAmpPower");
+
                     b.Property<byte>("CastingOptions")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("tinyint(3)")

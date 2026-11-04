@@ -10,10 +10,17 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Earned bonus AMP power](AMP_UPSTREAM_RECONCILIATION.md#earned-bonus-amp-power-survives-a-character-save)
+now persists through the guarded spellbook save and reloads into all specs.
+The zero-default migration preserves old allocations and withholds additional
+spending until any deficit is cleared. Post-commit power notification and
+live item consumption remain open.
+
 [Inlaid AMP unlock list](AMP_UPSTREAM_RECONCILIATION.md#unlocked-inlaid-amp-list-and-prerequisite-231)
 maps the player-create and `019C` packets to the cache used by prerequisite
 231 and AMP allocation. Both writers enforce the 54-ID client capacity.
-The verified grant, persistence and live update path remain open.
+Reloaded removed item unlocks from normal progression. Final-build evidence
+would be needed to activate the retained item-unlock path.
 
 [AMP property ownership](AMP_UPSTREAM_RECONCILIATION.md#property-ownership-when-an-effect-key-is-reused)
 now preserves a same-spell replacement that reuses the AMP's numeric effect

@@ -72,7 +72,7 @@ public sealed class ContractRewardSelectionSchemaTests
         var options = new DbContextOptionsBuilder<CharacterContext>().UseSqlite(connection, builder => builder.MigrationsAssembly(typeof(Factory).Assembly.GetName().Name)).Options;
         await using var context = new CharacterContext(options);
         await context.GetService<IMigrator>().MigrateAsync("20261030234818_ContractCompletionReceipts");
-        context.Character.Add(new() { Id = 42, Name = "Contract selection upgrade" });
+        await context.Database.ExecuteSqlRawAsync("INSERT INTO character (id,name,isOnline) VALUES (42,'Contract selection upgrade',0)");
         context.CharacterQuest.Add(new() { Id = 42, QuestId = 9880, State = 2, ContractAcceptanceId = "123456781234123412341234567890ab" });
         context.CharacterContractCompletion.Add(new() { Id = 42, AcceptanceId = "123456781234123412341234567890ab", QuestId = 9880,
             TrackId = 5, Points = 50, BasePoints = 50, PayloadVersion = 1, PayloadJson = "unchanged audit", CreatedUtc = DateTime.UtcNow });

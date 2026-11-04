@@ -43,7 +43,7 @@ public sealed class ContractAcceptanceSchemaTests
         var migrations = context.Database.GetMigrations().ToArray();
         int acceptance = Array.FindIndex(migrations, id => id.EndsWith("_ContractQuestAcceptance")); string previous = migrations[acceptance - 1];
         await context.GetService<IMigrator>().MigrateAsync(previous);
-        context.Character.Add(new() { Id = 42, Name = "Legacy Contract acceptance" }); await context.SaveChangesAsync();
+        await context.Database.ExecuteSqlRawAsync("INSERT INTO character (id,name,isOnline) VALUES (42,'Legacy Contract acceptance',0)");
         DateTime legacyReset = new(2026, 10, 31, 10, 30, 0, DateTimeKind.Utc);
         foreach (var pair in new[] { (9001, QuestState.Accepted), (9002, QuestState.Achieved), (9003, QuestState.Completed) })
             await context.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO character_quest (id,questId,state,flags,timer,reset) VALUES (42,{pair.Item1},{(byte)pair.Item2},7,1200,{legacyReset})");

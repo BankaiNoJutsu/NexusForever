@@ -30,6 +30,7 @@ namespace NexusForever.Database.Character.Model
         public sbyte InputKeySet { get; set; }
         public byte ActiveSpec { get; set; }
         public byte BonusAbilityTierPoints { get; set; }
+        public ushort BonusAmpPower { get; set; }
         public byte CastingOptions { get; set; }
         public bool SharedChallengeEnabled { get; set; }
         public bool DisableOtherPlayersCombatLogs { get; set; }

@@ -67,8 +67,8 @@ public sealed class RealmFirstMigrationTests
             using (var old = new CharacterContext(Sqlite($"Data Source={original};Pooling=False")))
             {
                 await old.GetService<IMigrator>().MigrateAsync(PreviousSqlite);
-                old.Character.Add(new CharacterModel { Id = 42, Name = "Legacy", TotalXp = 100, Level = 1,
-                    Achievement = [new CharacterAchievementModel { Id = 42, AchievementId = 500, ProgressState = 1, DateCompleted = new(2026, 10, 1) }] });
+                await old.Database.ExecuteSqlRawAsync("INSERT INTO character (id,name,totalXp,level,isOnline) VALUES (42,'Legacy',100,1,0)");
+                old.CharacterAchievement.Add(new CharacterAchievementModel { Id = 42, AchievementId = 500, ProgressState = 1, DateCompleted = new(2026, 10, 1) });
                 old.Guild.Add(new GuildModel { Id = 77, Name = "Legacy guild", LeaderId = 42,
                     Achievement = [new GuildAchievementModel { Id = 77, AchievementId = 501, ProgressState = 1, DateCompleted = new(2026, 10, 1) }] });
                 await old.SaveChangesAsync(); before = Snapshot(old);
@@ -97,6 +97,7 @@ public sealed class RealmFirstMigrationTests
                 Assert.Contains(claims, row => row.IsGuild && row.AchievementId == 501);
                 var after = Snapshot(read);
                 foreach (var tableName in before.Keys) Assert.Equal(before[tableName], after[tableName]);
+                Assert.Equal((ushort)0, read.Character.Single().BonusAmpPower);
                 Assert.Empty(read.CharacterEntitlement);
             }
             Assert.Equal(originalHash, Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(original))));
@@ -135,7 +136,8 @@ public sealed class RealmFirstMigrationTests
             while (reader.Read())
             {
                 var values = new object[reader.FieldCount]; reader.GetValues(values);
-                rows.Add(JsonSerializer.Serialize(values.Select(value => value is DBNull ? null : value)));
+                rows.Add(JsonSerializer.Serialize(values.Where((_, index) => name != "character" || reader.GetName(index) != "bonusAmpPower")
+                    .Select(value => value is DBNull ? null : value)));
             }
             result.Add(name, rows.Order(StringComparer.Ordinal).ToArray());
         }

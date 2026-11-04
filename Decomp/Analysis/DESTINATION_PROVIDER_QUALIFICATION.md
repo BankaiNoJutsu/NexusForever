@@ -1,5 +1,9 @@
 # Destination configured-provider qualification
 
+[Earned bonus AMP power save](#earned-bonus-amp-power-save) passes two
+real-player cases on migrated MySQL 8.4.13, including a rejected flush and
+power earned during the frozen save's Auth phase.
+
 [Challenge and Contract result publication](#challenge-and-contract-result-publication)
 passes nine scoped cases on migrated MySQL 8.4.13 schemas with the configured
 retry strategy. It covers commit-before-enqueue ordering, retry, session and
@@ -20,6 +24,19 @@ The [portable report](coverage/marketplace-mysql-concurrency-20261103.json) bind
 unchanged Source/DLLs and all44 outcomes. Owned workloads are stopped. No full
 suite was run. Other profiles, physical failures, other financial commands,
 broker/restart, deployment, native and retail qualification remain separate.
+
+### Earned bonus AMP power save
+
+4 November 2026. The original compiled `PlayerExperiencePersistenceTests`
+cases ran with `MySqlRetryingExecutionStrategy` and separate disposable
+schemas. Both preserved the first three bonus points and retained a later
+grant for the next save. The second case first injected a rejected flush.
+Each case applied all 48 migrations and dropped its schema afterward.
+Execution took 54 seconds after about 161 seconds of server startup. The
+owned process and listener stopped. Runner, DLL hashes, results and shutdown
+proof are in `artifacts/continuation-20261104/amp-power-persistence-mysql/`.
+The copied-schema upgrade and legacy allocated spec were exercised on
+SQLite. Live item consumption and client publication timing remain open.
 
 ### Challenge and Contract result publication
 

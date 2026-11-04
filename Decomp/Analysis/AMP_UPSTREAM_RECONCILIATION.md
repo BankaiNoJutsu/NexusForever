@@ -1,5 +1,42 @@
 # AMP prerequisite and lifecycle reconciliation
 
+## Earned bonus AMP power survives a character save
+
+4 November 2026. The existing bonus AMP power handler updated the four
+spec budgets and sent the power packet, but a character reload lost the
+bonus. Two real-player baseline cases reproduced a reloaded budget of 45
+after earning three bonus points and completing a save.
+
+The guarded spellbook save now persists `bonusAmpPower`, including the
+frozen ordinary-save snapshot and rollback recovery. A grant arriving during
+the Auth phase remains for the next save. The loaded bonus applies to every
+spec before its saved AMP costs are charged. Runtime power still caps at ten
+bonus points. MySQL and SQLite add one non-null column with a zero default.
+
+A historical spec may have saved more than 45 points of allocations while
+the old volatile bonus was available. Such a spec keeps its saved nodes and
+shows zero spendable power until respec or a new grant clears the deficit.
+The migration has no record of the original earned bonus to recover. It
+assigns zero rather than inferring an award from a saved spec.
+
+The 149-case scoped run covered the guarded character save, both migration
+models, and the historical upgrade fixtures. A copied SQLite fixture retained
+XP, active spec, bonus tier points and a 50-point AMP spec. It exercised
+loading and respec without granting bonus power. The final owning build and
+all 74 affected AMP and migration cases passed after the refund bounds and
+analyzer follow-up. Local evidence is in
+`artifacts/continuation-20261104/amp-power-persistence/`.
+
+The same two real-player cases passed on separate migrated MySQL 8.4.13
+schemas with the configured retry strategy. The provider run took 54 seconds
+after startup and verified all 48 migrations in each schema. The disposable
+process and listener stopped afterward. See the
+[provider record](DESTINATION_PROVIDER_QUALIFICATION.md#earned-bonus-amp-power-save).
+
+The save-and-reload tests exercise the existing `AddAmpPower` entry point.
+Post-commit power notification, live item consumption, deployed sockets and
+retail qualification remain separate.
+
 ## Unlocked inlaid AMP list and prerequisite 231
 
 4 November 2026. Build 16042 static evidence identifies the character's
@@ -29,10 +66,26 @@ and rejection at 55. Native verifier, PE reads, bounded disassembly, and the
 pinned add-on are in
 `artifacts/continuation-20261104/amp-prerequisite-231/`.
 
-Runtime prerequisite 231, server grant/persistence, and `019C` emission remain
-open. Before adding them, bind an actual build 16042 `UnlockInlaidAugment`
-effect row and its unlock item to the node and confirm the authoritative
-grant and consumption path. The client cache is a consumer of that state.
+### Release boundary for item unlocks
+
+Carbine announced the removal of the AMP item requirement for Reloaded. The
+29 September 2015 release notes for build 10512 record that AMPs no longer
+required unlock items and those items left world loot, bosses and vendors.
+Build 16042 still carries the client cache and allocation branch. Their presence
+does not establish an active final-build item grant. [Publisher announcement](https://www.prnewswire.com/news-releases/wildstar-will-become-free-to-play-this-fall-300089957.html) · [Archived Reloaded patch notes](https://wildstar.fandom.com/wiki/Patch_09/29/2015)
+
+The final binary's enum entry at `0x140c34920` pairs `UnlockInlaidAugment`
+with `0x7f`. The table descriptor at `0x140ad61f8` identifies
+`item2IdUnlock` as a four-byte field at `+0x1c`. The effect 127 validator byte
+at `0x140568246` selects slot 19 and `0x14056815a`, which returns success
+without inspecting an operand. The pinned verifier and extracts are in
+`artifacts/continuation-20261104/amp-unlock-effect/`.
+
+The two retained build 16042 AMP node witnesses have zero `Item2IdUnlock`.
+The full table and a final-build live grant remain unverified. A legacy item
+producer, prerequisite 231 server evaluation and `019C` emission need a
+contrary final-build row or capture before entering the runtime roadmap.
+Bonus AMP power is a separate progression path already used by effect 128.
 
 ## Property ownership when an effect key is reused
 

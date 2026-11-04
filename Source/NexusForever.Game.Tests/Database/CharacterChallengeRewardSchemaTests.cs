@@ -89,7 +89,8 @@ public sealed class CharacterChallengeRewardSchemaTests : IDisposable
     {
         await using var context = Context();
         await context.GetService<IMigrator>().MigrateAsync(PreviousSqlite);
-        context.Character.Add(Owner());
+        var owner = Owner();
+        await context.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO character (id,accountId,name,originalName,createTime,pathActivatedTimestamp,isOnline) VALUES ({owner.Id},{owner.AccountId},{owner.Name},{owner.OriginalName},{owner.CreateTime},{owner.PathActivatedTimestamp},0)");
         context.Item.Add(Item(700));
         await context.SaveChangesAsync();
         await context.Database.ExecuteSqlRawAsync("""

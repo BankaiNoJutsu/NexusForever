@@ -18,7 +18,7 @@ namespace NexusForever.Game.Entity
         internal sealed record LearnedSpell(ulong Owner, uint Id, byte Tier);
         internal sealed record Shortcut(ulong Owner, byte Spec, ushort Location, byte Type, uint Object, byte Tier);
         internal sealed record Amp(ulong Owner, byte Spec, ushort Id);
-        internal sealed record Spellbook(byte Active, byte Bonus, LearnedSpell[] Learned, Shortcut[] Shortcuts, Amp[] Amps);
+        internal sealed record Spellbook(byte Active, byte Bonus, LearnedSpell[] Learned, Shortcut[] Shortcuts, Amp[] Amps, ushort AmpPower);
         internal sealed record Pet(ulong Owner, byte Type, uint Id, string Name, ulong Flairs);
         internal sealed record Achievement(ulong Owner, ushort Id, uint Progress, uint Credited, DateTime? Completed);
         internal sealed record DatacubeState(ulong Owner, byte Type, ushort Id, uint Progress);
@@ -95,7 +95,10 @@ namespace NexusForever.Game.Entity
         internal static ExploredHexgroup FromModel(CharacterZonemapHexgroupModel row) => new(row.Id, row.ZoneMap, row.HexGroup);
         internal static ReputationState FromModel(CharacterReputation row) => new(row.Id, row.FactionId, row.Amount);
         private static bool SameSpells(Spellbook left, Spellbook right) => left == null ? right == null : right != null
-            && left.Active == right.Active && left.Bonus == right.Bonus && left.Learned.SequenceEqual(right.Learned) && left.Shortcuts.SequenceEqual(right.Shortcuts) && left.Amps.SequenceEqual(right.Amps);
+            && SpellbookFields(left) == SpellbookFields(right)
+            && left.Learned.SequenceEqual(right.Learned) && left.Shortcuts.SequenceEqual(right.Shortcuts) && left.Amps.SequenceEqual(right.Amps);
+        private static (byte Active, byte Bonus, ushort AmpPower)? SpellbookFields(Spellbook book)
+            => book == null ? null : (book.Active, book.Bonus, book.AmpPower);
         private static bool SameRows<T>(T[] left, T[] right) => left == null ? right == null : right != null && left.SequenceEqual(right);
         private static bool Equal(Snapshot left, Snapshot right) => left != null && right != null
             && left.Experience == right.Experience && left.Selection == right.Selection
@@ -167,7 +170,7 @@ namespace NexusForever.Game.Entity
                 ownsSpells ? new(row.ActiveSpec, row.BonusAbilityTierPoints,
                     context.CharacterSpell.AsNoTracking().Where(value => value.Id == character).OrderBy(value => value.Spell4BaseId).AsEnumerable().Select(FromModel).ToArray(),
                     context.CharacterActionSetShortcut.AsNoTracking().Where(value => value.Id == character).OrderBy(value => value.SpecIndex).ThenBy(value => value.Location).AsEnumerable().Select(FromModel).ToArray(),
-                    context.CharacterActionSetAmp.AsNoTracking().Where(value => value.Id == character).OrderBy(value => value.SpecIndex).ThenBy(value => value.AmpId).AsEnumerable().Select(FromModel).ToArray()) : null,
+                    context.CharacterActionSetAmp.AsNoTracking().Where(value => value.Id == character).OrderBy(value => value.SpecIndex).ThenBy(value => value.AmpId).AsEnumerable().Select(FromModel).ToArray(), row.BonusAmpPower) : null,
                 ownsPets ? context.CharacterPetCustomisation.AsNoTracking().Where(value => value.Id == character).OrderBy(value => value.Type).ThenBy(value => value.ObjectId).AsEnumerable().Select(FromModel).ToArray() : null,
                 ownsAchievements ? context.CharacterAchievement.AsNoTracking().Where(value => value.Id == character).OrderBy(value => value.AchievementId).AsEnumerable().Select(FromModel).ToArray() : null,
                 ownsDatacubes ? context.CharacterDatacube.AsNoTracking().Where(value => value.Id == character).OrderBy(value => value.Type).ThenBy(value => value.Datacube).AsEnumerable().Select(FromModel).ToArray() : null,
@@ -197,11 +200,11 @@ namespace NexusForever.Game.Entity
         private void Stage(Unit unit, Snapshot before, Snapshot desired, Snapshot previous)
         {
             if (before.Experience != desired.Experience || before.Selection != desired.Selection || previous.Experience != desired.Experience || previous.Selection != desired.Selection
-                || before.Spells?.Active != desired.Spells?.Active || before.Spells?.Bonus != desired.Spells?.Bonus || previous.Spells?.Active != desired.Spells?.Active || previous.Spells?.Bonus != desired.Spells?.Bonus)
+                || SpellbookFields(before.Spells) != SpellbookFields(desired.Spells) || SpellbookFields(previous.Spells) != SpellbookFields(desired.Spells))
             {
                 string[] fields = (ownsExperience ? new[] { nameof(CharacterModel.TotalXp), nameof(CharacterModel.RestBonusXp), nameof(CharacterModel.Level) } : [])
                     .Concat(ownsPaths ? new[] { nameof(CharacterModel.ActivePath), nameof(CharacterModel.PathActivatedTimestamp) } : [])
-                    .Concat(ownsSpells ? new[] { nameof(CharacterModel.ActiveSpec), nameof(CharacterModel.BonusAbilityTierPoints) } : []).ToArray();
+                    .Concat(ownsSpells ? new[] { nameof(CharacterModel.ActiveSpec), nameof(CharacterModel.BonusAbilityTierPoints), nameof(CharacterModel.BonusAmpPower) } : []).ToArray();
                 Write(unit, Character(before), Character(desired), [nameof(CharacterModel.Id)], fields, true);
             }
             var paths = before.Paths.ToDictionary(row => row.Id); var missions = before.Missions.ToDictionary(row => row.Id);
@@ -229,7 +232,7 @@ namespace NexusForever.Game.Entity
         }
         private CharacterModel Character(Snapshot snapshot) => new() { Id = character, TotalXp = snapshot.Experience?.Xp ?? 0, RestBonusXp = snapshot.Experience?.Rest ?? 0, Level = snapshot.Experience?.Level ?? 0,
             ActivePath = snapshot.Selection?.Path ?? 0, PathActivatedTimestamp = snapshot.Selection?.Activated ?? default,
-            ActiveSpec = snapshot.Spells?.Active ?? 0, BonusAbilityTierPoints = snapshot.Spells?.Bonus ?? 0 };
+            ActiveSpec = snapshot.Spells?.Active ?? 0, BonusAbilityTierPoints = snapshot.Spells?.Bonus ?? 0, BonusAmpPower = snapshot.Spells?.AmpPower ?? 0 };
         private static CharacterPathModel Model(PathState row) => new() { Id = row.Owner, Path = row.Id, Unlocked = row.Unlocked, TotalXp = row.Xp, LevelRewarded = row.Rewarded };
         private static CharacterPathMissionModel Model(Mission row) => new() { Id = row.Owner, PathMissionId = row.Id, PathEpisodeId = row.Episode, State = row.State, Completed = row.Completed, ProgressCount = row.Count, ProgressData = row.Data, Xp = row.Xp };
         private static void Write<T>(Unit unit, T before, T desired, string[] keys, string[] fields, bool partial = false) where T : class

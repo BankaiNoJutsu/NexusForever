@@ -30,7 +30,7 @@ public sealed class ContractClaimDeliverySchemaTests
         await using var connection = new SqliteConnection("Data Source=:memory:"); await connection.OpenAsync();
         var options = new DbContextOptionsBuilder<CharacterContext>().UseSqlite(connection, builder => builder.MigrationsAssembly(typeof(Factory).Assembly.GetName().Name)).Options;
         await using var context = new CharacterContext(options); await context.GetService<IMigrator>().MigrateAsync("20261031043709_ContractRewardClaims");
-        context.Character.Add(new() { Id = 42, AccountId = 27, Name = "Prior Contract receipt" }); await context.SaveChangesAsync();
+        await context.Database.ExecuteSqlRawAsync("INSERT INTO character (id,accountId,name,isOnline) VALUES (42,27,'Prior Contract receipt',0)");
         await context.Database.ExecuteSqlRawAsync("INSERT INTO character_contract_reward_claim (id,trackId,cycleId,ordinal,rewardRowId,choice,claimId,accountId,quoteVersion,quoteJson,deliveryVersion,deliveryJson,createdUtc) VALUES (42,5,7,0,17,0,'123456781234123412341234567890ab',27,1,'retained quote',1,'retained Item plan','2026-10-31 01:02:03')");
         await context.Database.MigrateAsync(); await context.Database.MigrateAsync(); context.ChangeTracker.Clear();
         var receipt = context.CharacterContractRewardClaim.Single(); Assert.Null(receipt.CharacterCurrencyJson); Assert.Equal("retained quote", receipt.QuoteJson);

@@ -44,7 +44,8 @@ namespace NexusForever.Game.Entity
         {
             None                   = 0x0000,
             ActiveActionSet        = 0x0001,
-            BonusAbilityTierPoints = 0x0002
+            BonusAbilityTierPoints = 0x0002,
+            BonusAmpPower          = 0x0004
         }
 
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
@@ -90,7 +91,8 @@ namespace NexusForever.Game.Entity
                 actionSets.SelectMany(set => set.Actions.Select(row => new ExperiencePersistence.Shortcut(set.Owner, set.Index, (ushort)row.Location, (byte)row.ShortcutType, row.ObjectId, row.Tier)))
                     .Concat(LoadedSpellbook.Shortcuts.Where(row => row.Spec >= ActionSet.MaxActionSets)).OrderBy(row => row.Spec).ThenBy(row => row.Location).ToArray(),
                 actionSets.SelectMany(set => set.Amps.Select(row => new ExperiencePersistence.Amp(set.Owner, set.Index, checked((ushort)row.Entry.Id))))
-                    .Concat(LoadedSpellbook.Amps.Where(row => row.Spec >= ActionSet.MaxActionSets)).OrderBy(row => row.Spec).ThenBy(row => row.Id).ToArray());
+                    .Concat(LoadedSpellbook.Amps.Where(row => row.Spec >= ActionSet.MaxActionSets)).OrderBy(row => row.Spec).ThenBy(row => row.Id).ToArray(),
+                (saveMask & SpellManagerSaveMask.BonusAmpPower) != 0 ? bonusAmpPower : LoadedSpellbook.AmpPower);
         }
         private bool initialised;
 
@@ -131,7 +133,7 @@ namespace NexusForever.Game.Entity
             LoadedSpellbook = new(model.ActiveSpec, model.BonusAbilityTierPoints,
                 model.Spell.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Id).ToArray(),
                 model.ActionSetShortcut.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Spec).ThenBy(row => row.Location).ToArray(),
-                model.ActionSetAmp.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Spec).ThenBy(row => row.Id).ToArray());
+                model.ActionSetAmp.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Spec).ThenBy(row => row.Id).ToArray(), model.BonusAmpPower);
 
             foreach (CharacterSpellModel spellModel in model.Spell)
             {
@@ -141,10 +143,12 @@ namespace NexusForever.Game.Entity
             }
 
             bonusAbilityTierPoints = (byte)Math.Min(model.BonusAbilityTierPoints, ActionSet.MaxBonusTierPoints);
+            bonusAmpPower = Math.Min(model.BonusAmpPower, MaxBonusAmpPower);
 
             for (byte i = 0; i < ActionSet.MaxActionSets; i++)
             {
                 actionSets[i] = new ActionSet(i, player, gameTableManager, bonusAbilityTierPoints) { CharacterSaveOwner = TrySaveExperience };
+                actionSets[i].AddAmpPower(bonusAmpPower);
 
                 foreach (CharacterActionSetShortcutModel shortcutModel in model.ActionSetShortcut
                     .Where(c => c.SpecIndex == i))
@@ -306,6 +310,12 @@ namespace NexusForever.Game.Entity
                 {
                     character.BonusAbilityTierPoints = bonusAbilityTierPoints;
                     entity.Property(p => p.BonusAbilityTierPoints).IsModified = true;
+                }
+
+                if ((saveMask & SpellManagerSaveMask.BonusAmpPower) != 0)
+                {
+                    character.BonusAmpPower = bonusAmpPower;
+                    entity.Property(p => p.BonusAmpPower).IsModified = true;
                 }
 
                 saveMask = SpellManagerSaveMask.None;
@@ -833,6 +843,8 @@ namespace NexusForever.Game.Entity
             foreach (IActionSet actionSet in actionSets)
                 actionSet.AddAmpPower(addedPower);
 
+            saveMask |= SpellManagerSaveMask.BonusAmpPower;
+            player.RequestSave();
             SendServerAmpPowerUpdate();
         }
 

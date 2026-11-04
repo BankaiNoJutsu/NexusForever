@@ -56,7 +56,7 @@ public sealed class ContractRewardClaimSchemaTests
         await using var connection = new SqliteConnection("Data Source=:memory:"); await connection.OpenAsync();
         var options = new DbContextOptionsBuilder<CharacterContext>().UseSqlite(connection, builder => builder.MigrationsAssembly(typeof(Factory).Assembly.GetName().Name)).Options;
         await using var context = new CharacterContext(options); await context.GetService<IMigrator>().MigrateAsync("20261031030210_ContractRewardSelections");
-        context.Character.Add(new() { Id = 42, AccountId = 27, Name = "Contract claim upgrade" });
+        await context.Database.ExecuteSqlRawAsync("INSERT INTO character (id,accountId,name,isOnline) VALUES (42,27,'Contract claim upgrade',0)");
         context.CharacterContractRewardTrack.Add(new() { Id = 42, TrackId = 5, CycleId = 7, Points = 1234, Revision = 9, Active = true, SelectionInitialized = true });
         await context.SaveChangesAsync();
         await context.Database.ExecuteSqlRawAsync("INSERT INTO character_contract_reward_slot (id,trackId,cycleId,ordinal,rewardRowId,requiredPoints,selectionJson) VALUES (42,5,7,0,17,1000,'retained selection')");

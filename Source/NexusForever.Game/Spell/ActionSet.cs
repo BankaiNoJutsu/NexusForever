@@ -36,7 +36,7 @@ namespace NexusForever.Game.Spell
         public ulong Owner { get; }
         public byte Index { get; }
         public byte TierPoints { get; private set; }
-        public byte AmpPoints { get; private set; }
+        public byte AmpPoints => (byte)Math.Max(availableAmpPower, 0);
 
         /// <summary>
         /// Collection of <see cref="IActionSetShortcut"/> contained in the <see cref="IActionSet"/>.
@@ -53,6 +53,7 @@ namespace NexusForever.Game.Spell
 
         private readonly IPlayer player;
         private readonly IGameTableManager gameTableManager;
+        private int availableAmpPower;
         private ActionSetSaveMask saveMask;
         internal Func<CharacterContext, bool> CharacterSaveOwner { private get; init; }
         internal bool TrySaveCharacter(CharacterContext context) => CharacterSaveOwner?.Invoke(context) == true;
@@ -67,7 +68,7 @@ namespace NexusForever.Game.Spell
             Owner      = player.CharacterId;
             Index      = index;
             TierPoints = (byte)(MaxTierPoints + Math.Min(bonusTierPoints, MaxBonusTierPoints));
-            AmpPoints  = MaxAmpPoints - 10;
+            availableAmpPower = MaxAmpPoints - 10;
         }
 
         public void Save(CharacterContext context)
@@ -268,10 +269,10 @@ namespace NexusForever.Game.Spell
             if (amps.TryGetValue(id, out IActionSetAmp amp) && !amp.PendingDelete)
                 throw new InvalidOperationException($"Failed to add AMP {id}, location is already occupied!");
 
-            checked
-            {
-                AmpPoints -= (byte)entry.PowerCost;
-            }
+            byte cost = checked((byte)entry.PowerCost);
+            if (cost > AmpPoints)
+                throw new OverflowException("The action set has insufficient AMP power.");
+            availableAmpPower -= cost;
 
             if (amp != null)
                 amp.EnqueueDelete(false);
@@ -293,7 +294,7 @@ namespace NexusForever.Game.Spell
             if (power == 0u)
                 return;
 
-            AmpPoints = (byte)Math.Min(AmpPoints + power, MaxAmpPoints);
+            availableAmpPower = Math.Min(availableAmpPower + power, MaxAmpPoints);
         }
 
         /// <summary>
@@ -316,12 +317,11 @@ namespace NexusForever.Game.Spell
             if (entry == null)
                 throw new ArgumentException();
 
-            checked
-            {
-                AmpPoints -= (byte)entry.PowerCost;
-            }
-
+            byte cost = checked((byte)entry.PowerCost);
             amps.Add(model.AmpId, new ActionSetAmp(this, entry, false));
+            // Old saves could retain allocations after the earned bonus itself was lost.
+            // Preserve those rows and count the deficit against future power and refunds.
+            availableAmpPower -= cost;
         }
 
         /// <summary>
@@ -362,10 +362,10 @@ namespace NexusForever.Game.Spell
             if (amp == null)
                 throw new ArgumentNullException();
 
-            checked
-            {
-                AmpPoints += (byte)amp.Entry.PowerCost;
-            }
+            int refunded = availableAmpPower + checked((byte)amp.Entry.PowerCost);
+            if (refunded > byte.MaxValue)
+                throw new OverflowException("The action set's AMP power exceeds its representation.");
+            availableAmpPower = refunded;
 
             if (amp.PendingCreate)
                 amps.Remove((ushort)amp.Entry.Id);
