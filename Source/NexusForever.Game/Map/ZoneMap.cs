@@ -93,6 +93,11 @@ namespace NexusForever.Game.Map
         /// </summary>
         public void Send()
         {
+            if (player is Player owner)
+            {
+                (owner.ZoneMapManager as ZoneMapManager)?.SendConfirmedMap(this);
+                return;
+            }
             player.Session.EnqueueMessageEncrypted(new ServerZoneMap
             {
                 ZoneMapId   = entry.Id,
@@ -101,27 +106,40 @@ namespace NexusForever.Game.Map
             });
         }
 
+        internal ServerZoneMap BuildConfirmed(ushort[] groups)
+        {
+            var bits = new NetworkBitArray(size, NetworkBitArray.BitOrder.LeastSignificantBit);
+            foreach (ushort group in groups) AddGroupBits(bits, group);
+            return new() { ZoneMapId = entry.Id, ZoneMapBits = bits, Count = size };
+        }
+
         /// <summary>
         /// Add a new discovered <see cref="MapZoneHexGroupEntry"/>.
         /// </summary>
         public void AddHexGroup(ushort hexGroupId, bool sendUpdate = true)
         {
-            GameTable<MapZoneHexGroupEntryEntry> hexGroupEntryTable = gameTableManager?.MapZoneHexGroupEntry;
-            if (hexGroupEntryTable == null)
+            if (gameTableManager?.MapZoneHexGroupEntry == null)
                 return;
 
-            foreach (MapZoneHexGroupEntryEntry mapZoneHexGroupEntry in hexGroupEntryTable.Entries.Where(m => m.MapZoneHexGroupId == hexGroupId))
+            AddGroupBits(zoneMapBits, hexGroupId);
+            zoneMapHexGroups.Add(hexGroupId, sendUpdate);
+            if (sendUpdate && player is not Player)
+                Send();
+        }
+
+        private void AddGroupBits(NetworkBitArray bits, ushort hexGroupId)
+        {
+            var entries = gameTableManager?.MapZoneHexGroupEntry?.Entries;
+            if (entries == null) return;
+            foreach (var mapZoneHexGroupEntry in entries.Where(m => m.MapZoneHexGroupId == hexGroupId))
             {
                 var bit = (ushort)
                     (((short)mapZoneHexGroupEntry.HexY - (short)entry.HexMinY) * (short)width +
                     ((short)mapZoneHexGroupEntry.HexX - (short)entry.HexMinX));
 
-                zoneMapBits.SetBit(bit, true);
+                bits.SetBit(bit, true);
             }
 
-            zoneMapHexGroups.Add(hexGroupId, sendUpdate);
-            if (sendUpdate)
-                Send();
         }
 
         /// <summary>

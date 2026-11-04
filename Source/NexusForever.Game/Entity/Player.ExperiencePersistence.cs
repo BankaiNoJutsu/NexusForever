@@ -62,16 +62,23 @@ namespace NexusForever.Game.Entity
             void PublicationReady()
             {
                 cubes?.NotifyPublicationReady();
+                maps?.NotifyPublicationReady();
                 try { achievements?.NotifyPublicationReady(); }
                 finally { archive?.NotifyPublicationReady(); }
             }
             return experiencePersistence = new(owner, baseline, Current, database, achievements == null ? null : achievements.QueuePublication,
                 achievements?.RealmFirst, archive == null ? null : archive.AcknowledgePublication, PublicationReady,
-                cubes == null ? null : cubes.AcknowledgePublication);
+                cubes == null ? null : cubes.AcknowledgePublication, maps == null ? null : maps.AcknowledgePublication);
         }
         internal bool OwnsDatacubePublication(DatacubeManager manager, Identity identity, IGameSession session)
             => Identity?.Id == identity.Id && Identity.RealmId == identity.RealmId
                 && ReferenceEquals(DatacubeManager, manager) && ReferenceEquals(Session, session)
+                && (playerManager == null || ReferenceEquals(playerManager.GetPlayer(identity), this))
+                && session is IPlayerSession current && ReferenceEquals(current.Player, this)
+                && session is not NetworkSession { IsDisconnecting: true };
+        internal bool OwnsExplorationPublication(ZoneMapManager manager, Identity identity, IGameSession session)
+            => Identity?.Id == identity.Id && Identity.RealmId == identity.RealmId
+                && ReferenceEquals(ZoneMapManager, manager) && ReferenceEquals(Session, session)
                 && (playerManager == null || ReferenceEquals(playerManager.GetPlayer(identity), this))
                 && session is IPlayerSession current && ReferenceEquals(current.Player, this)
                 && session is not NetworkSession { IsDisconnecting: true };

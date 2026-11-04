@@ -51,6 +51,7 @@ namespace NexusForever.Game.Entity
         private readonly Action<Achievement[], Achievement[], RealmFirstPersistence.Claim[]> acknowledgeAchievements;
         private readonly Action<ArchiveState[]> acknowledgeArchive;
         private readonly Action<DatacubeState[]> acknowledgeDatacubes;
+        private readonly Action<ExploredHexgroup[]> acknowledgeExploration;
         private readonly Action publicationReady;
         private readonly RealmFirstPersistence realmFirst;
         private readonly bool ownsExperience, ownsPaths, ownsSpells, ownsPets, ownsAchievements, ownsDatacubes, ownsArchive, ownsMaps, ownsReputations;
@@ -63,13 +64,14 @@ namespace NexusForever.Game.Entity
         internal ExperiencePersistence(ulong character, Snapshot baseline, Func<Snapshot> current, string database,
             Action<Achievement[], Achievement[], RealmFirstPersistence.Claim[]> acknowledgeAchievements = null,
             RealmFirstPersistence realmFirst = null, Action<ArchiveState[]> acknowledgeArchive = null, Action publicationReady = null,
-            Action<DatacubeState[]> acknowledgeDatacubes = null)
+            Action<DatacubeState[]> acknowledgeDatacubes = null, Action<ExploredHexgroup[]> acknowledgeExploration = null)
         {
             this.character = character; this.baseline = baseline; this.current = current; this.database = database;
             this.acknowledgeAchievements = acknowledgeAchievements;
             this.realmFirst = realmFirst;
             this.acknowledgeArchive = acknowledgeArchive; this.publicationReady = publicationReady;
             this.acknowledgeDatacubes = acknowledgeDatacubes;
+            this.acknowledgeExploration = acknowledgeExploration;
             baselineIntent = baseline;
             ownsExperience = baseline.Experience != null; ownsPaths = baseline.Selection != null;
             ownsSpells = baseline.Spells != null; ownsPets = baseline.Pets != null; ownsAchievements = baseline.Achievements != null;
@@ -279,6 +281,7 @@ namespace NexusForever.Game.Entity
                         acknowledgeAchievements?.Invoke(baseline.Achievements ?? [], unit.Sql.Achievements ?? [], claims);
                         acknowledgeArchive?.Invoke(unit.Sql.Articles ?? []);
                         acknowledgeDatacubes?.Invoke(unit.Sql.Datacubes ?? []);
+                        acknowledgeExploration?.Invoke(unit.Sql.MapHexgroups ?? []);
                         baseline = unit.Sql; baselineIntent = unit.FlushedIntent; uncertain = null;
                         ready = true;
                     }

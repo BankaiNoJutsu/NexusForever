@@ -10,6 +10,28 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+### Committed exploration masks
+
+4 November 2026. The original live relocation could reveal new hexes before
+the save, including a later relocation inside a frozen Auth phase. Four
+baseline cases reproduced premature packets or send errors escaping movement.
+
+The current map and reward logic still tracks accepted discovery on the
+Player. The existing Experience graph confirms the hex rows before the world
+queue sends a fresh map mask. Initial sync and direct owned map sends use the
+same confirmed groups. The queue keeps unsent maps on the original actor and
+can coalesce newer confirmed groups into their next full-mask update.
+A rebound session discards the retry. Standalone adapters preserve their
+immediate send path.
+
+The source/SQLite regressions cover real relocation, rejected save and
+completion reward, frozen later discovery, send failure and session replacement.
+The owning build and 121 scoped cases passed. The test run took 41 seconds.
+Evidence is in `artifacts/continuation-20261104/exploration-publication/`.
+Reputation deltas need a captured change sequence because signed changes can
+return to an earlier amount. Deployed sockets, native presentation and retail
+qualification remain open.
+
 [Datacube and journal publication](ARCHIVE_PUBLICATION.md#datacube-and-journal-companion-publication)
 retains accepted collection notices until the original ordinary or frozen
 Experience graph confirms the bits. Initial lists use committed state, and

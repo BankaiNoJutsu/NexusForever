@@ -11,7 +11,7 @@ using NexusForever.IO.Map;
 
 namespace NexusForever.Game.Map
 {
-    public class ZoneMapManager : IZoneMapManager
+    public partial class ZoneMapManager : IZoneMapManager
     {
         private const float ZoneMapBoundary = MapDefines.WorldGridOrigin * MapDefines.GridSize;
         private const byte RateLimit = 10;
@@ -47,6 +47,7 @@ namespace NexusForever.Game.Map
             ExplorationCharacter = characterModel.Id;
             ExplorationDatabase = CharacterLoadOrigin.Get(characterModel)?.Database;
             LoadedExploration = characterModel.ZonemapHexgroup.OrderBy(row => row.ZoneMap).ThenBy(row => row.HexGroup).Select(ExperiencePersistence.FromModel).ToArray();
+            InitialisePublication();
 
             GameTable<MapZoneEntry> mapZoneTable = this.gameTableManager?.MapZone;
             foreach (CharacterZonemapHexgroupModel hexGroupModel in characterModel.ZonemapHexgroup)
@@ -82,8 +83,9 @@ namespace NexusForever.Game.Map
 
         public void SendZoneMaps()
         {
-            foreach (IZoneMap zoneMap in zoneMaps.Values)
-                zoneMap.Send();
+            if (!OwnsPublication) return;
+            lock (publicationGate) pendingMaps.UnionWith(zoneMaps.Keys);
+            PublishCommitted(() => OwnsPublication);
         }
 
         public byte GetMapZoneExploredPercent(ushort mapZoneId)

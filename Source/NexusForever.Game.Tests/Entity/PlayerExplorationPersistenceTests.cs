@@ -24,7 +24,7 @@ using Fixture = NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.Fi
 
 namespace NexusForever.Game.Tests.Entity;
 
-public sealed class PlayerExplorationPersistenceTests
+public sealed partial class PlayerExplorationPersistenceTests
 {
     private readonly DbContextOptions<CharacterContext> options;
     public PlayerExplorationPersistenceTests() { }
