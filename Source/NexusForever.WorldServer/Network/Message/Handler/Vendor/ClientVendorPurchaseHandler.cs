@@ -107,7 +107,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
             }
 
             if (player is Player owner && inventory is Inventory concrete && satchel is null or SupplySatchelManager
-                && vendorItemPurchaseCost.CanSettlePurchase)
+                && vendorItemPurchaseCost.CanSettlePurchase(owner))
             {
                 var originalSession = owner.Session;
                 var originalEvents = originalSession.Events;

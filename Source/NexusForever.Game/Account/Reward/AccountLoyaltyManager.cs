@@ -42,7 +42,6 @@ namespace NexusForever.Game.Account.Reward
                 if (!enlisted.Add(context)) return;
                 var currency = account.CurrencyManager as AccountCurrencyManager
                     ?? throw new InvalidOperationException("Loyalty requires the transactional account currency owner.");
-                var mutations = currency.CaptureCosmicMutations(context);
                 AccountCurrencyManager.CosmicMutation[] appliedMutations = [];
                 IPlayer currentActor = actor;
                 bool Meets(uint id) => id == 0 || currentActor != null && prerequisites?.Meets(currentActor, id) == true;
@@ -51,6 +50,7 @@ namespace NexusForever.Game.Account.Reward
                 bool accepted = false;
                 try
                 {
+                    var mutations = currency.CaptureCosmicMutations(context);
                     context.EnlistSaveWork(unit =>
                     {
                         appliedMutations = currency.CurrentCapturedMutations(unit, mutations);

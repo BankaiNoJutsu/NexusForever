@@ -31,7 +31,14 @@ namespace NexusForever.Game.Account.Currency
         internal CosmicMutation[] CaptureCosmicMutations(AuthContext context)
         {
             lock (currencyGate)
+            {
+                if (currencies.GetValueOrDefault(AccountCurrencyType.CosmicReward) is AccountCurrency { IsPersistenceBusy: true })
+                {
+                    context.RejectSaveUnit();
+                    throw new InvalidOperationException("An authoritative vendor observation still owns the Cosmic wallet.");
+                }
                 return cosmicMutations.Values.Where(operation => operation.Scope == null || operation.Scope.Contexts.Contains(context)).ToArray();
+            }
         }
 
         internal CosmicMutation[] CurrentCapturedMutations(AuthContext context, IReadOnlyList<CosmicMutation> captured)
@@ -41,7 +48,7 @@ namespace NexusForever.Game.Account.Currency
                     && (operation.Scope == null || operation.Scope.Contexts.Contains(context))).ToArray();
         }
 
-        internal void CompleteCosmicMutations(IReadOnlyList<CosmicMutation> captured, ulong wallet, ulong revision)
+        internal void CompleteCosmicMutations(IReadOnlyList<CosmicMutation> captured, ulong wallet, ulong revision, bool publish = true)
         {
             lock (currencyGate)
             {
@@ -56,11 +63,11 @@ namespace NexusForever.Game.Account.Currency
                     committedCosmicRevision = revision;
                     committedCosmicWallet = wallet;
                 }
-                ReconcileCosmicWallet();
+                ReconcileCosmicWallet(publish);
             }
         }
 
-        private void ReconcileCosmicWallet()
+        private void ReconcileCosmicWallet(bool publish = true)
         {
             ulong visible = committedCosmicWallet;
             foreach (CosmicMutation operation in cosmicMutations.Values)
@@ -74,7 +81,7 @@ namespace NexusForever.Game.Account.Currency
             }
             bool changed = currency.Amount != visible;
             ((AccountCurrency)currency).SetJournalAmount(visible);
-            if (changed) SendAccountCurrencyUpdate(currency);
+            if (changed && publish) SendAccountCurrencyUpdate(currency);
         }
 
         public IAccountCurrencyMutationScope BeginMutationScope() => BeginScope(null, null, null, false);

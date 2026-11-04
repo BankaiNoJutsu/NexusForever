@@ -20,7 +20,7 @@ namespace NexusForever.Game.Account.Currency
                     {
                         if (!currencies.TryGetValue(cost.Currency, out var value) || value is not AccountCurrency wallet || !wallet.CanAfford(cost.Amount))
                             throw new InvalidOperationException("Vendor payment lost its original wallet or available balance.");
-                        rows.Add((wallet, wallet.CaptureRefresh()));
+                        rows.Add((wallet, wallet.CaptureRefresh(journal: cost.Currency == AccountCurrencyType.CosmicReward)));
                     }
                     return new(this, account.WorldSessionEpoch, account.Session, rows);
                 }
@@ -45,9 +45,18 @@ namespace NexusForever.Game.Account.Currency
             {
                 lock (manager.currencyGate)
                 {
-                    if (!Current() || rows.Any(row => !row.Refresh.TryAdopt()))
+                    if (!Current())
                         throw new InvalidOperationException("Vendor payment cannot adopt its original wallet observations.");
+                    (ulong Wallet, ulong Revision)? loyalty = null;
+                    foreach (var row in rows)
+                    {
+                        if (!row.Refresh.TryAdopt(out var journal))
+                            throw new InvalidOperationException("Vendor payment cannot adopt its original wallet observations.");
+                        loyalty ??= journal;
+                    }
                     Dispose();
+                    if (loyalty.HasValue)
+                        manager.CompleteCosmicMutations([], loyalty.Value.Wallet, loyalty.Value.Revision, publish: false);
                 }
             }
 

@@ -92,9 +92,11 @@ operation receipts. [Realm admission recovery](../../CURRENT_STATUS.md#account-f
 resolves local receipts and refreshes the wallet before session initialization.
 [Live account-funded vendor settlement](../../CURRENT_STATUS.md#live-account-funded-vendor-purchase-settlement)
 enrolls ledger-backed payments, fences retired session epochs, adopts the
-original wallet after settlement, and compensates confirmed rollback. Cosmic
-Reward Loyalty participation, configured-provider and deployed restart evidence,
-and retail qualification remain open.
+original wallet after settlement, and compensates confirmed rollback.
+[Cosmic Reward vendor settlement](../../CURRENT_STATUS.md#cosmic-reward-vendor-settlement)
+uses matching Loyalty entries for both debit and refund when the account has a
+Loyalty owner. Configured-provider and deployed restart evidence, socket
+delivery, and retail qualification remain open.
 
 [Fortune deal settlement](../../CURRENT_STATUS.md#persisted-deal-and-coin-settlement)
 commits the one-coin debit and deal together, including consumption and change

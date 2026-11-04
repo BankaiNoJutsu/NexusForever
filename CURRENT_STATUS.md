@@ -22928,9 +22928,25 @@ acknowledgment, a stale epoch, and session replacement. Build and tests took 71
 seconds, including 18 seconds of test execution. Evidence is under
 `artifacts/continuation-20261104/vendor-account-live/`.
 
-Cosmic Reward purchases still need to enlist the existing Loyalty journal.
-Configured-provider, deployed restart, socket delivery, and retail evidence
-remain open.
+#### Cosmic Reward vendor settlement
+
+4 November 2026. Vendor purchases with a Loyalty owner commit each Cosmic
+Reward debit or refund with a matching non-earning Loyalty entry. The Auth
+receipt and journal revision commit with the wallet, and recovery checks both
+receipts. Refunds preserve earned points and previously claimed slots. The live
+handler adopts the observed journal revision and wallet silently before the
+post-commit packet, and Realm admission refreshes both after recovery.
+
+The build and 143 scoped tests passed, including live Cosmic spends, rollback
+and refund, a mixed-wallet purchase with a lost Character acknowledgment, and
+Realm login recovery. The new cases verify that earned points and reward
+delivery do not change with a vendor refund. Build and tests took 152 seconds,
+including 56 seconds of test execution. Evidence is under
+`artifacts/continuation-20261104/vendor-cosmic-loyalty/`.
+
+Cosmic Reward offers on installations without a Loyalty owner still follow the
+legacy handler. Configured-provider, deployed restart, socket delivery, and
+retail evidence remain open.
 
 #### Vendor buyback request identity
 

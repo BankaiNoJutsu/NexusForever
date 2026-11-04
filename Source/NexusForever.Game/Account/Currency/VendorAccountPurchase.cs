@@ -13,6 +13,7 @@ using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Static.Account;
+using NexusForever.Game.Account.Reward;
 
 namespace NexusForever.Game.Account.Currency
 {
@@ -63,16 +64,18 @@ namespace NexusForever.Game.Account.Currency
                 await RecoverAsync(entry.Debit, entry.Intent);
 
             byte[] affected = local.SelectMany(entry => entry.Intent.Costs).Select(cost => (byte)cost.Currency).Distinct().ToArray();
+            bool cosmic = affected.Contains((byte)AccountCurrencyType.CosmicReward);
             await using var fresh = auth();
             if (AccountCurrencyOperationRepository.DatabaseKey(fresh) != route)
                 throw new InvalidOperationException("Vendor recovery changed its admitted Auth route.");
             var refreshed = await fresh.Account.AsNoTracking()
                 .Where(row => row.Id == account.Id && fresh.AccountWorldSession.Any(epoch => epoch.AccountId == row.Id && epoch.Epoch == account.WorldSessionEpoch))
-                .Select(row => new { Wallets = row.AccountCurrency.Where(wallet => affected.Contains(wallet.CurrencyId)).ToArray() })
+                .Select(row => new { Wallets = row.AccountCurrency.Where(wallet => affected.Contains(wallet.CurrencyId)).ToArray(), row.Loyalty })
                 .SingleOrDefaultAsync();
-            if (refreshed == null || refreshed.Wallets.Length != affected.Length)
+            if (refreshed == null || refreshed.Wallets.Length != affected.Length || cosmic && refreshed.Loyalty == null)
                 throw new InvalidOperationException("Vendor recovery lost its admitted account or wallet rows.");
             account.AccountCurrency = account.AccountCurrency.Where(wallet => !affected.Contains(wallet.CurrencyId)).Concat(refreshed.Wallets).ToList();
+            if (cosmic) account.Loyalty = refreshed.Loyalty;
         }
 
         internal sealed record Cost(AccountCurrencyType Currency, ulong Amount);
@@ -196,7 +199,8 @@ namespace NexusForever.Game.Account.Currency
                     context.EnlistSaveWork(unit =>
                     {
                         repository?.Detach();
-                        repository = new(unit, operation.AccountId, operation.Currency, [operation]);
+                        repository = new(unit, operation.AccountId, operation.Currency, [operation],
+                            vendorLoyalty: operation.Currency == AccountCurrencyType.CosmicReward);
                         repository.Stage();
                         // The repository holds the same account lock used to
                         // allocate Realm admission epochs before committing.
@@ -244,7 +248,11 @@ namespace NexusForever.Game.Account.Currency
             string[] keys = operations.Select(operation => operation.Key).ToArray();
             var rows = await context.AccountCurrencyOperation.AsNoTracking().Where(row => keys.Contains(row.OperationKey)).ToArrayAsync();
             foreach (var row in rows)
-                AccountCurrencyOperationRepository.ValidateReceipt(row, operations.Single(operation => operation.Key == row.OperationKey));
+            {
+                var operation = operations.Single(operation => operation.Key == row.OperationKey);
+                AccountCurrencyOperationRepository.ValidateReceipt(row, operation);
+                if (operation.Currency == AccountCurrencyType.CosmicReward) LoyaltyRepository.ValidateVendorPayment(context, row);
+            }
             if (rows.Length != 0 && rows.Length != operations.Length)
                 throw new InvalidOperationException("Vendor wallet settlement has a partial durable witness.");
             return rows.Length == operations.Length;
@@ -279,7 +287,7 @@ namespace NexusForever.Game.Account.Currency
                 || intent.AuthRoute?.Length != 64 || intent.CharacterRoute?.Length != 64 || intent.QuoteFingerprint?.Length != 64
                 || intent.Costs.IsDefaultOrEmpty || intent.Costs.Length > 2
                 || intent.Costs.Any(cost => cost == null || cost.Amount == 0 || !Enum.IsDefined(cost.Currency)
-                    || cost.Currency is AccountCurrencyType.None or AccountCurrencyType.CosmicReward)
+                    || cost.Currency == AccountCurrencyType.None)
                 || !intent.Costs.Select(cost => cost.Currency).SequenceEqual(intent.Costs.Select(cost => cost.Currency).Distinct().Order()))
                 throw new InvalidOperationException("Vendor payment requires a canonical purchase and its original wallet owners.");
         }

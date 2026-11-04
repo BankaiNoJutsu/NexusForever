@@ -14,12 +14,13 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary<AccountCurrencyType, ulong> accountCurrencyCost = new();
         private readonly Dictionary<uint, uint> itemCost = new();
 
-        public bool CanSettlePurchase => accountCurrencyCost.GetValueOrDefault(AccountCurrencyType.CosmicReward) == 0;
+        public bool CanSettlePurchase(Player player) => accountCurrencyCost.GetValueOrDefault(AccountCurrencyType.CosmicReward) == 0
+            || player.Account?.LoyaltyManager != null;
 
         public void SettlePurchase(Player player, Inventory inventory, SupplySatchelManager satchel,
             IItemInfo item, uint count, Func<bool> currentActor)
         {
-            if (!CanSettlePurchase) throw new InvalidOperationException("Cosmic Reward payment requires its Loyalty journal.");
+            if (!CanSettlePurchase(player)) throw new InvalidOperationException("Cosmic Reward payment requires its Loyalty journal.");
             inventory.SettleVendorPurchase(player, satchel, item, count, itemCost, currencyCost, accountCurrencyCost, currentActor);
         }
 

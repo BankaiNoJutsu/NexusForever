@@ -13,6 +13,7 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Account.Currency;
+using NexusForever.Game.Account.Reward;
 using NexusForever.Game.Mail;
 using NexusForever.Game.Static.Mail;
 using NexusForever.Network.World.Message.Model.Mail;
@@ -23,6 +24,7 @@ using NexusForever.Game.RealmBank;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Tests.Challenges;
+using NexusForever.Game.Tests.Account.Reward;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Game.Tests.Transport;
 using NexusForever.GameTable;
@@ -56,17 +58,22 @@ public sealed class BankDeferredCurrencyRecoveryTests
     [InlineData("account-stale")]
     [InlineData("account-rebound")]
     [InlineData("account-two-wallets")]
+    [InlineData("cosmic-commit")]
+    [InlineData("cosmic-rollback")]
+    [InlineData("cosmic-mixed-lost")]
     public async Task VendorPurchaseSettlesItsWalletPaymentAndCompleteDelivery(string outcome)
     {
         bool sameStack = outcome == "same-stack";
         bool dirtyWallet = outcome == "bag-dirty-wallet";
-        bool accountPayment = outcome.StartsWith("account-", StringComparison.Ordinal);
+        bool cosmic = outcome.StartsWith("cosmic-", StringComparison.Ordinal);
+        bool accountPayment = cosmic || outcome.StartsWith("account-", StringComparison.Ordinal);
         bool stale = outcome == "account-stale";
         bool rebound = outcome == "account-rebound";
-        bool twoWallets = outcome == "account-two-wallets";
+        bool twoWallets = outcome is "account-two-wallets" or "cosmic-mixed-lost";
+        AccountCurrencyType funding = cosmic ? AccountCurrencyType.CosmicReward : AccountCurrencyType.Omnibit;
         bool useSatchel = accountPayment || outcome.StartsWith("satchel-", StringComparison.Ordinal);
         bool rollback = outcome.EndsWith("-rollback", StringComparison.Ordinal) || stale;
-        using var auth = accountPayment ? new VendorAuthFixture() : null;
+        using var auth = accountPayment ? new VendorAuthFixture(funding) : null;
         using var f = new Fixture(options);
         f.Seed();
         var database = new CharacterDatabase();
@@ -100,10 +107,17 @@ public sealed class BankDeferredCurrencyRecoveryTests
         if (accountPayment)
         {
             tables.SetProperty(nameof(IGameTableManager.AccountCurrencyType), PlayerBindPointTests.Table(
-                new AccountCurrencyTypeEntry { Id = 6 }, new AccountCurrencyTypeEntry { Id = 14 }));
+                new AccountCurrencyTypeEntry { Id = (uint)funding }, new AccountCurrencyTypeEntry { Id = 14 }));
             account.SetProperty(nameof(IAccount.WorldSessionEpoch), 1ul);
             accountWallet = new AccountCurrencyManager(f.Source.Player.Account, auth.Model, f.Source.Tables);
             account.SetProperty(nameof(IAccount.CurrencyManager), accountWallet);
+            if (cosmic)
+            {
+                tables.SetProperty(nameof(IGameTableManager.RewardTrack), PlayerBindPointTests.Table(LoyaltyCatalogBuild16042Fixture.Tracks()));
+                tables.SetProperty(nameof(IGameTableManager.RewardTrackRewards), PlayerBindPointTests.Table(LoyaltyCatalogBuild16042Fixture.Rewards()));
+                tables.SetProperty(nameof(IGameTableManager.AccountItem), PlayerBindPointTests.Table(LoyaltyCatalogBuild16042Fixture.AccountItems()));
+                account.SetProperty(nameof(IAccount.LoyaltyManager), new AccountLoyaltyManager(f.Source.Player.Account, f.Source.Tables, auth.Database));
+            }
         }
         var events = new EventQueue();
         var session = RecordingDispatchProxy<IWorldSession>.Create(out var network);
@@ -152,7 +166,7 @@ public sealed class BankDeferredCurrencyRecoveryTests
             ExtraCost1Type = twoWallets ? ItemExtraCostType.AccountCurrency : ItemExtraCostType.Item,
             ExtraCost1ItemOrCurrencyId = twoWallets ? 14u : 7001u, ExtraCost1Quantity = twoWallets ? 9u : 1u,
             ExtraCost2Type = accountPayment ? ItemExtraCostType.AccountCurrency : ItemExtraCostType.Currency,
-            ExtraCost2ItemOrCurrencyId = accountPayment ? 6u : 1u, ExtraCost2Quantity = sameStack ? 0u : 15u
+            ExtraCost2ItemOrCurrencyId = accountPayment ? (uint)funding : 1u, ExtraCost2Quantity = sameStack ? 0u : 15u
         });
         typeof(Player).GetField("selectedVendorInfo", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(actor.Player, vendor);
         var notices = new List<object>();
@@ -178,8 +192,14 @@ public sealed class BankDeferredCurrencyRecoveryTests
             if (accountPayment)
             {
                 using var pendingAuth = auth.Database.CreateContext();
-                Assert.Equal(100ul, pendingAuth.AccountCurrency.Single(row => row.CurrencyId == 6).Amount);
-                Assert.Equal(100ul, accountWallet.GetCurrencyAmount(AccountCurrencyType.Omnibit));
+                Assert.Equal(100ul, pendingAuth.AccountCurrency.Single(row => row.CurrencyId == (byte)funding).Amount);
+                Assert.Equal(100ul, accountWallet.GetCurrencyAmount(funding));
+                if (cosmic)
+                {
+                    using var blocked = auth.Database.CreateContext();
+                    var denied = Assert.Throws<InvalidOperationException>(() => f.Source.Player.Account.LoyaltyManager.Save(blocked));
+                    Assert.Contains("vendor observation", denied.Message);
+                }
                 if (stale)
                 {
                     pendingAuth.AccountWorldSession.Single().Epoch = 2;
@@ -209,15 +229,24 @@ public sealed class BankDeferredCurrencyRecoveryTests
         if (accountPayment)
         {
             using var settled = auth.Database.CreateContext();
-            Assert.Equal(rollback ? 100ul : 85ul, settled.AccountCurrency.Single(row => row.CurrencyId == 6).Amount);
+            Assert.Equal(rollback ? 100ul : 85ul, settled.AccountCurrency.Single(row => row.CurrencyId == (byte)funding).Amount);
             Assert.Equal(twoWallets ? 61ul : 70ul, settled.AccountCurrency.Single(row => row.CurrencyId == 14).Amount);
-            Assert.Equal(rollback || rebound ? 100ul : 85ul, accountWallet.GetCurrencyAmount(AccountCurrencyType.Omnibit));
+            Assert.Equal(rollback || rebound ? 100ul : 85ul, accountWallet.GetCurrencyAmount(funding));
             Assert.Equal(stale ? 0 : twoWallets ? 2 : 1, settled.AccountCurrencyOperation.Count(row => row.Subtract));
             Assert.Equal(rollback && !stale ? 1 : 0, settled.AccountCurrencyOperation.Count(row => !row.Subtract));
             Assert.Equal(rollback || rebound ? 0 : twoWallets ? 2 : 1, notices.OfType<ServerAccountCurrencyGrant>().Count());
             Assert.Equal(rollback || rebound ? 0 : twoWallets ? 2 : 1, notices.OfType<ServerWalletUpdate>().Count());
             if (!rollback && !rebound)
                 Assert.Equal(twoWallets ? new ulong[] { 85, 61 } : [85], notices.OfType<ServerAccountCurrencyGrant>().Select(row => row.AccountCurrency.Amount));
+            if (cosmic)
+            {
+                Assert.Equal(480ul, settled.AccountLoyalty.Single().EarnedPoints);
+                Assert.Equal(200ul, settled.AccountLoyalty.Single().BootstrapWalletAmount);
+                Assert.Equal(rollback ? 2 : 1, settled.AccountCosmicOperation.Count());
+                Assert.All(settled.AccountCosmicOperation, row => Assert.False(row.Earned));
+                Assert.Empty(settled.AccountPendingItem);
+                Assert.Empty(settled.AccountEntitlement);
+            }
         }
 
         static IItemInfo Definition(uint id)
@@ -236,11 +265,13 @@ public sealed class BankDeferredCurrencyRecoveryTests
         internal AuthDatabase Database { get; } = new();
         internal AccountModel Model { get; } = new() { Id = 12, Email = "vendor-wallet@example.test" };
 
-        internal VendorAuthFixture()
+        internal VendorAuthFixture(AccountCurrencyType funding)
         {
             Database.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite, ConnectionString = $"Data Source={path};Pooling=False" });
-            Model.AccountCurrency.Add(new() { Id = 12, CurrencyId = 6, Amount = 100 });
+            Model.AccountCurrency.Add(new() { Id = 12, CurrencyId = (byte)funding, Amount = 100 });
             Model.AccountCurrency.Add(new() { Id = 12, CurrencyId = 14, Amount = 70 });
+            if (funding == AccountCurrencyType.CosmicReward)
+                Model.Loyalty = new() { AccountId = 12, EarnedPoints = 480, BootstrapWalletAmount = 200, ActiveTrackId = 9, Revision = 5 };
             using var context = Database.CreateContext();
             context.Database.EnsureCreated();
             context.Account.Add(Model);

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
+using NexusForever.Game.Account.Reward;
 using NexusForever.Game.Static.Account;
 
 namespace NexusForever.Game.Account.Currency
@@ -21,6 +22,7 @@ namespace NexusForever.Game.Account.Currency
         private readonly uint accountId;
         private readonly byte currencyId;
         private readonly IReadOnlyList<AccountWalletOperation> operations;
+        private readonly bool vendorLoyalty;
         private readonly List<(object Model, PropertyValues Values)> owned = [];
         private readonly List<(AccountWalletOperation Operation, ulong Before, ulong After)> witnesses = [];
         internal ulong Amount { get; private set; }
@@ -43,7 +45,7 @@ namespace NexusForever.Game.Account.Currency
         }
 
         internal AccountCurrencyOperationRepository(AuthContext context, uint accountId, AccountCurrencyType currency,
-            IReadOnlyList<AccountWalletOperation> operations)
+            IReadOnlyList<AccountWalletOperation> operations, bool vendorLoyalty = false)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context)); this.accountId = accountId;
             if (accountId == 0 || (uint)currency is 0 or > byte.MaxValue || context.Database.CurrentTransaction == null
@@ -52,7 +54,10 @@ namespace NexusForever.Game.Account.Currency
                     || operation.Key.Length > 128 || operation.SourceJson == null || operation.SourceJson.Length > 131072)
                 || operations.Select(operation => operation.Key).Distinct(StringComparer.Ordinal).Count() != operations.Count)
                 throw new InvalidOperationException("Wallet operations require one owned currency and retained distinct identities.");
+            if (vendorLoyalty && (currency != AccountCurrencyType.CosmicReward || operations.Count != 1))
+                throw new InvalidOperationException("Vendor Loyalty settlement requires its single Cosmic operation.");
             currencyId = (byte)currency; this.operations = Array.AsReadOnly(operations.ToArray());
+            this.vendorLoyalty = vendorLoyalty;
             DatabaseKey(context);
         }
 
@@ -70,6 +75,7 @@ namespace NexusForever.Game.Account.Currency
                 if (prior != null)
                 {
                     ValidateReceipt(prior, operation);
+                    if (vendorLoyalty) LoyaltyRepository.ValidateVendorPayment(context, prior);
                     witnesses.Add((operation, prior.BeforeAmount, prior.AfterAmount));
                     // Re-observe already applied keys without replaying them.
                     // A later legitimate payment may have changed the wallet.
@@ -80,6 +86,7 @@ namespace NexusForever.Game.Account.Currency
                     CurrencyId = currencyId, Amount = operation.Amount, Subtract = operation.Subtract,
                     BeforeAmount = balance, AfterAmount = after, SourceJson = operation.SourceJson };
                 context.AccountCurrencyOperation.Add(receipt); Capture(receipt); balance = after;
+                if (vendorLoyalty) LoyaltyRepository.StageVendorPayment(context, receipt, Capture);
             }
             wallet.Amount = balance; Amount = balance;
             owned[0] = (wallet, context.Entry(wallet).CurrentValues.Clone());
@@ -132,6 +139,8 @@ namespace NexusForever.Game.Account.Currency
                 {
                     AccountCurrencyModel => ReadWallet(),
                     AccountCurrencyOperationModel operation => ReadOperation(operation.OperationKey),
+                    AccountLoyaltyModel => LoyaltyRepository.ReadLedger(context, accountId),
+                    AccountCosmicOperationModel operation => LoyaltyRepository.ReadOperation(context, accountId, operation.OperationKey),
                     _ => null
                 };
                 if (stored == null || row.Values.Properties.Any(property => !Equals(context.Entry(stored).CurrentValues[property.Name], row.Values[property.Name]))) return Reject();
@@ -143,6 +152,7 @@ namespace NexusForever.Game.Account.Currency
                 var stored = ReadOperation(operation.Key);
                 if (stored == null) return Reject();
                 ValidateReceipt(stored, operation);
+                if (vendorLoyalty) LoyaltyRepository.ValidateVendorPayment(context, stored);
                 var witness = witnesses.SingleOrDefault(row => row.Operation.Key == operation.Key);
                 if (witness.Operation != null && (stored.BeforeAmount != witness.Before || stored.AfterAmount != witness.After)) return Reject();
             }

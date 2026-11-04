@@ -22,9 +22,10 @@ namespace NexusForever.Game.Tests.Account.Currency;
 public sealed partial class AccountCurrencyDurabilityTests
 {
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task RealmAdmissionRecoversLocalVendorDebitsBeforePublishingWallets(bool validKey)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task RealmAdmissionRecoversLocalVendorDebitsBeforePublishingWallets(bool validKey, bool cosmic)
     {
         const string key = "00112233445566778899AABBCCDDEEFF";
         using var auth = new Fixture(providerOptions);
@@ -38,13 +39,14 @@ public sealed partial class AccountCurrencyDurabilityTests
             authDatabase.Initialise(new DatabaseConnectionString { Provider = seed.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
                 ConnectionString = seed.Database.GetDbConnection().ConnectionString });
             seed.Account.Single().SessionKey = key;
+            if (cosmic) seed.AccountCurrency.Add(new() { Id = 77, CurrencyId = 8, Amount = 100 });
             await seed.SaveChangesAsync();
         }
         var characterDatabase = new CharacterDatabase();
         using (var seed = character.Context())
             characterDatabase.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite, ConnectionString = seed.Database.GetDbConnection().ConnectionString });
 
-        await Pay(1, 15, AccountCurrencyType.ProtostarPromissoryNote, commit: false);
+        await Pay(1, 15, cosmic ? AccountCurrencyType.CosmicReward : AccountCurrencyType.ProtostarPromissoryNote, commit: false);
         await Pay(1, 9, AccountCurrencyType.Omnibit, commit: true);
         await Pay(2, 7, AccountCurrencyType.NCoin, commit: false);
 
@@ -79,7 +81,12 @@ public sealed partial class AccountCurrencyDurabilityTests
                 Assert.Null(error);
                 Assert.NotNull(initialized);
                 Assert.Equal((ulong)attempt + 2, initialized.WorldSessionEpoch);
-                Assert.Equal(new ulong[] { 61, 43, 100 }, initialized.AccountCurrency.OrderBy(row => row.CurrencyId).Select(row => row.Amount));
+                Assert.Equal(cosmic ? new ulong[] { 61, 43, 100, 100 } : [61, 43, 100], initialized.AccountCurrency.OrderBy(row => row.CurrencyId).Select(row => row.Amount));
+                if (cosmic)
+                {
+                    Assert.Equal(100ul, initialized.Loyalty.EarnedPoints);
+                    Assert.Equal(2ul, initialized.Loyalty.Revision);
+                }
                 firstAdmission ??= initialized;
                 Assert.Single(network.GetInvocations(nameof(IWorldSession.SetEncryptionKey)));
                 Assert.True(session.CanProcessIncomingPackets);
@@ -99,8 +106,14 @@ public sealed partial class AccountCurrencyDurabilityTests
         using var storedAuth = auth.Context();
         Assert.Equal(3, storedAuth.AccountCurrencyOperation.Count(row => row.Subtract));
         Assert.Equal(validKey ? 1 : 0, storedAuth.AccountCurrencyOperation.Count(row => !row.Subtract));
-        Assert.Equal(validKey ? new ulong[] { 61, 43, 100 } : [61, 43, 85],
+        Assert.Equal(cosmic ? new ulong[] { 61, 43, 100, 100 } : validKey ? [61, 43, 100] : [61, 43, 85],
             storedAuth.AccountCurrency.OrderBy(row => row.CurrencyId).Select(row => row.Amount));
+        if (cosmic)
+        {
+            Assert.Equal(2, storedAuth.AccountCosmicOperation.Count());
+            Assert.All(storedAuth.AccountCosmicOperation, row => Assert.False(row.Earned));
+            Assert.Empty(storedAuth.AccountPendingItem);
+        }
         using var storedCharacter = character.Context();
         Assert.Equal(validKey ? 2 : 1, storedCharacter.BankReconciliationReceipt.Count());
         Assert.Equal(912ul, storedCharacter.Item.Single().Id);

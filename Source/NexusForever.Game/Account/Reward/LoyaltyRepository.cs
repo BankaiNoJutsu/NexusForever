@@ -11,6 +11,49 @@ namespace NexusForever.Game.Account.Reward
 
     internal static class LoyaltyRepository
     {
+        internal static AccountLoyaltyModel ReadLedger(AuthContext context, uint accountId)
+            => (LockingRead(context)
+                ? context.AccountLoyalty.FromSqlInterpolated($"SELECT * FROM account_loyalty WHERE accountId={accountId} FOR UPDATE")
+                : context.AccountLoyalty.Where(row => row.AccountId == accountId)).AsNoTracking().SingleOrDefault();
+
+        internal static AccountCosmicOperationModel ReadOperation(AuthContext context, uint accountId, string key)
+            => (LockingRead(context)
+                ? context.AccountCosmicOperation.FromSqlInterpolated($"SELECT * FROM account_cosmic_operation WHERE accountId={accountId} AND operationKey={key} FOR UPDATE")
+                : context.AccountCosmicOperation.Where(row => row.AccountId == accountId && row.OperationKey == key)).AsNoTracking().SingleOrDefault();
+
+        private static bool LockingRead(AuthContext context) => context.Database.CurrentTransaction != null
+            && context.Database.ProviderName?.Contains("MySql", StringComparison.OrdinalIgnoreCase) == true;
+
+        // The vendor wallet repository already holds the account lock and
+        // owns the balance change. Both receipts commit with the journal revision.
+        internal static void StageVendorPayment(AuthContext context, AccountCurrencyOperationModel receipt, Action<object> capture)
+        {
+            var ledger = ReadLedger(context, receipt.AccountId);
+            if (ledger == null)
+            {
+                if (!receipt.Subtract) throw new InvalidOperationException("Vendor refund lost its Loyalty ledger.");
+                ledger = new AccountLoyaltyModel { AccountId = receipt.AccountId, EarnedPoints = receipt.BeforeAmount,
+                    BootstrapWalletAmount = receipt.BeforeAmount, ActiveTrackId = 9 };
+                context.AccountLoyalty.Add(ledger);
+            }
+            else context.Attach(ledger);
+            ledger.Revision = checked(ledger.Revision + 1);
+            capture(ledger);
+
+            var operation = new AccountCosmicOperationModel { AccountId = receipt.AccountId, OperationKey = receipt.OperationKey,
+                Amount = receipt.Amount, Subtract = receipt.Subtract, Earned = false };
+            context.AccountCosmicOperation.Add(operation);
+            capture(operation);
+        }
+
+        internal static void ValidateVendorPayment(AuthContext context, AccountCurrencyOperationModel receipt)
+        {
+            var journal = ReadOperation(context, receipt.AccountId, receipt.OperationKey);
+            if (journal == null || journal.OperationKey != receipt.OperationKey || journal.Amount != receipt.Amount
+                || journal.Subtract != receipt.Subtract || journal.Earned || ReadLedger(context, receipt.AccountId) == null)
+                throw new InvalidOperationException("Vendor payment lost its matching non-earning Loyalty operation.");
+        }
+
         internal static LoyaltyState Stage(AuthContext context, uint accountId, LoyaltyCatalog catalog,
             IReadOnlyList<AccountCurrencyManager.CosmicMutation> mutations, Func<uint, bool> meets,
             uint? chooseTrack, (uint Row, uint Choice)? requestedClaim, List<object> staged, out bool accepted)
@@ -19,9 +62,7 @@ namespace NexusForever.Game.Account.Reward
             staged.Clear();
             context.ReservePendingItemIds(accountId, 0);
             bool mysql = context.Database.ProviderName?.Contains("MySql", StringComparison.OrdinalIgnoreCase) == true;
-            AccountLoyaltyModel ledger = (mysql
-                ? context.AccountLoyalty.FromSqlInterpolated($"SELECT * FROM account_loyalty WHERE accountId = {accountId} FOR UPDATE")
-                : context.AccountLoyalty.Where(row => row.AccountId == accountId)).AsNoTracking().SingleOrDefault();
+            AccountLoyaltyModel ledger = ReadLedger(context, accountId);
             AccountCurrencyModel wallet = (mysql
                 ? context.AccountCurrency.FromSqlInterpolated($"SELECT * FROM account_currency WHERE id = {accountId} AND currencyId = {(byte)AccountCurrencyType.CosmicReward} FOR UPDATE")
                 : context.AccountCurrency.Where(row => row.Id == accountId && row.CurrencyId == (byte)AccountCurrencyType.CosmicReward)).AsNoTracking().SingleOrDefault();
@@ -45,9 +86,7 @@ namespace NexusForever.Game.Account.Reward
             bool appliedPositiveEarning = false;
             foreach (AccountCurrencyManager.CosmicMutation mutation in mutations)
             {
-                AccountCosmicOperationModel prior = (mysql
-                    ? context.AccountCosmicOperation.FromSqlInterpolated($"SELECT * FROM account_cosmic_operation WHERE accountId = {accountId} AND operationKey = {mutation.Key} FOR UPDATE")
-                    : context.AccountCosmicOperation.Where(row => row.AccountId == accountId && row.OperationKey == mutation.Key)).AsNoTracking().SingleOrDefault();
+                AccountCosmicOperationModel prior = ReadOperation(context, accountId, mutation.Key);
                 if (prior != null)
                 {
                     if (prior.Amount != mutation.Amount || prior.Subtract != mutation.Subtract)

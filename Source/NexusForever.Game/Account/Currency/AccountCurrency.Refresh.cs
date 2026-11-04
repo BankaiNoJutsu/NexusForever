@@ -10,17 +10,17 @@ namespace NexusForever.Game.Account.Currency
         private RefreshReservation pendingRefresh;
         internal bool IsPersistenceBusy { get { lock (saveGate) return pendingSave != null || pendingRefresh != null; } }
 
-        internal RefreshReservation CaptureRefresh(AccountWalletOperation required = null)
+        internal RefreshReservation CaptureRefresh(AccountWalletOperation required = null, bool journal = false)
         {
             lock (saveGate)
             {
                 EnsureCurrent();
                 if (pendingSave != null || pendingRefresh != null || account.Id == 0 || (uint)CurrencyId is 0 or > byte.MaxValue
-                    || CurrencyId == AccountCurrencyType.CosmicReward && account.LoyaltyManager != null
+                    || journal != (CurrencyId == AccountCurrencyType.CosmicReward && account.LoyaltyManager != null)
                     || required != null && (required.AccountId != account.Id || required.Currency != CurrencyId))
                     throw new InvalidOperationException("Wallet observation requires its idle original account/currency owner.");
                 pendingRefresh = new(this, account.Id, CurrencyId, database, operations.ToArray(),
-                    (saveMask & AccountCurrencySaveMask.Create) != 0, required);
+                    (saveMask & AccountCurrencySaveMask.Create) != 0, required, journal);
                 return pendingRefresh;
             }
         }
@@ -28,9 +28,9 @@ namespace NexusForever.Game.Account.Currency
         // The worker sees only copied identities and operations. Its private
         // result is consumed on the actor; it never mutates the live wallet.
         internal sealed class RefreshReservation(AccountCurrency owner, uint accountId, AccountCurrencyType currency,
-            string expectedDatabase, AccountWalletOperation[] captured, bool allowMissing, AccountWalletOperation required) : IDisposable
+            string expectedDatabase, AccountWalletOperation[] captured, bool allowMissing, AccountWalletOperation required, bool journal) : IDisposable
         {
-            private sealed record Observation(string Database, ulong Amount, bool Exists, HashSet<string> Applied);
+            private sealed record Observation(string Database, ulong Amount, bool Exists, HashSet<string> Applied, ulong? Revision);
             private Task<Observation> observation;
             private bool adopted;
             internal Task ReadAsync(Func<AuthContext> contexts, Task beforeRead = null, ulong? epoch = null)
@@ -83,6 +83,10 @@ namespace NexusForever.Game.Account.Currency
                         ? context.AccountCurrency.FromSqlInterpolated($"SELECT * FROM account_currency WHERE id={accountId} AND currencyId={id} FOR UPDATE")
                         : context.AccountCurrency.Where(row => row.Id == accountId && row.CurrencyId == id)).AsNoTracking().SingleOrDefaultAsync();
                     if (wallet == null && !allowMissing) throw new InvalidOperationException("A retained wallet disappeared.");
+                    ulong? revision = journal ? await context.AccountLoyalty.AsNoTracking().Where(row => row.AccountId == accountId)
+                        .Select(row => (ulong?)row.Revision).SingleOrDefaultAsync() : null;
+                    if (journal && (!revision.HasValue || wallet == null))
+                        throw new InvalidOperationException("Vendor wallet observation lost its Loyalty journal.");
                     var applied = new HashSet<string>(StringComparer.Ordinal);
                     foreach (var operation in captured.Concat(required == null ? [] : new[] { required }))
                     {
@@ -99,12 +103,15 @@ namespace NexusForever.Game.Account.Currency
                         applied.Add(operation.Key);
                     }
                     await transaction.CommitAsync();
-                    return new Observation(retained, wallet?.Amount ?? 0, wallet != null, applied);
+                    return new Observation(retained, wallet?.Amount ?? 0, wallet != null, applied, revision);
                 });
             }
 
-            internal bool TryAdopt()
+            internal bool TryAdopt() => TryAdopt(out _);
+
+            internal bool TryAdopt(out (ulong Wallet, ulong Revision)? loyalty)
             {
+                loyalty = null;
                 lock (owner.saveGate)
                 {
                     if (!ReferenceEquals(owner.pendingRefresh, this) || adopted) return false;
@@ -117,6 +124,13 @@ namespace NexusForever.Game.Account.Currency
                         var read = observation.Result;
                         if (owner.database != null && owner.database != read.Database)
                             throw new InvalidOperationException("Wallet observation changed its retained database.");
+                        if (journal)
+                        {
+                            owner.database ??= read.Database;
+                            loyalty = (read.Amount, read.Revision.Value);
+                            adopted = true;
+                            return true;
+                        }
                         // A save cannot run during this reservation. Applied
                         // captured keys are already in SQL; all other, including
                         // later, semantic operations still need exactly one save.
