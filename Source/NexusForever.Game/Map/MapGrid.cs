@@ -172,9 +172,9 @@ namespace NexusForever.Game.Map
         /// <summary>
         /// Remove <see cref="IGridEntity"/> from the <see cref="IMapGrid"/>.
         /// </summary>
-        public void RemoveEntity(IGridEntity entity)
+        public void RemoveEntity(IGridEntity entity, Vector3? vector = null)
         {
-            GetCell(entity.Position).RemoveEntity(entity);
+            GetCell(vector ?? entity.Position).RemoveEntity(entity);
 
             checked
             {

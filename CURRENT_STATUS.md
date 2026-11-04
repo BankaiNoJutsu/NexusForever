@@ -21234,6 +21234,22 @@ later destination save. The owning-project build and 163 scoped tests passed.
 Test execution took 54 seconds. Results are under
 `artifacts/continuation-20261104/transfer-location-save/`.
 
+#### Failed map bootstrap recovery
+
+4 November 2026. A destination bootstrap exception cancels the matching
+admission and requests a disconnect from its original session. A rebound
+session cannot be disconnected by that older failure. If the player never
+attached to the map, the map removes the registration from the destination
+cell and returns the GUID. An attached player remains registered for ordinary
+logout removal. Failed bootstraps cannot acknowledge world entry or replace
+the saved location. Fare settlement still precedes bootstrap, and deployed
+disconnect/reconnect behavior remains open.
+
+Two baseline cases reproduced the escaping exceptions. The owning-project
+build and 127 scoped tests passed, including exact cell cleanup, ordinary
+removal after attachment, and the rebound-session control. Results are under
+`artifacts/continuation-20261104/map-bootstrap-failure/`.
+
 #### Rapid Transport cast fare
 
 4 November 2026. The request supplies its validated route fare to the spell

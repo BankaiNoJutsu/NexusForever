@@ -587,14 +587,21 @@ namespace NexusForever.Game.Map
 
         private void CompleteMapAdd(GridActionAdd action)
         {
-            if (action.Entity is Player player && !player.TryApplyTaxiAdmission(action.AdmissionPosition, checkFare: true, settleFare: true))
+            var player = action.Entity as Player;
+            if (player != null && !player.TryApplyTaxiAdmission(action.AdmissionPosition, checkFare: true, settleFare: true))
                 return;
 
+            var originalSession = player?.Session;
             bool successful = false;
             try
             {
                 AddEntity(action.Entity, action.Vector);
                 successful = true;
+            }
+            catch (Exception exception) when (player != null && action.AdmissionGeneration.HasValue)
+            {
+                log.Error(exception, "Player bootstrap failed in world {0}.", Entry?.Id);
+                player.FailMapBootstrap(action.AdmissionGeneration.Value, originalSession);
             }
             finally
             {
@@ -614,7 +621,18 @@ namespace NexusForever.Game.Map
             entities.Add(guid, entity);
 
             ulong? generation = PlayerMapAdmissionGuard.Capture(entity);
-            entity.OnAddToMap(this, guid, vector);
+            try
+            {
+                entity.OnAddToMap(this, guid, vector);
+            }
+            catch when (entity is Player { Map: null })
+            {
+                // A player without a map cannot remove this registration during session cleanup.
+                grid.RemoveEntity(entity, vector);
+                entities.Remove(guid);
+                entityCounter.Enqueue(guid);
+                throw;
+            }
             if (!PlayerMapAdmissionGuard.IsCurrent(entity, generation))
                 return;
 

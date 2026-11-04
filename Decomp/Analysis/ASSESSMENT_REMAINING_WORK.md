@@ -40,7 +40,9 @@ preserve queued transfers waiting on an unload. The follow-up
 fails the current request cleanly when instance preparation throws.
 [Detached destination grid recovery](../../CURRENT_STATUS.md#detached-destination-grid-recovery)
 ends admission when the destination grid cannot accept the player after source
-removal. Recovery after insertion and fare settlement on later failures remain open.
+removal. [Failed map bootstrap recovery](../../CURRENT_STATUS.md#failed-map-bootstrap-recovery)
+ends the matching admission on callback failure and retains map cleanup ownership.
+Fare settlement after the grid gate and deployed disconnect/reconnect remain open.
 [Transfer location persistence](../../CURRENT_STATUS.md#transfer-location-persistence)
 keeps the last saved location through detachment or unsuccessful bootstrap
 while other character changes commit.

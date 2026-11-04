@@ -7,6 +7,7 @@ using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Map.Lock;
+using NexusForever.Game.Abstract.Map.Search;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.RBAC;
 using NexusForever.Game.Configuration.Model;
@@ -18,9 +19,12 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
 using NexusForever.IO.Map;
 using NexusForever.Network.Session;
+using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Pregame;
 using NexusForever.Network.World.Message.Static;
+using NexusForever.Script.Template.Collection;
 using NexusForever.Shared.Configuration;
+using NexusForever.WorldServer.Network;
 
 namespace NexusForever.Game.Tests.Map;
 
@@ -52,6 +56,75 @@ public sealed class MapAdmissionQueueTests
         map.Tick();
         Assert.Equal(1, map.SpawnCount);
         Assert.Empty(map.Added);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void FailedRealPlayerBootstrapDisconnectsAndPreservesMapCleanupOwnership(bool afterAttachment, bool replaced)
+    {
+        var map = new BootstrapFaultMap();
+        var mapManager = RecordingDispatchProxy<IMapManager>.Create(out var managerProxy);
+        managerProxy.SetMethodHandler(nameof(IMapManager.AddToMap), args =>
+        {
+            map.EnqueueAdd((IPlayer)args[0], (IMapPosition)args[1]);
+            return null;
+        });
+        var movement = RecordingDispatchProxy<IMovementManager>.Create(out _);
+        var player = new Player(movement, null, null, null, null, null, null, mapManager: mapManager);
+        var session = RecordingDispatchProxy<IWorldSession>.Create(out var sessionProxy);
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
+        typeof(Player).GetProperty(nameof(Player.Session))!.SetValue(player, session);
+        typeof(Player).GetProperty(nameof(Player.Identity))!.SetValue(player, new Game.Abstract.Identity { RealmId = 1, Id = 42 });
+        if (afterAttachment)
+        {
+            var scripts = RecordingDispatchProxy<IScriptCollection>.Create(out var scriptProxy);
+            scriptProxy.SetMethodHandler(nameof(IScriptCollection.Invoke), _ => throw new InvalidOperationException("fixture attached bootstrap failure"));
+            typeof(GridEntity).GetField("scriptCollection", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(player, scripts);
+        }
+        else
+        {
+            sessionProxy.SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), args =>
+            {
+                if (args[0] is not ServerChangeWorld) return null;
+                if (replaced) sessionProxy.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+                throw new InvalidOperationException("fixture pre-attachment bootstrap failure");
+            });
+        }
+
+        var position = Position();
+        position.Position = new Vector3(MapDefines.GridSize + 32, 0, 32);
+        player.TeleportTo(position);
+        var admission = (IPlayerMapAdmission)player;
+        ulong generation = admission.MapAdmissionGeneration;
+        map.Tick();
+        player.OnEnteredWorld();
+        map.Tick();
+
+        Assert.Equal(replaced ? 0 : 1, sessionProxy.GetInvocations(nameof(IGameSession.ForceDisconnect)).Count);
+        Assert.DoesNotContain(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)), call => call.Arguments[0] is ServerPlayerEnteredWorld);
+        Assert.False(admission.IsMapAdmissionCurrent(generation));
+        Assert.False(player.IsLoading);
+        Assert.True(player.CanTeleport());
+        var all = RecordingDispatchProxy<ISearchCheck<IPlayer>>.Create(out var searchProxy);
+        searchProxy.SetMethodReturn(nameof(ISearchCheck<IPlayer>.CheckEntity), true);
+        var grid = map.GridAt(position.Position);
+        Assert.Equal(afterAttachment ? 1u : 0u, BootstrapFaultMap.GridOccupancy(grid));
+        if (afterAttachment)
+        {
+            Assert.Same(map, player.Map);
+            Assert.Same(player, Assert.Single(map.Registered));
+            Assert.Same(player, map.GetEntity<IPlayer>(player.Guid));
+            Assert.Same(player, Assert.Single(grid.Search(position.Position, all)));
+            typeof(GridEntity).GetField("scriptCollection", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(player, null);
+            map.EnqueueRemove(player);
+            map.Tick();
+            Assert.Equal(0u, BootstrapFaultMap.GridOccupancy(grid));
+        }
+        Assert.Null(player.Map);
+        Assert.Empty(map.Registered);
+        Assert.Empty(grid.Search(position.Position, all));
     }
 
     [Theory]
@@ -399,6 +472,30 @@ public sealed class MapAdmissionQueueTests
             Added.Add(entity);
             OnAdded?.Invoke();
         }
+    }
+
+    private sealed class BootstrapFaultMap : BaseMap
+    {
+        public IEnumerable<IGridEntity> Registered => entities.Values;
+
+        public BootstrapFaultMap() : base(null, RecordingDispatchProxy<IPublicEventManager>.Create(out _), sharedConfiguration: Configuration())
+        {
+            typeof(BaseMap).GetProperty(nameof(Entry))!.SetValue(this, Position().Info.Entry);
+            VisionRange = -MapDefines.GridSize;
+        }
+
+        public void Tick() => typeof(BaseMap).GetMethod("ProcessGridActions", BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(this, null);
+        protected override void SpawnGrid(uint gridX, uint gridZ) { }
+
+        public IMapGrid GridAt(Vector3 position)
+        {
+            var (x, z) = MapGrid.GetGridCoord(position);
+            var grids = (IMapGrid[])typeof(BaseMap).GetField("grids", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(this)!;
+            return grids[z * MapDefines.WorldGridCount + x];
+        }
+
+        public static uint GridOccupancy(IMapGrid grid) => (uint)typeof(MapGrid).GetField("entityCount", BindingFlags.NonPublic | BindingFlags.Instance)!
+            .GetValue(grid)!;
     }
 
     private sealed class TestInstancedMap : InstancedMap<IMapInstance>

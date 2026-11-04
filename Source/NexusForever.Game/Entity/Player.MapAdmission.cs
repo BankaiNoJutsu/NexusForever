@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Threading;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Session;
@@ -40,6 +41,21 @@ public partial class Player : IPlayerMapAdmission
         {
             if (mapAdmission.FinishBootstrap(generation, successful && IsAdmissionAllowed()))
                 CompleteEnteredWorld(generation);
+        }
+    }
+
+    internal void FailMapBootstrap(ulong generation, IGameSession originalSession)
+    {
+        lock (mapAdmission.SyncRoot)
+        {
+            if (!mapAdmission.IsCurrent(generation))
+                return;
+
+            CancelMapAdmission();
+            IsLoading = false;
+            if (ReferenceEquals(Session, originalSession)
+                && (originalSession is not IPlayerSession bound || ReferenceEquals(bound.Player, this)))
+                originalSession?.ForceDisconnect();
         }
     }
 
