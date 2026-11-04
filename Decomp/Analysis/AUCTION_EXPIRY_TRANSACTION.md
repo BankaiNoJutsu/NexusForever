@@ -1,5 +1,32 @@
 # Auction expiry settlement
 
+## Recovering the committed direct item delivery
+
+4 November 2026. Direct buyout, winning expiry and unsold expiry reuse the
+committed cancellation item retry. A failed item-add enqueue previously
+escaped the recipient's reconciliation even though SQL had committed. The
+confirmed item stays adopted and the original recipient retries its full
+item packet after the listing and account reservations release.
+
+The retry rebuilds the exact current item without mutating live state. It
+waits through an inventory save block, excludes Realm Bank custody and drops
+the old publication when the actor, inventory, session or queue changes.
+The recipient receives the item before the terminal expiry notice, or before
+the buyout result and won notice in that order. Item custody and listing
+absence control their respective stages. Seller proceeds, seller notices and
+previous-bidder notification do not wait for the recipient retry.
+
+The baseline reproduced failed publication in all three flows. The initial
+135 scoped tests passed in 82 seconds. Review identified an additional
+reservation release gap when a successful send replaced the event queue.
+The final build and 113 affected tests passed in 74 seconds, including five
+new cases covering both retry and queue replacement. The targeted re-review
+cleared the reservation release fix.
+
+Local evidence is in `artifacts/continuation-20261104/auction-direct-item-publication/`.
+This gate covers source and private SQLite through the existing producers.
+Restart replay, deployed sockets and retail qualification remain open.
+
 ## Retry for terminal auction notices
 
 4 November 2026. The live expiry producer reached committed item, wallet,

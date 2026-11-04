@@ -1,5 +1,9 @@
 # Auction buyout transaction
 
+The [direct item delivery retry](AUCTION_EXPIRY_TRANSACTION.md#recovering-the-committed-direct-item-delivery)
+also covers the buyout recipient. Its item packet precedes the successful
+result and terminal won notice.
+
 ## Ordered buyer result and won notice
 
 4 November 2026. The public buyout previously sent the buyer's won notice

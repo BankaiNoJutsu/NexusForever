@@ -10,6 +10,11 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Committed direct auction delivery](AUCTION_EXPIRY_TRANSACTION.md#recovering-the-committed-direct-item-delivery)
+recovers the recipient's item packet for buyout, winning expiry and unsold
+expiry. Settlement releases its reservations independently of the recipient's
+publication queue. Deployed and restart delivery remain open.
+
 [Committed auction cancellation publication](AUCTION_CANCELLATION_TRANSACTION.md#recovering-the-committed-item-return-and-cancellation-result)
 retries the returned item and success reply in order on the original actor.
 Item custody and listing absence control their respective notices. Deployed

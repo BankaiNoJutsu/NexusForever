@@ -56,6 +56,7 @@ public sealed class NormalBidCoordinatorTests
     [InlineData("none", "buyout-seller")] [InlineData("online", "buyout-seller")]
     [InlineData("none", "buyout-lost-reply")] [InlineData("none", "buyout-before")]
     [InlineData("online", "buyout-result-retry")]
+    [InlineData("online", "buyout-item-retry")]
     [InlineData("none", "buyout-won-retry")]
     [InlineData("none", "buyout-result-replace")]
     [InlineData("none", "buyout-replace-after-result")]
@@ -207,6 +208,7 @@ public sealed class NormalBidCoordinatorTests
             });
         marketplace.Initialise();
         int activeActor = 0, auth = 0, priorAuth = 0, sellerAuth = 0, replies = 0, bidResultAttempts = 0, wonAttempts = 0;
+        int itemAddAttempts = 0;
         actor.OnAuth = () => { Assert.Equal(42, activeActor); auth++;
             if (fault == "expiry-during-save" && auth == 2) actor.Player.Inventory.Update(2); };
         if (previous != null) previous.OnAuth = () => { Assert.Equal(200, activeActor); priorAuth++; };
@@ -216,6 +218,12 @@ public sealed class NormalBidCoordinatorTests
         ulong firstBidResultExpiration = 0;
         sessionProxy.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
             {
+                if (competing == "buyout-item-retry" && args[0] is ServerItemAdd)
+                {
+                    Assert.Equal(42, activeActor);
+                    if (++itemAddAttempts == 1) throw new IOException("Committed buyout item enqueue failed.");
+                    Assert.False(cleanup.IsAccountLocked(actor.Player.Account));
+                }
                 bool replaceDuringWallet = fault == "publication-replacement" && args[0] is ServerCombatReward;
                 bool replaceDuringWon = fault == "mail-replacement-during-won" && args[0] is ServerAuctionWon;
                 if ((replaceDuringWallet || replaceDuringWon) && replacementPublicationBoundary < 0)
@@ -378,7 +386,14 @@ public sealed class NormalBidCoordinatorTests
         var published = sessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).ToArray();
         bool buyerDelivery = (expectsReply || competing == "buyout-result-replace") && saleCommitted
             && fault is not ("custody" or "ordinary-mail-custody" or "ordinary-direct-custody" or "ordinary-header-custody" or "ordinary-link-custody" or "ordinary-rollback-custody");
-        if (buyout) Assert.Equal(buyerDelivery && !mailDelivery ? 1 : 0, published.OfType<ServerItemAdd>().Count());
+        if (buyout) Assert.Equal(buyerDelivery && !mailDelivery ? competing == "buyout-item-retry" ? 2 : 1 : 0,
+            published.OfType<ServerItemAdd>().Count());
+        if (competing == "buyout-item-retry")
+        {
+            Assert.Equal(2, itemAddAttempts);
+            Assert.True(Array.FindLastIndex(published, packet => packet is ServerItemAdd)
+                < Array.FindIndex(published, packet => packet is ServerAuctionBidResult));
+        }
         if (replacementPublicationBoundary >= 0) Assert.DoesNotContain(published.Skip(replacementPublicationBoundary),
             message => message is ServerItemAdd or ServerAuctionWon or ServerAuctionBidResult or ServerCombatReward or ServerMailAvailable);
         if (buyout)

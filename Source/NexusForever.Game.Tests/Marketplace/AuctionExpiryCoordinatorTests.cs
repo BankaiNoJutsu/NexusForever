@@ -61,6 +61,10 @@ public sealed partial class AuctionExpiryCoordinatorTests
     [InlineData(false, true, false, false, true, "ordinary-rollback")]
     [InlineData(true, true, false, true, false, "ordinary-lost")]
     [InlineData(true, true, true, false, false, "held-competing")]
+    [InlineData(true, true, true, false, false, "item-add-retry")]
+    [InlineData(false, true, false, false, false, "item-add-retry")]
+    [InlineData(true, true, false, false, false, "item-add-requeue")]
+    [InlineData(true, true, false, false, false, "item-add-requeue-success")]
     public async Task RealProducerSettlesWinningAndUnsoldExpiryThroughOriginalActorsOrOfflineMail(
         bool winning, bool receiverOnline, bool sellerOnline, bool mailed, bool missingWallet, string fault)
     {
@@ -150,6 +154,8 @@ public sealed partial class AuctionExpiryCoordinatorTests
         }); manager.Initialise();
         int activeActor = 0, saves = 0, sellerSaves = 0, won = 0, returned = 0, replacementBoundary = -1;
         int mailAttempts = 0, mailNotices = 0;
+        int itemAddAttempts = 0;
+        var replacementQueue = new EventQueue();
         bool failMailNotice = fault is "mail-notify-retry" or "mail-notify-replace";
         int auctionNoticeAttempts = 0;
         bool failAuctionNotice = fault is "auction-notice-retry" or "auction-notice-replace";
@@ -180,6 +186,23 @@ public sealed partial class AuctionExpiryCoordinatorTests
         });
         sp.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
         {
+            if (args[0] is ServerItemAdd && fault is "item-add-retry" or "item-add-requeue" or "item-add-requeue-success")
+            {
+                Assert.Equal(42, activeActor);
+                using var readItem = f.Context();
+                Assert.Equal(42ul, Assert.Single(readItem.Item).OwnerId);
+                Assert.Empty(readItem.MarketplaceAuction);
+                if (++itemAddAttempts == 1)
+                {
+                    if (fault is "item-add-requeue" or "item-add-requeue-success")
+                        sp.SetProperty(nameof(IWorldSession.Events), replacementQueue);
+                    if (fault == "item-add-requeue-success") return null;
+                    throw new IOException("Committed expiry item enqueue failed.");
+                }
+                CheckSql(readItem);
+                Assert.False(cleanup.IsAccountLocked(actor.Player.Account));
+                if (seller != null) Assert.False(cleanup.IsAccountLocked(seller.Player.Account));
+            }
             if (args[0] is ServerMailAvailable notice && failMailNotice)
             {
                 using var readMail = f.Context(); CheckSql(readMail);
@@ -252,7 +275,7 @@ public sealed partial class AuctionExpiryCoordinatorTests
             Assert.Equal(1, ordinaryDatabase.Failures);
         }
         bool publishes = receiverOnline && fault is not ("receiver-retire" or "receiver-replace");
-        bool publishesAuctionNotice = publishes && fault != "auction-notice-replace";
+        bool publishesAuctionNotice = publishes && fault is not ("auction-notice-replace" or "item-add-requeue" or "item-add-requeue-success");
         Assert.Equal(winning && publishesAuctionNotice ? 1 : 0, won);
         Assert.Equal(!winning && publishesAuctionNotice ? 1 : 0, returned);
         Assert.Equal(winning && sellerOnline && fault is not ("seller-retire" or "seller-notice-replace") ? 1 : 0, sold);
@@ -268,7 +291,13 @@ public sealed partial class AuctionExpiryCoordinatorTests
         Assert.False(cleanup.IsAccountLocked(f.Source.Player.Account));
         var packets = sp.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).ToArray();
         Assert.Empty(packets.OfType<ServerAuctionBidResult>());
-        Assert.Equal(publishes && !mailed ? 1 : 0, packets.OfType<ServerItemAdd>().Count());
+        Assert.Equal(publishes && !mailed ? fault == "item-add-retry" ? 2 : 1 : 0, packets.OfType<ServerItemAdd>().Count());
+        if (fault == "item-add-retry")
+            Assert.True(Array.FindLastIndex(packets, packet => packet is ServerItemAdd)
+                < Array.FindIndex(packets, packet => packet is ServerAuctionWon or ServerAuctionExpired));
+        if (fault is "item-add-retry" or "item-add-requeue" or "item-add-requeue-success")
+            Assert.False(currency.RequiresContractCurrencyReload);
+        if (fault is "item-add-requeue" or "item-add-requeue-success") Assert.False(replacementQueue.PendingEvents);
         if (replacementBoundary >= 0) Assert.DoesNotContain(packets.Skip(replacementBoundary), packet => packet is ServerMailAvailable or ServerItemAdd or ServerCombatReward or ServerAuctionBidResult);
         if (missingWallet && fault == "none") Assert.DoesNotContain(final.CharacterCurrency, row => row.Id == 42);
 
