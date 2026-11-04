@@ -22924,6 +22924,19 @@ and WorldServer builds and 152 scoped tests passed. Test execution took 50
 seconds. Results are under
 `artifacts/continuation-20261104/resource-conversion-wallet-application/`.
 
+#### Resource conversion notice recovery
+
+4 November 2026. A failed conversion balance enqueue schedules a retry for
+that currency on the original session queue. The retry reads the current
+balance and checks the original player, wallet and row identity. A session
+rebind or queue replacement drops the old notice. The retry leaves balances
+and earned progress untouched. Durable settlement, socket delivery and retail
+selector behavior remain open.
+
+The baseline lost the notice. The owning-project builds and 36 scoped tests
+passed, including a later balance change and both replacement controls.
+Results are under `artifacts/continuation-20261104/resource-conversion-notice-recovery/`.
+
 #### Existing item and unlock behavior
 
 Inventory, title, pet, costume, unlock surfaces exist. Generic unlock

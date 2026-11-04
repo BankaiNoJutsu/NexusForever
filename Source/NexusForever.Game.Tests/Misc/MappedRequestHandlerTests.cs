@@ -13,6 +13,7 @@ using NexusForever.GameTable.Model;
 using NexusForever.Network;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
+using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Misc;
 
@@ -264,16 +265,21 @@ public class MappedRequestHandlerTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ConvertResource_SettlesAllWalletsBeforePublishing(bool invalidTargetOwner)
+    [InlineData("retry")]
+    [InlineData("rebound")]
+    [InlineData("replaced-queue")]
+    [InlineData("invalid-target")]
+    public async Task ConvertResource_SettlesAllWalletsBeforePublishing(string outcome)
     {
+        bool invalidTargetOwner = outcome == "invalid-target";
         var conversion = CreateCurrencyConversion();
         conversion.SurchargeId = (uint)CurrencyType.ElderGems;
         conversion.SurchargeCount = 3;
         var tables = CreateGameTableManager(resourceConversions: [conversion], currencies:
         [CreateCurrency(CurrencyType.Credits), CreateCurrency(CurrencyType.ElderGems), CreateCurrency(CurrencyType.Renown)]);
         var session = CreateSession(out _, out _, out _, out var network);
+        var events = new EventQueue();
+        network.SetProperty(nameof(IWorldSession.Events), events);
         var player = (RecordingDispatchProxy<IPlayer>)(object)session.Player;
         player.SetProperty(nameof(IPlayer.CharacterId), 42ul);
         player.SetProperty(nameof(IPlayer.Session), session);
@@ -306,11 +312,35 @@ public class MappedRequestHandlerTests
         Assert.Equal(invalidTargetOwner ? 20ul : 25ul, rows[CurrencyType.Renown].Amount);
         Assert.Equal(invalidTargetOwner ? 0 : 3, attempts);
         Assert.Equal(invalidTargetOwner ? 0 : 1, achievementCalls.GetInvocations(nameof(NexusForever.Game.Abstract.Achievement.ICharacterAchievementManager.CheckAchievements)).Count);
-        if (!invalidTargetOwner)
+        if (invalidTargetOwner) return;
+
+        Assert.Equal(new (byte, ulong)[] { ((byte)CurrencyType.ElderGems - 1, 7ul), ((byte)CurrencyType.Renown - 1, 25ul) }, published);
+        if (outcome == "rebound")
+            network.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+        if (outcome == "replaced-queue")
+            network.SetProperty(nameof(IWorldSession.Events), new EventQueue());
+        if (outcome == "retry")
+            rows[CurrencyType.Credits].Amount = 11;
+
+        var deadline = System.Diagnostics.Stopwatch.StartNew();
+        while (events.PendingEvents)
         {
-            Assert.Contains(((byte)CurrencyType.ElderGems - 1, 7ul), published.Select(packet => ((int)packet.Item1, packet.Item2)));
-            Assert.Contains(((byte)CurrencyType.Renown - 1, 25ul), published.Select(packet => ((int)packet.Item1, packet.Item2)));
+            Assert.True(deadline.Elapsed < TimeSpan.FromSeconds(5), "Conversion balance retry did not settle.");
+            events.Update(0);
+            await Task.Delay(10);
         }
+
+        if (outcome == "retry")
+        {
+            Assert.Equal(((byte)CurrencyType.Credits - 1, 11ul), ((int)published.Last().Item1, published.Last().Item2));
+            Assert.Equal(4, attempts);
+        }
+        else
+            Assert.Equal(3, attempts);
+        Assert.Equal(outcome == "retry" ? 11ul : 15ul, rows[CurrencyType.Credits].Amount);
+        Assert.Equal(7ul, rows[CurrencyType.ElderGems].Amount);
+        Assert.Equal(25ul, rows[CurrencyType.Renown].Amount);
+        Assert.Single(achievementCalls.GetInvocations(nameof(NexusForever.Game.Abstract.Achievement.ICharacterAchievementManager.CheckAchievements)));
     }
 
     [Fact]

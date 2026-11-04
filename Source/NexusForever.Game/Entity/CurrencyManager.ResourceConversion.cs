@@ -1,6 +1,7 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Session;
+using NexusForever.Shared.Game.Events;
 using NLog;
 
 namespace NexusForever.Game.Entity
@@ -13,7 +14,10 @@ namespace NexusForever.Game.Entity
         public bool TryApplyResourceConversion(IGameSession session, CurrencyType source, ulong sourceCost,
             CurrencyType surcharge, ulong surchargeCost, CurrencyType target, ulong grant)
         {
+            var events = session?.Events;
+            ulong character = player?.CharacterId ?? 0;
             bool OwnsActor() => session != null && ReferenceEquals(player?.Session, session)
+                && player.CharacterId == character && ReferenceEquals(session.Events, events)
                 && ReferenceEquals(player.CurrencyManager, this) && HasLoadedCurrencyOwner()
                 && (session is not IPlayerSession bound || ReferenceEquals(bound.Player, player))
                 && session is not NetworkSession { IsDisconnecting: true }
@@ -81,15 +85,24 @@ namespace NexusForever.Game.Entity
                 }
             }
 
-            foreach (var row in rows.Values)
-            {
-                if (!OwnsActor()) break;
-                try { PublishCurrencyAmount(row, session); }
-                catch (Exception exception) { resourceConversionLog.Warn(exception, "Failed to publish an accepted resource conversion balance."); }
-            }
+            foreach (var row in rows)
+                PublishBalance(row.Key, row.Value);
             try { CreditCurrencyProgress(targetRow, grant); }
             catch (Exception exception) { resourceConversionLog.Warn(exception, "Failed to publish progress for an accepted resource conversion."); }
             return true;
+
+            void PublishBalance(CurrencyType type, Currency row)
+            {
+                if (!OwnsActor() || row.CharacterId != character || row.Id != type
+                    || !currencies.TryGetValue(type, out var current) || !ReferenceEquals(current, row)) return;
+                // A retry publishes the live balance, which may have changed since the conversion.
+                try { PublishCurrencyAmount(row, session); }
+                catch (Exception exception)
+                {
+                    resourceConversionLog.Warn(exception, "Failed to publish an accepted resource conversion balance.");
+                    events?.EnqueueThreadSafe(new DelayEvent(TimeSpan.FromSeconds(1), () => PublishBalance(type, row)));
+                }
+            }
         }
     }
 }
