@@ -126,6 +126,9 @@ namespace NexusForever.Game.Entity
         }
 
         public bool CanCreditFullAmount(CurrencyType currencyId, ulong amount)
+            => CanCreditFullAmountAfterDebit(currencyId, amount, 0);
+
+        public bool CanCreditFullAmountAfterDebit(CurrencyType currencyId, ulong amount, ulong debit)
         {
             CurrencyTypeEntry definition = gameTableManager.CurrencyType?.GetEntry((ulong)currencyId);
             if (definition == null || !HasLoadedCurrencyOwner() || IsMutationPublicationBlocked || ContractCurrencyBlocked(currencyId))
@@ -135,7 +138,9 @@ namespace NexusForever.Game.Entity
             ulong before = currency?.Amount ?? 0ul;
             ulong cap = currency == null ? definition.CapAmount : currency.Entry.CapAmount;
             ulong limit = cap == 0 ? ulong.MaxValue : cap;
-            return before <= limit && amount <= limit - before;
+            if (debit > before) return false;
+            ulong remaining = before - debit;
+            return remaining <= limit && amount <= limit - remaining;
         }
 
         /// <summary>

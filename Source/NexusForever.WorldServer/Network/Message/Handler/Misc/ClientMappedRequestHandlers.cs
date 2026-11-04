@@ -131,6 +131,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
                 return RejectConversion(session, conversion, $"missing source currency {conversion.SourceId} x{sourceCost}");
             if (surchargeCurrency != CurrencyType.None && !wallet.CanAfford(surchargeCurrency, conversion.SurchargeCount))
                 return RejectConversion(session, conversion, $"missing surcharge currency {conversion.SurchargeId} x{conversion.SurchargeCount}");
+
+            ulong targetDebit = targetCurrency == sourceCurrency ? sourceCost
+                : targetCurrency == surchargeCurrency && surchargeCurrency != CurrencyType.None ? conversion.SurchargeCount : 0ul;
+            bool canCredit = wallet is CurrencyManager concrete
+                ? concrete.CanCreditFullAmountAfterDebit(targetCurrency, conversion.TargetCount, targetDebit)
+                : wallet.CanCreditFullAmount(targetCurrency, conversion.TargetCount);
+            if (!canCredit)
+                return RejectConversion(session, conversion, $"target currency {conversion.TargetId} cannot accept the full grant");
+
             if (!ReferenceEquals(session.Player, player) || !ReferenceEquals(player.CurrencyManager, wallet))
                 return false;
 

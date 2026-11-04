@@ -22895,6 +22895,20 @@ controls. Local evidence is under
 `artifacts/continuation-20261104/resource-conversion-preflight/`.
 Retail selector semantics and durable settlement remain open.
 
+#### Resource conversion wallet capacity
+
+4 November 2026. A mapped currency-to-currency conversion checks the full
+target grant before taking any payment. The wallet projects source and
+surcharge debits that apply to the target balance, so exact-cap conversions
+still succeed. Partial capacity and unsigned overflow leave both currencies
+intact. Durable settlement, failure after a debit and retail selector behavior
+remain open.
+
+The baseline reproduced two partial-credit cases and an overflow after debit.
+The owning-project build and 104 scoped tests passed, including exact capacity
+and both source and surcharge overlap controls. Test execution took 49 seconds.
+Results are under `artifacts/continuation-20261104/resource-conversion-wallet-capacity/`.
+
 #### Existing item and unlock behavior
 
 Inventory, title, pet, costume, unlock surfaces exist. Generic unlock

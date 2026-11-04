@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging.Abstractions;
+using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Reputation;
@@ -129,6 +130,7 @@ public class MappedRequestHandlerTests
         IWorldSession session = CreateSession(out _, out var wallet, out _, out _);
         ulong renown = 0;
         wallet.SetMethodHandler(nameof(ICurrencyManager.CanAfford), args => credits >= (ulong)args[1]);
+        wallet.SetMethodReturn(nameof(ICurrencyManager.CanCreditFullAmount), true);
         wallet.SetMethodHandler(nameof(ICurrencyManager.CurrencySubtractAmount), args =>
         {
             Assert.Equal(CurrencyType.Credits, args[0]);
@@ -173,6 +175,55 @@ public class MappedRequestHandlerTests
         AssertNoResourceMutation(inventoryProxy, currencyProxy, reputationProxy);
     }
 
+    [Theory]
+    [InlineData("partial-cap", 40ul, 98ul, false)]
+    [InlineData("overflow", 40ul, ulong.MaxValue - 2ul, false)]
+    [InlineData("exact-cap", 15ul, 100ul, true)]
+    [InlineData("source-target", 20ul, 100ul, true)]
+    [InlineData("target-surcharge-full", 40ul, 100ul, false)]
+    [InlineData("target-surcharge-fits", 15ul, 100ul, true)]
+    public void ConvertResource_RequiresTheFullCreditAfterProjectedDebits(string outcome, ulong expectedCredits, ulong expectedRenown, bool accepted)
+    {
+        var conversion = CreateCurrencyConversion();
+        if (outcome == "source-target") conversion.TargetId = conversion.SourceId;
+        if (outcome is "target-surcharge-full" or "target-surcharge-fits")
+        {
+            conversion.SurchargeId = conversion.TargetId;
+            conversion.SurchargeCount = outcome == "target-surcharge-full" ? 3u : 5u;
+        }
+
+        var tables = CreateGameTableManager(resourceConversions: [conversion], currencies:
+        [
+            new() { Id = (uint)CurrencyType.Credits, CapAmount = 40 },
+            new() { Id = (uint)CurrencyType.Renown, CapAmount = outcome == "overflow" ? 0ul : 100ul }
+        ]);
+        var session = CreateSession(out _, out _, out _, out var network);
+        var player = (RecordingDispatchProxy<IPlayer>)(object)session.Player;
+        player.SetProperty(nameof(IPlayer.CharacterId), 42ul);
+        player.SetProperty(nameof(IPlayer.Session), session);
+        player.SetProperty(nameof(IPlayer.AchievementManager), RecordingDispatchProxy<NexusForever.Game.Abstract.Achievement.ICharacterAchievementManager>.Create(out _));
+        var model = new CharacterModel { Id = 42 };
+        model.Currency.Add(new() { Id = 42, CurrencyId = (byte)CurrencyType.Credits, Amount = 40 });
+        model.Currency.Add(new() { Id = 42, CurrencyId = (byte)CurrencyType.Renown, Amount = outcome switch
+        {
+            "partial-cap" => 98ul,
+            "overflow" => ulong.MaxValue - 2ul,
+            "exact-cap" => 95ul,
+            _ => 100ul
+        }});
+        var wallet = new CurrencyManager(tables);
+        wallet.Initialise(session.Player, model);
+        player.SetProperty(nameof(IPlayer.CurrencyManager), wallet);
+
+        new ClientConvertResourceHandler(NullLogger<ClientConvertResourceHandler>.Instance, tables)
+            .HandleMessage(session, CreateConvertResource(conversion.Id));
+
+        var amounts = wallet.ToDictionary(currency => currency.Id, currency => currency.Amount);
+        Assert.Equal(expectedCredits, amounts[CurrencyType.Credits]);
+        Assert.Equal(expectedRenown, amounts[CurrencyType.Renown]);
+        Assert.Equal(accepted, network.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Any());
+    }
+
     [Fact]
     public void ConvertResource_CurrencyToCurrencyWithKnownTablesMutatesCurrency()
     {
@@ -182,6 +233,7 @@ public class MappedRequestHandlerTests
             out RecordingDispatchProxy<IReputationManager> reputationProxy,
             out RecordingDispatchProxy<IWorldSession> sessionProxy);
         currencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+        currencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanCreditFullAmount), true);
         var handler = new ClientConvertResourceHandler(
             NullLogger<ClientConvertResourceHandler>.Instance,
             CreateGameTableManager(
