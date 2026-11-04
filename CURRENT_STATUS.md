@@ -22909,6 +22909,21 @@ The owning-project build and 104 scoped tests passed, including exact capacity
 and both source and surcharge overlap controls. Test execution took 49 seconds.
 Results are under `artifacts/continuation-20261104/resource-conversion-wallet-capacity/`.
 
+#### Resource conversion wallet application
+
+4 November 2026. The live wallet checks the ownership and final balance of
+every affected currency before applying the conversion. It applies the source,
+surcharge and grant before sending any balance notices. Ordinary frozen wallet
+capture shares the exchange guard. If an enqueue throws, the other notices
+and the accepted earning progress can still proceed. A request with an invalid
+target owner changes no balance. Durable settlement, notice replay and retail
+selector semantics remain open.
+
+Two baseline cases reproduced exceptions after payment had begun. The Game
+and WorldServer builds and 152 scoped tests passed. Test execution took 50
+seconds. Results are under
+`artifacts/continuation-20261104/resource-conversion-wallet-application/`.
+
 #### Existing item and unlock behavior
 
 Inventory, title, pet, costume, unlock surfaces exist. Generic unlock

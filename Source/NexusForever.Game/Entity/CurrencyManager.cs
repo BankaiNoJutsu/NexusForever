@@ -62,10 +62,14 @@ namespace NexusForever.Game.Entity
 
         internal Action<CharacterContext> CaptureNormalSave(object token)
         {
-            AssertContractCurrencySaveAllowed();
-            AssertLoadedCurrencyOwner();
-            var rows = currencies.Values.Select(currency => currency is Currency concrete ? concrete.CaptureNormalSave(token)
-                : throw new InvalidOperationException("Frozen currency save requires concrete currency owners.")).ToArray();
+            Action<CharacterContext>[] rows;
+            lock (currencyGraphGate)
+            {
+                AssertContractCurrencySaveAllowed();
+                AssertLoadedCurrencyOwner();
+                rows = currencies.Values.Select(currency => currency is Currency concrete ? concrete.CaptureNormalSave(token)
+                    : throw new InvalidOperationException("Frozen currency save requires concrete currency owners.")).ToArray();
+            }
             return context => { AssertLoadedCurrencyContext(context); foreach (var row in rows) row(context); };
         }
 
@@ -126,9 +130,6 @@ namespace NexusForever.Game.Entity
         }
 
         public bool CanCreditFullAmount(CurrencyType currencyId, ulong amount)
-            => CanCreditFullAmountAfterDebit(currencyId, amount, 0);
-
-        public bool CanCreditFullAmountAfterDebit(CurrencyType currencyId, ulong amount, ulong debit)
         {
             CurrencyTypeEntry definition = gameTableManager.CurrencyType?.GetEntry((ulong)currencyId);
             if (definition == null || !HasLoadedCurrencyOwner() || IsMutationPublicationBlocked || ContractCurrencyBlocked(currencyId))
@@ -138,9 +139,7 @@ namespace NexusForever.Game.Entity
             ulong before = currency?.Amount ?? 0ul;
             ulong cap = currency == null ? definition.CapAmount : currency.Entry.CapAmount;
             ulong limit = cap == 0 ? ulong.MaxValue : cap;
-            if (debit > before) return false;
-            ulong remaining = before - debit;
-            return remaining <= limit && amount <= limit - remaining;
+            return before <= limit && amount <= limit - before;
         }
 
         /// <summary>
@@ -177,6 +176,11 @@ namespace NexusForever.Game.Entity
             ulong addedAmount = amount - currency.Amount;
             CurrencyAmountUpdate(currency, amount, isLoot);
 
+            CreditCurrencyProgress(currency, addedAmount);
+        }
+
+        private void CreditCurrencyProgress(ICurrency currency, ulong addedAmount)
+        {
             if (addedAmount != 0ul)
             {
                 player.AchievementManager.CheckAchievements(player, AchievementType.CurrencyEarned, (uint)currency.Entry.Id, count: ToAchievementCount(addedAmount));

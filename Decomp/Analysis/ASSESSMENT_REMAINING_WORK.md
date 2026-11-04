@@ -63,8 +63,9 @@ transfer, later interruption/failure settlement, and formula pricing remain open
 [Resource conversion preflight](../../CURRENT_STATUS.md#resource-conversion-preflight)
 protects the source items when the full output cannot fit and checks a
 same-currency surcharge with the source debit. [Resource conversion wallet capacity](../../CURRENT_STATUS.md#resource-conversion-wallet-capacity)
-also checks the full currency grant after projected debits. Retail selector
-semantics and durable settlement remain open.
+also checks the full currency grant after projected debits. [Resource conversion wallet application](../../CURRENT_STATUS.md#resource-conversion-wallet-application)
+validates and applies the affected live wallets before publication. Retail
+selector semantics, durable settlement and notice replay remain open.
 
 [Vendor buyback request identity](../../CURRENT_STATUS.md#vendor-buyback-request-identity)
 keeps delayed requests from charging for a later sale and finishes accepted

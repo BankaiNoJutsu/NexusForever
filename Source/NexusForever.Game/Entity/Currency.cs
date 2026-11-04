@@ -34,16 +34,29 @@ namespace NexusForever.Game.Entity
             {
                 lock (persistence.Gate)
                 {
-                    assertActorMutation?.Invoke();
-                    AssertIdentity();
-                    if (bankChange != null || auctionOwner != null) throw new InvalidOperationException("Currency belongs to an economic operation.");
-                    persistence.AssertRewardOwner();
-                    if (Entry.CapAmount > 0 && value > Entry.CapAmount)
-                        throw new ArgumentOutOfRangeException();
-                    amount = value;
-                    persistence.Dirty((int)CurrencySaveMask.Amount);
+                    ValidateAmountChange(value);
+                    ApplyValidatedAmount(value);
                 }
             }
+        }
+
+        internal object MutationGate => persistence.Gate;
+
+        // The caller holds MutationGate when validating a batch or setting Amount.
+        internal void ValidateAmountChange(ulong value)
+        {
+            assertActorMutation?.Invoke();
+            AssertIdentity();
+            if (bankChange != null || auctionOwner != null) throw new InvalidOperationException("Currency belongs to an economic operation.");
+            persistence.AssertRewardOwner();
+            if (Entry.CapAmount > 0 && value > Entry.CapAmount)
+                throw new ArgumentOutOfRangeException(nameof(value));
+        }
+
+        internal void ApplyValidatedAmount(ulong value)
+        {
+            amount = value;
+            persistence.Dirty((int)CurrencySaveMask.Amount);
         }
 
         private ulong amount;

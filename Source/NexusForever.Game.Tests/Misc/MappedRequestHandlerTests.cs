@@ -263,6 +263,56 @@ public class MappedRequestHandlerTests
         Assert.Equal(5ul, add.Arguments[1]);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ConvertResource_SettlesAllWalletsBeforePublishing(bool invalidTargetOwner)
+    {
+        var conversion = CreateCurrencyConversion();
+        conversion.SurchargeId = (uint)CurrencyType.ElderGems;
+        conversion.SurchargeCount = 3;
+        var tables = CreateGameTableManager(resourceConversions: [conversion], currencies:
+        [CreateCurrency(CurrencyType.Credits), CreateCurrency(CurrencyType.ElderGems), CreateCurrency(CurrencyType.Renown)]);
+        var session = CreateSession(out _, out _, out _, out var network);
+        var player = (RecordingDispatchProxy<IPlayer>)(object)session.Player;
+        player.SetProperty(nameof(IPlayer.CharacterId), 42ul);
+        player.SetProperty(nameof(IPlayer.Session), session);
+        var achievements = RecordingDispatchProxy<NexusForever.Game.Abstract.Achievement.ICharacterAchievementManager>.Create(out var achievementCalls);
+        player.SetProperty(nameof(IPlayer.AchievementManager), achievements);
+        var model = new CharacterModel { Id = 42 };
+        model.Currency.Add(new() { Id = 42, CurrencyId = (byte)CurrencyType.Credits, Amount = 40 });
+        model.Currency.Add(new() { Id = 42, CurrencyId = (byte)CurrencyType.ElderGems, Amount = 10 });
+        model.Currency.Add(new() { Id = 42, CurrencyId = (byte)CurrencyType.Renown, Amount = 20 });
+        var wallet = new CurrencyManager(tables);
+        wallet.Initialise(session.Player, model);
+        player.SetProperty(nameof(IPlayer.CurrencyManager), wallet);
+        var rows = wallet.ToDictionary(currency => currency.Id);
+        if (invalidTargetOwner) rows[CurrencyType.Renown].CharacterId = 99;
+
+        var published = new List<(byte, ulong)>();
+        int attempts = 0;
+        network.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is not ServerCombatReward notice) return null;
+            if (++attempts == 1 && !invalidTargetOwner) throw new IOException("fixture balance enqueue failure");
+            published.Add((notice.Stat, notice.NewValue));
+            return null;
+        });
+        new ClientConvertResourceHandler(NullLogger<ClientConvertResourceHandler>.Instance, tables)
+            .HandleMessage(session, CreateConvertResource(conversion.Id));
+
+        Assert.Equal(invalidTargetOwner ? 40ul : 15ul, rows[CurrencyType.Credits].Amount);
+        Assert.Equal(invalidTargetOwner ? 10ul : 7ul, rows[CurrencyType.ElderGems].Amount);
+        Assert.Equal(invalidTargetOwner ? 20ul : 25ul, rows[CurrencyType.Renown].Amount);
+        Assert.Equal(invalidTargetOwner ? 0 : 3, attempts);
+        Assert.Equal(invalidTargetOwner ? 0 : 1, achievementCalls.GetInvocations(nameof(NexusForever.Game.Abstract.Achievement.ICharacterAchievementManager.CheckAchievements)).Count);
+        if (!invalidTargetOwner)
+        {
+            Assert.Contains(((byte)CurrencyType.ElderGems - 1, 7ul), published.Select(packet => ((int)packet.Item1, packet.Item2)));
+            Assert.Contains(((byte)CurrencyType.Renown - 1, 25ul), published.Select(packet => ((int)packet.Item1, packet.Item2)));
+        }
+    }
+
     [Fact]
     public void Spline2Request_WithMissingSplineTableDoesNotEmit()
     {
