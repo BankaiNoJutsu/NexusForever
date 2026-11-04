@@ -1,5 +1,31 @@
 # Committed Contract point publication
 
+## Retry for composed reward-track reloads
+
+4 November 2026. The composed Contract, Character and account presentation
+retains a reload after both immediate enqueues fail. It retries on the
+original session queue with the latest complete contributions, waits for any
+newly expected owner, and drops a superseded retry or one that lost its
+actor or queue. Claim authority still binds only to the snapshots in the
+last successfully enqueued reload.
+
+One deferred send is allowed after the immediate failures. If that send
+also fails during a committed normal-save Contract completion, the original
+Quest and Challenge managers retain the existing quarantine behavior and the
+still-bound original session disconnects. The already committed ordinary
+rewards are never replayed.
+
+Three baseline cases reproduced the repeated enqueue failure. The initial
+360-case run exposed a persistent-failure regression in the unbounded draft.
+After the bounded retry and review fixes, all 84 final affected tests passed
+in 13 seconds, including transient recovery, persistent quarantine and
+disconnect, and both reentrant readiness cases. Evidence is in
+`artifacts/continuation-20261104/contract-reload-recovery/`.
+
+The source qualification and [client progress cross-check](CONTRACT_RETAIL_RESET_EVIDENCE.md#client-progress-replacement-cross-check)
+are separate. Live UI, deployed delivery, full-table delivery and retail
+reset policy remain open. Public Contract claims remain gated.
+
 Latest continuation: [Contract track choice through the registered actor queue](CONTRACT_REWARD_TRACK_CHOICES.md)
 qualifies checkpoint9122: **9,122 full tests**,32 new/674 focused,1,172 MySQL runs
 (1,124 prior +24 choices +24 retry), two model gates and31 compatibility probes,

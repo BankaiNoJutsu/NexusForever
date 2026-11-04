@@ -37,7 +37,7 @@ namespace NexusForever.Game.Entity
             PublishContractRewards(reload: false);
         }
 
-        internal bool PublishContractRewards(bool reload = true)
+        internal bool PublishContractRewards(bool reload = true, Action onReloadFailure = null)
         {
             if (!contractRewardPacketsRequested || committedContractTracks == null || questRewardReload || questRewardInvalidated
                 || !ReferenceEquals(player.QuestManager, this)) return false;
@@ -53,7 +53,7 @@ namespace NexusForever.Game.Entity
                     RewardTrackRewardsIds = track.Slots.Select(slot => slot.RewardRowId).ToList(), ClaimedRewards = claimed
                 };
             }).ToArray();
-            return player.RewardTrackPresentation?.PublishContractTracks(rows, committedContractTracks, reload) == true;
+            return player.RewardTrackPresentation?.PublishContractTracks(rows, committedContractTracks, reload, onReloadFailure) == true;
         }
     }
 }

@@ -15,7 +15,7 @@ namespace NexusForever.Game.Abstract.Reward
         bool PublishCharacterTracks(IReadOnlyList<RewardTrack> tracks, object snapshot, bool reload = true) => false;
         bool IsPublishedCharacterSnapshot(object snapshot) => false;
         void ExpectContractTracks() { }
-        bool PublishContractTracks(IReadOnlyList<RewardTrack> tracks, object snapshot, bool reload = true) => false;
+        bool PublishContractTracks(IReadOnlyList<RewardTrack> tracks, object snapshot, bool reload = true, Action onReloadFailure = null) => false;
         bool IsPublishedContractSnapshot(object snapshot) => false;
         void Invalidate();
     }

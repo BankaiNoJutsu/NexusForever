@@ -10,12 +10,95 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Reward;
+using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Network;
 
 namespace NexusForever.Game.Tests.Reward;
 
 public sealed class RewardTrackPresentationTests
 {
+    [Theory]
+    [InlineData("latest")]
+    [InlineData("superseded")]
+    [InlineData("replaced-queue")]
+    [InlineData("new-owner")]
+    [InlineData("reentrant-owner")]
+    [InlineData("reentrant-ready-owner")]
+    public async Task ReloadRecoversAfterBothImmediateAttemptsFail(string scenario)
+    {
+        var f = new Fixture();
+        var queue = new EventQueue();
+        f.SessionProxy.SetProperty(nameof(IGameSession.Events), queue);
+        f.Presentation.ExpectContractTracks();
+        Assert.True(f.Presentation.PublishAccountTracks([AccountTrack()], reload: false));
+        object first = new(), latest = new();
+        object character = new();
+        bool reentrantOwner = scenario is "reentrant-owner" or "reentrant-ready-owner";
+        int attempts = 0, terminalFailures = 0;
+        f.SessionProxy.SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), _ =>
+        {
+            if (++attempts <= 2) throw new IOException("Reward reload failed before enqueue.");
+            if (attempts == 3 && reentrantOwner)
+            {
+                f.Presentation.ExpectCharacterTracks();
+                if (scenario == "reentrant-ready-owner")
+                    Assert.True(f.Presentation.PublishCharacterTracks([CharacterTrack()], character, reload: false));
+            }
+            return null;
+        });
+
+        Assert.True(f.Presentation.PublishContractTracks([Row(5, 450, 0, 0, true)], first,
+            onReloadFailure: () => terminalFailures++));
+        Assert.Equal(2, attempts);
+        Assert.True(queue.PendingEvents);
+        Assert.False(f.Presentation.IsPublishedContractSnapshot(first));
+
+        if (scenario == "replaced-queue")
+        {
+            var errors = new List<Exception>();
+            var replacement = new EventQueue { UnhandledExceptionHandler = errors.Add };
+            f.SessionProxy.SetProperty(nameof(IGameSession.Events), replacement);
+            queue.Update(0);
+            Assert.False(queue.PendingEvents);
+            Assert.Equal(2, attempts);
+            Assert.False(f.Presentation.IsPublishedContractSnapshot(first));
+            f.SessionProxy.SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), _ => throw new IOException("Replacement queue reload failed."));
+            Assert.True(f.Presentation.PublishAccountTracks([AccountTrack()]));
+            using var replacementTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            while (replacement.PendingEvents) { replacement.Update(0); await Task.Delay(10, replacementTimeout.Token); }
+            Assert.IsType<IOException>(Assert.Single(errors));
+            Assert.Equal(0, terminalFailures);
+            return;
+        }
+
+        Assert.True(f.Presentation.PublishContractTracks([Row(5, 125, 0, 0, true)], latest, reload: scenario == "superseded"));
+        if (scenario != "superseded") Assert.False(f.Presentation.IsPublishedContractSnapshot(latest));
+        if (scenario == "new-owner")
+        {
+            f.Presentation.ExpectCharacterTracks();
+            await Task.Delay(TimeSpan.FromMilliseconds(1100));
+            queue.Update(0);
+            Assert.Equal(2, attempts);
+            Assert.True(f.Presentation.PublishCharacterTracks([CharacterTrack()], character, reload: false));
+        }
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        if (reentrantOwner)
+        {
+            while (attempts == 2) { queue.Update(0); await Task.Delay(10, timeout.Token); }
+            Assert.False(f.Presentation.IsPublishedContractSnapshot(latest));
+            Assert.True(queue.PendingEvents);
+            if (scenario == "reentrant-owner")
+                Assert.True(f.Presentation.PublishCharacterTracks([CharacterTrack()], character, reload: false));
+        }
+        while (queue.PendingEvents) { queue.Update(0); await Task.Delay(10, timeout.Token); }
+        Assert.Equal(reentrantOwner ? 4 : 3, attempts);
+        Assert.Equal(125u, Assert.Single(Decode(f.Reloads.Last()), row => row.Id == 5).Points);
+        Assert.False(f.Presentation.IsPublishedContractSnapshot(first));
+        Assert.True(f.Presentation.IsPublishedContractSnapshot(latest));
+        Assert.Equal(0, terminalFailures);
+        if (reentrantOwner || scenario == "new-owner") Assert.True(f.Presentation.IsPublishedCharacterSnapshot(character));
+    }
+
     [Fact]
     public void ReloadRetryCannotAuthorizeClaimsAfterItsEnqueueRebindsThePlayer()
     {

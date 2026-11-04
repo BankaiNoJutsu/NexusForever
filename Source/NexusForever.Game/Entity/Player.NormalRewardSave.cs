@@ -174,7 +174,18 @@ namespace NexusForever.Game.Entity
                 if (!accepted) Quarantine();
                 else if (Quests.HasContractCompletion)
                 {
-                    try { quests.PublishContractRewards(); }
+                    var session = owner.Session;
+                    var queue = session?.Events;
+                    try
+                    {
+                        quests.PublishContractRewards(onReloadFailure: () =>
+                        {
+                            if (!ReferenceEquals(owner.Session, session) || !ReferenceEquals(session?.Events, queue)
+                                || !ReferenceEquals(owner.QuestManager, quests) || !ReferenceEquals(owner.ChallengeManager, challenges)) return;
+                            Quarantine();
+                            session?.ForceDisconnect();
+                        });
+                    }
                     catch { Quarantine(); return false; }
                 }
                 return accepted;

@@ -5,6 +5,7 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Network;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Reward;
+using NexusForever.Shared.Game.Events;
 using NLog;
 
 namespace NexusForever.Game.Reward
@@ -24,6 +25,7 @@ namespace NexusForever.Game.Reward
         private ulong boundCharacter;
         private object characterSnapshot, publishedCharacterSnapshot;
         private object contractSnapshot, publishedContractSnapshot;
+        private (EventQueue Queue, Action Callback) pendingContractReloadFailure;
         private enum Owner { Account, Character, Contract }
         private long sentReloadSequence;
 
@@ -50,8 +52,8 @@ namespace NexusForever.Game.Reward
                 if (!invalidated) contractExpected = true;
         }
 
-        public bool PublishContractTracks(IReadOnlyList<RewardTrack> tracks, object snapshot, bool reload = true)
-            => snapshot != null && Publish(tracks, Owner.Contract, reload, snapshot);
+        public bool PublishContractTracks(IReadOnlyList<RewardTrack> tracks, object snapshot, bool reload = true, Action onReloadFailure = null)
+            => snapshot != null && Publish(tracks, Owner.Contract, reload, snapshot, onReloadFailure);
 
         public bool IsPublishedContractSnapshot(object snapshot)
         {
@@ -63,7 +65,7 @@ namespace NexusForever.Game.Reward
             lock (gate) return snapshot != null && CurrentActor() && ReferenceEquals(snapshot, publishedCharacterSnapshot);
         }
 
-        private bool Publish(IReadOnlyList<RewardTrack> tracks, Owner owner, bool reload, object snapshot = null)
+        private bool Publish(IReadOnlyList<RewardTrack> tracks, Owner owner, bool reload, object snapshot = null, Action onReloadFailure = null)
         {
             lock (gate)
             {
@@ -92,6 +94,7 @@ namespace NexusForever.Game.Reward
                     contractRows = copy;
                     contractReady = true;
                     contractSnapshot = snapshot;
+                    if (onReloadFailure != null) pendingContractReloadFailure = (actor.Session.Events, onReloadFailure);
                 }
                 else
                 {
@@ -99,42 +102,92 @@ namespace NexusForever.Game.Reward
                     accountReady = true;
                 }
 
-                if (reload && accountReady && (!characterExpected || characterReady) && (!contractExpected || contractReady))
-                {
-                    // The packet gets its own copies too: queue/consumer mutation
-                    // cannot change the next composed snapshot. No owner locks are
-                    // acquired while this presentation gate is held.
-                    long sequence = ++sentReloadSequence;
-                    var session = actor.Session;
-                    object sentSnapshot = null, sentContractSnapshot = null;
-                    void SendReload()
-                    {
-                        sentSnapshot = characterSnapshot;
-                        sentContractSnapshot = contractSnapshot;
-                        session.EnqueueMessageEncrypted(new ServerRewardTracksReload
-                        {
-                            RewardsTracks = accountRows.Concat(characterRows).Concat(contractRows).Select(Copy).ToList()
-                        });
-                    }
+                if (reload && ReadyToReload)
+                    PublishReload();
+                return true;
+            }
+        }
 
-                    try { SendReload(); }
+        private bool ReadyToReload => accountReady && (!characterExpected || characterReady) && (!contractExpected || contractReady);
+
+        private void PublishReload()
+        {
+            long sequence = ++sentReloadSequence;
+            var session = actor.Session;
+            var queue = session.Events;
+            bool CanSend() => sequence == sentReloadSequence && CurrentActor() && ReferenceEquals(session.Events, queue);
+
+            void Send()
+            {
+                var sentCharacter = characterSnapshot;
+                var sentContract = contractSnapshot;
+                var sentContractFailure = pendingContractReloadFailure;
+                bool includedCharacter = characterReady;
+                bool includedContract = contractReady;
+                session.EnqueueMessageEncrypted(new ServerRewardTracksReload
+                {
+                    RewardsTracks = accountRows.Concat(characterRows).Concat(contractRows).Select(Copy).ToList()
+                });
+                // Enqueue can reenter presentation. Bind claims only to the
+                // snapshots in the last full reload actually sent.
+                if (!CanSend()) return;
+                if (characterExpected && !includedCharacter || contractExpected && !includedContract)
+                {
+                    if (queue != null) ScheduleRetry();
+                    return;
+                }
+                publishedCharacterSnapshot = sentCharacter;
+                publishedContractSnapshot = sentContract;
+                if (pendingContractReloadFailure == sentContractFailure) pendingContractReloadFailure = default;
+            }
+
+            void ScheduleRetry()
+            {
+                var delay = Task.Delay(TimeSpan.FromSeconds(1));
+                queue.EnqueueThreadSafe(new PredicateEvent(() =>
+                {
+                    lock (gate) return !CanSend() || ReadyToReload && delay.IsCompleted;
+                }, Retry));
+            }
+
+            void Retry()
+            {
+                Action failure;
+                lock (gate)
+                {
+                    if (!CanSend()) return;
+                    if (!ReadyToReload) { ScheduleRetry(); return; }
+                    try { Send(); return; }
                     catch (Exception error)
                     {
-                        if (sequence != sentReloadSequence || !CurrentActor()) throw;
-
-                        log.Warn(error, "Reward-track reload failed; retrying the current snapshot on its original actor.");
-                        SendReload();
-                    }
-                    // Enqueue can reenter presentation. Only the last actual
-                    // full reload binds claims; an accepted but unsent
-                    // contribution must not authorize a new cycle.
-                    if (sequence == sentReloadSequence && CurrentActor())
-                    {
-                        publishedCharacterSnapshot = sentSnapshot;
-                        publishedContractSnapshot = sentContractSnapshot;
+                        if (!CanSend()) return;
+                        failure = ReferenceEquals(pendingContractReloadFailure.Queue, queue) ? pendingContractReloadFailure.Callback : null;
+                        if (failure == null) throw;
+                        pendingContractReloadFailure = default;
+                        log.Warn(error, "Reward-track reload recovery failed.");
                     }
                 }
-                return true;
+                failure();
+            }
+
+            try { Send(); }
+            catch (Exception error)
+            {
+                if (!CanSend()) throw;
+                log.Warn(error, "Reward-track reload failed; retrying the current snapshot on its original actor.");
+                if (!ReadyToReload)
+                {
+                    if (queue == null) throw;
+                    ScheduleRetry();
+                    return;
+                }
+                try { Send(); }
+                catch (Exception retryError)
+                {
+                    if (queue == null || !CanSend()) throw;
+                    log.Warn(retryError, "Reward-track reload deferred to its original actor queue.");
+                    ScheduleRetry();
+                }
             }
         }
 
@@ -155,6 +208,7 @@ namespace NexusForever.Game.Reward
                 accountReady = characterReady = contractReady = false;
                 characterSnapshot = publishedCharacterSnapshot = null;
                 contractSnapshot = publishedContractSnapshot = null;
+                pendingContractReloadFailure = default;
             }
         }
 

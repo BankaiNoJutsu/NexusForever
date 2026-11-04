@@ -1,5 +1,24 @@
 # Contract cycle reset: retail evidence and implementation direction
 
+## Client progress replacement cross-check
+
+4 November 2026. REA identified the archived build 16042 executable at
+SHA-256 `231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+Its native provider was unavailable. Pinned PE reads and LLVM followed
+`07D5` from dispatch slot `1403f3114` through `1403f112e` to `1404d18e0`.
+The handler requires an existing track ID. It calls `1404d13a0`, which
+unconditionally replaces progress `+0x24`, claimed mask `+0x20` and unlock
+`+0x28` with the incoming values, then dispatches `RewardTrackUpdated`.
+Only the separate positive-point notification compares old and new progress.
+An inactive update skips the branch that assigns an active track.
+
+The exact packaged `Contracts.lua` handler redraws from the updated track
+even when progress decreases. The increasing-progress check selects sounds.
+This establishes client support for a lower authoritative value and a
+cleared mask on an existing track. It supplies no server rule for unclaimed
+milestones or excess points. Public claims remain gated. The verifier, REA
+results and disassembly are in `artifacts/continuation-20261104/contract-reload-recovery/`.
+
 On2026-10-31 the user instructed this work to reproduce live WildStar behavior,
 search online where uncertain and choose from that evidence. A configurable
 preference between all-claimed and final-claimed reset is no longer pending.

@@ -10,6 +10,11 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Composed reward reload retry](CONTRACT_POINT_PUBLICATION.md#retry-for-composed-reward-track-reloads)
+recovers repeated enqueue failures on the original queue and binds only the
+actually sent snapshots. The pinned client accepts authoritative decreases in
+progress; retail Contract reset and full-table delivery remain open.
+
 [Committed commodity posting result retry](COMMODITY_POSTING_SETTLEMENT.md#retry-for-the-committed-posting-result)
 retains the successful result for the original actor and refreshes the current
 owned-order list after success when the result could leave it stale.

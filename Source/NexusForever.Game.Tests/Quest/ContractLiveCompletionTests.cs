@@ -279,7 +279,21 @@ public sealed partial class ContractLiveCompletionTests
             ? throw new IOException("Contract reload enqueue fault.") : null);
         f.Complete(); await f.Actor.Drain(allowErrors: true); f.AssertCommitted();
         Assert.True(f.Actor.Quests.RequiresAuthoritativeReload); Assert.True(f.Actor.Challenges.RequiresAuthoritativeReload);
+        Assert.Single(f.Inner.Source.SessionProxy.GetInvocations("ForceDisconnect"));
         Assert.Throws<InvalidOperationException>(f.Complete); Assert.Equal(1, f.XpCalls);
+    }
+
+    [Fact]
+    public async Task ADeferredReloadRecoversCommittedOrdinaryRewardsWithoutQuarantiningTheActor()
+    {
+        using var f = new Fixture(options); await f.Actor.Load(); Assert.True(f.Actor.Player.RewardTrackPresentation.PublishAccountTracks([]));
+        int attempts = 0;
+        f.Inner.Source.SessionProxy.SetMethodHandler("EnqueueMessageEncrypted", args => args[0] is ServerRewardTracksReload && ++attempts <= 2
+            ? throw new IOException("Contract reload enqueue fault.") : null);
+        f.Complete(); await f.Actor.Drain(); f.AssertCommitted();
+        Assert.Equal(3, attempts); Assert.Equal(1, f.XpCalls);
+        Assert.False(f.Actor.Quests.RequiresAuthoritativeReload); Assert.False(f.Actor.Challenges.RequiresAuthoritativeReload);
+        Assert.Empty(f.Inner.Source.SessionProxy.GetInvocations("ForceDisconnect"));
     }
 
     [Theory]
