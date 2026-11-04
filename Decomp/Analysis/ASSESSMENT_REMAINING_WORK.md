@@ -10,6 +10,12 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Direct armor and mitigation callers](NATIVE_STATIC_ARMOR_PIERCE_EVIDENCE.md#direct-callers-and-the-rating-curve)
+resolve to single-unit stat getters, and their shared rating conversion uses
+nonlinear arithmetic above a threshold. The remaining #557 combat change
+requires pairwise evidence. Qualification of the rating curve also needs
+actual coefficients and combat observations across the threshold.
+
 [Composed reward reload retry](CONTRACT_POINT_PUBLICATION.md#retry-for-composed-reward-track-reloads)
 recovers repeated enqueue failures on the original queue and binds only the
 actually sent snapshots. The pinned client accepts authoritative decreases in
@@ -1856,12 +1862,13 @@ instruction to repeat completed work.
 2. Remaining #595 healing/Focus semantic questions need their specific producer
    and property ownership evidence. The compatible owner-only 0x07FD acceptance
    reply and its token/target/yaw mapping are implemented and full gated.
-3. Armor Pierce order (#557): the2 November static pass now binds five literal
-   method cells and ten observed unwind ranges, including the pierce/three-school
-   routes into the shared formula routine. These are one-unit stat-display paths;
-   pairwise damage ordering still needs a complete call chain and independent
-   corroboration. Physical-offset/strikethrough portions already exist in the fork;
-   no combat behavior changed. See NATIVE_STATIC_ARMOR_PIERCE_EVIDENCE.md.
+3. Armor Pierce order (#557): the direct pierce and mitigation callers resolve
+   to single-unit stat-display getters. The shared conversion uses nonlinear
+   arithmetic above a threshold. Next obtain a pairwise damage path and
+   independent evidence for pierce order, plus actual coefficients and
+   observations across the rating threshold.
+   Physical-offset and strikethrough portions already exist in the fork. See the
+   [static evidence](NATIVE_STATIC_ARMOR_PIERCE_EVIDENCE.md).
 4. Broader AMP families, remaining protocol/prerequisite semantics and Hycrest
    cinematic/physical-trigger/later-mission behavior remain evidence work.
 5. Q5597 still needs new quest/achievement-specific native UI and persistence
@@ -1877,5 +1884,5 @@ never replaced with empty placeholder files or invented runtime semantics.
 Parallel ownership follows the reverse-engineer-anything skill: separate
 runtime/lifetime/context, native spell/event and content/community slices.
 Parent integrates changes and owns asset generation, prerequisite evidence,
-assessment updates and full verification. Local logs/reports live in
+assessment updates and scoped verification. Local logs/reports live in
 `I:\GIT\NexusForever-assessment-report\remaining-goal`.
