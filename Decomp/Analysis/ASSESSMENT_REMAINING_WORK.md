@@ -10,6 +10,12 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Guarded live outbid retry](NORMAL_AUCTION_BID_TRANSACTION.md#guarded-live-outbid-retry)
+retains committed bid and buyout notices on the original session and waits for
+later local settlement authority before retrying. A successful rebid suppresses
+the obsolete notice. A rejected rebid leaves it eligible. Buyer reply, listing
+and account reservation release proceed independently of the retry.
+
 [Auction notice consumer evidence](NORMAL_AUCTION_BID_TRANSACTION.md#client-consumption-of-settlement-notices)
 binds build 16042 bid-result, expired, outbid and won dispatch to the Lua
 events. Archived Carbine handlers remove the auction by ID on outbid and
@@ -25,7 +31,7 @@ separate evidence requirements for #595.
 [Terminal auction notice retry](AUCTION_EXPIRY_TRANSACTION.md#retry-for-terminal-auction-notices)
 recovers failed won/expired packet sends on the original live actor after
 settlement. The retry retains the accepted snapshot and leaves listing and
-account reservations free. Outbid notices, request replies, restart replay and
+account reservations free. Seller notices, request replies, restart replay and
 wire or retail qualification remain open.
 
 [Marketplace inbox notice retry](MARKETPLACE_MAIL_PUBLICATION.md#retry-for-the-live-inbox-notice)

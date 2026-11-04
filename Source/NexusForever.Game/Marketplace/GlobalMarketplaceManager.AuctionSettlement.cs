@@ -7,6 +7,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Mail;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Marketplace;
 using NexusForever.Network.World.Message.Static;
@@ -126,6 +127,7 @@ namespace NexusForever.Game.Marketplace
         {
             private sealed record Participant(Player Player, IGameSession Session, IAccount Account);
             private sealed record Actor(Participant Owner, Player.AuctionBidActor Prepared, BidWallet Wallet);
+            private enum NoticeAuthority { Ready, Waiting, Superseded }
             private readonly GlobalMarketplaceManager manager;
             private Player receiver;
             private readonly Participant initiator;
@@ -155,6 +157,7 @@ namespace NexusForever.Game.Marketplace
             private IDisposable accounts;
             private AuctionSettlementCommand command;
             private BidOutcome outcome;
+            private bool confirmedListingAbsent;
             private AuctionInfo responseAuction;
             private int next;
             private bool finished, preparationFailed, reconciliationFailed, unresolvedReported;
@@ -315,6 +318,7 @@ namespace NexusForever.Game.Marketplace
                     outcome = view.Outcome;
                     lock (manager.syncRoot)
                     {
+                        confirmedListingAbsent = view.Auction == null;
                         manager.auctions.Remove(record);
                         if (view.Auction != null && view.Item != null && view.Item.Owner == null
                             && view.Item.Location == (ushort)InventoryLocation.None && view.Auction.Item == view.Item.Id
@@ -391,7 +395,9 @@ namespace NexusForever.Game.Marketplace
                                     winner.Prepared.PublishDeliveryMail(new MailItem(model, itemManager: manager.itemManager,
                                         gameTableManager: manager.GetGameTableManager()));
                                 }
-                                if (!Cancelling) PublishTerminalNotice(winner);
+                                if (!Cancelling)
+                                    PublishNotice(winner, responseAuction, auction => Returning
+                                        ? new ServerAuctionExpired { Auction = auction } : new ServerAuctionWon { Auction = auction });
                             }
                         }
                         finally { OnCoordinator(NotifyPrevious); }
@@ -400,26 +406,32 @@ namespace NexusForever.Game.Marketplace
                 else NotifyPrevious();
             }
 
-            private void PublishTerminalNotice(Actor winner)
+            private void PublishNotice(Actor actor, AuctionInfo notification, Func<AuctionInfo, IWritable> packet,
+                Func<NoticeAuthority> authority = null)
             {
-                var session = winner.Owner.Session;
+                var session = actor.Owner.Session;
                 var queue = session.Events;
-                var auction = CloneAuction(responseAuction);
-                bool CurrentActor() => ReferenceEquals(session.Events, queue) && CanPublish(winner);
+                var snapshot = CloneAuction(notification);
+                bool CurrentActor() => ReferenceEquals(session.Events, queue) && CanPublish(actor);
+                NoticeAuthority GetAuthority() => authority?.Invoke() ?? NoticeAuthority.Ready;
+                void Schedule(Task delay) => queue.EnqueueThreadSafe(new PredicateEvent(
+                    () => !CurrentActor() || delay.IsCompleted && GetAuthority() != NoticeAuthority.Waiting, Publish));
                 void Publish()
                 {
                     if (!CurrentActor()) return;
+                    switch (GetAuthority())
+                    {
+                        case NoticeAuthority.Superseded: return;
+                        case NoticeAuthority.Waiting: Schedule(Task.CompletedTask); return;
+                    }
                     try
                     {
-                        var packetAuction = CloneAuction(auction);
-                        session.EnqueueMessageEncrypted(Returning
-                            ? new ServerAuctionExpired { Auction = packetAuction } : new ServerAuctionWon { Auction = packetAuction });
+                        session.EnqueueMessageEncrypted(packet(CloneAuction(snapshot)));
                     }
                     catch (Exception error)
                     {
-                        log.Warn(error, "Committed auction terminal notice failed; retrying on its original actor.");
-                        var delay = Task.Delay(TimeSpan.FromSeconds(1));
-                        queue.EnqueueThreadSafe(new PredicateEvent(() => !CurrentActor() || delay.IsCompleted, Publish));
+                        log.Warn(error, "Committed auction notice failed; retrying on its original actor.");
+                        Schedule(Task.Delay(TimeSpan.FromSeconds(1)));
                     }
                 }
 
@@ -442,14 +454,32 @@ namespace NexusForever.Game.Marketplace
                 var previous = actors.SingleOrDefault(candidate => candidate.Wallet.Character == before.Bidder && before.Bidder != bidder);
                 if (previous == null) { Finish(GenericError.Ok); return; }
                 var notification = responseAuction ?? CloneAuction(record.Auction, record.ExpiresAtUtc);
+                var accepted = before with { Bid = amount, Bidder = bidder };
                 OnActor(previous.Owner, () =>
                 {
                     try
                     {
-                        if (CanPublish(previous)) previous.Owner.Session.EnqueueMessageEncrypted(new ServerAuctionOutbid { Auction = notification });
+                        PublishNotice(previous, notification, auction => new ServerAuctionOutbid { Auction = auction },
+                            () => ReadOutbidAuthority(accepted));
                     }
                     finally { OnCoordinator(() => Finish(GenericError.Ok)); }
                 });
+            }
+
+            private NoticeAuthority ReadOutbidAuthority(AuctionRow accepted)
+            {
+                lock (manager.syncRoot)
+                {
+                    // An outbid event removes this ID from the client's listings.
+                    // A later owner must finish before we can tell if the notice still applies.
+                    if (manager.auctionPostings.ContainsKey(before.Id)
+                        || manager.auctionSettlements.TryGetValue(before.Id, out var active) && !ReferenceEquals(active, this))
+                        return NoticeAuthority.Waiting;
+                    var current = manager.auctions.SingleOrDefault(row => row.Auction.AuctionId == before.Id);
+                    bool matches = TransfersItem ? current == null && confirmedListingAbsent
+                        : current?.StoredRow == accepted && current.StoredDatabase == route && manager.HasConsistentAuctionView(current);
+                    return matches ? NoticeAuthority.Ready : NoticeAuthority.Superseded;
+                }
             }
 
             private void Finish(GenericError error)

@@ -31,7 +31,7 @@ using Fixture = NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.Fi
 
 namespace NexusForever.Game.Tests.Marketplace;
 
-public sealed class AuctionExpiryCoordinatorTests
+public sealed partial class AuctionExpiryCoordinatorTests
 {
     [Theory]
     [InlineData(true, true, false, false, false, "none")]

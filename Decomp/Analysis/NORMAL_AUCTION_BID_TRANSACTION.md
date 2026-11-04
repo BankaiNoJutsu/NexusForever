@@ -1,5 +1,34 @@
 # Normal auction bid transaction
 
+## Guarded live outbid retry
+
+4 November 2026. A transient send failure on the original outbid recipient
+previously reached the event queue after the persisted bid or buyout committed.
+The settlement released its reservations and the outbid notice was lost.
+The public handler baseline reproduced that failure in four cases.
+
+Outbid publication now uses the same retained notice path as the terminal
+auction notices. It retries on the original live actor and queue, and sends
+a fresh packet from the captured auction snapshot. Settlement releases its
+reservations and sends the buyer's reply independently. The owning order book
+waits through a later in-flight settlement for the same auction. A rejected
+later bid leaves the original notice eligible. A changed listing suppresses
+the old notice, which could otherwise remove the refreshed entry by auction
+ID. A buyout requires explicit listing absence from reconciliation and
+continued absence in the local order book. Later wallet edits do not
+invalidate that listing proof. Session replacement drops the old callback.
+
+The tests use the registered public bid handler with private SQLite and
+original player actors. They cover normal bid and buyout retry, rebinding,
+a held and committed rebid, a held rebid rejected by SQL, and a buyout
+with a competing wallet edit. The first candidate suppressed that last
+notice, which the new case reproduced before the listing proof was narrowed.
+The owning build and 209 scoped cases passed, including all six public-flow
+regressions. The scoped tests ran in 57 seconds. Local evidence is in
+`artifacts/continuation-20261104/auction-outbid/`.
+Cross-server and restart replay, seller notices, request-reply retry and
+wire or retail qualification remain open.
+
 ## Client consumption of settlement notices
 
 4 November 2026. The retained build 16042 image
@@ -36,7 +65,7 @@ recipient bids again can remove that auction from the refreshed listings.
 The current committed transfer path sends `ServerAuctionWon` to the
 receiver. The owner-sale branch identifies a separate seller publication
 candidate whose original-recipient and committed-producer coverage remain
-open. Neither behavior was changed in this pass.
+open. The later guard is recorded above.
 
 The pinned PE reads, LLVM excerpts and four byte-verified addon files are
 retained under `artifacts/continuation-20261104/auction-consumer/`. This is
