@@ -20,6 +20,7 @@ using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.GameTable.Static;
 using NexusForever.Network.Message;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Shared;
@@ -1194,7 +1195,36 @@ namespace NexusForever.Game.Entity
             if (message is ServerCombatLog combatLog && ShouldSuppressCombatLogForPlayer(player, combatLog))
                 return;
 
+            if (!ReferenceEquals(this, player) && message is ServerEntityStatUpdateInteger { Stat.Stat: Stat.Level } level
+                && this is Player { QuestManager: QuestManager { IsOrdinaryCompletionMutationInProgress: true } quests })
+            {
+                RetainQuestLevelUpdate(quests, player, level);
+                return;
+            }
+
             player.Session.EnqueueMessageEncrypted(message);
+        }
+
+        private void RetainQuestLevelUpdate(QuestManager quests, IPlayer recipient, ServerEntityStatUpdateInteger message)
+        {
+            var map = Map;
+            uint sourceGuid = Guid;
+            uint recipientGuid = recipient.Guid;
+            var session = recipient.Session;
+            var account = recipient.Account;
+            ulong? epoch = account?.WorldSessionEpoch;
+            quests.RetainOrdinaryCompletionPublication(() =>
+            {
+                if (Level != message.Stat.Value || map == null || !ReferenceEquals(Map, map) || Guid != sourceGuid
+                    || !visibleEntities.TryGetValue(recipientGuid, out IGridEntity visible) || !ReferenceEquals(visible, recipient)
+                    || !ReferenceEquals(recipient.Map, map) || recipient.Guid != recipientGuid || recipient.IsLoading
+                    || !ReferenceEquals(recipient.Session, session) || !ReferenceEquals(recipient.Account, account)
+                    || account?.WorldSessionEpoch != epoch || session is NetworkSession { IsDisconnecting: true }
+                    || session is not IPlayerSession bound || !ReferenceEquals(bound.Player, recipient))
+                    return;
+
+                session.EnqueueMessageEncrypted(message);
+            });
         }
 
         private bool ShouldSuppressCombatLogForPlayer(IPlayer player, ServerCombatLog combatLog)

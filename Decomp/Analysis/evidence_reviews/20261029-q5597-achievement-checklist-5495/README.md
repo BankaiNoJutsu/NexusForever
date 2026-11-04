@@ -188,3 +188,26 @@ broader attempt hit fixture setup errors and then exhausted free space during
 Contract SQLite seeding. It did not produce a complete test result.
 Cross-player and delayed script effects, deployed provider behavior and
 native tutorial gameplay remain open.
+
+## Quest level publication
+
+4 November 2026. Ordinary quest XP can change the real Player level inside
+the turn-in transaction. Its level stat now reaches nearby players and the
+Character/Group/Friendship broker route only after the Character save.
+The original observer must still own the same session and be visible on
+the same map. A superseded level update is dropped.
+
+The loopback request uses an injected 120 XP prize and an actual Player XP
+manager. At the held save the actor is level 2, SQL remains at level 1, and
+the recording observer sessions and broker publisher have no level update.
+SQL rejection leaves both routes silent. A fresh retry commits XP and level
+once and publishes the new level to the current observer and broker.
+Changing the other observer's account session epoch before commit prevents
+publication to that observer. The recording endpoints establish delivery to
+the World session and broker producer boundaries. The live broker, new
+observer bootstrap, fanfare and native gameplay remain unqualified.
+
+The final six loopback cases passed. The preceding scoped run passed the
+other 46 cases and exposed two XP fixture setup failures. The scoped test
+results and assembly hashes are under
+`artifacts/continuation-20261104/quest-level-publication/`.

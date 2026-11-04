@@ -3602,12 +3602,21 @@ namespace NexusForever.Game.Entity
         /// </summary>
         protected override void OnStatUpdate(IStatValue statValue)
         {
-            messagePublisher.PublishAsync(new PlayerStatUpdatedMessage
+            var update = new PlayerStatUpdatedMessage
             {
                 Identity = Identity.ToInternalIdentity(),
                 Stat     = statValue.Stat,
                 Value    = statValue.Value
-            }).FireAndForgetAsync();
+            };
+            if (statValue.Stat == Stat.Level && QuestManager is QuestManager { IsOrdinaryCompletionMutationInProgress: true } quests)
+                quests.RetainOrdinaryCompletionPublication(() =>
+                {
+                    if (Level == update.Value) Publish();
+                });
+            else
+                Publish();
+
+            void Publish() => messagePublisher.PublishAsync(update).FireAndForgetAsync();
         }
 
         protected override void OnAbsorptionUpdate()

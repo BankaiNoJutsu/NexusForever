@@ -10,13 +10,17 @@ using NexusForever.Cryptography;
 using NexusForever.Database;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Character;
+using NexusForever.Database.Character.Model;
 using NexusForever.Database.Configuration.Model;
 using NexusForever.Game.Abstract.Account;
+using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Abstract.RBAC;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Quest;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Tutorial;
@@ -25,6 +29,8 @@ using NexusForever.Game.Tests.Transport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
+using NexusForever.Network.Internal;
+using NexusForever.Network.Internal.Message.Player;
 using NexusForever.Network.Message;
 using NexusForever.Network.Message.Handler;
 using NexusForever.Network.Message.Model;
@@ -47,15 +53,20 @@ public sealed partial class Q5597RewardPersistenceTests
     public Q5597RewardPersistenceTests(ITestOutputHelper output) => this.output = output;
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(true, true)]
-    public async Task LoopbackTurnInPublishesSavedRewardsOnce(bool rejectFirstSave, bool tutorialRecovery)
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, true, false)]
+    [InlineData(false, false, true)]
+    [InlineData(true, false, true)]
+    public async Task LoopbackTurnInPublishesSavedRewardsOnce(bool rejectFirstSave, bool tutorialRecovery, bool levelReward)
     {
         const uint accountId = 12;
         ushort questId = tutorialRecovery ? StarterTutorialDefinition.ExileMovementQuestId : QuestId;
         const ushort nextQuestId = StarterTutorialDefinition.ExileHoverboardQuestId;
+        RecordingDispatchProxy<IWorldSession> observer = null;
+        RecordingDispatchProxy<IWorldSession> retiredObserver = null;
+        RecordingDispatchProxy<IAccount> retiredObserverAccount = null;
         using var f = new Fixture(null);
         using var authConnection = new SqliteConnection(new SqliteConnectionStringBuilder
         {
@@ -73,10 +84,13 @@ public sealed partial class Q5597RewardPersistenceTests
             database.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite,
                 ConnectionString = seed.Database.GetDbConnection().ConnectionString });
             seed.Character.Single().AccountId = accountId;
+            if (levelReward) seed.Character.Single().Level = 1;
             seed.CharacterQuest.Add(new() { Id = 42, QuestId = questId, State = (byte)QuestState.Achieved });
             await seed.SaveChangesAsync();
         }
         ConfigureQuest(f, reclaim: false, questId);
+        if (levelReward)
+            ((RecordingDispatchProxy<IQuestInfo>)(object)f.Info).SetMethodReturn(nameof(IQuestInfo.GetRewardExperience), 120u);
         if (tutorialRecovery)
         {
             var next = RecordingDispatchProxy<IQuestInfo>.Create(out var nextProxy);
@@ -115,12 +129,19 @@ public sealed partial class Q5597RewardPersistenceTests
                 await SendWithSaveHeld(world, client, actor);
                 await PumpUntil(world, () => world.IsDisconnecting);
                 Assert.True(actor.Quests.RequiresAuthoritativeReload);
+                if (levelReward)
+                {
+                    Assert.Empty(LevelPackets(observer));
+                    Assert.Empty(LevelPackets(retiredObserver));
+                    Assert.Empty(LevelMessages(actor));
+                }
             });
 
             var rolledBack = Assert.Single(await database.GetCharacters(accountId));
             Assert.Equal(QuestState.Achieved, (QuestState)Assert.Single(rolledBack.Quest).State);
             Assert.Empty(rolledBack.Item);
             Assert.Empty(rolledBack.Achievement);
+            if (levelReward) Assert.Equal((1, 0u), ((int)rolledBack.Level, rolledBack.TotalXp));
             using var recovered = f.Context();
             await recovered.Database.ExecuteSqlRawAsync("DROP TRIGGER q5597_reject_completion");
         }
@@ -137,6 +158,14 @@ public sealed partial class Q5597RewardPersistenceTests
                     Assert.Equal(QuestState.Accepted, (QuestState)read.CharacterQuest.Single(row => row.QuestId == nextQuestId).State);
                 Assert.Equal(2, read.Item.Count());
                 Assert.Equal(2u, read.CharacterAchievement.Single().ProgressState);
+                if (levelReward)
+                {
+                    var character = read.Character.Single();
+                    Assert.Equal((2, 120u), ((int)character.Level, character.TotalXp));
+                    Assert.Equal(2f, Assert.Single(LevelPackets(observer)).Stat.Value);
+                    Assert.Equal(2f, Assert.Single(LevelMessages(actor)).Value);
+                    Assert.Empty(LevelPackets(retiredObserver));
+                }
             }
             using var first = await ReadPacket(client, GameMessageOpcode.ServerItemAdd);
             using var second = await ReadPacket(client, GameMessageOpcode.ServerItemAdd);
@@ -209,6 +238,7 @@ public sealed partial class Q5597RewardPersistenceTests
         var final = Assert.Single(await database.GetCharacters(accountId));
         Assert.Equal(savedItems, final.Item.OrderBy(item => item.ItemId).Select(item => (item.Id, item.ItemId, item.StackCount)).ToArray());
         Assert.Equal(completed.DateCompleted, Assert.Single(final.Achievement).DateCompleted);
+        if (levelReward) Assert.Equal((2, 120u), ((int)final.Level, final.TotalXp));
 
         async Task SendWithSaveHeld(WorldSession world, GameProtocolClient client, Actor actor)
         {
@@ -233,6 +263,15 @@ public sealed partial class Q5597RewardPersistenceTests
             Assert.Equal(QuestState.Achieved, (QuestState)read.CharacterQuest.Single().State);
             Assert.Empty(read.Item);
             Assert.Empty(read.CharacterAchievement);
+            if (levelReward)
+            {
+                Assert.Equal(2u, actor.Player.Level);
+                Assert.Equal(1, read.Character.Single().Level);
+                Assert.Empty(LevelPackets(observer));
+                Assert.Empty(LevelPackets(retiredObserver));
+                Assert.Empty(LevelMessages(actor));
+                retiredObserverAccount.SetProperty(nameof(IAccount.WorldSessionEpoch), 2ul);
+            }
             await AssertTurnInPacketsWithheld(world, client);
         }
 
@@ -258,6 +297,15 @@ public sealed partial class Q5597RewardPersistenceTests
             typeof(WorldSession).GetProperty(nameof(WorldSession.Account))!.SetValue(world, account);
             var model = Assert.Single(await database.GetCharacters(accountId));
             using var actor = LoadActor(f, items, 2, model, world, account, auth, questId);
+            if (levelReward)
+            {
+                var map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
+                mapProxy.SetProperty(nameof(IBaseMap.Entry), new WorldEntry { Id = 870 });
+                typeof(GridEntity).GetProperty(nameof(GridEntity.Map))!.SetValue(actor.Player, map);
+                ConfigureExperience(f, actor, model);
+                observer = AddObserver(actor.Player, map, 70, out _);
+                retiredObserver = AddObserver(actor.Player, map, 71, out retiredObserverAccount);
+            }
             if (tutorialRecovery)
             {
                 var map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
@@ -284,6 +332,61 @@ public sealed partial class Q5597RewardPersistenceTests
         }
     }
 
+    private static void ConfigureExperience(Fixture f, Actor actor, CharacterModel loaded)
+    {
+        const BindingFlags instance = BindingFlags.Instance | BindingFlags.NonPublic;
+        var tables = (RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables;
+        tables.SetProperty(nameof(IGameTableManager.XpPerLevel), PlayerBindPointTests.Table(
+            new XpPerLevelEntry { Id = 1 }, new XpPerLevelEntry { Id = 2, MinXpForLevel = 100 }));
+        tables.SetProperty(nameof(IGameTableManager.UnitProperty2), PlayerBindPointTests.Table<UnitProperty2Entry>());
+        typeof(Player).GetField("gameTableManager", instance)!.SetValue(actor.Player, f.Source.Tables);
+        typeof(WorldEntity).GetField("gameTableManagerResolver", instance)!.SetValue(actor.Player, (Func<IGameTableManager>)(() => f.Source.Tables));
+        foreach (var (type, fieldName) in new[] { (typeof(WorldEntity), "properties"), (typeof(WorldEntity), "dirtyProperties"), (typeof(Player), "itemProperties"),
+                     (typeof(UnitEntity), "spellProperties"), (typeof(UnitEntity), "recalculatingSpellPropertyConversions") })
+        {
+            var field = type.GetField(fieldName, instance)!;
+            field.SetValue(actor.Player, Activator.CreateInstance(field.FieldType));
+        }
+        var characters = RecordingDispatchProxy<ICharacterManager>.Create(out var characterProxy);
+        characterProxy.SetMethodReturn(nameof(ICharacterManager.GetCharacterBaseProperties), Array.Empty<IPropertyModifier>());
+        characterProxy.SetMethodReturn(nameof(ICharacterManager.GetCharacterClassBaseProperties), Array.Empty<IPropertyModifier>());
+        typeof(Player).GetField("characterManager", instance)!.SetValue(actor.Player, characters);
+        actor.Player.IsLoading = true;
+        actor.Player.Level = loaded.Level;
+        typeof(Player).GetField("attributePointAllocations", instance)!.SetValue(actor.Player, new uint[6]);
+        actor.Player.IsLoading = false;
+        ((RecordingDispatchProxy<IAccount>)(object)actor.Player.Account).SetProperty(nameof(IAccount.RbacManager),
+            RecordingDispatchProxy<IAccountRBACManager>.Create(out _));
+        actor.Set(nameof(Player.XpManager), new XpManager(actor.Player, loaded, f.Source.Tables));
+        actor.PublisherProxy.Invocations.Clear();
+    }
+
+    private static RecordingDispatchProxy<IWorldSession> AddObserver(Player source, IBaseMap map, uint guid,
+        out RecordingDispatchProxy<IAccount> accountProxy)
+    {
+        var recipient = RecordingDispatchProxy<IPlayer>.Create(out var recipientProxy);
+        var session = RecordingDispatchProxy<IWorldSession>.Create(out var sessionProxy);
+        var account = RecordingDispatchProxy<IAccount>.Create(out accountProxy);
+        accountProxy.SetProperty(nameof(IAccount.WorldSessionEpoch), 1ul);
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), recipient);
+        recipientProxy.SetProperty(nameof(IPlayer.Guid), guid);
+        recipientProxy.SetProperty(nameof(IPlayer.Session), session);
+        recipientProxy.SetProperty(nameof(IPlayer.Account), account);
+        recipientProxy.SetProperty(nameof(IPlayer.Map), map);
+        var visible = (Dictionary<uint, IGridEntity>)typeof(GridEntity)
+            .GetField("visibleEntities", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(source)!;
+        visible.Add(guid, recipient);
+        return sessionProxy;
+    }
+
+    private static IEnumerable<ServerEntityStatUpdateInteger> LevelPackets(RecordingDispatchProxy<IWorldSession> observer)
+        => observer.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).SelectMany(call => call.Arguments)
+            .OfType<ServerEntityStatUpdateInteger>().Where(packet => packet.Stat.Stat == Stat.Level);
+
+    private static IEnumerable<PlayerStatUpdatedMessage> LevelMessages(Actor actor)
+        => actor.PublisherProxy.GetInvocations(nameof(IInternalMessagePublisher.PublishAsync)).SelectMany(call => call.Arguments)
+            .OfType<PlayerStatUpdatedMessage>().Where(message => message.Stat == Stat.Level);
+
     private async Task AssertTurnInPacketsWithheld(WorldSession world, GameProtocolClient client)
     {
         // The marker delimits a flush on this private socket while the save is held.
@@ -295,7 +398,8 @@ public sealed partial class Q5597RewardPersistenceTests
             var frame = await client.ReadInnerFrame(deadline.Token);
             if (frame.Opcode == GameMessageOpcode.ServerPlayerEnteredWorld) break;
             Assert.False(frame.Opcode is GameMessageOpcode.ServerItemAdd or GameMessageOpcode.ServerQuestStateChange
-                or GameMessageOpcode.ServerAchievementUpdate or GameMessageOpcode.ServerDialogEnd, $"Premature {frame.Opcode}");
+                or GameMessageOpcode.ServerAchievementUpdate or GameMessageOpcode.ServerDialogEnd
+                or GameMessageOpcode.ServerExperienceGained or GameMessageOpcode.ServerEntityStatUpdateInteger, $"Premature {frame.Opcode}");
         }
         output.WriteLine("No item, quest-state, achievement or dialog-end packets while the turn-in save was held.");
     }

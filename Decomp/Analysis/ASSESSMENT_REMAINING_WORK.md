@@ -221,8 +221,10 @@ rejected Character write. Achievement publication stays withheld. Fresh
 session recovery works after rollback. The later [commit-gated turn-in](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#commit-gated-client-turn-in)
 releases ordinary client turn-in notices to the original session only after
 the Character save. [Starter tutorial automatic recovery](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#commit-gated-starter-tutorial-recovery)
-uses the same boundary for its turn-in and follow-up quest. Cross-player
-effects and deployed qualification remain open.
+uses the same boundary for its turn-in and follow-up quest. [Quest level
+publication](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#quest-level-publication)
+also gates nearby-player level packets and broker stat updates. Level-up
+fanfare, other cross-player effects and deployed qualification remain open.
 
 [Committed commodity fill recovery](COMMODITY_POSTING_SETTLEMENT.md#recovery-after-a-committed-fill-notice-fails)
 refreshes the original recipient's current orders after an enqueue failure.

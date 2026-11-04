@@ -866,7 +866,10 @@ namespace NexusForever.Game.Entity
             return false;
         }
 
-        internal bool IsOrdinaryCompletionMutationInProgress { get; private set; }
+        private List<Action> ordinaryCompletionPublications;
+        internal bool IsOrdinaryCompletionMutationInProgress => ordinaryCompletionPublications != null;
+
+        internal void RetainOrdinaryCompletionPublication(Action publish) => ordinaryCompletionPublications.Add(publish);
 
         internal bool CanStartTutorialQuestCompletion(Player owner) => !QuestCompletionBusy(owner);
 
@@ -888,14 +891,20 @@ namespace NexusForever.Game.Entity
             {
                 bool completed = false;
                 Action publish;
-                IsOrdinaryCompletionMutationInProgress = true;
+                List<Action> publications = [];
+                ordinaryCompletionPublications = publications;
                 try { publish = session.CaptureOutgoingPackets(() => completed = complete()); }
-                finally { IsOrdinaryCompletionMutationInProgress = false; }
+                finally { ordinaryCompletionPublications = null; }
 
                 void Publish()
                 {
                     if (!OwnsSession() || session.IsDisconnecting) return;
                     publish();
+                    foreach (Action publication in publications)
+                    {
+                        try { publication(); }
+                        catch (Exception exception) { log.Error(exception, "Failed to publish a committed quest effect."); }
+                    }
                     afterCommit?.Invoke();
                 }
 
