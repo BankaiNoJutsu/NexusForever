@@ -3,7 +3,8 @@ using NexusForever.Network.Message;
 namespace NexusForever.Network.World.Message.Model.CREDDExchange
 {
     /// <summary>
-    /// Redeem account CREDD currency into character credits (opcode 0x0268).
+    /// Legacy emulator CREDD-to-Credits request (opcode 0x0268).
+    /// The build 16042 account-inventory action uses <see cref="ClientAccountCREDDRedeem"/>.
     /// </summary>
     [Message(GameMessageOpcode.ClientCREDDRedeem)]
     public class ClientCREDDRedeem : IReadable

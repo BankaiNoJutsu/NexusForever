@@ -841,6 +841,7 @@ namespace NexusForever.Network.Message
         ServerRecruitmentGuildsRecruiters = 0x076D,
         ClientRecruitmentGuildGetDetailedGuildInfo = 0x076E,
         ClientRecruitmentGuildSubscribe = 0x076F,
+        ClientAccountCREDDRedeem        = 0x0770, // account-item senders 140006f80 and 1404e5410; registration 140077d30 uses the empty writer 140001ba0
         ServerRecruitmentAuxUInt32List  = 0x077E, // count + counted uint32 list; shares ServerFlightPathUpdate_ReadPayload 14008eaa0
         ServerPetDespawned              = 0x077F, // native reader ServerUInt32_ReadPayload 14007ab50 reads pet unit id; apply path Pet_ApplyDespawnedPayload 1403c09b0 dispatches PetDespawned
         ClientCharacterRename           = 0x0786,

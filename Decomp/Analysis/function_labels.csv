@@ -1264,6 +1264,10 @@ WildStar64.exe,1400076e0,CREDDOperationHistory_ResizeRows,Resizes the CREDD oper
 WildStar64.exe,140007760,CREDDExchangeInfo_AppendOrderCacheRows,Appends 0x10-byte rows from opcode 0x097A into the account/CREDD order cache; mapped as an internal cache refresh without a client event.
 WildStar64.exe,14042b9a0,CREDDExchangeInfo_BuildLuaResults,Builds and dispatches CREDDExchangeInfoResults with buy/sell counts price buckets and owned order rows; non-empty packet field semantics remain partially unresolved.
 WildStar64.exe,1400070f0,DailyLogin_SendClientClaimReward,Sends opcode 0x078F with a zero-byte payload when daily-login reward claim preconditions pass.
+WildStar64.exe,140006f80,AccountItem_SendClientAccountCREDDRedeem,Sends empty account opcode 0x0770 through AccountItem_SendOpcodePayloadHelper after checking account state.
+WildStar64.exe,1404e5410,Lua_RedeemCREDD_SendAccountRequest,Both RedeemCREDD name cells resolve here; sends empty account opcode 0x0770 through 1400161d0.
+WildStar64.exe,14051b690,AccountInventory_ConfirmCREDDRedeem,Calls the 0x0770 sender then dispatches local AccountCREDDRedeemed without waiting for a server reply.
+WildStar64.exe,140077d30,Network_RegisterClientOpcode_0770,Registers a one-byte in-memory object with the empty writer at 140001ba0 and no-op callback at 140001b70.
 WildStar64.exe,1404f1470,StorefrontLib_PurchaseVirtualCurrencyPackage,Lua StorefrontLib PurchaseVirtualCurrencyPackage registration target; exact request/confirm packet path remains mapped-only pending focused decompile/live trigger.
 WildStar64.exe,1404f1550,StorefrontLib_CompleteOrderVirtualCurrencyPackage,Lua StorefrontLib CompleteOrderVirtualCurrencyPackage registration target; exact request/confirm packet path remains mapped-only pending focused decompile/live trigger.
 WildStar64.exe,1404f1d50,StorefrontLib_RequestHistory,Lua StorefrontLib RequestHistory registration target; sends opcode 0x082E as a zero-byte storefront purchase-history request.

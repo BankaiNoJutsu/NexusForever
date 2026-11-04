@@ -10,6 +10,10 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Build 16042 account-inventory CREDD wire evidence](CREDD_ACCOUNT_REDEEM_WIRE_EVIDENCE.md)
+maps empty `0x0770` and separates the local confirmation event from a server
+result. The retail grant and settlement remain open.
+
 [CREDD redemption admission](../../CURRENT_STATUS.md#credd-redemption-admission)
 checks the full character credit and the usage increment before debiting
 the original account. Cross-database settlement remains open.

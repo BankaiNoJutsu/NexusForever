@@ -451,7 +451,10 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 
 - **Daily login** on catalog open (180-day track, Drop 6) distinct from opcode “reward rotation”. **S2** [Daily Login Rewards](http://wildstar.bigdamnheroes.org/?p=1657)
 - Store purchase velocity / privilege restrictions (emulator: 10/hour gate; no public doc). **S3** repo tests
-- CREDD redeem **1000:1** to character credits (emulator mapping). **S3** decomp
+- The emulator's `0x0268` CREDD-to-Credits compatibility path uses **1000:1**.
+  Build 16042 account inventory sends empty `0x0770`. Its retail grant and
+  relationship to the server result still require evidence.
+  [CREDD wire evidence](CREDD_ACCOUNT_REDEEM_WIRE_EVIDENCE.md)
 - VC package purchase grants currency + result packets (emulator). **S3** decomp
 
 ### Not sure
