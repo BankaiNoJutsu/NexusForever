@@ -10,6 +10,35 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+### Committed reputation deltas
+
+4 November 2026. Four baseline cases reproduced early reputation deltas,
+later frozen-save changes reaching the client too soon, and send failures
+escaping the standing update.
+
+Reputation now captures a notice sequence with the same ordinary or frozen
+Experience snapshot as the amounts. A save still confirms the sequence
+when signed deltas return the balance to its previous value. The original
+deltas publish in order after confirmation. Server-side standing and
+achievement checks still run when the change is accepted.
+
+The Player-create faction snapshot includes committed values. For each
+faction with queued deltas, it uses the standing immediately before its
+first queued delta, including any preceding quiet edit. The entire
+map-entry packet burst remains synchronous under the admission lock. A
+reentrant save and actor tick can confirm a delta during the burst, then
+publish it after the burst. Failed delta sends retry on the original Player and queue,
+and session replacement drops the old retry. Standalone reputation
+adapters keep immediate sends.
+
+The source/SQLite evidence covers a rejected equal-balance save, frozen
+later intent, session replacement, packet retry, initial callback reentry,
+and a quiet committed edit before the first queued delta. The owning build
+and 153 scoped cases passed, including the existing map-admission and
+world-entry controls. Test execution took 41 seconds. Evidence is in
+`artifacts/continuation-20261104/reputation-publication/`.
+Native presentation, deployed socket delivery and restart replay remain open.
+
 ### Committed exploration masks
 
 4 November 2026. The original live relocation could reveal new hexes before
@@ -28,8 +57,8 @@ The source/SQLite regressions cover real relocation, rejected save and
 completion reward, frozen later discovery, send failure and session replacement.
 The owning build and 121 scoped cases passed. The test run took 41 seconds.
 Evidence is in `artifacts/continuation-20261104/exploration-publication/`.
-Reputation deltas need a captured change sequence because signed changes can
-return to an earlier amount. Deployed sockets, native presentation and retail
+The later reputation publication uses a captured sequence above. Deployed
+sockets, native presentation and retail
 qualification remain open.
 
 [Datacube and journal publication](ARCHIVE_PUBLICATION.md#datacube-and-journal-companion-publication)

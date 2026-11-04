@@ -12,7 +12,7 @@ using NexusForever.Network.World.Message.Model.Reputation;
 
 namespace NexusForever.Game.Reputation
 {
-    public class ReputationManager : IReputationManager
+    public partial class ReputationManager : IReputationManager
     {
         private readonly IPlayer owner;
         private readonly IFactionManager factionManager;
@@ -20,11 +20,15 @@ namespace NexusForever.Game.Reputation
         internal ulong ReputationCharacter { get; }
         internal string ReputationDatabase { get; }
         internal ExperiencePersistence.ReputationState[] LoadedReputations { get; }
-        internal ExperiencePersistence.ReputationState[] CaptureReputations()
+        internal (ExperiencePersistence.ReputationState[] Rows, long Sequence) CaptureReputations()
         {
-            if (owner.CharacterId != ReputationCharacter || reputations.Any(pair => pair.Key != pair.Value.Id))
-                throw new InvalidOperationException("Reputation changed its Character owner or faction.");
-            return reputations.Values.Select(row => new ExperiencePersistence.ReputationState(ReputationCharacter, (uint)row.Id, row.Amount)).OrderBy(row => row.Faction).ToArray();
+            lock (publicationGate)
+            {
+                if (owner.CharacterId != ReputationCharacter || reputations.Any(pair => pair.Key != pair.Value.Id))
+                    throw new InvalidOperationException("Reputation changed its Character owner or faction.");
+                return (reputations.Values.Select(row => new ExperiencePersistence.ReputationState(ReputationCharacter, (uint)row.Id, row.Amount))
+                    .OrderBy(row => row.Faction).ToArray(), sequence);
+            }
         }
         internal bool Owns(IReputation reputation) => reputations.TryGetValue(reputation.Id, out var owned) && ReferenceEquals(owned, reputation);
 
@@ -48,6 +52,7 @@ namespace NexusForever.Game.Reputation
                 var reputation = new Reputation(owner, faction, reputationModel);
                 reputations.Add(reputation.Id, reputation);
             }
+            if (owner is Player) InitialisePublication();
         }
 
         public void Save(CharacterContext context)
@@ -78,18 +83,26 @@ namespace NexusForever.Game.Reputation
                 throw new ArgumentException($"Invalid faction id {factionId}!");
 
             FactionLevel previousLevel = FactionNode.GetFactionLevel(0f);
-            if (!reputations.TryGetValue(factionId, out IReputation reputation))
+            FactionLevel currentLevel;
+            lock (publicationGate)
             {
-                reputation = new Reputation(owner, faction, value);
-                reputations.Add(reputation.Id, reputation);
-            }
-            else
-            {
-                previousLevel = FactionNode.GetFactionLevel(reputation.Amount);
-                reputation.Amount += value;
+                float? before = null;
+                if (!reputations.TryGetValue(factionId, out IReputation reputation))
+                {
+                    reputation = new Reputation(owner, faction, value);
+                    reputations.Add(reputation.Id, reputation);
+                }
+                else
+                {
+                    before = reputation.Amount;
+                    previousLevel = FactionNode.GetFactionLevel(reputation.Amount);
+                    reputation.Amount += value;
+                }
+                currentLevel = FactionNode.GetFactionLevel(reputation.Amount);
+                if (owner is Player)
+                    pending.Enqueue(new(++sequence, factionId, value, before));
             }
 
-            FactionLevel currentLevel = FactionNode.GetFactionLevel(reputation.Amount);
             if (currentLevel > previousLevel)
                 for (int level = (int)previousLevel + 1; level <= (int)currentLevel; level++)
                     owner.AchievementManager.CheckAchievements(owner, AchievementType.ReputationLevel, (uint)factionId, (uint)(FactionLevel)level);
@@ -97,11 +110,8 @@ namespace NexusForever.Game.Reputation
             if (previousLevel < FactionLevel.Beloved && currentLevel >= FactionLevel.Beloved)
                 owner.AchievementManager.CheckAchievements(owner, AchievementType.GuildBelovedReputation, (uint)FactionLevel.Beloved);
 
-            owner.Session.EnqueueMessageEncrypted(new ServerReputationUpdate
-            {
-                FactionId       = factionId,
-                ReputationDelta = value
-            });
+            if (owner is not Player)
+                owner.Session.EnqueueMessageEncrypted(new ServerReputationUpdate { FactionId = factionId, ReputationDelta = value });
         }
 
         /// <summary>

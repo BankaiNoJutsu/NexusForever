@@ -51,9 +51,10 @@ namespace NexusForever.Game.Entity
                     || !ReferenceEquals(ZoneMapManager as ZoneMapManager, maps) || !ReferenceEquals(ReputationManager as ReputationManager, reputation))
                     throw new InvalidOperationException("Experience lost its loaded managers.");
                 var paths = path?.CapturePathProgress();
+                var standing = reputation?.CaptureReputations();
                 return new(xp?.CaptureExperience(), paths?.Selection, paths?.Paths ?? [], paths?.Missions ?? [],
                     spells?.CaptureSpellbook(), pets?.CaptureExperiencePets(), achievements?.CaptureExperienceAchievements(), cubes?.CaptureCollection(), archive?.CaptureArchive(),
-                    maps?.CaptureExploration(), reputation?.CaptureReputations());
+                    maps?.CaptureExploration(), standing?.Rows, standing?.Sequence ?? 0);
             }
             experienceXpOwner = xp; experiencePathOwner = path;
             experienceSpellOwner = spells; experiencePetOwner = pets; experienceAchievementOwner = achievements;
@@ -63,12 +64,14 @@ namespace NexusForever.Game.Entity
             {
                 cubes?.NotifyPublicationReady();
                 maps?.NotifyPublicationReady();
+                reputation?.NotifyPublicationReady();
                 try { achievements?.NotifyPublicationReady(); }
                 finally { archive?.NotifyPublicationReady(); }
             }
             return experiencePersistence = new(owner, baseline, Current, database, achievements == null ? null : achievements.QueuePublication,
                 achievements?.RealmFirst, archive == null ? null : archive.AcknowledgePublication, PublicationReady,
-                cubes == null ? null : cubes.AcknowledgePublication, maps == null ? null : maps.AcknowledgePublication);
+                cubes == null ? null : cubes.AcknowledgePublication, maps == null ? null : maps.AcknowledgePublication,
+                reputation == null ? null : reputation.AcknowledgePublication);
         }
         internal bool OwnsDatacubePublication(DatacubeManager manager, Identity identity, IGameSession session)
             => Identity?.Id == identity.Id && Identity.RealmId == identity.RealmId
@@ -79,6 +82,12 @@ namespace NexusForever.Game.Entity
         internal bool OwnsExplorationPublication(ZoneMapManager manager, Identity identity, IGameSession session)
             => Identity?.Id == identity.Id && Identity.RealmId == identity.RealmId
                 && ReferenceEquals(ZoneMapManager, manager) && ReferenceEquals(Session, session)
+                && (playerManager == null || ReferenceEquals(playerManager.GetPlayer(identity), this))
+                && session is IPlayerSession current && ReferenceEquals(current.Player, this)
+                && session is not NetworkSession { IsDisconnecting: true };
+        internal bool OwnsReputationPublication(ReputationManager manager, Identity identity, IGameSession session)
+            => Identity?.Id == identity.Id && Identity.RealmId == identity.RealmId
+                && ReferenceEquals(ReputationManager, manager) && ReferenceEquals(Session, session)
                 && (playerManager == null || ReferenceEquals(playerManager.GetPlayer(identity), this))
                 && session is IPlayerSession current && ReferenceEquals(current.Player, this)
                 && session is not NetworkSession { IsDisconnecting: true };

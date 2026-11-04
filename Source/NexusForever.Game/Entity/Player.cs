@@ -1417,6 +1417,15 @@ namespace NexusForever.Game.Entity
 
         private void SendPacketsAfterAddToMap()
         {
+            if (ReputationManager is ReputationManager reputation)
+                reputation.SendInitialStanding(SendMapPacketBurst);
+            else
+                SendMapPacketBurst(ReputationManager.Select(row => new ServerPlayerCreate.Faction.FactionReputation
+                    { FactionId = row.Id, ReputationAmount = row.Amount }).ToList());
+        }
+
+        private void SendMapPacketBurst(List<ServerPlayerCreate.Faction.FactionReputation> standing)
+        {
             DateTime start = DateTime.UtcNow;
 
             SendInGameTime();
@@ -1444,14 +1453,8 @@ namespace NexusForever.Game.Entity
                 ItemProficiencies = GetItemProficiencies(),
                 FactionData       = new ServerPlayerCreate.Faction
                 {
-                    FactionId          = Faction1, // This does not do anything for the player's "main" faction. Exiles/Dominion
-                    FactionReputations = ReputationManager
-                        .Select(r => new ServerPlayerCreate.Faction.FactionReputation
-                        {
-                            FactionId        = r.Id,
-                            ReputationAmount = r.Amount
-                        })
-                        .ToList()
+                    FactionId = Faction1, // This does not do anything for the player's "main" faction. Exiles/Dominion
+                    FactionReputations = standing
                 },
                 ActiveCostumeIndex    = CostumeManager.CostumeIndex ?? -1,
                 BindPointId           = bindPointId,
