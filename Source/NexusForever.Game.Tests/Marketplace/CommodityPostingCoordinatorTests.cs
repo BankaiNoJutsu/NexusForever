@@ -67,6 +67,9 @@ public sealed class CommodityPostingCoordinatorTests
     [InlineData(true, false, true, "self")]
     [InlineData(false, false, true, "self")]
     [InlineData(true, false, true, "multi")]
+    [InlineData(true, false, true, "fill-refresh")]
+    [InlineData(true, true, true, "fill-refresh")]
+    [InlineData(true, false, true, "fill-replace")]
     [InlineData(true, false, true, "satchel")]
     [InlineData(true, false, true, "satchel-later")]
     [InlineData(true, false, true, "mail")]
@@ -90,13 +93,14 @@ public sealed class CommodityPostingCoordinatorTests
     {
         bool full = fault.StartsWith("reuse", StringComparison.Ordinal) || fault == "consume-full";
         bool later = fault is "later" or "replace" or "retire" or "satchel-later";
-        bool otherOnline = fault == "online";
+        bool failFill = fault is "fill-refresh" or "fill-replace";
+        bool otherOnline = fault is "online" or "fill-replace";
         bool routing = fault.StartsWith("routing", StringComparison.Ordinal), earning = fault.StartsWith("earning", StringComparison.Ordinal);
         bool expiryProbe = fault is "legacy-expiry" or "expiry-lookup", lookupProbe = fault == "expiry-lookup";
         bool self = fault is "self" or "competing", multi = fault == "multi" || routing, satchel = fault.StartsWith("satchel", StringComparison.Ordinal), mail = fault == "mail";
         uint quantity = fault == "routing-split" ? 22u : fault == "routing-merge" ? 20u : 3u;
         uint oppositeQuantity = routing ? quantity / 2 : multi ? 1u : 2u;
-        bool refused = fault.StartsWith("missing", StringComparison.Ordinal), suppressed = fault is "replace" or "retire" or "reuse-packet-replace";
+        bool refused = fault.StartsWith("missing", StringComparison.Ordinal), suppressed = fault is "replace" or "retire" or "reuse-packet-replace" or "fill-replace";
         uint stock = fault == "missing-items" ? 2u : full ? 3u : 10u;
         using var f = new Fixture(null); f.Seed();
         if (earning) ((RecordingDispatchProxy<IQuestInfo>)(object)f.Info).SetProperty(nameof(IQuestInfo.Objectives),
@@ -212,11 +216,30 @@ public sealed class CommodityPostingCoordinatorTests
             })); manager.Initialise();
         bool replied = false, onActor = false, scopeDisposed = false, competingQueued = false, insideLegacy = false, expiryProtected = false;
         int rejected = 0, replacementBoundary = -1;
+        int fillAttempts = 0, refreshAttempts = 0;
         int reentrantRejected = 0;
         GenericError? legacyResult = null;
         Exception setterMutation = null, apiMutation = null;
         sp.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
         {
+            if (failFill && args[0] is ServerCommodityAuctionFilledPartial)
+            {
+                fillAttempts++;
+                if (fault == "fill-replace")
+                    sp.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+                throw new IOException("Commodity fill notice failed before enqueue.");
+            }
+            if (failFill && args[0] is ServerOwnedCommodityOrders refresh)
+            {
+                refreshAttempts++;
+                Assert.True(replied && onActor);
+                Assert.False(Pending(manager));
+                Assert.False(cleanup.IsAccountLocked(f.Source.Player.Account));
+                if (immediate) Assert.Empty(refresh.Orders);
+                else Assert.Equal(1u, Assert.Single(refresh.Orders).Quantity);
+                if (!immediate && refreshAttempts == 1)
+                    throw new IOException("Commodity owned-order refresh failed before enqueue.");
+            }
             if (fault == "publish" && args[0] is ServerCombatReward)
             {
                 setterMutation = Record.Exception(() => original.StackCount = 9);
@@ -314,6 +337,14 @@ public sealed class CommodityPostingCoordinatorTests
         } while (Pending(manager) || events.PendingEvents || otherEvents.PendingEvents || actor.Player.IsNormalSaveInProgress || other?.Player.IsNormalSaveInProgress == true);
         using var final = f.Context(); Check(final); Assert.False(cleanup.IsAccountLocked(f.Source.Player.Account));
         Assert.Equal(!suppressed, replied); Assert.Equal(refused ? 0 : 1, executions);
+        if (failFill)
+        {
+            Assert.Equal(1, fillAttempts);
+            Assert.Equal(suppressed ? 0 : immediate ? 1 : 2, refreshAttempts);
+            if (otherOnline)
+                Assert.Single(otherSp.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)),
+                    call => call.Arguments[0] is ServerCommodityAuctionFilledPartial);
+        }
         if (fault == "legacy-admission") Assert.Equal(GenericError.DbFailure, legacyResult.GetValueOrDefault());
         if (fault == "legacy-reentrant") { Assert.Equal(GenericError.VendorNotEnoughCash, legacyResult.GetValueOrDefault()); Assert.Equal(1, reentrantRejected); }
         if (fault == "legacy-expiry") { Assert.Equal(GenericError.VendorNotEnoughCash, legacyResult.GetValueOrDefault()); Assert.True(expiryProtected, "Legacy expiry bypassed the held commodity book."); }

@@ -1,6 +1,44 @@
 # Commodity posting and fill settlement
 
-Current working source is covered by the **11,354-case passing full gate** in
+## Recovery after a committed fill notice fails
+
+4 November 2026. The build 16042 image with SHA-256
+`231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`
+dispatches 024A through slot `0x1403f1ae8` to `0x1403f0c74`, which
+selects the `CommodityAuctionFilledPartial` event. Slot `0x1403f2af0` for
+064C selects `0x1403f0c09` and calls `0x14042b610`. That function builds a
+table from the packet's counted rows and dispatches `OwnedCommodityOrders`
+at `0x14042b6f0`, including for an empty table. REA identified the image.
+The deep provider was unavailable, so pinned PE reads and LLVM disassembly
+verified the exact case references and event strings.
+
+Both archived listings scripts replace or insert an equal order on the fill
+event and replace the entire list on the owned-orders event. Replaying an
+old fill could restore a removed order or overwrite a later quantity.
+[Listings archive](https://github.com/wildstarnasa/NASADocs/blob/5a154a6f1ec384ef852f216ed07f5ae0ed174126/Carbine%20Addons/MarketplaceListings/MarketplaceListings.lua#L422)
+· [Second archive](https://github.com/NexusInstruments/CarbineAddons/blob/cf063b3e22b08f49ff51c12cec258a9f1cf86d68/MarketplaceListings/MarketplaceListings.lua#L558)
+
+After a fill enqueue throws, the posting flow stops that recipient's
+remaining fill sends and continues other recipients. Once settlement
+releases its reservations and queues the post result, the affected actor
+receives a fresh owned-orders snapshot from the current book. Each failed
+refresh retries with a newly read list on the original actor and event queue.
+Replacement drops the retry. Successful fill sends retain their original
+payloads.
+
+Three baseline cases reproduced the send failure escaping the actor event.
+The owning build and 111 scoped tests passed with the new production code.
+The three new cases and two owned-list handler controls passed again after
+a test assertion syntax cleanup. Those runs took 64 and 10 seconds of test
+execution. Evidence is in
+`artifacts/continuation-20261104/commodity-fill-publication/`.
+The static analysis covers dispatch and list replacement. Native receipt of
+the recovery packet, deployed socket delivery, restart replay, and exact
+retail fill semantics remain open.
+
+## Original settlement qualification
+
+The original settlement is covered by the **11,354-case passing full gate** in
 [auction posting](AUCTION_POSTING_TRANSACTION.md), pin a900f698 with6,156inputs/
 nine DLL pairs and an explicit test-assembly hash. Commodity posting behavior and
 its existing regressions pass in that current snapshot. This supersedes the old

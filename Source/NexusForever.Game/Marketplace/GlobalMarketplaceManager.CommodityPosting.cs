@@ -100,6 +100,7 @@ namespace NexusForever.Game.Marketplace
             private readonly List<Actor> actors = [];
             private readonly HashSet<Actor> reconciled = [];
             private readonly List<CommodityPostingMail> mails = [];
+            private readonly List<(Actor Actor, EventQueue Queue)> fillRefreshes = [];
             private BidCharacter[] characters;
             private Participant[] preparing;
             private string route;
@@ -295,11 +296,13 @@ namespace NexusForever.Game.Marketplace
             {
                 if (index == actors.Count) { Finish(GenericError.Ok); return; }
                 var actor = actors[index];
-                OnActor(actor.Owner, () =>
+                var queue = actor.Owner.Session.Events;
+                queue.EnqueueThreadSafe(new PredicateEvent(() => true, () =>
                 {
+                    bool refresh = false;
                     try
                     {
-                        if (CanPublish(actor))
+                        if (ReferenceEquals(actor.Owner.Session.Events, queue) && CanPublish(actor))
                         {
                             foreach (var mail in mails.Where(row => row.Header.RecipientId == actor.Prepared.Character && row.Items.Count != 0))
                             {
@@ -312,13 +315,38 @@ namespace NexusForever.Game.Marketplace
                                 }
                                 actor.Prepared.PublishDeliveryMail(new MailItem(model, itemManager: manager.itemManager, gameTableManager: manager.GetGameTableManager()));
                             }
-                            foreach (var fill in quote.Fills)
-                                foreach (var order in new[] { fill.Buy, fill.Sell }.Where(row => row.Owner == actor.Prepared.Character))
-                                    if (CanPublish(actor)) actor.Owner.Session.EnqueueMessageEncrypted(new ServerCommodityAuctionFilledPartial { OrderFilled = ToCommodityOrder(order.Model()), Type = AuctionEventType.Fill });
+                            refresh = !TryPublishFills(actor, queue);
                         }
                     }
-                    finally { OnCoordinator(() => PublishNext(index + 1)); }
-                });
+                    finally
+                    {
+                        OnCoordinator(() =>
+                        {
+                            if (refresh) fillRefreshes.Add((actor, queue));
+                            PublishNext(index + 1);
+                        });
+                    }
+                }));
+            }
+
+            private bool TryPublishFills(Actor actor, EventQueue queue)
+            {
+                foreach (var fill in quote.Fills)
+                    foreach (var order in new[] { fill.Buy, fill.Sell }.Where(row => row.Owner == actor.Prepared.Character))
+                    {
+                        if (!ReferenceEquals(actor.Owner.Session.Events, queue) || !CanPublish(actor)) return true;
+                        try
+                        {
+                            actor.Owner.Session.EnqueueMessageEncrypted(new ServerCommodityAuctionFilledPartial
+                                { OrderFilled = ToCommodityOrder(order.Model()), Type = AuctionEventType.Fill });
+                        }
+                        catch (Exception error)
+                        {
+                            log.Warn(error, "Committed commodity fill notice failed; refreshing the original actor's owned orders.");
+                            return false;
+                        }
+                    }
+                return true;
             }
             private void Finish(GenericError result)
             {
@@ -335,6 +363,33 @@ namespace NexusForever.Game.Marketplace
                     if (CanPublish(initiator) && !actors.Any(row => ReferenceEquals(row.Owner.Player, initiator.Player) && row.Prepared.Retired))
                         reply(result, ToCommodityOrder((quote.Incoming.Immediate ? quote.Remainder : quote.Incoming).Model()));
                 });
+                // A successful post reply can itself update the owner's list.
+                // Queue its authoritative refresh after the reply and release.
+                foreach (var (actor, queue) in fillRefreshes)
+                    RefreshOwnedOrders(actor, queue);
+            }
+
+            private void RefreshOwnedOrders(Actor actor, EventQueue queue)
+            {
+                var session = actor.Owner.Session;
+                bool CurrentActor() => ReferenceEquals(session.Events, queue) && CanPublish(actor);
+                void Schedule(Task delay) => queue.EnqueueThreadSafe(new PredicateEvent(
+                    () => !CurrentActor() || delay.IsCompleted, Send));
+                void Send()
+                {
+                    if (!CurrentActor()) return;
+                    try
+                    {
+                        session.EnqueueMessageEncrypted(new ServerOwnedCommodityOrders
+                            { Orders = manager.GetOwnedCommodityOrders(actor.Owner.Player) });
+                    }
+                    catch (Exception error)
+                    {
+                        log.Warn(error, "Commodity owned-order refresh failed; retrying on its original actor.");
+                        Schedule(Task.Delay(TimeSpan.FromSeconds(1)));
+                    }
+                }
+                Schedule(Task.CompletedTask);
             }
         }
     }

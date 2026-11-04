@@ -10,10 +10,16 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Committed commodity fill recovery](COMMODITY_POSTING_SETTLEMENT.md#recovery-after-a-committed-fill-notice-fails)
+refreshes the original recipient's current orders after an enqueue failure.
+Static client evidence distinguishes the replacing list event from a fill
+event that can insert a stale row. Settlement and the other actor continue.
+Deployed receipt, restart replay and native presentation remain open.
+
 [Committed commodity expiry notices](COMMODITY_RETURN_SETTLEMENT.md#live-expiry-notice-recovery)
 retry on the original live actor after SQL confirmation and reservation release.
 The retry rebuilds the accepted payload and checks the current order and session.
-Commodity fill publication and restart replay remain separate work.
+The separate fill recovery is linked above. Restart replay remains open.
 
 ### Committed reputation deltas
 
