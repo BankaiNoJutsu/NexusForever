@@ -1,0 +1,126 @@
+{
+  "sourceCommit": "364f2fb8cd4490e034da6450c1e7437a6637fe3a",
+  "engine": {
+    "version": "8.4.13",
+    "sha256": "7a976874ef3974d612081960b1c193c663b4434692b6257382352c587e367ad6",
+    "controlConnectionIsolation": "REPEATABLE-READ",
+    "tlsRequired": true
+  },
+  "assemblies": [
+    {
+      "file": "NexusForever.Database.Auth.dll",
+      "sha256": "76fc01f017aae1d841a6436fa8e1020e66e8429775d83263c6999f4b9f00b380"
+    },
+    {
+      "file": "NexusForever.Database.Character.dll",
+      "sha256": "2b8468ced164746c4342d0dc0ec70baadfb8e95cac273779b947fdf66fbd72c4"
+    },
+    {
+      "file": "NexusForever.Game.dll",
+      "sha256": "97646fc46a1cf9f84629a39e4d068a12ed489b52452b23db100b7e4606e35f84"
+    },
+    {
+      "file": "NexusForever.Game.Tests.dll",
+      "sha256": "54994c147bf2d3ef09210fa3ccc9f5a8d8324dc14f67f522691c4c2924e79ea0"
+    },
+    {
+      "file": "NexusForever.WorldServer.dll",
+      "sha256": "e0066797265aa5fd8dd07a2c94bc548c327a60dab14efdf3f6753dd9b91f719f"
+    },
+    {
+      "file": "StorefrontWireValidate.dll",
+      "role": "provider runner",
+      "sha256": "2a691d6f5a3055c803938a3150b8fe8bf8992de17f157ee13485804fe0e58bc3"
+    }
+  ],
+  "strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+  "migrationsPerSchema": 48,
+  "startupToRunnerSeconds": 218.299,
+  "elapsedSeconds": 233.316,
+  "cases": [
+    {
+      "name": "TheRegisteredActorQueueSettlesAllCanonicalContractChoiceKindsBeforePublishingClaimedState(4,False,0)",
+      "passed": true
+    },
+    {
+      "name": "TheRegisteredActorQueueSettlesAllCanonicalContractChoiceKindsBeforePublishingClaimedState(4,False,1)",
+      "passed": true
+    },
+    {
+      "name": "TheRegisteredActorQueueSettlesAllCanonicalContractChoiceKindsBeforePublishingClaimedState(4,False,2)",
+      "passed": true
+    },
+    {
+      "name": "TheRegisteredActorQueueSettlesAllCanonicalContractChoiceKindsBeforePublishingClaimedState(4,True,0)",
+      "passed": true
+    },
+    {
+      "name": "TheRegisteredActorQueueSettlesAllCanonicalContractChoiceKindsBeforePublishingClaimedState(4,True,1)",
+      "passed": true
+    },
+    {
+      "name": "TheRegisteredActorQueueSettlesAllCanonicalContractChoiceKindsBeforePublishingClaimedState(4,True,2)",
+      "passed": true
+    },
+    {
+      "name": "TheRegisteredActorQueueSettlesAllCanonicalContractChoiceKindsBeforePublishingClaimedState(5,False,0)",
+      "passed": true
+    },
+    {
+      "name": "TheRegisteredActorQueueSettlesAllCanonicalContractChoiceKindsBeforePublishingClaimedState(5,False,1)",
+      "passed": true
+    },
+    {
+      "name": "TheRegisteredActorQueueSettlesAllCanonicalContractChoiceKindsBeforePublishingClaimedState(5,False,2)",
+      "passed": true
+    },
+    {
+      "name": "TheRegisteredActorQueueSettlesAllCanonicalContractChoiceKindsBeforePublishingClaimedState(5,True,0)",
+      "passed": true
+    },
+    {
+      "name": "TheRegisteredActorQueueSettlesAllCanonicalContractChoiceKindsBeforePublishingClaimedState(5,True,1)",
+      "passed": true
+    },
+    {
+      "name": "TheRegisteredActorQueueSettlesAllCanonicalContractChoiceKindsBeforePublishingClaimedState(5,True,2)",
+      "passed": true
+    },
+    {
+      "name": "QueuedContractCommitFailuresAndLostAcknowledgementsCannotPublishOrReplayAnUnprovedCredit(False)",
+      "passed": true
+    },
+    {
+      "name": "QueuedContractCommitFailuresAndLostAcknowledgementsCannotPublishOrReplayAnUnprovedCredit(True)",
+      "passed": true
+    }
+  ],
+  "sqliteControl": {
+    "passed": 14,
+    "failed": 0,
+    "trxSha256": "456d5dc253df9caf2358b5a21aac22edb6d97ecd50d8fd0688f18d6d6eda9c42"
+  },
+  "ownedShutdown": {
+    "caseSchemasDropped": 14,
+    "processAbsent": true,
+    "listenerAbsent": true,
+    "runnerAndHelperAbsent": true,
+    "observedUtc": "2026-11-04T22:03:30.5749080Z"
+  },
+  "scope": [
+    "Internal Contract claim actor queue on separate migrated Character schemas.",
+    "First and final reward choices on tracks 4 and 5 use retained award metadata and synthetic Item2 data.",
+    "Account currency cases assert Character outbox staging. Auth outbox application is outside this run.",
+    "Commit failures and session sends use fixtures. Physical failure, public 07CE, full-table delivery and retail reset remain open."
+  ],
+  "localArtifacts": {
+    "directory": "artifacts/continuation-20261104/contract-claim-mysql",
+    "sha256": {
+      "provider/Program.cs": "9b6d5bda4e558123f979fe6f612d5531f32c0b0cacee196edf697d03b5e44ce2",
+      "provider/Provider.csproj": "10b806000fc4254de1c1e333d688f93e38e6e29c677f9f3b0964dffe1d5683b5",
+      "provider/results.json": "bdb375ff4f879a39d4a3b0e77fd962ed74eb6de863c9228ef6171eb1dbc996ee",
+      "provider/native-run-state.json": "d9f7f1ce0d29ba8e17053bc85fb4afcfba2bfa4438756bbc7e1f1c5edd6a8184",
+      "shutdown-verification.json": "c643894271f21dffbada632647cc4bebcf2845675cc37689ba214974c5d59bde"
+    }
+  }
+}

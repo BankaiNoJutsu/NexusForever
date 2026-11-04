@@ -1814,7 +1814,10 @@ from the changed behavior and dependency surface, including at integration miles
    idempotent Auth compensation, account draining and wallet refresh foundations
    already have later source gates; do not repeat them from the older queue.
    Current `ClientRewardTrackClaimRewardPointHandler` has no Contract type0/type1
-   case, while `QueueContractRewardClaim` remains internal. Connect the remaining
+   case, while `QueueContractRewardClaim` remains internal. The [configured
+   MySQL claim gate](DESTINATION_PROVIDER_QUALIFICATION.md#internal-contract-claim-settlement)
+   passes 14 Character-side cases for both tracks, including staged Auth
+   outbox rows and recovery from simulated commit uncertainty. Connect the remaining
    reset/unclaimed/excess policy and complete canonical delivery/recovery gates
    before enabling public07CE. Do not expose a partial set of726 choices or use
    synthetic item/stacking metadata as full-table delivery evidence. The reset

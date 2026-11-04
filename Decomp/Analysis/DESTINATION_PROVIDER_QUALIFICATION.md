@@ -17,6 +17,10 @@ passes nine scoped cases on migrated MySQL 8.4.13 schemas with the configured
 retry strategy. It covers commit-before-enqueue ordering, retry, session and
 attempt replacement, and the composed reward-pane reload.
 
+[Internal Contract claim settlement](#internal-contract-claim-settlement)
+passes 14 cases on migrated MySQL 8.4.13 Character schemas, covering first
+and final reward choices on both tracks and simulated commit uncertainty.
+
 [Normal bid and buyout SQL settlement](#normal-bid-and-buyout-sql-settlement)
 qualifies 28 cases on migrated MySQL 8.4.13 schemas with the configured retry
 strategy. It covers complete command graphs, simulated commit acknowledgement
@@ -133,6 +137,30 @@ binds the cases to the engine and DLLs. Local inputs, runner and raw outputs
 are in `artifacts/continuation-20261104/challenge-result-publication-mysql/`.
 Physical connection loss, cross-process restart, deployed socket ordering,
 actual Contract table delivery, native presentation and retail remain open.
+
+### Internal Contract claim settlement
+
+4 November 2026. The runner invoked 14 original compiled cases. Each used
+its own disposable MySQL 8.4.13 Character schema with all 48 migrations and
+`MySqlRetryingExecutionStrategy` from production configuration. The TLS
+control connection reported `REPEATABLE-READ`.
+
+Twelve cases exercise the three choices on the first and final rewards of
+Contract tracks 4 and 5. They check committed item and Character currency
+delivery, staged account currency outbox rows, duplicate rejection and the
+composed reward snapshot. The other two cases inject a failure before commit
+or a lost acknowledgment after commit and check that the actor publishes
+only a confirmed result and credits it once.
+
+The runner build and the same 14 SQLite controls passed. MySQL startup to
+runner launch took 218 seconds. Provider execution took 233 seconds.
+All 14 case schemas were dropped. The owned server, listener, runner and
+helper stopped. The [portable result](coverage/contract-claim-mysql-20261104.json)
+binds the cases, engine and DLLs.
+
+The fixture uses retained award metadata and synthetic Item2 details. Auth
+outbox application, physical connection loss, public packet routing, actual
+full-table delivery and retail reset behavior remain outside this result.
 
 ### Normal bid and buyout SQL settlement
 
