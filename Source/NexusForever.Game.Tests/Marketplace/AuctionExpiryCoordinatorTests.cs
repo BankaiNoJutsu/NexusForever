@@ -52,7 +52,8 @@ public sealed partial class AuctionExpiryCoordinatorTests
     [InlineData(true, true, false, true, false, "mail-notify-retry")]
     [InlineData(true, true, false, true, false, "mail-notify-replace")]
     [InlineData(true, true, true, true, false, "mail-queue-paused")]
-    [InlineData(true, true, false, true, false, "mail-route-fault")]
+    [InlineData(true, true, false, true, false, "mail-route-retry")]
+    [InlineData(true, true, false, true, false, "mail-route-replace")]
     [InlineData(true, true, false, true, false, "auction-notice-retry")]
     [InlineData(false, true, false, false, false, "auction-notice-retry")]
     [InlineData(true, true, false, true, false, "auction-notice-replace")]
@@ -103,14 +104,23 @@ public sealed partial class AuctionExpiryCoordinatorTests
         using var actor = receiverOnline ? new RewardNormalSaveSnapshotTests.Actor(f, characterDatabase: ordinaryDatabase, actorModel: model, actorSession: session,
             actorEvents: events, inventoryFactory: (owner, loaded) => EmptyInventory(owner, loaded, items, f.Source.Tables, mailed ? 0u : 20u)) : null;
         CurrencyManager currency = null;
+        int mailRouteAttempts = 0;
+        var replacementQueue = new EventQueue();
         if (actor != null)
         {
             sp.SetProperty(nameof(IWorldSession.Player), actor.Player);
             currency = new CurrencyManager(f.Source.Tables); currency.Initialise(actor.Player, model);
             actor.Set(nameof(Player.CurrencyManager), currency);
             if (mailed) actor.Set(nameof(Player.MailManager), new MailManager(actor.Player, model,
-                itemManager: items, gameTableManager: f.Source.Tables, deliveryContexts: () => fault == "mail-route-fault"
-                    ? throw new IOException("Committed mailbox route discovery failed.") : f.Context()));
+                itemManager: items, gameTableManager: f.Source.Tables, deliveryContexts: () =>
+                {
+                    if (fault is "mail-route-retry" or "mail-route-replace" && ++mailRouteAttempts == 1)
+                    {
+                        if (fault == "mail-route-replace") sp.SetProperty(nameof(IWorldSession.Events), replacementQueue);
+                        throw new IOException("Committed mailbox route discovery failed.");
+                    }
+                    return f.Context();
+                }));
             await actor.Load(); actor.Quest.Single().Progress = 2;
             if (!missingWallet) currency.CurrencyAddAmount(CurrencyType.Credits, 20);
         }
@@ -159,7 +169,6 @@ public sealed partial class AuctionExpiryCoordinatorTests
         int mailAttempts = 0, mailNotices = 0;
         bool pausedMailbox = false;
         int itemAddAttempts = 0;
-        var replacementQueue = new EventQueue();
         bool failMailNotice = fault is "mail-notify-retry" or "mail-notify-replace";
         int auctionNoticeAttempts = 0;
         bool failAuctionNotice = fault is "auction-notice-retry" or "auction-notice-replace";
@@ -197,7 +206,13 @@ public sealed partial class AuctionExpiryCoordinatorTests
                 Assert.False(cleanup.IsAccountLocked(seller.Player.Account));
                 mailNotices++;
             }
-            if (fault == "mail-route-fault" && args[0] is ServerMailAvailable) mailNotices++;
+            if (fault is "mail-route-retry" or "mail-route-replace" && args[0] is ServerMailAvailable)
+            {
+                Assert.Equal(42, activeActor);
+                using var readMail = f.Context(); CheckSql(readMail);
+                Assert.False(cleanup.IsAccountLocked(actor.Player.Account));
+                mailNotices++;
+            }
             if (args[0] is ServerItemAdd && fault is "item-add-retry" or "item-add-requeue" or "item-add-requeue-success")
             {
                 Assert.Equal(42, activeActor);
@@ -290,7 +305,7 @@ public sealed partial class AuctionExpiryCoordinatorTests
             Assert.Equal(1, ordinaryDatabase.Failures);
         }
         bool publishes = receiverOnline && fault is not ("receiver-retire" or "receiver-replace");
-        bool publishesAuctionNotice = publishes && fault is not ("auction-notice-replace" or "item-add-requeue" or "item-add-requeue-success");
+        bool publishesAuctionNotice = publishes && fault is not ("auction-notice-replace" or "item-add-requeue" or "item-add-requeue-success" or "mail-route-replace");
         Assert.Equal(winning && publishesAuctionNotice ? 1 : 0, won);
         Assert.Equal(!winning && publishesAuctionNotice ? 1 : 0, returned);
         Assert.Equal(winning && sellerOnline && fault is not ("seller-retire" or "seller-notice-replace") ? 1 : 0, sold);
@@ -305,7 +320,12 @@ public sealed partial class AuctionExpiryCoordinatorTests
         Assert.Equal(sellerOnline ? fault == "seller-retire" ? 3 : 2 : 0, sellerSaves);
         Assert.False(cleanup.IsAccountLocked(f.Source.Player.Account));
         if (fault == "mail-queue-paused") Assert.Equal(1, mailNotices);
-        if (fault == "mail-route-fault") Assert.Equal(0, mailNotices);
+        if (fault is "mail-route-retry" or "mail-route-replace")
+        {
+            Assert.Equal(fault == "mail-route-retry" ? 2 : 1, mailRouteAttempts);
+            Assert.Equal(fault == "mail-route-retry" ? 1 : 0, mailNotices);
+            Assert.False(replacementQueue.PendingEvents);
+        }
         var packets = sp.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).ToArray();
         if (fault == "mail-queue-paused") Assert.Single(packets.OfType<ServerMailAvailable>());
         Assert.Empty(packets.OfType<ServerAuctionBidResult>());

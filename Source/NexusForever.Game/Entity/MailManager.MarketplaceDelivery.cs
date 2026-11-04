@@ -12,18 +12,44 @@ namespace NexusForever.Game.Entity
                 || deliveryContexts == null)
                 return;
 
-            // Route discovery belongs to the producer thread, outside mailbox
-            // metadata locks. The actor callback performs no provider work.
-            using var context = deliveryContexts();
-            if (Item.GetRewardDatabaseKey(context) != database)
-                return;
-
             var events = deliverySession.Events;
             if (events == null)
                 return;
             bool CurrentActor() => DeliveryActor() && ReferenceEquals(deliverySession.Events, events)
                 && (deliverySession is not IPlayerSession bound || ReferenceEquals(bound.Player, player))
                 && publicationAllowed?.Invoke() != false;
+            void Queue(Task delay, Action action) => events.EnqueueThreadSafe(new PredicateEvent(
+                () => !CurrentActor() || delay.IsCompleted && !IsMailSaveInProgress, action));
+
+            bool NeedsRoute()
+            {
+                if (!CurrentActor()) return false;
+                lock (mailboxGate)
+                    return !knownMail.Contains(mail.Id);
+            }
+
+            bool MatchesRoute()
+            {
+                using var context = deliveryContexts();
+                return Item.GetRewardDatabaseKey(context) == database;
+            }
+
+            void RetryRoute(Exception error)
+            {
+                if (!CurrentActor()) return;
+                deliveryLog.Warn(error, "Committed marketplace mail route check failed; retrying for its original actor.");
+                Queue(Task.Delay(TimeSpan.FromSeconds(1)), () =>
+                {
+                    if (!NeedsRoute()) return;
+                    // Provider discovery can connect to MySQL. Keep recovery off the actor thread.
+                    var lookup = Task.Run(MatchesRoute);
+                    events.EnqueueThreadSafe(new TaskGenericEvent<bool>(lookup, matches =>
+                    {
+                        if (matches && CurrentActor()) Queue(Task.CompletedTask, Publish);
+                    }, () => RetryRoute(lookup.Exception)));
+                });
+            }
+
             bool noticePending = false;
             void Publish()
             {
@@ -44,13 +70,15 @@ namespace NexusForever.Game.Entity
                 {
                     deliveryLog.Warn(error, "Committed marketplace mail publication failed.");
                     // The inbox already knows this row, so only the notice can be retried.
-                    if (noticePending) Queue(Task.Delay(TimeSpan.FromSeconds(1)));
+                    if (noticePending) Queue(Task.Delay(TimeSpan.FromSeconds(1)), Publish);
                 }
             }
-            void Queue(Task delay) => events.EnqueueThreadSafe(new PredicateEvent(
-                () => !CurrentActor() || delay.IsCompleted && !IsMailSaveInProgress, Publish));
 
-            Queue(Task.CompletedTask);
+            if (!NeedsRoute()) return;
+            bool initialRouteMatches;
+            try { initialRouteMatches = MatchesRoute(); }
+            catch (Exception error) { RetryRoute(error); return; }
+            if (initialRouteMatches) Queue(Task.CompletedTask, Publish);
         }
     }
 }

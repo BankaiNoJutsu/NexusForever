@@ -20,6 +20,9 @@ Local evidence is in `artifacts/continuation-20261104/auction-mail-queue/`.
 This gate covers source and private SQLite. Deployed delivery, restart replay
 and retail qualification remain open.
 
+The later [inbox route recovery](../../CURRENT_STATUS.md#marketplace-inbox-route-recovery)
+adds a live retry when the recipient route check throws after settlement.
+
 ## Recovering the committed direct item delivery
 
 4 November 2026. Direct buyout, winning expiry and unsold expiry reuse the

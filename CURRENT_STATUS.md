@@ -20898,6 +20898,23 @@ atomicity is source-local closed: auction bidder refunds now compose with bid
 updates, auction delete, or item-return mail saves, and the old marketplace
 `CreditCharacter` fallback has been removed.
 
+#### Marketplace inbox route recovery
+
+4 November 2026. A transient failure while resolving a committed marketplace
+mail recipient's Character database now retains the live inbox handoff. The
+retry checks the database route on a worker and publishes through the original
+actor queue once the mailbox is available. Replacement sessions and different
+routes cannot receive the notice. An inbox refresh that has already adopted the
+row makes the pending handoff unnecessary. The retry never saves mail, moves an
+Item, or repeats auction or commodity settlement.
+
+The public auction expiry regression reproduced the missing retry after SQL
+commit. The final owning-project build and 76 scoped tests passed, covering
+live notice after recovery and suppression after queue replacement. Test
+execution took 63 seconds. Configured MySQL and deployed delivery remain open.
+Evidence is under
+`artifacts/continuation-20261104/marketplace-mail-route/`.
+
 ### F-006 - Storefront / Account Inventory - PARTIAL
 
 Build 16042 account inventory uses a separate empty `0x0770` redeem request.

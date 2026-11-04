@@ -10,6 +10,11 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Marketplace inbox route recovery](../../CURRENT_STATUS.md#marketplace-inbox-route-recovery)
+retries failed recipient route checks for already committed mail on behalf of
+the original session, with no replay of settlement. A mismatched route or a
+replaced recipient still suppresses live publication.
+
 [Build 16042 account-inventory CREDD wire evidence](CREDD_ACCOUNT_REDEEM_WIRE_EVIDENCE.md)
 maps empty `0x0770` and separates the local confirmation event from a server
 result. Publisher evidence establishes historical Signature redemption, and
