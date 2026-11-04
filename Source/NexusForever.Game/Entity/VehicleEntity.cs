@@ -2,9 +2,11 @@
 using System.Numerics;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
+using NexusForever.Game.Map;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Model;
 using NexusForever.Network.World.Message.Model;
@@ -21,7 +23,8 @@ namespace NexusForever.Game.Entity
         public Spell4Entry SpellEntry { get; private set; }
 
         protected readonly List<IVehiclePassenger> passengers = new();
-        private readonly Queue<IVehiclePassenger> pendingAdd = new();
+        private sealed record PendingPassenger(IVehiclePassenger Seat, IPlayer Player, IGameSession Session, ulong? Admission);
+        private readonly Queue<PendingPassenger> pendingAdd = new();
 
         #region Dependency Injection
 
@@ -91,7 +94,7 @@ namespace NexusForever.Game.Entity
             base.Update(lastTick);
 
             // passengers are delay added to make sure the vehicle exists at the client
-            while (pendingAdd.TryDequeue(out IVehiclePassenger passenger))
+            while (pendingAdd.TryDequeue(out var passenger))
                 PassengerAdd(passenger);
         }
 
@@ -139,19 +142,39 @@ namespace NexusForever.Game.Entity
             if (GetPassenger(seatType, seatPosition) != null)
                 throw new InvalidOperationException();
 
-            if (pendingAdd.Any(p => p.Guid == player.Guid))
+            if (pendingAdd.Any(p => p.Seat.Guid == player.Guid))
                 throw new InvalidOperationException();
 
-            pendingAdd.Enqueue(new VehiclePassenger(seatType, seatPosition, player.Guid));
+            pendingAdd.Enqueue(new(new VehiclePassenger(seatType, seatPosition, player.Guid),
+                player, player.Session, PlayerMapAdmissionGuard.Capture(player)));
         }
 
-        private void PassengerAdd(IVehiclePassenger passenger)
+        private void PassengerAdd(PendingPassenger pending)
         {
-            // possible for a player to no longer be visible due to delayed add
-            IPlayer player = GetVisible<IPlayer>(passenger.Guid);
-            if (player == null)
-                return;
+            var player = pending.Player;
+            var seat = pending.Seat;
+            bool seated = false;
+            PlayerMapAdmissionGuard.Run(player, pending.Admission, () =>
+            {
+                if (Map == null || !ReferenceEquals(player.Map, Map) || player.Guid != seat.Guid || player.PlatformGuid != null
+                    || !ReferenceEquals(GetVisible<IPlayer>(seat.Guid), player) || pending.Session == null
+                    || !ReferenceEquals(player.Session, pending.Session)
+                    || (pending.Session is IPlayerSession bound && !ReferenceEquals(bound.Player, player))
+                    || !CanSeatPassenger(player, seat.SeatType))
+                    return;
 
+                SeatPassenger(player, seat);
+                seated = true;
+            });
+            if (!seated) OnPassengerAdmissionRejected(player, seat.SeatType);
+        }
+
+        protected virtual bool CanSeatPassenger(IPlayer player, VehicleSeatType seatType) => true;
+
+        protected virtual void OnPassengerAdmissionRejected(IPlayer player, VehicleSeatType seatType) { }
+
+        private void SeatPassenger(IPlayer player, IVehiclePassenger passenger)
+        {
             player.Session.EnqueueMessageEncrypted(new ServerPathScientistUnitScanParameters
             {
                 UnitId = Guid,

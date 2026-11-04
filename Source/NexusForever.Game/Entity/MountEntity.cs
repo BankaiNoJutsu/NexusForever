@@ -75,12 +75,23 @@ namespace NexusForever.Game.Entity
             CreateFlags |= EntityCreateFlag.Immediate;
         }
 
+        protected override bool CanSeatPassenger(IPlayer player, VehicleSeatType seatType)
+            => seatType != VehicleSeatType.Pilot || player is not Player pilot || pilot.OwnsPendingMount(this);
+
+        protected override void OnPassengerAdmissionRejected(IPlayer player, VehicleSeatType seatType)
+        {
+            if (seatType != VehicleSeatType.Pilot) return;
+            if (player is Player pilot) pilot.ClearPendingMount(this);
+            if (Map != null && passengers.Count == 0) RemoveFromMap();
+        }
+
         protected override void OnPassengerAdd(IPlayer player, VehicleSeatType seatType, byte seatPosition)
         {
             if (seatType != VehicleSeatType.Pilot)
                 return;
 
-            player.SetPendingMount(null);
+            if (player is Player pilot) pilot.ClearPendingMount(this);
+            else player.SetPendingMount(null);
 
             if (PilotDisplayInfo != null)
                 player.AddVisual(ItemSlot.Mount, (ushort)PilotDisplayInfo.Id);

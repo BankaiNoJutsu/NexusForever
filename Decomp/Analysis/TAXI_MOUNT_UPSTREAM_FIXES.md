@@ -80,6 +80,21 @@ upstream's broad cooldown bypass for all non-user casts. A rejected map-entry
 request no longer applies the mount auras. Existing AddSpell, Disembark,
 hoverboard customization and spell lifetime implementations remain in place.
 
+### Delayed pilot admission
+
+4 November 2026. The delayed vehicle queue keeps the original player,
+session and map admission through seating. An expired or superseded mount
+reservation, a reused unit ID, a new map admission or a replaced session
+cannot attach the old pilot or publish seating packets. Rejected mounts with
+no passengers are removed. Cleanup clears only the reservation owned by that
+mount, so a newer summon can still seat its pilot.
+
+The five stale cases reproduced on the baseline while normal seating
+passed. The owning build and 142 scoped mount, transport and map
+tests passed. Local evidence is under
+`artifacts/continuation-20261104/mount-pilot-admission/`. Physical movement
+and native mount presentation remain open.
+
 ## Verification
 
 There are 39 additional regression cases relative to the 5,885-case

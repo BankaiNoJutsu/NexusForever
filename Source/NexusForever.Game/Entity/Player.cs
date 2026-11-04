@@ -2634,7 +2634,7 @@ namespace NexusForever.Game.Entity
         {
             if (pendingMount != null)
             {
-                if (PlatformGuid == null && System.Diagnostics.Stopwatch.GetElapsedTime(pendingMountTimestamp) < TimeSpan.FromSeconds(10))
+                if (PlatformGuid == null && !PendingMountExpired)
                     return false;
                 pendingMount = null;
             }
@@ -2643,6 +2643,16 @@ namespace NexusForever.Game.Entity
 
         private IMountEntity pendingMount;
         private long pendingMountTimestamp;
+        private bool PendingMountExpired => System.Diagnostics.Stopwatch.GetElapsedTime(pendingMountTimestamp) >= TimeSpan.FromSeconds(10);
+
+        internal bool OwnsPendingMount(IMountEntity mount)
+            => ReferenceEquals(pendingMount, mount) && !PendingMountExpired && pendingTeleport == null;
+
+        internal void ClearPendingMount(IMountEntity mount)
+        {
+            if (ReferenceEquals(pendingMount, mount))
+                pendingMount = null;
+        }
 
         public void SetPendingMount(IMountEntity mount)
         {

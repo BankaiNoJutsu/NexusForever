@@ -14,6 +14,11 @@ retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_
 verifies #576's recovery cases on the fork and keeps each cached load bound
 to the directory whose version was checked.
 
+[Delayed pilot admission](TAXI_MOUNT_UPSTREAM_FIXES.md#delayed-pilot-admission)
+prevents an expired summon or superseded actor from taking control after the
+mount's queued seating delay. It retires the rejected empty mount and keeps
+any newer summon reservation.
+
 [Quest starter item admission](../../CURRENT_STATUS.md#quest-starter-item-admission)
 checks prerequisites and pushed-item space before consuming the starter. A
 missing or unusable starter cannot accept the quest. The capacity check
