@@ -1,6 +1,4 @@
-﻿using NexusForever.Game.Static.Entity;
-
-namespace NexusForever.Game.Abstract.Entity
+﻿namespace NexusForever.Game.Abstract.Entity
 {
     public interface IBuybackInfo : IEnumerable<IBuybackItem>
     {
@@ -10,9 +8,9 @@ namespace NexusForever.Game.Abstract.Entity
         IBuybackItem GetItem(uint uniqueId);
 
         /// <summary>
-        /// Create a new <see cref="IBuybackItem"/> from sold <see cref="IItem"/>.
+        /// Store an <see cref="IBuybackItem"/> with its assigned request identity.
         /// </summary>
-        uint AddItem(IItem item, uint quantity, List<(CurrencyType CurrencyTypeId, ulong CurrencyAmount)> currencyChange);
+        void AddItem(IBuybackItem item);
 
         /// <summary>
         /// Remove stored <see cref="IBuybackItem"/> with supplied unique id.

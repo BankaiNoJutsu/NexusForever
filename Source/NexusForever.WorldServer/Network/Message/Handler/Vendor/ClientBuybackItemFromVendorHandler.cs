@@ -1,5 +1,5 @@
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
-﻿using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
@@ -23,28 +23,37 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
 
         public void HandleMessage(IWorldSession session, ClientBuybackItemFromVendor buybackItemFromVendor)
         {
-            if (!InventoryMutationScope.TryAcquire(session.Player?.Inventory, out var mutationLease)) return;
+            IPlayer player = session.Player;
+            IInventory inventory = player?.Inventory;
+            if (inventory == null || !InventoryMutationScope.TryAcquire(inventory, out var mutationLease)) return;
             using var heldMutation = mutationLease;
-            IBuybackItem buybackItem = buybackManager.GetItem(session.Player, buybackItemFromVendor.UniqueId);
+            var ownerSession = player.Session;
+            IBuybackItem buybackItem = buybackManager.GetItem(player, buybackItemFromVendor.UniqueId);
             if (buybackItem == null)
                 return;
 
-            if (session.Player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) < 1)
+            if (inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) < 1)
             {
-                session.Player.SendGenericError(GenericError.ItemInventoryFull);
+                if (IsCurrentOwner())
+                    player.SendGenericError(GenericError.ItemInventoryFull);
                 return;
             }
 
-            // do all sanity checks before modifying currency
+            ICurrencyManager wallet = player.CurrencyManager;
             foreach ((CurrencyType currencyTypeId, ulong currencyAmount) in buybackItem.CurrencyChange)
-                if (!session.Player.CurrencyManager.CanAfford(currencyTypeId, currencyAmount))
+                if (!wallet.CanAfford(currencyTypeId, currencyAmount))
                     return;
+            if (!IsCurrentOwner())
+                return;
 
             foreach ((CurrencyType currencyTypeId, ulong currencyAmount) in buybackItem.CurrencyChange)
-                session.Player.CurrencyManager.CurrencySubtractAmount(currencyTypeId, currencyAmount);
+                wallet.CurrencySubtractAmount(currencyTypeId, currencyAmount);
 
-            session.Player.Inventory.AddItem(buybackItem.Item, InventoryLocation.Inventory);
-            buybackManager.RemoveItem(session.Player, buybackItem);
+            inventory.AddItem(buybackItem.Item, InventoryLocation.Inventory);
+            buybackManager.RemoveItem(player, buybackItem, notify: IsCurrentOwner());
+
+            bool IsCurrentOwner() => ReferenceEquals(session.Player, player)
+                && ReferenceEquals(player.Session, ownerSession) && ReferenceEquals(player.Inventory, inventory);
         }
     }
 }

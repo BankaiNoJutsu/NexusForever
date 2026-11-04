@@ -10,6 +10,10 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Vendor buyback request identity](../../CURRENT_STATUS.md#vendor-buyback-request-identity)
+keeps delayed requests from charging for a later sale and finishes accepted
+redemptions on the original inventory. Durable redemption settlement remains open.
+
 [Vendor purchase capacity](../../CURRENT_STATUS.md#vendor-purchase-capacity)
 checks the complete delivery before charging, including slots freed by item
 payment and the original satchel's available space. Accepted purchases retain

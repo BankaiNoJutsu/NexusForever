@@ -22632,6 +22632,22 @@ realm-bank identity coverage. See the local evidence under
 Durable purchase settlement, deployed delivery, and retail presentation remain
 open.
 
+#### Vendor buyback request identity
+
+4 November 2026. The buyback manager assigns request IDs independently of the
+character's current list. Emptying the list and selling another item no longer
+allows a delayed request for the previous item to charge the wallet or retrieve
+the new item. An accepted redemption uses the original wallet and inventory
+through delivery and removes the exact captured entry. Removal notifications
+require the original session and inventory binding.
+
+Three pre-fix regressions reproduced an extra debit on replay and delivery to a
+replacement inventory in two owner-change cases. The owning-project build and
+111 scoped tests passed, including vendor handlers, inventory mutation, and
+bank-sale payout, restoration, and currency recovery. Local evidence is under
+`artifacts/continuation-20261104/vendor-buyback-identity/`.
+Durable redemption settlement and deployed client behavior remain open.
+
 #### Existing item and unlock behavior
 
 Inventory, title, pet, costume, unlock surfaces exist. Generic unlock

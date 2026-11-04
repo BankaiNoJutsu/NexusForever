@@ -16,9 +16,9 @@ namespace NexusForever.Game.Abstract.Entity
         void AddItem(IPlayer player, IItem item, uint quantity, List<(CurrencyType CurrencyTypeId, ulong CurrencyAmount)> currencyChange);
 
         /// <summary>
-        /// Remove stored <see cref="IBuybackItem"/> with supplied unique id for <see cref="IPlayer"/>.
+        /// Remove the original stored <see cref="IBuybackItem"/> for <see cref="IPlayer"/>.
         /// </summary>
-        void RemoveItem(IPlayer player, IBuybackItem item);
+        void RemoveItem(IPlayer player, IBuybackItem item, bool notify = true);
 
         /// <summary>
         /// Send <see cref="ServerBuybackItems"/> for <see cref="IPlayer"/>.

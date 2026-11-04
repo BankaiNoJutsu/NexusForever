@@ -1,7 +1,6 @@
 ﻿using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.World.Message.Model;
-using NetworkBuybackItem = NexusForever.Network.World.Message.Model.Shared.BuybackItem;
 
 namespace NexusForever.Game.Entity
 {
@@ -9,6 +8,7 @@ namespace NexusForever.Game.Entity
     {
         private readonly Dictionary<ulong /*CharacterId*/, IBuybackInfo> buybackInfo = new();
         private readonly IPlayerManager playerManager;
+        private int lastUniqueId = -1;
 
         public BuybackManager(IPlayerManager playerManager = null)
         {
@@ -52,46 +52,33 @@ namespace NexusForever.Game.Entity
             if (!buybackInfo.ContainsKey(player.CharacterId))
                 buybackInfo.Add(player.CharacterId, new BuybackInfo());
 
-            uint uniqueId = buybackInfo[player.CharacterId].AddItem(item, quantity, currencyChange);
-
-            var networkBuybackItem = new NetworkBuybackItem
-            {
-                UniqueId = uniqueId,
-                ItemId = item.Info.Id,
-                Quantity = quantity
-            };
-
-            for (int i = 0; i < networkBuybackItem.CurrencyTypeId.Length; i++)
-            {
-                if (i >= currencyChange.Count)
-                    continue;
-
-                networkBuybackItem.CurrencyTypeId[i] = currencyChange[i].CurrencyTypeId;
-                networkBuybackItem.CurrencyAmount[i] = currencyChange[i].CurrencyAmount;
-            }
+            // A request can arrive after the character's previous list was emptied.
+            uint uniqueId = unchecked((uint)Interlocked.Increment(ref lastUniqueId));
+            var entry = new BuybackItem(uniqueId, item, quantity, currencyChange);
+            buybackInfo[player.CharacterId].AddItem(entry);
 
             player.Session.EnqueueMessageEncrypted(new ServerBuybackItemUpdated
             {
-                BuybackItem = networkBuybackItem
+                BuybackItem = entry.Build()
             });
         }
 
         /// <summary>
-        /// Remove stored <see cref="IBuybackItem"/> with supplied unique id for <see cref="IPlayer"/>.
+        /// Remove the original stored <see cref="IBuybackItem"/> for <see cref="IPlayer"/>.
         /// </summary>
-        public void RemoveItem(IPlayer player, IBuybackItem item)
+        public void RemoveItem(IPlayer player, IBuybackItem item, bool notify = true)
         {
-            if (!buybackInfo.TryGetValue(player.CharacterId, out IBuybackInfo info))
+            if (!buybackInfo.TryGetValue(player.CharacterId, out IBuybackInfo info)
+                || !ReferenceEquals(info.GetItem(item.UniqueId), item))
                 return;
 
             info.RemoveItem(item.UniqueId);
             if (!info.Any())
                 buybackInfo.Remove(player.CharacterId);
 
-            player.Session.EnqueueMessageEncrypted(new ServerBuybackItemRemoved
-            {
-                UniqueId = item.UniqueId
-            });
+            var session = player.Session;
+            if (notify && (session is not IPlayerSession bound || ReferenceEquals(bound.Player, player)))
+                session?.EnqueueMessageEncrypted(new ServerBuybackItemRemoved { UniqueId = item.UniqueId });
         }
 
         /// <summary>
