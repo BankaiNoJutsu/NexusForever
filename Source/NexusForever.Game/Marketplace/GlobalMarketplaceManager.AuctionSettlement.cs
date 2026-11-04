@@ -389,27 +389,26 @@ namespace NexusForever.Game.Marketplace
             {
                 if (preparationFailed || reconciliationFailed || outcome?.Committed != true)
                 { Finish(preparationFailed && !reconciliationFailed ? preparationResult : GenericError.DbFailure); return; }
-                NotifySeller();
-                NotifyPrevious();
+                Finish(GenericError.Ok);
             }
 
-            private void NotifySeller()
+            private void QueueSellerNotice()
             {
                 if (saleSeller == null) return;
                 var owner = characters.Single(row => row.Id == before.Owner);
                 var prepared = actors.SingleOrDefault(actor => actor.Wallet.Character == owner.Id)?.Prepared;
                 bool OriginalSeller() => prepared?.Retired != true && CanPublish(saleSeller, owner.Id, owner.Account);
-                OnActor(saleSeller, () => PublishNotice(saleSeller, OriginalSeller, responseAuction,
+                var queue = saleSeller.Queue;
+                queue.EnqueueThreadSafe(new PredicateEvent(() => true, () => PublishNotice(saleSeller, OriginalSeller, responseAuction,
                     auction => saleSeller.Session.EnqueueMessageEncrypted(new ServerAuctionWon { Auction = auction }),
-                    () => ReadNoticeAuthority(null)));
+                    () => ReadNoticeAuthority(null))));
             }
 
             private void PublishNotice(Participant owner, Func<bool> canPublish, AuctionInfo notification, Action<AuctionInfo> send,
-                Func<NoticeAuthority> authority = null, bool guardInitialAttempt = true, Action afterSend = null, bool deferInitialAttempt = false,
-                EventQueue originalQueue = null)
+                Func<NoticeAuthority> authority = null, bool guardInitialAttempt = true, Action afterSend = null, bool deferInitialAttempt = false)
             {
                 var session = owner.Session;
-                var queue = originalQueue ?? session.Events;
+                var queue = owner.Queue;
                 var snapshot = CloneAuction(notification);
                 bool CurrentActor() => ReferenceEquals(session.Events, queue) && canPublish();
                 NoticeAuthority GetAuthority() => authority?.Invoke() ?? NoticeAuthority.Ready;
@@ -461,27 +460,17 @@ namespace NexusForever.Game.Marketplace
                 && owner.Session is not NetworkSession { IsDisconnecting: true }
                 && owner.Player.LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished);
 
-            private void NotifyPrevious()
+            private void QueueOutbidNotice()
             {
-                if (Cancelling) { Finish(GenericError.Ok); return; }
+                if (Cancelling) return;
                 var previous = actors.SingleOrDefault(candidate => candidate.Wallet.Character == before.Bidder && before.Bidder != bidder);
-                if (previous == null) { Finish(GenericError.Ok); return; }
+                if (previous == null) return;
                 var notification = responseAuction ?? CloneAuction(record.Auction, record.ExpiresAtUtc);
                 var accepted = TransfersItem ? null : before with { Bid = amount, Bidder = bidder };
-                void PublishOutbid() => PublishNotice(previous.Owner, () => CanPublish(previous), notification,
+                var queue = previous.Owner.Queue;
+                queue.EnqueueThreadSafe(new PredicateEvent(() => true, () => PublishNotice(previous.Owner, () => CanPublish(previous), notification,
                     auction => previous.Owner.Session.EnqueueMessageEncrypted(new ServerAuctionOutbid { Auction = auction }),
-                    () => ReadNoticeAuthority(accepted));
-                if (kind == AuctionSettlementKind.Buyout)
-                {
-                    if (CanPublish(previous)) OnActor(previous.Owner, PublishOutbid);
-                    Finish(GenericError.Ok);
-                    return;
-                }
-                OnActor(previous.Owner, () =>
-                {
-                    try { PublishOutbid(); }
-                    finally { OnCoordinator(() => Finish(GenericError.Ok)); }
-                });
+                    () => ReadNoticeAuthority(accepted))));
             }
 
             private NoticeAuthority ReadNoticeAuthority(AuctionRow accepted)
@@ -511,6 +500,12 @@ namespace NexusForever.Game.Marketplace
                     manager.auctionSettlements.Remove(before.Id); auction = responseAuction ?? CloneAuction(record.Auction, record.ExpiresAtUtc);
                 }
                 accounts?.Dispose(); accounts = null;
+                if (error == GenericError.Ok)
+                {
+                    // Counterparty notices can wait on their original queues after settlement.
+                    QueueSellerNotice();
+                    QueueOutbidNotice();
+                }
                 if (error == GenericError.Ok && TransfersItem)
                 {
                     var recipient = actors.SingleOrDefault(candidate => candidate.Wallet.Character == bidder);
@@ -593,21 +588,21 @@ namespace NexusForever.Game.Marketplace
                 {
                     if (reply != null) PublishSuccess(auction);
                     else if (!Cancelling) PublishTerminalNotice(recipient, auction);
-                }, deferInitialAttempt: true, originalQueue: owner.Queue);
+                }, deferInitialAttempt: true);
             }
 
             private void PublishTerminalNotice(Actor recipient, AuctionInfo auction) =>
                 PublishNotice(recipient.Owner, () => CanPublish(recipient), auction, view =>
                     recipient.Owner.Session.EnqueueMessageEncrypted(Returning
                         ? new ServerAuctionExpired { Auction = view } : new ServerAuctionWon { Auction = view }),
-                    () => ReadNoticeAuthority(null), originalQueue: recipient.Owner.Queue);
+                    () => ReadNoticeAuthority(null));
 
             private void PublishSuccess(AuctionInfo auction)
             {
                 if (!Cancelling) { PublishBuyerResult(auction); return; }
                 var owner = actors.Single(actor => actor.Wallet.Character == bidder);
                 PublishNotice(initiator, () => CanPublish(owner), auction,
-                    view => reply(GenericError.Ok, view), () => ReadNoticeAuthority(null), originalQueue: initiator.Queue);
+                    view => reply(GenericError.Ok, view), () => ReadNoticeAuthority(null));
             }
 
             private void PublishBuyerResult(AuctionInfo auction)

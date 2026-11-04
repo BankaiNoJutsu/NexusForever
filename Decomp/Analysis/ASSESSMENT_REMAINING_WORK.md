@@ -327,6 +327,11 @@ later local settlement authority before retrying. A successful rebid suppresses
 the obsolete notice. A rejected rebid leaves it eligible. Buyer reply, listing
 and account reservation release proceed independently of the retry.
 
+[Buyer reply with a paused outbid queue](NORMAL_AUCTION_BID_TRANSACTION.md#buyer-reply-with-a-paused-outbid-queue)
+releases the listing and account reservations after reconciliation even if
+the previous bidder's first notice is paused. The buyer's reply proceeds and
+the outbid notice stays bound to the original queue.
+
 [Auction notice consumer evidence](NORMAL_AUCTION_BID_TRANSACTION.md#client-consumption-of-settlement-notices)
 binds build 16042 bid-result, expired, outbid and won dispatch to the Lua
 events. Archived Carbine handlers remove the auction by ID on outbid and

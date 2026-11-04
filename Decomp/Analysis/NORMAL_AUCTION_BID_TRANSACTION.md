@@ -62,6 +62,27 @@ regressions. The scoped tests ran in 57 seconds. Local evidence is in
 Cross-server and restart replay, error reply retry, and wire or
 retail qualification remain open. See the later [committed seller notice](AUCTION_BUYOUT_TRANSACTION.md#committed-notice-for-the-original-seller).
 
+## Buyer reply with a paused outbid queue
+
+4 November 2026. The public bid handler still waited for the previous
+bidder's first notice attempt after the debit, refund and wallet
+reconciliation finished. Two baseline cases paused that actor after the
+refund and reproduced the blocked buyer reply.
+
+The coordinator now releases the listing and account reservations once
+reconciliation finishes, then queues seller and outbid notices on their
+captured actor queues. The buyer receives the accepted bid result even while
+the previous bidder's queue is paused. The original queue can send the
+outbid notice when it resumes and the listing still matches. A replacement
+queue drops the pending notice. The listing, escrow item, debit and refund
+are checked in the public-handler cases.
+
+The owning test-project build passed and 226 scoped auction cases passed,
+including both regressions. The build took 35 seconds and the tests took
+88 seconds. Local logs, TRX results and source/DLL bindings are in
+`artifacts/continuation-20261104/auction-outbid-independent/`.
+Cross-process replay, deployed delivery and retail remain open.
+
 ## Client consumption of settlement notices
 
 4 November 2026. The retained build 16042 image

@@ -16,6 +16,7 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Game.Tests.Transport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Marketplace;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared.Game.Events;
@@ -35,6 +36,8 @@ public sealed partial class AuctionExpiryCoordinatorTests
     [InlineData("buyout")]
     [InlineData("buyout-wallet")]
     [InlineData("buyout-zero-proceeds")]
+    [InlineData("paused-outbid")]
+    [InlineData("replaced-outbid-queue")]
     public async Task PublicBidRetriesOutbidNoticeOnlyWhileTheOriginalOutcomeApplies(string mode)
     {
         using var f = new Fixture(null);
@@ -110,9 +113,12 @@ public sealed partial class AuctionExpiryCoordinatorTests
         ulong firstAmount = zeroProceeds ? 500ul : buyout ? 80ul : 20ul;
         ulong buyerAfterFirst = mode == "buyout-wallet" ? 25ul : startingBuyerWallet - firstAmount;
         bool rebids = mode is "rebid" or "rebid-rejected";
+        bool pauseOutbid = mode is "paused-outbid" or "replaced-outbid-queue";
         int attempts = 0, notices = 0, firstReplies = 0, rebidReplies = 0;
         int sellerNotices = 0, sellerSaves = 0;
         Stopwatch heldRebid = null;
+        Stopwatch pausedAfterRefund = null;
+        EventQueue replacementQueue = null;
 
         if (seller != null) seller.OnAuth = () => sellerSaves++;
         sellerProxy.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
@@ -129,6 +135,8 @@ public sealed partial class AuctionExpiryCoordinatorTests
         });
         priorProxy.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
         {
+            if (pauseOutbid && args[0] is ServerCombatReward { NewValue: 110ul })
+                pausedAfterRefund ??= Stopwatch.StartNew();
             if (args[0] is ServerAuctionBidResult reply)
             {
                 Assert.Equal(mode == "rebid-rejected" ? GenericError.DbFailure : GenericError.Ok, reply.Result);
@@ -140,6 +148,14 @@ public sealed partial class AuctionExpiryCoordinatorTests
             using var read = f.Context();
             Assert.Equal(110ul, read.CharacterCurrency.Single(row => row.Id == 100).Amount);
             Assert.Equal(buyerAfterFirst, read.CharacterCurrency.Single(row => row.Id == 42).Amount);
+            if (pauseOutbid)
+            {
+                Assert.False(cleanup.IsAccountLocked(buyer.Player.Account));
+                Assert.False(cleanup.IsAccountLocked(prior.Player.Account));
+                notices++;
+                attempts++;
+                return null;
+            }
             if (++attempts == 1)
             {
                 if (mode == "replace")
@@ -157,6 +173,19 @@ public sealed partial class AuctionExpiryCoordinatorTests
             {
                 Assert.Equal(GenericError.Ok, reply.Result);
                 firstReplies++;
+                if (pauseOutbid)
+                {
+                    Assert.NotNull(pausedAfterRefund);
+                    Assert.Equal(0, attempts);
+                    Assert.False(Pending(manager));
+                    Assert.False(cleanup.IsAccountLocked(buyer.Player.Account));
+                    Assert.False(cleanup.IsAccountLocked(prior.Player.Account));
+                    if (mode == "replaced-outbid-queue")
+                    {
+                        replacementQueue = new EventQueue();
+                        priorProxy.SetProperty(nameof(IWorldSession.Events), replacementQueue);
+                    }
+                }
                 if (mode == "rebid-rejected")
                 {
                     using var setup = f.Context();
@@ -175,7 +204,9 @@ public sealed partial class AuctionExpiryCoordinatorTests
             {
                 manager.Update(.01);
                 buyer.Events.Update(.01);
-                prior.Events.Update(.01);
+                if (pausedAfterRefund == null || firstReplies != 0)
+                    prior.Events.Update(.01);
+                replacementQueue?.Update(.01);
                 seller?.Events.Update(.01);
                 Assert.Empty(buyer.Errors);
                 Assert.Empty(prior.Errors);
@@ -185,6 +216,9 @@ public sealed partial class AuctionExpiryCoordinatorTests
                     heldRebid ??= Stopwatch.StartNew();
                     if (heldRebid.Elapsed >= TimeSpan.FromMilliseconds(1100)) releaseRebid.TrySetResult();
                 }
+                if (pausedAfterRefund != null && firstReplies == 0)
+                    Assert.True(pausedAfterRefund.Elapsed < TimeSpan.FromSeconds(5),
+                        "The buyer reply waited on the previous bidder after refund reconciliation.");
                 Assert.True(deadline.Elapsed < TimeSpan.FromSeconds(20), "Outbid publication did not settle.");
                 await Task.Delay(5);
             } while (Pending(manager) || buyer.Events.PendingEvents || prior.Events.PendingEvents || seller?.Events.PendingEvents == true);
@@ -192,8 +226,8 @@ public sealed partial class AuctionExpiryCoordinatorTests
         finally { releaseRebid.TrySetResult(); }
 
         bool retries = buyout || mode is "retry" or "rebid-rejected";
-        Assert.Equal(retries ? 2 : 1, attempts);
-        Assert.Equal(retries ? 1 : 0, notices);
+        Assert.Equal(mode == "replaced-outbid-queue" ? 0 : retries ? 2 : 1, attempts);
+        Assert.Equal(retries || mode == "paused-outbid" ? 1 : 0, notices);
         Assert.Equal(1, firstReplies);
         Assert.Equal(rebids ? 1 : 0, rebidReplies);
         Assert.Equal(rebids ? 2 : 1, executions);
