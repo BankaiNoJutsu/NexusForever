@@ -51,6 +51,9 @@ public sealed class AuctionExpiryCoordinatorTests
     [InlineData(true, true, false, true, false, "mail-replace")]
     [InlineData(true, true, false, true, false, "mail-notify-retry")]
     [InlineData(true, true, false, true, false, "mail-notify-replace")]
+    [InlineData(true, true, false, true, false, "auction-notice-retry")]
+    [InlineData(false, true, false, false, false, "auction-notice-retry")]
+    [InlineData(true, true, false, true, false, "auction-notice-replace")]
     [InlineData(true, true, true, false, false, "seller-retire")]
     [InlineData(true, true, false, false, true, "main-lost")]
     [InlineData(false, true, false, false, true, "ordinary-rollback")]
@@ -146,6 +149,8 @@ public sealed class AuctionExpiryCoordinatorTests
         int activeActor = 0, saves = 0, sellerSaves = 0, won = 0, returned = 0, replacementBoundary = -1;
         int mailAttempts = 0, mailNotices = 0;
         bool failMailNotice = fault is "mail-notify-retry" or "mail-notify-replace";
+        int auctionNoticeAttempts = 0;
+        bool failAuctionNotice = fault is "auction-notice-retry" or "auction-notice-replace";
         ulong buyerBalance = (missingWallet ? 0ul : receiverOnline ? 120ul : 100ul) + (fault != "none" && actor != null ? 5ul : 0ul);
         ulong sellerBalance = 124ul + (fault == "seller-retire" ? 3ul : 0ul);
         if (actor != null) actor.OnAuth = () => { Assert.Equal(42, activeActor); saves++; };
@@ -168,6 +173,19 @@ public sealed class AuctionExpiryCoordinatorTests
             if (args[0] is not (ServerAuctionWon or ServerAuctionExpired)) return null;
             using var read = f.Context(); CheckSql(read);
             Assert.Equal(42, activeActor);
+            if (failAuctionNotice)
+            {
+                var noticeAuction = args[0] is ServerAuctionWon wonNotice ? wonNotice.Auction : ((ServerAuctionExpired)args[0]).Auction;
+                Assert.Equal(1ul, noticeAuction.AuctionId);
+                Assert.Equal(winning ? 10ul : 0ul, noticeAuction.CurrentBid);
+                if (++auctionNoticeAttempts == 1)
+                {
+                    if (fault == "auction-notice-replace")
+                        sp.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+                    throw new IOException("Auction notice failed before enqueue.");
+                }
+                Assert.False(cleanup.IsAccountLocked(f.Source.Player.Account));
+            }
             if (args[0] is ServerAuctionWon) { Assert.True(winning); won++; }
             else { Assert.False(winning); returned++; }
             if (fault == "mail-replace")
@@ -211,7 +229,10 @@ public sealed class AuctionExpiryCoordinatorTests
             Assert.Equal(1, ordinaryDatabase.Failures);
         }
         bool publishes = receiverOnline && fault is not ("receiver-retire" or "receiver-replace");
-        Assert.Equal(winning && publishes ? 1 : 0, won); Assert.Equal(!winning && publishes ? 1 : 0, returned);
+        bool publishesAuctionNotice = publishes && fault != "auction-notice-replace";
+        Assert.Equal(winning && publishesAuctionNotice ? 1 : 0, won);
+        Assert.Equal(!winning && publishesAuctionNotice ? 1 : 0, returned);
+        if (failAuctionNotice) Assert.Equal(fault == "auction-notice-retry" ? 2 : 1, auctionNoticeAttempts);
         if (failMailNotice)
         {
             Assert.Equal(fault == "mail-notify-retry" ? 2 : 1, mailAttempts);

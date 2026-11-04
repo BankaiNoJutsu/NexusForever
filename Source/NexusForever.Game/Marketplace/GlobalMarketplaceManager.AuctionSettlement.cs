@@ -391,15 +391,39 @@ namespace NexusForever.Game.Marketplace
                                     winner.Prepared.PublishDeliveryMail(new MailItem(model, itemManager: manager.itemManager,
                                         gameTableManager: manager.GetGameTableManager()));
                                 }
-                                if (!Cancelling && CanPublish(winner))
-                                    winner.Owner.Session.EnqueueMessageEncrypted(Returning
-                                        ? new ServerAuctionExpired { Auction = responseAuction } : new ServerAuctionWon { Auction = responseAuction });
+                                if (!Cancelling) PublishTerminalNotice(winner);
                             }
                         }
                         finally { OnCoordinator(NotifyPrevious); }
                     });
                 }
                 else NotifyPrevious();
+            }
+
+            private void PublishTerminalNotice(Actor winner)
+            {
+                var session = winner.Owner.Session;
+                var queue = session.Events;
+                var auction = CloneAuction(responseAuction);
+                bool CurrentActor() => ReferenceEquals(session.Events, queue) && CanPublish(winner);
+                void Publish()
+                {
+                    if (!CurrentActor()) return;
+                    try
+                    {
+                        var packetAuction = CloneAuction(auction);
+                        session.EnqueueMessageEncrypted(Returning
+                            ? new ServerAuctionExpired { Auction = packetAuction } : new ServerAuctionWon { Auction = packetAuction });
+                    }
+                    catch (Exception error)
+                    {
+                        log.Warn(error, "Committed auction terminal notice failed; retrying on its original actor.");
+                        var delay = Task.Delay(TimeSpan.FromSeconds(1));
+                        queue.EnqueueThreadSafe(new PredicateEvent(() => !CurrentActor() || delay.IsCompleted, Publish));
+                    }
+                }
+
+                Publish();
             }
 
             private bool CanPublish(Actor actor) => !actor.Prepared.Retired

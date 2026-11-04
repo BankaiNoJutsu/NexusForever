@@ -10,6 +10,12 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Terminal auction notice retry](AUCTION_EXPIRY_TRANSACTION.md#retry-for-terminal-auction-notices)
+recovers failed won/expired packet sends on the original live actor after
+settlement. The retry retains the accepted snapshot and leaves listing and
+account reservations free. Outbid notices, request replies, restart replay and
+wire or retail qualification remain open.
+
 [Marketplace inbox notice retry](MARKETPLACE_MAIL_PUBLICATION.md#retry-for-the-live-inbox-notice)
 recovers a failed immediate notice after the live mailbox adopts the committed
 delivery. The original actor and mail object remain required. The auction
