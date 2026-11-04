@@ -36,7 +36,7 @@ namespace NexusForever.Game.Abstract.PublicEvent
         /// <summary>
         /// Add <see cref="IPlayer"/> to this <see cref="IPublicEventTeam"/>.
         /// </summary>
-        void JoinTeam(IPlayer player);
+        IPublicEventTeamMember JoinTeam(IPlayer player);
 
         /// <summary>
         /// Remove character from this <see cref="IPublicEventTeam"/>.

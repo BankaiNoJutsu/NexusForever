@@ -10,6 +10,10 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Public event contribution ownership](../../CURRENT_STATUS.md#public-event-contribution-ownership)
+checks the enrolled actor for player-driven progress, stats, votes, scoreboards,
+cinematic callbacks and membership removal.
+
 [Public event completion ownership](../../CURRENT_STATUS.md#public-event-completion-ownership)
 keeps quest and achievement credit and team packets with the original active
 membership, and preserves scoreboard identity after the player departs.

@@ -21799,6 +21799,18 @@ achievement publication tests passed. Local evidence is under
 `artifacts/continuation-20261104/public-event-member-ownership/`.
 Retail reward tiers and live client presentation remain open.
 
+#### Public event contribution ownership
+
+4 November 2026. Player-driven objective credit, stat changes, scoreboard
+requests, votes and cinematic callbacks use the actor and session enrolled on
+the event map. A replacement with the same character ID cannot submit inputs
+or remove the old membership. The original actor can still leave after moving
+or disconnecting. Map-owned objective updates continue to drive completion.
+Eight cases failed on the baseline. The owning-project build and 824 scoped
+public-event, quest reward and achievement publication tests passed.
+Local evidence is under
+`artifacts/continuation-20261104/public-event-input-ownership/`.
+
 #### Quest and public event coverage
 
 **Coverage audit:** see `Decomp/Analysis/QUEST_IMPLEMENTATION_STATUS.md` and

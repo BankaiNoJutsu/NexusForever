@@ -73,6 +73,47 @@ public class PublicEventScoreboardTests
     }
 
     [Fact]
+    public void ReplacementActorCannotChangeOrReadTheOriginalMembersScoreboard()
+    {
+        var harness = CreatePublicEventHarness(new PublicEventCustomStatEntry { Id = 1, PublicEventId = 9001, StatIndex = 2 });
+        harness.Event.JoinEvent(harness.PlayerOne, PublicEventTeamId.PublicTeam);
+        harness.Event.UpdateStat(harness.PlayerOne, PublicEventStat.Damage, 10);
+        harness.Event.UpdateCustomStat(harness.PlayerOne, 2, 5);
+        var replacementSession = RecordingDispatchProxy<IGameSession>.Create(out var replacementNetwork);
+        var replacement = TestPlayerBuilder.Create().WithCharacterId(harness.PlayerOne.CharacterId)
+            .WithMap(harness.Event.Map).WithSession(replacementSession).Build();
+
+        harness.Event.UpdateStat(replacement, PublicEventStat.Damage, 100);
+        harness.Event.IncrementStat(replacement, PublicEventStat.Damage, 50);
+        harness.Event.UpdateCustomStat(replacement, 2, 99);
+        harness.Event.SendScoreboardUpdate(replacement);
+        harness.Event.SendScoreboardUpdate(harness.PlayerOne);
+
+        var scoreboard = Assert.Single(harness.PlayerOneSession.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(call => call.Arguments[0]).OfType<ServerPublicEventStatsUpdate>());
+        AssertStats(Assert.Single(scoreboard.ParticipantStats).Stats, 0x00100001u, 10u, 5u);
+        Assert.Empty(replacementNetwork.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+    }
+
+    [Fact]
+    public void OnlyTheOriginalMemberCanLeaveAfterMovingOffTheEventMap()
+    {
+        var harness = CreatePublicEventHarness();
+        harness.Event.JoinEvent(harness.PlayerOne, PublicEventTeamId.PublicTeam);
+        var replacement = TestPlayerBuilder.Create().WithCharacterId(harness.PlayerOne.CharacterId)
+            .WithMap(harness.Event.Map).WithSession(RecordingDispatchProxy<IGameSession>.Create(out _)).Build();
+
+        harness.Event.LeaveEvent(replacement, PublicEventRemoveReason.LeftArea);
+        Assert.False(harness.Event.IsFinalised);
+        ((RecordingDispatchProxy<IPlayer>)(object)harness.PlayerOne).SetProperty(nameof(IPlayer.Map), null);
+        harness.Event.LeaveEvent(harness.PlayerOne, PublicEventRemoveReason.LeftArea);
+
+        Assert.True(harness.Event.IsFinalised);
+        Assert.Empty(harness.PlayerOneSession.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(call => call.Arguments[0]).OfType<ServerPublicEventLeave>());
+    }
+
+    [Fact]
     public void IncrementStat_AddsDeltasWithoutChangingAbsoluteUpdateSemantics()
     {
         PublicEventHarness harness = CreatePublicEventHarness();
@@ -231,6 +272,8 @@ public class PublicEventScoreboardTests
 
         IPublicEventManager manager = RecordingDispatchProxy<IPublicEventManager>.Create(out _);
         IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
+        playerOneProxy.SetProperty(nameof(IPlayer.Map), map);
+        playerTwoProxy.SetProperty(nameof(IPlayer.Map), map);
         publicEvent.Initialise(manager, new ScoreboardTemplate(customStats), map);
 
         return new PublicEventHarness(publicEvent, playerOne, playerTwo, playerOneSessionProxy);

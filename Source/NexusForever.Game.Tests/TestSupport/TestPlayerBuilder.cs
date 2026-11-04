@@ -2,6 +2,7 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Network.Session;
 
 namespace NexusForever.Game.Tests.TestSupport;
@@ -68,6 +69,12 @@ internal sealed class TestPlayerBuilder
     public TestPlayerBuilder WithSession(IGameSession session)
     {
         playerProxy.SetProperty(nameof(IPlayer.Session), session);
+        return this;
+    }
+
+    public TestPlayerBuilder WithMap(IBaseMap map)
+    {
+        playerProxy.SetProperty(nameof(IPlayer.Map), map);
         return this;
     }
 

@@ -128,6 +128,24 @@ public class PublicEventVoteTests
         Assert.Contains(messages, message => message is ServerPublicEventVoteEnd);
     }
 
+    [Fact]
+    public void PublicEventRespondVote_RejectsAReplacementActorWithTheSameCharacterId()
+    {
+        var harness = CreateEventVoteHarness(durationMs: 30000u);
+        harness.Event.JoinEvent(harness.Player, PublicEventTeamId.PublicTeam);
+        harness.Event.StartVote(PublicEventTeamId.PublicTeam, voteId: 64u, defaultChoice: 1u);
+        var replacement = TestPlayerBuilder.Create().WithCharacterId(harness.Player.CharacterId)
+            .WithMap(harness.Event.Map).Build();
+
+        harness.Event.RespondVote(replacement, 64u, (uint)PublicEventTeamId.PublicTeam, 1u);
+        harness.Event.RespondVote(harness.Player, 64u, (uint)PublicEventTeamId.PublicTeam, 2u);
+
+        var messages = harness.SessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(call => call.Arguments[0]);
+        Assert.Equal(2u, Assert.Single(messages.OfType<ServerPublicEventVoteTally>()).Choice);
+        Assert.Equal(2u, Assert.Single(messages.OfType<ServerPublicEventVoteEnd>()).Winner);
+    }
+
     private static void AssertVoteTally(IWritable message, uint choice)
     {
         ServerPublicEventVoteTally tally = Assert.IsType<ServerPublicEventVoteTally>(message);
@@ -262,6 +280,7 @@ public class PublicEventVoteTests
 
         IPublicEventManager manager = RecordingDispatchProxy<IPublicEventManager>.Create(out _);
         IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
+        playerProxy.SetProperty(nameof(IPlayer.Map), map);
         var template = new VoteOnlyTemplate(PublicEventTeamId.PublicTeam);
         publicEvent.Initialise(manager, template, map);
 

@@ -7,7 +7,6 @@ using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Static.Matching;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
-using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.PublicEvent;
 using NexusForever.Script;
 using NexusForever.Script.Template;
@@ -37,7 +36,8 @@ namespace NexusForever.Game.PublicEvent
         private IScriptCollection scriptCollection;
 
         private readonly Dictionary<Static.PublicEvent.PublicEventTeam, IPublicEventTeam> teams = [];
-        private readonly Dictionary<ulong, IPublicEventTeam> memberTeams = [];
+        private readonly Dictionary<ulong, Membership> memberships = [];
+        private sealed record Membership(IPlayer Owner, IPublicEventTeam Team, IPublicEventTeamMember Member);
 
         private double elapsedTimer;
         private UpdateTimer liveStatsTimer;
@@ -206,8 +206,11 @@ namespace NexusForever.Game.PublicEvent
             if (!teams.TryGetValue(team, out IPublicEventTeam publicEventTeam))
                 return;
 
-            publicEventTeam.JoinTeam(player);
-            memberTeams.Add(player.CharacterId, publicEventTeam);
+            if (memberships.ContainsKey(player.CharacterId))
+                return;
+
+            IPublicEventTeamMember member = publicEventTeam.JoinTeam(player);
+            memberships.Add(player.CharacterId, new Membership(player, publicEventTeam, member));
 
             publicEventManager.AddEvent(player.CharacterId, this);
 
@@ -244,10 +247,11 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void LeaveEvent(IPlayer player, PublicEventRemoveReason reason)
         {
-            if (!RemoveCharacter(player.CharacterId))
+            if (!memberships.TryGetValue(player.CharacterId, out Membership membership)
+                || !ReferenceEquals(membership.Owner, player) || !RemoveCharacter(player.CharacterId))
                 return;
 
-            SendServerPublicEventLeave(player.Session, reason);
+            membership.Member.Send(new ServerPublicEventLeave { PublicEventId = Id, Reason = reason });
 
             log.LogTrace($"Character {player.CharacterId} left public event {Guid} with reason {reason}.");
 
@@ -257,11 +261,11 @@ namespace NexusForever.Game.PublicEvent
 
         public bool RemoveCharacter(ulong characterId)
         {
-            if (!memberTeams.TryGetValue(characterId, out IPublicEventTeam publicEventTeam))
+            if (!memberships.TryGetValue(characterId, out Membership membership))
                 return false;
 
-            publicEventTeam.LeaveTeam(characterId);
-            memberTeams.Remove(characterId);
+            membership.Team.LeaveTeam(characterId);
+            memberships.Remove(characterId);
 
             publicEventManager.RemoveEvent(characterId, this);
 
@@ -273,13 +277,15 @@ namespace NexusForever.Game.PublicEvent
             return teams.Values.All(t => !t.GetMembers().Any());
         }
 
-        private void SendServerPublicEventLeave(IGameSession session, PublicEventRemoveReason reason)
+        private Membership GetCurrentMembership(IPlayer player)
         {
-            session.EnqueueMessageEncrypted(new ServerPublicEventLeave
-            {
-                PublicEventId = Id,
-                Reason        = reason
-            });
+            if (player == null || !ReferenceEquals(player.Map, Map)
+                || !memberships.TryGetValue(player.CharacterId, out Membership membership)
+                || !ReferenceEquals(membership.Owner, player)
+                || !ReferenceEquals(membership.Member.GetCurrentPlayer(), player))
+                return null;
+
+            return membership;
         }
 
         /// <summary>
@@ -295,10 +301,8 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void UpdateObjective(IPlayer player, PublicEventObjectiveType type, uint objectId, int count)
         {
-            if (!memberTeams.TryGetValue(player.CharacterId, out IPublicEventTeam publicEventTeam))
-                return;
-
-            UpdateObjective(publicEventTeam, type, objectId, count);
+            if (GetCurrentMembership(player) is { } membership)
+                UpdateObjective(membership.Team, type, objectId, count);
         }
 
         /// <summary>
@@ -396,10 +400,7 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void UpdateStat(IPlayer player, PublicEventStat stat, uint value)
         {
-            if (!memberTeams.TryGetValue(player.CharacterId, out IPublicEventTeam publicEventTeam))
-                return;
-
-            publicEventTeam.UpdateStat(player.CharacterId, stat, value);
+            GetCurrentMembership(player)?.Team.UpdateStat(player.CharacterId, stat, value);
         }
 
         /// <summary>
@@ -407,10 +408,7 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void IncrementStat(IPlayer player, PublicEventStat stat, uint value)
         {
-            if (!memberTeams.TryGetValue(player.CharacterId, out IPublicEventTeam publicEventTeam))
-                return;
-
-            publicEventTeam.IncrementStat(player.CharacterId, stat, value);
+            GetCurrentMembership(player)?.Team.IncrementStat(player.CharacterId, stat, value);
         }
 
         /// <summary>
@@ -418,13 +416,13 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void UpdateCustomStat(IPlayer player, uint index, uint value)
         {
-            if (!memberTeams.TryGetValue(player.CharacterId, out IPublicEventTeam publicEventTeam))
+            if (GetCurrentMembership(player) is not { } membership)
                 return;
 
             if (!template.CustomStats.Any(s => s.StatIndex == index))
                 return;
 
-            publicEventTeam.UpdateCustomStat(player.CharacterId, index, value);
+            membership.Team.UpdateCustomStat(player.CharacterId, index, value);
         }
 
         /// <summary>
@@ -432,13 +430,7 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void SendScoreboardUpdate(IPlayer player)
         {
-            if (player == null)
-                return;
-
-            if (!memberTeams.ContainsKey(player.CharacterId))
-                return;
-
-            player.Session.EnqueueMessageEncrypted(BuildStatsUpdate());
+            GetCurrentMembership(player)?.Member.Send(BuildStatsUpdate());
         }
 
         /// <summary>
@@ -461,15 +453,15 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void RespondVote(IPlayer player, uint voteId, uint teamId, uint choice)
         {
-            if (!memberTeams.TryGetValue(player.CharacterId, out IPublicEventTeam publicEventTeam))
+            if (GetCurrentMembership(player) is not { } membership)
                 return;
 
             // ClientPublicEventVote (0x06EE) carries event, vote, team, and choice.
             // Validate the mapped vote/team envelope here before touching vote state.
-            if ((uint)publicEventTeam.Team != teamId)
+            if ((uint)membership.Team.Team != teamId)
                 return;
 
-            publicEventTeam.RespondVote(player, voteId, choice);
+            membership.Team.RespondVote(player, voteId, choice);
         }
 
         /// <summary>

@@ -30,6 +30,7 @@ public sealed class PublicEventCompletionOwnershipTests
     public void CompletionUsesTheOriginalActiveMembership(string scenario)
     {
         const uint objectiveId = 201u;
+        const uint objectId = 501u;
         var map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
         var original = new Actor(map, 42ul, 100u);
         var replacement = new Actor(map, 42ul, 200u);
@@ -55,8 +56,10 @@ public sealed class PublicEventCompletionOwnershipTests
             {
                 Id = objectiveId,
                 Count = 1,
+                ObjectId = objectId,
                 PublicEventTeamId = EventTeam.PublicTeam,
                 PublicEventObjectiveCategoryEnum = PublicEventObjectiveCategory.Main,
+                PublicEventObjectiveTypeEnum = PublicEventObjectiveType.Script,
                 PublicEventObjectiveFlags = PublicEventObjectiveFlag.InitialObjective
             }), map);
         publicEvent.JoinEvent(original.Player, EventTeam.PublicTeam);
@@ -70,7 +73,10 @@ public sealed class PublicEventCompletionOwnershipTests
             case "rebound": original.Session.SetProperty(nameof(IWorldSession.Player), replacement.Player); break;
         }
 
-        publicEvent.UpdateObjective(objectiveId, 1);
+        IPlayer contributor = scenario == "replacement" ? replacement.Player : original.Player;
+        publicEvent.UpdateObjective(contributor, PublicEventObjectiveType.Script, objectId, 1);
+        if (scenario != "current")
+            Assert.False(publicEvent.IsFinalised);
         publicEvent.UpdateObjective(objectiveId, 1);
 
         Assert.True(publicEvent.IsFinalised);

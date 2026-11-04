@@ -121,11 +121,12 @@ namespace NexusForever.Game.PublicEvent
         /// <summary>
         /// Add <see cref="IPlayer"/> to this <see cref="IPublicEventTeam"/>.
         /// </summary>
-        public void JoinTeam(IPlayer player)
+        public IPublicEventTeamMember JoinTeam(IPlayer player)
         {
             IPublicEventTeamMember member = memberFactory.Resolve();
             member.Initialise(player);
             members.Add(player.CharacterId, member);
+            return member;
         }
 
         /// <summary>
