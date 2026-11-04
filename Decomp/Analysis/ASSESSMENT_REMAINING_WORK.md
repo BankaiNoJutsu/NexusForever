@@ -10,6 +10,12 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Vendor purchase capacity](../../CURRENT_STATUS.md#vendor-purchase-capacity)
+checks the complete delivery before charging, including slots freed by item
+payment and the original satchel's available space. Accepted purchases retain
+their original inventory and satchel through session changes. Durable purchase
+settlement and retail qualification remain open.
+
 [Fortune deal settlement](../../CURRENT_STATUS.md#persisted-deal-and-coin-settlement)
 commits the one-coin debit and deal together, including consumption and change
 for the committed coin-only bundle fallback. Pending funding and mixed claims

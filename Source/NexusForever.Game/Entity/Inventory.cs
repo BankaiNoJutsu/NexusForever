@@ -315,13 +315,15 @@ namespace NexusForever.Game.Entity
         /// Returns if a new item can be created in the supplied <see cref="InventoryLocation"/>.
         /// </summary>
         public bool CanCreateItem(InventoryLocation location, IItemInfo info, uint count)
+            => CanCreateItem(location, info, count, location == InventoryLocation.Inventory ? player?.SupplySatchelManager : null);
+
+        private bool CanCreateItem(InventoryLocation location, IItemInfo info, uint count, ISupplySatchelManager satchel)
         {
             lock (MutationGate)
             {
                 using var mutation = new InventoryMutationOperation(this, readOnly: true);
                 if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) return false;
-                if (location == InventoryLocation.Inventory
-                    && player?.SupplySatchelManager?.TryGetAutoStoreCapacity(info, out uint capacity) == true)
+                if (satchel?.TryGetAutoStoreCapacity(info, out uint capacity) == true)
                     count -= Math.Min(count, capacity);
 
                 return CanCreateItemInBag(location, info, count);
@@ -348,6 +350,17 @@ namespace NexusForever.Game.Entity
 
         internal bool CanCreateQuestRewardItems(IEnumerable<(uint ItemId, uint Count)> rewards,
             IEnumerable<(uint ItemId, uint Count)> reclaimedItems)
+            => CanCreateItemsAfterReclaim(rewards.Select(reward => (Info: itemManager?.GetItemInfo(reward.ItemId)
+                ?? throw new ArgumentNullException(nameof(rewards)), reward.Count)), reclaimedItems, player?.SupplySatchelManager,
+                requireFullReclaim: false);
+
+        internal bool CanCreateVendorPurchase(IItemInfo info, uint count, ISupplySatchelManager satchel, IReadOnlyDictionary<uint, uint> itemCosts)
+            => itemCosts.Count == 0
+                ? CanCreateItem(InventoryLocation.Inventory, info, count, satchel)
+                : CanCreateItemsAfterReclaim([(info, count)], itemCosts.Select(cost => (cost.Key, cost.Value)), satchel, requireFullReclaim: true);
+
+        private bool CanCreateItemsAfterReclaim(IEnumerable<(IItemInfo Info, uint Count)> rewards,
+            IEnumerable<(uint ItemId, uint Count)> reclaimedItems, ISupplySatchelManager satchel, bool requireFullReclaim)
         {
             lock (MutationGate)
             {
@@ -371,15 +384,14 @@ namespace NexusForever.Game.Entity
                         afterReclaim[stack] = stackCount - consumed;
                         if (consumed == stackCount) available++;
                     }
+                    if (requireFullReclaim && remaining != 0u) return false;
                 }
-                var items = rewards.Select(reward => (Info: itemManager?.GetItemInfo(reward.ItemId)
-                    ?? throw new ArgumentNullException(nameof(rewards)), reward.Count)).GroupBy(reward => reward.Info.Id);
 
-                foreach (var item in items)
+                foreach (var item in rewards.GroupBy(reward => reward.Info.Id))
                 {
                     IItemInfo info = item.First().Info;
                     ulong count = item.Aggregate(0ul, (total, reward) => total + reward.Count);
-                    if (player?.SupplySatchelManager?.TryGetAutoStoreCapacity(info, out uint capacity) == true)
+                    if (satchel?.TryGetAutoStoreCapacity(info, out uint capacity) == true)
                         count -= Math.Min(count, capacity);
                     ulong needed = CountRequiredSlots(bag, info, count, afterReclaim);
                     if (needed > available) return false;
@@ -575,6 +587,13 @@ namespace NexusForever.Game.Entity
         /// Create a new <see cref="IItem"/> in the first available inventory bag index or stack.
         /// </summary>
         public void ItemCreate(InventoryLocation location, IItemInfo info, uint count, ItemUpdateReason reason = ItemUpdateReason.NoReason, uint charges = 0)
+            => ItemCreate(location, info, count, reason, charges, location == InventoryLocation.Inventory ? player?.SupplySatchelManager : null);
+
+        internal void CreateVendorPurchase(IItemInfo info, uint count, ISupplySatchelManager satchel)
+            => ItemCreate(InventoryLocation.Inventory, info, count, ItemUpdateReason.NoReason, 0, satchel);
+
+        private void ItemCreate(InventoryLocation location, IItemInfo info, uint count, ItemUpdateReason reason, uint charges,
+            ISupplySatchelManager satchel)
         {
             lock (MutationGate)
             {
@@ -588,9 +607,8 @@ namespace NexusForever.Game.Entity
                 if (bag == null)
                     throw new ArgumentException();
 
-                if (count > 0u && location == InventoryLocation.Inventory
-                    && reason != ItemUpdateReason.ResourceConversion
-                    && player?.SupplySatchelManager?.TryGetAutoStoreCapacity(info, out uint capacity, charges) == true)
+                if (count > 0u && reason != ItemUpdateReason.ResourceConversion
+                    && satchel?.TryGetAutoStoreCapacity(info, out uint capacity, charges) == true)
                 {
                     uint toSatchel = Math.Min(count, capacity);
                     // Validate both destinations before sending a satchel update or modifying
@@ -604,14 +622,14 @@ namespace NexusForever.Game.Entity
                     if (toSatchel > 0u)
                     {
                         var material = new Item(characterId, info, toSatchel, charges, itemManager, gameTableManager);
-                        uint remainder = player.SupplySatchelManager.AddAmount(material, toSatchel);
+                        uint remainder = satchel.AddAmount(material, toSatchel);
                         uint stored = toSatchel - remainder;
                         if (remainder != 0u && !CanCreateItemInBag(location, info, count - stored))
                         {
                             // Capacity should be stable on the owning map thread. Retain
                             // quantities even if a custom manager changes it during this call.
                             if (stored != 0u)
-                                player.SupplySatchelManager.RemoveAmount(material, stored);
+                                satchel.RemoveAmount(material, stored);
                             EnqueueItemMessage(new ServerItemError { ErrorCode = GenericError.ItemInventoryFull });
                             return;
                         }

@@ -33,8 +33,16 @@ namespace NexusForever.Game.Entity
         private void EnqueueItemMessage(IWritable message)
         {
             if (realmBankNotifications != null) realmBankNotifications.Add(message);
-            else if (!BufferCommodityMessage(message)) player.Session.EnqueueMessageEncrypted(message);
+            else if (!BufferCommodityMessage(message))
+            {
+                IGameSession session = player.Session;
+                if (CanPublishToInventorySession(session))
+                    session.EnqueueMessageEncrypted(message);
+            }
         }
+
+        private bool CanPublishToInventorySession(IGameSession session)
+            => session is not IPlayerSession bound || (ReferenceEquals(bound.Player, player) && ReferenceEquals(player.Inventory, this));
 
         private void ApplyInventoryEffect(Action effect)
         {
@@ -48,7 +56,11 @@ namespace NexusForever.Game.Entity
             else effect();
         }
 
-        private void RefreshCollectedItem(uint id) => AfterBankCommit(() => InventoryQuestObjectiveUpdater.RefreshCollectItemForItem(player, id));
+        private void RefreshCollectedItem(uint id) => AfterBankCommit(() =>
+        {
+            if (CanPublishToInventorySession(player?.Session))
+                InventoryQuestObjectiveUpdater.RefreshCollectItemForItem(player, id);
+        });
 
         private sealed class BankPublication : IDisposable
         {

@@ -7,6 +7,7 @@ using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
 {
@@ -26,9 +27,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
 
         public void HandleMessage(IWorldSession session, ClientVendorPurchase vendorPurchase)
         {
-            if (!InventoryMutationScope.TryAcquire(session.Player?.Inventory, out var mutationLease)) return;
+            IPlayer player = session.Player;
+            IInventory inventory = player?.Inventory;
+            if (inventory == null || !InventoryMutationScope.TryAcquire(inventory, out var mutationLease)) return;
             using var heldMutation = mutationLease;
-            IVendorInfo vendorInfo = session.Player.SelectedVendorInfo;
+            ISupplySatchelManager satchel = player.SupplySatchelManager;
+            IVendorInfo vendorInfo = player.SelectedVendorInfo;
             if (vendorInfo == null)
                 return;
 
@@ -63,7 +67,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
                     if (currencyType == CurrencyType.Credits)
                         cost = VendorPriceCalculator.ApplyPurchaseMultiplier(
                             cost,
-                            VendorPriceCalculator.GetPurchaseMultiplier(session.Player));
+                            VendorPriceCalculator.GetPurchaseMultiplier(player));
 
                     vendorItemPurchaseCost.AddCurrencyCost(currencyType, cost);
                 }
@@ -90,11 +94,19 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
                 AddExtraCost(vendorItem.ExtraCost2Type, vendorItem.ExtraCost2ItemOrCurrencyId, vendorItem.ExtraCost2Quantity);
             }
 
-            if (!vendorItemPurchaseCost.CanAfford(session.Player))
+            if (!vendorItemPurchaseCost.CanAfford(player, inventory))
                 return;
+            bool fits = vendorItemPurchaseCost.CanDeliver(inventory, satchel, info, grantedItemCount);
+            if (!ReferenceEquals(session.Player, player) || !ReferenceEquals(player.Inventory, inventory)
+                || !ReferenceEquals(player.SupplySatchelManager, satchel))
+                return;
+            if (!fits)
+            {
+                session.EnqueueMessageEncrypted(new ServerItemError { ErrorCode = GenericError.ItemInventoryFull });
+                return;
+            }
 
-            vendorItemPurchaseCost.Charge(session.Player);
-            session.Player.Inventory.ItemCreate(InventoryLocation.Inventory, info.Id, grantedItemCount);
+            vendorItemPurchaseCost.ChargeAndDeliver(player, inventory, satchel, info, grantedItemCount);
         }
     }
 }

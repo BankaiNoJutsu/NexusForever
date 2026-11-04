@@ -22613,6 +22613,27 @@ null-table guard and tests for 15-bit id masking/objective lookup, but no
 producer or reverse selector.
 
 ### F-026 - Items / Unlocks / Costumes / Pets / Titles - PARTIAL
+
+#### Vendor purchase capacity
+
+4 November 2026. Vendor purchases check the full delivery before charging.
+The capacity check projects the exact item payment, including slots or stack
+room it frees, and includes eligible satchel space. When the delivery does
+not fit, the client receives the existing inventory-full error and keeps
+its payment. The accepted purchase uses the same inventory and satchel for
+payment and delivery, and direct item and satchel updates check the current
+session binding.
+
+Three pre-fix regressions reproduced a 15-credit debit on rejected purchases.
+The owning-project build and 770 scoped source tests passed, including vendor,
+inventory mutation and delivery, satchel, quest reward persistence, and
+realm-bank identity coverage. See the local evidence under
+`artifacts/continuation-20261104/vendor-purchase-capacity/`.
+Durable purchase settlement, deployed delivery, and retail presentation remain
+open.
+
+#### Existing item and unlock behavior
+
 Inventory, title, pet, costume, unlock surfaces exist. Generic unlock
 lifecycle tested, including invalid set/entry, already-unlocked, partial
 multi-entry unlocks, and consume-failure invalid result without granting locked

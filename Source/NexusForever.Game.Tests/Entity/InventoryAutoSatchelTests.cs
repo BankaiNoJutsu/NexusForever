@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using NexusForever.Database.Character.Model;
+using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Reward;
@@ -12,12 +13,15 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.Game.Tests.Vendor;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Loot;
 using NexusForever.Network.World.Message.Static;
+using NexusForever.WorldServer.Network;
+using NexusForever.WorldServer.Network.Message.Handler.Vendor;
 
 namespace NexusForever.Game.Tests.Entity;
 
@@ -77,6 +81,53 @@ public class InventoryAutoSatchelTests
         Assert.Single(f.Messages.OfType<ServerSupplySatchelUpdate>());
         Assert.Empty(f.Messages.OfType<ServerItemAdd>());
         Assert.Empty(f.Messages.OfType<ServerItemError>());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("session")]
+    [InlineData("targets")]
+    public void VendorPurchaseUsesSatchelCapacityAndOnlyPublishesToItsOriginalPlayer(string rebind)
+    {
+        var f = new Fixture(slots: 0, stored: 98);
+        f.Entry.BuyFromVendorStackCount = 1;
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out var network);
+        network.SetProperty(nameof(IWorldSession.Player), f.Player);
+        f.PlayerProxy.SetProperty(nameof(IPlayer.Session), session);
+        IVendorInfo vendor = RecordingDispatchProxy<IVendorInfo>.Create(out var stock);
+        stock.SetMethodReturn(nameof(IVendorInfo.GetItemAtIndex), new EntityVendorItemModel
+        {
+            ItemId = ItemId, ExtraCost1Type = ItemExtraCostType.Currency,
+            ExtraCost1ItemOrCurrencyId = (uint)CurrencyType.Credits, ExtraCost1Quantity = 15
+        });
+        f.PlayerProxy.SetProperty(nameof(IPlayer.SelectedVendorInfo), vendor);
+        ICurrencyManager wallet = RecordingDispatchProxy<ICurrencyManager>.Create(out var payment);
+        RecordingDispatchProxy<ISupplySatchelManager> replacementSatchel = null;
+        payment.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+        payment.SetMethodHandler(nameof(ICurrencyManager.CurrencySubtractAmount), args =>
+        {
+            Assert.Equal(15ul, args[1]);
+            if (rebind == "session")
+                network.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+            else if (rebind == "targets")
+            {
+                f.PlayerProxy.SetProperty(nameof(IPlayer.Inventory), RecordingDispatchProxy<IInventory>.Create(out _));
+                f.PlayerProxy.SetProperty(nameof(IPlayer.SupplySatchelManager), RecordingDispatchProxy<ISupplySatchelManager>.Create(out replacementSatchel));
+            }
+            return null;
+        });
+        f.PlayerProxy.SetProperty(nameof(IPlayer.CurrencyManager), wallet);
+
+        new ClientVendorPurchaseHandler(f.ItemManager).HandleMessage(session, ClientVendorPurchaseHandlerTests.CreateRequest(2));
+
+        Assert.Equal(100u, f.Stored);
+        Assert.Empty(f.Bag);
+        Assert.Single(payment.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        var messages = network.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).ToArray();
+        Assert.Empty(messages.OfType<ServerItemError>());
+        Assert.Equal(rebind == null ? 1 : 0, messages.OfType<ServerSupplySatchelUpdate>().Count());
+        if (replacementSatchel != null)
+            Assert.Empty(replacementSatchel.GetInvocations(nameof(ISupplySatchelManager.AddAmount)));
     }
 
     [Fact]

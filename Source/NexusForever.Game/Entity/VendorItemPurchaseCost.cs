@@ -50,7 +50,9 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Returns if the <see cref="IPlayer"/> can afford the purchase cost.
         /// </summary>
-        public bool CanAfford(IPlayer player)
+        public bool CanAfford(IPlayer player) => CanAfford(player, player.Inventory);
+
+        public bool CanAfford(IPlayer player, IInventory inventory)
         {
             foreach ((CurrencyType currencyTypeId, ulong currencyAmount) in currencyCost)
                 if (!player.CurrencyManager.CanAfford(currencyTypeId, currencyAmount))
@@ -61,16 +63,33 @@ namespace NexusForever.Game.Entity
                     return false;
 
             foreach ((uint itemId, uint itemCount) in itemCost)
-                if (!player.Inventory.HasItemCount(itemId, itemCount))
+                if (!inventory.HasItemCount(itemId, itemCount))
                     return false;
 
             return true;
         }
 
+        /// <summary>Check capacity after removing the exact item payment and before charging any cost.</summary>
+        public bool CanDeliver(IInventory inventory, ISupplySatchelManager satchel, IItemInfo item, uint count)
+            => inventory is Inventory concrete
+                ? concrete.CanCreateVendorPurchase(item, count, satchel, itemCost)
+                : inventory.CanCreateItem(InventoryLocation.Inventory, item, count);
+
+        public void ChargeAndDeliver(IPlayer player, IInventory inventory, ISupplySatchelManager satchel, IItemInfo item, uint count)
+        {
+            Charge(player, inventory);
+            if (inventory is Inventory concrete)
+                concrete.CreateVendorPurchase(item, count, satchel);
+            else
+                inventory.ItemCreate(InventoryLocation.Inventory, item, count);
+        }
+
         /// <summary>
         /// Charge the purchase cost to the <see cref="IPlayer"/>.
         /// </summary>
-        public void Charge(IPlayer player)
+        public void Charge(IPlayer player) => Charge(player, player.Inventory);
+
+        private void Charge(IPlayer player, IInventory inventory)
         {
             foreach ((CurrencyType currencyTypeId, ulong currencyCost) in currencyCost)
                 player.CurrencyManager.CurrencySubtractAmount(currencyTypeId, currencyCost);
@@ -79,7 +98,7 @@ namespace NexusForever.Game.Entity
                 player.Account.CurrencyManager.CurrencySubtractAmount(currencyTypeId, currencyCost);
 
             foreach ((uint itemId, uint itemAmount) in itemCost)
-                player.Inventory.ItemDelete(itemId, itemAmount, ItemUpdateReason.Vendor);
+                inventory.ItemDelete(itemId, itemAmount, ItemUpdateReason.Vendor);
         }
     }
 }

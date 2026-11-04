@@ -296,7 +296,11 @@ namespace NexusForever.Game.Entity
                 StackCount = tradeskillMaterials[materialId].Amount
             };
             if (player.Inventory is Inventory inventory && inventory.BufferCommodityMessage(packet)) return;
-            player.Session.EnqueueMessageEncrypted(packet);
+            var session = player.Session;
+            if (session is IPlayerSession bound &&
+                (!ReferenceEquals(bound.Player, player) || !ReferenceEquals(player.SupplySatchelManager, this)))
+                return;
+            session.EnqueueMessageEncrypted(packet);
         }
 
         public IEnumerator<ITradeskillMaterial> GetEnumerator()
