@@ -14,6 +14,9 @@ namespace NexusForever.Game.Abstract.PublicEvent
         /// </summary>
         void Initialise(IPlayer player);
 
+        /// <summary>Return the joined player while its original session and map still own this membership.</summary>
+        IPlayer GetCurrentPlayer();
+
         /// <summary>
         /// Update <see cref="PublicEventStat"/> with supplied value.
         /// </summary>

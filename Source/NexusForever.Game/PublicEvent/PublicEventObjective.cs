@@ -31,12 +31,6 @@ namespace NexusForever.Game.PublicEvent
         private double elapsedTimer;
         private UpdateTimer failureTimer;
         private bool completeTimedWinOnExpiry;
-        private readonly IPlayerManager playerManager;
-
-        public PublicEventObjective(IPlayerManager playerManager = null)
-        {
-            this.playerManager = playerManager;
-        }
 
         /// <summary>
         /// Initialise <see cref="PublicEventObjective"/> with suppled <see cref="IPublicEventTeam"/> and <see cref="PublicEventObjectiveEntry"/>.
@@ -92,8 +86,8 @@ namespace NexusForever.Game.PublicEvent
         {
             foreach (IPublicEventTeamMember member in Team.GetMembers())
             {
-                IPlayer player = playerManager?.GetPlayer(member.CharacterId);
-                if (player != null)
+                IPlayer player = member.GetCurrentPlayer();
+                if (player != null && ReferenceEquals(player.Map, Team.PublicEvent.Map))
                 {
                     player.AchievementManager.CheckAchievements(player, AchievementType.PublicEventObjectiveComplete, Entry.Id);
                     PublicEventQuestObjectiveUpdater.OnPublicEventObjectiveSucceeded(player, Entry.Id);

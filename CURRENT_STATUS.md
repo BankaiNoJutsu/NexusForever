@@ -21784,6 +21784,23 @@ in-progress transition. Keep synthetic server gates out until a live WildStar
 clear, packet timing, and result surface.
 
 ### F-022 - Quests / Path Missions / Public Events - PARTIAL
+
+#### Public event completion ownership
+
+4 November 2026. Objective completion credit and team broadcasts belong to the
+player, session, and map that joined the event. A replacement player or stale
+membership cannot receive the old event's achievement or quest credit or its
+completion packets. End-of-event participant stats retain the enrolled
+character and map unit identity when the player is no longer registered.
+The baseline reproduced three cases of credit assigned to a stale or
+replacement actor and one scoreboard crash when the member was unregistered.
+The owning-project build and 820 scoped public-event, quest reward and
+achievement publication tests passed. Local evidence is under
+`artifacts/continuation-20261104/public-event-member-ownership/`.
+Retail reward tiers and live client presentation remain open.
+
+#### Quest and public event coverage
+
 **Coverage audit:** see `Decomp/Analysis/QUEST_IMPLEMENTATION_STATUS.md` and
 the row-level retail tracker in
 `Decomp/Analysis/CONTENT_RETAIL_COMPLETENESS_TRACKER.md`. Current generated

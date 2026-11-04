@@ -1,9 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Network.Message;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Shared;
 using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
 
@@ -13,6 +15,10 @@ namespace NexusForever.Game.PublicEvent
     {
         public ulong CharacterId { get; private set; }
 
+        private IPlayer owner;
+        private IGameSession session;
+        private IBaseMap map;
+        private uint unitId;
         private Static.Entity.Class @class;
         private Static.PlayerPath.Path path;
 
@@ -46,10 +52,26 @@ namespace NexusForever.Game.PublicEvent
                 throw new InvalidOperationException();
 
             CharacterId = player.CharacterId;
+            owner       = player;
+            session     = player.Session;
+            map         = player.Map;
+            unitId      = player.Guid;
             @class      = player.Class;
             path        = player.Path;
 
             log.LogTrace($"Initialised public event team member {CharacterId} with class {@class} and path {path}.");
+        }
+
+        public IPlayer GetCurrentPlayer()
+        {
+            if (session is null or NetworkSession { IsDisconnecting: true }
+                || !ReferenceEquals(playerManager.GetPlayer(CharacterId), owner)
+                || !ReferenceEquals(owner.Map, map)
+                || !ReferenceEquals(owner.Session, session)
+                || (session is IPlayerSession bound && !ReferenceEquals(bound.Player, owner)))
+                return null;
+
+            return owner;
         }
 
         /// <summary>
@@ -75,8 +97,8 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void Send(IWritable message)
         {
-            IPlayer player = playerManager.GetPlayer(CharacterId);
-            player?.Session.EnqueueMessageEncrypted(message);
+            if (GetCurrentPlayer() != null)
+                session.EnqueueMessageEncrypted(message);
         }
 
         /// <summary>
@@ -92,14 +114,12 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public PublicEventParticipantStats BuildParticipantStats()
         {
-            IPlayer player = playerManager.GetPlayer(CharacterId);
-
             return new PublicEventParticipantStats
             {
-                UnitId = player.Guid,
+                UnitId = unitId,
                 Player = new NetworkIdentity
                 {
-                    Id      = player.CharacterId,
+                    Id      = CharacterId,
                     RealmId = realmContext.RealmId,
                 },
                 Class  = @class,

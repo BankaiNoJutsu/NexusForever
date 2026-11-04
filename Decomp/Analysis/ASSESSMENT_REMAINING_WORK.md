@@ -10,6 +10,11 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Public event completion ownership](../../CURRENT_STATUS.md#public-event-completion-ownership)
+keeps quest and achievement credit and team packets with the original active
+membership, and preserves scoreboard identity after the player departs.
+Retail reward tiers and client presentation remain open.
+
 [Instance transfer retries](../../CURRENT_STATUS.md#instance-transfer-retries)
 preserve queued transfers waiting on an unload when another instance entry
 is denied or throws. Recovery of the individual failed transfer remains open.
