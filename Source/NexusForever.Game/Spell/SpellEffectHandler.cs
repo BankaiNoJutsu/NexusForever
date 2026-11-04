@@ -2956,6 +2956,12 @@ namespace NexusForever.Game.Spell
         [SpellEffectHandler(SpellEffectType.RapidTransport)]
         public static void HandleEffectRapidTransport(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
+            if (target is Player concrete)
+            {
+                concrete.QueueRapidTransport(spell.Parameters.TaxiNode);
+                return;
+            }
+
             TaxiNodeEntry taxiNode = GetGameTableManager().TaxiNode.GetEntry(spell.Parameters.TaxiNode);
             if (taxiNode == null)
                 return;

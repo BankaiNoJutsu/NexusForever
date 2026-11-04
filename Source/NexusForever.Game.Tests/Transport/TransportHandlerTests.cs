@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
@@ -17,6 +18,7 @@ using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Map;
 using NexusForever.Game.Map.Instance;
+using NexusForever.Game.Static;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
@@ -26,6 +28,7 @@ using NexusForever.Network.Message;
 using NexusForever.Network.Packet;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Chat;
 using NexusForever.Network.World.Message.Model.Info;
 using NexusForever.Network.World.Message.Model.Pregame;
 using NexusForever.Network.World.Message.Static;
@@ -309,6 +312,79 @@ public class TransportHandlerTests
             Assert.Equal(parameters.ClientContextToken, failure.ContextToken);
         }
         Assert.Equal(expected, castResult);
+    }
+
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(true, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, false, true)]
+    public void RapidTransport_ValidatesWorldAtCastAndTransfer(bool worldExists, bool disabled, bool disableAfterCast)
+    {
+        CreateRapidTransportHandler(out var tables, out _, out var wallet, out var spells, out _, out _);
+        tables.SetProperty(nameof(IGameTableManager.World), worldExists
+            ? CreateGameTable(new WorldEntry { Id = 5 }) : CreateGameTable<WorldEntry>());
+        var disabledWorlds = RecordingDispatchProxy<IDisableManager>.Create(out var disables);
+        disables.SetMethodHandler(nameof(IDisableManager.IsDisabled), args => disabled && (DisableType)args[0] == DisableType.World && (uint)args[1] == 5);
+        var movement = RecordingDispatchProxy<IMovementManager>.Create(out var moves);
+        var mapManager = RecordingDispatchProxy<IMapManager>.Create(out var maps);
+        var player = new Player(movement, null, null, null, null,
+            (IGameTableManager)(object)tables, (ICurrencyManager)(object)wallet, disableManager: disabledWorlds,
+            mapManager: mapManager) { IsLoading = false };
+        var session = new TransportTestSession { Player = player };
+        typeof(Player).GetProperty(nameof(IPlayer.Session))!.SetValue(player, session);
+        typeof(Player).GetProperty(nameof(IPlayer.Identity))!.SetValue(player, new Game.Abstract.Identity { RealmId = 1, Id = 42 });
+        typeof(Player).GetProperty(nameof(IPlayer.SpellManager))!.SetValue(player, (ISpellManager)(object)spells);
+
+        var info = RecordingDispatchProxy<ISpellInfo>.Create(out var spellInfo);
+        var baseInfo = RecordingDispatchProxy<ISpellBaseInfo>.Create(out var spellBase);
+        spellBase.SetProperty(nameof(ISpellBaseInfo.Entry), new Spell4BaseEntry { Id = 12 });
+        spellInfo.SetProperty(nameof(ISpellInfo.BaseInfo), baseInfo);
+        spellInfo.SetProperty(nameof(ISpellInfo.Entry), new Spell4Entry { Id = RapidTransportSpell4Id, Spell4BaseIdBaseSpell = 12, CastTime = 1000 });
+        spellInfo.SetProperty(nameof(ISpellInfo.Effects), new List<Spell4EffectsEntry>());
+        spellInfo.SetProperty(nameof(ISpellInfo.Telegraphs), new List<TelegraphDamageEntry>());
+        var scripts = RecordingDispatchProxy<IScriptManager>.Create(out var scriptManager);
+        scriptManager.SetMethodReturn(nameof(IScriptManager.InitialiseOwnedScripts), RecordingDispatchProxy<IScriptCollection>.Create(out _));
+        var parameters = new Game.Spell.RapidTransportSpellParameters(25)
+        {
+            SpellInfo = info, TaxiNode = 20, HasClientCastRequest = true, ClientContextToken = 0xAABBCCDDu
+        };
+        using var spell = new Game.Spell.Spell(player, parameters,
+            globalSpellManager: RecordingDispatchProxy<IGlobalSpellManager>.Create(out _), scriptManager: scripts);
+
+        bool available = worldExists && !disabled;
+        Assert.Equal(available ? CastResult.Ok : CastResult.RapidTransportInvalid, spell.Cast());
+        if (available)
+        {
+            disabled = disableAfterCast;
+            Game.Spell.SpellHandler.HandleEffectRapidTransport(spell, player, null);
+            Assert.Equal(25ul, Assert.Single(wallet.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount))).Arguments[1]);
+            Assert.Single(session.EncryptedMessages.OfType<ServerSpellCastPositionSync>());
+            if (disableAfterCast)
+            {
+                Assert.Empty(maps.GetInvocations(nameof(IMapManager.AddToMap)));
+                Assert.Empty(moves.GetInvocations(nameof(IMovementManager.SetRotation)));
+                Assert.Single(session.EncryptedMessages.OfType<ServerChat>());
+            }
+            else
+            {
+                Game.Spell.SpellHandler.HandleEffectRapidTransport(spell, player, null);
+                var queued = Assert.Single(maps.GetInvocations(nameof(IMapManager.AddToMap)));
+                var destination = Assert.IsAssignableFrom<IMapPosition>(queued.Arguments[1]);
+                Assert.Equal(5u, destination.Info.Entry.Id);
+                Assert.Equal(new Vector3(10, 0, 0), destination.Position);
+                Assert.Single(moves.GetInvocations(nameof(IMovementManager.SetRotation)));
+            }
+        }
+        else
+        {
+            Assert.Empty(wallet.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+            Assert.Empty(maps.GetInvocations(nameof(IMapManager.AddToMap)));
+            Assert.Empty(session.EncryptedMessages.OfType<ServerSpellCastPositionSync>());
+            var result = Assert.Single(session.EncryptedMessages.OfType<ServerSpellCastResult>());
+            Assert.Equal(CastResult.RapidTransportInvalid, result.CastResult);
+            Assert.Equal(parameters.ClientContextToken, result.ContextToken);
+        }
     }
 
     [Fact]

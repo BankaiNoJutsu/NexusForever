@@ -21298,6 +21298,30 @@ Local evidence is under `artifacts/continuation-20261104/rapid-transport-cast-fa
 Physical transfer, fare settlement after interruption or a later map failure,
 and formula-driven pricing beyond the captured route cases remain open.
 
+#### Rapid Transport destination availability
+
+4 November 2026. Cast admission resolves the destination world and checks
+whether it is enabled before taking credits. A missing or disabled world
+returns `RapidTransportInvalid` with the original cast context. The spell
+effect resolves the destination again on the original player. A world disabled
+during the cast sends the existing system message and leaves the player in
+place with their original facing. The accepted effect queues one relocation.
+
+The baseline accepted both unavailable destinations. Its available-world
+control started in the loading state, which suppressed cast confirmation. The
+broader scoped run passed 150 of 151 after that setup was corrected. The
+successful-transfer fixture then received a character identity. The rerun
+passed all four targeted cases with identical Game and
+WorldServer binaries. Raw results are under
+`artifacts/continuation-20261104/rapid-transport-destination/`.
+
+REA matched the [archived build 16042 input](Decomp/Analysis/NATIVE_STATIC_CONTRACT_COMMUNICATOR_CROSSCHECK.md#input-and-method).
+The focused LLVM read shows `1403994bf` loading opcode `0x0141` and `1403994ca`
+calling the send helper. That client request evidence leaves interruption and
+post-cast failure fare policy open. Resolving those cases needs an authoritative
+server trace or a capture that pairs the cast outcome with the balance update.
+Physical arrival and formula pricing also remain open.
+
 #### Route and client evidence
 
 Pricing/request validation is partial. The 2026-06-04 taxi/rapid-transport

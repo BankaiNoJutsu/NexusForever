@@ -4,6 +4,7 @@ using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Abstract.Spell.Event;
 using NexusForever.Game.Combat.CrowdControl;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Quest;
 using NexusForever.Game.Spell.Effect;
@@ -283,7 +284,8 @@ namespace NexusForever.Game.Spell
 
         private CastResult TryConsumeRapidTransportFare(uint fare)
         {
-            if (Caster is not IPlayer player || !player.CanTeleport())
+            if (Caster is not IPlayer player || !player.CanTeleport()
+                || player is Player concrete && !concrete.CanStartRapidTransport(Parameters.TaxiNode))
                 return CastResult.RapidTransportInvalid;
             if (fare == 0)
                 return CastResult.Ok;

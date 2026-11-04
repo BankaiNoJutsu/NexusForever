@@ -5,6 +5,7 @@ using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Map;
+using NexusForever.Game.Static;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
@@ -75,6 +76,49 @@ namespace NexusForever.Game.Entity
                 var destination = new MapPosition { Info = new MapInfo { Entry = world }, Position = position };
                 TeleportToCore(destination, TeleportReason.Relocate, new PendingTaxiFlight(Session, destinationNode, fare, rotation));
             }
+        }
+
+        internal bool CanStartRapidTransport(ushort nodeId)
+        {
+            lock (mapAdmission.SyncRoot)
+            {
+                var world = ResolveRapidTransportWorld(nodeId, out _);
+                return world != null && disableManager?.IsDisabled(DisableType.World, world.Id) != true;
+            }
+        }
+
+        internal void QueueRapidTransport(ushort nodeId)
+        {
+            lock (mapAdmission.SyncRoot)
+            {
+                var world = ResolveRapidTransportWorld(nodeId, out var location);
+                if (world == null) return;
+
+                var destination = new MapPosition
+                {
+                    Info = new MapInfo { Entry = world },
+                    Position = new Vector3(location.Position0, location.Position1, location.Position2)
+                };
+                var facing = new Quaternion(location.Facing0, location.Facing1, location.Facing2, location.Facing3);
+                TeleportToCore(destination, TeleportReason.Relocate, arrivalRotation: facing.ToEuler());
+            }
+        }
+
+        private WorldEntry ResolveRapidTransportWorld(ushort nodeId, out WorldLocation2Entry location)
+        {
+            location = null;
+            if (!IsAdmissionAllowed() || !CanTeleport() || mapManager == null
+                || (Session is IPlayerSession bound && !ReferenceEquals(bound.Player, this))) return null;
+
+            var node = gameTableManager?.TaxiNode?.GetEntry(nodeId);
+            if (node == null) return null;
+            location = gameTableManager.WorldLocation2?.GetEntry(node.WorldLocation2Id);
+            if (location == null || location.WorldId is 0 or > ushort.MaxValue
+                || !float.IsFinite(location.Position0) || !float.IsFinite(location.Position1) || !float.IsFinite(location.Position2)
+                || !float.IsFinite(location.Facing0) || !float.IsFinite(location.Facing1)
+                || !float.IsFinite(location.Facing2) || !float.IsFinite(location.Facing3)) return null;
+
+            return gameTableManager.World?.GetEntry(location.WorldId);
         }
 
         // Called under the generation guard. Check funds before source removal and again at grid readiness.

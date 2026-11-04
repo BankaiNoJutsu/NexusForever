@@ -57,8 +57,11 @@ retries failed wallet and unlock enqueues for the original session. Native
 arrival and delivery after socket failure remain open.
 
 [Rapid Transport cast fare](../../CURRENT_STATUS.md#rapid-transport-cast-fare)
-charges the selected route only after the spell passes admission. Physical
-transfer, later interruption/failure settlement, and formula pricing remain open.
+charges the selected route only after the spell passes admission.
+[Destination availability](../../CURRENT_STATUS.md#rapid-transport-destination-availability)
+rejects a missing or disabled world before charging and rechecks the destination
+when the spell effect runs. Physical transfer, later interruption or failure fare
+settlement, and formula pricing remain open.
 
 [Resource conversion preflight](../../CURRENT_STATUS.md#resource-conversion-preflight)
 protects the source items when the full output cannot fit and checks a
