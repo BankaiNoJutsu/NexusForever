@@ -21120,6 +21120,18 @@ instance-binding, map-admission and world-entry tests passed. Local evidence is 
 `artifacts/continuation-20261104/taxi-instance-admission/`.
 Physical arrival and recovery after a later map failure remain open.
 
+#### Instance transfer retries
+
+4 November 2026. An instance transfer waiting for its destination to unload
+stays in the admission queue when a different request is refused or throws.
+An ordinary refusal sends its existing error and the current batch continues.
+The queue attempts each pending request at most once per tick and retains
+its original admission generation. Two regressions reproduced lost retries
+through the instance queue. The owning-project build and 222 scoped
+transport, instance-binding, map-admission and world-entry tests passed.
+Local evidence is under
+`artifacts/continuation-20261104/instance-transfer-retry/`.
+
 #### Rapid Transport cast fare
 
 4 November 2026. The request supplies its validated route fare to the spell

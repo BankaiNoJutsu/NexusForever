@@ -100,8 +100,9 @@ namespace NexusForever.Game.Map.Instance
 
         private void ProcessPending()
         {
-            List<PendingAdd> newActions = null;
-            while (pendingAdds.TryDequeue(out PendingAdd pending))
+            // An unloading instance gets at most one attempt per tick, even when immediately requeued.
+            int pendingCount = pendingAdds.Count;
+            for (int i = 0; i < pendingCount && pendingAdds.TryDequeue(out PendingAdd pending); i++)
             {
                 if (!PlayerMapAdmissionGuard.IsCurrent(pending.Player, pending.AdmissionGeneration))
                     continue;
@@ -145,8 +146,7 @@ namespace NexusForever.Game.Map.Instance
                     }
 
                     // wait for instance to completely unload before recreating and adding
-                    newActions ??= new List<PendingAdd>();
-                    newActions.Add(pending);
+                    pendingAdds.Enqueue(pending);
                     continue;
                 }
 
@@ -167,14 +167,7 @@ namespace NexusForever.Game.Map.Instance
                     UpdatePosition(pending.Player, pending.MapPosition);
                     instance.EnqueueAdd(pending.Player, pending.MapPosition);
                 });
-                if (result.HasValue)
-                    return;
             }
-
-            // new actions are added to the queue after processing so they are processed starting next update
-            if (newActions != null)
-                foreach (PendingAdd action in newActions)
-                    pendingAdds.Enqueue(action);
         }
 
         private void UpdateInstances(double lastTick)

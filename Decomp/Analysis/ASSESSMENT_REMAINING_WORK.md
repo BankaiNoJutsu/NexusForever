@@ -10,6 +10,10 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Instance transfer retries](../../CURRENT_STATUS.md#instance-transfer-retries)
+preserve queued transfers waiting on an unload when another instance entry
+is denied or throws. Recovery of the individual failed transfer remains open.
+
 [Flight-path destination admission](../../CURRENT_STATUS.md#flight-path-destination-admission)
 checks the destination map or selected instance and current funds before
 charging a queued fare and unlocking the destination. Physical arrival and

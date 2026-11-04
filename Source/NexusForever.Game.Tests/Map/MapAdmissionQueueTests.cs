@@ -128,6 +128,51 @@ public sealed class MapAdmissionQueueTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AFailedInstanceEntryPreservesOtherTransfers(bool admissionThrows)
+    {
+        var waiting = new TestPlayer();
+        var refused = new TestPlayer();
+        var following = new TestPlayer();
+        var map = new TestInstancedMap();
+        map.InstanceProxy.SetProperty(nameof(IMapInstance.UnloadStatus), MapUnloadStatus.UnloadingPlayers);
+        MapPosition otherDestination = map.AddDestination(out var otherInstance);
+        otherInstance.SetMethodHandler(nameof(IMap.CanEnter), args =>
+        {
+            if (!ReferenceEquals(args[0], refused.Player))
+                return null;
+            if (admissionThrows)
+                throw new InvalidOperationException("fixture admission failure");
+            return GenericError.InstanceFull;
+        });
+        map.EnqueueAdd(waiting.Player, Position());
+        map.EnqueueAdd(refused.Player, otherDestination);
+        map.EnqueueAdd(following.Player, otherDestination);
+
+        if (admissionThrows)
+        {
+            Assert.Equal("fixture admission failure", Assert.Throws<InvalidOperationException>(() => map.Update(0)).Message);
+        }
+        else
+        {
+            map.Update(0);
+            var failure = Assert.Single(refused.Proxy.GetInvocations(nameof(IPlayer.OnTeleportToFailed)));
+            Assert.Equal(GenericError.InstanceFull, failure.Arguments[0]);
+        }
+
+        int followingAddsOnFirstTick = otherInstance.GetInvocations(nameof(IMap.EnqueueAdd)).Count;
+        Assert.Empty(map.InstanceProxy.GetInvocations(nameof(IMap.EnqueueAdd)));
+        map.InstanceProxy.SetProperty(nameof(IMapInstance.UnloadStatus), null);
+        map.Update(0);
+        map.Update(0);
+
+        Assert.Same(waiting.Player, Assert.Single(map.InstanceProxy.GetInvocations(nameof(IMap.EnqueueAdd))).Arguments[0]);
+        Assert.Same(following.Player, Assert.Single(otherInstance.GetInvocations(nameof(IMap.EnqueueAdd))).Arguments[0]);
+        Assert.Equal(admissionThrows ? 0 : 1, followingAddsOnFirstTick);
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
     [InlineData(true, false)]
@@ -280,22 +325,35 @@ public sealed class MapAdmissionQueueTests
         public int Created { get; private set; }
         public RecordingDispatchProxy<IMapManager> ManagerProxy { get; }
         public RecordingDispatchProxy<IMapInstance> InstanceProxy { get; }
-        private readonly IMapInstance instance;
+        private readonly Dictionary<Guid, IMapInstance> destinations = new();
         private readonly IMapLock mapLock;
         public TestInstancedMap() : this(RecordingDispatchProxy<IMapManager>.Create(out var proxy), proxy) { }
         private TestInstancedMap(IMapManager manager, RecordingDispatchProxy<IMapManager> proxy) : base(manager)
         {
             ManagerProxy = proxy;
-            instance = RecordingDispatchProxy<IMapInstance>.Create(out var instanceProxy);
+            mapLock = AddDestination(out var instanceProxy).Info.MapLock;
             InstanceProxy = instanceProxy;
-            Guid id = Guid.NewGuid();
-            instanceProxy.SetProperty(nameof(IMapInstance.InstanceId), id);
-            instanceProxy.SetProperty(nameof(IMap.Entry), new WorldEntry { Id = 51 });
-            mapLock = RecordingDispatchProxy<IMapLock>.Create(out var lockProxy);
-            lockProxy.SetProperty(nameof(IMapLock.InstanceId), id);
         }
+
+        public MapPosition AddDestination(out RecordingDispatchProxy<IMapInstance> instanceProxy)
+        {
+            var instance = RecordingDispatchProxy<IMapInstance>.Create(out instanceProxy);
+            Guid id = Guid.NewGuid();
+            var world = new WorldEntry { Id = 51 };
+            instanceProxy.SetProperty(nameof(IMapInstance.InstanceId), id);
+            instanceProxy.SetProperty(nameof(IMap.Entry), world);
+            var destinationLock = RecordingDispatchProxy<IMapLock>.Create(out var lockProxy);
+            lockProxy.SetProperty(nameof(IMapLock.InstanceId), id);
+            destinations.Add(id, instance);
+            return new MapPosition { Info = new MapInfo { Entry = world, MapLock = destinationLock } };
+        }
+
         protected override IMapLock GetMapLock(IPlayer player) => mapLock;
-        protected override IMapInstance CreateInstance(IPlayer player, IMapLock mapLock) { Created++; return instance; }
+        protected override IMapInstance CreateInstance(IPlayer player, IMapLock mapLock)
+        {
+            Created++;
+            return destinations[mapLock.InstanceId];
+        }
     }
 
     private sealed class CapacityMap : MapInstance
