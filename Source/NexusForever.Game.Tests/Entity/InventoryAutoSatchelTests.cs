@@ -26,6 +26,33 @@ public class InventoryAutoSatchelTests
     private const uint ItemId = 9001;
     private const ushort MaterialId = 12;
 
+    [Theory]
+    [InlineData(5u, true)]
+    [InlineData(6u, false)]
+    public void QuestRewardBatchSharesSatchelCapacityAndBagStacks(uint secondGrant, bool fits)
+    {
+        var f = new Fixture(slots: 1, stored: 99);
+        Assert.True(f.Inventory.CanCreateItem(InventoryLocation.Inventory, ItemId, 6));
+        Assert.True(f.Inventory.CanCreateItem(InventoryLocation.Inventory, ItemId, secondGrant));
+        Assert.Equal(fits, f.Inventory.CanCreateQuestRewardItems([(ItemId, 6), (ItemId, secondGrant)], []));
+        Assert.Equal(99u, f.Stored);
+        Assert.Empty(f.Bag);
+        Assert.Empty(f.Messages);
+    }
+
+    [Theory]
+    [InlineData(4u, 6u, true)]
+    [InlineData(4u, 7u, false)]
+    [InlineData(8u, 11u, false)]
+    public void QuestRewardBatchCountsReclaimedStackRoomOnlyOnce(uint reclaimed, uint reward, bool fits)
+    {
+        var f = new Fixture(slots: 1, mapped: false);
+        f.AddExistingStack(8);
+        Assert.Equal(fits, f.Inventory.CanCreateQuestRewardItems([(ItemId, reward)], [(ItemId, reclaimed)]));
+        Assert.Equal(8u, f.BagAmount);
+        Assert.Empty(f.Messages);
+    }
+
     [Fact]
     public void CapacityQueryAndPreflightArePureAndAllowFullBagWhenSatchelFits()
     {

@@ -10,6 +10,13 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Q5597 fixed reward capacity and SQLite reload](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#fixed-reward-capacity-and-sqlite-reload)
+checks the whole item reward batch before ordinary Quest completion.
+The one-slot case preserves the achieved quest, and successful turn-in
+preserves both items and the achievement checklist across fresh actor load.
+The normal path accounts for capacity recovered from pushed quest items.
+Connected relog, native presentation and the full quest chain remain open.
+
 [Committed commodity fill recovery](COMMODITY_POSTING_SETTLEMENT.md#recovery-after-a-committed-fill-notice-fails)
 refreshes the original recipient's current orders after an enqueue failure.
 Static client evidence distinguishes the replacing list event from a fill

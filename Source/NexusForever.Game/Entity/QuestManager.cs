@@ -848,12 +848,8 @@ namespace NexusForever.Game.Entity
         {
             ushort questId = quest.Id;
             // reclaim any quest specific items
-            for (int i = 0; i < quest.Info.Entry.PushedItemIds.Length; i++)
-            {
-                uint itemId = quest.Info.Entry.PushedItemIds[i];
-                if (itemId != 0u)
-                    player.Inventory.ItemDelete(itemId, quest.Info.Entry.PushedItemCounts[i]);
-            }
+            foreach (var (itemId, count) in GetPushedQuestItems(quest.Info))
+                player.Inventory.ItemDelete(itemId, count);
 
             RewardQuest(quest.Info, selectedReward);
             quest.State = QuestState.Completed;
@@ -953,11 +949,19 @@ namespace NexusForever.Game.Entity
 
         private bool CanGrantQuestItemRewards(IQuestInfo info, Quest2RewardEntry selectedReward)
         {
-            foreach (Quest2RewardEntry rewardEntry in GetQuestItemRewards(info, selectedReward))
-                if (!player.Inventory.CanCreateItem(InventoryLocation.Inventory, rewardEntry.ObjectId, rewardEntry.ObjectAmount))
-                    return false;
+            Quest2RewardEntry[] rewards = GetQuestItemRewards(info, selectedReward).ToArray();
+            if (rewards.Length > 1 && player.Inventory is Inventory inventory)
+                return inventory.CanCreateQuestRewardItems(rewards.Select(reward => (reward.ObjectId, reward.ObjectAmount)),
+                    GetPushedQuestItems(info));
 
-            return true;
+            return rewards.All(reward => player.Inventory.CanCreateItem(InventoryLocation.Inventory, reward.ObjectId, reward.ObjectAmount));
+        }
+
+        private static IEnumerable<(uint ItemId, uint Count)> GetPushedQuestItems(IQuestInfo info)
+        {
+            for (int i = 0; i < info.Entry.PushedItemIds.Length; i++)
+                if (info.Entry.PushedItemIds[i] != 0u)
+                    yield return (info.Entry.PushedItemIds[i], info.Entry.PushedItemCounts[i]);
         }
 
         private static IEnumerable<Quest2RewardEntry> GetQuestItemRewards(IQuestInfo info, Quest2RewardEntry selectedReward)

@@ -39,9 +39,12 @@ achievement UI or inventory persistence.
 
 ## Still required
 
+The source/SQLite capacity and reload case is now covered by the follow-up
+below. The remaining gates require additional evidence.
+
 - Native Q5597 turn-in/reward presentation and achievement toast/log/journal UI.
-- Persisted reward inventory and achievement state across relog.
-- Duplicate completion and the listed missing-prerequisite/receiver negatives.
+- Reward inventory and achievement state across a connected world relog.
+- Native duplicate completion and missing-prerequisite/receiver observations.
 - Local Q5596 → Q5597 → Q5604 end-to-end behavior, including objective activation,
   route guidance and spawn/despawn timing.
 
@@ -50,3 +53,40 @@ Computer Use remains stopped. No quest-specific native UI action was performed
 by this recovery review. `manual_validation` remains pending and all affected
 content rows remain `not_retail_complete`. The strict source-existence validator
 is unchanged.
+
+## Fixed reward capacity and SQLite reload
+
+4 November 2026. The original turn-in checked both fixed rewards against
+the same free space. The one-slot reproduction reached Completed even
+though the separate item grants needed two slots.
+
+Ordinary Quest completion now checks the fixed items and chosen item as
+one batch on the real inventory. Repeated rows for the same item share
+the same satchel and compatible stack capacity. All items share the bag's
+unreserved slots. The capacity check accounts for the whole stacks and
+partial stack space that completion will reclaim, using the same pushed
+item rows as the turn-in. If the batch cannot fit, completion returns the
+existing inventory-full result before reclaiming quest items or granting
+rewards.
+
+A real Player, QuestManager, Inventory and CharacterAchievementManager
+exercise the visible-receiver turn-in using fixture rows for Q5597 and
+its documented rewards 29664 and 81917. The one-slot case keeps the
+quest achieved with no reward items or achievement. With two slots,
+ordinary Character save persists both items and completion bit 1
+for checklist 5495 on achievement 4134. Fresh actors reconstructed from
+the SQLite rows retain both outcomes. The completed actor rejects a
+duplicate turn-in after reload.
+
+Review found that the first candidate could refuse a turn-in that would fit
+once a pushed item was removed. A synthetic pushed-item variant exercises
+that existing path. Separate capacity controls verify partial and full
+reclamation and shared satchel headroom.
+
+The owning build and 244 scoped tests passed. Test execution took 17 seconds.
+Evidence is in `artifacts/continuation-20261104/q5597-reward-batch/`.
+The baseline's two-slot failure used the wrong checklist assertion
+field. Plain checklist bits persist in ProgressState, while
+CreditedChecklistMask tracks rows for checklist-count achievements.
+The final cases assert ProgressState and the completion timestamp.
+The earlier fixture build and missing-array failures are retained separately.

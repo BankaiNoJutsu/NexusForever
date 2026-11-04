@@ -337,8 +337,63 @@ namespace NexusForever.Game.Entity
             if (bag == null)
                 throw new ArgumentException();
 
-            if (count == 0u)
+            ulong slotsNeeded = CountRequiredSlots(bag, info, count);
+            if (slotsNeeded == 0)
                 return true;
+            if (location == InventoryLocation.Equipped)
+                return slotsNeeded == 1 && bag.GetFirstAvailableBagIndex((ItemSlot)info.SlotEntry.Id).HasValue;
+
+            return bag.AvailableSlots >= slotsNeeded;
+        }
+
+        internal bool CanCreateQuestRewardItems(IEnumerable<(uint ItemId, uint Count)> rewards,
+            IEnumerable<(uint ItemId, uint Count)> reclaimedItems)
+        {
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this, readOnly: true);
+                if (RequiresAuthoritativeReload || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated) return false;
+                IBag bag = GetBag(InventoryLocation.Inventory) ?? throw new ArgumentException();
+                ulong available = bag.AvailableSlots;
+                var afterReclaim = new Dictionary<IItem, uint>(ReferenceEqualityComparer.Instance);
+                foreach (var (itemId, count) in reclaimedItems)
+                {
+                    uint remaining = count;
+                    foreach (IItem stack in bag.Where(item => item.Id == itemId))
+                    {
+                        if (remaining == 0) break;
+                        uint stackCount = afterReclaim.GetValueOrDefault(stack, stack.StackCount);
+                        if (stackCount == 0) continue;
+                        if (bag.IsSlotReserved(stack.BagIndex) || IsBankSavePending(stack)) return false;
+
+                        uint consumed = Math.Min(remaining, stackCount);
+                        remaining -= consumed;
+                        afterReclaim[stack] = stackCount - consumed;
+                        if (consumed == stackCount) available++;
+                    }
+                }
+                var items = rewards.Select(reward => (Info: itemManager?.GetItemInfo(reward.ItemId)
+                    ?? throw new ArgumentNullException(nameof(rewards)), reward.Count)).GroupBy(reward => reward.Info.Id);
+
+                foreach (var item in items)
+                {
+                    IItemInfo info = item.First().Info;
+                    ulong count = item.Aggregate(0ul, (total, reward) => total + reward.Count);
+                    if (player?.SupplySatchelManager?.TryGetAutoStoreCapacity(info, out uint capacity) == true)
+                        count -= Math.Min(count, capacity);
+                    ulong needed = CountRequiredSlots(bag, info, count, afterReclaim);
+                    if (needed > available) return false;
+                    available -= needed;
+                }
+                return true;
+            }
+        }
+
+        private static ulong CountRequiredSlots(IBag bag, IItemInfo info, ulong count,
+            IReadOnlyDictionary<IItem, uint> afterReclaim = null)
+        {
+            if (count == 0u)
+                return 0;
 
             if (info.IsStackable())
             {
@@ -349,22 +404,21 @@ namespace NexusForever.Game.Entity
                     if (count == 0u)
                         break;
 
-                    if (item.StackCount >= maxStackCount)
+                    uint stackCount = item.StackCount;
+                    if (afterReclaim != null && afterReclaim.TryGetValue(item, out uint after))
+                    {
+                        if (after == 0) continue;
+                        stackCount = after;
+                    }
+
+                    if (stackCount >= maxStackCount)
                         continue;
 
-                    count -= Math.Min(count, maxStackCount - item.StackCount);
+                    count -= Math.Min(count, maxStackCount - stackCount);
                 }
+                return (count + maxStackCount - 1) / maxStackCount;
             }
-
-            if (count == 0u)
-                return true;
-
-            uint itemMaxStackCount = info.IsStackable() ? Math.Max(1u, info.Entry.MaxStackCount) : 1u;
-            ulong slotsNeeded = ((ulong)count + itemMaxStackCount - 1ul) / itemMaxStackCount;
-            if (location == InventoryLocation.Equipped)
-                return slotsNeeded <= 1ul && bag.GetFirstAvailableBagIndex((ItemSlot)info.SlotEntry.Id).HasValue;
-
-            return (ulong)bag.AvailableSlots >= slotsNeeded;
+            return count;
         }
 
         /// <inheritdoc />
