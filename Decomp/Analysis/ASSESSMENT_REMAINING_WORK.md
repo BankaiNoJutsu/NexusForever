@@ -116,6 +116,10 @@ sees the inventory changes after confirmed settlement.
 validates the loaded faction before spending, then saves the item or wallet
 debit with the standing change before publishing either.
 
+[Resource conversion save ownership](../../CURRENT_STATUS.md#resource-conversion-save-ownership)
+keeps enrollment and completion on the original Character actor. A session,
+queue or account epoch replacement cannot publish a prior conversion.
+
 [Vendor buyback request identity](../../CURRENT_STATUS.md#vendor-buyback-request-identity)
 keeps delayed requests from charging for a later sale and finishes accepted
 redemptions on the original inventory. [Vendor buyback settlement](../../CURRENT_STATUS.md#vendor-buyback-settlement)

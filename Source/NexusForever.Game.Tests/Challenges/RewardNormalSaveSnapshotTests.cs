@@ -60,6 +60,11 @@ public sealed class RewardNormalSaveSnapshotTests
     [InlineData("lost-ack")]
     [InlineData("rebound")]
     [InlineData("rebound-during-retry")]
+    [InlineData("rebound-before-character")]
+    [InlineData("rebound-after-commit")]
+    [InlineData("rebound-after-lost-ack")]
+    [InlineData("queue-replaced-after-commit")]
+    [InlineData("epoch-replaced-after-commit")]
     public async Task ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(string outcome)
     {
         using var f = new Fixture(options);
@@ -96,11 +101,23 @@ public sealed class RewardNormalSaveSnapshotTests
         actor.Quest.Single().Progress = 2;
         player.Flags = (CharacterFlag)1;
         int authSaves = 0;
-        actor.OnAuth = () => authSaves++;
+        void ReplacePlayer() => network.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+        actor.OnAuth = () =>
+        {
+            authSaves++;
+            if (outcome == "rebound-before-character") ReplacePlayer();
+        };
         if (outcome == "rebound")
-            database.OnRollback = () => network.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+            database.OnRollback = ReplacePlayer;
         if (outcome == "rebound-during-retry")
-            database.OnRetryCommitted = () => network.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+            database.OnRetryCommitted = ReplacePlayer;
+        if (outcome is "rebound-after-commit" or "rebound-after-lost-ack")
+            database.OnCommitted = ReplacePlayer;
+        if (outcome == "queue-replaced-after-commit")
+            database.OnCommitted = () => network.SetProperty(nameof(IWorldSession.Events), new EventQueue());
+        if (outcome == "epoch-replaced-after-commit")
+            database.OnCommitted = () => ((RecordingDispatchProxy<IAccount>)(object)player.Account)
+                .SetProperty(nameof(IAccount.WorldSessionEpoch), 2ul);
 
         var request = new ClientConvertResource();
         typeof(ClientConvertResource).GetProperty(nameof(ClientConvertResource.ConversionId))!.SetValue(request, 10u);
@@ -119,8 +136,16 @@ public sealed class RewardNormalSaveSnapshotTests
             Assert.Equal(new ulong[] { 40, 20, 10 }, before.CharacterCurrency.OrderBy(row => row.CurrencyId).Select(row => row.Amount));
         await actor.Drain();
 
-        bool committed = outcome is not ("rollback" or "rebound");
-        Assert.Equal(outcome is "retry" or "rollback" or "rebound-during-retry" ? 2 : 1, database.Attempts);
+        bool committed = outcome is not ("rollback" or "rebound" or "rebound-before-character");
+        bool replaced = outcome.StartsWith("rebound", StringComparison.Ordinal)
+            || outcome is "queue-replaced-after-commit" or "epoch-replaced-after-commit";
+        int attempts = outcome switch
+        {
+            "rebound-before-character" => 0,
+            "retry" or "rollback" or "rebound-during-retry" => 2,
+            _ => 1
+        };
+        Assert.Equal(attempts, database.Attempts);
         Assert.Equal(1, authSaves);
         var achievements = (RecordingDispatchProxy<NexusForever.Game.Abstract.Achievement.ICharacterAchievementManager>)(object)player.AchievementManager;
         Assert.Single(achievements.GetInvocations(nameof(NexusForever.Game.Abstract.Achievement.ICharacterAchievementManager.CheckAchievements)));
@@ -129,9 +154,14 @@ public sealed class RewardNormalSaveSnapshotTests
             after.CharacterCurrency.OrderBy(row => row.CurrencyId).Select(row => row.Amount));
         Assert.Equal(committed ? 2u : 1u, after.CharacterQuestObjective.Single().Progress);
         Assert.Equal(committed ? 1u : 0u, after.Character.Single().Flags);
-        Assert.Equal(committed && outcome != "rebound-during-retry" ? new ulong[] { 7, 15, 25 } : [], notices.Order());
+        Assert.Equal(committed && !replaced ? new ulong[] { 7, 15, 25 } : [], notices.Order());
         Assert.Equal(outcome == "rollback" ? 1 : 0, network.GetInvocations(nameof(IWorldSession.ForceDisconnect)).Count);
-        if (outcome is "rebound" or "rebound-during-retry") Assert.False(session.CanProcessIncomingPackets);
+        if (replaced)
+        {
+            Assert.False(session.CanProcessIncomingPackets);
+            Assert.False(actor.Player.IsNormalSaveInProgress);
+            Assert.True(actor.Quests.RequiresAuthoritativeReload);
+        }
         if (!committed)
             Assert.Empty(after.BankReconciliationReceipt);
         else
@@ -150,16 +180,20 @@ public sealed class RewardNormalSaveSnapshotTests
         public int Attempts { get; private set; }
         public Action OnRollback { get; set; }
         public Action OnRetryCommitted { get; set; }
+        public Action OnCommitted { get; set; }
 
         public override async Task SaveResourceConversionReconciliation(ulong characterId, Action<CharacterContext> action,
             ResourceConversionSaveReconciliation receipt)
         {
             Attempts++;
-            bool injectFault = outcome != "success" && (outcome is not ("retry" or "rebound-during-retry") || Attempts == 1);
+            bool injectFault = outcome is "lost-ack" or "rebound-after-lost-ack" or "rollback" or "rebound"
+                || outcome is "retry" or "rebound-during-retry" && Attempts == 1;
             try
             {
                 await CharacterAtomicSave.ExecuteResourceConversionReconciliation(() => injectFault
-                    ? fixture.Context(new CommitFault(outcome == "lost-ack")) : fixture.Context(), characterId, action, receipt);
+                    ? fixture.Context(new CommitFault(outcome is "lost-ack" or "rebound-after-lost-ack"))
+                    : fixture.Context(), characterId, action, receipt);
+                OnCommitted?.Invoke();
                 if (Attempts == 2) OnRetryCommitted?.Invoke();
             }
             catch (CharacterReconciliationRolledBackException)

@@ -23215,6 +23215,20 @@ commit, lost acknowledgment, rollback and retry. Local evidence is under
 `artifacts/continuation-20261105/reputation-resource-conversion/`.
 Configured MySQL, deployed delivery and retail selector semantics remain open.
 
+#### Resource conversion save ownership
+
+5 November 2026. A conversion retains the original character, account
+epoch, session, queue and save managers from the request. Character
+enrollment and the save result both check this ownership. A replacement
+before Character enrollment leaves Character storage unchanged. A replacement
+after confirmed commit or receipt recovery preserves the durable result
+and suppresses the old session's packets and input changes.
+
+Five baseline cases reproduced stale enrollment, publication or input
+resumption. The owning build and 136 scoped conversion and persistence
+tests passed, including the original retry cases. Local evidence is under
+`artifacts/continuation-20261105/resource-conversion-save-owner/`.
+
 #### Existing item and unlock behavior
 
 Inventory, title, pet, costume, unlock surfaces exist. Generic unlock
