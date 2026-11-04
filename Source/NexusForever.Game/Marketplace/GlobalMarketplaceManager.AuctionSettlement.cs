@@ -390,36 +390,7 @@ namespace NexusForever.Game.Marketplace
                 if (preparationFailed || reconciliationFailed || outcome?.Committed != true)
                 { Finish(preparationFailed && !reconciliationFailed ? preparationResult : GenericError.DbFailure); return; }
                 NotifySeller();
-                var recipient = TransfersItem ? actors.SingleOrDefault(candidate => candidate.Wallet.Character == bidder) : null;
-                bool terminalNotice = !Cancelling && (kind != AuctionSettlementKind.Buyout || reply == null);
-                if (recipient == null || pendingDelivery != null || !CanPublish(recipient))
-                { NotifyPrevious(); return; }
-
-                if (sale.DeliveryMail == null)
-                {
-                    // Direct delivery is already adopted. The optional terminal
-                    // packet must not hold settlement open on a stopped queue.
-                    if (terminalNotice)
-                        recipient.Owner.Queue.EnqueueThreadSafe(new PredicateEvent(() => true,
-                            () => PublishTerminalNotice(recipient, responseAuction)));
-                    NotifyPrevious();
-                    return;
-                }
-
-                OnActor(recipient.Owner, () =>
-                {
-                    try
-                    {
-                        if (!CanPublish(recipient)) return;
-                        var model = sale.DeliveryMail.Model();
-                        model.Attachment.Add(new() { Id = model.Id, Index = 0, ItemGuid = sale.DeliveredItem.Id,
-                            Item = sale.DeliveredItem.Model() });
-                        recipient.Prepared.PublishDeliveryMail(new MailItem(model, itemManager: manager.itemManager,
-                            gameTableManager: manager.GetGameTableManager()));
-                        if (terminalNotice) PublishTerminalNotice(recipient, responseAuction);
-                    }
-                    finally { OnCoordinator(NotifyPrevious); }
-                });
+                NotifyPrevious();
             }
 
             private void NotifySeller()
@@ -540,10 +511,20 @@ namespace NexusForever.Game.Marketplace
                     manager.auctionSettlements.Remove(before.Id); auction = responseAuction ?? CloneAuction(record.Auction, record.ExpiresAtUtc);
                 }
                 accounts?.Dispose(); accounts = null;
-                if (error == GenericError.Ok && pendingDelivery != null)
+                if (error == GenericError.Ok && TransfersItem)
                 {
-                    RetryCommittedDelivery(auction);
-                    return;
+                    var recipient = actors.SingleOrDefault(candidate => candidate.Wallet.Character == bidder);
+                    if (recipient == null || !CanPublish(recipient)) return;
+                    if (sale.DeliveryMail != null)
+                    { QueueCommittedMail(recipient, auction); return; }
+                    if (pendingDelivery != null)
+                    { RetryCommittedDelivery(recipient, auction); return; }
+                    if (reply == null && !Cancelling)
+                    {
+                        recipient.Owner.Queue.EnqueueThreadSafe(new PredicateEvent(() => true,
+                            () => PublishTerminalNotice(recipient, auction)));
+                        return;
+                    }
                 }
                 if (reply == null) return;
                 if (error == GenericError.Ok)
@@ -558,6 +539,33 @@ namespace NexusForever.Game.Marketplace
                 reply(error, auction);
             }
 
+            private void QueueCommittedMail(Actor recipient, AuctionInfo auction)
+            {
+                // SQL owns the mail now. The live mailbox and auction packets
+                // can wait on the original queue without holding settlement.
+                var queue = recipient.Owner.Queue;
+                queue.EnqueueThreadSafe(new PredicateEvent(() => true, () =>
+                {
+                    if (!CanPublish(recipient)) return;
+                    try
+                    {
+                        var model = sale.DeliveryMail.Model();
+                        model.Attachment.Add(new() { Id = model.Id, Index = 0, ItemGuid = sale.DeliveredItem.Id,
+                            Item = sale.DeliveredItem.Model() });
+                        recipient.Prepared.PublishDeliveryMail(new MailItem(model, itemManager: manager.itemManager,
+                            gameTableManager: manager.GetGameTableManager()));
+                    }
+                    catch (Exception error)
+                    {
+                        log.Warn(error, "Committed auction mail could not be handed to the live mailbox.");
+                    }
+
+                    if (reply != null)
+                        queue.EnqueueThreadSafe(new PredicateEvent(() => true, () => PublishSuccess(auction)));
+                    else if (!Cancelling) PublishTerminalNotice(recipient, auction);
+                }));
+            }
+
             private void PublishInitialDelivery(Actor recipient, Func<ServerItemAdd> build)
             {
                 var packet = build();
@@ -570,9 +578,8 @@ namespace NexusForever.Game.Marketplace
                 }
             }
 
-            private void RetryCommittedDelivery(AuctionInfo auction)
+            private void RetryCommittedDelivery(Actor recipient, AuctionInfo auction)
             {
-                var recipient = actors.Single(actor => actor.Wallet.Character == bidder);
                 var owner = recipient.Owner;
                 NoticeAuthority ItemAuthority() => !owner.Inventory.RequiresAuthoritativeReload && owner.Inventory.IsSaveBlocked
                     ? NoticeAuthority.Waiting : NoticeAuthority.Ready;

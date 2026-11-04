@@ -51,6 +51,8 @@ public sealed partial class AuctionExpiryCoordinatorTests
     [InlineData(true, true, false, true, false, "mail-replace")]
     [InlineData(true, true, false, true, false, "mail-notify-retry")]
     [InlineData(true, true, false, true, false, "mail-notify-replace")]
+    [InlineData(true, true, true, true, false, "mail-queue-paused")]
+    [InlineData(true, true, false, true, false, "mail-route-fault")]
     [InlineData(true, true, false, true, false, "auction-notice-retry")]
     [InlineData(false, true, false, false, false, "auction-notice-retry")]
     [InlineData(true, true, false, true, false, "auction-notice-replace")]
@@ -107,7 +109,8 @@ public sealed partial class AuctionExpiryCoordinatorTests
             currency = new CurrencyManager(f.Source.Tables); currency.Initialise(actor.Player, model);
             actor.Set(nameof(Player.CurrencyManager), currency);
             if (mailed) actor.Set(nameof(Player.MailManager), new MailManager(actor.Player, model,
-                itemManager: items, gameTableManager: f.Source.Tables, deliveryContexts: () => f.Context()));
+                itemManager: items, gameTableManager: f.Source.Tables, deliveryContexts: () => fault == "mail-route-fault"
+                    ? throw new IOException("Committed mailbox route discovery failed.") : f.Context()));
             await actor.Load(); actor.Quest.Single().Progress = 2;
             if (!missingWallet) currency.CurrencyAddAmount(CurrencyType.Credits, 20);
         }
@@ -154,6 +157,7 @@ public sealed partial class AuctionExpiryCoordinatorTests
         }); manager.Initialise();
         int activeActor = 0, saves = 0, sellerSaves = 0, won = 0, returned = 0, replacementBoundary = -1;
         int mailAttempts = 0, mailNotices = 0;
+        bool pausedMailbox = false;
         int itemAddAttempts = 0;
         var replacementQueue = new EventQueue();
         bool failMailNotice = fault is "mail-notify-retry" or "mail-notify-replace";
@@ -186,6 +190,14 @@ public sealed partial class AuctionExpiryCoordinatorTests
         });
         sp.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
         {
+            if (fault == "mail-queue-paused" && args[0] is ServerMailAvailable)
+            {
+                Assert.True(pausedMailbox);
+                Assert.False(cleanup.IsAccountLocked(actor.Player.Account));
+                Assert.False(cleanup.IsAccountLocked(seller.Player.Account));
+                mailNotices++;
+            }
+            if (fault == "mail-route-fault" && args[0] is ServerMailAvailable) mailNotices++;
             if (args[0] is ServerItemAdd && fault is "item-add-retry" or "item-add-requeue" or "item-add-requeue-success")
             {
                 Assert.Equal(42, activeActor);
@@ -259,7 +271,10 @@ public sealed partial class AuctionExpiryCoordinatorTests
                     Assert.NotEqual(GenericError.Ok, manager.CancelAuction(seller.Player, 1, 7001, out _)); rejected++;
                 }));
             }
-            activeActor = 42; events.Update(.01);
+            activeActor = 42;
+            if (!pausedMailbox || !Pending(manager)) events.Update(.01);
+            if (fault == "mail-queue-paused" && saves == 2 && session.CanProcessIncomingPackets && Pending(manager))
+                pausedMailbox = true;
             activeActor = 100; sellerEvents.Update(.01); activeActor = 0;
             if (rejected == 2) release.TrySetResult(true);
             if (actor != null) Assert.Empty(actor.Errors); if (seller != null) Assert.Empty(seller.Errors);
@@ -289,7 +304,10 @@ public sealed partial class AuctionExpiryCoordinatorTests
         Assert.Equal(receiverOnline ? fault == "receiver-retire" ? 3 : 2 : 0, saves);
         Assert.Equal(sellerOnline ? fault == "seller-retire" ? 3 : 2 : 0, sellerSaves);
         Assert.False(cleanup.IsAccountLocked(f.Source.Player.Account));
+        if (fault == "mail-queue-paused") Assert.Equal(1, mailNotices);
+        if (fault == "mail-route-fault") Assert.Equal(0, mailNotices);
         var packets = sp.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).ToArray();
+        if (fault == "mail-queue-paused") Assert.Single(packets.OfType<ServerMailAvailable>());
         Assert.Empty(packets.OfType<ServerAuctionBidResult>());
         Assert.Equal(publishes && !mailed ? fault == "item-add-retry" ? 2 : 1 : 0, packets.OfType<ServerItemAdd>().Count());
         if (fault == "item-add-retry")

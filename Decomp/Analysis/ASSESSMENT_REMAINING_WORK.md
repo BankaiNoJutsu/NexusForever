@@ -10,6 +10,11 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Committed auction mailbox handoff](AUCTION_EXPIRY_TRANSACTION.md#release-settlement-before-live-mailbox-handoff)
+releases reservations before live inbox work. A paused recipient queue can
+resume independently, and a route preparation failure leaves the durable
+mail available for inbox recovery.
+
 [Committed direct auction delivery](AUCTION_EXPIRY_TRANSACTION.md#recovering-the-committed-direct-item-delivery)
 recovers the recipient's item packet for buyout, winning expiry and unsold
 expiry. Settlement releases its reservations independently of the recipient's

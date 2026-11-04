@@ -1,5 +1,25 @@
 # Auction expiry settlement
 
+## Release settlement before live mailbox handoff
+
+4 November 2026. Auction mail and its item custody are durable before live
+publication. Buyout, cancellation and expiry now release account and listing
+reservations before handing the mail to the original recipient queue. An
+unpolled queue cannot keep a committed settlement active. When that queue
+resumes, the existing mailbox publication path adopts the mail once and
+handles its own notice retries. If route preparation fails, the auction
+notice still proceeds and the durable inbox row remains available to recover.
+Direct item publication continues to use the same post-settlement boundary.
+
+The baseline reproduced a paused queue holding settlement open and a route
+exception escaping to the actor. The final build and 161 scoped cases passed,
+including both new cases. Test execution took 80 seconds. The paused queue
+resumed after both accounts unlocked and published exactly one mail notice.
+
+Local evidence is in `artifacts/continuation-20261104/auction-mail-queue/`.
+This gate covers source and private SQLite. Deployed delivery, restart replay
+and retail qualification remain open.
+
 ## Recovering the committed direct item delivery
 
 4 November 2026. Direct buyout, winning expiry and unsold expiry reuse the
