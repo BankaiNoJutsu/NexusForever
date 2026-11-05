@@ -2,6 +2,16 @@ namespace NexusForever.Network.Message
 {
     public enum GameMessageOpcode
     {
+        // Additional models from upstream game_rework d8e43d2c. Existing opcode
+        // names and evidence-backed models retain their current registrations.
+        ClientHousingPlaceDecor         = 0x04E6,
+        ServerMissileActorRemove         = 0x077D,
+        ServerSpellVisualEffectRemove    = 0x0784,
+        ServerSpellVisualEffectRemoveFromUnit = 0x0785,
+        ClientPremiumLockboxKeyRequest   = 0x079E,
+        ServerSpellDisableCooldowns      = 0x080E,
+        ServerAnnounceCommandOnCooldown  = 0x0832,
+        ServerOmnibitsWeeklyBonus        = 0x096F,
         State                           = 0x0000,
         State2                          = 0x0001,
         ServerHello                     = 0x0003,

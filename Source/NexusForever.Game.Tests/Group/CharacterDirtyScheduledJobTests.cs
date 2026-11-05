@@ -180,7 +180,10 @@ public class CharacterDirtyScheduledJobTests
 
             var services = new ServiceCollection();
             services.AddGroupDatabase(fixture.database);
-            services.AddDbContext<GroupContext>(b => b.AddInterceptors(fixture.Observer));
+            // Each fixture intentionally owns a separate root provider/interceptor.
+            // Keep EF's suite-wide provider-count diagnostic without treating it as a job failure.
+            services.AddDbContext<GroupContext>(b => b.AddInterceptors(fixture.Observer)
+                .ConfigureWarnings(warnings => warnings.Log(CoreEventId.ManyServiceProvidersCreatedWarning)));
             services.AddGroup();
             services.AddCharacter();
             services.AddScoped(sp => new CharacterManager(sp.GetRequiredService<CharacterRepository>(), null, sp));
@@ -194,6 +197,7 @@ public class CharacterDirtyScheduledJobTests
         {
             var options = new DbContextOptionsBuilder<GroupContext>();
             options.UseConfiguration(database);
+            options.ConfigureWarnings(warnings => warnings.Log(CoreEventId.ManyServiceProvidersCreatedWarning));
             return new GroupContext(options.Options);
         }
 

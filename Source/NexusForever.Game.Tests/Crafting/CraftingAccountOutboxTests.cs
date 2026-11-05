@@ -156,9 +156,11 @@ public sealed class CraftingAccountOutboxTests
             account.AccountWorldSession.Add(new() { AccountId = 12, Epoch = 1 }); account.SaveChanges();
         }
         internal AuthContext Auth(params IInterceptor[] interceptors)
-            => new(new DbContextOptionsBuilder<AuthContext>(auth).AddInterceptors(interceptors).Options);
+            => new(new DbContextOptionsBuilder<AuthContext>(auth).AddInterceptors(interceptors)
+                .ConfigureWarnings(warnings => warnings.Log(CoreEventId.ManyServiceProvidersCreatedWarning)).Options);
         internal CharacterContext Character(params IInterceptor[] interceptors)
-            => new(new DbContextOptionsBuilder<CharacterContext>(characters).AddInterceptors(interceptors).Options);
+            => new(new DbContextOptionsBuilder<CharacterContext>(characters).AddInterceptors(interceptors)
+                .ConfigureWarnings(warnings => warnings.Log(CoreEventId.ManyServiceProvidersCreatedWarning)).Options);
         internal async Task<CraftingAccountIntent> Queue(int ordinal, bool paid, bool cancelled = false, ushort realm = 1)
         {
             using var authContext = Auth(); using var character = Character();

@@ -149,7 +149,7 @@ public sealed class AssetPreparationCompositionTests : IDisposable
     {
         using var services = builder.Services.BuildServiceProvider();
         var result = await ExecutionConfigurationBuilder.Create(resource).WithArgumentsConfig()
-            .BuildAsync(new DistributedApplicationExecutionContext(new DistributedApplicationExecutionContextOptions(DistributedApplicationOperation.Publish) { ServiceProvider = services }));
+            .BuildAsync(new DistributedApplicationExecutionContext(new DistributedApplicationExecutionContextOptions(DistributedApplicationOperation.Publish) { Services = services }));
         Assert.Null(result.Exception);
         return result.Arguments.Select(argument => argument.Value).ToArray();
     }
@@ -158,7 +158,7 @@ public sealed class AssetPreparationCompositionTests : IDisposable
     {
         using var services = builder.Services.BuildServiceProvider();
         var result = await ExecutionConfigurationBuilder.Create(resource).WithEnvironmentVariablesConfig()
-            .BuildAsync(new DistributedApplicationExecutionContext(new DistributedApplicationExecutionContextOptions(DistributedApplicationOperation.Publish) { ServiceProvider = services }));
+            .BuildAsync(new DistributedApplicationExecutionContext(new DistributedApplicationExecutionContextOptions(DistributedApplicationOperation.Publish) { Services = services }));
         Assert.Null(result.Exception);
         return result.EnvironmentVariables.ToDictionary(p => p.Key, p => p.Value);
     }
