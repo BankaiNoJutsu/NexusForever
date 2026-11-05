@@ -1,13 +1,22 @@
 # Assessment follow-through goal
 
+[Guild bank native contracts](GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md) map
+signed04A8 money requests,04B1 rank settings, the signed-max “all” sentinel,
+six-bit tab permissions and the eight selector values joined to formulas757-762.
+All29 selected native spans match the pinned PE. This is mapped evidence, not
+implemented banking: the financial handlers are log-only, so there is no existing
+transaction to fault-inject. Next implement the public rank bank-settings
+operations through the original guild save owner and confirmed readback; retain
+the diagnostic financial boundary until balances/custody/limits settle coherently.
+
 [Confirmed public LAS replies](ACTION_SET_PUBLICATION.md) now follow the frozen
 Character spellbook acknowledgement on the original World owner. The executed
 save/retry/replacement probe and candidate no-op defect are fixed;16 focused
 cases/all252 affected, clean scoped builds and both final reviews
 pass. Packet retry retains its cursor and fresh objects. Broader AMP/combat
 mutation timing, native async ordering and provider/socket/retail remain open.
-Continue the remaining public guild-bank financial owner/recovery probe or
-independent progression/gameplay work; do not repeat this completed reply slice.
+The later bank mapping above replaces the proposed financial probe with its
+actual prerequisite. Continue that integration or independent gameplay work.
 
 [Public Community Service Token creation](COMMUNITY_TOKEN_CREATION.md) now
 couples a durable admitted Auth payment with the complete Character/guild/root/

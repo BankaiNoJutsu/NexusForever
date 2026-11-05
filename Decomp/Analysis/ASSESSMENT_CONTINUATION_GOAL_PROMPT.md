@@ -1,6 +1,6 @@
 # Assessment continuation Goal prompt
 
-Updated 5 November 2026 with the verified ordinary Guild creation milestone,
+Updated 5 November 2026 with verified creation/LAS milestones and bank contracts,
 remaining implementation/evidence priorities and current REA boundary. Retains
 roadmap-driven execution, scoped-only validation and the existing main-thread
 regular commit/push policy.
@@ -98,9 +98,16 @@ Next actionable outcomes and remaining gates
   use the frozen confirmed book, original actor/account/session/epoch and fresh
   retained packet cursors; no-op and later edits remain owned. Do not repeat
   that completed reply slice. Broader initialized AMP/combat mutation timing,
-  native asynchronous ordering and provider/socket/retail stay open. Continue
-  the remaining public guild-bank financial owner/recovery probe or independent
-  progression/gameplay work as inputs allow.
+  native asynchronous ordering and provider/socket/retail stay open. The later
+  Decomp/Analysis/GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md maps29 exact-hash native
+  spans:04A8 signs,04B1 bank rank settings, signed-max “all,” six-bit tab permission
+  groups and the eight withdrawal selectors (formulas757-762). This is mapped
+  only. Financial handlers are log-only and have no transaction to fault-inject.
+  Next implement the public rank bank-settings operations through original-owner
+  guild persistence and confirmed readback, or independent gameplay work as its
+  inputs allow. Keep money/item/tab-open diagnostic until a coherent financial
+  service exists; actual formula/perk values, custody, authenticator authority,
+  daily reset ownership and provider/native/retail remain open.
 - Keep the full broader roadmap active: Contract public claim/reset requires
   remaining unclaimed/final-first/excess policy evidence and complete canonical
   delivery/recovery. Its726 choices are already recovered; retain the remaining
@@ -111,8 +118,8 @@ Next actionable outcomes and remaining gates
   prerequisite/combat work, Hycrest later gameplay and Q5597 qualification as
   their specific inputs allow. Do not request the superseded Q5597 worksheet.
 - Use the all-family audit to distinguish unfinished Source work (including
-  guild bank and LAS public-flow
-  probes) from actual missing evidence. A proposed or unexecuted probe is not a
+  guild bank settings and broader gameplay probes) from actual missing evidence.
+  The LAS public reply probe is completed above. A proposed or unexecuted probe is not a
   reproduced defect. Contract reset edges, Fortune exact weights and other
   retail-policy gaps stay explicit; continue independent implementation.
 - Fresh configured-provider/copied-upgrade, actual-table delivery, physical

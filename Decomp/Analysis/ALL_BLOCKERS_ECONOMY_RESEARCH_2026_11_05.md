@@ -199,6 +199,14 @@ remains stronger than the older UI for wire and cost staging.
 
 ## Guild bank and creation: implementation gates with concrete API leads
 
+Later [exact-hash native bank contracts](GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md)
+qualify the money request signs, rank limit/sentinel and packed-permission
+producers, plus the selector join to formulas757-762.29 selected spans match the
+pinned PE. This supersedes those missing native inputs below, not the missing
+financial service, active row values, daily reset or deployment/retail policy.
+Public rank bank settings with original-owner persistence/confirmed readback
+are the next available integration; financial handlers remain diagnostic.
+
 The [money](../../Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildBankMoneyTransactionHandler.cs)
 and [tab-open](../../Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildBankTabOpenHandler.cs)
 handlers remain log-only; the existing boundary test intentionally expects no

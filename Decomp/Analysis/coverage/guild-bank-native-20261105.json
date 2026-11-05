@@ -1,0 +1,547 @@
+{
+  "date": "2026-11-05",
+  "status": "Mapped only; financial bank service remains unimplemented",
+  "milestone": "Guild bank native money, rank settings and formula selector contracts",
+  "sourceBaselineCommit": "3e5a0a9b8c271d2db9c497fe69dda16ad6b26de3",
+  "publicationParent": "3e5a0a9b8c271d2db9c497fe69dda16ad6b26de3",
+  "binary": {
+    "binary": "C:\\GIT\\_archive\\cluster-3d\\NexusForever\\Decomp\\Client64\\WildStar64.exe",
+    "bytes": 13927576,
+    "sha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+    "imageBase": "0x140000000"
+  },
+  "reusedReaEvidence": {
+    "operation": "inspect_pe_imports",
+    "evidenceId": "ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4",
+    "bundle": "artifacts/continuation-20261105/blocker-next-targets/deep-rea-bundle.json",
+    "sha256": "d900a258756bfdec974ff1b901e22e7e72af469326fce8796cc1a65504d8fa6f",
+    "newProviderAttempt": false
+  },
+  "analysis": {
+    "engine": "Standalone Ghidra12.0.4 / JDK21",
+    "readOnly": true,
+    "newAnalysis": false,
+    "projectSaves": false,
+    "selectedFunctionSpanPeByteMatches": 29,
+    "ranges": [
+      {
+        "startVA": "0x14069a980",
+        "bytes": 171,
+        "sha256": "3cba7d88cc7b8340c5b4e1497a75cd15dc6b63d9253d84ed371ee49d5a1a7ac3",
+        "rawFileOffset": 6921600,
+        "observation": "DepositMoney"
+      },
+      {
+        "startVA": "0x14069aa30",
+        "bytes": 168,
+        "sha256": "69121c95e8b0b40bc35f3d5760c0d3d0a6defb34e1591a5c0327002fe595c432",
+        "rawFileOffset": 6921776,
+        "observation": "WithdrawMoney"
+      },
+      {
+        "startVA": "0x140698b80",
+        "bytes": 251,
+        "sha256": "3be6ade0dd7d65ec2b490ae1b57d33b84e885b6dc85f5e09513a9e0ac27e8277",
+        "rawFileOffset": 6913920,
+        "observation": "GetMoney"
+      },
+      {
+        "startVA": "0x140698c80",
+        "bytes": 251,
+        "sha256": "da40e22a09fc66328cc672374d9ca0af99f4c5abedd87d0f33ac2b903f905225",
+        "rawFileOffset": 6914176,
+        "observation": "GetBankMoneyWithdrawnToday"
+      },
+      {
+        "startVA": "0x140698d80",
+        "bytes": 251,
+        "sha256": "d4969708ae4ff0b43e510499f63d2735e3dd9a8b42487149a1b6f6745bc30255",
+        "rawFileOffset": 6914432,
+        "observation": "GetBankMoneyRepairToday"
+      },
+      {
+        "startVA": "0x140698e80",
+        "bytes": 203,
+        "sha256": "18ef0e4dccb5a41d34361d1b54fdb2e15beb19d12e519af8396f115e2f496c08",
+        "rawFileOffset": 6914688,
+        "observation": "GetBankMoneyRepairRemaining"
+      },
+      {
+        "startVA": "0x140698f50",
+        "bytes": 221,
+        "sha256": "3fa39a740da561df82a70bce987c92575cff80d287a4fa66432f251f6427fb6e",
+        "rawFileOffset": 6914896,
+        "observation": "GetBankTabItemWithdrawnToday"
+      },
+      {
+        "startVA": "0x1406993a0",
+        "bytes": 128,
+        "sha256": "028107b74d1683ccffe0f000a7cbd947030bcef0f33e05d4f392940c7e262ad6",
+        "rawFileOffset": 6916000,
+        "observation": "OpenBankTab"
+      },
+      {
+        "startVA": "0x1406998a0",
+        "bytes": 124,
+        "sha256": "9c97a0a00e4ea87d6d0c6896640e8416f2ab4bb161937fa9022b88e198b0213d",
+        "rawFileOffset": 6917280,
+        "observation": "GetBankTabCount"
+      },
+      {
+        "startVA": "0x140699470",
+        "bytes": 753,
+        "sha256": "ee0cab97e78a1d0c57397e707dfc8ed2f1da6bf4866e189ce733767f3d62f898",
+        "rawFileOffset": 6916208,
+        "observation": "GetBankTab"
+      },
+      {
+        "startVA": "0x140699e60",
+        "bytes": 2329,
+        "sha256": "009973808f4c571a7cf0d96cb302f7b7a5d6db777778eaa308d253102d0e59a5",
+        "rawFileOffset": 6918752,
+        "observation": "SetBankTabPermissions"
+      },
+      {
+        "startVA": "0x14069a780",
+        "bytes": 136,
+        "sha256": "4c13a412a0d689aa57b1593366a3e3dcf472d1cec072b83deb15b352c08001e9",
+        "rawFileOffset": 6921088,
+        "observation": "SetRankBankMoneyLimit"
+      },
+      {
+        "startVA": "0x14069a810",
+        "bytes": 108,
+        "sha256": "16788a75884bd89596113a2d5de004a6a2a092ffbdf81d6430585eb6437aace4",
+        "rawFileOffset": 6921232,
+        "observation": "SetRankBankMoneyLimitToAll"
+      },
+      {
+        "startVA": "0x14069b520",
+        "bytes": 101,
+        "sha256": "dccd987466f4c371f2a7448db98a157e2656bc0156c71f24585500bf7d8963fe",
+        "rawFileOffset": 6924576,
+        "observation": "PurchasePerk"
+      },
+      {
+        "startVA": "0x14057fb20",
+        "bytes": 84,
+        "sha256": "b373cc85832b11101a1a60223dd1e5c4bb6739513e8663956697f7db6b249ffe",
+        "rawFileOffset": 5762848,
+        "observation": "Signed bank money request sender"
+      },
+      {
+        "startVA": "0x14057ee50",
+        "bytes": 206,
+        "sha256": "af10e8af1c0ea96b10899eb255fc77f153e379b8a4274138638b6ea904310fc2",
+        "rawFileOffset": 5759568,
+        "observation": "Cached tab open or request sender"
+      },
+      {
+        "startVA": "0x14057fa20",
+        "bytes": 116,
+        "sha256": "b2ce09b127396cc74cc7c1373192f2548aa37365e898e0e2ac14914f415ccd37",
+        "rawFileOffset": 5762592,
+        "observation": "Rank money limit sender"
+      },
+      {
+        "startVA": "0x14057f9a0",
+        "bytes": 116,
+        "sha256": "8b2f5c28c968fb46d779572c8d4f08e953dc544ad2fc6fb0dc97e212089ee947",
+        "rawFileOffset": 5762464,
+        "observation": "Rank bank permission sender"
+      },
+      {
+        "startVA": "0x14057fb80",
+        "bytes": 116,
+        "sha256": "ad03369c9d5f747f0d36023fc62037e3b2c03b3361a81fa3471e6e2ec8a1f8d8",
+        "rawFileOffset": 5762944,
+        "observation": "PurchasePerk sender"
+      },
+      {
+        "startVA": "0x1406973d0",
+        "bytes": 3890,
+        "sha256": "d57697130ab874f1d33baa9d1af1fa0adf687f2199d695db740b6b2ebb2c3171",
+        "rawFileOffset": 6907856,
+        "observation": "GetRanks"
+      },
+      {
+        "startVA": "0x14069a880",
+        "bytes": 136,
+        "sha256": "bbd2b6b5b09d49171a70ae9d3b8652ef8134743a21c4a473bd3bba97a5fd8acb",
+        "rawFileOffset": 6921344,
+        "observation": "SetRankBankRepairLimit"
+      },
+      {
+        "startVA": "0x14069a910",
+        "bytes": 108,
+        "sha256": "bf75fb47341b19d843f89a2fea18c508f2e60fe2be0d7f09bb3a318925f30f88",
+        "rawFileOffset": 6921488,
+        "observation": "SetRankBankRepairLimitToAll"
+      },
+      {
+        "startVA": "0x14069dfe0",
+        "bytes": 330,
+        "sha256": "a7401080c9549689639420d387f6be1b61bd152794d92ee4f034f676ebd4dea8",
+        "rawFileOffset": 6935520,
+        "observation": "Money userdata extraction helper"
+      },
+      {
+        "startVA": "0x140699920",
+        "bytes": 157,
+        "sha256": "6faa78d9aadb6c88be3161669bd08716029abc58099764b4b6e1b2dd6a45ce43",
+        "rawFileOffset": 6917408,
+        "observation": "GetBankTabSlots"
+      },
+      {
+        "startVA": "0x14075cfe0",
+        "bytes": 623,
+        "sha256": "327ea26627eb341ff95640babc7a6b39935e083b67c676f27bea5b059baf8332",
+        "rawFileOffset": 7717856,
+        "observation": "GuildLib.GetBankWithdrawLimits"
+      },
+      {
+        "startVA": "0x14057faa0",
+        "bytes": 116,
+        "sha256": "b2fc338006b2850beef20ff3ad471690d0a1b39df4aa0f6e9b4539447d940c6b",
+        "rawFileOffset": 5762720,
+        "observation": "Rank repair limit sender"
+      },
+      {
+        "startVA": "0x140695c20",
+        "bytes": 3247,
+        "sha256": "30096cd10df9cdde6f5382db6854ce5ac1b36999ec44f9844b3f814d78751422",
+        "rawFileOffset": 6901792,
+        "observation": "Guild object procedural Lua registration"
+      },
+      {
+        "startVA": "0x1405814b0",
+        "bytes": 363,
+        "sha256": "8419c1b5badfa640750cd67e9c8f45e7abd6611a1f64a96b2324ac6ff52974aa",
+        "rawFileOffset": 5769392,
+        "observation": "Initialize eight withdrawal selector values"
+      },
+      {
+        "startVA": "0x140581260",
+        "bytes": 237,
+        "sha256": "dd0b3559f42ea82eb7e6fc88c2470fbd994ef6dd0409d3e3cdef6e7b71bb3ada",
+        "rawFileOffset": 5768800,
+        "observation": "Initialize Guild subsystem cache container"
+      }
+    ],
+    "observedLogWriteWindowSeconds": 176.25,
+    "timingBoundary": "Sum of seven native log creation-to-last-write windows; excludes inspection/documentation"
+  },
+  "proceduralBindings": [
+    {
+      "name": "GetRanks",
+      "entry": "0x1406973d0"
+    },
+    {
+      "name": "BeginBankItemTransfer",
+      "entry": "0x1406990b0"
+    },
+    {
+      "name": "EndBankItemTransfer",
+      "entry": "0x140699230"
+    },
+    {
+      "name": "MoveBankItemToInventory",
+      "entry": "0x1406992d0"
+    },
+    {
+      "name": "OpenBankTab",
+      "entry": "0x1406993a0"
+    },
+    {
+      "name": "CloseBankTab",
+      "entry": "0x140699420"
+    },
+    {
+      "name": "GetBankTab",
+      "entry": "0x140699470"
+    },
+    {
+      "name": "RenameBankTab",
+      "entry": "0x1406999c0"
+    },
+    {
+      "name": "GetBankTabName",
+      "entry": "0x140699770"
+    },
+    {
+      "name": "GetBankTabCount",
+      "entry": "0x1406998a0"
+    },
+    {
+      "name": "GetBankTabSlots",
+      "entry": "0x140699920"
+    },
+    {
+      "name": "GetMoney",
+      "entry": "0x140698b80"
+    },
+    {
+      "name": "GetBankMoneyWithdrawnToday",
+      "entry": "0x140698c80"
+    },
+    {
+      "name": "GetBankMoneyRepairToday",
+      "entry": "0x140698d80"
+    },
+    {
+      "name": "GetBankMoneyRepairRemaining",
+      "entry": "0x140698e80"
+    },
+    {
+      "name": "GetBankTabItemWithdrawnToday",
+      "entry": "0x140698f50"
+    },
+    {
+      "name": "DepositMoney",
+      "entry": "0x14069a980"
+    },
+    {
+      "name": "WithdrawMoney",
+      "entry": "0x14069aa30"
+    },
+    {
+      "name": "SetBankTabPermissions",
+      "entry": "0x140699e60"
+    },
+    {
+      "name": "SetRankBankMoneyLimit",
+      "entry": "0x14069a780"
+    },
+    {
+      "name": "SetRankBankMoneyLimitToAll",
+      "entry": "0x14069a810"
+    },
+    {
+      "name": "SetRankBankRepairLimit",
+      "entry": "0x14069a880"
+    },
+    {
+      "name": "SetRankBankRepairLimitToAll",
+      "entry": "0x14069a910"
+    },
+    {
+      "name": "PurchasePerk",
+      "entry": "0x14069b520"
+    },
+    {
+      "name": "RequestBankLogs",
+      "entry": "0x14069c420"
+    }
+  ],
+  "withdrawSelectorBinding": [
+    {
+      "name": "GetBankWithdrawLimits",
+      "stringVA": "0x140b75998",
+      "bindings": [
+        {
+          "cell": "0x140b75ea0",
+          "target": "0x14075cfe0",
+          "bytes": 18,
+          "sha256": "36d5d6ff96ea764fcdc196e978d4b202d368486918435400b1eb1f8a977d802a",
+          "bindingBytes": "9859b74001000000e0cf754001000000",
+          "bindingSha256": "909d2569b19a45a5ada177fc64f4e1fabbdb705a6649f117c1748de175df018e"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "moneyOpcode": "04A8",
+    "positiveInputDeposit": "negated signed amount",
+    "positiveInputWithdrawal": "unchanged positive amount",
+    "guildOperationOpcode": "04B1",
+    "rankBankPermissionsOperation": 23,
+    "rankMoneyLimitOperation": 24,
+    "rankRepairLimitOperation": 30,
+    "toAllSentinel": "0x7fffffffffffffff",
+    "tabBits": {
+      "withdrawSelector": [
+        0,
+        1,
+        2
+      ],
+      "visible": 3,
+      "deposit": 4,
+      "authenticator": 5
+    },
+    "withdrawSelectorValues": [
+      "constant0",
+      "GameFormula757",
+      "GameFormula758",
+      "GameFormula759",
+      "GameFormula760",
+      "GameFormula761",
+      "GameFormula762",
+      "signed-1"
+    ],
+    "bankTabSlotSource": {
+      "formula": 644,
+      "nativeMissingRowFallback": 64,
+      "serverValuesQualified": false
+    }
+  },
+  "sourceObservations": [
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildBankMoneyTransactionHandler.cs",
+      "sha256": "0368943f148ffe3bc11c79264b372ee9a09886f61da735c4bc8a6bb93fb84c9e",
+      "gitBlob": "6bf0e1c9da62f3036f7f85e3546242ce6b6af1c9",
+      "changed": false
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildBankTransactionHandler.cs",
+      "sha256": "7ae7af620b3dceddf11e3b0d716009c35f01e32ee65a8690c95734ebff2d79c9",
+      "gitBlob": "a07ee02e65bd17952c33ae862540905a6011fec7",
+      "changed": false
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildBankTransaction2Handler.cs",
+      "sha256": "50ef1f2393bf2e5edc1e9e9e66acae9b0d8f1ba798aae201c18d659dd1a88aae",
+      "gitBlob": "b1592f0a4d7c930e103d537250c0ec89eb821262",
+      "changed": false
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildBankTabOpenHandler.cs",
+      "sha256": "9102aa49f25ec0279bf92bb2c856cae61299cc27c870ab44e4e164d8958ffb0b",
+      "gitBlob": "e17f6616b4140e37b40f38289046679e77045ef5",
+      "changed": false
+    },
+    {
+      "path": "Source/NexusForever.Network.World/Message/Model/Guild/ClientGuildBankMoneyTransaction.cs",
+      "sha256": "7f887c9c1b3837ec169795a7fe491119d804df34d9b4317babd17463731fd2e8",
+      "gitBlob": "a41d01bceebabe99c3c1c8527c2d73c2bea1cb02",
+      "changed": false
+    },
+    {
+      "path": "Source/NexusForever.Network.World/Message/Model/Guild/ClientGuildOperation.cs",
+      "sha256": "890c5ef99df0478ebe59538e7724bed615fbeea17cb10867b68b8f5f267dbf7d",
+      "gitBlob": "9369c5a9d4ff97b61ae151341092fcd1968f143b",
+      "changed": false
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/Model/GuildDataModel.cs",
+      "sha256": "3a2e2c20656dcbe520922d4c1b6170ba9ed3b48ec9841ca249941d54db1c46c6",
+      "gitBlob": "d3c481520122012dfed13b30cd29d9b2d9925255",
+      "changed": false
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/Model/GuildRankModel.cs",
+      "sha256": "083f3ace9003fd644b09a42e22a3e812d510e107f3186d29f82ee15124688345",
+      "gitBlob": "cfbb02e567574c9a6b18bdb8b6e1874ebad35723",
+      "changed": false
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/GuildRank.cs",
+      "sha256": "b7c652d3fbf931538de4fc00d9b0ffc586701a11e8d5555f2fadcd205b91dda0",
+      "gitBlob": "3016da1cdb632f76e91ea3c0738161f52e2144eb",
+      "changed": false
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/GuildMutationPersistence.cs",
+      "sha256": "50bc030332631818432f2a624f89c059b7849e9abfa696fff473c69ccb7960fe",
+      "gitBlob": "8ad875834e77e1e7a65086a0b33200089e326ecf",
+      "changed": false
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/GuildBaseOperation.cs",
+      "sha256": "d1d51af37351cb25fa1473a145ab225e22705a9686293cc7493d7d28f906fcea",
+      "gitBlob": "2a1ab19ee36ba999b9a83122e3b6adfaa37dfefd",
+      "changed": false
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Guild/GuildBankHandlerBoundaryTests.cs",
+      "sha256": "0242a382408306f6a3abe43f70ebf5a5bceae28b4f39f481d0ab9f339ad2d8db",
+      "gitBlob": "fdfbd061f5ed86b8629d1c44165a84dcf04a7e5a",
+      "changed": false
+    }
+  ],
+  "authoredCorroboration": {
+    "revision": "0827880c8a820b5cbb3f1dff3e3888c9ab9f0263",
+    "era": "API16 v1.7.3.15736; not build16042 equality",
+    "url": "https://github.com/Zod-/Wildstar-Carbine-Addons/blob/0827880c8a820b5cbb3f1dff3e3888c9ab9f0263/Live/GuildBank/GuildBank.lua",
+    "scope": "Dynamic limit getter and permission/money/repair submission only; stale UI constants are not server policy"
+  },
+  "artifacts": [
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-native/string-refs.log",
+      "sha256": "0bf898320a9218e9024c41fa4dc01845a921cfe96ee1d289c7b908f47bcf90b0"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-native/registration.log",
+      "sha256": "720a2dc8d24c4efeba56a487bae7e2609298537dec507719d058d67c2794c487"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-native/operations.log",
+      "sha256": "aad5d0f1ec52d4537716bcfbbd0bf3669c32ca6dc6b5f4a4c56a8c1d13296ea2"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-native/senders-limits.log",
+      "sha256": "bcd19de224827ac2647a386b60a82b30397def6045fc19beff5173a072121d76"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-native/selector-registration.log",
+      "sha256": "60abe4e55b536aaef8536b6e048d8dd1d0e3099ca1297b6123694f274d0bd6d4"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-native/selector-writers.log",
+      "sha256": "230272f2eb2d1c47ef65c0b231d33b62c89e80528092d9f9f320a508296830e2"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-native/selector-init.log",
+      "sha256": "dcb113678d72af79e3924d39b2ec4d23f29a62528930005d9e4bd9e02407887a"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-native/InspectGuildBank.java",
+      "sha256": "fb9c272cf31ddcbfa5511fc81df352335fb068d8fdb398def2bdc7aa1c5309a4"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-native/map_bindings.py",
+      "sha256": "0e9da9a9f5d506cbd464624378b0e4e6b3c6600e8ca6d2ef23d778b90ea1c9ac"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-native/extract.py",
+      "sha256": "987664eca9b60c61f9f55ef6614714b26cb1113566eaaa12fd0af5e0eac3bac8"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-native/verified-ranges.json",
+      "sha256": "48d3b05b55acc58186f0c67c50616178aeaf344501bc72f9428b46ffe33c64ce"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-native/upstream-refresh.json",
+      "sha256": "ad75bc89b919918d989658e2d498c7d951a1d5d8e868e4071a4c118c1f6c4147"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-native/timing.json",
+      "sha256": "a131baff30dfcc3912d3cb546c929a45f2573d76222c563fbb550fd41a88f117"
+    }
+  ],
+  "upstreamRefresh": {
+    "latestAllStatePulls": 20,
+    "changedHeadsBasesStatesOrMergeStates": [],
+    "pr608": "open",
+    "pr609": "closed-unmerged"
+  },
+  "verification": {
+    "productionSourceChanged": false,
+    "buildOrTestRerun": false,
+    "nativeRuntimeOrCua": false,
+    "labelsOrExportsChanged": false,
+    "configuredProviderOrActualTableQualified": false
+  },
+  "nextIntegratedOutcome": "Public rank bank permissions and money/repair limit operations through the original recoverable guild owner with confirmed readback",
+  "remaining": [
+    "Coherent bank balances/tabs/custody and Character/guild financial settlement",
+    "Actual GameFormula644/757-762 and perk row qualification",
+    "Authenticator authority and daily counter/reset ownership",
+    "Banker interaction, overflow/replay/concurrency and committed replies",
+    "Current provider/physical restart/socket/deployment/native/retail"
+  ],
+  "goal": "active",
+  "reviews": {
+    "path": "artifacts/continuation-20261105/guild-bank-native/reviews.md",
+    "sha256": "5220bc5ba98a19f4b80a77fcd842c1346bc370060ec240a9a2f230bc4fa94ef3"
+  }
+}

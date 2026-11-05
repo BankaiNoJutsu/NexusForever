@@ -1,13 +1,20 @@
 # Continue on another machine
 
+Latest bank evidence: [native request/limit contracts](Decomp/Analysis/GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md)
+maps04A8 signs,04B1 rank settings and signed-max “all,” six-bit tab permissions
+and eight selectors using formulas757-762.29 native spans match the pinned PE.
+This is mapped only; no money/item/tab-open flow or bank storage was enabled.
+Next integrate public rank bank settings with original-owner persistence and
+confirmed readback. Finance/custody/reset/provider/native/retail stay open.
+
 Latest LAS implementation: [confirmed public replies](Decomp/Analysis/ACTION_SET_PUBLICATION.md)
 bind the supported reply batch to the frozen Character spellbook and original
 World/account/session/epoch. Save rollback/uncertainty, later edits, no-op and
 fresh packet cursor retry pass16 focused/all252 affected cases;
 clean scoped builds and both final reviews pass. Broader AMP/combat mutation
-timing and native/provider/socket/retail gates remain. Continue the remaining
-guild-bank financial owner/recovery probe or independent progression/gameplay
-queue. No full suite/client/CUA ran and defaults are preserved.
+timing and native/provider/socket/retail gates remain. The later bank mapping
+above replaces that proposed financial probe with its actual prerequisite.
+No full suite/client/CUA ran and defaults are preserved.
 
 Latest Community implementation: [Service Token creation](Decomp/Analysis/COMMUNITY_TOKEN_CREATION.md)
 binds admitted durable Auth debit to the sealed full Character/guild/residence/

@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Guild bank native request/limit contracts](Decomp/Analysis/GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md)
+now map deposit/withdraw signs, rank settings and their “all” sentinel, packed
+tab permissions and formula757-762 withdrawal selectors.29 native spans match
+the pinned PE. No banking was enabled: money/item/tab-open handlers remain
+diagnostic and balances/custody are absent. Public persisted rank bank settings
+and committed readback are the next Source outcome. F-011 remains partial.
+
 [Confirmed public LAS replies](Decomp/Analysis/ACTION_SET_PUBLICATION.md) now
 wait for the original frozen Character spellbook acknowledgement. Save rollback,
 lost acknowledgement, later edits, no-op requests, packet retry and replacement

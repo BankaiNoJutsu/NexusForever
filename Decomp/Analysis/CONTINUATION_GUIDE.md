@@ -1,5 +1,13 @@
 # Client Binary Decompile Continuation Guide
 
+[Guild bank native contracts](GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md) provide
+the exact signed money sender, rank setting operations/sentinel, packed tab
+permissions and formula757-762 selector join.29 spans were freshly matched to
+the retained PE using read-only standalone analysis and reused REA provenance.
+No Source bank flow was enabled. Implement public rank bank settings with the
+original save/confirmed readback owner next; finance/custody/reset/provider and
+native runtime remain open. Do not fault-inject a transaction into log-only stubs.
+
 [Public LAS committed replies](ACTION_SET_PUBLICATION.md) complete the executed
 save/retry/actor probe through the original frozen Character/World owner.
 Sixteen focused/all252 affected cases, clean owning/test-only
