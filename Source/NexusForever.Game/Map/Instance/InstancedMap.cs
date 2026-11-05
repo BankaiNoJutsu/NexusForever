@@ -154,8 +154,14 @@ namespace NexusForever.Game.Map.Instance
                         && pending.Player.Map == (IBaseMap)instance
                         && !pending.ExplictRemove)
                     {
-                        pending.Player.RemoveFromMap();
-                        pending.ExplictRemove = true;
+                        PlayerMapAdmissionGuard.Run(pending.Player, pending.AdmissionGeneration, () =>
+                        {
+                            if (pending.Player is Player player)
+                                player.RemoveFromMapForTransfer(pending.MapPosition);
+                            else
+                                pending.Player.RemoveFromMap();
+                            pending.ExplictRemove = true;
+                        });
                     }
 
                     // wait for instance to completely unload before recreating and adding

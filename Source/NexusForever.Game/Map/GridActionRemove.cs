@@ -6,5 +6,6 @@ namespace NexusForever.Game.Map
     public class GridActionRemove : IGridActionRemove
     {
         public IGridEntity Entity { get; init; }
+        internal ulong? AdmissionGeneration { get; init; }
     }
 }

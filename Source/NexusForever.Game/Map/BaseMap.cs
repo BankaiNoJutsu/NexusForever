@@ -232,11 +232,10 @@ namespace NexusForever.Game.Map
                         break;
                     }
                     case GridActionRemove actionRemove:
-                        // A duplicate or stale queued callback must not recycle another entity's GUID.
-                        if (ReferenceEquals(actionRemove.Entity.Map, this)
-                            && entities.TryGetValue(actionRemove.Entity.Guid, out IGridEntity registered)
-                            && ReferenceEquals(registered, actionRemove.Entity))
-                            RemoveEntity(actionRemove.Entity);
+                        if (actionRemove.AdmissionGeneration is ulong generation)
+                            PlayerMapAdmissionGuard.Run(actionRemove.Entity, generation, () => CompleteMapRemoval(actionRemove));
+                        else
+                            CompleteMapRemoval(actionRemove);
                         break;
                 }
             }
@@ -245,6 +244,19 @@ namespace NexusForever.Game.Map
             if (newActions != null)
                 foreach (IGridAction action in newActions)
                     pendingActions.Enqueue(action);
+        }
+
+        private void CompleteMapRemoval(GridActionRemove action)
+        {
+            // A duplicate or stale queued callback must not recycle another entity's GUID.
+            if (!ReferenceEquals(action.Entity.Map, this)
+                || !entities.TryGetValue(action.Entity.Guid, out IGridEntity registered)
+                || !ReferenceEquals(registered, action.Entity))
+                return;
+
+            if (action.AdmissionGeneration.HasValue && action.Entity is Player player)
+                player.BeginMatchTransferSourceRemoval();
+            RemoveEntity(action.Entity);
         }
 
         private static void FailPlayerGridAdmission(GridActionAdd action)
@@ -295,7 +307,10 @@ namespace NexusForever.Game.Map
             if (entity.Map != null)
             {
                 // entity is on an existing map, will need to be removed before add
-                entity.RemoveFromMap();
+                if (entity is Player player)
+                    player.RemoveFromMapForTransfer(position);
+                else
+                    entity.RemoveFromMap();
 
                 pendingActions.Enqueue(new GridActionPending
                 {
@@ -353,13 +368,17 @@ namespace NexusForever.Game.Map
         /// <summary>
         /// Enqueue <see cref="IGridEntity"/> to be removed from <see cref="IBaseMap"/>.
         /// </summary>
-        public void EnqueueRemove(IGridEntity entity)
+        public void EnqueueRemove(IGridEntity entity) => EnqueueRemove(entity, null);
+
+        internal void EnqueueAdmissionRemoval(IPlayer player, ulong generation) => EnqueueRemove(player, generation);
+
+        private void EnqueueRemove(IGridEntity entity, ulong? generation)
         {
             entity.OnEnqueueRemoveFromMap();
             lock (relocationLock)
             {
                 pendingRelocations.Remove(entity);
-                pendingActions.Enqueue(new GridActionRemove { Entity = entity });
+                pendingActions.Enqueue(new GridActionRemove { Entity = entity, AdmissionGeneration = generation });
             }
         }
 

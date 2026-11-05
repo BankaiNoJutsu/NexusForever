@@ -1907,7 +1907,8 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        private void TeleportToCore(IMapPosition mapPosition, TeleportReason reason, PendingTaxiFlight taxiFlight = null, Vector3? arrivalRotation = null)
+        private void TeleportToCore(IMapPosition mapPosition, TeleportReason reason, PendingTaxiFlight taxiFlight = null,
+            Vector3? arrivalRotation = null, PendingMatchTransfer matchTransfer = null, uint? carriedVanityPetId = null)
         {
             if (!CanTeleport())
             {
@@ -1922,19 +1923,20 @@ namespace NexusForever.Game.Entity
             }
 
             // store vanity pet summoned before teleport so it can be summoned again after being added to the new map
-            uint? vanityPetId = null;
+            uint? vanityPetId = carriedVanityPetId;
             if (VanityPetGuid != null)
             {
                 IPetEntity pet = GetVisible<IPetEntity>(VanityPetGuid.Value);
-                vanityPetId = pet?.CreatureId;
+                vanityPetId = pet?.CreatureId ?? vanityPetId;
             }
 
             pendingTeleport = new PendingTeleport
             {
-                Reason      = reason,
-                MapPosition = mapPosition,
-                VanityPetId = vanityPetId,
-                TaxiFlight  = taxiFlight
+                Reason        = reason,
+                MapPosition   = mapPosition,
+                VanityPetId   = vanityPetId,
+                TaxiFlight    = taxiFlight,
+                MatchTransfer = matchTransfer
             };
 
             if (arrivalRotation.HasValue) Rotation = arrivalRotation.Value;

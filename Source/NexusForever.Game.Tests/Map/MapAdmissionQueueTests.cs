@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
@@ -8,23 +9,32 @@ using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Map.Search;
+using NexusForever.Game.Abstract.Matching;
+using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.RBAC;
 using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Map;
 using NexusForever.Game.Map.Instance;
+using NexusForever.Game.Matching;
+using NexusForever.Game.Matching.Match;
 using NexusForever.Game.Static.Map;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.Game.Tests.Transport;
+using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.IO.Map;
+using NexusForever.Network.Internal;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Pregame;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Script.Template.Collection;
+using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
 using NexusForever.WorldServer.Network;
+using Role = NexusForever.Game.Static.Matching.Role;
 
 namespace NexusForever.Game.Tests.Map;
 
@@ -32,6 +42,106 @@ public interface IAdmissionTestPlayer : IPlayer, IPlayerMapAdmission { }
 
 public sealed class MapAdmissionQueueTests
 {
+    [Theory]
+    [InlineData("before routing")]
+    [InlineData("before source removal")]
+    [InlineData("after source removal")]
+    [InlineData("no departure")]
+    [InlineData("unrelated teleport")]
+    public void MatchDepartureCancelsOnlyItsOwnTransfer(string timing)
+    {
+        WorldEntry sourceWorld = new() { Id = 51 };
+        WorldEntry matchWorld = new() { Id = 77, Type = MapType.Pvp };
+        var source = new TestMap();
+        source.Initialise(sourceWorld);
+        var destination = new TestMap();
+        var mapFactory = RecordingDispatchProxy<IMapFactory>.Create(out var factory);
+        factory.SetMethodHandler(nameof(IMapFactory.CreateMap), args => Equals(args[0], matchWorld.Type) ? destination : source);
+        var maps = new MapManager(mapFactory);
+
+        var player = (Player)RuntimeHelpers.GetUninitializedObject(typeof(Player));
+        var session = RecordingDispatchProxy<IGameSession>.Create(out var connection);
+        typeof(Player).GetProperty(nameof(Player.Session))!.SetValue(player, session);
+        typeof(Player).GetProperty(nameof(Player.Identity))!.SetValue(player, new Identity { RealmId = 1, Id = 42 });
+        var movement = RecordingDispatchProxy<IMovementManager>.Create(out var facing);
+        facing.SetMethodReturn(nameof(IMovementManager.GetRotation), Vector3.UnitX);
+        typeof(WorldEntity).GetProperty(nameof(WorldEntity.MovementManager))!.SetValue(player, movement);
+        var tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tableProxy);
+        tableProxy.SetProperty(nameof(IGameTableManager.World), PlayerBindPointTests.Table(sourceWorld, matchWorld));
+        PlayerBindPointTests.Field(typeof(Player), player, "mapManager", maps);
+        PlayerBindPointTests.Field(typeof(Player), player, "gameTableManager", tables);
+        source.Attach(player, new Vector3(10, 20, 30));
+
+        var players = RecordingDispatchProxy<IPlayerManager>.Create(out var registry);
+        registry.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+        var data = RecordingDispatchProxy<IMatchingDataManager>.Create(out var entrances);
+        entrances.SetMethodReturn(nameof(IMatchingDataManager.GetMapEntrance), new MapEntrance
+        {
+            MapId = (ushort)matchWorld.Id, Team = 0, Position = Vector3.One, Rotation = Vector3.UnitY
+        });
+        var memberFactory = RecordingDispatchProxy<IFactory<IMatchTeamMember>>.Create(out var members);
+        members.SetMethodReturn(nameof(IFactory<IMatchTeamMember>.Resolve), new MatchTeamMember(players));
+        var publisher = RecordingDispatchProxy<IInternalMessagePublisher>.Create(out var messages);
+        messages.SetMethodReturn(nameof(IInternalMessagePublisher.PublishAsync), Task.CompletedTask);
+        var match = RecordingDispatchProxy<IMatch>.Create(out var matchProxy);
+        matchProxy.SetProperty(nameof(IMatch.MatchingMap), new MatchingMap
+        {
+            GameMapEntry = new MatchingGameMapEntry { WorldId = matchWorld.Id },
+            GameTypeEntry = new MatchingGameTypeEntry()
+        });
+        var team = new MatchTeam(data, memberFactory, publisher);
+        team.Initialise(match, Static.Matching.MatchTeam.Red);
+        matchProxy.SetMethodReturn(nameof(IMatch.GetTeams), new[] { team });
+
+        if (timing == "unrelated teleport")
+            player.TeleportTo(matchWorld, Vector3.One);
+        team.MatchJoin(player.Identity, Role.DPS);
+        var admission = (IPlayerMapAdmission)player;
+        ulong originalGeneration = admission.MapAdmissionGeneration;
+        if (timing is "before source removal" or "after source removal")
+            maps.Update(0);
+        if (timing == "after source removal")
+        {
+            source.Tick();
+            Assert.Null(player.Map);
+        }
+
+        if (timing != "no departure")
+            team.MatchLeave(player.Identity);
+        maps.Update(0);
+        source.Tick();
+        maps.Update(0);
+        maps.Update(0);
+
+        if (timing is "no departure" or "unrelated teleport")
+        {
+            Assert.Same(player, Assert.Single(destination.Added));
+            Assert.True(admission.IsMapAdmissionCurrent(originalGeneration));
+        }
+        else
+        {
+            Assert.Empty(destination.Added);
+            Assert.False(admission.IsMapAdmissionCurrent(originalGeneration));
+            Assert.DoesNotContain(connection.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)),
+                call => call.Arguments[0] is ServerForceKick);
+            if (timing == "after source removal")
+            {
+                Assert.Same(player, Assert.Single(source.Added));
+                Assert.Equal(new Vector3(10, 20, 30), source.LastAddedPosition);
+            }
+            else
+            {
+                Assert.Same(source, player.Map);
+                Assert.Empty(source.Added);
+                Assert.True(player.CanTeleport());
+                Assert.False(player.IsLoading);
+                Assert.Equal(player.Guid, player.ControlGuid);
+            }
+            Assert.Contains(facing.GetInvocations(nameof(IMovementManager.SetRotation)),
+                call => Equals(call.Arguments[0], Vector3.UnitX));
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -452,11 +562,28 @@ public sealed class MapAdmissionQueueTests
     private sealed class TestMap : BaseMap
     {
         public List<IGridEntity> Added { get; } = [];
+        public Vector3 LastAddedPosition { get; private set; }
         public int SpawnCount { get; private set; }
         public Action OnSpawn { get; init; }
         public Action OnAdded { get; init; }
         public int QueueCount => pendingActions.Count;
         public TestMap() : base(null, null, sharedConfiguration: Configuration()) { }
+        public override void Initialise(WorldEntry entry) =>
+            typeof(BaseMap).GetProperty(nameof(Entry))!.SetValue(this, entry);
+        public override GenericError? CanEnter(IPlayer player, IMapPosition position) => null;
+        public override void Update(double lastTick) => Tick();
+        public void Attach(Player player, Vector3 position)
+        {
+            typeof(GridEntity).GetProperty(nameof(GridEntity.Map))!.SetValue(player, this);
+            typeof(GridEntity).GetProperty(nameof(GridEntity.Guid))!.SetValue(player, 1u);
+            typeof(GridEntity).GetProperty(nameof(GridEntity.Position))!.SetValue(player, position);
+            entities.Add(player.Guid, player);
+        }
+        protected override void RemoveEntity(IGridEntity entity)
+        {
+            entities.Remove(entity.Guid);
+            typeof(GridEntity).GetProperty(nameof(GridEntity.Map))!.SetValue(entity, null);
+        }
         public void Tick() => typeof(BaseMap).GetMethod("ProcessGridActions", BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(this, null);
         public void HoldGridUnloading(Vector3 position)
         {
@@ -470,6 +597,7 @@ public sealed class MapAdmissionQueueTests
         protected override void AddEntity(IGridEntity entity, Vector3 vector)
         {
             Added.Add(entity);
+            LastAddedPosition = vector;
             OnAdded?.Invoke();
         }
     }

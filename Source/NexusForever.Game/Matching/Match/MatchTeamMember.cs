@@ -4,6 +4,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Matching;
 using NexusForever.Game.Abstract.Matching.Match;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Map;
 using NexusForever.Game.Static.Matching;
 using NexusForever.Network.Message;
@@ -101,8 +102,20 @@ namespace NexusForever.Game.Matching.Match
             if (player == null)
                 return;
 
+            if (player is Player actor)
+            {
+                actor.TeleportToMatch(this, mapEntrance);
+                return;
+            }
+
             player.Rotation = mapEntrance.Rotation;
             player.TeleportTo(mapEntrance.MapId, mapEntrance.Position.X, mapEntrance.Position.Y, mapEntrance.Position.Z);
+        }
+
+        internal void CancelPendingTransfer()
+        {
+            if (playerManager.GetPlayer(Identity) is Player player)
+                player.CancelMatchTransfer(this);
         }
 
         /// <summary>

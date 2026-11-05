@@ -21598,7 +21598,19 @@ and premature removal of another pending member. The owning build passed
 without warnings or errors in 32 seconds. All 184 scoped matching, instance
 and public-event cases passed in 12 seconds. Local evidence is under
 `artifacts/continuation-20261105/match-admission-cleanup/`.
-Queued teleport cancellation, deployment and native gameplay remain open.
+
+A subsequent source change cancels travel owned by the departing member
+before match map admission. The stale destination and queued source removal
+are invalidated together. A player already detached from the source is
+routed back to the saved position and instance lock. Other queued travel
+retains its original admission generation. With the cancellation hook
+omitted, all three departure cases reached the match destination. The two
+controls passed. The final owning build had zero warnings and errors, and
+all 350 scoped matching, map, instance, public-event, and transport tests
+passed. Evidence is under
+`artifacts/continuation-20261105/match-teleport-admission/`.
+Departure after destination attachment while client acknowledgement is
+pending remains open, along with deployment and native gameplay verification.
 
 ### F-011 - Guild / Recruitment / War Party - PARTIAL (blocked)
 Guild handlers and recruitment output models exist. `ServerGuildBankTabInventory`

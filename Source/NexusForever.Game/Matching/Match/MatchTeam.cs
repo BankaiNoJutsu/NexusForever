@@ -139,6 +139,9 @@ namespace NexusForever.Game.Matching.Match
             IMatchTeamMember matchTeamMember = GetMember(identity);
             if (matchTeamMember != null)
             {
+                if (matchTeamMember is MatchTeamMember member)
+                    member.CancelPendingTransfer();
+
                 matchTeamMember.Send(new ServerMatchingMatchLeft());
 
                 messagePublisher.PublishAsync(new MatchMemberLeftMessage
