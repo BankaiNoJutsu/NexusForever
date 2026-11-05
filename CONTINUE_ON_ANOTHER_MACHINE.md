@@ -1,8 +1,12 @@
 # Continue on another machine
 
-Latest provider evidence: [44-case MySQL listing concurrency qualification](Decomp/Analysis/MARKETPLACE_CONDITIONAL_LISTING_WRITES.md#actual-mysql-qualification---3-november-2026)
-and its portable coverage report bind unchanged Source/DLLs. Owned workloads are stopped;
-broader financial, physical-failure and retail gates remain open.
+Latest provider evidence: [crafting account settlement](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#crafting-account-settlement)
+passes 29 configured MySQL cases after fixing whole-transaction retry ownership;
+its portable report binds the retained failures, passing candidate and stopped
+owned workloads. Autonomous paid-outbox delivery is next. Physical-failure,
+actual-table, socket/native and retail gates remain open. The earlier
+[listing concurrency qualification](Decomp/Analysis/MARKETPLACE_CONDITIONAL_LISTING_WRITES.md#actual-mysql-qualification---3-november-2026)
+retains its own unchanged Source/DLL bindings. Use scoped validation only.
 
 [Committed tradeskill publication](Decomp/Analysis/TRADESKILL_PUBLICATION.md) passes 15 new/238 scoped
 and 15 MySQL cases with a clean owning-project build and both Source reviews.

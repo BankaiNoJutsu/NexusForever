@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Cryptography;
 using NexusForever.Database;
@@ -51,6 +52,34 @@ namespace NexusForever.Game.Tests.Crafting;
 
 public sealed class CraftingSettlementTests
 {
+    private readonly DbContextOptions<CharacterContext> providerCharacters;
+    private readonly DatabaseConnectionString providerAuth;
+    private readonly DatabaseConnectionString providerForeignAuth;
+    private bool retryingSqlite;
+    public CraftingSettlementTests() { }
+    internal CraftingSettlementTests(DbContextOptions<CharacterContext> characters, DatabaseConnectionString auth,
+        DatabaseConnectionString foreignAuth = null)
+    { providerCharacters = characters; providerAuth = auth; providerForeignAuth = foreignAuth; }
+
+    [Theory]
+    [InlineData("commit")]
+    [InlineData("rollback")]
+    [InlineData("ack-lost")]
+    public async Task RetryingDatabasesKeepCraftingDeliveryAndAdmissionTransactionsInsideTheirStrategies(string outcome)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"nf-crafting-retries-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var options = new DbContextOptionsBuilder<CharacterContext>()
+                .UseSqlite($"Data Source={Path.Combine(directory, "character.sqlite")};Pooling=False")
+                .ReplaceService<IExecutionStrategyFactory, RetryFactory>().Options;
+            await new CraftingSettlementTests(options, null) { retryingSqlite = true }
+                .CraftingPublishesItsFrozenInventoryAndResultAfterTheCharacterSave("simple", "account", outcome);
+        }
+        finally { Directory.Delete(directory, true); }
+    }
+
     [Theory]
     [InlineData("simple", "direct", "commit")]
     [InlineData("simple", "direct", "rollback")]
@@ -102,13 +131,13 @@ public sealed class CraftingSettlementTests
     [InlineData("simple", "account-cosmic", "loyalty-cap")]
     public async Task CraftingPublishesItsFrozenInventoryAndResultAfterTheCharacterSave(string request, string output, string outcome)
     {
-        using var f = new Fixture(null, output == "virtual" ? new QuestObjectiveEntry
+        using var f = new Fixture(providerCharacters, output == "virtual" ? new QuestObjectiveEntry
             { Id = 90010, Type = (uint)QuestObjectiveType.VirtualCollect, Data = 265, Count = 5 } : null);
         f.Seed();
         var database = new HeldDatabase(f, outcome);
         using (var seed = f.Context())
         {
-            database.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite,
+            database.Initialise(new DatabaseConnectionString { Provider = seed.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
                 ConnectionString = seed.Database.GetDbConnection().ConnectionString });
             seed.Character.Single().AccountId = 12;
             if (output == "satchel")
@@ -163,8 +192,9 @@ public sealed class CraftingSettlementTests
         if (accountOutput)
         {
             using var source = f.Context();
-            auth = outcome is "auth-rollback" or "auth-lost" or "late-loot-retry" ? new AwardDatabase(authFault) : new AuthDatabase();
-            authConnection = new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite,
+            bool faultAuth = outcome is "auth-rollback" or "auth-lost" or "late-loot-retry";
+            auth = faultAuth || retryingSqlite ? new AwardDatabase(faultAuth ? authFault : null, retryingSqlite) : new AuthDatabase();
+            authConnection = providerAuth ?? new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite,
                 ConnectionString = $"Data Source={Path.Combine(Path.GetDirectoryName(source.Database.GetDbConnection().DataSource)!, "crafting-auth.sqlite")};Pooling=False" };
             auth.Initialise(authConnection);
             foreignAuthPath = Path.Combine(Path.GetDirectoryName(source.Database.GetDbConnection().DataSource)!, "crafting-foreign.sqlite");
@@ -243,8 +273,22 @@ public sealed class CraftingSettlementTests
             using var replacement = auth.CreateContext();
             replacement.AccountWorldSession.Where(row => row.AccountId == 12).ExecuteUpdate(set => set.SetProperty(row => row.Epoch, 2ul));
         };
-        if (outcome == "auth-route-replacement") database.Committed = () => auth.Initialise(new DatabaseConnectionString
-            { Provider = DatabaseProvider.Sqlite, ConnectionString = $"Data Source={foreignAuthPath};Pooling=False" });
+        if (outcome == "auth-route-replacement") database.Committed = () =>
+        {
+            if (providerForeignAuth != null)
+            {
+                // A fully valid destination carrying the original reservation
+                // must still receive no award when its database route changes.
+                var foreign = new AuthDatabase(); foreign.Initialise(providerForeignAuth);
+                using var original = auth.CreateContext(); using var copied = foreign.CreateContext();
+                copied.Account.Add(original.Account.AsNoTracking().Single());
+                copied.AccountWorldSession.Add(original.AccountWorldSession.AsNoTracking().Single());
+                copied.AccountCraftingReceipt.Add(original.AccountCraftingReceipt.AsNoTracking().Single());
+                copied.SaveChanges(); auth.Initialise(providerForeignAuth);
+            }
+            else auth.Initialise(new DatabaseConnectionString
+                { Provider = DatabaseProvider.Sqlite, ConnectionString = $"Data Source={foreignAuthPath};Pooling=False" });
+        };
         try
         {
             switch (request)
@@ -346,7 +390,13 @@ public sealed class CraftingSettlementTests
         await actor.Drain(allowErrors: outcome is "rollback" or "lost" or "auth-rollback" or "ack-rollback" or "admission-before-character");
         if (outcome == "auth-route-replacement")
         {
-            Assert.False(File.Exists(foreignAuthPath));
+            if (providerForeignAuth == null) Assert.False(File.Exists(foreignAuthPath));
+            else
+            {
+                using var foreign = auth.CreateContext();
+                Assert.Empty(foreign.AccountInventory); Assert.Empty(foreign.AccountCurrency);
+                var copied = foreign.AccountCraftingReceipt.Single(); Assert.False(copied.Delivered); Assert.False(copied.Completed);
+            }
             auth.Initialise(authConnection);
         }
         using var stored = f.Context();
@@ -549,12 +599,25 @@ public sealed class CraftingSettlementTests
             Committed?.Invoke();
         }
     }
-    private sealed class AwardDatabase(AwardFault fault) : AuthDatabase
+    private sealed class RetryFactory(ExecutionStrategyDependencies dependencies) : IExecutionStrategyFactory
+    {
+        public IExecutionStrategy Create() => new Retry(dependencies);
+    }
+    private sealed class Retry(ExecutionStrategyDependencies dependencies) : ExecutionStrategy(dependencies, 2, TimeSpan.Zero)
+    {
+        protected override bool ShouldRetryOn(Exception error) => error is TimeoutException;
+    }
+    private sealed class AwardDatabase(AwardFault fault, bool retrying = false) : AuthDatabase
     {
         public override AuthContext CreateContext()
         {
             using var configured = base.CreateContext();
-            return new(new DbContextOptionsBuilder<AuthContext>().UseSqlite(configured.Database.GetDbConnection().ConnectionString).AddInterceptors(fault).Options);
+            var options = new DbContextOptionsBuilder<AuthContext>();
+            options.UseConfiguration(new DatabaseConnectionString { Provider = configured.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
+                ConnectionString = configured.Database.GetDbConnection().ConnectionString });
+            if (retrying) options.ReplaceService<IExecutionStrategyFactory, RetryFactory>();
+            if (fault != null) options.AddInterceptors(fault);
+            return new(options.Options);
         }
     }
     private sealed class AwardFault(bool after, bool character = false, bool allocator = false) : DbTransactionInterceptor

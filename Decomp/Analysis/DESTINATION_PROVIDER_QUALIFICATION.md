@@ -216,6 +216,48 @@ Physical connection failures, deployed restart and sockets, native presentation,
 actual tables and retail economic qualification remain open. No full solution
 build or full test suite was run under the user's scoped-only policy.
 
+### Crafting account settlement
+
+5 November 2026. All 29 account crafting cases passed on separate disposable
+MySQL 8.4.13 Auth and Character schemas. Each applied 42 Auth and 49 Character
+migrations and used the configured `MySqlRetryingExecutionStrategy`. The
+wrong-route control also used a fully migrated foreign Auth schema carrying
+the original reservation; it received no awards. The TLS control connection
+reported `REPEATABLE-READ`; explicit settlement transactions use `Serializable`.
+
+The first provider replay exposed a production defect: explicit delivery,
+acknowledgement, reservation and admission transactions ran outside the configured
+retry strategy. Fourteen completed cases failed before that known-failing replay
+was stopped and its interrupted schema pair cleaned. Each whole transaction now
+runs inside its owning database strategy with a fresh guarded context per attempt.
+Auth and Character remain separate durable stages. Admission pins the Auth route
+and publishes only the snapshot from a successfully committed read transaction.
+
+The public recipe and Realm-handler cases cover ordinary and Cosmic/Loyalty
+awards, item-only/wallet-only output, Character rollback/deletion, injected Auth
+and acknowledgement failures, both admission-fence orders, route/session
+replacement, later accepted rewards, consumed items and capacity limits. These
+use projected recipe/item tables. They qualify this configured provider path,
+not actual-table crafting, physical failures or retail semantics.
+
+The owning WorldServer build passed with no warnings/errors in 43 seconds. The 48
+affected SQLite controls passed in 47 seconds; three new retry-enabled controls
+failed against the isolated pre-fix Game DLL and passed with the fix in 9 seconds
+each. The final 29 SQL cases took 637 seconds after the owned server's 163-second
+startup. All 59 final schema drops succeeded, both owned schema prefixes were
+empty, and the server, listener and both runner/helper generations stopped after
+graceful shutdown. Independent spec review found no defects; standards review
+had no required changes. The
+[portable result](coverage/crafting-account-mysql-20261105.json) binds the
+negative and passing results, actual compiled candidates, review and shutdown.
+Local evidence is under `artifacts/continuation-20261105/crafting-accounts-mysql/`.
+
+Autonomous paid-outbox delivery without a live completion or Realm admission,
+physical connection/process failure, backup/route/catalog migration, durable
+shared virtual-effect replay, actual tables, sockets and native/retail remain
+open. Entitlement policy is unchanged. No full solution build or full test suite
+was run under the user's scoped-only policy; native client/CUA remain stopped.
+
 ### Vendor repair settlement
 
 5 November 2026. All seven compiled repair cases passed on separate disposable

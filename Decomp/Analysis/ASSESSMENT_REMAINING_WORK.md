@@ -579,10 +579,15 @@ snapshots and SQLite upgrades are covered;138 affected and72 account-claim/
 Fortune controls pass, followed by83 focused context-review checks and the final29
 account cases after capacity review. The
 [portable summary](coverage/crafting-account-settlement-20261105.json) binds the
-final candidate and retained checks. These are source/SQLite outcomes, not
-configured-provider or retail closure.
-Continue configured MySQL qualification and autonomous paid-outbox processing
-without re-admission, then physical process/connection failure and backup/route/
+final candidate and retained checks. Those are source/SQLite outcomes. The later
+[configured account crafting gate](DESTINATION_PROVIDER_QUALIFICATION.md#crafting-account-settlement)
+passes 29 MySQL cases after fixing whole-transaction retry ownership, with 48
+affected SQLite controls and three retry-enabled regressions that fail against
+the pre-fix Game DLL. The 59 final schema drops and owned graceful shutdown are
+verified; the portable gate retains the failed provider replay and final bindings.
+This is configured-provider qualification, not retail closure.
+Continue autonomous paid-outbox processing without re-admission, then physical
+process/connection failure and backup/route/
 catalog migration. Shared virtual-effect replay, material/modifier validation,
 actual-table, crafting socket and native/retail qualification remain open. Keep
 the original rollback negative as superseded evidence rather than an open Source

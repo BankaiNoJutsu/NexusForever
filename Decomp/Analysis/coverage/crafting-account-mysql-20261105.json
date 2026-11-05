@@ -1,0 +1,736 @@
+{
+  "version": 1,
+  "feature": "Crafting account settlement on configured MySQL",
+  "verified_utc": "2026-11-05T09:58:47.443621+00:00",
+  "base_head": "f8470bb1f5c48b8c5528350ff1c9894bcf76fa23",
+  "behavior": [
+    "Each explicit delivery/read/acknowledgement/reservation/admission transaction executes within its own database retry strategy using fresh guarded contexts per attempt",
+    "Auth and Character remain separate durable settlement stages",
+    "Admission pins one Auth route and publishes the copied account snapshot only after successful transaction completion"
+  ],
+  "qualification": {
+    "source_sqlite": "48 affected existing cases and3 new retry-enabled regressions passed",
+    "configured_mysql": "29 cases passed on MySQL8.4.13 with configured MySqlRetryingExecutionStrategy and separate migrated disposable Auth and Character schemas",
+    "transaction_isolation": "Explicit settlement reads/acknowledgement/fence use Serializable; TLS control connection observed REPEATABLE-READ",
+    "fault_boundary": "Injected transaction rejection and commit acknowledgement loss; not physical connection/process failure",
+    "full_solution_or_full_suite": "Not run; user-directed scoped checks only",
+    "native_client_and_computer_use": "Remain stopped",
+    "retail": "Not qualified",
+    "entitlement_defaults": "15:1 and17:1 preserved; no introduced44 or seven baseline Character grants"
+  },
+  "configured_cases": [
+    {
+      "case": "simple,account,commit",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_01_a",
+        "nf_craft_acct_be3291151103_01_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_01_c": 49,
+        "nf_craft_acct_be3291151103_01_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_01_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_01_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account,rollback",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_02_a",
+        "nf_craft_acct_be3291151103_02_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_02_c": 49,
+        "nf_craft_acct_be3291151103_02_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_02_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_02_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account,lost",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_03_a",
+        "nf_craft_acct_be3291151103_03_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_03_c": 49,
+        "nf_craft_acct_be3291151103_03_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_03_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_03_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account,replacement",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_04_a",
+        "nf_craft_acct_be3291151103_04_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_04_c": 49,
+        "nf_craft_acct_be3291151103_04_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_04_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_04_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account,auth-rollback",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_05_a",
+        "nf_craft_acct_be3291151103_05_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_05_c": 49,
+        "nf_craft_acct_be3291151103_05_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_05_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_05_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account,auth-lost",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_06_a",
+        "nf_craft_acct_be3291151103_06_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_06_c": 49,
+        "nf_craft_acct_be3291151103_06_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_06_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_06_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account,ack-rollback",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_07_a",
+        "nf_craft_acct_be3291151103_07_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_07_c": 49,
+        "nf_craft_acct_be3291151103_07_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_07_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_07_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account,ack-lost",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_08_a",
+        "nf_craft_acct_be3291151103_08_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_08_c": 49,
+        "nf_craft_acct_be3291151103_08_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_08_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_08_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account,late-account-items",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_09_a",
+        "nf_craft_acct_be3291151103_09_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_09_c": 49,
+        "nf_craft_acct_be3291151103_09_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_09_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_09_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account,late-loot-retry",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_10_a",
+        "nf_craft_acct_be3291151103_10_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_10_c": 49,
+        "nf_craft_acct_be3291151103_10_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_10_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_10_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account,late-wallet",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_11_a",
+        "nf_craft_acct_be3291151103_11_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_11_c": 49,
+        "nf_craft_acct_be3291151103_11_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_11_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_11_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account,admission-replacement",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_12_a",
+        "nf_craft_acct_be3291151103_12_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_12_c": 49,
+        "nf_craft_acct_be3291151103_12_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_12_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_12_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account,admission-before-character",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_13_a",
+        "nf_craft_acct_be3291151103_13_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_13_c": 49,
+        "nf_craft_acct_be3291151103_13_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_13_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_13_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account,auth-route-replacement",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_14_a",
+        "nf_craft_acct_be3291151103_14_c",
+        "nf_craft_acct_be3291151103_14_f"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_14_c": 49,
+        "nf_craft_acct_be3291151103_14_a": 42,
+        "nf_craft_acct_be3291151103_14_f": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_14_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_14_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_14_f": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account,wallet-cap",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_15_a",
+        "nf_craft_acct_be3291151103_15_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_15_c": 49,
+        "nf_craft_acct_be3291151103_15_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_15_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_15_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account,pending-spend",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_16_a",
+        "nf_craft_acct_be3291151103_16_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_16_c": 49,
+        "nf_craft_acct_be3291151103_16_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_16_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_16_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account-deleted,lost",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_17_a",
+        "nf_craft_acct_be3291151103_17_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_17_c": 49,
+        "nf_craft_acct_be3291151103_17_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_17_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_17_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account-realm,lost",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_18_a",
+        "nf_craft_acct_be3291151103_18_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_18_c": 49,
+        "nf_craft_acct_be3291151103_18_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_18_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_18_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account-consumed,ack-rollback",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_19_a",
+        "nf_craft_acct_be3291151103_19_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_19_c": 49,
+        "nf_craft_acct_be3291151103_19_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_19_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_19_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "complex,account,commit",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_20_a",
+        "nf_craft_acct_be3291151103_20_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_20_c": 49,
+        "nf_craft_acct_be3291151103_20_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_20_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_20_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "manual,account,commit",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_21_a",
+        "nf_craft_acct_be3291151103_21_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_21_c": 49,
+        "nf_craft_acct_be3291151103_21_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_21_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_21_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "auto,account-cosmic,commit",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_22_a",
+        "nf_craft_acct_be3291151103_22_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_22_c": 49,
+        "nf_craft_acct_be3291151103_22_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_22_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_22_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account-wallet,commit",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_23_a",
+        "nf_craft_acct_be3291151103_23_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_23_c": 49,
+        "nf_craft_acct_be3291151103_23_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_23_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_23_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account-item,commit",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_24_a",
+        "nf_craft_acct_be3291151103_24_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_24_c": 49,
+        "nf_craft_acct_be3291151103_24_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_24_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_24_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account-cosmic,commit",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_25_a",
+        "nf_craft_acct_be3291151103_25_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_25_c": 49,
+        "nf_craft_acct_be3291151103_25_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_25_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_25_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account-cosmic,auth-lost",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_26_a",
+        "nf_craft_acct_be3291151103_26_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_26_c": 49,
+        "nf_craft_acct_be3291151103_26_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_26_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_26_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account-cosmic,auth-rollback",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_27_a",
+        "nf_craft_acct_be3291151103_27_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_27_c": 49,
+        "nf_craft_acct_be3291151103_27_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_27_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_27_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account-cosmic,rollback",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_28_a",
+        "nf_craft_acct_be3291151103_28_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_28_c": 49,
+        "nf_craft_acct_be3291151103_28_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_28_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_28_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    },
+    {
+      "case": "simple,account-cosmic,loyalty-cap",
+      "passed": true,
+      "schemas": [
+        "nf_craft_acct_be3291151103_29_a",
+        "nf_craft_acct_be3291151103_29_c"
+      ],
+      "migration_counts": {
+        "nf_craft_acct_be3291151103_29_c": 49,
+        "nf_craft_acct_be3291151103_29_a": 42
+      },
+      "strategies": {
+        "nf_craft_acct_be3291151103_29_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+        "nf_craft_acct_be3291151103_29_a": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+      }
+    }
+  ],
+  "failures_retained": {
+    "initial_mysql": {
+      "completed": 14,
+      "failed": 14,
+      "artifact": "artifacts/continuation-20261105/crafting-accounts-mysql/provider/results.json",
+      "interrupted_next_case": "Original known-failing runner stopped deliberately; recorded pair dropped by owned cleanup",
+      "binding": {
+        "BaseHead": "f8470bb1f5c48b8c5528350ff1c9894bcf76fa23",
+        "RuntimeSource": "Matches the published settlement milestone; only test fixture provider adapters changed",
+        "FixtureSHA256": "50856201020C13F6A7C51E3D382DDE7E8F4891142929580AD52BE65EDEE3B6CC",
+        "Cases": 29,
+        "SQLiteControls": 29,
+        "Assemblies": [
+          {
+            "Name": "NexusForever.Game.Tests.dll",
+            "SHA256": "3007B659EE097DD7488EECC9F3E79A677EB231D6C3A874B34DA536D4E3F15A62"
+          },
+          {
+            "Name": "NexusForever.Game.dll",
+            "SHA256": "FC92952BB983E5BA620A3E53659F2893E5C12678119C6F4514C5B0E53F1BAEBF"
+          },
+          {
+            "Name": "NexusForever.WorldServer.dll",
+            "SHA256": "C6D9A93B2926D18C36D04067ADE3B5E0C51FD2462DDE40C64C38BE2D462D3CC5"
+          },
+          {
+            "Name": "NexusForever.Database.Auth.dll",
+            "SHA256": "E43D0426E347EBBB61EA1FFD48CE07236ED64A7CF0CE777659E68C5AE1874854"
+          },
+          {
+            "Name": "NexusForever.Database.Character.dll",
+            "SHA256": "85E668E7AB836689A7C26A649B3E27EE604A08E3D246B3D1054C473BA9BC2938"
+          },
+          {
+            "Name": "NexusForever.Database.Sqlite.Migrations.dll",
+            "SHA256": "0E84465B7E00249F541F7B2737A3C4FDC12BAD30621B94D1F22C5C4128FD4DE4"
+          },
+          {
+            "Name": "NexusForever.Database.dll",
+            "SHA256": "405BB524D165BBF722DBBD3DABCC8D45D77B95F2E47292278551A14B5790CE74"
+          }
+        ],
+        "RunnerSHA256": "3A43C4C18C14FD557A0FDD054D1EB9C85AE176F35BF85E161625F1EF21D9B5CF"
+      }
+    },
+    "retry_enabled_sqlite": {
+      "failed_before": 3,
+      "passed_after": 3,
+      "old_game": {
+        "path": "artifacts/continuation-20261105/crafting-accounts-mysql/retry-regression-before/NexusForever.Game.dll",
+        "sha256": "FC92952BB983E5BA620A3E53659F2893E5C12678119C6F4514C5B0E53F1BAEBF"
+      },
+      "test_dll": {
+        "path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+        "sha256": "99DEFE88EC80B3EADA146C82A853BAD784336926F09BAFE796D7D1F434A22664"
+      },
+      "boundary": "Same final test binary, isolated pre-fix Game DLL versus fixed runtime"
+    }
+  },
+  "source": [
+    {
+      "path": "Source/NexusForever.Game/Crafting/CraftingAccountDelivery.cs",
+      "sha256": "A4CDBDD40CA25BA5B918E5D520344B12B9B099E4479E6E7873BC1F15FDEEDE94"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Crafting/CraftingSettlementTests.cs",
+      "sha256": "3615A5B6461F02FF760A625B3A3CC1DF576CE999231FF2F660602E2F2AEA716C"
+    }
+  ],
+  "runtime_assemblies": [
+    {
+      "path": "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "86DD9B3D956346EC8CBDCB9E5C3EF803535F1C4E3A88C8F32ECAA5146E7076D8"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "sha256": "742B862F1969709BC953B878316BAC490B5027710BA59CA8478B475DDBD4A872"
+    },
+    {
+      "path": "Source/NexusForever.Database.Auth/bin/Debug/net10.0/NexusForever.Database.Auth.dll",
+      "sha256": "9AE4423574DD6540B75BD288D14447D0C1859DBB6DE523B7208ED47BF7530379"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/bin/Debug/net10.0/NexusForever.Database.Character.dll",
+      "sha256": "6FC600A5F0EABD3F3BD5B6C1A46B0C425020B27CA47D1517D0C879118C31929B"
+    },
+    {
+      "path": "Source/NexusForever.Database.Sqlite.Migrations/bin/Debug/net10.0/NexusForever.Database.Sqlite.Migrations.dll",
+      "sha256": "9C6D2A1D2B60F46AA4C2D704ACC8A5081ACF17EEDCEC0564E69405D86773635F"
+    }
+  ],
+  "provider_test_binding": {
+    "fixture_source_sha256": "50856201020C13F6A7C51E3D382DDE7E8F4891142929580AD52BE65EDEE3B6CC",
+    "assemblies": [
+      {
+        "Name": "NexusForever.Game.Tests",
+        "SHA256": "B3D0546D16A405E7A9A6FF2597AF2EDC5E941ADC1BAB1CB866DE243EA78DFDA6"
+      },
+      {
+        "Name": "NexusForever.Game",
+        "SHA256": "86DD9B3D956346EC8CBDCB9E5C3EF803535F1C4E3A88C8F32ECAA5146E7076D8"
+      },
+      {
+        "Name": "NexusForever.WorldServer",
+        "SHA256": "742B862F1969709BC953B878316BAC490B5027710BA59CA8478B475DDBD4A872"
+      },
+      {
+        "Name": "NexusForever.Database.Auth",
+        "SHA256": "9AE4423574DD6540B75BD288D14447D0C1859DBB6DE523B7208ED47BF7530379"
+      },
+      {
+        "Name": "NexusForever.Database.Character",
+        "SHA256": "6FC600A5F0EABD3F3BD5B6C1A46B0C425020B27CA47D1517D0C879118C31929B"
+      },
+      {
+        "Name": "NexusForever.Database.Sqlite.Migrations",
+        "SHA256": "9C6D2A1D2B60F46AA4C2D704ACC8A5081ACF17EEDCEC0564E69405D86773635F"
+      }
+    ],
+    "note": "Provider29 and existing48 controls used the fixture before adding the three retry-enabled tests. Final test-only build adds those controls and leaves the provider default behavior equivalent; production runtime hashes match across owning, test and provider copies."
+  },
+  "artifacts": [
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/transaction-fix-build.log",
+      "sha256": "D8D4758C413D3D4FB40E6C1EA958791A7BD7ED15B153CE5E7C227A67610FA96E"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/transaction-fix-test-build.log",
+      "sha256": "494AFBEBDCA7B59C05BE94232580D721B6E527A05E45026565FD63F7CEDE37CA"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/transaction-fix-sqlite.trx",
+      "sha256": "13F80853274CC732F92F392029CA64309EA13CAAC3246EFE98C166EACD7EA5A3"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/transaction-fix-runner-build.log",
+      "sha256": "19D54F45A31ABD497B70B3C83C3C7A5F8FA358D0314DD423E8C168DF947CE865"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/retry-regression-build.log",
+      "sha256": "EC8F1D4E6903E083DDD8C92990A6F511345A698755F77B80179722D787C5A997"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/retry-regression-before.trx",
+      "sha256": "CDA395701EADD78FE84C4B97DFB03555F0EE47A44296D46EDC00D336F7FA917B"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/retry-regression-after.trx",
+      "sha256": "4EDF2BC4FE459A098BC5E8BB980A68D055E4CAFD22FEBFAB09776403871F5AF1"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/review.md",
+      "sha256": "7F77B9C32EA8E0FE1DC95DA2E4F3E8C1B70807E7532888588E3FF69C81E5018D"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/provider/results.json",
+      "sha256": "EBCC1563A170545A78B2317E14B66EEE25449046840E9290063A994AD10252F4"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/provider/inputs.json",
+      "sha256": "ABD63BBF1959A38F4EC902D81803FA1B2C207F3BB816C3E7E1F0FAFD9B79B49E"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/provider/interrupted-schema-cleanup.json",
+      "sha256": "BA0D3C1BBA9C32E173EC8EB9B13FE280D8B71548680B519F5EC9A2B4A3D5C044"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/provider-retry/results.json",
+      "sha256": "2B387ED6A88C9DC5A87652FB525EAD86F4E4202924E8F1043933A7217A7DD46F"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/provider-retry/native-run-state.json",
+      "sha256": "E2CCF8BDC97E3455F9373353D90EE14CC4BD0A191D0D46B2791E75DB639DD599"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/provider-retry/copied-binaries.json",
+      "sha256": "9F899EBEFB3A5468936DCDEBE2FC0EC1C6BFBE5A99D6F0068AFD73EEEC807744"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/provider-retry/Program.cs",
+      "sha256": "E8895FC24E4E1A019D8061726672ECFE736919B04F6597899438240313A89EF1"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/provider-finish/owned-schema-verification.json",
+      "sha256": "47F4EAEC0B68326BA8745D6F31F150522EBEE3BB8F24B875C8E61603B9E22B33"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/provider-finish/shutdown-request.json",
+      "sha256": "84FDC8BB7669BD506E8E7DA1261B431C338420F284B86D364E42CFD1F1B4398D"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-accounts-mysql/shutdown-observation.json",
+      "sha256": "6DD5F84E5CCA9264ABD339900E2819F8583668FCE0397008B3E408BB12342ED3"
+    }
+  ],
+  "observed_seconds": {
+    "owning_worldserver_build": 43.37,
+    "initial_test_only_build": 18.5,
+    "affected_sqlite48": 47,
+    "provider_runner_build": 5.47,
+    "new_regression_test_only_build": 15.72,
+    "new_regression_after3": 9,
+    "new_regression_before3": 9,
+    "configured_mysql29": 637.1824929,
+    "owned_mysql_startup_approximate": 163,
+    "initial_known_failing_runner_until_stop": 345.0044507
+  },
+  "cleanup": {
+    "successful_final_schema_drops": 59,
+    "owned_prefix_inventory_remaining": [],
+    "graceful_shutdown": {
+      "Pid": 23536,
+      "At": "2026-11-05T09:57:37.5480908Z",
+      "Graceful": true
+    },
+    "process_observation": {
+      "At": "2026-11-05T09:57:50.8494647Z",
+      "ServerAbsent": true,
+      "ListenerAbsent": true,
+      "RunnerAbsent": true,
+      "HelperAbsent": true,
+      "InterruptedRunnerAbsent": true,
+      "InterruptedHelperAbsent": true,
+      "Port": 53795,
+      "ServerPid": 23536,
+      "RunnerPid": 20008,
+      "HelperPid": 7648
+    }
+  },
+  "review": {
+    "standards_required_findings": 0,
+    "standards_optional_judgments": 2,
+    "spec_findings": 0,
+    "artifact": "artifacts/continuation-20261105/crafting-accounts-mysql/review.md",
+    "disposition": "Existing context naming retained; no extra admission identity abstraction for two calls"
+  },
+  "evidence_reuse": "Existing unaffected controls from the source milestone were not rerun. The48 affected crafting cases passed before the added retry-only regressions. Three new cases prove the pre-fix defect and the corrected candidate. No broader suite repeated.",
+  "historical_handoff_verification": "Previously retained expected Source divergence from checkpoint2938422; not repeated or altered to pass",
+  "upstream": "Newest-created upstream PR refresh still lists609 and608; unchanged reviewed heads and reconciliation are reused",
+  "remaining": [
+    "Autonomous paid-outbox delivery without a live completion or Realm re-admission",
+    "Physical connection/process failure and deployed restart",
+    "Backup, database-route and Loyalty catalog migration",
+    "Durable shared virtual-event replay",
+    "Actual recipe tables, material/modifier economics, crafting socket and native/retail qualification"
+  ]
+}

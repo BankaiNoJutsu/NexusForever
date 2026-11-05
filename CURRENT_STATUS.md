@@ -21163,9 +21163,21 @@ and source/binary identities. No full solution build or full suite was run.
 Upstream #606-609 heads were refreshed and remain unchanged from their prior
 reconciliation; #609 and #608 remain the newest created PRs.
 
+The later [configured MySQL gate](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#crafting-account-settlement)
+passes all 29 account cases on separate migrated Auth/Character schemas. It fixes
+a provider-only failure: whole explicit transactions must run inside the owning
+retry strategy, using fresh guarded contexts per attempt. Admission retains one
+Auth route and publishes its copied account snapshot after the successful read
+commit. The owning build and 48 affected SQLite controls pass; three additional
+retry-enabled controls fail with the pre-fix Game DLL and pass with the fix.
+The SQL cases take 637 seconds, with 59 successful final schema drops and verified
+graceful shutdown. Both source reviews have no required findings. The
+[portable provider result](Decomp/Analysis/coverage/crafting-account-mysql-20261105.json)
+retains the negative replay, final bindings and qualification limits.
+
 Full recipe qualification remains open. Inactive-owner/interrupted cases can
 remain pending until Realm admission; an autonomous paid-outbox drain is still
-needed. Configured MySQL, physical connection/process failure, backup/route/catalog
+needed. Physical connection/process failure, backup/route/catalog
 migration, actual-table material/modifier economics, crafting socket and native/
 retail gates remain open. Shared virtual-event effects still lack durable replay
 after an uncertain save or process loss. Native client/CUA launch remain stopped.

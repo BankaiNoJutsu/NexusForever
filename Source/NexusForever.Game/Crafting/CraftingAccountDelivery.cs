@@ -44,35 +44,44 @@ namespace NexusForever.Game.Crafting
 
             // An acknowledgement failure can always be retried against the same
             // source and receipts. Deleting the Character cannot erase the award.
-            await using var context = Character(intent);
-            await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
-            var stored = await (context.Database.IsSqlite()
-                ? context.CharacterCraftingAccountOutbox.Where(value => value.Id == id)
-                : context.CharacterCraftingAccountOutbox.FromSqlInterpolated($"SELECT * FROM character_crafting_account_outbox WHERE id={id} FOR UPDATE")).SingleAsync();
-            if (CraftingAccountIntent.Restore(stored).Json != intent.Json)
-                throw new InvalidOperationException("Crafting source changed before acknowledgement.");
-            stored.Delivered = true;
-            context.OnSaveValidation(phase =>
+            await Acknowledge(intent);
+            await CompleteAuth(intent, cancelled: false);
+        }
+
+        private async Task Acknowledge(CraftingAccountIntent intent)
+        {
+            await using var strategy = Character(intent);
+            await strategy.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
             {
-                if (context.Entry(stored).State is EntityState.Deleted or EntityState.Detached || !stored.Delivered
-                    || stored.Cancelled || CraftingAccountIntent.Restore(stored).Json != intent.Json)
-                    throw new InvalidOperationException("Crafting acknowledgement changed its source identity.");
-                if (phase == CharacterSaveValidationPhase.BeforeExplicitCommit)
+                await using var context = Character(intent);
+                await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+                var stored = await (context.Database.IsSqlite()
+                    ? context.CharacterCraftingAccountOutbox.Where(value => value.Id == intent.Id)
+                    : context.CharacterCraftingAccountOutbox.FromSqlInterpolated($"SELECT * FROM character_crafting_account_outbox WHERE id={intent.Id} FOR UPDATE")).SingleAsync();
+                if (CraftingAccountIntent.Restore(stored).Json != intent.Json)
+                    throw new InvalidOperationException("Crafting source changed before acknowledgement.");
+                stored.Delivered = true;
+                context.OnSaveValidation(phase =>
                 {
-                    var values = context.Entry(stored).GetDatabaseValues();
-                    if (values == null || context.Entry(stored).CurrentValues.Properties.Any(property => !Equals(values[property.Name], context.Entry(stored).CurrentValues[property.Name])))
-                        throw new InvalidOperationException("Crafting acknowledgement did not reach its source transaction.");
+                    if (context.Entry(stored).State is EntityState.Deleted or EntityState.Detached || !stored.Delivered
+                        || stored.Cancelled || CraftingAccountIntent.Restore(stored).Json != intent.Json)
+                        throw new InvalidOperationException("Crafting acknowledgement changed its source identity.");
+                    if (phase == CharacterSaveValidationPhase.BeforeExplicitCommit)
+                    {
+                        var values = context.Entry(stored).GetDatabaseValues();
+                        if (values == null || context.Entry(stored).CurrentValues.Properties.Any(property => !Equals(values[property.Name], context.Entry(stored).CurrentValues[property.Name])))
+                            throw new InvalidOperationException("Crafting acknowledgement did not reach its source transaction.");
+                    }
+                });
+                try { await context.SaveChangesAsync(); await tx.CommitAsync(); }
+                catch
+                {
+                    await tx.DisposeAsync();
+                    await using var fresh = Character(intent);
+                    var observed = await fresh.CharacterCraftingAccountOutbox.AsNoTracking().SingleOrDefaultAsync(value => value.Id == intent.Id);
+                    if (observed == null || !observed.Delivered || observed.Cancelled || CraftingAccountIntent.Restore(observed).Json != intent.Json) throw;
                 }
             });
-            try { await context.SaveChangesAsync(); await tx.CommitAsync(); }
-            catch
-            {
-                await tx.DisposeAsync();
-                await using var fresh = Character(intent);
-                var observed = await fresh.CharacterCraftingAccountOutbox.AsNoTracking().SingleOrDefaultAsync(value => value.Id == id);
-                if (observed == null || !observed.Delivered || observed.Cancelled || CraftingAccountIntent.Restore(observed).Json != intent.Json) throw;
-            }
-            await CompleteAuth(intent, cancelled: false);
         }
 
         // The same Character-before-outbox lock order as the original save
@@ -81,42 +90,46 @@ namespace NexusForever.Game.Crafting
         internal async Task<bool> ResolveReservation(CraftingAccountIntent intent, bool delivered)
         {
             intent.Validate();
-            await using var context = Character(intent);
-            await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
-            await context.Database.ExecuteSqlInterpolatedAsync($"UPDATE `character` SET id=id WHERE id={intent.Character}");
-            var row = await (context.Database.IsSqlite() ? context.CharacterCraftingAccountOutbox.Where(value => value.Id == intent.Id)
-                : context.CharacterCraftingAccountOutbox.FromSqlInterpolated($"SELECT * FROM character_crafting_account_outbox WHERE id={intent.Id} FOR UPDATE"))
-                .AsNoTracking().SingleOrDefaultAsync();
-            if (row == null)
+            await using var strategy = Character(intent);
+            return await strategy.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
             {
-                if (delivered) throw new InvalidOperationException("Delivered crafting awards lost their Character history.");
-                row = intent.Model(); row.Cancelled = true; context.CharacterCraftingAccountOutbox.Add(row);
-                context.OnSaveValidation(phase =>
+                await using var context = Character(intent);
+                await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+                await context.Database.ExecuteSqlInterpolatedAsync($"UPDATE `character` SET id=id WHERE id={intent.Character}");
+                var row = await (context.Database.IsSqlite() ? context.CharacterCraftingAccountOutbox.Where(value => value.Id == intent.Id)
+                    : context.CharacterCraftingAccountOutbox.FromSqlInterpolated($"SELECT * FROM character_crafting_account_outbox WHERE id={intent.Id} FOR UPDATE"))
+                    .AsNoTracking().SingleOrDefaultAsync();
+                if (row == null)
                 {
-                    if (context.Entry(row).State is EntityState.Deleted or EntityState.Detached || !row.Cancelled || row.Delivered
-                        || CraftingAccountIntent.Restore(row).Json != intent.Json)
-                        throw new InvalidOperationException("Crafting cancellation fence changed before commit.");
-                    if (phase == CharacterSaveValidationPhase.BeforeExplicitCommit)
+                    if (delivered) throw new InvalidOperationException("Delivered crafting awards lost their Character history.");
+                    row = intent.Model(); row.Cancelled = true; context.CharacterCraftingAccountOutbox.Add(row);
+                    context.OnSaveValidation(phase =>
                     {
-                        var values = context.Entry(row).GetDatabaseValues();
-                        if (values == null || context.Entry(row).CurrentValues.Properties.Any(property => !Equals(values[property.Name], context.Entry(row).CurrentValues[property.Name])))
-                            throw new InvalidOperationException("Crafting fence did not reach its source transaction.");
-                    }
-                });
-                await context.SaveChangesAsync();
-            }
-            if (CraftingAccountIntent.Restore(row).Json != intent.Json)
-                throw new InvalidOperationException("Crafting reservation changed its frozen Character identity.");
-            try { await tx.CommitAsync(); }
-            catch
-            {
-                await tx.DisposeAsync();
-                await using var fresh = Character(intent);
-                var observed = await fresh.CharacterCraftingAccountOutbox.AsNoTracking().SingleOrDefaultAsync(value => value.Id == intent.Id);
-                if (observed == null || CraftingAccountIntent.Restore(observed).Json != intent.Json) throw;
-                return !observed.Cancelled;
-            }
-            return !row.Cancelled;
+                        if (context.Entry(row).State is EntityState.Deleted or EntityState.Detached || !row.Cancelled || row.Delivered
+                            || CraftingAccountIntent.Restore(row).Json != intent.Json)
+                            throw new InvalidOperationException("Crafting cancellation fence changed before commit.");
+                        if (phase == CharacterSaveValidationPhase.BeforeExplicitCommit)
+                        {
+                            var values = context.Entry(row).GetDatabaseValues();
+                            if (values == null || context.Entry(row).CurrentValues.Properties.Any(property => !Equals(values[property.Name], context.Entry(row).CurrentValues[property.Name])))
+                                throw new InvalidOperationException("Crafting fence did not reach its source transaction.");
+                        }
+                    });
+                    await context.SaveChangesAsync();
+                }
+                if (CraftingAccountIntent.Restore(row).Json != intent.Json)
+                    throw new InvalidOperationException("Crafting reservation changed its frozen Character identity.");
+                try { await tx.CommitAsync(); }
+                catch
+                {
+                    await tx.DisposeAsync();
+                    await using var fresh = Character(intent);
+                    var observed = await fresh.CharacterCraftingAccountOutbox.AsNoTracking().SingleOrDefaultAsync(value => value.Id == intent.Id);
+                    if (observed == null || CraftingAccountIntent.Restore(observed).Json != intent.Json) throw;
+                    return !observed.Cancelled;
+                }
+                return !row.Cancelled;
+            });
         }
 
         internal async Task CompleteAuth(CraftingAccountIntent intent, bool cancelled)
@@ -152,24 +165,28 @@ namespace NexusForever.Game.Crafting
 
         internal async Task<CraftingAccountSnapshot> ReadSnapshot(CraftingAccountIntent intent, ulong epoch = 0)
         {
-            await using var context = Auth(intent);
-            await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
-            context.ReservePendingItemIds(intent.Account, 0);
-            if (epoch != 0 && !await context.AccountWorldSession.AnyAsync(row => row.AccountId == intent.Account && row.Epoch == epoch))
-                throw new InvalidOperationException("Crafting publication lost its admitted account epoch.");
-            string prefix = $"craft-award:{intent.Realm}:{intent.Id}:";
-            var items = await context.AccountInventory.AsNoTracking()
-                .Where(row => row.Id == intent.Account && row.CreationKey.StartsWith(prefix)).ToArrayAsync();
-            LoyaltyState state = null;
-            if (intent.LoyaltyFingerprint != null)
+            await using var strategy = Auth(intent);
+            return await strategy.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
             {
-                var ledger = await context.AccountLoyalty.AsNoTracking().SingleAsync(row => row.AccountId == intent.Account);
-                var wallet = await context.AccountCurrency.AsNoTracking().SingleAsync(row => row.Id == intent.Account && row.CurrencyId == (byte)AccountCurrencyType.CosmicReward);
-                state = new(ledger.EarnedPoints, ledger.ActiveTrackId, ledger.Revision, wallet.Amount,
-                    await context.AccountLoyaltySlot.AsNoTracking().Where(row => row.AccountId == intent.Account).ToArrayAsync(),
-                    context.LoadPendingItemRows(intent.Account));
-            }
-            await tx.CommitAsync(); return new(items, state);
+                await using var context = Auth(intent);
+                await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+                context.ReservePendingItemIds(intent.Account, 0);
+                if (epoch != 0 && !await context.AccountWorldSession.AnyAsync(row => row.AccountId == intent.Account && row.Epoch == epoch))
+                    throw new InvalidOperationException("Crafting publication lost its admitted account epoch.");
+                string prefix = $"craft-award:{intent.Realm}:{intent.Id}:";
+                var items = await context.AccountInventory.AsNoTracking()
+                    .Where(row => row.Id == intent.Account && row.CreationKey.StartsWith(prefix)).ToArrayAsync();
+                LoyaltyState state = null;
+                if (intent.LoyaltyFingerprint != null)
+                {
+                    var ledger = await context.AccountLoyalty.AsNoTracking().SingleAsync(row => row.AccountId == intent.Account);
+                    var wallet = await context.AccountCurrency.AsNoTracking().SingleAsync(row => row.Id == intent.Account && row.CurrencyId == (byte)AccountCurrencyType.CosmicReward);
+                    state = new(ledger.EarnedPoints, ledger.ActiveTrackId, ledger.Revision, wallet.Amount,
+                        await context.AccountLoyaltySlot.AsNoTracking().Where(row => row.AccountId == intent.Account).ToArrayAsync(),
+                        context.LoadPendingItemRows(intent.Account));
+                }
+                await tx.CommitAsync(); return new CraftingAccountSnapshot(items, state);
+            });
         }
 
         private AuthContext Auth(CraftingAccountIntent intent)
@@ -283,46 +300,50 @@ namespace NexusForever.Game.Crafting
 
         private async Task<bool> ObserveAuth(CraftingAccountIntent intent)
         {
-            await using var context = Auth(intent);
-            await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
-            context.ReservePendingItemIds(intent.Account, 0);
-            var bundle = await Receipt(context, intent.Id).SingleOrDefaultAsync();
-            if (bundle == null || CraftingAccountIntent.Restore(bundle).Json != intent.Json || bundle.Cancelled)
-                throw new InvalidOperationException("Crafting Auth receipt changed its original source.");
-            if (!bundle.Delivered) return false;
-            ulong nextInventoryId = intent.FirstInventoryId;
-            foreach (var (award, ordinal) in intent.Awards.Select((award, ordinal) => (award, ordinal)))
+            await using var strategy = Auth(intent);
+            return await strategy.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
             {
-                string key = intent.Key(ordinal);
-                if (award.Type == LootItemType.AccountCurrency)
+                await using var context = Auth(intent);
+                await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+                context.ReservePendingItemIds(intent.Account, 0);
+                var bundle = await Receipt(context, intent.Id).SingleOrDefaultAsync();
+                if (bundle == null || CraftingAccountIntent.Restore(bundle).Json != intent.Json || bundle.Cancelled)
+                    throw new InvalidOperationException("Crafting Auth receipt changed its original source.");
+                if (!bundle.Delivered) return false;
+                ulong nextInventoryId = intent.FirstInventoryId;
+                foreach (var (award, ordinal) in intent.Awards.Select((award, ordinal) => (award, ordinal)))
                 {
-                    if (award.Id == (uint)AccountCurrencyType.CosmicReward && intent.LoyaltyFingerprint != null)
+                    string key = intent.Key(ordinal);
+                    if (award.Type == LootItemType.AccountCurrency)
                     {
-                        var operation = LoyaltyRepository.ReadOperation(context, intent.Account, key);
-                        if (operation == null) throw new InvalidOperationException("Committed crafting bundle lost its Cosmic receipt.");
-                        if (operation.Amount != award.Amount || operation.Subtract || !operation.Earned)
-                            throw new InvalidOperationException("Crafting Cosmic receipt changed its earning identity.");
+                        if (award.Id == (uint)AccountCurrencyType.CosmicReward && intent.LoyaltyFingerprint != null)
+                        {
+                            var operation = LoyaltyRepository.ReadOperation(context, intent.Account, key);
+                            if (operation == null) throw new InvalidOperationException("Committed crafting bundle lost its Cosmic receipt.");
+                            if (operation.Amount != award.Amount || operation.Subtract || !operation.Earned)
+                                throw new InvalidOperationException("Crafting Cosmic receipt changed its earning identity.");
+                        }
+                        else
+                        {
+                            var operation = await context.AccountCurrencyOperation.AsNoTracking().SingleOrDefaultAsync(value => value.OperationKey == key);
+                            if (operation == null) throw new InvalidOperationException("Committed crafting bundle lost its wallet receipt.");
+                            AccountCurrencyOperationRepository.ValidateReceipt(operation, new(key, intent.Account, (AccountCurrencyType)award.Id, award.Amount, false, intent.Json));
+                        }
                     }
-                    else
+                    else for (uint index = 0; index < award.Amount; index++)
                     {
-                        var operation = await context.AccountCurrencyOperation.AsNoTracking().SingleOrDefaultAsync(value => value.OperationKey == key);
-                        if (operation == null) throw new InvalidOperationException("Committed crafting bundle lost its wallet receipt.");
-                        AccountCurrencyOperationRepository.ValidateReceipt(operation, new(key, intent.Account, (AccountCurrencyType)award.Id, award.Amount, false, intent.Json));
+                        string itemKey = intent.Key(ordinal, index);
+                        var receipt = await context.AccountInventoryReceipt.AsNoTracking().SingleOrDefaultAsync(value => value.AccountId == intent.Account && value.DeliveryKey == itemKey);
+                        if (receipt == null) throw new InvalidOperationException("Committed crafting bundle lost its account-item receipt.");
+                        if (receipt.InventoryId != nextInventoryId++) throw new InvalidOperationException("Crafting receipt lost its reserved item identity.");
+                        var item = await context.AccountInventory.AsNoTracking().SingleOrDefaultAsync(value => value.Id == intent.Account && value.InventoryId == receipt.InventoryId);
+                        // A consumed item keeps its creation receipt, never a regrant.
+                        if (item != null && (item.CreationKey != itemKey || item.AccountItemId != award.Id))
+                            throw new InvalidOperationException("Crafting account-item receipt changed its award identity.");
                     }
                 }
-                else for (uint index = 0; index < award.Amount; index++)
-                {
-                    string itemKey = intent.Key(ordinal, index);
-                    var receipt = await context.AccountInventoryReceipt.AsNoTracking().SingleOrDefaultAsync(value => value.AccountId == intent.Account && value.DeliveryKey == itemKey);
-                    if (receipt == null) throw new InvalidOperationException("Committed crafting bundle lost its account-item receipt.");
-                    if (receipt.InventoryId != nextInventoryId++) throw new InvalidOperationException("Crafting receipt lost its reserved item identity.");
-                    var item = await context.AccountInventory.AsNoTracking().SingleOrDefaultAsync(value => value.Id == intent.Account && value.InventoryId == receipt.InventoryId);
-                    // A consumed item keeps its creation receipt, never a regrant.
-                    if (item != null && (item.CreationKey != itemKey || item.AccountItemId != award.Id))
-                        throw new InvalidOperationException("Crafting account-item receipt changed its award identity.");
-                }
-            }
-            await tx.CommitAsync(); return true;
+                await tx.CommitAsync(); return true;
+            });
         }
     }
 
@@ -333,20 +354,19 @@ namespace NexusForever.Game.Crafting
         {
             if (account.Id == 0 || account.WorldSessionEpoch == 0 || realm == 0)
                 throw new InvalidOperationException("Crafting recovery requires its admitted account/realm.");
-            AccountCraftingReceiptModel[] rows;
-            await using (var reader = auth.CreateContext())
-            await using (var reservation = await reader.Database.BeginTransactionAsync(IsolationLevel.Serializable))
+            uint accountId = account.Id;
+            ulong epoch = account.WorldSessionEpoch;
+            await using var route = auth.CreateContext();
+            string authRoute = AccountCurrencyOperationRepository.DatabaseKey(route);
+            var rows = await ReadAtAdmission(auth, accountId, epoch, authRoute, async reader =>
             {
-                reader.ReservePendingItemIds(account.Id, 0);
-                if (!await reader.AccountWorldSession.AnyAsync(row => row.AccountId == account.Id && row.Epoch == account.WorldSessionEpoch))
-                    throw new InvalidOperationException("Crafting recovery lost its admitted epoch before source discovery.");
-                rows = await reader.AccountCraftingReceipt.AsNoTracking()
-                    .Where(row => row.AccountId == account.Id && row.RealmId == realm && !row.Completed).ToArrayAsync();
-                foreach (var row in rows)
-                    if (CraftingAccountIntent.Restore(row).AuthRoute != AccountCurrencyOperationRepository.DatabaseKey(reader))
+                var pending = await reader.AccountCraftingReceipt.AsNoTracking()
+                    .Where(row => row.AccountId == accountId && row.RealmId == realm && !row.Completed).ToArrayAsync();
+                foreach (var row in pending)
+                    if (CraftingAccountIntent.Restore(row).AuthRoute != authRoute)
                         throw new InvalidOperationException("Crafting reservation changed its original Auth route.");
-                await reservation.CommitAsync();
-            }
+                return pending;
+            });
             LoyaltyCatalog catalog = null;
             foreach (var row in rows)
             {
@@ -360,17 +380,51 @@ namespace NexusForever.Game.Crafting
                 if (intent.LoyaltyFingerprint != null) catalog ??= new(tables);
                 await new CraftingAccountDelivery(characters.CreateContext, auth.CreateContext, realm, catalog).DeliverAsync(intent);
             }
-            await using var context = auth.CreateContext();
-            await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
-            context.ReservePendingItemIds(account.Id, 0);
-            if (!await context.AccountWorldSession.AnyAsync(row => row.AccountId == account.Id && row.Epoch == account.WorldSessionEpoch))
-                throw new InvalidOperationException("Crafting recovery lost its admitted epoch.");
-            account.AccountCurrency = await context.AccountCurrency.AsNoTracking().Where(row => row.Id == account.Id).ToArrayAsync();
-            account.AccountInventory = await context.AccountInventory.AsNoTracking().Where(row => row.Id == account.Id).ToArrayAsync();
-            account.AccountPendingItem = context.LoadPendingItemRows(account.Id);
-            account.Loyalty = await context.AccountLoyalty.AsNoTracking().SingleOrDefaultAsync(row => row.AccountId == account.Id);
-            account.LoyaltySlots = await context.AccountLoyaltySlot.AsNoTracking().Where(row => row.AccountId == account.Id).ToArrayAsync();
-            await tx.CommitAsync();
+            var snapshot = await ReadAtAdmission(auth, accountId, epoch, authRoute, async context =>
+            {
+                var wallets = await context.AccountCurrency.AsNoTracking().Where(row => row.Id == accountId).ToArrayAsync();
+                var items = await context.AccountInventory.AsNoTracking().Where(row => row.Id == accountId).ToArrayAsync();
+                var pending = context.LoadPendingItemRows(accountId);
+                var ledger = await context.AccountLoyalty.AsNoTracking().SingleOrDefaultAsync(row => row.AccountId == accountId);
+                var slots = await context.AccountLoyaltySlot.AsNoTracking().Where(row => row.AccountId == accountId).ToArrayAsync();
+                return (wallets, items, pending, ledger, slots);
+            });
+            // Publish only the snapshot from the successful transaction attempt.
+            account.AccountCurrency = snapshot.wallets;
+            account.AccountInventory = snapshot.items;
+            account.AccountPendingItem = snapshot.pending;
+            account.Loyalty = snapshot.ledger;
+            account.LoyaltySlots = snapshot.slots;
+        }
+
+        private static async Task<T> ReadAtAdmission<T>(AuthDatabase auth, uint accountId, ulong epoch,
+            string authRoute, Func<AuthContext, Task<T>> read)
+        {
+            await using var strategy = Context();
+            return await strategy.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+            {
+                await using var context = Context();
+                await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+                context.ReservePendingItemIds(accountId, 0);
+                if (!await context.AccountWorldSession.AnyAsync(row => row.AccountId == accountId && row.Epoch == epoch))
+                    throw new InvalidOperationException("Crafting recovery lost its admitted epoch.");
+                T value = await read(context);
+                await tx.CommitAsync();
+                return value;
+            });
+
+            AuthContext Context()
+            {
+                var context = auth.CreateContext() ?? throw new InvalidOperationException("Missing crafting recovery Auth context.");
+                try
+                {
+                    if (context.Database.CurrentTransaction != null || context.ChangeTracker.Entries().Any()
+                        || AccountCurrencyOperationRepository.DatabaseKey(context) != authRoute)
+                        throw new InvalidOperationException("Crafting recovery changed its owned Auth context or route.");
+                    return context;
+                }
+                catch { context.Dispose(); throw; }
+            }
         }
     }
 }
