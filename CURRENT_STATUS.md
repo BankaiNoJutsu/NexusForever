@@ -20936,6 +20936,25 @@ tests passed. Cross-database settlement and recovery after a committed partial
 outcome remain open. Local evidence is under
 `artifacts/continuation-20261104/credd-redemption-admission/`.
 
+#### CREDD redemption partial commit
+
+5 November 2026. The compatibility handler reports success while the Auth
+and Character rows still hold their original values. A disposable two-database
+SQLite probe exercised the real wallet and entitlement managers through the
+World save queue. The control committed a 2 CREDD debit, one usage increment
+and 2,000 Character credits. Rejecting the Character currency update left
+the Auth debit and usage increment committed, the stored Character balance
+unchanged, and the session queued for disconnect. The owning build and 19
+scoped handler, packet and persistence checks passed. Evidence is under
+`artifacts/continuation-20261105/credd-partial-commit/`.
+
+Settle the existing 1000:1 exchange under a single redemption identity.
+Commit the Auth debit and usage increment together. Use the Character-side
+delivery decision to prevent a late credit after a refund. After confirmed
+cancellation, restore the debit and usage increment once. Publish success
+after both databases confirm delivery. Retail grant rules for empty
+`0x0770` remain open.
+
 #### Storefront and account inventory coverage
 
 Catalog, supported account-currency purchase, claim/return, pending item groups,

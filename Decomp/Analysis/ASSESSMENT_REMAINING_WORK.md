@@ -54,7 +54,10 @@ grant rules, result correlation and durable settlement remain open.
 
 [CREDD redemption admission](../../CURRENT_STATUS.md#credd-redemption-admission)
 checks the full character credit and the usage increment before debiting
-the original account. Cross-database settlement remains open.
+the original account. The [cross-database save probe](../../CURRENT_STATUS.md#credd-redemption-partial-commit)
+reproduces an Auth debit and usage increment with no Character credit when
+the Character save fails. Connect durable delivery and compensation before
+reporting success for the existing compatibility exchange.
 
 [Public event contribution ownership](../../CURRENT_STATUS.md#public-event-contribution-ownership)
 checks the enrolled actor for player-driven progress, stats, votes, scoreboards,
