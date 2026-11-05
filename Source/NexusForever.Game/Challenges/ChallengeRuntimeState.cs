@@ -4,6 +4,7 @@ namespace NexusForever.Game.Challenges
     {
         public uint ChallengeId { get; init; }
         public string ActiveAttemptId { get; set; }
+        public ulong ActivationGeneration { get; set; }
         public bool Activated { get; set; }
         public bool OnCooldown { get; set; }
         public bool LeftArea { get; set; }

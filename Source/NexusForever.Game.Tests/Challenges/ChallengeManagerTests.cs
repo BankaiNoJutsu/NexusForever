@@ -207,6 +207,105 @@ public class ChallengeManagerTests
         Assert.Equal(1u, questUpdate.Arguments[2]);
     }
 
+    [Theory]
+    [InlineData("status")]
+    [InlineData("medal")]
+    [InlineData("completed")]
+    public void LegacyProgressSettlesOnceWhenAnImmediateNoticeFails(string notice)
+    {
+        var (manager, session, inventory, quests) = CreateLegacyRewardAttempt();
+        int failures = 0;
+        session.SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), args =>
+        {
+            bool reject = notice switch
+            {
+                "status" => args[0] is ServerChallengeUpdate,
+                "medal" => args[0] is ServerChallengeResult { Result: ChallengeResult.TierAchieved },
+                _ => args[0] is ServerChallengeResult { Result: ChallengeResult.Completed }
+            };
+            if (reject && failures++ == 0)
+                throw new IOException("Owned legacy Challenge notice rejection.");
+            return null;
+        });
+
+        Assert.True(manager.TryAdvanceProgress(ChallengeId));
+        Assert.False(manager.TryAdvanceProgress(ChallengeId));
+
+        Assert.True(failures > 0);
+        AssertLegacyRewardSettled(session, inventory, quests);
+    }
+
+    [Fact]
+    public void ReentrantLegacyMedalNoticeCannotRepeatCompletionOrItsRewards()
+    {
+        var (manager, session, inventory, quests) = CreateLegacyRewardAttempt();
+        bool attempted = false;
+        bool advanced = false;
+        session.SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), args =>
+        {
+            if (!attempted && args[0] is ServerChallengeResult { Result: ChallengeResult.TierAchieved })
+            {
+                attempted = true;
+                advanced = manager.TryAdvanceProgress(ChallengeId);
+            }
+            return null;
+        });
+
+        Assert.True(manager.TryAdvanceProgress(ChallengeId));
+
+        Assert.True(attempted);
+        Assert.False(advanced);
+        AssertLegacyRewardSettled(session, inventory, quests);
+    }
+
+    [Fact]
+    public void LegacyCompletionTailCannotOverwriteTheReplacementActivation()
+    {
+        var (manager, session, inventory, quests) = CreateLegacyRewardAttempt(cooldown: false);
+        session.SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerChallengeResult { Result: ChallengeResult.TierAchieved })
+                manager.HandleChoice(ChallengeId, ChallengeChoice.Activate);
+            return null;
+        });
+
+        Assert.True(manager.TryAdvanceProgress(ChallengeId));
+
+        Assert.Equal([ChallengeResult.Activate, ChallengeResult.TierAchieved, ChallengeResult.Activate],
+            GetMessages<ServerChallengeResult>(session).Select(result => result.Result));
+        var state = Assert.Single(GetMessages<ServerChallengeUpdate>(session).Last().ActiveChallenges);
+        Assert.True(state.Activated);
+        Assert.Equal(1u, state.CompletionCount);
+        Assert.Single(inventory.GetInvocations(nameof(IInventory.ItemCreate)));
+        Assert.Single(quests.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+    }
+
+    [Fact]
+    public void RestartDuringLegacyActivationStatusPublishesOnlyTheReplacementActivation()
+    {
+        GameTableManager tables = CreateGameTables();
+        IPlayer player = CreatePlayer(RecipientGuid, out var session, tables);
+        IChallengeManager manager = player.ChallengeManager;
+        bool restarted = false;
+        session.SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), args =>
+        {
+            if (!restarted && args[0] is ServerChallengeUpdate update && update.ActiveChallenges.Any(challenge => challenge.Activated))
+            {
+                restarted = true;
+                manager.HandleChoice(ChallengeId, ChallengeChoice.Abandon);
+                manager.HandleChoice(ChallengeId, ChallengeChoice.Activate);
+            }
+            return null;
+        });
+
+        manager.HandleChoice(ChallengeId, ChallengeChoice.Activate);
+
+        Assert.True(restarted);
+        Assert.Equal([ChallengeResult.AbandonRemove, ChallengeResult.Activate],
+            GetMessages<ServerChallengeResult>(session).Select(result => result.Result));
+        Assert.True(Assert.Single(GetMessages<ServerChallengeUpdate>(session).Last().ActiveChallenges).Activated);
+    }
+
     [Fact]
     public void TryAdvanceProgress_ThroughPublicHook_CompletesActiveChallenge()
     {
@@ -287,6 +386,40 @@ public class ChallengeManagerTests
     {
         RecordingDispatchProxy<IPlayer> sharerProxy = (RecordingDispatchProxy<IPlayer>)(object)sharer;
         sharerProxy.SetMethodReturnFactory(nameof(IPlayer.GetVisible), () => recipient);
+    }
+
+    private static (IChallengeManager Manager, RecordingDispatchProxy<IGameSession> Session,
+        RecordingDispatchProxy<IInventory> Inventory, RecordingDispatchProxy<IQuestManager> Quests) CreateLegacyRewardAttempt(bool cooldown = true)
+    {
+        GameTableManager tables = CreateGameTables(tierOneCount: 1);
+        const uint trackId = 16u;
+        ChallengeEntry entry = tables.Challenge.GetEntry(ChallengeId);
+        entry.RewardTrackId = trackId;
+        if (!cooldown)
+            entry.ChallengeFlags = 0;
+        SetAutoProperty(tables, nameof(GameTableManager.RewardTrack), CreateGameTable(new RewardTrackEntry { Id = trackId }));
+        SetAutoProperty(tables, nameof(GameTableManager.RewardTrackRewards), CreateGameTable(new RewardTrackRewardsEntry
+        {
+            Id = 1u, RewardTrackId = trackId, RewardPointFlags = 1u, RewardChoiceId00 = 9011u, RewardChoiceCount00 = 1u
+        }));
+        IPlayer player = CreatePlayer(RecipientGuid, out var session, tables, out var quests);
+        IInventory inventory = RecordingDispatchProxy<IInventory>.Create(out var inventoryProxy);
+        ((RecordingDispatchProxy<IPlayer>)(object)player).SetProperty(nameof(IPlayer.Inventory), inventory);
+        IChallengeManager manager = player.ChallengeManager;
+        manager.HandleChoice(ChallengeId, ChallengeChoice.Activate);
+        return (manager, session, inventoryProxy, quests);
+    }
+
+    private static void AssertLegacyRewardSettled(RecordingDispatchProxy<IGameSession> session, RecordingDispatchProxy<IInventory> inventory,
+        RecordingDispatchProxy<IQuestManager> quests)
+    {
+        var results = GetMessages<ServerChallengeResult>(session).Select(result => result.Result);
+        Assert.Equal([ChallengeResult.Activate, ChallengeResult.TierAchieved, ChallengeResult.Completed], results);
+        var state = Assert.Single(GetMessages<ServerChallengeUpdate>(session).Last().ActiveChallenges);
+        Assert.False(state.Activated);
+        Assert.Equal(1u, state.CompletionCount);
+        Assert.Single(inventory.GetInvocations(nameof(IInventory.ItemCreate)));
+        Assert.Single(quests.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
     }
 
     private static GameTableManager CreateGameTablesWithMultipleTypes(params (ushort Id, ChallengeType Type)[] challenges)

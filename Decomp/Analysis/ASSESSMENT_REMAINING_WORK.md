@@ -290,6 +290,9 @@ and casting IDs. Proc and mixed AMP ownership and row evidence remain open.
 publish after the original Character or Contract transaction confirms.
 The producer keeps live status separate from durable results, guards
 reentrant advancement, and drops retries for replaced sessions or attempts.
+[Legacy Challenge result ownership](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#legacy-challenge-result-ownership)
+also protects the immediate item and quest completion path from enqueue
+failures and suppresses notices for superseded attempts.
 The [configured MySQL gate](DESTINATION_PROVIDER_QUALIFICATION.md#challenge-and-contract-result-publication)
 passes nine original compiled cases, including the Contract companion reload
 and simulated lost commit acknowledgment, on separately migrated schemas.

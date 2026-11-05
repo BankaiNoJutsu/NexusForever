@@ -1,5 +1,23 @@
 # Live Character Challenge earning producers
 
+## Legacy Challenge result ownership
+
+5 November 2026. Legacy Challenge attempts apply tier progression and terminal
+gameplay effects before sending their immediate result notices. A failed
+Challenge status, medal or completion enqueue can no longer interrupt the item
+grant or quest objective update. A reentrant activation replaces the runtime
+generation and drops any unsent result for the older attempt. The generation
+is local to the Player and leaves historical attempt IDs and save rows intact.
+
+Six baseline cases reproduced interrupted progress or delivery, repeat
+completion, duplicate activation and a rejected restart during a terminal
+medal notice. The owning build passed with zero warnings and errors in
+36 seconds. All 144 scoped Challenge and Contract companion cases passed in
+86 seconds. Evidence is under
+`artifacts/continuation-20261105/legacy-challenge-result-ownership/`.
+Legacy items still use normal inventory persistence. Unsupported earning rules,
+deployed sockets and native presentation remain open.
+
 ## Confirmed medal and completion results
 
 4 November 2026. Four baseline cases reproduced a live Challenge result
