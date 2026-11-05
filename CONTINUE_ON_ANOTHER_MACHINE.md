@@ -1,5 +1,12 @@
 # Continue on another machine
 
+Latest bank implementation: [public rank settings](Decomp/Analysis/GUILD_BANK_RANK_SETTINGS.md)
+persist operations23/24/30 through the original guild owner with frozen World
+readback/cursors.22 new/346 affected cases and both reviews pass. The rank256
+alias and lost ordinary notice are fixed. Separate upstream integration changed
+the parent to8749af17; bank Source was preserved and scoped validation refreshed.
+Finance/custody/reset/actual-row/provider/runtime/native/retail remain open.
+
 Latest bank evidence: [native request/limit contracts](Decomp/Analysis/GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md)
 maps04A8 signs,04B1 rank settings and signed-max “all,” six-bit tab permissions
 and eight selectors using formulas757-762.29 native spans match the pinned PE.

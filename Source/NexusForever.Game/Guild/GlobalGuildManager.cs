@@ -407,6 +407,13 @@ namespace NexusForever.Game.Guild
                 if (member == null)
                     return new GuildResultInfo(GuildResult.NotInThatGuild);
 
+                // Validate the wire index before any handler can narrow it to
+                // a byte and alias a different rank (for example 256 -> 0).
+                if (operation.Rank >= 10 && operation.Operation is (GuildOperation.RankAdd or GuildOperation.RankDelete
+                    or GuildOperation.RankPermissions or GuildOperation.RankRename or GuildOperation.BankTabPermissions
+                    or GuildOperation.WithdrawalLimitChange or GuildOperation.RepairLimitChange))
+                    return new GuildResultInfo(GuildResult.InvalidRank, guild.Identity, operation.TextValue, operation.Rank);
+
                 if (handlers.Delegate != null)
                 {
                     handlers.Delegate.Invoke(guild, member, player, operation);

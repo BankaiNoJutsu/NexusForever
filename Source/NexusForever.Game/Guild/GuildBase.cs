@@ -775,6 +775,11 @@ namespace NexusForever.Game.Guild
         /// </remarks>
         protected IEnumerable<NetworkGuildRank> GetGuildRanksPackets()
         {
+            if (TryGetConfirmedBankRanks(out var confirmed))
+            {
+                foreach (var rank in confirmed) yield return rank;
+                yield break;
+            }
             for (byte i = 0; i < 10; i++)
             {
                 IGuildRank rank = GetRank(i);
@@ -944,6 +949,8 @@ namespace NexusForever.Game.Guild
         /// </summary>
         private void AnnounceGuildResult(GuildResult result, uint referenceId = 0, string referenceText = "")
         {
+            if ((result is GuildResult.RankModified or GuildResult.RankCreated or GuildResult.RankDeleted or GuildResult.RankRenamed)
+                && DeferBankRankAnnouncement(new(result, referenceId, referenceText))) return;
             Broadcast(new ServerGuildResult
             {
                 Result        = result,
@@ -972,6 +979,7 @@ namespace NexusForever.Game.Guild
         /// </summary>
         private void AnnounceGuildRankChange()
         {
+            if (DeferBankRankAnnouncement()) return;
             Broadcast(new ServerGuildRankChange
             {
                 GuildIdentity = Identity.ToNetworkIdentity(),

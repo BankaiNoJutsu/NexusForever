@@ -103,9 +103,14 @@ Next actionable outcomes and remaining gates
   spans:04A8 signs,04B1 bank rank settings, signed-max “all,” six-bit tab permission
   groups and the eight withdrawal selectors (formulas757-762). This is mapped
   only. Financial handlers are log-only and have no transaction to fault-inject.
-  Next implement the public rank bank-settings operations through original-owner
-  guild persistence and confirmed readback, or independent gameplay work as its
-  inputs allow. Keep money/item/tab-open diagnostic until a coherent financial
+  The later Decomp/Analysis/GUILD_BANK_RANK_SETTINGS.md implements public rank
+  permission/money/repair settings through original guild persistence and
+  confirmed World readback.22 new/346 affected cases, clean scoped builds and
+  both final reviews pass. Rank256 alias and lost later ordinary notice defects
+  are fixed. Separate upstream integration8749af17 changed the parent; bank
+  validation was refreshed against it. Do not repeat the settings slice. Continue
+  independent progression/gameplay while financial inputs are qualified.
+  Keep money/item/tab-open diagnostic until a coherent financial
   service exists; actual formula/perk values, custody, authenticator authority,
   daily reset ownership and provider/native/retail remain open.
 - Keep the full broader roadmap active: Contract public claim/reset requires

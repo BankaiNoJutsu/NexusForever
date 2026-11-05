@@ -1,0 +1,555 @@
+{
+  "date": "2026-11-05",
+  "milestone": "Public rank bank settings with original guild persistence and confirmed World replies",
+  "sourceBaselineCommit": "ed2e9339d00f7928c0bc5f05cbf5724267c3ca76",
+  "publicationParent": "8749af171c3dd523abc1a29df320e07df316d1f2",
+  "bankSourceBaseUnchangedByConcurrentMerge": true,
+  "sourceFiles": [
+    {
+      "path": "Source/NexusForever.Game/Guild/GlobalGuildManager.cs",
+      "sha256": "d776f0f36d356122cc24acfc06baef7dbdbc471b0f93eb6c1b1b844254c17ecd",
+      "gitBlob": "cb9dded08a91fcb85f382915c6b44d10f1ce9941"
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/GuildBase.cs",
+      "sha256": "33d3b7961b9da6b5eea24a62b710fc652e8f51c50308d723c4e080f9268ae17f",
+      "gitBlob": "1770c4016bd10b05b41b565aa2a330652c712434"
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/GuildBase.Mutations.cs",
+      "sha256": "7de1e16ea7f30c9c65003a5d01466024120862f067c4d03e8fcd0fdb8c9b07bd",
+      "gitBlob": "02e573fc3667a7502d790df0580cdd19b8ffbfe1"
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/GuildMutationPersistence.cs",
+      "sha256": "dc4b08ef30dbeabc5bc7418d0c20d56cd66572c14a1b2f94ca925429b1c42aca",
+      "gitBlob": "752ed0391968b089bba469b5bbf8542de1d253ab"
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/GuildBase.BankRankSettings.cs",
+      "sha256": "4b9f40f0dd308a75ae004ae5d2d59005072344257be6d7bef37bfb9ff5573796",
+      "gitBlob": "59517c2b87cc14293d30c7ff8f3be2529939bbc0"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Guild/GuildMutationRecoveryTests.cs",
+      "sha256": "69fe36ea119141a952c171a42f17eb933d33d35e9a92bbabbe2a07e05df90593",
+      "gitBlob": "1ca2a946cc64bc3ac890ef1374fd9e089018826a"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Guild/GuildBankRankSettingsTests.cs",
+      "sha256": "45bcd9a2c6fae44025029d702e2a0ede63667e928dfda9959fd37f041b5fc973",
+      "gitBlob": "91fbe6fab727e71a7f79618c2f8a13910f9c4da2"
+    }
+  ],
+  "assemblies": {
+    "Source/NexusForever.Game.Abstract/bin/Debug/net10.0/NexusForever.Game.Abstract.dll": "dbed6f58dc55b2a31a85c3ed99e1f065db4c693659fd9c24cd91dc61b777b3c3",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Abstract.dll": "dbed6f58dc55b2a31a85c3ed99e1f065db4c693659fd9c24cd91dc61b777b3c3",
+    "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll": "84169fd77c2ea217b15916251013983564de5f9af1fde78edeac2eea2371dbfe",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll": "84169fd77c2ea217b15916251013983564de5f9af1fde78edeac2eea2371dbfe",
+    "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll": "08e19c5b2d7a616d55647d64cc7836a6f47417e60d4904b3a2ad510e1048e21f",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll": "08e19c5b2d7a616d55647d64cc7836a6f47417e60d4904b3a2ad510e1048e21f",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll": "6484ff722b4391795372b9678ddc8c23930e012393fb08614a4fd8eefc4a07c7"
+  },
+  "nativeInput": {
+    "path": "Decomp/Analysis/coverage/guild-bank-native-20261105.json",
+    "sha256": "45ec0b03a1188a2a167ef41a03590a86fa972eae0e9e659acf8a398ea8608da0",
+    "boundary": "Reused exact-hash mapped bank contracts; no new native/provider/client execution"
+  },
+  "baseline": {
+    "path": "artifacts/continuation-20261105/guild-bank-rank-settings/baseline.trx",
+    "sha256": "7c251da4ed871126d3cebf1b06f902e1c917fbd2fa3e1f9e66d5645d0f2c14f4",
+    "counters": {
+      "total": "4",
+      "executed": "4",
+      "passed": "0",
+      "failed": "4",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "groups": {
+      "GuildMutationRecoveryTests": {
+        "Failed": 4
+      }
+    },
+    "bankRankCases": {
+      "Failed": 4
+    },
+    "nonPassing": [
+      {
+        "name": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankPublicSettingPersistsAndPublishesConfirmedReadback(operation: BankTabPermissions, value: 1134907106097365023)",
+        "outcome": "Failed",
+        "message": "Assert.Equal() Failure: Values differ\r\nExpected: 1134907106097365023\r\nActual:   0"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankPendingSettingsAreNotLeakedByOrdinaryRankBroadcast",
+        "outcome": "Failed",
+        "message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerGuildRankChange { GuildIdentity = 1:77, Ranks = [GuildRank { BankWithdrawalPermissions = 0, MoneyWithdrawalLimit = 0, PermissionMask = All, RankName = \"Leader\", RepairLimit = 0 }, GuildRank { BankWithdrawalPermissions = 0, MoneyWithdrawalLimit = 0, PermissionMask = Disabled, RankN"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankPublicSettingPersistsAndPublishesConfirmedReadback(operation: RepairLimitChange, value: 9223372036854775807)",
+        "outcome": "Failed",
+        "message": "Assert.Equal() Failure: Values differ\r\nExpected: 9223372036854775807\r\nActual:   0"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankPublicSettingPersistsAndPublishesConfirmedReadback(operation: WithdrawalLimitChange, value: 777)",
+        "outcome": "Failed",
+        "message": "Assert.Equal() Failure: Values differ\r\nExpected: 777\r\nActual:   0"
+      }
+    ]
+  },
+  "reviewFindingBeforeFix": {
+    "path": "artifacts/continuation-20261105/guild-bank-rank-settings/before-ordinary-fix.trx",
+    "sha256": "9f4d3b06bc81751b18f1a1f20978bb2fae006973d7eaddb7832207c0c209a9f0",
+    "counters": {
+      "total": "19",
+      "executed": "19",
+      "passed": "18",
+      "failed": "1",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "groups": {
+      "GuildMutationRecoveryTests": {
+        "Passed": 18,
+        "Failed": 1
+      }
+    },
+    "bankRankCases": {
+      "Passed": 18,
+      "Failed": 1
+    },
+    "nonPassing": [
+      {
+        "name": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankLaterOrdinaryEditRetainsItsReadbackBehindTheQueuedBankSnapshot",
+        "outcome": "Failed",
+        "message": "Assert.Equal() Failure: Values differ\r\nExpected: 2\r\nActual:   1"
+      }
+    ]
+  },
+  "rankAliasBeforeFix": {
+    "path": "artifacts/continuation-20261105/guild-bank-rank-settings/rank-alias-before-fix.trx",
+    "sha256": "c25288f14554d5bc75304cc6a5dd5c81201ca75fa892101e257d72ba3814cc26",
+    "counters": {
+      "total": "1",
+      "executed": "1",
+      "passed": "0",
+      "failed": "1",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "groups": {
+      "GuildMutationRecoveryTests": {
+        "Failed": 1
+      }
+    },
+    "bankRankCases": {
+      "Failed": 1
+    },
+    "nonPassing": [
+      {
+        "name": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankSharedPermissionEditCannotAliasTheLeaderThroughAHighRank",
+        "outcome": "Failed",
+        "message": "Assert.Equal() Failure: Values differ\r\nExpected: All\r\nActual:   None"
+      }
+    ]
+  },
+  "intermediateFocused": {
+    "path": "artifacts/continuation-20261105/guild-bank-rank-settings/fixed-focused.trx",
+    "sha256": "45a64f2ca97890bd63f680ca57cfeb7405eedfdaa789bc95f6653409649d347c",
+    "counters": {
+      "total": "20",
+      "executed": "20",
+      "passed": "20",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "groups": {
+      "GuildMutationRecoveryTests": {
+        "Passed": 20
+      }
+    },
+    "bankRankCases": {
+      "Passed": 20
+    },
+    "nonPassing": []
+  },
+  "preMergeAffected": {
+    "path": "artifacts/continuation-20261105/guild-bank-rank-settings/final-affected.trx",
+    "sha256": "f72cbfb6f2e7814261fe04deff765bd984642e463549d9969338f163c1de1d09",
+    "counters": {
+      "total": "346",
+      "executed": "346",
+      "passed": "346",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "groups": {
+      "GuildMutationRecoveryTests": {
+        "Passed": 52
+      },
+      "GuildCreationFinanceTests": {
+        "Passed": 54
+      },
+      "GuildRenameRecoveryTests": {
+        "Passed": 14
+      },
+      "CharacterAtomicSaveTests": {
+        "Passed": 20
+      },
+      "CommunityResidenceLifecycleTests": {
+        "Passed": 41
+      },
+      "GuildDisbandRecoveryTests": {
+        "Passed": 14
+      },
+      "CommunityVisitIndexTests": {
+        "Passed": 25
+      },
+      "ClientHousingCommunityRenameHandlerTests": {
+        "Passed": 3
+      },
+      "GuildAffiliationRecoveryTests": {
+        "Passed": 20
+      },
+      "GuildAffiliationPublicationTests": {
+        "Passed": 26
+      },
+      "WarPartyBossTokenProtocolTests": {
+        "Passed": 3
+      },
+      "ClientHousingCommunityDonateHandlerTests": {
+        "Passed": 1
+      },
+      "GuildBankHandlerBoundaryTests": {
+        "Passed": 1
+      },
+      "GuildStandardTests": {
+        "Passed": 5
+      },
+      "CommunityListProducerTests": {
+        "Passed": 4
+      },
+      "GuildAchievementRecoveryTests": {
+        "Passed": 21
+      },
+      "GuildDisbandChatCleanupTests": {
+        "Passed": 4
+      },
+      "ClientHousingCommunityUpdateHandlerTests": {
+        "Passed": 2
+      },
+      "GuildCreationRecoveryTests": {
+        "Passed": 21
+      },
+      "GuildRankIdentityTests": {
+        "Passed": 3
+      },
+      "GuildPacketShapeTests": {
+        "Passed": 6
+      },
+      "ClientGuildRegisterHandlerTests": {
+        "Passed": 5
+      },
+      "GuildAchievementManagerTests": {
+        "Passed": 1
+      }
+    },
+    "bankRankCases": {
+      "Passed": 22
+    },
+    "nonPassing": []
+  },
+  "finalAffected": {
+    "path": "artifacts/continuation-20261105/guild-bank-rank-settings/merged-affected.trx",
+    "sha256": "a5ca473bd9cf717647fe39a121ab0db4e50f0088715794034aee05bc19e8ae0b",
+    "counters": {
+      "total": "346",
+      "executed": "346",
+      "passed": "346",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "groups": {
+      "GuildCreationFinanceTests": {
+        "Passed": 54
+      },
+      "GuildAchievementRecoveryTests": {
+        "Passed": 21
+      },
+      "GuildAffiliationPublicationTests": {
+        "Passed": 26
+      },
+      "CommunityVisitIndexTests": {
+        "Passed": 25
+      },
+      "CommunityResidenceLifecycleTests": {
+        "Passed": 41
+      },
+      "GuildRankIdentityTests": {
+        "Passed": 3
+      },
+      "CharacterAtomicSaveTests": {
+        "Passed": 20
+      },
+      "GuildMutationRecoveryTests": {
+        "Passed": 52
+      },
+      "GuildAffiliationRecoveryTests": {
+        "Passed": 20
+      },
+      "ClientHousingCommunityDonateHandlerTests": {
+        "Passed": 1
+      },
+      "GuildCreationRecoveryTests": {
+        "Passed": 21
+      },
+      "GuildPacketShapeTests": {
+        "Passed": 6
+      },
+      "GuildRenameRecoveryTests": {
+        "Passed": 14
+      },
+      "ClientGuildRegisterHandlerTests": {
+        "Passed": 5
+      },
+      "GuildDisbandRecoveryTests": {
+        "Passed": 14
+      },
+      "ClientHousingCommunityUpdateHandlerTests": {
+        "Passed": 2
+      },
+      "GuildDisbandChatCleanupTests": {
+        "Passed": 4
+      },
+      "GuildStandardTests": {
+        "Passed": 5
+      },
+      "WarPartyBossTokenProtocolTests": {
+        "Passed": 3
+      },
+      "ClientHousingCommunityRenameHandlerTests": {
+        "Passed": 3
+      },
+      "CommunityListProducerTests": {
+        "Passed": 4
+      },
+      "GuildBankHandlerBoundaryTests": {
+        "Passed": 1
+      },
+      "GuildAchievementManagerTests": {
+        "Passed": 1
+      }
+    },
+    "bankRankCases": {
+      "Passed": 22
+    },
+    "nonPassing": []
+  },
+  "finalFocusedSubset": {
+    "selector": "test method prefix BankRank in merged-affected.trx",
+    "passed": 22,
+    "failed": 0,
+    "standaloneFinalFocusedRerun": false
+  },
+  "affectedFilter": "FullyQualifiedName~NexusForever.Game.Tests.Guild|FullyQualifiedName~GuildPacketShapeTests|FullyQualifiedName~GuildAchievementManagerTests|FullyQualifiedName~CommunityVisitIndexTests|FullyQualifiedName~CommunityListProducerTests|FullyQualifiedName~ClientHousingCommunityUpdateHandlerTests|FullyQualifiedName~ClientHousingCommunityRenameHandlerTests|FullyQualifiedName~ClientHousingCommunityDonateHandlerTests|FullyQualifiedName~CharacterAtomicSaveTests",
+  "artifacts": [
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/baseline-build.log",
+      "sha256": "4db53e44c9548263a0bc36c2d556c85d8f4d228450f9396b1be3dfc721443d05"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/baseline-tests.log",
+      "sha256": "78d7c40c9d6fba429f3a5dfa0a8df4b7f7a038c8dd74d2fa238daddcbc5f5871"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/baseline-assemblies.json",
+      "sha256": "95f79538237bbacdd15edce2c1b1069fbb938869efcc1b4a67d40bb0a567b2cf"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/candidate-owning-build.log",
+      "sha256": "e0124661c15b59485770871bdf14e012e1a9dfbad667b55fa2a766277a613c21"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/candidate-test-build.log",
+      "sha256": "222825afa18420d73a273089353a91f877f520ccdc187f793a397fbe5bf47526"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/initial-publication.cs",
+      "sha256": "01a8ba017ab8289b57408d1a20be67a20166d318b6fe40d75224844a9a91c94f"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/initial-production.diff",
+      "sha256": "1355db0692c23cc603cb13dd074f21649151419322f11f7b3905ac22ad26691f"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/initial-candidate-hashes.json",
+      "sha256": "f925fbdee92fd18679cda3a117864ac28169f89b8a0dd6716f6d7b628a3baf6b"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/before-ordinary-fix-tests.log",
+      "sha256": "0ada0160bd7d3e784f62744328d9a592fe61f5c2af70ec228662b9c87d5f0055"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/rank-alias-before-fix-tests.log",
+      "sha256": "d9268b22d0a3a0d12cb7cbb6db449dc1b459461dabf32742e81d6c8e0c8abe3f"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/expanded-build.log",
+      "sha256": "5e7488c1cf140f2b5fb1f286d42d257fb0297891296776f9961553327af27ba9"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/alias-probe-build.log",
+      "sha256": "6131353f81c18c04e0c2e139aa5d34e7f88d72ca314f457444fd7c11fb3bbabc"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/fixed-owning-build.log",
+      "sha256": "c51eb8df168ea2d4454e2e8c70e704ec5ba4413553c6d9bd3fa2ddb04a412192"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/final-test-build.log",
+      "sha256": "602c17169cacf8db75f5934620b1543b52dd89322f4ee39808d79f8d41aa75ae"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/final-affected-tests.log",
+      "sha256": "68166a4213f7025ef1944bb73de9fabfc222b9deb6596607d19dc77605ab1d07"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/reviews.md",
+      "sha256": "b591115e2cb5f8bde0f36a5fd8468089c5b7a8a933e1cfd48be045b7a2af5590"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/upstream-refresh.json",
+      "sha256": "6ca266dd8cbaf44d3f93634689d9106441be5af59d88e23a4796549271b019f2"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/merged-owning-build.log",
+      "sha256": "d7351484dc6950e3c05e21005945eda8c6dd507a9bc72c0c00c3f01f19cc8a48"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/merged-test-build.log",
+      "sha256": "e223b3f654f0a1944442bd39d0a0c4bafa5f5789c2b8341d2a697eab1d4c9dfe"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/merged-scoped-restore.log",
+      "sha256": "3221d94c79c53b6caa70e4d9a98e456e900416877c37c0ce6f3e042fb3b9ba1b"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/merged-refreshed-test-build.log",
+      "sha256": "170032685199d3e5af9d568d6fe0f93dbef9c21cdca6d09a1025b7cecef5516b"
+    },
+    {
+      "path": "artifacts/continuation-20261105/guild-bank-rank-settings/merged-affected-tests.log",
+      "sha256": "16dcbcd4891024fa8c46fdbbccae532517a55ab4248eeb3a00fb0b2108e30655"
+    }
+  ],
+  "reviews": {
+    "Standards": {
+      "initial": 1,
+      "finalMaterial": 0
+    },
+    "Spec": {
+      "initial": 1,
+      "finalMaterial": 0
+    },
+    "sharedFinding": "Lost ordinary readback during a pending bank publication; executed and fixed"
+  },
+  "behavior": {
+    "publicGuildOperations": [
+      23,
+      24,
+      30
+    ],
+    "bankPermissions": "Opaque UInt64 with retained unknown bits; no guessed withdrawal count",
+    "moneyAndRepairLimits": "Nonnegative signed64 including Int64Max all sentinel",
+    "rankIdentity": "Full UInt32 validated below10 before any public rank-indexed delegate can narrow it",
+    "saveOwner": "Existing recoverable guild graph; in-memory request sequence also owns accepted no-ops",
+    "publication": "Frozen confirmed10-slot rank view and retained notices per original World recipient/queue/account/epoch",
+    "ordinaryRankWindow": "Suppressed snapshots and rank results retain their own confirmed sequences behind older bank packets"
+  },
+  "upstreamRefresh": {
+    "latestAllStatePulls": 20,
+    "changedHeadsBasesStatesOrMergeStates": [],
+    "pr608": "open",
+    "pr609": "closed-unmerged"
+  },
+  "qualification": "Public decoder/World handler, real GlobalGuildManager/Guild and disposable Character SQLite; recorded player/account/session actors and driven EventQueues",
+  "notes": [
+    "Four baseline failures are three missing operation writes and one premature ordinary rank readback.",
+    "The reviewed lost readback and separate permission alias are executed production failures, unlike retained fixture compile corrections.",
+    "The final22 feature cases are part of the346 affected run; no standalone22-case rerun or full suite ran.",
+    "A separate task merged upstream history during publication. Bank files were unchanged by the merge; owning/test dependencies and affected validation were refreshed against8749af17.",
+    "The first post-merge no-restore test build used stale Aspire assets; scoped project restore fixed dependency selection before final validation.",
+    "Positive public fixture is an ordinary Guild. WarParty base-class routing/native contracts do not constitute a separate runtime/provider bank qualification.",
+    "Acknowledged enqueue is not socket delivery or durable packet replay across process restart."
+  ],
+  "remaining": [
+    "Guild bank balances/tabs/item custody and Character/guild financial settlement",
+    "Actual formula/perk rows, authenticator authority and daily reset/counter ownership",
+    "Fresh configured-provider/copied-upgrade, physical restart, broker/socket/deployment/native/retail",
+    "Broader ordinary rank publication outside a bank-owned window and all other roadmap gameplay/producer requirements"
+  ],
+  "goal": "active"
+}

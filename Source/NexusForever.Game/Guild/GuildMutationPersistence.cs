@@ -16,7 +16,7 @@ namespace NexusForever.Game.Guild
         internal sealed record Member(ulong Character, byte Rank, string Note, int Plot);
         internal sealed record Data(string Motd, string Info, ushort Background, ushort Foreground, ushort Scan);
         internal sealed record Achievement(ushort Id, uint Progress, uint Credited, DateTime? Completed);
-        internal sealed record Snapshot(ulong? Leader, uint Flags, Rank[] Ranks, Member[] Members, Data Data, Achievement[] Achievements);
+        internal sealed record Snapshot(ulong? Leader, uint Flags, Rank[] Ranks, Member[] Members, Data Data, Achievement[] Achievements, long BankRankSequence = 0);
         internal sealed record CreationHeader(string Name, DateTime Created, DateTime? Deleted, string OriginalName, ulong? OriginalLeader);
         internal static Snapshot Empty => new(null, 0, [], [], null, []);
         private sealed class Unit(CharacterContext context, Snapshot intent, Snapshot target, Snapshot sql, bool disband, string name, bool ownsName, CreationHeader targetHeader, CreationHeader sqlHeader, object reservation)
@@ -72,7 +72,7 @@ namespace NexusForever.Game.Guild
                 {
                     if (active != null || uncertain.Count != 0) return true;
                     Snapshot value = current();
-                    return !Equal(value, baselineIntent) || owner is Guild achievementGuild
+                    return !Equal(value, baselineIntent) || value.BankRankSequence != (baselineIntent?.BankRankSequence ?? 0) || owner is Guild achievementGuild
                         && achievementGuild.RealmFirst?.HasPendingFor((value.Achievements ?? []).Where(row => row.Completed != null).Select(row => row.Id)) == true;
                 }
             }

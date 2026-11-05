@@ -1,5 +1,11 @@
 # Client Binary Decompile Continuation Guide
 
+[Public bank rank settings](GUILD_BANK_RANK_SETTINGS.md) now use the mapped
+operations through the original guild snapshot/World recipients.22 new/346
+affected cases and both reviews pass; the rank alias and lost later ordinary
+notice are fixed. Finance/custody/reset/actual-row and provider/native/retail
+remain open. Keep financial handlers diagnostic and continue independent gameplay.
+
 [Guild bank native contracts](GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md) provide
 the exact signed money sender, rank setting operations/sentinel, packed tab
 permissions and formula757-762 selector join.29 spans were freshly matched to

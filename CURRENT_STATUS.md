@@ -1,5 +1,11 @@
 # NexusForever Feature Restoration - Current Status
 
+[Public bank rank settings](Decomp/Analysis/GUILD_BANK_RANK_SETTINGS.md) now
+persist permission/money/repair settings and publish frozen rank readback on
+each original World recipient.22 new/346 affected cases and both reviews pass,
+including the rank256 alias and lost ordinary notice fixes. Finance/custody/
+reset/actual-row/provider/native/retail gates and F-011 partial status remain.
+
 [Guild bank native request/limit contracts](Decomp/Analysis/GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md)
 now map deposit/withdraw signs, rank settings and their “all” sentinel, packed
 tab permissions and formula757-762 withdrawal selectors.29 native spans match

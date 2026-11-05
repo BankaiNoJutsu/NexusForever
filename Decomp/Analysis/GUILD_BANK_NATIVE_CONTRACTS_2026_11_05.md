@@ -1,5 +1,11 @@
 # Guild bank native request and limit contracts
 
+Later [public rank-settings implementation](GUILD_BANK_RANK_SETTINGS.md) completes
+operations23/24/30 with original-owner persistence and confirmed World readback.
+Its22 new/346 affected cases and reviews are separate Source evidence. The
+financial handlers remain diagnostic. The observations below describe this
+native-mapping checkpoint; its proposed rank-settings integration is superseded.
+
 5 November 2026. **Mapped only; bank economy remains unimplemented.** This
 follow-through replaces the proposed financial fault-injection probe with its
 actual prerequisite: the public money/item/tab-open handlers only log, so they

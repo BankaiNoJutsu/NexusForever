@@ -38,7 +38,7 @@ namespace NexusForever.Game.Guild
                 (ushort)guild.Standard.BackgroundIcon.GuildStandardPartEntry.Id,
                 (ushort)guild.Standard.ForegroundIcon.GuildStandardPartEntry.Id,
                 (ushort)guild.Standard.ScanLines.GuildStandardPartEntry.Id) : null,
-            this is Guild achievementGuild ? achievementGuild.CaptureAchievementMutations() : null);
+            this is Guild achievementGuild ? achievementGuild.CaptureAchievementMutations() : null, bankRankSequence);
         }
         internal bool OwnsMutationNameWrite(CharacterContext context)
         {
@@ -69,12 +69,14 @@ namespace NexusForever.Game.Guild
         }
         private void InitialiseMutations(GuildMutationPersistence.Snapshot baseline, string database)
         {
+            InitialiseBankRankSettings(baseline?.Ranks ?? []);
             if (baseline != null && this is Community community) community.ConfirmDirectoryMutations(baseline.Flags, baseline.Leader);
             mutationPersistence = new(this, MutationGate, baseline, database, CaptureMutations, AcknowledgeMutations);
             foreach (GuildRank rank in ranks.Values.OfType<GuildRank>()) rank.BindSaveOwner(this);
         }
         private void AcknowledgeMutations(GuildMutationPersistence.Snapshot before, GuildMutationPersistence.Snapshot target, GuildMutationPersistence.Snapshot intent)
         {
+            AcknowledgeBankRankSettings(target.Ranks, intent.BankRankSequence);
             if (this is Community community)
             {
                 community.PrivacyMutationCommitted(intent.Flags, target.Flags);

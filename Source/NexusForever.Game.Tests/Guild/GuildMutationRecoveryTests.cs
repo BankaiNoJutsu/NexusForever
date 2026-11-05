@@ -24,7 +24,7 @@ using GameGuild = NexusForever.Game.Guild.Guild;
 
 namespace NexusForever.Game.Tests.Guild;
 
-public sealed class GuildMutationRecoveryTests : IDisposable
+public sealed partial class GuildMutationRecoveryTests : IDisposable
 {
     private readonly string file = Path.Combine(Path.GetTempPath(), $"nf-guild-mutations-{Guid.NewGuid():N}.sqlite");
     private readonly List<string> extraFiles = [];

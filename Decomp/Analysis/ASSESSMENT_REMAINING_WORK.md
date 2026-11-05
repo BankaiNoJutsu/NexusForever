@@ -1,12 +1,19 @@
 # Assessment follow-through goal
 
+[Public bank rank settings](GUILD_BANK_RANK_SETTINGS.md) now route operations
+23/24/30 through the original guild save and confirmed World readback.22 new/
+346 affected cases and both final reviews pass. A reproduced full-width rank
+alias and lost later ordinary readback are fixed. Finance/custody/reset/actual
+rows and provider/runtime/native/retail remain open; money/item/tab-open handlers
+stay diagnostic. Continue independent gameplay while financial inputs are qualified.
+
 [Guild bank native contracts](GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md) map
 signed04A8 money requests,04B1 rank settings, the signed-max “all” sentinel,
 six-bit tab permissions and the eight selector values joined to formulas757-762.
 All29 selected native spans match the pinned PE. This is mapped evidence, not
 implemented banking: the financial handlers are log-only, so there is no existing
-transaction to fault-inject. Next implement the public rank bank-settings
-operations through the original guild save owner and confirmed readback; retain
+transaction to fault-inject. The later rank-settings result above completes
+that public original-owner/readback integration; retain
 the diagnostic financial boundary until balances/custody/limits settle coherently.
 
 [Confirmed public LAS replies](ACTION_SET_PUBLICATION.md) now follow the frozen
