@@ -23210,6 +23210,28 @@ producer or reverse selector.
 
 ### F-026 - Items / Unlocks / Costumes / Pets / Titles - PARTIAL
 
+#### Committed vendor repairs
+
+5 November 2026. The public repair handler settles earlier Character changes
+before applying a repair. It retains the quoted items and their durability,
+then commits the durability writes and credit debit together through the
+existing inventory reconciliation path. The balance notice waits for settlement
+on the original World actor and queue. A rollback restores both sides, and a
+lost commit acknowledgement resolves the existing writes without another debit.
+Durability changed during the preceding save retires the quote before payment.
+Single-item and repair-all requests keep the existing formula and rounding.
+
+Four baseline cases reproduced a 25-credit balance notice before saving. The
+owning build took 34 seconds with zero warnings or errors. All 21 scoped repair
+and purchase cases passed in 19 seconds. Seven repair cases and eight existing
+buyback controls then passed in 10 seconds after an 18-second test-project build
+with matching, unchanged Game and WorldServer DLLs. The initial test type-name
+compile error is corrected and retained. Evidence is under
+`artifacts/continuation-20261105/vendor-repair-settlement/`.
+These are source and SQLite checks. Configured MySQL, socket delivery and native
+durability presentation remain open. The unregistered `ServerItemDurability`
+model still requires a verified wire producer.
+
 #### Vendor purchase capacity
 
 4 November 2026. Vendor purchases check the full delivery before charging.

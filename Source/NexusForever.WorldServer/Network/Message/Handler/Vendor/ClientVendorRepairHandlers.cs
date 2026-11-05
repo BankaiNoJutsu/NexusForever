@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -56,15 +57,23 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
 
         public void HandleMessage(IWorldSession session, ClientRepairItemVendor repairItemVendor)
         {
-            if (session.Player.SelectedVendorInfo == null)
+            IPlayer player = session.Player;
+            IInventory inventory = player?.Inventory;
+            if (inventory == null || !InventoryMutationScope.TryAcquire(inventory, out var mutationLease))
+                return;
+            using var heldMutation = mutationLease;
+            IVendorInfo vendor = player.SelectedVendorInfo;
+            if (vendor == null)
             {
-                session.Player.SendGenericError(GenericError.VendorNoVendor);
+                player.SendGenericError(GenericError.VendorNoVendor);
                 return;
             }
 
-            IReadOnlyList<IItem> repairItems = GetRepairItems(session.Player, repairItemVendor.ItemIdentity);
+            IReadOnlyList<IItem> repairItems = GetRepairItems(player, repairItemVendor.ItemIdentity);
             if (repairItems.Count == 0)
                 return;
+            var quote = repairItems.Select(item => (Item: item, Durability: item.Durability)).ToArray();
+            ICurrencyManager wallet = player.CurrencyManager;
 
             ulong repairCost = 0ul;
             foreach (IItem item in repairItems)
@@ -73,19 +82,39 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
             if (repairCost == 0ul)
                 return;
 
-            if (!session.Player.CurrencyManager.CanAfford(CurrencyType.Credits, repairCost))
+            if (!wallet.CanAfford(CurrencyType.Credits, repairCost))
             {
-                session.Player.SendGenericError(GenericError.VendorNotEnoughCash);
+                player.SendGenericError(GenericError.VendorNotEnoughCash);
                 return;
             }
+
+            if (!ReferenceEquals(session.Player, player) || !ReferenceEquals(player.Inventory, inventory)
+                || !ReferenceEquals(player.CurrencyManager, wallet) || !ReferenceEquals(player.SelectedVendorInfo, vendor)
+                || quote.Any(line => !line.Item.Durability.Equals(line.Durability)))
+                return;
 
             if (repairItemVendor.ItemIdentity == 0ul && repairItemVendor.RepairCost != 0ul && repairItemVendor.RepairCost != repairCost)
             {
                 log.LogDebug("Repair-all cost mismatch for player {PlayerGuid}: client {ClientCost}, server {ServerCost}.",
-                    session.Player.Guid, repairItemVendor.RepairCost, repairCost);
+                    player.Guid, repairItemVendor.RepairCost, repairCost);
             }
 
-            session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, repairCost);
+            if (player is Player owner && inventory is Inventory concrete && wallet is CurrencyManager)
+            {
+                var originalSession = owner.Session;
+                var events = originalSession.Events;
+                var account = owner.Account;
+                ulong epoch = account.WorldSessionEpoch;
+                heldMutation.Dispose();
+                concrete.SettleVendorRepair(owner, quote, repairCost, () =>
+                    ReferenceEquals(session.Player, owner) && ReferenceEquals(owner.Session, originalSession)
+                    && ReferenceEquals(originalSession.Events, events) && ReferenceEquals(owner.Account, account)
+                    && account.WorldSessionEpoch == epoch && ReferenceEquals(owner.Inventory, concrete)
+                    && ReferenceEquals(owner.CurrencyManager, wallet));
+                return;
+            }
+
+            wallet.CurrencySubtractAmount(CurrencyType.Credits, repairCost);
             foreach (IItem item in repairItems)
                 item.Durability = 1.0f;
         }
