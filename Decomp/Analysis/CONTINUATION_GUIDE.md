@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[Pet-flair Character MySQL](PET_FLAIR_PROGRESSION.md#character-mysql-qualification)
+passes all16 original cases with configured retries and exact49-migration
+identities, plus16 SQLite controls and both reviews. The initial stale guard
+failure is retained. All32 schemas are absent and the owned workloads stop.
+This qualifies the recorded Character/provider slice; other profiles, physical
+failure/restart, Auth, actual rows and native/retail remain open.
+
 [Original-recipient chat delivery](INCOMING_CHAT_OWNERSHIP.md) now queues admitted
 whisper/channel text and automatic replies on the original World recipient.
 Five baseline failures and two item-link aliasing probes are fixed;21 new/all57

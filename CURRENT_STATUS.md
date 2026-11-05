@@ -1,5 +1,11 @@
 # NexusForever Feature Restoration - Current Status
 
+[Pet-flair MySQL qualification](Decomp/Analysis/PET_FLAIR_PROGRESSION.md#character-mysql-qualification)
+passes all16 original cases on fresh49-migration Character schemas;16 SQLite
+controls and both reviews pass. The stale migration guard failure is retained.
+All32 owned schemas are absent and the owned engine is stopped. F-026 remains
+partial; other profiles, physical restart, actual rows and native/retail stay open.
+
 [Original-recipient chat delivery](Decomp/Analysis/INCOMING_CHAT_OWNERSHIP.md)
 now binds broker whisper/channel text, bubble lookup and automatic replies to
 each admitted World recipient. Five baseline failures and two item-link

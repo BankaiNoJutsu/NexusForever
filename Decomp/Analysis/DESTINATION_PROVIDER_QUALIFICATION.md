@@ -1,5 +1,9 @@
 # Destination configured-provider qualification
 
+[Pet-flair progression](PET_FLAIR_PROGRESSION.md#character-mysql-qualification)
+passes all16 cases on migrated49-identity MySQL8.4.13 Character schemas, with
+configured retries, exact owned-schema cleanup and terminal shutdown proof.
+
 [Path progression publication](#path-progression-publication) covers committed
 mission notices, XP display, and item and satchel persistence controls on
 migrated MySQL Character schemas.

@@ -71,6 +71,38 @@ producer/frozen save/confirmed ownership boundary and unknown-row preservation.
 Both full reports remain in the linked local evidence set. Findings per axis:
 Standards0, Spec0; neither axis has an outstanding issue.
 
+## Character MySQL qualification
+
+5 November 2026. All16 original cases also pass on MySQL8.4.13, with a fresh
+owned Character schema and the complete49-migration identity set per case.
+The [provider record](coverage/pet-flair-mysql-20261105.json) binds production
+Source2e4cd603, the injectable fixture, selected DLLs and all140 runner/dependency DLL
+hashes before/after execution. Synthetic tables, recording World sessions and
+the scripted Auth phase remain fixtures. No production behavior changed.
+
+Only provider options and equivalent trigger SQL were added to the fixture;
+assertions are unchanged. All16 SQLite controls pass. The direct-row explicit
+transaction case runs within the configured retry strategy; this does not prove
+a transient retry or physical connection loss. The other cases use the production
+save/recovery paths. Initial/followup publication, frozen Auth-time grants,
+rejected/lost-acknowledgement saves, unknown rows and packet cursors retain their
+original checks.
+
+The first batch is retained as unqualified: all16 bodies completed, but its
+historical48-migration postcondition rejected the current49 inventory. The final
+batch instead verifies exact compiled/applied migration identities. The owned
+engine hash, process generation, executable and SQL datadir are checked; TLS is
+negotiated and the control connection reports REPEATABLE-READ. Both batches'
+32 schemas are absent, and the server/listener/runner/helper are stopped.
+No service, installation, global configuration or original database was changed.
+
+The isolated Source matches the published content except the fixture change;
+historical clean-filter differences and one BOM/newline checkout variant are
+explicitly recorded. Test/provider builds are clean; the unchanged production
+owning build is reused. Both provider review axes have0 findings. Broader
+provider profiles, copied-upgrade, physical failure/restart, Auth, actual rows,
+public consumption, broker/socket/deployment and native/retail stay open.
+
 ## Remaining qualification
 
 The latest20 all-state upstream PRs retain their previously reviewed heads,
@@ -79,10 +111,10 @@ refresh, not additional implementation. Concurrent duel work in the shared tree
 is recorded as a separate build dependency and excluded from this task's source
 scope and commit staging.
 
-The fixtures use synthetic table rows and disposable Character SQLite storage.
+The earlier Source fixtures use synthetic table rows and disposable Character SQLite storage.
 They establish Source behavior only. Actual catalog/prerequisite completeness,
 the public item-consumption settlement boundary, physical restart/autonomous
-publication recovery, configured providers, sockets/deployment, native timing
+publication recovery, provider profiles beyond the Character gate above, sockets/deployment, native timing
 and retail behavior remain open. Default entitlements15:1/17:1 are preserved;
 44/seven grants are not enabled. Continue the broader actionable gameplay and
 progression queue without repeating this completed grant slice.

@@ -26,6 +26,10 @@ namespace NexusForever.Game.Tests.Pet;
 [Collection(MissingGameDataDiagnosticsCollection.Name)]
 public sealed class PetFlairProgressionTests
 {
+    private readonly DbContextOptions<CharacterContext> providerOptions;
+    public PetFlairProgressionTests() { }
+    internal PetFlairProgressionTests(DbContextOptions<CharacterContext> providerOptions) => this.providerOptions = providerOptions;
+
     [Fact]
     public async Task SpellFlairGrantDoesNotPublishBeforeCharacterConfirmation()
     {
@@ -39,8 +43,9 @@ public sealed class PetFlairProgressionTests
     public async Task RejectedSpellFlairSaveRetainsItsGrantForRetry()
     {
         using var f = await Create();
-        using (var setup = f.Source.Context()) await setup.Database.ExecuteSqlRawAsync(
-            "CREATE TRIGGER reject_pet_flair BEFORE INSERT ON character_pet_flair BEGIN SELECT RAISE(ABORT, 'owned flair failure'); END");
+        using (var setup = f.Source.Context()) await setup.Database.ExecuteSqlRawAsync(setup.Database.IsSqlite()
+            ? "CREATE TRIGGER reject_pet_flair BEFORE INSERT ON character_pet_flair BEGIN SELECT RAISE(ABORT, 'owned flair failure'); END"
+            : "CREATE TRIGGER reject_pet_flair BEFORE INSERT ON character_pet_flair FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='owned flair failure'");
         f.Grant(12); await Assert.ThrowsAsync<DbUpdateException>(() => f.Persist());
         using (var failed = f.Source.Context())
         {
@@ -182,9 +187,9 @@ public sealed class PetFlairProgressionTests
             => Task.FromException(new IOException("Owned pet flair commit acknowledgement loss."));
     }
 
-    private static async Task<Fixture> Create(uint[] loadedFlairs = null)
+    private async Task<Fixture> Create(uint[] loadedFlairs = null)
     {
-        var source = new SourceFixture(null); source.Seed();
+        var source = new SourceFixture(providerOptions); source.Seed();
         using (var setup = source.Context())
         {
             foreach (uint id in loadedFlairs ?? []) setup.CharacterPetFlair.Add(new() { Id = 42, PetFlairId = id });

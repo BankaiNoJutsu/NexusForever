@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[Pet-flair Character MySQL qualification](PET_FLAIR_PROGRESSION.md#character-mysql-qualification)
+passes all16 original cases against fresh49-migration schemas with configured
+retries, plus16 SQLite controls and both review axes. The first stale migration
+guard run is retained separately;32 schemas are absent and owned workloads stop.
+This closes the recorded Character/MySQL slice, not physical failures/restart,
+Auth, other profiles/copied-upgrade, actual catalogs, public consumption or
+broker/socket/native/retail. Preserve concurrent PvP/prerequisite/native work
+and continue the wider actionable gameplay queue.
+
 [Original-recipient incoming chat](INCOMING_CHAT_OWNERSHIP.md) completes the
 broker-to-World whisper/channel actor boundary, including bubble lookup and
 automatic replies. Five baseline failures and two review-driven item-link

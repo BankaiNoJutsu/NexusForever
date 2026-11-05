@@ -1,5 +1,12 @@
 # Continue on another machine
 
+Latest provider gate: [pet-flair Character MySQL](Decomp/Analysis/PET_FLAIR_PROGRESSION.md#character-mysql-qualification)
+passes all16 original cases on fresh49-migration MySQL8.4.13 schemas;16 SQLite
+controls and both reviews pass. The stale48-migration harness failure is retained;
+the corrected batch checks exact applied identities. All32 owned schemas are
+absent and the server/listener/runner/helper are stopped. Other profiles,
+physical failure/restart, Auth, actual rows, consumption and native/retail remain.
+
 Latest chat delivery: [original recipients](Decomp/Analysis/INCOMING_CHAT_OWNERSHIP.md)
 bind broker whisper/channel text, bubble lookup and automatic replies to each
 admitted World recipient. Five baseline defects and two reviewed item-link

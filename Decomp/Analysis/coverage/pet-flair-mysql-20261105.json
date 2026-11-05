@@ -1,0 +1,380 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-05T21:02:46.413876+00:00",
+  "productionSourceCommit": "2e4cd603ccfffb7bf1dab04293f6afe444c7679d",
+  "fixtureSource": {
+    "path": "Source/NexusForever.Game.Tests/Pet/PetFlairProgressionTests.cs",
+    "sha256": "dab1b6e9e5d64e8f7a3d7c8286b4315f005a62ed65138724d8532ef2b6e8f3dc",
+    "gitBlob": "ae7e9610e016737c751b41e37a76e2b04911ec1a"
+  },
+  "qualification": "Character MySQL8.4.13, migrated fresh per-case owned schemas, synthetic table rows and recording World actors; Auth phase remains a fixture",
+  "engine": {
+    "version": "8.4.13",
+    "sha256": "7a976874ef3974d612081960b1c193c663b4434692b6257382352c587e367ad6",
+    "controlConnectionIsolation": "REPEATABLE-READ",
+    "tlsCipher": "TLS_AES_256_GCM_SHA384",
+    "tlsRequired": true
+  },
+  "migrationsPerSchema": 49,
+  "migrationInventory": {
+    "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/migration-inventory.json",
+    "sha256": "6fbc75317baf3e321caa13f713275f7b8315b9f21c846afa64f1ffd6b483c49f"
+  },
+  "cases": [
+    {
+      "Name": "SpellFlairGrantDoesNotPublishBeforeCharacterConfirmation",
+      "Schema": "nf_flair_pub_51a720bb6c5e_01",
+      "Passed": true,
+      "BodyError": null,
+      "CleanupError": null,
+      "Strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+      "MigrationCount": 49,
+      "ExplicitTransactionStrategyWrapper": false
+    },
+    {
+      "Name": "RejectedSpellFlairSaveRetainsItsGrantForRetry",
+      "Schema": "nf_flair_pub_51a720bb6c5e_02",
+      "Passed": true,
+      "BodyError": null,
+      "CleanupError": null,
+      "Strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+      "MigrationCount": 49,
+      "ExplicitTransactionStrategyWrapper": false
+    },
+    {
+      "Name": "FrozenNormalSaveDoesNotFlushAFlairGrantedDuringAuth",
+      "Schema": "nf_flair_pub_51a720bb6c5e_03",
+      "Passed": true,
+      "BodyError": null,
+      "CleanupError": null,
+      "Strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+      "MigrationCount": 49,
+      "ExplicitTransactionStrategyWrapper": false
+    },
+    {
+      "Name": "LostCommitAcknowledgementWaitsForStoredObservationAndPublishesOnce",
+      "Schema": "nf_flair_pub_51a720bb6c5e_04",
+      "Passed": true,
+      "BodyError": null,
+      "CleanupError": null,
+      "Strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+      "MigrationCount": 49,
+      "ExplicitTransactionStrategyWrapper": false
+    },
+    {
+      "Name": "InitialFlairBitsHideAcceptedButUncommittedUnlocks",
+      "Schema": "nf_flair_pub_51a720bb6c5e_05",
+      "Passed": true,
+      "BodyError": null,
+      "CleanupError": null,
+      "Strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+      "MigrationCount": 49,
+      "ExplicitTransactionStrategyWrapper": false
+    },
+    {
+      "Name": "LoadingGrantPersistsWithoutCreatingALaterIncrementalNotice",
+      "Schema": "nf_flair_pub_51a720bb6c5e_06",
+      "Passed": true,
+      "BodyError": null,
+      "CleanupError": null,
+      "Strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+      "MigrationCount": 49,
+      "ExplicitTransactionStrategyWrapper": false
+    },
+    {
+      "Name": "ReentrantOwnerReplacementStopsLaterFlairNotices(player)",
+      "Schema": "nf_flair_pub_51a720bb6c5e_07",
+      "Passed": true,
+      "BodyError": null,
+      "CleanupError": null,
+      "Strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+      "MigrationCount": 49,
+      "ExplicitTransactionStrategyWrapper": false
+    },
+    {
+      "Name": "ReentrantOwnerReplacementStopsLaterFlairNotices(manager)",
+      "Schema": "nf_flair_pub_51a720bb6c5e_08",
+      "Passed": true,
+      "BodyError": null,
+      "CleanupError": null,
+      "Strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+      "MigrationCount": 49,
+      "ExplicitTransactionStrategyWrapper": false
+    },
+    {
+      "Name": "ReentrantOwnerReplacementStopsLaterFlairNotices(epoch)",
+      "Schema": "nf_flair_pub_51a720bb6c5e_09",
+      "Passed": true,
+      "BodyError": null,
+      "CleanupError": null,
+      "Strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+      "MigrationCount": 49,
+      "ExplicitTransactionStrategyWrapper": false
+    },
+    {
+      "Name": "ReentrantOwnerReplacementStopsLaterFlairNotices(queue)",
+      "Schema": "nf_flair_pub_51a720bb6c5e_10",
+      "Passed": true,
+      "BodyError": null,
+      "CleanupError": null,
+      "Strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+      "MigrationCount": 49,
+      "ExplicitTransactionStrategyWrapper": false
+    },
+    {
+      "Name": "RejectedMutableDeltaRetriesFreshWithoutReplayingAnEarlierUnlock",
+      "Schema": "nf_flair_pub_51a720bb6c5e_11",
+      "Passed": true,
+      "BodyError": null,
+      "CleanupError": null,
+      "Strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+      "MigrationCount": 49,
+      "ExplicitTransactionStrategyWrapper": false
+    },
+    {
+      "Name": "RejectedInitialBitsRetryFromTheirImmutableSnapshot",
+      "Schema": "nf_flair_pub_51a720bb6c5e_12",
+      "Passed": true,
+      "BodyError": null,
+      "CleanupError": null,
+      "Strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+      "MigrationCount": 49,
+      "ExplicitTransactionStrategyWrapper": false
+    },
+    {
+      "Name": "UnknownLoadedFlairRowsSurviveAKnownGrant",
+      "Schema": "nf_flair_pub_51a720bb6c5e_13",
+      "Passed": true,
+      "BodyError": null,
+      "CleanupError": null,
+      "Strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+      "MigrationCount": 49,
+      "ExplicitTransactionStrategyWrapper": false
+    },
+    {
+      "Name": "DuplicateProducerGrantsDoNotCreateRowsOrNoticesTwice",
+      "Schema": "nf_flair_pub_51a720bb6c5e_14",
+      "Passed": true,
+      "BodyError": null,
+      "CleanupError": null,
+      "Strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+      "MigrationCount": 49,
+      "ExplicitTransactionStrategyWrapper": false
+    },
+    {
+      "Name": "UnrepresentableEffectIdCannotAliasAKnownFlair",
+      "Schema": "nf_flair_pub_51a720bb6c5e_15",
+      "Passed": true,
+      "BodyError": null,
+      "CleanupError": null,
+      "Strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+      "MigrationCount": 49,
+      "ExplicitTransactionStrategyWrapper": false
+    },
+    {
+      "Name": "LegacyFlairRowRetainsItsDirtyGrantAcrossExplicitRollback",
+      "Schema": "nf_flair_pub_51a720bb6c5e_16",
+      "Passed": true,
+      "BodyError": null,
+      "CleanupError": null,
+      "Strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+      "MigrationCount": 49,
+      "ExplicitTransactionStrategyWrapper": true
+    }
+  ],
+  "elapsedSeconds": 268.8408608,
+  "configuredStrategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+  "explicitTransactionWrapper": "Only the original direct-row rollback test executes within the configured strategy; no transient retry or assertion rewrite is claimed",
+  "rawResults": {
+    "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/results.json",
+    "sha256": "43fb3fe9361840775b31ffa87c3265c09f1ba97bce96641db5caa382eb43df41"
+  },
+  "invocation": {
+    "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/invocation.json",
+    "sha256": "c3f935f8954be619a31f1b32210f90ed1a3de182e6420b1b5b14b2c427f5d05b"
+  },
+  "preRunInputs": {
+    "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/inputs.json",
+    "sha256": "c22dad66f9d5bc34ef234daa6b28719fc75bedfd1f1d7726481ae2b368627f90"
+  },
+  "postRunInputs": {
+    "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/inputs-after.json",
+    "sha256": "a6d168329b7251f421fe8f8555a37c2a513280fbaa71003e4ba0052f33403164"
+  },
+  "sourceBinding": {
+    "inputs": 6269,
+    "publishedSourceContentMatchedExceptFixture": true,
+    "literalMatchesWithHistoricalCleanFilterDifference": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "storedGitBlob": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "cleanFilteredBlob": "7de92fafe0c2474ba8428ca9ceee883d39138b46",
+        "rawSha256": "94169cf216538f27ff4ca0fa9031856bb203b34c910ff76aea2bdf5623c680db"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "storedGitBlob": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "cleanFilteredBlob": "8ab13a9023dec3cf548ee61ba183013bd098a297",
+        "rawSha256": "9418911411acc0544d1c075dd16a6405aaea7ad7753b8eae8201304dc84a97a1"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "storedGitBlob": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "cleanFilteredBlob": "822019e403ed9793f698f1ec7569be810c7a4a03",
+        "rawSha256": "e20151d3b624dee5fb7a997bba6b7057725139c09c3b8e7996cacc33b3903309"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "storedGitBlob": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "cleanFilteredBlob": "822019e403ed9793f698f1ec7569be810c7a4a03",
+        "rawSha256": "e20151d3b624dee5fb7a997bba6b7057725139c09c3b8e7996cacc33b3903309"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "storedGitBlob": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "cleanFilteredBlob": "74272fd6bf29afac14c5d62cb172e81b4edee19a",
+        "rawSha256": "2473e04364588dbd7ddfbf06a2a6a2b9db32f3dc0191ae6965b7ae6031b5c87b"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "storedGitBlob": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "cleanFilteredBlob": "163c4f01e198e71066afcd9089a367c78b4c3de6",
+        "rawSha256": "17070160b7f82b9546b38ba4f69a61b5e1483fc15a57cb264cfa7b4f083c1250"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "storedGitBlob": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "cleanFilteredBlob": "ecd970da6d0d220f3caaf6780656c1809e18a9af",
+        "rawSha256": "efd0e6c7cf5a1823d14188c640ecf5299e2ca60155b6133b736826da06a30032"
+      }
+    ],
+    "explicitCheckoutEncodingVariants": [
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "storedGitBlob": "1ffaefc3cf8c1eb7c5b0534d4d91f28eb7001347",
+        "cleanFilteredBlob": "6c145b847fa7316e7982ab44cfa404f4e1e7fc70",
+        "storedSha256": "9e04e912062c4b7a30a30a3e79dcaf15339ba72e44ca9b9675a0cb4d2e66f41b",
+        "observedSha256": "a6da337f337407b162ba7fcf8d608882b2a71f7fd41d06ef25a4cd43fa20d1a4",
+        "boundary": "BOM/newline checkout variation; normalized text equal, source was not rewritten for qualification"
+      }
+    ],
+    "sourceWasNotNormalizedForQualification": true
+  },
+  "runnerAndDependencyDlls": {
+    "count": 140,
+    "allPrePostHashesMatch": true,
+    "selected": [
+      {
+        "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/bin/Debug/net10.0/NexusForever.Database.Character.dll",
+        "sha256": "77ec3b4ee427490f8c9a64a0c1ad2a7f0e3cf47df3423a215aeb2f393e6bece8"
+      },
+      {
+        "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/bin/Debug/net10.0/NexusForever.Database.dll",
+        "sha256": "a30b2064fd1410686eded7ab814429988ebccea3cbad8e2a18d5f07191c56c20"
+      },
+      {
+        "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+        "sha256": "319cd85afe18a2d696a14c540d1ee5299ccfae9fe25220de26412955573bb562"
+      },
+      {
+        "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/bin/Debug/net10.0/NexusForever.Game.dll",
+        "sha256": "b5830b46324acb64afc914adbfd0f840ca9741e12f4eb2d1fb5025a15b125546"
+      },
+      {
+        "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+        "sha256": "5bda5485da6fd87325e28ecfa7d699da702ca14129ca562fb8bf7df3e7c940dd"
+      },
+      {
+        "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+        "sha256": "cab7b64aa9864fc7316566db048242315f6888eac8d728b760bf435f589597c6"
+      },
+      {
+        "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/bin/Debug/net10.0/PetFlairProviderGate.dll",
+        "sha256": "93c7c6a444f54f366aa09ca4da1c7e56f30b7b7d3b50bed05635b92d62c367c0"
+      }
+    ]
+  },
+  "sqliteControls": {
+    "path": "artifacts/continuation-20261105/pet-flair-mysql/sqlite-controls.trx",
+    "sha256": "488fcdc6209b9dd484532d6299fce14518c1eba3f5ffdf7a08f4b676d1d1dd9f",
+    "passed": 16,
+    "failed": 0,
+    "skipped": 0
+  },
+  "builds": [
+    {
+      "path": "artifacts/continuation-20261105/pet-flair-mysql/test-build.log",
+      "sha256": "7442e5fa80ce62060dfb0669706d721aff9e14e2b1434bf67b8a75e44c0f2e23"
+    },
+    {
+      "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/build.log",
+      "sha256": "6d869111ab2ee2450c9ac44440c56b0a18c2f02a3f1473143e361127ba70c2bf"
+    }
+  ],
+  "owningBuildReuse": "Production Source and DLLs unchanged from the published incoming-chat candidate; no repeated owning build or full suite",
+  "retainedInitialFailure": {
+    "results": {
+      "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/initial/results.json",
+      "sha256": "dc46286279cba81afbeebd00b759075061ddad24db3d67c6a2f3ddb9e09d0175"
+    },
+    "runner": {
+      "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/initial/initial-runner.dll",
+      "sha256": "b002a99e4811826d0f17366c01f1aa70443a27d7339d63af74cacbac2006967c"
+    },
+    "program": {
+      "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/initial/initial-Program.cs.txt",
+      "sha256": "1917fbb2a73ff4bccd25072f56ca3b9c263d576db6997ec4bc94dcc5d2f2ae40"
+    },
+    "exitCode": 1,
+    "qualified": false,
+    "explanation": "All16 bodies completed and schemas were dropped; the historical48-migration postcondition rejected the current49 inventory. The corrected complete16-case batch above is separate."
+  },
+  "cleanup": {
+    "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/cleanup-proof.json",
+    "sha256": "d5e34e9450a12d42e0696c0381534af6b6c30df35b085f5c7b5453b48d9aeb7c",
+    "ownedSchemasAbsent": 32
+  },
+  "shutdown": {
+    "path": "artifacts/continuation-20261105/pet-flair-mysql/shutdown-verification.json",
+    "sha256": "0a3004b863881a6e03b5a34d49bb135adbd0e38bcf796d425d24afcdf15aabe7",
+    "processAbsent": true,
+    "listenerAbsent": true,
+    "runnerAndHelperAbsent": true
+  },
+  "review": {
+    "standards": {
+      "findings": 0,
+      "path": "artifacts/continuation-20261105/pet-flair-mysql/review-standards.txt",
+      "sha256": "c81526260ad1f23170da4006d3b42c457d344ae729bbae103a253766fce98303"
+    },
+    "spec": {
+      "findings": 0,
+      "path": "artifacts/continuation-20261105/pet-flair-mysql/review-spec.txt",
+      "sha256": "8001281450c8558d1db8b5f9679a955c8f30963e3e8c0dd717128bb2735b3ec6"
+    }
+  },
+  "upstream": {
+    "path": "artifacts/continuation-20261105/pet-flair-mysql/upstream-refresh.json",
+    "sha256": "2970587e603111360df4e0652a18695703d184835b0ca17c0d326e40be701fd0",
+    "latestAllStateCount": 20,
+    "changedRecords": 0,
+    "pr608": "open",
+    "pr609": "closed, unmerged"
+  },
+  "preserved": [
+    "All unrelated PvP/prerequisite/native changes",
+    "Default entitlements15:1/17:1",
+    "No automatic44/seven grants",
+    "Existing hosts/config/data outside the owned fixture"
+  ],
+  "remaining": [
+    "F-026 partial",
+    "actual catalogs/prerequisites",
+    "public item consumption settlement",
+    "other providers/profiles and copied-upgrade",
+    "physical connection loss/restart/autonomous publication recovery",
+    "Auth provider",
+    "broker/socket/deployment",
+    "native/retail"
+  ]
+}

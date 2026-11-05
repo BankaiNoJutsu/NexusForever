@@ -88,7 +88,12 @@ Next actionable outcomes and remaining gates
   real spell-effect flair grant's frozen Character rows and confirmed original
   World unlock/initial-bit publication. Three baseline failures are fixed;
   16 new/all299 affected cases, clean owning/test builds and both reviews pass.
-  Do not repeat this completed Source slice. F-026 remains partial; broader
+  Its later Character MySQL section passes all16 original cases with configured
+  retries and exact49-migration identities, plus16 SQLite controls and both
+  provider reviews. The stale48-migration harness failure remains retained;
+  all32 schemas are absent and the owned server/runner/helper are stopped.
+  Do not repeat these completed Source and Character/MySQL slices. F-026
+  remains partial; other profiles/copied-upgrade, Auth, broader
   cosmetic timing, public consumption settlement, physical restart, providers,
   actual tables, sockets/deployment and native/retail remain open. Continue the
   wider actionable gameplay/progression queue. Concurrent duel work is separately
