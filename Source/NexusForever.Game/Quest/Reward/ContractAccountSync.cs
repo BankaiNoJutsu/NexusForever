@@ -148,15 +148,33 @@ namespace NexusForever.Game.Quest.Reward
                 var delivery = new ContractAccountDelivery(Character, Auth, catalog, realm);
                 // No actor callback is passed into the SQL continuation.
                 _ = Deliver(delivery, sources, barrier);
-                events.EnqueueEvent(new TaskEvent(refresh.Completion, () =>
-                {
-                    if (phase == 4) return;
-                    if (!Live() || !refresh.TryPublish(Live)) { Fail(); return; }
-                    refresh.Dispose(); refresh = null; ++group; StartGroup();
-                }, Fail));
+                events.EnqueueEvent(new TaskEvent(refresh.Completion, () => PublishGroup(retriesRemaining: 2), Fail));
             }
             catch { Fail(); }
         }
+
+        private void PublishGroup(int retriesRemaining)
+        {
+            if (phase == 4) return;
+            if (!Live()) { Fail(); return; }
+
+            switch (refresh.Publish(Live, allowRetry: retriesRemaining > 0))
+            {
+                case AccountCurrencyManager.WalletRefresh.PublicationOutcome.Published:
+                    refresh.Dispose();
+                    refresh = null;
+                    ++group;
+                    StartGroup();
+                    break;
+                case AccountCurrencyManager.WalletRefresh.PublicationOutcome.Retry:
+                    events.EnqueueEvent(new DelayEvent(TimeSpan.FromMilliseconds(100), () => PublishGroup(retriesRemaining - 1)));
+                    break;
+                default:
+                    Fail();
+                    break;
+            }
+        }
+
         private static async Task Deliver(ContractAccountDelivery delivery, ContractAccountIntent[] sources, TaskCompletionSource barrier)
         {
             try

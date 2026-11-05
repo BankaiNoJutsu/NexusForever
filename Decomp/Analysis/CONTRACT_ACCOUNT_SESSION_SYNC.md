@@ -39,6 +39,24 @@ different Player. Local evidence is under
 `artifacts/continuation-20261105/contract-queue-ownership/`.
 Retail reset, public claim routing, and deployed session recovery remain open.
 
+## Wallet notice retry
+
+5 November 2026. The original World queue now retries an enqueue failure
+after Contract wallet settlement. It keeps the adopted balance and the packet
+position while it retries, so an already enqueued grant is not repeated and
+the claimed bit stays pending until both wallet packets are enqueued.
+The retry uses the original Player and queue. Replacing either retires the
+publication. A persistent failure exhausts two retries and uses the existing
+reload path. Neither outcome repeats the Auth credit or Character acknowledgement.
+
+The three baseline cases stopped at the first failed wallet enqueue. The
+owning build took 37 seconds with zero warnings or errors, and all 66 scoped
+tests passed in 38 seconds. The four new cases exercise failure at either
+packet, persistent failure, and queue replacement before a retry. Local
+evidence is under `artifacts/continuation-20261105/contract-wallet-notice-retry/`.
+The injected failures occur before enqueue. Deployed network delivery and
+public claim enablement remain separate.
+
 ## Historical continuation
 
 Latest continuation: [Realm bank persistence and loading](REALM_BANK_CODECS_AND_LOADING.md)

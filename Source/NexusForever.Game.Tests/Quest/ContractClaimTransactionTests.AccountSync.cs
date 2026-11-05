@@ -119,6 +119,74 @@ public sealed partial class ContractClaimTransactionTests
     }
 
     [Theory]
+    [InlineData("grant", "retry")]
+    [InlineData("wallet", "retry")]
+    [InlineData("wallet", "persistent")]
+    [InlineData("wallet", "replacement")]
+    public async Task CommittedContractWalletResumesAtTheFailedPacket(string failedPacket, string outcome)
+    {
+        using var f = new AccountSyncFixture(characterOptions, authOptions);
+        uint reward = await ContractLiveCompletionTests.SeedQueuedClaim(f.Live, final: false);
+        var session = f.Live.Inner.Source.SessionProxy;
+        List<string> attempted = [];
+        List<string> sent = [];
+        session.SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), args =>
+        {
+            string label = args[0] switch
+            {
+                ServerAccountCurrencyGrant => "grant",
+                ServerWalletUpdate => "wallet",
+                ServerRewardTracksReload reload when reload.RewardsTracks.Any(track =>
+                    (track.RewardTrackId is 4 or 5) && (track.ClaimedRewards.GetBuffer()[0] & 1) != 0) => "claim",
+                _ => null
+            };
+            if (label == null)
+                return null;
+
+            bool firstAttempt = !attempted.Contains(label);
+            attempted.Add(label);
+            if (label == failedPacket && (firstAttempt || outcome == "persistent"))
+            {
+                if (outcome == "replacement")
+                    f.Actor.Events.EnqueueEvent(new PredicateEvent(() => true,
+                        () => session.SetProperty(nameof(IGameSession.Events), new EventQueue())));
+                throw new IOException("Owned wallet packet failed before enqueue.");
+            }
+            sent.Add(label);
+            return null;
+        });
+
+        Assert.True(f.Actor.Quests.QueueContractRewardClaim(reward, 2));
+        await f.Actor.Drain();
+
+        if (outcome != "retry")
+        {
+            string[] expected = outcome == "persistent" ? ["grant", "wallet", "wallet", "wallet"] : ["grant", "wallet"];
+            Assert.Equal(expected, attempted);
+            Assert.Equal(new[] { "grant" }, sent);
+            Assert.Equal(outcome == "persistent" ? 1 : 0, session.GetInvocations(nameof(IGameSession.ForceDisconnect)).Count);
+            Assert.True(f.Actor.Challenges.RequiresAuthoritativeReload);
+        }
+        else
+        {
+            string[] expected = failedPacket == "grant"
+                ? ["grant", "grant", "wallet", "claim"]
+                : ["grant", "wallet", "wallet", "claim"];
+            Assert.Equal(expected, attempted);
+            Assert.Equal(new[] { "grant", "wallet", "claim" }, sent);
+            Assert.Empty(session.GetInvocations(nameof(IGameSession.ForceDisconnect)));
+            Assert.True(f.Actor.Quests.CommittedContractTracks.Single().Slots[0].Claim.AccountDelivered);
+        }
+
+        using var auth = f.Auth();
+        Assert.Equal(105ul, auth.AccountCurrency.Single().Amount);
+        Assert.Single(auth.AccountCurrencyOperation);
+        using var read = f.Live.Inner.Context();
+        Assert.True(Assert.Single(read.CharacterContractAccountOutbox).Delivered);
+        Assert.Equal(5ul, read.CharacterContractRewardTrack.Single().Revision);
+    }
+
+    [Theory]
     [InlineData(false, false)] [InlineData(false, true)] [InlineData(true, false)] [InlineData(true, true)]
     public async Task AccountSynchronizationRecoversEitherDatabaseCommitFaultWithoutRegrantingOrAdvancingTheTrackTwice(bool source, bool after)
     {
