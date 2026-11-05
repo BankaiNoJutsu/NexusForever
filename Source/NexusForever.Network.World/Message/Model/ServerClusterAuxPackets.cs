@@ -220,8 +220,9 @@ namespace NexusForever.Network.World.Message.Model
     public class ServerReputationAuxUInt64UInt32 : IWritable
     {
         /// <summary>
-        /// Client reader <c>14008ef80</c> reads one uint64 field plus one
-        /// uint32 field. Reputation/path-XP semantics remain blocked.
+        /// Historical raw-bit compatibility model for item durability. Reader
+        /// <c>14008ef80</c> reads GUID64 and float32 bits. New producers use
+        /// <c>Item.ServerItemDurability</c> with its typed durability field.
         /// </summary>
         public ulong Value0 { get; set; }
 

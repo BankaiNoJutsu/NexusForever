@@ -1,5 +1,6 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Network.World.Message.Model.Item;
 using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.Game.Entity
@@ -50,6 +51,8 @@ namespace NexusForever.Game.Entity
                             line.Item.Durability = 1f;
                         }
                         batch.Add(() => payment.Publish(batch.Send));
+                        foreach (var line in lines)
+                            batch.Add(new ServerItemDurability { ItemGuid = line.Item.Guid, Durability = 1f });
                         batch.Complete();
                     }
                     catch (Exception error)

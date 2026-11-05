@@ -18859,7 +18859,12 @@ Client opcode discovery loop pass 31 (2026-05-29):
   `PublicEventObjectiveLocationAdded_ApplyPair` @ `1405f4040` applies a u32
   pair and dispatches `PublicEventObjectiveLocationAdded`. Opcode linkage for
   both remains blocked.
-- **Partial apply-table map (DATA-only cells, no walker):**
+- **Correction 5 November 2026:** the following "apply-table" addresses are
+  PE exception entries. Their begin/end/unwind RVAs establish function ranges
+  only. They supply no opcode link and no dispatch walker. See
+  [the pinned section and entry evidence](ITEM_DURABILITY_WIRE_EVIDENCE.md#correction-to-historical-exception-table-annotations).
+  Historical opcode associations require their independent reader/code evidence.
+- **Historical partial map (exception entries, not dispatch cells):**
   `140e215ac`=`1405f2ae0` (`0x0112` start),
   `140e2163c`=`1405f3520` (`0x0132` objective update),
   `140e21948`=`1405f5010`, `140e21954`=`1405f50f0`,
@@ -18875,7 +18880,8 @@ Client opcode discovery loop pass 31 (2026-05-29):
   `0x06FF` PE opcodes; apply-table index walker.
 - Next: map `0x0359` apply cell; tie `1405f3c50`/`1405f4040` to opcodes;
   sweep `1405f3680`/`1405f37e0`/`1405f50f0` vtable targets; recover table
-  walker; F-010 sniff for `0x089F`.
+  walker from actual dispatch code rather than these exception entries;
+  F-010 sniff for `0x089F`.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~PublicEventVoteTests|FullyQualifiedName~PublicEventObjectiveTests" -v minimal --nologo`
   should pass after this pass.

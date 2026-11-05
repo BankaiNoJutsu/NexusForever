@@ -16,6 +16,29 @@ namespace NexusForever.Game.Tests.Network;
 public class ItemProtocolPacketShapeTests
 {
     [Fact]
+    public void ItemDurability_RegistersAndWritesGuidThenFloatBits()
+    {
+        var manager = new MessageManager(Microsoft.Extensions.Logging.Abstractions.NullLogger<MessageManager>.Instance);
+        manager.RegisterMessage(typeof(NexusForever.Network.World.Message.Model.Item.ServerItemDurability));
+        manager.RegisterMessage(typeof(ServerReputationAuxUInt64UInt32));
+        var packet = new NexusForever.Network.World.Message.Model.Item.ServerItemDurability
+        {
+            ItemGuid = 0xfedcba9876543210ul,
+            Durability = .625f
+        };
+        Assert.Equal<GameMessageOpcode?>((GameMessageOpcode)0x01a7, manager.GetOpcode(packet));
+        byte[] bytes = WritePacket(packet);
+        Assert.Equal(Convert.FromHexString("1032547698BADCFE0000203F"), bytes);
+        var compatibility = new ServerReputationAuxUInt64UInt32
+        {
+            Value0 = packet.ItemGuid,
+            Value1 = BitConverter.SingleToUInt32Bits(packet.Durability)
+        };
+        Assert.Equal(manager.GetOpcode(packet), manager.GetOpcode(compatibility));
+        Assert.Equal(bytes, WritePacket(compatibility));
+    }
+
+    [Fact]
     public void InventoryId_WriteRoundTripsPackedLocationSlotAndCount()
     {
         ItemInventoryId inventoryId = ItemInventoryId.FromLocation(InventoryLocation.GuildBankTab10, 0x7F, 3);

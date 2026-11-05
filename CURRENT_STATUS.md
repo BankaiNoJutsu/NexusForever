@@ -22235,8 +22235,10 @@ Count and busy updates now use the registered `ServerPublicEventObjectiveUpdate`
 wrapper. The former producer passed the embedded objective row, which has no
 opcode registration and was discarded by `GameSession`. Build 16042's mapped
 `0132` reader and apply path supply the wire contract. REA matched the archived
-client SHA-256, and pinned PE reads and LLVM corroborated the start apply slot
-and objective lookup at `1405f3520`. The deep provider remains unavailable.
+client SHA-256, and LLVM corroborated the objective lookup at `1405f3520`.
+The recorded start "apply slot" is a PE exception entry that establishes a
+function range only. See the [metadata correction](Decomp/Analysis/ITEM_DURABILITY_WIRE_EVIDENCE.md#correction-to-historical-exception-table-annotations).
+The deep provider remains unavailable.
 
 The baseline reproduced a missing retry and a delta sent ahead of enrollment.
 The owning build took 30 seconds with zero warnings or errors, and 310 scoped
@@ -23230,8 +23232,10 @@ compile error is corrected and retained. Evidence is under
 `artifacts/continuation-20261105/vendor-repair-settlement/`.
 The [configured MySQL gate](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#vendor-repair-settlement)
 also passes all seven compiled repair cases on separately migrated schemas.
-Socket delivery and native durability presentation remain open. The unregistered
-`ServerItemDurability` model still requires a verified wire producer.
+The [durability wire and publication follow-up](Decomp/Analysis/ITEM_DURABILITY_WIRE_EVIDENCE.md)
+connects registration, payload reader and entity dispatcher to `01A7`, registers
+the typed model and publishes committed repair notices through the original
+actor. Socket delivery and native durability presentation remain open.
 
 #### Vendor purchase capacity
 

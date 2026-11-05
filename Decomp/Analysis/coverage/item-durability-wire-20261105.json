@@ -1,0 +1,247 @@
+{
+  "sha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+  "target": "0x1403b9690",
+  "range": [
+    "0x1403b9690",
+    "0x1403b9717"
+  ],
+  "exceptionDirectory": {
+    "start": "0x140dc7000",
+    "bytes": 556884
+  },
+  "sections": [
+    {
+      "Name": ".text",
+      "VirtualSize": 9792556,
+      "RVA": 4096,
+      "RawSize": 9793024,
+      "Offset": 1024
+    },
+    {
+      "Name": "BINK",
+      "VirtualSize": 3420,
+      "RVA": 9797632,
+      "RawSize": 3584,
+      "Offset": 9794048
+    },
+    {
+      "Name": ".rdata",
+      "VirtualSize": 2839220,
+      "RVA": 9801728,
+      "RawSize": 2839552,
+      "Offset": 9797632
+    },
+    {
+      "Name": ".data",
+      "VirtualSize": 1799016,
+      "RVA": 12644352,
+      "RawSize": 329216,
+      "Offset": 12637184
+    },
+    {
+      "Name": ".pdata",
+      "VirtualSize": 556884,
+      "RVA": 14446592,
+      "RawSize": 557056,
+      "Offset": 12966400
+    },
+    {
+      "Name": "_RDATA",
+      "VirtualSize": 33480,
+      "RVA": 15003648,
+      "RawSize": 33792,
+      "Offset": 13523456
+    },
+    {
+      "Name": ".rsrc",
+      "VirtualSize": 212552,
+      "RVA": 15040512,
+      "RawSize": 212992,
+      "Offset": 13557248
+    },
+    {
+      "Name": ".reloc",
+      "VirtualSize": 151528,
+      "RVA": 15253504,
+      "RawSize": 151552,
+      "Offset": 13770240
+    }
+  ],
+  "literalReferences": [
+    {
+      "address": "0x140e00b64",
+      "section": ".pdata",
+      "encoding": "rva32",
+      "exceptionFieldOffset": 0,
+      "exceptionEntry": [
+        "0x1403b9690",
+        "0x1403b9717",
+        "0x140bbdf34"
+      ]
+    }
+  ],
+  "codeCandidates": [
+    {
+      "address": "0x1403ef780",
+      "kind": "direct-branch",
+      "boundaryConfirmed": true,
+      "assembly": "1403ec6ee.asm",
+      "instruction": "1403ef780: e8 0b 9f fc ff              \tcall\t0x1403b9690 <.text+0x3b8690>"
+    }
+  ],
+  "annotatedCells": [
+    {
+      "address": "0x140e00b64",
+      "section": ".pdata",
+      "exceptionEntry": {
+        "begin": "0x1403b9690",
+        "endExclusive": "0x1403b9717",
+        "unwind": "0x140bbdf34"
+      }
+    },
+    {
+      "address": "0x140e215ac",
+      "section": ".pdata",
+      "exceptionEntry": {
+        "begin": "0x1405f2ae0",
+        "endExclusive": "0x1405f2e86",
+        "unwind": "0x140bef5dc"
+      }
+    },
+    {
+      "address": "0x140e2163c",
+      "section": ".pdata",
+      "exceptionEntry": {
+        "begin": "0x1405f3520",
+        "endExclusive": "0x1405f354e",
+        "unwind": "0x140bad354"
+      }
+    },
+    {
+      "address": "0x140e21948",
+      "section": ".pdata",
+      "exceptionEntry": {
+        "begin": "0x1405f5010",
+        "endExclusive": "0x1405f50e3",
+        "unwind": "0x140bf8058"
+      }
+    },
+    {
+      "address": "0x140e21954",
+      "section": ".pdata",
+      "exceptionEntry": {
+        "begin": "0x1405f50f0",
+        "endExclusive": "0x1405f516a",
+        "unwind": "0x140bf8058"
+      }
+    },
+    {
+      "address": "0x140e21960",
+      "section": ".pdata",
+      "exceptionEntry": {
+        "begin": "0x1405f5170",
+        "endExclusive": "0x1405f51c2",
+        "unwind": "0x140b86054"
+      }
+    },
+    {
+      "address": "0x140e22158",
+      "section": ".pdata",
+      "exceptionEntry": {
+        "begin": "0x1405fb350",
+        "endExclusive": "0x1405fb47f",
+        "unwind": "0x140beff98"
+      }
+    },
+    {
+      "address": "0x140e22188",
+      "section": ".pdata",
+      "exceptionEntry": {
+        "begin": "0x1405fb670",
+        "endExclusive": "0x1405fb6b0",
+        "unwind": "0x140b83120"
+      }
+    },
+    {
+      "address": "0x140e221ac",
+      "section": ".pdata",
+      "exceptionEntry": {
+        "begin": "0x1405fb830",
+        "endExclusive": "0x1405fb8a0",
+        "unwind": "0x140bbda34"
+      }
+    },
+    {
+      "address": "0x140e22578",
+      "section": ".pdata",
+      "exceptionEntry": {
+        "begin": "0x1405ff500",
+        "endExclusive": "0x1405ff574",
+        "unwind": "0x140bf02a8"
+      }
+    }
+  ],
+  "limits": "All section raw bytes for exact 64-bit pointer and 32-bit RVA patterns, and direct E8/E9 and REX RIP-relative LEA patterns in executable raw sections. Candidate code needs LLVM instruction boundaries. Encoded, computed, virtual and other instruction forms remain unresolved. Static inspection only.",
+  "durabilityDispatchSlots": [
+    {
+      "opcode": "0x12c",
+      "slot": "0x1403f1670",
+      "destination": "0x1403ef768"
+    },
+    {
+      "opcode": "0x1a7",
+      "slot": "0x1403f185c",
+      "destination": "0x1403ef77a"
+    },
+    {
+      "opcode": "0x1a8",
+      "slot": "0x1403f1860",
+      "destination": "0x1403ef78c"
+    }
+  ],
+  "registrationCandidates": [
+    {
+      "address": "0x140072cc8",
+      "assembly": "registration-140072cc8.asm"
+    }
+  ],
+  "eventName": {
+    "address": "0x140afdd90",
+    "ascii": "ItemDurabilityUpdate"
+  },
+  "registration": {
+    "opcode": "0x01a7",
+    "argument": "0x140072cc8",
+    "reader": "0x14008ef80",
+    "call": "0x140072cd6",
+    "objectBytes": 16,
+    "wireBits": 96
+  },
+  "reader": {
+    "guid": "0x14008efa8 ->0x14006c120",
+    "durability": "0x14008efb8 ->0x14006c1c0",
+    "fastFloatStore": "0x14006c259",
+    "fallbackFloatStore": "0x14006c279"
+  },
+  "validation": {
+    "buildSeconds": [
+      37.76,
+      23.29
+    ],
+    "warnings": 0,
+    "errors": 0,
+    "passed": 29,
+    "failed": 0,
+    "skipped": 0,
+    "trx": [
+      "final-scoped.trx",
+      "handler-controls.trx"
+    ],
+    "scope": "Repair settlement, item packet shapes, legacy auxiliary packet control, repair and buyback handlers. Source and SQLite only for new publication cases. No full solution gate.",
+    "dllSha256": {
+      "NexusForever.Game.dll": "57bbbb88da1585d9176094d433fa2710d2e007a70ce569cf11a996810c8f398b",
+      "NexusForever.Network.dll": "85bb99ef26328b8436beafe91fdb4ae9fed06c07ba7e68af237fdcc72d188bdf",
+      "NexusForever.Network.World.dll": "24203266e5608b19feacd73250ba752f76c97721cdd5d868c2fd1afcf47a75a4"
+    }
+  }
+}

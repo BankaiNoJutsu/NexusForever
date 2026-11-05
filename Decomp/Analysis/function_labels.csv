@@ -118,7 +118,7 @@ WildStar64.exe,1400acec0,RewardPropertySetEntry_ReadPayload,Reads one reward-pro
 WildStar64.exe,1400ace10,RewardProperty_ReadPayload,Reads one reward-property modifier row as 6-bit reward property id, 32-bit data, 2-bit modifier value type, and typed value.
 WildStar64.exe,1400acd60,SubRewardProperty_ReadPayload,Reads one sub-reward-property modifier row as 4-bit sub-property id, 32-bit data, 2-bit modifier value type, and typed value.
 WildStar64.exe,14006c120,NetworkBitReader_ReadUInt64,Reads one 64-bit value from the packet bitstream via NetworkBitReader_ReadBitsAcrossSegments.
-WildStar64.exe,14006c1c0,NetworkBitReader_ReadUInt32Fast,Reads one 32-bit value from the packet bitstream into a uint32 destination with fast-path segment handling and NetworkBitReader_ReadBitsAcrossSegments fallback.
+WildStar64.exe,14006c1c0,NetworkBitReader_ReadFloat32,Reads raw32 bits into a float destination with segment fast path and32-bit fallback. MOVSS preserves bits. Durability reader14008ef80 uses it for decoded+8.
 WildStar64.exe,1400a4840,ServerItemSwap_ReadPayload,Reads server opcode 0x0568 as two consecutive ItemDragDrop rows of two uint64 fields each inside the registered 0x20-byte object.
 WildStar64.exe,1400a48d0,ServerItemSwapAux_ReadPayload,Reads server opcode 0x0567 as one ItemDragDrop row of two uint64 fields inside the registered 0x10-byte object.
 WildStar64.exe,1400a3ce0,ServerItemModdableData_ReadPayload,Reads server opcode 0x056B as item guid threshold data random glyph data and random circuit data.
@@ -988,7 +988,7 @@ WildStar64.exe,1403c2a20,Vendor_SendClientRepairAllItemsVendor,Sends opcode 0x01
 WildStar64.exe,1403b5400,Item_CalculateMaxDurability,Calculates max durability for repair from item data plus a GameFormula durability offset.
 WildStar64.exe,1403b5360,Item_CalculateDurabilityValue,Scales max durability by a durability fraction and clamps positive repaired values to at least one.
 WildStar64.exe,1403b54a0,Item_CalculateRepairCost,Calculates credit repair cost from missing durability fraction, GameFormula 0x022F multiplier, and item value.
-WildStar64.exe,1403b9690,ServerItemDurabilityUpdate_ReadPayload,Reads item identity and durability update payload then dispatches the ItemDurabilityUpdate client event.
+WildStar64.exe,1403b9690,Item_ApplyDurabilityUpdate,Applies decoded item GUID64 and float32 durability from opcode01A7 then dispatches ItemDurabilityUpdate. Direct call1403ef780 from entity case1403ef77a at slot1403f185c. Exception entry140e00b64 is not a dispatch cell.
 WildStar64.exe,1403c2630,Vendor_SendClientSellItemToVendor,Validates vendor state and sends opcode 0x0166 with item location and quantity for SellItemToVendor.
 WildStar64.exe,1403c2850,Vendor_SendClientBuybackItemFromVendor,Validates inventory and buyback state before sending opcode 0x00BB with the selected buyback unique id.
 WildStar64.exe,14050cbc0,Lua_GameLib_GetRestXp,GameLib.GetRestXp Lua method that returns the local player's current rested XP pool from current player state offset 0x1688.
@@ -1315,7 +1315,7 @@ WildStar64.exe,1400a3fd0,ServerSupportUInt32AndTwoTriplets_ReadPayload,Reads opc
 WildStar64.exe,140603a60,Group_HandleGroupDisband_ReadPayload,Client reader for a server group-disband or large roster packet (2116 bytes — very large, likely a dispatcher or multi-opcode handler). Decompile to confirm opcode and field layout.
 WildStar64.exe,14008de20,ServerHousingResidenceKeyedUpdate_ReadPayload,Reads opcode 0x00CA as one 64-bit field plus one uint32; the 0x10 registration size is client object size/padding, not a second uint32 wire field.
 WildStar64.exe,14008d430,ServerReputationUInt14UInt32_ReadPayload,Reads one 14-bit value plus one uint32 field; registered for ServerReputationUpdate 0x01A5 and reputation follow-up aux 0x01A9.
-WildStar64.exe,14008ef80,ServerReputationAuxUInt64UInt32_ReadPayload,Reads reputation follow-up aux opcode 0x01A7 as one uint64 field plus one uint32 field; producer semantics unresolved.
+WildStar64.exe,14008ef80,ServerItemDurability_ReadPayload,Registered for01A7 at140072cc8. Reads GUID64 through14006c120 then raw float32 through14006c1c0 into decoded+8. Entity case1403ef77a calls1403b9690 to apply it.
 WildStar64.exe,14008fe80,ServerRewardTrackUpdate_ReadPayload,"Reads 0x07D5 track ID (14 bits), points, claimed mask, unlock value and active bit; dispatch 1403f112e reaches track consumer 1404d18e0, not auction code."
 WildStar64.exe,140090090,ServerAuctionPostAux_ReadPayload,Reads opcode 0x06DF as uint32 count, counted uint32 array, counted byte array of the same count, and trailing uint32; auction producer semantics remain blocked.
 WildStar64.exe,14007335d,Network_RegisterServerOpcode_07D5,Registers reader 14008fe80 for 0x07D5; fresh high-range dispatch slot 1403f3114 reaches reward-track update consumer 1404d18e0.
@@ -2132,16 +2132,16 @@ WildStar64.exe,14007b620,ServerPublicEventStart_ReadPayload,Opcode 0x0112 reader
 WildStar64.exe,14008f2d0,ServerQuestInit_ReadPayload,Opcode 0x035F reader: counted completed u15+u1 rows inactive u15+u32 rows active rows via FUN_14008f170 and trailing u64 daily seed.
 WildStar64.exe,14008f530,ServerQuestLuaEvent_ReadPayload,Opcode 0x0359 reader: u14 lua event id u32 count and per-entry u32 type dispatched through PTR table 140c1eb98.
 WildStar64.exe,14008f100,ServerQuestStateOrObjective_ReadPayload,Opcode 0x035C and 0x0361 shared reader: u15 quest id u32 field2 u32 field3.
-WildStar64.exe,1405f2ae0,PublicEventStart_ApplyParsedPayload,Apply consumer at apply-table cell 140e215ac: materializes live public-event state from parsed 0x0112 payload and dispatches PublicEventStart plus optional PublicEventObjectiveJoinedMessage.
+WildStar64.exe,1405f2ae0,PublicEventStart_ApplyParsedPayload,Materializes live public-event state from parsed start payload and dispatches PublicEventStart plus optional PublicEventObjectiveJoinedMessage.140e215ac is a PE exception entry and supplies no opcode linkage.
 WildStar64.exe,140496b10,PublicEventMap_DispatchStartOrClear,Map-layer consumer: resolves live event by id and dispatches PublicEventStart when second uint non-zero else PublicEventCleared.
-WildStar64.exe,1405fb670,QuestRuntime_HandleQuestStateChange,Quest apply consumer at apply-table cell 140e22188: resolves objective node updates quest state via FUN_1405fbdc0 and dispatches ContractStateChanged or quest UI refresh helpers.
+WildStar64.exe,1405fb670,QuestRuntime_HandleQuestStateChange,Resolves objective node and updates quest state via1405fbdc0 before ContractStateChanged or quest UI refresh.140e22188 is a PE exception entry and supplies no opcode linkage.
 WildStar64.exe,1405fbdc0,QuestRuntime_ApplyQuestStateTransition,Quest state transition helper called from QuestRuntime_HandleQuestStateChange; switches on quest-state enum and mutates quest runtime trees plus UI refresh hooks.
-WildStar64.exe,1405f3520,PublicEventObjectiveUpdate_ApplyParsedPayload,Apply consumer at cell 140e2163c: resolves live objective via service vtable+0x88 applies status row location ids and map-region pairs then dispatches PublicEventObjectiveUpdate ClientEvent.
+WildStar64.exe,1405f3520,PublicEventObjectiveUpdate_ApplyParsedPayload,Resolves live objective via service vtable+0x88 and applies status locations and map-region pairs before PublicEventObjectiveUpdate.140e2163c is a PE exception entry and supplies no opcode linkage.
 WildStar64.exe,1405f3c50,PublicEventObjectiveUpdate_BroadcastByNotificationMode,Walks live public-event objective tree and dispatches PublicEventObjectiveUpdate for nodes matching notification-mode filter; also stores mode at liveObj+0xb8.
 WildStar64.exe,1405f4040,PublicEventObjectiveLocationAdded_ApplyPair,Resolves live objective and applies u32 pair via vtable+0x120 then dispatches PublicEventObjectiveLocationAdded when objective is active.
-WildStar64.exe,1405f5010,PublicEventPacketApply_DispatchByMode,Apply-table router at cell 140e21948: switches on payload mode 0-3 and calls live-event or live-objective vtable slots +0x138/+0x140/+0x148/+0x150.
-WildStar64.exe,1405f50f0,PublicEventPacketApply_DispatchExtendedMode,Apply-table router at cell 140e21954: modes 2-3 call live-objective vtable +0x160/+0x168 with extra payload fields.
-WildStar64.exe,1405f5170,PublicEventVoteInitiate_Apply,Apply consumer at cell 140e21960: enqueues PublicEventVote rows and dispatches PublicEventInitiateVote when queue was empty.
+WildStar64.exe,1405f5010,PublicEventPacketApply_DispatchByMode,Switches on payload mode0..3 and calls live-event or live-objective vtable slots+138/+140/+148/+150.140e21948 is a PE exception entry and supplies no opcode linkage.
+WildStar64.exe,1405f50f0,PublicEventPacketApply_DispatchExtendedMode,Modes2..3 call live-objective vtable+160/+168 with extra payload fields.140e21954 is a PE exception entry and supplies no opcode linkage.
+WildStar64.exe,1405f5170,PublicEventVoteInitiate_Apply,Enqueues PublicEventVote rows and dispatches PublicEventInitiateVote when queue was empty.140e21960 is a PE exception entry and supplies no opcode linkage.
 WildStar64.exe,140bd97b0,HousingNeighborhoodList_ApplyDispatchSlot_DataRef,Server opcode 0x0506 apply-table DATA pointer to Housing_HandleNeighborhoodList@1404ba4f0; TraceFunctionCallers shows no direct CALL sites.
 WildStar64.exe,140bd97c0,HousingNeighborhoodList_ApplyDispatchSlot_DataRef_Alt,Second apply-table DATA pointer to Housing_HandleNeighborhoodList@1404ba4f0 in cluster at 140bd97b0.
 WildStar64.exe,140e0ec28,HousingNeighborhoodList_ApplyDispatchSlot_DataRef_Table,Third apply-table DATA pointer to Housing_HandleNeighborhoodList@1404ba4f0 (table region 140e0ec28).

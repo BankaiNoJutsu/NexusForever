@@ -195,7 +195,10 @@ and publishes to the original session.
 save the quoted durability and credit debit together before the balance notice,
 and retire a quote changed during the preceding Character save. The
 [configured MySQL gate](DESTINATION_PROVIDER_QUALIFICATION.md#vendor-repair-settlement)
-covers all seven compiled repair cases. Socket delivery and native durability
+covers all seven compiled repair cases. The [durability notice follow-up](ITEM_DURABILITY_WIRE_EVIDENCE.md)
+recovers the native `01A7` registration/reader/dispatch chain and connects typed
+item updates to committed repairs. It also corrects historical exception entries
+misidentified as opcode apply-table cells. Socket delivery and native durability
 presentation remain open.
 
 [Vendor purchase capacity](../../CURRENT_STATUS.md#vendor-purchase-capacity)

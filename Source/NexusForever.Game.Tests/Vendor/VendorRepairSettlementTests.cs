@@ -18,6 +18,7 @@ using NexusForever.Game.Tests.Transport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Item;
 using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Vendor;
@@ -40,7 +41,9 @@ public sealed class VendorRepairSettlementTests
     [InlineData("single")]
     [InlineData("all")]
     [InlineData("changed")]
-    public async Task RepairHandlerSettlesDurabilityAndCreditsBeforePublishingTheBalance(string outcome)
+    [InlineData("retry")]
+    [InlineData("publication-replacement")]
+    public async Task RepairHandlerSettlesDurabilityAndCreditsBeforePublishingTheirUpdates(string outcome)
     {
         using var f = new Fixture(options);
         f.Seed();
@@ -106,6 +109,23 @@ public sealed class VendorRepairSettlementTests
         var vendor = RecordingDispatchProxy<IVendorInfo>.Create(out _);
         typeof(Player).GetField("selectedVendorInfo", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(actor.Player, vendor);
         network.Invocations.Clear();
+        var accepted = new List<object>();
+        int durabilityAttempts = 0;
+        network.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerItemDurability update)
+            {
+                using var committed = f.Context();
+                Assert.Equal(1f, committed.Item.Single(item => item.Id == update.ItemGuid).Durability);
+                Assert.Equal(outcome == "all" ? 70ul : 75ul, committed.CharacterCurrency.Single().Amount);
+                if (++durabilityAttempts == 1 && outcome == "retry")
+                    throw new IOException("Owned first durability enqueue rejection.");
+            }
+            accepted.Add(args[0]);
+            if (outcome == "publication-replacement" && args[0] is ServerCombatReward)
+                network.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+            return null;
+        });
         var handler = new ClientRepairItemVendorHandler(NullLogger<ClientRepairItemVendorHandler>.Instance, f.Source.Tables);
         var request = new ClientRepairItemVendor();
         if (outcome == "single")
@@ -117,6 +137,7 @@ public sealed class VendorRepairSettlementTests
         {
             handler.HandleMessage(session, request);
             Assert.Empty(Packets().OfType<ServerCombatReward>());
+            Assert.Empty(Packets().OfType<ServerItemDurability>());
             if (outcome == "changed")
             {
                 await actor.Drain();
@@ -137,6 +158,7 @@ public sealed class VendorRepairSettlementTests
                 await Task.Delay(5, timeout.Token);
             }
             Assert.Equal(100ul, Assert.Single(credits).Amount);
+            Assert.Empty(Packets().OfType<ServerItemDurability>());
             using var pending = f.Context();
             Assert.Equal(.5f, pending.Item.Single(item => item.Id == 904ul).Durability);
             Assert.Equal(100ul, pending.CharacterCurrency.Single().Amount);
@@ -162,7 +184,18 @@ public sealed class VendorRepairSettlementTests
             Assert.Equal(committed ? 1f : .5f, inventory.GetItem(904ul).Durability);
             Assert.Equal(expectedCredits, Assert.Single(credits).Amount);
             Assert.Equal(committed ? 1 : 0, Packets().OfType<ServerCombatReward>().Count());
-            Assert.False(inventory.RequiresAuthoritativeReload);
+            Assert.Equal(outcome == "publication-replacement", inventory.RequiresAuthoritativeReload);
+        }
+
+        var updates = accepted.OfType<ServerItemDurability>().ToArray();
+        if (!committed || outcome is "replacement" or "publication-replacement")
+            Assert.Empty(updates);
+        else
+        {
+            Assert.Equal(outcome == "all" ? new ulong[] { 904, 905 } : [904ul], updates.Select(update => update.ItemGuid).Order());
+            Assert.All(updates, update => Assert.Equal(1f, update.Durability));
+            Assert.Equal(outcome is "all" or "retry" ? 2 : 1, durabilityAttempts);
+            Assert.IsType<ServerCombatReward>(accepted.First());
         }
 
         IEnumerable<object> Packets() => network.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]);

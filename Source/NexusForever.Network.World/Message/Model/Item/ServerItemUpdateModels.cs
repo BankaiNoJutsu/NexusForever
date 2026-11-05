@@ -4,9 +4,8 @@ using NexusForever.Network.World.Message.Model.Shared;
 
 namespace NexusForever.Network.World.Message.Model.Item
 {
-    // The krakal/inventory branch mapped several of these shapes to opcodes that
-    // this checkout now has stronger decompile labels for. Keep the payload
-    // models available without registering conflicting opcodes.
+    // Keep unresolved shapes unregistered. Durability has a proven registration,
+    // reader and entity apply route in build16042 (ITEM_DURABILITY_WIRE_EVIDENCE.md).
     public class ServerItemCharges : IWritable
     {
         public ulong ItemGuid { get; set; }
@@ -19,6 +18,7 @@ namespace NexusForever.Network.World.Message.Model.Item
         }
     }
 
+    [Message(GameMessageOpcode.ServerItemDurability)]
     public class ServerItemDurability : IWritable
     {
         public ulong ItemGuid { get; set; }

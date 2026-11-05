@@ -250,7 +250,8 @@ namespace NexusForever.Network.Message
         ServerActionSetFiveUInt32       = 0x01A4, // five uint32 fields; reader FUN_1400819b0 (shared with 0x01AC)
         ServerReputationUpdate          = 0x01A5,
         ServerReputationAuxUInt32       = 0x01A6, // uint32 reputation follow-up aux; reader slot 140080c60
-        ServerReputationAuxUInt64UInt32 = 0x01A7, // uint64 + uint32 reputation follow-up aux; reader 14008ef80
+        ServerItemDurability           = 0x01A7, // item guid64 + durability float32; reader14008ef80 -> entity case1403ef77a
+        ServerReputationAuxUInt64UInt32 = ServerItemDurability, // historical raw-bit alias retained for compatibility
         ServerReputationAuxUInt64UInt32Alt = 0x01A8, // uint64 + uint32 reputation follow-up aux; shares reader 14008de20
         ServerReputationAuxUInt14UInt32 = 0x01A9, // 14-bit value + uint32 reputation follow-up aux; reader 14008d430
         ServerPathUpdateXP              = 0x01AA,
