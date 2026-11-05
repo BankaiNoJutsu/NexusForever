@@ -244,6 +244,12 @@ resolve to single-unit stat getters, and their shared rating conversion uses
 nonlinear arithmetic above a threshold. The remaining #557 combat change
 requires pairwise evidence. Qualification of the rating curve also needs
 actual coefficients and combat observations across the threshold.
+The later [finite cosine mapping](NATIVE_STATIC_ARMOR_PIERCE_EVIDENCE.md#finite-cosine-helper-and-the-rating-curve)
+resolves the shared routine's math callee and symbolic nonlinear branch.
+Its 4,101 bounded reconstruction checks agree with float-rounded cosine within
+one ULP; they are static analysis controls, not client execution. Source stays
+unchanged pending actual coefficients and independently corroborated combat
+application. Do not repeat the unresolved-callee search or infer #557 closure.
 
 [Composed reward reload retry](CONTRACT_POINT_PUBLICATION.md#retry-for-composed-reward-track-reloads)
 recovers repeated enqueue failures on the original queue and binds only the

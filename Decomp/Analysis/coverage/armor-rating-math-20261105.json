@@ -1,0 +1,157 @@
+{
+  "version": 1,
+  "feature": "Finite cosine in the native shared rating curve",
+  "base_head": "b055715b8ba3ea59df61019597c45dc897f11429",
+  "verified_utc": "2026-11-05T11:17:04.580015+00:00",
+  "disposition": "Mapped positive finite helper domain and symbolic curve; no server implementation or retail combat qualification",
+  "input": {
+    "path": "C:/GIT/_archive/cluster-3d/NexusForever/Decomp/Client64/WildStar64.exe",
+    "sha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+    "rea_evidence_id": "ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4",
+    "rea_operation": "inspect_pe_imports",
+    "rea_role": "Portable file-backed import and identity evidence; LLVM instruction extraction is separate external inspector evidence",
+    "imports": {
+      "status": "complete",
+      "reason": null,
+      "examined_dlls": 19,
+      "imports": 384,
+      "delay_imports": 0
+    }
+  },
+  "helper": {
+    "requested_va": "0x1408fc950",
+    "range_start": "0x1408fc950",
+    "range_end_exclusive": "0x1408fcc50",
+    "observed_unwind_parts": 1,
+    "meaning": "Float-result cosine in the sampled positive finite rating domain",
+    "cosine_branch": "0x1408fcb70",
+    "sine_reduced_branch": "0x1408fcb25",
+    "caller": "0x140453beb",
+    "caller_function": "0x140453b60",
+    "symbol_status": "Analyst identification; no recovered symbol or applied/exported label claimed"
+  },
+  "formula": {
+    "symbolic": "t=(c-b)/a; e=r-t; v=a*r+b below t, else c+a*e*cos((e/(e+k))*(pi/2)); scale by stored float0.01, add supplied offset, upper clamp",
+    "parameters": "Symbolic register roles, not verified GameFormula field names or retail coefficients",
+    "rounding": "Target single-precision scalar operations round at each instruction; symbolic real algebra is not bit-identical replacement",
+    "bounded_domain_assumptions": "Finite nonnegative excess, positive rolloff argument; real reachable coefficient/rating ranges remain unknown"
+  },
+  "analysis_reconstruction": {
+    "python": "3.13.14 (tags/v3.13.14:fd17997, Jun 10 2026, 13:03:48) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "win32",
+    "reference": "float-rounded Python math.cos",
+    "reference_math": "https://dlmf.nist.gov/4.19.E2",
+    "domain": [
+      0,
+      1.5707963705062866
+    ],
+    "sample_count": 4101,
+    "max_float_ulp_distance": 1,
+    "selected_samples": [
+      {
+        "input": 0.0,
+        "reconstructed": 1.0,
+        "reference_float_cosine": 1.0,
+        "ulp_distance": 0
+      },
+      {
+        "input": 0.7853981852531433,
+        "reconstructed": 0.7071067690849304,
+        "reference_float_cosine": 0.7071067690849304,
+        "ulp_distance": 0
+      },
+      {
+        "input": 1.5707963705062866,
+        "reconstructed": -4.371138828673793e-08,
+        "reference_float_cosine": -4.371138828673793e-08,
+        "ulp_distance": 0
+      }
+    ],
+    "unsupported_controls": 4,
+    "boundary": "Handwritten arithmetic analysis of observed instructions and constants; no execution or CPU emulation of client code; excludes NaN/Inf/negative/large-argument behavior and does not establish libm correctness for all floats"
+  },
+  "artifacts": [
+    {
+      "path": "artifacts/continuation-20261105/armor-rating-math/rea-pe-imports.json",
+      "sha256": "26D8B4C06523B41B96E9086D3143DE7993EF37C2C1D8F689A8C1DF354818B8D3"
+    },
+    {
+      "path": "artifacts/continuation-20261105/armor-rating-math/helper-range.json",
+      "sha256": "C023142F8A7E0A54C38924534A4575B935FD282B136D94B06C87B61D54258961"
+    },
+    {
+      "path": "artifacts/continuation-20261105/armor-rating-math/rating-math-helper.asm",
+      "sha256": "123BE14AB2C0BC562732FF21492A28A27069702B39C94127A0968C32B954C09E"
+    },
+    {
+      "path": "artifacts/continuation-20261105/armor-rating-math/ranges.json",
+      "sha256": "A5E5360E9194CFD38511BAAE2EC1439F773E0AD131AD63756DED22B22D4197CE"
+    },
+    {
+      "path": "artifacts/continuation-20261105/armor-rating-math/inspect-chains.py",
+      "sha256": "2788691DAB356D8934FF9B812BADCA1CDE3DEC1041DF79F2A11839FD0A6956F2"
+    },
+    {
+      "path": "artifacts/continuation-20261105/armor-rating-math/chains.json",
+      "sha256": "79030C7671887EE2F00B37E6F8861545971BF8584CA3F7E651604A1577CDD61E"
+    },
+    {
+      "path": "artifacts/continuation-20261105/armor-rating-math/1408fc950-chained-0.txt",
+      "sha256": "123BE14AB2C0BC562732FF21492A28A27069702B39C94127A0968C32B954C09E"
+    },
+    {
+      "path": "artifacts/continuation-20261105/armor-rating-math/verify-finite-cosine.py",
+      "sha256": "168CBB333685A7843E199C31F6DC54A04479F71C8E22ADC3927FE796541BD257"
+    },
+    {
+      "path": "artifacts/continuation-20261105/armor-rating-math/finite-cosine-verification.json",
+      "sha256": "2C679FA672EE822129434B311D3A53B60819B619878EEE355836A33F02EAA496"
+    },
+    {
+      "path": "artifacts/continuation-20261105/armor-rating-math/mapping-validation.log",
+      "sha256": "6C449FE28C05EC5CF85F6E1C0A881A98061CE858A58B84D93FF17C310DC5AE31"
+    },
+    {
+      "path": "artifacts/continuation-20261105/armor-rating-math/review.md",
+      "sha256": "4CB9B1DF4D96C6C7AB8D470B14C170CF7D3EA974E824125114F7F327F8C0CC40"
+    }
+  ],
+  "verification": {
+    "analysis_command": "python artifacts/continuation-20261105/armor-rating-math/verify-finite-cosine.py",
+    "unwind_command": "python artifacts/continuation-20261105/armor-rating-math/inspect-chains.py",
+    "source_and_tools_diff": "empty",
+    "csharp_build_or_tests": "Not run; no Source/Tools changes",
+    "native_execution_and_computer_use": "Remain stopped",
+    "configuration_changes": "None",
+    "historical_handoff_verifier": "Expected Source divergence from2938422 was previously retained; not repeated"
+  },
+  "contract_boundary_rechecked": "Reset/unclaimed/excess server rules are not established by existing client progress/claim paths. Historical full prepared table root is I:/GIT/NexusForever-assessment-report/remaining-goal/full-prepared-assets; I: is not mounted and no rawTBL files are present in the lean continuation store. No public claim or reset behavior was enabled.",
+  "review": {
+    "spec_findings": 0,
+    "initial_standards_findings": 1,
+    "remaining_standards_findings": 0,
+    "optional_findings": 0,
+    "resolved": "Explicit mapping-ledger deferral/disposition added and bounded re-reviewed",
+    "artifact": "artifacts/continuation-20261105/armor-rating-math/review.md"
+  },
+  "remaining": [
+    "Actual GameFormula coefficients and loader-field binding",
+    "Independent pairwise damage/mitigation evidence for attacker pierce, victim armor, order, caps and rounding",
+    "Real table/capture/runtime corroboration before changing #557 combat behavior",
+    "Nonfinite and large-argument helper behavior unqualified",
+    "All other Contract, gameplay, provider, deployment and native/retail requirements in the active Goal"
+  ],
+  "mapping_ledger_disposition": {
+    "function_labels_and_function_evidence_inventory": "Intentionally unchanged; no applied/exported durable label is established while the deep provider is unavailable. Mapped evidence retained in focused tracker and portable result.",
+    "other_csvs": "Intentionally unchanged; no new opcode, packet layout, structure member, Source implementation or live evidence bundle; no packet fixture inferred.",
+    "validator": "5016 rows across7 files passed"
+  },
+  "upstream": {
+    "pr": 557,
+    "head": "4bda9d1269fda8464c8cf7686ff3743b6edeae91",
+    "state": "open",
+    "merged": false,
+    "changed_files": 2,
+    "disposition": "Head unchanged; prior actual two-file diff reconciliation reused. Newest-created search still lists609 and608."
+  }
+}

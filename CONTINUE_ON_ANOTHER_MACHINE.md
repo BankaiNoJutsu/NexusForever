@@ -9,6 +9,13 @@ actual-table, socket/native and retail gates remain open. The earlier
 [listing concurrency qualification](Decomp/Analysis/MARKETPLACE_CONDITIONAL_LISTING_WRITES.md#actual-mysql-qualification---3-november-2026)
 retains its own unchanged Source/DLL bindings. Use scoped validation only.
 
+Latest static RE result: [finite cosine and rating curve](Decomp/Analysis/NATIVE_STATIC_ARMOR_PIERCE_EVIDENCE.md#finite-cosine-helper-and-the-rating-curve)
+resolves the former math-callee unknown with REA PE identity/import evidence,
+LLVM instructions and bounded analysis-reconstruction checks. This is mapped
+evidence, with Source unchanged; actual coefficients and pairwise combat
+corroboration still gate #557. Contract reset/unclaimed/excess policy and its
+full-table delivery requirements remain open. Native client/CUA remain stopped.
+
 [Committed tradeskill publication](Decomp/Analysis/TRADESKILL_PUBLICATION.md) passes 15 new/238 scoped
 and 15 MySQL cases with a clean owning-project build and both Source reviews.
 Original ordinary/frozen graphs release immutable skill/recipe/reset notices;

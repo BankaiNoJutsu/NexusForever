@@ -1,5 +1,70 @@
 # Armor-pierce and mitigation static evidence
 
+## Finite cosine helper and the rating curve
+
+5 November 2026. The previously unresolved call at `0x140453beb` targets
+`0x1408fc950`. Its observed exception-directory group has one part,
+`[0x1408fc950, 0x1408fcc50)`, with no chained fragments. The PE still matches
+SHA-256 `231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+REA's portable import inspection retains Evidence
+`ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4`;
+its complete 19-DLL/384-function inventory contains no named cosine import.
+LLVM supplies the instruction observations separately from REA. Neither tool
+executes the client. Ghidra remains unconfigured; no unavailable deep-analysis
+operation or setup was repeated.
+
+The sampled positive finite path implements float-result cosine. Up to pi/4, it
+starts at `0x1408fcb70` with `1 - x*x/2` and an even polynomial whose next
+coefficients match `1/24`, approximately `-1/720`, `1/40320` and `-1/3628800`.
+For the rest of the sampled range it reduces by pi/2 using the constant
+`2/pi` at `0x1409c7fc0`, selects the sine polynomial at `0x1408fcb25` for an
+odd quadrant, then adjusts the sign. This coefficient/branch interpretation
+agrees with the [NIST cosine and sine series](https://dlmf.nist.gov/4.19).
+This is an analyst identification, not a recovered symbol or a complete audit
+of the large-argument and nonfinite helper calls.
+
+A read-only analysis reconstruction follows the observed positive finite paths
+over `[0, 1.5707963705062866]`, the rounded single-precision half-pi used by the
+rating routine. Its 4,101 selected inputs, including adjacent floats around
+pi/4 and the endpoint, agree with independently evaluated float-rounded cosine
+within one float ULP. The reconstruction rejects NaN, infinity, negative and
+out-of-range inputs explicitly. Those rejections describe the analysis scope,
+not the executable's behavior. The endpoint cosine is approximately
+`-4.3711388e-8`; do not replace target rounding with an idealized positive limit.
+These are reconstruction checks, not native runtime observations.
+
+The shared rating curve can therefore be described schematically with slope
+`a`, linear base `b`, join value `c`, rating `r` and rolloff argument `k`:
+`t = (c-b)/a`; below `t`, `v = a*r+b`; otherwise, with `e = r-t`,
+`v = c + a*e*cos((e/(e+k))*(pi/2))`.
+The routine then scales by the stored float approximation to 0.01, adds a
+supplied offset and applies an upper cap. The executable rounds its scalar
+operations at each single-precision instruction; the expression is not an
+exact real-number or bit-identical replacement. The bounded cosine argument
+requires finite nonnegative excess and a positive rolloff argument. Actual
+GameFormula coefficients and reachable rating ranges remain unverified.
+
+Disposition: **Mapped finite-domain cosine and symbolic rating curve**. No
+combat implementation changed. The callers previously identified below still
+resolve one unit for stat display. The required next evidence is the actual
+coefficient/loader binding and independent pairwise damage/mitigation evidence
+for attacker pierce, victim armor, order, caps and rounding. This closes the
+unresolved-callee question without qualifying #557's remaining combat change.
+No label export is claimed while the deep provider is unavailable.
+`function_labels.csv` and `mapping_artifacts/function_evidence_inventory.csv`
+are intentionally unchanged: the inventory links durable applied labels, and
+this pass cannot apply/re-export a new label. This focused record and portable
+result retain the mapped helper until that workflow is available. Other mapping
+CSVs are intentionally unchanged because no new opcode, packet layout, structure
+field, Source implementation or live evidence bundle is established. No packet
+fixture is inferred; actual coefficient and pairwise/runtime blockers remain above.
+
+The [portable result](coverage/armor-rating-math-20261105.json) binds PE and LLVM
+identity, the observed unwind group, raw constants, full instruction extracts,
+analysis reconstruction and review. Local evidence is under
+`artifacts/continuation-20261105/armor-rating-math/`. Source and Tools are
+unchanged; no C# build or test suite was needed. Native client/CUA remain stopped.
+
 ## Direct callers and the rating curve
 
 4 November 2026. REA reopened the same build16042 PE with the SHA256 below.
