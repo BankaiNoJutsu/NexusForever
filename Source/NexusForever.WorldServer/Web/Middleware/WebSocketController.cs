@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.RBAC;
 using NexusForever.WorldServer.Command;
 using NexusForever.WorldServer.Command.Context;
@@ -17,15 +18,18 @@ namespace NexusForever.WorldServer.Web.Middleware
     {
         private readonly ICommandManager commandManager;
         private readonly IRBACManager rbacManager;
+        private readonly IPlayerManager playerManager;
 
         public WebSocketMiddleware(
             RequestDelegate next,
             ICommandManager commandManager,
-            IRBACManager rbacManager)
+            IRBACManager rbacManager,
+            IPlayerManager playerManager)
         {
             Next = next;
             this.commandManager = commandManager;
             this.rbacManager = rbacManager;
+            this.playerManager = playerManager;
         }
 
         public RequestDelegate Next { get; }
@@ -34,6 +38,9 @@ namespace NexusForever.WorldServer.Web.Middleware
         {
             [JsonProperty("message")]
             public string Message { get; set; }
+
+            [JsonProperty("character")]
+            public string Character { get; set; }
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -49,7 +56,8 @@ namespace NexusForever.WorldServer.Web.Middleware
                         if (result.CloseStatus != null)
                             continue;
 
-                        commandManager.HandleCommandDelay(new WebSocketCommandContext(webSocket, rbacManager), clientMessage.Message);
+                        commandManager.HandleCommandDelay(new WebSocketCommandContext(webSocket, rbacManager, null,
+                            playerManager: playerManager, characterName: clientMessage.Character), clientMessage.Message);
                     }
                 }
                 else

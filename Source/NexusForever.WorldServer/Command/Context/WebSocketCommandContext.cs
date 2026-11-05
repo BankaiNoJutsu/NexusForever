@@ -19,8 +19,14 @@ namespace NexusForever.WorldServer.Command.Context
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
-        public IWorldEntity Invoker { get; }
+        // CommandManager evaluates this context on the world thread, after the
+        // websocket request has been queued. Do not retain a player from receive time.
+        public IWorldEntity Invoker => invoker ?? (characterName != null ? playerManager.GetPlayer(characterName) : null);
         public IWorldEntity Target { get; }
+
+        private readonly IWorldEntity invoker;
+        private readonly IPlayerManager playerManager;
+        private readonly string characterName;
 
         public Language Language { get; } = Language.English;
         public ImmutableHashSet<Permission> Permissions { get; }
@@ -48,11 +54,16 @@ namespace NexusForever.WorldServer.Command.Context
         {
         }
 
-        public WebSocketCommandContext(WebSocket webSocket, IRBACManager rbacManager, IWorldEntity invoker, IWorldEntity target = null)
+        public WebSocketCommandContext(WebSocket webSocket, IRBACManager rbacManager, IWorldEntity invoker, IWorldEntity target = null,
+            IPlayerManager playerManager = null, string characterName = null)
         {
             WebSocket = webSocket;
-            Invoker   = invoker;
+            this.invoker = invoker;
             Target    = target;
+            this.playerManager = playerManager;
+            this.characterName = string.IsNullOrWhiteSpace(characterName) ? null : characterName;
+            if (this.characterName != null && playerManager == null)
+                throw new ArgumentNullException(nameof(playerManager));
 
             // websocket role needs to exist in order for the websocket command context to work
             IRBACRole role = GetRbacManager(rbacManager).GetRole(Role.WebSocket);

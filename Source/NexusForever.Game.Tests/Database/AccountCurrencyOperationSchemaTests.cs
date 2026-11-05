@@ -35,11 +35,13 @@ public sealed class AccountCurrencyOperationSchemaTests
         await using var connection = new SqliteConnection("Data Source=:memory:"); await connection.OpenAsync();
         var options = new DbContextOptionsBuilder<AuthContext>().UseSqlite(connection, builder => builder.MigrationsAssembly(typeof(Factory).Assembly.GetName().Name)).Options;
         await using var context = new AuthContext(options); await context.GetService<IMigrator>().MigrateAsync("20261030165054_AccountWorldSessionEpoch");
-        context.Account.Add(new() { Id = 77, Email = "wallet-upgrade@example.local" });
+        // This migration target predates fields in the current AccountModel.
+        await context.Database.ExecuteSqlRawAsync("INSERT INTO account (id,email) VALUES (77,'wallet-upgrade@example.local')");
         context.AccountCurrency.Add(new() { Id = 77, CurrencyId = 14, Amount = 1234 });
         context.AccountEntitlement.AddRange(new AccountEntitlementModel { Id = 77, EntitlementId = 15, Amount = 1 }, new AccountEntitlementModel { Id = 77, EntitlementId = 17, Amount = 1 });
         await context.SaveChangesAsync(); await context.Database.MigrateAsync(); await context.Database.MigrateAsync(); context.ChangeTracker.Clear();
         Assert.Equal(1234ul, context.AccountCurrency.Single().Amount); Assert.Empty(context.AccountCurrencyOperation);
+        Assert.Equal(1ul, context.Account.Single().NextInventoryId);
         Assert.Equal(new byte[] { 15, 17 }, context.AccountEntitlement.OrderBy(row => row.EntitlementId).Select(row => row.EntitlementId));
         Assert.All(context.AccountEntitlement, row => Assert.Equal(1u, row.Amount)); Assert.Empty(context.AccountInventory); Assert.Empty(context.AccountPendingItem);
         Assert.Equal(context.Database.GetMigrations(), await context.Database.GetAppliedMigrationsAsync());

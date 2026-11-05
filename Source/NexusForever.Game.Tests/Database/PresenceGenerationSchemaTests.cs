@@ -20,7 +20,9 @@ public sealed class PresenceGenerationSchemaTests
         await using (var before = new AuthContext(options))
         {
             await before.GetService<IMigrator>().MigrateAsync("20261029175905_AccountInventorySourceIdentity");
-            before.Account.Add(new() { Id = 7, Email = "upgrade@example.test", S = "preserve-s", V = "preserve-v", SessionKey = "preserve-key", GameToken = "preserve-token" });
+            // Seed the historical schema directly; the current AccountModel also
+            // maps columns introduced by migrations that this fixture has not run.
+            await before.Database.ExecuteSqlRawAsync("INSERT INTO account (id,email,s,v,sessionKey,gameToken) VALUES (7,'upgrade@example.test','preserve-s','preserve-v','preserve-key','preserve-token')");
             before.AccountEntitlement.AddRange(new AccountEntitlementModel { Id = 7, EntitlementId = 15, Amount = 1 },
                 new AccountEntitlementModel { Id = 7, EntitlementId = 17, Amount = 1 });
             before.AccountCurrency.Add(new() { Id = 7, CurrencyId = 8, Amount = 0 }); await before.SaveChangesAsync();
@@ -30,6 +32,7 @@ public sealed class PresenceGenerationSchemaTests
             await after.Database.MigrateAsync(); Assert.False(after.Database.HasPendingModelChanges());
             var row = await after.Account.SingleAsync(); Assert.Equal("preserve-s", row.S); Assert.Equal("preserve-v", row.V);
             Assert.Equal("preserve-key", row.SessionKey); Assert.Equal("preserve-token", row.GameToken); Assert.Equal(1ul, row.NextPendingItemId);
+            Assert.Equal(1ul, row.NextInventoryId);
             Assert.Empty(await after.AccountWorldSession.ToArrayAsync()); Assert.Equal(0ul, row.WorldSessionEpoch);
             Assert.Equal(new byte[] { 15, 17 }, await after.AccountEntitlement.OrderBy(e => e.EntitlementId).Select(e => e.EntitlementId).ToArrayAsync());
             Assert.All(await after.AccountEntitlement.ToArrayAsync(), e => Assert.Equal(1u, e.Amount));
