@@ -75,21 +75,31 @@ namespace NexusForever.Script.Instance.Adventure.TheHycrestInsurrection
         /// <summary>The map calls this before manager enumeration; vote callbacks cannot create events there.</summary>
         public void Update(double lastTick)
         {
-            if (parentStopped || publicEvent.IsFinalised || pendingMission == 0 || mission != null
-                || publicEvent.Map is not IMapInstance map) return;
+            if (pendingMission == 0 || mission != null
+                || publicEvent.Map is not IMapInstance map || !CanRunMission(map)) return;
             retryTime -= lastTick;
             if (retryTime > 0) return;
             retryTime = 1;
             var selected = map.PublicEventManager.GetEvent(pendingMission) ?? map.PublicEventManager.CreateEvent(pendingMission);
             if (selected == null || selected.IsFinalised) return;
+            if (!CanRunMission(map))
+            {
+                selected.Finish(null);
+                return;
+            }
+
             mission = selected;
             pendingMission = 0;
-            foreach (IPlayer player in map.GetPlayers()) mission.JoinEvent(player, PublicEventTeam.PublicTeam);
+            foreach (IPlayer player in map.GetPlayers().ToArray())
+                OnAddToMap(player);
         }
+
+        private bool CanRunMission(IMapInstance map) => !parentStopped && !publicEvent.IsFinalised && !map.UnloadStatus.HasValue;
 
         public void OnAddToMap(IGridEntity entity)
         {
-            if (entity is IPlayer player && mission != null && !mission.IsFinalised)
+            if (entity is IPlayer player && mission?.IsFinalised == false
+                && publicEvent.Map is IMapInstance map && CanRunMission(map) && ReferenceEquals(player.Map, map))
                 mission.JoinEvent(player, PublicEventTeam.PublicTeam);
         }
 

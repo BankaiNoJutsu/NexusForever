@@ -43,6 +43,23 @@ Cached native `Lua_PublicEventObjective_GetRequiredCount` at `14068ef30` treats 
 
 Focused Hycrest, public-event objective, generic event-map/range, objective-credit and HallOfTheHundred suites: **950 passed,0 failed,0 skipped; zero build warnings/errors**. Exact command, log and TRX are external in `remaining-goal/HYCREST_RECONCILIATION.md`, `hycrest-focused.log` and `hycrest-tests/`. `git diff --check` passes. Parent owns the full solution checkpoint.
 
+## Selected mission enrollment
+
+5 November 2026. The map tick checks that the parent is still running after
+initializing the voted mission. If the parent finishes during initialization,
+the selected event closes before enrolling anyone. Initial enrollment takes a
+party snapshot and checks each player's current map. A new arrival can join
+through the map callback while a departing player is skipped. Public Event
+start notices use the enrolled member's guarded send path, so a rejected
+enqueue for one player leaves the rest of the party's enrollment intact. The
+failed notice is logged and has no retry in this slice.
+
+All three regressions failed on the baseline. The owning build took 43 seconds
+with zero warnings or errors. All 312 scoped Hycrest, Public Event, content-map
+and match cleanup tests passed in 24 seconds. Game and Instance Script DLL
+hashes matched the test copies. Local evidence is under
+`artifacts/continuation-20261105/hycrest-mission-enrollment/`.
+
 ## Explicit remaining boundaries
 
 This is **partial #585 implementation**, not retail completion. No synthetic arrival cinematic, forced ship boarding, guessed ship path/seat offsets, arbitrary barn radius, text-length speech timing, automatic fall/jump helpers or video-derived timeout fallback is added. Existing physical entry/tutorial/platform behavior remains. The existing type6 volume producer must supply objective189 occupancy; exact Hycrest trigger placement/bounds still needs authoritative data or runtime capture. Dialogue text IDs are corroborated but their delivery order/timing, sound and presentation remain unmapped. Mission420/421/422 gameplay, later branch decisions, return portal and exact live group flow remain separate work. No entitlement/default/spawn SQL changes were made.

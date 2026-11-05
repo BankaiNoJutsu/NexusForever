@@ -226,15 +226,15 @@ namespace NexusForever.Game.PublicEvent
 
             publicEventManager.AddEvent(player.CharacterId, this);
 
-            SendServerPublicEventStart(player, publicEventTeam);
+            SendServerPublicEventStart(member, publicEventTeam);
 
-            if (template.HasLiveStats())
+            if (CanChangeProgress && template.HasLiveStats())
                 SendServerPublicEventStatsUpdate();
 
             log.LogTrace($"Character {player.CharacterId} has joined public event {Guid} on team {team}.");
         }
 
-        private void SendServerPublicEventStart(IPlayer player, IPublicEventTeam publicEventTeam)
+        private void SendServerPublicEventStart(IPublicEventTeamMember member, IPublicEventTeam publicEventTeam)
         {
             IEnumerable<IPublicEventObjective> objectives = publicEventTeam.GetObjectives();
 
@@ -242,7 +242,7 @@ namespace NexusForever.Game.PublicEvent
             foreach (IPublicEventTeam otherPublicEventTeam in teams.Values.Where(t => t.Team != publicEventTeam.Team))
                 objectives = objectives.Concat(otherPublicEventTeam.GetOtherObjectives());
 
-            player.Session.EnqueueMessageEncrypted(new ServerPublicEventStart
+            member.Send(new ServerPublicEventStart
             {
                 PublicEventId     = Id,
                 PublicEventTeamId = publicEventTeam.Team,

@@ -173,6 +173,54 @@ public class HycrestReconciliationTests
     }
 
     [Fact]
+    public void SelectedMissionFinishesWithoutEnrollingIfItsParentStopsDuringCreation()
+    {
+        var f = new Fixture();
+        f.MapScript.OnPublicEventFinish(f.IntroEvent, f.Winner);
+        f.Main.OnVoteFinished(45, 1);
+        f.OnCreateEvent = id =>
+        {
+            Assert.Equal(421u, id);
+            f.MapScript.OnPublicEventFinish(f.MainEvent, f.Winner);
+        };
+
+        ((IUpdate)f.MapScript).Update(1);
+        f.Main.OnAddToMap(f.Player(3));
+
+        Assert.Equal(new uint[] { 419, 418, 421 }, f.Created);
+        var mission = f.EventProxy(421);
+        Assert.Null(Assert.Single(mission.GetInvocations(nameof(IPublicEvent.Finish))).Arguments[0]);
+        Assert.Empty(mission.GetInvocations(nameof(IPublicEvent.JoinEvent)));
+    }
+
+    [Fact]
+    public void MissionEnrollmentSurvivesPartyChangesDuringTheFirstJoin()
+    {
+        var f = new Fixture();
+        f.MapScript.OnPublicEventFinish(f.IntroEvent, f.Winner);
+        f.Main.OnVoteFinished(45, 2);
+        IPlayer first = f.Players[0];
+        IPlayer departing = f.Players[1];
+        IPlayer arriving = f.Player(3);
+        f.OnCreateEvent = id => f.EventProxy(id).SetMethodHandler(nameof(IPublicEvent.JoinEvent), args =>
+        {
+            if (ReferenceEquals(args[0], first))
+            {
+                f.Players.Remove(departing);
+                ((RecordingDispatchProxy<IPlayer>)(object)departing).SetProperty(nameof(IPlayer.Map), null);
+                f.Players.Add(arriving);
+                f.Main.OnAddToMap(arriving);
+            }
+            return null;
+        });
+
+        ((IUpdate)f.MapScript).Update(1);
+
+        Assert.Equal(new IPlayer[] { first, arriving }, f.EventProxy(422).GetInvocations(nameof(IPublicEvent.JoinEvent))
+            .Select(invocation => (IPlayer)invocation.Arguments[0]));
+    }
+
+    [Fact]
     public void LateJoinNeverRejoinsTheFinishedIntroOrParent()
     {
         var f = new Fixture();
@@ -289,6 +337,7 @@ public class HycrestReconciliationTests
         public RecordingDispatchProxy<IPublicEventManager> ManagerProxy { get; }
         public List<IPlayer> Players { get; } = [];
         public List<uint> Created { get; } = [];
+        public Action<uint> OnCreateEvent { get; set; }
         public IPublicEventTeam Winner { get; }
         private readonly Dictionary<uint, IPublicEvent> events = [];
 
@@ -308,7 +357,9 @@ public class HycrestReconciliationTests
                 var e = RecordingDispatchProxy<IPublicEvent>.Create(out var ep);
                 ep.SetProperty(nameof(IPublicEvent.Id), id); ep.SetProperty(nameof(IPublicEvent.Map), Map);
                 ep.SetProperty(nameof(IPublicEvent.ChildEventIds), id == 419 ? new uint[] {420,421,422,423,424,425} : Array.Empty<uint>());
-                events[id] = e; return e;
+                events[id] = e;
+                OnCreateEvent?.Invoke(id);
+                return e;
             });
             MapScript.OnLoad(Map);
             var tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tp);

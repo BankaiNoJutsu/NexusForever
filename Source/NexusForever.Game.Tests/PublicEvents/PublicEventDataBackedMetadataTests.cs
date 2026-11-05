@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging.Abstractions;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.PublicEvent;
@@ -142,11 +143,13 @@ public class PublicEventDataBackedMetadataTests
                 }
             ]);
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
         IPlayer player = TestPlayerBuilder.Create()
             .WithCharacterId(101ul)
             .WithSession(session)
+            .WithMap(map)
             .Build();
-        RuntimePublicEvent publicEvent = CreateJoinablePublicEvent(template);
+        RuntimePublicEvent publicEvent = CreateJoinablePublicEvent(template, map, player);
 
         publicEvent.JoinEvent(player, PublicEventTeamId.PublicTeam);
 
@@ -161,8 +164,11 @@ public class PublicEventDataBackedMetadataTests
         AssertVirtualItem(virtualItem, 100u, 3u);
     }
 
-    private static RuntimePublicEvent CreateJoinablePublicEvent(IPublicEventTemplate template)
+    private static RuntimePublicEvent CreateJoinablePublicEvent(IPublicEventTemplate template, IBaseMap map, IPlayer player)
     {
+        var players = RecordingDispatchProxy<IPlayerManager>.Create(out var registry);
+        registry.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
+        var realm = RecordingDispatchProxy<IRealmContext>.Create(out _);
         var publicEvent = new RuntimePublicEvent(
             NullLogger<RuntimePublicEvent>.Instance,
             RecordingDispatchProxy<IScriptManager>.Create(out _),
@@ -170,13 +176,12 @@ public class PublicEventDataBackedMetadataTests
                 NullLogger<RuntimePublicEventTeam>.Instance,
                 new PublicEventTestSupport.DelegateFactory<IPublicEventObjective>(() => new RuntimePublicEventObjective()),
                 new PublicEventTestSupport.DelegateFactory<IPublicEventTeamMember>(() =>
-                    RecordingDispatchProxy<IPublicEventTeamMember>.Create(out _)),
+                    new PublicEventTeamMember(NullLogger<PublicEventTeamMember>.Instance, players, realm)),
                 new PublicEventTestSupport.ThrowingFactory<IPublicEventVote>(),
                 new RuntimePublicEventStats())),
             RecordingDispatchProxy<IPublicEventEntityFactory>.Create(out _));
 
         IPublicEventManager manager = RecordingDispatchProxy<IPublicEventManager>.Create(out _);
-        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
         publicEvent.Initialise(manager, template, map);
         return publicEvent;
     }

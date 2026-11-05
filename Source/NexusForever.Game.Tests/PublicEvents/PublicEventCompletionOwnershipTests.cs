@@ -252,6 +252,31 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
     }
 
     [Fact]
+    public void RejectedStartNoticeDoesNotInterruptPartyEnrollment()
+    {
+        var map = RecordingDispatchProxy<IBaseMap>.Create(out _);
+        var first = new Actor(map, 42ul, 100u);
+        var teammate = new Actor(map, 43ul, 200u);
+        var players = RecordingDispatchProxy<IPlayerManager>.Create(out var registry);
+        registry.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] == 42ul ? first.Player : teammate.Player);
+        var publicEvent = CreateEvent(players, map, 201u, 501u);
+        first.Session.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerPublicEventStart)
+                throw new IOException("Owned public-event start notice rejection.");
+            return null;
+        });
+
+        publicEvent.JoinEvent(first.Player, EventTeam.PublicTeam);
+        publicEvent.JoinEvent(teammate.Player, EventTeam.PublicTeam);
+
+        Assert.Single(first.Packets.OfType<ServerPublicEventStart>());
+        Assert.Single(teammate.Packets.OfType<ServerPublicEventStart>());
+        Assert.Equal(new[] { first.Player, teammate.Player }, Assert.Single(publicEvent.GetTeams()).GetMembers()
+            .Select(member => member.GetCurrentPlayer()));
+    }
+
+    [Fact]
     public void ObjectiveCompletionNotifiesTheMapOnceWhenMatchFinishCallsBack()
     {
         var (script, publicEvent, actor, map) = CreateContentEvent();
