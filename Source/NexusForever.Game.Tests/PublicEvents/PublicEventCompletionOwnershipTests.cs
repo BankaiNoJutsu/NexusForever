@@ -87,6 +87,66 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
     }
 
     [Theory]
+    [InlineData(typeof(ServerPublicEventObjectiveStatusUpdate))]
+    [InlineData(typeof(ServerPublicEventEnd))]
+    public void RejectedMemberNoticeDoesNotInterruptCompletion(Type rejectedPacket)
+    {
+        const uint objectiveId = 201u;
+        var map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
+        var first = new Actor(map, 42ul, 100u);
+        var teammate = new Actor(map, 43ul, 200u);
+        var players = RecordingDispatchProxy<IPlayerManager>.Create(out var registry);
+        registry.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] == 42ul ? first.Player : teammate.Player);
+        var publicEvent = CreateEvent(players, map, objectiveId, 501u);
+        publicEvent.JoinEvent(first.Player, EventTeam.PublicTeam);
+        publicEvent.JoinEvent(teammate.Player, EventTeam.PublicTeam);
+        int rejections = 0;
+        first.Session.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0].GetType() == rejectedPacket)
+            {
+                rejections++;
+                throw new IOException("Owned public-event notice rejection.");
+            }
+            return null;
+        });
+
+        publicEvent.UpdateObjective(objectiveId, 1);
+        Assert.True(publicEvent.IsFinalised);
+        publicEvent.Finish(EventTeam.PublicTeam);
+
+        Assert.Equal(1, rejections);
+        Assert.Single(mapProxy.GetInvocations(nameof(IBaseMap.OnPublicEventFinish)));
+        Assert.Empty(publicEvent.GetTeams().SelectMany(team => team.GetMembers()));
+        AssertCredit(first, objectiveId);
+        AssertCredit(teammate, objectiveId);
+    }
+
+    [Fact]
+    public void RejectedLeaveNoticeDoesNotKeepAnEmptyEventRunning()
+    {
+        var map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
+        var actor = new Actor(map, 42ul, 100u);
+        var players = RecordingDispatchProxy<IPlayerManager>.Create(out var registry);
+        registry.SetMethodReturn(nameof(IPlayerManager.GetPlayer), actor.Player);
+        var publicEvent = CreateEvent(players, map, 201u, 501u);
+        publicEvent.JoinEvent(actor.Player, EventTeam.PublicTeam);
+        actor.Session.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerPublicEventLeave)
+                throw new IOException("Owned public-event leave notice rejection.");
+            return null;
+        });
+
+        publicEvent.LeaveEvent(actor.Player, PublicEventRemoveReason.Failure);
+
+        Assert.True(publicEvent.IsFinalised);
+        Assert.Single(actor.Packets.OfType<ServerPublicEventLeave>());
+        Assert.Single(mapProxy.GetInvocations(nameof(IBaseMap.OnPublicEventFinish)));
+        Assert.Empty(publicEvent.GetTeams().SelectMany(team => team.GetMembers()));
+    }
+
+    [Theory]
     [InlineData("direct-rollback")]
     [InlineData("unflushed-commit")]
     [InlineData("queued-rollback")]

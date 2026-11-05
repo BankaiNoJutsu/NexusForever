@@ -97,8 +97,19 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void Send(IWritable message)
         {
-            if (GetCurrentPlayer() != null)
+            if (GetCurrentPlayer() == null)
+                return;
+
+            try
+            {
                 session.EnqueueMessageEncrypted(message);
+            }
+            catch (Exception error)
+            {
+                // A member's delivery failure must not interrupt shared event progress.
+                log.LogWarning(error, "Could not enqueue public event notice {Notice} for character {CharacterId}.",
+                    message.GetType().Name, CharacterId);
+            }
         }
 
         /// <summary>

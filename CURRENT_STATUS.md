@@ -22105,6 +22105,20 @@ achievement publication tests passed. Local evidence is under
 `artifacts/continuation-20261104/public-event-member-ownership/`.
 Retail reward tiers and live client presentation remain open.
 
+#### Public event member delivery failure
+
+5 November 2026. A member's failed packet enqueue no longer interrupts
+objective credit, other members' notices, or map finalization. A failed
+leave notice also allows an empty event to finish. The member send still
+checks the original player, session, and map and logs a rejected enqueue.
+
+Three baselines reproduced failures during objective status, the end
+scoreboard, and the last player's leave notice. The owning build passed with
+zero warnings or errors, and all 850 scoped public-event and Hycrest tests
+passed, including the three fault cases. Local results are in
+`artifacts/continuation-20261105/public-event-member-enqueue/`.
+Replay to the failed recipient and deployed socket behavior remain open.
+
 #### Public event Character save recovery
 
 5 November 2026. A real public-event objective advanced an enrolled Player's

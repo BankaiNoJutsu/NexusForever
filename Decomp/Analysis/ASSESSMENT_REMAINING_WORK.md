@@ -76,6 +76,9 @@ cinematic callbacks and membership removal.
 [Public event completion ownership](../../CURRENT_STATUS.md#public-event-completion-ownership)
 keeps quest and achievement credit and team packets with the original active
 membership, and preserves scoreboard identity after the player departs.
+[Member delivery failure](../../CURRENT_STATUS.md#public-event-member-delivery-failure)
+keeps objective credit, teammate notices, and event cleanup moving when an
+individual member enqueue fails.
 The [Character rollback probe](../../CURRENT_STATUS.md#public-event-character-save-recovery)
 reproduced early quest updates and loss of unsaved credit on the World save
 failure path. [Committed quest notices](../../CURRENT_STATUS.md#committed-public-event-quest-notices)
