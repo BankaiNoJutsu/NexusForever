@@ -1,5 +1,8 @@
 # Destination configured-provider qualification
 
+[Satchel transfer settlement](#satchel-transfer-settlement) covers manual
+withdrawals and deposits on migrated MySQL Character schemas.
+
 [Quest lifecycle and notice publication](#quest-lifecycle-and-notice-publication)
 covers ordinary abandon and retry over encrypted loopback and public-event
 notice recovery on migrated MySQL Character schemas.
@@ -51,6 +54,27 @@ The [portable report](coverage/marketplace-mysql-concurrency-20261103.json) bind
 unchanged Source/DLLs and all44 outcomes. Owned workloads are stopped. No full
 suite was run. Other profiles, physical failures, other financial commands,
 broker/restart, deployment, native and retail qualification remain separate.
+
+### Satchel transfer settlement
+
+5 November 2026. Four encrypted World loopback cases cover a committed
+withdrawal, a retry after proven rollback, a simulated lost commit
+acknowledgement, and a persistent rollback that preserves the material
+balance and leaves the bag empty. Five deposit cases cover partial and full
+backpack deposits, shared-bank acknowledgement loss and rollback, and
+rejection of a changed shared-bank source stack. They check the durable
+material and item rows and the notices to the original session.
+
+Each case used its own disposable MySQL 8.4.13 Character schema with all
+48 migrations and `MySqlRetryingExecutionStrategy`. The TLS control
+connection reported `REPEATABLE-READ`. Withdrawals use a disposable SQLite
+Auth fixture. Deposits use a recording World session and fixture Auth.
+Startup to runner launch took 156 seconds and provider execution took
+191 seconds. All nine schemas were dropped and the owned server, listener,
+runner and helper stopped. The [portable result](coverage/satchel-mysql-20261105.json)
+binds the cases to the tested binaries and earlier scoped SQLite checks.
+Physical connection loss, deployed delivery and restart, and native client
+behavior remain open.
 
 ### Quest lifecycle and notice publication
 

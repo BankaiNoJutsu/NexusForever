@@ -58,6 +58,8 @@ together before sending the original session's notices.
 [Committed satchel deposits](../../CURRENT_STATUS.md#committed-satchel-deposits)
 couple backpack and shared-bank stack changes to the material credit and
 validate the stored source before settlement.
+The [configured MySQL gate](DESTINATION_PROVIDER_QUALIFICATION.md#satchel-transfer-settlement)
+exercises both transfer directions, including rollback and lost acknowledgement.
 
 [Build 16042 account-inventory CREDD wire evidence](CREDD_ACCOUNT_REDEEM_WIRE_EVIDENCE.md)
 maps empty `0x0770` and separates the local confirmation event from a server

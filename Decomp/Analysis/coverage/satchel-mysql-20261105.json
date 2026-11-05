@@ -1,0 +1,108 @@
+{
+  "productionSourceCommit": "e05c132b21dc4451abde3a84c01503f4f0a0d28d",
+  "testFixtures": [
+    {
+      "path": "Source/NexusForever.Game.Tests/Quest/Q5597RewardPersistenceTests.Loopback.cs",
+      "gitBlob": "b534bb24ed2b1b7dacebe27b21e55241fb6af249"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Entity/BankDeferredCurrencyRecoveryTests.cs",
+      "gitBlob": "c2071a27ef794e890d61592206862168885d1e89"
+    }
+  ],
+  "engine": {
+    "version": "8.4.13",
+    "sha256": "7a976874ef3974d612081960b1c193c663b4434692b6257382352c587e367ad6",
+    "tlsRequired": true,
+    "controlConnectionIsolation": "REPEATABLE-READ"
+  },
+  "strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+  "migrationsPerSchema": 48,
+  "testCases": [
+    {
+      "name": "LoopbackSatchelWithdrawalCommitsMaterialAndItemBeforePublication(success)",
+      "passed": true
+    },
+    {
+      "name": "LoopbackSatchelWithdrawalCommitsMaterialAndItemBeforePublication(retry)",
+      "passed": true
+    },
+    {
+      "name": "LoopbackSatchelWithdrawalCommitsMaterialAndItemBeforePublication(lost-ack)",
+      "passed": true
+    },
+    {
+      "name": "LoopbackSatchelWithdrawalCommitsMaterialAndItemBeforePublication(rollback)",
+      "passed": true
+    },
+    {
+      "name": "ManualSatchelDepositSettlesItemAndMaterialTogether(False,partial)",
+      "passed": true
+    },
+    {
+      "name": "ManualSatchelDepositSettlesItemAndMaterialTogether(False,full)",
+      "passed": true
+    },
+    {
+      "name": "ManualSatchelDepositSettlesItemAndMaterialTogether(True,lost)",
+      "passed": true
+    },
+    {
+      "name": "ManualSatchelDepositSettlesItemAndMaterialTogether(True,rollback)",
+      "passed": true
+    },
+    {
+      "name": "ManualSatchelDepositSettlesItemAndMaterialTogether(True,stale)",
+      "passed": true
+    }
+  ],
+  "elapsedSeconds": 191.1009979,
+  "sqliteControls": [
+    {
+      "cases": 4,
+      "trxSha256": "72ad6b9841556d66ce0e250ea066667ccbbdebd7e63b7e3f5d76cb08c1dcb79f"
+    },
+    {
+      "cases": 5,
+      "trxSha256": "edc568c3c41a99310ec34629e4ee795d71dc192ea2e05c336092e1d5de8412b3"
+    }
+  ],
+  "assemblies": [
+    {
+      "file": "NexusForever.Game.dll",
+      "sha256": "72a1a949e74dcbe921f996e88e9c583274f25c0362419fe0bf31d62466cee7da"
+    },
+    {
+      "file": "NexusForever.Game.Tests.dll",
+      "sha256": "bbf559de9f3344dc513570856278accc2fa805c8335bd925bafbc93412558742"
+    },
+    {
+      "file": "NexusForever.WorldServer.dll",
+      "sha256": "dfc8f15ba00452f752670da21a3c1c27414e5d00adf1cfa48992caa23236a43a"
+    },
+    {
+      "file": "NexusForever.Network.World.dll",
+      "sha256": "5cf2a0522ccdb21f328c53abfe9cb5f1d4ef183f363186045cb841012686b7db"
+    },
+    {
+      "file": "NexusForever.Database.Character.dll",
+      "sha256": "57243b02f523d495af1a80e7ca5c6666e5c83e3a1d6feb5958e48fa29937a49b"
+    },
+    {
+      "file": "MySqlConnector.dll",
+      "sha256": "a3104353e86cc96123d8015fc5a3bf4ab88b127b9180caaa4db9a006c49f467b"
+    }
+  ],
+  "runnerSourceSha256": "cf94c583de94095fb82d939aae0adfba9521d342e35db1148d384b0023a48768",
+  "runnerSha256": "a2e5d2606e9764df3bcf08913d7cce3d33e8dd05dcd9f6b0e5f8acec889d2780",
+  "resultsSha256": "d007b56f2c82db3f79a07e7ce0640bf5cc8808e8f26d018d3717e69fc8abe73e",
+  "shutdown": {
+    "serverAbsent": true,
+    "listenerAbsent": true,
+    "runnerAbsent": true,
+    "helperAbsent": true,
+    "proofSha256": "e0364f81d715976f605fc79df25d0a5e161fff95072dbdf7d01aa17ad8463c62"
+  },
+  "limits": "Withdrawal uses encrypted World loopback and disposable SQLite Auth. Deposit uses a recording World session and fixture Auth. Commit faults are injected. Physical connection failures, deployed restart and delivery, and native client behavior remain open.",
+  "localArtifacts": "artifacts/continuation-20261105/satchel-mysql/"
+}

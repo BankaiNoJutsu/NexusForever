@@ -23436,7 +23436,8 @@ or errors in 38 seconds. All 184 scoped tests passed in 71 seconds, including
 encrypted loopback cases for commit, retry after proven rollback, lost commit
 acknowledgement and rollback after an unsuccessful retry. Results are under
 `artifacts/continuation-20261105/satchel-withdrawal/`.
-Fresh configured-provider coverage and native client behavior remain open.
+Four migrated MySQL cases also passed. Native client behavior remains open.
+See [satchel transfer settlement](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#satchel-transfer-settlement).
 
 #### Committed satchel deposits
 
@@ -23455,7 +23456,8 @@ All 66 scoped tests passed in 26 seconds, including partial and full deposits,
 shared-bank rollback, lost commit acknowledgement and stale-stack rejection.
 Local evidence is under
 `artifacts/continuation-20261105/satchel-deposit/`.
-Fresh configured-provider, deployed socket and native client behavior remain open.
+Five migrated MySQL cases also passed. Deployed socket and native client behavior
+remain open. See [satchel transfer settlement](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#satchel-transfer-settlement).
 
 #### Existing item and unlock behavior
 
